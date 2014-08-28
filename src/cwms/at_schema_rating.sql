@@ -294,4 +294,69 @@ comment on column at_compound_rating.position  is 'Independent parameter positio
 comment on column at_compound_rating.ind_value is 'Independent parameter value';
 comment on column at_compound_rating.parent_id is 'Id specifying upstream lower-position parameter position/value combinations';
 
+-----------------------
+-- AT_VIRTUAL_RATING --
+-----------------------
+create table at_virtual_rating (
+   virtual_rating_code number(10),
+   rating_spec_code    number(10) not null,
+   connections         varchar2(80) not null,
+   description         varchar2(256),
+   constraint at_virtual_rating_pk  primary key (virtual_rating_code),
+   constraint at_virtual_rating_u1  unique (rating_spec_code) using index,
+   constraint at_virtual_rating_fk1 foreign key (rating_spec_code) references at_rating_spec (rating_spec_code),
+   constraint at_virtual_rating_ck1 check (regexp_instr(connections, 'R\d(D|I\d)=(I\d|R\d(D|I\d))(,R\d(D|I\d)=(I\d|R\d(D|I\d)))*', 1, 1, 0, 'i') = 1)
+)
+organization index
+tablespace CWMS_20AT_DATA;
+
+comment on table  at_virtual_rating is 'Holds information about virtual ratings';
+comment on column at_virtual_rating.virtual_rating_code is 'Synthetic key';
+comment on column at_virtual_rating.rating_spec_code    is 'Foreign key to rating specification for this virtual rating';
+comment on column at_virtual_rating.connections         is 'String specifying how source ratings are connected to form virtual rating';
+comment on column at_virtual_rating.description         is 'Descriptive text about this virtual rating';
+
+-------------------------------
+-- AT_VIRTUAL_RATING_ELEMENT --
+-------------------------------
+create table at_virtual_rating_element (
+   virtual_rating_element_code number(10),
+   virtual_rating_code         number(10),
+   position                    integer,
+   rating_spec_code            number(10),
+   rating_expression           varchar2(32),
+   constraint at_virtual_rating_element_pk  primary key (virtual_rating_element_code),
+   constraint at_virtual_rating_element_fk1 foreign key (virtual_rating_code) references at_virtual_rating (virtual_rating_code),
+   constraint at_virtual_rating_element_ck1 check ((rating_spec_code is null or  rating_expression is null) and not 
+                                                   (rating_spec_code is null and rating_expression is null))
+)
+organization index
+tablespace CWMS_20AT_DATA;
+
+comment on table  at_virtual_rating_element is 'Holds source ratings (rating specs or rating expressions) for virtual ratings';
+comment on column at_virtual_rating_element.virtual_rating_element_code is 'Synthetic key';
+comment on column at_virtual_rating_element.virtual_rating_code         is 'Foreign key to the virtual rating that this source rating is for';
+comment on column at_virtual_rating_element.position                    is 'The sequential position of this source rating in the virtual rating';
+comment on column at_virtual_rating_element.rating_spec_code            is 'Foreign key to the rating spec for this source rating if it is a rating';
+comment on column at_virtual_rating_element.rating_expression           is 'Mathematical expression for this source rating if it is an expression. For longer expressions use formula-based ratings.';
+
+----------------------------
+-- AT_VRITUAL_RATING_UNIT --
+----------------------------
+create table at_virtual_rating_unit (
+   virtual_rating_element_code number(10),
+   position                    integer,
+   unit_code                   number(10) not null,
+   constraint at_virtual_rating_unit_pk  primary key (virtual_rating_element_code, position),
+   constraint at_virtual_rating_unit_fk1 foreign key (virtual_rating_element_code) references at_virtual_rating_element (virtual_rating_element_code),
+   constraint at_virtual_rating_unit_fk2 foreign key (unit_code) references cwms_unit (unit_code)
+)
+organization index
+tablespace CWMS_20AT_DATA;
+
+comment on table  at_virtual_rating_unit is 'Holds units for virtual rating elements (source ratings)';
+comment on column at_virtual_rating_unit.virtual_rating_element_code is 'Foreign key to the virtual rating element this unit is for';
+comment on column at_virtual_rating_unit.position                    is 'Sequential position of the paramter in the virtual rating element that this unit is for';
+comment on column at_virtual_rating_unit.unit_code                   is 'Foreign key intto the units table for this unit';
+
    

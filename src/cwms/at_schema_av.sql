@@ -131,6 +131,7 @@ END;
 @@cwms/views/av_rating_local.sql
 @@cwms/views/av_rating_values.sql
 @@cwms/views/av_rating_values_native.sql
+@@cwms/views/av_virtual_rating.sql
 @@cwms/views/av_ts_association.sql
 @@cwms/views/av_stream_types.sql
 @@cwms/views/av_data_q_changed.sql

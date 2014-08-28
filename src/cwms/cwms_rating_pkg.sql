@@ -2719,7 +2719,48 @@ function get_min_opening2(
 function get_database_units(
    p_id in varchar2)
    return varchar2;
-      
+/**
+ * Retrieves the number of independent parameters for a rating specification, rating template, or parameters identifier
+ *
+ * @param p_id The rating specification, rating template, or parameters identifier to get the number of independent parameters for 
+ *
+ * @return the number of independent parameters for the specified identifier 
+ */                         
+function get_ind_parameter_count(
+   p_id in varchar2)
+   return integer;
+/**
+ * Retrieves the independent parameters for a rating specification, rating template, or parameters identifier
+ *
+ * @param p_id The rating specification, rating template, or parameters identifier to get the independent parameters for 
+ *
+ * @return the independent parameters for the specified identifier 
+ */                         
+function get_ind_parameters(
+   p_id in varchar2)
+   return varchar2;
+/**
+ * Retrieves the independent parameter at a specified position for a rating specification, rating template, or parameters identifier
+ *
+ * @param p_id The rating specification, rating template, or parameters identifier to get the independent parameter for 
+ *
+ * @return the independent parameter at the specified position for the identifier 
+ */                         
+function get_ind_parameter(
+   p_id       in varchar2,
+   p_position in integer)
+   return varchar2;
+/**
+ * Retrieves the dependent parameter for a rating specification, rating template, or parameters identifier
+ *
+ * @param p_id The rating specification, rating template, or parameters identifier to get the dependent parameter for 
+ *
+ * @return the dependent parameter for the specified identifier 
+ */                         
+function get_dep_parameter(
+   p_id in varchar2)
+   return varchar2;
+         
 procedure update_materialized_views;
 
 procedure start_update_mviews_job;

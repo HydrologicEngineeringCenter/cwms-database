@@ -33,7 +33,7 @@ begin
    loop
       if rec.note_code is not null then
          delete
-           from at_rating_value_note 
+           from at_rating_value_note
           where note_code = rec.note_code;
       end if;
       if rec.dep_rating_ind_param_code is not null then
@@ -41,7 +41,7 @@ begin
       end if;
    end loop;
    delete
-     from at_rating_value 
+     from at_rating_value
     where rating_ind_param_code = p_rating_ind_param_code
        or dep_rating_ind_param_code = p_rating_ind_param_code;
    --------------------------------------
@@ -56,8 +56,8 @@ begin
       )
    loop
       if rec.note_code is not null then
-         delete 
-           from at_rating_value_note 
+         delete
+           from at_rating_value_note
           where note_code = rec.note_code;
       end if;
       if rec.dep_rating_ind_param_code is not null then
@@ -65,16 +65,16 @@ begin
       end if;
       delete_rating_ind_parameter(rec.dep_rating_ind_param_code);
    end loop;
-   delete 
-     from at_rating_extension_value 
+   delete
+     from at_rating_extension_value
     where rating_ind_param_code = p_rating_ind_param_code
        or dep_rating_ind_param_code = p_rating_ind_param_code;
-   -------------------------------     
+   -------------------------------
    -- finally the record itself --
-   -------------------------------  
+   -------------------------------
    delete
      from at_rating_ind_parameter
-    where rating_ind_param_code = p_rating_ind_param_code;     
+    where rating_ind_param_code = p_rating_ind_param_code;
 end delete_rating_ind_parameter;
 
 procedure delete_rating(
@@ -84,12 +84,12 @@ begin
    ----------------------------
    -- first the rating table --
    ----------------------------
-   for rec in 
+   for rec in
       (  select rating_ind_param_code
            from at_rating_ind_parameter
           where rating_code = p_rating_code
       )
-   loop                                     
+   loop
       delete_rating_ind_parameter(rec.rating_ind_param_code);
    end loop;
    ----------------------------------------------
@@ -117,32 +117,32 @@ procedure delete_rating_spec(
 is
 begin
    if p_delete_action in (cwms_util.delete_data, cwms_util.delete_all) then
-      for rec in 
-         (  select rating_code 
-             from at_rating 
+      for rec in
+         (  select rating_code
+             from at_rating
             where rating_spec_code = p_rating_spec_code
          )
-      loop  
+      loop
          delete_rating(rec.rating_code);
       end loop;
    end if;
    if p_delete_action in (cwms_util.delete_key, cwms_util.delete_all) then
       delete
-        from at_rating_ind_rounding 
+        from at_rating_ind_rounding
        where rating_spec_code = p_rating_spec_code;
-      for rec in 
+      for rec in
          (  select rating_code
               from at_rating
              where rating_spec_code = p_rating_spec_code
          )
       loop
          delete_Rating(rec.rating_code);
-      end loop; 
+      end loop;
       delete
-        from at_rating_spec 
+        from at_rating_spec
        where rating_spec_code = p_rating_spec_code;
    end if;
-end delete_rating_spec;         
+end delete_rating_spec;
 
 procedure delete_rating_template(
    p_rating_template_code in number,
@@ -150,25 +150,25 @@ procedure delete_rating_template(
 is
 begin
    if p_delete_action in (cwms_util.delete_data, cwms_util.delete_all) then
-      for rec in 
-         (  select rating_spec_code 
-             from at_rating_spec 
+      for rec in
+         (  select rating_spec_code
+             from at_rating_spec
             where template_code = p_rating_template_code
          )
-      loop  
+      loop
          delete_rating_spec(rec.rating_spec_code);
       end loop;
    end if;
    if p_delete_action in (cwms_util.delete_key, cwms_util.delete_all) then
       delete
-        from at_rating_ind_param_spec 
+        from at_rating_ind_param_spec
        where template_code = p_rating_template_code;
       delete
-        from at_rating_template 
+        from at_rating_template
        where template_code = p_rating_template_code;
    end if;
-    
-end delete_rating_template;         
+
+end delete_rating_template;
 
 --------------------------------------------------------------------------------
 -- STORE TEMPLATES
@@ -435,7 +435,7 @@ begin
          l_templates(i).parameters_id,
          l_templates(i).version,
          l_templates(i).office_id);
-      delete_rating_template(l_template_code, p_delete_action);         
+      delete_rating_template(l_template_code, p_delete_action);
    end loop;
 end delete_templates;
 
@@ -519,7 +519,7 @@ begin
    return cwms_util.get_default_units(get_opening_parameter(p_template), p_unit_system);
 exception
    when others then
-      return null;      
+      return null;
 end get_opening_unit;
 
 --------------------------------------------------------------------------------
@@ -863,8 +863,8 @@ begin
          l_specs(i).location_id,
          l_specs(i).template_id,
          l_specs(i).version,
-         l_specs(i).office_id); 
-      delete_rating_spec(l_spec_code, p_delete_action);         
+         l_specs(i).office_id);
+      delete_rating_spec(l_spec_code, p_delete_action);
    end loop;
 end delete_specs;
 
@@ -959,10 +959,12 @@ procedure store_ratings(
    p_fail_if_exists in varchar2)
 is
    l_ratings rating_tab_t := p_ratings;
+   l_rating  rating_t;
 begin
    if l_ratings is not null then
       for i in 1..l_ratings.count loop
-         l_ratings(i).store(p_fail_if_exists);
+         l_rating := treat(l_ratings(i) as rating_t);
+         l_rating.store(p_fail_if_exists);
       end loop;
    end if;
 end store_ratings;
@@ -1225,7 +1227,7 @@ begin
         into l_count
         from at_rating
        where ref_rating_code = rec.rating_code;
-      if l_count = 0 then                      
+      if l_count = 0 then
          l_rating := rating_t(rec.rating_code);
          l_parts  := cwms_util.split_text(l_rating.rating_spec_id, separator1);
          l_location_id := l_parts(1);
@@ -1239,7 +1241,7 @@ begin
                p_ratings(p_ratings.count) := l_rating;
             else
                p_ratings(p_ratings.count) := vdatum_rating_t(l_rating, l_local_datum, l_elev_positions);
-            end if;   
+            end if;
          end if;
       else
          l_stream_rating := stream_rating_t(rec.rating_code);
@@ -1249,12 +1251,12 @@ begin
          l_elev_positions := get_elevation_positions(l_parts(2));
          if l_elev_positions is null then
             p_ratings(p_ratings.count) := l_stream_rating;
-         else                                             
+         else
             if l_elev_positions = number_tab_t(1) then
                null;
-            else  
+            else
                cwms_err.raise(
-                  'ERROR', 
+                  'ERROR',
                   l_stream_rating.office_id
                   ||'/'
                   ||l_stream_rating.rating_spec_id
@@ -1263,9 +1265,9 @@ begin
             l_local_datum := cwms_loc.get_location_vertical_datum(l_location_id, l_stream_rating.office_id);
             if l_local_datum is null then
                p_ratings(p_ratings.count) := l_stream_rating;
-            else 
+            else
                p_ratings(p_ratings.count) := vdatum_stream_rating_t(l_stream_rating, l_local_datum);
-            end if;   
+            end if;
          end if;
       end if;
       p_ratings(p_ratings.count).rating_spec_id := cwms_util.join_text(l_parts, separator1);
@@ -1324,7 +1326,7 @@ begin
       '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
       ||'xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
    for i in 1..l_ratings.count loop
-      cwms_util.append(l_text, l_ratings(i).to_clob);
+      cwms_util.append(l_text, treat(l_ratings(i) as rating_t).to_clob);
    end loop;
    cwms_util.append(l_text, '</ratings>');
    dbms_lob.close(l_text);
@@ -1346,7 +1348,7 @@ procedure retrieve_ratings_xml2(
    p_time_zone            in  varchar2 default null,
    p_office_id_mask       in  varchar2 default null)
 is
-   type id_tab_t is table of boolean index by varchar2(390); 
+   type id_tab_t is table of boolean index by varchar2(390);
    l_id            varchar2(390);
    l_ids           id_tab_t;
    l_specs         rating_spec_tab_t := rating_spec_tab_t();
@@ -1354,11 +1356,12 @@ is
    l_ratings       rating_tab_t;
    l_text          clob;
    l_spec_id_mask  varchar2(1024) := p_spec_id_mask;
-   l_values        boolean := true; 
+   l_values        boolean := true;   
+   l_rating        rating_t;
 begin
    if substr(l_spec_id_mask, 1, 1) = '-' then
       l_values := false;
-      l_spec_id_mask := substr(l_spec_id_mask, 2); 
+      l_spec_id_mask := substr(l_spec_id_mask, 2);
    end if;
    retrieve_ratings_obj(
       l_ratings,
@@ -1383,11 +1386,11 @@ begin
          l_templates(l_templates.count) := retrieve_templates_obj_f(l_specs(i).template_id, l_specs(i).office_id)(1);
          l_ids(l_id) := true;
       end if;
-   end loop;      
+   end loop;
    dbms_lob.createtemporary(l_text, true);
    dbms_lob.open(l_text, dbms_lob.lob_readwrite);
    cwms_util.append(
-      l_text, 
+      l_text,
       '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
       ||'xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
    for i in 1..l_templates.count loop
@@ -1396,24 +1399,25 @@ begin
    for i in 1..l_specs.count loop
       cwms_util.append(l_text, l_specs(i).to_clob);
    end loop;
-   for i in 1..l_ratings.count loop   
+   for i in 1..l_ratings.count loop
       if not l_values then
-         l_ratings(i).formula := null;
-         if l_ratings(i).rating_info is not null then
-            l_ratings(i).rating_info.rating_values := rating_value_tab_t();
-         end if;         
-      end if;                   
-      cwms_util.append(l_text, l_ratings(i).to_clob);
-   end loop; 
-   cwms_util.append(l_text, '</ratings>');     
-   dbms_lob.close(l_text); 
+         l_rating := treat(l_ratings(i) as rating_t);
+         l_rating.formula := null;
+         if l_rating.rating_info is not null then
+            l_rating.rating_info.rating_values := rating_value_tab_t();
+         end if;
+      end if;
+      cwms_util.append(l_text, treat(l_ratings(i) as rating_t).to_clob);
+   end loop;
+   cwms_util.append(l_text, '</ratings>');
+   dbms_lob.close(l_text);
    dbms_lob.createtemporary(p_ratings, true);
    dbms_lob.open(p_ratings, dbms_lob.lob_readwrite);
    cwms_util.append(p_ratings, '<?xml version="1.0" encoding="utf-8"?>'||chr(10));
    cwms_util.append(p_ratings, xmltype(l_text).extract('/node()').getclobval);
    dbms_lob.close(p_ratings);
-end retrieve_ratings_xml2;   
-   
+end retrieve_ratings_xml2;
+
 --------------------------------------------------------------------------------
 -- RETRIEVE_RATINGS_XML_F
 --
@@ -1458,10 +1462,10 @@ begin
       p_effective_date_end,
       p_time_zone,
       p_office_id_mask);
-      
-   return l_ratings;      
-end retrieve_ratings_xml2_f;   
-   
+
+   return l_ratings;
+end retrieve_ratings_xml2_f;
+
 --------------------------------------------------------------------------------
 -- DELETE_RATINGS
 --
@@ -1490,7 +1494,7 @@ begin
           where upper(rating_id) like upper(l_spec_id_mask) escape '\'
             and office_id like upper(l_office_id_mask) escape '\'
             and effective_date >= nvl(l_effective_start, effective_date)
-            and effective_date <= nvl(l_effective_end, effective_date) 
+            and effective_date <= nvl(l_effective_end, effective_date)
       )
    loop
       delete_rating(rec.rating_code);
@@ -1660,6 +1664,9 @@ is
    l_rating_units            str_tab_tab_t;
    l_stream_rating           stream_rating_t;
    l_round                   boolean := cwms_util.is_true(p_round);
+   l_rating                  rating_t;
+   l_code                    integer;
+   l_is_virtual              boolean;
 begin
    -------------------
    -- sanity checks --
@@ -1711,6 +1718,61 @@ begin
          p_rating_spec,
          'rating specification');
    end if;
+   ------------------------------
+   -- check for virtual rating --
+   ------------------------------
+   begin 
+      select rs.rating_spec_code
+        into l_code
+        from at_rating_spec rs,
+             at_rating_template rt,
+             at_physical_location pl,
+             at_base_location bl,
+             cwms_office o
+       where o.office_id = l_office_id
+         and bl.db_office_code = o.office_code
+         and pl.base_location_code = bl.base_location_code
+         and upper(bl.base_location_id||substr('-', 1, length(pl.sub_location_id)||pl.sub_location_id)) = upper(l_parts(1))
+         and rt.office_code = o.office_code
+         and upper(rt.parameters_id) = upper(l_parts(2))
+         and upper(rt.version) = upper(l_parts(3))
+         and rs.location_code = pl.location_code
+         and rs.template_code = rt.template_code
+         and upper(rs.version) = upper(l_parts(4)); 
+   exception
+      when no_data_found then 
+      cwms_err.raise(
+         'ITEM_DOES_NOT_EXIST',
+         'Rating specification',
+         l_office_id||'/'||p_rating_spec);
+   end;
+   begin
+      select virtual_rating_code
+        into l_code
+        from at_virtual_rating
+       where rating_spec_code = l_code;
+       l_is_virtual := true; 
+   exception
+      when no_data_found then
+       l_is_virtual := false; 
+   end;
+   if l_is_virtual then
+       -------------------- 
+       -- virtual rating --
+       --------------------
+      l_rating := rating_t(l_code);
+      p_results := l_rating.rate(
+         p_values,
+         p_units,
+         p_round,
+         p_value_times,
+         p_rating_time,
+         p_time_zone);
+      return;
+   end if;
+   -------------------------- 
+   -- not a virtual rating --
+   -------------------------- 
    -------------------------------
    -- get the working time zone --
    -------------------------------
@@ -1800,7 +1862,7 @@ begin
             and r.rating_spec_code = rs.rating_spec_code
             and r.active_flag = 'T'
             and r.create_date <= l_rating_time
-          order by r.effective_date  
+          order by r.effective_date
       )
    loop
       if l_ratings is null then
@@ -1950,7 +2012,6 @@ begin
          if l_ratio != 0. then
             if l_ratings(l_hi_index) is null then
                l_ratings(l_hi_index) := get_rating(l_rating_codes(l_hi_index));
-               l_ratings(l_hi_index).convert_to_native_units;
                l_rating_units(l_hi_index) := cwms_util.split_text(replace(l_ratings(l_hi_index).native_units, separator2, separator3), separator3);
                if l_rating_units(l_hi_index).count != p_units.count then
                   cwms_err.raise(
@@ -1961,14 +2022,20 @@ begin
                      ||l_ratings(l_hi_index).rating_spec_id);
                end if;
                if l_ratings(l_hi_index) is of (stream_rating_t) then
+                  l_stream_rating := treat(l_ratings(l_hi_index) as stream_rating_t);
+                  l_stream_rating.convert_to_native_units;
                   if l_hi_index < l_date_offsets.count then
                      ---------------------------------------------------------
                      -- chop any shifts that are after the next rating date --
                      ---------------------------------------------------------
-                     l_stream_rating := treat(l_ratings(l_hi_index) as stream_rating_t);
                      l_stream_rating.trim_to_effective_date(c_base_date + l_date_offsets(l_hi_index+1));
                      l_stream_rating.trim_to_create_date(l_rating_time);
                   end if;
+                     l_ratings(l_hi_index) := l_stream_rating;
+               else 
+                  l_rating := treat(l_ratings(l_hi_index) as rating_t);
+                  l_rating.convert_to_native_units;
+                  l_ratings(l_hi_index) := l_rating;
                end if;
             end if;
             l_ind_set_2 := double_tab_t();
@@ -1976,13 +2043,12 @@ begin
             for i in 1..l_ind_set.count loop
                l_ind_set_2(i) := cwms_util.convert_units(l_ind_set(i), p_units(i), l_rating_units(l_hi_index)(i));
             end loop;
-            l_hi_value := l_ratings(l_hi_index).rate_one(l_ind_set_2);
+            l_hi_value := treat(l_ratings(l_hi_index) as rating_t).rate_one(l_ind_set_2);
             l_hi_value := cwms_util.convert_units(l_hi_value, l_rating_units(l_hi_index)(p_units.count), p_units(p_units.count));
          end if;
          if l_ratio != 1. then
             if l_ratings(l_hi_index-1) is null then
-               l_ratings(l_hi_index-1) := get_rating(l_rating_codes(l_hi_index-1));
-               l_ratings(l_hi_index-1).convert_to_native_units;
+               l_ratings(l_hi_index-1) := get_rating(l_rating_codes(l_hi_index-1)); 
                l_rating_units(l_hi_index-1) := cwms_util.split_text(replace(l_ratings(l_hi_index-1).native_units, separator2, separator3), separator3);
                if l_rating_units(l_hi_index-1).count != p_units.count then
                   cwms_err.raise(
@@ -1993,12 +2059,20 @@ begin
                      ||l_ratings(l_hi_index-1).rating_spec_id);
                end if;
                if l_ratings(l_hi_index-1) is of (stream_rating_t) then
-                  ---------------------------------------
-                  -- chop any shifts extraneous shifts --
-                  ---------------------------------------
                   l_stream_rating := treat(l_ratings(l_hi_index-1) as stream_rating_t);
-                  l_stream_rating.trim_to_effective_date(c_base_date + l_date_offsets(l_hi_index));
-                  l_stream_rating.trim_to_create_date(l_rating_time);
+                  l_stream_rating.convert_to_native_units;
+                  if l_hi_index-1 < l_date_offsets.count then
+                     ---------------------------------------------------------
+                     -- chop any shifts that are after the next rating date --
+                     ---------------------------------------------------------
+                     l_stream_rating.trim_to_effective_date(c_base_date + l_date_offsets(l_hi_index-1+1));
+                     l_stream_rating.trim_to_create_date(l_rating_time);
+                  end if;
+                     l_ratings(l_hi_index-1) := l_stream_rating;
+               else 
+                  l_rating := treat(l_ratings(l_hi_index-1) as rating_t);
+                  l_rating.convert_to_native_units;
+                  l_ratings(l_hi_index-1) := l_rating;
                end if;
             end if;
             l_ind_set_2 := double_tab_t();
@@ -2006,7 +2080,7 @@ begin
             for i in 1..l_ind_set.count loop
                l_ind_set_2(i) := cwms_util.convert_units(l_ind_set(i), p_units(i), l_rating_units(l_hi_index-1)(i));
             end loop;
-            l_lo_value := l_ratings(l_hi_index-1).rate_one(l_ind_set_2);
+            l_lo_value := treat(l_ratings(l_hi_index-1) as rating_t).rate_one(l_ind_set_2);
             l_lo_value := cwms_util.convert_units(l_lo_value, l_rating_units(l_hi_index-1)(p_units.count), p_units(p_units.count));
          end if;
          -----------------------------------------
@@ -2644,6 +2718,9 @@ is
    l_rating_units            str_tab_tab_t;
    l_stream_rating           stream_rating_t;
    l_round                   boolean := cwms_util.is_true(p_round);
+   l_rating                  rating_t;
+   l_code                    integer;
+   l_is_virtual              boolean;
 begin
    -------------------
    -- sanity checks --
@@ -2678,6 +2755,61 @@ begin
          p_rating_spec,
          'rating specification');
    end if;
+   ------------------------------
+   -- check for virtual rating --
+   ------------------------------
+   begin 
+      select rs.rating_spec_code
+        into l_code
+        from at_rating_spec rs,
+             at_rating_template rt,
+             at_physical_location pl,
+             at_base_location bl,
+             cwms_office o
+       where o.office_id = l_office_id
+         and bl.db_office_code = o.office_code
+         and pl.base_location_code = bl.base_location_code
+         and upper(bl.base_location_id||substr('-', 1, length(pl.sub_location_id)||pl.sub_location_id)) = upper(l_parts(1))
+         and rt.office_code = o.office_code
+         and upper(rt.parameters_id) = upper(l_parts(2))
+         and upper(rt.version) = upper(l_parts(3))
+         and rs.location_code = pl.location_code
+         and rs.template_code = rt.template_code
+         and upper(rs.version) = upper(l_parts(4)); 
+   exception
+      when no_data_found then 
+      cwms_err.raise(
+         'ITEM_DOES_NOT_EXIST',
+         'Rating specification',
+         l_office_id||'/'||p_rating_spec);
+   end;
+   begin
+      select virtual_rating_code
+        into l_code
+        from at_virtual_rating
+       where rating_spec_code = l_code;
+       l_is_virtual := true; 
+   exception
+      when no_data_found then
+       l_is_virtual := false; 
+   end;
+   if l_is_virtual then
+       -------------------- 
+       -- virtual rating --
+       --------------------
+      l_rating := rating_t(l_code);
+      p_results := l_rating.reverse_rate(
+         p_values,
+         p_units,
+         p_round,
+         p_value_times,
+         p_rating_time,
+         p_time_zone);
+      return;
+   end if;
+   -------------------------- 
+   -- not a virtual rating --
+   -------------------------- 
    -------------------------------
    -- get the working time zone --
    -------------------------------
@@ -2767,7 +2899,7 @@ begin
             and r.rating_spec_code = rs.rating_spec_code
             and r.active_flag = 'T'
             and r.create_date <= l_rating_time
-          order by r.effective_date  
+          order by r.effective_date
       )
    loop
       if l_ratings is null then
@@ -2909,8 +3041,9 @@ begin
          if l_ratio != 0. then
             if l_ratings(l_hi_index) is null then
                l_ratings(l_hi_index) := get_rating(l_rating_codes(l_hi_index));
-               l_ratings(l_hi_index).convert_to_native_units;
-               l_rating_units(l_hi_index) := cwms_util.split_text(replace(l_ratings(l_hi_index).native_units, separator2, separator3), separator3);
+               l_rating := treat(l_ratings(l_hi_index) as rating_t);
+               l_rating.convert_to_native_units;
+               l_rating_units(l_hi_index) := cwms_util.split_text(replace(l_rating.native_units, separator2, separator3), separator3);
                if l_rating_units(l_hi_index).count != p_units.count then
                   cwms_err.raise(
                      'ERROR',
@@ -2931,7 +3064,7 @@ begin
                end if;
             end if;
             l_hi_value := cwms_util.convert_units(
-               l_ratings(l_hi_index).reverse_rate(
+               treat(l_ratings(l_hi_index) as rating_t).reverse_rate(
                   cwms_util.convert_units(
                      p_values(i),
                      p_units(1),
@@ -2942,8 +3075,9 @@ begin
          if l_ratio != 1. then
             if l_ratings(l_hi_index-1) is null then
                l_ratings(l_hi_index-1) := get_rating(l_rating_codes(l_hi_index-1));
-               l_ratings(l_hi_index-1).convert_to_native_units;
-               l_rating_units(l_hi_index-1) := cwms_util.split_text(replace(l_ratings(l_hi_index-1).native_units, separator2, separator3), separator3);
+               l_rating := treat(l_ratings(l_hi_index-1) as rating_t);
+               l_rating.convert_to_native_units;
+               l_rating_units(l_hi_index-1) := cwms_util.split_text(replace(l_rating.native_units, separator2, separator3), separator3);
                if l_rating_units(l_hi_index-1).count != p_units.count then
                   cwms_err.raise(
                      'ERROR',
@@ -2962,7 +3096,7 @@ begin
                end if;
             end if;
             l_lo_value := cwms_util.convert_units(
-               l_ratings(l_hi_index-1).reverse_rate(
+               treat(l_ratings(l_hi_index-1) as rating_t).reverse_rate(
                   cwms_util.convert_units(
                      p_values(i),
                      p_units(1),
@@ -4560,20 +4694,30 @@ begin
    return l_result;
 end get_min_opening2;
 
-function get_database_units(
+function get_parameters_id(
    p_id in varchar2)
-   return varchar2
+   return varchar
 is
    l_parts str_tab_t;
    l_index integer;   
-   l_units varchar2(128);
 begin
    l_parts := cwms_util.split_text(p_id, separator1);
    l_index := case l_parts.count
                  when 4 then 2 -- rating id
                  else 1        -- template id, or parameters id
               end;
-   l_parts := cwms_util.split_text(replace(l_parts(l_index), separator2, separator3), separator3);
+   return l_parts(l_index);
+end get_parameters_id;
+   
+function get_database_units(
+   p_id in varchar2)
+   return varchar2
+is
+   l_parts str_tab_t;
+   l_pos   integer;
+   l_units varchar2(128);
+begin
+   l_parts := cwms_util.split_text(replace(get_parameters_id(p_id), separator2, separator3), separator3);
    if l_parts.count < 2 then
       cwms_err.raise('INVALID_ITEM', p_id, 'rating specification, rating template, or parameters id');
    end if;
@@ -4585,10 +4729,77 @@ begin
       end;         
    end loop;
    l_units := cwms_util.join_text(l_parts, separator3);
-   l_index := instr(l_units, separator3, -1, 1);
-   l_units := substr(l_units, 1, l_index-1)||separator2||substr(l_units, l_index+1);
+   l_pos   := instr(l_units, separator3, -1, 1);
+   l_units := substr(l_units, 1, l_pos-1)||separator2||substr(l_units, l_pos+1);
    return l_units;
 end get_database_units;   
+
+                   
+function get_ind_parameter_count(
+   p_id in varchar2)
+   return integer
+is
+   l_parts str_tab_t;
+begin
+   l_parts := cwms_util.split_text(get_parameters_id(p_id), separator2);
+   if l_parts.count != 2 then
+      cwms_err.raise('INVALID_ITEM', p_id, 'rating specification, rating template, or parameters id');
+   end if;
+   l_parts := cwms_util.split_text(l_parts(1), separator3);
+   return l_parts.count;   
+end get_ind_parameter_count;   
+   
+function get_ind_parameters(
+   p_id in varchar2)
+   return varchar2
+is
+   l_parts str_tab_t;
+begin
+   l_parts := cwms_util.split_text(get_parameters_id(p_id), separator2);
+   if l_parts.count != 2 then
+      cwms_err.raise('INVALID_ITEM', p_id, 'rating specification, rating template, or parameters id');
+   end if;
+   return l_parts(1);
+end get_ind_parameters;   
+   
+function get_ind_parameter(
+   p_id       in varchar2,
+   p_position in integer)
+   return varchar2
+is
+   l_parts str_tab_t;
+begin
+   l_parts := cwms_util.split_text(get_parameters_id(p_id), separator2);
+   if l_parts.count != 2 then
+      cwms_err.raise('INVALID_ITEM', p_id, 'rating specification, rating template, or parameters id');
+   end if;
+   l_parts := cwms_util.split_text(l_parts(1), separator3);
+   if p_position is null or p_position not between 1 and l_parts.count then
+      cwms_err.raise(
+         'ERROR',
+         'Position '
+         ||nvl(p_position, 'NULL')
+         ||' is not in required range 1..'
+         ||l_parts.count
+         ||' for independent parameters '
+         ||cwms_util.join_text(l_parts, separator3));
+   end if;
+   return l_parts(p_position);
+end get_ind_parameter;   
+   
+function get_dep_parameter(
+   p_id in varchar2)
+   return varchar2
+is
+   l_parts str_tab_t;
+begin
+   l_parts := cwms_util.split_text(get_parameters_id(p_id), separator2);
+   if l_parts.count != 2 then
+      cwms_err.raise('INVALID_ITEM', p_id, 'rating specification, rating template, or parameters id');
+   end if;
+   return l_parts(2);
+end get_dep_parameter;   
+
 
 procedure update_materialized_views
 is
@@ -4711,36 +4922,36 @@ end start_update_mviews_job;
 function get_elevation_positions(
    p_rating_template_id in varchar2)
    return number_tab_t
-   
+
 is
    l_elev_code      number(10);
    l_params         str_tab_t;
    l_elev_positions number_tab_t;
 begin
-      select base_parameter_code 
-        into l_elev_code 
-        from cwms_base_parameter 
+      select base_parameter_code
+        into l_elev_code
+        from cwms_base_parameter
        where base_parameter_id = 'Elev';
-         
+
       l_params := cwms_util.split_text(
          cwms_util.split_text(
-            replace(p_rating_template_id, separator2, separator3), 
-            1, 
-            separator1), 
+            replace(p_rating_template_id, separator2, separator3),
+            1,
+            separator1),
          separator3);
       for i in 1..l_params.count loop
          if cwms_util.get_base_param_code(l_params(i), 'T') = l_elev_code then
             if l_elev_positions is null then
                l_elev_positions := number_tab_t();
-            end if;                               
+            end if;
             l_elev_positions.extend;
             if i = l_params.count then
                l_elev_positions(l_elev_positions.count) := -1;
             else
                l_elev_positions(l_elev_positions.count) := i;
             end if;
-         end if;   
-      end loop; 
+         end if;
+      end loop;
       return l_elev_positions;
 end get_elevation_positions;         
 

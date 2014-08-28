@@ -4,6 +4,8 @@ drop type vdatum_rating_t;
 drop type stream_rating_t;
 drop type rating_tab_t;
 drop type rating_t;
+drop type rating_connections_map_tab_t;
+drop type rating_connections_map_t;
 drop type rating_ind_param_tab_t;
 drop type rating_ind_parameter_t;
 drop type rating_value_tab_t;
@@ -3202,7 +3204,6 @@ as
       l_dep_unit_id             varchar2(16);
       l_parts                   str_tab_t;
       l_deepest                 boolean;
-      l_rating                  rating_ind_parameter_t;
       l_remaining_parameters_id varchar2(256);
       l_remaining_units_id      varchar2(256);
    begin
@@ -3242,12 +3243,12 @@ as
             and uc.from_unit_code = bp.unit_code
             and uc.to_unit_id = l_ind_unit_id;
          for i in 1..self.rating_values.count loop
-            self.rating_values(i).ind_value :=
+            self.rating_values(i).ind_value := 
                cwms_rounding.round_dd_f(self.rating_values(i).ind_value * l_ind_factor + l_ind_offset, '9999999999');
             if l_deepest then
                self.rating_values(i).dep_value :=
                   cwms_rounding.round_dd_f(self.rating_values(i).dep_value * l_dep_factor + l_dep_offset, '9999999999');
-            else
+            else                                                                 
                self.rating_values(i).dep_rating_ind_param.convert_to_native_units(
                   l_remaining_parameters_id,
                   l_remaining_units_id);
@@ -4020,6 +4021,29 @@ end;
 /
 show errors;
 
+create type rating_connections_map_t
+/**
+ * Holds connection information for a single source rating for a virtual rating
+ *
+ */ 
+as object(
+   ind_params str_tab_t, 
+   dep_param  varchar2(4),
+   units      str_tab_t,
+   factors    double_tab_t,
+   offsets    double_tab_t
+)
+/   
+
+create type rating_connections_map_tab_t
+/**
+ * Holds connection information for all source ratings for a virtual rating
+ *
+ * @see type rating_connections_map_t
+ */
+is table of rating_connections_map_t
+/
+
 create type rating_t
 /**
  * Holds a rating
@@ -4029,32 +4053,38 @@ create type rating_t
  * @see type stream_rating_t
  * @see type rating_tab_t
  *
- * @member office_id      The office that owns the rating
- * @member rating_spec_id The rating specification identifier
- * @member effective_date The earliest date/time that the rating is to be in effect
- * @member create_date    The date/time that the rating was loaded into the datbase
- * @member active_flag    A flag ('T' or 'F') specifying whether the rating is active
- * @member formula        The formula (algebraic or RPN) for the rating if the rating is formula-based
- * @member native_units   The native units for the rating
- * @member description    The description of the rating
- * @member rating_info    The rating lookup values if the rating is lookup-based
- * @member current_units  A flag ('D' or 'N') specfying whether the lookup values are currently in database storage ('D') or native ('N') units
- * @member current_time   A flag ('D' or 'L') specifying whether the times are currently in database ('D') (=UTC) or rating location local ('L') time zone
- * @member formula_tokens A collection of formula tokens if the rating is formula-based
+ * @member office_id       The office that owns the rating
+ * @member rating_spec_id  The rating specification identifier
+ * @member effective_date  The earliest date/time that the rating is to be in effect
+ * @member create_date     The date/time that the rating was loaded into the datbase
+ * @member active_flag     A flag ('T' or 'F') specifying whether the rating is active
+ * @member formula         The formula (algebraic or RPN) for the rating if the rating is formula-based
+ * @member connections     The connection strings for the source ratings if the rating is a virtual rating
+ * @member native_units    The native units for the rating
+ * @member description     The description of the rating
+ * @member rating_info     The rating lookup values if the rating is lookup-based
+ * @member current_units   A flag ('D' or 'N') specfying whether the lookup values are currently in database storage ('D') or native ('N') units
+ * @member current_time    A flag ('D' or 'L') specifying whether the times are currently in database ('D') (=UTC) or rating location local ('L') time zone
+ * @member formula_tokens  A collection of formula tokens if the rating is formula-based
+ * @member source_ratings  An ordered collection of source rating specifications if the rating is a virtual rating
+ * @member connections_map A map of data inputs to ratings inputs if the rating is a virtual rating
  */
-as object(
-   office_id      varchar2(16),
-   rating_spec_id varchar2(372),
-   effective_date date,
-   create_date    date,
-   active_flag    varchar2(1),
-   formula        varchar2(1000),
-   native_units   varchar2(256),
-   description    varchar2(256),
-   rating_info    rating_ind_parameter_t,
-   current_units  varchar2(1), -- 'D' = database, 'N' = native, other = don't know
-   current_time   varchar2(2), -- 'D' = database, 'L' = native, other = don't know
-   formula_tokens str_tab_t,
+as object (
+   office_id       varchar2(16),
+   rating_spec_id  varchar2(372),
+   effective_date  date,
+   create_date     date,
+   active_flag     varchar2(1),
+   formula         varchar2(1000),
+   connections     varchar2(80),
+   native_units    varchar2(256),
+   description     varchar2(256),
+   rating_info     rating_ind_parameter_t,
+   current_units   varchar2(1), -- 'D' = database, 'N' = native, other = don't know
+   current_time    varchar2(2), -- 'D' = database, 'L' = native, other = don't know
+   formula_tokens  str_tab_t,
+   source_ratings  str_tab_t,
+   connections_map rating_connections_map_tab_t,
    /**
     * Construct a rating_t object from data in the database.
     *
@@ -4107,6 +4137,23 @@ as object(
       p_match_date     in varchar2 default 'F',
       p_time_zone      in varchar2 default null,
       p_office_id      in varchar2 default null),
+   -- not documented
+   member function rating_expr_ind_param_count(
+      p_text in varchar2)
+      return pls_integer,
+   -- not documented
+   member procedure parse_source_rating(
+      self           in  rating_t, -- to keep from implicity being defined as OUT type  
+      p_is_rating    out boolean,
+      p_rating_part  out varchar2,
+      p_units_part   out varchar2,
+      p_text         in  varchar2),
+   -- not documented
+   member procedure parse_connection_part(
+      self        in  rating_t, -- to keep from implicity being defined as OUT type  
+      p_rating    out pls_integer,
+      p_ind_param out pls_integer,
+      p_conn_part in  varchar2),
    -- not documented
    member procedure validate_obj,
    /**
@@ -4234,6 +4281,19 @@ as object(
    member function rate(
       p_ind_value in ztsv_type)
    return ztsv_type,
+   /*
+    * not documented, called only from CWMS_RATING.RATE
+    * only for virtual ratings
+    *
+    */ 
+   member function rate(
+      p_values      in  double_tab_tab_t,
+      p_units       in  str_tab_t,
+      p_round       in  varchar2,
+      p_value_times in  date_table_type,
+      p_rating_time in  date,
+      p_time_zone   in  varchar2)
+   return double_tab_t,
    /**
     * Reverse rate the specified dependent values. This method id valid only if
     * the rating contains a signle independent value.
@@ -4300,6 +4360,19 @@ as object(
    member function reverse_rate(
       p_dep_value in ztsv_type)
    return ztsv_type,
+   /*
+    * not documented, called only from CWMS_RATING.RATE
+    * only for virtual ratings
+    *
+    */ 
+   member function reverse_rate(
+      p_values      in  double_tab_t,
+      p_units       in  str_tab_t,
+      p_round       in  varchar2,
+      p_value_times in  date_table_type,
+      p_rating_time in  date,
+      p_time_zone   in  varchar2)
+   return double_tab_t,
    -- not documented
    member function get_date(
       p_timestr in varchar2)
@@ -4311,6 +4384,30 @@ as object(
     */
    member function get_ind_parameter_count
    return pls_integer,
+   /**
+    * Returns the independent parameters for this rating
+    *
+    * @return the independent parameters for this rating
+    */
+   member function get_ind_parameters
+   return str_tab_t,
+   /**
+    * Returns the independent paramter at the specified position
+    *
+    * @param p_position The position (starting at 1) of the independent paramter to retrieve
+    * 
+    * @return the independent paramter at the specified position
+    */
+   member function get_ind_parameter(
+      p_position in integer)
+   return varchar2,
+   /**
+    * Returns the dependent parameter for this rating
+    *
+    * @return the dependent parameter for this rating
+    */
+   member function get_dep_parameter
+   return varchar2,
    -- not documented
     member function reverse
     return rating_t,
@@ -4361,33 +4458,40 @@ as
       p_xml in xmltype)
    return self as result
    is
-      l_xml     xmltype;
-      l_text    varchar2(64);
-      l_params         str_tab_t;
-      l_elev_code      number(10);
-      l_elev_positions number_tab_t;
-      l_datum          varchar2(16);
+      type hash_t is table of varchar2(512) index by binary_integer;
+      l_xml                  xmltype;
+      l_text                 varchar2(64);
+      l_elev_positions       number_tab_t;
+      l_datum                varchar2(16);
+      l_is_virtual           boolean;
+      l_source_rating_xml    xmltype;
+      l_source_ratings_xml   xmltype;
+      l_source_rating_specs  hash_t;
+      l_position             binary_integer;
+      l_is_rating            boolean;
+      l_rating_part          varchar2(500);
+      l_units_part           varchar2(50);
       ------------------------------
       -- local function shortcuts --
       ------------------------------
-      function get_node(p_xml in xmltype, p_path in varchar2) return xmltype is
+      function get_node(pp_xml in xmltype, p_path in varchar2) return xmltype is
       begin
-         return cwms_util.get_xml_node(p_xml, p_path);
+         return cwms_util.get_xml_node(pp_xml, p_path);
       end;
-      function get_text(p_xml in xmltype, p_path in varchar2) return varchar2 is
+      function get_text(pp_xml in xmltype, p_path in varchar2) return varchar2 is
       begin
-         return cwms_util.get_xml_text(p_xml, p_path);
+         return cwms_util.get_xml_text(pp_xml, p_path);
       end;
-      function get_number(p_xml in xmltype, p_path in varchar2) return number is
+      function get_number(pp_xml in xmltype, p_path in varchar2) return number is
       begin
-         return cwms_util.get_xml_number(p_xml, p_path);
+         return cwms_util.get_xml_number(pp_xml, p_path);
       end;
    begin
       l_xml := get_node(p_xml, '//rating[1]');
       if l_xml is null then
          cwms_err.raise(
             'ERROR',
-            'Cannot locate <rating> element');
+            'Cannot locate <rating> /rating/element');
       end if;
       self.office_id := get_text(l_xml, '/rating/@office-id');
       if self.office_id is null then
@@ -4397,11 +4501,29 @@ as
       if self.rating_spec_id is null then
          cwms_err.raise('ERROR', 'Required <rating-spec-id> element not found');
       end if;
+      l_source_ratings_xml := get_node(l_xml, '/rating/source-ratings');
+      l_is_virtual := l_source_ratings_xml is not null;
       l_text := get_text(l_xml, '/rating/effective-date');
-      if l_text is null then
-         cwms_err.raise('ERROR', 'Required <effective-date> element not found');
+      if l_text is null  then
+         if not l_is_virtual then
+            cwms_err.raise(
+               'ERROR', 
+               'Required <effective-date> element not found on non-virtual rating '
+               ||self.office_id
+               ||'/'
+               ||self.rating_spec_id);
+         end if;
+      else
+         if l_is_virtual then
+            cwms_err.raise(
+               'ERROR', 
+               'Forbidden <effective-date> element found on virtual rating '
+               ||self.office_id
+               ||'/'
+               ||self.rating_spec_id);
+         end if;
+         self.effective_date := get_date(l_text);
       end if;
-      self.effective_date := get_date(l_text);
       l_text := get_text(l_xml, '/rating/create-date');
       if l_text is not null then
          self.create_date := get_date(l_text);
@@ -4410,7 +4532,10 @@ as
       if l_text is null then
          cwms_err.raise(
             'ERROR',
-            'Missing <active> element under <rating> element');
+            'Missing <active> element under <rating> element on rating '
+            ||self.office_id
+            ||'/'
+            ||self.rating_spec_id);
       else
          case l_text
             when 'true'  then self.active_flag := 'T';
@@ -4422,37 +4547,149 @@ as
                   'ERROR',
                   'Invalid value for <active> element under <rating-spec> element: '
                   ||l_text
-                  ||', should be 1, 0, true or false');
+                  ||', should be 1, 0, true or false on rating '
+                  ||self.office_id
+                  ||'/'
+                  ||self.rating_spec_id);
          end case;
       end if;
       self.formula := get_text(l_xml, '/rating/formula');
       self.native_units := get_text(l_xml, '/rating/units-id');
       if self.native_units is null then
-         cwms_err.raise('ERROR', 'Required <units-id> element not found');
-      end if;
-      self.description   := get_text(l_xml, '/rating/description');
-      self.rating_info   := rating_ind_parameter_t(l_xml);
-      self.current_units := 'N';
-      self.current_time  := 'D';
-      self.validate_obj;
-      --------------------------------------------------
-      -- convert to native datum if                   --
-      --   a. has elevations, and                     --
-      --   b. xml specifies a non-null vertical datum --
-      --------------------------------------------------
-      l_elev_positions := cwms_rating.get_elevation_positions(cwms_util.split_text(self.rating_spec_id, 2, cwms_rating.separator1)); 
-      if l_elev_positions is not null then
-         l_datum := get_text(l_xml, '/rating/vertical-datum');
-         if l_datum is not null then
-            declare
-               l_vdatum_rating vdatum_rating_t;
-            begin                                      
-               l_vdatum_rating := vdatum_rating_t(self, l_datum, l_elev_positions);
-               l_vdatum_rating.to_native_datum;
-               self := l_vdatum_rating;
-            end;
+         if not l_is_virtual then
+            cwms_err.raise(
+               'ERROR', 
+               'Required <units-id> element not found on non-virtual rating '
+               ||self.office_id
+               ||'/'
+               ||self.rating_spec_id);
          end if;
-      end if;       
+      else
+         if l_is_virtual then
+            cwms_err.raise(
+               'ERROR', 
+               'Forbidden <units-id> element found on virtual rating '
+               ||self.office_id
+               ||'/'
+               ||self.rating_spec_id);
+         end if;
+      end if;
+      self.description := get_text(l_xml, '/rating/description');
+      if l_is_virtual then
+         self.connections := get_text(l_xml, '/rating/connections');
+         if self.connections is null then
+            cwms_err.raise(
+               'ERROR', 
+               'Required <connections> element not found on virtual rating '
+               ||self.office_id
+               ||'/'
+               ||self.rating_spec_id);
+         end if;
+         for i in 1..9999999 loop
+            l_source_rating_xml := get_node(l_source_ratings_xml, '/source-ratings/source-rating['||i||']');
+            exit when l_source_rating_xml is null;
+            l_text := get_text(l_source_rating_xml, '/source-rating/@position');
+            if l_text is null then
+               cwms_err.raise(
+                  'ERROR', 
+                  'Required position attribute not found on source rating '
+                  ||i
+                  ||' of virtual rating '
+                  ||self.office_id
+                  ||'/'
+                  ||self.rating_spec_id);
+            end if;
+            begin
+               l_position := to_number(l_text);
+            exception
+               when others then
+                  cwms_err.raise(
+                     'ERROR', 
+                     'Invalid position attribute "'
+                     ||l_text
+                     ||'" found on source rating '
+                     ||i
+                     ||' of virtual rating '
+                     ||self.office_id
+                     ||'/'
+                     ||self.rating_spec_id);
+            end;
+            l_text := get_text(l_source_rating_xml, '/source-rating/rating-spec-id');
+            if l_text is null then
+               l_text := get_text(l_source_rating_xml, '/source-rating/rating-expression');
+               if l_text is null then
+                  cwms_err.raise(
+                     'ERROR', 
+                     'Required <rating-spec-id> or <rating-expression> element not found on source rating '
+                     ||i
+                     ||' of virtual rating '
+                     ||self.office_id
+                     ||'/'
+                     ||self.rating_spec_id);
+               end if;
+            end if;
+            l_source_rating_specs(l_position) := l_text;
+         end loop;
+         if l_source_rating_specs.count = 0 then
+            cwms_err.raise(
+               'ERROR',
+               'No source ratings specified on virtual rating '
+               ||self.office_id
+               ||'/'
+               ||self.rating_spec_id);
+         end if;
+         l_position := l_source_rating_specs.first;
+         for i in 1..l_source_rating_specs.count loop
+            if l_position != i then
+               cwms_err.raise(
+                  'ERROR',
+                  'Position attributes aren''t in range 1..'
+                  ||l_source_rating_specs.count
+                  ||' on virtual rating '
+                  ||self.office_id
+                  ||'/'
+                  ||self.rating_spec_id);
+            end if;
+            l_position := l_source_rating_specs.next(l_position);
+         end loop;
+         self.source_ratings := str_tab_t();
+         self.source_ratings.extend(l_source_rating_specs.count);
+         for i in 1..l_source_rating_specs.count loop
+            parse_source_rating(l_is_rating, l_rating_part, l_units_part, l_source_rating_specs(i));
+            if l_units_part is null then
+               cwms_err.raise(
+                  'ERROR',
+                  'No units specified on source rating '||i||' ('||l_source_rating_specs(i)||')');
+            end if;     
+            self.source_ratings(i) := l_source_rating_specs(i); 
+         end loop;
+      else
+         self.rating_info   := rating_ind_parameter_t(l_xml);
+         self.current_units := 'N';
+         self.current_time  := 'D';
+      end if;
+      self.validate_obj;         
+      if not l_is_virtual then
+         --------------------------------------------------
+         -- convert to native datum if                   --
+         --   a. not a virtual rating, and               --
+         --   b. has elevations, and                     --
+         --   c. xml specifies a non-null vertical datum --
+         --------------------------------------------------
+         l_elev_positions := cwms_rating.get_elevation_positions(cwms_util.split_text(self.rating_spec_id, 2, cwms_rating.separator1)); 
+         if l_elev_positions is not null then
+            l_datum := get_text(l_xml, '/rating/vertical-datum');
+            if l_datum is not null then
+               declare
+                  l_vdatum_rating vdatum_rating_t;
+               begin                                      
+                  l_vdatum_rating := vdatum_rating_t(self, l_datum, l_elev_positions);
+                  l_vdatum_rating.to_native_datum;
+                  self := l_vdatum_rating;
+               end;
+            end if;
+         end if;       
+      end if;
       return;
    end;
    
@@ -4551,6 +4788,119 @@ as
          self.current_units  := 'D';
          self.current_time   := 'D';
       end loop;
+      if self.rating_spec_id is null then
+         -----------------------------------------------------
+         -- no such normal rating, check for virtual rating --
+         -----------------------------------------------------
+         ----------------------------------------------------------
+         -- use loop for convenience - only 1 at most will match --
+         ----------------------------------------------------------
+         for rec in
+            (  select *
+                 from at_virtual_rating
+                where virtual_rating_code = p_rating_code
+            )
+         loop
+            for rec2 in
+               (  select rs2.location_code
+                    from at_virtual_rating_element vre,
+                         at_rating_spec rs1,
+                         at_rating_spec rs2
+                   where rs1.rating_spec_code = rec.rating_spec_code
+                     and vre.virtual_rating_code = rec.virtual_rating_code
+                     and vre.rating_spec_code is not null
+                     and rs2.rating_spec_code = vre.rating_spec_code
+                     and rs2.location_code != rs1.location_code
+               )
+            loop
+               cwms_err.raise(
+                  'ERROR',
+                  'Virtual rating cannot reference ratings for other locations.');
+            end loop;
+                  
+            select bl.base_location_id
+                   ||substr('-', 1, length(pl.sub_location_id))
+                   ||pl.sub_location_id
+                   ||'.'||rt.parameters_id
+                   ||'.'||rt.version
+                   ||'.'||rs.version,
+                   rs.active_flag,
+                   o.office_id
+              into self.rating_spec_id,
+                   self.active_flag,
+                   self.office_id
+              from at_rating_spec rs,
+                   at_rating_template rt,
+                   at_base_location bl,
+                   at_physical_location pl,
+                   cwms_office o
+             where rs.rating_spec_code = rec.rating_spec_code
+               and pl.location_code = rs.location_code
+               and bl.base_location_code = pl.base_location_code
+               and rt.template_code = rs.template_code
+               and o.office_code = bl.db_office_code;
+                   
+            select source_rating
+                   ||' {'
+                   ||reverse(regexp_replace(reverse(units), ',', ';', 1, 1))
+                   ||'}'
+              bulk collect
+              into self.source_ratings     
+              from (select bl.base_location_id
+                           ||substr('-', 1, length(pl.sub_location_id))
+                           ||pl.sub_location_id
+                           ||'.'||rt.parameters_id
+                           ||'.'||rt.version
+                           ||'.'||rs.version as source_rating,
+                           cwms_util.join_text(
+                              cast(multiset(select cwms_util.get_unit_id2(vru.unit_code)
+                                              from at_virtual_rating_unit vru 
+                                             where vru.virtual_rating_element_code = vre.virtual_rating_element_code 
+                                             order by position) as str_tab_t), ','
+                                              ) as units,
+                           vre.position
+                      from at_virtual_rating_element vre,
+                           at_rating_spec rs,
+                           at_rating_template rt,
+                           at_base_location bl,
+                           at_physical_location pl
+                     where vre.virtual_rating_code = rec.virtual_rating_code
+                       and vre.rating_spec_code is not null
+                       and rs.rating_spec_code = vre.rating_spec_code
+                       and pl.location_code = rs.location_code
+                       and bl.base_location_code = pl.base_location_code
+                       and rt.template_code = rs.template_code
+                       
+                    union all
+                    
+                    select rating_expression as source_rating,
+                           cwms_util.join_text(
+                              cast(multiset(select cwms_util.get_unit_id2(vru.unit_code)
+                                              from at_virtual_rating_unit vru 
+                                             where vru.virtual_rating_element_code = vre.virtual_rating_element_code 
+                                             order by position) as str_tab_t), ','
+                                              ) as units,
+                           position
+                      from at_virtual_rating_element vre
+                     where vre.virtual_rating_code = rec.virtual_rating_code
+                       and vre.rating_expression is not null
+                   )     
+             order by position;                   
+                                       
+            if self.source_ratings is null or self.source_ratings.count = 0 then
+               cwms_err.raise(
+                  'ERROR',
+                  'Virtual rating has no source ratings: '
+                  ||self.office_id||'/'||self.rating_spec_id);
+            end if;
+            self.connections := rec.connections;
+            self.description := rec.description;
+               
+         end loop;
+      end if;
+      if self.rating_spec_id is null then
+         cwms_err.raise('ERROR', 'Rating not found for code '||p_rating_code);
+      end if;
       validate_obj;
    end;
 
@@ -4575,12 +4925,15 @@ as
 
    member procedure validate_obj
    is
-      l_code   number(10);
-      l_parts  str_tab_t;
-      l_params str_tab_t;
-      l_units  str_tab_t;
-      l_factor binary_double;
-      l_offset binary_double;
+      l_code        number(10);
+      l_count       pls_integer;
+      l_parts       str_tab_t;
+      l_params      str_tab_t;
+      l_units       str_tab_t;
+      l_tokens      str_tab_t;
+      l_connections str_tab_t;
+      l_factor      binary_double;
+      l_offset      binary_double;
    begin
       ---------------
       -- office_id --
@@ -4724,111 +5077,745 @@ as
             ||cwms_rating.separator2
             ||cwms_util.get_unit_id(l_units(l_units.count), self.office_id);
       end if;
-      ----------------------
-      -- formula / points --
-      ----------------------
-      if self.formula is null then
-         if self.rating_info is null then
+      ------------------------------------
+      -- formula / points / connections --
+      ------------------------------------
+      l_count := 0;
+      if self.formula     is not null then l_count := l_count + 1; end if;
+      if self.connections is not null then l_count := l_count + 1; end if;
+      if self.rating_info is not null then l_count := l_count + 1; end if;
+      if l_count != 1 then
+         cwms_err.raise(
+            'ERROR',
+            'Rating requires exactly 1 of formula, connections, or points, '||l_count||' specified');
+      end if;
+      if (self.connections is null) != (self.source_ratings is null) then
+         cwms_err.raise(
+            'ERROR',
+            'Connections and source ratings must only be specified together: '
+            ||case when self.connections    is null then 'TRUE' else 'FALSE' end||','
+            ||case when self.source_ratings is null then 'TRUE' else 'FALSE' end);
+      end if;
+      case
+      when self.rating_info is not null then
+         ------------------------------------------
+         -- ind_params validated on construction --
+         ------------------------------------------
+         null;
+      when self.formula is not null then
+         -------------
+         -- formula --
+         -------------
+         l_tokens := cwms_util.tokenize_expression(self.formula);
+         select distinct
+                substr(column_value, instr(column_value, '-') + 1)
+           bulk collect
+           into l_parts     
+           from table(l_tokens)
+          where regexp_like(column_value, '-?ARG\d')
+          order by column_value;
+
+         if to_number(substr(l_parts(l_parts.count), 4, 1)) != l_parts.count then
             cwms_err.raise(
                'ERROR',
-               'Either formula or rating points must be specified');
-         else
-            ------------------------------------------
-            -- ind_params validated on construction --
-            ------------------------------------------
-            null;
-         end if;
-      else
-         if self.rating_info is null then
-            -------------
-            -- formula --
-            -------------
-            declare
-               l_tokens   str_tab_t;
-               l_count    number_tab_t;
-               l_position integer;
+               'Rating formula contains '
+               ||cwms_util.join_text(l_parts, ',')
+               ||' - expected ARG1 - ARG'
+               ||l_parts.count);
+         end if;               
+         self.formula_tokens := l_tokens;
+      when self.connections is not null then
+         --------------------
+         -- virtual rating --
+         --------------------
+         declare
+            type bool_tab_t is table of boolean;
+            l_is_rating             bool_tab_t := bool_tab_t(); 
+            l_rating                pls_integer;
+            l_ind_param             pls_integer;  
+            l_ind_input             boolean;  
+            l_input_connections     str_tab_tab_t := str_tab_tab_t();
+            l_actual_termination    varchar2(4); 
+            l_expected_termination  varchar2(4);
+            l_rating_part           varchar2(500);
+            l_units_parts           str_tab_t := str_tab_t();
+            l_from_unit             varchar2(16);
+            l_to_unit               varchar2(16); 
+               
+            function walk_connections(
+               p_input_connection     varchar2,  -- input to rating or expression (may be dep or any ind)
+               p_prev_connections     str_tab_t) 
+               return varchar2
+            is
+               ll_output_connection varchar2(4); -- output from rating or expression (may be ind 1 (not expressions) or dep)
+               ll_prev_rating       pls_integer;
+               ll_prev_ind_param    pls_integer;
+               ll_rating            pls_integer;
+               ll_ind_param         pls_integer;
+               ll_termination       varchar2(4);
+               ll_termination2      varchar2(4);
+               ll_next_conn_str     varchar2(50);
+               ll_prev_connections  str_tab_t;
+               ll_next_connections  str_tab_t;
             begin
-               if instr(self.formula, '(') > 0 then
-                  l_tokens := cwms_util.tokenize_algebraic(self.formula);
+               parse_connection_part(ll_prev_rating, ll_prev_ind_param, p_prev_connections(p_prev_connections.count));
+               parse_connection_part(ll_rating, ll_ind_param, p_input_connection);
+               --------------------------------
+               -- update the connection path --
+               --------------------------------
+               ll_prev_connections :=  p_prev_connections;
+               ll_prev_connections.extend;
+               ll_prev_connections(ll_prev_connections.count) := p_input_connection;
+               -----------------------------------
+               -- validate the input connection --
+               -----------------------------------
+               case
+               when ll_rating = 0 then
+                  cwms_err.raise(
+                     'ERROR', 
+                     'Virtual rating independent parameter found in connection path: '
+                     ||cwms_util.join_text(ll_prev_connections, '->'));
+               when ll_ind_param = 0 and not l_is_rating(ll_rating) then
+                  cwms_err.raise(
+                     'ERROR',
+                     'Cannot reverse through rating expression at source rating '
+                     ||ll_rating
+                     ||' ('
+                     ||self.source_ratings(ll_rating)
+                     ||') in connection path '
+                     ||cwms_util.join_text(ll_prev_connections, '->'));
+               when ll_rating <= ll_prev_rating then
+                  cwms_err.raise(
+                     'ERROR',
+                     'Output of source rating '
+                     ||ll_prev_rating
+                     ||' cannot connect to same or previous rating ('
+                     ||ll_rating
+                     ||') in connection path '
+                     ||cwms_util.join_text(ll_prev_connections, '->'));
                else
-                  l_tokens := cwms_util.tokenize_rpn(self.formula);
-                  if l_tokens.count > 1 and
-                     l_tokens(l_tokens.count) not in
-                     ('+cwms_rating.separator3-cwms_rating.separator3*cwms_rating.separator3/cwms_rating.separator3//cwms_rating.separator3%cwms_rating.separator3^cwms_rating.separator3ABScwms_rating.separator3ACOScwms_rating.separator3ASINcwms_rating.separator3ATANcwms_rating.separator3CEILcwms_rating.separator3COS',
-                     'EXPcwms_rating.separator3FLOORcwms_rating.separator3INVcwms_rating.separator3LNcwms_rating.separator3LOGcwms_rating.separator3NEG', 'SIGNcwms_rating.separator3SINcwms_rating.separator3SQRTcwms_rating.separator3TANcwms_rating.separator3TRUNC')
-                  then
-                     l_tokens := cwms_util.tokenize_algebraic(self.formula);
-                  end if;
+                  null;
+               end case;
+               ----------------------------------------------------------------------------
+               -- walk across the rating at hand, noting what is connected to its output --
+               ----------------------------------------------------------------------------
+               if ll_ind_param = 0 then
+                   ------------------------------------------------------
+                   -- can only reverse across single ind param ratings --
+                   ------------------------------------------------------
+                  ll_output_connection := 'R'||ll_rating||'I1';
+                  ll_next_conn_str := self.connections_map(ll_rating).ind_params(1);
+               else
+                  ---------------------------------------------
+                  -- all ind params lead to single dep param --
+                  ---------------------------------------------
+                  ll_output_connection := 'R'||ll_rating||'D';
+                  ll_next_conn_str := self.connections_map(ll_rating).dep_param;
                end if;
-               l_count := number_tab_t();
-               l_count.extend(l_params.count - 1);
-               for i in 1..l_count.count loop
-                  l_count(i) := 0;
-               end loop;
-               for i in 1..l_tokens.count loop
-                  if upper(l_tokens(i)) = 'ARG' then
-                     begin
-                        l_position := to_number(substr(l_tokens(i), 4));
-                        l_count(l_position) := l_count(l_position) + 1;
-                     exception
-                        when others then
-                           if sqlcode = -6502 then
-                              cwms_err.raise(
-                                 'ERROR',
-                                 'Formula contains invalid token: '||l_tokens(i));
-                           else
-                              raise;
-                           end if;
-                     end;
-                  end if;
-               end loop;
-               for i in 1..l_count.count loop
-                  if l_count(i) = 0 then
+               -------------------------------------------
+               -- see if we're done or need to continue --
+               -------------------------------------------
+               if ll_next_conn_str is null then
+                  --------------------------------
+                  -- end of the connection path --
+                  --------------------------------
+                  ll_termination := ll_output_connection;
+               else
+                  -------------------------------------------------------------------
+                  -- walk each input connected to the output of the rating at hand --
+                  -------------------------------------------------------------------
+                  ll_prev_connections.extend;
+                  ll_prev_connections(ll_prev_connections.count) := '('||ll_output_connection||')';
+                  ll_next_connections := cwms_util.split_text(ll_next_conn_str, ',');
+                  for i in 1..ll_next_connections.count loop
+                     if i = 1 then
+                        ll_termination := walk_connections(ll_next_connections(i), ll_prev_connections); 
+                     else
+                        ll_termination2 := walk_connections(ll_next_connections(i), ll_prev_connections);
+                        if ll_termination2 != ll_termination then
+                           cwms_err.raise(
+                              'ERROR',
+                              'Connection path '
+                              ||cwms_util.join_text(ll_prev_connections, '->')
+                              ||'->'
+                              ||ll_next_connections(i)
+                              ||' leads to different termination ('
+                              ||ll_termination2
+                              ||') than does connection path '
+                              ||cwms_util.join_text(ll_prev_connections, '->')
+                              ||'->'
+                              ||ll_next_connections(1)
+                              ||' ('
+                              ||ll_termination
+                              ||')');
+                        end if;
+                     end if; 
+                  end loop;
+               end if;
+               return ll_termination;                     
+            end walk_connections;
+         begin                                                                                                       
+            ---------------------------------------------------------
+            -- verify the connections string is the correct format --
+            ---------------------------------------------------------
+            if regexp_instr(self.connections, 'R\d(D|I\d)=(R\d(D|I\d)|I\d)(,R\d(D|I\d)=(R\d(D|I\d)|I\d))*') != 1 then
+               cwms_err.raise(
+                  'INVALID_ITEM',
+                  self.connections,
+                  'virtual rating connections string');
+            end if;
+            l_connections := cwms_util.split_text(self.connections, ',');
+            -----------------------------------------
+            -- verify the source ratings are valid --
+            -----------------------------------------
+            l_is_rating.extend(self.source_ratings.count);
+            l_units_parts.extend(self.source_ratings.count);
+            for i in 1..self.source_ratings.count loop
+               parse_source_rating(l_is_rating(i), l_rating_part, l_units_parts(i), self.source_ratings(i));
+               if l_is_rating(i) then
+                  -----------------------
+                  -- valid rating spec --
+                  -----------------------
+                  null;
+               else
+                  ----------------------------------------------------------------------
+                  -- valid rating expression, make sure we have consecutive arguments --
+                  ----------------------------------------------------------------------
+                  l_tokens := cwms_util.tokenize_expression(l_rating_part);
+                  select distinct
+                         substr(column_value, instr(column_value, '-') + 1)
+                    bulk collect
+                    into l_parts     
+                    from table(l_tokens)
+                   where regexp_like(column_value, '-?ARG\d')
+                   order by 1;
+                  if to_number(substr(l_parts(l_parts.count), 4, 1)) != l_parts.count then
                      cwms_err.raise(
                         'ERROR',
-                        'Formula does not contain token ARG'||i);
+                        'Source rating '
+                        ||i
+                        ||' (expression = '
+                        ||self.source_ratings(i)
+                        ||') contains '
+                        ||cwms_util.join_text(l_parts, ',')
+                        ||' - expected ARG1 - ARG'
+                        ||l_parts.count);
+                  end if;               
+                  --------------------------------------------                             
+                  -- save the RPN version of the expression --
+                  --------------------------------------------
+                  self.source_ratings(i) := cwms_util.join_text(l_tokens, ' ')||' {'||l_units_parts(i)||'}';                             
+               end if; 
+            end loop;
+            -----------------------------------
+            -- intialize the connections map --
+            -----------------------------------
+            self.connections_map := rating_connections_map_tab_t();
+            self.connections_map.extend(self.source_ratings.count);
+            for i in 1..self.source_ratings.count loop 
+               self.connections_map(i) := rating_connections_map_t(
+                  str_tab_t(),     -- ind_params
+                  null,            -- dep_param
+                  str_tab_t(),     -- units
+                  double_tab_t(),  -- factors
+                  double_tab_t()); -- offsets
+               if l_is_rating(i) then
+                  l_count := cwms_rating.get_ind_parameter_count(self.source_ratings(i)); 
+               else   
+                  l_count := rating_expr_ind_param_count(self.source_ratings(i));
+               end if;
+               self.connections_map(i).ind_params.extend(l_count);
+               self.connections_map(i).factors.extend(l_count+1);
+               self.connections_map(i).offsets.extend(l_count+1);
+               self.connections_map(i).units := cwms_util.split_text(
+                  replace(l_units_parts(i), cwms_rating.separator2, cwms_rating.separator3),
+                  cwms_rating.separator3);
+               if self.connections_map(i).units.count != l_count + 1 then
+                  cwms_err.raise(
+                     'ERROR',
+                     'Source rating '
+                     ||i
+                     ||' specifies '
+                     ||self.connections_map(i).units.count
+                     ||' units when '
+                     ||(l_count+1)
+                     ||' are required ('
+                     ||l_count
+                     ||' independent parameters plus one dependent parameter)');
+               end if;
+            end loop;
+            ------------------------------
+            -- populate the connections --
+            ------------------------------
+            for i in 1..l_connections.count loop  
+               l_parts := cwms_util.split_text(l_connections(i), '='); 
+               for j in 1..2 loop  
+                  ---------------------------------------------------------------------------------------------
+                  -- store l_parts(2) in slot specified by l_parts(1)                                        --
+                  -- store l_parts(1) in slot specified by l_parts(2) unless l_parts(2) specifies input data --
+                  ---------------------------------------------------------------------------------------------
+                  if j = 2 and substr(l_parts(j), 1, 1) = 'I' then
+                     if not to_number(substr(l_parts(j), 2, 1)) between 1 and l_count then
+                        cwms_err.raise(
+                           'ERROR',
+                           'Connection part "'
+                           ||l_parts(j)
+                           ||'" of "'
+                           ||l_connections(i)
+                           ||'" specifies invalid independent parameter number, must be in range 1..'
+                           ||l_count);
+                     end if;
+                     exit;
+                  end if;
+                  parse_connection_part(l_rating, l_ind_param,l_parts(j));
+                  if not l_rating between 1 and self.connections_map.count then
+                     cwms_err.raise(
+                        'ERROR',
+                        'Connection part "'
+                        ||l_parts(j)
+                        ||'" of "'
+                        ||l_connections(i)
+                        ||'" specifies invalid rating number, must be in range 1..'
+                        ||self.connections_map.count);
+                  end if;
+                  if l_ind_param > 0 then
+                     -----------------------------------------------------------
+                     -- l_parts(j) specifies independent parameter connection --
+                     -----------------------------------------------------------
+                     if l_ind_param > self.connections_map(l_rating).ind_params.count then
+                        cwms_err.raise(
+                           'ERROR',
+                           'Connection part "'
+                           ||l_parts(j)
+                           ||'" of "'
+                           ||l_connections(i)
+                           ||'" specifies invalid independent parameter number, must be in range 1..'
+                           ||self.connections_map(l_rating).ind_params.count);
+                     end if; 
+                     case 
+                     when self.connections_map(l_rating).ind_params(l_ind_param) is null then
+                        --------------------------------
+                        -- first connection specified --
+                        --------------------------------
+                        self.connections_map(l_rating).ind_params(l_ind_param) := l_parts(mod(j,2)+1);
+                     when instr(self.connections_map(l_rating).ind_params(l_ind_param), l_parts(mod(j,2)+1)) = 0 then
+                        ------------------------------------- 
+                        -- additional connection specified --
+                        ------------------------------------- 
+                        self.connections_map(l_rating).ind_params(l_ind_param) :=
+                        self.connections_map(l_rating).ind_params(l_ind_param) || ',' || l_parts(mod(j,2)+1);
+                     else
+                        ------------------------------------ 
+                        -- duplicate connection specified --
+                        ------------------------------------ 
+                        null;
+                     end case;
+                  else
+                     ---------------------------------------------------------
+                     -- l_parts(j) specifies dependent parameter connection --
+                     ---------------------------------------------------------
+                     case                                     
+                     when self.connections_map(l_rating).dep_param is null then
+                        --------------------------------
+                        -- first connection specified --
+                        --------------------------------
+                        self.connections_map(l_rating).dep_param := l_parts(mod(j,2)+1);
+                     when instr(self.connections_map(l_rating).dep_param, l_parts(mod(j,2)+1)) = 0 then
+                        ------------------------------------- 
+                        -- additional connection specified --
+                        ------------------------------------- 
+                        self.connections_map(l_rating).dep_param := 
+                        self.connections_map(l_rating).dep_param || ',' || l_parts(mod(j,2)+1); 
+                     else
+                        ------------------------------------ 
+                        -- duplicate connection specified --
+                        ------------------------------------ 
+                        null;
+                     end case;
+                  end if;                              
+               end loop;
+            end loop;
+            ---------------------------------------------------------------------------------------
+            -- serially assign unconnected source rating ind_params and dep_params to input data --
+            ---------------------------------------------------------------------------------------
+            l_count := 0;    
+            <<connections_map>>
+            for i in 1..self.connections_map.count loop
+               for j in 1..self.connections_map(i).ind_params.count loop
+                  exit connections_map when l_count = self.get_ind_parameter_count;
+                  if self.connections_map(i).ind_params(j) is null then
+                     l_count := l_count + 1;
+                     self.connections_map(i).ind_params(j) := 'I'||l_count;
                   end if;
                end loop;
-               self.formula_tokens := l_tokens;
+               exit when l_count = self.get_ind_parameter_count;
+               if self.connections_map(i).dep_param is null then
+                  l_count := l_count + 1;
+                  self.connections_map(i).dep_param := 'I'||l_count;
+               end if;
+               exit when l_count = self.get_ind_parameter_count;
+            end loop; 
+            -----------------------------------------
+            -- validate the data input connections --
+            -----------------------------------------
+            l_input_connections.extend(self.get_ind_parameter_count);
+            for i in 1..l_input_connections.count loop
+               l_input_connections(i) := str_tab_t();
+            end loop;
+            for i in 1..self.connections_map.count loop
+               l_ind_input := false;
+               for j in 1..self.connections_map(i).ind_params.count loop
+                  l_parts := cwms_util.split_text(self.connections_map(i).ind_params(j), ',');
+                  for k in 1..l_parts.count loop
+                     if substr(l_parts(k), 1, 1) = 'I' then
+                        l_ind_input := true;
+                        l_count := to_number(substr(l_parts(k), 2, 1));
+                        l_input_connections(l_count).extend;
+                        l_input_connections(l_count)(l_input_connections(l_count).count) := 'R'||i||'I'||j;
+                     end if;
+                  end loop;
+               end loop;
+               l_parts := cwms_util.split_text(self.connections_map(i).dep_param, ',');
+               for k in 1..l_parts.count loop
+                  if substr(l_parts(k), 1, 1) = 'I' then
+                     if l_ind_input then
+                        cwms_err.raise(
+                           'ERROR',
+                           'Source rating '
+                           ||i
+                           ||' has independent parameters of the virtual rating mapped to its independent and dependent paramters');
+                     end if;
+                     l_count := to_number(substr(l_parts(k), 2, 1));
+                     l_input_connections(l_count).extend;
+                     l_input_connections(l_count)(l_input_connections(l_count).count) := 'R'||i||'D';
+                  end if;
+               end loop;
+            end loop;
+            for i in 1..l_input_connections.count loop
+               if l_input_connections(i).count = 0 then
+                  cwms_err.raise(
+                     'ERROR',
+                     'Virtual rating independent parameter '
+                     ||i
+                     ||' is not mapped to any source rating parameter');
+               end if;
+               for j in 1..l_input_connections(i).count loop
+                  parse_connection_part(l_rating, l_ind_param,l_input_connections(i)(j));
+                  if l_ind_param = 0 then
+                     select count(*)
+                       into l_count
+                       from table(cwms_util.split_text(self.connections_map(l_rating).dep_param, ','));  
+                     if l_count > 1 then
+                        cwms_err.raise(
+                           'ERROR',
+                           'Virtual rating independent parameter '
+                           ||i
+                           ||' cannot be mapped with other connections at R'
+                           ||l_rating
+                           ||'D');
+                     end if;
+                  else
+                     select count(*)
+                       into l_count
+                       from table(cwms_util.split_text(self.connections_map(l_rating).ind_params(l_ind_param), ','));  
+                     if l_count > 1 then
+                        cwms_err.raise(
+                           'ERROR',
+                           'Virtual rating independent parameter '
+                           ||i
+                           ||' cannot be mapped with other connections at R'
+                           ||l_rating
+                           ||'I'
+                           ||l_ind_param);
+                     end if;
+                  end if;
+               end loop;
+            end loop;
+            -------------------------------------------------------------
+            -- verify that each data input leads to the correct output --
+            -------------------------------------------------------------
+            if self.connections_map(self.connections_map.count).dep_param is null then
+               l_expected_termination := 'R'||self.connections_map.count||'D';
+            else
+               l_expected_termination := 'R'||self.connections_map.count||'I1';
+            end if; 
+            for i in 1..l_input_connections.count loop
+               for j in 1..l_input_connections(i).count loop
+                  l_actual_termination := walk_connections(l_input_connections(i)(j), str_tab_t('I'||l_input_connections.count));
+                  if l_actual_termination != l_expected_termination then
+                     cwms_err.raise(
+                        'ERROR',
+                        'The connection path for virtual rating indpendent parameter '
+                        ||i
+                        ||' connection '
+                        ||j
+                        ||' ('
+                        ||l_input_connections(i)(j)
+                        ||') terminates at '
+                        ||l_actual_termination
+                        ||' instead of the expected termination connection of '
+                        ||l_expected_termination); 
+                  end if;
+               end loop;
+            end loop;
+            ---------------------------------------------------------  
+            -- populate the internal connection conversion factors --
+            ---------------------------------------------------------
+            begin
+            for i in 1..self.connections_map.count loop
+               for j in 1..self.connections_map(i).ind_params.count loop
+                  if self.connections_map(i).ind_params(j) is not null and substr(self.connections_map(i).ind_params(j), 1, 1) != 'I' then
+                     l_from_unit := self.connections_map(i).units(j);
+                     parse_connection_part(l_rating, l_ind_param, self.connections_map(i).ind_params(j));
+                     begin
+                        if l_rating > 0 then
+                           if l_ind_param = 0 then
+                              l_to_unit := self.connections_map(l_rating).units(self.connections_map(l_rating).units.count);
+                           else
+                              l_to_unit := self.connections_map(l_rating).units(l_ind_param);             
+                           end if;
+                        end if;
+                        select factor,
+                               offset
+                          into self.connections_map(i).factors(j),
+                               self.connections_map(i).offsets(j)
+                          from cwms_unit_conversion
+                         where from_unit_id = cwms_util.get_unit_id(l_from_unit, self.office_id)
+                           and to_unit_id = cwms_util.get_unit_id(l_to_unit, self.office_id);
+                        
+                        if self.connections_map(i).factors(j) is null 
+                        or self.connections_map(i).offsets(j) is null then
+                           cwms_err.raise('ERROR', 'Null conversion factor'); 
+                        end if;              
+                     exception
+                        when others then
+                           cwms_err.raise(
+                              'ERROR',
+                              'Cannot convert from rating '
+                              ||i
+                              ||' independent parameter '
+                              ||j
+                              ||' unit of '
+                              ||l_from_unit
+                              ||' to rating '
+                              ||l_rating
+                              ||case l_ind_param
+                                   when 0 then ' dependent parameter unit of '
+                                   else ' independent parameter '||l_ind_param||' unit of '
+                                end
+                              ||l_to_unit
+                              ||' on connection R'
+                              ||i
+                              ||'I'
+                              ||j
+                              ||'='
+                              ||self.connections_map(i).ind_params(j));
+                     end; 
+                  end if;
+               end loop;
+               if self.connections_map(i).dep_param is not null and substr(self.connections_map(i).dep_param, 1, 1) != 'I' then
+                  l_from_unit := self.connections_map(i).units(self.connections_map(i).units.count);
+                  parse_connection_part(l_rating, l_ind_param, self.connections_map(i).dep_param);
+                  begin
+                     if l_rating > 0 then
+                        if l_ind_param = 0 then
+                           l_to_unit := self.connections_map(l_rating).units(self.connections_map(l_rating).units.count);
+                        else
+                           l_to_unit := self.connections_map(l_rating).units(l_ind_param);             
+                        end if;
+                     end if;
+                     select factor,
+                            offset
+                       into self.connections_map(i).factors(self.connections_map(i).factors.count),
+                            self.connections_map(i).offsets(self.connections_map(i).offsets.count)
+                       from cwms_unit_conversion
+                      where from_unit_id = cwms_util.get_unit_id(l_from_unit, self.office_id)
+                        and to_unit_id = cwms_util.get_unit_id(l_to_unit, self.office_id);
+                                     
+                     if self.connections_map(i).factors(self.connections_map(i).factors.count) is null 
+                     or self.connections_map(i).offsets(self.connections_map(i).offsets.count) is null then
+                        cwms_err.raise('ERROR', 'Null conversion factor'); 
+                     end if;              
+                  exception
+                     when others then
+                        cwms_err.raise(
+                           'ERROR',
+                           'Cannot convert from rating '
+                           ||i
+                           ||' dependent parameter unit of '
+                           ||l_from_unit
+                           ||' to rating '
+                           ||l_rating
+                           ||case l_ind_param
+                                when 0 then ' dependent parameter unit of '
+                                else ' independent parameter '||l_ind_param||' unit of '
+                             end
+                           ||l_to_unit
+                           ||' on connection R'
+                           ||i
+                           ||'D='
+                           ||self.connections_map(i).dep_param);
+                  end; 
+               end if;
+            end loop;
             end;
-         else
-            cwms_err.raise(
-               'ERROR',
-               'Formula and rating points cannot both be specified');
+         end;
+      end case;
+   end;
+               
+   member function rating_expr_ind_param_count(
+      p_text in varchar2)
+      return pls_integer
+   is
+      l_parts str_tab_t;
+   begin
+      select distinct
+             substr(column_value, instr(column_value, '-') + 1)
+        bulk collect
+        into l_parts     
+        from table(cwms_util.split_text(p_text))
+       where regexp_like(column_value, '-?ARG\d')
+       order by 1;
+                   
+      return l_parts.count;                          
+   end rating_expr_ind_param_count;
+   
+   member procedure parse_source_rating(
+      self           in  rating_t, -- to keep from implicity being defined as OUT type  
+      p_is_rating    out boolean,
+      p_rating_part  out varchar2,
+      p_units_part   out varchar2,
+      p_text         in  varchar2)
+   is
+      l_parts       str_tab_t;
+      l_tokens      str_tab_t;
+      l_pos         pls_integer;
+      l_rating_spec rating_spec_t;
+   begin
+      l_parts := str_tab_t();
+      l_parts.extend(2);
+      l_pos := instr(p_text, '{', -1);
+      if l_pos = 0 then
+         l_parts(1) := trim(p_text);
+      else
+         l_parts(1) := trim(substr(p_text, 1, l_pos-1));
+         l_parts(2) := trim(substr(p_text, l_pos+1));
+         if substr(l_parts(2), length(l_parts(2))) = '}' then
+            l_parts(2) := trim(substr(l_parts(2), 1, length(l_parts(2))-1));
          end if;
       end if;
-   end;
+      begin            
+         l_rating_spec := rating_spec_t(l_parts(1), self.office_id);
+         p_is_rating := true;
+      exception
+         when others then
+            begin
+               l_tokens := cwms_util.tokenize_expression(l_parts(1));
+               for i in 1..l_tokens.count loop
+                  case
+                  when cwms_util.is_expression_constant(l_tokens(i)) then null;
+                  when cwms_util.is_expression_function(l_tokens(i)) then null;
+                  when cwms_util.is_expression_operator(l_tokens(i)) then null;
+                  when regexp_instr(l_tokens(i), '^-?ARG\d$') = 1    then null;
+                  else cwms_err.raise('INVALID_ITEM', l_tokens(i), 'math expression token');
+                  end case;
+               end loop;
+               p_is_rating := false;
+            exception
+               when others then
+                  cwms_err.raise(
+                     'INVALID_ITEM', 
+                     l_parts(1), 
+                     'CWMS rating spec or math expression'); 
+            end;
+      end;
+      p_rating_part := l_parts(1);
+      p_units_part  := l_parts(2);
+   end parse_source_rating;      
+               
+   member procedure parse_connection_part(
+      self        in  rating_t, -- to keep from implicity being defined as OUT type
+      p_rating    out pls_integer,
+      p_ind_param out pls_integer,
+      p_conn_part in  varchar2)
+   is
+      l_valid boolean := false; 
+      l_conn_part varchar2(8);
+   begin
+      if substr(p_conn_part, 1, 1) = '(' then
+         l_conn_part := substr(p_conn_part, 2, length(p_conn_part)-2);
+      else
+         l_conn_part := p_conn_part;
+      end if;
+      begin
+         case length(l_conn_part)
+         when 2 then
+            if substr(l_conn_part, 1, 1) = 'I' then
+               p_rating := 0;
+               p_ind_param := to_number(substr(l_conn_part, 2, 1));
+               l_valid := true;
+            end if;
+         when 3 then
+            if substr(l_conn_part, 1, 1) = 'R' then
+               p_rating := to_number(substr(l_conn_part, 2, 1));
+               if substr(l_conn_part, 3, 1) = 'D' then
+                  p_ind_param := 0;
+                  l_valid := true;
+               end if;
+            end if;
+         when 4 then
+            if substr(l_conn_part, 1, 1) = 'R' then
+               p_rating := to_number(substr(l_conn_part, 2, 1));
+               if substr(l_conn_part, 3, 1) = 'I' then
+                  p_ind_param := to_number(substr(l_conn_part, 4, 1));
+                  l_valid := true;
+               end if;
+            end if;
+         else
+            null;
+         end case;
+      exception 
+         when others then null;
+      end;
+      if not l_valid then
+         cwms_err.raise('INVALID_ITEM', l_conn_part, 'virtual rating connection part');
+      end if;
+   end parse_connection_part;  
 
    member procedure convert_to_database_units
    is
       l_parts str_tab_t;
-   begin
-      case self.current_units
-         when 'D' then
-            null;
-         when 'N' then
-            l_parts := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1);
-            self.rating_info.convert_to_database_units(l_parts(2), self.native_units);
-            self.current_units := 'D';
-         else
-            cwms_err.raise('ERROR', 'Don''t know the current units of the rating object');
-      end case;
+   begin     
+      if self.source_ratings is null then -- quietly ignore for virtual ratings
+         case self.current_units
+            when 'D' then
+               null;
+            when 'N' then
+               l_parts := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1);
+               self.rating_info.convert_to_database_units(l_parts(2), self.native_units);
+               self.current_units := 'D';
+            else
+               cwms_err.raise('ERROR', 'Don''t know the current units of the rating object');
+         end case;
+      end if;
    end;
 
    member procedure convert_to_native_units
    is
       l_parts str_tab_t;
    begin
-      case self.current_units
-         when 'D' then
-            l_parts := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1);
-            self.rating_info.convert_to_native_units(l_parts(2), self.native_units);
-            self.current_units := 'N';
-         when 'N' then
-            null;
-         else
-            cwms_err.raise('ERROR', 'Don''t know the current units of the rating object');
-      end case;
+      if self.source_ratings is null then -- quietly ignore for virtual ratings
+         case self.current_units
+            when 'D' then
+               l_parts := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1);
+               self.rating_info.convert_to_native_units(l_parts(2), self.native_units);
+               self.current_units := 'N';
+            when 'N' then
+               null;
+            else
+               cwms_err.raise('ERROR', 'Don''t know the current units of the rating object');
+         end case;
+      end if;
    end;
 
    member procedure convert_to_database_time
@@ -4836,23 +5823,25 @@ as
       l_local_timezone varchar2(28);
       l_location_id    varchar2(49);
    begin
-      case self.current_time
-         when 'D' then
-            null;
-         when 'L' then
-            l_location_id := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1)(1);
-            l_local_timezone := cwms_loc.get_local_timezone(l_location_id, self.office_id);
-            if l_local_timezone is null then
-               cwms_err.raise('ERROR', 'Location '||l_location_id||' does not have a time zone set');
-            end if;
-            self.effective_date := cwms_util.change_timezone(self.effective_date, l_local_timezone, 'UTC');
-            if self.create_date is not null then
-               self.create_date := cwms_util.change_timezone(self.create_date, l_local_timezone, 'UTC');
-            end if;
-            self.current_time := 'D';
-         else
-            cwms_err.raise('ERROR', 'Don''t know the current time setting of the rating object');
-      end case;
+      if self.source_ratings is null then -- quietly ignore for virtual ratings
+         case self.current_time
+            when 'D' then
+               null;
+            when 'L' then
+               l_location_id := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1)(1);
+               l_local_timezone := cwms_loc.get_local_timezone(l_location_id, self.office_id);
+               if l_local_timezone is null then
+                  cwms_err.raise('ERROR', 'Location '||l_location_id||' does not have a time zone set');
+               end if;
+               self.effective_date := cwms_util.change_timezone(self.effective_date, l_local_timezone, 'UTC');
+               if self.create_date is not null then
+                  self.create_date := cwms_util.change_timezone(self.create_date, l_local_timezone, 'UTC');
+               end if;
+               self.current_time := 'D';
+            else
+               cwms_err.raise('ERROR', 'Don''t know the current time setting of the rating object');
+         end case;
+      end if;
    end;
 
    member procedure convert_to_local_time
@@ -4860,112 +5849,230 @@ as
       l_local_timezone varchar2(28);
       l_location_id    varchar2(49);
    begin
-      case self.current_time
-         when 'D' then
-            l_location_id := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1)(1);
-            l_local_timezone := cwms_loc.get_local_timezone(l_location_id, self.office_id);
-            if l_local_timezone is null then
-               cwms_err.raise('ERROR', 'Location '||l_location_id||' does not have a time zone set');
-            end if;
-            self.effective_date := cwms_util.change_timezone(self.effective_date, 'UTC', l_local_timezone);
-            if self.create_date is not null then
-               self.create_date := cwms_util.change_timezone(self.create_date, 'UTC', l_local_timezone);
-            end if;
-            self.current_time := 'L';
-         when 'L' then
-            null;
-         else
-            cwms_err.raise('ERROR', 'Don''t know the current time setting of the rating object');
-      end case;
+      if self.source_ratings is null then -- quietly ignore for virtual ratings
+         case self.current_time
+            when 'D' then
+               l_location_id := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1)(1);
+               l_local_timezone := cwms_loc.get_local_timezone(l_location_id, self.office_id);
+               if l_local_timezone is null then
+                  cwms_err.raise('ERROR', 'Location '||l_location_id||' does not have a time zone set');
+               end if;
+               self.effective_date := cwms_util.change_timezone(self.effective_date, 'UTC', l_local_timezone);
+               if self.create_date is not null then
+                  self.create_date := cwms_util.change_timezone(self.create_date, 'UTC', l_local_timezone);
+               end if;
+               self.current_time := 'L';
+            when 'L' then
+               null;
+            else
+               cwms_err.raise('ERROR', 'Don''t know the current time setting of the rating object');
+         end case;
+      end if;
    end;
 
    member procedure store(
       p_rating_code    out number,
       p_fail_if_exists in  varchar2)
    is
-      l_rec       at_rating%rowtype;
-      l_exists    boolean := true;
-      l_clone     rating_t;
-      l_msg       sys.aq$_jms_map_message;
-      l_msgid     pls_integer;
-      i           integer;
-   begin
-      if self.current_units = 'N' or self.current_time = 'L' then
-         l_clone := rating_t(self);  
-         if self.current_units = 'N' then
-            l_clone.convert_to_database_units;
+      l_rating_rec  at_rating%rowtype; 
+      l_vrating_rec at_virtual_rating%rowtype;
+      l_exists      boolean := true;
+      l_clone       rating_t;
+      l_msg         sys.aq$_jms_map_message;
+      l_msgid       pls_integer;
+      i             integer;
+      l_is_rating   boolean;
+      l_rating_part varchar2(500);
+      l_units_part  varchar2(50);
+      l_units       str_tab_t;
+      l_units_rec   at_virtual_rating_unit%rowtype; 
+   begin               
+      if self.source_ratings is null then
+         ---------------------
+         -- concrete rating --
+         ---------------------
+         if self.current_units = 'N' or self.current_time = 'L' then
+            l_clone := rating_t(self);  
+            if self.current_units = 'N' then
+               l_clone.convert_to_database_units;
+            end if;
+            if self.current_time = 'L' then 
+               l_clone.convert_to_database_time;
+            end if;
+            l_clone.store(p_rating_code, p_fail_if_exists);
+            return;
          end if;
-         if self.current_time = 'L' then 
-            l_clone.convert_to_database_time;
+         l_rating_rec.rating_spec_code := rating_spec_t.get_rating_spec_code(
+            self.rating_spec_id,
+            self.office_id);
+         l_rating_rec.effective_date := self.effective_date;
+
+         begin
+            select *
+              into l_rating_rec
+              from at_rating
+             where rating_spec_code = l_rating_rec.rating_spec_code
+               and effective_date = l_rating_rec.effective_date;
+
+            if cwms_util.is_true(p_fail_if_exists) then
+               cwms_err.raise(
+                  'ITEM_ALREADY_EXISTS',
+                  'Rating',
+                  self.office_id
+                  ||'/'
+                  ||self.rating_spec_id
+                  ||' - '
+                  ||to_char(self.effective_date, 'yyyy/mm/dd hh24mi')
+                  ||' (UTC)');
+            end if;
+         exception
+            when no_data_found then
+               l_exists := false;
+               l_rating_rec.rating_code := cwms_seq.nextval;
+         end;
+
+         l_rating_rec.ref_rating_code := null;
+         l_rating_rec.create_date     := nvl(self.create_date, cast(systimestamp at time zone 'UTC' as date));
+         l_rating_rec.active_flag     := self.active_flag;
+         l_rating_rec.formula         := self.formula;
+         l_rating_rec.native_units    := self.native_units;
+         l_rating_rec.description     := self.description;
+
+         if l_exists then
+            update at_rating
+               set row = l_rating_rec
+             where rating_code = l_rating_rec.rating_code;
+         else
+            insert
+              into at_rating
+            values l_rating_rec;
          end if;
-         l_clone.store(p_rating_code, p_fail_if_exists);
-         return;
-      end if;
-      l_rec.rating_spec_code := rating_spec_t.get_rating_spec_code(
-         self.rating_spec_id,
-         self.office_id);
-      l_rec.effective_date := self.effective_date;
 
-      begin
-         select *
-           into l_rec
-           from at_rating
-          where rating_spec_code = l_rec.rating_spec_code
-            and effective_date = l_rec.effective_date;
-
-         if cwms_util.is_true(p_fail_if_exists) then
-            cwms_err.raise(
-               'ITEM_ALREADY_EXISTS',
-               'Rating',
-               self.office_id
-               ||'/'
-               ||self.rating_spec_id
-               ||' - '
-               ||to_char(self.effective_date, 'yyyy/mm/dd hh24mi')
-               ||' (UTC)');
+         if self.rating_info is not null then
+            self.rating_info.store(l_rating_rec.rating_code, null, 'F');
          end if;
-      exception
-         when no_data_found then
-            l_exists := false;
-            l_rec.rating_code := cwms_seq.nextval;
-      end;
 
-      l_rec.ref_rating_code := null;
-      l_rec.create_date     := nvl(self.create_date, cast(systimestamp at time zone 'UTC' as date));
-      l_rec.active_flag     := self.active_flag;
-      l_rec.formula         := self.formula;
-      l_rec.native_units    := self.native_units;
-      l_rec.description     := self.description;
-
-      if l_exists then
-         update at_rating
-            set row = l_rec
-          where rating_code = l_rec.rating_code;
+         p_rating_code := l_rating_rec.rating_code;
       else
-         insert
-           into at_rating
-         values l_rec;
+         --------------------
+         -- virtual rating --
+         --------------------
+         l_vrating_rec.rating_spec_code := rating_spec_t.get_rating_spec_code(
+            self.rating_spec_id,
+            self.office_id);
+            
+         begin
+            select *
+              into l_vrating_rec
+              from at_virtual_rating
+             where rating_spec_code = l_vrating_rec.rating_spec_code;
+             
+            if cwms_util.is_true(p_fail_if_exists) then
+               cwms_err.raise(
+                  'ITEM_ALREADY_EXISTS',
+                  'Virtual rating',
+                  self.office_id
+                  ||'/'
+                  ||self.rating_spec_id);
+            end if;
+         exception
+            when no_data_found then l_exists := false;
+         end;
+         l_vrating_rec.connections := self.connections;
+         l_vrating_rec.description := self.description;
+         if l_exists then
+            delete
+              from at_virtual_rating_unit
+             where virtual_rating_element_code in
+                   (select virtual_rating_element_code
+                      from at_virtual_rating_element
+                     where virtual_rating_code = l_vrating_rec.virtual_rating_code
+                   );  
+            delete
+              from at_virtual_rating_element
+             where virtual_rating_code = l_vrating_rec.virtual_rating_code;
+             
+            update at_virtual_rating
+               set row = l_vrating_rec
+             where virtual_rating_code = l_vrating_rec.virtual_rating_code;
+             
+         else
+            l_vrating_rec.virtual_rating_code := cwms_seq.nextval;
+            insert
+              into at_virtual_rating
+            values l_vrating_rec;
+         end if;
+         
+         for j in 1..self.source_ratings.count loop
+            parse_source_rating(l_is_rating, l_rating_part, l_units_part, self.source_ratings(j));
+            if l_is_rating then
+               insert
+                 into at_virtual_rating_element
+               values (cwms_seq.nextval,
+                       l_vrating_rec.virtual_rating_code,
+                       j,
+                       rating_spec_t.get_rating_spec_code(l_rating_part, self.office_id),
+                       null
+                      )
+               return virtual_rating_element_code
+                 into l_units_rec.virtual_rating_element_code;                   
+            else
+               insert
+                 into at_virtual_rating_element
+               values (cwms_seq.nextval,
+                       l_vrating_rec.virtual_rating_code,
+                       j,
+                       null,
+                       l_rating_part
+                      )             
+               return virtual_rating_element_code
+                 into l_units_rec.virtual_rating_element_code;                   
+            end if;
+            l_units := cwms_util.split_text(replace(l_units_part, cwms_rating.separator2, cwms_rating.separator3), cwms_rating.separator3);
+            if l_units is null or l_units.count = 0 then
+               cwms_err.raise('ERROR', 'No units on source rating '||j||' ('||self.source_ratings(j)||')');
+            end if;
+            for k in 1..l_units.count loop
+               l_units_rec.position := k;
+               begin
+                  select unit_code
+                    into l_units_rec.unit_code
+                    from cwms_unit
+                   where unit_id = cwms_util.get_unit_id(l_units(k), self.office_id);
+               exception
+                  when no_data_found then
+                     cwms_err.raise(
+                        'ERROR',
+                        'Invalid unit ('
+                        ||l_units(k)
+                        ||') in source rating '
+                        ||j
+                        ||' ('
+                        ||self.source_ratings(j)
+                        ||')');
+               end;                
+               insert
+                 into at_virtual_rating_unit
+               values l_units_rec;                   
+            end loop;
+         end loop;
       end if;
-
-      if self.rating_info is not null then
-         self.rating_info.store(l_rec.rating_code, null, 'F');
-      end if;
-
-      p_rating_code := l_rec.rating_code;
 
       cwms_msg.new_message(l_msg, l_msgid, 'RatingStored');
       l_msg.set_string(l_msgid, 'office_id', self.office_id);
       l_msg.set_string(l_msgid, 'rating_id', self.rating_spec_id);
       l_msg.set_string(l_msgid, 'active',    self.active_flag);
-      l_msg.set_long(l_msgid, 'create_date',    cwms_util.to_millis(l_rec.create_date));
-      l_msg.set_long(l_msgid, 'effective_date', cwms_util.to_millis(l_rec.effective_date));
+      l_msg.set_string(l_msgid, 'is_virtual', case self.source_ratings is null when true then 'false' else 'true' end);
+      l_msg.set_long(l_msgid, 'create_date',    cwms_util.to_millis(l_rating_rec.create_date));
+      l_msg.set_long(l_msgid, 'effective_date', cwms_util.to_millis(l_rating_rec.effective_date));
       i := cwms_msg.publish_message(l_msg, l_msgid, self.office_id||'_ts_stored');
       cwms_msg.new_message(l_msg, l_msgid, 'RatingStored');
       l_msg.set_string(l_msgid, 'office_id', self.office_id);
       l_msg.set_string(l_msgid, 'rating_id', self.rating_spec_id);
       l_msg.set_string(l_msgid, 'active',    self.active_flag);
-      l_msg.set_long(l_msgid, 'create_date',    cwms_util.to_millis(l_rec.create_date));
-      l_msg.set_long(l_msgid, 'effective_date', cwms_util.to_millis(l_rec.effective_date));
+      l_msg.set_string(l_msgid, 'is_virtual', case self.source_ratings is null when true then 'false' else 'true' end);
+      l_msg.set_long(l_msgid, 'create_date',    cwms_util.to_millis(l_rating_rec.create_date));
+      l_msg.set_long(l_msgid, 'effective_date', cwms_util.to_millis(l_rating_rec.effective_date));
       i := cwms_msg.publish_message(l_msg, l_msgid, self.office_id||'_realtime_ops');
    end;
 
@@ -4980,9 +6087,13 @@ as
    member function to_clob
    return clob
    is
-      l_text  clob;
-      l_clone rating_t;
-      l_tzone varchar2(28);
+      l_text               clob;
+      l_clone              rating_t;
+      l_tzone              varchar2(28);
+      l_is_virtual         boolean;
+      l_rating_spec        rating_spec_t;  
+      l_source_rating_type varchar2(17);
+      
       function bool_text(
          p_state in boolean)
       return varchar2
@@ -4993,34 +6104,71 @@ as
                    when false then 'false'
                 end;
       end;
-   begin
-      if self.current_units = 'D' then
+   begin          
+      l_is_virtual := self.source_ratings is not null;
+      if self.current_units = 'D' and not l_is_virtual then
          l_clone := rating_t(self);
          l_clone.convert_to_native_units;
-         return l_clone.to_clob;
-      end if;
-      l_tzone := nvl(cwms_loc.get_local_timezone(cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1)(1), self.office_id), 'UTC');
-      dbms_lob.createtemporary(l_text, true);
-      dbms_lob.open(l_text, dbms_lob.lob_readwrite);
-      cwms_util.append(l_text, '<rating office-id="'||self.office_id||'">'
-         ||'<rating-spec-id>'||self.rating_spec_id||'</rating-spec-id>'
-         ||'<units-id>'||self.native_units||'</units-id>'
-         ||'<effective-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(self.effective_date, 'UTC', l_tzone), l_tzone)||'</effective-date>');
-      if self.create_date is not null then
-         cwms_util.append(l_text, '<create-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(self.create_date, 'UTC', l_tzone), l_tzone)||'</create-date>');
-      end if;
-      cwms_util.append(l_text,'<active>'||bool_text(cwms_util.is_true(self.active_flag))||'</active>'
-         ||case self.description is null
-              when true  then '<description/>'
-              when false then '<description>'||self.description||'</description>'
-           end);
-      if self.formula is null then
-         cwms_util.append(l_text, self.rating_info.to_clob);
+         l_text := l_clone.to_clob;
       else
-         cwms_util.append(l_text, '<formula>'||self.formula||'</formula>');
+         dbms_lob.createtemporary(l_text, true);
+         dbms_lob.open(l_text, dbms_lob.lob_readwrite);
+         cwms_util.append(l_text, '<rating office-id="'||self.office_id||'"><rating-spec-id>'||self.rating_spec_id||'</rating-spec-id>');
+         if not l_is_virtual then
+            -------------------
+            -- concrete only --
+            -------------------
+            l_tzone := nvl(cwms_loc.get_local_timezone(cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1)(1), self.office_id), 'UTC');
+            cwms_util.append(l_text, '<units-id>'||self.native_units||'</units-id>'
+               ||'<effective-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(self.effective_date, 'UTC', l_tzone), l_tzone)||'</effective-date>');
+            if self.create_date is not null then
+               cwms_util.append(l_text, '<create-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(self.create_date, 'UTC', l_tzone), l_tzone)||'</create-date>');
+            end if;
+         end if;
+         cwms_util.append(l_text, '<active>'||bool_text(cwms_util.is_true(self.active_flag))||'</active>');
+         if self.description is null then
+            cwms_util.append(l_text, '<description/>');
+         else
+            cwms_util.append(l_text, '<description>'||self.description||'</description>');
+         end if;
+         if l_is_virtual then
+            ------------------
+            -- virtual only --
+            ------------------
+            cwms_util.append(l_text, '<connections>'||self.connections||'</connections>');
+            cwms_util.append(l_text, '<source-ratings>');
+            for i in 1..self.source_ratings.count loop
+               begin
+                  l_rating_spec := rating_spec_t(self.source_ratings(i), self.office_id);
+                  l_source_rating_type := 'rating-spec-id';
+               exception
+                  when others then l_source_rating_type := 'rating-expression';
+               end;
+               cwms_util.append(
+                  l_text, 
+                  '<source_rating position="'
+                  ||i
+                  ||'"><'
+                  ||l_source_rating_type
+                  ||self.source_ratings(i)
+                  ||'</'
+                  ||l_source_rating_type
+                  ||'></source-rating>');
+            end loop;              
+            cwms_util.append(l_text, '</source-ratings>');
+         else
+            -------------------
+            -- concrete only --
+            -------------------
+            if self.formula is null then
+               cwms_util.append(l_text, self.rating_info.to_clob);
+            else
+               cwms_util.append(l_text, '<formula>'||self.formula||'</formula>');
+            end if;
+         end if;
+         cwms_util.append(l_text, '</rating>');
+         dbms_lob.close(l_text);
       end if;
-      cwms_util.append(l_text, '</rating>');
-      dbms_lob.close(l_text);
       return l_text;
    end;
 
@@ -5223,6 +6371,302 @@ as
    begin
       l_values := rate(ztsv_array(p_ind_value));
       return l_values(1);
+   end;
+   
+   member function rate(
+      p_values      in  double_tab_tab_t,
+      p_units       in  str_tab_t,
+      p_round       in  varchar2,
+      p_value_times in  date_table_type,
+      p_rating_time in  date,
+      p_time_zone   in  varchar2)
+   return double_tab_t
+   is
+      type rating_values_t     is record(ind_vals double_tab_tab_t, dep_vals double_tab_t);
+      type rating_values_tab_t is table of rating_values_t;
+      type boolean_tab_t       is table of boolean; 
+      l_rating_values       rating_values_tab_t;
+      l_is_rating           boolean;
+      l_rating              pls_integer;
+      l_ind_val             pls_integer;
+      l_count               pls_integer;
+      l_rating_part         varchar2(500);
+      l_units_part          varchar2(50);
+      l_factor              binary_double;
+      l_offset              binary_double;
+      l_tokens              str_tab_t;
+      l_results             double_tab_t;         
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      if self.source_ratings is null then
+         cwms_err.raise('ERROR', 'Method is only valid for virtual ratings');
+      end if;  
+      l_count := self.get_ind_parameter_count;
+      if p_values is null or p_values.count != l_count then
+         cwms_err.raise(
+            'ERROR',
+            'Expected '||l_count||' sets of input data, got '
+            ||case
+              when p_values is null then 0
+              else p_values.count
+              end);
+      end if; 
+      if p_units is null or p_units.count != l_count+1 then
+         cwms_err.raise(
+            'ERROR',
+            'Expected '||(l_count+1)||' units, got '
+            ||case
+              when p_units is null then 0
+              else p_units.count
+              end);
+      end if;
+      for i in 2..p_values.count loop
+         if p_values(i).count != p_values(1).count then
+            cwms_err.raise(
+               'ERROR',
+               'Input data sets have differing lengths'); 
+         end if;
+      end loop; 
+      
+      l_rating_values := rating_values_tab_t();
+      l_rating_values.extend(self.source_ratings.count);
+      ------------------------------------------------------------------------------------------
+      -- for each source rating, populate its inputs and perform the rating to get its output --
+      ------------------------------------------------------------------------------------------
+      for i in 1..self.source_ratings.count loop
+         ----------------------------------------------------------------------  
+         -- determine if this source rating is a rating spec or an expresion --
+         ----------------------------------------------------------------------
+         parse_source_rating(
+            l_is_rating,
+            l_rating_part,
+            l_units_part,
+            self.source_ratings(i));
+         ---------------------------------------------
+         -- populate the data for the source rating --
+         ---------------------------------------------
+         l_rating_values(i).ind_vals := double_tab_tab_t();
+         l_rating_values(i).ind_vals.extend(self.connections_map(i).ind_params.count);
+         ---------------------------------------------------
+         -- populate any inputs on independent parameters --
+         ---------------------------------------------------
+         for j in 1..self.connections_map(i).ind_params.count loop
+            if self.connections_map(i).ind_params(j) is not null then
+               self.parse_connection_part(l_rating, l_ind_val, self.connections_map(i).ind_params(j));
+               if l_rating < i then
+                  if l_rating = 0 then
+                     begin
+                        select factor,
+                               offset
+                          into l_factor,
+                               l_offset
+                          from cwms_unit_conversion
+                         where from_unit_id = cwms_util.get_unit_id(p_units(l_ind_val), self.office_id)
+                           and to_unit_id = cwms_util.get_unit_id(self.connections_map(i).units(j));           
+                     exception
+                        when no_data_found then
+                           cwms_err.raise(
+                              'ERROR',
+                              'Cannot convert from input '||l_ind_val||' unit of '||p_units(l_ind_val)
+                              ||' to rating '||i||' independent parameter '||j||' unit of '||self.connections_map(i).units(j));
+                     end;
+                     select column_value * l_factor + l_offset
+                       bulk collect
+                       into l_rating_values(i).ind_vals(j)
+                       from table(p_values(l_ind_val));
+                  else
+                     if l_ind_val = 0 then
+                        l_factor := self.connections_map(l_rating).factors(self.connections_map(l_rating).factors.count);
+                        l_offset := self.connections_map(l_rating).offsets(self.connections_map(l_rating).offsets.count);
+                        select column_value * l_factor + l_offset
+                          bulk collect
+                          into l_rating_values(i).ind_vals(j)
+                          from table(l_rating_values(l_rating).dep_vals);
+                     else 
+                        l_factor := self.connections_map(l_rating).factors(l_ind_val);
+                        l_offset := self.connections_map(l_rating).offsets(l_ind_val);
+                        select column_value * l_factor + l_offset
+                          bulk collect
+                          into l_rating_values(i).ind_vals(j)
+                          from table(l_rating_values(l_rating).ind_vals(l_ind_val));
+                     end if;
+                  end if;
+                  if l_rating_values(i).ind_vals(j) is null or l_rating_values(i).ind_vals(j).count = 0 then
+                     cwms_err.raise(
+                        'ERROR',
+                        'No values found at '
+                        ||self.connections_map(i).ind_params(j)
+                        ||' to populate R'
+                        ||i
+                        ||'I'
+                        ||j); 
+                  end if;
+               end if;
+            end if;
+         end loop;
+         -------------------------------------------------
+         -- populate any inputs on dependent parameters --
+         -------------------------------------------------
+         if self.connections_map(i).dep_param is not null then
+            parse_connection_part(l_rating, l_ind_val, self.connections_map(i).dep_param);
+            if l_rating < i then
+               if l_rating = 0 then
+                  begin
+                     select factor,
+                            offset
+                       into l_factor,
+                            l_offset
+                       from cwms_unit_conversion
+                      where from_unit_id = cwms_util.get_unit_id(p_units(l_ind_val), self.office_id)
+                        and to_unit_id = cwms_util.get_unit_id(self.connections_map(i).units(self.connections_map(i).units.count));           
+                  exception
+                     when no_data_found then
+                        cwms_err.raise(
+                           'ERROR',
+                           'Cannot convert from input '||l_ind_val||' unit of '||p_units(l_ind_val)
+                           ||' to rating '||i||' dependent parameter unit of '||self.connections_map(i).units(self.connections_map(i).units.count));
+                  end;
+                  select column_value * l_factor + l_offset
+                    bulk collect
+                    into l_rating_values(i).dep_vals
+                    from table(p_values(l_ind_val));
+               else
+                  if l_ind_val = 0 then
+                     l_factor := self.connections_map(l_rating).factors(self.connections_map(l_rating).factors.count);
+                     l_offset := self.connections_map(l_rating).offsets(self.connections_map(l_rating).offsets.count);
+                     select column_value * l_factor + l_offset
+                       bulk collect
+                       into l_rating_values(i).dep_vals
+                       from table(l_rating_values(l_rating).dep_vals);
+                  else 
+                     l_factor := self.connections_map(l_rating).factors(l_ind_val);
+                     l_offset := self.connections_map(l_rating).offsets(l_ind_val);
+                     select column_value * l_factor + l_offset
+                       bulk collect
+                       into l_rating_values(i).dep_vals
+                       from table(l_rating_values(l_rating).ind_vals(l_ind_val));
+                  end if;
+               end if;
+               if l_rating_values(i).dep_vals is null then
+                  cwms_err.raise(
+                     'ERROR',
+                     'No values found at '
+                     ||self.connections_map(i).dep_param
+                     ||' to populate R'
+                     ||i
+                     ||'D');
+               end if; 
+            end if;
+         end if;
+         ----------------------------------------------------------------------
+         -- verify that only the output (ind or dep parameter) has no values --
+         ----------------------------------------------------------------------
+         select count(*)
+           into l_count
+           from table(l_rating_values(i).ind_vals)
+          where column_value is null;
+         if l_count = 0 then
+            if l_rating_values(i).dep_vals is not null then
+               cwms_err.raise(
+                  'ERROR',
+                  'Source rating '
+                  ||i
+                  ||' is over-connected. Values for all independent and dependent parameters are specified');
+            end if;
+         else
+            if l_count > 1 or (l_count = 1 and l_rating_values(i).dep_vals is null) then
+               cwms_err.raise(
+                  'ERROR',
+                  'Soure rating '
+                  ||i
+                  ||' is under-connected. Values for more than one independent and/or dependent parameters are unspecified');
+            end if;
+         end if;
+         ------------------------           
+         -- perform the rating --
+         ------------------------
+         if l_rating_values(i).dep_vals is null then
+            if l_is_rating then  
+               l_rating_values(i).dep_vals := cwms_rating.rate_f(
+                  p_rating_spec => l_rating_part, 
+                  p_values      => l_rating_values(i).ind_vals, 
+                  p_units       => self.connections_map(i).units, 
+                  p_round       => case when i = self.source_ratings.count then p_round else 'F' end, 
+                  p_value_times => p_value_times, 
+                  p_rating_time => p_rating_time, 
+                  p_time_zone   => p_time_zone, 
+                  p_office_id   => self.office_id);
+            else  
+               l_tokens := cwms_util.split_text(l_rating_part, ' '); -- already in RPN from
+               l_count := l_rating_values(i).ind_vals(1).count; 
+               l_rating_values(i).dep_vals := double_tab_t();
+               l_rating_values(i).dep_vals.extend(l_count);
+               for j in 1..l_count loop
+                  l_rating_values(i).dep_vals(j) := cwms_util.eval_tokenized_expression(
+                     l_tokens,
+                     cwms_util.get_column(l_rating_values(i).ind_vals, j));
+               end loop;
+            end if;
+            if l_rating_values(i).dep_vals is null or l_rating_values(i).dep_vals.count = 0 then
+               cwms_err.raise(
+                  'ERROR',
+                  'Source rating '||i||' produced no values');
+            end if;
+         else
+            if l_is_rating then
+               l_rating_values(i).ind_vals(1) := cwms_rating.reverse_rate_f(
+                  p_rating_spec => l_rating_part, 
+                  p_values      => l_rating_values(i).dep_vals, 
+                  p_units       => self.connections_map(i).units, 
+                  p_round       => case when i = self.source_ratings.count then p_round else 'F' end, 
+                  p_value_times => p_value_times, 
+                  p_rating_time => p_rating_time, 
+                  p_time_zone   => p_time_zone, 
+                  p_office_id   => self.office_id);
+            else
+               cwms_err.raise('ERROR', 'Cannot reverse through a rating expression');
+            end if;
+            if l_rating_values(i).ind_vals(1) is null or l_rating_values(i).ind_vals(1).count = 0 then
+               cwms_err.raise(
+                  'ERROR',
+                  'Source rating '||i||' produced no values');
+            end if;
+         end if;           
+      end loop;
+      ------------------------------------------------------ 
+      -- put the results in the requested unit and return --
+      ------------------------------------------------------
+      l_count := self.connections_map.count;
+      if self.connections_map(self.source_ratings.count).dep_param is null then
+         select factor,
+                offset
+           into l_factor,
+                l_offset
+           from cwms_unit_conversion
+          where from_unit_id = cwms_util.get_unit_id(self.connections_map(l_count).units(self.connections_map(l_count).units.count))
+            and to_unit_id = cwms_util.get_unit_id(p_units(p_units.count));
+            
+         select column_value * l_factor + l_offset
+           bulk collect
+           into l_results 
+           from table(l_rating_values(l_count).dep_vals);                       
+      else
+         select factor,
+                offset
+           into l_factor,
+                l_offset
+           from cwms_unit_conversion
+          where from_unit_id = cwms_util.get_unit_id(self.connections_map(l_count).units(1))
+            and to_unit_id = cwms_util.get_unit_id(p_units(p_units.count));
+            
+         select column_value * l_factor + l_offset
+           bulk collect
+           into l_results 
+           from table(l_rating_values(l_count).ind_vals(1));                       
+      end if;
+      return l_results; 
    end;
 
    member function reverse
@@ -5464,7 +6908,314 @@ as
       l_reversed := self.reverse;
       return l_reversed.rate(p_dep_value);
    end;
+   
+   member function reverse_rate(
+      p_values      in  double_tab_t,
+      p_units       in  str_tab_t,
+      p_round       in  varchar2,
+      p_value_times in  date_table_type,
+      p_rating_time in  date,
+      p_time_zone   in  varchar2)
+   return double_tab_t
+   is
+      type rating_values_t     is record(ind_vals double_tab_t, dep_vals double_tab_t);
+      type rating_values_tab_t is table of rating_values_t;
+      type boolean_tab_t       is table of boolean; 
+      l_rating_values       rating_values_tab_t;
+      l_is_rating           boolean;
+      l_rating              pls_integer;
+      l_ind_val             pls_integer;
+      l_count               pls_integer;
+      l_rating_part         varchar2(500);
+      l_units_part          varchar2(50);
+      l_factor              binary_double;
+      l_offset              binary_double;
+      l_results             double_tab_t;         
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      if self.source_ratings is null then
+         cwms_err.raise('ERROR', 'Method is only valid for virtual ratings');
+      end if;  
+      if self.get_ind_parameter_count != 1 then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot reverse through a multiple independent paramter rating');
+      end if;
+      if p_units is null or p_units.count != 2 then
+         cwms_err.raise(
+            'ERROR',
+            'Expected 2 units, got '
+            ||case
+              when p_units is null then 0
+              else p_units.count
+              end);
+      end if;
+      
+      l_rating_values := rating_values_tab_t();
+      l_rating_values.extend(self.source_ratings.count);
+      ------------------------------------------------------------------------------------------
+      -- for each source rating, populate its inputs and perform the rating to get its output --
+      ------------------------------------------------------------------------------------------
+      for i in reverse 1..self.source_ratings.count loop
+         ----------------------------------------------------------------------  
+         -- determine if this source rating is a rating spec or an expresion --
+         ----------------------------------------------------------------------
+         parse_source_rating(
+            l_is_rating,
+            l_rating_part,
+            l_units_part,
+            self.source_ratings(i));
+         if not l_is_rating then
+            cwms_err.raise(
+               'ERROR',
+               'Cannot reverse rate a virtual rating that contains a rating expression');
+         end if;
+         ---------------------------------------------
+         -- populate the data for the source rating --
+         ---------------------------------------------
+         if self.connections_map(i).ind_params.count != 1 then
+            cwms_err.raise(
+               'ERROR',
+               'Cannot reverse through a multiple independent paramter rating');
+         end if;
+         ---------------------------------------------------
+         -- populate any inputs on independent parameters --
+         ---------------------------------------------------
+         case 
+         when self.connections_map(i).ind_params(1) is null then
+            if i = self.source_ratings.count then
+               begin
+                  select factor,
+                         offset
+                    into l_factor,
+                         l_offset
+                    from cwms_unit_conversion
+                   where from_unit_id = cwms_util.get_unit_id(p_units(2), self.office_id)
+                     and to_unit_id = cwms_util.get_unit_id(self.connections_map(i).units(1), self.office_id);           
+               exception
+                  when no_data_found then
+                     cwms_err.raise(
+                        'ERROR',
+                        'Cannot convert from input unit of '||p_units(2)
+                        ||' to rating '||i||' independent parameter unit of '||self.connections_map(i).units(1));
+               end;
+               select column_value * l_factor + l_offset
+                 bulk collect
+                 into l_rating_values(i).ind_vals
+                 from table(p_values);
+            else
+               cwms_err.raise(
+                  'ERROR',
+                  'Unexpected null connection found at R'||i||'I1');
+            end if;
+         when self.connections_map(i).ind_params(1) = 'I1' then
+            null; -- output of virtual rating
+         else
+            parse_connection_part(l_rating, l_ind_val, self.connections_map(i).ind_params(1));
+            if l_rating > i then
+               if l_ind_val = 0 then
+                  l_factor := self.connections_map(l_rating).factors(2);
+                  l_offset := self.connections_map(l_rating).offsets(2);
+                  select column_value * l_factor + l_offset
+                    bulk collect
+                    into l_rating_values(i).ind_vals
+                    from table(l_rating_values(l_rating).dep_vals);
+               else 
+                  l_factor := self.connections_map(l_rating).factors(1);
+                  l_offset := self.connections_map(l_rating).offsets(1);
+                  select column_value * l_factor + l_offset
+                    bulk collect
+                    into l_rating_values(i).ind_vals
+                    from table(l_rating_values(l_rating).ind_vals);
+               end if;
+               if l_rating_values(i).ind_vals is null then
+                  cwms_err.raise(
+                     'ERROR',
+                     'No values found at '
+                     ||self.connections_map(i).ind_params(1)
+                     ||' to populate R'
+                     ||i
+                     ||'I1');
+               end if; 
+            end if;
+         end case;
+         -------------------------------------------------
+         -- populate any inputs on dependent parameters --
+         -------------------------------------------------
+         case
+         when self.connections_map(i).dep_param is null then
+            if i = self.source_ratings.count then
+               begin
+                  select factor,
+                         offset
+                    into l_factor,
+                         l_offset
+                    from cwms_unit_conversion
+                   where from_unit_id = cwms_util.get_unit_id(p_units(2), self.office_id)
+                     and to_unit_id = cwms_util.get_unit_id(self.connections_map(i).units(2));           
+               exception
+                  when no_data_found then
+                     cwms_err.raise(
+                        'ERROR',
+                        'Cannot convert from input unit of '||p_units(2)
+                        ||' to rating '||i||' dependent parameter unit of '||cwms_util.get_unit_id(self.connections_map(i).units(2)));
+               end;
+               select column_value * l_factor + l_offset
+                 bulk collect
+                 into l_rating_values(i).dep_vals
+                 from table(p_values);
+            else
+               cwms_err.raise(
+                  'ERROR',
+                  'Unexpected null connection found at R'||i||'D');
+            end if;
+         when self.connections_map(i).dep_param = 'I1' then
+            null; -- output of virtual rating
+         else
+            parse_connection_part(l_rating, l_ind_val, self.connections_map(i).dep_param);
+            if l_ind_val = 0 then
+               l_factor := self.connections_map(l_rating).factors(2);
+               l_offset := self.connections_map(l_rating).offsets(2);
+               select column_value * l_factor + l_offset
+                 bulk collect
+                 into l_rating_values(i).dep_vals
+                 from table(l_rating_values(l_rating).dep_vals);
+            else 
+               l_factor := self.connections_map(l_rating).factors(1);
+               l_offset := self.connections_map(l_rating).offsets(2);
+               select column_value * l_factor + l_offset
+                 bulk collect
+                 into l_rating_values(i).dep_vals
+                 from table(l_rating_values(l_rating).ind_vals);
+            end if;
+            if l_rating_values(i).dep_vals is null then
+               cwms_err.raise(
+                  'ERROR',
+                  'No values found at '
+                  ||self.connections_map(i).dep_param
+                  ||' to populate R'
+                  ||i
+                  ||'D');
+            end if; 
+         end case;
+         ----------------------------------------------------------------------
+         -- verify that only the output (ind or dep parameter) has no values --
+         ----------------------------------------------------------------------
+         l_count := 0;
+         if l_rating_values(i).ind_vals is not null then l_count := l_count + 1; end if;
+         if l_rating_values(i).dep_vals is not null then l_count := l_count + 1; end if;
+         if l_count = 0 then
+            cwms_err.raise(
+               'ERROR',
+               'Soure rating '
+               ||i
+               ||' is under-connected. No independent or dependent parameter values are specified');
+         elsif l_count = 2 then
+            cwms_err.raise(
+               'ERROR',
+               'Source rating '
+               ||i
+               ||' is over-connected. Values for independent and dependent parameters are specified');
+         end if;
+         ------------------------           
+         -- perform the rating --
+         ------------------------
+         if l_rating_values(i).dep_vals is null then
+            l_rating_values(i).dep_vals := cwms_rating.rate_f(
+               p_rating_spec => l_rating_part, 
+               p_values      => double_tab_tab_t(l_rating_values(i).ind_vals), 
+               p_units       => self.connections_map(i).units, 
+               p_round       => case when i = 1 then p_round else 'F' end, 
+               p_value_times => p_value_times, 
+               p_rating_time => p_rating_time, 
+               p_time_zone   => p_time_zone, 
+               p_office_id   => self.office_id);
+         else
+            l_rating_values(i).ind_vals := cwms_rating.reverse_rate_f(
+               p_rating_spec => l_rating_part, 
+               p_values      => l_rating_values(i).dep_vals, 
+               p_units       => self.connections_map(i).units, 
+               p_round       => case when i = 1 then p_round else 'F' end, 
+               p_value_times => p_value_times, 
+               p_rating_time => p_rating_time, 
+               p_time_zone   => p_time_zone, 
+               p_office_id   => self.office_id);
+         end if;           
+      end loop;
+      ------------------------------------------------------ 
+      -- put the results in the requested unit and return --
+      ------------------------------------------------------
+      if self.connections_map(1).dep_param = 'I1' then
+         select factor,
+                offset
+           into l_factor,
+                l_offset
+           from cwms_unit_conversion
+          where from_unit_id = cwms_util.get_unit_id(self.connections_map(1).units(2))
+            and to_unit_id = cwms_util.get_unit_id(p_units(1));
+            
+         select column_value * l_factor + l_offset
+           bulk collect
+           into l_results 
+           from table(l_rating_values(l_count).dep_vals);                       
+      else
+         select factor,
+                offset
+           into l_factor,
+                l_offset
+           from cwms_unit_conversion
+          where from_unit_id = cwms_util.get_unit_id(self.connections_map(1).units(1))
+            and to_unit_id = cwms_util.get_unit_id(p_units(1));
+            
+         select column_value * l_factor + l_offset
+           bulk collect
+           into l_results 
+           from table(l_rating_values(l_count).ind_vals);                       
+      end if;
+      return l_results; 
+   end;
+   
+   member function get_ind_parameters
+   return str_tab_t
+   is
+      l_parts str_tab_t;
+   begin
+      l_parts := cwms_util.split_text(rating_spec_id, cwms_rating.separator1);
+      l_parts := cwms_util.split_text(l_parts(2), cwms_rating.separator2);
+      l_parts := cwms_util.split_text(l_parts(1), cwms_rating.separator3);
+      return l_parts;
+   end;
+   
+   member function get_ind_parameter(
+      p_position in integer)
+   return varchar2
+   is
+      l_parts str_tab_t;
+   begin
+      l_parts := get_ind_parameters;
+      if p_position is null or not p_position between 1 and l_parts.count then
+         cwms_err.raise(
+            'ERROR',
+            'Expected position in range 1..'
+            ||l_parts.count
+            ||', got '
+            ||nvl(p_position, 'NULL'));
+      end if;
+      return l_parts(p_position);
+   end;
 
+   member function get_dep_parameter
+   return varchar2
+   is
+      l_parts str_tab_t;
+   begin
+      l_parts := cwms_util.split_text(rating_spec_id, cwms_rating.separator1);
+      l_parts := cwms_util.split_text(l_parts(2), cwms_rating.separator2);
+      return l_parts(2);
+   end;
+   
    member function get_date(p_timestr in varchar2) return date
    is
       l_date  date;
@@ -5623,7 +7374,7 @@ create type rating_tab_t
  *
  * @see type rating_t
  */
-as table of rating_t;
+as table of rating_t
 /
 show errors;
 
@@ -5645,11 +7396,14 @@ under rating_t
 -- create_date    date,
 -- active_flag    varchar2(1),
 -- formula        varchar2(1000),
+-- connections    varchar2(80),
 -- native_units   varchar2(256),
 -- description    varchar2(256),
 -- rating_info    rating_ind_parameter_t,
 -- current_units  varchar2(1), -- 'D' = database, 'N' = native, other = don't know
 -- current_time   varchar2(2), -- 'D' = database, 'L' = native, other = don't know
+-- formula_tokens str_tab_t,
+-- source_ratings rating_tab_t,
    native_datum   varchar2(16),
    current_datum  varchar2(16),
    elev_positions number_tab_t,  
@@ -6141,6 +7895,7 @@ as
       l_rating_version   varchar2(32);
       l_parts            str_tab_t;
       l_skipped          pls_integer;
+      l_temp             rating_t;
       ------------------------------
       -- local function shortcuts --
       ------------------------------
@@ -6242,7 +7997,8 @@ as
             self.shifts := rating_tab_t();
          end if;
          self.shifts.extend;
-         self.shifts(i-l_skipped) := rating_t(
+         l_temp := treat(self.shifts(i-l_skipped) as rating_t);
+         l_temp := rating_t(
             self.office_id,              -- office_id
             l_location_id
             ||cwms_rating.separator1||l_ind_param
@@ -6253,12 +8009,15 @@ as
             null,                        -- create_date
             null,                        -- active_flag
             null,                        -- formula
+            null,                        -- connections
             null,                        -- native_units
             null,                        -- description
             null,                        -- rating_info
             'N',                         -- current_units
             'D',                         -- current_time
-            null);                       -- formula_tokens
+            null,                        -- formula_tokens
+            null,                        -- source_ratings
+            null);                       -- connections_map
          ----------------------------------
          -- get the shift effective date --
          ----------------------------------
@@ -6266,18 +8025,18 @@ as
          if l_timestr is null then
             cwms_err.raise('ERROR', 'Required <effective-date> element not found on shift');
          end if;
-         self.shifts(i-l_skipped).effective_date := (self as rating_t).get_date(l_timestr);
+         l_temp.effective_date := (self as rating_t).get_date(l_timestr);
          ----------------------------------
          -- get the shift create date --
          ----------------------------------
          l_timestr := get_text(l_shift, '/height-shifts/create-date');
          if l_timestr is not null then
-            self.shifts(i-l_skipped).create_date := (self as rating_t).get_date(l_timestr);
+            l_temp.create_date := (self as rating_t).get_date(l_timestr);
          end if;
          -------------------------------
          -- get the shift active flag --
          -------------------------------
-         self.shifts(i-l_skipped).active_flag :=
+         l_temp.active_flag :=
             case get_text(l_shift, '/height-shifts/active')
                when 'true'  then 'T'
                when '1'     then 'T'
@@ -6285,7 +8044,7 @@ as
                when '0'     then 'F'
                else               null
             end;
-         if self.shifts(i-l_skipped).active_flag is null then
+         if l_temp.active_flag is null then
             cwms_err.raise(
                'ERROR',
                'Invalid text for <active> element: '
@@ -6295,11 +8054,11 @@ as
          -- get the shift units id --
          ----------------------------
          l_parts := cwms_util.split_text(self.native_units, cwms_rating.separator2);
-         self.shifts(i-l_skipped).native_units := l_parts(1) || cwms_rating.separator2 || l_parts(1);
+         l_temp.native_units := l_parts(1) || cwms_rating.separator2 || l_parts(1);
          -------------------------------
          -- get the shift description --
          -------------------------------
-         self.shifts(i-l_skipped).description := get_text(l_shift, '/height-shifts/description');
+         l_temp.description := get_text(l_shift, '/height-shifts/description');
          --------------------------
          -- for each shift point --
          --------------------------
@@ -6309,23 +8068,22 @@ as
             ------------------------------------------------------------
             -- create a new rating_value_t object for the shift point --
             ------------------------------------------------------------
-            if self.shifts(i-l_skipped).rating_info is null then
-               self.shifts(i-l_skipped).rating_info := rating_ind_parameter_t(
+            if l_temp.rating_info is null then
+               l_temp.rating_info := rating_ind_parameter_t(
                   'F',                  -- constructed
                   rating_value_tab_t(), -- rating_values
                   null);                -- extension_values
             end if;
-            self.shifts(i-l_skipped).rating_info.rating_values.extend();
-            self.shifts(i-l_skipped).rating_info.rating_values(j) := rating_value_t();
-            self.shifts(i-l_skipped).rating_info.rating_values(j).ind_value := get_number(l_point, '/point/ind');
-            self.shifts(i-l_skipped).rating_info.rating_values(j).dep_value := get_number(l_point, '/point/dep');
-            self.shifts(i-l_skipped).rating_info.rating_values(j).note_id   := get_text(l_point, '/point/note');
+            l_temp.rating_info.rating_values.extend();
+            l_temp.rating_info.rating_values(j) := rating_value_t();
+            l_temp.rating_info.rating_values(j).ind_value := get_number(l_point, '/point/ind');
+            l_temp.rating_info.rating_values(j).dep_value := get_number(l_point, '/point/dep');
+            l_temp.rating_info.rating_values(j).note_id   := get_text(l_point, '/point/note');
          end loop;
-         if self.shifts(i-l_skipped).rating_info is not null then
-            self.shifts(i-l_skipped).rating_info.constructed := 'T';
+         if l_temp.rating_info is not null then
+            l_temp.rating_info.constructed := 'T';
             begin
-               self.shifts(i-l_skipped).rating_info.validate_obj(1);
-               dbms_output.put_line('shift OK');
+               l_temp.rating_info.validate_obj(1);
             exception
                when others then
                   cwms_msg.log_db_message(
@@ -6336,6 +8094,11 @@ as
                   self.shifts.trim;
             end;
          end if;
+         if i = 1 then
+            self.shifts := rating_tab_t();
+         end if;
+         self.shifts.extend;
+         self.shifts(i-l_skipped) := l_temp;
       end loop;
       l_offsets := get_node(l_xml, '/usgs-stream-rating/height-offsets');
       if l_offsets is not null then
@@ -6353,12 +8116,15 @@ as
             self.create_date,                    -- create_date
             self.active_flag,                    -- active_flag
             null,                                -- formula
+            null,                                -- connection
             null,                                -- native_units
             'Logarithmic interpolation offsets', -- description
             null,                                -- rating_info
             'N',                                 -- current_units
             'D',                                 -- current_time
-            null);                               -- formula_tokens
+            null,                                -- formula_tokens
+            null,                                -- source_ratings
+            null);                               -- connections_map
          ----------------------------
          -- get the offset units id --
          ----------------------------
@@ -6501,7 +8267,8 @@ as
       l_parts         str_tab_t;
       l_ind_param     varchar2(256);
       l_dep_param     varchar2(256);
-      l_parameters_id varchar2(256);
+      l_parameters_id varchar2(256); 
+      l_temp          rating_t;
    begin
       ------------------------
       -- validate as rating --
@@ -6600,68 +8367,69 @@ as
       ---------------------
       if self.shifts is not null then
          for i in reverse 1..self.shifts.count loop
-            begin
-               self.shifts(i).validate_obj;
-               if self.shifts(i).office_id != self.office_id then
+            begin            
+               l_temp := treat(self.shifts(i) as rating_t);
+               l_temp.validate_obj;
+               if l_temp.office_id != self.office_id then
                   cwms_err.raise('ERROR', 'Shifts office does not match rating office');
                end if;
-               l_parts := cwms_util.split_text(self.shifts(i).rating_spec_id, cwms_rating.separator1);
+               l_parts := cwms_util.split_text(l_temp.rating_spec_id, cwms_rating.separator1);
                l_parameters_id := l_parts(2);
                if l_parameters_id != l_ind_param || cwms_rating.separator2 || l_ind_param || '-Shift' then
                   cwms_err.raise('ERROR', 'Invalid shift parameter id - should be '||l_ind_param||cwms_rating.separator2||l_ind_param||'-Shift');
                end if;
-               if self.shifts(i).effective_date < self.effective_date then
+               if l_temp.effective_date < self.effective_date then
                   cwms_err.raise(
                      'ERROR',
                      'Shift '||i||' effective date ('
-                     ||self.shifts(i).effective_date
+                     ||l_temp.effective_date
                      ||') is earlier than rating effective date ('
                      ||self.effective_date
                      ||')');
                end if;
-               if self.shifts(i).create_date is not null then
-                  if self.create_date is null or self.shifts(i).create_date < self.create_date then
+               if l_temp.create_date is not null then
+                  if self.create_date is null or l_temp.create_date < self.create_date then
                      cwms_err.raise(
                         'ERROR',
                         'Shift '||i||' create date ('
-                        ||to_char(self.shifts(i).create_date, 'yyyy/mm/dd hh24:mi:ss')
+                        ||to_char(l_temp.create_date, 'yyyy/mm/dd hh24:mi:ss')
                         ||') is earlier than rating create date ('
                         ||to_char(self.create_date, 'yyyy/mm/dd hh24:mi:ss')
                         ||')');
                   end if;
                end if;
-               if self.shifts(i).formula is not null then
+               if l_temp.formula is not null then
                   cwms_err.raise('ERROR', 'Shifts cannot use a formula');
                end if;
-               if self.shifts(i).native_units is null then
+               if l_temp.native_units is null then
                   cwms_err.raise('ERROR', 'Shifts must use same unit as rating stage or elevation unit');
                end if;
-               l_parts := cwms_util.split_text(self.shifts(i).native_units, cwms_rating.separator2);
+               l_parts := cwms_util.split_text(l_temp.native_units, cwms_rating.separator2);
                if l_parts.count != 2 or l_parts(1) != l_parts(2) then
                   cwms_err.raise('ERROR', 'Invalid native units for shifts');
                end if;
                if substr(self.native_units, 1, instr(self.native_units, cwms_rating.separator2) - 1) != l_parts(1) then
                   cwms_err.raise('ERROR', 'Shifts must use same unit as rating stage or elevation unit');
                end if;
-               if self.shifts(i).rating_info.extension_values is not null then
+               if l_temp.rating_info.extension_values is not null then
                   cwms_err.raise('ERROR', 'Shifts cannot contain extension values');
                end if;
-               if self.shifts(i).rating_info.rating_values is null then
+               if l_temp.rating_info.rating_values is null then
                   cwms_err.raise('ERROR', 'Shifts must contain rating values if specified');
                end if;
-               for j in 1..self.shifts(i).rating_info.rating_values.count loop
+               for j in 1..l_temp.rating_info.rating_values.count loop
                   if j > 1 then
-                     if self.shifts(i).rating_info.rating_values(j).ind_value <=
-                        self.shifts(i).rating_info.rating_values(j-1).ind_value
+                     if l_temp.rating_info.rating_values(j).ind_value <=
+                        l_temp.rating_info.rating_values(j-1).ind_value
                      then
                         cwms_err.raise(
                            'ERROR',
                            'Shifts stages/elevations do not monotonically increase after value '
-                           ||cwms_rounding.round_dt_f(self.shifts(i).rating_info.rating_values(j-1).ind_value, '9999999999'));
+                           ||cwms_rounding.round_dt_f(l_temp.rating_info.rating_values(j-1).ind_value, '9999999999'));
                      end if;
                   end if;
-                  if self.shifts(i).rating_info.rating_values(j).dep_value is null or
-                     self.shifts(i).rating_info.rating_values(j).dep_rating_ind_param is not null
+                  if l_temp.rating_info.rating_values(j).dep_value is null or
+                     l_temp.rating_info.rating_values(j).dep_rating_ind_param is not null
                   then
                      cwms_err.raise('ERROR', 'Shifts must contain shift values as dependent parameter');
                   end if;
@@ -6684,6 +8452,7 @@ as
 
    overriding member procedure convert_to_database_units
    is
+      l_temp rating_t;
    begin
       (self as rating_t).convert_to_database_units;
       if self.offsets is not null then
@@ -6691,13 +8460,15 @@ as
       end if;
       if self.shifts is not null then
          for i in 1..self.shifts.count loop
-            self.shifts(i).convert_to_database_units;
+            l_temp := treat(self.shifts(i) as rating_t);
+            l_temp.convert_to_database_units;
          end loop;
       end if;
    end;
 
    overriding member procedure convert_to_native_units
    is
+      l_temp rating_t;
    begin
       (self as rating_t).convert_to_native_units;
       if self.offsets is not null then
@@ -6705,13 +8476,15 @@ as
       end if;
       if self.shifts is not null then
          for i in 1..self.shifts.count loop
-            self.shifts(i).convert_to_native_units;
+            l_temp := treat(self.shifts(i) as rating_t);
+            l_temp.convert_to_native_units;
          end loop;
       end if;
    end;
 
    overriding member procedure convert_to_database_time
-   is
+   is             
+      l_temp rating_t;
    begin
       (self as rating_t).convert_to_database_time;
       if self.offsets is not null then
@@ -6719,13 +8492,15 @@ as
       end if;
       if self.shifts is not null then
          for i in 1..self.shifts.count loop
-            self.shifts(i).convert_to_database_time;
+            l_temp := treat(self.shifts(i) as rating_t);
+            l_temp.convert_to_database_time;
          end loop;
       end if;
    end;
 
    overriding member procedure convert_to_local_time
    is
+      l_temp rating_t;
    begin
       (self as rating_t).convert_to_local_time;
       if self.offsets is not null then
@@ -6733,7 +8508,8 @@ as
       end if;
       if self.shifts is not null then
          for i in 1..self.shifts.count loop
-            self.shifts(i).convert_to_local_time;
+            l_temp := treat(self.shifts(i) as rating_t);
+            l_temp.convert_to_local_time;
          end loop;
       end if;
    end;
@@ -6752,6 +8528,7 @@ as
       l_spec             rating_spec_t;
       l_rating_spec      rating_spec_t;
       l_clone            stream_rating_t;
+      l_temp             rating_t;
    begin
       if self.current_units = 'N' or self.current_time = 'L' then
          l_clone := stream_rating_t(self);  
@@ -6805,7 +8582,8 @@ as
             'USGS-style rating shifts');
          l_spec.store('F');
          for i in 1..self.shifts.count loop
-            self.shifts(i).store(l_rating_code, 'F');
+            l_temp := treat(self.shifts(i) as rating_t);
+            l_temp.store(l_rating_code, 'F');
             update at_rating
                set ref_rating_code = l_ref_rating_code
              where rating_code = l_rating_code;
@@ -6856,6 +8634,7 @@ as
       l_text  clob;
       l_clone stream_rating_t;
       l_tzone varchar2(28);
+      l_temp  rating_t;
       function bool_text(
          p_state in boolean)
       return varchar2
@@ -6895,30 +8674,31 @@ as
       -------------------
       if self.shifts is not null then
          for i in 1..self.shifts.count loop
+            l_temp := treat(self.shifts(i) as rating_t);
             cwms_util.append(l_text,
                '<height-shifts><effective-date>'
-               ||cwms_util.get_xml_time(cwms_util.change_timezone(self.shifts(i).effective_date, 'UTC', l_tzone), l_tzone)||'</effective-date>');
-            if self.shifts(i).create_date is not null then
-               cwms_util.append(l_text, '<create-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(self.shifts(i).create_date, 'UTC', l_tzone), l_tzone)||'</create-date>');
+               ||cwms_util.get_xml_time(cwms_util.change_timezone(l_temp.effective_date, 'UTC', l_tzone), l_tzone)||'</effective-date>');
+            if l_temp.create_date is not null then
+               cwms_util.append(l_text, '<create-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(l_temp.create_date, 'UTC', l_tzone), l_tzone)||'</create-date>');
             end if;
             cwms_util.append(l_text,
                '<active>'
-               ||bool_text(cwms_util.is_true(self.shifts(i).active_flag))
+               ||bool_text(cwms_util.is_true(l_temp.active_flag))
                ||'</active>');
-            if self.shifts(i).description is not null then
-               cwms_util.append(l_text, '<description>'||self.shifts(i).description||'</description>');
+            if l_temp.description is not null then
+               cwms_util.append(l_text, '<description>'||l_temp.description||'</description>');
             end if;
-            for j in 1..self.shifts(i).rating_info.rating_values.count loop
+            for j in 1..l_temp.rating_info.rating_values.count loop
                cwms_util.append(l_text,
                   '<point><ind>'
-                  ||cwms_rounding.round_dt_f(self.shifts(i).rating_info.rating_values(j).ind_value, '9999999999')
+                  ||cwms_rounding.round_dt_f(l_temp.rating_info.rating_values(j).ind_value, '9999999999')
                   ||'</ind><dep>'
-                  ||cwms_rounding.round_dt_f(self.shifts(i).rating_info.rating_values(j).dep_value, '9999999999')
+                  ||cwms_rounding.round_dt_f(l_temp.rating_info.rating_values(j).dep_value, '9999999999')
                   ||'</dep>');
-               if self.shifts(i).rating_info.rating_values(j).note_id is not null then
+               if l_temp.rating_info.rating_values(j).note_id is not null then
                   cwms_util.append(l_text,
                      '<note>'
-                     ||self.shifts(i).rating_info.rating_values(j).note_id
+                     ||l_temp.rating_info.rating_values(j).note_id
                      ||'</note>');
                end if;
                cwms_util.append(l_text, '</point>');
@@ -7218,13 +8998,13 @@ as
                   cwms_lookup.method_error,
                   cwms_lookup.method_nearest);
                if l_ratio != 0. then
-                  l_hi_value := shifts(l_hi_index-1).rate(l_height);
+                  l_hi_value := treat(shifts(l_hi_index-1) as rating_t).rate(l_height);
                end if;
                if l_ratio != 1. then
                   if l_hi_index = 1 then
                      l_lo_value := 0.;
                   else
-                     l_lo_value := shifts(l_hi_index).rate(l_height);
+                     l_lo_value := treat(shifts(l_hi_index) as rating_t).rate(l_height);
                   end if;
                end if;
                if l_ratio = 0. then
@@ -7691,12 +9471,12 @@ as
                      cwms_lookup.method_nearest);
                   if l_ratio != 0. then
                      l_heights.delete;
-                     l_heights.extend(shifts(l_hi_index-1).rating_info.rating_values.count);
+                     l_heights.extend(treat(shifts(l_hi_index-1) as rating_t).rating_info.rating_values.count);
                      l_shifts := double_tab_t();
-                     l_shifts.extend(shifts(l_hi_index-1).rating_info.rating_values.count);
-                     for j in 1..shifts(l_hi_index-1).rating_info.rating_values.count loop
-                        l_heights(j) := shifts(l_hi_index-1).rating_info.rating_values(j).ind_value;
-                        l_shifts(j) := shifts(l_hi_index-1).rating_info.rating_values(j).dep_value;
+                     l_shifts.extend(treat(shifts(l_hi_index-1) as rating_t).rating_info.rating_values.count);
+                     for j in 1..treat(shifts(l_hi_index-1) as rating_t).rating_info.rating_values.count loop
+                        l_heights(j) := treat(shifts(l_hi_index-1) as rating_t).rating_info.rating_values(j).ind_value;
+                        l_shifts(j) := treat(shifts(l_hi_index-1) as rating_t).rating_info.rating_values(j).dep_value;
                      end loop;
                      if l_results(i).value - l_shifts(1) <= l_heights(1) then
                         l_hi_value := l_shifts(1);
@@ -7726,12 +9506,12 @@ as
                         l_lo_value := 0.; -- zero shift on base curve
                      else
                         l_heights.delete;
-                        l_heights.extend(shifts(l_hi_index).rating_info.rating_values.count);
+                        l_heights.extend(treat(shifts(l_hi_index) as rating_t).rating_info.rating_values.count);
                         l_shifts := double_tab_t();
-                        l_shifts.extend(shifts(l_hi_index).rating_info.rating_values.count);
-                        for j in 1..shifts(l_hi_index).rating_info.rating_values.count loop
-                           l_heights(j) := shifts(l_hi_index).rating_info.rating_values(j).ind_value;
-                           l_shifts(j) := shifts(l_hi_index).rating_info.rating_values(j).dep_value;
+                        l_shifts.extend(treat(shifts(l_hi_index) as rating_t).rating_info.rating_values.count);
+                        for j in 1..treat(shifts(l_hi_index) as rating_t).rating_info.rating_values.count loop
+                           l_heights(j) := treat(shifts(l_hi_index) as rating_t).rating_info.rating_values(j).ind_value;
+                           l_shifts(j) := treat(shifts(l_hi_index) as rating_t).rating_info.rating_values(j).dep_value;
                         end loop;
                         if l_results(i).value - l_shifts(1) <= l_heights(1) then
                            l_lo_value := l_shifts(1);
@@ -8016,6 +9796,7 @@ as
       l_ind_units str_tab_t;
       l_elev_unit varchar2(16);
       l_offset    binary_double;
+      l_temp      rating_t;
    begin   
       if self.current_datum != upper(p_vertical_datum) then
          if self.current_units = 'D' then
@@ -8036,8 +9817,9 @@ as
          self.current_datum := upper(p_vertical_datum);
          if self.shifts is not null then
             for i in 1..self.shifts.count loop
-               if self.shifts(i) is not null and self.shifts(i).rating_info is not null then
-                  self.shifts(i).rating_info.add_offset(l_offset, self.elev_position);
+               l_temp := treat(self.shifts(i) as rating_t);
+               if l_temp is not null and l_temp.rating_info is not null then
+                  l_temp.rating_info.add_offset(l_offset, self.elev_position);
                end if;
             end loop;
          end if;
