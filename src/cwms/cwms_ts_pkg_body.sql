@@ -8576,10 +8576,11 @@ end retrieve_existing_item_counts;
          DELETE FROM at_ts_group_assignment
                WHERE ts_group_code = l_ts_group_code
                  AND get_db_office_code(ts_code) = l_office_code;
-      ELSE
+      ELSE                               
+         l_ts_code := get_ts_code (p_ts_id, l_office_code);
          DELETE FROM at_ts_group_assignment
                WHERE ts_group_code = l_ts_group_code 
-                 AND ts_code = get_ts_code (p_ts_id, l_office_code);
+                 AND ts_code = l_ts_code;
       END IF;
    END unassign_ts_group;
 
