@@ -1272,10 +1272,10 @@ CREATE OR REPLACE package body cwms_xchg as
                cwms_err.raise('ERROR', l_log_msg);
             end if;
             if instr(l_xchg_set_text, '<max-interpolate') > 0  then
-               l_att_text := split(split(l_xchg_set_text, '<max-interpolate')(2), '<')(1);
+               l_att_text := split(split(l_xchg_set_text, '<max-interpolate')(2), '>')(1);
                l_attributes := make_attributes(l_att_text);
                l_interp_units := l_attributes('units');
-               l_interp_count := to_number(trim(split(split(l_xchg_set_text, '<max-interpolate')(2), '<')(1)));
+               l_interp_count := to_number(trim(split(split(l_xchg_set_text, '<max-interpolate')(2), '>')(2)));
             else
                l_interp_count := null;
                l_interp_units := null;
