@@ -11,6 +11,7 @@ VERSIONS:
    1.3   07Mar2012   MDP   Fixed tokenize(), added documents to initial page
    1.4   12Jul2012   MDP   Added API Usage Note to main page
    1.5   23May2014   MDP   Added web links
+   1.6   12Sep2014   MDP   Fixed deprecation handling
 
 JAVADOCS:
    Standard javadoc syntax applies as shown below, but the list of tags is a
@@ -389,6 +390,9 @@ css = '''
    .inline {
      white-space:nowrap;
    }
+   .deprecated {
+     text-decoration:line-through;
+   }
 '''
 web_titles = {}
 compiled_regexs = {}
@@ -723,48 +727,53 @@ def add_routine(summary_table, details_div, routine_name, routine_type, return_t
    #-----------------------#
    # build routine summary #
    #-----------------------#
+   jdoc = JDoc(replace_synonyms(jdoc_text))
+   if jdoc.is_deprecated() :
+      dep = ' deprecated'
+   else :
+      dep = ''
    if return_type :
-      return_type_elem = HtmlElem('span', attrs=[('class', 'param-type')], content=format(return_type))
+      return_type_elem = HtmlElem('span', attrs=[('class', 'param-type'+dep)], content=format(return_type))
       if fmt_type_names.has_key(return_type.upper()) or return_type.lower() in local_types :
          return_type_elem = make_reference_elem('type %s' % return_type, local_types).add_content([return_type_elem])
-      col1 = HtmlElem('td', attrs=[('class', 'routine-type-col')], content=[
+      col1 = HtmlElem('td', attrs=[('class', 'routine-type-col'+dep)], content=[
          return_type_elem,
          HtmlElem('br'),
-         HtmlElem('span', attrs=[('class', 'keyword')], content=format(routine_type, False))])
+         HtmlElem('span', attrs=[('class', 'keyword'+dep)], content=format(routine_type, False))])
    else :
-      col1 = HtmlElem('td', attrs=[('class', 'routine-type-col')], content=[
-         HtmlElem('span', attrs=[('class', 'keyword')], content=format(routine_type, False)),
+      col1 = HtmlElem('td', attrs=[('class', 'routine-type-col'+dep)], content=[
+         HtmlElem('span', attrs=[('class', 'keyword'+dep)], content=format(routine_type, False)),
          HtmlElem('br')])
-   col2 = HtmlElem('td', attrs=[('class', 'details-col')], content=[
+   col2 = HtmlElem('td', attrs=[('class', 'details-col'+dep)], content=[
       HtmlElem('p'),
       HtmlElem('a', attrs=[('name', routine_name)]),
       HtmlElem('a', attrs=[('href', '#%s' % anchor),('title', 'Click for details')], content=[
-         HtmlElem('span', attrs=[('class', 'routine-name')], content=format(routine_name, False))])])
+         HtmlElem('span', attrs=[('class', 'routine-name'+dep)], content=format(routine_name, False))])])
    param_count = len(params)
    for i in range(param_count) :
       param_name, param_usage, param_type, param_dflt = params[i]
-      param_type_elem = HtmlElem('span', attrs=[('class', 'param-type')], content=format(param_type))
+      param_type_elem = HtmlElem('span', attrs=[('class', 'param-type'+dep)], content=format(param_type))
       if fmt_type_names.has_key(param_type.upper()) or param_type.lower() in local_types :
          param_type_elem = make_reference_elem('type %s' % param_type, local_types).add_content([param_type_elem])
       if param_dflt :
-         param_dflt_elem = HtmlElem('span', attrs=[('class', 'param-value')], content=format(param_dflt))
+         param_dflt_elem = HtmlElem('span', attrs=[('class', 'param-value'+dep)], content=format(param_dflt))
          if param_dflt.lower() in local_names :
             param_dflt_elem = make_reference_elem('dflt %s' % param_dflt, local_names).add_content([param_dflt_elem])
-      if i == 0 : col2.add_content([HtmlElem('span', attrs=[('class', 'parentheses')], content='(')])
+      if i == 0 : col2.add_content([HtmlElem('span', attrs=[('class', 'parentheses'+dep)], content='(')])
       col2.add_content([
-         HtmlElem('span', attrs=[('class', 'param-name')], content=format(param_name, False)),
-         HtmlElem('span', attrs=[('class', 'keyword')], content=format(param_usage, False))])
+         HtmlElem('span', attrs=[('class', 'param-name'+dep)], content=format(param_name, False)),
+         HtmlElem('span', attrs=[('class', 'keyword'+dep)], content=format(param_usage, False))])
       if param_dflt :
          col2.add_content([
             param_type_elem,
-            HtmlElem('span', attrs=[('class', 'keyword')], content=format(' default ', False))])
-         span = HtmlElem('span', attrs=[('class', 'inline')], content=[param_dflt_elem])
+            HtmlElem('span', attrs=[('class', 'keyword'+dep)], content=format(' default ', False))])
+         span = HtmlElem('span', attrs=[('class', 'inline'+dep)], content=[param_dflt_elem])
       else :
-         span = HtmlElem('span', attrs=[('class', 'inline')], content=[param_type_elem])
+         span = HtmlElem('span', attrs=[('class', 'inline'+dep)], content=[param_type_elem])
       if i == param_count - 1 :
-         span.add_content([HtmlElem('span', attrs=[('class', 'parentheses')], content=')')])
+         span.add_content([HtmlElem('span', attrs=[('class', 'parentheses'+dep)], content=')')])
       else :
-         span.add_content([HtmlElem('span', attrs=[('class', 'comma')], content=',')])
+         span.add_content([HtmlElem('span', attrs=[('class', 'comma'+dep)], content=',')])
       col2.add_content([span])
    jdoc = JDoc(replace_synonyms(jdoc_text))
    if jdoc.has_description() : col2.add_brief(jdoc)
@@ -774,50 +783,50 @@ def add_routine(summary_table, details_div, routine_name, routine_type, return_t
    #-----------------------#
    details_div.add_content([HtmlElem('a', attrs=[('name', anchor)])])
    if return_type :
-      return_type_elem = HtmlElem('span', attrs=[('class', 'param-type')], content=format(return_type))
+      return_type_elem = HtmlElem('span', attrs=[('class', 'param-type'+dep)], content=format(return_type))
       if fmt_type_names.has_key(return_type.upper()) or return_type.lower() in local_types :
          return_type_elem = make_reference_elem('type %s' % return_type, local_types).add_content([return_type_elem])
       details_div.add_content([
          return_type_elem,
          HtmlElem('br')])
    details_div.add_content([
-      HtmlElem('span', attrs=[('class', 'keyword')], content=format(routine_type)),
+      HtmlElem('span', attrs=[('class', 'keyword'+dep)], content=format(routine_type)),
       HtmlElem('', '&nbsp;')])
    if param_count == 0 :
-      routine_table = HtmlElem('table', attrs=[('class', 'members')], content= [
+      routine_table = HtmlElem('table', attrs=[('class', 'members'+dep)], content= [
          HtmlElem('tr', [
             HtmlElem('td', [
-               HtmlElem('span', attrs=[('class', 'routine-name')], content=format(routine_name, False))])])])
+               HtmlElem('span', attrs=[('class', 'routine-name'+dep)], content=format(routine_name, False))])])])
    else :
       for i in range(param_count) :
          param_name, param_usage, param_type, param_dflt = params[i]
          col1 = HtmlElem('td')
          if i == 0 :
             col1.add_content([
-               HtmlElem('span', attrs=[('class', 'routine-name')], content=format(routine_name, False)),
-               HtmlElem('span', attrs=[('class', 'parentheses')], content='(')])
-         col2 = HtmlElem('td', [HtmlElem('span', attrs=[('class', 'param-name')], content=(format(param_name, False)))])
+               HtmlElem('span', attrs=[('class', 'routine-name'+dep)], content=format(routine_name, False)),
+               HtmlElem('span', attrs=[('class', 'parentheses'+dep)], content='(')])
+         col2 = HtmlElem('td', [HtmlElem('span', attrs=[('class', 'param-name'+dep)], content=(format(param_name, False)))])
          col3 = HtmlElem('td', [
             HtmlElem('', '&nbsp;'),
-            HtmlElem('span', attrs=[('class', 'keyword')], content=format(param_usage, False)),
+            HtmlElem('span', attrs=[('class', 'keyword'+dep)], content=format(param_usage, False)),
             HtmlElem('', '&nbsp;')])
-         param_type_elem = HtmlElem('span', attrs=[('class', 'param-type')], content=format(param_type))
+         param_type_elem = HtmlElem('span', attrs=[('class', 'param-type'+dep)], content=format(param_type))
          if fmt_type_names.has_key(param_type.upper()) or param_type.lower() in local_types :
             param_type_elem = make_reference_elem('type %s' % param_type, local_types).add_content([param_type_elem])
          col4 = HtmlElem('td', [param_type_elem])
          if param_dflt :
-            param_dflt_elem = HtmlElem('span', attrs=[('class', 'param-value')], content=format(param_dflt))
+            param_dflt_elem = HtmlElem('span', attrs=[('class', 'param-value'+dep)], content=format(param_dflt))
             if param_dflt.lower() in local_names :
                param_dflt_elem = make_reference_elem('dflt %s' % param_dflt, local_names).add_content([param_dflt_elem])
             col4.add_content([
-               HtmlElem('span', attrs=[('class', 'keyword')], content=format(' default ', False)),
+               HtmlElem('span', attrs=[('class', 'keyword'+dep)], content=format(' default ', False)),
                param_dflt_elem])
          if i == param_count - 1 :
-            col4.add_content([HtmlElem('span', attrs=[('class', 'parentheses')], content=')')])
+            col4.add_content([HtmlElem('span', attrs=[('class', 'parentheses'+dep)], content=')')])
          else :
-            col4.add_content([HtmlElem('span', attrs=[('class', 'comma')], content=',')])
+            col4.add_content([HtmlElem('span', attrs=[('class', 'comma'+dep)], content=',')])
          if i == 0 :
-            routine_table = HtmlElem('table', attrs=[('class', 'members')], content= [
+            routine_table = HtmlElem('table', attrs=[('class', 'members'+dep)], content= [
                HtmlElem('tr', [col1, col2, col3, col4])])
          else :
             routine_table.add_content([HtmlElem('tr', [col1, col2, col3, col4])])
@@ -894,7 +903,7 @@ class JDoc :
    Parses jdoc text and allows access to components
    '''
    def __init__(self, jdoc_text) :
-      self._deprecated  = ''
+      self._deprecated  = False
       self._since       = ''
       self._description = ''
       self._return      = ''
@@ -945,7 +954,7 @@ class JDoc :
             section = section[len(tag):].strip()
             if   tag == '@deprecated' :
                if self._deprecated : raise ValueError('Multiple @deprecated tags encountered');
-               self._deprecated = section
+               self._deprecated = True
             elif tag == '@author' :
                self._authors.append(section)
             elif tag == '@since' :
@@ -987,8 +996,7 @@ class JDoc :
    def has_see_also(self)     : return self.see_also_count() > 0
    def returns(self)          : return self._return
    def has_return(self)       : return bool(self._return)
-   def deprecated(self)       : return self._deprecated
-   def is_deprecated(self)    : return bool(self._deprecated)
+   def is_deprecated(self)    : return self._deprecated
    def since(self)            : return self._since
    def has_since(self)        : return bool(self._since)
    def get_param(self, name)  : return self._params_by_name[name.lower()]
@@ -1039,10 +1047,8 @@ class HtmlElem :
       if jdoc.is_deprecated() :
          self.add_content([
             HtmlElem('p'),
-            HtmlElem('dl', [
-               HtmlElem('dt', [
-                  HtmlElem('b', 'Deprecated'),
-                  HtmlElem('dl', [HtmlElem('dt', jdoc.deprecated())])])])])
+            HtmlElem('b', 'DEPRECATED')])
+         print ("DEPRECATED")
       return self
 
    def add_brief(self, jdoc) :
