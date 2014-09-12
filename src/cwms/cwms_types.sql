@@ -1689,10 +1689,10 @@ create type body location_obj_t as
                             cwms_state
                       where cwms_state.state_code = cwms_county.state_code
                    ) s on s.county_code = l.county_code
-                   left outer join cwms_time_zone   tz on tz.time_zone_code = l.time_zone_code
-                   left outer join at_location_kind lk on lk.location_kind_code = l.location_kind
-                   left outer join cwms_office      o  on o.office_code = l.office_code
-                   left outer join cwms_nation      n  on n.nation_code = l.nation_code
+                   left outer join cwms_time_zone     tz on tz.time_zone_code = l.time_zone_code
+                   left outer join cwms_location_kind lk on lk.location_kind_code = l.location_kind
+                   left outer join cwms_office        o  on o.office_code = l.office_code
+                   left outer join cwms_nation        n  on n.nation_code = l.nation_code
          )   
       loop
          self.location_ref         := location_ref_t(p_location_code);
