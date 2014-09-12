@@ -4,8 +4,8 @@ drop type vdatum_rating_t;
 drop type stream_rating_t;
 drop type rating_tab_t;
 drop type rating_t;
-drop type rating_connections_map_tab_t;
-drop type rating_connections_map_t;
+drop type rating_conn_map_tab_t;
+drop type rating_conn_map_t;
 drop type rating_ind_param_tab_t;
 drop type rating_ind_parameter_t;
 drop type rating_value_tab_t;
@@ -4021,7 +4021,7 @@ end;
 /
 show errors;
 
-create type rating_connections_map_t
+create type rating_conn_map_t
 /**
  * Holds connection information for a single source rating for a virtual rating
  *
@@ -4035,13 +4035,13 @@ as object(
 )
 /   
 
-create type rating_connections_map_tab_t
+create type rating_conn_map_tab_t
 /**
  * Holds connection information for all source ratings for a virtual rating
  *
- * @see type rating_connections_map_t
+ * @see type rating_conn_map_t
  */
-is table of rating_connections_map_t
+is table of rating_conn_map_t
 /
 
 create type rating_t
@@ -4084,7 +4084,7 @@ as object (
    current_time    varchar2(2), -- 'D' = database, 'L' = native, other = don't know
    formula_tokens  str_tab_t,
    source_ratings  str_tab_t,
-   connections_map rating_connections_map_tab_t,
+   connections_map rating_conn_map_tab_t,
    /**
     * Construct a rating_t object from data in the database.
     *
@@ -5310,10 +5310,10 @@ as
             -----------------------------------
             -- intialize the connections map --
             -----------------------------------
-            self.connections_map := rating_connections_map_tab_t();
+            self.connections_map := rating_conn_map_tab_t();
             self.connections_map.extend(self.source_ratings.count);
             for i in 1..self.source_ratings.count loop 
-               self.connections_map(i) := rating_connections_map_t(
+               self.connections_map(i) := rating_conn_map_t(
                   str_tab_t(),     -- ind_params
                   null,            -- dep_param
                   str_tab_t(),     -- units
