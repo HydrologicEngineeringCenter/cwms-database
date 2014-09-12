@@ -13,8 +13,248 @@ PROMPT rename at_sec_user_office column
 ALTER TABLE at_sec_user_office
   RENAME COLUMN user_db_office_code to db_office_code;
 
+PROMPT Switch from AT_LOCATION_KIND to CWMS_LOCATION_KIND
 
+alter table at_physical_location drop constraint at_physical_location_fk4;
+drop table at_location_kind;
 
+create table cwms_location_kind
+(
+  location_kind_code    number(10)         not null,
+  parent_location_kind  number(10),
+  location_kind_id      varchar2(32 byte)  not null,
+  representative_point  varchar2(32 byte)  not null,
+  description           varchar2(256 byte)
+);
+
+alter table cwms_location_kind add constraint cwms_location_kind_pk  primary key (location_kind_code) using index;
+alter table cwms_location_kind add constraint cwms_location_kind_u1  unique (location_kind_id) using index;
+alter table cwms_location_kind add constraint cwms_location_kind_fk1 foreign key (parent_location_kind) references cwms_location_kind (location_kind_code);
+
+comment on table  cwms_location_kind is 'Contains location kinds.';
+comment on column cwms_location_kind.location_kind_code   is 'Primary key relating location kinds locations.';
+comment on column cwms_location_kind.parent_location_kind is 'References the code of the location kind that this kind is a sub-kind of.';
+comment on column cwms_location_kind.location_kind_id     is 'Text name used as an input to the lookup.';
+comment on column cwms_location_kind.representative_point is 'The point represented by the single lat/lon in the physical location tabel.';
+comment on column cwms_location_kind.description          is 'Descriptive text about the location kind.';
+
+insert into cwms_location_kind values ( 1, null, 'POINT',      'The point itself',                'A generic geographic point');
+insert into cwms_location_kind values ( 2, null, 'STREAM',     'The downstream-most point',       'A stream or river');
+insert into cwms_location_kind values ( 3, null, 'BASIN',      'The outlet of the basin',         'A basin or water catchment');
+insert into cwms_location_kind values ( 4, null, 'PROJECT',    'The project office or other loc', 'One or more associated structures constructed to manage the flow of water in a river or stream');
+insert into cwms_location_kind values ( 5, null, 'EMBANKMENT', 'The midpoint of the centerline',  'A raised structure constructed to impede or direct the flow of water in a river or stream');
+insert into cwms_location_kind values ( 6, null, 'OUTLET',     'The discharge point or midpoint', 'A structure constructed to allow the flow of water through, under, or over an embankment');
+insert into cwms_location_kind values ( 7, null, 'TURBINE',    'The discharge point',             'An structure constructed to generate electricity from the flow of water');
+insert into cwms_location_kind values ( 8, null, 'LOCK',       'The center of the chamber',       'A structure that raises and lowers waterborne vessels between upper and lower pools');
+insert into cwms_location_kind values ( 9, 6,    'GATE',       'The discharge point',             'An outlet that can restrict or prevent the flow of water.');
+insert into cwms_location_kind values (10, 6,    'OVERFLOW',   'The midpoint of the discharge',   'An outlet that passes the flow of water without restriction above a certain elevation'); 
+
+alter table at_physical_location add constraint at_physical_location_fk4 foreign key (location_kind) references cwms_location_kind (location_kind_code);
+
+PROMPT Updating location kinds
+
+declare
+   l_location_kind varchar2(32);                                                       
+   l_type_str      varchar2(32);
+begin
+   ------------
+   -- basins --
+   ------------
+   for rec in (select basin_location_code as code from at_basin) loop
+      begin
+         l_type_str := cwms_loc.get_location_type(rec.code);
+      exception
+         when others then dbms_output.put_line(sqlerrm);
+      end;
+      if l_type_str != 'BASIN' then
+         dbms_output.put_line(cwms_loc.get_location_id(rec.code)||' is of type '||l_type_str||', expected BASIN');
+      end if; 
+      select lk.location_kind_id
+        into l_location_kind
+        from at_physical_location pl,
+             cwms_location_kind lk
+       where pl.location_code = rec.code
+         and lk.location_kind_code = pl.location_kind;
+       if l_location_kind != 'BASIN' then
+         dbms_output.put_line('Changing '||cwms_loc.get_location_id(rec.code)||' location kind to BASIN'); 
+         update at_physical_location
+            set location_kind = (select location_kind_code 
+                                   from cwms_location_kind 
+                                  where location_kind_id = 'BASIN'
+                                )
+          where location_code = rec.code;  
+       end if;
+   end loop;              
+   -------------
+   -- streams --
+   -------------
+   for rec in (select stream_location_code as code from at_stream) loop
+      begin
+         l_type_str := cwms_loc.get_location_type(rec.code);
+      exception
+         when others then dbms_output.put_line(sqlerrm);
+      end;
+      if l_type_str != 'STREAM' then
+         dbms_output.put_line(cwms_loc.get_location_id(rec.code)||' is of type '||l_type_str||', expected STREAM');
+      end if; 
+      select lk.location_kind_id
+        into l_location_kind
+        from at_physical_location pl,
+             cwms_location_kind lk
+       where pl.location_code = rec.code
+         and lk.location_kind_code = pl.location_kind;
+       if l_location_kind != 'STREAM' then
+         dbms_output.put_line('Changing '||cwms_loc.get_location_id(rec.code)||' location kind to STREAM');
+         update at_physical_location
+            set location_kind = (select location_kind_code 
+                                   from cwms_location_kind 
+                                  where location_kind_id = 'STREAM'
+                                )
+          where location_code = rec.code;  
+       end if;
+   end loop;              
+   -----------------
+   -- embankments --
+   -----------------
+   for rec in (select embankment_location_code as code from at_embankment) loop
+      begin
+         l_type_str := cwms_loc.get_location_type(rec.code);
+      exception
+         when others then dbms_output.put_line(sqlerrm);
+      end;
+      if l_type_str != 'EMBANKMENT' then
+         dbms_output.put_line(cwms_loc.get_location_id(rec.code)||' is of type '||l_type_str||', expected EMBANKMENT');
+      end if; 
+      select lk.location_kind_id
+        into l_location_kind
+        from at_physical_location pl,
+             cwms_location_kind lk
+       where pl.location_code = rec.code
+         and lk.location_kind_code = pl.location_kind;
+       if l_location_kind != 'EMBANKMENT' then
+         dbms_output.put_line('Changing '||cwms_loc.get_location_id(rec.code)||' location kind to EMBANKMENT'); 
+         update at_physical_location
+            set location_kind = (select location_kind_code 
+                                   from cwms_location_kind 
+                                  where location_kind_id = 'EMBANKMENT'
+                                )
+          where location_code = rec.code;  
+       end if;
+   end loop;              
+   -----------
+   -- locks --
+   -----------
+   for rec in (select lock_location_code as code from at_lock) loop
+      begin
+         l_type_str := cwms_loc.get_location_type(rec.code);
+      exception
+         when others then dbms_output.put_line(sqlerrm);
+      end;
+      if l_type_str != 'LOCK' then
+         dbms_output.put_line(cwms_loc.get_location_id(rec.code)||' is of type '||l_type_str||', expected LOCK');
+      end if; 
+      select lk.location_kind_id
+        into l_location_kind
+        from at_physical_location pl,
+             cwms_location_kind lk
+       where pl.location_code = rec.code
+         and lk.location_kind_code = pl.location_kind;
+       if l_location_kind != 'LOCK' then
+         dbms_output.put_line('Changing '||cwms_loc.get_location_id(rec.code)||' location kind to LOCK'); 
+         update at_physical_location
+            set location_kind = (select location_kind_code 
+                                   from cwms_location_kind 
+                                  where location_kind_id = 'LOCK'
+                                )
+          where location_code = rec.code;  
+       end if;
+   end loop;              
+   -------------
+   -- outlets --
+   -------------
+   for rec in (select outlet_location_code as code from at_outlet) loop
+      begin
+         l_type_str := cwms_loc.get_location_type(rec.code);
+      exception
+         when others then dbms_output.put_line(sqlerrm);
+      end;
+      if l_type_str != 'OUTLET' then
+         dbms_output.put_line(cwms_loc.get_location_id(rec.code)||' is of type '||l_type_str||', expected OUTLET');
+      end if; 
+      select lk.location_kind_id
+        into l_location_kind
+        from at_physical_location pl,
+             cwms_location_kind lk
+       where pl.location_code = rec.code
+         and lk.location_kind_code = pl.location_kind;
+       if l_location_kind != 'OUTLET' then
+         dbms_output.put_line('Changing '||cwms_loc.get_location_id(rec.code)||' location kind to OUTLET');
+         update at_physical_location
+            set location_kind = (select location_kind_code 
+                                   from cwms_location_kind 
+                                  where location_kind_id = 'OUTLET'
+                                )
+          where location_code = rec.code;  
+       end if;
+   end loop;              
+   --------------
+   -- projects --
+   --------------
+   for rec in (select project_location_code as code from at_project) loop
+      begin
+         l_type_str := cwms_loc.get_location_type(rec.code);
+      exception
+         when others then dbms_output.put_line(sqlerrm);
+      end;
+      if l_type_str != 'PROJECT' then
+         dbms_output.put_line(cwms_loc.get_location_id(rec.code)||' is of type '||l_type_str||', expected PROJECT');
+      end if; 
+      select lk.location_kind_id
+        into l_location_kind
+        from at_physical_location pl,
+             cwms_location_kind lk
+       where pl.location_code = rec.code
+         and lk.location_kind_code = pl.location_kind;
+       if l_location_kind != 'PROJECT' then
+         dbms_output.put_line('Changing '||cwms_loc.get_location_id(rec.code)||' location kind to PROJECT');
+         update at_physical_location
+            set location_kind = (select location_kind_code 
+                                   from cwms_location_kind 
+                                  where location_kind_id = 'PROJECT'
+                                )                                                       
+          where location_code = rec.code;  
+       end if;
+   end loop;              
+   --------------
+   -- turbines --
+   --------------
+   for rec in (select turbine_location_code as code from at_turbine) loop
+      begin
+         l_type_str := cwms_loc.get_location_type(rec.code);
+      exception
+         when others then dbms_output.put_line(sqlerrm);
+      end;
+      if l_type_str != 'TURBINE' then
+         dbms_output.put_line(cwms_loc.get_location_id(rec.code)||' is of type '||l_type_str||', expected TURBINE');
+      end if; 
+      select lk.location_kind_id
+        into l_location_kind
+        from at_physical_location pl,
+             cwms_location_kind lk
+       where pl.location_code = rec.code
+         and lk.location_kind_code = pl.location_kind;
+       if l_location_kind != 'TURBINE' then
+         dbms_output.put_line('Changing '||cwms_loc.get_location_id(rec.code)||' location kind to TURBINE');
+         update at_physical_location
+            set location_kind = (select location_kind_code 
+                                   from cwms_location_kind 
+                                  where location_kind_id = 'TURBINE'
+                                )
+          where location_code = rec.code;  
+       end if;
+   end loop;              
+end;         
+ 
 PROMPT Adding USGS Parameter Table
 
 create table at_usgs_parameter(

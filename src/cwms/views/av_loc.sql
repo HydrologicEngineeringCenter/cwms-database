@@ -2,7 +2,7 @@
 -- AV_LOC  (View)
 --
 --  Dependencies:
---   AT_LOCATION_KIND (Table)
+--   CWMS_LOCATION_KIND (Table)
 --   CWMS_NATION (Table)
 --   CWMS_OFFICE (Table)
 --   CWMS_STATE (Table)
@@ -43,7 +43,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC', null,
  * @field description          Description of location
  * @field base_loc_active_flag Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code> specifying whether the base location is marked as active
  * @field loc_active_flag      Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code> specifying whether the location is marked as active
- * @field location_kind_id     The geographic type of the location
+ * @field location_kind_id     The object type of the location
  * @field map_label            Label to be used on maps for location (may be inherited from base location)
  * @field published_latitude   Published latitude of location (may be inherited from base location)
  * @field published_longitude  Published longitude of location (may be inherited from base location)
@@ -162,7 +162,7 @@ AS
                                             cwms_office o
                                          on b.db_office_code = o.office_code)
                                      left outer join
-                                        at_location_kind
+                                        cwms_location_kind
                                      on location_kind_code = p1.location_kind)
                                  left outer join
                                     cwms_time_zone t

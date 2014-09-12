@@ -196,10 +196,10 @@ begin
                          cwms_state
                    where cwms_state.state_code = cwms_county.state_code
                 ) s on s.county_code = l.county_code
-                left outer join cwms_time_zone   tz on tz.time_zone_code = l.time_zone_code
-                left outer join at_location_kind lk on lk.location_kind_code = l.location_kind
-                left outer join cwms_office      o  on o.office_code = l.office_code
-                left outer join cwms_nation      n  on n.nation_code = l.nation_code
+                left outer join cwms_time_zone     tz on tz.time_zone_code = l.time_zone_code
+                left outer join cwms_location_kind lk on lk.location_kind_code = l.location_kind
+                left outer join cwms_office        o  on o.office_code = l.office_code
+                left outer join cwms_nation        n  on n.nation_code = l.nation_code
       )   
    loop
       l_temp_location_ref := new location_ref_t (
@@ -276,15 +276,14 @@ AS
    l_near_gage_location_code number := null;
    l_rec                     at_project%rowtype;
    l_exists                  boolean;
+   l_location_kind_id        varchar2(32);
 BEGIN
-   --
-   -- create or update the locations
-   --
-   -- note - the ignore_nulls parameter is set to 'T' on the following
-   --        calls, so if you don't want to overwrite any location info
-   --        just set everything exception location_id and db_office_id
-   --       to null in the location objects
-   --
+   -------------------
+   -- sanity checks --
+   -------------------
+   if p_project is null then
+      cwms_err.raise('NULL_ARGUMENT', 'P_PROJECT');
+   end if;
    cwms_loc.store_location( p_project.project_location,'F');
    if p_project.pump_back_location is not null then
       cwms_loc.store_location( p_project.pump_back_location,'F');
@@ -295,18 +294,24 @@ BEGIN
    --
    -- get the location codes
    --
-   l_project_location_code := cwms_loc.get_location_code(
-      p_project.project_location.location_ref.office_id,
-      p_project.project_location.location_ref.get_location_id());
+   l_project_location_code := p_project.project_location.location_ref.get_location_code;
+   l_location_kind_id := cwms_loc.check_location_kind(l_project_location_code);
+   if l_location_kind_id not in ('PROJECT', 'POINT', 'NONE') then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot switch location '
+         ||p_project.project_location.location_ref.office_id
+         ||'/'
+         ||p_project.project_location.location_ref.get_location_id
+         ||' from type '
+         ||l_location_kind_id
+         ||' to type PROJECT');
+   end if;
    if p_project.pump_back_location is not null then
-      l_pump_back_location_code := cwms_loc.get_location_code(
-         p_project.pump_back_location.location_ref.office_id,
-         p_project.pump_back_location.location_ref.get_location_id());
+      l_pump_back_location_code := p_project.pump_back_location.location_ref.get_location_code;
    end if;
    if p_project.near_gage_location is not null then
-      l_near_gage_location_code := cwms_loc.get_location_code(
-         p_project.near_gage_location.location_ref.office_id,
-         p_project.near_gage_location.location_ref.get_location_id());
+      l_near_gage_location_code := p_project.near_gage_location.location_ref.get_location_code;
    end if;
    --
    -- determine whether the project exists
@@ -353,6 +358,15 @@ BEGIN
         into at_project
       values l_rec;
    end if;
+   ---------------------------      
+   -- set the location kind --
+   ---------------------------
+   update at_physical_location
+      set location_kind = (select location_kind_code 
+                             from cwms_location_kind 
+                            where location_kind_id = 'PROJECT'
+                          )
+    where location_code = l_rec.project_location_code;                                 
 
 END store_project;
 

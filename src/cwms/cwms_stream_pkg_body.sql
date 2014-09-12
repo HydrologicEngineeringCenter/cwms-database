@@ -59,12 +59,10 @@ is
    l_office_id             varchar2(16) := nvl(upper(p_office_id), cwms_util.user_office_id); 
    l_station_units         varchar2(16) := cwms_util.get_unit_id(p_station_units, l_office_id);
    l_rec                   at_stream%rowtype;
+   l_location_kind_id      varchar2(32);
 begin
    if p_stream_id is null then
-      cwms_err.raise(
-         'INVALID_ITEM',
-         '<NULL>',
-         'CWMS stream identifier.');
+      cwms_err.raise('NULL_ARGUMENT', 'P_STREAM_ID');
    end if;
    begin
       l_location_code := cwms_loc.get_location_code(l_office_id, p_stream_id);
@@ -77,14 +75,17 @@ begin
    if l_location_code is null then
       l_exists := false;
    else
-      if cwms_loc.get_location_type(l_location_code) not in ('STREAM', 'NONE') then
+      l_location_kind_id := cwms_loc.check_location_kind(l_location_code);
+      if l_location_kind_id not in ('STREAM', 'POINT', 'NONE') then
          cwms_err.raise(
             'ERROR',
-            'The location '
+            'Cannot switch location '
             ||l_office_id
             ||'/'
             ||p_stream_id
-            ||' exists and is not a CWMS stream');
+            ||' from type '
+            ||l_location_kind_id
+            ||' to type STREAM');
       end if;
       begin
          select *
@@ -217,6 +218,15 @@ begin
         into at_stream
       values l_rec;
    end if;
+   ---------------------------      
+   -- set the location kind --
+   ---------------------------
+   update at_physical_location
+      set location_kind = (select location_kind_code 
+                             from cwms_location_kind 
+                            where location_kind_id = 'STREAM'
+                          )
+    where location_code = l_location_code;                                 
    
 end store_stream;   
 

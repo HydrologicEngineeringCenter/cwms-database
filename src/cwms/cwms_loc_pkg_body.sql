@@ -528,10 +528,8 @@ AS
 		BEGIN
 			SELECT	location_kind_code
 			  INTO	l_location_kind_code
-			  FROM	at_location_kind
-			 WHERE	location_kind_id =
-							UPPER (NVL (p_location_kind_id, 'POINT'))
-						AND office_code IN (p_db_office_code, l_cwms_office_code);
+			  FROM	cwms_location_kind
+			 WHERE	location_kind_id = UPPER (NVL (p_location_kind_id, 'POINT'));
 		EXCEPTION
 			WHEN NO_DATA_FOUND
 			THEN
@@ -1171,9 +1169,8 @@ AS
 			BEGIN
 				SELECT	location_kind_code
 				  INTO	l_location_kind_code
-				  FROM	at_location_kind
-				 WHERE	location_kind_id = UPPER (p_location_kind_id)
-							AND office_code IN (l_office_code, l_cwms_office_code);
+				  FROM	cwms_location_kind
+				 WHERE	location_kind_id = UPPER (p_location_kind_id);
 			EXCEPTION
 				WHEN NO_DATA_FOUND
 				THEN
@@ -3544,7 +3541,7 @@ AS
 						apl.latitude, apl.longitude, apl.horizontal_datum,
 						apl.public_name, apl.long_name, apl.description,
 						ctz.time_zone_name, cc.county_name, cs.state_initial,
-						apl.active_flag, alk.location_kind_id, apl.map_label,
+						apl.active_flag, clk.location_kind_id, apl.map_label,
 						apl.published_latitude, apl.published_longitude,
 						apl.office_code, apl.nation_code, apl.nearest_city
 			  INTO	p_location_type, p_elevation, p_vertical_datum, p_latitude, p_longitude,
@@ -3557,12 +3554,11 @@ AS
 						cwms_county cc,
 						cwms_state cs,
 						cwms_time_zone ctz,
-						at_location_kind alk
+						cwms_location_kind clk
 			 WHERE		 NVL (apl.county_code, 0) = cc.county_code
 						AND NVL (cc.state_code, 0) = cs.state_code
 						AND NVL (apl.time_zone_code, 0) = ctz.time_zone_code
-						AND alk.location_kind_code = apl.location_kind
-						AND alk.office_code IN (l_office_code, l_cwms_office_code)
+						AND clk.location_kind_code = apl.location_kind
 						AND apl.location_code = l_location_code;
 		EXCEPTION
 			WHEN NO_DATA_FOUND
@@ -3640,7 +3636,7 @@ AS
 		p_db_office_id 		IN 	 VARCHAR2 DEFAULT NULL
 	)
 	IS
-		l_location_kind_id		at_location_kind.location_kind_id%TYPE;
+		l_location_kind_id		cwms_location_kind.location_kind_id%TYPE;
 		l_map_label 				at_physical_location.map_label%TYPE;
 		l_published_latitude 	at_physical_location.published_latitude%TYPE;
 		l_published_longitude	at_physical_location.published_longitude%TYPE;
@@ -3674,110 +3670,6 @@ AS
 								  p_db_office_id
 								 );
 	END retrieve_location;
-
-
-	PROCEDURE create_location_kind (p_location_kind_id   IN VARCHAR2,
-											  p_description		  IN VARCHAR2
-											 )
-	IS
-		l_office_code			INTEGER := cwms_util.user_office_code;
-		l_cwms_office_code	INTEGER := cwms_util.get_office_code ('CWMS');
-		l_count					INTEGER;
-		l_location_kind_id	VARCHAR2 (32) := UPPER (TRIM (p_location_kind_id));
-		l_description			VARCHAR2 (256) := TRIM (p_description);
-	BEGIN
-		SELECT	COUNT (*)
-		  INTO	l_count
-		  FROM	at_location_kind
-		 WHERE	location_kind_id = l_location_kind_id
-					AND office_code IN (l_office_code, l_cwms_office_code);
-
-		IF l_count != 0
-		THEN
-			cwms_err.raise ('ITEM_ALREADY_EXISTS',
-								 'Location kind',
-								 l_location_kind_id
-								);
-		END IF;
-
-		INSERT INTO   at_location_kind
-			  VALUES   (
-							  cwms_seq.NEXTVAL,
-							  l_office_code,
-							  l_location_kind_id,
-							  l_description
-						  );
-	END create_location_kind;
-
-	PROCEDURE update_location_kind (p_location_kind_id   IN VARCHAR2,
-											  p_description		  IN VARCHAR2
-											 )
-	IS
-		l_office_code				 INTEGER := cwms_util.user_office_code;
-		l_cwms_office_code		 INTEGER := cwms_util.get_office_code ('CWMS');
-		l_existing_office_code	 INTEGER;
-		l_location_kind_id		 VARCHAR2 (32)
-											 := UPPER (TRIM (p_location_kind_id));
-		l_description				 VARCHAR2 (256) := TRIM (p_description);
-	BEGIN
-		SELECT	office_code
-		  INTO	l_existing_office_code
-		  FROM	at_location_kind
-		 WHERE	location_kind_id = l_location_kind_id
-					AND office_code IN (l_office_code, l_cwms_office_code);
-
-		IF l_existing_office_code = l_cwms_office_code
-		THEN
-			cwms_err.raise (
-				'ERROR',
-					'Cannot delete location kind '
-				|| l_location_kind_id
-				|| ' because it is owned by CWMS'
-			);
-		ELSE
-			UPDATE	at_location_kind
-				SET	description = l_description
-			 WHERE	office_code = l_office_code
-						AND location_kind_id = l_location_kind_id;
-		END IF;
-	EXCEPTION
-		WHEN NO_DATA_FOUND
-		THEN
-			cwms_err.raise ('INVALID_ITEM', l_location_kind_id, 'location kind');
-	END update_location_kind;
-
-	PROCEDURE delete_location_kind (p_location_kind_id IN VARCHAR2)
-	IS
-		l_office_code				 INTEGER := cwms_util.user_office_code;
-		l_cwms_office_code		 INTEGER := cwms_util.get_office_code ('CWMS');
-		l_existing_office_code	 INTEGER;
-		l_location_kind_id		 VARCHAR2 (32)
-											 := UPPER (TRIM (p_location_kind_id));
-	BEGIN
-		SELECT	office_code
-		  INTO	l_existing_office_code
-		  FROM	at_location_kind
-		 WHERE	location_kind_id = l_location_kind_id
-					AND office_code IN (l_office_code, l_cwms_office_code);
-
-		IF l_existing_office_code = l_cwms_office_code
-		THEN
-			cwms_err.raise (
-				'ERROR',
-					'Cannot delete location kind '
-				|| l_location_kind_id
-				|| ' because it is owned by CWMS'
-			);
-		ELSE
-			DELETE FROM   at_location_kind
-					WHERE   office_code = l_office_code
-							  AND location_kind_id = l_location_kind_id;
-		END IF;
-	EXCEPTION
-		WHEN NO_DATA_FOUND
-		THEN
-			cwms_err.raise ('INVALID_ITEM', l_location_kind_id, 'location kind');
-	END delete_location_kind;
 
 	--------------------------------------------------------------------------------
 	-- FUNCTION get_local_timezone
@@ -5499,7 +5391,7 @@ AS
 									LEFT OUTER JOIN at_base_location bl
 										ON (pl.base_location_code =
 												 bl.base_location_code)
-									LEFT OUTER JOIN at_location_kind lk
+									LEFT OUTER JOIN cwms_location_kind lk
 										ON (pl.location_kind = lk.location_kind_code)
 									LEFT OUTER JOIN cwms_time_zone tz
 										ON (pl.time_zone_code = tz.time_zone_code)
@@ -6162,7 +6054,7 @@ AS
 		RETURN l_cursor;
 	END cat_urls_f;
 
-   function get_location_type(
+   function check_location_kind(
       p_location_code in number)
       return varchar2
    is
@@ -6174,8 +6066,10 @@ AS
          str_tab_t('AT_EMBANKMENT', 'EMBANKMENT_LOCATION_CODE', 'EMBANKMENT'),
          str_tab_t('AT_LOCK',       'LOCK_LOCATION_CODE',       'LOCK'),
          str_tab_t('AT_PROJECT',    'PROJECT_LOCATION_CODE',    'PROJECT'));
-      l_type_names  str_tab_t := str_tab_t();
-      l_count       pls_integer;
+      l_type_names         str_tab_t := str_tab_t();
+      l_count              pls_integer;
+      l_location_kind_id   varchar2(32);
+      l_location_kind_code integer;
    begin
       for i in 1..l_table_types.count loop
          execute immediate 'select count(*) from '||l_table_types(i)(1)||' where '||l_table_types(i)(2)||' = :1'
@@ -6187,11 +6081,53 @@ AS
          end if;                                
       end loop;
       case l_type_names.count
-         when 0 then return 'NONE';
-         when 1 then return l_type_names(1);
-         else cwms_err.raise('ERROR', 'Location has multiple types: '||cwms_util.join_text(l_type_names, ', '));
+      when 0 then
+         select location_kind
+           into l_location_kind_code 
+           from at_physical_location
+          where location_code = p_location_code;
+         if l_location_kind_code is null then
+            l_location_kind_id := 'NONE';
+         else
+            select location_kind_id
+              into l_location_kind_id
+              from cwms_location_kind
+             where location_kind_code = l_location_kind_code;
+            if l_location_kind_id != 'POINT' then
+               cwms_err.raise(
+                  'ERROR',
+                  'Location '
+                  ||cwms_loc.get_location_id(p_location_code)
+                  ||' has a location kind of '
+                  ||l_location_kind_id
+                  ||' but has no entry in the AT_'
+                  ||l_location_kind_id
+                  ||' table');
+            end if;     
+         end if;              
+      when 1 then 
+         l_location_kind_id := l_type_names(1);
+      else cwms_err.raise('ERROR', 'Location has multiple types: '||cwms_util.join_text(l_type_names, ', '));
       end case;
+      return l_location_kind_id;
+   end check_location_kind;
+
+   function get_location_type(
+      p_location_code in number)
+      return varchar2
+   is
+   begin                 
+      return check_location_kind(p_location_code);
    end get_location_type;
+   
+   function check_location_kind(
+      p_location_id in varchar2,
+      p_office_id   in varchar2 default null)
+      return varchar2
+   is
+   begin
+      return check_location_kind(cwms_loc.get_location_code(p_office_id, p_location_id));
+   end check_location_kind;
 
    function get_location_type(
       p_location_id in varchar2,
@@ -6199,7 +6135,7 @@ AS
       return varchar2
    is
    begin
-      return get_location_type(cwms_loc.get_location_code(p_office_id, p_location_id));
+      return check_location_kind(p_location_id, p_office_id);
    end get_location_type;
 
    function get_vertcon_offset(
@@ -7921,6 +7857,167 @@ AS
    begin
       delete_local_vert_datum_name(get_location_code(p_office_id, p_location_id));
    end delete_local_vert_datum_name;
+            
+   function get_location_kind_ancestors(
+      p_location_kind_id  in varchar2,
+      p_include_this_kind in varchar2 default 'F')
+      return str_tab_t
+   is
+      l_ancestors          str_tab_t;
+      l_location_kind_code integer; 
+   begin
+      begin
+         select location_kind_code
+           into l_location_kind_code 
+           from cwms_location_kind 
+          where location_kind_id = upper(trim(p_location_kind_id));
+      exception
+         when no_data_found then
+            cwms_err.raise('INVALID_ITEM', p_location_kind_id, 'CWMS location kind');        
+      end;
+      select location_kind_id
+        bulk collect
+        into l_ancestors
+        from cwms_location_kind
+       where location_kind_code in (select * from table(get_location_kind_ancestors(l_location_kind_code, p_include_this_kind)));
+        
+      return l_ancestors;        
+   end get_location_kind_ancestors;
+               
+   function get_location_kind_ancestors(
+      p_location_kind_code in integer,
+      p_include_this_kind  in varchar2 default 'F')
+      return number_tab_t
+   is 
+      l_ancestors  number_tab_t;
+      l_code       integer;
+   begin                                                       
+      -------------------
+      -- sanity checks --
+      -------------------
+      if p_location_kind_code is null then
+         cwms_err.raise('NULL_ARGUMENT', 'P_LOCATION_KIND_CODE'); 
+      end if;
+      if p_include_this_kind is null then
+         cwms_err.raise('NULL_ARGUMENT', 'P_INCLUDE_THIS_KIND'); 
+      end if;
+      begin
+         select location_kind_code
+           into l_code
+           from cwms_location_kind
+          where location_kind_code = p_location_kind_code; 
+      exception
+         when no_data_found then
+            cwms_err.raise('INVALID_ITEM', p_location_kind_code, 'CWMS location kind code');        
+      end;
+      select location_kind_code
+        bulk collect
+        into l_ancestors 
+        from (select location_kind_code,
+                      rownum as seq
+                 from cwms_location_kind 
+                start with location_kind_code = p_location_kind_code 
+             connect by prior parent_location_kind = location_kind_code
+             )
+       order by seq desc;
+      if not cwms_util.return_true_or_false(p_include_this_kind) then
+         l_ancestors.trim;
+      end if;
+      return l_ancestors;       
+   end get_location_kind_ancestors;
+         
+   function get_location_kind_descendants(
+      p_location_kind_id   in varchar2,
+      p_include_this_kind  in varchar2 default 'F',
+      p_include_all_levels in varchar2 default 'T')
+      return str_tab_t
+   is
+      l_location_kind_code integer;
+      l_descendants        str_tab_t;
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      if p_location_kind_id is null then
+         cwms_err.raise('NULL_ARGUMENT', 'P_LOCATION_KIND_ID'); 
+      end if;
+      if p_include_all_levels is null then
+         cwms_err.raise('NULL_ARGUMENT', 'P_INCLUDE_ALL_LEVELS'); 
+      end if;
+      begin
+         select location_kind_code
+           into l_location_kind_code 
+           from cwms_location_kind 
+          where location_kind_id = upper(trim(p_location_kind_id));
+      exception
+         when no_data_found then
+            cwms_err.raise('INVALID_ITEM', p_location_kind_id, 'CWMS location kind');        
+      end;
+      
+      select location_kind_id
+        bulk collect
+        into l_descendants
+        from cwms_location_kind
+       where location_kind_code in (select * from table(get_location_kind_descendants(l_location_kind_code, p_include_this_kind, p_include_all_levels)));
+
+      return l_descendants;      
+   end get_location_kind_descendants;
+         
+   function get_location_kind_descendants(
+      p_location_kind_code in integer,
+      p_include_this_kind  in varchar2 default 'F',
+      p_include_all_levels in varchar2 default 'T')
+      return number_tab_t
+   is
+      l_descendants number_tab_t;
+      l_code        integer;
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      if p_location_kind_code is null then
+         cwms_err.raise('NULL_ARGUMENT', 'P_LOCATION_KIND_CODE'); 
+      end if;
+      if p_include_all_levels is null then
+         cwms_err.raise('NULL_ARGUMENT', 'P_INCLUDE_ALL_LEVELS'); 
+      end if;
+      begin
+         select location_kind_code
+           into l_code
+           from cwms_location_kind
+          where location_kind_code = p_location_kind_code; 
+      exception
+         when no_data_found then
+            cwms_err.raise('INVALID_ITEM', p_location_kind_code, 'CWMS location kind code');        
+      end;
+      
+      if cwms_util.return_true_or_false(p_include_all_levels) then
+          select location_kind_code
+             bulk collect
+             into l_descendants
+             from cwms_location_kind 
+            start with location_kind_code = p_location_kind_code 
+         connect by prior location_kind_code = parent_location_kind;
+         if not cwms_util.return_true_or_false(p_include_this_kind) then
+            l_descendants.delete(1);
+         end if; 
+      else
+         if cwms_util.return_true_or_false(p_include_this_kind) then
+            select location_kind_code
+              bulk collect
+              into l_descendants 
+              from cwms_location_kind 
+             where p_location_kind_code in (location_kind_code, parent_location_kind);
+         else
+            select location_kind_code
+              bulk collect
+              into l_descendants 
+              from cwms_location_kind 
+             where parent_location_kind = p_location_kind_code;  
+         end if;
+      end if;
+      return l_descendants;
+   end get_location_kind_descendants;      
    
 END cwms_loc;
 /

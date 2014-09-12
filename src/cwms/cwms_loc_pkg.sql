@@ -738,16 +738,6 @@ AS
 		p_alias_cursor 				OUT SYS_REFCURSOR,
 		p_db_office_id 			IN 	 VARCHAR2 DEFAULT NULL
 	);
-   -- not documeneted. use should be restricted
-	PROCEDURE create_location_kind (p_location_kind_id   IN VARCHAR2,
-											  p_description		  IN VARCHAR2
-											 );
-   -- not documeneted. use should be restricted
-	PROCEDURE update_location_kind (p_location_kind_id   IN VARCHAR2,
-											  p_description		  IN VARCHAR2
-											 );
-   -- not documeneted. use should be restricted
-	PROCEDURE delete_location_kind (p_location_kind_id IN VARCHAR2);
    /**
     * Retreives the time zone of a location
     *
@@ -1428,33 +1418,32 @@ AS
 							  )
 		RETURN SYS_REFCURSOR;
    /**
-    * Retrieves the type of the location
+    * Retrieves the location kind (object type) of the location
     *
-    * @param p_location_code The unique numeric code that identifies the location
-    *
-    * @return A string identifying the type of the location. Will be one of:
-    * <ul>
-    *   <li>BASIN</li>
-    *   <li>STREAM</li>
-    *   <li>OUTLET</li>
-    *   <li>TURBINE</li>
-    *   <li>PROJECT</li>
-    *   <li>EMBANKMENT</li>
-    *   <li>LOCK</li>
-    *   <li>NONE</li>
-    * </ul>
+    * @deprecated
+    * @see check_location_kind
     */
    function get_location_type(
       p_location_code in number)
       return varchar2;
    /**
-    * Retrieves the type of the location
+    * Retrieves the location kind (object type) of the location
     *
-    * @param p_location_id The location identifier
-    * @param p_office_id   The office that owns the location. If not specified or NULL, the session user's default office will be used
+    * @deprecated
+    * @see check_location_kind
+    */
+   function get_location_type(
+      p_location_id in varchar2,
+      p_office_id   in varchar2 default null)
+      return varchar2;
+   /**
+    * Retrieves the location kind (object type) of the location
     *
-    * @return A string identifying the type of the location. Will be one of:
+    * @param p_location_code The unique numeric code that identifies the location
+    *
+    * @return A string identifying the kind (object type) of the location. Will be one of:
     * <ul>
+    *   <li>POINT</li>
     *   <li>BASIN</li>
     *   <li>STREAM</li>
     *   <li>OUTLET</li>
@@ -1464,8 +1453,38 @@ AS
     *   <li>LOCK</li>
     *   <li>NONE</li>
     * </ul>
+    * All values exception POINT and NONE require that the locatation be referenced by the object type table of the specified location kind.
+    * If the location is not referenced by an object type table, POINT or NONE will be returned based on whether the AT_PHYSICAL_LOCATION.LOCATION_KIND column is set to POINT or is NULL, respectively. 
+    *
+    * @exception ERROR If the location is referenced by more than one object type table or the AT_PHYSICAL_LOCATION.LOCATION_KIND column doesn't agree with the object type table reference
     */
-   function get_location_type(
+   function check_location_kind(
+      p_location_code in number)
+      return varchar2;
+   /**
+    * Retrieves the location kind (object type) of the location
+    *
+    * @param p_location_id The location identifier
+    * @param p_office_id   The office that owns the location. If not specified or NULL, the session user's default office will be used
+    *
+    * @return A string identifying the kind (object type) of the location. Will be one of:
+    * <ul>
+    *   <li>POINT</li>
+    *   <li>BASIN</li>
+    *   <li>STREAM</li>
+    *   <li>OUTLET</li>
+    *   <li>TURBINE</li>
+    *   <li>PROJECT</li>
+    *   <li>EMBANKMENT</li>
+    *   <li>LOCK</li>
+    *   <li>NONE</li>
+    * </ul>
+    * All values exception POINT and NONE require that the locatation be referenced by the object type table of the specified location kind.
+    * If the location is not referenced by an object type table, POINT or NONE will be returned based on whether the AT_PHYSICAL_LOCATION.LOCATION_KIND column is set to POINT or is NULL, respectively. 
+    *
+    * @exception ERROR If the location is referenced by more than one object type table or the AT_PHYSICAL_LOCATION.LOCATION_KIND column doesn't agree with the object type table reference
+    */
+   function check_location_kind(
       p_location_id in varchar2,
       p_office_id   in varchar2 default null)
       return varchar2;
@@ -1484,7 +1503,7 @@ AS
     * @param p_description         A description of the offset
     * @param p_fail_if_exists      A flag ('T'/'F') specifying whether to fail if a vertical datum offset already exists for the location and vertical datum identifers
     * @param p_office_id           The offset that owns the location.  If not specified or NULL the session user's default office is used.
-    */
+    */   
    procedure store_vertical_datum_offset(
       p_location_id         in varchar2,
       p_vertical_datum_id_1 in varchar2,
@@ -2262,7 +2281,56 @@ AS
    procedure delete_local_vert_datum_name (
       p_location_id in varchar2,
       p_office_id   in varchar2 default null);
-      
+   /**
+    * Retrieves anscestors of the specified location kind in top-down order
+    *
+    * @param p_location_kind_id  The location_kind to retrieve the ancestor list for
+    * @param p_include_this_kind A flag ('T'/'F') specifying whether to include the specified location kind at the bottom of the list
+    *                                                                                                                                
+    * @return A top-down ordered list of the ancestors of the specified location kind 
+    */   
+   function get_location_kind_ancestors(
+      p_location_kind_id  in varchar2,
+      p_include_this_kind in varchar2 default 'F')
+      return str_tab_t;      
+   /**
+    * Retrieves anscestors of the specified location kind in top-down order
+    *
+    * @param p_location_kind_code  The location_kind to retrieve the ancestor list for
+    * @param p_include_this_kind   A flag ('T'/'F') specifying whether to include the specified location kind at the bottom of the list
+    *                                                                                                                                
+    * @return A top-down ordered list of the ancestors of the specified location kind 
+    */   
+   function get_location_kind_ancestors(
+      p_location_kind_code in integer,
+      p_include_this_kind  in varchar2 default 'F')
+      return number_tab_t;      
+   /**
+    * Retrieves descendants of the specified location kind
+    *
+    * @param p_location_kind_id   The location_kind to retrieve the descendents list for
+    * @param p_include_this_kind  A flag ('T'/'F') specifying whether to include the specified location kind in the list
+    * @param p_include_all_levels A flag ('T'/'F') specifying whether to include all generations of descendants ('T') or just children 
+    *
+    */   
+   function get_location_kind_descendants(
+      p_location_kind_id   in varchar2,
+      p_include_this_kind  in varchar2 default 'F',
+      p_include_all_levels in varchar2 default 'T')
+      return str_tab_t;      
+   /**
+    * Retrieves descendants of the specified location kind
+    *
+    * @param p_location_kind_code The location_kind to retrieve the descendents list for
+    * @param p_include_this_kind  A flag ('T'/'F') specifying whether to include the specified location kind in the list
+    * @param p_include_all_levels A flag ('T'/'F') specifying whether to include all generations of descendants ('T') or just children 
+    *
+    */   
+   function get_location_kind_descendants(
+      p_location_kind_code in integer,
+      p_include_this_kind  in varchar2 default 'F',
+      p_include_all_levels in varchar2 default 'T')
+      return number_tab_t;      
 END cwms_loc;
 /
 

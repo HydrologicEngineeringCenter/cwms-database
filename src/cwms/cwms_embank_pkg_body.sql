@@ -281,19 +281,43 @@ procedure store_embankment(
    p_fail_if_exists in varchar2 default 'T'
 )
 is
-   l_embankment  at_embankment%rowtype;
-   l_factor      binary_double;
-   l_offset      binary_double;
+   l_embankment       at_embankment%rowtype; 
+   l_factor           binary_double;
+   l_offset           binary_double;
+   l_code             integer;
+   l_location_kind_id varchar2(32);
 begin
+   if p_embankment is null then
+      cwms_err.raise('NULL_ARGUMENT', 'P_EMBANKMENT');
+   end if;
    begin
-      l_embankment.embankment_location_code := p_embankment.embankment_location.location_ref.get_location_code;
+      l_code := p_embankment.embankment_location.location_ref.get_location_code;
    exception
       when no_data_found then null;
    end;
+   if l_code is not null then
+      l_location_kind_id := cwms_loc.check_location_kind(l_code);
+      if l_location_kind_id not in ('EMBANKMENT', 'POINT', 'NONE') then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot switch location '
+            ||p_embankment.embankment_location.location_ref.office_id
+            ||'/'
+            ||p_embankment.embankment_location.location_ref.get_location_id
+            ||' from type '
+            ||l_location_kind_id
+            ||' to type EMBANKMENT');
+      end if;
+      begin
+         select *
+           into l_embankment  
+           from at_embankment
+          where embankment_location_code = l_code;
+      exception
+         when no_data_found then null;
+      end;
+   end if;
    if l_embankment.embankment_location_code is not null then
-      -----------------------
-      -- embankment exists --
-      -----------------------
       if cwms_util.is_true(p_fail_if_exists) then
          cwms_err.raise(
             'ITEM_ALREADY_EXISTS',
@@ -303,20 +327,6 @@ begin
             || p_embankment.embankment_location.location_ref.get_location_id);
             
       end if;
-      begin
-         select *
-           into l_embankment
-           from at_embankment
-          where embankment_location_code = l_embankment.embankment_location_code;
-      exception
-         when no_data_found then
-            cwms_err.raise(
-               'ERROR',
-               'No embankment exists for existing embankment location'
-               || p_embankment.embankment_location.location_ref.get_office_id
-               || '/'
-               || p_embankment.embankment_location.location_ref.get_location_id);
-      end;
    end if;
    ------------------------------------
    -- get the unit conversion factor --
@@ -419,6 +429,9 @@ begin
    l_embankment.height_max           := p_embankment.height_max * l_factor;
    l_embankment.top_width            := p_embankment.top_width * l_factor;
    cwms_loc.store_location(p_embankment.embankment_location,'F');
+   -------------------------------------
+   -- insert or update the embankment --
+   -------------------------------------
    if l_embankment.embankment_location_code is null then
       l_embankment.embankment_location_code := cwms_loc.get_location_code(
          p_embankment.embankment_location.location_ref.get_office_id,
@@ -431,6 +444,15 @@ begin
         set row = l_embankment 
       where embankment_location_code = l_embankment.embankment_location_code;
    end if;
+   ---------------------------      
+   -- set the location kind --
+   ---------------------------
+   update at_physical_location
+      set location_kind = (select location_kind_code 
+                             from cwms_location_kind 
+                            where location_kind_id = 'EMBANKMENT'
+                          )
+    where location_code = l_embankment.embankment_location_code;                                 
 end store_embankment;
 
 -- Stores the data contained within the embankment object into the database schema.

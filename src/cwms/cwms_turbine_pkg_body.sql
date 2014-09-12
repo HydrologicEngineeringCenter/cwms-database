@@ -257,23 +257,44 @@ procedure store_turbines(
    p_turbines       in project_structure_tab_t,
    p_fail_if_exists in varchar2 default 'T')
 is
-   l_fail_if_exists boolean;
-   l_exists         boolean;
-   l_project        project_obj_t;
-   l_rec            at_turbine%rowtype;
-   l_location_type  varchar2(32);
+   l_fail_if_exists   boolean;
+   l_exists           boolean;
+   l_project          project_obj_t;
+   l_rec              at_turbine%rowtype;
+   l_location_type    varchar2(32);
+   l_code             integer;
+   l_location_kind_id varchar2(32);
 begin
    -------------------
    -- sanity checks --
    -------------------
    if p_turbines is null then
-      cwms_err.raise('NULL_ARGUMENT', 'p_turbines');
+      cwms_err.raise('NULL_ARGUMENT', 'P_TURBINES');
    end if;
    l_fail_if_exists := cwms_util.is_true(p_fail_if_exists);
    for i in 1..p_turbines.count loop
       ------------------------
       -- more sanity checks --
       ------------------------
+      begin
+         l_code := p_turbines(i).structure_location.location_ref.get_location_code; 
+      exception
+         when no_data_found then null;
+      end;
+      if l_code is not null then
+         l_location_kind_id := cwms_loc.check_location_kind(l_code);
+         if l_location_kind_id not in ('TURBINE', 'POINT', 'NONE') then
+            cwms_err.raise(
+               'ERROR',
+               'Cannot switch location '
+               ||p_turbines(i).structure_location.location_ref.office_id
+               ||'/'
+               ||p_turbines(i).structure_location.location_ref.get_location_id
+               ||' from type '
+               ||l_location_kind_id
+               ||' to type TURBINE');
+         end if;
+      end if;
       check_project_structure(p_turbines(i));
       -- will raise an exception if project doesn't exist
       cwms_project.retrieve_project(
@@ -319,6 +340,15 @@ begin
          l_rec.project_location_code := l_project.project_location.location_ref.get_location_code('F');
          insert into at_turbine values l_rec; 
       end if;
+      ---------------------------      
+      -- set the location kind --
+      ---------------------------
+      update at_physical_location
+         set location_kind = (select location_kind_code 
+                                from cwms_location_kind 
+                               where location_kind_id = 'TURBINE'
+                             )
+       where location_code = l_rec.turbine_location_code;                                 
    end loop;
 end store_turbines;
 --------------------------------------------------------------------------------

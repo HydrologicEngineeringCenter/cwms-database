@@ -489,24 +489,44 @@ procedure store_outlets(
    p_rating_group   in varchar2 default null,
    p_fail_if_exists in varchar2 default 'T')
 is
-   l_fail_if_exists boolean;
-   l_exists         boolean;
-   l_project        project_obj_t;
-   l_rec            at_outlet%rowtype;
-   l_rating_group   varchar2(65);
-   l_location_type  varchar2(32);
+   l_fail_if_exists   boolean;
+   l_exists           boolean;
+   l_project          project_obj_t;
+   l_rec              at_outlet%rowtype;
+   l_rating_group     varchar2(65);
+   l_code             integer;
+   l_location_kind_id varchar2(32);
 begin
    -------------------
    -- sanity checks --
    -------------------
    if p_outlets is null then
-      cwms_err.raise('NULL_ARGUMENT', 'p_outlets');
+      cwms_err.raise('NULL_ARGUMENT', 'P_OUTLETS');
    end if;
    l_fail_if_exists := cwms_util.is_true(p_fail_if_exists);
    for i in 1..p_outlets.count loop
       ------------------------
       -- more sanity checks --
       ------------------------
+      begin
+         l_code := p_outlets(i).structure_location.location_ref.get_location_code; 
+      exception
+         when no_data_found then null;
+      end;
+      if l_code is not null then
+         l_location_kind_id := cwms_loc.check_location_kind(l_code);
+         if l_location_kind_id not in ('OUTLET', 'POINT', 'NONE') then
+            cwms_err.raise(
+               'ERROR',
+               'Cannot switch location '
+               ||p_outlets(i).structure_location.location_ref.office_id
+               ||'/'
+               ||p_outlets(i).structure_location.location_ref.get_location_id
+               ||' from type '
+               ||l_location_kind_id
+               ||' to type OUTLET');
+         end if;
+      end if;
       check_project_structure(p_outlets(i));
       -- will raise an exception if project doesn't exist
       cwms_project.retrieve_project(
@@ -527,16 +547,6 @@ begin
       begin          
          l_rec.outlet_location_code := p_outlets(i).structure_location.location_ref.get_location_code('F');
          l_exists := true;
-         l_location_type := cwms_loc.get_location_type(l_rec.outlet_location_code);
-         if l_location_type not in ('NONE', 'OUTLET') then
-            cwms_err.raise(
-               'ERROR',
-               'CWMS location '             
-               ||p_outlets(i).structure_location.location_ref.get_office_id
-               ||'/'
-               ||p_outlets(i).structure_location.location_ref.get_location_id
-               ||' exists but is identified as type '||l_location_type);
-         end if;
          if l_fail_if_exists then
             cwms_err.raise(
                'ITEM_ALREADY_EXISTS',
@@ -564,6 +574,15 @@ begin
       l_rec.outlet_location_code,
       l_rec.project_location_code,
       l_rating_group);
+      ---------------------------      
+      -- set the location kind --
+      ---------------------------
+      update at_physical_location
+         set location_kind = (select location_kind_code 
+                                from cwms_location_kind 
+                               where location_kind_id = 'OUTLET'
+                             )
+       where location_code = l_rec.outlet_location_code;                                 
    end loop;
 end store_outlets;
 --------------------------------------------------------------------------------

@@ -431,70 +431,6 @@ IS
          RETURN t;
       END cat_location2_obj2tab;
 
-   -------------------------------------------------------------------------------
-   -- CAT_LOCATION_KIND record-to-object conversion function
-   --
-      FUNCTION cat_location_kind_rec2obj (r IN cat_location_kind_rec_t)
-         RETURN cat_location_kind_obj_t
-      IS
-      BEGIN
-         RETURN cat_location_kind_obj_t (
-            r.office_id,
-            r.location_kind_id,
-            r.description
-            );
-      END cat_location_kind_rec2obj;
-
-   -------------------------------------------------------------------------------
-   -- CAT_LOCATION_KIND table-to-object conversion function
-   --
-      FUNCTION cat_location_kind_tab2obj (t IN cat_location_kind_tab_t)
-         RETURN cat_location_kind_otab_t
-      IS
-         o   cat_location_kind_otab_t;
-      BEGIN
-         FOR i IN 1 .. t.LAST
-         LOOP
-            o (i) := cat_location_kind_rec2obj (t (i));
-         END LOOP;
-
-         RETURN o;
-      END cat_location_kind_tab2obj;
-
-   -------------------------------------------------------------------------------
-   -- CAT_LOCATION_KIND object-to-record conversion function
-   --
-      FUNCTION cat_location_kind_obj2rec (o IN cat_location_kind_obj_t)
-         RETURN cat_location_kind_rec_t
-      IS
-         r   cat_location_kind_rec_t := NULL;
-      BEGIN
-         IF o IS NOT NULL
-         THEN
-            r.office_id        := o.office_id;
-            r.location_kind_id := o.location_kind_id;
-            r.description      := o.description;
-         END IF;
-
-         RETURN r;
-      END cat_location_kind_obj2rec;
-
-   -------------------------------------------------------------------------------
-   -- CAT_LOCATION_KIND object-to-table conversion function
-   --
-      FUNCTION cat_location_kind_obj2tab (o IN cat_location_kind_otab_t)
-         RETURN cat_location_kind_tab_t
-      IS
-         t   cat_location_kind_tab_t;
-      BEGIN
-         FOR i IN 1 .. o.LAST
-         LOOP
-            t (i) := cat_location_kind_obj2rec (o (i));
-         END LOOP;
-
-         RETURN t;
-      END cat_location_kind_obj2tab;
-
    ---------------------------------------------------------------------------------
    ---- CAT_LOC_ALIAS record-to-object conversion function
    ----
@@ -2152,7 +2088,7 @@ END cat_ts_id;
                                apl.long_name,
                                apl.description,
                                apl.active_flag,
-                               alk.location_kind_id,
+                               clk.location_kind_id,
                                apl.map_label,
                                apl.published_latitude,
                                apl.published_longitude,
@@ -2166,7 +2102,7 @@ END cat_ts_id;
                                cwms_state cs,
                                cwms_time_zone ctz,
                                cwms_unit_conversion cuc,
-                               at_location_kind alk,
+                               cwms_location_kind clk,
                                at_loc_group_assignment atlga
                          where abl.db_office_code = l_db_office_code
                            and (cc.county_code = nvl (apl.county_code, 0))
@@ -2177,7 +2113,7 @@ END cat_ts_id;
                            and apl.location_code != 0
                            and cuc.from_unit_id = 'm'
                            and cuc.to_unit_id = p_elevation_unit
-                           and alk.location_kind_code = apl.location_kind
+                           and clk.location_kind_code = apl.location_kind
                            and atlga.loc_group_code = l_loc_group_code
                            and apl.location_code = atlga.location_code
                            and apl.sub_location_id is null
@@ -2240,7 +2176,7 @@ END cat_ts_id;
                                apl.long_name,
                                apl.description,
                                apl.active_flag,
-                               alk.location_kind_id,
+                               clk.location_kind_id,
                                apl.map_label,
                                apl.published_latitude,
                                apl.published_longitude,
@@ -2254,7 +2190,7 @@ END cat_ts_id;
                                cwms_state cs,
                                cwms_time_zone ctz,
                                cwms_unit_conversion cuc,
-                               at_location_kind alk,
+                               cwms_location_kind clk,
                                at_loc_group_assignment atlga
                          where abl.db_office_code = l_db_office_code
                            and (cc.county_code = nvl (apl.county_code, 0))
@@ -2265,7 +2201,7 @@ END cat_ts_id;
                            and apl.location_code != 0
                            and cuc.from_unit_id = 'm'
                            and cuc.to_unit_id = p_elevation_unit
-                           and alk.location_kind_code = apl.location_kind
+                           and clk.location_kind_code = apl.location_kind
                            and atlga.loc_group_code = l_loc_group_code
                            and apl.location_code = atlga.location_code
                       ) loc
@@ -2330,7 +2266,7 @@ END cat_ts_id;
                                apl.long_name,
                                apl.description,
                                apl.active_flag,
-                               alk.location_kind_id,
+                               clk.location_kind_id,
                                apl.map_label,
                                apl.published_latitude,
                                apl.published_longitude,
@@ -2344,7 +2280,7 @@ END cat_ts_id;
                                cwms_state cs,
                                cwms_time_zone ctz,
                                cwms_unit_conversion cuc,
-                               at_location_kind alk
+                               cwms_location_kind clk
                          where abl.db_office_code = l_db_office_code
                            and (cc.county_code = nvl (apl.county_code, 0))
                            and (cs.state_code = nvl (cc.state_code, 0))
@@ -2354,7 +2290,7 @@ END cat_ts_id;
                            and apl.location_code != 0
                            and cuc.from_unit_id = 'm'
                            and cuc.to_unit_id = p_elevation_unit
-                           and alk.location_kind_code = apl.location_kind
+                           and clk.location_kind_code = apl.location_kind
                            and apl.sub_location_id is null
                       ) loc
                       left outer join
@@ -2415,7 +2351,7 @@ END cat_ts_id;
                                apl.long_name,
                                apl.description,
                                apl.active_flag,
-                               alk.location_kind_id,
+                               clk.location_kind_id,
                                apl.map_label,
                                apl.published_latitude,
                                apl.published_longitude,
@@ -2429,7 +2365,7 @@ END cat_ts_id;
                                cwms_state cs,
                                cwms_time_zone ctz,
                                cwms_unit_conversion cuc,
-                               at_location_kind alk
+                               cwms_location_kind clk
                          where abl.db_office_code = l_db_office_code
                            and (cc.county_code = nvl (apl.county_code, 0))
                            and (cs.state_code = nvl (cc.state_code, 0))
@@ -2439,7 +2375,7 @@ END cat_ts_id;
                            and apl.location_code != 0
                            and cuc.from_unit_id = 'm'
                            and cuc.to_unit_id = p_elevation_unit
-                           and alk.location_kind_code = apl.location_kind
+                           and clk.location_kind_code = apl.location_kind
                       ) loc
                       left outer join
                       ( select office_code,
@@ -2492,83 +2428,6 @@ END cat_ts_id;
 
       RETURN;
    END cat_location2_tab;
-
--------------------------------------------------------------------------------
--- CAT_LOCATION_KIND
---
--- These procedures and functions catalog location kinds in the CWMS.
--- database.
---
--- Function returns may be used as source of SELECT statements.
---
--- The returned records contain the following columns:
---
---    Name              Datatype      Description
---    ------------------------------ --------------------------------
---    office_id        varchar2(16)   owning office of location kind
---    location_kind_id varchar2(32)   location kind id
---    description      varchar2(256)  description of location kind
---
--------------------------------------------------------------------------------
--- procedure cat_location_kind(...)
---
---
-   PROCEDURE cat_location_kind (
-      p_cwms_cat              out sys_refcursor,
-      p_location_kind_id_mask in  varchar2 default null,
-      p_office_id_mask        in  varchar2 default null
-   )
-   is
-      l_location_kind_id_mask varchar2(32);
-      l_office_id_mask        varchar2(16);
-   begin
-      l_location_kind_id_mask := cwms_util.normalize_wildcards(
-         upper(nvl(p_location_kind_id_mask, '*')), true);
-      l_office_id_mask        := cwms_util.normalize_wildcards(
-         upper(nvl(p_office_id_mask, cwms_util.user_office_id)), true);
-      open p_cwms_cat for 
-         select o.office_id,
-                k.location_kind_id,
-                k.description
-           from cwms_office o,
-                at_location_kind k
-          where k.location_kind_id like l_location_kind_id_mask escape '\'
-            and (o.office_id like l_office_id_mask escape '\' or o.office_id = 'CWMS')
-            and o.office_code = k.office_code
-       order by o.office_id,
-                k.location_kind_id;
-   end cat_location_kind;
-
--------------------------------------------------------------------------------
--- function cat_location_kind_tab(...)
---
---
-   FUNCTION cat_location_kind_tab (
-      p_location_kind_id_mask in  varchar2 default null,
-      p_office_id_mask        in  varchar2 default null
-   )
-      RETURN cat_location_kind_tab_t PIPELINED
-   IS
-      query_cursor   sys_refcursor;
-      output_row     cat_location_kind_rec_t;
-   BEGIN
-      cat_location_kind (
-         query_cursor,
-         p_location_kind_id_mask,
-         p_office_id_mask);
-
-      LOOP
-         FETCH query_cursor
-          INTO output_row;
-
-         EXIT WHEN query_cursor%NOTFOUND;
-         PIPE ROW (output_row);
-      END LOOP;
-
-      CLOSE query_cursor;
-
-      RETURN;
-   end cat_location_kind_tab;
 
    --------------------------------------------------------------------------------
    -- DEPRICATED --

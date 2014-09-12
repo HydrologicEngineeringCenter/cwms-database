@@ -124,7 +124,6 @@ tableInfo = [
     {"ID" : "logMessageTypes",    "TABLE" : "CWMS_LOG_MESSAGE_TYPES",     "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "logMessagePropTypes","TABLE" : "CWMS_LOG_MESSAGE_PROP_TYPES","SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "interpolateUnits"   ,"TABLE" : "CWMS_INTERPOLATE_UNITS",     "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "locationKind",       "TABLE" : "AT_LOCATION_KIND",           "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "gageMethod",         "TABLE" : "CWMS_GAGE_METHOD",           "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "gageType",           "TABLE" : "CWMS_GAGE_TYPE",             "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "nation",             "TABLE" : "CWMS_NATION",                "SCHEMA" : "CWMS", "USERACCESS" : True},
@@ -134,6 +133,7 @@ tableInfo = [
     {"ID" : "vertconData",        "TABLE" : "CWMS_VERTCON_DATA",          "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "verticalDatum",      "TABLE" : "CWMS_VERTICAL_DATUM",        "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "storeRule",          "TABLE" : "CWMS_STORE_RULE",            "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "locationKind",       "TABLE" : "CWMS_LOCATION_KIND",         "SCHEMA" : "CWMS", "USERACCESS" : True},
 ]
 
 tables = []
@@ -4867,18 +4867,6 @@ interpolateUnits = [
     [2, 'intervals'],
 ]
 
-#---------------------#
-# LOCATION CATEGORIES #
-#---------------------#
-if __name__ in ("__main__", "main") : sys.stderr.write("Processing location categories \n")
-locationKinds = [
-#   CODE  ID        DESCRIPTION
-#   ----  --------  -----------------------------------------------------------------------------
-    [1,   'POINT',        'A generic location that can be represented by a single lat/lon.'               ],
-    [2,   'STREAM',       'A stream, the lat/lon represent the downstream-most point.'                    ],
-    [3,   'BASIN',        'A basin, the lat/lon represent the point on the major stream draing the basin.'],
-]
-
 #--------------#
 # GAGE METHODS #
 #--------------#
@@ -5265,8 +5253,25 @@ streamTypes = [
     ['DA6',  'MULTIPLE', None,        'HIGHLY VARIABLE', 'HIGHLY VARIABLE', '< 0.005',      'SILT/CLAY'],   
 ]
 
+#----------------#
+# location kinds #                            
+#----------------#
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing location kinds \n")
+locationKinds = [
+    [ 1, None, 'POINT',      'The point itself',                'A generic geographic point'                                                                                    ],
+    [ 2,    1, 'STREAM',     'The downstream-most point',       'A stream or river'                                                                                             ],
+    [ 3,    1, 'BASIN',      'The outlet of the basin',         'A basin or water catchment'                                                                                    ],
+    [ 4,    1, 'PROJECT',    'The project office or other loc', 'One or more associated structures constructed to manage the flow of water in a river or stream'                ],
+    [ 5,    1, 'EMBANKMENT', 'The midpoint of the centerline',  'A structure protruding above the ground constructed to impede or direct the flow of water in a river or stream'],
+    [ 6,    1, 'OUTLET',     'The discharge point or midpoint', 'A structure constructed to allow the flow of water through, under, or over an embankment'                      ],
+    [ 7,    1, 'TURBINE',    'The discharge point',             'A structure constructed to generate electricity from the flow of water'                                        ],
+    [ 8,    1, 'LOCK',       'The center of the chamber',       'A structure that raises and lowers waterborne vessels between upper and lower pools'                           ],
+    [ 9,    6, 'GATE',       'The discharge point',             'An outlet that can restrict or prevent the flow of water.'                                                     ],
+    [10,    6, 'OVERFLOW',   'The midpoint of the discharge',   'An outlet that passes the flow of water without restriction above a certain elevation'                         ], 
+]
+
 def main() :
-    global db_office_id
+    global db_office_id                 
     global office_ids
     global prefix
     global testAccount
@@ -8395,65 +8400,6 @@ def main() :
                 displayUnitsLoadTemplate +="/\n"
     displayUnitsLoadTemplate +="COMMIT;\n"
     
-    
-    
-    sys.stderr.write("Building locationKindCreationTemplate\n")
-    locationKindCreationTemplate = \
-    '''
-    -- ## TABLE ###############################################
-    -- ## @TABLE
-    -- ##
-    CREATE TABLE @TABLE
-    (
-       LOCATION_KIND_CODE NUMBER(10)     NOT NULL,
-       OFFICE_CODE        NUMBER(10)     NOT NULL,
-       LOCATION_KIND_ID   VARCHAR2(32)   NOT NULL,
-       DESCRIPTION        VARCHAR2(256),
-       CONSTRAINT @TABLE_PK  PRIMARY KEY (LOCATION_KIND_CODE) USING INDEX,
-       CONSTRAINT @TABLE_U1  UNIQUE (OFFICE_CODE, LOCATION_KIND_ID)
-    )
-    tablespace @DATASPACE
-    PCTUSED    0
-    PCTFREE    10
-    INITRANS   1
-    MAXTRANS   255
-    STORAGE    (
-            INITIAL          10K
-            NEXT             10K
-            MINEXTENTS       1
-            MAXEXTENTS       UNLIMITED
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-    LOGGING 
-    NOCOMPRESS 
-    NOCACHE
-    NOPARALLEL
-    MONITORING;
-    
-    -------------------------------
-    -- @TABLE constraints  --
-    --
-    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK1 CHECK(TRIM(UPPER(LOCATION_KIND_ID)) = LOCATION_KIND_ID);
-    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK1 FOREIGN KEY (OFFICE_CODE) REFERENCES CWMS_OFFICE (OFFICE_CODE);
-    
-    ---------------------------
-    -- @TABLE comments --
-    --
-    COMMENT ON TABLE  @TABLE                    IS 'Contains location kinds.';
-    COMMENT ON COLUMN @TABLE.LOCATION_KIND_CODE IS 'Primary key relating location kinds to other entities.';
-    COMMENT ON COLUMN @TABLE.OFFICE_CODE        IS 'Office that generated/owns this kind code';
-    COMMENT ON COLUMN @TABLE.LOCATION_KIND_ID   IS 'Text name used as an input to the lookup.';
-    COMMENT ON COLUMN @TABLE.DESCRIPTION        IS 'Optional description or comments.';
-    
-    COMMIT;
-    '''
-    sys.stderr.write("Building locationKindLoadTemplate\n")
-    locationKindLoadTemplate = ''
-    for code, id, description in locationKinds :
-        locationKindLoadTemplate += "INSERT INTO @TABLE VALUES (%d, 53, '%s', '%s');\n" % (code, id, description)
-    locationKindLoadTemplate += "COMMIT;\n"
-    
     sys.stderr.write("Building gageMethodCreationTemplate\n")
     gageMethodCreationTemplate = \
     '''
@@ -8901,6 +8847,50 @@ def main() :
     insert into @TABLE values(5, 'DELETE INSERT',               'Delete all existing values in time window of incoming data and then insert incoming data');
     '''
 
+    sys.stderr.write("Building locationKindCreationTemplate\n")
+    locationKindCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    create table @TABLE
+    (
+      location_kind_code    number(10)         not null,
+      parent_location_kind  number(10),
+      location_kind_id      varchar2(32 byte)  not null,
+      representative_point  varchar2(32 byte)  not null,
+      description           varchar2(256 byte)
+    )
+    /
+    
+    alter table @TABLE add constraint @TABLE_pk  primary key (location_kind_code) using index;
+    alter table @TABLE add constraint @TABLE_u1  unique (location_kind_id) using index;
+    alter table @TABLE add constraint @TABLE_fk1 foreign key (parent_location_kind) references @TABLE (location_kind_code);
+    ---------------------------
+    -- @TABLE comments --
+    --
+    comment on table  @TABLE is 'Contains location kinds.';
+    comment on column @TABLE.location_kind_code   is 'Primary key relating location kinds locations.';
+    comment on column @TABLE.parent_location_kind is 'References the code of the location kind that this kind is a sub-kind of.';
+    comment on column @TABLE.location_kind_id     is 'Text name used as an input to the lookup.';
+    comment on column @TABLE.representative_point is 'The point represented by the single lat/lon in the physical location tabel.';
+    comment on column @TABLE.description          is 'Descriptive text about the location kind.';
+        
+    COMMIT;
+    '''
+
+    sys.stderr.write("Building locationKindLoadTemplate\n")
+    locationKindLoadTemplate = ""
+    for code, parentCode, name, representativePoint, description in locationKinds :
+        locationKindLoadTemplate += "insert into @TABLE values(%s, %s, '%s', '%s', '%s');\n" % (
+            code, 
+            (parentCode,'NULL')[parentCode is None], 
+            name, 
+            representativePoint, 
+            description)
+        
+    locationKindLoadTemplate += "COMMIT;\n"
+    
     #==
     #====
     #======

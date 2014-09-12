@@ -61,10 +61,7 @@ begin
    -- sanity checks --
    -------------------
    if p_basin_id is null then
-      cwms_err.raise(
-         'INVALID_ITEM',
-         '<NULL>',
-         'CWMS basin identifier');
+      cwms_err.raise('NULL_ARGUMENT', 'P_BASIN_ID');
    end if;
    if p_area_unit is null then
       if coalesce(p_total_drainage_area, p_contributing_drainage_area) is not null then
@@ -100,15 +97,18 @@ begin
       end;
       if l_rec.basin_location_code is null then
          l_rec.basin_location_code := cwms_seq.nextval;
-      else
-         if cwms_loc.get_location_type(l_rec.basin_location_code) not in ('BASIN', 'NONE') then
+      else                    
+         l_location_kind_id := cwms_loc.check_location_kind(l_rec.basin_location_code);
+         if l_location_kind_id not in ('BASIN', 'POINT', 'NONE') then
             cwms_err.raise(
                'ERROR',
-               'The location '
+               'Cannot switch location '
                ||l_office_id
                ||'/'
                ||p_basin_id
-               ||' exists and is not a CWMS basin');
+               ||' from type '
+               ||l_location_kind_id
+               ||' to type BASIN');
          end if;
       end if;
    end if;
@@ -155,7 +155,16 @@ begin
       insert
         into at_basin
       values l_rec;
-   end if;   
+   end if;
+   ---------------------------      
+   -- set the location kind --
+   ---------------------------
+   update at_physical_location
+      set location_kind = (select location_kind_code 
+                             from cwms_location_kind 
+                            where location_kind_id = 'BASIN'
+                          )
+    where location_code = l_rec.basin_location_code;                                 
 end store_basin;   
       
 --------------------------------------------------------------------------------

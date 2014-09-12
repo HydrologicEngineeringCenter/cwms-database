@@ -207,7 +207,7 @@ begin
              cwms_time_zone tz,
              cwms_base_parameter bp,
              cwms_unit u,
-             at_location_kind lk,
+             cwms_location_kind lk,
              at_base_location bl,
              cwms_office o,
              cwms_nation n
@@ -217,7 +217,6 @@ begin
          and bp.base_parameter_id = 'Elev'
          and u.unit_code = bp.unit_code
          and bl.base_location_code = l_lock_loc_rec.base_location_code
-         and (lk.office_code = bl.db_office_code or lk.office_code = l_cwms_office_code)
          and lk.location_kind_code = nvl(l_lock_loc_rec.location_kind, 1)
          and o.office_code = nvl(l_lock_loc_rec.office_code, 0)
          -- and o.office_code = l_lock_loc_rec.office_code
@@ -302,13 +301,34 @@ procedure store_lock(
    p_lock           IN lock_obj_t,           -- a populated lock object type.
    p_fail_if_exists IN VARCHAR2 DEFAULT 'T') -- a flag that will cause the procedure to fail if the lock already exists
 is
-   l_lock_rec      at_lock%rowtype;
-   l_exists        boolean;
-   l_length_factor binary_double;
-   l_length_offset binary_double;
-   l_volume_factor binary_double;
-   l_volume_offset binary_double;
+   l_lock_rec         at_lock%rowtype; 
+   l_code             integer;
+   l_location_kind_id varchar2(32);   
+   l_exists           boolean;
+   l_length_factor    binary_double;
+   l_length_offset    binary_double;
+   l_volume_factor    binary_double;
+   l_volume_offset    binary_double;
 begin
+   begin
+      l_code := p_lock.lock_location.location_ref.get_location_code;
+   exception
+      when no_data_found then null;
+   end;
+   if l_code is not null then
+      l_location_kind_id := cwms_loc.check_location_kind(l_code);
+      if l_location_kind_id not in ('LOCK', 'POINT', 'NONE') then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot switch location '
+            ||p_lock.lock_location.location_ref.office_id
+            ||'/'
+            ||p_lock.lock_location.location_ref.get_location_id
+            ||' from type '
+            ||l_location_kind_id
+            ||' to type LOCK');
+      end if;
+   end if;
    -------------------------------------
    -- retrieve the lock, if it exists --
    -------------------------------------
@@ -410,20 +430,23 @@ begin
       ------------
       -- insert --
       ------------
-      begin
-         l_lock_rec.lock_location_code := p_lock.lock_location.location_ref.get_location_code;
-      exception
-         when no_data_found then
-            --------------------------------------
-            -- need to create the lock location --
-            --------------------------------------
-            cwms_loc.store_location(p_lock.lock_location,'F');
-            l_lock_rec.lock_location_code := p_lock.lock_location.location_ref.get_location_code;
-      end;
+      if l_code is null then
+         cwms_loc.store_location(p_lock.lock_location,'F');
+      end if;
+      l_lock_rec.lock_location_code := p_lock.lock_location.location_ref.get_location_code;
       insert
         into at_lock
       values l_lock_rec;
    end if;   
+   ---------------------------      
+   -- set the location kind --
+   ---------------------------
+   update at_physical_location
+      set location_kind = (select location_kind_code 
+                             from cwms_location_kind 
+                            where location_kind_id = 'LOCK'
+                          )
+    where location_code = l_lock_rec.lock_location_code;                                 
 end store_lock;
 
 
