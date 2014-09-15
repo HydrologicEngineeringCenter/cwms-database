@@ -5258,16 +5258,16 @@ streamTypes = [
 #----------------#
 if __name__ in ("__main__", "main") : sys.stderr.write("Processing location kinds \n")
 locationKinds = [
-    [ 1, None, 'POINT',      'The point itself',                'A generic geographic point'                                                                                    ],
-    [ 2,    1, 'STREAM',     'The downstream-most point',       'A stream or river'                                                                                             ],
-    [ 3,    1, 'BASIN',      'The outlet of the basin',         'A basin or water catchment'                                                                                    ],
-    [ 4,    1, 'PROJECT',    'The project office or other loc', 'One or more associated structures constructed to manage the flow of water in a river or stream'                ],
-    [ 5,    1, 'EMBANKMENT', 'The midpoint of the centerline',  'A structure protruding above the ground constructed to impede or direct the flow of water in a river or stream'],
-    [ 6,    1, 'OUTLET',     'The discharge point or midpoint', 'A structure constructed to allow the flow of water through, under, or over an embankment'                      ],
-    [ 7,    1, 'TURBINE',    'The discharge point',             'A structure constructed to generate electricity from the flow of water'                                        ],
-    [ 8,    1, 'LOCK',       'The center of the chamber',       'A structure that raises and lowers waterborne vessels between upper and lower pools'                           ],
-    [ 9,    6, 'GATE',       'The discharge point',             'An outlet that can restrict or prevent the flow of water.'                                                     ],
-    [10,    6, 'OVERFLOW',   'The midpoint of the discharge',   'An outlet that passes the flow of water without restriction above a certain elevation'                         ], 
+    [ 1, None, 'UNSPECIFIED', 'The point identified with loc',   'A location with no entry in one of the location kind tables'                                                   ],
+    [ 2,    1, 'STREAM',      'The downstream-most point',       'A stream or river'                                                                                             ],
+    [ 3,    1, 'BASIN',       'The outlet of the basin',         'A basin or water catchment'                                                                                    ],
+    [ 4,    1, 'PROJECT',     'The project office or other loc', 'One or more associated structures constructed to manage the flow of water in a river or stream'                ],
+    [ 5,    1, 'EMBANKMENT',  'The midpoint of the centerline',  'A structure protruding above the ground constructed to impede or direct the flow of water in a river or stream'],
+    [ 6,    1, 'OUTLET',      'The discharge point or midpoint', 'A structure constructed to allow the flow of water through, under, or over an embankment'                      ],
+    [ 7,    1, 'TURBINE',     'The discharge point',             'A structure constructed to generate electricity from the flow of water'                                        ],
+    [ 8,    1, 'LOCK',        'The center of the chamber',       'A structure that raises and lowers waterborne vessels between upper and lower pools'                           ],
+    [ 9,    6, 'GATE',        'The discharge point',             'An outlet that can restrict or prevent the flow of water.'                                                     ],
+    [10,    6, 'OVERFLOW',    'The midpoint of the discharge',   'An outlet that passes the flow of water without restriction above a certain elevation'                         ], 
 ]
 
 def main() :
@@ -8861,7 +8861,7 @@ def main() :
       representative_point  varchar2(32 byte)  not null,
       description           varchar2(256 byte)
     )
-    /
+    /                                                      
     
     alter table @TABLE add constraint @TABLE_pk  primary key (location_kind_code) using index;
     alter table @TABLE add constraint @TABLE_u1  unique (location_kind_id) using index;

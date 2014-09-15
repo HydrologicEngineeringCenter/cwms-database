@@ -76,7 +76,7 @@ begin
       l_exists := false;
    else
       l_location_kind_id := cwms_loc.check_location_kind(l_location_code);
-      if l_location_kind_id not in ('STREAM', 'POINT', 'NONE') then
+      if l_location_kind_id not in ('STREAM', 'UNSPECIFIED', 'NONE') then
          cwms_err.raise(
             'ERROR',
             'Cannot switch location '

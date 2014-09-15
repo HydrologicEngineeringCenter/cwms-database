@@ -296,7 +296,7 @@ BEGIN
    --
    l_project_location_code := p_project.project_location.location_ref.get_location_code;
    l_location_kind_id := cwms_loc.check_location_kind(l_project_location_code);
-   if l_location_kind_id not in ('PROJECT', 'POINT', 'NONE') then
+   if l_location_kind_id not in ('PROJECT', 'UNSPECIFIED', 'NONE') then
       cwms_err.raise(
          'ERROR',
          'Cannot switch location '

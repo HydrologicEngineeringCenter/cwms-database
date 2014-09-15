@@ -1443,7 +1443,7 @@ AS
     *
     * @return A string identifying the kind (object type) of the location. Will be one of:
     * <ul>
-    *   <li>POINT</li>
+    *   <li>UNSPECIFIED</li>
     *   <li>BASIN</li>
     *   <li>STREAM</li>
     *   <li>OUTLET</li>
@@ -1453,8 +1453,8 @@ AS
     *   <li>LOCK</li>
     *   <li>NONE</li>
     * </ul>
-    * All values exception POINT and NONE require that the locatation be referenced by the object type table of the specified location kind.
-    * If the location is not referenced by an object type table, POINT or NONE will be returned based on whether the AT_PHYSICAL_LOCATION.LOCATION_KIND column is set to POINT or is NULL, respectively. 
+    * All values exception UNSPECIFIED and NONE require that the locatation be referenced by the object type table of the specified location kind.
+    * If the location is not referenced by an object type table, UNSPECIFIED or NONE will be returned based on whether the AT_PHYSICAL_LOCATION.LOCATION_KIND column is set to UNSPECIFIED or is NULL, respectively. 
     *
     * @exception ERROR If the location is referenced by more than one object type table or the AT_PHYSICAL_LOCATION.LOCATION_KIND column doesn't agree with the object type table reference
     */
@@ -1469,7 +1469,7 @@ AS
     *
     * @return A string identifying the kind (object type) of the location. Will be one of:
     * <ul>
-    *   <li>POINT</li>
+    *   <li>UNSPECIFIED</li>
     *   <li>BASIN</li>
     *   <li>STREAM</li>
     *   <li>OUTLET</li>
@@ -1479,8 +1479,8 @@ AS
     *   <li>LOCK</li>
     *   <li>NONE</li>
     * </ul>
-    * All values exception POINT and NONE require that the locatation be referenced by the object type table of the specified location kind.
-    * If the location is not referenced by an object type table, POINT or NONE will be returned based on whether the AT_PHYSICAL_LOCATION.LOCATION_KIND column is set to POINT or is NULL, respectively. 
+    * All values exception UNSPECIFIED and NONE require that the locatation be referenced by the object type table of the specified location kind.
+    * If the location is not referenced by an object type table, UNSPECIFIED or NONE will be returned based on whether the AT_PHYSICAL_LOCATION.LOCATION_KIND column is set to UNSPECIFIED or is NULL, respectively. 
     *
     * @exception ERROR If the location is referenced by more than one object type table or the AT_PHYSICAL_LOCATION.LOCATION_KIND column doesn't agree with the object type table reference
     */

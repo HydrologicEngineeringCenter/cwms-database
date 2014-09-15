@@ -38,16 +38,16 @@ comment on column cwms_location_kind.location_kind_id     is 'Text name used as 
 comment on column cwms_location_kind.representative_point is 'The point represented by the single lat/lon in the physical location tabel.';
 comment on column cwms_location_kind.description          is 'Descriptive text about the location kind.';
 
-insert into cwms_location_kind values ( 1, null, 'POINT',      'The point itself',                'A generic geographic point');
-insert into cwms_location_kind values ( 2, null, 'STREAM',     'The downstream-most point',       'A stream or river');
-insert into cwms_location_kind values ( 3, null, 'BASIN',      'The outlet of the basin',         'A basin or water catchment');
-insert into cwms_location_kind values ( 4, null, 'PROJECT',    'The project office or other loc', 'One or more associated structures constructed to manage the flow of water in a river or stream');
-insert into cwms_location_kind values ( 5, null, 'EMBANKMENT', 'The midpoint of the centerline',  'A raised structure constructed to impede or direct the flow of water in a river or stream');
-insert into cwms_location_kind values ( 6, null, 'OUTLET',     'The discharge point or midpoint', 'A structure constructed to allow the flow of water through, under, or over an embankment');
-insert into cwms_location_kind values ( 7, null, 'TURBINE',    'The discharge point',             'An structure constructed to generate electricity from the flow of water');
-insert into cwms_location_kind values ( 8, null, 'LOCK',       'The center of the chamber',       'A structure that raises and lowers waterborne vessels between upper and lower pools');
-insert into cwms_location_kind values ( 9, 6,    'GATE',       'The discharge point',             'An outlet that can restrict or prevent the flow of water.');
-insert into cwms_location_kind values (10, 6,    'OVERFLOW',   'The midpoint of the discharge',   'An outlet that passes the flow of water without restriction above a certain elevation'); 
+insert into cwms_location_kind values ( 1, null, 'UNSPECIFIED', 'The point identified with loc',   'A location with no entry in one of the location kind tables');
+insert into cwms_location_kind values ( 2,    1, 'STREAM',      'The downstream-most point',       'A stream or river');
+insert into cwms_location_kind values ( 3,    1, 'BASIN',       'The outlet of the basin',         'A basin or water catchment');
+insert into cwms_location_kind values ( 4,    1, 'PROJECT',     'The project office or other loc', 'One or more associated structures constructed to manage the flow of water in a river or stream');
+insert into cwms_location_kind values ( 5,    1, 'EMBANKMENT',  'The midpoint of the centerline',  'A raised structure constructed to impede or direct the flow of water in a river or stream');
+insert into cwms_location_kind values ( 6,    1, 'OUTLET',      'The discharge point or midpoint', 'A structure constructed to allow the flow of water through, under, or over an embankment');
+insert into cwms_location_kind values ( 7,    1, 'TURBINE',     'The discharge point',             'An structure constructed to generate electricity from the flow of water');
+insert into cwms_location_kind values ( 8,    1, 'LOCK',        'The center of the chamber',       'A structure that raises and lowers waterborne vessels between upper and lower pools');
+insert into cwms_location_kind values ( 9,    6, 'GATE',        'The discharge point',             'An outlet that can restrict or prevent the flow of water.');
+insert into cwms_location_kind values (10,    6, 'OVERFLOW',    'The midpoint of the discharge',   'An outlet that passes the flow of water without restriction above a certain elevation'); 
 
 alter table at_physical_location add constraint at_physical_location_fk4 foreign key (location_kind) references cwms_location_kind (location_kind_code);
 

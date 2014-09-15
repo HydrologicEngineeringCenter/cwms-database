@@ -515,7 +515,7 @@ begin
       end;
       if l_code is not null then
          l_location_kind_id := cwms_loc.check_location_kind(l_code);
-         if l_location_kind_id not in ('OUTLET', 'POINT', 'NONE') then
+         if l_location_kind_id not in ('OUTLET', 'UNSPECIFIED', 'NONE') then
             cwms_err.raise(
                'ERROR',
                'Cannot switch location '

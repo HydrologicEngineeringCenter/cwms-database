@@ -94,6 +94,7 @@ END;
 @@cwms/views/av_cwms_media_type.sql
 @@cwms/views/av_document.sql
 @@cwms/views/av_document_type.sql
+@@cwms/views/av_location_kind.sql
 @@cwms/views/av_loc_alias.sql
 @@cwms/views/av_loc_grp_assgn.sql
 @@cwms/views/av_loc_cat_grp.sql

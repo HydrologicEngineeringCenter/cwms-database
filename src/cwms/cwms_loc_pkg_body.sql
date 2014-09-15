@@ -529,7 +529,7 @@ AS
 			SELECT	location_kind_code
 			  INTO	l_location_kind_code
 			  FROM	cwms_location_kind
-			 WHERE	location_kind_id = UPPER (NVL (p_location_kind_id, 'POINT'));
+			 WHERE	location_kind_id = UPPER (NVL (p_location_kind_id, 'UNSPECIFIED'));
 		EXCEPTION
 			WHEN NO_DATA_FOUND
 			THEN
@@ -6093,7 +6093,7 @@ AS
               into l_location_kind_id
               from cwms_location_kind
              where location_kind_code = l_location_kind_code;
-            if l_location_kind_id != 'POINT' then
+            if l_location_kind_id != 'UNSPECIFIED' then
                cwms_err.raise(
                   'ERROR',
                   'Location '
