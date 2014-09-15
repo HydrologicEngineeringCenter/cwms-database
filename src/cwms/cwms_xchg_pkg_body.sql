@@ -1522,7 +1522,12 @@ CREATE OR REPLACE package body cwms_xchg as
             )
          loop
             log_entry('Deleting time series mapping '||rec.mapping_code);
-            log_entry('=>'||cwms_ts.get_ts_id(rec.cwms_ts_code));
+            begin
+               log_entry('=>'||cwms_ts.get_ts_id(rec.cwms_ts_code));
+            exception
+               when no_data_found then
+                  log_entry('=>{Deleted TS_CODE}');
+            end;
             log_entry('=>/'||rec.a_pathname_part||'/'||rec.b_pathname_part||'/'||rec.c_pathname_part||'//'||rec.e_pathname_part||'/'||rec.f_pathname_part||'/');
          end loop;
          select count(*)
