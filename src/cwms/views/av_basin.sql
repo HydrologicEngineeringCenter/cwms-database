@@ -10,7 +10,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_BASIN', null,
  * @field primary_stream_id          The identifier of the primary stream that flows through this basin
  * @field parent_basin_id            The identifier of a larger basin that encompasses this basin
  * @field sort_order                 A number that specifies the sort order of this basin with respect to other basins that have the same parent basin
- * @field total_drainange_area       The total area of this basin
+ * @field total_drainage_area        The total area of this basin
  * @field contributing_drainage_area The drainage area that contributes flow to the downstream extent
  * @field area_unit                  The unit the drainages areas are expressed in
  * @field basin_code                 The unique numeric code that identifies the basin in the database
@@ -24,7 +24,7 @@ create or replace force view av_basin(
    primary_stream_id,
    parent_basin_id,
    sort_order,
-   total_drainange_area,
+   total_drainage_area,
    contributing_drainage_area,
    area_unit,
    basin_code,
