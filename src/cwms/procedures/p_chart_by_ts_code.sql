@@ -1,5 +1,5 @@
 CREATE OR REPLACE PROCEDURE P_CHART_BY_TS_CODE 
-                            (  p_ts_code    IN cwms_v_ts_id.TS_CODE%TYPE 
+                            (  p_ts_code    IN at_cwms_ts_id.TS_CODE%TYPE 
                              , p_days       IN NUMBER DEFAULT 5  
                              , p_date_start IN DATE   DEFAULT SYSDATE - 30
                              , p_date_end   IN DATE   DEFAULT SYSDATE
