@@ -1807,6 +1807,19 @@ AS
    function is_nan(
       p_value in binary_double)
       return varchar2;
+
+
+
+
+    FUNCTION str2tbl (p_str IN VARCHAR2, p_delim IN VARCHAR2 DEFAULT ',')
+       RETURN str2tblType
+       PIPELINED;
+       
+    FUNCTION stragg (input VARCHAR2)
+       RETURN VARCHAR2
+       PARALLEL_ENABLE
+       AGGREGATE USING string_agg_type;     
+
    /**
     * Returns the value associated with a specified key in a unit specification string in the form of <code>x=abc|y=def|z=ghi</code> or NULL if the specified key is not present in the string.
     * The characters <code>x</code>, <code>y</code>, and <code>z</code> are keys and <code>abc</code>, <code>def</code>, <code>ghi</code> are the values associated with the keys.

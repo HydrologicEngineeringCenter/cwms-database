@@ -117,9 +117,9 @@ AS
       l_tz_designator :=
          CASE l_interval = TO_DSINTERVAL ('00 00:00:00')
             WHEN TRUE
-            THEN
+      THEN
                'Z'
-            ELSE
+         ELSE
                   TO_CHAR (EXTRACT (HOUR FROM l_interval), 'S09')
                || ':'
                || TRIM (TO_CHAR (EXTRACT (MINUTE FROM l_interval), '09'))
@@ -426,17 +426,17 @@ AS
          THEN
             RETURN 'CWMS';
          ELSE
-            BEGIN
-		SELECT a.office_id
-		INTO l_office_id
-		FROM cwms_office a, at_sec_user_office b
-		WHERE b.username=l_username 
+      BEGIN
+         SELECT a.office_id
+           INTO l_office_id
+           FROM cwms_office a, at_sec_user_office b
+          WHERE     b.username = l_username
 		AND a.office_code=b.db_office_code;
 	    EXCEPTION WHEN OTHERS THEN
                 cwms_err.raise ('SESSION_OFFICE_ID_NOT_SET');
             END;
          END IF;
-      END IF;
+         END IF;
 
       RETURN l_office_id;
    END user_office_id;
@@ -447,7 +447,7 @@ AS
       l_office_id   VARCHAR2 (16) := user_office_id;
    BEGIN
       SELECT office_id, long_name
-        INTO p_office_id, p_office_long_name
+           INTO p_office_id, p_office_long_name
         FROM cwms_office
        WHERE office_id = l_office_id;
    END get_user_office_data;
@@ -460,7 +460,7 @@ AS
    IS
       l_office_code   NUMBER (10) := 0;
       l_office_id     VARCHAR2 (16) := user_office_id;
-   BEGIN
+      BEGIN
       SELECT office_code
         INTO l_office_code
         FROM cwms_office
@@ -3957,7 +3957,7 @@ AS
       l_parts2 str_tab_t;
       l_parsed varchar2(16);
       l_key    varchar2(1) := upper(trim(p_key));
-   begin
+      begin
       l_parts1 := split_text(p_unit_spec, '|');
       for i in 1..l_parts1.count loop
          l_parts2 := split_text(trim(l_parts1(i)), '=');
@@ -3968,7 +3968,7 @@ AS
       end loop;
       return l_parsed;
    end parse_unit_spec;
-   
+
    function parse_unit(
       p_unit_spec in varchar2)
       return varchar2
@@ -3988,7 +3988,7 @@ AS
    begin
       return parse_unit_spec(p_unit_spec, 'V');
    end parse_vertical_datum;
-   
+
    function get_effective_vertical_datum(
       p_unit_spec in varchar2)
       return varchar2
@@ -4010,13 +4010,13 @@ AS
       p_sql in varchar2)
    is 
       l_sql_no_quotes varchar2(32767);
-      
+
       function remove_quotes(p_text in varchar2) return varchar2
       as
          l_test varchar2(32767);
          l_result varchar2(32767);
          l_pos    pls_integer;
-      begin
+   begin
          l_test := p_text;
          loop
             l_pos := regexp_instr(l_test, '[''"]');
@@ -4035,9 +4035,9 @@ AS
                   l_result := regexp_replace(l_result, '"[^"]*?"', '#', 1, 1);
                end if;
             else
-              -----------------------
+      -----------------------
               -- no quotes in text --
-              -----------------------
+      -----------------------
                l_result := l_test;
             end if;
             exit when l_result = l_test;
@@ -4074,7 +4074,7 @@ AS
    begin       
       dbms_lob.createtemporary(l_clob, true);
       dbms_lob.open(l_clob, dbms_lob.lob_readwrite);   
-      begin   
+   begin
          utl_http.set_transfer_timeout(p_timeout);
          l_req := utl_http.begin_request(p_url);
          utl_http.set_header(l_req, 'User-Agent', 'Mozilla/4.0');
@@ -4091,7 +4091,7 @@ AS
       dbms_lob.close(l_clob);
       return l_clob;
    end get_url;      
-
+   
    function get_column(
       p_table  in double_tab_tab_t,
       p_column in pls_integer)
@@ -4136,6 +4136,23 @@ AS
              where mod(r, l_count) = mod(p_column, l_count);
       return l_results;
    end get_column;            
+   
+    FUNCTION str2tbl (p_str IN VARCHAR2, p_delim IN VARCHAR2 DEFAULT ',')
+       RETURN str2tblType
+       PIPELINED
+    AS
+       l_str   LONG DEFAULT p_str || p_delim;
+       l_n     NUMBER;
+    BEGIN
+       LOOP
+          l_n := INSTR (l_str, p_delim);
+          EXIT WHEN (NVL (l_n, 0) = 0);
+          PIPE ROW (LTRIM (RTRIM (SUBSTR (l_str, 1, l_n - 1))));
+          l_str := SUBSTR (l_str, l_n + 1);
+       END LOOP;
+
+       RETURN;
+    END;
 
    function get_column(
       p_table  in str_tab_tab_t,

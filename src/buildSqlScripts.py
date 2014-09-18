@@ -8822,29 +8822,32 @@ def main() :
        store_rule_code integer,
        store_rule_id   varchar2(32),
        description     varchar2(128),
+       use_as_default  varchar2(1) not null,  
        constraint @TABLE_pk primary key(store_rule_code),
        constraint @TABLE_u1 unique(store_rule_id),
-       constraint @TABLE_ck1 check(upper(trim(store_rule_id)) = store_rule_id)
+       constraint @TABLE_ck1 check (use_as_default in ('T', 'F'))
     ) tablespace @DATASPACE
     /
     ---------------------------
     -- @TABLE comments --
     --
     comment on table @TABLE is 'Holds CWMS data storage rules'; 
+    comment on column @TABLE.store_rule_code is 'Primary key';
     comment on column @TABLE.store_rule_id is 'Text identifier, which is also the primary key';
     comment on column @TABLE.description   is 'Describes store rule behavior';
-        
+    comment on column @TABLE.use_as_default  is 'Use as default in UI choIce controls';
+
     COMMIT;
     '''            
     
     sys.stderr.write("Building storeRuleLoadTemplate\n")
     storeRuleLoadTemplate = \
     '''
-    insert into @TABLE values(1, 'REPLACE WITH NON MISSING',    'Insert values at new times and replace any values at existing times, unless the incoming values are specified as missing');
-    insert into @TABLE values(2, 'REPLACE ALL',                 'Insert values at new times and replace any values at existing times, even if incoming values are specified as missing');
-    insert into @TABLE values(3, 'REPLACE MISSING VALUES ONLY', 'Insert values at new times but do not replace any values at existing times unless the existing values are specified as missing');
-    insert into @TABLE values(4, 'DO NOT REPLACE',              'Insert values at new times but do not replace any values at existing times');
-    insert into @TABLE values(5, 'DELETE INSERT',               'Delete all existing values in time window of incoming data and then insert incoming data');
+    insert into @TABLE values(1, 'REPLACE WITH NON MISSING',    'Insert values at new times and replace any values at existing times, unless the incoming values are specified as missing', 'T');
+    insert into @TABLE values(2, 'REPLACE ALL',                 'Insert values at new times and replace any values at existing times, even if incoming values are specified as missing', 'F');
+    insert into @TABLE values(3, 'REPLACE MISSING VALUES ONLY', 'Insert values at new times but do not replace any values at existing times unless the existing values are specified as missing', 'F');
+    insert into @TABLE values(4, 'DO NOT REPLACE',              'Insert values at new times but do not replace any values at existing times', 'F');
+    insert into @TABLE values(5, 'DELETE INSERT',               'Delete all existing values in time window of incoming data and then insert incoming data', 'F');
     '''
 
     sys.stderr.write("Building locationKindCreationTemplate\n")

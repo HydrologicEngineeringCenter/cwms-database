@@ -30,7 +30,7 @@ BEGIN
 	SELECT	synonym_name
 	  BULK	COLLECT INTO l_public_synonyms
 	  FROM	dba_synonyms
-	 WHERE	owner = 'PUBLIC' AND SUBSTR (synonym_name, 1, 5) = 'CWMS_';
+	 WHERE	owner = 'PUBLIC' AND table_owner = '&cwms_schema';
 
 	--
 	-- collect CWMS schema packages except for security
@@ -231,3 +231,44 @@ BEGIN
 	END LOOP;
 END;
 /
+
+--
+-- BEGIN: non-standard CMA related GRANTS and SYNONYMS
+----
+--
+-- PROCEDURE Synonyms...
+--
+GRANT EXECUTE ON &cwms_schema..download_file TO public;
+create public synonym DOWNLOAD_FILE for &cwms_schema..DOWNLOAD_FILE;
+--
+GRANT EXECUTE ON &cwms_schema..p_chart_by_ts_code TO public;
+create public synonym P_CHART_BY_TS_CODE for &cwms_schema..P_CHART_BY_TS_CODE;
+--
+-- FUNCTION Synonyms...
+--
+GRANT EXECUTE ON &cwms_schema..str2tbl TO CWMS_USER;
+create public synonym str2tbl for &cwms_schema..str2tbl;
+--
+GRANT EXECUTE ON &cwms_schema..stragg TO CWMS_USER;
+create public synonym stragg for &cwms_schema..stragg;
+
+-----------------------------------------------
+-- New GRANTS on TABLES for public interface --
+-----------------------------------------------
+--GRANT SELECT on &cwms_schema..cwms_usace_dam TO CWMS_USER;
+--GRANT SELECT on &cwms_schema..cwms_nid TO CWMS_USER;
+--GRANT SELECT ON &cwms_schema..cwms_station_nws TO CWMS_User;
+--GRANT SELECT ON &cwms_schema..cwms_station_usgs TO CWMS_User;
+--
+GRANT SELECT ON &cwms_schema..UPLOADED_XLS_FILE_ROWS_T TO CWMS_USER;
+GRANT INSERT ON &cwms_schema..UPLOADED_XLS_FILE_ROWS_T TO CWMS_USER;
+GRANT DELETE ON &cwms_schema..UPLOADED_XLS_FILE_ROWS_T TO CWMS_USER;
+GRANT UPDATE ON &cwms_schema..UPLOADED_XLS_FILE_ROWS_T TO CWMS_USER;
+GRANT SELECT ON &cwms_schema..UPLOADED_XLS_FILES_T TO CWMS_USER;
+GRANT INSERT ON &cwms_schema..UPLOADED_XLS_FILES_T TO CWMS_USER;
+GRANT DELETE ON &cwms_schema..UPLOADED_XLS_FILES_T TO CWMS_USER;
+GRANT UPDATE ON &cwms_schema..UPLOADED_XLS_FILES_T TO CWMS_USER;
+
+----
+-- END: non-standard CMA related GRANTS and SYNONYMS
+--

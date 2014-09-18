@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE CWMS_20.CWMS_DOC
+CREATE OR REPLACE package CWMS_20.CWMS_DOC
 /**
  * Routines to work with CWMS documents
  *
@@ -20,7 +20,7 @@ AS
    /**
     * Converts a blob to a clob
     *
-    * @param p_blob is a blob  
+    * @param p_blob is a blob
     *
     *
     * @return a clob
@@ -31,35 +31,35 @@ FUNCTION f_blob_to_clob (f_blob IN BLOB) RETURN CLOB;
     * Deletes a document
     *
     * @param p_document_id is the document id to delete.
-    * @param p_db_office_id is the  
+    * @param p_db_office_id is the
     *
    */
 
   PROCEDURE delete_document(p_document_id          IN av_document.document_id%TYPE
-                           , p_db_Office_id         IN av_document.db_Office_id%TYPE DEFAULT CWMS_UTIL.USER_OFFICE_ID 
+                           , p_db_Office_id         IN av_document.db_Office_id%TYPE DEFAULT CWMS_UTIL.USER_OFFICE_ID
                            );
 
    /**
     * Downloads a document via URL
     *
     * @param p_document_code is the document code to delete.
-    * @param p_db_office_id is the  
+    * @param p_db_office_id is the
     *
    */
 
-  PROCEDURE download_file(p_document_code           IN av_document.document_code%TYPE
-                        , p_db_Office_id            IN av_document.db_Office_id%TYPE DEFAULT CWMS_UTIL.USER_OFFICE_ID 
+  PROCEDURE p_download_file(p_document_code           IN av_document.document_code%TYPE
+                        , p_db_Office_id            IN av_document.db_Office_id%TYPE 
                          );
 
      /**
     * Downloads a document via URL
     *
     * @param p_document_code is the document code to delete.
-    * @param p_db_office_id is the  
+    * @param p_db_office_id is the
     *
    */
-  
-  
+
+
   PROCEDURE load_document( p_document_id             IN av_document.document_id%TYPE
                            ,p_document_Type_code      IN av_document.document_Type_code%TYPE
                            ,p_document_location_code  IN av_document.document_location_code%TYPE
@@ -70,10 +70,10 @@ FUNCTION f_blob_to_clob (f_blob IN BLOB) RETURN CLOB;
                            ,p_document_Preview_code   IN av_document.document_Preview_code%TYPE
                            --,p_stored_document         IN at_document.stored_document%TYPE
                            ,p_blob                    IN BLOB
-                           ,p_media_type_id           IN cwms_media_type.media_type_id%TYPE        
+                           ,p_media_type_id           IN cwms_media_type.media_type_id%TYPE
                            ,p_submit_file_rule        IN NUMBER
                            ,p_sync_index_tf           IN VARCHAR2 DEFAULT 'T'
-                           ,p_db_office_id            IN av_document.db_office_id%TYPE DEFAULT CWMS_UTIL.USER_OFFICE_ID 
+                           ,p_db_office_id            IN av_document.db_office_id%TYPE DEFAULT CWMS_UTIL.USER_OFFICE_ID
                             );
 
 
@@ -81,15 +81,13 @@ FUNCTION f_blob_to_clob (f_blob IN BLOB) RETURN CLOB;
     * Daily syncronizing of the indexes
     *
     * @param p_index_name is the index name of the index to sync/optimize. Leaving this blank will sync AND optimize ALL indexes
-    * @param p_sync_or_optimize is the string SYNC or OPTIMIZE or ALL.   
+    * @param p_sync_or_optimize is the string SYNC or OPTIMIZE or ALL.
     *
    */
 PROCEDURE Daily_Sync(p_index_name       IN all_indexes.index_name%TYPE DEFAULT 'ALL'
                     ,p_sync_or_optimize IN VARCHAR2 DEFAULT 'ALL');
-                         
---  PROCEDURE delete_document (p_db_Office_id           IN at                         
-                         
+
+--  PROCEDURE delete_document (p_db_Office_id           IN at
 
 END CWMS_DOC;
 /
-show errors

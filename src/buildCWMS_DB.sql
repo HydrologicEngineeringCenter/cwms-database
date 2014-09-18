@@ -66,6 +66,7 @@ alter session set current_schema = &cwms_schema;
 @@cwms/at_schema_sec_2
 @@cwms/at_schema_sec
 @@cwms/at_schema_apex_debug
+@@cwms/at_schema_cma
 
 --
 --  Load data into cwms tables...
@@ -157,6 +158,10 @@ prompt Connecting as &cwms_schema
 connect &cwms_schema/&cwms_passwd@&inst
 set serveroutput on
 prompt Connected as &cwms_schema
+
+@@cwms/tables/at_clob_index.sql
+@@cwms/tables/indexes_for_spatial_data.sql
+
 --------------------------------
 -- populate base data via API --
 --------------------------------
