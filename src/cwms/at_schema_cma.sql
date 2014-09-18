@@ -30,7 +30,6 @@ DECLARE
                                'av_base_parameter_units',
                                'av_cities_sp',
                                'av_county_sp',
-                               'av_location_kind',
                                'av_lock',
                                'av_specified_level_order',
                                'av_state_sp',
@@ -139,9 +138,6 @@ prompt create view av_cities_sp
 --
 prompt create view av_county_sp
 @@cwms/views/av_county_sp.sql
---
-prompt create view av_location_kind
-@@cwms/views/av_location_kind.sql
 --
 prompt create view av_lock
 @@cwms/views/av_lock.sql
