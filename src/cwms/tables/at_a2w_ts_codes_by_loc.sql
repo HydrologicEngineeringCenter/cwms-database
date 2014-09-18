@@ -37,7 +37,6 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-
 COMMENT ON TABLE AT_A2W_TS_CODES_BY_LOC IS
    'The AT_A2W_TS_CODES_BY_LOC table stores the WM choice of TS Codes representing a locations elevation, precipitation, stage, inflow, outflow, flood storage, drought storage, and surcharge releases. The TS Codes establish a 1:1 relationship between location and display in various nationwide/public reports. Additional details are in the column comments/'
 /
@@ -86,13 +85,11 @@ COMMENT ON COLUMN AT_A2W_TS_CODES_BY_LOC.LAKE_SUMMARY_TF IS
 COMMENT ON COLUMN AT_A2W_TS_CODES_BY_LOC.TS_CODE_SUR_RELEASE IS
    'The TS Code showing Surchage Releases (flow)'
 /
-
 CREATE INDEX A2W_COUNTS_IDX
    ON AT_A2W_TS_CODES_BY_LOC (LOCATION_ID, DB_OFFICE_ID, DISPLAY_FLAG)
    LOGGING
    NOPARALLEL
 /
-
 CREATE UNIQUE INDEX AT_A2W_TS_CODES_BY_LOC_PK
    ON AT_A2W_TS_CODES_BY_LOC (LOCATION_ID, DB_OFFICE_ID)
    LOGGING
