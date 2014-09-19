@@ -1,6 +1,10 @@
 define cwms_schema = CWMS_20
 set echo on
 set define on
+
+accept inst        char prompt 'Enter the database SID           : '
+accept cwms_passwd char prompt 'Enter the password for &cwms_schema   : '
+connect &cwms_schema/&cwms_passwd@&inst
 set verify off
 alter session set current_schema=&cwms_schema;
 --alter system enable restricted session;
@@ -12,6 +16,26 @@ PROMPT rename at_sec_user_office column
 
 ALTER TABLE at_sec_user_office
   RENAME COLUMN user_db_office_code to db_office_code;
+
+PROMPT Append additional entries into CWMS_TIME_ZONE_ALIAS
+
+INSERT INTO CWMS_TIME_ZONE_ALIAS VALUES ('CST', 'Etc/GMT+6');
+INSERT INTO CWMS_TIME_ZONE_ALIAS VALUES ('PST', 'Etc/GMT+8');
+INSERT INTO CWMS_TIME_ZONE_ALIAS VALUES ('EDT', 'Etc/GMT+4');
+INSERT INTO CWMS_TIME_ZONE_ALIAS VALUES ('CDT', 'Etc/GMT+5');
+INSERT INTO CWMS_TIME_ZONE_ALIAS VALUES ('MDT', 'Etc/GMT+6');
+INSERT INTO CWMS_TIME_ZONE_ALIAS VALUES ('PDT', 'Etc/GMT+7');
+
+commit;
+
+PROMPT Correct AT_PROJECT_PURPOSES Table
+
+delete FROM AT_PROJECT_PURPOSES WHERE PURPOSE_CODE=3;
+set escape on
+insert into at_project_purposes values ( 3, 53, 'Fish \& Wildlife Pond', 'Fish \& Wildlife Pond', 'T', 'F');
+set escape off
+
+commit;
 
 PROMPT Switch from AT_LOCATION_KIND to CWMS_LOCATION_KIND
 
@@ -49,6 +73,7 @@ insert into cwms_location_kind values ( 8,    1, 'LOCK',        'The center of t
 insert into cwms_location_kind values ( 9,    6, 'GATE',        'The discharge point',             'An outlet that can restrict or prevent the flow of water.');
 insert into cwms_location_kind values (10,    6, 'OVERFLOW',    'The midpoint of the discharge',   'An outlet that passes the flow of water without restriction above a certain elevation'); 
 
+comment on column cwms_20.at_physical_location.location_kind is 'Reference to location kind in CWMS_LOCATION_KIND';
 alter table at_physical_location add constraint at_physical_location_fk4 foreign key (location_kind) references cwms_location_kind (location_kind_code);
 
 PROMPT Updating location kinds
@@ -254,7 +279,7 @@ begin
        end if;
    end loop;              
 end;         
- 
+/ 
 PROMPT Adding USGS Parameter Table
 
 create table at_usgs_parameter(
@@ -515,6 +540,74 @@ insert
         0.0);
 commit;        
 
+PROMPT AT virtual rating tables
+
+-----------------------
+-- AT_VIRTUAL_RATING --
+-----------------------
+create table at_virtual_rating (
+   virtual_rating_code number(10),
+   rating_spec_code    number(10) not null,
+   connections         varchar2(80) not null,
+   description         varchar2(256),
+   constraint at_virtual_rating_pk  primary key (virtual_rating_code),
+   constraint at_virtual_rating_u1  unique (rating_spec_code) using index,
+   constraint at_virtual_rating_fk1 foreign key (rating_spec_code) references at_rating_spec (rating_spec_code),
+   constraint at_virtual_rating_ck1 check (regexp_instr(connections, 'R\d(D|I\d)=(I\d|R\d(D|I\d))(,R\d(D|I\d)=(I\d|R\d(D|I\d)))*', 1, 1, 0, 'i') = 1)
+)
+organization index
+tablespace CWMS_20AT_DATA;
+
+comment on table  at_virtual_rating is 'Holds information about virtual ratings';
+comment on column at_virtual_rating.virtual_rating_code is 'Synthetic key';
+comment on column at_virtual_rating.rating_spec_code    is 'Foreign key to rating specification for this virtual rating';
+comment on column at_virtual_rating.connections         is 'String specifying how source ratings are connected to form virtual rating';
+comment on column at_virtual_rating.description         is 'Descriptive text about this virtual rating';
+
+-------------------------------
+-- AT_VIRTUAL_RATING_ELEMENT --
+-------------------------------
+create table at_virtual_rating_element (
+   virtual_rating_element_code number(10),
+   virtual_rating_code         number(10),
+   position                    integer,
+   rating_spec_code            number(10),
+   rating_expression           varchar2(32),
+   constraint at_virtual_rating_element_pk  primary key (virtual_rating_element_code),
+   constraint at_virtual_rating_element_fk1 foreign key (virtual_rating_code) references at_virtual_rating (virtual_rating_code),
+   constraint at_virtual_rating_element_ck1 check ((rating_spec_code is null or  rating_expression is null) and not 
+                                                   (rating_spec_code is null and rating_expression is null))
+)
+organization index
+tablespace CWMS_20AT_DATA;
+
+comment on table  at_virtual_rating_element is 'Holds source ratings (rating specs or rating expressions) for virtual ratings';
+comment on column at_virtual_rating_element.virtual_rating_element_code is 'Synthetic key';
+comment on column at_virtual_rating_element.virtual_rating_code         is 'Foreign key to the virtual rating that this source rating is for';
+comment on column at_virtual_rating_element.position                    is 'The sequential position of this source rating in the virtual rating';
+comment on column at_virtual_rating_element.rating_spec_code            is 'Foreign key to the rating spec for this source rating if it is a rating';
+comment on column at_virtual_rating_element.rating_expression           is 'Mathematical expression for this source rating if it is an expression. For longer expressions use formula-based ratings.';
+
+----------------------------
+-- AT_VRITUAL_RATING_UNIT --
+----------------------------
+create table at_virtual_rating_unit (
+   virtual_rating_element_code number(10),
+   position                    integer,
+   unit_code                   number(10) not null,
+   constraint at_virtual_rating_unit_pk  primary key (virtual_rating_element_code, position),
+   constraint at_virtual_rating_unit_fk1 foreign key (virtual_rating_element_code) references at_virtual_rating_element (virtual_rating_element_code),
+   constraint at_virtual_rating_unit_fk2 foreign key (unit_code) references cwms_unit (unit_code)
+)
+organization index
+tablespace CWMS_20AT_DATA;
+
+comment on table  at_virtual_rating_unit is 'Holds units for virtual rating elements (source ratings)';
+comment on column at_virtual_rating_unit.virtual_rating_element_code is 'Foreign key to the virtual rating element this unit is for';
+comment on column at_virtual_rating_unit.position                    is 'Sequential position of the paramter in the virtual rating element that this unit is for';
+comment on column at_virtual_rating_unit.unit_code                   is 'Foreign key intto the units table for this unit';
+
+   
 PROMPT Adding Vertical Datum Offset Types
 
 CREATE OR REPLACE TYPE &cwms_schema..vert_datum_offset_t
@@ -691,9 +784,107 @@ PROMPT Updating CWMS_RATING Package
 @@../cwms/cwms_rating_pkg.sql
 @@../cwms/cwms_rating_pkg_body.sql
 
+
+PROMPT Adding an entry to CWMS_ERROR
+
+INSERT INTO CWMS_ERROR (ERR_CODE, ERR_NAME, ERR_MSG) VALUES (-20047, 'SESSION_OFFICE_ID_NOT_SET', 'Session office id is not set by the application');
+
+PROMPT Creating AV_SEC_USERS view
+@@../cwms/views/av_sec_users
+
+PROMPT Recreating at_sec_users_r02 constraint
+
+alter table at_sec_users drop constraint at_sec_users_r02;
+
+PROMPT Inserting Additional CCP groups
+@@insert_new_groups
+
+insert into at_sec_cwms_users(userid,createdby) (select unique username,user from at_sec_users where username not in (select userid from at_sec_cwms_users));
+
+ALTER TABLE at_sec_users ADD (
+  CONSTRAINT at_sec_users_r02
+ FOREIGN KEY (username)
+ REFERENCES at_sec_cwms_users (userid))
+/
+
+ALTER TABLE AT_SEC_USER_OFFICE DROP CONSTRAINT AT_SEC_USER_OFFICE_PK;
+DROP INDEX AT_SEC_USER_OFFICE_PK;
+ALTER TABLE AT_SEC_USER_OFFICE DROP CONSTRAINT AT_SEC_USER_OFFICE_R01;
+COMMENT ON TABLE AT_SEC_USER_OFFICE IS 'Table to indicate whether a user has any permissions for a given office';
+CREATE UNIQUE INDEX AT_SEC_USER_OFFICE_PK ON AT_SEC_USER_OFFICE
+(USERNAME,DB_OFFICE_CODE)
+LOGGING
+TABLESPACE CWMS_20AT_DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            NEXT             1M
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL;
+ALTER TABLE CWMS_20.AT_SEC_USER_OFFICE ADD (
+  CONSTRAINT AT_SEC_USER_OFFICE_PK
+  PRIMARY KEY
+  (USERNAME, DB_OFFICE_CODE)
+  USING INDEX CWMS_20.AT_SEC_USER_OFFICE_PK
+  ENABLE VALIDATE);
+
+ALTER TABLE CWMS_20.AT_SEC_USER_OFFICE ADD (
+  CONSTRAINT AT_SEC_USER_OFFICE_FK1 
+  FOREIGN KEY (DB_OFFICE_CODE) 
+  REFERENCES CWMS_20.CWMS_OFFICE (OFFICE_CODE)
+  ENABLE VALIDATE,
+  CONSTRAINT AT_SEC_USER_OFFICE_FK2 
+  FOREIGN KEY (USERNAME) 
+  REFERENCES CWMS_20.AT_SEC_CWMS_USERS (USERID)
+  ENABLE VALIDATE);
+COMMIT;
+
+PROMPT Update packages/types/views
+@@../cwms/updateCwmsSchema
+
+PROMPT Creating CWMS_ENV context
+@@../cwms/at_schema_env
+
+PROMPT Creating Additional synonyms and grants
+@@../cwms/at_schema_public_interface
+whenever sqlerror continue 
+revoke execute on &cwms_schema..cwms_upass from cwms_user;
+whenever sqlerror exit sql.sqlcode
+--grant select on dba_scheduler_jobs to cwms_user;
+--grant select on dba_scheduler_job_log to cwms_user;
+--grant select on dba_scheduler_job_run_details to cwms_user;
+prompt Recompiling all invalid objects...
+exec sys.utl_recomp.recomp_serial('&cwms_schema');
+declare
+   obj_count integer;
+begin
+   select count(*)
+     into obj_count
+     from dba_objects
+    where owner = '&cwms_schema'
+      and status = 'INVALID';
+   if obj_count > 0 then
+      dbms_output.put_line('' || obj_count || ' objects are still invalid.');
+      raise_application_error(-20999, 'Some objects are still invalid.');
+   else
+      dbms_output.put_line('All invalid objects successfully compiled.');
+   end if;
+end;
+/
+
+commit;
+
 PROMPT Adding VERTCON Data as CLOBs            
 
-HOST sqlldr userid=\"/ as sysdba\" control=vertcon_clobs.ctl
+HOST sqlldr &cwms_schema/&cwms_passwd@&inst  vertcon_clobs.ctl
+
+connect &cwms_schema/&cwms_passwd@&inst
 
 PROMPT Parsing VERTCON CLOBs into Tables            
 
@@ -850,100 +1041,6 @@ begin
     where clob_code < 0;
     
    commit;    
-end;
-/
-
-
-PROMPT Adding an entry to CWMS_ERROR
-
-INSERT INTO CWMS_ERROR (ERR_CODE, ERR_NAME, ERR_MSG) VALUES (-20047, 'SESSION_OFFICE_ID_NOT_SET', 'Session office id is not set by the application');
-
-PROMPT Creating AV_SEC_USERS view
-@@../cwms/views/av_sec_users
-
-PROMPT Recreating at_sec_users_r02 constraint
-
-alter table at_sec_users drop constraint at_sec_users_r02;
-
-PROMPT Inserting Additional CCP groups
-@@insert_new_groups
-
-insert into at_sec_cwms_users(userid,createdby) (select unique username,user from at_sec_users where username not in (select userid from at_sec_cwms_users));
-
-ALTER TABLE at_sec_users ADD (
-  CONSTRAINT at_sec_users_r02
- FOREIGN KEY (username)
- REFERENCES at_sec_cwms_users (userid))
-/
-
-ALTER TABLE AT_SEC_USER_OFFICE DROP CONSTRAINT AT_SEC_USER_OFFICE_PK;
-DROP INDEX AT_SEC_USER_OFFICE_PK;
-ALTER TABLE AT_SEC_USER_OFFICE DROP CONSTRAINT AT_SEC_USER_OFFICE_R01;
-COMMENT ON TABLE AT_SEC_USER_OFFICE IS 'Table to indicate whether a user has any permissions for a given office';
-CREATE UNIQUE INDEX AT_SEC_USER_OFFICE_PK ON AT_SEC_USER_OFFICE
-(USERNAME,DB_OFFICE_CODE)
-LOGGING
-TABLESPACE CWMS_20AT_DATA
-PCTFREE    10
-INITRANS   2
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64K
-            NEXT             1M
-            MINEXTENTS       1
-            MAXEXTENTS       UNLIMITED
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-NOPARALLEL;
-ALTER TABLE CWMS_20.AT_SEC_USER_OFFICE ADD (
-  CONSTRAINT AT_SEC_USER_OFFICE_PK
-  PRIMARY KEY
-  (USERNAME, DB_OFFICE_CODE)
-  USING INDEX CWMS_20.AT_SEC_USER_OFFICE_PK
-  ENABLE VALIDATE);
-
-ALTER TABLE CWMS_20.AT_SEC_USER_OFFICE ADD (
-  CONSTRAINT AT_SEC_USER_OFFICE_FK1 
-  FOREIGN KEY (DB_OFFICE_CODE) 
-  REFERENCES CWMS_20.CWMS_OFFICE (OFFICE_CODE)
-  ENABLE VALIDATE,
-  CONSTRAINT AT_SEC_USER_OFFICE_FK2 
-  FOREIGN KEY (USERNAME) 
-  REFERENCES CWMS_20.AT_SEC_CWMS_USERS (USERID)
-  ENABLE VALIDATE);
-COMMIT;
-
-PROMPT Update packages/types/views
-@@../cwms/updateCwmsSchema
-
-PROMPT Creating CWMS_ENV context
-@@../cwms/at_schema_env
-
-PROMPT Creating Additional synonyms and grants
-@@../cwms/at_schema_public_interface
-whenever sqlerror continue 
-revoke execute on &cwms_schema..cwms_upass from cwms_user;
-whenever sqlerror exit sql.sqlcode
-grant select on dba_scheduler_jobs to cwms_user;
-grant select on dba_scheduler_job_log to cwms_user;
-grant select on dba_scheduler_job_run_details to cwms_user;
-prompt Recompiling all invalid objects...
-exec sys.utl_recomp.recomp_serial('&cwms_schema');
-declare
-   obj_count integer;
-begin
-   select count(*)
-     into obj_count
-     from dba_objects
-    where owner = '&cwms_schema'
-      and status = 'INVALID';
-   if obj_count > 0 then
-      dbms_output.put_line('' || obj_count || ' objects are still invalid.');
-      raise_application_error(-20999, 'Some objects are still invalid.');
-   else
-      dbms_output.put_line('All invalid objects successfully compiled.');
-   end if;
 end;
 /
 
