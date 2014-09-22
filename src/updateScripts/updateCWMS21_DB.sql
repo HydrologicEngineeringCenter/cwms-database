@@ -886,6 +886,10 @@ HOST sqlldr &cwms_schema/&cwms_passwd@&inst  vertcon_clobs.ctl
 
 connect &cwms_schema/&cwms_passwd@&inst
 
+PROMPT Dropping CWMS_ENV public synonym
+
+drop public synonym cwms_env;
+
 PROMPT Parsing VERTCON CLOBs into Tables            
 
 declare

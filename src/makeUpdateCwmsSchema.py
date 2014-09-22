@@ -67,6 +67,7 @@ updates  = [
         ['type',         'rating_t'],
         ['type body',    'rating_t'],
         ['type',         'rating_tab_t'],
+        ['type body',    'seasonal_value_t'],
         ['type',         'stream_rating_t'],
         ['type body',    'stream_rating_t'],
         ['type',         'tsv_array'],
