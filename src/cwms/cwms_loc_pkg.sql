@@ -1489,6 +1489,22 @@ AS
       p_office_id   in varchar2 default null)
       return varchar2;
    /**
+    * Clears the location kind (object type) of the location, resetting it to UNSPECIFIED. This call will only succeed if there is no dependent data for the object type (e.g., sub-basins, gate settings, water users, etc...)
+    *
+    * @param p_location_code The unique numeric code that identifies the location
+    */
+   procedure clear_location_kind(
+      p_location_code in number);
+   /**
+    * Clears the location kind (object type) of the location, resetting it to UNSPECIFIED. This call will only succeed if there is no dependent data for the object type (e.g., sub-basins, gate settings, water users, etc...)
+    *
+    * @param p_location_id The location identifier
+    * @param p_office_id   The office that owns the location. If not specified or NULL, the session user's default office will be used
+    */
+   procedure clear_location_kind(
+      p_location_id in varchar2,
+      p_office_id   in varchar2 default null);
+   /**
     * Stores (inserts or updates) a vertical datum offset to the database for a location
     *
     * @since CWMS 2.2

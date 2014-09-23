@@ -6138,6 +6138,41 @@ AS
       return check_location_kind(p_location_id, p_office_id);
    end get_location_type;
 
+   procedure clear_location_kind(
+      p_location_code in number)
+   is
+   begin
+      -- use loop for convenience; will only match once
+      for rec in (select db_office_id, 
+                         location_id 
+                    from av_loc 
+                   where location_code = p_location_code
+                 )
+      loop
+         clear_location_kind(rec.location_id, rec.db_office_id);
+      end loop;                 
+   end clear_location_kind;      
+
+   procedure clear_location_kind(
+      p_location_id in varchar2,
+      p_office_id   in varchar2 default null)
+   is
+   begin
+      case check_location_kind(p_location_id, p_office_id)
+         when 'BASIN'      then cwms_basin.delete_basin(p_location_id, cwms_util.delete_key, p_office_id);
+         when 'STREAM'     then cwms_stream.delete_stream(p_location_id, cwms_util.delete_key, p_office_id);
+         when 'OUTLET'     then cwms_outlet.delete_outlet(p_location_id, cwms_util.delete_key, p_office_id);
+         when 'TURBINE'    then cwms_turbine.delete_turbine(p_location_id, cwms_util.delete_key, p_office_id);
+         when 'EMBANKMENT' then cwms_embank.delete_embankment(p_location_id, cwms_util.delete_key, p_office_id);
+         when 'LOCK'       then cwms_lock.delete_lock(p_location_id, cwms_util.delete_key, p_office_id);
+         when 'PROJECT'    then cwms_project.delete_project(p_location_id, cwms_util.delete_key, p_office_id);
+         else null;
+      end case;
+      update at_physical_location
+         set location_kind = 1
+       where location_code = get_location_code(p_office_id, p_location_id);   
+   end clear_location_kind;      
+
    function get_vertcon_offset(
       p_lat in binary_double,
       p_lon in binary_double)

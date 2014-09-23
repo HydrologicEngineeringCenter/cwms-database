@@ -9,6 +9,11 @@ PACKAGE CWMS_EMBANK
  * @since CWMS 2.1
  */
 AS
+-- not documented
+function get_embankment_code(
+   p_office_id in varchar2,
+   p_embankment_id  in varchar2)
+   return number;
 /**
  * Catalogs embankments stored in the database that for a specified CWMS project.
  *
@@ -229,11 +234,69 @@ PROCEDURE rename_embankment(
  */
 PROCEDURE delete_embankment(
     p_embankment_id IN VARCHAR, -- base location id + "-" + sub-loc id (if it exists)
-    -- delete key will fail if there are references to the embankment.
-    -- delete all will delete the referring children then the embankment.
     p_delete_action IN VARCHAR2 DEFAULT cwms_util.delete_key,
     p_db_office_id  IN VARCHAR2 DEFAULT NULL -- defaults to the connected user's office if null
   );
+/**
+ * Deletes an embankment from the database
+ *
+ * @see constant cwms_util.delete_key
+ * @see constant cwms_util.delete_data
+ * @see constant cwms_util.delete_all
+ *
+ * @param p_embankment_id The location identifier of the embankment
+ *
+ * @param p_delete_action Specifies what embankment elements to delete.  Actions are as follows:
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">p_delete_action</th>
+ *     <th class="descr">Action</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr">cwms_util.delete_key</td>
+ *     <td class="descr">deletes only this embankment, and then only if it has no dependent data</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr">cwms_util.delete_data</td>
+ *     <td class="descr">deletes only dependent data of this embankment, if any</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr">cwms_util.delete_all</td>
+ *     <td class="descr">deletes this embankment and dependent data, if any</td>
+ *   </tr>
+ * </table>
+ * @param p_delete_location A flag (T/F) that indicates whether the underlying location should be deleted.
+ * @param p_delete_location_action Specifies what location elements to delete.  Actions are as follows (only if p_delete_location is 'T'):
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">p_delete_action</th>
+ *     <th class="descr">Action</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr">cwms_util.delete_key</td>
+ *     <td class="descr">deletes only the location, does not delete any dependent data</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr">cwms_util.delete_data</td>
+ *     <td class="descr">deletes only dependent data but does not delete the actual location</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr">cwms_util.delete_all</td>
+ *     <td class="descr">delete the location and all dependent data</td>
+ *   </tr>
+ * </table>
+ * @param p_office_id The office that owns the embankment location
+ *
+ * @exception ITEM_DOES_NOT_EXIST if no such embankment location exists
+ */
+procedure delete_embankment2(
+   p_embankment_id          in varchar2,
+   p_delete_action          in varchar2 default cwms_util.delete_key,
+   p_delete_location        in varchar2 default 'F',
+   p_delete_location_action in varchar2 default cwms_util.delete_key,
+   p_office_id              in varchar2 default null);
 /**
  * Retrieves the set of available structure types for an office
  *

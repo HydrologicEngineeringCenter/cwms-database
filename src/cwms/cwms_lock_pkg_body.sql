@@ -6,6 +6,38 @@ CREATE OR REPLACE PACKAGE BODY CWMS_LOCK AS
 -- These procedures and functions query and manipulate locks in the CWMS/ROWCPS
 -- database.
 
+--------------------------------------------------------------------------------
+-- function get_lock_code
+--------------------------------------------------------------------------------
+function get_lock_code(
+   p_office_id     in varchar2,
+   p_lock_id in varchar2)
+   return number
+is
+   l_lock_code number(10);
+   l_office_id varchar2(16);
+begin
+   if p_lock_id is null then
+      cwms_err.raise('NULL_ARGUMENT', 'P_LOCK_ID');
+   end if;
+   l_office_id := nvl(upper(p_office_id), cwms_util.user_office_id);
+   begin
+      l_lock_code := cwms_loc.get_location_code(l_office_id, p_lock_id);
+      select lock_location_code
+        into l_lock_code
+        from at_lock
+       where lock_location_code = l_lock_code;
+   exception
+      when others then
+         cwms_err.raise(
+            'ITEM_DOES_NOT_EXIST',
+            'CWMS lock identifier.',
+            l_office_id
+            ||'/'
+            ||p_lock_id);
+   end;
+   return l_lock_code;   
+end get_lock_code;   
 
 --
 -- cat_project
@@ -461,40 +493,95 @@ end rename_lock;
 
 
 procedure delete_lock(
-    p_lock_id       IN VARCHAR,                               -- base location id + "-" + sub-loc id (if it exists)
-    p_delete_action IN VARCHAR2 DEFAULT cwms_util.delete_key, --
-    p_db_office_id  IN VARCHAR2 DEFAULT NULL)                 -- defaults to the connected user's office if null  
+   p_lock_id in varchar,
+   p_delete_action in varchar2 default cwms_util.delete_key, 
+   p_db_office_id  in varchar2 default null
+)
 is
-   l_child_loc_code NUMBER;
 begin
-
-  IF NOT p_delete_action IN (cwms_util.delete_key, cwms_util.delete_all ) THEN
-    cwms_err.raise(
-       'ERROR',
-       'P_DELETE_ACTION must be '''
-       || cwms_util.delete_key
-       || ''' or '''
-       || cwms_util.delete_all
-       || '');
-  END IF;
-  
-  l_child_loc_code := cwms_loc.get_location_code(p_db_office_id,p_lock_id);
-   
-  IF p_delete_action = cwms_util.delete_all THEN
-      -- delete settings
-      DELETE
-        FROM at_lockage
-       WHERE lockage_location_code = l_child_loc_code;
-       
-   END IF; -- delete all
-   
-   -- delete from at_lock
-   DELETE
-     FROM at_lock
-    WHERE lock_location_code = l_child_loc_code;
-    
-
+   delete_lock2(
+      p_lock_id => p_lock_id,
+      p_delete_action => p_delete_action,
+      p_office_id     => p_db_office_id);
 end delete_lock;
+
+procedure delete_lock2(
+   p_lock_id                in varchar2,
+   p_delete_action          in varchar2 default cwms_util.delete_key,
+   p_delete_location        in varchar2 default 'F',
+   p_delete_location_action in varchar2 default cwms_util.delete_key,
+   p_office_id              in varchar2 default null)
+is
+   l_lock_code number(10);
+   l_delete_location boolean;
+   l_delete_action1  varchar2(16);
+   l_delete_action2  varchar2(16);
+begin
+   -------------------
+   -- sanity checks --
+   -------------------
+   if p_lock_id is null then
+      cwms_err.raise('NULL_ARGUMENT', 'P_lock_ID');
+   end if;
+   l_delete_action1 := upper(substr(p_delete_action, 1, 16));
+   if l_delete_action1 not in (
+      cwms_util.delete_key,
+      cwms_util.delete_data,
+      cwms_util.delete_all)
+   then
+      cwms_err.raise(
+         'ERROR',
+         'Delete action must be one of '''
+         ||cwms_util.delete_key
+         ||''',  '''
+         ||cwms_util.delete_data
+         ||''', or '''
+         ||cwms_util.delete_all
+         ||'');
+   end if;
+   l_delete_location := cwms_util.return_true_or_false(p_delete_location); 
+   l_delete_action2 := upper(substr(p_delete_location_action, 1, 16));
+   if l_delete_action2 not in (
+      cwms_util.delete_key,
+      cwms_util.delete_data,
+      cwms_util.delete_all)
+   then
+      cwms_err.raise(
+         'ERROR',
+         'Delete action must be one of '''
+         ||cwms_util.delete_key
+         ||''',  '''
+         ||cwms_util.delete_data
+         ||''', or '''
+         ||cwms_util.delete_all
+         ||'');
+   end if;
+   l_lock_code := get_lock_code(p_office_id, p_lock_id);
+   -------------------------------------------
+   -- delete the child records if specified --
+   -------------------------------------------
+   if l_delete_action1 in (cwms_util.delete_data, cwms_util.delete_all) then
+      delete
+        from at_lockage
+       where lockage_location_code = l_lock_code; 
+   end if;
+   ------------------------------------
+   -- delete the record if specified --
+   ------------------------------------
+   if l_delete_action1 in (cwms_util.delete_key, cwms_util.delete_all) then
+      delete
+        from at_lock
+       where lock_location_code = l_lock_code;
+   end if; 
+   -------------------------------------
+   -- delete the location if required --
+   -------------------------------------
+   if l_delete_location then
+      cwms_loc.delete_location(p_lock_id, l_delete_action2, p_office_id);
+   else
+      update at_physical_location set location_kind=1 where location_code = l_lock_code;   
+   end if;
+end delete_lock2;   
 
 END CWMS_LOCK;
 

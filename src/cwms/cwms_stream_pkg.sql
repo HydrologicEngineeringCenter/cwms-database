@@ -111,9 +111,69 @@ procedure retrieve_stream(
  * @param p_office_id      The office that owns the stream location. If not specified or NULL, the session user's default office is used.
  */
 procedure delete_stream(
-   p_stream_id     in varchar2,
+   p_stream_id      in varchar2,
    p_delete_action in varchar2 default cwms_util.delete_key,
    p_office_id     in varchar2 default null);
+/**
+ * Deletes a stream from the database
+ *
+ * @see constant cwms_util.delete_key
+ * @see constant cwms_util.delete_data
+ * @see constant cwms_util.delete_all
+ *
+ * @param p_stream_id The location identifier of the stream
+ *
+ * @param p_delete_action Specifies what stream elements to delete.  Actions are as follows:
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">p_delete_action</th>
+ *     <th class="descr">Action</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr">cwms_util.delete_key</td>
+ *     <td class="descr">deletes only this stream, and then only if it has no dependent data</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr">cwms_util.delete_data</td>
+ *     <td class="descr">deletes only dependent data of this stream, if any</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr">cwms_util.delete_all</td>
+ *     <td class="descr">deletes this stream and its dependent data, if any</td>
+ *   </tr>
+ * </table>
+ * @param p_delete_location A flag (T/F) that indicates whether the underlying location should be deleted.
+ * @param p_delete_location_action Specifies what location elements to delete.  Actions are as follows (only if p_delete_location is 'T'):
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">p_delete_action</th>
+ *     <th class="descr">Action</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr">cwms_util.delete_key</td>
+ *     <td class="descr">deletes only the location, does not delete any dependent data</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr">cwms_util.delete_data</td>
+ *     <td class="descr">deletes only dependent data but does not delete the actual location</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr">cwms_util.delete_all</td>
+ *     <td class="descr">delete the location and all dependent data</td>
+ *   </tr>
+ * </table>
+ * @param p_office_id The office that owns the stream location
+ *
+ * @exception ITEM_DOES_NOT_EXIST if no such stream location exists
+ */
+procedure delete_stream2(
+   p_stream_id              in varchar2,
+   p_delete_action          in varchar2 default cwms_util.delete_key,
+   p_delete_location        in varchar2 default 'F',
+   p_delete_location_action in varchar2 default cwms_util.delete_key,
+   p_office_id              in varchar2 default null);
 /**
  * Renames a stream in the database
  *

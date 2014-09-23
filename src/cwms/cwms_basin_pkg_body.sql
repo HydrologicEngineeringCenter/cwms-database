@@ -11,10 +11,7 @@ is
    l_office_id  varchar2(16);
 begin
    if p_basin_id is null then
-      cwms_err.raise(
-         'INVALID_ITEM',
-         '<NULL>',
-         'CWMS basin identifier');
+      cwms_err.raise('NULL_ARGUMENT', 'P_BASIN_ID');
    end if;
    l_office_id := nvl(upper(p_office_id), cwms_util.user_office_id);
    begin
@@ -245,20 +242,52 @@ procedure delete_basin(
    p_delete_action in varchar2 default cwms_util.delete_key,
    p_office_id     in varchar2 default null)
 is
-   l_basin_code    number(10);
-   l_delete_action varchar2(16);
+begin
+   delete_basin2(
+      p_basin_id      => p_basin_id,
+      p_delete_action => p_delete_action,
+      p_office_id     => p_office_id);
+end delete_basin;
+--------------------------------------------------------------------------------
+-- procedure delete_basin2
+--------------------------------------------------------------------------------
+procedure delete_basin2(
+   p_basin_id               in varchar2,
+   p_delete_action          in varchar2 default cwms_util.delete_key,
+   p_delete_location        in varchar2 default 'F',
+   p_delete_location_action in varchar2 default cwms_util.delete_key,
+   p_office_id              in varchar2 default null)
+is
+   l_basin_code      number(10);
+   l_delete_location boolean;
+   l_delete_action1  varchar2(16);
+   l_delete_action2  varchar2(16);
 begin
    -------------------
    -- sanity checks --
    -------------------
    if p_basin_id is null then
-      cwms_err.raise(
-         'INVALID_ITEM',
-         '<NULL>',
-         'CWMS basin identifier');
+      cwms_err.raise('NULL_ARGUMENT', 'P_BASIN_ID');
    end if;
-   l_delete_action := upper(substr(p_delete_action, 1, 16));
-   if l_delete_action not in (
+   l_delete_action1 := upper(substr(p_delete_action, 1, 16));
+   if l_delete_action1 not in (
+      cwms_util.delete_key,
+      cwms_util.delete_data,
+      cwms_util.delete_all)
+   then
+      cwms_err.raise(
+         'ERROR',
+         'Delete action must be one of '''
+         ||cwms_util.delete_key
+         ||''',  '''
+         ||cwms_util.delete_data
+         ||''', or '''
+         ||cwms_util.delete_all
+         ||'');
+   end if;
+   l_delete_location := cwms_util.return_true_or_false(p_delete_location); 
+   l_delete_action2 := upper(substr(p_delete_location_action, 1, 16));
+   if l_delete_action2 not in (
       cwms_util.delete_key,
       cwms_util.delete_data,
       cwms_util.delete_all)
@@ -277,7 +306,7 @@ begin
    -------------------------------------------
    -- delete the child records if specified --
    -------------------------------------------
-   if l_delete_action in (cwms_util.delete_data, cwms_util.delete_all) then
+   if l_delete_action1 in (cwms_util.delete_data, cwms_util.delete_all) then
       for rec in
          (  select bl.base_location_id
                    ||substr('-', 1, length(pl.sub_location_id))
@@ -298,12 +327,20 @@ begin
    ------------------------------------
    -- delete the record if specified --
    ------------------------------------
-   if l_delete_action in (cwms_util.delete_key, cwms_util.delete_all) then
+   if l_delete_action1 in (cwms_util.delete_key, cwms_util.delete_all) then
       delete
         from at_basin
        where basin_location_code = l_basin_code;
+   end if; 
+   -------------------------------------
+   -- delete the location if required --
+   -------------------------------------
+   if l_delete_location then
+      cwms_loc.delete_location(p_basin_id, l_delete_action2, p_office_id);
+   else
+      update at_physical_location set location_kind=1 where location_code = l_basin_code;   
    end if;
-end delete_basin;   
+end delete_basin2;   
       
 --------------------------------------------------------------------------------
 -- procedure rename_basin

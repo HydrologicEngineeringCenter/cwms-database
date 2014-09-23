@@ -35,6 +35,38 @@ package body cwms_embank is
 
 
 
+--------------------------------------------------------------------------------
+-- function get_embankment_code
+--------------------------------------------------------------------------------
+function get_embankment_code(
+   p_office_id     in varchar2,
+   p_embankment_id in varchar2)
+   return number
+is
+   l_embankment_code number(10);
+   l_office_id       varchar2(16);
+begin
+   if p_embankment_id is null then
+      cwms_err.raise('NULL_ARGUMENT', 'P_EMBANKMENT_ID');
+   end if;
+   l_office_id := nvl(upper(p_office_id), cwms_util.user_office_id);
+   begin
+      l_embankment_code := cwms_loc.get_location_code(l_office_id, p_embankment_id);
+      select embankment_location_code
+        into l_embankment_code
+        from at_embankment
+       where embankment_location_code = l_embankment_code;
+   exception
+      when others then
+         cwms_err.raise(
+            'ITEM_DOES_NOT_EXIST',
+            'CWMS embankment identifier.',
+            l_office_id
+            ||'/'
+            ||p_embankment_id);
+   end;
+   return l_embankment_code;   
+end get_embankment_code;   
 
 --
 -- cat_embankment
@@ -156,9 +188,8 @@ procedure retrieve_embankment(
    p_embankment_location_ref in  location_ref_t
 )
 is
-   l_embank_location_obj location_obj_t;
-   l_unit                varchar2(16);
-   l_factor              number;
+   l_unit   varchar2(16);
+   l_factor number;
 begin
    p_embankment := null;
    ----------------------------------------------------------------------------------
@@ -520,37 +551,94 @@ begin
       p_db_office_id);
 end rename_embankment;
 
--- Performs a  delete on the embankment.
---
--- security: can only be called by dba group.
---
---
--- errors will be issued is thrown exceptions.
---
--- p_embankment_id       IN VARCHAR,  
---    base location id + "-" + sub-loc id (if it exists)
--- p_delete_action IN VARCHAR2 DEFAULT cwms_util.delete_key, 
---    delete key will fail if there are references to the embankment.
---    delete all will delete the referring children then the embankment.
--- p_db_office_id  IN VARCHAR2 DEFAULT NULL 
---    defaults to the connected user's office if null 
 procedure delete_embankment(
    p_embankment_id in varchar,
    p_delete_action in varchar2 default cwms_util.delete_key, 
    p_db_office_id  in varchar2 default null
 )
 is
-   l_db_office_id    varchar2(16) := nvl(p_db_office_id, cwms_util.user_office_id);
-   l_location_code   number;
 begin
-   l_location_code := cwms_loc.get_location_code(l_db_office_id, p_embankment_id);
-   
-   delete
-     from at_embankment
-    where embankment_location_code = l_location_code;
-    
-   cwms_loc.delete_location(p_embankment_id, p_delete_action, l_db_office_id);         
+   delete_embankment2(
+      p_embankment_id => p_embankment_id,
+      p_delete_action => p_delete_action,
+      p_office_id     => p_db_office_id);
 end delete_embankment;
+
+procedure delete_embankment2(
+   p_embankment_id          in varchar2,
+   p_delete_action          in varchar2 default cwms_util.delete_key,
+   p_delete_location        in varchar2 default 'F',
+   p_delete_location_action in varchar2 default cwms_util.delete_key,
+   p_office_id              in varchar2 default null)
+is
+   l_embankment_code number(10);
+   l_delete_location boolean;
+   l_delete_action1  varchar2(16);
+   l_delete_action2  varchar2(16);
+begin
+   -------------------
+   -- sanity checks --
+   -------------------
+   if p_embankment_id is null then
+      cwms_err.raise('NULL_ARGUMENT', 'P_EMBANKMENT_ID');
+   end if;
+   l_delete_action1 := upper(substr(p_delete_action, 1, 16));
+   if l_delete_action1 not in (
+      cwms_util.delete_key,
+      cwms_util.delete_data,
+      cwms_util.delete_all)
+   then
+      cwms_err.raise(
+         'ERROR',
+         'Delete action must be one of '''
+         ||cwms_util.delete_key
+         ||''',  '''
+         ||cwms_util.delete_data
+         ||''', or '''
+         ||cwms_util.delete_all
+         ||'');
+   end if;
+   l_delete_location := cwms_util.return_true_or_false(p_delete_location); 
+   l_delete_action2 := upper(substr(p_delete_location_action, 1, 16));
+   if l_delete_action2 not in (
+      cwms_util.delete_key,
+      cwms_util.delete_data,
+      cwms_util.delete_all)
+   then
+      cwms_err.raise(
+         'ERROR',
+         'Delete action must be one of '''
+         ||cwms_util.delete_key
+         ||''',  '''
+         ||cwms_util.delete_data
+         ||''', or '''
+         ||cwms_util.delete_all
+         ||'');
+   end if;
+   l_embankment_code := get_embankment_code(p_office_id, p_embankment_id);
+   -------------------------------------------
+   -- delete the child records if specified --
+   -------------------------------------------
+   if l_delete_action1 in (cwms_util.delete_data, cwms_util.delete_all) then
+      null;  -- currently no dependent data
+   end if;
+   ------------------------------------
+   -- delete the record if specified --
+   ------------------------------------
+   if l_delete_action1 in (cwms_util.delete_key, cwms_util.delete_all) then
+      delete
+        from at_embankment
+       where embankment_location_code = l_embankment_code;
+   end if; 
+   -------------------------------------
+   -- delete the location if required --
+   -------------------------------------
+   if l_delete_location then
+      cwms_loc.delete_location(p_embankment_id, l_delete_action2, p_office_id);
+   else
+      update at_physical_location set location_kind=1 where location_code = l_embankment_code;   
+   end if;
+end delete_embankment2;   
 
 --
 -- manipulation of structure_type lookups

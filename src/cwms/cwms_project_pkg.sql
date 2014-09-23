@@ -228,16 +228,73 @@ procedure rename_project(
  * @param p_db_office_id The office that owns the project.  If not specified or NULL, the session user's default office will be used.
  */
 procedure delete_project(
-	-- base location id + "-" + sub-loc id (if it exists)
-  p_project_id		IN   VARCHAR2,
-  -- the cwms_util delete action for this delete, options are delete_key and delete_all.
-  -- delete_key will fail if there are project children referencing this project, i.e. embankments, etc.
-  -- delete_all will cascade delete this project and all children. 
-  p_delete_action IN VARCHAR2 DEFAULT cwms_util.delete_key, 
-	-- defaults to the connected user's office if null
-  p_db_office_id    IN   VARCHAR2 DEFAULT NULL
-);
-
+   p_project_id    in varchar2,
+   p_delete_action in varchar2 default cwms_util.delete_key,
+   p_office_id     in varchar2 default null);
+/**
+ * Deletes a project from the database
+ *
+ * @see constant cwms_util.delete_key
+ * @see constant cwms_util.delete_data
+ * @see constant cwms_util.delete_all
+ *
+ * @param p_project_id The location identifier of the project
+ *
+ * @param p_delete_action Specifies what project elements to delete.  Actions are as follows:
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">p_delete_action</th>
+ *     <th class="descr">Action</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr">cwms_util.delete_key</td>
+ *     <td class="descr">deletes only this project, and then only if it has no dependent data</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr">cwms_util.delete_data</td>
+ *     <td class="descr">deletes only dependent data of this project, if any</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr">cwms_util.delete_all</td>
+ *     <td class="descr">deletes this project and its dependent data, if any</td>
+ *   </tr>
+ * </table>
+ * @param p_delete_location A flag (T/F) that indicates whether the underlying location should be deleted.
+ * @param p_delete_location_action Specifies what location elements to delete.  Actions are as follows (only if p_delete_location is 'T'):
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">p_delete_action</th>
+ *     <th class="descr">Action</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr">cwms_util.delete_key</td>
+ *     <td class="descr">deletes only the location, does not delete any dependent data</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr">cwms_util.delete_data</td>
+ *     <td class="descr">deletes only dependent data but does not delete the actual location</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr">cwms_util.delete_all</td>
+ *     <td class="descr">delete the location and all dependent data</td>
+ *   </tr>
+ * </table>                         
+ * @param p_delete_assoc_locs A flag (T/F) that indicates whether locations associated with this project (embankments, outlets, etc...) should also be deleted.
+ * @param p_delete_assoc_locs_action Specifies what elements of associated locations to delete.  Actions are same as for p_delete_location_action (only if p_delete_assoc_locs is 'T')
+ * @param p_office_id The office that owns the project location
+ *
+ * @exception ITEM_DOES_NOT_EXIST if no such project location exists
+ */
+procedure delete_project2(
+   p_project_id               in varchar2,
+   p_delete_action            in varchar2 default cwms_util.delete_key,
+   p_delete_location          in varchar2 default 'F',
+   p_delete_location_action   in varchar2 default cwms_util.delete_key,
+   p_delete_assoc_locs        in varchar2 default 'F',
+   p_delete_assoc_locs_action in varchar2 default cwms_util.delete_key,
+   p_office_id                in varchar2 default null);
 
 -- procedure create_basin_group
 -- creates a "Basin" category location group

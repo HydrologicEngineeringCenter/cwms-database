@@ -1,5 +1,37 @@
 create or replace package body cwms_turbine as
 --------------------------------------------------------------------------------
+-- function get_turbine_code
+--------------------------------------------------------------------------------
+function get_turbine_code(
+   p_office_id  in varchar2,
+   p_turbine_id in varchar2)
+   return number
+is
+   l_turbine_code number(10);
+   l_office_id       varchar2(16);
+begin
+   if p_turbine_id is null then
+      cwms_err.raise('NULL_ARGUMENT', 'P_TURBINE_ID');
+   end if;
+   l_office_id := nvl(upper(p_office_id), cwms_util.user_office_id);
+   begin
+      l_turbine_code := cwms_loc.get_location_code(l_office_id, p_turbine_id);
+      select turbine_location_code
+        into l_turbine_code
+        from at_turbine
+       where turbine_location_code = l_turbine_code;
+   exception
+      when others then
+         cwms_err.raise(
+            'ITEM_DOES_NOT_EXIST',
+            'CWMS turbine identifier.',
+            l_office_id
+            ||'/'
+            ||p_turbine_id);
+   end;
+   return l_turbine_code;   
+end get_turbine_code;   
+--------------------------------------------------------------------------------
 -- procedure check_lookup
 --------------------------------------------------------------------------------
 procedure check_lookup(
@@ -380,49 +412,84 @@ end rename_turbine;
 -- procedure delete_turbine
 --------------------------------------------------------------------------------
 procedure delete_turbine(
-   p_turbine_id    in varchar,
-   p_delete_action in varchar2 default cwms_util.delete_key,
-   p_office_id     in varchar2 default null)
+   p_turbine_id     in varchar,
+   p_delete_action in varchar2 default cwms_util.delete_key, 
+   p_office_id  in varchar2 default null
+)
 is
-   l_turbine               project_structure_obj_t;
-   l_turbine_location_code number(10);
-   l_turbine_change_codes    number_tab_t;
+begin
+   delete_turbine2(
+      p_turbine_id    => p_turbine_id,
+      p_delete_action => p_delete_action,
+      p_office_id     => p_office_id);
+end delete_turbine;
+--------------------------------------------------------------------------------
+-- procedure delete_turbine2
+--------------------------------------------------------------------------------
+procedure delete_turbine2(
+   p_turbine_id             in varchar2,
+   p_delete_action          in varchar2 default cwms_util.delete_key,
+   p_delete_location        in varchar2 default 'F',
+   p_delete_location_action in varchar2 default cwms_util.delete_key,
+   p_office_id              in varchar2 default null)
+is
+   l_turbine_code         number(10);
+   l_delete_location      boolean;
+   l_delete_action1       varchar2(16);
+   l_delete_action2       varchar2(16);
+   l_turbine_change_codes number_tab_t;
 begin
    -------------------
    -- sanity checks --
    -------------------
    if p_turbine_id is null then
-      cwms_err.raise('NULL_ARGUMENT', 'p_turbine_id');
+      cwms_err.raise('NULL_ARGUMENT', 'P_turbine_ID');
    end if;
-   if p_delete_action is null then
-      cwms_err.raise('NULL_ARGUMENT', 'p_delete_action');
-   end if;
-   if p_office_id is null then
-      cwms_err.raise('NULL_ARGUMENT', 'p_office_id');
-   end if;
-   l_turbine := retrieve_turbine_f(location_ref_t(p_turbine_id, p_office_id));
-   if upper(p_delete_action) not in (
+   l_delete_action1 := upper(substr(p_delete_action, 1, 16));
+   if l_delete_action1 not in (
       cwms_util.delete_key,
       cwms_util.delete_data,
-      cwms_util.delete_all) 
+      cwms_util.delete_all)
    then
-      cwms_err.raise('INVALID_DELETE_ACTION', p_delete_action);      
+      cwms_err.raise(
+         'ERROR',
+         'Delete action must be one of '''
+         ||cwms_util.delete_key
+         ||''',  '''
+         ||cwms_util.delete_data
+         ||''', or '''
+         ||cwms_util.delete_all
+         ||'');
    end if;
-   l_turbine_location_code := l_turbine.structure_location.location_ref.get_location_code;
-   --------------------------------------------
-   -- delete the dependent data if necessary --
-   --------------------------------------------
-   if upper(p_delete_action) in (
+   l_delete_location := cwms_util.return_true_or_false(p_delete_location); 
+   l_delete_action2 := upper(substr(p_delete_location_action, 1, 16));
+   if l_delete_action2 not in (
+      cwms_util.delete_key,
       cwms_util.delete_data,
-      cwms_util.delete_all) 
+      cwms_util.delete_all)
    then
+      cwms_err.raise(
+         'ERROR',
+         'Delete action must be one of '''
+         ||cwms_util.delete_key
+         ||''',  '''
+         ||cwms_util.delete_data
+         ||''', or '''
+         ||cwms_util.delete_all
+         ||'');
+   end if;
+   l_turbine_code := get_turbine_code(p_office_id, p_turbine_id);
+   -------------------------------------------
+   -- delete the child records if specified --
+   -------------------------------------------
+   if l_delete_action1 in (cwms_util.delete_data, cwms_util.delete_all) then
       select turbine_change_code bulk collect
         into l_turbine_change_codes
         from at_turbine_change
        where turbine_change_code in
              ( select turbine_change_code
                  from at_turbine_setting
-                where turbine_location_code = l_turbine_location_code 
+                where turbine_location_code = l_turbine_code 
              );
       delete
         from at_turbine_setting
@@ -431,22 +498,23 @@ begin
         from at_turbine_change
        where turbine_change_code in (select * from table(l_turbine_change_codes));  
    end if;
-   ---------------------------------------------
-   -- delete the location record if necessary --
-   ---------------------------------------------
-   if upper(p_delete_action) in (
-      cwms_util.delete_key,
-      cwms_util.delete_all)
-   then
+   ------------------------------------
+   -- delete the record if specified --
+   ------------------------------------
+   if l_delete_action1 in (cwms_util.delete_key, cwms_util.delete_all) then
       delete
         from at_turbine
-       where turbine_location_code = l_turbine_location_code;
-      cwms_loc.delete_location(
-         l_turbine.structure_location.location_ref.get_location_id,
-         p_delete_action,
-         p_office_id);
-   end if;       
-end delete_turbine;
+       where turbine_location_code = l_turbine_code;
+   end if; 
+   -------------------------------------
+   -- delete the location if required --
+   -------------------------------------
+   if l_delete_location then
+      cwms_loc.delete_location(p_turbine_id, l_delete_action2, p_office_id);
+   else
+      update at_physical_location set location_kind=1 where location_code = l_turbine_code;   
+   end if;
+end delete_turbine2;   
 --------------------------------------------------------------------------------
 -- procedure store_turbine_changes
 --------------------------------------------------------------------------------

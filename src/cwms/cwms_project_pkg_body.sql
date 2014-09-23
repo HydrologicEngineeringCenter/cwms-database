@@ -4,6 +4,33 @@ SET serveroutput on
 
 create or replace PACKAGE BODY CWMS_PROJECT
 AS
+--------------------------------------------------------------------------------
+-- procedure get_project_code
+--------------------------------------------------------------------------------
+function get_project_code(
+   p_office_id in varchar2,
+   p_project_id in varchar2)
+   return number
+is
+   l_location_code number(10);
+begin
+   begin
+      l_location_code := cwms_loc.get_location_code(p_office_id, p_project_id);
+      select project_location_code
+        into l_location_code
+        from at_project
+       where project_location_code = l_location_code;
+   exception
+      when others then
+         cwms_err.raise(
+            'ITEM_DOES_NOT_EXIST',
+            'CWMS project identifier.',
+            p_office_id
+            ||'/'
+            ||p_project_id);
+   end;
+   return l_location_code;
+end get_project_code;
 
 PROCEDURE cat_project (
    p_project_cat  out sys_refcursor,
@@ -380,164 +407,247 @@ AS
 BEGIN
    cwms_loc.rename_location(p_project_id_old, p_project_id_new, p_db_office_id);
 END rename_project;
-
--- deletes a project, this does not affect any of the location code data.
+--------------------------------------------------------------------------------
+-- procedure delete_project
+--------------------------------------------------------------------------------
 procedure delete_project(
-      p_project_id      IN VARCHAR2,
-      p_delete_action   IN VARCHAR2 DEFAULT cwms_util.delete_key, 
-      p_db_office_id    IN VARCHAR2 DEFAULT NULL
-   )
-AS
-   type cat_rec_t is record(
-      project_office_id  varchar2(16),
-      project_id         varchar2(49),
-      office_id          varchar2(16),
-      base_location_id   varchar2(16),
-      sub_location_id    varchar2(32),
-      time_zone_id       varchar2(28),
-      latitude           number,
-      longitude          number,
-      horizontal_datum   varchar2(16),
-      elevation          number,
-      elev_unit_id       varchar2(16),
-      vertical_datum     varchar2(16),
-      public_name        varchar2(32),
-      long_name          varchar2(80),
-      description        varchar2(1024),
-      active_flag        varchar2(1));
-      
-   type cat_wu_rec_t is record(
-      project_office_id  varchar2(16),
-      project_id         varchar2(49),
-      entity_name        varchar2(64),
-      water_right        varchar2(255));
-          
-   l_proj_loc_code  number := cwms_loc.get_location_code(p_db_office_id, p_project_id);
-   l_location_id    varchar2(49);
-   l_cursor         sys_refcursor;
-   l_rec            cat_rec_t;
-   l_wu_rec         cat_wu_rec_t;
-   l_location_ref   location_ref_t := location_ref_t(p_project_id, p_db_office_id);
-   l_office_id      varchar2(16) := cwms_util.get_db_office_id(p_db_office_id);
-   
-   function make_location_id (
-      p_base_location_id in varchar2,
-      p_sub_location_id  in varchar2)
-   return varchar2
-   is
-   begin
-      return p_base_location_id
-         ||substr('-', 1, length(p_sub_location_id))
-         ||p_sub_location_id; 
-   end;
+   p_project_id    in varchar2,
+   p_delete_action in varchar2 default cwms_util.delete_key,
+   p_office_id     in varchar2 default null)
+is
 begin
-   if p_delete_action not in (cwms_util.delete_all, cwms_util.delete_data, cwms_util.delete_key) then
-      cwms_err.raise('INVALID_ITEM', p_delete_action, 'delete action');
+   delete_project2(
+      p_project_id    => p_project_id,
+      p_delete_action => p_delete_action,
+      p_office_id     => p_office_id);
+end delete_project;   
+--------------------------------------------------------------------------------
+-- procedure delete_project2
+--------------------------------------------------------------------------------
+procedure delete_project2(
+   p_project_id               in varchar2,
+   p_delete_action            in varchar2 default cwms_util.delete_key,
+   p_delete_location          in varchar2 default 'F',
+   p_delete_location_action   in varchar2 default cwms_util.delete_key,
+   p_delete_assoc_locs        in varchar2 default 'F',
+   p_delete_assoc_locs_action in varchar2 default cwms_util.delete_key,
+   p_office_id                in varchar2 default null)
+is
+   l_project_code      number(10);
+   l_delete_location   boolean;
+   l_delete_action1    varchar2(16);
+   l_delete_action2    varchar2(16);
+   l_delete_action3    varchar2(16);
+   l_project_loc_ref   location_ref_t;
+begin
+   -------------------
+   -- sanity checks --
+   -------------------
+   if p_project_id is null then
+      cwms_err.raise('NULL_ARGUMENT', 'P_project_ID');
    end if;
-   if p_delete_action in (cwms_util.delete_all, cwms_util.delete_data) then
-      -------------------------------------------------
-      -- delete all items that reference the project --
-      -------------------------------------------------
+   l_delete_action1 := upper(substr(p_delete_action, 1, 16));
+   if l_delete_action1 not in (
+      cwms_util.delete_key,
+      cwms_util.delete_data,
+      cwms_util.delete_all)
+   then
+      cwms_err.raise(
+         'ERROR',
+         'Delete action must be one of '''
+         ||cwms_util.delete_key
+         ||''',  '''
+         ||cwms_util.delete_data
+         ||''', or '''
+         ||cwms_util.delete_all
+         ||'');
+   end if;
+   l_delete_location := cwms_util.return_true_or_false(p_delete_location); 
+   l_delete_action2 := upper(substr(p_delete_location_action, 1, 16));
+   if l_delete_action2 not in (
+      cwms_util.delete_key,
+      cwms_util.delete_data,
+      cwms_util.delete_all)
+   then
+      cwms_err.raise(
+         'ERROR',
+         'Delete action must be one of '''
+         ||cwms_util.delete_key
+         ||''',  '''
+         ||cwms_util.delete_data
+         ||''', or '''
+         ||cwms_util.delete_all
+         ||'');
+   end if;
+   l_delete_action3 := upper(substr(p_delete_assoc_locs_action, 1, 16));
+   if l_delete_action1 not in (
+      cwms_util.delete_key,
+      cwms_util.delete_data,
+      cwms_util.delete_all)
+   then
+      cwms_err.raise(
+         'ERROR',
+         'Delete action must be one of '''
+         ||cwms_util.delete_key
+         ||''',  '''
+         ||cwms_util.delete_data
+         ||''', or '''
+         ||cwms_util.delete_all
+         ||'');
+   end if;
+   l_project_code := get_project_code(p_office_id, p_project_id);
+   -------------------------------------------
+   -- delete the child records if specified --
+   -------------------------------------------
+   if l_delete_action1 in (cwms_util.delete_data, cwms_util.delete_all) then
       -----------------
       -- embankments --
-      -----------------
-      cwms_embank.cat_embankment(l_cursor, p_project_id, p_db_office_id);
+      ----------------- 
+      for rec in
+         (select v.db_office_id,
+                 v.location_id 
+            from at_embankment t,
+                 av_loc v
+           where t.embankment_project_loc_code = l_project_code
+             and v.location_code = t.embankment_location_code
+             and unit_system = 'EN'       
+         )
       loop
-         fetch l_cursor into l_rec;
-         exit when l_cursor%notfound;
-         cwms_embank.delete_embankment(
-            make_location_id(l_rec.base_location_id, l_rec.sub_location_id),
-            cwms_util.delete_all,
-            p_db_office_id);               
-      end loop;
-      close l_cursor;
+         cwms_embank.delete_embankment2(
+            p_embankment_id          => rec.location_id, 
+            p_delete_action          => cwms_util.delete_all, 
+            p_delete_location        => p_delete_assoc_locs, 
+            p_delete_location_action => l_delete_action3, 
+            p_office_id              => rec.db_office_id);      end loop;
       -----------
       -- locks --
       -----------
-      cwms_lock.cat_lock(l_cursor, p_project_id, p_db_office_id);
+      for rec in
+         (select v.db_office_id,
+                 v.location_id 
+            from at_lock t,
+                 av_loc v
+           where t.project_location_code = l_project_code
+             and v.location_code = t.lock_location_code       
+             and unit_system = 'EN'       
+         )
       loop
-         fetch l_cursor into l_rec;
-         exit when l_cursor%notfound;
-         cwms_lock.delete_lock(
-            make_location_id(l_rec.base_location_id, l_rec.sub_location_id),
-            cwms_util.delete_all,
-            p_db_office_id);               
+         cwms_lock.delete_lock2(
+            p_lock_id                => rec.location_id, 
+            p_delete_action          => cwms_util.delete_all, 
+            p_delete_location        => p_delete_assoc_locs, 
+            p_delete_location_action => l_delete_action3, 
+            p_office_id              => rec.db_office_id);
       end loop;
-      close l_cursor;
       -------------
       -- outlets --
       -------------
       for rec in
-         (  select outlet_location_code
-              from at_outlet
-             where project_location_code = l_proj_loc_code
+         (select v.db_office_id,
+                 v.location_id 
+            from at_outlet t,
+                 av_loc v
+           where t.project_location_code = l_project_code
+             and v.location_code = t.outlet_location_code       
+             and unit_system = 'EN'       
          )
       loop
-         cwms_outlet.delete_outlet(
-            cwms_loc.get_location_id(rec.outlet_location_code),
-            cwms_util.delete_all,
-            l_office_id);
-      end loop;
+         cwms_outlet.delete_outlet2(
+            p_outlet_id              => rec.location_id, 
+            p_delete_action          => cwms_util.delete_all, 
+            p_delete_location        => p_delete_assoc_locs, 
+            p_delete_location_action => l_delete_action3, 
+            p_office_id              => rec.db_office_id);
+      end loop; 
       --------------
       -- turbines --
       --------------
       for rec in
-         (  select turbine_location_code
-              from at_turbine
-             where project_location_code = l_proj_loc_code
+         (select v.db_office_id,
+                 v.location_id 
+            from at_turbine t,
+                 av_loc v
+           where t.project_location_code = l_project_code
+             and v.location_code = t.turbine_location_code       
+             and unit_system = 'EN'       
          )
       loop
-         cwms_turbine.delete_turbine(
-            cwms_loc.get_location_id(rec.turbine_location_code),
-            cwms_util.delete_all,
-            l_office_id);
+         cwms_turbine.delete_turbine2(
+            p_turbine_id                => rec.location_id, 
+            p_delete_action          => cwms_util.delete_all, 
+            p_delete_location        => p_delete_assoc_locs, 
+            p_delete_location_action => l_delete_action3, 
+            p_office_id              => rec.db_office_id);
       end loop;
+      ------------------
+      -- gate changes --
+      ------------------
+      delete
+        from at_gate_change
+       where project_location_code = l_project_code; 
+      ---------------------
+      -- turbine changes --
+      ---------------------
+      delete
+        from at_turbine_change
+       where project_location_code = l_project_code; 
       ----------------------------
       -- construction histories --
       ----------------------------
       delete
         from at_construction_history
-       where project_location_code = l_proj_loc_code;
+       where project_location_code = l_project_code;
       ------------------------
       -- project agreements --
       ------------------------
       delete
         from at_project_agreement
-       where project_agreement_loc_code = l_proj_loc_code;
+       where project_agreement_loc_code = l_project_code;
       -------------------------------------
       -- project congressional districts --
       -------------------------------------
       delete
         from at_project_congress_district
-       where project_congress_location_code = l_proj_loc_code;
+       where project_congress_location_code = l_project_code;
       ----------------------
       -- project purposes --
       ----------------------
       delete
         from at_project_purpose
-       where project_location_code = l_proj_loc_code;
+       where project_location_code = l_project_code;
       -----------------
       -- water users --
-      -----------------
-      cwms_water_supply.cat_water_user(l_cursor, p_project_id, p_db_office_id);
+      ----------------- 
+      l_project_loc_ref := location_ref_t(l_project_code); 
+      for rec in
+         (select entity_name 
+            from at_water_user
+           where project_location_code = l_project_code       
+         )
       loop
-         fetch l_cursor into l_wu_rec;
-         exit when l_cursor%notfound;
          cwms_water_supply.delete_water_user(
-            l_location_ref, 
-            l_wu_rec.entity_name, 
-            cwms_util.delete_all);
+            p_project_location_ref => l_project_loc_ref, 
+            p_entity_name          => rec.entity_name, 
+            p_delete_action        => cwms_util.delete_all);
       end loop;
    end if;
-   if p_delete_action in (cwms_util.delete_key, cwms_util.delete_all) then
-      -------------------------------
-      -- delete the project itself --
-      -------------------------------
-      delete 
-        from at_project 
-       where project_location_code = l_proj_loc_code;
+   ------------------------------------
+   -- delete the record if specified --
+   ------------------------------------
+   if l_delete_action1 in (cwms_util.delete_key, cwms_util.delete_all) then
+      delete
+        from at_project
+       where project_location_code = l_project_code;
+   end if; 
+   -------------------------------------
+   -- delete the location if required --
+   -------------------------------------
+   if l_delete_location then
+      cwms_loc.delete_location(p_project_id, l_delete_action2, p_office_id);
+   else
+      update at_physical_location set location_kind=1 where location_code = l_project_code;   
    end if;
-END delete_project;
+end delete_project2;   
 
 PROCEDURE create_basin_group (
       -- the basin name
