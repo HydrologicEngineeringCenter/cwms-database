@@ -182,31 +182,31 @@ begin
                                when false then 'US'
                             end;
    end if;
-   if l_diverting_stream_code is not null or l_ignore_nulls then
+   if l_diverting_stream_code is not null or not l_ignore_nulls then
       l_rec.diverting_stream_code := l_diverting_stream_code;
    end if;
-   if p_diverts_from_station is not null or l_ignore_nulls then
+   if p_diverts_from_station is not null or not l_ignore_nulls then
       l_rec.diversion_station := cwms_util.convert_units(p_diverts_from_station, l_station_units, 'km');
    end if;
-   if p_diverts_from_bank is not null or l_ignore_nulls then
+   if p_diverts_from_bank is not null or not l_ignore_nulls then
       l_rec.diversion_bank := upper(p_diverts_from_bank);
    end if;
-   if l_receiving_stream_code is not null or l_ignore_nulls then
+   if l_receiving_stream_code is not null or not l_ignore_nulls then
       l_rec.receiving_stream_code := l_receiving_stream_code;
    end if;
-   if p_flows_into_station is not null or l_ignore_nulls then
+   if p_flows_into_station is not null or not l_ignore_nulls then
       l_rec.confluence_station := cwms_util.convert_units(p_flows_into_station, l_station_units, 'km');
    end if;
-   if p_flows_into_bank is not null or l_ignore_nulls then
+   if p_flows_into_bank is not null or not l_ignore_nulls then
       l_rec.confluence_bank := upper(p_flows_into_bank);
    end if;
-   if p_length is not null or l_ignore_nulls then
+   if p_length is not null or not l_ignore_nulls then
       l_rec.stream_length := cwms_util.convert_units(p_length, l_station_units, 'km');
    end if;
-   if p_average_slope is not null or l_ignore_nulls then
+   if p_average_slope is not null or not l_ignore_nulls then
       l_rec.average_slope := p_average_slope;
    end if;
-   if p_comments is not null or l_ignore_nulls then
+   if p_comments is not null or not l_ignore_nulls then
       l_rec.comments := p_comments;
    end if;
    if l_exists then
