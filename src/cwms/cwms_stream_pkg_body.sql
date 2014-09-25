@@ -76,7 +76,7 @@ begin
       l_exists := false;
    else
       l_location_kind_id := cwms_loc.check_location_kind(l_location_code);
-      if l_location_kind_id not in ('STREAM', 'UNSPECIFIED', 'NONE') then
+      if l_location_kind_id not in ('STREAM', 'SITE') then
          cwms_err.raise(
             'ERROR',
             'Cannot switch location '
@@ -305,7 +305,7 @@ end retrieve_stream;
 -- procedure delete_stream
 --------------------------------------------------------------------------------
 procedure delete_stream(
-   p_stream_id      in varchar2,
+   p_stream_id     in varchar2,
    p_delete_action in varchar2 default cwms_util.delete_key,
    p_office_id     in varchar2 default null)
 is
@@ -968,16 +968,7 @@ begin
    -- sanity checks --
    -------------------
    if p_location_id is null then
-      cwms_err.raise(
-         'INVALID_ITEM',
-         '<NULL>',
-         'CWMS location identifier.');
-   end if;
-   if p_stream_id is null then
-      cwms_err.raise(
-         'INVALID_ITEM',
-         '<NULL>',
-         'CWMS stream identifier.');
+      cwms_err.raise('NULL_ARGUMENT', 'P_LOCATION_ID');
    end if;
    if p_station is not null and p_station_unit is null then
       cwms_err.raise(
@@ -1003,7 +994,7 @@ begin
    ------------------------------------------
    -- get the existing record if it exists --
    ------------------------------------------
-   l_rec.location_code        := cwms_loc.get_location_code(l_office_id, p_location_id);
+   l_rec.location_code := cwms_loc.get_location_code(l_office_id, p_location_id);
    begin
       select *
         into l_rec
@@ -1030,7 +1021,11 @@ begin
    --------------------------- 
    -- set the record values --
    ---------------------------
-   l_rec.stream_location_code := get_stream_code(l_office_id, p_stream_id);
+   if p_stream_id is not null then
+      l_rec.stream_location_code := get_stream_code(l_office_id, p_stream_id);
+   elsif not l_ignore_nulls then
+      l_rec.stream_location_code := null;
+   end if;
    if p_station is not null or not l_ignore_nulls then
       l_rec.station := cwms_util.convert_units(p_station, l_station_unit, 'km');
    end if;
@@ -1165,52 +1160,85 @@ end retrieve_stream_location;
 --------------------------------------------------------------------------------
 procedure delete_stream_location(
    p_location_id in  varchar2,
-   p_stream_id   in  varchar2,
+   p_stream_id   in  varchar2, -- unused as stream_id, repurposed as delete action
    p_office_id   in  varchar2 default null)
 is
-   l_office_id            varchar2(16) := nvl(upper(p_office_id), cwms_util.user_office_id);
-   l_location_code        number(10);
-   l_stream_location_code number(10);
+begin
+   delete_stream_location2(
+      p_location_id   => p_location_id,
+      p_delete_action => p_stream_id, -- note repurposing
+      p_office_id     => p_office_id);
+end delete_stream_location;   
+--------------------------------------------------------------------------------
+-- procedure delete_stream_location2
+--------------------------------------------------------------------------------
+procedure delete_stream_location2(
+   p_location_id            in varchar2,
+   p_delete_action          in varchar2 default cwms_util.delete_key,
+   p_delete_location        in varchar2 default 'F',
+   p_delete_location_action in varchar2 default cwms_util.delete_key,
+   p_office_id              in varchar2 default null)
+is
+   l_location_code   number(10);
+   l_delete_location boolean;
+   l_delete_action1  varchar2(16);
+   l_delete_action2  varchar2(16);
 begin
    -------------------
    -- sanity checks --
    -------------------
    if p_location_id is null then
-      cwms_err.raise(
-         'INVALID_ITEM',
-         '<NULL>',
-         'CWMS location identifier.');
+      cwms_err.raise('NULL_ARGUMENT', 'P_LOCATION');
    end if;
-   if p_stream_id is null then
-      cwms_err.raise(
-         'INVALID_ITEM',
-         '<NULL>',
-         'CWMS stream identifier.');
+   l_delete_action1 := upper(substr(p_delete_action, 1, 16));
+   if l_delete_action1 not in (
+      cwms_util.delete_key,
+      cwms_util.delete_data,
+      cwms_util.delete_all)
+   then
+      l_delete_action1 := cwms_util.delete_key; -- delete_stream_location might pass in a stream_id
    end if;
-   -----------------------
-   -- delete the record --
-   -----------------------
-   l_location_code        := cwms_loc.get_location_code(l_office_id, p_location_id);
-   l_stream_location_code := get_stream_code(l_office_id, p_stream_id);
-   begin
+   l_delete_location := cwms_util.return_true_or_false(p_delete_location); 
+   l_delete_action2 := upper(substr(p_delete_location_action, 1, 16));
+   if l_delete_action2 not in (
+      cwms_util.delete_key,
+      cwms_util.delete_data,
+      cwms_util.delete_all)
+   then
+      cwms_err.raise(
+         'ERROR',
+         'Delete action must be one of '''
+         ||cwms_util.delete_key
+         ||''',  '''
+         ||cwms_util.delete_data
+         ||''', or '''
+         ||cwms_util.delete_all
+         ||'');
+   end if;
+   l_location_code := cwms_loc.get_location_code(p_office_id, p_location_id);
+   -------------------------------------------
+   -- delete the child records if specified --
+   -------------------------------------------
+   if l_delete_action1 in (cwms_util.delete_data, cwms_util.delete_all) then
+      null; -- no dependent data
+   end if;
+   ------------------------------------
+   -- delete the record if specified --
+   ------------------------------------
+   if l_delete_action1 in (cwms_util.delete_key, cwms_util.delete_all) then
       delete
         from at_stream_location
-       where location_code = l_location_code
-         and stream_location_code = l_stream_location_code;              
-   exception
-      when no_data_found then
-         cwms_err.raise(
-            'ERROR',
-            'Location '
-            ||l_office_id
-            ||'/'
-            ||p_location_id
-            ||' does not exist as a stream location on stream '
-            ||l_office_id
-            ||'/'
-            ||p_stream_id);
-   end;
-end delete_stream_location;   
+       where location_code = l_location_code;
+   end if; 
+   -------------------------------------
+   -- delete the location if required --
+   -------------------------------------
+   if l_delete_location then
+      cwms_loc.delete_location(p_location_id, l_delete_action2, p_office_id);
+   else
+      update at_physical_location set location_kind=1 where location_code = l_location_code;   
+   end if;
+end delete_stream_location2;   
    
 --------------------------------------------------------------------------------
 -- procedure cat_stream_locations   

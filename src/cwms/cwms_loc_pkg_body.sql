@@ -529,7 +529,7 @@ AS
 			SELECT	location_kind_code
 			  INTO	l_location_kind_code
 			  FROM	cwms_location_kind
-			 WHERE	location_kind_id = UPPER (NVL (p_location_kind_id, 'UNSPECIFIED'));
+			 WHERE	location_kind_id = UPPER (NVL (p_location_kind_id, 'SITE'));
 		EXCEPTION
 			WHEN NO_DATA_FOUND
 			THEN
@@ -6059,17 +6059,19 @@ AS
       return varchar2
    is
       l_table_types str_tab_tab_t := str_tab_tab_t(
-         str_tab_t('AT_BASIN',      'BASIN_LOCATION_CODE',      'BASIN'),
-         str_tab_t('AT_STREAM',     'STREAM_LOCATION_CODE',     'STREAM'),
-         str_tab_t('AT_OUTLET',     'OUTLET_LOCATION_CODE',     'OUTLET'),
-         str_tab_t('AT_TURBINE',    'TURBINE_LOCATION_CODE',    'TURBINE'),
-         str_tab_t('AT_EMBANKMENT', 'EMBANKMENT_LOCATION_CODE', 'EMBANKMENT'),
-         str_tab_t('AT_LOCK',       'LOCK_LOCATION_CODE',       'LOCK'),
-         str_tab_t('AT_PROJECT',    'PROJECT_LOCATION_CODE',    'PROJECT'));
+         str_tab_t('AT_BASIN',           'BASIN_LOCATION_CODE',      'BASIN'),
+         str_tab_t('AT_STREAM',          'STREAM_LOCATION_CODE',     'STREAM'),
+         str_tab_t('AT_OUTLET',          'OUTLET_LOCATION_CODE',     'OUTLET'),
+         str_tab_t('AT_TURBINE',         'TURBINE_LOCATION_CODE',    'TURBINE'),
+         str_tab_t('AT_EMBANKMENT',      'EMBANKMENT_LOCATION_CODE', 'EMBANKMENT'),
+         str_tab_t('AT_LOCK',            'LOCK_LOCATION_CODE',       'LOCK'),
+         str_tab_t('AT_PROJECT',         'PROJECT_LOCATION_CODE',    'PROJECT'),
+         str_tab_t('AT_STREAM_LOCATION', 'LOCATION_CODE',            'STREAMGAGE'));
       l_type_names         str_tab_t := str_tab_t();
       l_count              pls_integer;
       l_location_kind_id   varchar2(32);
-      l_location_kind_code integer;
+      l_location_kind_code integer; 
+      l_multiple           boolean := false;
    begin
       for i in 1..l_table_types.count loop
          execute immediate 'select count(*) from '||l_table_types(i)(1)||' where '||l_table_types(i)(2)||' = :1'
@@ -6086,29 +6088,40 @@ AS
            into l_location_kind_code 
            from at_physical_location
           where location_code = p_location_code;
-         if l_location_kind_code is null then
-            l_location_kind_id := 'NONE';
-         else
-            select location_kind_id
-              into l_location_kind_id
-              from cwms_location_kind
-             where location_kind_code = l_location_kind_code;
-            if l_location_kind_id != 'UNSPECIFIED' then
-               cwms_err.raise(
-                  'ERROR',
-                  'Location '
-                  ||cwms_loc.get_location_id(p_location_code)
-                  ||' has a location kind of '
-                  ||l_location_kind_id
-                  ||' but has no entry in the AT_'
-                  ||l_location_kind_id
-                  ||' table');
-            end if;     
-         end if;              
+          
+         select location_kind_id
+           into l_location_kind_id
+           from cwms_location_kind
+          where location_kind_code = l_location_kind_code;
+         if l_location_kind_id != 'SITE' then
+            cwms_err.raise(
+               'ERROR',
+               'Location '
+               ||cwms_loc.get_location_id(p_location_code)
+               ||' has a location kind of '
+               ||l_location_kind_id
+               ||' but has no entry in the AT_'
+               ||replace(l_location_kind_id, 'STREAMGAGE', 'STREAM_LOCATION')
+               ||' table');
+         end if;     
       when 1 then 
          l_location_kind_id := l_type_names(1);
-      else cwms_err.raise('ERROR', 'Location has multiple types: '||cwms_util.join_text(l_type_names, ', '));
+      when 2 then
+         if l_type_names(2) = 'STREAMGAGE' then 
+            if l_type_names(1) in ('EMBANKMENT', 'LOCK', 'PROJECT') then
+               l_location_kind_id := l_type_names(1);
+            else
+               l_multiple := true;
+            end if;
+         else
+            l_multiple := true;
+         end if;
+      else
+         l_multiple := true; 
       end case;
+      if l_multiple then
+         cwms_err.raise('ERROR', 'Location has multiple types: '||cwms_util.join_text(l_type_names, ', '));
+      end if;
       return l_location_kind_id;
    end check_location_kind;
 
@@ -6119,6 +6132,20 @@ AS
    begin                 
       return check_location_kind(p_location_code);
    end get_location_type;
+         
+   function check_location_kind_code(
+      p_location_code in number)
+      return integer
+   is
+      l_location_kind_code integer;
+   begin
+      select location_kind_code
+        into l_location_kind_code
+        from cwms_location_kind
+       where location_kind_id = check_location_kind(p_location_code);
+       
+      return l_location_kind_code;  
+   end check_location_kind_code;
    
    function check_location_kind(
       p_location_id in varchar2,
@@ -6157,8 +6184,11 @@ AS
       p_location_id in varchar2,
       p_office_id   in varchar2 default null)
    is
+      l_location_code         integer;
+      l_streamgage_compatible boolean;
    begin
-      case check_location_kind(p_location_id, p_office_id)
+      l_location_code := get_location_code(p_office_id, p_location_id); 
+      case check_location_kind(l_location_code)
          when 'BASIN'      then cwms_basin.delete_basin(p_location_id, cwms_util.delete_key, p_office_id);
          when 'STREAM'     then cwms_stream.delete_stream(p_location_id, cwms_util.delete_key, p_office_id);
          when 'OUTLET'     then cwms_outlet.delete_outlet(p_location_id, cwms_util.delete_key, p_office_id);
@@ -6168,9 +6198,10 @@ AS
          when 'PROJECT'    then cwms_project.delete_project(p_location_id, cwms_util.delete_key, p_office_id);
          else null;
       end case;
+      
       update at_physical_location
-         set location_kind = 1
-       where location_code = get_location_code(p_office_id, p_location_id);   
+         set location_kind = check_location_kind_code(l_location_code)
+       where location_code = l_location_code;   
    end clear_location_kind;      
 
    function get_vertcon_offset(

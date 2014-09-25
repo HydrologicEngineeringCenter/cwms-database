@@ -96,7 +96,7 @@ begin
          l_rec.basin_location_code := cwms_seq.nextval;
       else                    
          l_location_kind_id := cwms_loc.check_location_kind(l_rec.basin_location_code);
-         if l_location_kind_id not in ('BASIN', 'UNSPECIFIED', 'NONE') then
+         if l_location_kind_id not in ('BASIN', 'SITE') then
             cwms_err.raise(
                'ERROR',
                'Cannot switch location '

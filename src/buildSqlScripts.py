@@ -5258,7 +5258,7 @@ streamTypes = [
 #----------------#
 if __name__ in ("__main__", "main") : sys.stderr.write("Processing location kinds \n")
 locationKinds = [
-    [ 1, None, 'UNSPECIFIED', 'The point identified with loc',   'A location with no entry in one of the location kind tables'                                                   ],
+    [ 1, None, 'SITE',        'The point identified with site',  'A location with no entry in one of the location kind tables'                                                   ],
     [ 2,    1, 'STREAM',      'The downstream-most point',       'A stream or river'                                                                                             ],
     [ 3,    1, 'BASIN',       'The outlet of the basin',         'A basin or water catchment'                                                                                    ],
     [ 4,    1, 'PROJECT',     'The project office or other loc', 'One or more associated structures constructed to manage the flow of water in a river or stream'                ],
@@ -5266,8 +5266,9 @@ locationKinds = [
     [ 6,    1, 'OUTLET',      'The discharge point or midpoint', 'A structure constructed to allow the flow of water through, under, or over an embankment'                      ],
     [ 7,    1, 'TURBINE',     'The discharge point',             'A structure constructed to generate electricity from the flow of water'                                        ],
     [ 8,    1, 'LOCK',        'The center of the chamber',       'A structure that raises and lowers waterborne vessels between upper and lower pools'                           ],
-    [ 9,    6, 'GATE',        'The discharge point',             'An outlet that can restrict or prevent the flow of water.'                                                     ],
-    [10,    6, 'OVERFLOW',    'The midpoint of the discharge',   'An outlet that passes the flow of water without restriction above a certain elevation'                         ], 
+    [ 9,    1, 'STREAMGAGE',  'The gage location',               'A gage on or along a stream, used to measure stage and possibly other parameters'                              ],
+    [10,    6, 'GATE',        'The discharge point',             'An outlet that can restrict or prevent the flow of water.'                                                     ],
+    [11,    6, 'OVERFLOW',    'The midpoint of the discharge',   'An outlet that passes the flow of water without restriction above a certain elevation'                         ], 
 ]
 
 def main() :

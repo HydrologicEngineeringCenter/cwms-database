@@ -323,7 +323,7 @@ BEGIN
    --
    l_project_location_code := p_project.project_location.location_ref.get_location_code;
    l_location_kind_id := cwms_loc.check_location_kind(l_project_location_code);
-   if l_location_kind_id not in ('PROJECT', 'UNSPECIFIED', 'NONE') then
+   if l_location_kind_id not in ('PROJECT', 'SITE', 'STREAMGAGE') then
       cwms_err.raise(
          'ERROR',
          'Cannot switch location '
@@ -645,7 +645,9 @@ begin
    if l_delete_location then
       cwms_loc.delete_location(p_project_id, l_delete_action2, p_office_id);
    else
-      update at_physical_location set location_kind=1 where location_code = l_project_code;   
+      update at_physical_location 
+         set location_kind = cwms_loc.check_location_kind_code(l_project_code) -- SITE or STREAMGAGE 
+       where location_code = l_project_code;   
    end if;
 end delete_project2;   
 

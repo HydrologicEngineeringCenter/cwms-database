@@ -328,7 +328,7 @@ begin
    end;
    if l_code is not null then
       l_location_kind_id := cwms_loc.check_location_kind(l_code);
-      if l_location_kind_id not in ('EMBANKMENT', 'UNSPECIFIED', 'NONE') then
+      if l_location_kind_id not in ('EMBANKMENT', 'SITE', 'STREAMGAGE') then
          cwms_err.raise(
             'ERROR',
             'Cannot switch location '
@@ -636,7 +636,9 @@ begin
    if l_delete_location then
       cwms_loc.delete_location(p_embankment_id, l_delete_action2, p_office_id);
    else
-      update at_physical_location set location_kind=1 where location_code = l_embankment_code;   
+      update at_physical_location 
+         set location_kind = cwms_loc.check_location_kind_code(l_embankment_code) 
+       where location_code = l_embankment_code;   
    end if;
 end delete_embankment2;   
 

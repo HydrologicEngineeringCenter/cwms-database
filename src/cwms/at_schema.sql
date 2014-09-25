@@ -229,7 +229,7 @@ CREATE TABLE AT_PHYSICAL_LOCATION
   LONG_NAME           VARCHAR2(80),
   DESCRIPTION         VARCHAR2(1024),
   ACTIVE_FLAG         VARCHAR2(1)               NOT NULL,
-  LOCATION_KIND       NUMBER(10),
+  LOCATION_KIND       NUMBER(10)                NOT NULL,
   MAP_LABEL           VARCHAR2(50),
   PUBLISHED_LATITUDE  NUMBER,
   PUBLISHED_LONGITUDE NUMBER,
@@ -309,8 +309,8 @@ NOPARALLEL
 
    
 INSERT INTO at_physical_location
-            (location_code, base_location_code, active_flag)
-     VALUES (0, 0, 'F');
+            (location_code, base_location_code, active_flag, location_kind)
+     VALUES (0, 0, 'F', 1);
 
 COMMIT;
 
@@ -587,8 +587,8 @@ NOPARALLEL
 CREATE TABLE AT_STREAM_LOCATION
 (
   LOCATION_CODE           NUMBER(10)   NOT NULL,
-  STREAM_LOCATION_CODE    NUMBER(10)   NOT NULL,
-  STATION                 NUMBER       NOT NULL,
+  STREAM_LOCATION_CODE    NUMBER(10),
+  STATION                 NUMBER,
   PUBLISHED_STATION       NUMBER,
   NAVIGATION_STATION      NUMBER,
   BANK                    VARCHAR2(1),

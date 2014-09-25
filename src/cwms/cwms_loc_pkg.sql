@@ -1443,7 +1443,8 @@ AS
     *
     * @return A string identifying the kind (object type) of the location. Will be one of:
     * <ul>
-    *   <li>UNSPECIFIED</li>
+    *   <li>SITE</li>
+    *   <li>STREAMGAGE</li>
     *   <li>BASIN</li>
     *   <li>STREAM</li>
     *   <li>OUTLET</li>
@@ -1451,10 +1452,8 @@ AS
     *   <li>PROJECT</li>
     *   <li>EMBANKMENT</li>
     *   <li>LOCK</li>
-    *   <li>NONE</li>
     * </ul>
-    * All values exception UNSPECIFIED and NONE require that the locatation be referenced by the object type table of the specified location kind.
-    * If the location is not referenced by an object type table, UNSPECIFIED or NONE will be returned based on whether the AT_PHYSICAL_LOCATION.LOCATION_KIND column is set to UNSPECIFIED or is NULL, respectively. 
+    * All values except SITE require that the locatation be referenced by the object type table of the specified location kind.
     *
     * @exception ERROR If the location is referenced by more than one object type table or the AT_PHYSICAL_LOCATION.LOCATION_KIND column doesn't agree with the object type table reference
     */
@@ -1469,7 +1468,8 @@ AS
     *
     * @return A string identifying the kind (object type) of the location. Will be one of:
     * <ul>
-    *   <li>UNSPECIFIED</li>
+    *   <li>SITE</li>
+    *   <li>STREAMGAGE</li>
     *   <li>BASIN</li>
     *   <li>STREAM</li>
     *   <li>OUTLET</li>
@@ -1477,10 +1477,8 @@ AS
     *   <li>PROJECT</li>
     *   <li>EMBANKMENT</li>
     *   <li>LOCK</li>
-    *   <li>NONE</li>
     * </ul>
-    * All values exception UNSPECIFIED and NONE require that the locatation be referenced by the object type table of the specified location kind.
-    * If the location is not referenced by an object type table, UNSPECIFIED or NONE will be returned based on whether the AT_PHYSICAL_LOCATION.LOCATION_KIND column is set to UNSPECIFIED or is NULL, respectively. 
+    * All values except SITE require that the locatation be referenced by the object type table of the specified location kind.
     *
     * @exception ERROR If the location is referenced by more than one object type table or the AT_PHYSICAL_LOCATION.LOCATION_KIND column doesn't agree with the object type table reference
     */
@@ -1488,15 +1486,19 @@ AS
       p_location_id in varchar2,
       p_office_id   in varchar2 default null)
       return varchar2;
+         
+   function check_location_kind_code(
+      p_location_code in number)
+      return integer;
    /**
-    * Clears the location kind (object type) of the location, resetting it to UNSPECIFIED. This call will only succeed if there is no dependent data for the object type (e.g., sub-basins, gate settings, water users, etc...)
+    * Clears the location kind (object type) of the location, resetting it to SITE or STREAMGAGE. This call will only succeed if there is no dependent data for the object type (e.g., sub-basins, gate settings, water users, etc...)
     *
     * @param p_location_code The unique numeric code that identifies the location
     */
    procedure clear_location_kind(
       p_location_code in number);
    /**
-    * Clears the location kind (object type) of the location, resetting it to UNSPECIFIED. This call will only succeed if there is no dependent data for the object type (e.g., sub-basins, gate settings, water users, etc...)
+    * Clears the location kind (object type) of the location, resetting it to SITE or STREAMGAGE. This call will only succeed if there is no dependent data for the object type (e.g., sub-basins, gate settings, water users, etc...)
     *
     * @param p_location_id The location identifier
     * @param p_office_id   The office that owns the location. If not specified or NULL, the session user's default office will be used
