@@ -21,6 +21,8 @@ DECLARE
 			       'av_embank_protection_type', -- created in at_schema_2...
 			       'av_embank_structure_type',  -- created in at_schema_2...
 			       'av_embankment',             -- created in at_schema_2... 
+			       'av_gate_change',
+			       'av_gate_setting',
 			       'av_loc',                    -- created in at_schema_2...
 			       'av_loc2',                   -- created in at_schema_2...
 			       'av_county',
@@ -31,7 +33,9 @@ DECLARE
 			       'av_loc_level',
 			       'av_nation',
 			       'av_office',
+			       'av_outlet',
 			       'av_parameter',
+			       'av_project',
 			       'av_project_purpose',
 			       'av_project_purposes',
 			       'av_project_purposes_ui',
@@ -47,6 +51,9 @@ DECLARE
 			       'av_state',
 			       'av_stream',                    -- located in at_schema_2
 			       'av_stream_location',           -- located in at_schema_2
+			       'av_turbine',
+			       'av_turbine_change',
+			       'av_turbine_setting',
 			       'av_unit',
 			       'av_storage_unit',
 			       'av_log_message',               -- located in at_schema_2
@@ -154,6 +161,14 @@ END;
 @@cwms/views/av_property.sql
 @@cwms/views/av_vert_datum_offset.sql
 @@cwms/views/av_office.sql
+
+@@cwms/views/av_outlet.sql
+@@cwms/views/av_gate_change.sql
+@@cwms/views/av_gate_setting.sql
+@@cwms/views/av_turbine.sql
+@@cwms/views/av_turbine_change.sql
+@@cwms/views/av_turbine_setting.sql
+@@cwms/views/av_project.sql
 
 --------------------------------------------------------------------------------
 SHOW ERRORS;

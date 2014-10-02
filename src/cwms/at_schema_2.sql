@@ -1,4 +1,4 @@
-create index at_loc_lvl_indicator_u1 on at_loc_lvl_indicator (
+create unique index at_loc_lvl_indicator_u1 on at_loc_lvl_indicator (
    location_code,
    specified_level_code,
    parameter_code,

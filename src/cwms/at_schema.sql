@@ -1118,7 +1118,7 @@ CREATE TABLE at_loc_group_assignment
   loc_attribute   NUMBER,
   loc_alias_id    VARCHAR2(256 BYTE),
   loc_ref_code    NUMBER,
-  office_code     NUMBER NOT NULL
+  office_code     NUMBER(10) NOT NULL
 )
 TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
@@ -1992,7 +1992,7 @@ CREATE TABLE at_ts_group_assignment
   ts_attribute   NUMBER,
   ts_alias_id    VARCHAR2(256 BYTE),
   ts_ref_code    NUMBER,
-  office_code    NUMBER NOT NULL
+  office_code    NUMBER(10) NOT NULL
 )
 TABLESPACE CWMS_20AT_DATA
 PCTUSED    0

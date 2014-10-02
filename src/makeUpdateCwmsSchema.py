@@ -11,14 +11,16 @@ defines_pattern = re.compile('@@defines.sql', re.I)
 
 synonyms = {}
 updates  = [
-	['script',       'disable_all_jobs'],
+	['script',       'updateScript_pre_compile'],
         ['package spec', 'cwms_alarm'],
         ['package body', 'cwms_alarm'],
         ['package body', 'cwms_apex'],
+        ['package spec', 'cwms_basin'],
         ['package body', 'cwms_basin'],
         ['package spec', 'cwms_cat'],
         ['package body', 'cwms_cat'],
         ['package body', 'cwms_display'],
+        ['package spec', 'cwms_embank'],
         ['package body', 'cwms_embank'],
         ['package spec', 'cwms_env'],
         ['package body', 'cwms_env'],
@@ -27,10 +29,13 @@ updates  = [
         ['package body', 'cwms_level'],
         ['package spec', 'cwms_loc'],
         ['package body', 'cwms_loc'],
+        ['package spec', 'cwms_lock'],
         ['package body', 'cwms_lock'],
         ['package body', 'cwms_msg'],
+        ['package spec', 'cwms_outlet'],
         ['package body', 'cwms_outlet'],
         ['package body', 'cwms_priv'],
+        ['package spec', 'cwms_project'],
         ['package body', 'cwms_project'],
         ['package body', 'cwms_prop'],
         ['package spec', 'cwms_rating'],
@@ -40,11 +45,13 @@ updates  = [
         ['package spec', 'cwms_sec'],
         ['package body', 'cwms_sec'],
         ['package body', 'cwms_shef'],
+        ['package spec', 'cwms_stream'],
         ['package body', 'cwms_stream'],
         ['package spec', 'cwms_text'],
         ['package body', 'cwms_text'],
         ['package body', 'cwms_ts'],
         ['package body', 'cwms_ts_id'],
+        ['package spec', 'cwms_turbine'],
         ['package body', 'cwms_turbine'],
         ['package spec', 'cwms_usgs'],
         ['package body', 'cwms_usgs'],
@@ -57,6 +64,7 @@ updates  = [
         ['type',         'abs_rating_ind_param_t'],
         ['type body',    'abs_rating_ind_param_t'],
         ['type',         'loc_lvl_cur_max_ind_tab_t'],
+        ['type body',    'loc_lvl_indicator_t'],
         ['type body',    'loc_lvl_indicator_cond_t'],
         ['type body',    'location_obj_t'],
         ['type body',    'location_ref_t'],
@@ -82,10 +90,17 @@ updates  = [
         ['view',         'av_location_kind'],
         ['view',         'av_loc'],
         ['view',         'av_loc2'],
+        ['view',         'av_outlet'],
+        ['view',         'av_vert_datum_offset'],
         ['view',         'av_virtual_rating'],
         ['view',         'av_usgs_parameter'],
         ['view',         'av_usgs_rating'],
-	['script',       'enable_all_jobs'],
+	['script',       'cwms/views/av_sec_users'],
+	['script',       'cwms/at_schema_env'],
+	['script',       'cwms/at_schema_public_interface'],
+	['script',       'compileAll'],
+	['script',       'updateScript_post_compile'],
+	['script',       'compileAll'],
 ]
 
 srcdir = os.path.join(os.path.split(sys.argv[0])[0], 'cwms')
@@ -167,7 +182,7 @@ def get(item_type, item_name) :
 	else :
 		raise Exception('Invalid item type: "%s"' % item_type)
 
-outfile = os.path.join(srcdir, 'updateCwmsSchema.sql')
+outfile = os.path.join('.', 'updateCwmsSchema.sql')
 logfile = 'updateCwmsSchema.log'
 f = open(outfile, 'w')
 f.write(
@@ -175,7 +190,6 @@ f.write(
 define cwms_schema = CWMS_20
 set define on
 set verify off
-alter session set current_schema=&cwms_schema;
 whenever sqlerror exit sql.sqlcode
 ''')
 f.write('\nspool '+logfile+'; \n')
@@ -188,59 +202,10 @@ for item_type, item_name in updates :
 	message = 'update for %s %s' % (item_type, item_name)
 	f.write('prompt %s\n%s\n' % (message, item_text))
 	if item_type == 'view' :
-		synonyms[item_name] = item_name.replace('av_', 'cwms_v_')
+		f.write('whenever sqlerror continue\n')
+		f.write('drop public synonym %s;\n' % item_name.replace('av_', 'cwms_v_'))
+		f.write('whenever sqlerror exit sql.sqlcode\n')
+		f.write('create public synonym %s for &cwms_schema..%s;\n' % (item_name.replace('av_', 'cwms_v_'), item_name))
 f.write('\ncommit;\n\n')
-if synonyms :
-	f.write('whenever sqlerror continue\n')
-	for synonym in sorted(synonyms.values()) :
-		f.write('drop public synonym %s;\n' % synonym)
-	f.write('whenever sqlerror exit sql.sqlcode\n')
-	for view in sorted(synonyms.keys()) :
-		f.write('create public synonym %s for &cwms_schema..%s;\n' % (synonyms[view], view))
-f.write('\ncommit;\n')
-f.write(
-'''
-set echo off
-set define on
-whenever sqlerror exit sql.sqlcode
-prompt Invalid objects...
-  select substr(object_name, 1, 31) "INVALID OBJECT", object_type
-    from dba_objects
-   where owner = '&cwms_schema'
-     and status = 'INVALID'
-order by object_name, object_type asc;
-
-prompt Recompiling all invalid objects...
-exec sys.utl_recomp.recomp_serial('&cwms_schema');
---  Some of the packages/types don't compile first time
-commit;
-exec dbms_lock.sleep(10);
-exec sys.utl_recomp.recomp_serial('&cwms_schema');
-/
-
-prompt Remaining invalid objects...
-  select substr(object_name, 1, 31) "INVALID OBJECT", object_type
-    from dba_objects
-   where owner = '&cwms_schema'
-     and status = 'INVALID'
-order by object_name, object_type asc;
-
-declare
-   obj_count integer;
-begin
-   select count(*)
-     into obj_count
-     from dba_objects
-    where owner = '&cwms_schema'
-      and status = 'INVALID';
-   if obj_count > 0 then
-      dbms_output.put_line('' || obj_count || ' objects are still invalid.');
-      raise_application_error(-20999, 'Some objects are still invalid.');
-   else
-      dbms_output.put_line('All invalid objects successfully compiled.');
-   end if;
-end;
-/
-''')
 f.close()
 print('\nUpdate script is %s' % outfile)
