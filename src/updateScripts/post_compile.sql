@@ -217,7 +217,7 @@ alter table at_physical_location modify (location_kind NUMBER(10)  not null);
 
 PROMPT Adding VERTCON Data as CLOBs            
 
-HOST sqlldr &cwms_schema/&cwms_passwd@&inst  vertcon_clobs.ctl
+HOST sqlldr &cwms_schema/&cwms_passwd@&inst  updateScripts/vertcon_clobs.ctl
 
 PROMPT Parsing VERTCON CLOBs into Tables            
 
@@ -378,6 +378,7 @@ end;
 /
 
 COMMIT;
+drop public synonym CWMS_ENV ;
 whenever sqlerror exit;
 
 BEGIN

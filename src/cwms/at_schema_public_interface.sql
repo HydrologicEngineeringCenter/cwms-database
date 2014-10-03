@@ -71,7 +71,7 @@ BEGIN
 
 	FOR i IN 1 .. l_public_synonyms.COUNT
 	LOOP
-		l_sql_statement := 'DROP PUBLIC SYNONYM ' || l_public_synonyms (i);
+		l_sql_statement := 'DROP PUBLIC SYNONYM "' || l_public_synonyms (i) || '"';
 		DBMS_OUTPUT.put_line ('-- ' || l_sql_statement);
 
 		EXECUTE IMMEDIATE l_sql_statement;

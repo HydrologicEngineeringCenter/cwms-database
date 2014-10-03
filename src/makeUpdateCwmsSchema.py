@@ -11,7 +11,7 @@ defines_pattern = re.compile('@@defines.sql', re.I)
 
 synonyms = {}
 updates  = [
-	['script',       'updateScript_pre_compile'],
+	['script',       'updateScripts/pre_compile'],
         ['package spec', 'cwms_alarm'],
         ['package body', 'cwms_alarm'],
         ['package body', 'cwms_apex'],
@@ -99,7 +99,7 @@ updates  = [
 	['script',       'cwms/at_schema_env'],
 	['script',       'cwms/at_schema_public_interface'],
 	['script',       'compileAll'],
-	['script',       'updateScript_post_compile'],
+	['script',       'updateScripts/post_compile'],
 	['script',       'compileAll'],
 ]
 
@@ -207,5 +207,6 @@ for item_type, item_name in updates :
 		f.write('whenever sqlerror exit sql.sqlcode\n')
 		f.write('create public synonym %s for &cwms_schema..%s;\n' % (item_name.replace('av_', 'cwms_v_'), item_name))
 f.write('\ncommit;\n\n')
+f.write('\nexit;\n\n')
 f.close()
 print('\nUpdate script is %s' % outfile)
