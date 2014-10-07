@@ -127,27 +127,11 @@ AS
             and upper(db_office_id) = upper(p_office_id);
       exception
          when no_data_found then
-            ---------------------------
-            -- try time series alias --
-            ---------------------------
+            ----------------------------
+            -- try time series alias  --
+            -- (will try loc aliases) --
+            ----------------------------
             l_cwms_ts_id := cwms_ts.get_ts_id_from_alias(p_cwms_ts_id, null, null, p_office_id);
-            if l_cwms_ts_id is null then
-               ------------------------
-               -- try location alias --
-               ------------------------
-               l_parts := cwms_util.split_text(p_cwms_ts_id, '.', 1); 
-               l_parts(1) := cwms_loc.get_location_id(l_parts(1), p_office_id);
-               begin
-                  select cwms_ts_id
-                    into l_cwms_ts_id
-                    from at_cwms_ts_id
-                   where upper(cwms_ts_id) = upper(cwms_util.join_text(l_parts, '.'))
-                     and upper(db_office_id) = upper(p_office_id);
-               exception
-                  when no_data_found then
-                     cwms_err.raise('TS_ID_NOT_FOUND', p_cwms_ts_id, p_office_id);
-               end;
-            end if;
       end;
       return l_cwms_ts_id;
    end;
@@ -8725,14 +8709,7 @@ end retrieve_existing_item_counts;
       EXCEPTION
          WHEN ts_id_not_found
          THEN
-            BEGIN
-               l_ts_code :=
-                  get_ts_code_from_alias (p_ts_id_or_alias, null, null, p_office_id);
-            EXCEPTION
-               WHEN ts_id_not_found
-               THEN
-                  NULL;
-            END;
+            NULL;
       END;
 
       IF l_ts_code IS NOT NULL
