@@ -133,6 +133,9 @@ AS
             ----------------------------
             l_cwms_ts_id := cwms_ts.get_ts_id_from_alias(p_cwms_ts_id, null, null, p_office_id);
       end;
+      if l_cwms_ts_id is null then
+         l_cwms_ts_id := p_cwms_ts_id;
+      end if;
       return l_cwms_ts_id;
    end;
 
