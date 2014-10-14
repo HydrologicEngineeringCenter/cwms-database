@@ -6108,7 +6108,7 @@ AS
          l_location_kind_id := l_type_names(1);
       when 2 then
          if l_type_names(2) = 'STREAMGAGE' then 
-            if l_type_names(1) in ('EMBANKMENT', 'LOCK', 'OUTLET', 'PROJECT') then
+            if l_type_names(1) in ('EMBANKMENT', 'LOCK', 'OUTLET', 'PROJECT', 'TURBINE') then
                l_location_kind_id := l_type_names(1);
             else
                l_multiple := true;
