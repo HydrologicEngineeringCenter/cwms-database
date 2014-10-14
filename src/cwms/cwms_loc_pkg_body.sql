@@ -344,36 +344,6 @@ AS
 			RAISE;
 	END get_county_code;
 
-	--********************************************************************** -
-	--********************************************************************** -
-	--
-	-- get_county_code returns zone_code
-	--
-	------------------------------------------------------------------------------*/
-	FUNCTION get_timezone_code (p_time_zone_id IN VARCHAR2)
-		RETURN NUMBER
-	IS
-		l_zone_code   NUMBER;
-	BEGIN
-		--dbms_output.put_line('function: get_county_code');
-		SELECT	time_zone_code
-		  INTO	l_zone_code
-		  FROM	mv_time_zone
-		 WHERE	UPPER (time_zone_name) = UPPER (p_time_zone_id);
-
-		RETURN l_zone_code;
-	EXCEPTION
-		WHEN NO_DATA_FOUND
-		THEN
-			raise_application_error (
-				-20215,
-				'Could not find a ' || p_time_zone_id || ' time zone',
-				TRUE
-			);
-		WHEN OTHERS
-		THEN
-			RAISE;
-	END get_timezone_code;
 
 	--********************************************************************** -
 	--********************************************************************** -
@@ -1122,7 +1092,7 @@ AS
 		--
 		IF p_time_zone_id IS NOT NULL
 		THEN
-			l_time_zone_code := get_timezone_code (p_time_zone_id);
+			l_time_zone_code := cwms_util.get_time_zone_code (p_time_zone_id);
 		ELSIF NOT l_ignorenulls
 		THEN
 			l_time_zone_code := NULL;
@@ -1522,7 +1492,7 @@ AS
 		--
 		IF p_time_zone_id IS NOT NULL
 		THEN
-			l_time_zone_code := get_timezone_code (p_time_zone_id);
+			l_time_zone_code := cwms_util.get_time_zone_code (p_time_zone_id);
 		ELSIF NOT l_ignorenulls
 		THEN
 			l_time_zone_code := NULL;
@@ -1865,7 +1835,7 @@ AS
 		--
 		IF p_time_zone_id IS NOT NULL
 		THEN
-			l_time_zone_code := get_timezone_code (p_time_zone_id);
+			l_time_zone_code := cwms_util.get_time_zone_code (p_time_zone_id);
 		END IF;
 
 		---------.
