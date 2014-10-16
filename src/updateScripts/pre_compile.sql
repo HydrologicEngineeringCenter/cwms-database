@@ -25,6 +25,10 @@ END;
 
 whenever sqlerror continue; 
 
+PROMPT update cwms_ts package body
+
+@../cwms/cwms_ts_pkg_body.sql
+
 PROMPT rename at_sec_user_office column
 
 ALTER TABLE at_sec_user_office
