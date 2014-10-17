@@ -4691,8 +4691,8 @@ AS
                                    x.table_name)
                   USING l_ts_code,
                         l_version_date,
-                        l_timeseries_data,
-                        l_timeseries_data;
+                        p_timeseries_data, -- get the ENTIRE time window of incoming data, even if it was trimmed by filtering NULLs
+                        p_timeseries_data;
 
                EXECUTE IMMEDIATE REPLACE (
                   'MERGE INTO table_name t1
@@ -4812,8 +4812,8 @@ AS
                                    x.table_name)
                   USING l_ts_code,
                         l_version_date,
-                        l_timeseries_data,
-                        l_timeseries_data;
+                        p_timeseries_data, -- get the ENTIRE time window of incoming data, even if it was trimmed by filtering NULLs
+                        p_timeseries_data;
 
                EXECUTE IMMEDIATE REPLACE (
                   'MERGE INTO table_name t1
