@@ -1050,24 +1050,30 @@ as
     *   </tr>
     *   <tr>
     *     <td class="descr-center">2</td>
+    *     <td class="descr">version_date</td>
+    *     <td class="descr">date</td>
+    *     <td class="descr">The date/time for which the text applies. No date/times without standard text are included, even for regular time series.</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">3</td>
     *     <td class="descr">data_entry_date</td>
     *     <td class="descr">timestamp(6)</td>
     *     <td class="descr">The time the nonstandard text was stored</td>
     *   </tr>
     *   <tr>
-    *     <td class="descr-center">3</td>
+    *     <td class="descr-center">4</td>
     *     <td class="descr">text_id</td>
     *     <td class="descr">varchar2(32)</td>
     *     <td class="descr">A unique identifier for the nonstandard text</td>
     *   </tr>
     *   <tr>
-    *     <td class="descr-center">4</td>
+    *     <td class="descr-center">5</td>
     *     <td class="descr">attribute</td>
     *     <td class="descr">number</td>
     *     <td class="descr">The numeric attribute, if any, for the text</td>
     *   </tr>
     *   <tr>
-    *     <td class="descr-center">5</td>
+    *     <td class="descr-center">6</td>
     *     <td class="descr">text</td>
     *     <td class="descr">clob</td>
     *     <td class="descr">The nonstandard text</td>
