@@ -489,26 +489,12 @@ AS
 		l_sub_loc_exists			 BOOLEAN := TRUE;
 		l_nation_id 				 VARCHAR2 (48) := NVL (p_nation_id, 'UNITED STATES');
 		l_bounding_office_id 	 VARCHAR2 (16);
-		l_location_kind_code 	 NUMBER;
+		l_location_kind_code 	 NUMBER := 1; -- SITE
 		l_bounding_office_code	 NUMBER := NULL;
 		l_nation_code				 VARCHAR2 (2);
 		l_cwms_office_code		 NUMBER (10)
 											 := cwms_util.get_office_code ('CWMS');
 	BEGIN
-		BEGIN
-			SELECT	location_kind_code
-			  INTO	l_location_kind_code
-			  FROM	cwms_location_kind
-			 WHERE	location_kind_id = UPPER (NVL (p_location_kind_id, 'SITE'));
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				cwms_err.raise ('INVALID_ITEM',
-									 p_location_kind_id,
-									 'location kind'
-									);
-		END;
-
 		IF p_bounding_office_id IS NOT NULL
 		THEN
 			BEGIN
@@ -1132,25 +1118,9 @@ AS
 		END IF;
 
 		-------------------
-		-- location kind --
+		-- location kind --  NOT UPDATED
 		-------------------
-		IF p_location_kind_id IS NOT NULL
-		THEN
-			BEGIN
-				SELECT	location_kind_code
-				  INTO	l_location_kind_code
-				  FROM	cwms_location_kind
-				 WHERE	location_kind_id = UPPER (p_location_kind_id);
-			EXCEPTION
-				WHEN NO_DATA_FOUND
-				THEN
-					cwms_err.raise ('INVALID_ITEM',
-										 p_location_kind_id,
-										 'location kind id'
-										);
-			END;
-		END IF;
-
+      
 		---------------
 		-- map label --
 		---------------

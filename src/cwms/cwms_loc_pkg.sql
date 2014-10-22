@@ -464,7 +464,7 @@ AS
     * @param p_county_name         The name of the county that the location is in
     * @param p_state_initial       The two letter abbreviation of the state that the location is in
     * @param p_active              A flag ('T' or 'F') that specifies whether the location is marked as active
-    * @param p_location_kind_id    The geographic type of the location
+    * @param p_location_kind_id    THIS PARAMETER IS IGNORED. A site created with this procedure will have a location kind of SITE.
     * @param p_map_label           A label to be used on maps for location
     * @param p_published_latitude  The published latitude for the location
     * @param p_published_longitude The published longitude for the location
