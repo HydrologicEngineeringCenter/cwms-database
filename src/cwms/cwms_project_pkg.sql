@@ -230,7 +230,7 @@ procedure rename_project(
 procedure delete_project(
    p_project_id    in varchar2,
    p_delete_action in varchar2 default cwms_util.delete_key,
-   p_office_id     in varchar2 default null);
+   p_db_office_id     in varchar2 default null);
 /**
  * Deletes a project from the database
  *

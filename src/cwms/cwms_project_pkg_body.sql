@@ -413,13 +413,13 @@ END rename_project;
 procedure delete_project(
    p_project_id    in varchar2,
    p_delete_action in varchar2 default cwms_util.delete_key,
-   p_office_id     in varchar2 default null)
+   p_db_office_id     in varchar2 default null)
 is
 begin
    delete_project2(
       p_project_id    => p_project_id,
       p_delete_action => p_delete_action,
-      p_office_id     => p_office_id);
+      p_office_id     => p_db_office_id);
 end delete_project;   
 --------------------------------------------------------------------------------
 -- procedure delete_project2
