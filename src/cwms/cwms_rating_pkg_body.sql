@@ -1732,7 +1732,7 @@ begin
        where o.office_id = l_office_id
          and bl.db_office_code = o.office_code
          and pl.base_location_code = bl.base_location_code
-         and upper(bl.base_location_id||substr('-', 1, length(pl.sub_location_id)||pl.sub_location_id)) = upper(l_parts(1))
+         and upper(bl.base_location_id||substr('-', 1, length(pl.sub_location_id))||pl.sub_location_id) = upper(l_parts(1))
          and rt.office_code = o.office_code
          and upper(rt.parameters_id) = upper(l_parts(2))
          and upper(rt.version) = upper(l_parts(3))
