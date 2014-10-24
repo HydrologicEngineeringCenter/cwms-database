@@ -8284,6 +8284,7 @@ as
             and rs.rating_spec_code = r.rating_spec_code
             and rt.template_code = rs.template_code
             and rt.parameters_id = 'Stage;Stage-Shift'
+            and r.active_flag = 'T'
        order by r.effective_date;
       exception
          when no_data_found then null;
