@@ -8646,7 +8646,7 @@ as
                rating_ind_param_spec_t(
                   1,
                   l_ind_param,
-                  'NEAREST',
+                  'PREVIOUS',
                   'NEAREST',
                   'NEAREST')),
             l_ind_param||'-Offset',
@@ -8658,7 +8658,7 @@ as
             l_template.parameters_id||cwms_rating.separator1||l_template.version,
             l_spec_version,
             l_rating_spec.source_agency_id,
-            'NEAREST',
+            'PREVIOUS',
             'NEAREST',
             'NEAREST',
             l_rating_spec.active_flag,
