@@ -422,7 +422,7 @@ AS
 
       IF l_office_id IS NULL
       THEN
-         IF l_username = '&cwms_schema' or l_username = 'NOBODY' or l_username = 'CCP'
+         IF l_username = '&cwms_schema' or l_username = 'NOBODY' or l_username = 'CCP' or l_username = 'SYS'
          THEN
             RETURN 'CWMS';
          ELSE
