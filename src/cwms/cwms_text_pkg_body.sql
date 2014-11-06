@@ -1283,7 +1283,7 @@ as
       l_ts_code            number(10);
       l_std_text_code      number(10);
       l_start_time_utc     date;
-      l_end_time_utc       date := date '2199-12-31';
+      l_end_time_utc       date := sysdate;
       l_version_date_utc   date;
       l_time_zone          varchar2(28);
       l_replace_all        boolean;
@@ -2212,7 +2212,7 @@ as
       l_ts_code            number(10);
       l_clob_code          number(10);
       l_start_time_utc     date;
-      l_end_time_utc       date := date '2199-12-31';
+      l_end_time_utc       date := sysdate;
       l_version_date_utc   date;
       l_time_zone          varchar2(28);
       l_replace_all        boolean;
@@ -2558,7 +2558,7 @@ as
       l_ts_code            number(10);
       l_clob_code          number(10);
       l_start_time_utc     date;
-      l_end_time_utc       date := date '2199-12-31';
+      l_end_time_utc       date := sysdate;
       l_version_date_utc   date;
       l_time_zone          varchar2(28);
       l_replace_all        boolean;
@@ -3482,7 +3482,7 @@ as
       l_blob_code          number(10);
       l_media_type_code    number(10);
       l_start_time_utc     date;
-      l_end_time_utc       date := date '2199-12-31';
+      l_end_time_utc       date := sysdate;
       l_version_date_utc   date;
       l_time_zone          varchar2(28);
       l_replace_all        boolean;
@@ -3843,7 +3843,7 @@ as
       l_ts_code            number(10);
       l_blob_code          number(10);
       l_start_time_utc     date;
-      l_end_time_utc       date := date '2199-12-31';
+      l_end_time_utc       date := sysdate;
       l_version_date_utc   date;
       l_time_zone          varchar2(28);
       l_replace_all        boolean;
