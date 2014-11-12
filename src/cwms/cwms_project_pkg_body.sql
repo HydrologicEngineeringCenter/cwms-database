@@ -433,12 +433,14 @@ procedure delete_project2(
    p_delete_assoc_locs_action in varchar2 default cwms_util.delete_key,
    p_office_id                in varchar2 default null)
 is
-   l_project_code      number(10);
-   l_delete_location   boolean;
-   l_delete_action1    varchar2(16);
-   l_delete_action2    varchar2(16);
-   l_delete_action3    varchar2(16);
-   l_project_loc_ref   location_ref_t;
+   l_project_code       number(10);
+   l_delete_location    boolean;
+   l_delete_action1     varchar2(16);
+   l_delete_action2     varchar2(16);
+   l_delete_action3     varchar2(16);
+   l_project_loc_ref    location_ref_t;
+   l_count              pls_integer;
+   l_location_kind_code integer;
 begin
    -------------------
    -- sanity checks --
@@ -462,7 +464,7 @@ begin
          ||cwms_util.delete_all
          ||'');
    end if;
-   l_delete_location := cwms_util.return_true_or_false(p_delete_location); 
+   l_delete_location := cwms_util.return_true_or_false(p_delete_location);
    l_delete_action2 := upper(substr(p_delete_location_action, 1, 16));
    if l_delete_action2 not in (
       cwms_util.delete_key,
@@ -502,41 +504,41 @@ begin
    if l_delete_action1 in (cwms_util.delete_data, cwms_util.delete_all) then
       -----------------
       -- embankments --
-      ----------------- 
+      -----------------
       for rec in
          (select v.db_office_id,
-                 v.location_id 
+                 v.location_id
             from at_embankment t,
                  av_loc v
            where t.embankment_project_loc_code = l_project_code
              and v.location_code = t.embankment_location_code
-             and unit_system = 'EN'       
+             and unit_system = 'EN'
          )
       loop
          cwms_embank.delete_embankment2(
-            p_embankment_id          => rec.location_id, 
-            p_delete_action          => cwms_util.delete_all, 
-            p_delete_location        => p_delete_assoc_locs, 
-            p_delete_location_action => l_delete_action3, 
+            p_embankment_id          => rec.location_id,
+            p_delete_action          => cwms_util.delete_all,
+            p_delete_location        => p_delete_assoc_locs,
+            p_delete_location_action => l_delete_action3,
             p_office_id              => rec.db_office_id);      end loop;
       -----------
       -- locks --
       -----------
       for rec in
          (select v.db_office_id,
-                 v.location_id 
+                 v.location_id
             from at_lock t,
                  av_loc v
            where t.project_location_code = l_project_code
-             and v.location_code = t.lock_location_code       
-             and unit_system = 'EN'       
+             and v.location_code = t.lock_location_code
+             and unit_system = 'EN'
          )
       loop
          cwms_lock.delete_lock2(
-            p_lock_id                => rec.location_id, 
-            p_delete_action          => cwms_util.delete_all, 
-            p_delete_location        => p_delete_assoc_locs, 
-            p_delete_location_action => l_delete_action3, 
+            p_lock_id                => rec.location_id,
+            p_delete_action          => cwms_util.delete_all,
+            p_delete_location        => p_delete_assoc_locs,
+            p_delete_location_action => l_delete_action3,
             p_office_id              => rec.db_office_id);
       end loop;
       -------------
@@ -544,39 +546,39 @@ begin
       -------------
       for rec in
          (select v.db_office_id,
-                 v.location_id 
+                 v.location_id
             from at_outlet t,
                  av_loc v
            where t.project_location_code = l_project_code
-             and v.location_code = t.outlet_location_code       
-             and unit_system = 'EN'       
+             and v.location_code = t.outlet_location_code
+             and unit_system = 'EN'
          )
       loop
          cwms_outlet.delete_outlet2(
-            p_outlet_id              => rec.location_id, 
-            p_delete_action          => cwms_util.delete_all, 
-            p_delete_location        => p_delete_assoc_locs, 
-            p_delete_location_action => l_delete_action3, 
+            p_outlet_id              => rec.location_id,
+            p_delete_action          => cwms_util.delete_all,
+            p_delete_location        => p_delete_assoc_locs,
+            p_delete_location_action => l_delete_action3,
             p_office_id              => rec.db_office_id);
-      end loop; 
+      end loop;
       --------------
       -- turbines --
       --------------
       for rec in
          (select v.db_office_id,
-                 v.location_id 
+                 v.location_id
             from at_turbine t,
                  av_loc v
            where t.project_location_code = l_project_code
-             and v.location_code = t.turbine_location_code       
-             and unit_system = 'EN'       
+             and v.location_code = t.turbine_location_code
+             and unit_system = 'EN'
          )
       loop
          cwms_turbine.delete_turbine2(
-            p_turbine_id                => rec.location_id, 
-            p_delete_action          => cwms_util.delete_all, 
-            p_delete_location        => p_delete_assoc_locs, 
-            p_delete_location_action => l_delete_action3, 
+            p_turbine_id                => rec.location_id,
+            p_delete_action          => cwms_util.delete_all,
+            p_delete_location        => p_delete_assoc_locs,
+            p_delete_location_action => l_delete_action3,
             p_office_id              => rec.db_office_id);
       end loop;
       ------------------
@@ -584,13 +586,13 @@ begin
       ------------------
       delete
         from at_gate_change
-       where project_location_code = l_project_code; 
+       where project_location_code = l_project_code;
       ---------------------
       -- turbine changes --
       ---------------------
       delete
         from at_turbine_change
-       where project_location_code = l_project_code; 
+       where project_location_code = l_project_code;
       ----------------------------
       -- construction histories --
       ----------------------------
@@ -617,17 +619,17 @@ begin
        where project_location_code = l_project_code;
       -----------------
       -- water users --
-      ----------------- 
-      l_project_loc_ref := location_ref_t(l_project_code); 
+      -----------------
+      l_project_loc_ref := location_ref_t(l_project_code);
       for rec in
-         (select entity_name 
+         (select entity_name
             from at_water_user
-           where project_location_code = l_project_code       
+           where project_location_code = l_project_code
          )
       loop
          cwms_water_supply.delete_water_user(
-            p_project_location_ref => l_project_loc_ref, 
-            p_entity_name          => rec.entity_name, 
+            p_project_location_ref => l_project_loc_ref,
+            p_entity_name          => rec.entity_name,
             p_delete_action        => cwms_util.delete_all);
       end loop;
    end if;
@@ -638,18 +640,33 @@ begin
       delete
         from at_project
        where project_location_code = l_project_code;
-   end if; 
+   end if;
    -------------------------------------
    -- delete the location if required --
    -------------------------------------
    if l_delete_location then
       cwms_loc.delete_location(p_project_id, l_delete_action2, p_office_id);
    else
-      update at_physical_location 
-         set location_kind = cwms_loc.check_location_kind_code(l_project_code) -- SITE or STREAMGAGE 
-       where location_code = l_project_code;   
+      select count(*)
+        into l_count
+        from at_stream_location
+       where location_code = l_project_code;
+      if l_count = 0 then
+         select location_kind_code
+           into l_location_kind_code
+           from cwms_location_kind
+          where location_kind_id = 'SITE'; 
+      else
+         select location_kind_code
+           into l_location_kind_code
+           from cwms_location_kind
+          where location_kind_id = 'STREAMGAGE'; 
+      end if;       
+      update at_physical_location
+         set location_kind = l_location_kind_code
+       where location_code = l_project_code;
    end if;
-end delete_project2;   
+end delete_project2;
 
 PROCEDURE create_basin_group (
       -- the basin name

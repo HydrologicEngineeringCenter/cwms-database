@@ -668,11 +668,13 @@ procedure delete_outlet2(
    p_delete_location_action in varchar2 default cwms_util.delete_key,
    p_office_id              in varchar2 default null)
 is
-   l_outlet_code       number(10);
-   l_delete_location   boolean;
-   l_delete_action1    varchar2(16);
-   l_delete_action2    varchar2(16);
-   l_gate_change_codes number_tab_t;
+   l_outlet_code        number(10);
+   l_delete_location    boolean;
+   l_delete_action1     varchar2(16);
+   l_delete_action2     varchar2(16);
+   l_gate_change_codes  number_tab_t;
+   l_count              pls_integer;
+   l_location_kind_code integer;
 begin
    -------------------
    -- sanity checks --
@@ -747,8 +749,23 @@ begin
    if l_delete_location then
       cwms_loc.delete_location(p_outlet_id, l_delete_action2, p_office_id);
    else
+      select count(*)
+        into l_count
+        from at_stream_location
+       where location_code = l_outlet_code;
+      if l_count = 0 then
+         select location_kind_code
+           into l_location_kind_code
+           from cwms_location_kind
+          where location_kind_id = 'SITE'; 
+      else
+         select location_kind_code
+           into l_location_kind_code
+           from cwms_location_kind
+          where location_kind_id = 'STREAMGAGE'; 
+      end if;       
       update at_physical_location 
-         set location_kind = cwms_loc.check_location_kind_code(l_outlet_code) 
+         set location_kind = l_location_kind_code 
        where location_code = l_outlet_code;   
    end if;
 end delete_outlet2;   

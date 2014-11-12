@@ -4673,7 +4673,7 @@ begin
       and nvl(attribute_parameter_code, -1) = nvl(l_attribute_parameter_code, -1)
       and nvl(attribute_parameter_type_code, -1) = nvl(l_attribute_param_type_code, -1)
       and nvl(attribute_duration_code, -1) = nvl(l_attribute_duration_code, -1)
-      and nvl(to_char(attribute_value), '@') = nvl(to_char(l_attribute_value), '@');
+      and nvl(cwms_rounding.round_dt_f(attribute_value, '9999999999'), '@') = nvl(cwms_rounding.round_nt_f(l_attribute_value, '9999999999'), '@');
    if l_level_count > 1 then
       l_indicator_count := 0;
    else
@@ -4687,7 +4687,7 @@ begin
          and nvl(attr_parameter_code, -1) = nvl(l_attribute_parameter_code, -1)
          and nvl(attr_parameter_type_code, -1) = nvl(l_attribute_param_type_code, -1)
          and nvl(attr_duration_code, -1) = nvl(l_attribute_duration_code, -1)
-         and nvl(to_char(attr_value), '@') = nvl(to_char(l_attribute_value), '@');          
+         and nvl(cwms_rounding.round_nt_f(attr_value, '9999999999'), '@') = nvl(cwms_rounding.round_nt_f(l_attribute_value, '9999999999'), '@');          
    end if;                
    if l_indicator_count > 0 and not l_delete_indicators then
       cwms_err.raise(
@@ -4749,7 +4749,7 @@ begin
                       and nvl(attr_parameter_code, -1) = nvl(l_attribute_parameter_code, -1)
                       and nvl(attr_parameter_type_code, -1) = nvl(l_attribute_param_type_code, -1)
                       and nvl(attr_duration_code, -1) = nvl(l_attribute_duration_code, -1)
-                      and nvl(to_char(attr_value), '@') = nvl(to_char(l_attribute_value), '@')
+                      and nvl(cwms_rounding.round_dt_f(attr_value, '9999999999'), '@') = nvl(cwms_rounding.round_nt_f(l_attribute_value, '9999999999'), '@')
                 );
          delete
            from at_loc_lvl_indicator
@@ -4760,7 +4760,7 @@ begin
             and nvl(attr_parameter_code, -1) = nvl(l_attribute_parameter_code, -1)
             and nvl(attr_parameter_type_code, -1) = nvl(l_attribute_param_type_code, -1)
             and nvl(attr_duration_code, -1) = nvl(l_attribute_duration_code, -1)
-            and nvl(to_char(attr_value), '@') = nvl(to_char(l_attribute_value), '@');          
+            and nvl(cwms_rounding.round_nt_f(attr_value, '9999999999'), '@') = nvl(cwms_rounding.round_nt_f(l_attribute_value, '9999999999'), '@');          
       exception
          when no_data_found then null;
       end;
