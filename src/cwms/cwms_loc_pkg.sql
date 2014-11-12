@@ -2299,6 +2299,8 @@ AS
    procedure delete_local_vert_datum_name (
       p_location_id in varchar2,
       p_office_id   in varchar2 default null);
+   function get_location_kind_code(p_location_code in number)
+      return integer;
    /**
     * Retrieves anscestors of the specified location kind in top-down order
     *

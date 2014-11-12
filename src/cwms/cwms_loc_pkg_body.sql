@@ -2527,7 +2527,7 @@ AS
               from at_physical_location
              where location_code = l_location_code;           
          end if;
-         
+                
             -----------------------
             -- group assignments --
             -----------------------
@@ -2550,13 +2550,13 @@ AS
          -- group assignments --
          -----------------------
          delete 
-           from at_loc_group_assignment 
+              from at_loc_group_assignment 
           where location_code in (select * from table(l_location_codes));
              
          update at_loc_group_assignment
             set loc_ref_code = null
           where loc_ref_code in (select * from table(l_location_codes));
-         ------------             
+				------------
          -- groups --
          ------------             
          update at_loc_group
@@ -2569,12 +2569,12 @@ AS
            from at_vert_datum_offset
           where location_code in (select * from table(l_location_codes));           
          ------------
-         -- basins --
-         ------------
+				-- basins --
+				------------
          update at_basin
             set parent_basin_code = null
           where parent_basin_code in (select * from table (l_location_codes));
-               
+
          update at_basin
             set primary_stream_code = null
           where primary_stream_code in (select * from table (l_location_codes));
@@ -2587,14 +2587,14 @@ AS
          update at_stream
             set diverting_stream_code = null
           where diverting_stream_code in (select * from table (l_location_codes));
-               
+
          update at_stream
             set receiving_stream_code = null
           where receiving_stream_code in (select * from table (l_location_codes));
-               
+
          delete from at_stream_reach
                where stream_location_code in (select * from table (l_location_codes));
-                    
+
          delete from at_stream_location
                where stream_location_code in (select *from table (l_location_codes))
                      or location_code in (select * from table (l_location_codes));
@@ -2606,12 +2606,12 @@ AS
          -----------------               
          delete from at_embankment
                where embankment_location_code in (select * from table (l_location_codes));
-         -----------               
+				-----------
          -- locks --
-         -----------
+				-----------
          delete from at_lockage               
                where lockage_location_code in (select * from table (l_location_codes));
-               
+
          delete from at_lock
                where lock_location_code in (select * from table (l_location_codes));
          -------------               
@@ -2619,7 +2619,7 @@ AS
          -------------   
          delete from at_gate_setting            
                where outlet_location_code in (select * from table (l_location_codes));
-               
+
          delete from at_outlet
                where outlet_location_code in (select * from table (l_location_codes));
          --------------               
@@ -2627,12 +2627,12 @@ AS
          --------------   
          delete from at_turbine_setting            
                where turbine_location_code in (select * from table (l_location_codes));
-               
+
          delete from at_turbine
                where turbine_location_code in (select * from table (l_location_codes));
-         --------------
-         -- projects --
-         --------------
+				--------------
+				-- projects --
+				--------------
          for i in 1..l_location_codes.count loop
             for rec in
                (select project_location_code
@@ -2642,85 +2642,85 @@ AS
             loop
                cwms_project.delete_project(
                   l_location_ids (i),
-                  cwms_util.delete_all,
+															  cwms_util.delete_all,
                   p_db_office_id);
             end loop;
          end loop;
-         -----------
-         -- gages --
-         -----------
+				-----------
+				-- gages --
+				-----------
          delete from at_gage_sensor
                where gage_code in
                         (select gage_code
                            from at_gage
                           where gage_location_code in (select * from table (l_location_codes)));
-                                                               
+
          delete from at_goes                                   
                where gage_code in                              
                         (select gage_code                    
                            from at_gage                      
                           where gage_location_code in (select * from table (l_location_codes)));
-                    
+
          delete from at_gage
                where gage_location_code in (select * from table (l_location_codes));
-         ---------------
-         -- documents --
-         ---------------
+				---------------
+				-- documents --
+				---------------
          delete from at_document
                where document_location_code in (select * from table (l_location_codes));
-         --------------------------
-         -- geographic locations --
-         --------------------------
+				--------------------------
+				-- geographic locations --
+				--------------------------
          delete from at_geographic_location
                where location_code in (select * from table (l_location_codes));
-         -----------
-         -- urls --
-         -----------
+				-----------
+				-- urls --
+				-----------
          delete from at_location_url
                where location_code in (select * from table (l_location_codes));
-         -------------------
-         -- display scale --
-         -------------------
+				-------------------
+				-- display scale --
+				-------------------
          delete from at_display_scale
                where location_code in (select * from table (l_location_codes));
-         ---------------
-         -- forecasts --
-         ---------------
+				---------------
+				-- forecasts --
+				---------------
          delete from at_forecast_spec
                where target_location_code in (select * from table (l_location_codes))
                      or source_location_code in (select * from table (l_location_codes));
-         -------------
-         -- ratings --
-         -------------
+				-------------
+				-- ratings --
+				-------------
          for i in 1..l_location_ids.count loop
             cwms_rating.delete_specs(
                l_location_ids (i) || '.*',
-               cwms_util.delete_all,
+												  cwms_util.delete_all,
                p_db_office_id);
          end loop;
-         ---------------------
-         -- location levels --
-         ---------------------
+				---------------------
+				-- location levels --
+				---------------------
          for i in 1..l_location_ids.count loop
             for rec
                in (select distinct office_id, location_level_id,
-                                  level_date, attribute_id,
-                                  attribute_value, attribute_unit
+												 level_date, attribute_id,
+												 attribute_value, attribute_unit
                      from cwms_v_location_level
                     where office_id = nvl (upper (trim (p_db_office_id)),cwms_util.user_office_id)
                       and location_level_id like l_location_ids (i) || '.%'
                       and unit_system = 'SI'
-                  )
+											  )
             loop
                cwms_level.delete_location_level_ex(
                   rec.location_level_id,
-                  rec.level_date,
-                  'UTC',
-                  rec.attribute_id,
-                  rec.attribute_value,
-                  rec.attribute_unit,
-                  'T',
-                  'T',
+																	 rec.level_date,
+																	 'UTC',
+																	 rec.attribute_id,
+																	 rec.attribute_value,
+																	 rec.attribute_unit,
+																	 'T',
+																	 'T',
                   rec.office_id);
             end loop;
          end loop;
@@ -2738,7 +2738,7 @@ AS
 		then
 			if l_this_is_a_base_loc
 			then -- Deleting Base Location ----------------------------------------
-   			----------------------
+				----------------------
 				-- actual locations --
 				----------------------
 				delete 
@@ -2761,7 +2761,7 @@ AS
             update at_loc_group
                set shared_loc_ref_code = null
              where shared_loc_ref_code = l_location_code;
-   			---------------------
+				---------------------
 				-- actual location --
 				---------------------
 				delete 
@@ -5861,9 +5861,9 @@ AS
 		RETURN l_cursor;
 	END cat_urls_f;
 
-   function check_location_kind(
+   function get_loc_kind_names(
       p_location_code in number)
-      return varchar2
+      return str_tab_t
    is
       l_table_types str_tab_tab_t := str_tab_tab_t(
          str_tab_t('AT_BASIN',           'BASIN_LOCATION_CODE',      'BASIN'),
@@ -5876,9 +5876,6 @@ AS
          str_tab_t('AT_STREAM_LOCATION', 'LOCATION_CODE',            'STREAMGAGE'));
       l_type_names         str_tab_t := str_tab_t();
       l_count              pls_integer;
-      l_location_kind_id   varchar2(32);
-      l_location_kind_code integer; 
-      l_multiple           boolean := false;
    begin
       for i in 1..l_table_types.count loop
          execute immediate 'select count(*) from '||l_table_types(i)(1)||' where '||l_table_types(i)(2)||' = :1'
@@ -5889,6 +5886,22 @@ AS
             l_type_names(l_type_names.count) := l_table_types(i)(3);
          end if;                                
       end loop;
+      
+      return l_type_names;
+   end get_loc_kind_names;
+
+   function check_location_kind(
+      p_location_code in number)
+      return varchar2
+   is
+      l_type_names         str_tab_t := str_tab_t();
+      l_count              pls_integer;
+      l_location_kind_id   varchar2(32);
+      l_location_kind_code integer; 
+      l_multiple           boolean := false;
+   begin
+      l_type_names := get_loc_kind_names(p_location_code);
+      
       case l_type_names.count
       when 0 then
          select location_kind
@@ -7756,6 +7769,18 @@ AS
         
       return l_ancestors;        
    end get_location_kind_ancestors;
+               
+   function get_location_kind_code(p_location_code in number)
+      return integer
+   is
+   begin
+     begin
+       return check_location_kind_code(p_location_code);
+     exception
+       when others then
+         return 0;
+     end;
+   end get_location_kind_code;
                
    function get_location_kind_ancestors(
       p_location_kind_code in integer,
