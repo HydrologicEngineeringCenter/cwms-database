@@ -20,7 +20,11 @@ DECLARE
 			       'av_document_type',
 			       'av_embank_protection_type', -- created in at_schema_2...
 			       'av_embank_structure_type',  -- created in at_schema_2...
-			       'av_embankment',             -- created in at_schema_2... 
+			       'av_embankment',             -- created in at_schema_2...
+                'av_gage', 
+                'av_gage_method',
+                'av_gage_sensor',
+                'av_gage_type', 
 			       'av_gate_change',
 			       'av_gate_setting',
 			       'av_loc',                    -- created in at_schema_2...
@@ -169,6 +173,12 @@ END;
 @@cwms/views/av_turbine_change.sql
 @@cwms/views/av_turbine_setting.sql
 @@cwms/views/av_project.sql
+
+@@cwms/views/av_gage_method.sql
+@@cwms/views/av_gage_type.sql
+@@cwms/views/av_gage.sql
+@@cwms/views/av_gage_sensor.sql
+
 
 --------------------------------------------------------------------------------
 SHOW ERRORS;
