@@ -4893,8 +4893,8 @@ gageTypes = [
     [2,   'GOES_TI', 'F',             'GOES',        'GOES',      'GOES TX+INQ'],
     [3,   'LOS_T',   'F',             'NULL',        'LOS',       'LOS TX-only'],
     [4,   'LOS_TI',  'F',             'LOS',         'LOS',       'LOS TX+INQ'],
-    [5,   'INET_T',  'F',             'NULL',        'INETERNET', 'INTERNET TX-only'],
-    [6,   'INET_TI', 'F',             'INTERNET',    'INETERNET', 'INTERNET TX+INQ'],
+    [5,   'INET_T',  'F',             'NULL',        'INTERNET',  'INTERNET TX-only'],
+    [6,   'INET_TI', 'F',             'INTERNET',    'INTERNET',  'INTERNET TX+INQ'],
 ]
 
 #---------#
