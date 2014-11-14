@@ -2193,7 +2193,7 @@ AS
       END;
                           
       if l_base_parameter_id = 'Elev' then
-         l_value_offset := cwms_loc.get_vertical_datum_offset(l_location_code, l_units);
+         l_value_offset := cwms_loc.get_vertical_datum_offset(l_location_code, p_units);
       end if;
       
       set_action ('Handle start and end times');
