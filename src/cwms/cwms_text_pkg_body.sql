@@ -655,6 +655,7 @@ as
       l_id_mask_tab        := cwms_util.split_text(p_id_masks, p_delimiter);
 
       for i in 1 .. l_id_mask_tab.count loop
+         l_id_mask := cwms_util.normalize_wildcards(upper(l_id_mask_tab(i)), true);
          for rec in (select id
                        from at_clob
                       where id like l_id_mask) loop
