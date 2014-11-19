@@ -1,0 +1,271 @@
+create or replace type body location_level_t
+as
+
+   constructor function location_level_t(
+      p_obj zlocation_level_t)
+      return self as result
+   is
+   begin
+      select o.office_id,
+             bl.base_location_id
+             || substr('-', 1, length(pl.sub_location_id))
+             || pl.sub_location_id
+        into self.office_id,
+             self.location_id
+        from at_physical_location pl,
+             at_base_location bl,
+             cwms_office o
+       where pl.location_code = p_obj.location_code
+         and bl.base_location_code = pl.base_location_code
+         and o.office_code = bl.db_office_code;
+
+      select bp.base_parameter_id
+             || substr('-', 1, length(p.sub_parameter_id))
+             || p.sub_parameter_id
+        into self.parameter_id
+        from at_parameter p,
+             cwms_base_parameter bp
+       where p.parameter_code = p_obj.parameter_code
+         and bp.base_parameter_code = p.base_parameter_code;
+
+      select parameter_type_id
+        into self.parameter_type_id
+        from cwms_parameter_type
+       where parameter_type_code = p_obj.parameter_type_code;
+
+      select duration_id
+        into self.duration_id
+        from cwms_duration
+       where duration_code = p_obj.duration_code;
+
+      select specified_level_id
+        into self.specified_level_id
+        from at_specified_level
+       where specified_level_code = p_obj.specified_level_code;
+
+      self.level_date := p_obj.location_level_date;
+      self.level_value := p_obj.location_level_value;
+      self.level_units_id := cwms_util.get_default_units(parameter_id);
+
+      if p_obj.attribute_parameter_code is not null then
+         select bp.base_parameter_id
+                || substr('-', 1, length(p.sub_parameter_id))
+                || p.sub_parameter_id
+           into self.attribute_parameter_id
+           from at_parameter p,
+                cwms_base_parameter bp
+          where p.parameter_code = p_obj.attribute_parameter_code
+            and bp.base_parameter_code = p.base_parameter_code;
+
+         select parameter_type_id
+           into self.attribute_parameter_type_id
+           from cwms_parameter_type
+          where parameter_type_code = p_obj.attribute_param_type_code;
+
+         select duration_id
+           into self.attribute_duration_id
+           from cwms_duration
+          where duration_code = p_obj.attribute_duration_code;
+         attribute_value := p_obj.attribute_value;
+         level_units_id := cwms_util.get_default_units(attribute_parameter_id);
+
+         attribute_comment := p_obj.attribute_comment;
+      end if;
+
+      self.interval_origin  := p_obj.interval_origin;
+      self.interval_months  := cwms_util.yminterval_to_months(p_obj.calendar_interval);
+      self.interval_minutes := cwms_util.dsinterval_to_minutes(p_obj.time_interval);
+      self.interpolate      := p_obj.interpolate;
+      self.tsid             := case p_obj.ts_code is null
+                                  when true  then null
+                                  when false then cwms_ts.get_ts_id(p_obj.ts_code)
+                               end;
+      if p_obj.seasonal_level_values is not null then
+         self.seasonal_values := new seasonal_value_tab_t();
+         for i in 1..p_obj.seasonal_level_values.count loop
+            self.seasonal_values.extend;
+            self.seasonal_values(i) := seasonal_value_t(
+               p_obj.seasonal_level_values(i).calendar_offset,
+               p_obj.seasonal_level_values(i).time_offset,
+               p_obj.seasonal_level_values(i).level_value);
+         end loop;
+      end if;
+      self.indicators := p_obj.indicators;
+      return;
+   end location_level_t;
+
+ constructor function location_level_t
+      return self as result
+   is
+   begin
+      --------------------------
+      -- all members are null --
+      --------------------------
+      return;
+   end;               
+
+   member function zlocation_level
+      return zlocation_level_t
+   is
+      l_office_code                   number(10);
+      l_cwms_office_code              number(10) := cwms_util.get_office_code('CWMS');
+      l_location_level_code           number(10);
+      l_location_code                 number(10);
+      l_specified_level_code          number(10);
+      l_parameter_code                number(10);
+      l_parameter_type_code           number(10);
+      l_duration_code                 number(10);
+      l_location_level_value          number;
+      l_attribute_value               number;
+      l_attribute_parameter_code      number(10);
+      l_attribute_param_type_code     number(10);
+      l_attribute_duration_code       number(10);
+      l_calendar_interval             interval year(2) to month;
+      l_time_interval                 interval day(3) to second(0);
+      l_seasonal_level_values         seasonal_loc_lvl_tab_t;
+      l_obj                           zlocation_level_t;
+      l_parameter_type_id             parameter_type_id%type := parameter_type_id;
+      l_duration_id                   duration_id%type := duration_id;
+      l_specified_level_id            specified_level_id%type := specified_level_id;
+
+   begin
+      select o.office_code,
+             pl.location_code
+        into l_office_code,
+             l_location_code
+        from at_physical_location pl,
+             at_base_location bl,
+             cwms_office o
+       where upper(o.office_id) = upper(self.office_id)
+         and bl.db_office_code = o.office_code
+         and bl.base_location_code = pl.base_location_code
+         and upper(bl.base_location_id) = upper(cwms_util.get_base_id(self.location_id))
+         and upper(nvl(pl.sub_location_id, '.')) = upper(nvl(cwms_util.get_sub_id(self.location_id), '.'));
+
+      select p.parameter_code
+        into l_parameter_code
+        from at_parameter p,
+             cwms_base_parameter bp
+       where upper(bp.base_parameter_id) = upper(cwms_util.get_base_id(self.parameter_id))
+         and p.base_parameter_code = bp.base_parameter_code
+         and upper(nvl(p.sub_parameter_id, '.')) = upper(nvl(cwms_util.get_sub_id(self.parameter_id), '.'))
+         and p.db_office_code in (l_office_code, l_cwms_office_code);
+
+      select pt.parameter_type_code
+        into l_parameter_type_code
+        from cwms_parameter_type pt
+       where upper(pt.parameter_type_id) = upper(l_parameter_type_id);
+
+      select d.duration_code
+        into l_duration_code
+        from cwms_duration d
+       where upper(d.duration_id) = upper(l_duration_id);
+
+      select sl.specified_level_code
+        into l_specified_level_code
+        from at_specified_level sl
+       where upper(sl.specified_level_id) = upper(l_specified_level_id);
+
+      select level_value * factor + offset
+        into l_location_level_value
+        from cwms_unit_conversion cuc
+       where from_unit_id = self.level_units_id
+         and to_unit_id = cwms_util.get_default_units(self.parameter_id);
+
+      if self.attribute_parameter_id is not null then
+         select p.parameter_code
+           into l_attribute_parameter_code
+           from at_parameter p,
+                cwms_base_parameter bp
+          where upper(bp.base_parameter_id) = upper(cwms_util.get_base_id(self.attribute_parameter_id))
+            and p.base_parameter_code = bp.base_parameter_code
+            and upper(nvl(p.sub_parameter_id, '.')) = upper(nvl(cwms_util.get_sub_id(self.attribute_parameter_id), '.'))
+            and p.db_office_code in (l_office_code, l_cwms_office_code);
+
+         select pt.parameter_type_code
+           into l_attribute_param_type_code
+           from cwms_parameter_type pt
+          where upper(pt.parameter_type_id) = upper(self.attribute_parameter_type_id);
+
+         select d.duration_code
+           into l_attribute_duration_code
+           from cwms_duration d
+          where upper(d.duration_id) = upper(self.attribute_duration_id);
+
+         select cwms_rounding.round_f(self.attribute_value * factor + offset, 12)
+           into l_attribute_value
+           from cwms_unit_conversion cuc
+          where from_unit_id = attribute_units_id
+            and to_unit_id = cwms_util.get_default_units(self.attribute_parameter_id);
+      end if;
+
+      l_calendar_interval := cwms_util.months_to_yminterval(self.interval_months);
+      l_time_interval     := cwms_util.minutes_to_dsinterval(self.interval_minutes);
+
+      if self.seasonal_values is not null then
+         l_seasonal_level_values := new seasonal_loc_lvl_tab_t();
+         for i in 1..self.seasonal_values.count loop
+            l_seasonal_level_values.extend;
+            l_seasonal_level_values(i) := seasonal_location_level_t(
+               cwms_util.months_to_yminterval(self.seasonal_values(i).offset_months),
+               cwms_util.minutes_to_dsinterval(self.seasonal_values(i).offset_minutes),
+               seasonal_values(i).value);
+         end loop;
+      end if;
+
+      begin
+         select location_level_code
+           into l_location_level_code
+           from at_location_level
+          where location_code = l_location_code
+            and parameter_code = l_parameter_code
+            and parameter_type_code = l_parameter_type_code
+            and duration_code = l_duration_code
+            and specified_level_code = l_specified_level_code
+            and location_level_date = self.level_date
+            and nvl(to_char(attribute_value), '@') = nvl(to_char(l_attribute_value), '@')
+            and nvl(attribute_parameter_code, -1) = nvl(l_attribute_parameter_code, -1)
+            and nvl(attribute_parameter_type_code, -1) = nvl(l_attribute_param_type_code, -1)
+            and nvl(attribute_duration_code, -1) = nvl(l_attribute_duration_code, -1);
+      exception
+         when no_data_found then null;
+      end;
+      l_obj := zlocation_level_t();
+      l_obj.init(
+         nvl(l_location_level_code, cwms_seq.nextval),
+         l_location_code,
+         l_specified_level_code,
+         l_parameter_code,
+         l_parameter_type_code,
+         l_duration_code,
+         self.level_date,
+         l_location_level_value,
+         self.level_comment,
+         l_attribute_value,
+         l_attribute_parameter_code,
+         l_attribute_param_type_code,
+         l_attribute_duration_code,
+         self.attribute_comment,
+         self.interval_origin,
+         l_calendar_interval,
+         l_time_interval,
+         self.interpolate,
+         case self.tsid is null
+            when true  then null
+            when false then cwms_ts.get_ts_code(self.tsid, l_office_code)
+         end,
+         l_seasonal_level_values,
+         self.indicators);
+      return l_obj;
+   end zlocation_level;
+
+   member procedure store
+   is
+      l_obj zlocation_level_t;
+   begin
+      l_obj:= zlocation_level;
+      l_obj.store;
+   end store;
+end;
+/
+show errors;
