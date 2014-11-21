@@ -199,14 +199,14 @@ end get_parameters;
                         
 function get_parameters(
    p_usgs_id   in varchar2,
-   p_office_id in varchar2)
+   p_office_id in varchar2 default null)
    return number_tab_t
 is
    l_all_parameters number_tab_t;
    l_parameters     number_tab_t;
    l_count          integer;
 begin
-   l_all_parameters := get_parameters(p_office_id);
+   l_all_parameters := get_parameters(p_office_id => p_office_id);
    for i in 1..l_all_parameters.count loop
       select count(*)
         into l_count
@@ -415,7 +415,7 @@ function get_ts_data(
    p_period     in varchar2,
    p_sites      in varchar2,
    p_parameters in varchar2,
-   p_office_id  in varchar2)
+   p_office_id  in varchar2 default null)
    return clob
 is
    l_office_id varchar2(16);
@@ -508,7 +508,7 @@ function get_ts_data(
    p_end_time   in varchar2,
    p_sites      in varchar2,
    p_parameters in varchar2,
-   p_office_id  in varchar2)
+   p_office_id  in varchar2 default null)
    return clob   
 is
    l_url varchar2(32767) := cwms_usgs.realtime_ts_url_dates;
@@ -529,11 +529,11 @@ function get_ts_data_rdb(
    p_period     in varchar2,
    p_sites      in varchar2,
    p_parameters in varchar2,
-   p_office_id  in varchar2)
+   p_office_id  in varchar2 default null)
    return clob
 is
 begin
-   return get_ts_data('rdb', p_period, p_sites, p_parameters, p_office_id);
+   return get_ts_data('rdb', p_period, p_sites, p_parameters, p_office_id=>p_office_id);
 end get_ts_data_rdb;      
 
 function get_ts_data_rdb(
@@ -541,7 +541,7 @@ function get_ts_data_rdb(
    p_end_time   in varchar2,
    p_sites      in varchar2,
    p_parameters in varchar2,
-   p_office_id  in varchar2)
+   p_office_id  in varchar2 default null)
    return clob
 is
 begin
@@ -572,7 +572,7 @@ end make_text_id;
 procedure store_text(
    p_text      in varchar2,
    p_text_id   in varchar2,
-   p_office_id in varchar2)
+   p_office_id in varchar2 default null)
 is
    pragma autonomous_transaction;
    l_code      integer;
@@ -583,7 +583,7 @@ end store_text;
 
 procedure delete_text(
    p_text_id   in varchar2,
-   p_office_id in varchar2)
+   p_office_id in varchar2 default null)
 is
    pragma autonomous_transaction;
 begin
@@ -597,7 +597,7 @@ procedure process_ts_rdb(
    p_ts_data     out tsv_array_tab, 
    p_location_id in  varchar2,
    p_rdb_data    in  varchar2,
-   p_office_id   in  varchar2)
+   p_office_id   in  varchar2 default null)
 is
    type col_t is table of integer index by varchar2(16);
    l_ts_ids     str_tab_t;     
@@ -770,7 +770,7 @@ end process_ts_rdb;
    
 procedure process_ts_rdb_and_store(      
    p_rdb_data  in clob,
-   p_office_id in varchar2)
+   p_office_id in varchar2 default null)
 is
    l_office_id   varchar2(16);
    l_datasets    str_tab_t;
@@ -879,14 +879,14 @@ begin
    exception
       when others then null;
    end;
-   retrieve_and_store_ts(null, null, null, p_office_id);
+   retrieve_and_store_ts(null, null, null, p_office_id=>p_office_id);
 end retrieve_and_store_ts;   
    
 procedure retrieve_and_store_ts(      
    p_period     in varchar2,
    p_sites      in varchar2,
    p_parameters in varchar2,
-   p_office_id  in varchar2)
+   p_office_id  in varchar2 default null)
 is
    l_office_id varchar2(16);
 begin
@@ -896,7 +896,7 @@ begin
       cwms_msg.msg_level_normal, 
       'CWMS_USGS.RETRIEVE_AND_STORE_TS starting for '||l_office_id); 
    process_ts_rdb_and_store(
-      get_ts_data_rdb(p_period, p_sites, p_parameters, l_office_id), 
+      get_ts_data_rdb(p_period, p_sites, p_parameters, p_office_id=>l_office_id), 
       l_office_id);   
    cwms_msg.log_db_message(
       'cwms_usgs.retrieve_and_store_ts', 
@@ -909,7 +909,7 @@ procedure retrieve_and_store_ts(
    p_end_time   in varchar2,
    p_sites      in varchar2,
    p_parameters in varchar2,
-   p_office_id  in varchar2)
+   p_office_id  in varchar2 default null)
 is
    l_office_id varchar2(16);
 begin
@@ -1082,6 +1082,199 @@ begin
    end if;
    
 end stop_auto_ts_job;
+
+procedure set_auto_stream_meas_filter_id(
+   p_text_filter_id in varchar2,
+   p_office_id      in varchar2 default null)
+is
+   l_office_id varchar2(16) := cwms_util.get_db_office_id(p_office_id);
+begin
+   cwms_properties.set_property('USGS', cwms_usgs.auto_stream_meas_filter_prop, p_text_filter_id, 'Text filter locations to retrieve stream measurements from USGS', l_office_id);
+end set_auto_stream_meas_filter_id;
+
+function get_auto_stream_meas_filter_id(
+   p_office_id in varchar2 default null)
+   return varchar2
+is
+   l_office_id varchar2(16) := cwms_util.get_db_office_id(p_office_id);
+begin
+   return cwms_properties.get_property('USGS', cwms_usgs.auto_stream_meas_filter_prop, null, l_office_id);
+end get_auto_stream_meas_filter_id;
+
+function get_auto_stream_meas_locations(
+   p_office_id in varchar2 default null)
+   return str_tab_t
+is
+   l_office_code       integer;
+   l_office_id         varchar2(16);
+   l_text_filter_id    varchar2(32);
+   l_locations         str_tab_t;
+   l_filtered          str_tab_t;
+   l_filter_must_exist varchar2(1) := 'T';
+begin
+   l_office_id      := cwms_util.get_db_office_id(p_office_id);
+   l_office_code    := cwms_util.get_db_office_code(l_office_id);
+   l_text_filter_id := get_auto_stream_meas_filter_id(l_office_id);
+   if l_text_filter_id is not null then
+      -----------------------------------
+      -- get the locations to retrieve --
+      -----------------------------------
+      l_filtered := filter_locations(l_text_filter_id, l_filter_must_exist, null, l_office_id);
+      --------------------------------------------
+      -- get the USGS aliases for the locations --
+      --------------------------------------------
+      select distinct
+             location_id
+        bulk collect
+        into l_locations
+        from av_loc2
+       where aliased_item = 'LOCATION'                              
+         and loc_alias_category = 'Agency Aliases'
+         and loc_alias_group = 'USGS Station Number'
+         and location_code in (select location_code
+                                 from av_loc2
+                                where location_id in (select * from table(l_filtered))
+                                  and db_office_id = l_office_id 
+                              );                                             
+   end if;
+   return l_locations;
+end get_auto_stream_meas_locations;   
+
+procedure retrieve_and_store_stream_meas(      
+   p_period     in varchar2,
+   p_sites      in varchar2,
+   p_office_id  in varchar2 default null)
+is
+   l_period      varchar2(32);
+   l_start_time  date;
+   l_end_time    date;
+   l_ym_interval yminterval_unconstrained;
+   l_ds_interval dsinterval_unconstrained;
+begin
+   l_period := nvl(p_period, 'P200Y');
+   cwms_util.duration_to_interval(l_ym_interval, l_ds_interval, l_period);
+   l_end_time   := sysdate;
+   l_start_time := cast((cast(l_end_time as timestamp) - l_ym_interval - l_ds_interval) as date); 
+   retrieve_and_store_stream_meas(
+      to_char(l_start_time, 'yyyy-mm-dd'),
+      to_char(l_end_time, 'yyyy-mm-dd'),
+      p_sites,
+      p_office_id);
+end retrieve_and_store_stream_meas;   
+
+procedure retrieve_and_store_stream_meas(      
+   p_start_time in varchar2,
+   p_end_time   in varchar2,
+   p_sites      in varchar2,
+   p_office_id  in varchar2 default null)
+is
+   l_office_id  varchar2(16);
+   l_start_time varchar2(10);
+   l_end_time   varchar2(10);
+   l_sites_txt  varchar2(32767);
+   l_sites_tab  str_tab_t; 
+   l_set_tab    str_tab_t;
+   l_set_count  pls_integer;
+   l_set_min    pls_integer;
+   l_set_max    pls_integer;
+   l_url        varchar2(32767);
+   l_data       clob;
+   l_data2      clob;
+   l_lines      str_tab_t;
+   l_count      pls_integer;
+   l_meas       streamflow_meas_t;
+begin
+   l_start_time := nvl(p_start_time, '1800-01-01');
+   l_end_time   := nvl(p_end_time, to_char(sysdate, 'yyyy-mm-dd')); 
+ 
+   
+   l_office_id := cwms_util.get_db_office_id(p_office_id);
+   if p_sites is null then
+      l_sites_tab := get_auto_stream_meas_locations(l_office_id);
+   else
+      select trim(column_value)
+        bulk collect
+        into l_sites_tab
+        from table(cwms_util.split_text(p_sites, ','));
+   end if;
+   if l_sites_tab is null or l_sites_tab.count = 0 then
+      cwms_msg.log_db_message(
+         'cwms_usgs.retrieve_and_store_stream_meas', 
+         cwms_msg.msg_level_detailed, 
+         'Retrieval aborted due to no sites to retrieve'); 
+   else
+      l_set_count := trunc((l_sites_tab.count - 1) / cwms_usgs.max_sites) + 1;
+      for i in 1..l_set_count loop
+         l_url := cwms_usgs.stream_meas_url;
+         l_url := replace(l_url, '<start>', l_start_time);
+         l_url := replace(l_url, '<end>', l_end_time);
+         l_set_min := (i-1) * cwms_usgs.max_sites + 1;
+         l_set_max := case 
+                         when i = l_set_count then l_sites_tab.count 
+                         else l_set_min + cwms_usgs.max_sites - 1 
+                      end;
+         select column_value
+           bulk collect
+           into l_set_tab
+           from (select rownum as j,
+                        column_value
+                   from table(l_sites_tab)
+                )
+          where j between l_set_min and l_set_max;
+         l_sites_txt := cwms_util.join_text(l_set_tab, ',');
+         l_url := replace(l_url, '<sites>' , l_sites_txt);
+         cwms_msg.log_db_message(
+            'cwms_usgs.retrieve_and_store_stream_meas', 
+            cwms_msg.msg_level_detailed, 
+            l_office_id||': USGS URL: '||l_url); 
+         if i = 1 then
+            l_data := cwms_util.get_url(l_url, 60 + l_sites_tab.count * 15);
+            cwms_msg.log_db_message(
+               'cwms_usgs.retrieve_and_store_stream_meas', 
+               cwms_msg.msg_level_detailed, 
+               l_office_id||': bytes retrieved: '||dbms_lob.getlength(l_data)); 
+         else
+            l_data2 := cwms_util.get_url(l_url, 60 + l_sites_tab.count * 15);
+            cwms_msg.log_db_message(
+               'cwms_usgs.retrieve_and_store_stream_meas', 
+               cwms_msg.msg_level_detailed, 
+               l_office_id||': bytes retrieved: '||dbms_lob.getlength(l_data2)); 
+            dbms_lob.append(l_data, l_data2);
+         end if;
+      end loop;
+      cwms_msg.log_db_message(
+         'cwms_usgs.retrieve_and_store_stream_meas', 
+         cwms_msg.msg_level_detailed, 
+         'Processing measurements');
+      l_lines := cwms_util.split_text(l_data, chr(10));
+      l_count := 0;
+      for i in 1..l_lines.count loop
+         if length(l_lines(i)) < 20 
+            or substr(l_lines(i), 1, 1) = '#' 
+            or substr(l_lines(i), 1, 9) = 'agency_cd'
+            or substr(l_lines(i), 1, 2) = '5s'
+         then
+            continue;
+         end if;
+         l_meas := streamflow_meas_t(l_lines(i), l_office_id);
+         if l_meas is null or l_meas.location is null then 
+            continue;
+         end if;
+         declare
+            l_xml xmltype;
+         begin
+            dbms_output.put_line(l_meas.to_string);
+         end;
+         l_meas.store('F'); 
+         l_count := l_count + 1;  
+      end loop; 
+      cwms_msg.log_db_message(
+         'cwms_usgs.retrieve_and_store_stream_meas', 
+         cwms_msg.msg_level_detailed, 
+         l_count||' measurements stored');
+   end if;   
+   
+end retrieve_and_store_stream_meas;    
 
 
 end cwms_usgs;

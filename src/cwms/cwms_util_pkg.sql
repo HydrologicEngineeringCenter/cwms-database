@@ -1376,13 +1376,24 @@ AS
    /**
     * Converts an ISO 8601 Duration string to an equivalent number of minutes
     * 
-    * @param p_minutes the duration to convert
+    * @param p_duration the duration to convert
     * 
     * @return an equivalent number of minutes                
     */       
    function duration_to_minutes(
       p_duration in varchar2)
-      return integer;
+      return integer;   
+   /**
+    * Converts an ISO 8601 Duration string to equivalent interval 
+    *
+    * @param p_ym_interval the interval year to month portion of the equivalent interval
+    * @param p_ds_interval the interval day to second portion of the equivalent interval 
+    * @param p_duration the duration to convert
+    */       
+   procedure duration_to_interval(
+      p_ym_interval out yminterval_unconstrained,
+      p_ds_interval out dsinterval_unconstrained,
+      p_duration    in  varchar2);      
    /**
     * Converts an ODBC timestamp string to an equivalent <code><big>DATE</big></code>
     * 
@@ -1667,6 +1678,24 @@ AS
       p_xml  in xmltype,
       p_path in varchar)
    return xmltype;
+   /**
+    * Retrieves matching XML element from an <code><big>XMLTYPE</big></code>
+    *
+    * @param p_xml        The xml document or fragment to retrieve from  
+    * @param p_path       The elements to retrieve, in XPath format
+    * @param p_condition  An optional condition by which to filter the elements, in XPath format. If specified, the path in this condition must be relative to the root of the xml document or fragment
+    * @param p_order_by   An optional path by which to order the elements, in XPath format. If specified, the path must be relative to the the root of the xml document or fragment.
+    * @param p_descending A flag ('T'/'F') specifying if the ordering should be in descending order. If unspecified, any ordering will be in ascending order. This parameter is meaningful only in conjunction with p_order_by parameter.
+    *
+    * @return The elements that match the input path and condition (if any), in the specified order (if any).
+    */
+   function get_xml_nodes(
+      p_xml        in xmltype,
+      p_path       in varchar2,
+      p_condition  in varchar2 default null,
+      p_order_by   in varchar2 default null,
+      p_descending in varchar2 default 'F')
+   return xml_tab_t;
    /**
     * Retrieves the text contained in a specified XML element from an <code><big>XMLTYPE</big></code>
     * 

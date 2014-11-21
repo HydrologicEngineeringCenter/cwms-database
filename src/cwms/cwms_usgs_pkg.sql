@@ -51,6 +51,38 @@ auto_ts_filter_prop constant varchar2(27) := 'timeseries_locations_filter';
  */
 auto_ts_period_prop constant varchar2(26) := 'timeseries_retrieve_period';
 /**
+ * URL for retrieving streamflow measurement data from USGS NWIS for specified start and end dates
+ */
+stream_meas_url     constant varchar2(113) := 'http://waterdata.usgs.gov/nwis/measurements?format=rdb&begin_date=<start>&end_date=<end>&multiple_site_no=<sites>';
+/**
+ * CWMS Properties ID for text filter for determining locations for which to retrieve instantaneous value time series data from USGS NWIS. No time series are retrieved if property is not set. Property category is 'USGS'.
+ * May be managed using CWMS_PROPERTIES package or by routines in this package.
+ *
+ * @see package cwms_properties
+ * @see set_auto_stream_meas_filter_id
+ * @see get_auto_stream_meas_filter_id
+ */
+auto_stream_meas_filter_prop constant varchar2(32) := 'streamflow_meas_locations_filter';
+/**
+ * URL for retrieving rating update info from the USGS NWIS rating depot for all ratings updated within a specified period 
+ * @see http://waterdata.usgs.gov/nwisweb/get_ratings?help
+ */
+rating_url_site   constant varchar2(71) := 'http://waterdata.usgs.gov/nwisweb/get_ratings?format=rdb&period=<hours>';
+/**
+ * URL for retrieving rating update info from the USGS NWIS rating depot for all ratings for a specified site 
+ * @see http://waterdata.usgs.gov/nwisweb/get_ratings?help
+ */
+rating_url_period constant varchar2(71) := 'http://waterdata.usgs.gov/nwisweb/get_ratings?format=rdb&site_no=<site>';
+/**
+ * CWMS Properties ID for specifying run interval in minutes for automatic rating retrieval job. Job doesn't run if property is not set. Property category is 'USGS'. Property value is integer.
+ * May be managed using CWMS_PROPERTIES package or by routines in this package.
+ *
+ * @see package cwms_properties
+ * @see set_auto_rating_interval
+ * @see get_auto_rating_interval
+ */
+auto_rating_interval_prop constant varchar2(24) := 'rating_retrieve_interval';
+/**
  * Sets the text filter used to determine locations for which to retrieve instantaneous value time series data from USGS NWIS.
  *
  * @param p_text_filter_id The text filter to use to determine location for which to retrieve time series data. 
@@ -158,7 +190,7 @@ function get_parameters(
  */                        
 function get_parameters(
    p_usgs_id   in varchar2,
-   p_office_id in varchar2)
+   p_office_id in varchar2 default null)
    return number_tab_t;
 /**
  * Sets the USGS-to-CWMS parameter mapping for a specified USGS parameter and office
@@ -279,7 +311,7 @@ function get_ts_data(
    p_period     in varchar2,
    p_sites      in varchar2,
    p_parameters in varchar2,
-   p_office_id  in varchar2)
+   p_office_id  in varchar2 default null)
    return clob;   
 /**
  * Retrieve instantaneous value time series data from USGS NWIS based on start and end times
@@ -339,7 +371,7 @@ function get_ts_data(
    p_end_time   in varchar2,
    p_sites      in varchar2,
    p_parameters in varchar2,
-   p_office_id  in varchar2)
+   p_office_id  in varchar2 default null)
    return clob;   
 /**
  * Retrieve instantaneous value time series data in RDB format from USGS NWIS based on a lookback period
@@ -354,7 +386,7 @@ function get_ts_data_rdb(
    p_period     in varchar2,
    p_sites      in varchar2,
    p_parameters in varchar2,
-   p_office_id  in varchar2)
+   p_office_id  in varchar2 default null)
    return clob;   
 /**
  * Retrieve instantaneous value time series data in RDB format from USGS NWIS based on based on start and end times
@@ -371,7 +403,7 @@ function get_ts_data_rdb(
    p_end_time   in varchar2,
    p_sites      in varchar2,
    p_parameters in varchar2,
-   p_office_id  in varchar2)
+   p_office_id  in varchar2 default null)
    return clob;
 /**
  * Retrieve instantaneous value time series data from USGS NWIS based on a lookback period and store in CWMS.
@@ -395,7 +427,7 @@ procedure retrieve_and_store_ts(
    p_period     in varchar2,
    p_sites      in varchar2,
    p_parameters in varchar2,
-   p_office_id  in varchar2);
+   p_office_id  in varchar2 default null);
 /**
  * Retrieve instantaneous value time series data from USGS NWIS based on based on start and end times and store in CWMS
  *
@@ -410,7 +442,7 @@ procedure retrieve_and_store_ts(
    p_end_time   in varchar2,
    p_sites      in varchar2,
    p_parameters in varchar2,
-   p_office_id  in varchar2);
+   p_office_id  in varchar2 default null);
 /**
  * Schedules (or re-schedules) the job to automatically retrieve instaneous value time series data.
  * The scheduled job name is USGS_AUTO_TS_XXX, where XXX is the office identifier the job is running for
@@ -428,6 +460,62 @@ procedure start_auto_ts_job(
  */
 procedure stop_auto_ts_job(
    p_office_id in varchar2 default null);
+/**
+ * Sets the text filter used to determine locations for which to retrieve stream flow measurement data from USGS NWIS.
+ *
+ * @param p_text_filter_id The text filter to use to determine locations for which to retrieve stream flow measurement data. 
+ * @param p_office_id      The office to set the text filter for. If NULL or not specified, the session user's default office is used.
+ *
+ * @see constant auto_ts_filter_prop
+ */
+procedure set_auto_stream_meas_filter_id(
+   p_text_filter_id in varchar2,
+   p_office_id      in varchar2 default null);
+/**
+ * Retrieves the text filter used to determine locations for which to retrieve stream flow measurement data from USGS NWIS.
+ *
+ * @param p_office_id The office that owns the text filter. If NULL or not specified, the session user's default office is used.
+ * @return The text filter to use to determine locations for which to retrieve stream flow measurement data. 
+ *
+ * @see constant auto_stream_meas_filter_prop
+ */
+function get_auto_stream_meas_filter_id(
+   p_office_id in varchar2 default null)
+   return varchar2;
+/**
+ * Retrieves the list of locations whose stream flow measurements will be retrieved from the USGS NWIS.
+ *
+ * @param p_office_id The office to retrieve locations for. If NULL or not spcecified, the session user's default office is used.
+ *
+ * @see get_auto_stream_meas_filter_id
+ */   
+function get_auto_stream_meas_locations(
+   p_office_id in varchar2 default null)
+   return str_tab_t;   
+/**
+ * Retrieve stream flow measurement data from USGS NWIS based on a lookback period and store in CWMS
+ *
+ * @param p_period     The lookback period to retrieve data for. If NULL, the value returned by get_auto_stream_meas_period for the specified or default office is used. 
+ * @param p_sites      A comma-separated list of USGS site names (station numbers) to retrieve the data for. If NULL, the same list of sites as returned from get_auto_stream_meas_locations (without the input parameter) for the specified or default office is used. 
+ * @param p_office_id  The office to retrieve the data for. If NULL or not specified, the session user's default office is used
+ */
+procedure retrieve_and_store_stream_meas(      
+   p_period     in varchar2,
+   p_sites      in varchar2,
+   p_office_id  in varchar2 default null);
+/**
+ * Retrieve stream flow measurement data from USGS NWIS based on based on start and end times and store in CWMS
+ *
+ * @param p_start_time The beginning of the time window specified in ISO 8601 date/time format
+ * @param p_end_time   The end of the time window specified in ISO 8601 date/time format  
+ * @param p_sites      A comma-separated list of USGS site names (station numbers) to retrieve the data for. If NULL, the same list of sites as returned from get_auto_stream_meas_locations (without the input parameter) for the specified or default office is used. 
+ * @param p_office_id  The office to retrieve the data for. If NULL or not specified, the session user's default office is used
+ */
+procedure retrieve_and_store_stream_meas(      
+   p_start_time in varchar2,
+   p_end_time   in varchar2,
+   p_sites      in varchar2,
+   p_office_id  in varchar2 default null);
 
 end cwms_usgs;
 /

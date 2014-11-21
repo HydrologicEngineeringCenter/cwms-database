@@ -1,3 +1,4 @@
+set define off
 create or replace package cwms_stream
 /**
  * Facilities for working with streams, stream reaches, and stream locations
@@ -1341,7 +1342,195 @@ function get_ds_locations_f(
    p_all_ds_locations in varchar2 default 'F',
    p_office_id        in varchar2 default null)
    return str_tab_t;
-
+/**
+ * Stores one or more stream flow measurements specified in an XML document
+ *
+ * @param p_xml The XML document. This can be single measurement with the root element of &lt;stream-flow-measurement%gt; with the format shown below. To store more than one measurement, include multiple measurement XML elements inside a document with the root element of &lt;stream-flow-measurements%gt; (plural)<p>
+ * <pre><big>
+ * &lt;stream-flow-measurement office-id="SWT" height-unit="ft" flow-unit="cfs" used="true"&gt;
+ *   &lt;location&gt;TULA&lt;/location&gt;
+ *   &lt;number&gt;1737&lt;/number&gt;
+ *   &lt;date&gt;2014-01-14T17:08:30Z&lt;/date&gt;
+ *   &lt;agency&gt;USGS&lt;/agency&gt;
+ *   &lt;party&gt;WZM/JEP&lt;/party&gt;                                                        
+ *   &lt;gage-height&gt;.81&lt;/gage-height&gt;
+ *   &lt;flow&gt;221&lt;/flow&gt;
+ *   &lt;current-rating&gt;19.0&lt;/current-rating&gt;
+ *   &lt;shift-used&gt;.88&lt;/shift-used&gt;
+ *   &lt;percent-difference&gt;61.3&lt;/percent-difference&gt;
+ *   &lt;quality&gt;Fair&lt;/quality&gt;
+ *   &lt;delta-height&gt;-.02&lt;/delta-height&gt;
+ *   &lt;delta-time&gt;1.07&lt;/delta-time&gt;
+ *   &lt;control-condition&gt;CLER&lt;/control-condition&gt;
+ *   &lt;flow-adjustment&gt;MEAS&lt;/flow-adjustment&gt;
+ *   &lt;remarks/&gt;
+ * &lt;/stream-flow-measurement&gt;
+ * </big></pre>
+ * @param p_fail_if_exists A flag (T/F) that specifies whether to fail if any of the specified measurements already exist in the database
+ */
+procedure store_streamflow_meas_xml(
+   p_xml            in clob,
+   p_fail_if_exists in varchar2);
+/**
+ * Retrieves stream flow measurements that match input criteria as a table of streamflow_meas_t objects
+ *
+ * @param p_location_id_mask A wildcard-enabled string used to match the location(s) to retrieve measurements for.  Matching is
+ *                           accomplished with glob-style wildcards, as shown below, instead of sql-style wildcards
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
+ *   </tr>
+ * </table>
+ * @param p_unit_system      The unit system (EN/SI) to return the measurements in. If not specified, the measurements will be returned in English units 
+ * @param p_min_date         The earliest date to return measurements for, in the time zone indicated by the p_time_zone parameters. If not specified, no earliest date will be used
+ * @param p_max_date         The latest date to return measurements for, in the time zone indicated by the p_time_zone parameters. If not specified, no latest date will be used
+ * @param p_min_height       The minimum gage height to return measurements for. If not specified, no minimum gage height will be used
+ * @param p_max_height       The maximum gage height to return measurements for. If not specified, no maximum gage height will be used
+ * @param p_min_flow         The minimum flow to return measurements for. If not specified, no minimum flow will be used
+ * @param p_max_flow         The maximum flow to return measurements for. If not specified, no maximum flow will be used
+ * @param p_min_num          The minimum measurement number to return measurements for. If not specified, no minimum measurement number will be used
+ * @param p_max_num          The maximum measurement number to return measurements for. If not specified, no maximum measurement number will be used
+ * @param p_agencies         The measuring agencies to return measurements for, as a comma-separated list. If not specified, measurements from any agency will be returned
+ * @param p_qualities        The measurement qualities to return measurements for, as a comma-separated list. If not specified, measurements of any will be returned 
+ * @param p_time_zone        The time zone for the p_min_date and p_max_date parameters. If not specified, the local time zone for each location will be used
+ * @param p_office_id mask   A wildcard-enabled string used to match the location(s) to retrieve measurements for.  Matching is
+ *                           accomplished with glob-style wildcards, as shown above, instead of sql-style wildcards. If not specified, the session user's default office is used. To
+ *                           retrieve from all offices, use '*'
+ *
+ * @return The matching stream flow measurements
+ */
+function retrieve_streamflow_meas_objs(
+   p_location_id_mask in varchar2,
+   p_unit_system      in varchar2 default 'EN',
+   p_min_date         in date default null,
+   p_max_date         in date default null,
+   p_min_height       in number default null,
+   p_max_height       in number default null,
+   p_min_flow         in number default null,
+   p_max_flow         in number default null,
+   p_min_num          in integer default null,
+   p_max_num          in integer default null,
+   p_agencies         in varchar2 default null,
+   p_qualities        in varchar2 default null,
+   p_time_zone        in varchar2 default null,
+   p_office_id_mask   in varchar2 default null)
+   return streamflow_meas_tab_t;
+/**
+ * Retrieves stream flow measurements that match input criteria as an XML document
+ *
+ * @param p_location_id_mask A wildcard-enabled string used to match the location(s) to retrieve measurements for.  Matching is
+ *                           accomplished with glob-style wildcards, as shown below, instead of sql-style wildcards
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
+ *   </tr>
+ * </table>
+ * @param p_unit_system      The unit system (EN/SI) to return the measurements in.  If EN, height and flow must be specified in ft and cfs, otherwise they must be specified in m and cms. If not specified, the English unit system is used 
+ * @param p_min_date         The earliest date to return measurements for, in the time zone indicated by the p_time_zone parameters. If not specified, no earliest date will be used
+ * @param p_max_date         The latest date to return measurements for, in the time zone indicated by the p_time_zone parameters. If not specified, no latest date will be used
+ * @param p_min_height       The minimum gage height to return measurements for. If not specified, no minimum gage height will be used
+ * @param p_max_height       The maximum gage height to return measurements for. If not specified, no maximum gage height will be used
+ * @param p_min_flow         The minimum flow to return measurements for. If not specified, no minimum flow will be used
+ * @param p_max_flow         The maximum flow to return measurements for. If not specified, no maximum flow will be used
+ * @param p_min_num          The minimum measurement number to return measurements for. If not specified, no minimum measurement number will be used
+ * @param p_max_num          The maximum measurement number to return measurements for. If not specified, no maximum measurement number will be used
+ * @param p_agencies         The measuring agencies to return measurements for, as a comma-separated list. If not specified, measurements from any agency will be returned
+ * @param p_qualities        The measurement qualities to return measurements for, as a comma-separated list. If not specified, measurements of any will be returned 
+ * @param p_time_zone        The time zone for the p_min_date and p_max_date parameters. If not specified, the local time zone for each location will be used
+ * @param p_office_id mask   A wildcard-enabled string used to match the location(s) to retrieve measurements for.  Matching is
+ *                           accomplished with glob-style wildcards, as shown above, instead of sql-style wildcards. If not specified, the session user's default office is used. To
+ *                           retrieve from all offices, use '*'
+ *
+ * @return The matching stream flow measurements
+ */
+function retrieve_streamflow_meas_xml(
+   p_location_id_mask in varchar2,
+   p_unit_system      in varchar2 default 'EN',
+   p_min_date         in date default null,
+   p_max_date         in date default null,
+   p_min_height       in number default null,
+   p_max_height       in number default null,
+   p_min_flow         in number default null,
+   p_max_flow         in number default null,
+   p_min_num          in integer default null,
+   p_max_num          in integer default null,
+   p_agencies         in varchar2 default null,
+   p_qualities        in varchar2 default null,
+   p_time_zone        in varchar2 default null,
+   p_office_id_mask   in varchar2 default null)
+   return clob;
+/**
+ * Deletes stream flow measurements that match input criteria
+ *
+ * @param p_location_id_mask A wildcard-enabled string used to match the location(s) to delete measurements for.  Matching is
+ *                           accomplished with glob-style wildcards, as shown below, instead of sql-style wildcards
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
+ *   </tr>
+ * </table>
+ * @param p_unit_system      The unit system (EN/SI) to for for the height and flow boundaries. If EN, height and flow must be specified in ft and cfs, otherwise they must be specified in m and cms. If not specified, the English unit system is used 
+ * @param p_min_date         The earliest date to delete measurements for, in the time zone indicated by the p_time_zone parameters. If not specified, no earliest date will be used
+ * @param p_max_date         The latest date to delete measurements for, in the time zone indicated by the p_time_zone parameters. If not specified, no latest date will be used
+ * @param p_min_height       The minimum gage height to delete measurements for. If not specified, no minimum gage height will be used
+ * @param p_max_height       The maximum gage height to delete measurements for. If not specified, no maximum gage height will be used
+ * @param p_min_flow         The minimum flow to delete measurements for. If not specified, no minimum flow will be used
+ * @param p_max_flow         The maximum flow to delete measurements for. If not specified, no maximum flow will be used
+ * @param p_min_num          The minimum measurement number to delete measurements for. If not specified, no minimum measurement number will be used
+ * @param p_max_num          The maximum measurement number to delete measurements for. If not specified, no maximum measurement number will be used
+ * @param p_agencies         The measuring agencies to delete measurements for, as a comma-separated list. If not specified, measurements from any agency will be deleteed
+ * @param p_qualities        The measurement qualities to delete measurements for, as a comma-separated list. If not specified, measurements of any will be deleteed 
+ * @param p_time_zone        The time zone for the p_min_date and p_max_date parameters. If not specified, the local time zone for each location will be used
+ * @param p_office_id mask   A wildcard-enabled string used to match the location(s) to delete measurements for.  Matching is
+ *                           accomplished with glob-style wildcards, as shown above, instead of sql-style wildcards. If not specified, the session user's default office is used. To
+ *                           delete from all offices, use '*'
+ */
+procedure delete_streamflow_meas(
+   p_location_id_mask in varchar2,
+   p_unit_system      in varchar2 default 'EN',
+   p_min_date         in date default null,
+   p_max_date         in date default null,
+   p_min_height       in number default null,
+   p_max_height       in number default null,
+   p_min_flow         in number default null,
+   p_max_flow         in number default null,
+   p_min_num          in integer default null,
+   p_max_num          in integer default null,
+   p_agencies         in varchar2 default null,
+   p_qualities        in varchar2 default null,
+   p_time_zone        in varchar2 default null,
+   p_office_id_mask   in varchar2 default null);
+   
 end cwms_stream;
 /
 show errors;

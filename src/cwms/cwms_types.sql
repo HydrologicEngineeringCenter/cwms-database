@@ -154,6 +154,10 @@ end;
 @@cwms/types/str2tbltype
 @@cwms/types/vert_datum_offset_t
 @@cwms/types/vert_datum_offset_tab_t
+@@cwms/types/xml_tab_t
+@@cwms/types/streamflow_meas_t
+@@cwms/types/streamflow_meas_tab_t
+@@cwms/types/streamflow_meas_t-body
 
 -- HOST pwd
 @@rowcps_types

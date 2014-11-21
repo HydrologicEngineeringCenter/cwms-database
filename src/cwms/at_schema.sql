@@ -6116,5 +6116,53 @@ insert
         0.0);
 commit;        
 
+create table at_streamflow_meas (
+   location_code  number(10),
+   meas_number    integer,
+   date_time      date,
+   used           varchar2(1),
+   party          varchar2(12),
+   agency_id      varchar2(6),
+   gage_height    binary_double,
+   flow           binary_double,
+   cur_rating_num varchar2(4),
+   shift_used     binary_double,
+   pct_diff       binary_double,
+   quality        varchar2(1),
+   delta_height   binary_double,
+   delta_time     binary_double,
+   ctrl_cond_id   varchar2(4),
+   flow_adj_id    varchar2(4),
+   remarks        varchar2(256),
+   constraint     at_streamflow_meas_pk  primary key(location_code, meas_number) using index,
+   constraint     at_streamflow_meas_fk1 foreign key(location_code) references at_physical_location(location_code),
+   constraint     at_streamflow_meas_fk2 foreign key(agency_id) references cwms_usgs_agency(agcy_id),
+   constraint     at_streamflow_meas_fk3 foreign key(quality) references cwms_usgs_meas_qual(qual_id),
+   constraint     at_streamflow_meas_fk4 foreign key(ctrl_cond_id) references cwms_usgs_rating_ctrl_cond(ctrl_cond_id),
+   constraint     at_streamflow_meas_fk5 foreign key(flow_adj_id) references cwms_usgs_flow_adj(adj_id)
+) tablespace cwms_20at_data;
+
+create index at_streamflow_meas_idx1 on at_streamflow_meas (location_code, date_time) tablespace cwms_20at_data;
+
+comment on table  at_streamflow_meas is 'Contains streamflow measurements performed by USGS or USACE personnel';
+comment on column at_streamflow_meas.location_code  is 'The location for this measurement';
+comment on column at_streamflow_meas.meas_number    is 'The serial number of the measurement';
+comment on column at_streamflow_meas.date_time      is 'The date and time the measurement was performed';
+comment on column at_streamflow_meas.used           is 'Flag (''T''/''F'') indicating if the discharge measurement is marked as used';
+comment on column at_streamflow_meas.party          is 'The person(s) that performed the measurement';
+comment on column at_streamflow_meas.agency_id      is 'The agency that performed the measurement';
+comment on column at_streamflow_meas.gage_height    is 'Gage height as shown on the inside staff gage or read off the recorder inside the gage house';
+comment on column at_streamflow_meas.flow           is 'The computed discharge';
+comment on column at_streamflow_meas.cur_rating_num is 'The number of the rating used to calculate the streamflow from the gage height';
+comment on column at_streamflow_meas.shift_used     is 'The current shift being applied to the rating';
+comment on column at_streamflow_meas.pct_diff       is 'The percent difference between the measurement and the rating with the shift applied';
+comment on column at_streamflow_meas.quality        is 'The relative quality of the measurement';
+comment on column at_streamflow_meas.delta_height   is 'The amount the gage height changed while the measurement was being made';
+comment on column at_streamflow_meas.delta_time     is 'The amount of time elapsed while the measurement was being made (hours)';
+comment on column at_streamflow_meas.ctrl_cond_id   is 'The condition of the rating control at the time of the measurement';
+comment on column at_streamflow_meas.flow_adj_id    is 'The adjustment code for the measured discharge';
+comment on column at_streamflow_meas.remarks        is 'Any remarks about the rating';
+
+
 -- HOST pwd
 @@rowcps_schema.sql

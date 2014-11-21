@@ -55,6 +55,7 @@ DECLARE
 			       'av_state',
 			       'av_stream',                    -- located in at_schema_2
 			       'av_stream_location',           -- located in at_schema_2
+			       'av_streamflow_meas',
 			       'av_turbine',
 			       'av_turbine_change',
 			       'av_turbine_setting',
@@ -178,6 +179,8 @@ END;
 @@cwms/views/av_gage_type.sql
 @@cwms/views/av_gage.sql
 @@cwms/views/av_gage_sensor.sql
+
+@@cwms/views/av_streamflow_meas.sql
 
 
 --------------------------------------------------------------------------------

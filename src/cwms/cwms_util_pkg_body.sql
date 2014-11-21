@@ -2832,6 +2832,57 @@ AS
       return l_minutes;
    end duration_to_minutes;      
 
+   ------------------------------------
+   -- procedure duration_to_interval --
+   ------------------------------------
+
+   procedure duration_to_interval(
+      p_ym_interval out yminterval_unconstrained,
+      p_ds_interval out dsinterval_unconstrained,
+      p_duration    in  varchar2)
+   is
+      --                                     1      2      3      4 5      6      7   8
+      l_pattern constant varchar2(128) := '^P(\d+Y)?(\d+M)?(\d+D)?(T(\d+H)?(\d+M)?(\d+([.]\d+)?S)?)?$';
+      l_duration varchar2(64) := trim(p_duration);
+      l_text     varchar2(8);        
+      l_years    pls_integer := 0;
+      l_months   pls_integer := 0;
+      l_days     pls_integer := 0;
+      l_hours    pls_integer := 0;
+      l_minutes  pls_integer := 0;
+      l_seconds  number := 0;
+   begin
+      if regexp_substr(l_duration, l_pattern, 1, 1, 'i', 0) is null then
+         cwms_err.raise('INVALID_ITEM', l_duration, 'ISO 8601 duration');
+      end if;                                             
+      if regexp_substr(l_duration, l_pattern, 1, 1, 'i', 1) is not null then
+         l_text := regexp_substr(l_duration, l_pattern, 1, 1, 'i', 1);
+         l_years := to_number(substr(l_text, 1, length(l_text)-1));
+      end if;
+      if regexp_substr(l_duration, l_pattern, 1, 1, 'i', 2) is not null then
+         l_text := regexp_substr(l_duration, l_pattern, 1, 1, 'i', 2);
+         l_months := to_number(substr(l_text, 1, length(l_text)-1));
+      end if;
+      if regexp_substr(l_duration, l_pattern, 1, 1, 'i', 3) is not null then
+         l_text := regexp_substr(l_duration, l_pattern, 1, 1, 'i', 3);
+         l_days := to_number(substr(l_text, 1, length(l_text)-1));
+      end if;
+      if regexp_substr(l_duration, l_pattern, 1, 1, 'i', 5) is not null then
+         l_text := regexp_substr(l_duration, l_pattern, 1, 1, 'i', 5);
+         l_hours := to_number(substr(l_text, 1, length(l_text)-1));
+      end if;
+      if regexp_substr(l_duration, l_pattern, 1, 1, 'i', 6) is not null then
+         l_text := regexp_substr(l_duration, l_pattern, 1, 1, 'i', 6);
+         l_minutes := to_number(substr(l_text, 1, length(l_text)-1));
+      end if;
+      if regexp_substr(l_duration, l_pattern, 1, 1, 'i', 7) is not null then
+         l_text := regexp_substr(l_duration, l_pattern, 1, 1, 'i', 7);
+         l_seconds := to_number(substr(l_text, 1, length(l_text)-1));
+      end if;
+      p_ym_interval := to_yminterval(l_years||'-'||l_months);
+      p_ds_interval := to_dsinterval(l_days||' '||l_hours||':'||l_minutes||':'||l_seconds);
+   end duration_to_interval;            
+
    -----------------------------------
    -- function parse_odbc_ts_string --
    -----------------------------------
@@ -3653,6 +3704,41 @@ AS
                 WHEN FALSE THEN p_xml.EXTRACT (p_path)
              END;
    END get_xml_node;
+   
+   function get_xml_nodes(
+      p_xml        in xmltype,
+      p_path       in varchar2,
+      p_condition  in varchar2 default null,
+      p_order_by   in varchar2 default null,
+      p_descending in varchar2 default 'F')
+   return xml_tab_t  
+   is
+      l_flwor   varchar2(32767);
+      l_results xml_tab_t;
+   begin
+      -------------------------------------
+      -- build an XQuery FLWOR statement --
+      -------------------------------------
+      l_flwor := 'for $e in '||p_path;
+      if p_condition is not null then
+         l_flwor := l_flwor||' where '||replace(p_condition, p_path, '$e');
+      end if;
+      if p_order_by is not null then
+         l_flwor := l_flwor||' order by '||replace(p_order_by, p_path, '$e');
+         if return_true_or_false(p_descending) then
+            l_flwor := l_flwor||' descending';
+         end if;
+      end if;
+      l_flwor := l_flwor||' return $e';
+      select element
+        bulk collect
+        into l_results
+        from xmltable(
+                l_flwor 
+                passing p_xml
+                columns element xmltype path '.'); -- included only for completeness
+      return l_results;
+   end get_xml_nodes;
 
    FUNCTION get_xml_text (p_xml IN XMLTYPE, p_path IN VARCHAR)
       RETURN VARCHAR2
