@@ -1183,6 +1183,8 @@ is
    l_lines      str_tab_t;
    l_count      pls_integer;
    l_meas       streamflow_meas_t;
+   l_loc_code   number(10);
+   l_group_code number(10);
 begin
    l_start_time := nvl(p_start_time, '1800-01-01');
    l_end_time   := nvl(p_end_time, to_char(sysdate, 'yyyy-mm-dd')); 
@@ -1192,10 +1194,26 @@ begin
    if p_sites is null then
       l_sites_tab := get_auto_stream_meas_locations(l_office_id);
    else
+      select loc_group_code
+        into l_group_code 
+        from at_loc_group where loc_group_id = 'USGS Station Number'
+          and loc_category_code = (select loc_category_code
+                                     from at_loc_category 
+                                    where loc_category_id = 'Agency Aliases'
+                                  ); 
       select trim(column_value)
         bulk collect
         into l_sites_tab
         from table(cwms_util.split_text(p_sites, ','));
+      for i in 1..l_sites_tab.count loop    
+                 
+         l_loc_code := cwms_loc.get_location_code(l_office_id, l_sites_tab(i));
+         select loc_alias_id
+           into l_sites_tab(i)
+           from at_loc_group_assignment
+          where location_code = l_loc_code
+            and loc_group_code = l_group_code; 
+      end loop;        
    end if;
    if l_sites_tab is null or l_sites_tab.count = 0 then
       cwms_msg.log_db_message(

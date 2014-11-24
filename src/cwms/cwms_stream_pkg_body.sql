@@ -2117,20 +2117,20 @@ begin
           between 
              case
              when p_min_date is null then 
-                sm.date_time
+                date '1000-01-01'
              when p_time_zone is null then 
-                cwms_util.change_timezone(sm.date_time, cwms_loc.get_local_timezone(sm.location_code), 'UTC')
+                cwms_util.change_timezone(p_min_date, cwms_loc.get_local_timezone(sm.location_code), 'UTC')
              else
-                cwms_util.change_timezone(sm.date_time, p_time_zone) 
+                cwms_util.change_timezone(p_min_date, p_time_zone) 
              end
           and
              case
              when p_max_date is null then 
-                sm.date_time
+                date '3000-01-01'
              when p_time_zone is null then 
-                cwms_util.change_timezone(sm.date_time, cwms_loc.get_local_timezone(sm.location_code), 'UTC')
+                cwms_util.change_timezone(p_max_date, cwms_loc.get_local_timezone(sm.location_code), 'UTC')
              else
-                cwms_util.change_timezone(sm.date_time, p_time_zone) 
+                cwms_util.change_timezone(p_max_date, p_time_zone) 
               end
       and sm.gage_height 
           between
