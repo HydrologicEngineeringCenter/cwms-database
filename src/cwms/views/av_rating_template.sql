@@ -18,6 +18,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_RATING_TEMPLATE'
  * @field version                The template version
  * @field description            A description for the template
  * @field rating_methods         Specifies the behavior of any rating associated with this template when looking up independent parameters
+ * @field tempalate_code         The unique numeric code that identifies the template in the database.
  */
 ');
 
@@ -30,12 +31,13 @@ CREATE OR REPLACE FORCE VIEW av_rating_template
     dependent_parameter,
     version,
     description,
-    rating_methods
+    rating_methods,
+    template_code
 )
 AS
     SELECT    DISTINCT office_id, template_id, parameters_id,
                             independent_parameters, dependent_parameter, version,
-                            description, rating_methods
+                            description, rating_methods, a.template_code
       FROM        (SELECT     rt.template_code, o.office_id,
                                  rt.parameters_id || '.' || rt.version AS template_id,
                                  rt.parameters_id,
