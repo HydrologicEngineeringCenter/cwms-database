@@ -2439,7 +2439,6 @@ procedure retrieve_loc_lvl_values_utc(
    p_attribute_parameter_id  in  varchar2 default null,
    p_attribute_param_type_id in  varchar2 default null,
    p_attribute_duration_id   in  varchar2 default null,
-   p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null)
 is
    type encoded_date_t is table of boolean index by binary_integer;
@@ -2447,13 +2446,9 @@ is
    l_rec                       at_location_level%rowtype;
    l_spec_level_code           number(10);
    l_location_level_code       number(10);
-   l_interval_origin           date; 
    l_start_time                date;
    l_end_time                  date;
    l_location_code             number(10);
-   l_parts                     str_tab_t;
-   l_base_parameter_id         varchar2(16);
-   l_sub_parameter_id          varchar2(32);
    l_parameter_code            number(10);
    l_parameter_type_code       number(10);
    l_duration_code             number(10);
@@ -2462,7 +2457,6 @@ is
    l_offset                    binary_double;
    l_office_code               number := cwms_util.get_office_code(p_office_id);
    l_office_id                 varchar2(16) := cwms_util.get_db_office_id(p_office_id);
-   l_date                      date;
    l_date_prev                 date;
    l_date_next                 date;
    l_value                     number;
@@ -2503,7 +2497,7 @@ begin
          and office_code in (l_office_code, cwms_util.db_office_code_all);
    exception
       when no_data_found then
-         cwms_err.raise('ITEM_DOES_NOT_EXIST', 'Specified level', p_spec_level_id);
+         cwms_err.raise('ITEM_DOES_NOT_EXIST', 'Specified level', l_office_id||'/'||p_spec_level_id);
    end;
    -----------------------------------------------------------
    -- get the codes and effective dates for the time window --
@@ -2636,17 +2630,10 @@ begin
          l_level_values       ztsv_array;
          l_encoded_start_time integer := l_encoded_dates.first;
          l_encoded_end_time   integer := l_encoded_dates.next(l_encoded_start_time);
-         l_encoded_last_time  integer := l_encoded_dates.last;
       begin
-         while l_encoded_end_time is not null loop
-            l_encoded_start_time := l_encoded_end_time;
-            l_encoded_end_time := l_encoded_dates.next(l_encoded_start_time);
+         while l_encoded_start_time is not null loop
             l_start_time := decode_date(l_encoded_start_time);
-            if l_encoded_end_time < l_encoded_last_time then
                l_end_time := decode_date(l_encoded_end_time - 1); -- one minute before
-            else
-               l_end_time := decode_date(l_encoded_end_time);
-            end if;
             -------------------------------------
             -- recurse for the sub time window --
             -------------------------------------
@@ -2667,10 +2654,16 @@ begin
                p_attribute_duration_id,
                p_office_id);
             for i in 1..l_level_values.count loop
+               if i = 1 then
+                  l_level_values(i).date_time := greatest(l_level_values(i).date_time, p_start_time_utc);
+               end if;
                p_level_values.extend;
                p_level_values(p_level_values.count) := l_level_values(i);
             end loop;
+            l_encoded_start_time := l_encoded_dates.next(l_encoded_start_time);
+            l_encoded_end_time   := l_encoded_dates.next(l_encoded_start_time);
          end loop;
+         p_level_values(p_level_values.count).date_time := nvl(p_level_values(p_level_values.count).date_time, p_end_time_utc);
       end;
    else
       ------------------------------------------
@@ -3002,7 +2995,6 @@ begin
       p_attribute_parameter_id  =>  p_attribute_parameter_id,
       p_attribute_param_type_id =>  p_attribute_param_type_id,
       p_attribute_duration_id   =>  p_attribute_duration_id,
-      p_timezone_id             =>  l_timezone_id,
       p_office_id               =>  p_office_id);
      
    -------------------------------------------------------   
