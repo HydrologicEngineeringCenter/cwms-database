@@ -2595,10 +2595,13 @@ AS
            from at_stream_reach
           where stream_location_code in (select * from table (l_location_codes));
 
+         update at_stream_location
+            set stream_location_code = null
+          where stream_location_code in (select *from table (l_location_codes));
+
          delete 
            from at_stream_location
-          where stream_location_code in (select *from table (l_location_codes))
-             or location_code in (select * from table (l_location_codes));
+          where location_code in (select * from table (l_location_codes));
 
          delete 
            from at_stream
