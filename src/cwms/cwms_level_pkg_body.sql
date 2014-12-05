@@ -2661,7 +2661,7 @@ begin
                p_level_values(p_level_values.count) := l_level_values(i);
             end loop;
             l_encoded_start_time := l_encoded_dates.next(l_encoded_start_time);
-            l_encoded_end_time   := l_encoded_dates.next(l_encoded_start_time);
+            l_encoded_end_time   := nvl(l_encoded_dates.next(l_encoded_start_time), encode_date(p_end_time_utc));
          end loop;
          p_level_values(p_level_values.count).date_time := nvl(p_level_values(p_level_values.count).date_time, p_end_time_utc);
       end;
