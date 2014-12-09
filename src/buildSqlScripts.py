@@ -4169,6 +4169,7 @@ unitDefs = [
     ["Irradiation",                      "langley",     "NULL", "Langley",                       "Radiant energy of 1 langley"                                       ],
     ["Length",                           "cm",          "SI",   "Centimeters",                   "Length of 1E-02 meter"                                             ],
     ["Length",                           "ft",          "EN",   "Feet",                          "Length of 1 foot"                                                  ],
+    ["Length",                           "ftUS",        "EN",   "Survey Feet",                   "Length of 1 US survey foot"                                        ],
     ["Length",                           "in",          "EN",   "Inches",                        "Length of 1 inch"                                                  ],
     ["Length",                           "km",          "SI",   "Kilometers",                    "Length of 1E+03 meters"                                            ],
     ["Length",                           "m",           "SI",   "Meters",                        "Length of 1 meter"                                                 ],
@@ -4223,6 +4224,7 @@ unitDefs = [
     ["Volume",                           "mile3",       "EN",   "Cubic miles",                   "Volume of 1 cubic mile"                                            ],
     ["Angle",                            "rev",         "NULL", "Revolution",                    "Angle of 360 degrees"                                              ],
     ["Electric Charge Rate",             "ampere",      "NULL", "Ampere",                        "Current of 6.241E+18 electrons (1 coulomb) per second"             ],
+    ["Force",                            "N",           "SI",   "Newtons",                       "Force of 1 Newton"                                                 ],
 ]
 
 unitDefsById = {}
@@ -4276,11 +4278,21 @@ unitAliases = [
     ["Electromotive Potential", "volt",    "Volts"                 ],
     ["Electromotive Potential", "volt",    "volts"                 ],
     ["Force",                   "lb",      "lbs"                   ],
+    ["Force",                   "lb",      "pounds"                ],
+    ["Force",                   "lb",      "POUNDS"                ],
+    ["Force",                   "N",       "newton"                ],
+    ["Force",                   "N",       "newtons"               ],
+    ["Force",                   "N",       "NEWTON"                ],
+    ["Force",                   "N",       "NEWTONS"               ],
     ["Length",                  "cm",      "centimeter"            ],
     ["Length",                  "cm",      "centimeters"           ],
     ["Length",                  "ft",      "FEET"                  ],
     ["Length",                  "ft",      "feet"                  ],
     ["Length",                  "ft",      "foot"                  ],
+    ["Length",                  "ftUS",    "survey foot"           ],
+    ["Length",                  "ftUS",    "survey feet"           ],
+    ["Length",                  "ftUS",    "SURVEY FEET"           ],
+    ["Length",                  "ftUS",    "SURVEY FOOT"           ],
     ["Length",                  "in",      "INCHES"                ],
     ["Length",                  "in",      "inch"                  ],
     ["Length",                  "in",      "inches"                ],
@@ -4380,7 +4392,7 @@ for abstract_param, unit_id, unitAlias_id in unitAliases :
 
 #------------------#
 # Unit conversions #
-#------------------#
+#------------------#                                 
 if __name__ in ("__main__", "main") : sys.stderr.write("Processing unit conversion definitions.\n")
 unitConversionsByUnitIds = {}
 cannotConvert = ("FNU", "JTU", "NTU")
