@@ -842,7 +842,6 @@ all_units_lists = [
 ]                                                                            
 
 no_conversion_units = [
-	"lb", # ???
 	"$",
 	"FNU",
 	"JTU",
@@ -907,13 +906,19 @@ unit_aliases = {
 	"umho/cm"  : ["umhos/cm"],
 	"volt"     : ["Volt","VOLT","Volts","volts","VOLTS"],
 }
-
+#
+# Verify that every unit alias references a unit that is specified both by unit system and by parameter
+#
 for unit in sorted(unit_aliases.keys()) :
 	if unit not in all_unit_system_units :
 		raise Exception("Unit %s is not in any unit system list" % unit);
 	if unit not in all_param_units :
 		raise Exception("Unit %s is not in any parameter list" % unit);
-
+#
+# Verify that every unit in every list is identified by unit system and by parameter, and that
+# every unit except those specified to have no conversions are listed as conversion sources and
+# conversion targets.
+#
 for i in range(len(all_units_lists)) :
 	for j in range(len(all_units_lists)) :
 		if i == j : continue
@@ -925,18 +930,28 @@ for i in range(len(all_units_lists)) :
 
 def expand_units(unit) :
 	'''
-	m  -> [m]
-	m2 -> [m, m]
-	m3 -> [m, m, m]
+	m     -> [m]
+	m2    -> [m, m]
+	m3*s2 -> [m, m, m, s, s]
 	etc..
 	'''
 	units = []
 	if unit :
-		if unit[-1].isdigit() :
-			unit, count = unit[:-1], int(unit[-1])
+		if unit.find("*") != -1 :
+			#----------------------------#
+			# expand each unit component #
+			#----------------------------#
+			for part in unit.split("*") :
+				units.extend(expand_units(part))
 		else :
-			count = 1
-		units = count * [unit]
+			#---------------------------#
+			# expand a single component #
+			#---------------------------#
+			if unit[-1].isdigit() :
+				unit, count = unit[:-1], int(unit[-1])
+			else :
+				count = 1
+			units = count * [unit]
 	return units
 	
 def process_conversion_definition(from_unit, definition) :
@@ -984,8 +999,6 @@ def process_conversion_definition(from_unit, definition) :
 	#------------------#
 	# reduce the units #
 	#------------------#
-	for i in range(len(n_units)) : n_units.extend(n_units.pop(0).split("*"))
-	for i in range(len(d_units)) : d_units.extend(d_units.pop(0).split("*"))
 	while True :
 		reduced = False
 		for unit in n_units :
