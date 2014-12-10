@@ -2632,8 +2632,8 @@ begin
          l_encoded_end_time   integer := l_encoded_dates.next(l_encoded_start_time);
       begin
          while l_encoded_start_time is not null loop
-            l_start_time := decode_date(l_encoded_start_time);
-               l_end_time := decode_date(l_encoded_end_time - 1); -- one minute before
+            l_start_time := greatest(decode_date(l_encoded_start_time), p_start_time_utc);
+            l_end_time := decode_date(l_encoded_end_time - 1); -- one minute before
             -------------------------------------
             -- recurse for the sub time window --
             -------------------------------------
@@ -2654,9 +2654,6 @@ begin
                p_attribute_duration_id,
                p_office_id);
             for i in 1..l_level_values.count loop
-               if i = 1 then
-                  l_level_values(i).date_time := greatest(l_level_values(i).date_time, p_start_time_utc);
-               end if;
                p_level_values.extend;
                p_level_values(p_level_values.count) := l_level_values(i);
             end loop;
