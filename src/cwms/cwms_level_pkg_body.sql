@@ -178,7 +178,7 @@ begin
       select parameter_type_code
         into p_parameter_type_code
         from cwms_parameter_type
-       where parameter_type_id = p_parameter_type_id;
+       where upper(parameter_type_id) = upper(p_parameter_type_id);
    exception
       when no_data_found then
          cwms_err.raise(
@@ -193,7 +193,7 @@ begin
       select duration_code
         into p_duration_code
         from cwms_duration
-       where duration_id = p_duration_id;
+       where upper(duration_id) = upper(p_duration_id);
    exception
       when no_data_found then
          cwms_err.raise(

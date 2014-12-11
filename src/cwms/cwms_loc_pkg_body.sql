@@ -3538,30 +3538,8 @@ AS
 		p_office_id		in varchar2)
 		return varchar2
 	is
-		l_local_tz	varchar2(28);
-      l_office_id varchar2(16) := cwms_util.get_db_office_id(p_office_id);  
    begin
-      select distinct
-             vl.time_zone_name
-        into l_local_tz
-        from av_loc2 vl
-       where upper(vl.location_id) = upper(trim(p_location_id))
-         and vl.db_office_id = l_office_id 
-         and vl.unit_system = 'SI';
-
-      if l_local_tz is null then
-         l_local_tz := 'UTC';
-      end if;
-
-      return l_local_tz;
-   exception
-     when too_many_rows then
-        cwms_err.raise(
-           'ERROR', 
-           l_office_id
-           ||'/'
-           ||p_location_id
-           ||' references more than one location.');      
+      return get_local_timezone(get_location_code(p_office_id, p_location_id, 'T'));
    end get_local_timezone;
 
 	FUNCTION get_loc_category_code (p_loc_category_id	 IN VARCHAR2,
