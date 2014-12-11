@@ -1947,8 +1947,7 @@ AS
               FROM av_tsv
              WHERE     ts_code = p_ts_code
                    AND date_time < l_start_time
-                   AND start_date <= l_end_time
-                   AND end_date > l_start_time;
+                   AND start_date <= l_end_time;
 
             IF l_temp_time IS NOT NULL
             THEN
@@ -1968,7 +1967,6 @@ AS
               FROM av_tsv
              WHERE     ts_code = p_ts_code
                    AND date_time > l_end_time
-                   AND start_date <= l_end_time
                    AND end_date > l_start_time;
 
             IF l_temp_time IS NOT NULL
