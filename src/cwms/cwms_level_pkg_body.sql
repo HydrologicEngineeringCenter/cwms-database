@@ -2422,7 +2422,8 @@ end retrieve_location_level;
 --          
 -- Retreives a time series of Location Level values for a specified time window
 --          
--- The returned QUALITY_CODE values of the time series will be zero.
+-- The returned QUALITY_CODE values of the time series will be zero or one,
+-- depending on whether the level is set to interpolate (1=interpolate, 2=no).
 --------------------------------------------------------------------------------
 procedure retrieve_loc_lvl_values_utc(
    p_level_values            out ztsv_array,
@@ -2483,6 +2484,16 @@ is
       l_origin constant date := to_date('01Jan2000 0000', 'ddMonyyyy hh24mi');
    begin
       return l_origin + p_int / 1440;
+   end;
+   
+   function get_quality(p_rec in at_location_level%rowtype) return integer
+   is 
+      l_quality integer := 0;
+   begin
+      if p_rec.location_level_value is null and p_rec.interpolate = 'T' then   
+         l_quality := 1; -- interpolate between values
+      end if;  
+      return l_quality; 
    end;
 begin
    -------------------------------------------------------
@@ -2779,7 +2790,7 @@ begin
             end if;
          end if;
          p_level_values.extend;
-         p_level_values(1) := new ztsv_type(p_start_time_utc, l_value, 0);
+         p_level_values(1) := new ztsv_type(p_start_time_utc, l_value, get_quality(l_rec));
          if p_end_time_utc is null then
             --------------------------------------------------
             -- called from retrieve_location_level_value(), --
@@ -2804,7 +2815,7 @@ begin
                   -- on or before end of time window --
                   -------------------------------------
                   p_level_values(p_level_values.count) :=
-                     new ztsv_type(l_date_next, l_value_next * l_factor + l_offset, 0);
+                     new ztsv_type(l_date_next, l_value_next * l_factor + l_offset, get_quality(l_rec));
                else
                   -------------------------------
                   -- beyond end of time window --
@@ -2829,7 +2840,7 @@ begin
                      l_value := l_value_prev * l_factor + l_offset;
                   end if;
                   p_level_values(p_level_values.count) :=
-                     new ztsv_type(p_end_time_utc, l_value, 0);
+                     new ztsv_type(p_end_time_utc, l_value, get_quality(l_rec));
                end if;
                if l_date_next > p_end_time_utc then
                   exit;
@@ -2877,7 +2888,7 @@ begin
                   l_first := 2;
                   if l_ts(2).date_time > p_start_time_utc then
                      p_level_values.extend;
-                     p_level_values(1) := ztsv_type(p_start_time_utc, null, 0);
+                     p_level_values(1) := ztsv_type(p_start_time_utc, null, get_quality(l_rec));
                      if l_rec.interpolate = 'T' then
                         a := 1;
                         b := 2;
@@ -2901,7 +2912,7 @@ begin
                if l_ts(l_ts.count).date_time > p_end_time_utc then
                   if l_ts(l_ts.count - 1).date_time < p_end_time_utc then
                      p_level_values.extend;
-                     p_level_values(p_level_values.count) := ztsv_type(p_end_time_utc, null, 0);
+                     p_level_values(p_level_values.count) := ztsv_type(p_end_time_utc, null, get_quality(l_rec));
                      if l_rec.interpolate = 'T' then
                         a := l_ts.count - 1;
                         b := l_ts.count;
@@ -2950,10 +2961,11 @@ procedure retrieve_location_level_values(
    p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null)
 is
-   l_office_id   varchar2(16);
-   l_timezone_id varchar2(28);
-   l_start_time date;
-   l_end_time   date;
+   l_office_id    varchar2(16);
+   l_timezone_id  varchar2(28);
+   l_start_time   date;
+   l_end_time     date;
+   l_level_values ztsv_array;
 begin
    -----------------------------------------------------------
    -- get the start and end times of the time window in UTC --
@@ -2994,14 +3006,15 @@ begin
       p_attribute_duration_id   =>  p_attribute_duration_id,
       p_office_id               =>  p_office_id);
      
-   -------------------------------------------------------   
-   -- convert the times back to the specified time zone --
-   -------------------------------------------------------   
-   if (p_level_values is not null and l_timezone_id != 'UTC') then
-      for i in 1..p_level_values.count loop
-         p_level_values(i).date_time := cwms_util.change_timezone(p_level_values(i).date_time, 'UTC', l_timezone_id);
-      end loop;
-   end if;
+   ------------------------------------------------------------------------   
+   -- convert the times back to the specified time zone and zero quality --
+   ------------------------------------------------------------------------
+   select ztsv_type(cwms_util.change_timezone(date_time, 'UTC', l_timezone_id), value, 0)
+     bulk collect
+     into l_level_values
+     from table(p_level_values);
+     
+   p_level_values := l_level_values;        
 end;   
             
 --------------------------------------------------------------------------------
@@ -3207,24 +3220,115 @@ procedure retrieve_loc_lvl_values3(
    p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null)
 is
+   l_utc_dates    date_table_type;
+   l_min_date_utc date;
+   l_max_date_utc date;
+   l_level_id_parts str_tab_t;
+   l_attr_id_parts  str_tab_t;
+   l_level_values ztsv_array;
+   l_date_offset  number;  
+   l_date_offsets number_tab_t;
+   l_values       double_tab_t;
+   l_quality      number_tab_t; 
+   l_seq_props    cwms_lookup.sequence_properties_t;
+   l_hi_idx       pls_integer;
+   l_lo_idx       pls_integer;
+   l_log_used     boolean; 
+   l_ratio        number;
 begin
-   if p_specified_times is not null then
+   if p_specified_times is not null then 
+      -------------------------------------------------- 
+      -- collect the times and the time window in UTC --
+      -------------------------------------------------- 
+      select cwms_util.change_timezone(date_time, p_timezone_id, 'UTC')
+        bulk collect
+        into l_utc_dates
+        from table(p_specified_times);
+        
+      select min(column_value),
+             max(column_value)
+        into l_min_date_utc,
+             l_max_date_utc
+        from table(l_utc_dates);
+      ---------------------------------------------------------                              
+      -- get the location level values the level breakpoints --
+      ---------------------------------------------------------                              
+      l_level_id_parts := cwms_util.split_text(p_location_level_id, '.');
+      if p_attribute_id is null then
+         l_attr_id_parts := str_tab_t(null, null, null);
+      else
+         l_attr_id_parts :=  cwms_util.split_text(p_attribute_id, '.'); 
+      end if;                                           
+      retrieve_loc_lvl_values_utc(
+         p_level_values            => l_level_values,
+         p_location_id             => l_level_id_parts(1),
+         p_parameter_id            => l_level_id_parts(2),
+         p_parameter_type_id       => l_level_id_parts(3),
+         p_duration_id             => l_level_id_parts(4),
+         p_spec_level_id           => l_level_id_parts(5),
+         p_level_units             => p_level_units,
+         p_start_time_utc          => l_min_date_utc,
+         p_end_time_utc            => l_max_date_utc,
+         p_attribute_value         => p_attribute_value,
+         p_attribute_units         => p_attribute_units,
+         p_attribute_parameter_id  => l_attr_id_parts(1),
+         p_attribute_param_type_id => l_attr_id_parts(2),
+         p_attribute_duration_id   => l_attr_id_parts(3),
+         p_office_id               => p_office_id); 
+      -----------------------------------------          
+      -- set up variables to do lookups with --
+      -----------------------------------------          
+      select date_time - l_min_date_utc,
+             value,
+             quality_code
+        bulk collect
+        into l_date_offsets,
+             l_values,
+             l_quality 
+        from table(l_level_values);
+      l_seq_props := cwms_lookup.analyze_sequence(l_date_offsets);
+      -------------------------------------------- 
+      -- do the lookups for the specified times --
+      -------------------------------------------- 
       p_level_values := ztsv_array();
       p_level_values.extend(p_specified_times.count);
       for i in 1..p_specified_times.count loop
-         p_level_values(i) := ztsv_type(
-            p_specified_times(i).date_time,
-            retrieve_location_level_value(
-               p_location_level_id, 
-               p_level_units, 
-               p_specified_times(i).date_time, 
-               p_attribute_id, 
-               p_attribute_value, 
-               p_attribute_units, 
-               p_timezone_id, 
-               p_office_id),
-            0);                           
+         p_level_values(i) := ztsv_type(p_specified_times(i).date_time, null, 0);
+         l_date_offset := l_utc_dates(i) - l_min_date_utc;
+         l_hi_idx := cwms_lookup.find_high_index(l_date_offset, l_date_offsets, l_seq_props);
+         l_lo_idx := l_hi_idx -1 ;
+         l_ratio  := cwms_lookup.find_ratio(
+            p_log_used                => l_log_used, 
+            p_value                   => l_date_offset, 
+            p_sequence                => l_date_offsets, 
+            p_high_index              => l_hi_idx, 
+            p_increasing              => l_seq_props.increasing_range, 
+            p_in_range_behavior       => cwms_lookup.method_linear, 
+            p_out_range_low_behavior  => cwms_lookup.method_null,   -- set values to null before earliest effective date 
+            p_out_range_high_behavior => cwms_lookup.method_linear);
+         if l_ratio is not null then
+            if l_level_values(l_lo_idx).quality_code = 0 then
+               ----------------------
+               -- no interpolation --
+               ----------------------
+               p_level_values(i).value := l_level_values(l_lo_idx).value; 
+            else
+               -------------------
+               -- interpolation --
+               -------------------
+               p_level_values(i).value := l_level_values(l_lo_idx).value + l_ratio * (l_level_values(l_hi_idx).value - l_level_values(l_lo_idx).value); 
+            end if;
+         end if;
       end loop;
+      ---------------------------------------------------------      
+      -- filter out any times before earliest effective date --
+      ---------------------------------------------------------      
+      select ztsv_type(date_time, value, quality_code)
+        bulk collect
+        into l_level_values
+        from table(p_level_values)
+       where value is not null;
+      p_level_values := l_level_values;                        
    end if;
 end retrieve_loc_lvl_values3;   
    
