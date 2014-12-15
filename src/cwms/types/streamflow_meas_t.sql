@@ -155,7 +155,8 @@ as object (
    member function to_xml
       return xmltype,
    /**
-    * Returns a streamflow_meas_t object as a VARCHAR2
+    * Returns a streamflow_meas_t object as a VARCHAR2.  The preferred name of to_string
+    * cause conlicts with JPublisher-generated Java function toString().
     *
     * @return The object as a VARCHAR2
     */
