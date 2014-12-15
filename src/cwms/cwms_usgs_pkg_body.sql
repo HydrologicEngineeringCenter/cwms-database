@@ -1280,8 +1280,8 @@ begin
          end if;
          declare
             l_xml xmltype;
-         begin
-            dbms_output.put_line(l_meas.to_string);
+         Begin
+            dbms_output.put_line(l_meas.to_string1);
          end;
          l_meas.store('F'); 
          l_count := l_count + 1;  

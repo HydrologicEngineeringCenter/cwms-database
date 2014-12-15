@@ -2221,8 +2221,8 @@ begin
       cwms_util.append(l_clob, '<stream-flow-measurements/>'||chr(10));
    else
       cwms_util.append(l_clob, '<stream-flow-measurements>'||chr(10));
-      for i in 1..l_meas_tab.count loop
-         cwms_util.append(l_clob, l_meas_tab(i).to_string||chr(10));
+      For I In 1..L_Meas_Tab.Count Loop
+         cwms_util.append(l_clob, l_meas_tab(i).to_string1||chr(10));
       end loop;      
       cwms_util.append(l_clob, '</stream-flow-measurements>'||chr(10));
    end if;

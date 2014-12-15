@@ -283,11 +283,11 @@ as
    member function to_xml
       return xmltype
    is
-   begin 
-      return xmltype(self.to_string);
+   Begin 
+      return xmltype(self.to_string1);
    end to_xml;
       
-   member function to_string
+   member function to_string1
       return varchar2
    is
       l_text    varchar2(32767);
@@ -333,8 +333,8 @@ as
       l_text := l_text ||make_elem('flow-adjustment',    self.flow_adj_id);                
       l_text := l_text ||make_elem('remarks',            self.remarks);                
       l_text := l_text || '</stream-flow-measurement>';
-      return l_text;            
-   end to_string;
+      Return L_Text;            
+   end to_string1;
 end;
 /
 show errors;

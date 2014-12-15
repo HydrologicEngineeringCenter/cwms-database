@@ -159,7 +159,7 @@ as object (
     *
     * @return The object as a VARCHAR2
     */
-   member function to_string
+   member function to_string1
       return varchar2         
 );
 /
