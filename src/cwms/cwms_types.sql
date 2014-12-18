@@ -158,6 +158,11 @@ end;
 @@cwms/types/streamflow_meas_t
 @@cwms/types/streamflow_meas_tab_t
 @@cwms/types/streamflow_meas_t-body
+@@cwms/types/abs_logic_expr_t
+@@cwms/types/abs_logic_expr_t-body
+@@cwms/types/logic_expr_t
+@@cwms/types/logic_expr_tab_t
+@@cwms/types/logic_expr_t-body
 
 -- HOST pwd
 @@rowcps_types
