@@ -1,4 +1,3 @@
-/* Formatted on 12/29/2011 8:07:55 AM (QP5 v5.185.11230.41888) */
 SET DEFINE ON
 @@defines.sql
 
@@ -1496,6 +1495,41 @@ AS
       DBMS_LOB.close (l_clob);
       RETURN l_rows;
    END split_text;
+   
+   function split_text_regexp(
+      p_text               in varchar2,
+      p_separator          in varchar2,
+      p_include_separators in varchar2 default 'F',
+      p_match_parameter    in varchar2 default 'c',
+      p_max_split          in integer default null)
+      return str_tab_t
+   is
+      l_rows               str_tab_t := str_tab_t();
+      l_start_pos          pls_integer;      -- start position of separator
+      l_end_pos            pls_integer := 1; -- end position of separator plus 1
+      l_len                pls_integer := length(p_text);
+      l_include_separators boolean := is_true(p_include_separators);
+   begin
+      loop
+         exit when l_end_pos > l_len;         
+         l_start_pos := regexp_instr(p_text, p_separator, l_end_pos, 1, 0, p_match_parameter);
+         if l_start_pos = 0 then
+            l_rows.extend;
+            l_rows(l_rows.count) := substr(p_text, l_end_pos);
+            exit;
+         end if;
+         if l_start_pos > l_end_pos then
+            l_rows.extend;
+            l_rows(l_rows.count) := substr(p_text, l_end_pos, l_start_pos-l_end_pos+1);
+         end if;
+         l_end_pos := regexp_instr(p_text, p_separator, l_start_pos, 1, 1, p_match_parameter);
+         if l_include_separators then
+            l_rows.extend;
+            l_rows(l_rows.count) := substr(p_text, l_start_pos, l_end_pos-l_start_pos);
+         end if;
+      end loop; 
+      return l_rows;
+   end split_text_regexp;            
 
    -------------------------------------------------------------------------------
    -- function join_text(...)
@@ -2962,687 +2996,1302 @@ AS
          END;
    END parse_odbc_ts_or_d_string;
 
-   FUNCTION is_expression_constant (p_token IN VARCHAR2)
-      RETURN BOOLEAN
-   IS
-      l_count   INTEGER;
-   BEGIN
-      SELECT COUNT (*)
-        INTO l_count
-        FROM DUAL
-       WHERE p_token IN (SELECT * FROM TABLE (expression_constants));
+   function is_expression_constant(
+      p_token in varchar2)
+      return boolean
+   is
+      l_count   integer;
+   begin
+      select count(*)
+        into l_count
+        from table(expression_constants)
+       where column_value = p_token;
 
-      RETURN l_count > 0;
-   END is_expression_constant;
+      return l_count > 0;
+   end is_expression_constant;
 
-   FUNCTION is_expression_operator (p_token IN VARCHAR2)
-      RETURN BOOLEAN
-   IS
-      l_count   INTEGER;
-   BEGIN
-      SELECT COUNT (*)
-        INTO l_count
-        FROM DUAL
-       WHERE p_token IN (SELECT * FROM TABLE (expression_operators));
+   function is_expression_operator(
+      p_token in varchar2)
+      return boolean
+   is
+      l_count   integer;
+   begin
+      select count(*)
+        into l_count
+        from table(expression_operators)
+       where column_value = p_token;
 
-      RETURN l_count > 0;
-   END is_expression_operator;
+      return l_count > 0;
+   end is_expression_operator;
 
-   FUNCTION is_expression_function (p_token IN VARCHAR2)
-      RETURN BOOLEAN
-   IS
-      l_count   INTEGER;
-   BEGIN
-      SELECT COUNT (*)
-        INTO l_count
-        FROM DUAL
-       WHERE p_token IN (SELECT * FROM TABLE (expression_functions));
+   function is_expression_function(
+      p_token in varchar2)
+      return boolean
+   is
+      l_count   integer;
+   begin
+      select count(*)
+        into l_count
+        from table(expression_functions)
+       where column_value = p_token;
 
-      RETURN l_count > 0;
-   END is_expression_function;
+      return l_count > 0;
+   end is_expression_function;
 
+   function is_comparison_operator(
+      p_token in varchar2)
+      return boolean
+   is
+      l_count   integer;
+   begin
+      select count(*)
+        into l_count
+        from table(comparitors)
+       where column_value = p_token;
+
+      return l_count > 0;
+   end is_comparison_operator;
+
+   function is_combination_operator(
+      p_token in varchar2)
+      return boolean
+   is
+      l_count   integer;
+   begin
+      select count(*)
+        into l_count
+        from table(combinators)
+       where column_value = p_token;
+
+      return l_count > 0;
+   end is_combination_operator;
+
+   function is_logic_operator(
+      p_token in varchar2)
+      return boolean
+   is        
+   begin
+      return is_comparison_operator(p_token) or is_combination_operator(p_token);
+   end is_logic_operator;
+   
+   function tokenize_comparison_expression(
+      p_comparison_expression in varchar2)
+      return str_tab_tab_t
+   is
+      c_re          constant varchar2(49) := '\W?('||join_text(comparitors, '|')||')\W?';
+      l_tokenized   str_tab_tab_t;
+      l_parts       str_tab_t;
+      l_expressions str_tab_t;
+      l_op          varchar2(3);
+      procedure invalid is 
+      begin 
+         cwms_err.raise('ERROR', 'Invalid comparison expression: '||p_comparison_expression);
+      end;
+   begin        
+      l_parts := split_text(upper(trim(p_comparison_expression)));
+      if is_comparison_operator(l_parts(l_parts.count)) then
+         l_op := l_parts(l_parts.count); 
+         l_parts := tokenize_expression2(join_text(sub_table(l_parts, 1, l_parts.count-1), ' '), 'T');
+         l_tokenized := str_tab_tab_t();
+         l_tokenized.extend(l_parts.count+1);
+         for i in 1..l_parts.count loop
+            l_tokenized(i) := split_text(l_parts(i));
+         end loop;
+         l_tokenized(l_tokenized.count) := str_tab_t(l_op); 
+      else
+         select trim(column_value) 
+           bulk collect 
+           into l_parts 
+          from table(cwms_util.split_text_regexp(p_comparison_expression, c_re, 'T', 'i')); 
+         case l_parts.count
+         when 2 then
+            if is_comparison_operator(l_parts(2)) then
+               l_expressions := tokenize_expression2(l_parts(1));
+               if l_expressions.count = 2 then
+                  l_tokenized := str_tab_tab_t();
+                  l_tokenized.extend(3);
+                  l_tokenized(1) := tokenize_rpn(l_expressions(1));
+                  l_tokenized(2) := tokenize_rpn(l_expressions(2));
+                  l_tokenized(3) := str_tab_t(l_parts(2));
+               else
+                  invalid;
+               end if;
+            else
+               invalid;
+            end if;
+         when 3 then
+            if is_comparison_operator(l_parts(2)) then
+               l_tokenized := str_tab_tab_t();
+               l_tokenized.extend(3);
+                  l_tokenized(1) := tokenize_expression(l_parts(1));
+                  l_tokenized(2) := tokenize_expression(l_parts(3));
+                  l_tokenized(3) := str_tab_t(l_parts(2));
+            else
+               invalid;
+            end if;
+         else 
+            invalid;
+         end case;
+      end if;
+      return l_tokenized;
+   end tokenize_comparison_expression;
+   
    -----------------------------------------------------------------------------
-   -- FUNCTION tokenize_algebraic
-   --
-   -- Returns a table of RPN tokens for a specified algebraic expression
-   --
-   -- The expression is not case sensitive
-   --
-   -- The operators supported are +, -, *, /, //, %, and ^
-   --
-   -- The constants supported are pi and e
-   --
-   -- The functions supported are abs, acos, asin, atan, ceil, cos, exp, floor,
-   --           ln, log, sign, sin, tan, trunc
-   --
-   -- Standard operator precedence (order of operations) applies and can be
-   -- overridden by parentheses
-   --
-   -- All numbers, arguments and operators must be separated by whitespace,
-   -- except than no space is required adjacent to parentheses
+   -- FUNCTION tokenize_logic_expression
    -----------------------------------------------------------------------------
-
-   FUNCTION tokenize_algebraic (p_algebraic_expr IN VARCHAR2)
-      RETURN str_tab_t
-      RESULT_CACHE
-   IS
+   function tokenize_logic_expression(
+      p_expr in varchar2)                                                                                                                 
+      return str_tab_tab_t
+   is              
+      type logic_info_t     is record(op varchar2(5), pos pls_integer, precedence pls_integer);
+      type logic_info_tab_t is table of logic_info_t; 
+      c_re           constant varchar2(22) := '\W?('||cwms_util.join_text(cwms_util.combinators, '|')||')\W?';
+      l_expr         varchar2(32767);
+      l_temp         varchar2(32676);
+      l_results      str_tab_tab_t;
+      l_len          pls_integer;
+      l_parts        str_tab_t;
+      l_replacements str_tab_t;
+      l_table1       str_tab_t;
+      l_table2       str_tab_tab_t;
+      l_logic_info   logic_info_tab_t;
+      l_break        pls_integer;
+      l_start        pls_integer;
+      l_end          pls_integer;  
+      
+      function sub_expr(p_table in str_tab_t, p_first in pls_integer, p_last in pls_integer default null) return varchar2
+      is
+         l_table str_tab_t;
+         l_expr  varchar2(32767);
+         l_end   pls_integer := nvl(p_last, p_table.count);
+         l_extra pls_integer;
+      begin
+         select trim(column_value)
+           bulk collect
+           into l_table 
+           from table(sub_table(p_table, p_first, p_last));    
+         l_expr := join_text(l_table, ' ');                           
+         return l_expr;                           
+      end sub_expr; 
+                     
+      function drop_elements(p_indices in number_tab_t, p_table in str_tab_t) return str_tab_t
+      is
+         l_table str_tab_t;
+      begin
+         select column_value
+           bulk collect
+           into l_table
+           from (select column_value,
+                        rownum as seq
+                   from table(p_table)
+                )
+          where seq not in (select * from table(p_indices))
+          order by seq;
+          
+         return l_table;                     
+      end drop_elements;
+   begin
+      l_expr := upper(trim(p_expr));
+      l_len  := length(l_expr);
+      if nvl(get_expression_depth_at(l_len+1, l_expr), 0) != 0 then
+         cwms_err.raise('ERROR', 'Expression has unbalanced parentheses: '||p_expr);
+      end if;
+      if regexp_count(l_expr, c_re) = 0 then
+         ------------------------
+         -- no logic operators --
+         ------------------------
+         begin
+            l_results := tokenize_comparison_expression(p_expr);
+         exception
+            when others then
+               ------------------------------------
+               -- no comparison operators either --
+               ------------------------------------
+               l_results := str_tab_tab_t(tokenize_expression(p_expr));
+         end;
+      else
+         l_parts := split_text(l_expr);
+         l_len := l_parts.count;
+         if is_combination_operator(l_parts(l_len)) or 
+            is_comparison_operator(l_parts(l_len)) or
+            is_expression_operator(l_parts(l_len)) or
+            is_expression_function(l_parts(l_len))
+         then
+            -------------
+            -- postfix --
+            ------------- 
+            if instr(l_expr, '(') > 0 then
+               cwms_err.raise('ERROR', 'Invalid logic expression: '||p_expr);
+            end if; 
+            l_results := str_tab_tab_t();
+            l_temp  := null;
+            for i in 1..l_len loop  
+               if is_comparison_operator(l_parts(i)) then 
+                  l_temp := l_temp||' '||l_parts(i);
+                  l_table2 := tokenize_comparison_expression(l_temp);
+                  if l_table2.count != 3 then
+                     cwms_err.raise('ERROR', 'Invalid logic expression: '||l_temp);
+                  end if;
+                  l_results.extend(3);
+                  for j in 1..3 loop
+                     l_results(l_results.count-3+j) := l_table2(j);
+                  end loop;
+                  l_temp  := null;
+               elsif is_combination_operator(l_parts(i)) then
+                  l_results.extend;
+                  l_results(l_results.count) := str_tab_t(l_parts(i));
+               else
+                  l_temp := l_temp||' '||l_parts(i);
+               end if;
+            end loop;
+         else
+            -----------
+            -- infix --
+            -----------
+            ---------------------------- 
+            -- bind parentheses first --
+            ---------------------------- 
+            l_replacements := replace_parentheticals(l_expr);
+            l_replacements(l_replacements.count) := regexp_replace(l_replacements(l_replacements.count), '\$(\d+)', 'ARG10\1', 1, 0);
+            l_expr := l_replacements(l_replacements.count);
+            l_replacements.trim;
+            -----------------------------------------------------------
+            -- next bind operators in decreasing order of precedence --
+            -----------------------------------------------------------
+            l_start := l_replacements.count + 1;
+            l_parts := split_text_regexp(l_expr, c_re, 'T', 'i');
+            for rec in (select column_value as op from table(str_tab_t('NOT', 'AND', 'XOR', 'OR'))) loop
+               for i in reverse 1..l_parts.count loop
+                  if trim(l_parts(i)) = rec.op then
+                     l_replacements.extend;
+                     if rec.op = 'NOT' then
+                        l_replacements(l_replacements.count) := join_text(sub_table(l_parts, i, i+1),' ');
+                        l_parts(i) := 'ARG10'||l_replacements.count;
+                        l_parts := drop_elements(number_tab_t(i+1), l_parts);
+                     else
+                        l_replacements(l_replacements.count) := join_text(sub_table(l_parts, i-1, i+1), ' ');
+                        l_parts(i-1) := 'ARG10'||l_replacements.count;
+                        l_parts := drop_elements(number_tab_t(i, i+1), l_parts);
+                     end if;
+                  end if;
+               end loop;
+            end loop;
+            ------------------------------------------------------
+            -- unwind operator replacements in postfix notation --
+            ------------------------------------------------------
+            l_expr := l_parts(1);
+            for i in reverse 1..l_replacements.count loop
+               l_temp := null;
+               if i < l_start then
+                  -------------------------------------
+                  -- replace parentetical expression --
+                  -------------------------------------  
+                  l_table1 := split_text(l_replacements(i));
+                  if is_expression_function(l_table1(1)) then
+                     l_table2 := tokenize_logic_expression(sub_expr(l_table1, 2));
+                     l_table2.extend;
+                     l_table2(l_table2.count) := str_tab_t(l_table1(1));
+                  else 
+                     l_table2 := tokenize_logic_expression(l_replacements(i));
+                  end if;
+                  for j in 1..l_table2.count loop
+                     l_temp := l_temp||join_text(l_table2(j), ' ')||' ';
+                  end loop;
+               else
+                  ------------------------------
+                  -- replace logic expression --
+                  ------------------------------
+                  l_parts := split_text_regexp(l_replacements(i), c_re, 'T', 'i');
+                  case l_parts.count
+                  when 2 then 
+                     --------------------------
+                     -- unary operator (NOT) --
+                     --------------------------
+                     begin
+                        l_table2 := tokenize_comparison_expression(l_parts(2));
+                        for j in 1..l_table2.count loop
+                           l_temp := l_temp||join_text(l_table2(j), ' ')||' ';
+                        end loop;
+                        l_temp := l_temp||l_parts(1);
+                     exception
+                        when others then
+                           l_temp := l_parts(2)||' '||l_parts(1);
+                     end; 
+                  when 3 then
+                     --------------------- 
+                     -- binary operator --
+                     --------------------- 
+                     begin
+                        l_table2 := tokenize_comparison_expression(l_parts(1));
+                        for j in 1..l_table2.count loop
+                           l_temp := l_temp||join_text(l_table2(j), ' ')||' ';
+                        end loop;
+                     exception
+                        when others then
+                           l_temp := l_parts(1);
+                     end; 
+                     begin
+                        l_table2 := tokenize_comparison_expression(l_parts(3));
+                        for j in 1..l_table2.count loop
+                           l_temp := l_temp||join_text(l_table2(j), ' ')||' ';
+                        end loop;
+                        l_temp := l_temp||l_parts(2);
+                     exception
+                        when others then
+                           l_temp := l_temp||' '||l_parts(3)||' '||l_parts(2);
+                     end; 
+                  else 
+                     cwms_err.raise('ERROR', 'Invalid subexpression: '||l_replacements(i));
+                  end case;
+               end if;
+               l_expr := replace(l_expr, 'ARG10'||i, l_temp);
+            end loop;
+            l_results := tokenize_logic_expression(l_expr);
+         end if;
+      end if; 
+      return l_results;
+   end tokenize_logic_expression;
+   
+   function tokenize_algebraic(
+      p_algebraic_expr in varchar2)
+      return str_tab_t
+      result_cache
+   is
       l_infix_tokens        str_tab_t;
-      l_postfix_tokens      str_tab_t := NEW str_tab_t ();
-      l_stack               str_tab_t := NEW str_tab_t ();
-      l_func_stack          str_tab_t := NEW str_tab_t ();
-      l_left_paren_count    BINARY_INTEGER := 0;
-      l_right_paren_count   BINARY_INTEGER := 0;
-      l_func                VARCHAR2 (8);
-      l_dummy               VARCHAR2 (1);
-
-      PROCEDURE error
-      IS
-      BEGIN
-         cwms_err.raise (
+      l_postfix_tokens      str_tab_t := new str_tab_t();
+      l_stack               str_tab_t := new str_tab_t();
+      l_func_stack          str_tab_t := new str_tab_t();
+      l_left_paren_count    binary_integer := 0;
+      l_right_paren_count   binary_integer := 0;
+      l_func                varchar2(8);
+      l_dummy               varchar2(1);
+      --------------------
+      -- local routines --
+      --------------------
+      procedure error
+      is
+      begin
+         cwms_err.raise(
             'ERROR',
             'Invalid algebraic expression: ' || p_algebraic_expr);
-      END;
+      end;
 
-      PROCEDURE token_error (token IN VARCHAR2)
-      IS
-      BEGIN
-         cwms_err.raise ('ERROR', 'Invalid token in equation: ' || token);
-      END;
+      procedure token_error(token in varchar2)
+      is
+      begin
+         cwms_err.raise('ERROR', 'Invalid token in equation: ' || token);
+      end;
 
-      FUNCTION precedence (op IN VARCHAR2)
-         RETURN NUMBER
-      IS
-      BEGIN
-         RETURN CASE op
-                   WHEN '+' THEN 1
-                   WHEN '-' THEN 1
-                   WHEN '*' THEN 2
-                   WHEN '/' THEN 2
-                   WHEN '//' THEN 2
-                   WHEN '%' THEN 2
-                   WHEN '^' THEN 3
-                END;
-      END;
+      function precedence(op in varchar2) return number
+      is
+         l_precedence pls_integer;
+      begin     
+         if op is not null then
+            l_precedence :=  case op
+                             when '+'  then 1
+                             when '-'  then 1
+                             when '*'  then 2
+                             when '/'  then 2
+                             when '//' then 2
+                             when '%'  then 2
+                             when '^'  then 3
+                             else 0
+                             end;
+            if l_precedence < 1 then
+               cwms_err.raise('ERROR', 'Invalid arithmetic operator: '||op);
+            end if;
+         end if;
+         return l_precedence;                          
+      end;
 
-      PROCEDURE push (p_op IN VARCHAR2)
-      IS
-      BEGIN
-         l_stack.EXTEND;
-         l_stack (l_stack.COUNT) := p_op;
-      END;
+      procedure push(p_op in varchar2)
+      is
+      begin
+         l_stack.extend;
+         l_stack(l_stack.count) := p_op;
+      end;
 
-      FUNCTION pop
-         RETURN VARCHAR2
-      IS
-         l_op   VARCHAR2 (8);
-      BEGIN
-         BEGIN
-            l_op := l_stack (l_stack.COUNT);
-         EXCEPTION
-            WHEN OTHERS
-            THEN
-               error;
-         END;
+      function pop return varchar2
+      is
+         l_op   varchar2(8);
+      begin
+         begin
+            l_op := l_stack(l_stack.count);
+         exception
+            when others then error;
+         end;
+         l_stack.trim;
+         return l_op;
+      end;
 
-         l_stack.TRIM;
-         RETURN l_op;
-      END;
+      procedure push_func(p_func in varchar2)
+      is
+      begin
+         l_func_stack.extend;
+         l_func_stack(l_func_stack.count) := p_func;
+      end;
 
-      PROCEDURE push_func (p_func IN VARCHAR2)
-      IS
-      BEGIN
-         l_func_stack.EXTEND;
-         l_func_stack (l_func_stack.COUNT) := p_func;
-      END;
-
-      FUNCTION pop_func
-         RETURN VARCHAR2
-      IS
-         l_func   VARCHAR2 (8);
-      BEGIN
-         BEGIN
-            l_func := l_func_stack (l_func_stack.COUNT);
-         EXCEPTION
-            WHEN OTHERS
-            THEN
-               error;
-         END;
-
-         l_func_stack.TRIM;
-         RETURN l_func;
-      END;
-   BEGIN
+      function pop_func return varchar2
+      is
+         l_func   varchar2(8);
+      begin
+         begin
+            l_func := l_func_stack(l_func_stack.count);
+         exception
+            when others then error;
+         end;
+         l_func_stack.trim;
+         return l_func;
+      end;
+   begin
       ---------------------------------
       -- parse the infix into tokens --
       ---------------------------------
-      l_infix_tokens :=
-         cwms_util.split_text (
-            TRIM (
-               REGEXP_REPLACE (
-                  UPPER (REPLACE (p_algebraic_expr, CHR (10), ' ')),
-                  '([()])',
-                  ' \1 ')));
-
+      l_infix_tokens := cwms_util.split_text(trim(regexp_replace(upper(replace(p_algebraic_expr,chr(10),' ')),'([()])',' \1 ')));
       -------------------------------------
       -- process the tokens into postfix --
       -------------------------------------
-      FOR i IN 1 .. l_infix_tokens.COUNT
-      LOOP
-         CASE
+      for i in 1 .. l_infix_tokens.count
+      loop   
+         case
+         when is_expression_operator(l_infix_tokens(i)) then
             ---------------
             -- operators --
             ---------------
-            WHEN is_expression_operator (l_infix_tokens (i))
-            THEN
-               IF l_stack.COUNT > 0
-                  AND precedence (l_stack (l_stack.COUNT)) >=
-                         precedence (l_infix_tokens (i))
-               THEN
-                  l_postfix_tokens.EXTEND;
-                  l_postfix_tokens (l_postfix_tokens.COUNT) := pop;
-               END IF;
+            if l_stack.count > 0 and precedence(l_stack(l_stack.count)) >= precedence(l_infix_tokens(i)) then
+               l_postfix_tokens.extend;
+               l_postfix_tokens(l_postfix_tokens.count) := pop;
+            end if;
 
-               push (l_infix_tokens (i));
+            push(l_infix_tokens(i));
+         when is_expression_function(l_infix_tokens(i)) then
             ---------------
             -- functions --
             ---------------
-            WHEN is_expression_function (l_infix_tokens (i))
-            THEN
-               push_func (l_infix_tokens (i));
+            push_func(l_infix_tokens(i));
+         when l_infix_tokens(i) = '(' then
             ----------------------
             -- open parentheses --
             ----------------------
-            WHEN l_infix_tokens (i) = '('
-            THEN
-               push (NULL);
-               push_func (NULL);
-               l_left_paren_count := l_left_paren_count + 1;
+            push(null);
+            push_func(null);
+            l_left_paren_count := l_left_paren_count + 1;
+         when l_infix_tokens(i) = ')' then
             ------------------------
             -- close parentheses --
             ------------------------
-            WHEN l_infix_tokens (i) = ')'
-            THEN
-               WHILE l_stack (l_stack.COUNT) IS NOT NULL
-               LOOP
-                  l_postfix_tokens.EXTEND;
-                  l_postfix_tokens (l_postfix_tokens.COUNT) := pop;
-               END LOOP;
+            while l_stack(l_stack.count) is not null loop
+               l_postfix_tokens.extend;
+               l_postfix_tokens(l_postfix_tokens.count) := pop;
+            end loop;
 
-               l_dummy := pop;
+            l_dummy := pop;
+            l_func := pop_func;
+
+            if l_func_stack.count > 0 and l_func_stack(l_func_stack.count) is not null then
                l_func := pop_func;
+               l_postfix_tokens.extend;
+               l_postfix_tokens(l_postfix_tokens.count) := l_func;
+            end if;
 
-               IF l_func_stack.COUNT > 0
-                  AND l_func_stack (l_func_stack.COUNT) IS NOT NULL
-               THEN
-                  l_func := pop_func;
-                  l_postfix_tokens.EXTEND;
-                  l_postfix_tokens (l_postfix_tokens.COUNT) := l_func;
-               END IF;
-
-               l_right_paren_count := l_right_paren_count + 1;
+            l_right_paren_count := l_right_paren_count + 1;
+         else
             ---------------------
             -- everything else --
             ---------------------
-            ELSE
-               l_postfix_tokens.EXTEND;
-               l_postfix_tokens (l_postfix_tokens.COUNT) := l_infix_tokens (i);
-         END CASE;
-      END LOOP;
+            l_postfix_tokens.extend;
+            l_postfix_tokens(l_postfix_tokens.count) := l_infix_tokens(i);
+         end case;
+      end loop;
 
-      IF l_right_paren_count != l_left_paren_count
-      THEN
+      if l_right_paren_count != l_left_paren_count
+      then
          error;
-      END IF;
+      end if;
 
-      WHILE l_stack.COUNT > 0
-      LOOP
-         l_postfix_tokens.EXTEND;
-         l_postfix_tokens (l_postfix_tokens.COUNT) := pop;
-      END LOOP;
+      while l_stack.count > 0
+      loop
+         l_postfix_tokens.extend;
+         l_postfix_tokens(l_postfix_tokens.count) := pop;
+      end loop;
 
-      RETURN l_postfix_tokens;
-   END tokenize_algebraic;
+      return l_postfix_tokens;
+   end tokenize_algebraic;
 
    -----------------------------------------------------------------------------
-   -- FUNCTION tokenize_RPN
-   --
-   -- Returns a table of RPN tokens for a specified delimited RPN expression
-   --
-   -- The expression is not case sensitive
-   --
-   -- The operators supported are +, -, *, /, //, %, and ^
-   --
-   -- The constants supported are pi and e
-   --
-   -- The functions supported are abs, acos, asin, atan, ceil, cos, exp, floor,
-   --           ln, log, sign, sin, tan, trunc
-   --
-   -- All numbers, arguments and operators must be separated by whitespace
+   -- FUNCTION tokenize_rpn
    -----------------------------------------------------------------------------
-
-   FUNCTION tokenize_rpn (p_rpn_expr IN VARCHAR2)
-      RETURN str_tab_t
-      RESULT_CACHE
-   IS
-   BEGIN
-      RETURN split_text (TRIM (UPPER (REPLACE (p_rpn_expr, CHR (10), ' '))));
-   END tokenize_rpn;
+   function tokenize_rpn(
+      p_rpn_expr in varchar2)
+      return str_tab_t
+      result_cache
+   is
+   begin
+      return split_text(trim(upper(replace(p_rpn_expr, chr(10), ' '))));
+   end tokenize_rpn;
 
    -----------------------------------------------------------------------------
    -- FUNCTION tokenize_expression
-   --
-   -- Returns a table of RPN tokens for a specified algebraic or RPN expression
-   --
-   -- The expression is not case sensitive
-   --
-   -- The operators supported are +, -, *, /, //, %, and ^
-   --
-   -- The constants supported are pi and e
-   --
-   -- The functions supported are abs, acos, asin, atan, ceil, cos, exp, floor,
-   --           ln, log, sign, sin, tan, trunc
-   --
-   -- Standard operator precedence (order of operations) applies and can be
-   -- overridden by parentheses
-   --
-   -- All numbers, arguments and operators must be separated by whitespace,
-   -- except than no space is required adjacent to parentheses
    -----------------------------------------------------------------------------
-
-   FUNCTION tokenize_expression (p_expr IN VARCHAR2)
-      RETURN str_tab_t
-      RESULT_CACHE
-   IS
-      l_tokens   str_tab_t;
-      l_count    INTEGER := 0;
-   BEGIN
-      IF INSTR (p_expr, '(') > 0
-      THEN
+   function tokenize_expression(
+      p_expr in varchar2)
+      return str_tab_t
+      result_cache
+   is
+      l_tokens str_tab_t;
+      l_count  integer := 0;
+      l_number number;
+   begin
+      if instr(p_expr, '(') > 0 then
          -----------------------------------------------------
          -- must be algebraic, rpn doesn't have parentheses --
          -----------------------------------------------------
-         l_tokens := tokenize_algebraic (p_expr);
-      ELSE
+         l_tokens := tokenize_algebraic(p_expr);
+      else            
          -------------------
          -- first try rpn --
          -------------------
-         l_tokens := tokenize_rpn (p_expr);
+         l_tokens := tokenize_rpn(p_expr);
+         case l_tokens.count
+         when 0 then null;
+         when 1 then
+            begin
+               l_number := to_number(l_tokens(1));
+            exception
+               when others then
+                  if not regexp_like(l_tokens(1), 'arg\d+', 'i') and not is_expression_constant(l_tokens(1)) then
+                     cwms_err.raise('ERROR', 'Invalid expression: '||p_expr);
+                  end if; 
+            end;
+         else
+            if not is_expression_operator(l_tokens(l_tokens.count)) and 
+               not is_expression_function(l_tokens(l_tokens.count)) and
+               not is_comparison_operator(l_tokens(l_tokens.count)) and
+               not is_combination_operator(l_tokens(l_tokens.count))
+            then
+               -----------------------------------------------------------------
+               -- last token isn't an operator or function, must be algebraic --
+               -----------------------------------------------------------------
+               l_tokens := tokenize_algebraic(p_expr);
+            end if;
+         end case;
+      end if;
 
-         IF     l_tokens.COUNT > 0
-            AND NOT is_expression_operator (l_tokens (l_tokens.COUNT))
-            AND NOT is_expression_function (l_tokens (l_tokens.COUNT))
-         THEN
-            -----------------------------------------------------------------
-            -- last token isn't an operator or function, must be algebraic --
-            -----------------------------------------------------------------
-            l_tokens := tokenize_algebraic (p_expr);
-         END IF;
-      END IF;
+      return l_tokens;
+   end tokenize_expression;
+   
+   function tokenize_expression2(
+      p_expr   in varchar2,
+      p_is_rpn in varchar2 default 'F')
+      return str_tab_t
+      result_cache
+   is    
+      l_rpn_tokens str_tab_t;
+      l_stack      str_tab_t := str_tab_t();
+      l_val1       varchar2(32767);
+      l_val2       varchar2(32767);
+      l_idx        binary_integer; 
+      l_number     number;
+      --------------------
+      -- local routines --
+      --------------------
+      procedure token_error(token in varchar2)
+      is
+      begin
+         cwms_err.raise('ERROR', 'Invalid token in equation: ' || token);
+      end;
 
-      RETURN l_tokens;
-   END tokenize_expression;
+      procedure argument_error(l_idx in integer)
+      is
+      begin
+         cwms_err.raise('ERROR', 'ARG' || l_idx || ' does not exist');
+      end;
+
+      procedure push(val in varchar2)
+      is
+      begin
+         l_stack.extend;
+         l_stack(l_stack.count) := val;
+      end;
+
+      function pop return varchar2
+      is
+         val varchar2(32767);
+      begin
+         val := l_stack(l_stack.last);
+         l_stack.trim;
+         return val;
+      end;
+   begin                   
+      if is_true(p_is_rpn) then
+         l_rpn_tokens := split_text(p_expr);
+      else
+         l_rpn_tokens := tokenize_expression(p_expr);
+      end if;
+      for i in 1 .. l_rpn_tokens.count loop
+         case
+         ---------------
+         -- operators --
+         ---------------
+         when is_expression_operator(l_rpn_tokens(i)) or
+              is_comparison_operator(l_rpn_tokens(i)) or
+              is_combination_operator(l_rpn_tokens(i))          
+         then
+            if l_rpn_tokens(i) = 'NOT' then
+               push(pop||l_rpn_tokens(i));
+            else
+               l_val2 := pop;
+               l_val1 := pop;
+               push(l_val1||' '||l_val2||' '||l_rpn_tokens(i));
+            end if; 
+         ---------------
+         -- constants --
+         ---------------
+         when is_expression_constant(l_rpn_tokens(i)) then push(l_rpn_tokens(i));
+         ---------------------
+         -- unary functions --
+         ---------------------
+         when is_expression_function(l_rpn_tokens(i)) then
+            push(pop||' '||l_rpn_tokens(i));
+         ---------------
+         -- arguments --
+         ---------------
+         when substr(l_rpn_tokens(i), 1, 3) = 'ARG' or substr(l_rpn_tokens(i), 1, 4) = '-ARG' then
+            push(l_rpn_tokens(i));
+         -------------
+         -- numbers --
+         -------------
+         else             
+            begin
+               l_number := to_number(l_rpn_tokens(i));
+            exception
+               when others then cwms_err.raise('ERROR', 'Invalid expression token: '||l_rpn_tokens(i));
+            end;
+            push(l_rpn_tokens(i));
+         end case;
+      end loop;
+      return l_stack;
+   end tokenize_expression2;
+   
+   -----------------------------------------------------------------------------
+   -- FUNCTION replace_parentheticals
+   -----------------------------------------------------------------------------
+   function replace_parentheticals(
+      p_expr in varchar2)
+      return str_tab_t
+   is
+      l_results   str_tab_t := str_tab_t();
+      l_positions number_tab_t;
+      l_expr      varchar2(32767);
+      l_start     pls_integer;
+      l_end       pls_integer;
+      l_token     varchar2(4);
+      l_parts     str_tab_t;  
+   begin
+      select pos
+        bulk collect
+        into l_positions 
+        from (select pos,
+                     offset,
+                     sum(offset) over (order by pos) as depth
+                from (select instr(p_expr, '(', 1, level) as pos,
+                             1 as offset 
+                        from dual
+                     connect by level <= regexp_count(p_expr, '\(')
+                      union all
+                      select instr(p_expr, ')', 1, level) as pos,
+                             -1 as offset 
+                        from dual
+                     connect by level <= regexp_count(p_expr, '\)')
+                     )
+              )
+        where offset =  1 and depth = 1
+           or offset = -1 and depth = 0;
+      if l_positions.count = 1 then 
+         l_positions.trim;
+      end if;           
+      l_results.extend(l_positions.count/2+1);
+      l_expr := p_expr;
+      for i in reverse 1..l_positions.count/2 loop
+         l_start := l_positions(2*i-1);
+         l_end   := l_positions(2*i);  
+         l_results(i) := trim(substr(l_expr, l_start+1, l_end-l_start-1)); 
+                              
+         l_token := '$'||i;
+         l_expr  := rtrim(substr(l_expr, 1, l_start-1))||' '||l_token||' '||ltrim(substr(l_expr, l_end+1));
+         l_parts := split_text(l_expr);
+         for j in 1..l_parts.count loop
+            if l_parts(j) = l_token then
+               if j > 1 and is_expression_function(l_parts(j-1)) then
+                  l_results(i) := l_parts(j-1)||' '||l_results(i);
+                  l_parts(j-1) := ' ';
+                  l_expr := join_text(l_parts, ' ');
+               end if;
+               exit;
+            end if;
+         end loop; 
+      end loop;
+      l_results(l_positions.count/2+1) := trim(l_expr);              
+      return l_results;
+   end replace_parentheticals;      
 
    -----------------------------------------------------------------------------
    -- FUNCTION eval_tokenized_expression
-   --
-   -- Returns the result of evaluating RPN tokens against specified arguments
-   --
-   -- The tokens are not case sensitive
-   --
-   -- Arguments are specified as arg1, arg2, etc...  Negated arguments (-arg1)
-   -- are accepted
-   --
-   -- p_args_offset is the offset into the args table for arg1
    -----------------------------------------------------------------------------
-
-   FUNCTION eval_tokenized_expression (p_rpn_tokens    IN str_tab_t,
-                                       p_args          IN double_tab_t,
-                                       p_args_offset   IN INTEGER DEFAULT 0)
-      RETURN NUMBER
-   IS
-      l_stack   number_tab_t := NEW number_tab_t ();
-      l_val1    BINARY_DOUBLE;
-      l_val2    BINARY_DOUBLE;
-      l_idx     BINARY_INTEGER;
-
-      PROCEDURE token_error (token IN VARCHAR2)
-      IS
-      BEGIN
-         cwms_err.raise ('ERROR', 'Invalid token in equation: ' || token);
-      END;
-
-      PROCEDURE argument_error (l_idx IN INTEGER)
-      IS
-      BEGIN
-         cwms_err.raise ('ERROR', 'ARG' || l_idx || ' does not exist');
-      END;
-
-      PROCEDURE push (val IN NUMBER)
-      IS
-      BEGIN
-         l_stack.EXTEND;
-         l_stack (l_stack.COUNT) := val;
-      -- dbms_output.put_line('pushed '||val);
-      END;
-
-      FUNCTION pop
-         RETURN NUMBER
-      IS
-         val   NUMBER;
-      BEGIN
-         val := l_stack (l_stack.LAST);
-         l_stack.TRIM;
-         -- dbms_output.put_line('popped '||val);
-         RETURN val;
-      END;
-   BEGIN
-      FOR i IN 1 .. p_rpn_tokens.COUNT
-      LOOP
-         -- dbms_output.put_line('token('||i||') = '||p_RPN_tokens(i));
-         CASE
-            ---------------
-            -- operators --
-            ---------------
-            WHEN p_rpn_tokens (i) = '+'
-            THEN
-               push (pop + pop);
-            WHEN p_rpn_tokens (i) = '-'
-            THEN
-               push (-pop + pop);
-            WHEN p_rpn_tokens (i) = '*'
-            THEN
-               push (pop * pop);
-            WHEN p_rpn_tokens (i) = '/'
-            THEN
-               l_val2 := NULLIF (pop, 0);
-               l_val1 := pop;
-               push (l_val1 / l_val2);
-            WHEN p_rpn_tokens (i) = '//'
-            THEN                                             -- same as Python
-               l_val2 := NULLIF (pop, 0);
-               l_val1 := pop;
-               push (FLOOR (l_val1 / l_val2));
-            WHEN p_rpn_tokens (i) = '%'
-            THEN                            -- same as Python math.fmod, not %
-               l_val2 := NULLIF (pop, 0);
-               l_val1 := pop;
-               push (MOD (l_val1, l_val2));
-            WHEN p_rpn_tokens (i) = '^'
-            THEN
-               l_val2 := pop;
-               l_val1 := pop;
-               push (POWER (l_val1, l_val2));
-            ---------------
-            -- constants --
-            ---------------
-            WHEN p_rpn_tokens (i) = 'E'
-            THEN
-               push (2.7182818284590451);
-            WHEN p_rpn_tokens (i) = 'PI'
-            THEN
-               push (3.1415926535897931);
-            ---------------------
-            -- unary functions --
-            ---------------------
-            WHEN p_rpn_tokens (i) = 'ABS'
-            THEN
-               push (ABS (pop));
-            WHEN p_rpn_tokens (i) = 'ACOS'
-            THEN
-               push (ACOS (pop));
-            WHEN p_rpn_tokens (i) = 'ASIN'
-            THEN
-               push (ASIN (pop));
-            WHEN p_rpn_tokens (i) = 'ATAN'
-            THEN
-               push (ATAN (pop));
-            WHEN p_rpn_tokens (i) = 'CEIL'
-            THEN
-               push (CEIL (pop));
-            WHEN p_rpn_tokens (i) = 'COS'
-            THEN
-               push (COS (pop));
-            WHEN p_rpn_tokens (i) = 'EXP'
-            THEN
-               push (EXP (pop));
-            WHEN p_rpn_tokens (i) = 'FLOOR'
-            THEN
-               push (FLOOR (pop));
-            WHEN p_rpn_tokens (i) = 'INV'
-            THEN
-               push (1 / pop);
-            WHEN p_rpn_tokens (i) = 'LN'
-            THEN
-               push (LN (pop));
-            WHEN p_rpn_tokens (i) = 'LOG'
-            THEN                                                -- log base 10
-               push (LOG (10, pop));
-            WHEN p_rpn_tokens (i) = 'NEG'
-            THEN
-               push (pop * -1);
-            WHEN p_rpn_tokens (i) = 'ROUND'
-            THEN
-               push (ROUND (pop));
-            WHEN p_rpn_tokens (i) = 'SIGN'
-            THEN                             -- not SQL sign, but +1, 0, or -1
-               l_val1 := pop;
-
-               CASE
-                  WHEN l_val1 < 0
-                  THEN
-                     push (-1);
-                  WHEN l_val1 > 0
-                  THEN
-                     push (1);
-                  ELSE
-                     push (0);
-               END CASE;
-            WHEN p_rpn_tokens (i) = 'SIN'
-            THEN
-               push (SIN (pop));
-            WHEN p_rpn_tokens (i) = 'SQRT'
-            THEN
-               push (SQRT (pop));
-            WHEN p_rpn_tokens (i) = 'TAN'
-            THEN
-               push (TAN (pop));
-            WHEN p_rpn_tokens (i) = 'TRUNC'
-            THEN
-               push (TRUNC (pop));
-            ---------------
-            -- arguments --
-            ---------------
-            WHEN SUBSTR (p_rpn_tokens (i), 1, 3) = 'ARG'
-            THEN
-               BEGIN
-                  l_idx :=
-                     TO_NUMBER (SUBSTR (p_rpn_tokens (i), 4)) + p_args_offset;
-
-                  IF l_idx < 1 OR l_idx > p_args.COUNT
-                  THEN
-                     argument_error (l_idx - p_args_offset);
-                  END IF;
-
-                  IF p_args (l_idx) IS NULL
-                  THEN
-                     RETURN NULL;
-                  END IF;
-
-                  push (p_args (l_idx));
-               EXCEPTION
-                  WHEN OTHERS
-                  THEN
-                     token_error (p_rpn_tokens (i));
-               END;
-            WHEN SUBSTR (p_rpn_tokens (i), 1, 4) = '-ARG'
-            THEN
-               BEGIN
-                  l_idx := TO_NUMBER (SUBSTR (p_rpn_tokens (i), 5));
-
-                  IF l_idx < 1 OR l_idx > p_args.COUNT
-                  THEN
-                     argument_error (l_idx - p_args_offset);
-                  END IF;
-
-                  IF p_args (l_idx) IS NULL
-                  THEN
-                     RETURN NULL;
-                  END IF;
-
-                  push (p_args (l_idx));
-               EXCEPTION
-                  WHEN OTHERS
-                  THEN
-                     token_error (p_rpn_tokens (i));
-               END;
-            -------------
-            -- numbers --
-            -------------
-            ELSE
-               BEGIN
-                  push (TO_NUMBER (p_rpn_tokens (i)));
-               EXCEPTION
-                  WHEN OTHERS
-                  THEN
-                     token_error (p_rpn_tokens (i));
-               END;
-         END CASE;
-      END LOOP;
-
-      IF l_stack.COUNT != 1
-      THEN
+   function eval_tokenized_expression(
+      p_rpn_tokens    in str_tab_t,
+      p_args          in double_tab_t,
+      p_args_offset   in integer default 0)
+      return number
+   is 
+      l_stack double_tab_t;
+   begin
+      l_stack := eval_tokenized_expression2(
+         p_rpn_tokens  => p_rpn_tokens,
+         p_args        => p_args,
+         p_args_offset => p_args_offset);
+      if l_stack.count > 1 then
          cwms_err.raise ('ERROR', 'Remaining items on stack');
-      END IF;
+      end if;
+      return l_stack(1);         
+   end eval_tokenized_expression;      
 
-      RETURN pop;
-   END eval_tokenized_expression;
+   -----------------------------------------------------------------------------
+   -- FUNCTION eval_tokenized_expression2
+   -----------------------------------------------------------------------------
+   function eval_tokenized_expression2(
+      p_rpn_tokens    in str_tab_t,
+      p_args          in double_tab_t,
+      p_args_offset   in integer default 0)
+   return double_tab_t
+   is
+      l_stack double_tab_t := double_tab_t();
+      l_val1  binary_double;
+      l_val2  binary_double;
+      l_idx   binary_integer;
+      --------------------
+      -- local routines --
+      --------------------
+      procedure token_error(token in varchar2)
+      is
+      begin
+         cwms_err.raise('ERROR', 'Invalid token in equation: ' || token);
+      end;
+
+      procedure argument_error(l_idx in integer)
+      is
+      begin
+         cwms_err.raise('ERROR', 'ARG' || l_idx || ' does not exist');
+      end;
+
+      procedure push(val in binary_double)
+      is
+      begin
+         l_stack.extend;
+         l_stack(l_stack.count) := val;
+      end;
+
+      function pop return binary_double
+      is
+         val binary_double;
+      begin
+         val := l_stack(l_stack.last);
+         l_stack.trim;
+         return val;
+      end;
+   begin
+      for i in 1 .. p_rpn_tokens.count
+      loop
+         case
+         ---------------
+         -- operators --
+         ---------------
+         when p_rpn_tokens(i) = '+'  then push(pop + pop);
+         when p_rpn_tokens(i) = '-'  then push(-pop + pop);
+         when p_rpn_tokens(i) = '*'  then push(pop * pop);
+         when p_rpn_tokens(i) = '/'  then
+            l_val2 := nullif(pop, 0);
+            l_val1 := pop;
+            push(l_val1 / l_val2);
+         when p_rpn_tokens(i) = '//' then -- same as Python
+            l_val2 := nullif(pop, 0);
+            l_val1 := pop;
+            push(floor(l_val1 / l_val2));
+         when p_rpn_tokens(i) = '%'  then -- same as Python math.fmod, not %
+            l_val2 := nullif(pop, 0);
+            l_val1 := pop;
+            push(mod(l_val1, l_val2));
+         when p_rpn_tokens(i) = '^'  then
+            l_val2 := pop;
+            l_val1 := pop;
+            push(power(l_val1, l_val2));
+         ---------------
+         -- constants --
+         ---------------
+         when p_rpn_tokens(i) = 'E'  then push(2.7182818284590451);
+         when p_rpn_tokens(i) = 'PI' then push(3.1415926535897931);
+         ---------------------
+         -- unary functions --
+         ---------------------
+         when p_rpn_tokens(i) = 'ABS'   then push(abs(pop));
+         when p_rpn_tokens(i) = 'ACOS'  then push(acos(pop));
+         when p_rpn_tokens(i) = 'ASIN'  then push(asin(pop));
+         when p_rpn_tokens(i) = 'ATAN'  then push(atan(pop));
+         when p_rpn_tokens(i) = 'CEIL'  then push(ceil(pop));
+         when p_rpn_tokens(i) = 'COS'   then push(cos(pop));
+         when p_rpn_tokens(i) = 'EXP'   then push(exp(pop));
+         when p_rpn_tokens(i) = 'FLOOR' then push(floor(pop));
+         when p_rpn_tokens(i) = 'INV'   then push(1 / pop);
+         when p_rpn_tokens(i) = 'LN'    then push(ln(pop));
+         when p_rpn_tokens(i) = 'LOG'   then push(log(10, pop)); -- log base 10
+         when p_rpn_tokens(i) = 'NEG'   then push(pop * -1);
+         when p_rpn_tokens(i) = 'ROUND' then push(round(pop));
+         when p_rpn_tokens(i) = 'SIGN'  then                     -- not SQL sign, but +1, 0, or -1
+            l_val1 := pop;
+            case
+            when l_val1 < 0 then push(-1);
+            when l_val1 > 0 then push(1);
+            else push(0);
+            end case;
+         when p_rpn_tokens(i) = 'SIN'   then push(sin(pop));
+         when p_rpn_tokens(i) = 'SQRT'  then push(sqrt(pop));
+         when p_rpn_tokens(i) = 'TAN'   then push(tan(pop));
+         when p_rpn_tokens(i) = 'TRUNC' then push(trunc(pop));
+         ---------------
+         -- arguments --
+         ---------------
+         when substr(p_rpn_tokens(i), 1, 3) = 'ARG' then
+            begin
+               l_idx := to_number(substr(p_rpn_tokens(i), 4)) + p_args_offset;
+               if l_idx < 1 or l_idx > p_args.count then
+                  argument_error(l_idx - p_args_offset);
+               end if;
+               push(p_args(l_idx)); 
+            exception
+               when others then
+                  token_error(p_rpn_tokens(i));
+            end;
+         when substr(p_rpn_tokens(i), 1, 4) = '-ARG' then
+            begin
+               l_idx := to_number(substr(p_rpn_tokens(i), 5));
+               if l_idx < 1 or l_idx > p_args.count
+               then
+                  argument_error(l_idx - p_args_offset);
+               end if;
+               push(p_args(l_idx));
+            exception
+               when others then
+                  token_error(p_rpn_tokens(i));
+            end;
+         -------------
+         -- numbers --
+         -------------
+         else
+            begin
+               push(to_binary_double(p_rpn_tokens(i)));
+            exception
+               when others then
+                  token_error(p_rpn_tokens(i));
+            end;
+         end case;
+      end loop;
+      return l_stack;
+   end eval_tokenized_expression2;
 
    -----------------------------------------------------------------------------
    -- FUNCTION eval_algebraic_expression
-   --
-   -- Returns the result of evaluating an algebraic expression against specified
-   -- arguments
-   --
-   -- The expression is not case sensitive
-   --
-   -- The operators supported are +, -, *, /, //, %, and ^
-   --
-   -- The constants supported are pi and e
-   --
-   -- The functions supported are abs, acos, asin, atan, ceil, cos, exp, floor,
-   --           ln, log, sign, sin, tan, trunc
-   --
-   -- Standard operator precedence (order of operations) applies and can be
-   -- overridden by parentheses
-   --
-   -- All numbers, arguments and operators must be separated by whitespace,
-   -- except than no space is required adjacent to parentheses
-   --
-   -- Arguments are specified as arg1, arg2, etc...  Negated arguments (-arg1)
-   -- are accepted
-   --
-   -- p_args_offset is the offset into the args table for arg1
    -----------------------------------------------------------------------------
-
-   FUNCTION eval_algebraic_expression (
-      p_algebraic_expr   IN VARCHAR2,
-      p_args             IN double_tab_t,
-      p_args_offset      IN INTEGER DEFAULT 0)
-      RETURN NUMBER
-   IS
-   BEGIN
-      RETURN eval_tokenized_expression (
-                tokenize_algebraic (p_algebraic_expr),
+   function eval_algebraic_expression(
+      p_algebraic_expr in varchar2,
+      p_args           in double_tab_t,
+      p_args_offset    in integer default 0)
+      return number
+   is
+   begin
+      return eval_tokenized_expression(
+                tokenize_algebraic(p_algebraic_expr),
                 p_args,
                 p_args_offset);
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         cwms_err.raise (
-            'ERROR',
-            'Invalid algebraic expression: ' || p_algebraic_expr);
-   END eval_algebraic_expression;
+   exception
+      when others then
+         cwms_err.raise('ERROR', 'Invalid algebraic expression: ' || p_algebraic_expr);
+   end eval_algebraic_expression;
 
    -----------------------------------------------------------------------------
-   -- FUNCTION eval_RPN_expression
-   --
-   -- Returns the result of evaluating a delimited RPN expression against
-   -- specified arguments
-   --
-   -- The expression is not case sensitive
-   --
-   -- The operators supported are +, -, *, /, //, %, and ^
-   --
-   -- The constants supported are pi and e
-   --
-   -- The functions supported are abs, acos, asin, atan, ceil, cos, exp, floor,
-   --           ln, log, sign, sin, tan, trunc
-   --
-   -- All numbers, arguments and operators must be separated by whitespace
-   --
-   -- Arguments are specified as arg1, arg2, etc...  Negated arguments (-arg1)
-   -- are accepted
-   --
-   -- p_args_offset is the offset into the args table for arg1
+   -- FUNCTION eval_algebraic_expression2
    -----------------------------------------------------------------------------
+   function eval_algebraic_expression2(
+      p_algebraic_expr in varchar2,
+      p_args           in double_tab_t,
+      p_args_offset    in integer default 0)
+      return double_tab_t
+   is
+   begin
+      return eval_tokenized_expression2(
+                tokenize_algebraic(p_algebraic_expr),
+                p_args,
+                p_args_offset);
+   exception
+      when others then
+         cwms_err.raise('ERROR', 'Invalid algebraic expression: ' || p_algebraic_expr);
+   end eval_algebraic_expression2;
 
-   FUNCTION eval_rpn_expression (p_rpn_expr      IN VARCHAR2,
-                                 p_args          IN double_tab_t,
-                                 p_args_offset   IN INTEGER DEFAULT 0)
-      RETURN NUMBER
-   IS
-   BEGIN
-      RETURN eval_tokenized_expression (tokenize_rpn (p_rpn_expr),
-                                        p_args,
-                                        p_args_offset);
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         cwms_err.raise ('ERROR', 'Invalid RPN expression: ' || p_rpn_expr);
-   END eval_rpn_expression;
+   -----------------------------------------------------------------------------
+   -- FUNCTION eval_rpn_expression
+   -----------------------------------------------------------------------------
+   function eval_rpn_expression(
+      p_rpn_expr      in varchar2,
+      p_args          in double_tab_t,
+      p_args_offset   in integer default 0)
+      return number
+   is
+   begin
+      return eval_tokenized_expression(
+                tokenize_rpn(p_rpn_expr),
+                p_args,
+                p_args_offset);
+   exception
+      when others then
+         cwms_err.raise('ERROR', 'Invalid RPN expression: ' || p_rpn_expr);
+   end eval_rpn_expression;
+
+   -----------------------------------------------------------------------------
+   -- FUNCTION eval_rpn_expression2
+   -----------------------------------------------------------------------------
+   function eval_rpn_expression2(
+      p_rpn_expr      in varchar2,
+      p_args          in double_tab_t,
+      p_args_offset   in integer default 0)
+      return double_tab_t
+   is
+   begin
+      return eval_tokenized_expression2(
+                tokenize_rpn(p_rpn_expr),
+                p_args,
+                p_args_offset);
+   exception
+      when others then
+         cwms_err.raise('ERROR', 'Invalid RPN expression: ' || p_rpn_expr);
+   end eval_rpn_expression2;
 
    -----------------------------------------------------------------------------
    -- FUNCTION eval_expression
-   --
-   -- Returns the result of evaluating an algebraic or RPN expression against
-   -- specified arguments
-   --
-   -- The expression is not case sensitive
-   --
-   -- The operators supported are +, -, *, /, //, %, and ^
-   --
-   -- The constants supported are pi and e
-   --
-   -- The functions supported are abs, acos, asin, atan, ceil, cos, exp, floor,
-   --           ln, log, sign, sin, tan, trunc
-   --
-   -- Standard operator precedence (order of operations) applies and can be
-   -- overridden by parentheses
-   --
-   -- All numbers, arguments and operators must be separated by whitespace,
-   -- except than no space is required adjacent to parentheses
-   --
-   -- Arguments are specified as arg1, arg2, etc...  Negated arguments (-arg1)
-   -- are accepted
-   --
-   -- p_args_offset is the offset into the args table for arg1
    -----------------------------------------------------------------------------
+   function eval_expression(
+      p_expr          in varchar2,
+      p_args          in double_tab_t,
+      p_args_offset   in integer default 0)
+      return number
+   is
+   begin
+      return eval_tokenized_expression(tokenize_expression(p_expr), p_args, p_args_offset);
+   exception
+      when others then
+         cwms_err.raise('ERROR', 'Invalid expression: ' || p_expr);
+   end eval_expression;
+   
+   -----------------------------------------------------------------------------
+   -- FUNCTION eval_expression2
+   -----------------------------------------------------------------------------
+   function eval_expression2(
+      p_expr          in varchar2,
+      p_args          in double_tab_t,
+      p_args_offset   in integer default 0)
+      return double_tab_t
+   is
+   begin
+      return eval_tokenized_expression2(tokenize_expression(p_expr), p_args, p_args_offset);
+   exception
+      when others then
+         cwms_err.raise('ERROR', 'Invalid expression: ' || p_expr);
+   end eval_expression2;
 
-   FUNCTION eval_expression (p_expr          IN VARCHAR2,
-                             p_args          IN double_tab_t,
-                             p_args_offset   IN INTEGER DEFAULT 0)
-      RETURN NUMBER
-   IS
-      l_tokens   str_tab_t;
-   BEGIN
-      l_tokens := tokenize_expression (p_expr);
-      RETURN eval_tokenized_expression (l_tokens, p_args, p_args_offset);
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         cwms_err.raise ('ERROR', 'Invalid expression: ' || p_expr);
-   END eval_expression;
+   -----------------------------------------------------------------------------
+   -- FUNCTION eval_tokenized_comparison
+   -----------------------------------------------------------------------------
+   function eval_tokenized_comparison(
+      p_tokens      in str_tab_tab_t,
+      p_args        in double_tab_t,
+      p_args_offset in integer default 0)
+      return boolean
+   is
+      l_val1   number;
+      l_val2   number;
+      l_op     varchar2(16);
+      l_result boolean;
+   begin
+      l_val1 := eval_tokenized_expression(p_tokens(1), p_args, p_args_offset);
+      l_val2 := eval_tokenized_expression(p_tokens(2), p_args, p_args_offset);
+      l_op   := p_tokens(3)(1);
+      case
+         when l_op =   '='        then l_result := l_val1  = l_val2;
+         when l_op in ('!=','<>') then l_result := l_val1 != l_val2;
+         when l_op in ('<', 'LT') then l_result := l_val1 <  l_val2;
+         when l_op in ('<=','LE') then l_result := l_val1 <= l_val2;
+         when l_op in ('>', 'GT') then l_result := l_val1 >  l_val2;
+         when l_op in ('>=','GE') then l_result := l_val1 >= l_val2;
+         else cwms_err.raise('ERROR', 'Invalid comparison operator: '||l_op);
+      end case;
+      return l_result;
+   end eval_tokenized_comparison;
+          
+   -----------------------------------------------------------------------------
+   -- FUNCTION eval_tokenized_comparison2
+   -----------------------------------------------------------------------------
+   function eval_tokenized_comparison2(
+      p_tokens      in str_tab_tab_t,
+      p_args        in double_tab_t,
+      p_args_offset in integer default 0)
+      return varchar2
+   is
+   begin
+      return case eval_tokenized_comparison(p_tokens, p_args, p_args_offset)
+             when true  then 'T'
+             when false then 'F'
+             end;
+   end eval_tokenized_comparison2;
+          
+   -----------------------------------------------------------------------------
+   -- FUNCTION eval_comparison_expression
+   -----------------------------------------------------------------------------
+   function eval_comparison_expression(
+      p_expr        in varchar2,
+      p_args        in double_tab_t,
+      p_args_offset in integer default 0)
+      return boolean
+   is
+   begin
+      return eval_tokenized_comparison(
+         tokenize_comparison_expression(p_expr), 
+         p_args, 
+         p_args_offset);
+   end eval_comparison_expression;
+          
+   -----------------------------------------------------------------------------
+   -- FUNCTION eval_comparison_expression2
+   -----------------------------------------------------------------------------
+   function eval_comparison_expression2(
+      p_expr        in varchar2,
+      p_args        in double_tab_t,
+      p_args_offset in integer default 0)
+      return varchar2
+   is
+   begin
+      return case eval_comparison_expression(p_expr, p_args, p_args_offset)
+             when true  then 'T'
+             when false then 'F'
+             end;
+   end eval_comparison_expression2;
+          
+   -----------------------------------------------------------------------------
+   -- FUNCTION get_expression_depth_at
+   -----------------------------------------------------------------------------
+   function get_expression_depth_at(
+      p_position in integer,
+      p_expr     in varchar2)
+      return integer
+   is
+      l_expr  varchar2(32767) := substr(p_expr, 1, p_position);
+      l_depth pls_integer;
+   begin                       
+      l_depth := regexp_count(l_expr, '\(') - regexp_count(l_expr, '\)');
+      if substr(l_expr, p_position, 1) = ')' then
+         l_depth := l_depth + 1;
+      end if;
+      return l_depth;
+   end get_expression_depth_at;      
+            
+   function to_algebraic(
+      p_expr in varchar2)
+      return varchar2
+   is
+   begin
+      return to_algebraic(tokenize_expression(p_expr));
+   end to_algebraic;      
+            
+   function to_algebraic(
+      p_tokens in str_tab_t)
+      return varchar2
+   is
+      l_rpn_tokens str_tab_t;
+      l_stack      str_tab_t := str_tab_t();
+      l_val1       varchar2(32767);
+      l_val2       varchar2(32767);
+      l_idx        binary_integer;
+      --------------------
+      -- local routines --
+      --------------------
+      procedure token_error(token in varchar2)
+      is
+      begin
+         cwms_err.raise('ERROR', 'Invalid token in equation: ' || token);
+      end;
 
+      procedure argument_error(l_idx in integer)
+      is
+      begin
+         cwms_err.raise('ERROR', 'ARG' || l_idx || ' does not exist');
+      end;
+
+      procedure push(val in varchar2)
+      is
+      begin
+         l_stack.extend;
+         l_stack(l_stack.count) := val;
+      end;
+
+      function pop return varchar2
+      is
+         val         varchar2(32767);
+      begin
+         val := l_stack(l_stack.last);
+         l_stack.trim;
+         return val;
+      end;
+      
+      function precedence(p_op in varchar2) return integer
+      is
+         l_precedence integer;
+      begin
+         case 
+         when p_op in ('+','-')          then l_precedence := 1;
+         when p_op in ('*','/','//','%') then l_precedence := 2;
+         when p_op = '^'                 then l_precedence := 3;
+         else cwms_err.raise('ERROR', 'Invalid operator: '||p_op); 
+         end case;
+         return l_precedence;
+      end;
+   begin             
+      for i in 1 .. p_tokens.count loop
+         case
+         ---------------
+         -- operators --
+         ---------------
+         when p_tokens(i) in ('+','-','*','/','//','%','^')  then 
+            l_val2 := pop;
+            l_rpn_tokens := tokenize_expression(l_val2);
+            if l_rpn_tokens(l_rpn_tokens.count) in ('+','-','*','/','//','%','^') and 
+               precedence(l_rpn_tokens(l_rpn_tokens.count)) < precedence(p_tokens(i))
+            then
+               l_val2 := '('||l_val2||')';
+            end if; 
+            l_val1 := pop;
+            l_rpn_tokens := tokenize_expression(l_val1);
+            if l_rpn_tokens(l_rpn_tokens.count) in ('+','-','*','/','//','%','^') and 
+            precedence(l_rpn_tokens(l_rpn_tokens.count)) < precedence(p_tokens(i))
+            then
+               l_val1 := '('||l_val1||')';
+            end if; 
+            push(l_val1||' '||p_tokens(i)||' '||l_val2);
+         ---------------
+         -- constants --
+         ---------------
+         when p_tokens(i) in ('E', 'PI') then push(p_tokens(i));
+         ---------------------
+         -- unary functions --
+         ---------------------
+         when p_tokens(i) in ('ABS','ACOS','ASIN','ATAN','CEIL','COS','EXP','FLOOR','INV','LN','LOG','NEG','ROUND','SIGN','SIN','SQRT','TAN','TRUNC') then
+            l_val1 := pop;
+            if substr(l_val1, 1, 1) = '(' then
+               push(p_tokens(i)||l_val1);
+            else
+               push(p_tokens(i)||'('||l_val1||')');
+            end if;
+         ---------------
+         -- arguments --
+         ---------------
+         when substr(p_tokens(i), 1, 3) = 'ARG' or substr(p_tokens(i), 1, 4) = '-ARG' then
+            push(p_tokens(i));
+         -------------
+         -- numbers --
+         -------------
+         else
+            push(p_tokens(i));
+         end case;
+      end loop;
+      if l_stack.count != 1 then
+         cwms_err.raise('ERROR', 'Items left on stack');
+      end if;
+      return pop;
+   end to_algebraic;
+         
+   function to_algebraic_logic(
+      p_expr in varchar2)
+      return varchar2
+   is
+      l_expr        varchar2(256);
+      l_logic_expr logic_expr_t;
+   begin
+      l_logic_expr := logic_expr_t(p_expr);
+      l_logic_expr.to_algebraic(l_expr);
+      return l_expr;
+   end to_algebraic_logic;            
+            
+   function to_rpn(
+      p_expr in varchar2)
+      return varchar2
+   is
+   begin
+      return to_rpn(tokenize_expression(p_expr));
+   end to_rpn;      
+            
+   function to_rpn(
+      p_tokens in str_tab_t)
+      return varchar2
+   is
+   begin
+      return join_text(p_tokens, ' ');
+   end to_rpn;      
+         
+   function to_rpn_logic(
+      p_expr in varchar2)
+      return varchar2
+   is
+      l_expr        varchar2(256);
+      l_logic_expr logic_expr_t;
+   begin
+      l_logic_expr := logic_expr_t(p_expr);
+      l_logic_expr.to_rpn(l_expr);
+      return l_expr;
+   end to_rpn_logic;
+               
+   function get_comparison_op_symbol(
+      p_operator in varchar2)
+      return varchar2
+   is
+      l_op varchar2(8); 
+   begin
+      l_op := upper(trim(p_operator));
+      case
+      when l_op in ('EQ', '='        ) then l_op := '=' ;
+      when l_op in ('NE', '!=', '<>' ) then l_op := '!=';
+      when l_op in ('LT', '<'        ) then l_op := '<' ;
+      when l_op in ('LE', '<='       ) then l_op := '<=';
+      when l_op in ('GT', '>'        ) then l_op := '>' ;
+      when l_op in ('GE', '>='       ) then l_op := '>=';
+      else cwms_err.raise('INVALID_ITEM', p_operator, 'comparison operator');
+      end case;
+      return l_op;
+   end;               
+               
+   function get_comparison_op_text(
+      p_operator in varchar2)
+      return varchar2
+   is
+      l_op varchar2(8); 
+   begin
+      l_op := upper(trim(p_operator));
+      case
+      when l_op in ('EQ', '='        ) then l_op := 'EQ';
+      when l_op in ('NE', '!=', '<>' ) then l_op := 'NE';
+      when l_op in ('LT', '<'        ) then l_op := 'LT';
+      when l_op in ('LE', '<='       ) then l_op := 'LE';
+      when l_op in ('GT', '>'        ) then l_op := 'GT';
+      when l_op in ('GE', '>='       ) then l_op := 'GE';
+      else cwms_err.raise('INVALID_ITEM', p_operator, 'comparison operator');
+      end case;
+      return l_op;
+   end;               
 
    ---------------------
    -- Append routines --
@@ -3695,15 +4344,17 @@ AS
    -- XML Utility routines --
    --------------------------
 
-   FUNCTION get_xml_node (p_xml IN XMLTYPE, p_path IN VARCHAR)
-      RETURN XMLTYPE
-   IS
-   BEGIN
-      RETURN CASE p_xml IS NULL OR p_path IS NULL
-                WHEN TRUE THEN NULL
-                WHEN FALSE THEN p_xml.EXTRACT (p_path)
-             END;
-   END get_xml_node;
+   function get_xml_node (
+      p_xml  in xmltype, 
+      p_path in varchar)
+   return xmltype
+   is
+   begin
+      return case p_xml is null or p_path is null
+             when true then null
+             when false then p_xml.extract (p_path)
+             end;
+   end get_xml_node;
    
    function get_xml_nodes(
       p_xml        in xmltype,
@@ -3740,43 +4391,37 @@ AS
       return l_results;
    end get_xml_nodes;
 
-   FUNCTION get_xml_text (p_xml IN XMLTYPE, p_path IN VARCHAR)
-      RETURN VARCHAR2
-   IS
-      l_xml    XMLTYPE;
-      l_text   VARCHAR2 (32767);
-   BEGIN
-      l_xml := get_xml_node (p_xml, p_path);
-
-      IF l_xml IS NULL
-      THEN
-         RETURN NULL;
-      ELSE
+   function get_xml_text(
+      p_xml  in xmltype, 
+      p_path in varchar)
+   return varchar2
+   is
+      l_xml    xmltype;
+      l_text   varchar2(32767);
+   begin    
+      l_xml := get_xml_node(p_xml, p_path);
+      if l_xml is not null then
          l_text := l_xml.getstringval;
 
-         IF INSTR (p_path, '/@') = 0
-         THEN
-            l_xml := l_xml.EXTRACT ('/node()/text()');
-         END IF;
-      END IF;
+         if instr(p_path, '/@') = 0 then
+            l_xml := l_xml.extract('/node()/text()');
+         end if;
+      end if;
 
-      IF l_xml IS NULL
-      THEN
-         RETURN NULL;
-      ELSE
-         l_text :=
-            REGEXP_REPLACE (REGEXP_REPLACE (l_xml.getstringval, '^\s+'),
-                            '\s+$');
-         RETURN l_text;
-      END IF;
-   END get_xml_text;
+      if l_xml is not null then
+         l_text := regexp_replace(regexp_replace(l_xml.getstringval, '^\s+'), '\s+$');
+      end if;
+      return l_text;
+   end get_xml_text;
 
-   FUNCTION get_xml_number (p_xml IN XMLTYPE, p_path IN VARCHAR)
-      RETURN NUMBER
-   IS
-   BEGIN
-      RETURN TO_NUMBER (get_xml_text (p_xml, p_path));
-   END get_xml_number;
+   function get_xml_number(
+      p_xml  in xmltype, 
+      p_path in varchar)
+   return number
+   is
+   begin
+      return to_number(get_xml_text (p_xml, p_path));
+   end get_xml_number;
 
 
    FUNCTION x_minus_y (p_list_1      IN VARCHAR2,
@@ -4033,6 +4678,77 @@ AS
       RETURN CASE l_is_nan WHEN TRUE THEN 'T' ELSE 'F' END;
    END is_nan;
 
+   function sub_table(
+      p_table in str_tab_t,
+      p_first in integer,
+      p_last  in integer default null)
+      return str_tab_t
+   is  
+      l_last  integer;
+      l_table str_tab_t;
+   begin
+      l_last := least(nvl(p_last, p_table.count), p_table.count);
+
+      select trim(column_value)
+        bulk collect
+        into l_table
+        from (select column_value,
+                     rownum as seq
+                from table(p_table)
+             )
+       where seq between p_first and l_last
+       order by seq; 
+       
+      return l_table;                        
+   end sub_table;
+
+   function sub_table(
+      p_table in number_tab_t,
+      p_first in integer,
+      p_last  in integer default null)
+      return number_tab_t
+   is  
+      l_last  integer;
+      l_table number_tab_t;
+   begin
+      l_last := least(nvl(p_last, p_table.count), p_table.count);
+
+      select trim(column_value)
+        bulk collect
+        into l_table
+        from (select column_value,
+                     rownum as seq
+                from table(p_table)
+             )
+       where seq between p_first and l_last
+       order by seq; 
+       
+      return l_table;                        
+   end sub_table;
+
+   function sub_table(
+      p_table in double_tab_t,
+      p_first in integer,
+      p_last  in integer default null)
+      return double_tab_t
+   is  
+      l_last  integer;
+      l_table double_tab_t;
+   begin
+      l_last := least(nvl(p_last, p_table.count), p_table.count);
+
+      select trim(column_value)
+        bulk collect
+        into l_table
+        from (select column_value,
+                     rownum as seq
+                from table(p_table)
+             )
+       where seq between p_first and l_last
+       order by seq; 
+       
+      return l_table;                        
+   end sub_table;
       
    function parse_unit_spec(
       p_unit_spec in varchar2,

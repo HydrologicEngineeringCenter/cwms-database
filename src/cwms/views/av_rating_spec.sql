@@ -26,7 +26,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_RATING_SPEC', nu
  * @field description           The description for this rating specification
  * @field aliased_item          Null if the location_id is not an alias, ''LOCATION'' if the entire location_id is aliased, or ''BASE LOCATION'' if only the base_location_id is alaised.  
  * @field loc_alias_category    The location category that owns the location group to which the alias for the location_id or base_location_id belongs. Null if location_id is not an alias.  
- * @field loc_alias_group       The location group to which the alias for the location_id or base_location_id belongs. Null if location_id is not an alias.
+ * @field loc_alias_group       The location group to which the alias for the location_id or base_location_id belongs. Null if location_id is not an alias.              
  * @field rating_spec_code      The unique numeric code that identifies the rating specification in the database
  * @field template_code         The unique numeric code that identifies the specification''s template in the database              
  */

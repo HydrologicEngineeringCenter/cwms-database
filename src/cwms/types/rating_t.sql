@@ -20,25 +20,30 @@ create type rating_t
  * @member current_units   A flag ('D' or 'N') specfying whether the lookup values are currently in database storage ('D') or native ('N') units
  * @member current_time    A flag ('D' or 'L') specifying whether the times are currently in database ('D') (=UTC) or rating location local ('L') time zone
  * @member formula_tokens  A collection of formula tokens if the rating is formula-based
- * @member source_ratings  An ordered collection of source rating specifications if the rating is a virtual rating
+ * @member source_ratings  An ordered collection of source rating specifications if the rating is a virtual rating, or alternative ratings if this is a transitional rating
  * @member connections_map A map of data inputs to ratings inputs if the rating is a virtual rating
+ * @member conditions      An ordered collection of conditions to test in order to determine which evaluation to return
+ * @member evaluations     An ordered collection of tokenized expressions based on alternative ratings.  This collection must be one element longer than the
+ *                         conditions collection in order to provide an evaluation in the case that no conditions are met.
  */
 as object (
    office_id       varchar2(16),
    rating_spec_id  varchar2(372),
-   effective_date  date,
-   create_date     date,
+   effective_date  date,                   -- for formula or expression ratings
+   create_date     date,                   -- for formula or expression ratings
    active_flag     varchar2(1),
-   formula         varchar2(1000),
-   connections     varchar2(80),
-   native_units    varchar2(256),
+   formula         varchar2(1000),         -- for expression ratings
+   connections     varchar2(80),           -- for virtual ratings
+   native_units    varchar2(256),          -- for formula, expression, or transitional ratings
    description     varchar2(256),
-   rating_info     rating_ind_parameter_t,
+   rating_info     rating_ind_parameter_t, -- for table ratings
    current_units   varchar2(1), -- 'D' = database, 'N' = native, other = don't know
    current_time    varchar2(2), -- 'D' = database, 'L' = native, other = don't know
-   formula_tokens  str_tab_t,
-   source_ratings  str_tab_t,
-   connections_map rating_conn_map_tab_t,
+   formula_tokens  str_tab_t,              -- for expresison ratings
+   source_ratings  str_tab_t,              -- for virtual and transitional ratings
+   connections_map rating_conn_map_tab_t,  -- for virtual ratings
+   conditions      logic_expr_tab_t,       -- for transitional ratings
+   evaluations     str_tab_tab_t,          -- for transitional ratings
    /**
     * Construct a rating_t object for a simple concrete rating.
     *
@@ -269,6 +274,16 @@ as object (
       p_value_times in  date_table_type,
       p_rating_time in  date,
       p_time_zone   in  varchar2)
+   return double_tab_t,
+   /*
+    * not documented, called only from CWMS_RATING.RATE
+    * only for transitional ratings
+    *
+    */
+   member function rate(
+      p_values          in double_tab_tab_t,
+      p_value_times_utc in date_table_type,
+      p_rating_time_utc in date)            
    return double_tab_t,
    /**
     * Reverse rate the specified dependent values. This method id valid only if

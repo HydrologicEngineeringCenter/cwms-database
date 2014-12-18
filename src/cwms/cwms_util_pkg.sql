@@ -210,6 +210,14 @@ AS
       'ABS','ACOS','ASIN','ATAN','CEIL','COS','EXP','FLOOR',
       'INV','LN','LOG','NEG','ROUND','SIGN','SIN','SQRT','TAN','TRUNC');
    /**
+    * Contains all valid logical comparision operators
+    */   
+   comparitors str_tab_t := str_tab_t('=','!=','<>','>','>=','<','<=','EQ','NE','GT','GE','LT','LE');
+   /**
+    * Contains all valid logical combination operators
+    */   
+   combinators str_tab_t := str_tab_t('AND', 'OR', 'XOR', 'NOT');   
+   /**
     * Record type contained in <code><big>cat_unit_tab_t</big></code>, which is
     * returned by <code><big>get_valid_units_tab</big></code>    
     */             
@@ -304,7 +312,14 @@ AS
                         p_separator   IN VARCHAR2 DEFAULT NULL ,
                         p_max_split   IN INTEGER DEFAULT NULL
                        )
-      RETURN str_tab_t;
+      RETURN str_tab_t; 
+   function split_text_regexp(
+      p_text               in varchar2,
+      p_separator          in varchar2,
+      p_include_separators in varchar2 default 'F',
+      p_match_parameter    in varchar2 default 'c',
+      p_max_split          in integer default null)
+      return str_tab_t;      
    /**
      * Joins a table of strings into a single string using the specified delimiter.
      * If no delimiter is supplied or is specified as <code><big>NULL</big></code>, the input
@@ -1461,6 +1476,43 @@ AS
     */       
    function is_expression_function(p_token in varchar2) return boolean;
    /**
+    * Determines whether a specified token is a comparison operator that can be used in 
+    * logic expression evaluation
+    * 
+    * @param p_token the token to analyze
+    * 
+    * @return whether the specified token is in the list of valid logic expression
+    *         comparison operators                        
+    *         
+    * @see comparitors                                
+    */       
+   function is_comparison_operator(p_token in varchar2) return boolean;
+   /**
+    * Determines whether a specified token is a combination operator that can be used in 
+    * logic expression evaluation
+    * 
+    * @param p_token the token to analyze
+    * 
+    * @return whether the specified token is in the list of valid logic expression
+    *         combination operators                        
+    *         
+    * @see combinators                                
+    */       
+   function is_combination_operator(p_token in varchar2) return boolean;
+   /**
+    * Determines whether a specified token is a an operator that can be used in 
+    * logic expression evaluation
+    * 
+    * @param p_token the token to analyze
+    * 
+    * @return whether the specified token is in the list of valid logic expression
+    *         comparison or combination operators                        
+    *         
+    * @see comparitors                                
+    * @see combinators                                
+    */       
+   function is_logic_operator(p_token in varchar2) return boolean;
+   /**
     * Generates a table of RPN tokens from an algebraic expression.
     * 
     * @param p_algebraic_expr a mathematical expression in infix (algebraic) notation.
@@ -1509,6 +1561,27 @@ AS
       p_expr in varchar2)
       return str_tab_t result_cache;
    /**
+    * Generates a stack of RPN expressions that can each be evaluated.
+    * 
+    * @param p_expr one or more mathematical expressions in infix (algebraic) notation or
+    *        in postfix (reverse Polish) notation (RPN). Standard algebraic operator
+    *        precedence (order of operations) applies for infix notation and can be
+    *        overridden by parentheses.  All tokens in the expression (numbers, 
+    *        variables, operators, constants, functions) must be separated from
+    *        adjacent tokens by whitespace. No whitespace is required before or
+    *        after parentheses. Parentheses are not used in RPN notation. Variables 
+    *        are specified as arg1, arg2, ... argN. Negated variables (e.g., -argN)
+    *        are accepted.
+    *
+    * @param p_is_rpn A flag (T/F) specifying whether the expression is known to be in postfix notation.                     
+    * 
+    * @return a stack of RPN expressions in postfix (reverse Polish) notation (RPN). The first value is the top of the stack                
+    */             
+   function tokenize_expression2(      
+      p_expr   in varchar2,
+      p_is_rpn in varchar2 default 'F')
+      return str_tab_t result_cache;
+   /**
     * Computes a value from tokens in postfix (reverse Polish) notation (RPN) and
     * specified values for variables
     * 
@@ -1528,6 +1601,26 @@ AS
       p_args           in double_tab_t,
       p_args_offset    in integer default 0)
       return number;      
+   /**
+    * Returns a stack of values from tokens in postfix (reverse Polish) notation (RPN) and
+    * specified values for variables.  The first value is the top of the stack.
+    * 
+    * @param p_RPN_tokens the tokens representing the mathematical expression to
+    *        evaluate. Variables are named arg1, arg2, ... argN.  Negated variables
+    *        of the form -argN are accepted.    
+    * @param p_args the actual values to use for arg1...argN. Values are assigned 
+    *        positionally beginning with the specified or default offset
+    * @param p_args_offset the offset into <code><big>p_args</big></code> from which
+    *        to start assigning values.  If 0 (default) then the arg1 will be assigned
+    *        the first value, etc...        
+    *                                                   
+    * @return the stack of values      
+    */             
+   function eval_tokenized_expression2(
+      p_RPN_tokens in str_tab_t,
+      p_args           in double_tab_t,
+      p_args_offset    in integer default 0)
+      return double_tab_t;      
    /**
     * Evaluates an arithmetic expression in infix (algebraic) notation and computes
     * a value based on specified variables.
@@ -1557,6 +1650,34 @@ AS
       p_args_offset    in integer default 0)
       return number;      
    /**
+    * Evaluates an arithmetic expression in infix (algebraic) notation and return
+    * a stack of vlues based on specified variables.  The first value is the top of the stack.
+    *
+    * @see expression_constants
+    * @see expression_operators
+    * @see expression_function
+    * 
+    * @param p_algebraic_expr a mathematical expression in infix (algebraic) notation.
+    *        Standard algebraic operator precedence (order of operations) applies
+    *        and can be overridden by parentheses.  All tokens in the expression 
+    *        (numbers, variables, operators, constants, functions) must be separated
+    *        from adjacent tokens by whitespace. No whitespace is required before
+    *        or after parentheses. Variables are specified as arg1, arg2, ... argN.
+    *        Negated variables (e.g., -argN) are accepted.                        
+    * @param p_args the actual values to use for arg1...argN. Values are assigned 
+    *        positionally beginning with the specified or default offset
+    * @param p_args_offset the offset into <code><big>p_args</big></code> from which
+    *        to start assigning values.  If 0 (default) then the arg1 will be assigned
+    *        the first value, etc...        
+    *                                                   
+    * @return the stack of values      
+    */             
+   function eval_algebraic_expression2(
+      p_algebraic_expr in varchar2,
+      p_args           in double_tab_t,
+      p_args_offset    in integer default 0)
+      return double_tab_t;      
+   /**
     * Evaluates an arithmetic expression in postfix (reverse Polish) notation (RPN)
     * and computes a value based on specified variables.    
     *
@@ -1582,6 +1703,32 @@ AS
       p_args        in double_tab_t,
       p_args_offset in integer default 0)
       return number;      
+   /**
+    * Evaluates an arithmetic expression in postfix (reverse Polish) notation (RPN)
+    * and return  a stack of values based on specified variables. The first value is the top of the stack.   
+    *
+    * @see expression_constants
+    * @see expression_operators
+    * @see expression_function
+    *
+    * @param p_RPN_expr a mathematical expression in postfix (reverse Polish) notation (RPN).
+    *        All tokens in the expression (numbers, variables, operators, constants, 
+    *        functions) must be separated from adjacent tokens by whitespace. Parentheses
+    *        are not used in RPN notation. Variables are specified as arg1, arg2, ... argN.
+    *        Negated variables (e.g., -argN) are accepted.                        
+    * @param p_args the actual values to use for arg1...argN. Values are assigned 
+    *        positionally beginning with the specified or default offset
+    * @param p_args_offset the offset into <code><big>p_args</big></code> from which
+    *        to start assigning values.  If 0 (default) then the arg1 will be assigned
+    *        the first value, etc...        
+    *                                                   
+    * @return the stack of values      
+    */             
+   function eval_RPN_expression2(
+      p_RPN_expr    in varchar2,
+      p_args        in double_tab_t,
+      p_args_offset in integer default 0)
+      return double_tab_t;      
    /**
     * Evaluates an arithmetic expression in infix (algebraic) notation or in postfix 
     * (reverse Polish) notation (RPN) and computes a value based on specified variables.    
@@ -1612,6 +1759,371 @@ AS
       p_args        in double_tab_t,
       p_args_offset in integer default 0)
       return number;
+   /**
+    * Evaluates an arithmetic expression in infix (algebraic) notation or in postfix 
+    * (reverse Polish) notation (RPN) and returns a stack of values based on specified variables.
+    * The first value is the top of the stack.    
+    *
+    * @see expression_constants
+    * @see expression_operators
+    * @see expression_functions
+    *
+    * @param p_expr a mathematical expression in infix (algebraic) notation or
+    *        in postfix (reverse Polish) notation (RPN). Standard algebraic operator
+    *        precedence (order of operations) applies for infix notation and can be
+    *        overridden by parentheses.  All tokens in the expression (numbers, 
+    *        variables, operators, constants, functions) must be separated from
+    *        adjacent tokens by whitespace. No whitespace is required before or
+    *        after parentheses. Parentheses are not used in RPN notation. Variables 
+    *        are specified as arg1, arg2, ... argN. Negated variables (e.g., -argN)
+    *        are accepted.                    
+    * @param p_args the actual values to use for arg1...argN. Values are assigned 
+    *        positionally beginning with the specified or default offset
+    * @param p_args_offset the offset into <code><big>p_args</big></code> from which
+    *        to start assigning values.  If 0 (default) then the arg1 will be assigned
+    *        the first value, etc...        
+    *                                                   
+    * @return the stack of values      
+    */             
+   function eval_expression2(
+      p_expr        in varchar2,
+      p_args        in double_tab_t,
+      p_args_offset in integer default 0)
+      return double_tab_t;
+   /**
+    * Tokenizes a comparison expression in infix or postfix notation and returns the 
+    * tokens in a table of length 3.  The first two rows of the table are the tokenized arithmetic
+    * expressions.  The last row contains a table of length 1 which contains the comparison operator.
+    *
+    * @param p_comparison_expression. The comparison expression in infix or postfix notation.
+    *        The expression must be comprised of two arithmetic expressions and one comparison operator. 
+    *        Valid comparison operators are:
+    * <p>
+    * <table class="descr">
+    *   <tr>
+    *     <th class="descr">operators</th>
+    *     <th class="descr">meaning</th>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">'='</td>
+    *     <td class="descr">The expressions are equal</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">'!=', '`&lt;`&gt;', 'NE'</td>
+    *     <td class="descr">The expressions are not equal</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">'`&lt;', 'LT'</td>
+    *     <td class="descr">The first expression is less than the second</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">'`&lt;=', 'LE'</td>
+    *     <td class="descr">The first expression is less than or equal to the second</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">'`&gt;', 'GT'</td>
+    *     <td class="descr">The first expression is greater than the second</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">'`&gt;=', 'GE'</td>
+    *     <td class="descr">The first expression is greater than or equal to the second</td>
+    *   </tr>
+    * </table>
+    *
+    * @return a table of tokens.
+    */      
+   function tokenize_comparison_expression(
+      p_comparison_expression in varchar2)
+      return str_tab_tab_t;
+   /**
+    * Tokenizes a logic expression in infix or postfix notation and returns the 
+    * tokens in a table ready for evaluation.
+    *
+    * @param p_expr. The logic expression in infix or postfix notation.
+    *        The expression must be comprised of one or more comparison expressions (two arithmetic expressions and one comparison operator) 
+    *        separated by logic operators 
+    *        Valid comparison operators are:
+    * <p>
+    * <table class="descr">
+    *   <tr>
+    *     <th class="descr">operators</th>
+    *     <th class="descr">meaning</th>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">'='</td>
+    *     <td class="descr">The expressions are equal</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">'!=', '`&lt;`&gt;', 'NE'</td>
+    *     <td class="descr">The expressions are not equal</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">'`&lt;', 'LT'</td>
+    *     <td class="descr">The first expression is less than the second</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">'`&lt;=', 'LE'</td>
+    *     <td class="descr">The first expression is less than or equal to the second</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">'`&gt;', 'GT'</td>
+    *     <td class="descr">The first expression is greater than the second</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">'`&gt;=', 'GE'</td>
+    *     <td class="descr">The first expression is greater than or equal to the second</td>
+    *   </tr>
+    * </table>
+    *              
+    *Valid logic operators are: (all operators evaluated left to right)
+    * <p>
+    * <table class="descr">
+    *   <tr>
+    *     <th class="descr">operators</th>
+    *     <th class="descr">precedence (higher evaluated earlier)</th>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">AND</td>
+    *     <td class="descr">3</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">OR</td>
+    *     <td class="descr">1</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">XOR</td>
+    *     <td class="descr">2</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">NOT</td>
+    *     <td class="descr">4</td>
+    *   </tr>
+    * </table>
+    *
+    * @return a table of tokens.
+    */      
+   function tokenize_logic_expression(
+      p_expr in varchar2)
+      return str_tab_tab_t;
+   /**
+    * Replaces top-level parenthetical sub-expressions in a specifed expression. The replaced sub-expressions are in positions 1..count-1 in the returned table
+    * and the expression with the sub-expressions replaced is returned in position count in the returned table.  The sub-expressions are replaced with the 
+    * string '$n' where n is the position of the replaced sub-expression in the table.
+    *
+    * @param p_expr The expression whose top-level parenthetical expressions will be replaced
+    *
+    * @return A table of length n+1 where n is the number of top-level parenthetical expressions replaced
+    */   
+   function replace_parentheticals(
+      p_expr in varchar2)
+      return str_tab_t;      
+   /**
+    * Evaluates a tokenized comparison expression and return the the result of the comparison as a boolean (true or false) 
+    *
+    * @param p_tokens The tokenized comparison expression
+    *
+    * @return true or false
+    */      
+   function eval_tokenized_comparison(
+      p_tokens      in str_tab_tab_t,
+      p_args        in double_tab_t,
+      p_args_offset in integer default 0)
+      return boolean;
+   /**
+    * Evaluates a tokenized comparison expression and return the the result of the comparison as a varchar2(1) ('T' or 'F') 
+    *
+    * @param p_tokens The tokenized comparison expression
+    *
+    * @return 'T' or 'F'
+    */      
+   function eval_tokenized_comparison2(
+      p_tokens      in str_tab_tab_t,
+      p_args        in double_tab_t,
+      p_args_offset in integer default 0)
+      return varchar2;
+   /**
+    * Evaluates a comparison expression in infix or postfix notation and returns the result of the comparison as a boolean (true or false). 
+    *
+    * @param p_comparison_expression. The comparison expression in infix or postfix notation.
+    *        The expression must be comprised of two arithmetic expressions and one comparison operator. 
+    *        Valid comparison operators are:
+    * <p>
+    * <table class="descr">
+    *   <tr>
+    *     <th class="descr">operators</th>
+    *     <th class="descr">meaning</th>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">'='</td>
+    *     <td class="descr">The expressions are equal</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">'!=', '`&lt;`&gt;', 'NE'</td>
+    *     <td class="descr">The expressions are not equal</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">'`&lt;', 'LT'</td>
+    *     <td class="descr">The first expression is less than the second</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">'`&lt;=', 'LE'</td>
+    *     <td class="descr">The first expression is less than or equal to the second</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">'`&gt;', 'GT'</td>
+    *     <td class="descr">The first expression is greater than the second</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">'`&gt;=', 'GE'</td>
+    *     <td class="descr">The first expression is greater than or equal to the second</td>
+    *   </tr>
+    * </table>
+    *
+    * @return true or false.
+    */      
+   function eval_comparison_expression(
+      p_expr        in varchar2,
+      p_args        in double_tab_t,
+      p_args_offset in integer default 0)
+      return boolean;
+   /**
+    * Evaluates a comparison expression in infix or postfix notation and returns the result of the comparison as a varchar2(1) ('T' or 'F') 
+    *
+    * @param p_comparison_expression. The comparison expression in infix or postfix notation.
+    *        The expression must be comprised of two arithmetic expressions and one comparison operator. 
+    *        Valid comparison operators are:
+    * <p>
+    * <table class="descr">
+    *   <tr>
+    *     <th class="descr">operators</th>
+    *     <th class="descr">meaning</th>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">'='</td>
+    *     <td class="descr">The expressions are equal</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">'!=', '`&lt;`&gt;', 'NE'</td>
+    *     <td class="descr">The expressions are not equal</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">'`&lt;', 'LT'</td>
+    *     <td class="descr">The first expression is less than the second</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">'`&lt;=', 'LE'</td>
+    *     <td class="descr">The first expression is less than or equal to the second</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">'`&gt;', 'GT'</td>
+    *     <td class="descr">The first expression is greater than the second</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">'`&gt;=', 'GE'</td>
+    *     <td class="descr">The first expression is greater than or equal to the second</td>
+    *   </tr>
+    * </table>
+    *
+    * @return The result of the comparison as 'T' or 'F'
+    */      
+   function eval_comparison_expression2(
+      p_expr        in varchar2,
+      p_args        in double_tab_t,
+      p_args_offset in integer default 0)
+      return varchar2;
+   /**
+    * Retrieves the expression depth (levels of enclosing parentheses) for a specified position in an expression.
+    *
+    * @param p_position The position in the expression.  Must be in range 1..lenth(expression).
+    * @param p_expr     The expression to evaluate
+    *
+    * @return The expression depth at the specified postion
+    *
+    */      
+   function get_expression_depth_at(
+      p_position in integer,
+      p_expr     in varchar2)
+      return integer;
+   /**
+    * Reformats a mathematical expression in infix (algebraic) notation
+    *
+    * @param p_expression The mathematical expression to reformat. It may be specified in infix (algebraic) or postfix (RPN) notation.  
+    *                                                                                                                               
+    * @return The mathematical expression in infix (algebraic) notation.  The expression will not include any parentheses that are not necessary for correct order of operations.
+    */            
+   function to_algebraic(
+      p_expr in varchar2)
+      return varchar2;      
+   /**
+    * Formats a tokenized mathematical expression in infix (algebraic) notation
+    *
+    * @param p_tokens The mathematical expression to format as postfix ordered tokens.  
+    *                                                                                                                               
+    * @return The mathematical expression in infix (algebraic) notation.  The expression will not include any parentheses that are not necessary for correct order of operations.
+    */            
+   function to_algebraic(
+      p_tokens in str_tab_t)
+      return varchar2;      
+   /**
+    * Reformats a logic expression in infix (algebraic) notation
+    *
+    * @param p_expression The logic expression to reformat. It may be specified in infix (algebraic) or postfix (RPN) notation.  
+    *                                                                                                                               
+    * @return The logic expression in infix (algebraic) notation.  The expression will not include any parentheses that are not necessary for correct order of operations.
+    */            
+   function to_algebraic_logic(
+      p_expr in varchar2)
+      return varchar2;      
+   /**
+    * Reformats a mathematical expression in postfix (RPN) notation
+    *
+    * @param p_expression The mathematical expression to reformat. It may be specified in infix (algebraic) or postfix (RPN) notation.  
+    *                                                                                                                               
+    * @return The mathematical expression in postfix (RPN) notation.
+    */            
+   function to_rpn(
+      p_expr in varchar2)
+      return varchar2;      
+   /**
+    * Formats a mathematical expression in postfix (RPN) notation
+    *
+    * @param p_tokens The mathematical expression to format as postfix ordered tokens.  
+    *                                                                                                                               
+    * @return The mathematical expression in postfix (RPN) notation.
+    */            
+   function to_rpn(
+      p_tokens in str_tab_t)
+      return varchar2;      
+   /**
+    * Reformats a logic expression in postfix (RPN) notation
+    *
+    * @param p_expression The logic expression to reformat. It may be specified in infix (algebraic) or postfix (RPN) notation.  
+    *                                                                                                                               
+    * @return The logic expression in postfix (RPN) notation.
+    */            
+   function to_rpn_logic(
+      p_expr in varchar2)
+      return varchar2;
+   /**
+    * Returns the symbolic representation of a comparison operator
+    *
+    * @param p_operator The comparison operator in text or symbolic from
+    *
+    * @return the comparison operator in symbolic form 
+    */         
+   function get_comparison_op_symbol(
+      p_operator in varchar2)
+      return varchar2;         
+   /**
+    * Returns the text representation of a comparison operator
+    *
+    * @param p_operator The comparison operator in text or symbolic from
+    *
+    * @return the comparison operator in text form 
+    */         
+   function get_comparison_op_text(
+      p_operator in varchar2)
+      return varchar2;         
    /**
     * Appends text to a <code><big>CLOB</big></code>
     * 
@@ -1669,8 +2181,8 @@ AS
    /**
     * Retrieves a specified XML element from an <code><big>XMLTYPE</big></code>
     * 
-    * @param p_xml the <code><big>XMLTYPE</big></code> to retrieve from 
-    * @param p_path the element to retrieve, in XPath format
+    * @param p_xml The xml document or fragment to retrieve from  
+    * @param p_path The element to retrieve, in XPath format
     * 
     * @return the specified element                      
     */       
@@ -1699,8 +2211,8 @@ AS
    /**
     * Retrieves the text contained in a specified XML element from an <code><big>XMLTYPE</big></code>
     * 
-    * @param p_xml the <code><big>XMLTYPE</big></code> to retrieve from 
-    * @param p_path the element from which to retrieve the text, in XPath format
+    * @param p_xml The xml document or fragment to retrieve from  
+    * @param p_path The element to retrieve, in XPath format
     * 
     * @return the text contained in the specified element                      
     */       
@@ -1711,8 +2223,8 @@ AS
    /**
     * Retrieves the numeric value contained in a specified XML element from an <code><big>XMLTYPE</big></code>
     * 
-    * @param p_xml the <code><big>XMLTYPE</big></code> to retrieve from 
-    * @param p_path the element from which to retrieve the numeric value, in XPath format
+    * @param p_xml The xml document or fragment to retrieve from  
+    * @param p_path The element to retrieve, in XPath format
     * 
     * @return the numeric value contained in the specified element                      
     */       
@@ -1836,8 +2348,48 @@ AS
    function is_nan(
       p_value in binary_double)
       return varchar2;
-
-
+   /**
+    * Returns a subset of a table
+    *
+    * @param p_table The table to return the subset of
+    * @param p_first The index of the first element to include
+    * @param p_last  The index of the last element to include.  If NULL or greater than the table length, the last index of the input table will be used.
+    *
+    * @return A subset of the input table, from p_first to p_last.
+    */
+   function sub_table(
+      p_table in str_tab_t,
+      p_first in integer,
+      p_last  in integer default null)
+      return str_tab_t;
+   /**
+    * Returns a subset of a table
+    *
+    * @param p_table The table to return the subset of
+    * @param p_first The index of the first element to include
+    * @param p_last  The index of the last element to include.  If NULL or greater than the table length, the last index of the input table will be used.
+    *
+    * @return A subset of the input table, from p_first to p_last.
+    */
+   function sub_table(
+      p_table in number_tab_t,
+      p_first in integer,
+      p_last  in integer default null)
+      return number_tab_t;
+   /**
+    * Returns a subset of a table
+    *
+    * @param p_table The table to return the subset of
+    * @param p_first The index of the first element to include
+    * @param p_last  The index of the last element to include.  If NULL or greater than the table length, the last index of the input table will be used.
+    *
+    * @return A subset of the input table, from p_first to p_last.
+    */
+   function sub_table(
+      p_table in double_tab_t,
+      p_first in integer,
+      p_last  in integer default null)
+      return double_tab_t;
 
 
     FUNCTION str2tbl (p_str IN VARCHAR2, p_delim IN VARCHAR2 DEFAULT ',')

@@ -70,6 +70,8 @@ DECLARE
 			       'av_rating_local',
 			       'av_rating_values',
 			       'av_rating_values_native',
+			       'av_transitional_rating',
+			       'av_virtual_rating',
 			       'av_ts_association',
 			       'av_stream_types',
 			       'av_store_rule',
@@ -144,6 +146,7 @@ END;
 @@cwms/views/av_rating_local.sql
 @@cwms/views/av_rating_values.sql
 @@cwms/views/av_rating_values_native.sql
+@@cwms/views/av_transitional_rating.sql
 @@cwms/views/av_virtual_rating.sql
 @@cwms/views/av_ts_association.sql
 @@cwms/views/av_stream_types.sql

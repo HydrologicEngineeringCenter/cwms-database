@@ -54,7 +54,6 @@ as
       l_rating_points        xmltype;
       l_other_ind            xmltype;
       l_point                xmltype;
-      l_note                 xmltype;
       l_position             number(1);
       l_value                binary_double;
       l_ind_value            binary_double;
@@ -63,8 +62,6 @@ as
       l_note_text            varchar2(64);
       l_rating_value         rating_value_t;
       l_rating_values        rating_value_tab_t;
-      l_rating_ind_param     rating_ind_parameter_t;
-      l_code                 number(10);
       l_value_at_pos         double_tab_t := double_tab_t();
       l_rating_value_tab_id  varchar2(32767);
       l_rating_value_tab     rating_value_tab_by_id;
@@ -79,17 +76,17 @@ as
       ------------------------------
       -- local function shortcuts --
       ------------------------------
-      function get_node(p_xml in xmltype, p_path in varchar2) return xmltype is
+      function get_node(pp_xml in xmltype, p_path in varchar2) return xmltype is
       begin
-         return cwms_util.get_xml_node(p_xml, p_path);
+         return cwms_util.get_xml_node(pp_xml, p_path);
       end;
-      function get_text(p_xml in xmltype, p_path in varchar2) return varchar2 is
+      function get_text(pp_xml in xmltype, p_path in varchar2) return varchar2 is
       begin
-         return cwms_util.get_xml_text(p_xml, p_path);
+         return cwms_util.get_xml_text(pp_xml, p_path);
       end;
-      function get_number(p_xml in xmltype, p_path in varchar2) return number is
+      function get_number(pp_xml in xmltype, p_path in varchar2) return number is
       begin
-         return cwms_util.get_xml_number(p_xml, p_path);
+         return cwms_util.get_xml_number(pp_xml, p_path);
       end;
       -------------------------------------------------------------------------
       -- local function to build rating by recursing through temporary table --
@@ -102,7 +99,7 @@ as
          last_ind_value        at_compound_rating.ind_value%type;
          l_rating_param        rating_ind_parameter_t;
          l_rating              rating_value_tab_t := rating_value_tab_t();
-         l_rating_value_tab_id varchar2(32767); -- hides outer declaration
+         ll_rating_value_tab_id varchar2(32767);
       begin
          for rec in
             (  select ind_value
@@ -134,20 +131,20 @@ as
                -- p_parent_id parameter for the recursive call if necessary)          --
                -------------------------------------------------------------------------
                if p_position = 1 then
-                  l_rating_value_tab_id := p_parent_id || rec.ind_value;
+                  ll_rating_value_tab_id := p_parent_id || rec.ind_value;
                else
-                  l_rating_value_tab_id := p_parent_id || cwms_rating.separator3 || rec.ind_value;
+                  ll_rating_value_tab_id := p_parent_id || cwms_rating.separator3 || rec.ind_value;
                end if;
-               if l_rating_value_tab.exists(l_rating_value_tab_id) then
+               if l_rating_value_tab.exists(ll_rating_value_tab_id) then
                   -------------------------------------------------------
                   -- attach the pre-built rating_value_tab_t of values --
                   -------------------------------------------------------
-                  l_rating_param.rating_values := l_rating_value_tab(l_rating_value_tab_id);
+                  l_rating_param.rating_values := l_rating_value_tab(ll_rating_value_tab_id);
                else
                   --------------------------------------------------------------------------------------------
                   -- create a new rating_value_tab_t from info below the current position/value combination --
                   --------------------------------------------------------------------------------------------
-                  l_rating_param.rating_values := build_rating(l_rating_value_tab_id, p_position+1);
+                  l_rating_param.rating_values := build_rating(ll_rating_value_tab_id, p_position+1);
                end if;
                   l_rating_param.constructed := 'T';
                -----------------------------------------------------------------------------------
@@ -161,7 +158,7 @@ as
       end;
    begin
       begin
-         l_parts := cwms_util.split_text(get_text(p_xml, '/rating/rating-spec-id'), cwms_rating.separator1);
+         l_parts := cwms_util.split_text(get_text(p_xml, '/*/rating-spec-id'), cwms_rating.separator1);
          l_parts := cwms_util.split_text(l_parts(2), cwms_rating.separator2);
          l_ind_params := cwms_util.split_text(l_parts(1), cwms_rating.separator3);
       exception
@@ -169,7 +166,7 @@ as
             cwms_err.raise('ERROR', 'Cannot determine rating independent parameter(s)');
       end;
       begin
-         l_parts := cwms_util.split_text(get_text(p_xml, '/rating/units-id'), cwms_rating.separator2);
+         l_parts := cwms_util.split_text(get_text(p_xml, '/*/units-id'), cwms_rating.separator2);
          l_ind_units := cwms_util.split_text(l_parts(1), cwms_rating.separator3);
       exception
          when others then
@@ -186,7 +183,7 @@ as
             ------------------------------------------------------------
             -- for each <rating-points> or <extension-points> element --
             ------------------------------------------------------------
-            l_rating_points := get_node(p_xml, '/rating/'||l_value_type(i)||'['||j||']');
+            l_rating_points := get_node(p_xml, '/*/'||l_value_type(i)||'['||j||']');
             exit rating_points when l_rating_points is null;
             if j > 1 and l_ind_params.count = 1 then
                cwms_err.raise(
@@ -1078,175 +1075,237 @@ as
          else
             l_out_range_high_behavior := cwms_lookup.method_by_name(p_param_specs(p_position).out_range_high_rating_method);
          end if;
-         ---------------------------------------------------------
-         -- find the high index for interpolation/extrapolation --
-         ---------------------------------------------------------
-         l_high_index := cwms_lookup.find_high_index(
-            p_ind_values(p_position),
-            l_ind,
-            l_independent_properties);
-         -----------------------------------------------------
-         -- find the ratio for interpolation/extrapoloation --
-         -----------------------------------------------------
-         l_ratio := cwms_lookup.find_ratio(
-            l_independent_log,
-            p_ind_values(p_position),
-            l_ind,
-            l_high_index,
-            l_independent_properties.increasing_range,
-            l_in_range_behavior,
-            l_out_range_low_behavior,
-            l_out_range_high_behavior);
-         if l_ratio is not null then
-            ------------------------------------------
-            -- set log properties on dependent axis --
-            ------------------------------------------
-            if l_ratio < 0. then
-               l_dependent_log := cwms_lookup.method_by_name(p_param_specs(p_position).out_range_low_rating_method)
-                                  in (cwms_lookup.method_logarithmic, cwms_lookup.method_lin_log);
-               if l_dependent_log then
-                  if cwms_lookup.method_by_name(p_param_specs(p_position).out_range_low_rating_method)
-                     in (cwms_lookup.method_logarithmic, cwms_lookup.method_log_lin)
-                     and not l_independent_log
-                  then
-                     ---------------------------------------
-                     -- fall back from LOG-LoG to LIN-LIN --
-                     ---------------------------------------
-                     l_dependent_log := false;
-                  end if;
-               end if;
-            elsif l_ratio > 1. then
-               l_dependent_log := cwms_lookup.method_by_name(p_param_specs(p_position).out_range_high_rating_method)
-                                  in (cwms_lookup.method_logarithmic, cwms_lookup.method_lin_log);
-               if l_dependent_log then
-                  if cwms_lookup.method_by_name(p_param_specs(p_position).out_range_high_rating_method)
-                     in (cwms_lookup.method_logarithmic, cwms_lookup.method_log_lin)
-                     and not l_independent_log
-                  then
-                     ---------------------------------------
-                     -- fall back from LOG-LoG to LIN-LIN --
-                     ---------------------------------------
-                     l_dependent_log := false;
-                  end if;
-               end if;
-            else
-               l_dependent_log := cwms_lookup.method_by_name(p_param_specs(p_position).in_range_rating_method)
-                                  in (cwms_lookup.method_logarithmic, cwms_lookup.method_lin_log);
-               if l_dependent_log then
-                  if cwms_lookup.method_by_name(p_param_specs(p_position).in_range_rating_method)
-                     in (cwms_lookup.method_logarithmic, cwms_lookup.method_log_lin)
-                     and not l_independent_log
-                  then
-                     ---------------------------------------
-                     -- fall back from LOG-LoG to LIN-LIN --
-                     ---------------------------------------
-                     l_dependent_log := false;
-                  end if;
-               end if;
-            end if;
+         if l_ind.count = 1 then
+            -------------------------------------------------------
+            -- just one independent value so we can't use lookup --
+            -- also we can ignore extension values               --
+            -------------------------------------------------------
             if p_ind_values.count - p_position + 1 = 1 then
-               ----------------------------
-               -- single input parameter --
-               ----------------------------
-               if l_ratio != 0. then
-                  if l_ndx(l_high_index) > 0 then
-                     l_hi_val := rating_values(l_ndx(l_high_index)).dep_value;
-                  else
-                     l_hi_val := extension_values(-l_ndx(l_high_index)).dep_value;
-                  end if;
-               end if;
-               if l_ratio != 1. then
-                  if l_ndx(l_high_index-1) > 0 then
-                     l_lo_val := rating_values(l_ndx(l_high_index-1)).dep_value;
-                  else
-                     l_lo_val := extension_values(-l_ndx(l_high_index-1)).dep_value;
-                  end if;
-               end if;
+               l_result := rating_values(1).dep_value;
             else
-               -------------------------------
-               -- multiple input parameters --
-               -------------------------------
-               if l_ratio != 0. then
-                  if l_ndx(l_high_index) > 0 then
-                     l_hi_val := rating_values(l_ndx(l_high_index)).dep_rating_ind_param.rate(
-                        p_ind_values,
-                        p_position+1,
-                        p_param_specs);
-                  else
-                     l_hi_val := extension_values(-l_ndx(l_high_index)).dep_rating_ind_param.rate(
-                        p_ind_values,
-                        p_position+1,
-                        p_param_specs);
-                  end if;
-               end if;
-               if l_ratio != 1.0 then
-                  if l_ndx(l_high_index-1) > 0 then
-                     l_lo_val := rating_values(l_ndx(l_high_index-1)).dep_rating_ind_param.rate(
-                        p_ind_values,
-                        p_position+1,
-                        p_param_specs);
-                  else
-                     l_lo_val := extension_values(-l_ndx(l_high_index-1)).dep_rating_ind_param.rate(
-                        p_ind_values,
-                        p_position+1,
-                        p_param_specs);
-                  end if;
-               end if;
+               l_result := rating_values(1).dep_rating_ind_param.rate(
+                  p_ind_values,
+                  p_position+1,
+                  p_param_specs);
             end if;
-            case l_ratio
-               when 0. then
-                  l_val := l_lo_val;
-               when 1. then
-                  l_val := l_hi_val;
-               else
-                  ------------------------------------------------------------------
-                  -- handle log interpolation/extrapolation on dependent sequence --
-                  ------------------------------------------------------------------
-                  if l_dependent_log then
-                     declare
-                        l_log_hi_val binary_double;
-                        l_log_lo_val binary_double;
-                     begin
-                        begin
-                           l_log_hi_val := log(10, l_hi_val);
-                           l_log_lo_val := log(10, l_lo_val);
-                        exception
-                           when others then
-                              l_dependent_log := false;
-                              if l_independent_log then
-                                 ---------------------------------------
-                                 -- fall back from LOG-LoG to LIN-LIN --
-                                 ---------------------------------------
-                                 l_independent_log := false;
-                                 l_ratio := cwms_lookup.find_ratio(
-                                    l_independent_log,
-                                    p_ind_values(p_position),
-                                    l_ind,
-                                    l_high_index,
-                                    l_independent_properties.increasing_range,
-                                    cwms_lookup.method_linear,
-                                    cwms_lookup.method_linear,
-                                    cwms_lookup.method_linear);
-                              end if;
-                        end;
-                        if l_dependent_log then
-                           l_hi_val := l_log_hi_val;
-                           l_lo_val := l_log_lo_val;
-                        end if;
-                     end;
-                  end if;
-                  -------------------------------
-                  -- interpolate / extrapolate --
-                  -------------------------------
-                  l_val := l_lo_val + l_ratio * (l_hi_val - l_lo_val);
-                  --------------------------------------------------------------------
-                  -- apply anti-log if log interpolation/extrapolation of dependent --
-                  --------------------------------------------------------------------
-                  if l_dependent_log then
-                     l_val := power(10, l_val);
-                  end if;
+            case
+            when p_ind_values(p_position) < l_ind(1) then
+               case l_out_range_low_behavior
+               when cwms_lookup.method_null        then l_result := null;                                            
+               when cwms_lookup.method_error       then cwms_err.raise('ERROR', 'Value '||p_ind_values(p_position)||' is below curve');                                     
+               when cwms_lookup.method_linear      then cwms_err.raise('ERROR', 'Cannot extrapolate below curve: curve has only one independent value');                  
+               when cwms_lookup.method_logarithmic then cwms_err.raise('ERROR', 'Cannot extrapolate below curve: curve has only one independent value');             
+               when cwms_lookup.method_lin_log     then cwms_err.raise('ERROR', 'Cannot extrapolate below curve: curve has only one independent value'); 
+               when cwms_lookup.method_log_lin     then cwms_err.raise('ERROR', 'Cannot extrapolate below curve: curve has only one independent value'); 
+               when cwms_lookup.method_previous    then cwms_err.raise('ERROR', 'No previous value');                                                 
+               when cwms_lookup.method_next        then null;                                                
+               when cwms_lookup.method_nearest     then null;                                               
+               when cwms_lookup.method_lower       then cwms_err.raise('ERROR', 'No lower value');                                                
+               when cwms_lookup.method_higher      then null;                                               
+               when cwms_lookup.method_closest     then null;
+               end case;
+            when p_ind_values(p_position) > l_ind(1) then
+               case l_out_range_high_behavior
+               when cwms_lookup.method_null        then l_result := null;                                            
+               when cwms_lookup.method_error       then cwms_err.raise('ERROR', 'Value '||p_ind_values(p_position)||' is above curve');                                     
+               when cwms_lookup.method_linear      then cwms_err.raise('ERROR', 'Cannot extrapolate above curve: curve has only one independent value');                  
+               when cwms_lookup.method_logarithmic then cwms_err.raise('ERROR', 'Cannot extrapolate above curve: curve has only one independent value');             
+               when cwms_lookup.method_lin_log     then cwms_err.raise('ERROR', 'Cannot extrapolate above curve: curve has only one independent value'); 
+               when cwms_lookup.method_log_lin     then cwms_err.raise('ERROR', 'Cannot extrapolate above curve: curve has only one independent value'); 
+               when cwms_lookup.method_previous    then null;                                                  
+               when cwms_lookup.method_next        then cwms_err.raise('ERROR', 'No next value');                                                
+               when cwms_lookup.method_nearest     then null;                                               
+               when cwms_lookup.method_lower       then null;                                                
+               when cwms_lookup.method_higher      then cwms_err.raise('ERROR', 'No higher value');                                                
+               when cwms_lookup.method_closest     then null;
+               end case;
+            else --  p_ind_values(p_position) = l_ind(1)  
+               case l_in_range_behavior
+               when cwms_lookup.method_null        then l_result := null;                                            
+               when cwms_lookup.method_error       then cwms_err.raise('ERROR', 'Value '||p_ind_values(p_position)||' matches only independent value in rating');                                     
+               when cwms_lookup.method_linear      then null;                  
+               when cwms_lookup.method_logarithmic then null;             
+               when cwms_lookup.method_lin_log     then null; 
+               when cwms_lookup.method_log_lin     then null; 
+               when cwms_lookup.method_previous    then cwms_err.raise('ERROR', 'No previous value');                                                 
+               when cwms_lookup.method_next        then cwms_err.raise('ERROR', 'No next value');                                                
+               when cwms_lookup.method_nearest     then null;                                               
+               when cwms_lookup.method_lower       then cwms_err.raise('ERROR', 'No lower value');                                                
+               when cwms_lookup.method_higher      then cwms_err.raise('ERROR', 'No higher value');                                               
+               when cwms_lookup.method_closest     then null;
+               end case;
             end case;
-            l_result := l_val;
+         else
+            ---------------------------------------------------------
+            -- find the high index for interpolation/extrapolation --
+            ---------------------------------------------------------
+            l_high_index := cwms_lookup.find_high_index(
+               p_ind_values(p_position),
+               l_ind,
+               l_independent_properties);
+            -----------------------------------------------------
+            -- find the ratio for interpolation/extrapoloation --
+            -----------------------------------------------------
+            l_ratio := cwms_lookup.find_ratio(
+               l_independent_log,
+               p_ind_values(p_position),
+               l_ind,
+               l_high_index,
+               l_independent_properties.increasing_range,
+               l_in_range_behavior,
+               l_out_range_low_behavior,
+               l_out_range_high_behavior);
+            if l_ratio is not null then
+               ------------------------------------------
+               -- set log properties on dependent axis --
+               ------------------------------------------
+               if l_ratio < 0. then
+                  l_dependent_log := cwms_lookup.method_by_name(p_param_specs(p_position).out_range_low_rating_method)
+                                     in (cwms_lookup.method_logarithmic, cwms_lookup.method_lin_log);
+                  if l_dependent_log then
+                     if cwms_lookup.method_by_name(p_param_specs(p_position).out_range_low_rating_method)
+                        in (cwms_lookup.method_logarithmic, cwms_lookup.method_log_lin)
+                        and not l_independent_log
+                     then
+                        ---------------------------------------
+                        -- fall back from LOG-LoG to LIN-LIN --
+                        ---------------------------------------
+                        l_dependent_log := false;
+                     end if;
+                  end if;
+               elsif l_ratio > 1. then
+                  l_dependent_log := cwms_lookup.method_by_name(p_param_specs(p_position).out_range_high_rating_method)
+                                     in (cwms_lookup.method_logarithmic, cwms_lookup.method_lin_log);
+                  if l_dependent_log then
+                     if cwms_lookup.method_by_name(p_param_specs(p_position).out_range_high_rating_method)
+                        in (cwms_lookup.method_logarithmic, cwms_lookup.method_log_lin)
+                        and not l_independent_log
+                     then
+                        ---------------------------------------
+                        -- fall back from LOG-LoG to LIN-LIN --
+                        ---------------------------------------
+                        l_dependent_log := false;
+                     end if;
+                  end if;
+               else
+                  l_dependent_log := cwms_lookup.method_by_name(p_param_specs(p_position).in_range_rating_method)
+                                     in (cwms_lookup.method_logarithmic, cwms_lookup.method_lin_log);
+                  if l_dependent_log then
+                     if cwms_lookup.method_by_name(p_param_specs(p_position).in_range_rating_method)
+                        in (cwms_lookup.method_logarithmic, cwms_lookup.method_log_lin)
+                        and not l_independent_log
+                     then
+                        ---------------------------------------
+                        -- fall back from LOG-LoG to LIN-LIN --
+                        ---------------------------------------
+                        l_dependent_log := false;
+                     end if;
+                  end if;
+               end if;
+               if p_ind_values.count - p_position + 1 = 1 then
+                  ----------------------------
+                  -- single input parameter --
+                  ----------------------------
+                  if l_ratio != 0. then
+                     if l_ndx(l_high_index) > 0 then
+                        l_hi_val := rating_values(l_ndx(l_high_index)).dep_value;
+                     else
+                        l_hi_val := extension_values(-l_ndx(l_high_index)).dep_value;
+                     end if;
+                  end if;
+                  if l_ratio != 1. then
+                     if l_ndx(l_high_index-1) > 0 then
+                        l_lo_val := rating_values(l_ndx(l_high_index-1)).dep_value;
+                     else
+                        l_lo_val := extension_values(-l_ndx(l_high_index-1)).dep_value;
+                     end if;
+                  end if;
+               else
+                  -------------------------------
+                  -- multiple input parameters --
+                  -------------------------------
+                  if l_ratio != 0. then
+                     if l_ndx(l_high_index) > 0 then
+                        l_hi_val := rating_values(l_ndx(l_high_index)).dep_rating_ind_param.rate(
+                           p_ind_values,
+                           p_position+1,
+                           p_param_specs);
+                     else
+                        l_hi_val := extension_values(-l_ndx(l_high_index)).dep_rating_ind_param.rate(
+                           p_ind_values,
+                           p_position+1,
+                           p_param_specs);
+                     end if;
+                  end if;
+                  if l_ratio != 1.0 then
+                     if l_ndx(l_high_index-1) > 0 then
+                        l_lo_val := rating_values(l_ndx(l_high_index-1)).dep_rating_ind_param.rate(
+                           p_ind_values,
+                           p_position+1,
+                           p_param_specs);
+                     else
+                        l_lo_val := extension_values(-l_ndx(l_high_index-1)).dep_rating_ind_param.rate(
+                           p_ind_values,
+                           p_position+1,
+                           p_param_specs);
+                     end if;
+                  end if;
+               end if;
+               case l_ratio
+                  when 0. then
+                     l_val := l_lo_val;
+                  when 1. then
+                     l_val := l_hi_val;
+                  else
+                     ------------------------------------------------------------------
+                     -- handle log interpolation/extrapolation on dependent sequence --
+                     ------------------------------------------------------------------
+                     if l_dependent_log then
+                        declare
+                           l_log_hi_val binary_double;
+                           l_log_lo_val binary_double;
+                        begin
+                           begin
+                              l_log_hi_val := log(10, l_hi_val);
+                              l_log_lo_val := log(10, l_lo_val);
+                           exception
+                              when others then
+                                 l_dependent_log := false;
+                                 if l_independent_log then
+                                    ---------------------------------------
+                                    -- fall back from LOG-LoG to LIN-LIN --
+                                    ---------------------------------------
+                                    l_independent_log := false;
+                                    l_ratio := cwms_lookup.find_ratio(
+                                       l_independent_log,
+                                       p_ind_values(p_position),
+                                       l_ind,
+                                       l_high_index,
+                                       l_independent_properties.increasing_range,
+                                       cwms_lookup.method_linear,
+                                       cwms_lookup.method_linear,
+                                       cwms_lookup.method_linear);
+                                 end if;
+                           end;
+                           if l_dependent_log then
+                              l_hi_val := l_log_hi_val;
+                              l_lo_val := l_log_lo_val;
+                           end if;
+                        end;
+                     end if;
+                     -------------------------------
+                     -- interpolate / extrapolate --
+                     -------------------------------
+                     l_val := l_lo_val + l_ratio * (l_hi_val - l_lo_val);
+                     --------------------------------------------------------------------
+                     -- apply anti-log if log interpolation/extrapolation of dependent --
+                     --------------------------------------------------------------------
+                     if l_dependent_log then
+                        l_val := power(10, l_val);
+                     end if;
+               end case;
+               l_result := l_val;
+            end if;
          end if;
       end if;
       return l_result;

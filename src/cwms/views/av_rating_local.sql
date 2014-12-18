@@ -70,12 +70,15 @@ as
           cwms_util.change_timezone(r.effective_date, 'UTC', v.time_zone_name) as effective_date,
           cwms_util.change_timezone(r.create_date, 'UTC', v.time_zone_name) as create_date,
           r.active_flag,
-          r.formula, 
+          regexp_replace(upper(r.formula), 'ARG(\d+)', 'I\1'), 
           r.description,
           v.aliased_item,
           v.loc_alias_category,
           v.loc_alias_group,
-          cwms_rating.get_database_units(rt.parameters_id) as database_units,
+          case
+          when r.formula is not null then null
+          else cwms_rating.get_database_units(rt.parameters_id)
+          end as database_units,
           rs.rating_spec_code,
           rt.template_code
      from at_rating r,

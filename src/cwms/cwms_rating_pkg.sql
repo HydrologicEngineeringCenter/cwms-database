@@ -1440,6 +1440,59 @@ procedure retrieve_ratings_xml2(
    p_time_zone            in  varchar2 default null,
    p_office_id_mask       in  varchar2 default null);
 /**
+ * Retrieves ratings that match specified parameters, plus rating specifications and templates as well as ratings, parameters, and templates for any source ratings used (transitional and virtual ratings only).
+ * Matching is accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_ratings The ratings that match the input parameters, in XML format as a CLOB
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching. If the first character is '-' (hyphen), no rating values will be included in the output, 
+ * and the remaining characters are interpreted as the specification pattern to match.
+ *
+ * @param p_effective_date_start The start time of the effective date time window. If specified
+ * and not NULL, no ratings will be matched that have effective dates earlier than this date/time.
+ * If not specified or NULL, no lower bound for effecive date matching will be used.
+ *
+ * @param p_effective_date_end The end time of the effective date time window. If specified
+ * and not NULL, no ratings will be matched that have effective dates later than this date/time.
+ * If not specified or NULL, no upper bound for effecive date matching will be used.
+ *
+ * @param p_time_zone The time zone in which to intepret the effective date time window.  If not
+ * specified or NULL, the effective data time window for each rating specification will be the
+ * local time zone of that specification's location.  The output effective and create dates will
+ * also be in this time zone, or in each specification's local time zone if not specified or NULL.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ */
+procedure retrieve_ratings_xml3(
+   p_ratings              out clob,
+   p_spec_id_mask         in  varchar2 default '*',
+   p_effective_date_start in  date     default null,
+   p_effective_date_end   in  date     default null,
+   p_time_zone            in  varchar2 default null,
+   p_office_id_mask       in  varchar2 default null);
+/**
  * Retrieves ratings that match specified parameters.  Matching is
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
@@ -1537,6 +1590,58 @@ function retrieve_ratings_xml_f(
  * @return The ratings that match the input parameters, in XML format as a CLOB
  */
 function retrieve_ratings_xml2_f(
+   p_spec_id_mask         in  varchar2 default '*',
+   p_effective_date_start in  date     default null,
+   p_effective_date_end   in  date     default null,
+   p_time_zone            in  varchar2 default null,
+   p_office_id_mask       in  varchar2 default null)
+   return clob;
+/**
+ * Retrieves ratings that match specified parameters, plus rating specifications and templates as well as ratings, parameters, and templates for any source ratings used (transitional and virtual ratings only).
+ * Matching is accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_effective_date_start The start time of the effective date time window. If specified
+ * and not NULL, no ratings will be matched that have effective dates earlier than this date/time.
+ * If not specified or NULL, no lower bound for effecive date matching will be used.
+ *
+ * @param p_effective_date_end The end time of the effective date time window. If specified
+ * and not NULL, no ratings will be matched that have effective dates later than this date/time.
+ * If not specified or NULL, no upper bound for effecive date matching will be used.
+ *
+ * @param p_time_zone The time zone in which to intepret the effective date time window.  If not
+ * specified or NULL, the effective data time window for each rating specification will be the
+ * local time zone of that specification's location.  The output effective and create dates will
+ * also be in this time zone, or in each specification's local time zone if not specified or NULL.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @return The ratings that match the input parameters, in XML format as a CLOB
+ */
+function retrieve_ratings_xml3_f(
    p_spec_id_mask         in  varchar2 default '*',
    p_effective_date_start in  date     default null,
    p_effective_date_end   in  date     default null,

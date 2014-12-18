@@ -298,14 +298,18 @@ comment on column at_compound_rating.parent_id is 'Id specifying upstream lower-
 -- AT_VIRTUAL_RATING --
 -----------------------
 create table at_virtual_rating (
-   virtual_rating_code number(10),
-   rating_spec_code    number(10) not null,
+   virtual_rating_code number(10)   not null,
+   rating_spec_code    number(10)   not null,
+   effective_date      date         not null,
+   create_date         date         not null,
+   active_flag         varchar2(1)  not null,
    connections         varchar2(80) not null,
    description         varchar2(256),
    constraint at_virtual_rating_pk  primary key (virtual_rating_code),
-   constraint at_virtual_rating_u1  unique (rating_spec_code) using index,
+   constraint at_virtual_rating_u1  unique (rating_spec_code, effective_date) using index,
    constraint at_virtual_rating_fk1 foreign key (rating_spec_code) references at_rating_spec (rating_spec_code),
-   constraint at_virtual_rating_ck1 check (regexp_instr(connections, 'R\d(D|I\d)=(I\d|R\d(D|I\d))(,R\d(D|I\d)=(I\d|R\d(D|I\d)))*', 1, 1, 0, 'i') = 1)
+   constraint at_virtual_rating_ck1 check (active_flag in ('T', 'F')),
+   constraint at_virtual_rating_ck2 check (regexp_instr(connections, 'R\d(D|I\d)=(I\d|R\d(D|I\d))(,R\d(D|I\d)=(I\d|R\d(D|I\d)))*', 1, 1, 0, 'i') = 1)
 )
 organization index
 tablespace CWMS_20AT_DATA;
@@ -313,6 +317,9 @@ tablespace CWMS_20AT_DATA;
 comment on table  at_virtual_rating is 'Holds information about virtual ratings';
 comment on column at_virtual_rating.virtual_rating_code is 'Synthetic key';
 comment on column at_virtual_rating.rating_spec_code    is 'Foreign key to rating specification for this virtual rating';
+comment on column at_virtual_rating.effective_date      is 'Earliest date/time this rating was in effect';
+comment on column at_virtual_rating.create_date         is 'Date/time this rating was stored to database';
+comment on column at_virtual_rating.active_flag         is 'Flag (T/F) specifying whether this rating is active';
 comment on column at_virtual_rating.connections         is 'String specifying how source ratings are connected to form virtual rating';
 comment on column at_virtual_rating.description         is 'Descriptive text about this virtual rating';
 
@@ -359,4 +366,73 @@ comment on column at_virtual_rating_unit.virtual_rating_element_code is 'Foreign
 comment on column at_virtual_rating_unit.position                    is 'Sequential position of the paramter in the virtual rating element that this unit is for';
 comment on column at_virtual_rating_unit.unit_code                   is 'Foreign key intto the units table for this unit';
 
-   
+----------------------------
+-- AT_TRANSITIONAL_RATING --
+----------------------------
+create table at_transitional_rating(
+   transitional_rating_code number(10)    not null,
+   rating_spec_code         number(10)    not null,
+   effective_date           date          not null,
+   create_date              date          not null,
+   active_flag              varchar2(1)   not null,
+   native_units             varchar2(256) not null,
+   description              varchar2(256),
+   constraint at_transitional_rating_pk  primary key (transitional_rating_code),
+   constraint at_transitional_rating_u1  unique(rating_spec_code, effective_date) using index,
+   constraint at_transitional_rating_fk1 foreign key(rating_spec_code) references at_rating_spec(rating_spec_code), 
+   constraint at_transitional_rating_ck1 check (active_flag in ('T', 'F'))
+) organization index
+  tablespace cwms_20at_data;
+
+comment on table  at_transitional_rating is 'Holds information about transitional ratings';
+comment on column at_transitional_rating.transitional_rating_code is 'Synthetic key';
+comment on column at_transitional_rating.rating_spec_code         is 'Foreign key to rating specification for this transitional rating';
+comment on column at_transitional_rating.effective_date           is 'Earliest date/time this rating was in effect';
+comment on column at_transitional_rating.create_date              is 'Date/time this rating was stored to database';
+comment on column at_transitional_rating.active_flag              is 'Flag (T/F) specifying whether this rating is active';
+comment on column at_transitional_rating.native_units             is 'Units used for selection and evaluation, in format ind1_unit[,ind2_unit[,...]];dep_unit';
+comment on column at_transitional_rating.description              is 'Descriptive text about this transitional rating';
+
+--------------------------------
+-- AT_TRANSITIONAL_RATING_SRC --
+--------------------------------
+create table at_transitional_rating_src
+(
+  transitional_rating_code     number(10) not null,
+  position                     integer    not null,
+  rating_spec_code             number(10) not null,
+  constraint at_trans_rating_src_pk  primary key (transitional_rating_code, position),
+  constraint at_trans_rating_src_ck1 check (position > 0), 
+  constraint at_trans_rating_src_fk1 foreign key(transitional_rating_code) references at_transitional_rating(transitional_rating_code), 
+  constraint at_trans_rating_src_fk2 foreign key(rating_spec_code) references at_rating_spec(rating_spec_code) 
+) organization index
+  tablespace cwms_20at_data;
+
+comment on table  at_transitional_rating_src is 'Holds source ratings for transitional ratings';
+comment on column at_transitional_rating_src.transitional_rating_code is     'Foreign key to the transitional rating that this alternative rating is for';
+comment on column at_transitional_rating_src.position is                     'The sequential position of this source rating in the transitional rating';
+comment on column at_transitional_rating_src.rating_spec_code is             'Foreign key to the rating spec for this alternative rating';
+
+--------------------------------
+-- AT_TRANSITIONAL_RATING_SEL --
+--------------------------------
+create table at_transitional_rating_sel
+(
+  transitional_rating_code     number(10) not null,
+  position                     integer    not null,
+  expression                   varchar2(256) not null,
+  condition                    varchar2(1024),
+  constraint at_trans_rating_sel_pk  primary key (transitional_rating_code, position),
+  constraint at_trans_rating_sel_ck1 check (position > -1), 
+  constraint at_trans_rating_sel_ck2 check (position > 0 or condition is null), 
+  constraint at_trans_rating_sel_ck3 check (not (position > 0 and condition is null)), 
+  constraint at_trans_rating_sel_fk1 foreign key(transitional_rating_code) references at_transitional_rating(transitional_rating_code)
+) organization index
+  tablespace cwms_20at_data;
+  
+comment on table  at_transitional_rating_sel is 'Holds selection information for transitional ratings';  
+comment on column at_transitional_rating_sel.transitional_rating_code is 'Foreign key to the transitional rating this selection is for';  
+comment on column at_transitional_rating_sel.position is 'The sequential order of this selection.  Selections are evaluated in sequential order.';  
+comment on column at_transitional_rating_sel.expression is 'The expression which yields the result of the rating if this condition is null or evaulates to true.';  
+comment on column at_transitional_rating_sel.condition is 'The condition to be evaluated to determine if the expression is used as the result of the rating';  
+ 

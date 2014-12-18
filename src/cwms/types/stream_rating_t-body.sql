@@ -153,25 +153,19 @@ as
          self.shifts.extend;
          l_temp := treat(self.shifts(i-l_skipped) as rating_t);
          l_temp := rating_t(
-            self.office_id,              -- office_id
             l_location_id
             ||cwms_rating.separator1||l_ind_param
             ||cwms_rating.separator2||l_ind_param||'-Shift'
             ||cwms_rating.separator1||l_template_version
             ||cwms_rating.separator1||l_rating_version,     -- rating_spec_id
+            null,                                           -- native_units
             null,                        -- effective_date
-            null,                        -- create_date
             null,                        -- active_flag
             null,                        -- formula
-            null,                        -- connections
-            null,                        -- native_units
+            null,                                           -- rating_info
             null,                        -- description
-            null,                        -- rating_info
-            'N',                         -- current_units
-            'D',                         -- current_time
-            null,                        -- formula_tokens
-            null,                        -- source_ratings
-            null);                       -- connections_map
+            self.office_id);                                -- office_id
+         l_temp.create_date := null;
          ----------------------------------
          -- get the shift effective date --
          ----------------------------------
@@ -260,25 +254,19 @@ as
          -- create a new rating_t object to hold the offsets --
          ------------------------------------------------------
          self.offsets := rating_t(
-            self.office_id,                      -- office_id
             l_location_id
             ||cwms_rating.separator1||l_ind_param
             ||cwms_rating.separator2||l_ind_param||'-Offset'
             ||cwms_rating.separator1||l_template_version
             ||cwms_rating.separator1||l_rating_version,             -- rating_spec_id
+            null,                                -- native_units
             self.effective_date,                 -- effective_date
-            self.create_date,                    -- create_date
             self.active_flag,                    -- active_flag
             null,                                -- formula
-            null,                                -- connection
-            null,                                -- native_units
-            'Logarithmic interpolation offsets', -- description
             null,                                -- rating_info
-            'N',                                 -- current_units
-            'D',                                 -- current_time
-            null,                                -- formula_tokens
-            null,                                -- source_ratings
-            null);                               -- connections_map
+            'Logarithmic interpolation offsets', -- description
+            self.office_id);                     -- office_id
+         self.offsets.create_date := self.create_date;
          ----------------------------
          -- get the offset units id --
          ----------------------------
