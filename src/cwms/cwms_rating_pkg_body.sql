@@ -1638,7 +1638,7 @@ begin
                  ||cwms_util.get_xml_text(l_xml_tab(i), '/rating-template/version');
          if not l_ids.exists(l_id) then
             l_ids(l_id) := true;
-            cwms_util.append(l_ratings, l_xml_tab(i).getstringval);
+            cwms_util.append(l_ratings, l_xml_tab(i).getclobval);
          end if;              
       end loop;
    end if;
@@ -1650,7 +1650,7 @@ begin
                  ||cwms_util.get_xml_text(l_xml_tab(i), '/rating-spec/rating-spec-id');
          if not l_ids.exists(l_id) then
             l_ids(l_id) := true;
-            cwms_util.append(l_ratings, l_xml_tab(i).getstringval);
+            cwms_util.append(l_ratings, l_xml_tab(i).getclobval);
          end if;              
       end loop;
    end if;
@@ -1665,7 +1665,7 @@ begin
                  ||')';
          if not l_ids.exists(l_id) then
             l_ids(l_id) := true;
-            cwms_util.append(l_ratings, l_xml_tab(i).getstringval);
+            cwms_util.append(l_ratings, l_xml_tab(i).getclobval);
          end if;              
       end loop;
    end if;

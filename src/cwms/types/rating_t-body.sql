@@ -2322,7 +2322,7 @@ as
                   ||'>'
                   ||case l_source_rating_type
                        when 'rating-expression' then
-                          cwms_util.to_algebraic(cwms_util.split_text(self.source_ratings(i), 1, '{'))
+                          regexp_replace(cwms_util.to_algebraic(cwms_util.split_text(self.source_ratings(i), 1, '{')), 'ARG(\d+)', 'I\1')
                           ||' '
                           ||substr(self.source_ratings(i), instr(self.source_ratings(i), '{'))
                        else
@@ -2338,7 +2338,6 @@ as
             -- transitional only --
             -----------------------
             cwms_util.append(l_text, '<select>');
-            cwms_util.append(l_text, '</select>');   
             if self.conditions is not null then
                for i in 1..self.conditions.count loop
                   cwms_util.append(l_text, '<case position="'
@@ -2353,14 +2352,15 @@ as
                ||regexp_replace(regexp_replace(cwms_util.to_algebraic(self.evaluations(self.evaluations.count)), 'ARG90(\d+)', 'R\1'), 'ARG(\d+)', 'I\1')
                ||'</default>');
             end if;
+            cwms_util.append(l_text, '</select>');   
             if self.source_ratings is not null then
                cwms_util.append(l_text, '<source-ratings>');
                for i in 1..self.source_ratings.count loop
-                  cwms_util.append(l_text, '<source-rating postion="'
+                  cwms_util.append(l_text, '<rating-spec-id position="'
                   ||i
                   ||'">'
                   ||self.source_ratings(i)
-                  ||'</source-rating>');
+                  ||'</rating-spec-id>');
                end loop;
                cwms_util.append(l_text, '</source-ratings>');
             end if;   

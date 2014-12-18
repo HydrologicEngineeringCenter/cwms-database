@@ -1,4 +1,4 @@
-create type body logic_expr_t 
+create or replace type body logic_expr_t 
 as
    constructor function logic_expr_t(
       p_expr in varchar2)
@@ -326,7 +326,7 @@ as
                             end;
          l_xml := '<'
                   ||l_comparison_op
-                  ||' postion="1"><arg position="1">'
+                  ||' position="1"><arg position="1">'
                   ||cwms_util.to_algebraic(self.expression(1))
                   ||'</arg><arg position="2">'
                   ||cwms_util.to_algebraic(self.expression(2))
