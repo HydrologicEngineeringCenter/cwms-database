@@ -2938,7 +2938,7 @@ as
                ------------
                l_inputs(i) := cwms_rating.rate_f(
                   p_rating_spec => self.source_ratings(to_number(substr(l_arg_names(i), 6))),
-                  p_values      => tabify(cwms_util.get_column(p_values, i)),
+                  p_values      => tabify(cwms_util.get_column(p_values, p_input)),
                   p_units       => cwms_util.split_text(replace(self.native_units, ';', ','), ','),
                   p_round       => 'F',
                   p_value_times => case
