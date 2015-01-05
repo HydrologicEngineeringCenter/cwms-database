@@ -367,19 +367,11 @@ as
                ||self.rating_spec_id);
          end if;                         
          l_source_ratings_xml := l_xml_tab(1);
-         l_xml_tab := get_nodes(l_source_ratings_xml, '/source-ratings/rating-spec', null, '/source-ratings/rating-spec/@position');
-         if l_xml_tab is null or l_xml_tab.count = 0 then
-            cwms_err.raise(
-               'ERROR',
-               'Required <rating-spec> elements not found on transitional rating '
-               ||self.office_id
-               ||'/'
-               ||self.rating_spec_id);
-         end if;
+         l_xml_tab := get_nodes(l_source_ratings_xml, '/source-ratings/rating-spec-id', null, '/source-ratings/rating-spec/@position');
          self.source_ratings := str_tab_t();
          self.source_ratings.extend(l_xml_tab.count);
          for i in 1..l_xml_tab.count loop
-            self.source_ratings(i) := get_text(l_xml_tab(i), '/rating-spec');
+            self.source_ratings(i) := get_text(l_xml_tab(i), '/rating-spec-id');
          end loop;
          l_xml_tab := get_nodes(l_select_xml, '/select/case', null, '/select/case/@position'); 
          if l_xml_tab is null then
@@ -1691,11 +1683,6 @@ as
          -------------------------
          -- transitional rating --
          -------------------------
-         if self.source_ratings is null or self.source_ratings.count = 0 then
-            cwms_err.raise(
-               'ERROR',
-               'At least one source rating is required on a transitional rating');
-         end if;
          if (self.evaluations.count = 1 and (self.conditions is not null and self.conditions.count != 0)) or 
             (self.evaluations.count > 1 and (self.conditions is null or self.conditions.count != self.evaluations.count - 1))
          then
@@ -1706,7 +1693,7 @@ as
          for i in 1..self.evaluations.count loop
             for j in 1..self.evaluations(i).count loop
                l_count := instr(evaluations(i)(j), 'ARG90');
-               if to_number(substr(evaluations(i)(j), l_count+5)) > self.source_ratings.count then
+               if l_count > 0 and to_number(substr(evaluations(i)(j), l_count+5)) > self.source_ratings.count then
                   cwms_err.raise(
                      'ERROR',
                      'Transitional rating evaluation '
