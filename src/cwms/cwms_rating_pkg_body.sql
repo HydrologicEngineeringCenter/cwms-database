@@ -1655,7 +1655,7 @@ begin
       end loop;
    end if;
    if p_retrieve_ratings then
-      l_xml_tab := cwms_util.get_xml_nodes(l_xml,  '/ratings/rating|/ratings/simple-rating|/ratings/virtual-rating|/ratings/transitional-rating');
+      l_xml_tab := cwms_util.get_xml_nodes(l_xml,  '/ratings/rating|/ratings/simple-rating|/ratings/usgs-stream-rating|/ratings/virtual-rating|/ratings/transitional-rating');
       for i in 1..l_xml_tab.count loop
          l_id := cwms_util.get_xml_text(l_xml_tab(i), '/*/@office-id')
                  ||'/'
