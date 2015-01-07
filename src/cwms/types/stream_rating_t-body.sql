@@ -605,6 +605,7 @@ as
          for i in 1..self.shifts.count loop
             l_temp := treat(self.shifts(i) as rating_t);
             l_temp.convert_to_database_units;
+            self.shifts(i) := l_temp;
          end loop;
       end if;
    end;
@@ -621,6 +622,7 @@ as
          for i in 1..self.shifts.count loop
             l_temp := treat(self.shifts(i) as rating_t);
             l_temp.convert_to_native_units;
+            self.shifts(i) := l_temp;
          end loop;
       end if;
    end;
@@ -637,6 +639,7 @@ as
          for i in 1..self.shifts.count loop
             l_temp := treat(self.shifts(i) as rating_t);
             l_temp.convert_to_database_time;
+            self.shifts(i) := l_temp;
          end loop;
       end if;
    end;
@@ -653,6 +656,7 @@ as
          for i in 1..self.shifts.count loop
             l_temp := treat(self.shifts(i) as rating_t);
             l_temp.convert_to_local_time;
+            self.shifts(i) := l_temp;
          end loop;
       end if;
    end;
