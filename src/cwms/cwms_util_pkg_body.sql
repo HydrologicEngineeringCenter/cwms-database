@@ -4400,12 +4400,8 @@ AS
       l_text   varchar2(32767);
    begin    
       l_xml := get_xml_node(p_xml, p_path);
-      if l_xml is not null then
-         l_text := l_xml.getstringval;
-
-         if instr(p_path, '/@') = 0 then
-            l_xml := l_xml.extract('/node()/text()');
-         end if;
+      if l_xml is not null and instr(p_path, '/@') = 0 then
+         l_xml := l_xml.extract('/node()/text()');
       end if;
 
       if l_xml is not null then
