@@ -1174,12 +1174,12 @@ as
                      ||self.source_ratings(ll_rating)
                      ||') in connection path '
                      ||cwms_util.join_text(ll_prev_connections, '->'));
-               when ll_rating <= ll_prev_rating then
+               when ll_rating = ll_prev_rating then
                   cwms_err.raise(
                      'ERROR',
                      'Output of source rating '
                      ||ll_prev_rating
-                     ||' cannot connect to same or previous rating ('
+                     ||' cannot connect to same rating ('
                      ||ll_rating
                      ||') in connection path '
                      ||cwms_util.join_text(ll_prev_connections, '->'));
