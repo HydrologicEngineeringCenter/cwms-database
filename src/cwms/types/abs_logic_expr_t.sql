@@ -33,7 +33,12 @@ as object(
    member procedure to_rpn(
       p_expr in out nocopy varchar2),
    
-   member function to_xml_text return varchar2
+   member function to_xml_text( 
+      self in out nocopy abs_logic_expr_t)
+      return varchar2,
+   
+   member procedure to_xml_text(
+      p_expr in out nocopy varchar2)
 ) not final;
 /
 show errors;

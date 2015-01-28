@@ -67,110 +67,6 @@ as
       return;
    end logic_expr_t;
          
-   constructor function logic_expr_t(
-      p_xml in xmltype)
-      return self as result
-   is       
-      l_text varchar2(32767); 
-      l_op   varchar2(16);
-      l_xml  xmltype;  
-      l_comparison_elems str_tab_t := str_tab_t(
-         'not-equal',
-         'equal',
-         'greater-than-or-equal-to',
-         'greater-than',
-         'less-than-or-equal-to',
-         'less-than');
-      l_comparison_opers str_tab_t := str_tab_t(
-         'NE',
-         'EQ',
-         'GE',
-         'GT',
-         'LE',
-         'LT');   
-      ------------------------------
-      -- local function shortcuts --
-      ------------------------------
-      function get_node(pp_xml in xmltype, p_path in varchar2) return xmltype is
-      begin
-         return cwms_util.get_xml_node(pp_xml, p_path);
-      end;
-      function get_text(pp_xml in xmltype, p_path in varchar2) return varchar2 is
-      begin
-         return cwms_util.get_xml_text(pp_xml, p_path);
-      end;
-      function get_number(pp_xml in xmltype, p_path in varchar2) return number is
-      begin
-         return cwms_util.get_xml_number(pp_xml, p_path);
-      end;
-   begin                  
-      ----------------------------------------------------------------------          
-      -- transform the element text into the correspsonding operator text --
-      ----------------------------------------------------------------------          
-      l_text := p_xml.getrootelement;
-      for i in 1..l_comparison_elems.count loop
-         l_text := replace(l_text, l_comparison_elems(i), l_comparison_opers(i));
-      end loop;
-      l_text := upper(l_text);      
-      case
-      when cwms_util.is_combination_operator(l_text) then
-         --------------------------
-         -- combination operator --
-         --------------------------
-         self.operator := l_text;
-         l_xml := get_node(p_xml, '/*/*[@position=''1'']');
-         if l_xml is null then cwms_err.raise(
-            'ERROR',
-            'Element <'
-            ||p_xml.getrootelement
-            ||'> does not contain required first comparison');
-         end if;
-         self.operand_1 := logic_expr_t(l_xml);
-         if l_text != 'NOT' then
-            l_xml := get_node(p_xml, '/*/*[@position=''2'']');
-            if l_xml is null then cwms_err.raise(
-               'ERROR',
-               'Element <'
-               ||p_xml.getrootelement
-               ||'> does not contain required second comparison');
-            end if;
-         self.operand_2 := logic_expr_t(l_xml);
-         end if;
-      when cwms_util.is_comparison_operator(l_text) then
-         -------------------------
-         -- comparison operator --
-         -------------------------
-         l_op := l_text;
-         l_xml := get_node(p_xml, '/*/arg[@position=''1'']');
-         if l_xml is null then cwms_err.raise(
-            'ERROR',
-            'Element <'
-            ||p_xml.getrootelement
-            ||'> does not contain required first argument');
-         end if;
-         l_text := cwms_util.join_text(cwms_util.tokenize_expression(regexp_replace(get_text(l_xml, '/arg'), 'i(\d)', 'arg\1', 1, 0, 'i')), ' ');
-         l_xml := get_node(p_xml, '/*/arg[@position=''2'']');
-         if l_xml is null then cwms_err.raise(
-            'ERROR',
-            'Element <'
-            ||p_xml.getrootelement
-            ||'> does not contain required second argument');
-         end if;
-         l_text := l_text
-            ||' '
-            ||cwms_util.join_text(cwms_util.tokenize_expression(regexp_replace(get_text(l_xml, '/arg'), 'i(\d)', 'arg\1', 1, 0, 'i')), ' ')
-            ||' '
-            ||l_op;
-         self := new logic_expr_t(l_text);
-      else
-         cwms_err.raise(
-            'ERROR',
-            'Element (<'
-            ||p_xml.getrootelement
-            ||'> is not a valid logic (combination or comparison) operator');
-      end case;
-      return;
-   end logic_expr_t;      
             
    overriding member function evaluate(
       p_args        in double_tab_t,
@@ -303,39 +199,37 @@ as
          p_expr := p_expr||' '||self.operator;
       end if;
    end to_rpn;
-   
-   overriding member function to_xml_text
+               
+   overriding member function to_xml_text( 
+      self in out nocopy logic_expr_t)
       return varchar2
    is
-      l_xml varchar2(32767);
-      l_comparison_op varchar2(21);
+      l_expr varchar2(32767);
    begin
-      if self.operator is not null then
-         l_xml := '<'||lower(self.operator)||'>';
-         l_xml := l_xml||self.operand_1.to_xml_text;
-         l_xml := l_xml||self.operand_2.to_xml_text;
-         l_xml := l_xml||'</'||lower(self.operator)||'>';
-      else
-         l_comparison_op := case
-                            when self.expression(3)(1) in ('=' , 'EQ'      ) then 'equal'
-                            when self.expression(3)(1) in ('!=', '<>', 'NE') then 'not-equal'
-                            when self.expression(3)(1) in ('<' , 'LT'      ) then 'less-than'
-                            when self.expression(3)(1) in ('<=', 'LE'      ) then 'less-than-or-equal'
-                            when self.expression(3)(1) in ('>' , 'LT'      ) then 'greater-than'
-                            when self.expression(3)(1) in ('>=', 'LE'      ) then 'greater-than-or-equal'
-                            end;
-         l_xml := '<'
-                  ||l_comparison_op
-                  ||' position="1"><arg position="1">'
-                  ||cwms_util.to_algebraic(self.expression(1))
-                  ||'</arg><arg position="2">'
-                  ||cwms_util.to_algebraic(self.expression(2))
-                  ||'</arg></'
-                  ||l_comparison_op
-                  ||'>';
+      self.to_xml_text(l_expr);
+      return substr(l_expr, 2);
+   end to_xml_text;      
+   
+   overriding member procedure to_xml_text(
+      p_expr in out nocopy varchar2)
+   is
+   begin
+      if self.operator is null then
+         p_expr := p_expr
+                   ||' '
+                   ||cwms_util.to_algebraic(self.expression(1))
+                   ||' '
+                   ||cwms_util.get_comparison_op_text(self.expression(3)(1))
+                   ||' '
+                   ||cwms_util.to_algebraic(self.expression(2));
+      else 
+         if self.operand_2 is not null then
+            self.operand_1.to_xml_text(p_expr);
+         end if;
+         p_expr := p_expr||' '||self.operator;
+         self.operand_2.to_xml_text(p_expr);
       end if;
-      return l_xml;         
-   end to_xml_text;   
+   end to_xml_text;
 end;
 /
 show errors;

@@ -1,4 +1,4 @@
-create type body abs_logic_expr_t
+create or replace type body abs_logic_expr_t
 as
    member function evaluate(
       p_args   in double_tab_t,
@@ -46,11 +46,21 @@ as
       cwms_err.raise('ERROR', 'To_rpn procedure cannot be called on abstract type');
    end to_rpn;                           
    
-   member function to_xml_text return varchar2
+      
+   member function to_xml_text( 
+      self in out nocopy abs_logic_expr_t)
+      return varchar2
    is
    begin
-      cwms_err.raise('ERROR', 'to_xml_text function cannot be called on abstract type');
+      cwms_err.raise('ERROR', 'To_xml_text function cannot be called on abstract type');
    end to_xml_text;      
+   
+   member procedure to_xml_text(
+      p_expr in out nocopy varchar2)
+   is
+   begin
+      cwms_err.raise('ERROR', 'To_xml_text procedure cannot be called on abstract type');
+   end to_xml_text;
 end;
 /
 show errors;

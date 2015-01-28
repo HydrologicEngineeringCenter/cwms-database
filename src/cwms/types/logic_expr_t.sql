@@ -38,14 +38,6 @@ under abs_logic_expr_t (
       p_table in out nocopy str_tab_tab_t)
       return self as result,
    /**
-    * Constructs a logic expression object from an XML element such as is found in a transitional rating XML instance
-    *
-    * @param p_xml The logic expression as an XML element.
-    */
-   constructor function logic_expr_t(
-      p_xml in xmltype)
-      return self as result,
-   /**
     * Evaluates the logic expression given specific arguments arg1..argN. This evaluation uses the short-circuit behavior of PL/SQL 
     * logic operators. The first expression of any operator is always evaluated.  The second expression of binary operators will
     * not be evaluated if it cannot affect the outcome.
@@ -86,8 +78,12 @@ under abs_logic_expr_t (
    overriding member procedure to_rpn(
       p_expr in out nocopy varchar2),
       
-   overriding member function to_xml_text 
-      return varchar2      
+   overriding member function to_xml_text( 
+      self in out nocopy logic_expr_t)
+      return varchar2,
+   
+   overriding member procedure to_xml_text(
+      p_expr in out nocopy varchar2)
 )
 /
 show errors;

@@ -437,13 +437,11 @@ as
                      end if;
                   end if;
                end if;
-               l_xml_tab2 := get_nodes(
-                  l_xml_tab(i), 
-                  '/case/not|/case/and|/case/xor|/case/or|/case/less-than|/case/less-than-or-equal|/case/greater-than|/case/greater-than-or-equal|/case/equal|/case/not-equal');       
+               l_xml_tab2 := get_nodes(l_xml_tab(i), '/case/when');       
                if l_xml_tab2 is null or l_xml_tab2.count = 0 then
                   cwms_err.raise(
                      'ERROR',
-                     'No logical operations found in case '
+                     'Required <when> element not found in case '
                      ||i
                      ||' on transitional rating '
                      ||self.office_id
@@ -452,14 +450,20 @@ as
                elsif l_xml_tab2.count > 1 then
                   cwms_err.raise(
                      'ERROR',
-                     'Multiple logical operations found in case '
+                     'Multiple <when> elements found in case '
                      ||i
                      ||' on transitional rating '
                      ||self.office_id
                      ||'/'
                      ||self.rating_spec_id);
                end if;                    
-               self.conditions(i) := logic_expr_t(l_xml_tab2(1));
+               self.conditions(i) := logic_expr_t(regexp_replace(
+                                        regexp_replace(
+                                           upper(get_text(l_xml_tab2(1), '/when')),
+                                           'R(\d+)', 
+                                           'ARG90\1'), 
+                                        'I(\d+)', 
+                                        'ARG\1'));
                l_xml_tab2 := get_nodes(l_xml_tab(i), '/case/then');   
                if l_xml_tab2 is null or l_xml_tab2.count = 0 then
                   cwms_err.raise(
@@ -2326,15 +2330,20 @@ as
             -----------------------
             cwms_util.append(l_text, '<select>');
             if self.conditions is not null then
-               for i in 1..self.conditions.count loop
-                  cwms_util.append(l_text, '<case position="'
-                  ||i
-                  ||'">'
-                  ||regexp_replace(regexp_replace(self.conditions(i).to_xml_text, 'ARG90(\d+)', 'R\1'), 'ARG(\d+)', 'I\1')
-                  ||'<then>'
-                  ||regexp_replace(regexp_replace(cwms_util.to_algebraic(self.evaluations(i)), 'ARG90(\d+)', 'R\1'), 'ARG(\d+)', 'I\1')
-                  ||'</then></case>');
-               end loop;
+               declare
+                  l_condition logic_expr_t;
+               begin
+                  for i in 1..self.conditions.count loop
+                     l_condition := self.conditions(i);
+                     cwms_util.append(l_text, '<case position="'
+                     ||i
+                     ||'"><when>'
+                     ||regexp_replace(regexp_replace(l_condition.to_xml_text, 'ARG90(\d+)', 'R\1'), 'ARG(\d+)', 'I\1')
+                     ||'</when><then>'
+                     ||regexp_replace(regexp_replace(cwms_util.to_algebraic(self.evaluations(i)), 'ARG90(\d+)', 'R\1'), 'ARG(\d+)', 'I\1')
+                     ||'</then></case>');
+                  end loop;
+               end;
                cwms_util.append(l_text, '<default>'
                ||regexp_replace(regexp_replace(cwms_util.to_algebraic(self.evaluations(self.evaluations.count)), 'ARG90(\d+)', 'R\1'), 'ARG(\d+)', 'I\1')
                ||'</default>');

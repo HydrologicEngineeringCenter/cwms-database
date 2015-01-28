@@ -968,7 +968,7 @@ begin
             'Storing '
             ||l_node.getrootelement
             ||' '
-            ||cwms_util.get_xml_text(l_node, '/rating/@office-id')
+            ||cwms_util.get_xml_text(l_node, '/*/@office-id')
             ||'/'||regexp_replace(cwms_util.get_xml_text(l_node, '/*/rating-spec-id'), '\s', '', 1, 0)
             ||case l_node.existsnode('/rating|/simple-rating')
               when 1 then ' ('
