@@ -1407,6 +1407,7 @@ AS
       l_interval_id           VARCHAR2 (50);
       l_interval_code         NUMBER;
       l_duration_id           VARCHAR2 (50);
+      l_duration;
       l_duration_code         NUMBER;
       l_version               VARCHAR2 (50);
       l_office_code           NUMBER;
@@ -1526,6 +1527,10 @@ AS
                 FROM cwms_duration d
                WHERE UPPER (d.duration_id) = UPPER (l_duration_id))
                 d,
+             (SELECT duration
+                FROM cwms_duration d
+               WHERE UPPER (d.duration_id) = UPPER (l_duration_id))
+                dd,
              (SELECT parameter_type_code
                 FROM cwms_parameter_type p
                WHERE UPPER (p.parameter_type_id) =
@@ -1541,6 +1546,7 @@ AS
                 ii
         INTO l_base_parameter_code,
              l_duration_code,
+	     l_duration,
              l_parameter_type_code,
              l_interval_code,
              l_interval
@@ -1550,6 +1556,7 @@ AS
          OR l_duration_code IS NULL
          OR l_parameter_type_code IS NULL
          OR l_interval_code IS NULL
+         OR (l_interval = 0 AND l_duration <> 0)
       THEN
          l_str_error :=
             'ERROR: Invalid Time Series Description: ' || p_cwms_ts_id;
@@ -1579,6 +1586,17 @@ AS
                || CHR (10)
                || l_interval_id
                || ' is not a valid interval';
+         END IF;
+
+         IF (l_interval = 0 AND l_duration <> 0) 
+         THEN
+            l_str_error :=
+                  l_str_error
+               || CHR (10)
+               || l_interval_id
+               || CHR (10)
+               || l_duration_id
+               || ' irregular timeseries can not have non-zero duration';
          END IF;
 
          IF l_can_create
