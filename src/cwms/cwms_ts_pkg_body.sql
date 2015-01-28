@@ -1407,7 +1407,7 @@ AS
       l_interval_id           VARCHAR2 (50);
       l_interval_code         NUMBER;
       l_duration_id           VARCHAR2 (50);
-      l_duration;
+      l_duration              NUMBER;
       l_duration_code         NUMBER;
       l_version               VARCHAR2 (50);
       l_office_code           NUMBER;
@@ -1593,9 +1593,12 @@ AS
             l_str_error :=
                   l_str_error
                || CHR (10)
+	       || 'Interval: '
                || l_interval_id
                || CHR (10)
+	       || 'Duration: '
                || l_duration_id
+               || CHR (10)
                || ' irregular timeseries can not have non-zero duration';
          END IF;
 
