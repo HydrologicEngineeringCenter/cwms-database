@@ -4042,8 +4042,12 @@ begin
       p_timezone_id,
       to_date(p_date, 'yyyy/mm/dd hh24:mi:ss'),
       p_office_id);
-   for i in 1..l_attribute_values.count loop
-      p_attribute_values := p_attribute_values || to_char(l_attribute_values(i)) || cwms_util.record_separator;
+   for i in 1..l_attribute_values.count loop 
+      if i = l_attribute_values.count then
+         p_attribute_values := p_attribute_values || to_char(l_attribute_values(i));
+      else
+         p_attribute_values := p_attribute_values || to_char(l_attribute_values(i)) || cwms_util.record_separator;
+      end if;
    end loop;
 end retrieve_location_level_attrs2;
             
