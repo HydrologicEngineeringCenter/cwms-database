@@ -87,8 +87,6 @@ alter session set current_schema = &cwms_schema;
 -- 
 @@cwms/at_schema_2
 @@cwms/at_schema_tsv_dqu
-@@cwms/at_schema_mv2
---@@cwms/cwms_types_rating
 --
 -- Create dbi and pd user accounts...
 ---
@@ -258,7 +256,6 @@ begin
    cwms_ts.start_trim_ts_deleted_job;
    cwms_sec.start_refresh_mv_sec_privs_job;
    cwms_shef.start_update_shef_spec_map_job;
-   cwms_rating.start_update_mviews_job;
 end;
 /
 --
