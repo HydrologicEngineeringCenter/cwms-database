@@ -5040,7 +5040,7 @@ is
    l_rating_time_utc date;
    l_rating_code     number(10);
    l_effective_date  date;
-   l_view_name       varchar2(30)  := 'cwms_v_mrating_values';
+   l_view_name       varchar2(30)  := 'av_rating_values';
    l_column_name     varchar2(30);
    l_sql constant    varchar2(256) :=
       'select min(column_name),
@@ -5344,124 +5344,6 @@ begin
    return l_parts(2);
 end get_dep_parameter;   
 
-
-procedure update_materialized_views
-is
-begin
-   if cwms_util.get_boolean_state('at_rating_value modified') then
-      cwms_msg.log_db_message('CWMS_RATING.UPDATE_MATERIALIZED_VIEWS', cwms_msg.msg_level_normal , 'Refresh of rating views started');
-      begin
-         dbms_mview.refresh('mv_rating_values,mv_rating_values_native', 'cc');
-         cwms_msg.log_db_message('CWMS_RATING.UPDATE_MATERIALIZED_VIEWS', cwms_msg.msg_level_normal , 'Refresh of rating views complete');
-         cwms_util.set_boolean_state('at_rating_value modified', false);
-      exception
-         when others then
-            cwms_msg.log_db_message('CWMS_RATING.UPDATE_MATERIALIZED_VIEWS', cwms_msg.msg_level_normal , 'Refresh of rating views: error '||sqlerrm);
-      end;
-   end if;
-end update_materialized_views;
-
-procedure start_update_mviews_job
-
-is
-   l_count        binary_integer;
-   l_user_id      varchar2(30);
-   l_job_id       varchar2(30)  := 'UPDATE_RATING_MVIEWS_JOB';
-   l_run_interval varchar2(8);
-   l_comment      varchar2(256);
-
-   function job_count
-      return binary_integer
-   is
-   begin
-      select count (*)
-        into l_count
-        from sys.dba_scheduler_jobs
-       where job_name = l_job_id and owner = l_user_id;
-
-      return l_count;
-   end;
-begin
-   --------------------------------------
-   -- make sure we're the correct user --
-   --------------------------------------
-   l_user_id := cwms_util.get_user_id;
-
-   if l_user_id != '&cwms_schema'
-   then
-      raise_application_error (-20999,
-                                  'Must be &cwms_schema user to start job '
-                               || l_job_id,
-                               true
-                              );
-   end if;
-   -------------------------------------------
-   -- drop the job if it is already running --
-   -------------------------------------------
-   if job_count > 0
-   then
-      dbms_output.put ('Dropping existing job ' || l_job_id || '...');
-      dbms_scheduler.drop_job (l_job_id);
-
-      --------------------------------
-      -- verify that it was dropped --
-      --------------------------------
-      if job_count = 0
-      then
-         dbms_output.put_line ('done.');
-      else
-         dbms_output.put_line ('failed.');
-      end if;
-   end if;
-
-   if job_count = 0
-   then
-      begin
-         ---------------------
-         -- restart the job --
-         ---------------------
-         cwms_properties.get_property(
-            l_run_interval,
-            l_comment,
-            'CWMSDB',
-            'mviews.ratings.refresh_interval',
-            '5',
-            'CWMS');
-         dbms_scheduler.create_job
-            (job_name        => l_job_id,
-             job_type        => 'stored_procedure',
-             job_action      => 'cwms_rating.update_materialized_views',
-             start_date      => null,
-             repeat_interval => 'freq=minutely; interval=' || l_run_interval,
-             end_date        => null,
-             job_class       => 'default_job_class',
-             enabled         => true,
-             auto_drop       => false,
-             comments        => 'Refreshes ratings materialized views when necessary.'
-            );
-
-         if job_count = 1
-         then
-            dbms_output.put_line
-                           (   'Job '
-                            || l_job_id
-                            || ' successfully scheduled to execute every '
-                            || l_run_interval
-                            || ' minutes.'
-                           );
-         else
-            cwms_err.raise ('ITEM_NOT_CREATED', 'job', l_job_id);
-         end if;
-      exception
-         when others
-         then
-            cwms_err.raise ('ITEM_NOT_CREATED',
-                            'job',
-                            l_job_id || ':' || sqlerrm
-                           );
-      end;
-   end if;
-end start_update_mviews_job;
 
 function get_elevation_positions(
    p_rating_template_id in varchar2)

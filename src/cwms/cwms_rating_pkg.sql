@@ -2865,10 +2865,6 @@ function get_ind_parameter(
 function get_dep_parameter(
    p_id in varchar2)
    return varchar2;
-         
-procedure update_materialized_views;
-
-procedure start_update_mviews_job;
 /**
  * Returns a table of positions in the template parameters that are elevation parameters. Used for determining whether a rating should include vertical datum information.
  *
