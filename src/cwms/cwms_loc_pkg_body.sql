@@ -4602,64 +4602,54 @@ AS
 	--is being referenced by a SHEF decode entry.
 	-------------------------------------------------------------------------------
 	-------------------------------------------------------------------------------
-	PROCEDURE unassign_loc_groups (
-		p_loc_category_id   IN VARCHAR2,
-		p_loc_group_id 	  IN VARCHAR2,
-		p_location_array	  IN char_49_array_type,
-		p_unassign_all 	  IN VARCHAR2 DEFAULT 'F',
-		p_db_office_id 	  IN VARCHAR2 DEFAULT NULL
-	)
-	IS
-		l_db_office_code	 NUMBER := cwms_util.get_office_code (p_db_office_id);
-		l_loc_group_code	 NUMBER
-			:= get_loc_group_code (p_loc_category_id	 => p_loc_category_id,
-										  p_loc_group_id		 => p_loc_group_id,
-										  p_db_office_code	 => l_db_office_code
-										 );
-		l_tmp 				 NUMBER;
-		l_unassign_all 	 BOOLEAN := FALSE;  
-	BEGIN
-		IF UPPER (TRIM (p_unassign_all)) = 'T'
-		THEN
-			l_unassign_all := TRUE;
-		END IF;
+procedure unassign_loc_groups(
+   p_loc_category_id in varchar2,
+   p_loc_group_id    in varchar2,
+   p_location_array  in char_49_array_type,
+   p_unassign_all    in varchar2 default 'F',
+   p_db_office_id    in varchar2 default null)
+is
+   l_db_office_code number;
+   l_loc_group_code number;
+   l_unassign_all   boolean := false;
+begin
+   if upper(trim(p_unassign_all)) = 'T' then
+      l_unassign_all := true;
+   end if;
+   l_db_office_code := cwms_util.get_office_code(p_db_office_id);
+   l_loc_group_code := get_loc_group_code(
+            p_loc_category_id => p_loc_category_id,
+            p_loc_group_id    => p_loc_group_id,
+            p_db_office_code  => l_db_office_code);
 
-		BEGIN
-			IF l_unassign_all
-			THEN							  -- delete all group/location assignments...
-				DELETE FROM   at_loc_group_assignment lga
-						WHERE   loc_group_code = l_loc_group_code
-                    AND   l_db_office_code = (select bl.db_office_code
-                                                from at_physical_location pl,
-                                                     at_base_location bl
-                                               where pl.location_code = location_code
-                                                 and bl.base_location_code = bl.base_location_code      
-                                             );
-			ELSE						 -- delete only group/location assignments for -
-				-- given locations...
-				DELETE FROM   at_loc_group_assignment
-						WHERE   loc_group_code = l_loc_group_code
-								  AND location_code IN
-											(SELECT	 location_code
-												FROM	 av_loc b,
-														 TABLE (
-															 CAST (
-																 p_location_array AS char_49_array_type
-															 )
-														 ) c
-											  WHERE	 UPPER (b.location_id) =
-															 UPPER (TRIM (c.COLUMN_VALUE)));
-			END IF;
-		EXCEPTION
-			WHEN OTHERS
-			THEN
-				cwms_err.raise (
-					'GENERIC_ERROR',
-					'Cannot unassign Location/Group pair(s). One or more group assignments are still assigned.'
-				);
-		END;
-	END unassign_loc_groups;
-
+   begin
+      if l_unassign_all then 
+         -------------------------------------------
+         -- delete all group/location assignments --
+         -------------------------------------------
+         delete 
+           from at_loc_group_assignment
+          where loc_group_code = l_loc_group_code
+            and office_code = l_db_office_code;
+      else 
+         ----------------------------------------------------------------
+         -- delete only group/location assignments for given locations --
+         ----------------------------------------------------------------
+         delete 
+           from at_loc_group_assignment
+          where loc_group_code = l_loc_group_code
+            and location_code in 
+                (select cwms_loc.get_location_code(l_db_office_code, trim(column_value))
+                  from table(p_location_array)
+                );
+      end if;
+   exception
+      when others then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot unassign Location/Group pair(s). One or more group assignments are still assigned.');
+   end;
+end unassign_loc_groups;
 	-------------------------------------------------------------------------------
 	-------------------------------------------------------------------------------
 	-- unassign_loc_group --
