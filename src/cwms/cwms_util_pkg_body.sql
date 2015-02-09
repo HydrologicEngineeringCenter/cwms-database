@@ -1630,30 +1630,53 @@ AS
    -- function parse_clob_recordset(...)
    --
    --
-   FUNCTION parse_clob_recordset (p_clob IN CLOB)
-      RETURN str_tab_tab_t
-   IS
-      l_rows   str_tab_t;
-      l_tab    str_tab_tab_t := str_tab_tab_t ();
-   BEGIN
-      IF p_clob IS NULL
-      THEN
-         RETURN NULL;
-      END IF;
-
-      l_rows := split_text (p_clob, record_separator);
-
-      IF l_rows.COUNT > 0
-      THEN
-         FOR i IN l_rows.FIRST .. l_rows.LAST
-         LOOP
-            l_tab.EXTEND;
-            l_tab (l_tab.LAST) := split_text (l_rows (i), field_separator);
-         END LOOP;
-      END IF;
-
-      RETURN l_tab;
-   END parse_clob_recordset;
+   function parse_clob_recordset (p_clob in clob)
+      return str_tab_tab_t
+   is
+      l_tab       str_tab_tab_t;
+      l_row       str_tab_t;
+      l_row_pos   integer;
+      l_row_start integer;         
+      l_col_pos   integer;
+      l_col_start integer;
+      l_row_done  boolean;
+      l_tab_done  boolean;         
+   begin
+      if p_clob is not null then
+         l_tab := str_tab_tab_t();
+         l_row_start := 1;
+         loop         
+            l_tab_done := false;
+            l_row_pos := instr(p_clob, record_separator, l_row_start, 1);
+            if l_row_pos = 0 then
+               l_tab_done := true;
+               l_row_pos := dbms_lob.getlength(p_clob);
+            end if;
+            l_col_start := l_row_start;
+            l_row := str_tab_t();
+            loop
+               l_col_pos := instr(p_clob, field_separator, l_col_start, 1);
+               if l_col_pos = 0 or l_col_pos > l_row_pos then
+                  l_row_done := true;
+                  if l_col_pos = 0 then
+                     l_col_pos := dbms_lob.getlength(p_clob);
+                  else
+                     l_col_pos := l_row_pos;
+                  end if;
+               end if;
+               l_row.extend;
+               l_row(l_row.count) := dbms_lob.substr(p_clob, l_col_pos - l_col_start, l_col_start);
+               l_col_start := l_col_pos + 1;                                                       
+               exit when l_row_done;
+            end loop;
+            l_tab.extend;
+            l_tab(l_tab.count) := l_row;
+            l_row_start := l_row_pos + 1;
+            exit when l_tab_done;
+         end loop; 
+      end if;
+      return l_tab;
+   end parse_clob_recordset;
 
    -------------------------------------------------------------------------------
    -- function parse_string_recordset(...)
