@@ -1048,7 +1048,6 @@ class HtmlElem :
          self.add_content([
             HtmlElem('p'),
             HtmlElem('b', 'DEPRECATED')])
-         print ("DEPRECATED")
       return self
 
    def add_brief(self, jdoc) :
