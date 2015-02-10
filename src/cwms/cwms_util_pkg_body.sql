@@ -1654,7 +1654,8 @@ AS
             end if;
             l_col_start := l_row_start;
             l_row := str_tab_t();
-            loop
+            loop    
+               l_row_done := false;
                l_col_pos := instr(p_clob, field_separator, l_col_start, 1);
                if l_col_pos = 0 or l_col_pos > l_row_pos then
                   l_row_done := true;
