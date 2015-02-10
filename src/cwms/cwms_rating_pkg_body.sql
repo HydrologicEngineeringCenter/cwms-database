@@ -1477,14 +1477,14 @@ is
    l_spec          rating_spec_t;
    l_template      rating_template_t;
 begin
-   l_spec_id_mask := cwms_util.normalize_wildcards(p_spec_id_mask);
    retrieve_ratings_obj(
       l_ratings,
-      l_spec_id_mask,
+      p_spec_id_mask,
       p_effective_date_start,
       p_effective_date_end,
       p_time_zone,
       p_office_id_mask);
+   l_spec_id_mask := cwms_util.normalize_wildcards(p_spec_id_mask);
       
    for i in 1..l_ratings.count loop 
       if p_templates is not null or p_specs is not null then
@@ -2084,7 +2084,7 @@ begin
          if p_value_times.count != l_values_count then
             cwms_err.raise(
                'ERROR',
-               'Input times must have same length as input parameters');
+               'Input times ('||p_value_times.count||') must have same length as input parameters ('||l_values_count||')');
          end if;
       end if;
    end if;
