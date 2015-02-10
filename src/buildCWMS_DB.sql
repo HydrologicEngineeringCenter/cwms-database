@@ -126,7 +126,7 @@ prompt Remaining invalid objects...
 order by object_name, object_type asc;
 
 prompt Database errors...
-  select * from dba_errors order by 1,2,3,4
+  select * from dba_errors order by 1,2,3,4;
   
 declare
    obj_count integer;
