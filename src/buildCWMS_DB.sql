@@ -105,6 +105,8 @@ alter materialized view "&cwms_schema"."MV_SEC_TS_PRIVILEGES" compile
 /
 
 set echo off
+set linesize 132
+set pagesize 1000
 prompt Invalid objects...
   select substr(object_name, 1, 31) "INVALID OBJECT", object_type 
     from dba_objects 
@@ -123,6 +125,9 @@ prompt Remaining invalid objects...
      and status = 'INVALID'
 order by object_name, object_type asc;
 
+prompt Database errors...
+  select * from dba_errors order by 1,2,3,4
+  
 declare
    obj_count integer;
 begin
