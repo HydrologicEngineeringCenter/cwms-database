@@ -5138,8 +5138,8 @@ begin
                p_values(1)(rec1.pos+1) := cwms_util.convert_units(rec2.min_dep, l_db_unit_code, p_units(rec1.pos+1)); 
                p_values(2)(rec1.pos+1) := cwms_util.convert_units(rec2.max_dep, l_db_unit_code, p_units(rec1.pos+1)); 
             else
-               p_values(1)(rec1.pos+1) := rec2.min_ind; 
-               p_values(2)(rec1.pos+1) := rec2.max_ind; 
+               p_values(1)(rec1.pos+1) := rec2.min_dep; 
+               p_values(2)(rec1.pos+1) := rec2.max_dep; 
             end if;
          end if;                                         
       end loop;                         
