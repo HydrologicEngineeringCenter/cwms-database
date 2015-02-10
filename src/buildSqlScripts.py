@@ -4130,6 +4130,11 @@ abstractParams = [
 # Units #
 #-------#
 if __name__ in ("__main__", "main") : sys.stderr.write("Processing static unit definitions.\n")
+#
+# NOTE:
+# NOTE: ALWAYS add new units to the BOTTOM of this list!!!!
+# NOTE:
+#
 unitDefs = [
 #                                                       UNIT
 #    ABSTRACT PARAMETER                  UNIT ID        SYSTEM  NAME                             DESCRIPTION
@@ -4169,7 +4174,6 @@ unitDefs = [
     ["Irradiation",                      "langley",     "NULL", "Langley",                       "Radiant energy of 1 langley"                                       ],
     ["Length",                           "cm",          "SI",   "Centimeters",                   "Length of 1E-02 meter"                                             ],
     ["Length",                           "ft",          "EN",   "Feet",                          "Length of 1 foot"                                                  ],
-    ["Length",                           "ftUS",        "EN",   "Survey Feet",                   "Length of 1 US survey foot"                                        ],
     ["Length",                           "in",          "EN",   "Inches",                        "Length of 1 inch"                                                  ],
     ["Length",                           "km",          "SI",   "Kilometers",                    "Length of 1E+03 meters"                                            ],
     ["Length",                           "m",           "SI",   "Meters",                        "Length of 1 meter"                                                 ],
@@ -4225,6 +4229,7 @@ unitDefs = [
     ["Angle",                            "rev",         "NULL", "Revolution",                    "Angle of 360 degrees"                                              ],
     ["Electric Charge Rate",             "ampere",      "NULL", "Ampere",                        "Current of 6.241E+18 electrons (1 coulomb) per second"             ],
     ["Force",                            "N",           "SI",   "Newtons",                       "Force of 1 Newton"                                                 ],
+    ["Length",                           "ftUS",        "EN",   "Survey Feet",                   "Length of 1 US survey foot"                                        ],
 ]
 
 unitDefsById = {}
