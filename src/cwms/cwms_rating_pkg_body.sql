@@ -5040,16 +5040,7 @@ is
    l_rating_time_utc date;
    l_rating_code     number(10);
    l_effective_date  date;
-   l_view_name       varchar2(30)  := 'av_rating_values';
-   l_column_name     varchar2(30);
-   l_sql constant    varchar2(256) :=
-      'select min(column_name),
-              max(column_name)
-         into :min_value,
-              :max_value
-         from view_name
-        where rating_code = :rating_code';
-
+   l_db_unit_code    number(10);
 begin
    -----------
    -- setup --
@@ -5112,20 +5103,48 @@ begin
       p_values(i) := double_tab_t();
       p_values(i).extend(p_parameters.count);
    end loop;
-   if l_native_units then
-      l_view_name := l_view_name || '_native';
-   end if;
-   for i in 1..p_parameters.count loop
-      l_column_name := case i = p_parameters.count
-                          when true  then 'dep_value'
-                          when false then 'ind_value_'||i
-                       end;
-      execute immediate
-         replace(replace(l_sql, 'column_name', l_column_name), 'view_name', l_view_name)
-         into p_values(1)(i),
-              p_values(2)(i)
-         using l_rating_code;
-   end loop;
+   --------------------------      
+   -- get the extents info --
+   --------------------------      
+   for rec1 in (select rips.parameter_position as pos,
+                       rips.parameter_code,
+                       rip.rating_ind_param_code
+                  from at_rating_ind_parameter rip,
+                       at_rating_ind_param_spec rips
+                 where rip.rating_code = l_rating_code
+                   and rips.ind_param_spec_code = rip.ind_param_spec_code
+                 order by rips.parameter_position  
+               )
+   loop
+      for rec2 in (select min(ind_value) as min_ind,
+                          max(ind_value) as max_ind,
+                          min(dep_value) as min_dep,
+                          max(dep_value) as max_dep
+                    from at_rating_value
+                   where rating_ind_param_code = rec1.rating_ind_param_code
+                  )
+      loop -- use loop for convenience, will execute only once                                       
+         if l_native_units then
+            l_db_unit_code := cwms_util.get_db_unit_code(p_parameters(rec1.pos));
+            p_values(1)(rec1.pos) := cwms_util.convert_units(rec2.min_ind, l_db_unit_code, p_units(rec1.pos)); 
+            p_values(2)(rec1.pos) := cwms_util.convert_units(rec2.max_ind, l_db_unit_code, p_units(rec1.pos)); 
+         else
+            p_values(1)(rec1.pos) := rec2.min_ind; 
+            p_values(2)(rec1.pos) := rec2.max_ind; 
+         end if;
+         if rec2.min_dep is not null then
+            if l_native_units then
+               l_db_unit_code := cwms_util.get_db_unit_code(p_parameters(rec1.pos+1));
+               p_values(1)(rec1.pos+1) := cwms_util.convert_units(rec2.min_dep, l_db_unit_code, p_units(rec1.pos+1)); 
+               p_values(2)(rec1.pos+1) := cwms_util.convert_units(rec2.max_dep, l_db_unit_code, p_units(rec1.pos+1)); 
+            else
+               p_values(1)(rec1.pos+1) := rec2.min_ind; 
+               p_values(2)(rec1.pos+1) := rec2.max_ind; 
+            end if;
+         end if;                                         
+      end loop;                         
+   end loop;                 
+      
 end get_rating_extents;
 
 --------------------------------------------------------------------------------
