@@ -48,7 +48,6 @@ as
       l_template_version varchar2(32);
       l_rating_version   varchar2(32);
       l_parts            str_tab_t;
-      l_skipped          pls_integer;
       l_temp             rating_t;
       ------------------------------
       -- local function shortcuts --
@@ -140,18 +139,10 @@ as
       --------------------
       -- for each shift --
       --------------------
-      l_skipped := 0;
+      <<shifts>>
       for i in 1..9999999 loop
          l_shift := get_node(l_xml, '/usgs-stream-rating/height-shifts['||i||']');
          exit when l_shift is null;
-         ----------------------------------------------------
-         -- create a new rating_t object to hold the shift --
-         ----------------------------------------------------
-         if i = 1 then
-            self.shifts := rating_tab_t();
-         end if;
-         self.shifts.extend;
-         l_temp := treat(self.shifts(i-l_skipped) as rating_t);
          l_temp := rating_t(
             l_location_id
             ||cwms_rating.separator1||l_ind_param
@@ -159,11 +150,11 @@ as
             ||cwms_rating.separator1||l_template_version
             ||cwms_rating.separator1||l_rating_version,     -- rating_spec_id
             null,                                           -- native_units
-            null,                        -- effective_date
-            null,                        -- active_flag
-            null,                        -- formula
+            null,                                           -- effective_date
+            null,                                           -- active_flag
+            null,                                           -- formula
             null,                                           -- rating_info
-            null,                        -- description
+            null,                                           -- description
             self.office_id);                                -- office_id
          l_temp.create_date := null;
          ----------------------------------
@@ -210,6 +201,7 @@ as
          --------------------------
          -- for each shift point --
          --------------------------
+         <<points>>
          for j in 1..9999999 loop
             l_point := get_node(l_shift, '/height-shifts/point['||j||']');
             exit when l_point is null;
@@ -227,7 +219,7 @@ as
             l_temp.rating_info.rating_values(j).ind_value := get_number(l_point, '/point/ind');
             l_temp.rating_info.rating_values(j).dep_value := get_number(l_point, '/point/dep');
             l_temp.rating_info.rating_values(j).note_id   := get_text(l_point, '/point/note');
-         end loop;
+         end loop points;
          if l_temp.rating_info is not null then
             l_temp.rating_info.constructed := 'T';
             begin
@@ -238,16 +230,15 @@ as
                      'stream_rating_t.store',
                      cwms_msg.msg_level_normal,
                      'Rating shift '||i||' skipped due to '||sqlerrm);
-                  l_skipped := l_skipped + 1;
-                  self.shifts.trim;
+                  continue shifts;
             end;
          end if;
-         if i = 1 then
+         if self.shifts is null then
             self.shifts := rating_tab_t();
          end if;
          self.shifts.extend;
-         self.shifts(i-l_skipped) := l_temp;
-      end loop;
+         self.shifts(self.shifts.count) := l_temp;
+      end loop shifts;
       l_offsets := get_node(l_xml, '/usgs-stream-rating/height-offsets');
       if l_offsets is not null then
          ------------------------------------------------------
@@ -695,7 +686,40 @@ as
       l_parts             := cwms_util.split_text(l_parts(2), cwms_rating.separator2);
       l_ind_param         := cwms_util.get_base_id(l_parts(1));
       l_rating_spec       := rating_spec_t(self.rating_spec_id, self.office_id);
+      --------------------------------------------------------------------
+      -- store the base rating, returning the rating code for reference --
+      --------------------------------------------------------------------
       (self as rating_t).store(l_ref_rating_code, p_fail_if_exists);
+      ------------------------------------------------------------------------
+      -- delete any existing shift or offset data before storing new values --
+      ------------------------------------------------------------------------
+      for rec1 in (select rating_code 
+                     from at_rating 
+                    where ref_rating_code = l_ref_rating_code
+                  ) 
+      loop
+         for rec2 in (select rating_ind_param_code 
+                        from at_rating_ind_parameter 
+                       where rating_code = rec1.rating_code
+                     )
+         loop
+            delete 
+              from at_rating_value 
+             where rating_ind_param_code = rec2.rating_ind_param_code;
+            delete 
+              from at_rating_extension_value 
+             where rating_ind_param_code = rec2.rating_ind_param_code;
+            delete
+              from at_rating_ind_parameter
+             where rating_ind_param_code = rec2.rating_ind_param_code;
+         end loop;
+         delete 
+           from at_rating 
+          where rating_code = rec1.rating_code;
+      end loop;
+      ----------------------
+      -- store the shifts --
+      ----------------------
       if self.shifts is not null then
         l_template := rating_template_t(
             self.office_id,
@@ -736,6 +760,9 @@ as
              where rating_code = l_rating_code;
          end loop;
       end if;
+      -----------------------
+      -- store the offsets --
+      -----------------------
       if self.offsets is not null then
          l_template := rating_template_t(
             self.office_id,
