@@ -72,7 +72,6 @@ alter session set current_schema = &cwms_schema;
 --  Load data into cwms tables...
 --
 @@data/cwms_shef_pe_codes
-@@data/cwms_schema_object_version
 
 
 --
