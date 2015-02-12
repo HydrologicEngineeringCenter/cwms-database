@@ -256,8 +256,6 @@ prompt Starting jobs...
 begin
    cwms_msg.start_trim_log_job;
    cwms_msg.start_purge_queues_job;
-   cwms_schema.cleanup_schema_version_table;
-   cwms_schema.start_check_schema_job;
    cwms_ts.start_trim_ts_deleted_job;
    cwms_sec.start_refresh_mv_sec_privs_job;
    cwms_shef.start_update_shef_spec_map_job;

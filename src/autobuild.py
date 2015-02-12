@@ -7,8 +7,6 @@ import glob, gzip, os, sys, tarfile
 #-----------------------------------------------------#
 manual_sqlfilename = "buildCWMS_DB.sql"
 auto_sqlfilename   = "autobuild.sql"
-schema_tarfilename = 'cwms_schema.tar'
-schema_zipfilename = schema_tarfilename + '.gz'
 
 defines_sqlfilename = "cwms/defines.sql"
 
@@ -84,23 +82,6 @@ f = open(defines_sqlfilename, "w")
 f.write(defines_block)
 f.close()
 
-#--------------------------------------------------#
-# extract the current cwms_schema info for loading #
-#--------------------------------------------------#
-extfilenames = []
-if os.path.exists(schema_zipfilename) :
-	print("Uncompressing %s..." % schema_zipfilename)
-	z = gzip.open(schema_zipfilename, 'rb')
-	t = open(schema_tarfilename, 'wb')
-	t.write(z.read())
-	t.close()
-	z.close()
-	print("Extracting %s..." % schema_tarfilename)
-	t = tarfile.TarFile(schema_tarfilename, 'r')
-	extfilenames = t.getnames()
-	t.extractall()
-	t.close()
-
 #---------------------------------------------#
 # execute the automatic version of the script #
 #---------------------------------------------#
@@ -146,13 +127,6 @@ for loaderFilename in glob.glob('*.ctl') + glob.glob('data/*.ctl') :
 	#-------------------------------#
 	# fixup pathnames for clob data #
 	#-------------------------------#
-	if os.sep != '\\' and os.path.basename(loaderFilename).lower() == 'ddl_clobs.ctl' :
-		f = open(loaderFilename)
-		data = f.read().replace('\\', os.sep).replace('\r','')
-		f.close()
-		f = open(loaderFilename, 'w')
-		f.write(data)
-		f.close()
 	loaderCmd = loaderCmdTemplate % (cwms_schema, cwms_passwd, inst, loaderFilename)
 	print("...%s" % loaderFilename)
 	ec = os.system(loaderCmd)
@@ -339,7 +313,7 @@ if ec :
 #---------#
 # cleanup #
 #---------#
-for filename in extfilenames + [schema_tarfilename, vertconScriptFileName, vertconControlFileName] :
+for filename in (vertconScriptFileName, vertconControlFileName) :
 	if os.path.exists(filename) :
 	   try    : os.remove(filename)
 	   except : pass

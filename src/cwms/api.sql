@@ -104,9 +104,6 @@
 @@cwms_turbine_pkg
 @@cwms_turbine_pkg_body
 
-@@cwms_schema_pkg
-@@cwms_schema_pkg_body
-
 @@cwms_alarm_pkg
 @@cwms_alarm_pkg_body
 

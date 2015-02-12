@@ -128,7 +128,6 @@ tableInfo = [
     {"ID" : "gageType",           "TABLE" : "CWMS_GAGE_TYPE",             "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "nation",             "TABLE" : "CWMS_NATION",                "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "streamType",         "TABLE" : "CWMS_STREAM_TYPE",           "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "schemaObjVersion",   "TABLE" : "CWMS_SCHEMA_OBJECT_VERSION", "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "vertconHeader",      "TABLE" : "CWMS_VERTCON_HEADER",        "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "vertconData",        "TABLE" : "CWMS_VERTCON_DATA",          "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "verticalDatum",      "TABLE" : "CWMS_VERTICAL_DATUM",        "SCHEMA" : "CWMS", "USERACCESS" : True},
@@ -11323,26 +11322,6 @@ def main() :
     for v1, v2, v3, v4, v5, v6, v7 in streamTypes :
         streamTypeLoadTemplate += "INSERT INTO @TABLE VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s');\n" % (v1, v2, v3, v4, v5, v6, v7)
     streamTypeLoadTemplate += "COMMIT;\n"
-    
-    sys.stderr.write("Building schemaObjVersionCreationTemplate\n")
-    schemaObjVersionCreationTemplate = \
-    '''
-    CREATE TABLE @TABLE (
-       HASH_CODE      VARCHAR2(40) NOT NULL,
-       OBJECT_TYPE    VARCHAR2(30) NOT NULL,
-       OBJECT_NAME    VARCHAR2(30) NOT NULL,
-       SCHEMA_VERSION VARCHAR2(64) NOT NULL,
-       COMMENTS       VARCHAR2(256),
-       CONSTRAINT CWMS_SCHEMA_VERSION_PK PRIMARY KEY (HASH_CODE, OBJECT_TYPE, OBJECT_NAME, SCHEMA_VERSION)
-    )
-    TABLESPACE @DATASPACE
-    /
-    CREATE INDEX @TABLE_IDX ON @TABLE (SCHEMA_VERSION)
-    TABLESPACE @DATASPACE
-    /
-    
-    COMMIT;
-    '''
     
     sys.stderr.write("Building vertconHeaderCreationTemplate\n")
     vertconHeaderCreationTemplate = \
