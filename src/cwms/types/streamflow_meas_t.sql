@@ -24,6 +24,10 @@ create type streamflow_meas_t
  * @member time_zone      The time zone of the date_time field    
  * @member height_unit    The unit of the gage_height, shift_used, and delta_height fields
  * @member flow_unit      The unit of the flow field
+ * @member temp_unit      The unit of the temperature fields
+ * @member air_temp       The air temperature at the location when the measurement was performed
+ * @member water_temp     The water temperature at the location when the measurement was performed
+ * @member wm_comments    Comments about the rating by water management personnel
  */
 as object (
    location       location_ref_t,
@@ -41,11 +45,15 @@ as object (
    delta_height   binary_double,
    delta_time     binary_double,
    ctrl_cond_id   varchar2(4),
-   flow_adj_id    varchar2(4),
+   flow_adj_id    varchar2(4),       
    remarks        varchar2(256),
    time_zone      varchar2(28),
    height_unit    varchar2(16),
    flow_unit      varchar2(16),
+   temp_unit      varchar2(16),
+   air_temp       binary_double,
+   water_temp     binary_double,
+   wm_comments    varchar2(256),       
    
    /**
     * Constructs a streamflow_meas_t object from one record of a rdb-formated measurement from USGS NWIS
@@ -62,7 +70,7 @@ as object (
     *
     * @param p_xml The XML document. The format required is like:
     * <pre><big>
-    * &lt;stream-flow-measurement office-id="SWT" height-unit="ft" flow-unit="cfs" used="true"&gt;
+    * &lt;stream-flow-measurement office-id="SWT" height-unit="ft" flow-unit="cfs" temp_unit="F" used="true"&gt;
     *   &lt;location&gt;TULA&lt;/location&gt;
     *   &lt;number&gt;1737&lt;/number&gt;
     *   &lt;date&gt;2014-01-14T17:08:30Z&lt;/date&gt;
@@ -78,7 +86,10 @@ as object (
     *   &lt;delta-time&gt;1.07&lt;/delta-time&gt;
     *   &lt;control-condition&gt;CLER&lt;/control-condition&gt;
     *   &lt;flow-adjustment&gt;MEAS&lt;/flow-adjustment&gt;
-    *   &lt;remarks/&gt;
+    *   &lt;remarks/&gt; 
+    *   &lt;air-temp unit="F"/&gt; 
+    *   &lt;water-temp unit="F"/&gt; 
+    *   &lt;wm-comments/&gt; 
     * &lt;/stream-flow-measurement&gt;
     * </big></pre>
     */

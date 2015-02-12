@@ -6134,6 +6134,9 @@ create table at_streamflow_meas (
    ctrl_cond_id   varchar2(4),
    flow_adj_id    varchar2(4),
    remarks        varchar2(256),
+   air_temp       binary_double,
+   water_temp     binary_double,
+   wm_comments    varchar2(256),       
    constraint     at_streamflow_meas_pk  primary key(location_code, meas_number) using index,
    constraint     at_streamflow_meas_fk1 foreign key(location_code) references at_physical_location(location_code),
    constraint     at_streamflow_meas_fk2 foreign key(agency_id) references cwms_usgs_agency(agcy_id),
@@ -6161,7 +6164,10 @@ comment on column at_streamflow_meas.delta_height   is 'The amount the gage heig
 comment on column at_streamflow_meas.delta_time     is 'The amount of time elapsed while the measurement was being made (hours)';
 comment on column at_streamflow_meas.ctrl_cond_id   is 'The condition of the rating control at the time of the measurement';
 comment on column at_streamflow_meas.flow_adj_id    is 'The adjustment code for the measured discharge';
-comment on column at_streamflow_meas.remarks        is 'Any remarks about the rating';
+comment on column at_streamflow_meas.remarks        is 'Any remarks about the rating by the person(s) performing the measurement';
+comment on column at_streamflow_meas.air_temp       is '(Not on USGS site) The air temperature at the location when the measurement was performed';
+comment on column at_streamflow_meas.water_temp     is '(Not on USGS site) The water temperature at the location when the measurement was performed';
+comment on column at_streamflow_meas.wm_comments    is '(Not on USGS site) Comments about the rating by water management personnel';
 
 
 -- HOST pwd
