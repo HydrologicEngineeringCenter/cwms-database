@@ -6129,7 +6129,7 @@ commit;
 
 create table at_streamflow_meas (
    location_code  number(10),
-   meas_number    integer,
+   meas_number    varchar2(8),
    date_time      date,
    used           varchar2(1),
    party          varchar2(12),

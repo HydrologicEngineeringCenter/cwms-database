@@ -42,7 +42,7 @@ auto_ts_interval_prop constant varchar2(28) := 'timeseries_retrieve_interval';
  */
 auto_ts_filter_prop constant varchar2(27) := 'timeseries_locations_filter';
 /**
- * CWMS Properties ID for specifying lookback period when retrieving instantaneous value time series from USGS NWIS. Property value is in ISO 8601 duration format. If property is not set, default period is PT4H (4 hours).
+ * CWMS Properties ID for specifying lookback period when retrieving instantaneous value time series from USGS NWIS. Property value is in minutes. If property is not set, default period is 240 (4 hours).
  * May be managed using CWMS_PROPERTIES package or by routines in this package.
  *
  * @see package cwms_properties
@@ -55,7 +55,25 @@ auto_ts_period_prop constant varchar2(26) := 'timeseries_retrieve_period';
  */
 stream_meas_url     constant varchar2(113) := 'http://waterdata.usgs.gov/nwis/measurements?format=rdb&begin_date=<start>&end_date=<end>&multiple_site_no=<sites>';
 /**
- * CWMS Properties ID for text filter for determining locations for which to retrieve instantaneous value time series data from USGS NWIS. No time series are retrieved if property is not set. Property category is 'USGS'.
+ * CWMS Properties ID for specifying run interval in minutes for automatic streamflow measurements retrieval job. Job doesn't run if property is not set. Property category is 'USGS'. Property value is integer.
+ * May be managed using CWMS_PROPERTIES package or by routines in this package.
+ *
+ * @see package cwms_properties
+ * @see set_auto_stream_meas_interval
+ * @see get_auto_stream_meas_interval
+ */
+auto_stream_meas_interval_prop constant varchar2(33) := 'streamflow_meas_retrieve_interval';
+/**
+ * CWMS Properties ID for specifying lookback period when retrieving streamflow measurements from USGS NWIS. Property value is in minutes. If property is not set, default period is 10080 (7 days).
+ * May be managed using CWMS_PROPERTIES package or by routines in this package.
+ *
+ * @see package cwms_properties
+ * @see set_auto_stream_meas_period
+ * @see get_auto_stream_meas_period
+ */
+auto_stream_meas_period_prop constant varchar2(31) := 'streamflow_meas_retrieve_period';
+/**
+ * CWMS Properties ID for text filter for determining locations for which to retrieve streamflow measurements data from USGS NWIS. No time series are retrieved if property is not set. Property category is 'USGS'.
  * May be managed using CWMS_PROPERTIES package or by routines in this package.
  *
  * @see package cwms_properties
@@ -461,9 +479,53 @@ procedure start_auto_ts_job(
 procedure stop_auto_ts_job(
    p_office_id in varchar2 default null);
 /**
- * Sets the text filter used to determine locations for which to retrieve stream flow measurement data from USGS NWIS.
+ * Sets the lookback period to use for retrieving instantaneous value time series data from USGS NWIS.
  *
- * @param p_text_filter_id The text filter to use to determine locations for which to retrieve stream flow measurement data. 
+ * @param p_period     The period in minutes to use for retrieving time series data from USGS NWIS 
+ * @param p_office_id  The office to set the period for. If NULL or not specified, the session user's default office is used.
+ *                                        
+ * @see constant auto_ts_period_prop
+ */
+procedure set_auto_stream_meas_period(
+   p_period    in integer,
+   p_office_id in varchar2 default null);
+/**
+ * Retrieves the lookback period in minutes to use for retrieving streamflow measurements data from USGS NWIS.
+ *
+ * @param p_office_id  The office to get the period for. If NULL or not specified, the session user's default office is used.
+ * @return             The period in minutes to use for retrieving time series data from USGS NWIS 
+ *                                        
+ * @see constant auto_stream_meas_period_prop
+ */
+function get_auto_stream_meas_period(
+   p_office_id in varchar2 default null)
+   return integer;
+/**
+ * Sets the run interval for automatically retrieving streamflow measurements data from USGS NWIS.
+ *
+ * @param p_interval   The run interval in minutes for automaticcally retrieving time series data from USGS NWIS. 
+ * @param p_office_id  The office to set the period for. If NULL or not specified, the session user's default office is used.
+ *                                        
+ * @see constant auto_stream_meas_interval_prop
+ */
+procedure set_auto_stream_meas_interval(
+   p_interval  in integer,
+   p_office_id in varchar2 default null);
+/**
+ * Retrieves the run interval for automatically retrieving streamflow measurements data from USGS NWIS.
+ *
+ * @param p_office_id  The office to set the period for. If NULL or not specified, the session user's default office is used.
+ * @return             The run interval in minutes for automatically retrieving time series data from USGS NWIS. 
+ *                                        
+ * @see constant auto_stream_meas_interval_prop
+ */
+function get_auto_stream_meas_interval(
+   p_office_id in varchar2 default null)
+   return integer;
+/**
+ * Sets the text filter used to determine locations for which to retrieve streamflow measurement data from USGS NWIS.
+ *
+ * @param p_text_filter_id The text filter to use to determine locations for which to retrieve streamflow measurement data. 
  * @param p_office_id      The office to set the text filter for. If NULL or not specified, the session user's default office is used.
  *
  * @see constant auto_ts_filter_prop
@@ -472,10 +534,10 @@ procedure set_auto_stream_meas_filter_id(
    p_text_filter_id in varchar2,
    p_office_id      in varchar2 default null);
 /**
- * Retrieves the text filter used to determine locations for which to retrieve stream flow measurement data from USGS NWIS.
+ * Retrieves the text filter used to determine locations for which to retrieve streamflow measurement data from USGS NWIS.
  *
  * @param p_office_id The office that owns the text filter. If NULL or not specified, the session user's default office is used.
- * @return The text filter to use to determine locations for which to retrieve stream flow measurement data. 
+ * @return The text filter to use to determine locations for which to retrieve streamflow measurement data. 
  *
  * @see constant auto_stream_meas_filter_prop
  */
@@ -483,7 +545,7 @@ function get_auto_stream_meas_filter_id(
    p_office_id in varchar2 default null)
    return varchar2;
 /**
- * Retrieves the list of locations whose stream flow measurements will be retrieved from the USGS NWIS.
+ * Retrieves the list of locations whose streamflow measurements will be retrieved from the USGS NWIS.
  *
  * @param p_office_id The office to retrieve locations for. If NULL or not spcecified, the session user's default office is used.
  *
@@ -493,7 +555,14 @@ function get_auto_stream_meas_locations(
    p_office_id in varchar2 default null)
    return str_tab_t;   
 /**
- * Retrieve stream flow measurement data from USGS NWIS based on a lookback period and store in CWMS
+ * Retrieve streamflow measurement data from USGS NWIS based on a lookback period and store in CWMS
+ *
+ * @param p_office_id  The office to retrieve the data for. If NULL or not specified, the session user's default office is used
+ */
+procedure retrieve_and_store_stream_meas(      
+   p_office_id  in varchar2 default null);
+/**
+ * Retrieve streamflow measurement data from USGS NWIS based on a lookback period and store in CWMS
  *
  * @param p_period     The lookback period to retrieve data for. If NULL, the value returned by get_auto_stream_meas_period for the specified or default office is used. 
  * @param p_sites      A comma-separated list of USGS site names (station numbers) to retrieve the data for. If NULL, the same list of sites as returned from get_auto_stream_meas_locations (without the input parameter) for the specified or default office is used. 
@@ -504,7 +573,7 @@ procedure retrieve_and_store_stream_meas(
    p_sites      in varchar2,
    p_office_id  in varchar2 default null);
 /**
- * Retrieve stream flow measurement data from USGS NWIS based on based on start and end times and store in CWMS
+ * Retrieve streamflow measurement data from USGS NWIS based on based on start and end times and store in CWMS
  *
  * @param p_start_time The beginning of the time window specified in ISO 8601 date/time format
  * @param p_end_time   The end of the time window specified in ISO 8601 date/time format  
@@ -516,6 +585,23 @@ procedure retrieve_and_store_stream_meas(
    p_end_time   in varchar2,
    p_sites      in varchar2,
    p_office_id  in varchar2 default null);
+/**
+ * Schedules (or re-schedules) the job to automatically retrieve streamflow measurement data.
+ * The scheduled job name is USGS_AUTO_MEAS_XXX, where XXX is the office identifier the job is running for
+ *
+ * @param p_office_id  The office to start the job for.  If NULL or not specified, the session user's default office is used.
+ *
+ */
+procedure start_auto_stream_meas_job(
+   p_office_id in varchar2 default null);
+/**
+ * Unschedules the job to automatically retrieve streamflow measurement data.
+ *
+ * @param p_office_id  The office to stop the job for.  If NULL or not specified, the session user's default office is used.
+ *
+ */
+procedure stop_auto_stream_meas_job(
+   p_office_id in varchar2 default null);
 
 end cwms_usgs;
 /

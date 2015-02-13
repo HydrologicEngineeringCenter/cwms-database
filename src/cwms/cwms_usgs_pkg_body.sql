@@ -1,4 +1,5 @@
 set define on
+@@defines.sql
 create or replace package body cwms_usgs
 as
 
@@ -35,7 +36,7 @@ function get_auto_ts_period(
 is
    l_office_id varchar2(16) := cwms_util.get_db_office_id(p_office_id);
 begin
-   return to_number(cwms_properties.get_property('USGS', cwms_usgs.auto_ts_period_prop, '0', l_office_id));
+   return to_number(cwms_properties.get_property('USGS', cwms_usgs.auto_ts_period_prop, '240', l_office_id));
 end get_auto_ts_period;   
 
 procedure set_auto_ts_interval(
@@ -1155,6 +1156,42 @@ begin
    return cwms_properties.get_property('USGS', cwms_usgs.auto_stream_meas_filter_prop, null, l_office_id);
 end get_auto_stream_meas_filter_id;
 
+procedure set_auto_stream_meas_period(
+   p_period    in integer,
+   p_office_id in varchar2 default null)
+is
+   l_office_id varchar2(16) := cwms_util.get_db_office_id(p_office_id);
+begin
+   cwms_properties.set_property('USGS', cwms_usgs.auto_stream_meas_period_prop, to_char(p_period), 'lookback period in minutes for retrieving streamflow measurements data', l_office_id);
+end set_auto_stream_meas_period;
+  
+function get_auto_stream_meas_period(
+   p_office_id in varchar2 default null)
+   return integer
+is
+   l_office_id varchar2(16) := cwms_util.get_db_office_id(p_office_id);
+begin
+   return to_number(cwms_properties.get_property('USGS', cwms_usgs.auto_stream_meas_period_prop, '10080', l_office_id));
+end get_auto_stream_meas_period;   
+
+procedure set_auto_stream_meas_interval(
+   p_interval  in integer,
+   p_office_id in varchar2 default null)
+is
+   l_office_id varchar2(16) := cwms_util.get_db_office_id(p_office_id);
+begin
+   cwms_properties.set_property('USGS', cwms_usgs.auto_stream_meas_interval_prop, to_char(p_interval), 'interval in minutes for running automatic streamflow measurements data retrieval', l_office_id);
+end set_auto_stream_meas_interval;
+   
+function get_auto_stream_meas_interval(
+   p_office_id in varchar2 default null)
+   return integer
+is
+   l_office_id varchar2(16) := cwms_util.get_db_office_id(p_office_id);
+begin
+   return to_number(cwms_properties.get_property('USGS', cwms_usgs.auto_stream_meas_interval_prop, '0', l_office_id));
+end get_auto_stream_meas_interval;   
+
 function get_auto_stream_meas_locations(
    p_office_id in varchar2 default null)
    return str_tab_t
@@ -1195,6 +1232,13 @@ begin
 end get_auto_stream_meas_locations;   
 
 procedure retrieve_and_store_stream_meas(      
+   p_office_id  in varchar2 default null)
+is
+begin
+   retrieve_and_store_stream_meas(p_period=>null, p_sites=>null, p_office_id=>p_office_id);
+end retrieve_and_store_stream_meas;   
+
+procedure retrieve_and_store_stream_meas(      
    p_period     in varchar2,
    p_sites      in varchar2,
    p_office_id  in varchar2 default null)
@@ -1205,7 +1249,21 @@ is
    l_ym_interval yminterval_unconstrained;
    l_ds_interval dsinterval_unconstrained;
 begin
-   l_period := nvl(p_period, 'P200Y');
+   if p_period is null then
+      if p_sites is null then                                                   
+         ---------------
+         -- all sites --
+         ---------------
+         l_period := cwms_util.minutes_to_duration(get_auto_stream_meas_period);
+      else
+         ---------------------                   
+         -- specified sites --
+         ---------------------                   
+         l_period := 'P200Y';
+      end if;
+   else
+      l_period := p_period;
+   end if;
    cwms_util.duration_to_interval(l_ym_interval, l_ds_interval, l_period);
    l_end_time   := sysdate;
    l_start_time := cast((cast(l_end_time as timestamp) - l_ym_interval - l_ds_interval) as date); 
@@ -1245,6 +1303,10 @@ begin
  
    
    l_office_id := cwms_util.get_db_office_id(p_office_id);
+   cwms_msg.log_db_message(
+      'cwms_usgs.retrieve_and_store_stream_meas', 
+      cwms_msg.msg_level_normal, 
+      'CWMS_USGS.RETRIEVE_AND_STORE_STREAM_MEAS starting for '||l_office_id); 
    if p_sites is null then
       l_sites_tab := get_auto_stream_meas_locations(l_office_id);
    else
@@ -1328,7 +1390,16 @@ begin
          then
             continue;
          end if;
-         l_meas := streamflow_meas_t(l_lines(i), l_office_id);
+         begin
+            l_meas := streamflow_meas_t(l_lines(i), l_office_id);
+         exception
+            when others then  
+               cwms_msg.log_db_message(
+                  'cwms_usgs.retrieve_and_store_stream_meas',    
+                  cwms_msg.msg_level_normal,
+                  l_office_id||': cannot process: '||sqlerrm||chr(10)||l_lines(i));
+               continue;
+         end;
          if l_meas is null or l_meas.location is null then 
             continue;
          end if;
@@ -1340,9 +1411,167 @@ begin
          cwms_msg.msg_level_detailed, 
          l_count||' measurements stored');
    end if;   
-   
+   cwms_msg.log_db_message(
+      'cwms_usgs.retrieve_and_store_stream_meas', 
+      cwms_msg.msg_level_normal, 
+      'CWMS_USGS.RETRIEVE_AND_STORE_STREAM_MEAS stopping for '||l_office_id); 
 end retrieve_and_store_stream_meas;    
 
+procedure start_auto_stream_meas_job(
+   p_office_id in varchar2 default null)
+is
+   l_count           binary_integer;
+   l_office_id       varchar2(16) := cwms_util.get_db_office_id(p_office_id);
+   l_user_office_id  varchar2(16) := cwms_util.user_office_id;
+   l_job_id          varchar2(30);
+   l_run_interval    integer;
+   l_comment         varchar2(256);
+
+   function job_count
+      return binary_integer
+   is
+   begin
+      select count (*)
+        into l_count
+        from sys.dba_scheduler_jobs
+       where job_name = l_job_id;
+
+      return l_count;
+   end;
+begin
+   l_job_id := 'USGS_AUTO_MEAS_'||l_office_id;
+   --------------------------------------
+   -- make sure we're the correct user --
+   --------------------------------------
+   if l_user_office_id != l_office_id and cwms_util.get_user_id != '&cwms_schema' then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot start job '||l_job_id||' when default office is '||l_user_office_id);
+   end if;
+             
+   l_run_interval := get_auto_stream_meas_interval(l_office_id);
+   if l_run_interval is null then
+      cwms_err.raise(
+         'ERROR',
+         'No run interval defined for job in property '||auto_stream_meas_interval_prop);
+   elsif l_run_interval < 15 then
+      cwms_err.raise(
+         'ERROR',
+         'Run interval of '
+         ||l_run_interval
+         ||' defined for job in property '
+         ||auto_stream_meas_interval_prop
+         ||' is less than 15 minutes');
+   end if;
+   -------------------------------------------
+   -- drop the job if it is already running --
+   -------------------------------------------
+   if job_count > 0 then
+      dbms_output.put ('Dropping existing job ' || l_job_id || '...');
+      dbms_scheduler.drop_job (l_job_id);
+
+      --------------------------------
+      -- verify that it was dropped --
+      --------------------------------
+      if job_count = 0 then
+         dbms_output.put_line ('done.');
+      else
+         dbms_output.put_line ('failed.');
+      end if;
+   end if;
+
+   if job_count = 0
+   then
+      begin
+         ---------------------
+         -- restart the job --
+         ---------------------
+         dbms_scheduler.create_job(
+            job_name             => l_job_id,
+            job_type             => 'stored_procedure',
+            job_action           => 'cwms_usgs.retrieve_and_store_stream_meas',   
+            number_of_arguments  => 1,
+            start_date           => null,
+            repeat_interval      => 'freq=minutely; interval=' || l_run_interval,
+            end_date             => null,
+            job_class            => 'default_job_class',
+            enabled              => false,
+            auto_drop            => false,
+            comments             => 'Retrieves streamflow measurements data from USGS');
+            
+         dbms_scheduler.set_job_argument_value(
+            job_name          => l_job_id, 
+            argument_position => 1, 
+            argument_value    => l_office_id);
+            
+         dbms_scheduler.enable(l_job_id);
+         if job_count = 1 then
+            dbms_output.put_line(
+               'Job '
+               ||l_job_id
+               ||' successfully scheduled to execute every '
+               ||l_run_interval
+               ||' minutes.');
+         else
+            cwms_err.raise ('ITEM_NOT_CREATED', 'job', l_job_id);
+         end if;
+      exception
+         when others then
+            cwms_err.raise (
+               'ITEM_NOT_CREATED',
+               'job',l_job_id || ':' || sqlerrm);
+      end;
+   end if;
+end start_auto_stream_meas_job;
+
+procedure stop_auto_stream_meas_job(
+   p_office_id in varchar2 default null)
+is
+   l_count           binary_integer;
+   l_office_id       varchar2(16) := cwms_util.get_db_office_id(p_office_id);
+   l_user_office_id  varchar2(16) := cwms_util.user_office_id;
+   l_job_id          varchar2(30);
+
+   function job_count
+      return binary_integer
+   is
+   begin
+      select count (*)
+        into l_count
+        from sys.dba_scheduler_jobs
+       where job_name = l_job_id;
+
+      return l_count;
+   end;
+begin
+   l_job_id := 'USGS_AUTO_MEAS_'||l_office_id;
+   --------------------------------------
+   -- make sure we're the correct user --
+   --------------------------------------
+   if l_user_office_id != l_office_id and cwms_util.get_user_id != '&cwms_schema' then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot stop job '||l_job_id||' when default office is '||l_user_office_id);
+   end if;
+
+   ------------------
+   -- drop the job --
+   ------------------
+   if job_count > 0 then
+      dbms_output.put ('Dropping existing job ' || l_job_id || '...');
+      dbms_scheduler.drop_job (job_name=>l_job_id, force=>true);
+
+      --------------------------------
+      -- verify that it was dropped --
+      --------------------------------
+      if job_count = 0 then
+         dbms_output.put_line ('done.');
+      else
+         dbms_output.put_line ('failed.');
+      end if;
+   end if;
+   
+end stop_auto_stream_meas_job;
 
 end cwms_usgs;
 /

@@ -43,7 +43,7 @@ as
          end if;
          l_office_id         := cwms_util.get_db_office_id(p_office_id);
          self.location       := location_ref_t(cwms_loc.get_location_id(l_parts(c_site_no), l_office_id), l_office_id); 
-         self.meas_number    := to_number(l_parts(c_measurement_nu));
+         self.meas_number    := l_parts(c_measurement_nu);
          if length(l_parts(c_measurement_dt)) = 10 then
             -- date only 
             self.date_time   := to_date(l_parts(c_measurement_dt), 'yyyy-mm-dd');
@@ -102,7 +102,7 @@ as
       self.used           := case get_text('/*/@used', true) when 'true' then 'T' else 'F' end;
       self.height_unit    := get_text('/*/@height-unit', self.used='T');       
       self.flow_unit      := get_text('/*/@flow-unit', self.used='T');
-      self.meas_number    := to_number(get_text('/*/number', true));  
+      self.meas_number    := get_text('/*/number', true);  
       self.date_time      := cast(cwms_util.to_timestamp(get_text('/*/date', true)) as date);
       self.agency_id      := get_text('/*/agency');     
       self.party          := get_text('/*/party');
@@ -147,7 +147,7 @@ as
       
    constructor function streamflow_meas_t (
       p_location    in location_ref_t,
-      p_meas_number in integer,
+      p_meas_number in varchar2,
       p_unit_system in varchar2 default 'EN')
       return self as result
    is
@@ -196,8 +196,8 @@ as
       self.ctrl_cond_id    := l_rec.ctrl_cond_id;
       self.flow_adj_id     := l_rec.flow_adj_id;
       self.remarks         := l_rec.remarks;
-      self.air_temp        := cwms_util.convert_units(l_rec.air_temp, 'C', self.flow_unit);
-      self.water_temp      := cwms_util.convert_units(l_rec.water_temp, 'C', self.flow_unit);
+      self.air_temp        := cwms_util.convert_units(l_rec.air_temp, 'C', self.temp_unit);
+      self.water_temp      := cwms_util.convert_units(l_rec.water_temp, 'C', self.temp_unit);
       self.wm_comments     := l_rec.wm_comments;
       return;       
    end streamflow_meas_t;      
@@ -276,9 +276,9 @@ as
       l_rec.ctrl_cond_id   := self.ctrl_cond_id;
       l_rec.flow_adj_id    := self.flow_adj_id;
       l_rec.remarks        := self.remarks; 
-      l_rec.air_temp       := cwms_util.convert_units(self.air_temp, self.temp_unit, 'C');
-      l_rec.water_temp     := cwms_util.convert_units(self.water_temp, self.temp_unit, 'C');
-      l_rec.wm_comments    := self.wm_comments;
+      l_rec.air_temp       := nvl(cwms_util.convert_units(self.air_temp, self.temp_unit, 'C'), l_rec.air_temp);
+      l_rec.water_temp     := nvl(cwms_util.convert_units(self.water_temp, self.temp_unit, 'C'), l_rec.water_temp);
+      l_rec.wm_comments    := nvl(self.wm_comments, l_rec.wm_comments);
       if l_exists then
          update at_streamflow_meas
             set row = l_rec
@@ -348,7 +348,7 @@ as
       l_text := l_text ||make_elem('water-temp',         cwms_rounding.round_dt_f(self.water_temp, '9999999999'));
       l_text := l_text ||make_elem('wm-comments',        self.wm_comments);
       l_text := l_text || '</stream-flow-measurement>';
-      Return L_Text;            
+      return l_text;            
    end to_string1;
 end;
 /

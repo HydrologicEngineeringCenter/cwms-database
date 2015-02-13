@@ -31,7 +31,7 @@ create type streamflow_meas_t
  */
 as object (
    location       location_ref_t,
-   meas_number    integer,
+   meas_number    varchar2(8),
    date_time      date,
    used           varchar2(1),
    party          varchar2(12),
@@ -119,7 +119,7 @@ as object (
     */
    constructor function streamflow_meas_t (
       p_location    in location_ref_t,
-      p_meas_number in integer,
+      p_meas_number in varchar2,
       p_unit_system in varchar2 default 'EN')
       return self as result,
    /**
