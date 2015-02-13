@@ -2623,10 +2623,14 @@ AS
       RESULT_CACHE
    IS
       l_factor_and_offset   double_tab_t;
+      l_converted           binary_double;
    BEGIN
-      l_factor_and_offset :=
-         get_factor_and_offset (p_from_unit_id, p_to_unit_id);
-      RETURN p_value * l_factor_and_offset (1) + l_factor_and_offset (2);
+      if p_value is not null then
+         l_factor_and_offset :=
+            get_factor_and_offset (p_from_unit_id, p_to_unit_id);
+         l_converted :=  p_value * l_factor_and_offset (1) + l_factor_and_offset (2);
+      end if;
+      RETURN l_converted;
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
