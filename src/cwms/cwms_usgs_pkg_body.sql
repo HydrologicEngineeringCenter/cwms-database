@@ -147,35 +147,79 @@ is
    l_locations         str_tab_t;
    l_filtered          str_tab_t;
    l_filter_must_exist varchar2(1) := 'T';
+   l_parameter         integer;
 begin
+   l_parameter      := nvl(p_parameter, -1);
    l_office_id      := cwms_util.get_db_office_id(p_office_id);
    l_office_code    := cwms_util.get_db_office_code(l_office_id);
    l_text_filter_id := get_auto_ts_filter_id(l_office_id);
-   if l_text_filter_id is not null then
-      if p_parameter is not null then
-         l_text_filter_id := l_text_filter_id||'.'||trim(to_char(p_parameter, '00009'));
-         l_filter_must_exist := 'F';
-      end if;
-      -----------------------------------
-      -- get the locations to retrieve --
-      -----------------------------------
-      l_filtered := filter_locations(l_text_filter_id, l_filter_must_exist, null, l_office_id);
-      --------------------------------------------
-      -- get the USGS aliases for the locations --
-      --------------------------------------------
-      select distinct
-             location_id
+   -----------------------------------------------
+   -- try to get locations from temporary table --
+   -----------------------------------------------
+   begin
+      select location_id
         bulk collect
         into l_locations
-        from av_loc2
-       where aliased_item = 'LOCATION'                              
-         and loc_alias_category = 'Agency Aliases'
-         and loc_alias_group = 'USGS Station Number'
-         and location_code in (select location_code
-                                 from av_loc2
-                                where location_id in (select * from table(l_filtered))
-                                  and db_office_id = l_office_id 
-                              );                                             
+        from at_usgs_param_locations
+       where time_entered > sysdate - 1 /24
+         and office_code = l_office_code
+         and usgs_parameter = l_parameter; 
+   exception                              
+      when no_data_found then null; 
+   end;
+   if l_locations.count = 0 then
+      --------------------------------------
+      -- no locations were found in table --
+      --------------------------------------
+      if l_text_filter_id is not null then
+         if p_parameter is not null then
+            l_text_filter_id := l_text_filter_id||'.'||trim(to_char(p_parameter, '00009'));
+            l_filter_must_exist := 'F';
+         end if;
+         -----------------------------------
+         -- get the locations to retrieve --
+         -----------------------------------
+         l_filtered := filter_locations(l_text_filter_id, l_filter_must_exist, null, l_office_id);
+         if l_filtered.count > 0 then
+            --------------------------------------------
+            -- get the USGS aliases for the locations --
+            --------------------------------------------
+            select distinct
+                   location_id
+              bulk collect
+              into l_locations
+              from av_loc2
+             where aliased_item = 'LOCATION'                              
+               and loc_alias_category = 'Agency Aliases'
+               and loc_alias_group = 'USGS Station Number'
+               and location_code in (select location_code
+                                       from av_loc2
+                                      where location_id in (select * from table(l_filtered))
+                                        and db_office_id = l_office_id 
+                                    );
+         end if;  
+         -----------------------------------------------------
+         -- store the locations for (near) future reference --
+         -----------------------------------------------------
+         if l_locations.count = 0 then
+            insert into at_usgs_param_locations
+            values (sysdate, l_office_code, l_parameter, '<none>');
+         else
+            forall i in indices of l_locations
+               insert into at_usgs_param_locations
+               values (sysdate, l_office_code, l_parameter, l_locations(i));
+         end if;                                              
+      end if;
+   else
+      -----------------------------------
+      -- locations were found in table --
+      -----------------------------------
+      if l_locations.count = 1 and l_locations(1) = '<none>' then
+         ------------------------------------------
+         -- ...but only the "no locations" token --
+         ------------------------------------------
+         l_locations.trim;
+      end if;
    end if;
    return l_locations;
 end get_auto_ts_locations;      
@@ -204,13 +248,15 @@ function get_parameters(
 is
    l_all_parameters number_tab_t;
    l_parameters     number_tab_t;
+   l_locations      str_tab_t;
    l_count          integer;
 begin
    l_all_parameters := get_parameters(p_office_id => p_office_id);
    for i in 1..l_all_parameters.count loop
+      l_locations := get_auto_ts_locations(l_all_parameters(i), p_office_id);
       select count(*)
         into l_count
-        from table(get_auto_ts_locations(l_all_parameters(i), p_office_id))
+        from table(l_locations)
        where column_value = p_usgs_id; 
       if l_count = 1 then
          if l_parameters is null then l_parameters := number_tab_t(); end if;
@@ -616,40 +662,33 @@ is
    l_date_time  timestamp with time zone;
    l_value      number;
    l_interval   integer;
-   l_interval2  integer;
+   l_interval2  integer; 
 begin
-   ---------------------------------------------------
-   -- store the data for inspection if error occurs --
-   ---------------------------------------------------
-   store_text(p_rdb_data, make_text_id(p_location_id), p_office_id);
    -----------------------------------------------
    -- skip the header and parse the column info --
    -----------------------------------------------
    l_all_params := get_parameters(p_location_id, p_office_id);
-   l_lines := cwms_util.split_text(p_rdb_data, chr(10));
-   <<header_loop>>
-   for i in 1..l_lines.count loop
-      if substr(l_lines(i), 1, 1) != '#' then
-         l_line_num := i;
-         l_cols := cwms_util.split_text(l_lines(i), chr(9));
-         l_col_count := l_cols.count;
-         for j in 1..l_col_count loop
-            case l_cols(j)
-               when 'agency_cd' then l_col_info('agency') := j;
-               when 'site_no'   then l_col_info('site')   := j;
-               when 'datetime'  then l_col_info('time')   := j;
-               when 'tz_cd'     then l_col_info('tz')     := j;
-               else
-                  l_value := to_number(regexp_substr(l_cols(j), '^\d{2}_(\d{5})$', 1, 1, null, 1));
-                  if l_value is not null and l_value member of l_all_params then
-                     l_col_info(to_char(l_value)) := j;
-                     l_params.extend;
-                     l_params(l_params.count) := l_value;
-                  end if;
-            end case;
-         end loop;
-         exit header_loop;
-      end if;
+   select column_value
+     bulk collect
+     into l_lines
+     from table(cwms_util.split_text(p_rdb_data, chr(10)))
+    where column_value not like '#%'; 
+   l_cols := cwms_util.split_text(l_lines(1), chr(9));
+   l_col_count := l_cols.count;
+   for j in 1..l_col_count loop
+      case l_cols(j)
+         when 'agency_cd' then l_col_info('agency') := j;
+         when 'site_no'   then l_col_info('site')   := j;
+         when 'datetime'  then l_col_info('time')   := j;
+         when 'tz_cd'     then l_col_info('tz')     := j;
+         else
+            l_value := to_number(regexp_substr(l_cols(j), '^\d{2}_(\d{5})$', 1, 1, null, 1));
+            if l_value is not null and l_value member of l_all_params then
+               l_col_info(to_char(l_value)) := j;
+               l_params.extend;
+               l_params(l_params.count) := l_value;
+            end if;
+      end case;
    end loop;
    if not l_col_info.exists('agency') or 
       not l_col_info.exists('site')   or
@@ -694,10 +733,11 @@ begin
           where rownum = 1;
       end loop;
       <<data_loop>>
-      for i in l_line_num+2..l_lines.count loop
+      for i in 2..l_lines.count loop
          continue data_loop when trim(l_lines(i)) is null;
          exit data_loop when substr(l_lines(i), 1, 1) = '#'; -- beginning of next data retrieval response
          l_cols := cwms_util.split_text(l_lines(i), chr(9));
+            continue data_loop when l_cols.count = 1;
             if l_cols.count != l_col_count then
                cwms_err.raise('ERROR', 'Unexpected USGS RDB format for station '||p_location_id); 
             end if;
@@ -762,10 +802,20 @@ begin
    ---------------------------   
    -- set the out parametrs --
    ---------------------------
-   delete_text(make_text_id(p_location_id), p_office_id);
    p_ts_ids  := l_ts_ids;
    p_units   := l_units;  
    p_ts_data := l_ts_data;
+exception
+   when others then   
+      -----------------------------------
+      -- store the data for inspection --
+      -----------------------------------
+      store_text(p_rdb_data, make_text_id(p_location_id), p_office_id); 
+      cwms_msg.log_db_message(
+         'process_ts_rdb', 
+         cwms_msg.msg_level_detailed, 
+         dbms_utility.format_error_backtrace);
+      raise;
 end process_ts_rdb;
    
 procedure process_ts_rdb_and_store(      
@@ -806,6 +856,10 @@ begin
             ----------------------------------------------
             -- parse the time series out of the dataset --
             ----------------------------------------------
+            cwms_msg.log_db_message(
+               'cwms_usgs.process_ts_rdb_and_store', 
+               cwms_msg.msg_level_detailed, 
+               l_office_id||': Processing site '||(i-1)||' of '||(l_datasets.count-1));
             begin
                process_ts_rdb(l_ts_ids, l_units, l_ts_data, trim(l_parts(1)), trim(l_parts(2)), p_office_id);
             exception
@@ -846,7 +900,7 @@ begin
                end loop;
             end if;         
          end if;
-      end loop;
+      end loop;   
       cwms_msg.log_db_message(
          'cwms_usgs.process_ts_rdb_and_store', 
          cwms_msg.msg_level_detailed, 
@@ -1069,7 +1123,7 @@ begin
    ------------------
    if job_count > 0 then
       dbms_output.put ('Dropping existing job ' || l_job_id || '...');
-      dbms_scheduler.drop_job (l_job_id);
+      dbms_scheduler.drop_job (job_name=>l_job_id, force=>true);
 
       --------------------------------
       -- verify that it was dropped --
@@ -1278,11 +1332,6 @@ begin
          if l_meas is null or l_meas.location is null then 
             continue;
          end if;
-         declare
-            l_xml xmltype;
-         Begin
-            dbms_output.put_line(l_meas.to_string1);
-         end;
          l_meas.store('F'); 
          l_count := l_count + 1;  
       end loop; 

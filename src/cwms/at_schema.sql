@@ -5858,6 +5858,17 @@ comment on column at_text_filter_element.filter_text      is 'The filter element
 comment on column at_text_filter_element.regex_flags      is 'Regex flags (match parameter) for this element only';
 commit;
 
+create global temporary table at_usgs_param_locations (
+   time_entered   date,
+   office_code    integer,
+   usgs_parameter integer,
+   location_id    varchar2(32),
+   constraint at_usgs_param_location_pk  primary key (time_entered, office_code, usgs_parameter,location_id)     
+)
+on commit delete rows;
+
+comment on table at_usgs_param_locations is 'Used to speed up selection of locations to process for USGS parameters';
+
 create table at_usgs_parameter(
    office_code              integer,
    usgs_parameter_code      integer,
