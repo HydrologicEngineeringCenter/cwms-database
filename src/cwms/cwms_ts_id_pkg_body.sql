@@ -123,7 +123,6 @@ AS
 			  INTO	p_cwms_ts_id
 			  FROM	at_cwms_ts_id
 			 WHERE	ts_code = p_cwms_ts_spec.ts_code;
-
 			--
 			p_cwms_ts_id.base_location_code := p_base_location_code;
 		--
@@ -182,19 +181,18 @@ AS
 				  FROM	cwms_duration cd
 				 WHERE	duration_code = p_cwms_ts_spec.duration_code;
 
-				--
-				SELECT	co.office_id, abl.base_location_id, abl.db_office_code,
-							NVL (abl.active_flag, 'T')
-				  INTO	p_cwms_ts_id.db_office_id, p_cwms_ts_id.base_location_id,
-							p_cwms_ts_id.db_office_code,
-							p_cwms_ts_id.base_loc_active_flag
-				  FROM		at_base_location abl
-							JOIN
-								cwms_office co
-							ON (co.office_code = abl.db_office_code)
-				 WHERE	base_location_code = p_cwms_ts_id.base_location_code;
 		END;
-
+        --
+        SELECT    co.office_id, abl.base_location_id, abl.db_office_code,
+                    NVL (abl.active_flag, 'T')
+          INTO    p_cwms_ts_id.db_office_id, p_cwms_ts_id.base_location_id,
+                    p_cwms_ts_id.db_office_code,
+                    p_cwms_ts_id.base_loc_active_flag
+          FROM        at_base_location abl
+                    JOIN
+                        cwms_office co
+                    ON (co.office_code = abl.db_office_code)
+         WHERE    base_location_code = p_cwms_ts_id.base_location_code;
 
 		p_cwms_ts_id.sub_location_id := p_sub_location_id;
 		p_cwms_ts_id.loc_active_flag := p_loc_active_flag;
