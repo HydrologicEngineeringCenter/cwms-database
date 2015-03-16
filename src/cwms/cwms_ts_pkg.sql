@@ -2551,14 +2551,14 @@ AS
       p_office_id  IN VARCHAR2 DEFAULT NULL)
       RETURN date_table_type;
    /**
-    * Retrieves the earliest time series data date in the database for a time series
+    * Retrieves the earliest non-null time series data date in the database for a time series
     *
     * @see constant cwms_util.non_versioned
     *
     * @param p_ts_code          The unique numeric code identifying the time series
     * @param p_version_date_utc The version date of the time series in UTC
     *
-    * @return The earliest time series data date in the database for the time series, in UTC
+    * @return The earliest non-null time series data date in the database for the time series, in UTC
     */
    FUNCTION get_ts_min_date_utc (
       p_ts_code            IN NUMBER,
@@ -2566,7 +2566,7 @@ AS
       RETURN DATE;
 
    /**
-    * Retrieves the earliest time series data date in the database for a time series
+    * Retrieves the earliest non-null time series data date in the database for a time series
     *
     * @see constant cwms_util.non_versioned
     *
@@ -2575,7 +2575,7 @@ AS
     * @param p_version_date The version date of the time series in the specified time zone
     * @param p_office_id    The office that owns the time series. If not specified or NULL, the session user's default office is used
     *
-    * @return The earliest time series data date in the database for the time series, in the specified time zone
+    * @return The earliest non-null time series data date in the database for the time series, in the specified time zone
     */
    FUNCTION get_ts_min_date (
       p_cwms_ts_id     IN VARCHAR2,
@@ -2585,14 +2585,14 @@ AS
       RETURN DATE;
 
    /**
-    * Retrieves the latest time series data date in the database for a time series
+    * Retrieves the latest non-null time series data date in the database for a time series
     *
     * @see constant cwms_util.non_versioned
     *
     * @param p_ts_code          The unique numeric code identifying the time series
     * @param p_version_date_utc The version date of the time series in UTC
     *
-    * @return The latest time series data date in the database for the time series, in UTC
+    * @return The latest non-null time series data date in the database for the time series, in UTC
     */
    FUNCTION get_ts_max_date_utc (
       p_ts_code            IN NUMBER,
@@ -2600,7 +2600,7 @@ AS
       RETURN DATE;
 
    /**
-    * Retrieves the latest time series data date in the database for a time series
+    * Retrieves the latest non-null time series data date in the database for a time series
     *
     * @see constant cwms_util.non_versioned
     *
@@ -2609,7 +2609,7 @@ AS
     * @param p_version_date The version date of the time series in the specified time zone
     * @param p_office_id    The office that owns the time series. If not specified or NULL, the session user's default office is used
     *
-    * @return The latest time series data date in the database for the time series, in the specified time zone
+    * @return The latest non-null time series data date in the database for the time series, in the specified time zone
     */
    FUNCTION get_ts_max_date (
       p_cwms_ts_id     IN VARCHAR2,
@@ -2619,13 +2619,13 @@ AS
       RETURN DATE;
 
    /**
-    * Retrieves the earliest and latest time series data date in the database for a time series
+    * Retrieves the earliest and latest non-null time series data date in the database for a time series
     *
     * @see constant cwms_util.non_versioned
     *
+    * @param p_min_date_utc     The earliest non-null time series data date in the database for the time series, in UTC
+    * @param p_max_date_utc     The latest non-null time series data date in the database for the time series, in UTC
     * @param p_ts_code          The unique numeric code identifying the time series
-    * @param p_min_date_utc     The earliest time series data date in the database for the time series, in UTC
-    * @param p_max_date_utc     The latest time series data date in the database for the time series, in UTC
     * @param p_version_date_utc The version date of the time series in UTC
     */
    PROCEDURE get_ts_extents_utc (
@@ -2635,18 +2635,122 @@ AS
       p_version_date_utc   IN     DATE DEFAULT cwms_util.non_versioned);
 
    /**
-    * Retrieves the earliest and latest time series data date in the database for a time series
+    * Retrieves the earliest and latest non-null time series data date in the database for a time series
     *
     * @see constant cwms_util.non_versioned
     *
-    * @param p_min_date     The earliest time series data date in the database for the time series, in the specified time zone
-    * @param p_max_date     The latest time series data date in the database for the time series, in the specified time zone
+    * @param p_min_date     The earliest non-null time series data date in the database for the time series, in the specified time zone
+    * @param p_max_date     The latest non-null time series data date in the database for the time series, in the specified time zone
     * @param p_cwms_ts_id   The time series identifier
     * @param p_time_zone    The time zone to use
     * @param p_version_date The version date of the time series, in the specified time zone
     * @param p_office_id    The office that owns the time series. If not specified or NULL, the session user's default office is used
     */
    PROCEDURE get_ts_extents (
+      p_min_date          OUT DATE,
+      p_max_date          OUT DATE,
+      p_cwms_ts_id     IN     VARCHAR2,
+      p_time_zone      IN     VARCHAR2 DEFAULT 'UTC',
+      p_version_date   IN     DATE DEFAULT cwms_util.non_versioned,
+      p_office_id      IN     VARCHAR2 DEFAULT NULL);
+
+   /**
+    * Retrieves the earliest time series data date (even if value is null) in the database for a time series
+    *
+    * @see constant cwms_util.non_versioned
+    *
+    * @param p_ts_code          The unique numeric code identifying the time series
+    * @param p_version_date_utc The version date of the time series in UTC
+    *
+    * @return The earliest time series data date (even if value is null) in the database for the time series, in UTC
+    */
+   FUNCTION get_ts_min_date2_utc (
+      p_ts_code            IN NUMBER,
+      p_version_date_utc   IN DATE DEFAULT cwms_util.non_versioned)
+      RETURN DATE;
+
+   /**
+    * Retrieves the earliest time series data date (even if value is null) in the database for a time series
+    *
+    * @see constant cwms_util.non_versioned
+    *
+    * @param p_cwms_ts_id   The time series identifier
+    * @param p_time_zone    The time zone in which to retrieve the earliest time
+    * @param p_version_date The version date of the time series in the specified time zone
+    * @param p_office_id    The office that owns the time series. If not specified or NULL, the session user's default office is used
+    *
+    * @return The earliest time series data date (even if value is null) in the database for the time series, in the specified time zone
+    */
+   FUNCTION get_ts_min_date2 (
+      p_cwms_ts_id     IN VARCHAR2,
+      p_time_zone      IN VARCHAR2 DEFAULT 'UTC',
+      p_version_date   IN DATE DEFAULT cwms_util.non_versioned,
+      p_office_id      IN VARCHAR2 DEFAULT NULL)
+      RETURN DATE;
+
+   /**
+    * Retrieves the latest time series data date (even if value is null) in the database for a time series
+    *
+    * @see constant cwms_util.non_versioned
+    *
+    * @param p_ts_code          The unique numeric code identifying the time series
+    * @param p_version_date_utc The version date of the time series in UTC
+    *
+    * @return The latest time series data date (even if value is null) in the database for the time series, in UTC
+    */
+   FUNCTION get_ts_max_date2_utc (
+      p_ts_code            IN NUMBER,
+      p_version_date_utc   IN DATE DEFAULT cwms_util.non_versioned)
+      RETURN DATE;
+
+   /**
+    * Retrieves the latest time series data date (even if value is null) in the database for a time series
+    *
+    * @see constant cwms_util.non_versioned
+    *
+    * @param p_cwms_ts_id   The time series identifier
+    * @param p_time_zone    The time zone in which to retrieve the latest time
+    * @param p_version_date The version date of the time series in the specified time zone
+    * @param p_office_id    The office that owns the time series. If not specified or NULL, the session user's default office is used
+    *
+    * @return The latest time series data date (even if value is null) in the database for the time series, in the specified time zone
+    */
+   FUNCTION get_ts_max_date2 (
+      p_cwms_ts_id     IN VARCHAR2,
+      p_time_zone      IN VARCHAR2 DEFAULT 'UTC',
+      p_version_date   IN DATE DEFAULT cwms_util.non_versioned,
+      p_office_id      IN VARCHAR2 DEFAULT NULL)
+      RETURN DATE;
+
+   /**
+    * Retrieves the earliest and latest time series data date (even if value is null) in the database for a time series
+    *
+    * @see constant cwms_util.non_versioned
+    *
+    * @param p_min_date_utc     The earliest time series data date (even if value is null) in the database for the time series, in UTC
+    * @param p_max_date_utc     The latest time series data date (even if value is null) in the database for the time series, in UTC
+    * @param p_ts_code          The unique numeric code identifying the time series
+    * @param p_version_date_utc The version date of the time series in UTC
+    */
+   PROCEDURE get_ts_extents2_utc (
+      p_min_date_utc          OUT DATE,
+      p_max_date_utc          OUT DATE,
+      p_ts_code            IN     NUMBER,
+      p_version_date_utc   IN     DATE DEFAULT cwms_util.non_versioned);
+
+   /**
+    * Retrieves the earliest and latest time series data date (even if value is null) in the database for a time series
+    *
+    * @see constant cwms_util.non_versioned
+    *
+    * @param p_min_date     The earliest time series data date (even if value is null) in the database for the time series, in the specified time zone
+    * @param p_max_date     The latest time series data date (even if value is null) in the database for the time series, in the specified time zone
+    * @param p_cwms_ts_id   The time series identifier
+    * @param p_time_zone    The time zone to use
+    * @param p_version_date The version date of the time series, in the specified time zone
+    * @param p_office_id    The office that owns the time series. If not specified or NULL, the session user's default office is used
+    */
+   PROCEDURE get_ts_extents2 (
       p_min_date          OUT DATE,
       p_max_date          OUT DATE,
       p_cwms_ts_id     IN     VARCHAR2,

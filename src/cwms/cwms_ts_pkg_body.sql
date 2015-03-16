@@ -9233,7 +9233,8 @@ end retrieve_existing_item_counts;
             'select min(date_time)
                from '|| rec.table_name||'
               where ts_code = :1
-                and version_date = :2'
+                and version_date = :2
+                and value is not null'
             INTO l_min_date_utc
             USING p_ts_code, p_version_date_utc;
 
@@ -9242,6 +9243,31 @@ end retrieve_existing_item_counts;
 
       RETURN l_min_date_utc;
    END get_ts_min_date_utc;
+
+   FUNCTION get_ts_min_date2_utc (
+      p_ts_code            IN NUMBER,
+      p_version_date_utc   IN DATE DEFAULT cwms_util.non_versioned)
+      RETURN DATE
+   IS
+      l_min_date_utc   DATE;
+   BEGIN
+      FOR rec IN (  SELECT table_name
+                      FROM at_ts_table_properties
+                  ORDER BY start_date)
+      LOOP
+         EXECUTE IMMEDIATE
+            'select min(date_time)
+               from '|| rec.table_name||'
+              where ts_code = :1
+                and version_date = :2'
+            INTO l_min_date_utc
+            USING p_ts_code, p_version_date_utc;
+
+         EXIT WHEN l_min_date_utc IS NOT NULL;
+      END LOOP;
+
+      RETURN l_min_date_utc;
+   END get_ts_min_date2_utc;
 
    FUNCTION get_ts_min_date (
       p_cwms_ts_id     IN VARCHAR2,
@@ -9268,8 +9294,58 @@ end retrieve_existing_item_counts;
       RETURN cwms_util.change_timezone (l_min_date_utc, 'UTC', p_time_zone);
    END get_ts_min_date;
 
+   FUNCTION get_ts_min_date2 (
+      p_cwms_ts_id     IN VARCHAR2,
+      p_time_zone      IN VARCHAR2 DEFAULT 'UTC',
+      p_version_date   IN DATE DEFAULT cwms_util.non_versioned,
+      p_office_id      IN VARCHAR2 DEFAULT NULL)
+      RETURN DATE
+   IS
+      l_min_date_utc       DATE;
+      l_version_date_utc   DATE;
+   BEGIN
+      IF p_version_date = cwms_util.non_versioned
+      THEN
+         l_version_date_utc := p_version_date;
+      ELSE
+         l_version_date_utc :=
+            cwms_util.change_timezone (p_version_date, p_time_zone, 'UTC');
+      END IF;
+
+      l_min_date_utc :=
+         get_ts_min_date2_utc (
+            cwms_ts.get_ts_code (p_cwms_ts_id, p_office_id),
+            l_version_date_utc);
+      RETURN cwms_util.change_timezone (l_min_date_utc, 'UTC', p_time_zone);
+   END get_ts_min_date2;
 
    FUNCTION get_ts_max_date_utc (
+      p_ts_code            IN NUMBER,
+      p_version_date_utc   IN DATE DEFAULT cwms_util.non_versioned)
+      RETURN DATE
+   IS
+      l_max_date_utc   DATE;
+   BEGIN
+      FOR rec IN (  SELECT table_name
+                      FROM at_ts_table_properties
+                  ORDER BY start_date DESC)
+      LOOP
+         EXECUTE IMMEDIATE
+            'select max(date_time)
+               from '||rec.table_name||'
+              where ts_code = :1
+                and version_date = :2
+                and value is not null'
+            INTO l_max_date_utc
+            USING p_ts_code, p_version_date_utc;
+
+         EXIT WHEN l_max_date_utc IS NOT NULL;
+      END LOOP;
+
+      RETURN l_max_date_utc;
+   END get_ts_max_date_utc;
+
+   FUNCTION get_ts_max_date2_utc (
       p_ts_code            IN NUMBER,
       p_version_date_utc   IN DATE DEFAULT cwms_util.non_versioned)
       RETURN DATE
@@ -9292,7 +9368,7 @@ end retrieve_existing_item_counts;
       END LOOP;
 
       RETURN l_max_date_utc;
-   END get_ts_max_date_utc;
+   END get_ts_max_date2_utc;
 
    FUNCTION get_ts_max_date (
       p_cwms_ts_id     IN VARCHAR2,
@@ -9319,6 +9395,30 @@ end retrieve_existing_item_counts;
       RETURN cwms_util.change_timezone (l_max_date_utc, 'UTC', p_time_zone);
    END get_ts_max_date;
 
+   FUNCTION get_ts_max_date2 (
+      p_cwms_ts_id     IN VARCHAR2,
+      p_time_zone      IN VARCHAR2 DEFAULT 'UTC',
+      p_version_date   IN DATE DEFAULT cwms_util.non_versioned,
+      p_office_id      IN VARCHAR2 DEFAULT NULL)
+      RETURN DATE
+   IS
+      l_max_date_utc       DATE;
+      l_version_date_utc   DATE;
+   BEGIN
+      IF p_version_date = cwms_util.non_versioned
+      THEN
+         l_version_date_utc := p_version_date;
+      ELSE
+         l_version_date_utc :=
+            cwms_util.change_timezone (p_version_date, p_time_zone, 'UTC');
+      END IF;
+
+      l_max_date_utc :=
+         get_ts_max_date2_utc (
+            cwms_ts.get_ts_code (p_cwms_ts_id, p_office_id),
+            l_version_date_utc);
+      RETURN cwms_util.change_timezone (l_max_date_utc, 'UTC', p_time_zone);
+   END get_ts_max_date2;
 
    PROCEDURE get_ts_extents_utc (
       p_min_date_utc          OUT DATE,
@@ -9330,6 +9430,17 @@ end retrieve_existing_item_counts;
       p_min_date_utc := get_ts_min_date_utc (p_ts_code, p_version_date_utc);
       p_max_date_utc := get_ts_max_date_utc (p_ts_code, p_version_date_utc);
    END get_ts_extents_utc;
+
+   PROCEDURE get_ts_extents2_utc (
+      p_min_date_utc          OUT DATE,
+      p_max_date_utc          OUT DATE,
+      p_ts_code            IN     NUMBER,
+      p_version_date_utc   IN     DATE DEFAULT cwms_util.non_versioned)
+   IS
+   BEGIN
+      p_min_date_utc := get_ts_min_date2_utc (p_ts_code, p_version_date_utc);
+      p_max_date_utc := get_ts_max_date2_utc (p_ts_code, p_version_date_utc);
+   END get_ts_extents2_utc;
 
    PROCEDURE get_ts_extents (
       p_min_date          OUT DATE,
@@ -9360,6 +9471,36 @@ end retrieve_existing_item_counts;
       p_max_date :=
          cwms_util.change_timezone (l_max_date_utc, 'UTC', p_time_zone);
    END get_ts_extents;
+
+   PROCEDURE get_ts_extents2 (
+      p_min_date          OUT DATE,
+      p_max_date          OUT DATE,
+      p_cwms_ts_id     IN     VARCHAR2,
+      p_time_zone      IN     VARCHAR2 DEFAULT 'UTC',
+      p_version_date   IN     DATE DEFAULT cwms_util.non_versioned,
+      p_office_id      IN     VARCHAR2 DEFAULT NULL)
+   IS
+      l_min_date_utc       DATE;
+      l_max_date_utc       DATE;
+      l_version_date_utc   DATE;
+   BEGIN
+      IF p_version_date = cwms_util.non_versioned
+      THEN
+         l_version_date_utc := p_version_date;
+      ELSE
+         l_version_date_utc :=
+            cwms_util.change_timezone (p_version_date, p_time_zone, 'UTC');
+      END IF;
+
+      get_ts_extents2_utc (l_min_date_utc,
+                           l_max_date_utc,
+                           cwms_ts.get_ts_code (p_cwms_ts_id, p_office_id),
+                           l_version_date_utc);
+      p_min_date :=       
+         cwms_util.change_timezone (l_min_date_utc, 'UTC', p_time_zone);
+      p_max_date :=
+         cwms_util.change_timezone (l_max_date_utc, 'UTC', p_time_zone);
+   END get_ts_extents2;
 
    PROCEDURE get_value_extents (p_min_value      OUT BINARY_DOUBLE,
                                 p_max_value      OUT BINARY_DOUBLE,
