@@ -49,6 +49,7 @@ updates  = [
         ['package body', 'cwms_stream'],
         ['package spec', 'cwms_text'],
         ['package body', 'cwms_text'],
+        ['package spec', 'cwms_ts'],
         ['package body', 'cwms_ts'],
         ['package body', 'cwms_ts_id'],
         ['package spec', 'cwms_turbine'],
