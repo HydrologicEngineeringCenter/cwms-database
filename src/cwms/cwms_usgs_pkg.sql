@@ -85,21 +85,35 @@ auto_stream_meas_filter_prop constant varchar2(32) := 'streamflow_meas_locations
  * URL for retrieving rating update info from the USGS NWIS rating depot for all ratings updated within a specified period 
  * @see http://waterdata.usgs.gov/nwisweb/get_ratings?help
  */
-rating_url_site   constant varchar2(71) := 'http://waterdata.usgs.gov/nwisweb/get_ratings?format=rdb&period=<hours>';
+rating_query_url_period   constant varchar2(71) := 'http://waterdata.usgs.gov/nwisweb/get_ratings?format=rdb&period=<hours>';
 /**
  * URL for retrieving rating update info from the USGS NWIS rating depot for all ratings for a specified site 
  * @see http://waterdata.usgs.gov/nwisweb/get_ratings?help
  */
-rating_url_period constant varchar2(71) := 'http://waterdata.usgs.gov/nwisweb/get_ratings?format=rdb&site_no=<site>';
+rating_query_url_site constant varchar2(71) := 'http://waterdata.usgs.gov/nwisweb/get_ratings?format=rdb&site_no=<site>';
 /**
- * CWMS Properties ID for specifying run interval in minutes for automatic rating retrieval job. Job doesn't run if property is not set. Property category is 'USGS'. Property value is integer.
+ * URL for retrieving rating from the USGS NWIS rating depot 
+ * @see http://waterdata.usgs.gov/nwisweb/get_ratings?help
+ */
+rating_url constant varchar2(76) := 'http://waterdata.usgs.gov/nwisweb/data/ratings/<type>/USGS.<site>.<type>.rdb';
+/**
+ * CWMS Properties ID for specifying run interval in minutes for job to automatically retrieve new ratings. Job doesn't run if property is not set. Property category is 'USGS'. Property value is integer.
  * May be managed using CWMS_PROPERTIES package or by routines in this package.
  *
  * @see package cwms_properties
- * @see set_auto_rating_interval
- * @see get_auto_rating_interval
+ * @see set_auto_new_rating_interval
+ * @see get_auto_new_rating_interval
  */
-auto_rating_interval_prop constant varchar2(24) := 'rating_retrieve_interval';
+auto_new_rating_interval_prop constant varchar2(28) := 'new_rating_retrieve_interval';
+/**
+ * CWMS Properties ID for specifying run interval in minutes for job to automatically retrieve updated ratings. Job doesn't run if property is not set. Property category is 'USGS'. Property value is integer.
+ * May be managed using CWMS_PROPERTIES package or by routines in this package.
+ *
+ * @see package cwms_properties
+ * @see set_auto_upd_rating_interval
+ * @see get_auto_upd_rating_interval
+ */
+auto_upd_rating_interval_prop constant varchar2(28) := 'upd_rating_retrieve_interval';
 /**
  * Sets the text filter used to determine locations for which to retrieve instantaneous value time series data from USGS NWIS.
  *
@@ -147,7 +161,7 @@ function get_auto_ts_period(
 /**
  * Sets the run interval for automatically retrieving instantaneous value time series data from USGS NWIS.
  *
- * @param p_interval   The run interval in minutes for automaticcally retrieving time series data from USGS NWIS. 
+ * @param p_interval   The run interval in minutes for automatically retrieving time series data from USGS NWIS. 
  * @param p_office_id  The office to set the period for. If NULL or not specified, the session user's default office is used.
  *                                        
  * @see constant auto_ts_interval_prop
@@ -503,7 +517,7 @@ function get_auto_stream_meas_period(
 /**
  * Sets the run interval for automatically retrieving streamflow measurements data from USGS NWIS.
  *
- * @param p_interval   The run interval in minutes for automaticcally retrieving time series data from USGS NWIS. 
+ * @param p_interval   The run interval in minutes for automatically retrieving time series data from USGS NWIS. 
  * @param p_office_id  The office to set the period for. If NULL or not specified, the session user's default office is used.
  *                                        
  * @see constant auto_stream_meas_interval_prop
@@ -601,8 +615,161 @@ procedure start_auto_stream_meas_job(
  *
  */
 procedure stop_auto_stream_meas_job(
+   p_office_id in varchar2 default null);   
+/**
+ * Retreives all the rating specification codes that have a template version of USGS-BASE, USGS-EXSA, USGS-CORR, a specification version of USGS, and are set to auto-update.
+ *
+ * @param p_office_id  The office to retrieve the rating specification identifiers for.  If NULL or not specified, the session user's default office is used.
+ * @return A table of the matching rating specification identifiers.
+ */   
+function get_auto_update_ratings(
+   p_office_id in varchar2 default null)
+   return number_tab_t;
+/**
+ * Updates any BASE, EXSA, or CORR ratings from USGS ratings depot that are set to auto update
+ *
+ * @param p_office_id   The office to update the ratings for.  If NULL or not specified, the session user's default office is used.
+ */   
+procedure update_existing_ratings(
    p_office_id in varchar2 default null);
-
+/**
+ * Retreieves BASE, EXSA, or CORR ratings from USGS ratings depot for specified locations
+ *
+ * @param p_rating_type The rating type. Must be 'BASE', 'EXSA', or 'CORR'.
+ * @param p_sites       A comma-separated string of the locations to retrieve ratings for.  If the name of an existing text filter is specified, the locations that match the filter will be used.  If NULL, all locations with a USGS Station Number alias will be used. 
+ * @param p_office_id   The office to retrieve the ratings for.  If NULL or not specified, the session user's default office is used.
+ */   
+procedure retrieve_and_store_ratings(
+   p_rating_type in varchar2,
+   p_sites       in varchar2 default null,
+   p_office_id   in varchar2 default null);  
+/**
+ * Generates <site>.Stage;Flow.USGS-Production.USGS ratings for every site that has a <site>.Stage;Flow.USGS-BASE.USGS or <site>.Stage;Flow.USGS-EXSA.USGS rating.
+ * The procedure generates a virtual rating if the site has a <site.Stage;Stage-Correction.USGS-CORR.USGS rating and a transitional rating if it does not.  The virtual rating
+ * will compute the stage correction and add it to the input stage before rating via the BASE or EXSA rating.  The procedure will not retrieve the stage correction ratings; 
+ * they must be retrieved separately. Executing this procedure allows a similar rating specification identifier to be used for every site regardless of whether the site
+ * has a stage correction rating. 
+ *
+ * @param p_office_id The office to generate the production ratings for.  If NULL or not specified, the session user's default office is used. 
+ */  
+procedure generate_production_ratings2(
+   p_office_id in varchar2 default null);   
+/**
+ * Generates <site>.Stage;Flow.USGS-Production.USGS ratings for the specified site if it has a <site>.Stage;Flow.USGS-BASE.USGS or <site>.Stage;Flow.USGS-EXSA.USGS rating.
+ * The procedure generates a virtual rating if the site has a <site.Stage;Stage-Correction.USGS-CORR.USGS rating and a transitional rating if it does not.  The virtual rating
+ * will compute the stage correction and add it to the input stage before rating via the BASE or EXSA rating.  The procedure will not retrieve the stage correction rating; 
+ * it must be retrieved separately. Executing this procedure allows a similar rating specification identifier to be used for every site regardless of whether the site
+ * has a stage correction rating. 
+ *
+ * @param location_id The location to generate the production rating for.
+ * @param p_office_id The office to generate the production ratings for.  If NULL or not specified, the session user's default office is used. 
+ */  
+procedure generate_production_ratings(
+   p_location_id in varchar2,
+   p_office_id in varchar2 default null);   
+/**
+ * Retrieves BASE and CORR ratings for all locations that have USGS Station Number aliases, if such ratings exist. Also generates production ratings
+ * that use the CORR+BASE ratings where the CORR ratings exist and just BASE ratings otherwise. Note that the use of the BASE ratings includes using
+ * any available shifts and offsets in the same manner as they are used by the USGS and does not just use the BASE rating points for lookup. 
+ *
+ * @param p_office_id The office retreive ratings for.  If NULL or not specified, the session user's default office is used. 
+ */             
+procedure retrieve_available_ratings2(
+   p_office_id in varchar2 default null);
+/**
+ * Retrieves BASE and CORR ratings for the specified location, if such ratings exist. Also generates production rating
+ * that use the CORR+BASE ratings if the CORR rating exists and just BASE rating otherwise. Note that the use of the BASE rating includes using
+ * any available shifts and offsets in the same manner as they are used by the USGS and does not just use the BASE rating points for lookup. 
+ *
+ * @param location_id The location to retrieve the available ratings for.
+ * @param p_office_id The office retreive ratings for.  If NULL or not specified, the session user's default office is used. 
+ */             
+procedure retrieve_available_ratings(
+   p_location_id in varchar2,
+   p_office_id   in varchar2 default null);
+/**
+ * Sets the run interval for automatically retrieving new ratings from USGS.
+ *
+ * @param p_interval   The run interval in minutes for automatically retrieving new ratings from USGS. 
+ * @param p_office_id  The office to set the period for. If NULL or not specified, the session user's default office is used.
+ *                                        
+ * @see constant auto_new_rating_interval_prop
+ */
+procedure set_auto_new_rating_interval(
+   p_interval  in integer,      
+   p_office_id in varchar2 default null);
+/**
+ * Sets the run interval for automatically retrieving new ratings from USGS.
+ *
+ * @param p_office_id  The office to set the period for. If NULL or not specified, the session user's default office is used.
+ *                                        
+ * @return  The run interval in minutes for automatically retrieving new ratings from USGS. 
+ *                                        
+ * @see constant auto_new_rating_interval_prop
+ *
+ */
+function get_auto_new_rating_interval(
+   p_office_id in varchar2 default null)
+   return integer;   
+/**
+ * Sets the run interval for automatically retrieving updated ratings from USGS.
+ *
+ * @param p_interval   The run interval in minutes for automatically retrieving updated ratings from USGS. 
+ * @param p_office_id  The office to set the period for. If NULL or not specified, the session user's default office is used.
+ *                                        
+ * @see constant auto_upd_rating_interval_prop
+ */
+procedure set_auto_upd_rating_interval(
+   p_interval  in integer,      
+   p_office_id in varchar2 default null);
+/**
+ * Sets the run interval for automatically retrieving updated ratings from USGS.
+ *
+ * @param p_office_id  The office to set the period for. If NULL or not specified, the session user's default office is used.
+ *                                        
+ * @return  The run interval in minutes for automatically retrieving updated ratings from USGS. 
+ *                                        
+ * @see constant auto_upd_rating_interval_prop
+ *
+ */
+function get_auto_upd_rating_interval(
+   p_office_id in varchar2 default null)
+   return integer;   
+/**
+ * Schedules (or re-schedules) the job to automatically retrieve USGS ratings for locations that have USGS Station Number aliases
+ * The scheduled job name is USGS_AUTO_NEW_RATE_XXX, where XXX is the office identifier the job is running for
+ *
+ * @param p_office_id  The office to start the job for.  If NULL or not specified, the session user's default office is used.
+ *
+ */
+procedure start_auto_new_rating_job(
+   p_office_id in varchar2 default null);
+/**
+ * Unschedules the job to automatically retrieve USGS ratings for locations that have USGS Station Number aliases
+ *
+ * @param p_office_id  The office to stop the job for.  If NULL or not specified, the session user's default office is used.
+ *
+ */
+procedure stop_auto_new_rating_job(
+   p_office_id in varchar2 default null);   
+/**
+ * Schedules (or re-schedules) the job to automatically retrieve updates to existing USGS ratings that are so specified..
+ * The scheduled job name is USGS_AUTO_UPD_RATE_XXX, where XXX is the office identifier the job is running for
+ *
+ * @param p_office_id  The office to start the job for.  If NULL or not specified, the session user's default office is used.
+ *
+ */
+procedure start_auto_update_rating_job(
+   p_office_id in varchar2 default null);
+/**
+ * Unschedules the job to automatically retrieve updates to existing USGS ratings that are so specified.
+ *
+ * @param p_office_id  The office to stop the job for.  If NULL or not specified, the session user's default office is used.
+ *
+ */
+procedure stop_auto_update_rating_job(
+   p_office_id in varchar2 default null);   
+      
 end cwms_usgs;
 /
 show errors

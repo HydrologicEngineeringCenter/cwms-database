@@ -628,6 +628,18 @@ begin
    commit;
 end store_text;
 
+procedure store_text(
+   p_text      in clob,
+   p_text_id   in varchar2,
+   p_office_id in varchar2 default null)
+is
+   pragma autonomous_transaction;
+   l_code      integer;
+begin
+   l_code := cwms_text.store_text(p_text, p_text_id, null, 'F', p_office_id);
+   commit;
+end store_text;
+
 procedure delete_text(
    p_text_id   in varchar2,
    p_office_id in varchar2 default null)
@@ -876,7 +888,7 @@ begin
                   cwms_msg.log_db_message(
                      'cwms_usgs.process_ts_rdb_and_store', 
                      cwms_msg.msg_level_basic, 
-                     l_office_id||': RDB data is at '||make_text_id(l_parts(1)));
+                     l_office_id||': RDB Clob ID is '||make_text_id(l_parts(1)));
                   continue dataset_loop;
             end;
             -----------------------------------------------------
@@ -1572,6 +1584,2310 @@ begin
    end if;
    
 end stop_auto_stream_meas_job;
+
+function get_auto_update_ratings(
+   p_office_id in varchar2 default null)
+   return number_tab_t
+is
+   l_rating_specs number_tab_t;
+   l_office_code  integer := cwms_util.get_db_office_code(p_office_id);
+begin
+   select rs.rating_spec_code
+     bulk collect
+     into l_rating_specs         
+     from at_rating_template rt,
+          at_rating_spec rs
+    where rt.office_code = l_office_code
+      and rt.version in ('USGS-BASE', 'USGS-EXSA', 'USGS-CORR')
+      and rt.parameters_id not in ('Stage;Stage-Shift', 'Stage;Stage-Offset') 
+      and rs.template_code = rt.template_code
+      and rs.version = 'USGS'
+      and rs.active_flag = 'T'
+      and rs.auto_update_flag = 'T' ;
+   return l_rating_specs;
+end get_auto_update_ratings;
+
+function hash_rating_text(
+   p_rating_text in clob)
+   return varchar2
+is
+begin
+   return rawtohex(dbms_crypto.hash(regexp_replace(p_rating_text, '# //.+?'||chr(10), null), dbms_crypto.hash_sh1));
+end;
+   
+procedure write_clob(
+   p_clob in out nocopy clob,
+   p_text in            varchar2)
+is
+begin
+   dbms_lob.writeappend(p_clob, length(p_text), p_text);
+end write_clob;
+   
+procedure writeln_clob(
+   p_clob in out nocopy clob,
+   p_text in            varchar2)
+is
+begin
+   dbms_lob.writeappend(p_clob, length(p_text)+1, p_text||chr(10));
+end writeln_clob;
+
+function expand_xml_entities(
+   p_text in varchar2)
+   return varchar2
+is
+begin
+   return replace(
+             replace(
+                replace(
+                   replace(
+                      replace(
+                        p_text,
+                        '&',
+                        '&'||'amp;'),
+                      '>',
+                      '&'||'gt;'),
+                   '<',
+                   '&'||'lt;'),
+                '''',
+                '&'||'apos;'),
+             '"',
+             '&'||'quot;');
+             
+end expand_xml_entities;   
+   
+function corr_to_xml(
+   p_rating_text in clob,
+   p_office_id   in varchar2)
+   return clob
+is
+   type number_tab_tab_t is table of number_tab_t;
+   tab               constant varchar2(1) := chr(9);
+   l_xml             clob;
+   l_lines           str_tab_t;
+   l_lines2          str_tab_t;
+   l_parts           str_tab_t;
+   l_clob_id         varchar2(256) := '/_usgs-ratings/corr/'||cwms_msg.get_msg_id;
+   l_station_number  varchar2(15);
+   l_date            date;
+   l_values          number_tab_t;  
+   l_effective_dates date_table_type  := date_table_type();
+   l_stages          number_tab_tab_t := number_tab_tab_t();
+   l_corrections     number_tab_tab_t := number_tab_tab_t();   
+   l_descriptions    str_tab_t        := str_tab_t();
+   j                 pls_integer;
+   k                 pls_integer;
+begin
+   begin
+      -------------------------------
+      -- get just the header lines --
+      -------------------------------
+      select column_value
+        bulk collect
+        into l_lines
+        from table(cwms_util.split_text(p_rating_text, chr(10)))
+       where column_value like '#%'; 
+      ----------------------------
+      -- get the station number --
+      ----------------------------
+      select column_value
+        bulk collect
+        into l_parts     
+        from table(l_lines)
+       where column_value like '# //STATION AGENCY%'; 
+      if l_parts.count = 0 then
+            cwms_err.raise('ERROR', 'Could not find rating station number. Clob ID is '||l_clob_id);
+      end if;
+      if l_parts.count > 1 then
+            cwms_err.raise('ERROR', 'Found multiple rating station numbers. Clob ID is '||l_clob_id);
+      end if;
+      l_parts := cwms_util.split_text(l_parts(1));
+      for i in 1..l_parts.count loop
+         if l_parts(i) like 'NUMBER=%' then
+            l_station_number := trim(cwms_util.split_text(replace(l_parts(i), '"', null), 2, '='));
+            exit;
+         end if;
+      end loop;
+      if l_station_number is null then
+         cwms_err.raise('ERROR', 'Could not find rating station number. Clob ID is '||l_clob_id);
+      end if;
+      -----------------------------------    
+      -- get the stage correction info --
+      ----------------------------------- 
+      select trim(replace(substr(column_value, 15), '"', null))
+        bulk collect
+        into l_lines2
+        from table(l_lines)
+       where column_value like '# //CORR_\_____ %' escape '\';
+      for i in 1..l_lines2.count / 3 loop
+         l_parts := cwms_util.split_text(l_lines2(3*i-2));
+         begin
+            l_date := to_date(cwms_util.split_text(l_parts(1), 2, '='), 'yyyymmddhh24miss');
+         exception
+            when others then continue;
+         end;
+         begin
+            l_date := cwms_util.change_timezone(l_date, cwms_util.split_text(l_parts(2), 2, '='), 'UTC'); 
+         exception
+            when others then null;
+         end;
+         l_parts := cwms_util.split_text(l_lines2(3*i-1));
+         select to_number(cwms_util.split_text(column_value, 2, '='))
+           bulk collect
+           into l_values
+           from table(l_parts)
+          where instr(column_value, '--') = 0;
+          
+         continue when l_parts.count = 0;
+         l_effective_dates.extend;          
+         l_stages.extend;
+         l_corrections.extend;
+         l_descriptions.extend;
+         j := l_effective_dates.count;
+         l_stages(j) := number_tab_t();
+         l_corrections(j) := number_tab_t();
+         l_effective_dates(j) := l_date;
+         if mod(l_values.count, 2) = 1 then
+            cwms_err.raise('ERROR', 'Error processing correction values. Clob ID is '||l_clob_id);
+         end if;
+         k := l_values.count / 2;
+         l_stages(j).extend(k);
+         l_corrections(j).extend(k);
+         for m in 1..k loop
+            l_stages(j)(m) := l_values(2*m-1);
+            l_corrections(j)(m) := l_values(2*m);
+         end loop;
+         l_descriptions(j) := trim(cwms_util.split_text(cwms_util.split_text(l_lines2(3*i), 2, '='), 1, chr(13)));
+      end loop;
+      if l_effective_dates.count = 0 then
+         l_stages := number_tab_tab_t(number_tab_t(0));
+         l_corrections := number_tab_tab_t(number_tab_t(0));
+         l_effective_dates.extend;
+         l_descriptions.extend;
+         ----------------------------
+         -- get the effective date --
+         ----------------------------
+         select column_value
+           bulk collect
+           into l_parts     
+           from table(l_lines)
+          where column_value like '# //RETRIEVED: %'; 
+         if l_parts.count = 0 then
+               cwms_err.raise('ERROR', 'Could not find rating retrieval time. Clob ID is '||l_clob_id);
+         end if;
+         if l_parts.count > 1 then
+               cwms_err.raise('ERROR', 'Found multiple rating retrieval times. Clob ID is '||l_clob_id);
+         end if;
+         l_parts := cwms_util.split_text(l_parts(1));
+         l_effective_dates(1) := to_date(l_parts(3)||' '||l_parts(4), 'yyyy-mm-dd hh24:mi:ss');
+         --------------------------------------
+         -- get the effective date time zone --
+         --------------------------------------
+         select column_value
+           bulk collect
+           into l_parts     
+           from table(l_lines)
+          where column_value like '%TIME_ZONE=%'; 
+         if l_parts.count = 0 then
+               cwms_err.raise('ERROR', 'Could not find rating retrieval time zone. Clob ID is '||l_clob_id);
+         end if;
+         if l_parts.count > 1 then
+               cwms_err.raise('ERROR', 'Found multiple rating retrieval time zones. Clob ID is '||l_clob_id);
+         end if;
+         l_parts := cwms_util.split_text(l_parts(1));
+         for i in 1..l_parts.count loop
+            if l_parts(i) like 'TIME_ZONE=%' then
+               select trim(upper(column_value))
+                 bulk collect
+                 into l_parts
+                 from table(cwms_util.split_text(replace(l_parts(i), '"', null), '='));
+               l_effective_dates(1) := cwms_util.change_timezone(l_effective_dates(1), l_parts(2), 'UTC');
+               exit;
+            end if;
+         end loop;
+      end if;     
+      ---------------------------------------------------------------------        
+      -- compute the resultant correction if multiple ones are specified --
+      ---------------------------------------------------------------------        
+      if l_effective_dates.count > 1 then
+         declare
+            ll_stages      double_tab_t := double_tab_t();
+            ll_values      double_tab_t;
+            ll_corrections double_tab_t := double_tab_t();
+            ll_ratings     rating_ind_param_tab_t := rating_ind_param_tab_t();
+            ll_rat_values  rating_value_tab_t;
+            ll_ind_params  rating_ind_par_spec_tab_t;
+            ll_ind_values  double_tab_t;
+         begin
+            ll_ind_params := rating_ind_par_spec_tab_t(rating_ind_param_spec_t(1, 'Stage', 'LINEAR', 'CLOSEST', 'CLOSEST'));              
+            ll_ratings.extend(l_effective_dates.count);
+            ------------------------------
+            -- build a table of ratings --
+            ------------------------------
+            for i in 1..l_effective_dates.count loop
+               ----------------------------------------------------
+               -- get the stages and corrections for this rating --
+               ----------------------------------------------------
+               select rating_value_t(stage.value, correction.value, null, null)
+                 bulk collect
+                 into ll_rat_values
+                 from (select column_value as value,
+                              rownum as seq
+                         from table(l_stages(i))
+                      ) stage
+                      join
+                      (select column_value as value,
+                              rownum as seq
+                         from table(l_corrections(i))
+                      ) correction
+                      on correction.seq = stage.seq;
+               ----------------------------------------------------
+               -- build a rating from the stages and corrections --
+               ----------------------------------------------------
+               ll_ratings(i) := rating_ind_parameter_t('T', ll_rat_values, null);
+               ----------------------------------------------------------------
+               -- keep track of all the stages (breakpoints) for ALL ratings --
+               ----------------------------------------------------------------
+               select *
+                 bulk collect
+                 into ll_values
+                 from (select * from table(ll_stages)
+                       union
+                       select * from table(l_stages(i))
+                      )
+                order by 1;
+               ll_stages := ll_values;
+            end loop;   
+            -----------------------------------------------------------------------------------
+            -- rate each of the stages (breakpoints) through each of the ratings in sequence --
+            -----------------------------------------------------------------------------------
+            select 0
+              bulk collect
+              into ll_corrections
+              from table(ll_stages);
+            for i in 1..ll_ratings.count loop
+               for j in 1..ll_corrections.count loop
+                  ll_ind_values := double_tab_t(ll_stages(j));            
+                  ll_corrections(j) := ll_corrections(j) + ll_ratings(i).rate(ll_ind_values, 1, ll_ind_params);
+               end loop;
+            end loop; 
+            --------------------------------------------------------------------- 
+            -- copy the local variable values back into the first array values --
+            --------------------------------------------------------------------- 
+            select * bulk collect into l_stages(1) from table(ll_stages);
+            select * bulk collect into l_corrections(1) from table(ll_corrections);
+         end;
+      end if;        
+      dbms_lob.createtemporary(l_xml, true);
+      dbms_lob.open(l_xml, dbms_lob.lob_readwrite);
+      writeln_clob(l_xml, '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlschema/cwms/Ratings.xsd">');
+      writeln_clob(l_xml, tab||'<rating-template office-id="'||p_office_id||'">'); 
+      writeln_clob(l_xml, tab||tab||'<parameters-id>Stage;Stage-Correction</parameters-id>');
+      writeln_clob(l_xml, tab||tab||'<version>USGS-CORR</version>');
+      writeln_clob(l_xml, tab||tab||'<ind-parameter-specs>');
+      writeln_clob(l_xml, tab||tab||tab||'<ind-parameter-spec position="1">');
+      writeln_clob(l_xml, tab||tab||tab||tab||'<parameter>Stage</parameter>');
+      writeln_clob(l_xml, tab||tab||tab||tab||'<in-range-method>LINEAR</in-range-method>');
+      writeln_clob(l_xml, tab||tab||tab||tab||'<out-range-low-method>NEAREST</out-range-low-method>');
+      writeln_clob(l_xml, tab||tab||tab||tab||'<out-range-high-method>NEAREST</out-range-high-method>');
+      writeln_clob(l_xml, tab||tab||tab||'</ind-parameter-spec>');
+      writeln_clob(l_xml, tab||tab||'</ind-parameter-specs>');
+      writeln_clob(l_xml, tab||tab||'<dep-parameter>Stage-Correction</dep-parameter>');
+      writeln_clob(l_xml, tab||tab||'<description>Stage-Correction</description>');
+      writeln_clob(l_xml, tab||'</rating-template>');     
+      writeln_clob(l_xml, tab||'<rating-spec office-id="'||p_office_id||'">'); 
+      writeln_clob(l_xml, tab||tab||'<rating-spec-id>'||l_station_number||'.Stage;Stage-Correction.USGS-CORR.USGS</rating-spec-id>'); 
+      writeln_clob(l_xml, tab||tab||'<template-id>Stage;Stage-Correction.USGS-CORR</template-id>'); 
+      writeln_clob(l_xml, tab||tab||'<location-id>'||l_station_number||'</location-id>'); 
+      writeln_clob(l_xml, tab||tab||'<version>USGS</version>');
+      writeln_clob(l_xml, tab||tab||'<in-range-method>PREVIOUS</in-range-method>');
+      writeln_clob(l_xml, tab||tab||'<out-range-low-method>NULL</out-range-low-method>');
+      writeln_clob(l_xml, tab||tab||'<out-range-high-method>NEAREST</out-range-high-method>');
+      writeln_clob(l_xml, tab||tab||'<active>true</active>');
+      writeln_clob(l_xml, tab||tab||'<auto-update>true</auto-update>');
+      writeln_clob(l_xml, tab||tab||'<auto-activate>true</auto-activate>');
+      writeln_clob(l_xml, tab||tab||'<auto-migrate-extension>false</auto-migrate-extension>');
+      writeln_clob(l_xml, tab||tab||'<ind-rounding-specs>');
+      writeln_clob(l_xml, tab||tab||tab||'<ind-rounding-spec position="1">4444444444</ind-rounding-spec>');
+      writeln_clob(l_xml, tab||tab||'</ind-rounding-specs>');
+      writeln_clob(l_xml, tab||tab||'<dep-rounding-spec>4444444444</dep-rounding-spec>');
+      writeln_clob(l_xml, tab||tab||'<description>'||l_station_number||' stage correction rating</description>');
+      writeln_clob(l_xml, tab||'</rating-spec>'); 
+      writeln_clob(l_xml, tab||'<simple-rating office-id="'||p_office_id||'">'); 
+      writeln_clob(l_xml, tab||tab||'<rating-spec-id>'||l_station_number||'.Stage;Stage-Correction.USGS-CORR.USGS</rating-spec-id>'); 
+      writeln_clob(l_xml, tab||tab||'<units-id>ft;ft</units-id>'); 
+      writeln_clob(l_xml, tab||tab||'<effective-date>'||to_char(trunc(l_effective_dates(l_effective_dates.count), 'mi'), 'yyyy-mm-dd"T"hh24:mi:ss"Z"')||'</effective-date>');
+      writeln_clob(l_xml, tab||tab||'<create-date/>');
+      writeln_clob(l_xml, tab||tab||'<active>true</active>');
+      if l_descriptions(l_descriptions.count) is null then
+         writeln_clob(l_xml, tab||tab||'<description/>');
+      else
+         writeln_clob(l_xml, tab||tab||'<description>'||expand_xml_entities(l_descriptions(l_descriptions.count))||'</description>');
+      end if; 
+      writeln_clob(l_xml, tab||tab||'<rating-points>');
+      for i in 1..l_stages(1).count loop
+         writeln_clob(l_xml, tab||tab||tab||'<point>');
+         writeln_clob(l_xml, tab||tab||tab||tab||'<ind>'||cwms_rounding.round_dt_f(l_stages(1)(i), '9999999999')||'</ind>');
+         writeln_clob(l_xml, tab||tab||tab||tab||'<dep>'||cwms_rounding.round_dt_f(l_corrections(1)(i), '9999999999')||'</dep>');
+         writeln_clob(l_xml, tab||tab||tab||'</point>');
+      end loop; 
+      writeln_clob(l_xml, tab||tab||'</rating-points>'); 
+      writeln_clob(l_xml, tab||'</simple-rating>'); 
+      writeln_clob(l_xml, '</ratings>'); 
+      dbms_lob.close(l_xml);
+      return l_xml;
+   exception
+      when others then
+         cwms_msg.log_db_message('corr_to_xml', cwms_msg.msg_level_normal, dbms_utility.format_error_backtrace);
+         store_text(p_rating_text, l_clob_id, p_office_id); 
+         raise;
+   end;
+end corr_to_xml;
+
+
+function base_to_xml(
+   p_rating_base in clob,
+   p_rating_exsa in clob,
+   p_office_id   in varchar2)
+   return clob
+is
+   type              shift_t is record(effective_date date, stages number_tab_t, shifts number_tab_t, description varchar2(1024));
+   type              shift_tab_t is table of shift_t;  
+   type              offsets_t is record(stages number_tab_t, offsets number_tab_t);
+   tab               constant varchar2(1) := chr(9);
+   l_xml             clob;
+   l_lines           str_tab_t;
+   l_lines2          str_tab_t;
+   l_parts           str_tab_t;
+   l_text            varchar2(256);
+   l_clob_id         varchar2(256) := '/_usgs-ratings/base/'||cwms_msg.get_msg_id;
+   l_effective_date  date;
+   l_station_number  varchar2(15);
+   l_description     varchar2(256);  
+   l_stages          number_tab_t;
+   l_flows           number_tab_t;
+   l_dates           date_table_type;
+   l_ind_rounding    varchar2(10);
+   l_dep_rounding    varchar2(10);
+   l_shifts          shift_tab_t  := shift_tab_t();
+   l_offsets         offsets_t;
+begin
+   begin
+      l_lines := cwms_util.split_text(p_rating_base, chr(10));
+      ----------------------------
+      -- get the station number --
+      ----------------------------
+      select column_value
+        bulk collect
+        into l_parts     
+        from table(l_lines)
+       where column_value like '# //STATION AGENCY%'; 
+      if l_parts.count = 0 then
+            cwms_err.raise('ERROR', 'Could not find rating station number. Clob ID is '||l_clob_id);
+      end if;
+      if l_parts.count > 1 then
+            cwms_err.raise('ERROR', 'Found multiple rating station numbers. Clob ID is '||l_clob_id);
+      end if;
+      l_parts := cwms_util.split_text(replace(l_parts(1), '"', null));
+      begin
+         select cwms_util.split_text(column_value, 2, '=')
+           into l_station_number
+           from table(l_parts)
+          where column_value like 'NUMBER=%';
+      exception
+         when no_data_found then 
+            cwms_err.raise('ERROR', 'Could not find rating station number. Clob ID is '||l_clob_id);
+      end;  
+      -------------------------------------------
+      -- get the rating number and description --
+      -------------------------------------------
+      select column_value
+        bulk collect
+        into l_parts     
+        from table(l_lines)
+       where column_value like '# //RATING ID=%';
+      if l_parts.count > 0 then
+         l_description := 'Rating '||trim(cwms_util.split_text(replace(substr(l_parts(1), instr(l_parts(1), '=')+1), '"', null), 1));
+      end if;  
+      select column_value
+        bulk collect
+        into l_parts     
+        from table(l_lines)
+       where column_value like '# //RATING REMARKS=%';
+      if l_parts.count > 0 then
+         if l_description is not null then
+            l_description := l_description||'-'; 
+         end if;
+         l_description := l_description||trim(replace(substr(l_parts(1), instr(l_parts(1), '=')+1), '"', null));
+      end if;  
+      ----------------------------
+      -- get the effective date --
+      ----------------------------
+      select column_value
+        bulk collect
+        into l_lines2     
+        from table(l_lines)
+       where column_value like '# //RATING_DATETIME BEGIN=%'; 
+      if l_lines2.count = 0 then
+            cwms_err.raise('ERROR', 'Could not find rating effective time. Clob ID is '||l_clob_id);
+      end if;
+      l_dates := date_table_type();
+      <<lines>> 
+      for i in 1..l_lines2.count loop
+         l_parts := cwms_util.split_text(replace(l_lines2(i), '"', null));
+         <<timeval>>
+         for j in 3..l_parts.count loop
+            if l_parts(j) like 'BEGIN=%' then
+               l_text := cwms_util.split_text(l_parts(j), 2, '=');
+               l_dates.extend;                                             
+               begin
+                  l_dates(l_dates.count) := to_date(l_text, 'yyyymmddhh24miss');
+               exception
+                  when others then
+                     l_dates.trim; 
+                     continue;
+               end;    
+               <<timezone>>
+               for k in j+1..l_parts.count loop
+                  if l_parts(k) like 'BZONE=%' then
+                     l_text := cwms_util.split_text(l_parts(k), 2, '=');
+                     begin
+                        l_dates(l_dates.count) := cwms_util.change_timezone(l_dates(l_dates.count), l_text, 'UTC');
+                     exception
+                        when others then null;
+                     end;
+                     exit timeval;
+                  end if;
+               end loop;
+            end if;
+         end loop;
+      end loop;
+      select max(column_value)
+        into l_effective_date
+        from table(l_dates);
+      l_dates.delete;
+      ----------------------------      
+      -- get the rounding specs --
+      ----------------------------
+      select column_value
+        bulk collect
+        into l_parts     
+        from table(l_lines)
+       where column_value like '# //RATING_INDEP ROUNDING=%'; 
+      if l_parts.count = 0 then
+            cwms_err.raise('ERROR', 'Could not find stage rounding specification. Clob ID is '||l_clob_id);
+      end if;
+      if l_parts.count > 1 then
+            cwms_err.raise('ERROR', 'Found multiple stage rounding specifications. Clob ID is '||l_clob_id);
+      end if;
+      begin
+         select cwms_util.split_text(trim(replace(column_value, '"', null)), 2, '=')
+           into l_ind_rounding
+           from table(cwms_util.split_text(l_parts(1)))
+          where column_value like 'ROUNDING=%'; 
+      exception
+         when no_data_found then
+            cwms_err.raise('ERROR', 'Could not find stage rounding specification. Clob ID is '||l_clob_id);
+      end;
+      select column_value
+        bulk collect
+        into l_parts     
+        from table(l_lines)
+       where column_value like '# //RATING_DEP ROUNDING=%'; 
+      if l_parts.count = 0 then
+            cwms_err.raise('ERROR', 'Could not find flow rounding specification. Clob ID is '||l_clob_id);
+      end if;
+      if l_parts.count > 1 then
+            cwms_err.raise('ERROR', 'Found multiple flow rounding specifications. Clob ID is '||l_clob_id);
+      end if;
+      begin
+         select cwms_util.split_text(trim(replace(column_value, '"', null)), 2, '=')
+           into l_dep_rounding
+           from table(cwms_util.split_text(l_parts(1)))
+          where column_value like 'ROUNDING=%'; 
+      exception
+         when no_data_found then
+            cwms_err.raise('ERROR', 'Could not find flow rounding specification. Clob ID is '||l_clob_id);
+      end;
+      ---------------------------
+      -- get the rating values --
+      ---------------------------
+      select column_value
+        bulk collect
+        into l_lines2
+        from table(l_lines)
+       where column_value not like '#%';
+        
+      select to_number(text)
+        bulk collect
+        into l_stages
+        from (select cwms_util.split_text(column_value, 1) as text 
+                from table(l_lines2)
+             )
+       where trim(translate(text, '-+.0123456789E', ' ')) is null;
+       
+      select to_number(text)
+        bulk collect
+        into l_flows
+        from (select cwms_util.split_text(column_value, 2) as text 
+                from table(l_lines2)
+             )
+       where trim(translate(text, '-+.0123456789E', ' ')) is null;
+       
+      if l_stages.count != l_flows.count or l_stages.count != l_lines2.count-2 then
+        cwms_err.raise('ERROR', 'Error parsing rating values.  Clob ID is '||l_clob_id); 
+      end if;
+      ----------------------------------
+      -- get the shifts from the exsa --
+      ----------------------------------
+      select column_value
+        bulk collect
+        into l_lines
+        from table(cwms_util.split_text(p_rating_exsa, chr(10)))
+       where column_value like '#%';
+      
+      select column_value
+        bulk collect
+        into l_lines2
+        from table(l_lines)
+       where column_value like '# //SHIFT\_____%' escape '\';
+      for i in 1..l_lines2.count / 3 loop
+         l_parts := cwms_util.split_text(replace(l_lines2(3*i-2), '"', null));
+         --
+         -- shift date/time
+         --
+         l_shifts.extend;
+         l_shifts(i).stages := number_tab_t(null, null, null);
+         l_shifts(i).shifts := number_tab_t(null, null, null);
+         begin
+            l_shifts(i).effective_date := to_date(cwms_util.split_text(l_parts(3), 2, '='), 'yyyymmddhh24miss');
+         exception
+            when others then
+               l_shifts.trim;
+               exit; 
+         end;
+         begin
+            l_shifts(i).effective_date := cwms_util.change_timezone(l_shifts(i).effective_date, cwms_util.split_text(l_parts(4), 2, '='));
+         exception
+            when others then null;
+         end;
+         --
+         -- shift values
+         --
+         l_parts := cwms_util.split_text(replace(l_lines2(3*i-1), '"', null));
+         begin                         
+            if l_parts.count > 3 then
+               l_shifts(i).stages(1) := to_number(cwms_util.split_text(l_parts(3), 2, '='));
+               l_shifts(i).shifts(1) := to_number(cwms_util.split_text(l_parts(4), 2, '='));
+            else
+               l_shifts.trim;
+               exit;
+            end if;
+            if l_parts.count > 5 then
+               l_shifts(i).stages(2) := to_number(cwms_util.split_text(l_parts(5), 2, '='));
+               l_shifts(i).shifts(2) := to_number(cwms_util.split_text(l_parts(6), 2, '='));
+            end if;
+            if l_parts.count > 7 then
+               l_shifts(i).stages(3) := to_number(cwms_util.split_text(l_parts(7), 2, '='));
+               l_shifts(i).shifts(3) := to_number(cwms_util.split_text(l_parts(8), 2, '='));
+            end if;
+         exception
+            when others then
+              cwms_err.raise('ERROR', 'Error parsing shift values.  Clob ID is '||l_clob_id); 
+         end;
+         --
+         -- shift comment
+         --
+         l_lines2(3*i) := replace(l_lines2(3*i), '"', null);
+         l_shifts(i).description := trim(substr(l_lines2(3*i), instr(l_lines2(3*i), '=')+1)); 
+      end loop;        
+      -----------------------------------
+      -- get the offsets from the exsa --
+      -----------------------------------
+      select column_value
+        bulk collect
+        into l_parts
+        from table(l_lines)
+       where column_value like '# //RATING BREAKPOINT1=%';
+
+      if l_parts.count = 1 then
+         --
+         -- offset breakpoints
+         --             
+         select to_number(value)
+           bulk collect
+           into l_offsets.stages
+           from (select 0 as seq,
+                        '0' as value
+                   from dual
+                 union all
+                 select rownum as seq,
+                        value
+                   from (select cwms_util.split_text(column_value, 2, '=') as value
+                           from table(cwms_util.split_text(substr(l_parts(1), 12)))
+                        )
+                );
+           l_offsets.stages(1) := l_offsets.stages(2) - .001;     
+      end if;             
+      --
+      -- offset values
+      --                                      
+      select column_value
+        bulk collect
+        into l_parts
+        from table(l_lines)
+       where column_value like '# //RATING OFFSET1=%';
+       
+      if l_parts.count > 0 then
+         select to_number(value)
+           bulk collect
+           into l_offsets.offsets
+           from (select cwms_util.split_text(column_value, 2, '=') as value
+                   from table(cwms_util.split_text(substr(l_parts(1), 12)))
+                );
+         while l_offsets.offsets(l_offsets.offsets.count) is null loop
+            -- don't know why this is necessary, but I ran into a case where it was             
+            l_offsets.offsets.trim;
+         end loop;              
+                                                                  
+         if l_offsets.offsets.count = 1 and l_offsets.stages is null then
+            -- single offset
+            l_offsets.stages := number_tab_t(0);
+         end if;
+                      
+         if l_offsets.offsets.count != l_offsets.stages.count then
+           cwms_err.raise('ERROR', 'Error parsing rating offsets.  Clob ID is '||l_clob_id); 
+         end if;
+      elsif l_offsets.stages is not null then                
+        cwms_err.raise('ERROR', 'Error parsing rating offsets.  Clob ID is '||l_clob_id); 
+      end if;          
+        
+               
+      dbms_lob.createtemporary(l_xml, true);
+      dbms_lob.open(l_xml, dbms_lob.lob_readwrite);
+      writeln_clob(l_xml, '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlschema/cwms/Ratings.xsd">');
+      writeln_clob(l_xml, tab||'<rating-template office-id="'||p_office_id||'">'); 
+      writeln_clob(l_xml, tab||tab||'<parameters-id>Stage;Flow</parameters-id>');
+      writeln_clob(l_xml, tab||tab||'<version>USGS-BASE</version>');
+      writeln_clob(l_xml, tab||tab||'<ind-parameter-specs>');
+      writeln_clob(l_xml, tab||tab||tab||'<ind-parameter-spec position="1">');
+      writeln_clob(l_xml, tab||tab||tab||tab||'<parameter>Stage</parameter>');
+      writeln_clob(l_xml, tab||tab||tab||tab||'<in-range-method>LOGARITHMIC</in-range-method>');
+      writeln_clob(l_xml, tab||tab||tab||tab||'<out-range-low-method>NULL</out-range-low-method>');
+      writeln_clob(l_xml, tab||tab||tab||tab||'<out-range-high-method>NULL</out-range-high-method>');
+      writeln_clob(l_xml, tab||tab||tab||'</ind-parameter-spec>');
+      writeln_clob(l_xml, tab||tab||'</ind-parameter-specs>');
+      writeln_clob(l_xml, tab||tab||'<dep-parameter>Flow</dep-parameter>');
+      writeln_clob(l_xml, tab||tab||'<description>Stage-Flow</description>');
+      writeln_clob(l_xml, tab||'</rating-template>');
+      writeln_clob(l_xml, tab||'<rating-spec office-id="'||p_office_id||'">'); 
+      writeln_clob(l_xml, tab||tab||'<rating-spec-id>'||l_station_number||'.Stage;Flow.USGS-BASE.USGS</rating-spec-id>'); 
+      writeln_clob(l_xml, tab||tab||'<template-id>Stage;Flow.USGS-BASE</template-id>'); 
+      writeln_clob(l_xml, tab||tab||'<location-id>'||l_station_number||'</location-id>'); 
+      writeln_clob(l_xml, tab||tab||'<version>USGS</version>');
+      writeln_clob(l_xml, tab||tab||'<source-agency>USGS</source-agency>');
+      writeln_clob(l_xml, tab||tab||'<in-range-method>LINEAR</in-range-method>');
+      writeln_clob(l_xml, tab||tab||'<out-range-low-method>NULL</out-range-low-method>');
+      writeln_clob(l_xml, tab||tab||'<out-range-high-method>NEAREST</out-range-high-method>');
+      writeln_clob(l_xml, tab||tab||'<active>true</active>');
+      writeln_clob(l_xml, tab||tab||'<auto-update>true</auto-update>');
+      writeln_clob(l_xml, tab||tab||'<auto-activate>true</auto-activate>');
+      writeln_clob(l_xml, tab||tab||'<auto-migrate-extension>true</auto-migrate-extension>');
+      writeln_clob(l_xml, tab||tab||'<ind-rounding-specs>');
+      writeln_clob(l_xml, tab||tab||tab||'<ind-rounding-spec position="1">'||l_ind_rounding||'</ind-rounding-spec>');
+      writeln_clob(l_xml, tab||tab||'</ind-rounding-specs>');
+      writeln_clob(l_xml, tab||tab||'<dep-rounding-spec>'||l_dep_rounding||'</dep-rounding-spec>');
+      writeln_clob(l_xml, tab||tab||'<description>'||l_station_number||' stage correction rating</description>');
+      writeln_clob(l_xml, tab||'</rating-spec>'); 
+      writeln_clob(l_xml, tab||'<usgs-stream-rating office-id="'||p_office_id||'">'); 
+      writeln_clob(l_xml, tab||tab||'<rating-spec-id>'||l_station_number||'.Stage;Flow.USGS-BASE.USGS</rating-spec-id>'); 
+      writeln_clob(l_xml, tab||tab||'<units-id>ft;cfs</units-id>'); 
+      writeln_clob(l_xml, tab||tab||'<effective-date>'||to_char(trunc(l_effective_date, 'mi'), 'yyyy-mm-dd"T"hh24:mi:ss"Z"')||'</effective-date>'); 
+      writeln_clob(l_xml, tab||tab||'<create-date/>'); 
+      writeln_clob(l_xml, tab||tab||'<active>true</active>');
+      if l_description is null then
+         writeln_clob(l_xml, tab||tab||'<description/>'); 
+      else
+         writeln_clob(l_xml, tab||tab||'<description>'||expand_xml_entities(l_description)||'</description>'); 
+      end if;
+      if l_shifts.count > 0 then
+         for i in 1..l_shifts.count loop
+            writeln_clob(l_xml, tab||tab||'<height-shifts>');
+            writeln_clob(l_xml, tab||tab||tab||'<effective-date>'||to_char(trunc(l_shifts(i).effective_date, 'mi'), 'yyyy-mm-dd"T"hh24:mi:ss"Z"')||'</effective-date>');
+            writeln_clob(l_xml, tab||tab||tab||'<create-date/>'); 
+            writeln_clob(l_xml, tab||tab||tab||'<active>true</active>');
+            if l_shifts(i).description is null then
+               writeln_clob(l_xml, tab||tab||tab||'<description/>'); 
+            else
+               writeln_clob(l_xml, tab||tab||tab||'<description>'||expand_xml_entities(l_shifts(i).description)||'</description>'); 
+            end if;          
+            for j in 1..l_shifts(i).stages.count loop
+               exit when l_shifts(i).stages(j) is null;
+               writeln_clob(l_xml, tab||tab||tab||'<point>');
+               writeln_clob(l_xml, tab||tab||tab||tab||'<ind>'||l_shifts(i).stages(j)||'</ind>');
+               writeln_clob(l_xml, tab||tab||tab||tab||'<dep>'||l_shifts(i).shifts(j)||'</dep>');
+               writeln_clob(l_xml, tab||tab||tab||'</point>');
+            end loop; 
+            writeln_clob(l_xml, tab||tab||'</height-shifts>');
+         end loop;
+      else
+         writeln_clob(l_xml, tab||tab||'<height-shifts/>');
+      end if;          
+      if l_offsets.stages is not null and l_offsets.stages.count > 0 then
+         writeln_clob(l_xml, tab||tab||'<height-offsets>');
+         for j in 1..l_offsets.stages.count loop
+            writeln_clob(l_xml, tab||tab||tab||'<point>');
+            writeln_clob(l_xml, tab||tab||tab||tab||'<ind>'||l_offsets.stages(j)||'</ind>');
+            writeln_clob(l_xml, tab||tab||tab||tab||'<dep>'||l_offsets.offsets(j)||'</dep>');
+            writeln_clob(l_xml, tab||tab||tab||'</point>');
+         end loop; 
+         writeln_clob(l_xml, tab||tab||'</height-offsets>');
+      else
+         writeln_clob(l_xml, tab||tab||'<height-offsets/>');
+      end if;
+      writeln_clob(l_xml, tab||tab||'<rating-points>');
+      for i in 1..l_stages.count loop
+         writeln_clob(l_xml, tab||tab||tab||'<point>');
+         writeln_clob(l_xml, tab||tab||tab||tab||'<ind>'||l_stages(i)||'</ind>');
+         writeln_clob(l_xml, tab||tab||tab||tab||'<dep>'||l_flows(i)||'</dep>');
+         writeln_clob(l_xml, tab||tab||tab||'</point>');
+      end loop; 
+      writeln_clob(l_xml, tab||tab||'</rating-points>'); 
+      writeln_clob(l_xml, tab||'</usgs-stream-rating>'); 
+      writeln_clob(l_xml, '</ratings>'); 
+      dbms_lob.close(l_xml);
+      return l_xml;
+   exception
+      when others then
+         cwms_msg.log_db_message('base_to_xml', cwms_msg.msg_level_normal, dbms_utility.format_error_backtrace);
+         cwms_msg.log_db_message('base_to_xml', cwms_msg.msg_level_normal, dbms_utility.format_error_stack);
+         declare
+            l_clob clob;
+         begin                                   
+            dbms_lob.createtemporary(l_clob, true);
+            dbms_lob.append(l_clob, p_rating_base);
+            dbms_lob.append(l_clob, p_rating_exsa);
+            store_text(l_clob, l_clob_id, p_office_id);  
+            commit;
+         end; 
+         raise;
+   end;
+end base_to_xml;
+
+function exsa_to_xml(
+   p_rating_text in clob,
+   p_office_id   in varchar2)
+   return clob
+is
+   tab               constant varchar2(1) := chr(9);
+   l_xml             clob;
+   l_lines           str_tab_t;
+   l_lines2          str_tab_t;
+   l_parts           str_tab_t;
+   l_text            varchar2(256);
+   l_clob_id         varchar2(256) := '/_usgs-ratings/exsa/'||cwms_msg.get_msg_id;
+   l_description     varchar2(256);
+   l_effective_date  date;
+   l_station_number  varchar2(15);  
+   l_stages          number_tab_t;
+   l_flows           number_tab_t;
+   l_dates           date_table_type;
+   l_ind_rounding    varchar2(10);
+   l_dep_rounding    varchar2(10);
+begin
+   begin
+      l_lines := cwms_util.split_text(p_rating_text, chr(10));
+      ----------------------------
+      -- get the station number --
+      ----------------------------
+      select column_value
+        bulk collect
+        into l_parts     
+        from table(l_lines)
+       where column_value like '# //STATION AGENCY%'; 
+      if l_parts.count = 0 then
+            cwms_err.raise('ERROR', 'Could not find rating station number. Clob ID is '||l_clob_id);
+      end if;
+      if l_parts.count > 1 then
+            cwms_err.raise('ERROR', 'Found multiple rating station numbers. Clob ID is '||l_clob_id);
+      end if;
+      l_parts := cwms_util.split_text(l_parts(1));
+      for i in 1..l_parts.count loop
+         if l_parts(i) like 'NUMBER=%' then
+            l_station_number := trim(cwms_util.split_text(replace(l_parts(i), '"', null), 2, '='));
+            exit;
+         end if;
+      end loop;
+      if l_station_number is null then
+         cwms_err.raise('ERROR', 'Could not find rating station number. Clob ID is '||l_clob_id);
+      end if;
+      -------------------------------------------
+      -- get the rating number and description --
+      -------------------------------------------
+      select column_value
+        bulk collect
+        into l_parts     
+        from table(l_lines)
+       where column_value like '# //RATING ID=%';
+      if l_parts.count > 0 then
+         l_description := 'Rating '||trim(cwms_util.split_text(replace(substr(l_parts(1), instr(l_parts(1), '=')+1), '"', null), 1));
+      end if;  
+      select column_value
+        bulk collect
+        into l_parts     
+        from table(l_lines)
+       where column_value like '# //RATING REMARKS=%';
+      if l_parts.count > 0 then
+         if l_description is not null then
+            l_description := l_description||'-'; 
+         end if;
+         l_description := l_description||trim(replace(substr(l_parts(1), instr(l_parts(1), '=')+1), '"', null));
+      end if;  
+      ----------------------------
+      -- get the effective date --
+      ----------------------------
+      select column_value
+        bulk collect
+        into l_lines2     
+        from table(l_lines)
+       where column_value like '# //RATING_DATETIME BEGIN=%'
+          or column_value like '# //SHIFT_PREV BEGIN=%'; 
+      if l_lines2.count = 0 then
+            cwms_err.raise('ERROR', 'Could not find rating effective time. Clob ID is '||l_clob_id);
+      end if;
+      l_dates := date_table_type();
+      <<lines>> 
+      for i in 1..l_lines2.count loop
+         l_parts := cwms_util.split_text(replace(l_lines2(i), '"', null));
+         <<timeval>>
+         for j in 3..l_parts.count loop
+            if l_parts(j) like 'BEGIN=%' then
+               l_text := cwms_util.split_text(l_parts(j), 2, '=');
+               l_dates.extend;                                             
+               begin
+                  l_dates(l_dates.count) := to_date(l_text, 'yyyymmddhh24miss');
+               exception
+                  when others then
+                     l_dates.trim; 
+                     continue;
+               end;    
+               <<timezone>>
+               for k in j+1..l_parts.count loop
+                  if l_parts(k) like 'BZONE=%' then
+                     l_text := cwms_util.split_text(l_parts(k), 2, '=');
+                     begin
+                        l_dates(l_dates.count) := cwms_util.change_timezone(l_dates(l_dates.count), l_text, 'UTC');
+                     exception
+                        when others then null;
+                     end;
+                     exit timeval;
+                  end if;
+               end loop;
+            end if;
+         end loop;
+      end loop;
+      select max(column_value)
+        into l_effective_date
+        from table(l_dates);
+      l_dates.delete;
+      ----------------------------      
+      -- get the rounding specs --
+      ----------------------------
+      select column_value
+        bulk collect
+        into l_parts     
+        from table(l_lines)
+       where column_value like '# //RATING_INDEP ROUNDING=%'; 
+      if l_parts.count = 0 then
+            cwms_err.raise('ERROR', 'Could not find stage rounding specification. Clob ID is '||l_clob_id);
+      end if;
+      if l_parts.count > 1 then
+            cwms_err.raise('ERROR', 'Found multiple stage rounding specifications. Clob ID is '||l_clob_id);
+      end if;
+      begin
+         select cwms_util.split_text(trim(replace(column_value, '"', null)), 2, '=')
+           into l_ind_rounding
+           from table(cwms_util.split_text(l_parts(1)))
+          where column_value like 'ROUNDING=%'; 
+      exception
+         when no_data_found then
+            cwms_err.raise('ERROR', 'Could not find stage rounding specification. Clob ID is '||l_clob_id);
+      end;
+      select column_value
+        bulk collect
+        into l_parts     
+        from table(l_lines)
+       where column_value like '# //RATING_DEP ROUNDING=%'; 
+      if l_parts.count = 0 then
+            cwms_err.raise('ERROR', 'Could not find flow rounding specification. Clob ID is '||l_clob_id);
+      end if;
+      if l_parts.count > 1 then
+            cwms_err.raise('ERROR', 'Found multiple flow rounding specifications. Clob ID is '||l_clob_id);
+      end if;
+      begin
+         select cwms_util.split_text(trim(replace(column_value, '"', null)), 2, '=')
+           into l_dep_rounding
+           from table(cwms_util.split_text(l_parts(1)))
+          where column_value like 'ROUNDING=%'; 
+      exception
+         when no_data_found then
+            cwms_err.raise('ERROR', 'Could not find flow rounding specification. Clob ID is '||l_clob_id);
+      end;
+      ---------------------------
+      -- get the rating values --
+      ---------------------------
+      select column_value
+        bulk collect
+        into l_lines2
+        from table(l_lines)
+       where column_value not like '#%';
+        
+      select to_number(text)
+        bulk collect
+        into l_stages
+        from (select cwms_util.split_text(column_value, 1) as text 
+                from table(l_lines2)
+             )
+       where trim(translate(text, '-+.0123456789', ' ')) is null;
+       
+      select to_number(text)
+        bulk collect
+        into l_flows
+        from (select cwms_util.split_text(column_value, 3) as text 
+                from table(l_lines2)
+             )
+       where trim(translate(text, '-+.0123456789', ' ')) is null;
+       if l_stages.count != l_flows.count or l_stages.count != l_lines2.count-2 then
+         cwms_err.raise('ERROR', 'Error parsing rating values.  Clob ID is '||l_clob_id); 
+       end if;
+               
+      dbms_lob.createtemporary(l_xml, true);
+      dbms_lob.open(l_xml, dbms_lob.lob_readwrite);
+      writeln_clob(l_xml, '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlschema/cwms/Ratings.xsd">');
+      writeln_clob(l_xml, tab||'<rating-template office-id="'||p_office_id||'">'); 
+      writeln_clob(l_xml, tab||tab||'<parameters-id>Stage;Flow</parameters-id>');
+      writeln_clob(l_xml, tab||tab||'<version>USGS-EXSA</version>');
+      writeln_clob(l_xml, tab||tab||'<ind-parameter-specs>');
+      writeln_clob(l_xml, tab||tab||tab||'<ind-parameter-spec position="1">');
+      writeln_clob(l_xml, tab||tab||tab||tab||'<parameter>Stage</parameter>');
+      writeln_clob(l_xml, tab||tab||tab||tab||'<in-range-method>LINEAR</in-range-method>');
+      writeln_clob(l_xml, tab||tab||tab||tab||'<out-range-low-method>NULL</out-range-low-method>');
+      writeln_clob(l_xml, tab||tab||tab||tab||'<out-range-high-method>NULL</out-range-high-method>');
+      writeln_clob(l_xml, tab||tab||tab||'</ind-parameter-spec>');
+      writeln_clob(l_xml, tab||tab||'</ind-parameter-specs>');
+      writeln_clob(l_xml, tab||tab||'<dep-parameter>Flow</dep-parameter>');
+      writeln_clob(l_xml, tab||tab||'<description>Stage-Flow</description>');
+      writeln_clob(l_xml, tab||'</rating-template>');
+      writeln_clob(l_xml, tab||'<rating-spec office-id="'||p_office_id||'">'); 
+      writeln_clob(l_xml, tab||tab||'<rating-spec-id>'||l_station_number||'.Stage;Flow.USGS-EXSA.USGS</rating-spec-id>'); 
+      writeln_clob(l_xml, tab||tab||'<template-id>Stage;Flow.USGS-EXSA</template-id>'); 
+      writeln_clob(l_xml, tab||tab||'<location-id>'||l_station_number||'</location-id>'); 
+      writeln_clob(l_xml, tab||tab||'<version>USGS</version>');
+      writeln_clob(l_xml, tab||tab||'<in-range-method>LINEAR</in-range-method>');
+      writeln_clob(l_xml, tab||tab||'<out-range-low-method>NULL</out-range-low-method>');
+      writeln_clob(l_xml, tab||tab||'<out-range-high-method>NEAREST</out-range-high-method>');
+      writeln_clob(l_xml, tab||tab||'<active>true</active>');
+      writeln_clob(l_xml, tab||tab||'<auto-update>true</auto-update>');
+      writeln_clob(l_xml, tab||tab||'<auto-activate>true</auto-activate>');
+      writeln_clob(l_xml, tab||tab||'<auto-migrate-extension>true</auto-migrate-extension>');
+      writeln_clob(l_xml, tab||tab||'<ind-rounding-specs>');
+      writeln_clob(l_xml, tab||tab||tab||'<ind-rounding-spec position="1">'||l_ind_rounding||'</ind-rounding-spec>');
+      writeln_clob(l_xml, tab||tab||'</ind-rounding-specs>');
+      writeln_clob(l_xml, tab||tab||'<dep-rounding-spec>'||l_dep_rounding||'</dep-rounding-spec>');
+      writeln_clob(l_xml, tab||tab||'<description>'||l_station_number||' stage correction rating</description>');
+      writeln_clob(l_xml, tab||'</rating-spec>'); 
+      writeln_clob(l_xml, tab||'<simple-rating office-id="'||p_office_id||'">'); 
+      writeln_clob(l_xml, tab||tab||'<rating-spec-id>'||l_station_number||'.Stage;Flow.USGS-EXSA.USGS</rating-spec-id>'); 
+      writeln_clob(l_xml, tab||tab||'<units-id>ft;cfs</units-id>'); 
+      writeln_clob(l_xml, tab||tab||'<effective-date>'||to_char(trunc(l_effective_date, 'mi'), 'yyyy-mm-dd"T"hh24:mi:ss"Z"')||'</effective-date>'); 
+      writeln_clob(l_xml, tab||tab||'<create-date/>'); 
+      writeln_clob(l_xml, tab||tab||'<active>true</active>'); 
+      if l_description is null then
+         writeln_clob(l_xml, tab||tab||'<description/>'); 
+      else
+         writeln_clob(l_xml, tab||tab||'<description>'||expand_xml_entities(l_description)||'</description>'); 
+      end if;
+      writeln_clob(l_xml, tab||tab||'<rating-points>');
+      for i in 1..l_stages.count loop
+         writeln_clob(l_xml, tab||tab||tab||'<point>');
+         writeln_clob(l_xml, tab||tab||tab||tab||'<ind>'||l_stages(i)||'</ind>');
+         writeln_clob(l_xml, tab||tab||tab||tab||'<dep>'||l_flows(i)||'</dep>');
+         writeln_clob(l_xml, tab||tab||tab||'</point>');
+      end loop; 
+      writeln_clob(l_xml, tab||tab||'</rating-points>'); 
+      writeln_clob(l_xml, tab||'</simple-rating>'); 
+      writeln_clob(l_xml, '</ratings>'); 
+      dbms_lob.close(l_xml);
+      return l_xml;
+   exception
+      when others then
+         cwms_msg.log_db_message('exsa_to_xml', cwms_msg.msg_level_normal, dbms_utility.format_error_backtrace);
+         store_text(p_rating_text, l_clob_id, p_office_id); 
+         raise;
+   end;
+end exsa_to_xml;
+
+procedure process_and_store_rating_text(
+   p_rating_type in varchar2,
+   p_rating_text in clob,
+   p_rating_exsa in clob,
+   p_office_id   in varchar2)
+is
+   item_does_not_exist exception;
+   pragma exception_init(item_does_not_exist, -20034);
+   l_clob           clob;         
+   l_xml            xmltype;
+   l_template       rating_template_t;
+   l_spec           rating_spec_t;
+   l_rating         rating_t;
+   l_spec_code      integer;
+   l_hash_value     varchar2(40);
+   l_first          boolean := true;  
+   l_active         boolean;
+   l_auto_update    boolean;
+   l_auto_activate  boolean;
+   l_auto_migrate   boolean;
+begin
+   --------------------------------------------------------
+   -- process the rating into the CWMS XML rating format --
+   --------------------------------------------------------
+   l_clob := case upper(p_rating_type)
+             when 'BASE' then base_to_xml(p_rating_text, p_rating_exsa, p_office_id)
+             when 'EXSA' then exsa_to_xml(p_rating_text, p_office_id)
+             when 'CORR' then corr_to_xml(p_rating_text, p_office_id)
+             else null
+             end;
+   if l_clob is null then
+      cwms_err.raise('INVALID_ITEM', p_rating_type, 'USGS rating type');
+   end if;
+   l_xml := xmltype(l_clob);
+   ---------------------------------------------------------                  
+   -- get the existing rating template or store a new one --
+   ---------------------------------------------------------                  
+   if l_first then
+      begin
+         l_template := new rating_template_t(
+            p_office_id, 
+            cwms_util.get_xml_text(l_xml, '/ratings/rating-template/parameters-id'), 
+            cwms_util.get_xml_text(l_xml, '/ratings/rating-template/version'));
+      exception
+         when item_does_not_exist then
+            l_template := new rating_template_t(cwms_util.get_xml_node(l_xml, '/ratings/rating-template'));
+            l_template.store('T');
+      end;
+      l_first := false;
+   end if;
+   -----------------------------------------------------
+   -- get the existing rating spec or store a new one --
+   -----------------------------------------------------
+   begin
+      l_spec := new rating_spec_t(
+         cwms_util.get_xml_text(l_xml, '/ratings/rating-spec/rating-spec-id'),
+         p_office_id);
+   exception
+      when item_does_not_exist then
+         l_spec := new rating_spec_t(cwms_util.get_xml_node(l_xml, '/ratings/rating-spec'));
+         l_spec.store('T');
+   end;
+   ----------------------------------------------------------------------
+   -- create the rating from the XML and adjust settings based on spec --
+   ----------------------------------------------------------------------
+   if upper(p_rating_type) = 'BASE' then
+      l_rating := new stream_rating_t(cwms_util.get_xml_node(l_xml, '/ratings/usgs-stream-rating')); 
+   else
+      l_rating := new rating_t(cwms_util.get_xml_node(l_xml, '/ratings/simple-rating')); 
+   end if;
+   l_rating.convert_to_database_time;
+   l_rating.active_flag := l_spec.auto_activate_flag;
+   if l_spec.auto_migrate_ext_flag = 'T' and l_rating.rating_info is not null then
+      declare
+         l_prev rating_tab_t;
+      begin
+         l_prev := cwms_rating.retrieve_ratings_obj_f(
+            p_spec_id_mask         => l_rating.rating_spec_id, 
+            p_effective_date_start => null, 
+            p_effective_date_end   => l_rating.effective_date - 1/86400, 
+            p_time_zone            => 'UTC', 
+            p_office_id_mask       => p_office_id);
+                  
+         if l_prev.count > 0 and l_prev(l_prev.count).rating_info is not null then
+            l_rating.rating_info.extension_values := l_prev(l_prev.count).rating_info.extension_values;
+         end if;               
+      end;
+   end if;
+   ------------------------------------------------------------------
+   -- store the rating and store a hash code for future comparison --
+   ------------------------------------------------------------------
+   l_rating.store('F');
+   l_spec_code := rating_spec_t.get_rating_spec_code(
+      l_spec.location_id
+      ||'.'
+      ||l_spec.template_id
+      ||'.'
+      ||l_spec.version, 
+      p_office_id);
+   if upper(p_rating_type) = 'BASE' then
+      l_hash_value := hash_rating_text(p_rating_exsa);            
+   else
+      l_hash_value := hash_rating_text(p_rating_text);            
+   end if;
+   begin
+      select rating_spec_code
+        into l_spec_code
+        from at_usgs_rating_hash
+       where rating_spec_code = l_spec_code;
+              
+      update at_usgs_rating_hash
+         set hash_value = l_hash_value
+       where rating_spec_code = l_spec_code;  
+   exception
+      when no_data_found then
+         insert
+           into at_usgs_rating_hash
+         values (l_spec_code, l_hash_value);  
+   end;
+   commit;
+end process_and_store_rating_text;   
+   
+procedure retrieve_and_store_ratings(
+   p_rating_type  in varchar2,
+   p_sites        in str_tab_t,
+   p_log_progress in varchar2 default 'F',
+   p_office_id    in varchar2)
+is
+   l_log_progress   boolean := cwms_util.return_true_or_false(p_log_progress);
+   l_url            varchar2(81); 
+   l_rating_text    clob;
+   l_rating_exsa    clob;
+begin
+   for i in 1..p_sites.count loop
+      l_url := replace(rating_url, '<type>', lower(p_rating_type));
+      --------------------------------------------
+      -- get the rating from the USGS NWIS site --
+      --------------------------------------------
+      begin
+         l_rating_text := cwms_util.get_url(replace(l_url, '<site>', p_sites(i)));
+      exception
+         when others then
+            cwms_msg.log_db_message(
+               'retrieve_and_store_ratings', 
+               cwms_msg.msg_level_normal, 
+               p_office_id
+               ||': '
+               ||i
+               ||' of '
+               ||p_sites.count
+               ||': '
+               ||nvl(cwms_loc.get_location_id_from_alias(p_sites(i), 'USGS Station Number', 'Agency Aliases', p_office_id), p_sites(i))
+               ||': '
+               ||sqlerrm
+               ||' retrieving data from '
+               ||replace(l_url, '<site>', p_sites(i)));
+            continue;
+      end;
+      if not l_rating_text like '%# //%' then
+         cwms_msg.log_db_message(
+            'retrieve_and_store_ratings', 
+            cwms_msg.msg_level_normal, 
+            p_office_id
+            ||': '
+            ||i
+            ||' of '
+            ||p_sites.count
+            ||': '
+            ||nvl(cwms_loc.get_location_id_from_alias(p_sites(i), 'USGS Station Number', 'Agency Aliases', p_office_id), p_sites(i))
+            ||': Invalid rating text:'
+            ||chr(10)
+            ||substr(l_rating_text, 1, 1000));
+         continue;            
+      end if;
+      if l_log_progress then
+         cwms_msg.log_db_message(
+            'retrieve_and_store_ratings', 
+            cwms_msg.msg_level_verbose, 
+            p_office_id
+            ||': '
+            ||i
+            ||' of '
+            ||p_sites.count
+            ||': '
+            ||nvl(cwms_loc.get_location_id_from_alias(p_sites(i), 'USGS Station Number', 'Agency Aliases', p_office_id), p_sites(i))
+            ||': '
+            ||dbms_lob.getlength(l_rating_text)
+            ||' bytes retrieved from '
+            ||replace(l_url, '<site>', p_sites(i)));
+      end if;
+      if p_rating_type = 'BASE' then
+         ------------------------------------------------------------
+         -- retrieve the EXSA rating for the shift and offset info --
+         ------------------------------------------------------------
+         l_url := replace(l_url, 'base', 'exsa');
+         begin
+            l_rating_exsa := cwms_util.get_url(replace(l_url, '<site>', p_sites(i)));
+         exception
+            when others then
+               cwms_msg.log_db_message(
+                  'retrieve_and_store_ratings', 
+                  cwms_msg.msg_level_normal, 
+                  p_office_id
+                  ||': '
+                  ||i
+                  ||' of '
+                  ||p_sites.count
+                  ||': '
+                  ||nvl(cwms_loc.get_location_id_from_alias(p_sites(i), 'USGS Station Number', 'Agency Aliases', p_office_id), p_sites(i))
+                  ||': '
+                  ||sqlerrm
+                  ||' retrieving data from '
+                  ||replace(l_url, '<site>', p_sites(i)));
+               continue;
+         end;
+         if not l_rating_exsa like '%# //%' then
+            cwms_msg.log_db_message(
+               'retrieve_and_store_ratings', 
+               cwms_msg.msg_level_normal, 
+               p_office_id
+               ||': '
+               ||i
+               ||' of '
+               ||p_sites.count
+               ||': '
+               ||nvl(cwms_loc.get_location_id_from_alias(p_sites(i), 'USGS Station Number', 'Agency Aliases', p_office_id), p_sites(i))
+               ||': Invalid rating text:'
+               ||chr(10)
+               ||substr(l_rating_exsa, 1, 1000));
+            continue;            
+         end if;
+         if l_log_progress then
+            cwms_msg.log_db_message(
+               'retrieve_and_store_ratings', 
+               cwms_msg.msg_level_verbose, 
+               p_office_id
+               ||': '
+               ||i
+               ||' of '
+               ||p_sites.count
+               ||': '
+               ||nvl(cwms_loc.get_location_id_from_alias(p_sites(i), 'USGS Station Number', 'Agency Aliases', p_office_id), p_sites(i))
+               ||': '
+               ||dbms_lob.getlength(l_rating_exsa)
+               ||' bytes retrieved from '
+               ||replace(l_url, '<site>', p_sites(i)));
+         end if;
+      else
+         l_rating_exsa := null;
+      end if;
+      begin
+         process_and_store_rating_text(p_rating_type, l_rating_text, l_rating_exsa, p_office_id);
+      exception
+         when others then
+            cwms_msg.log_db_message(
+               'retrieve_and_store_ratings', 
+               cwms_msg.msg_level_basic, 
+               p_office_id
+               ||': '
+               ||i
+               ||' of '
+               ||p_sites.count
+               ||': '
+               ||nvl(cwms_loc.get_location_id_from_alias(p_sites(i), 'USGS Station Number', 'Agency Aliases', p_office_id), p_sites(i))
+               ||': '
+               ||dbms_utility.format_error_backtrace);
+            cwms_msg.log_db_message(
+               'retrieve_and_store_ratings', 
+               cwms_msg.msg_level_detailed, 
+               p_office_id
+               ||': '
+               ||i
+               ||' of '
+               ||p_sites.count
+               ||': '
+               ||nvl(cwms_loc.get_location_id_from_alias(p_sites(i), 'USGS Station Number', 'Agency Aliases', p_office_id), p_sites(i))
+               ||': '
+               ||dbms_utility.format_error_stack);
+      end;
+   end loop;    
+end retrieve_and_store_ratings;   
+      
+procedure retrieve_and_store_ratings(
+   p_rating_type in varchar2,
+   p_sites       in varchar2 default null,
+   p_office_id   in varchar2 default null)
+is
+   l_office_id      varchar2(16) := cwms_util.get_db_office_id(p_office_id);
+   l_office_code    integer := cwms_util.get_db_office_code(l_office_id);
+   l_rating_type    varchar2(9);
+   l_sites          str_tab_t;
+   l_parts          str_tab_t;
+   l_text_filter_id varchar2(32);
+begin
+   if upper(p_rating_type) not in ('BASE', 'EXSA', 'CORR') then
+      cwms_err.raise('INVALID_ITEM', p_rating_type, 'USGS rating type');
+   end if;
+   l_rating_type := upper(p_rating_type);
+   cwms_msg.log_db_message(
+      'retrieve_and_store_ratings', 
+      cwms_msg.msg_level_basic, 
+      l_rating_type||' ratings retreival started for '||l_office_id);
+   begin
+      -----------------------
+      -- get the locations --
+      -----------------------
+      if p_sites is null then 
+         -------------------
+         -- all locations --
+         -------------------
+         select bl.base_location_id
+                ||substr('-', 1, length(pl.sub_location_id))
+                ||pl.sub_location_id
+           bulk collect
+           into l_parts
+           from at_physical_location pl,
+                at_base_location bl
+          where bl.db_office_code = l_office_code
+            and pl.base_location_code = bl.base_location_code;            
+      else
+         -------------------------
+         -- specified locations --
+         -------------------------
+         select trim(column_value) 
+           bulk collect 
+           into l_parts 
+           from table(cwms_util.split_text(p_sites, ','));
+         if l_parts.count = 1 then
+            begin
+               select text_filter_id
+                 into l_text_filter_id
+                 from at_text_filter
+                where office_code in (l_office_code, cwms_util.db_office_code_all)
+                  and upper(text_filter_id) = upper(l_parts(1));
+            exception
+               when no_data_found then null;
+            end;
+            if l_text_filter_id is not null then
+               ------------------------------
+               -- text filter id specified --
+               ------------------------------
+               l_parts := cwms_usgs.filter_locations(l_text_filter_id, 'T', null, p_office_id);
+            end if;
+         end if;        
+      end if; 
+      ----------------------------------
+      -- get the USGS station numbers --
+      ----------------------------------
+      select lga.loc_alias_id
+        bulk collect
+        into l_sites
+        from at_loc_category lc,
+             at_loc_group lg,
+             at_loc_group_assignment lga
+       where lc.loc_category_id = 'Agency Aliases'
+         and lg.loc_category_code = lc.loc_category_code
+         and lg.loc_group_id = 'USGS Station Number'
+         and lga.loc_group_code = lg.loc_group_code
+         and lga.location_code in (select cwms_loc.get_location_code(l_office_code, column_value)
+                                     from table(l_parts)
+                                  )
+       order by 1;
+      cwms_msg.log_db_message(
+         'retrieve_and_store_ratings', 
+         cwms_msg.msg_level_detailed, 
+         l_office_id||': retrieving ratings for '||l_sites.count||' sites');
+      -----------------------   
+      -- store the ratings --
+      -----------------------   
+      retrieve_and_store_ratings(
+         l_rating_type,
+         l_sites,
+         'T',
+         l_office_id);         
+   exception
+      when others then
+         cwms_msg.log_db_message(
+            'retrieve_and_store_ratings', 
+            cwms_msg.msg_level_basic, 
+            l_office_id||': '||dbms_utility.format_error_backtrace);
+         cwms_msg.log_db_message(
+            'retrieve_and_store_ratings', 
+            cwms_msg.msg_level_detailed, 
+            l_office_id||': '||dbms_utility.format_error_stack);
+   end;      
+   cwms_msg.log_db_message(
+      'retrieve_and_store_ratings', 
+      cwms_msg.msg_level_basic, 
+      l_rating_type||' ratings retreival ended for '||l_office_id);
+   
+end retrieve_and_store_ratings;            
+   
+procedure update_existing_ratings(
+   p_office_id in varchar2 default null)
+is
+   l_office_id        varchar2(16) := cwms_util.get_db_office_id(p_office_id);
+   l_office_code      integer := cwms_util.get_db_office_code(l_office_id);
+   l_location_id      varchar2(49);
+   l_parameters_id    varchar2(64);
+   l_template_version varchar2(9); 
+   l_rating_text      clob;   
+   l_rating_exsa      clob;  
+   l_hash_value       varchar2(40); 
+   l_count            pls_integer := 0;
+begin
+   cwms_msg.log_db_message(
+      'update_existing_ratings', 
+      cwms_msg.msg_level_basic, 
+      'Updating USGS ratings started for '||l_office_id);
+   for rec in (select a.site_number,
+                      a.rating_type,
+                      a.location_code,
+                      a.parameters_id,
+                      b.hash_value 
+                 from (select aur.column_value as rating_spec_code,
+                              lga.loc_alias_id as site_number,
+                              lower(substr(rt.version, 6)) as rating_type,
+                              rs.location_code,
+                              rt.parameters_id
+                         from table(cwms_usgs.get_auto_update_ratings(l_office_id)) aur,
+                              at_rating_spec rs,
+                              at_rating_template rt,
+                              at_loc_category lc,
+                              at_loc_group lg,
+                              at_loc_group_assignment lga
+                        where rs.rating_spec_code = aur.column_value
+                          and rs.template_code = rt.template_code
+                          and lc.loc_category_id = 'Agency Aliases'
+                          and lg.loc_category_code = lc.loc_category_code
+                          and lg.loc_group_id = 'USGS Station Number'
+                          and lga.loc_group_code = lg.loc_group_code
+                          and lga.location_code = rs.location_code
+                      ) a
+                 left outer join at_usgs_rating_hash b
+                 on b.rating_spec_code = a.rating_spec_code
+              )    
+   loop
+      --------------------------------------------       
+      -- get the rating from the USGS NWIS site --
+      --------------------------------------------
+      begin
+         l_rating_text := cwms_util.get_url(replace(replace(rating_url, '<site>', rec.site_number), '<type>', rec.rating_type));
+      exception
+         when others then
+            cwms_msg.log_db_message(
+               'update_existing_ratings', 
+               cwms_msg.msg_level_detailed, 
+               dbms_utility.format_error_backtrace);
+               
+            cwms_msg.log_db_message(
+               'update_existing_ratings', 
+               cwms_msg.msg_level_basic, 
+               sqlerrm);
+               
+            continue;
+      end;
+      if rec.rating_type = 'base' then
+         begin
+            l_rating_exsa := cwms_util.get_url(replace(replace(rating_url, '<site>', rec.site_number), '<type>', 'exsa'));
+         exception
+            when others then
+               cwms_msg.log_db_message(
+                  'update_existing_ratings', 
+                  cwms_msg.msg_level_detailed, 
+                  dbms_utility.format_error_backtrace);
+                  
+               cwms_msg.log_db_message(
+                  'update_existing_ratings', 
+                  cwms_msg.msg_level_basic, 
+                  sqlerrm);
+                  
+               continue;
+         end;
+         l_hash_value := hash_rating_text(l_rating_exsa); 
+      else
+         l_hash_value := hash_rating_text(l_rating_text); 
+      end if;
+      cwms_msg.log_db_message(
+         'update_existing_ratings', 
+         cwms_msg.msg_level_verbose, 
+         'Checking USGS rating for '
+         ||cwms_loc.get_location_id(rec.location_code)
+         ||'.'
+         ||rec.parameters_id
+         ||'.USGS-'
+         ||upper(rec.rating_type)
+         ||'.USGS');
+      --------------------------------------------------------------------
+      -- compare it to the previous rating retrieved from the same site --
+      --------------------------------------------------------------------
+      if l_hash_value = rec.hash_value then
+         null;
+      else
+         ------------------------------
+         -- store the updated rating --
+         ------------------------------
+         cwms_msg.log_db_message(
+            'update_existing_ratings', 
+            cwms_msg.msg_level_detailed, 
+            'Updating USGS rating for '
+            ||cwms_loc.get_location_id(rec.location_code)
+            ||'.'
+            ||rec.parameters_id
+            ||'.USGS-'
+            ||upper(rec.rating_type)
+            ||'.USGS');
+         process_and_store_rating_text(rec.rating_type, l_rating_text, l_rating_exsa, l_office_id);
+         l_count := l_count + 1;
+      end if; 
+   end loop;                 
+   cwms_msg.log_db_message(
+      'update_existing_ratings', 
+      cwms_msg.msg_level_basic, 
+      'Updating USGS ratings ended for '||l_office_id||': '||l_count||' rating(s) updated');
+end update_existing_ratings;
+
+procedure generate_production_ratings2(
+   p_office_id in varchar2 default null)   
+is
+   l_base_specs     rating_spec_tab_t;
+   l_exsa_specs     rating_spec_tab_t;
+   l_corr_specs     rating_spec_tab_t;
+   l_ratings1       rating_tab_t;
+   l_ratings2       rating_tab_t;
+   l_lines          str_tab_t := str_tab_t();  
+   l_effective_date date;
+   l_office_id      varchar2(16);
+   l_office_code    number(10);   
+   
+   procedure append(
+      p_table in out nocopy str_tab_t,
+      p_text  in            varchar2)
+   is
+   begin
+      p_table.extend;
+      p_table(p_table.count) := p_text;
+   end append;
+begin
+   pragma inline(append, 'YES');
+   
+   l_office_code := cwms_util.get_db_office_code(l_office_id);
+   for rec in (
+      select loc_alias_id as site_id
+        from at_loc_group_assignment
+       where office_code = l_office_code
+         and loc_group_code = (select loc_group_code
+                                 from at_loc_group where loc_group_id = 'USGS Station Number'
+                                  and loc_category_code = (select loc_category_code
+                                                             from at_loc_category 
+                                                            where loc_category_id = 'Agency Aliases'
+                                                          )
+                              )
+       order by 1
+              )
+   loop 
+      generate_production_ratings(rec.site_id, p_office_id);
+   end loop;
+end generate_production_ratings2;
+
+procedure generate_production_ratings(
+   p_location_id in varchar2,
+   p_office_id   in varchar2 default null)   
+is
+   l_base_specs     rating_spec_tab_t;
+   l_exsa_specs     rating_spec_tab_t;
+   l_corr_specs     rating_spec_tab_t;
+   l_ratings1       rating_tab_t;
+   l_ratings2       rating_tab_t;
+   l_lines          str_tab_t := str_tab_t();  
+   l_effective_date date;
+   l_location_id    varchar2(49);   
+   
+   procedure append(
+      p_table in out nocopy str_tab_t,
+      p_text  in            varchar2)
+   is
+   begin
+      p_table.extend;
+      p_table(p_table.count) := p_text;
+   end append;
+begin
+   pragma inline(append, 'YES');
+                                 
+   l_location_id := cwms_loc.get_location_id(p_location_id, p_office_id);
+   
+   l_base_specs := cwms_rating.retrieve_specs_obj_f(l_location_id||'.Stage;Flow.USGS-BASE.USGS', p_office_id);
+   if l_base_specs.count = 0 then     
+      l_exsa_specs := cwms_rating.retrieve_specs_obj_f(l_location_id||'.Stage;Flow.USGS-EXSA.USGS', p_office_id);
+   end if;
+   if l_base_specs.count = 1 or l_exsa_specs.count = 1 then
+      l_corr_specs := cwms_rating.retrieve_specs_obj_f(l_location_id||'.Stage;Stage-Correction.USGS-CORR.USGS', p_office_id);
+      if l_corr_specs.count = 1 then
+         if l_base_specs.count = 1 then
+            --------------------------------
+            -- corr + base virtual rating --
+            --------------------------------
+            l_ratings1 := cwms_rating.retrieve_ratings_obj_f(l_location_id||'.Stage;Flow.USGS-BASE.USGS', null, null, null, p_office_id);
+            l_ratings1(l_ratings1.count).convert_to_database_time;
+            l_ratings2 := cwms_rating.retrieve_ratings_obj_f(l_location_id||'.Stage;Stage-Correction.USGS-CORR.USGS', null, null, null, p_office_id);
+            l_ratings2(l_ratings2.count).convert_to_database_time;
+            l_effective_date := greatest(l_ratings1(l_ratings1.count).effective_date, l_ratings2(l_ratings2.count).effective_date);  
+            l_lines.delete;
+            append(l_lines, '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
+            append(l_lines, '  <rating-template office-id="'||p_office_id||'">');
+            append(l_lines, '    <parameters-id>Stage;Flow</parameters-id>');
+            append(l_lines, '    <version>USGS-Production</version>');
+            append(l_lines, '    <ind-parameter-specs>');
+            append(l_lines, '      <ind-parameter-spec position="1">');
+            append(l_lines, '        <parameter>Stage</parameter>');
+            append(l_lines, '        <in-range-method>LINEAR</in-range-method>');
+            append(l_lines, '        <out-range-low-method>NULL</out-range-low-method>');
+            append(l_lines, '        <out-range-high-method>NULL</out-range-high-method>');
+            append(l_lines, '      </ind-parameter-spec>');
+            append(l_lines, '    </ind-parameter-specs>');
+            append(l_lines, '    <dep-parameter>Flow</dep-parameter>');
+            append(l_lines, '    <description>Production Stage;Flow rating using USGS ratings</description>');
+            append(l_lines, '  </rating-template>');
+            append(l_lines, '  <rating-spec office-id="'||p_office_id||'">');
+            append(l_lines, '    <rating-spec-id>'||l_location_id||'.Stage;Flow.USGS-Production.USGS</rating-spec-id>');
+            append(l_lines, '    <template-id>Stage;Flow.USGS-Production</template-id>');
+            append(l_lines, '    <location-id>'||l_location_id||'</location-id>');
+            append(l_lines, '    <version>USGS</version>');
+            append(l_lines, '    <in-range-method>LINEAR</in-range-method>');
+            append(l_lines, '    <out-range-low-method>NULL</out-range-low-method>');
+            append(l_lines, '    <out-range-high-method>PREVIOUS</out-range-high-method>');
+            append(l_lines, '    <active>true</active>');
+            append(l_lines, '    <auto-update>true</auto-update>');
+            append(l_lines, '    <auto-activate>true</auto-activate>');
+            append(l_lines, '    <auto-migrate-extension>false</auto-migrate-extension>');
+            append(l_lines, '    <ind-rounding-specs>');
+            append(l_lines, '      <ind-rounding-spec position="1">'||l_base_specs(1).ind_rounding_specs(1)||'</ind-rounding-spec>');
+            append(l_lines, '    </ind-rounding-specs>');
+            append(l_lines, '    <dep-rounding-spec>'||l_base_specs(1).dep_rounding_spec||'</dep-rounding-spec>');
+            append(l_lines, '    <description>'||l_location_id||' Production Stage;Flow rating using USGS ratings</description>');
+            append(l_lines, '  </rating-spec>');
+            append(l_lines, '  <virtual-rating office-id="'||p_office_id||'">');
+            append(l_lines, '    <rating-spec-id>'||l_location_id||'.Stage;Flow.USGS-Production.USGS</rating-spec-id>');
+            append(l_lines, '    <effective-date>'||cwms_util.get_xml_time(l_effective_date, 'UTC')||'</effective-date>');
+            append(l_lines, '    <active>true</active>');
+            append(l_lines, '    <connections>R2I1=I1,R2I2=R1D,R3I1=R2D</connections>');
+            append(l_lines, '    <source-ratings>');
+            append(l_lines, '      <source-rating position="1">');
+            append(l_lines, '        <rating-spec-id>'||l_location_id||'.Stage;Stage-Correction.USGS-CORR.USGS {ft;ft}</rating-spec-id>');
+            append(l_lines, '      </source-rating>');
+            append(l_lines, '      <source-rating position="2">');
+            append(l_lines, '        <rating-spec-id>I1 + I2 {ft,ft;ft}</rating-spec-id>');
+            append(l_lines, '      </source-rating>');
+            append(l_lines, '      <source-rating position="3">');
+            append(l_lines, '        <rating-spec-id>'||l_location_id||'.Stage;Flow.USGS-BASE.USGS {ft;cfs}</rating-spec-id>');
+            append(l_lines, '      </source-rating>');
+            append(l_lines, '    </source-ratings>');
+            append(l_lines, '  </virtual-rating>');
+            append(l_lines, '</ratings>');
+         else
+            --------------------------------
+            -- corr + exsa virtual rating --
+            --------------------------------
+            l_ratings1 := cwms_rating.retrieve_ratings_obj_f(l_location_id||'.Stage;Flow.USGS-EXSA.USGS', null, null, null, p_office_id);
+            l_ratings1(l_ratings1.count).convert_to_database_time;
+            l_ratings2 := cwms_rating.retrieve_ratings_obj_f(l_location_id||'.Stage;Stage-Correction.USGS-CORR.USGS', null, null, null, p_office_id);
+            l_ratings2(l_ratings2.count).convert_to_database_time;
+            l_effective_date := greatest(l_ratings1(l_ratings1.count).effective_date, l_ratings2(l_ratings2.count).effective_date);  
+            l_lines.delete;
+            append(l_lines, '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
+            append(l_lines, '  <rating-template office-id="'||p_office_id||'">');
+            append(l_lines, '    <parameters-id>Stage;Flow</parameters-id>');
+            append(l_lines, '    <version>USGS-Production</version>');
+            append(l_lines, '    <ind-parameter-specs>');
+            append(l_lines, '      <ind-parameter-spec position="1">');
+            append(l_lines, '        <parameter>Stage</parameter>');
+            append(l_lines, '        <in-range-method>LINEAR</in-range-method>');
+            append(l_lines, '        <out-range-low-method>NULL</out-range-low-method>');
+            append(l_lines, '        <out-range-high-method>NULL</out-range-high-method>');
+            append(l_lines, '      </ind-parameter-spec>');
+            append(l_lines, '    </ind-parameter-specs>');
+            append(l_lines, '    <dep-parameter>Flow</dep-parameter>');
+            append(l_lines, '    <description>Production Stage;Flow rating using USGS ratings</description>');
+            append(l_lines, '  </rating-template>');
+            append(l_lines, '  <rating-spec office-id="'||p_office_id||'">');
+            append(l_lines, '    <rating-spec-id>'||l_location_id||'.Stage;Flow.USGS-Production.USGS</rating-spec-id>');
+            append(l_lines, '    <template-id>Stage;Flow.USGS-Production</template-id>');
+            append(l_lines, '    <location-id>'||l_location_id||'</location-id>');
+            append(l_lines, '    <version>USGS</version>');
+            append(l_lines, '    <in-range-method>LINEAR</in-range-method>');
+            append(l_lines, '    <out-range-low-method>NULL</out-range-low-method>');
+            append(l_lines, '    <out-range-high-method>PREVIOUS</out-range-high-method>');
+            append(l_lines, '    <active>true</active>');
+            append(l_lines, '    <auto-update>true</auto-update>');
+            append(l_lines, '    <auto-activate>true</auto-activate>');
+            append(l_lines, '    <auto-migrate-extension>false</auto-migrate-extension>');
+            append(l_lines, '    <ind-rounding-specs>');
+            append(l_lines, '      <ind-rounding-spec position="1">'||l_exsa_specs(1).ind_rounding_specs(1)||'</ind-rounding-spec>');
+            append(l_lines, '    </ind-rounding-specs>');
+            append(l_lines, '    <dep-rounding-spec>'||l_exsa_specs(1).dep_rounding_spec||'</dep-rounding-spec>');
+            append(l_lines, '    <description>'||l_location_id||' Production Stage;Flow rating using USGS ratings</description>');
+            append(l_lines, '  </rating-spec>');
+            append(l_lines, '  <virtual-rating office-id="'||p_office_id||'">');
+            append(l_lines, '    <rating-spec-id>'||l_location_id||'.Stage;Flow.USGS-Production.USGS</rating-spec-id>');
+            append(l_lines, '    <effective-date>'||cwms_util.get_xml_time(l_effective_date, 'UTC')||'</effective-date>');
+            append(l_lines, '    <active>true</active>');
+            append(l_lines, '    <connections>R2I1=I1,R2I2=R1D,R3I1=R2D</connections>');
+            append(l_lines, '    <source-ratings>');
+            append(l_lines, '      <source-rating position="1">');
+            append(l_lines, '        <rating-spec-id>'||l_location_id||'.Stage;Stage-Correction.USGS-CORR.USGS {ft;ft}</rating-spec-id>');
+            append(l_lines, '      </source-rating>');
+            append(l_lines, '      <source-rating position="2">');
+            append(l_lines, '        <rating-spec-id>I1 + I2 {ft,ft;ft}</rating-spec-id>');
+            append(l_lines, '      </source-rating>');
+            append(l_lines, '      <source-rating position="3">');
+            append(l_lines, '        <rating-spec-id>'||l_location_id||'.Stage;Flow.USGS-EXSA.USGS {ft;cfs}</rating-spec-id>');
+            append(l_lines, '      </source-rating>');
+            append(l_lines, '    </source-ratings>');
+            append(l_lines, '  </virtual-rating>');
+            append(l_lines, '</ratings>');
+         end if;
+      else 
+         if l_base_specs.count = 1 then
+            ------------------------------
+            -- base transitional rating --
+            ------------------------------
+            l_ratings1 := cwms_rating.retrieve_ratings_obj_f(l_location_id||'.Stage;Flow.USGS-BASE.USGS', null, null, null, p_office_id);
+            l_ratings1(l_ratings1.count).convert_to_database_time;
+            l_effective_date := l_ratings1(l_ratings1.count).effective_date;  
+            l_lines.delete;
+            append(l_lines, '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
+            append(l_lines, '  <rating-template office-id="'||p_office_id||'">');
+            append(l_lines, '    <parameters-id>Stage;Flow</parameters-id>');
+            append(l_lines, '    <version>USGS-Production</version>');
+            append(l_lines, '    <ind-parameter-specs>');
+            append(l_lines, '      <ind-parameter-spec position="1">');
+            append(l_lines, '        <parameter>Stage</parameter>');
+            append(l_lines, '        <in-range-method>LINEAR</in-range-method>');
+            append(l_lines, '        <out-range-low-method>NULL</out-range-low-method>');
+            append(l_lines, '        <out-range-high-method>NULL</out-range-high-method>');
+            append(l_lines, '      </ind-parameter-spec>');
+            append(l_lines, '    </ind-parameter-specs>');
+            append(l_lines, '    <dep-parameter>Flow</dep-parameter>');
+            append(l_lines, '    <description>Production Stage;Flow rating using USGS ratings</description>');
+            append(l_lines, '  </rating-template>');
+            append(l_lines, '  <rating-spec office-id="'||p_office_id||'">');
+            append(l_lines, '    <rating-spec-id>'||l_location_id||'.Stage;Flow.USGS-Production.USGS</rating-spec-id>');
+            append(l_lines, '    <template-id>Stage;Flow.USGS-Production</template-id>');
+            append(l_lines, '    <location-id>'||l_location_id||'</location-id>');
+            append(l_lines, '    <version>USGS</version>');
+            append(l_lines, '    <in-range-method>LINEAR</in-range-method>');
+            append(l_lines, '    <out-range-low-method>NULL</out-range-low-method>');
+            append(l_lines, '    <out-range-high-method>PREVIOUS</out-range-high-method>');
+            append(l_lines, '    <active>true</active>');
+            append(l_lines, '    <auto-update>true</auto-update>');
+            append(l_lines, '    <auto-activate>true</auto-activate>');
+            append(l_lines, '    <auto-migrate-extension>false</auto-migrate-extension>');
+            append(l_lines, '    <ind-rounding-specs>');
+            append(l_lines, '      <ind-rounding-spec position="1">'||l_base_specs(1).ind_rounding_specs(1)||'</ind-rounding-spec>');
+            append(l_lines, '    </ind-rounding-specs>');
+            append(l_lines, '    <dep-rounding-spec>'||l_base_specs(1).dep_rounding_spec||'</dep-rounding-spec>');
+            append(l_lines, '    <description>'||l_location_id||' Production Stage;Flow rating using USGS ratings</description>');
+            append(l_lines, '  </rating-spec>');
+            append(l_lines, '  <transitional-rating office-id="'||p_office_id||'">');
+            append(l_lines, '    <rating-spec-id>'||l_location_id||'.Stage;Flow.USGS-Production.USGS</rating-spec-id>');
+            append(l_lines, '    <units-id>ft;cfs</units-id>');
+            append(l_lines, '    <effective-date>'||cwms_util.get_xml_time(l_effective_date, 'UTC')||'</effective-date>');
+            append(l_lines, '    <active>true</active>');
+            append(l_lines, '    <select>');
+            append(l_lines, '      <default>R1</default>');
+            append(l_lines, '    </select>');
+            append(l_lines, '    <source-ratings>');
+            append(l_lines, '      <rating-spec-id position="1">'||l_location_id||'.Stage;Flow.USGS-BASE.USGS</rating-spec-id>');
+            append(l_lines, '    </source-ratings>');
+            append(l_lines, '  </transitional-rating>');
+            append(l_lines, '</ratings>');
+         else
+            ------------------------------
+            -- exsa transitional rating --
+            ------------------------------
+            l_ratings1 := cwms_rating.retrieve_ratings_obj_f(l_location_id||'.Stage;Flow.USGS-EXSA.USGS', null, null, null, p_office_id);
+            l_ratings1(l_ratings1.count).convert_to_database_time;
+            l_effective_date := l_ratings1(l_ratings1.count).effective_date;  
+            l_lines.delete;
+            append(l_lines, '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
+            append(l_lines, '  <rating-template office-id="'||p_office_id||'">');
+            append(l_lines, '    <parameters-id>Stage;Flow</parameters-id>');
+            append(l_lines, '    <version>USGS-Production</version>');
+            append(l_lines, '    <ind-parameter-specs>');
+            append(l_lines, '      <ind-parameter-spec position="1">');
+            append(l_lines, '        <parameter>Stage</parameter>');
+            append(l_lines, '        <in-range-method>LINEAR</in-range-method>');
+            append(l_lines, '        <out-range-low-method>NULL</out-range-low-method>');
+            append(l_lines, '        <out-range-high-method>NULL</out-range-high-method>');
+            append(l_lines, '      </ind-parameter-spec>');
+            append(l_lines, '    </ind-parameter-specs>');
+            append(l_lines, '    <dep-parameter>Flow</dep-parameter>');
+            append(l_lines, '    <description>Production Stage;Flow rating using USGS ratings</description>');
+            append(l_lines, '  </rating-template>');
+            append(l_lines, '  <rating-spec office-id="'||p_office_id||'">');
+            append(l_lines, '    <rating-spec-id>'||l_location_id||'.Stage;Flow.USGS-Production.USGS</rating-spec-id>');
+            append(l_lines, '    <template-id>Stage;Flow.USGS-Production</template-id>');
+            append(l_lines, '    <location-id>'||l_location_id||'</location-id>');
+            append(l_lines, '    <version>USGS</version>');
+            append(l_lines, '    <in-range-method>LINEAR</in-range-method>');
+            append(l_lines, '    <out-range-low-method>NULL</out-range-low-method>');
+            append(l_lines, '    <out-range-high-method>PREVIOUS</out-range-high-method>');
+            append(l_lines, '    <active>true</active>');
+            append(l_lines, '    <auto-update>true</auto-update>');
+            append(l_lines, '    <auto-activate>true</auto-activate>');
+            append(l_lines, '    <auto-migrate-extension>false</auto-migrate-extension>');
+            append(l_lines, '    <ind-rounding-specs>');
+            append(l_lines, '      <ind-rounding-spec position="1">'||l_exsa_specs(1).ind_rounding_specs(1)||'</ind-rounding-spec>');
+            append(l_lines, '    </ind-rounding-specs>');
+            append(l_lines, '    <dep-rounding-spec>'||l_exsa_specs(1).dep_rounding_spec||'</dep-rounding-spec>');
+            append(l_lines, '    <description>'||l_location_id||' Production Stage;Flow rating using USGS ratings</description>');
+            append(l_lines, '  </rating-spec>');
+            append(l_lines, '  <transitional-rating office-id="'||p_office_id||'">');
+            append(l_lines, '    <rating-spec-id>'||l_location_id||'.Stage;Flow.USGS-Production.USGS</rating-spec-id>');
+            append(l_lines, '    <units-id>ft;cfs</units-id>');
+            append(l_lines, '    <effective-date>'||cwms_util.get_xml_time(l_effective_date, 'UTC')||'</effective-date>');
+            append(l_lines, '    <active>true</active>');
+            append(l_lines, '    <select>');
+            append(l_lines, '      <default>R1</default>');
+            append(l_lines, '    </select>');
+            append(l_lines, '    <source-ratings>');
+            append(l_lines, '      <rating-spec-id position="1">'||l_location_id||'.Stage;Flow.USGS-EXSA.USGS</rating-spec-id>');
+            append(l_lines, '    </source-ratings>');
+            append(l_lines, '  </transitional-rating>');
+            append(l_lines, '</ratings>');
+         end if;
+      end if;
+      cwms_rating.store_ratings_xml(cwms_util.join_text(l_lines, chr(10)), 'F', 'F');     
+   end if;
+end generate_production_ratings;
+
+procedure retrieve_available_ratings2(
+   p_office_id in varchar2 default null)
+is
+   l_office_id     varchar2(16); 
+   l_office_code   number(10);
+   l_locations     str_tab_t;
+   l_locations_str varchar2(32767);
+   l_ratings       rating_tab_t;
+begin
+   l_office_id   := cwms_util.get_db_office_id(p_office_id);
+   l_office_code := cwms_util.get_db_office_code(l_office_id);
+   --------------------------------------------------------
+   -- get all locations with USGS Station Number aliases --
+   --------------------------------------------------------
+   select cwms_loc.get_location_id(location_code)          
+     bulk collect
+     into l_locations
+     from at_loc_group_assignment
+    where office_code = l_office_code
+      and loc_group_code = (select loc_group_code
+                              from at_loc_group where loc_group_id = 'USGS Station Number'
+                               and loc_category_code = (select loc_category_code
+                                                          from at_loc_category 
+                                                         where loc_category_id = 'Agency Aliases'
+                                                       )
+                           )
+    order by 1;
+    -------------------------------------------  
+    -- get any BASE ratings that don't exist --
+    -------------------------------------------     
+    for i in 1..l_locations.count loop
+       l_ratings := cwms_rating.retrieve_ratings_obj_f(l_locations(i)||'.Stage;Flow.USGS-BASE.USGS', null, null, null, l_office_id);
+       if l_ratings.count = 0 then
+         l_locations_str := l_locations_str||','||l_locations(i);
+         if length(l_locations_str) > 32000 then
+            retrieve_and_store_ratings('BASE', substr(l_locations_str, 2), l_office_id);
+            l_locations_str := null;
+         end if;
+       end if; 
+    end loop;
+    if l_locations_str is not null then
+      retrieve_and_store_ratings('BASE', substr(l_locations_str, 2), l_office_id);
+      l_locations_str := null;
+    end if;
+    -------------------------------------------  
+    -- get any CORR ratings that don't exist --
+    -------------------------------------------     
+    for i in 1..l_locations.count loop
+       l_ratings := cwms_rating.retrieve_ratings_obj_f(l_locations(i)||'.Stage;Stage-Correction.USGS-CORR.USGS', null, null, null, l_office_id);
+       if l_ratings.count = 0 then
+         l_locations_str := l_locations_str||','||l_locations(i);
+         if length(l_locations_str) > 32000 then
+            retrieve_and_store_ratings('CORR', substr(l_locations_str, 2), l_office_id);
+            l_locations_str := null;
+         end if;
+       end if; 
+    end loop;
+    if l_locations_str is not null then
+      retrieve_and_store_ratings('CORR', substr(l_locations_str, 2), l_office_id);
+    end if;
+    --------------------------------------------------------------------- 
+    -- generate production ratings for any that we may have downloaded --
+    ---------------------------------------------------------------------
+    generate_production_ratings2(l_office_id); 
+end retrieve_available_ratings2;   
+
+procedure retrieve_available_ratings(
+   p_location_id in varchar2,
+   p_office_id   in varchar2 default null)
+is
+begin
+   retrieve_and_store_ratings('BASE', p_location_id, p_office_id);
+   retrieve_and_store_ratings('CORR', p_location_id, p_office_id);
+   generate_production_ratings(p_location_id, p_office_id); 
+end retrieve_available_ratings;    
+
+
+procedure set_auto_new_rating_interval(
+   p_interval  in integer,      
+   p_office_id in varchar2 default null)
+is
+   l_office_id varchar2(16) := cwms_util.get_db_office_id(p_office_id);
+begin
+   cwms_properties.set_property(
+      'USGS', 
+      cwms_usgs.auto_new_rating_interval_prop, 
+      to_char(p_interval), 
+      'interval in minutes for running automatic retrieval of new ratings', 
+      l_office_id);
+end set_auto_new_rating_interval;
+
+function get_auto_new_rating_interval(
+   p_office_id in varchar2 default null)
+   return integer
+is
+   l_office_id varchar2(16) := cwms_util.get_db_office_id(p_office_id);
+begin
+   return to_number(cwms_properties.get_property('USGS', cwms_usgs.auto_new_rating_interval_prop, null, l_office_id));
+end get_auto_new_rating_interval;   
+
+procedure set_auto_upd_rating_interval(
+   p_interval  in integer,      
+   p_office_id in varchar2 default null)
+is
+   l_office_id varchar2(16) := cwms_util.get_db_office_id(p_office_id);
+begin
+   cwms_properties.set_property(
+      'USGS', 
+      cwms_usgs.auto_upd_rating_interval_prop, 
+      to_char(p_interval), 
+      'interval in minutes for running automatic retrieval of updated ratings', 
+      l_office_id);
+end set_auto_upd_rating_interval;
+
+function get_auto_upd_rating_interval(
+   p_office_id in varchar2 default null)
+   return integer
+is
+   l_office_id varchar2(16) := cwms_util.get_db_office_id(p_office_id);
+begin
+   return to_number(cwms_properties.get_property('USGS', cwms_usgs.auto_upd_rating_interval_prop, null, l_office_id));
+end get_auto_upd_rating_interval;   
+
+procedure start_auto_new_rating_job(
+   p_office_id in varchar2 default null)
+is
+   l_count           binary_integer;
+   l_office_id       varchar2(16) := cwms_util.get_db_office_id(p_office_id);
+   l_user_office_id  varchar2(16) := cwms_util.user_office_id;
+   l_job_id          varchar2(30);
+   l_run_interval    integer;
+
+   function job_count
+      return binary_integer
+   is
+   begin
+      select count (*)
+        into l_count
+        from sys.dba_scheduler_jobs
+       where job_name = l_job_id;
+
+      return l_count;
+   end;
+begin
+   l_job_id := 'USGS_AUTO_NEW_RATE_'||l_office_id;
+   --------------------------------------
+   -- make sure we're the correct user --
+   --------------------------------------
+   if l_user_office_id != l_office_id and cwms_util.get_user_id != '&cwms_schema' then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot start job '||l_job_id||' when default office is '||l_user_office_id);
+   end if;
+             
+   l_run_interval := get_auto_new_rating_interval(l_office_id);
+   if l_run_interval is null then
+      cwms_err.raise(
+         'ERROR',
+         'No run interval defined for job in property '||auto_new_rating_interval_prop);
+   elsif l_run_interval < 720 then
+      cwms_err.raise(
+         'ERROR',
+         'Run interval of '
+         ||l_run_interval
+         ||' defined for job in property '
+         ||auto_new_rating_interval_prop
+         ||' is less than 12 hours');
+   end if;
+   -------------------------------------------
+   -- drop the job if it is already running --
+   -------------------------------------------
+   if job_count > 0 then
+      dbms_output.put ('Dropping existing job ' || l_job_id || '...');
+      dbms_scheduler.drop_job (l_job_id);
+
+      --------------------------------
+      -- verify that it was dropped --
+      --------------------------------
+      if job_count = 0 then
+         dbms_output.put_line ('done.');
+      else
+         dbms_output.put_line ('failed.');
+      end if;
+   end if;
+
+   if job_count = 0
+   then
+      begin
+         ---------------------
+         -- restart the job --
+         ---------------------
+         dbms_scheduler.create_job(
+            job_name             => l_job_id,
+            job_type             => 'stored_procedure',
+            job_action           => 'cwms_usgs.retrieve_available_ratings2',   
+            number_of_arguments  => 1,
+            start_date           => null,
+            repeat_interval      => 'freq=minutely; interval=' || l_run_interval,
+            end_date             => null,
+            job_class            => 'default_job_class',
+            enabled              => false,
+            auto_drop            => false,
+            comments             => 'Retrieves new ratings from USGS');
+            
+         dbms_scheduler.set_job_argument_value(
+            job_name          => l_job_id, 
+            argument_position => 1, 
+            argument_value    => l_office_id);
+            
+         dbms_scheduler.enable(l_job_id);
+         if job_count = 1 then
+            dbms_output.put_line(
+               'Job '
+               ||l_job_id
+               ||' successfully scheduled to execute every '
+               ||l_run_interval
+               ||' minutes.');
+         else
+            cwms_err.raise ('ITEM_NOT_CREATED', 'job', l_job_id);
+         end if;
+      exception
+         when others then
+            cwms_err.raise (
+               'ITEM_NOT_CREATED',
+               'job',l_job_id || ':' || sqlerrm);
+      end;
+   end if;
+end start_auto_new_rating_job;
+
+procedure stop_auto_new_rating_job(
+   p_office_id in varchar2 default null)
+is
+   l_count           binary_integer;
+   l_office_id       varchar2(16) := cwms_util.get_db_office_id(p_office_id);
+   l_user_office_id  varchar2(16) := cwms_util.user_office_id;
+   l_job_id          varchar2(30);
+
+   function job_count
+      return binary_integer
+   is
+   begin
+      select count (*)
+        into l_count
+        from sys.dba_scheduler_jobs
+       where job_name = l_job_id;
+
+      return l_count;
+   end;
+begin
+   l_job_id := 'USGS_AUTO_NEW_RATE_'||l_office_id;
+   --------------------------------------
+   -- make sure we're the correct user --
+   --------------------------------------
+   if l_user_office_id != l_office_id and cwms_util.get_user_id != '&cwms_schema' then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot stop job '||l_job_id||' when default office is '||l_user_office_id);
+   end if;
+
+   ------------------
+   -- drop the job --
+   ------------------
+   if job_count > 0 then
+      dbms_output.put ('Dropping existing job ' || l_job_id || '...');
+      dbms_scheduler.drop_job (job_name=>l_job_id, force=>true);
+
+      --------------------------------
+      -- verify that it was dropped --
+      --------------------------------
+      if job_count = 0 then
+         dbms_output.put_line ('done.');
+      else
+         dbms_output.put_line ('failed.');
+      end if;
+   end if;
+   
+end stop_auto_new_rating_job;
+      
+procedure start_auto_update_rating_job(
+   p_office_id in varchar2 default null)
+is
+   l_count           binary_integer;
+   l_office_id       varchar2(16) := cwms_util.get_db_office_id(p_office_id);
+   l_user_office_id  varchar2(16) := cwms_util.user_office_id;
+   l_job_id          varchar2(30);
+   l_run_interval    integer;
+
+   function job_count
+      return binary_integer
+   is
+   begin
+      select count (*)
+        into l_count
+        from sys.dba_scheduler_jobs
+       where job_name = l_job_id;
+
+      return l_count;
+   end;
+begin
+   l_job_id := 'USGS_AUTO_UPD_RATE_'||l_office_id;
+   --------------------------------------
+   -- make sure we're the correct user --
+   --------------------------------------
+   if l_user_office_id != l_office_id and cwms_util.get_user_id != '&cwms_schema' then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot start job '||l_job_id||' when default office is '||l_user_office_id);
+   end if;
+             
+   l_run_interval := get_auto_upd_rating_interval(l_office_id);
+   if l_run_interval is null then
+      cwms_err.raise(
+         'ERROR',
+         'No run interval defined for job in property '||get_auto_upd_rating_interval);
+   elsif l_run_interval < 60 then
+      cwms_err.raise(
+         'ERROR',
+         'Run interval of '
+         ||l_run_interval
+         ||' defined for job in property '
+         ||auto_upd_rating_interval_prop
+         ||' is less than 1 hour');
+   end if;
+   -------------------------------------------
+   -- drop the job if it is already running --
+   -------------------------------------------
+   if job_count > 0 then
+      dbms_output.put ('Dropping existing job ' || l_job_id || '...');
+      dbms_scheduler.drop_job (l_job_id);
+
+      --------------------------------
+      -- verify that it was dropped --
+      --------------------------------
+      if job_count = 0 then
+         dbms_output.put_line ('done.');
+      else
+         dbms_output.put_line ('failed.');
+      end if;
+   end if;
+
+   if job_count = 0
+   then
+      begin
+         ---------------------
+         -- restart the job --
+         ---------------------
+         dbms_scheduler.create_job(
+            job_name             => l_job_id,
+            job_type             => 'stored_procedure',
+            job_action           => 'cwms_usgs.update_existing_ratings',   
+            number_of_arguments  => 1,
+            start_date           => null,
+            repeat_interval      => 'freq=minutely; interval=' || l_run_interval,
+            end_date             => null,
+            job_class            => 'default_job_class',
+            enabled              => false,
+            auto_drop            => false,
+            comments             => 'Retrieves updated ratings from USGS');
+            
+         dbms_scheduler.set_job_argument_value(
+            job_name          => l_job_id, 
+            argument_position => 1, 
+            argument_value    => l_office_id);
+            
+         dbms_scheduler.enable(l_job_id);
+         if job_count = 1 then
+            dbms_output.put_line(
+               'Job '
+               ||l_job_id
+               ||' successfully scheduled to execute every '
+               ||l_run_interval
+               ||' minutes.');
+         else
+            cwms_err.raise ('ITEM_NOT_CREATED', 'job', l_job_id);
+         end if;
+      exception
+         when others then
+            cwms_err.raise (
+               'ITEM_NOT_CREATED',
+               'job',l_job_id || ':' || sqlerrm);
+      end;
+   end if;
+end start_auto_update_rating_job;
+
+procedure stop_auto_update_rating_job(
+   p_office_id in varchar2 default null)
+is
+   l_count           binary_integer;
+   l_office_id       varchar2(16) := cwms_util.get_db_office_id(p_office_id);
+   l_user_office_id  varchar2(16) := cwms_util.user_office_id;
+   l_job_id          varchar2(30);
+
+   function job_count
+      return binary_integer
+   is
+   begin
+      select count (*)
+        into l_count
+        from sys.dba_scheduler_jobs
+       where job_name = l_job_id;
+
+      return l_count;
+   end;
+begin
+   l_job_id := 'USGS_AUTO_UPD_RATE_'||l_office_id;
+   --------------------------------------
+   -- make sure we're the correct user --
+   --------------------------------------
+   if l_user_office_id != l_office_id and cwms_util.get_user_id != '&cwms_schema' then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot stop job '||l_job_id||' when default office is '||l_user_office_id);
+   end if;
+
+   ------------------
+   -- drop the job --
+   ------------------
+   if job_count > 0 then
+      dbms_output.put ('Dropping existing job ' || l_job_id || '...');
+      dbms_scheduler.drop_job (job_name=>l_job_id, force=>true);
+
+      --------------------------------
+      -- verify that it was dropped --
+      --------------------------------
+      if job_count = 0 then
+         dbms_output.put_line ('done.');
+      else
+         dbms_output.put_line ('failed.');
+      end if;
+   end if;
+   
+end stop_auto_update_rating_job;   
 
 end cwms_usgs;
 /
