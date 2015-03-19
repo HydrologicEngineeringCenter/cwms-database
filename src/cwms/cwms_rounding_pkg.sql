@@ -24,9 +24,8 @@ as
  * @return The rounded number as an Oracle NUMBER type
  */
 function round_f(
-   p_value         in number,
-   p_sig_digits    in integer,
-   p_round_to_even in varchar2 default 'T')
+   p_value      in number,
+   p_sig_digits in integer)
 return number deterministic;   
 /**
  * Returns a number rounded to a specified number of significant digits.  This differs
@@ -39,9 +38,8 @@ return number deterministic;
  * @return The rounded number as an Oracle BINARY_DOUBLE type
  */
 function round_f(
-   p_value         in binary_double,
-   p_sig_digits    in integer,
-   p_round_to_even in varchar2 default 'T')
+   p_value      in binary_double,
+   p_sig_digits in integer)
 return binary_double deterministic;   
 /**
  * Returns a number rounded according to a rounding specification.
@@ -52,9 +50,8 @@ return binary_double deterministic;
  * @return The rounded value
  */
 function round_nn_f(
-   p_value         in number,
-   p_rounding_spec in varchar2,
-   p_round_to_even in varchar2 default 'T')
+   p_value         in  number,
+   p_rounding_spec in  varchar2)
 return number deterministic;   
 /**
  * Returns a number rounded according to a rounding specification.
@@ -65,9 +62,8 @@ return number deterministic;
  * @return The rounded value
  */
 function round_nd_f(
-   p_value         in number,
-   p_rounding_spec in varchar2,
-   p_round_to_even in varchar2 default 'T')
+   p_value         in  number,
+   p_rounding_spec in  varchar2)
 return binary_double deterministic;   
 /**
  * Returns a number rounded according to a rounding specification.
@@ -78,9 +74,8 @@ return binary_double deterministic;
  * @return The rounded value
  */
 function round_nt_f(
-   p_value         in number,
-   p_rounding_spec in varchar2,
-   p_round_to_even in varchar2 default 'T')
+   p_value         in  number,
+   p_rounding_spec in  varchar2)
 return varchar2 deterministic;   
 /**
  * Returns a number rounded according to a rounding specification.
@@ -91,9 +86,8 @@ return varchar2 deterministic;
  * @return The rounded value
  */
 function round_dd_f(
-   p_value         in binary_double,
-   p_rounding_spec in varchar2,
-   p_round_to_even in varchar2 default 'T')
+   p_value         in  binary_double,
+   p_rounding_spec in  varchar2)
 return binary_double deterministic;   
 /**
  * Returns a number rounded according to a rounding specification.
@@ -104,9 +98,8 @@ return binary_double deterministic;
  * @return The rounded value
  */
 function round_dn_f(
-   p_value         in binary_double,
-   p_rounding_spec in varchar2,
-   p_round_to_even in varchar2 default 'T')
+   p_value         in  binary_double,
+   p_rounding_spec in  varchar2)
 return number deterministic;   
 /**
  * Returns a number rounded according to a rounding specification.
@@ -117,9 +110,8 @@ return number deterministic;
  * @return The rounded value
  */
 function round_dt_f(
-   p_value         in binary_double,
-   p_rounding_spec in varchar2,
-   p_round_to_even in varchar2 default 'T')
+   p_value         in  binary_double,
+   p_rounding_spec in  varchar2)
 return varchar2 deterministic;   
 /**
  * Returns a number rounded according to a rounding specification.
@@ -130,9 +122,8 @@ return varchar2 deterministic;
  * @return The rounded value
  */
 function round_td_f(
-   p_value         in varchar2,
-   p_rounding_spec in varchar2,
-   p_round_to_even in varchar2 default 'T')
+   p_value         in  varchar2,
+   p_rounding_spec in  varchar2)
 return binary_double deterministic;   
 /**
  * Returns a number rounded according to a rounding specification.
@@ -143,9 +134,8 @@ return binary_double deterministic;
  * @return The rounded value
  */
 function round_tn_f(
-   p_value         in varchar2,
-   p_rounding_spec in varchar2,
-   p_round_to_even in varchar2 default 'T')
+   p_value         in  varchar2,
+   p_rounding_spec in  varchar2)
 return number deterministic;   
 /**
  * Returns a number rounded according to a rounding specification.
@@ -156,9 +146,8 @@ return number deterministic;
  * @return The rounded value
  */
 function round_tt_f(
-   p_value         in varchar2,
-   p_rounding_spec in varchar2,
-   p_round_to_even in varchar2 default 'T')
+   p_value         in  varchar2,
+   p_rounding_spec in  varchar2)
 return varchar2 deterministic;   
 /**
  * Rounds a collection of values according to a rounding specification
@@ -168,8 +157,7 @@ return varchar2 deterministic;
  */
 procedure round_n_tab(
    p_values        in out nocopy number_tab_t,
-   p_rounding_spec in            varchar2,
-   p_round_to_even in            varchar2 default 'T');
+   p_rounding_spec in            varchar2);
 /**
  * Rounds a collection of values according to a rounding specification
  *
@@ -178,8 +166,7 @@ procedure round_n_tab(
  */
 procedure round_d_tab(
    p_values        in out nocopy double_tab_t,
-   p_rounding_spec in            varchar2,
-   p_round_to_even in            varchar2 default 'T');
+   p_rounding_spec in            varchar2);
 /**
  * Rounds a collection of values according to a rounding specification
  *
@@ -188,8 +175,7 @@ procedure round_d_tab(
  */
 procedure round_t_tab(
    p_values        in out nocopy str_tab_t,
-   p_rounding_spec in            varchar2,
-   p_round_to_even in            varchar2 default 'T');
+   p_rounding_spec in            varchar2);
 /**
  * Rounds values of a time series according to a rounding specification
  *
@@ -198,8 +184,7 @@ procedure round_t_tab(
  */
 procedure round_tsv_array(
    p_values        in out nocopy tsv_array,
-   p_rounding_spec in            varchar2,
-   p_round_to_even in            varchar2 default 'T');
+   p_rounding_spec in            varchar2);
 /**
  * Rounds values of a time series according to a rounding specification
  *
@@ -208,8 +193,7 @@ procedure round_tsv_array(
  */
 procedure round_ztsv_array(
    p_values        in out nocopy ztsv_array,
-   p_rounding_spec in            varchar2,
-   p_round_to_even in            varchar2 default 'T');
+   p_rounding_spec in            varchar2);
    
 end cwms_rounding;
 /

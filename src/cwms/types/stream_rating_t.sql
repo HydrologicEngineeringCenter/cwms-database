@@ -97,37 +97,6 @@ under rating_t (
    overriding member procedure store(
       p_fail_if_exists in varchar2),
    /**
-    * Stores the rating to the database
-    *
-    * @param p_fail_if_exists A flag ('T' or 'F') that specifies whether the function
-    *        should fail if the rating already exists in the database
-    *
-    * @param p_replace A flag('T' or 'F') that specifies whether any existing rating
-    *        should be completely replaced even if the base ratings are the same.
-    * <p>
-    * <table class="descr">
-    *   <tr>
-    *     <th class="descr">Flag</th>
-    *     <th class="descr">Behavior</th>
-    *   </tr>
-    *   <tr>
-    *     <td class="descr">'T'</td>
-    *     <td class="descr">The existing rating will be completely replaced with this one, even if the only difference is a new shift</td>
-    *   </tr>
-    *   <tr>
-    *     <td class="descr">'F'</td>
-    *     <td class="descr">If this rating differs from the existing one only by the existence of a new shift, only the new shift is stored</td>
-    *   </tr>
-    * </table>
-    *  
-    *
-    * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is set to 'T' and the
-    *            rating already exists
-    */
-   member procedure store(
-      p_fail_if_exists in varchar2,
-      p_replace        in varchar2),
-   /**
     * Retrieves the rating as an XML instance in an CLOB object
     *
     * @return the rating as an XML instance in an CLOB object

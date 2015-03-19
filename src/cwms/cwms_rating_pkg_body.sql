@@ -184,12 +184,6 @@ begin
       delete
         from at_rating_ind_rounding
        where rating_spec_code = p_rating_spec_code;
-      ---------------------------- 
-      -- USGS rating hash codes --
-      ----------------------------
-      delete
-        from at_usgs_rating_hash
-       where rating_spec_code = p_rating_spec_code;  
       ------------------ 
       -- rating specs --
       ------------------ 
@@ -944,8 +938,7 @@ end get_template;
 --
 procedure store_ratings(
    p_xml            in xmltype,
-   p_fail_if_exists in varchar2,
-   p_replace_base   in varchar2 default 'F')
+   p_fail_if_exists in varchar2)
 is
    l_rating        rating_t;
    l_stream_rating stream_rating_t;
@@ -967,7 +960,7 @@ begin
             ||regexp_replace(cwms_util.get_xml_text(l_node, '/*/effective-date'), '\s', '', 1, 0)
             ||')');
          l_stream_rating := stream_rating_t(l_node);
-         l_stream_rating.store(p_fail_if_exists, p_replace_base);
+         l_stream_rating.store(p_fail_if_exists);
       elsif l_node.existsnode('/rating|/simple-rating|/virtual-rating|/transitional-rating') = 1 then
          cwms_msg.log_db_message(
             'cwms_rating.store_ratings',
@@ -998,11 +991,10 @@ end store_ratings;
 --
 procedure store_ratings(
    p_xml            in varchar2,
-   p_fail_if_exists in varchar2,
-   p_replace_base   in varchar2 default 'F')
+   p_fail_if_exists in varchar2)
 is
 begin
-   store_ratings(xmltype(p_xml), p_fail_if_exists, p_replace_base);
+   store_ratings(xmltype(p_xml), p_fail_if_exists);
 end store_ratings;
 
 --------------------------------------------------------------------------------
@@ -1010,11 +1002,10 @@ end store_ratings;
 --
 procedure store_ratings(
    p_xml            in clob,
-   p_fail_if_exists in varchar2,
-   p_replace_base   in varchar2 default 'F')
+   p_fail_if_exists in varchar2)
 is
 begin
-   store_ratings(xmltype(p_xml), p_fail_if_exists, p_replace_base);
+   store_ratings(xmltype(p_xml), p_fail_if_exists);
 end store_ratings;
 
 --------------------------------------------------------------------------------
@@ -1022,22 +1013,15 @@ end store_ratings;
 --
 procedure store_ratings(
    p_ratings        in rating_tab_t,
-   p_fail_if_exists in varchar2,
-   p_replace_base   in varchar2 default 'F')
+   p_fail_if_exists in varchar2)
 is
-   l_ratings       rating_tab_t := p_ratings;
-   l_rating        rating_t;
-   l_stream_rating stream_rating_t;
+   l_ratings rating_tab_t := p_ratings;
+   l_rating  rating_t;
 begin
    if l_ratings is not null then
       for i in 1..l_ratings.count loop
-         if l_ratings(i) is of (stream_rating_t) then
-            l_stream_rating := treat(l_ratings(i) as stream_rating_t);
-            l_stream_rating.store(p_fail_if_exists, p_replace_base);
-         else
-            l_rating := treat(l_ratings(i) as rating_t);
-            l_rating.store(p_fail_if_exists);
-         end if;
+         l_rating := treat(l_ratings(i) as rating_t);
+         l_rating.store(p_fail_if_exists);
       end loop;
    end if;
 end store_ratings;
@@ -1241,163 +1225,160 @@ begin
 
    p_ratings := rating_tab_t();
    for rec in
-      (select db_office_id,
-              location_id,
-              parameters_id,
-              template_version,
-              spec_version,
-              effective_date,
-              rating_code
-         from (select v.db_office_id,
-                      v.location_id,
-                      rt.parameters_id,
-                      rt.version as template_version,
-                      rs.version as spec_version,
-                      r.effective_date,
-                      r.rating_code
-                 from at_rating r,
-                      at_rating_spec rs,
-                      at_rating_template rt,
-                      av_loc2 v,
-                      at_physical_location pl,
-                      cwms_office o,
-                      cwms_time_zone tz1,
-                      cwms_time_zone tz2
-                where v.db_office_id like upper(l_office_id_mask) escape '\'
-                  and o.office_id = v.db_office_id
-                  and rt.office_code = o.office_code
-                  and upper(rt.parameters_id) like upper(l_parameters_id_mask) escape '\'
-                  and upper(rt.version) like upper(l_template_version_mask) escape '\'
-                  and rs.template_code = rt.template_code
-                  and upper(rs.version) like upper(l_spec_version_mask) escape '\'
-                  and r.rating_spec_code = rs.rating_spec_code
-                  and v.location_code = rs.location_code
-                  and upper(v.location_id) like upper(l_location_id_mask) escape '\'
-                  and v.unit_system = 'SI'
-                  and pl.location_code = v.location_code
-                  and tz1.time_zone_code = nvl(pl.time_zone_code, 0)
-                  and tz2.time_zone_name = case
-                                           when p_time_zone is null then tz1.time_zone_name
-                                           else p_time_zone
-                                           end
-                  and r.effective_date >= case
-                                          when p_effective_date_start is null then c_default_start_date
-                                          else cwms_util.change_timezone(
-                                             p_effective_date_start, 
-                                             tz2.time_zone_name, 
-                                             'UTC')
-                                          end
-                  and r.effective_date <= case
-                                          when p_effective_date_end is null then c_default_end_date
-                                          else cwms_util.change_timezone(
-                                             p_effective_date_end, 
-                                             tz2.time_zone_name, 
-                                             'UTC')
-                                          end
-                  and r.ref_rating_code is null  -- don't pick up stream rating shifts and offsets
-              )
-              union all               
-              (select v.db_office_id,
-                      v.location_id,
-                      rt.parameters_id,
-                      rt.version as template_version,
-                      rs.version as spec_version,
-                      vr.effective_date,
-                      vr.virtual_rating_code as rating_code
-                 from at_virtual_rating vr,
-                      at_rating_spec rs,
-                      at_rating_template rt,
-                      av_loc2 v,
-                      at_physical_location pl,
-                      cwms_office o,
-                      cwms_time_zone tz1,
-                      cwms_time_zone tz2
-                where v.db_office_id like upper(l_office_id_mask) escape '\'
-                  and o.office_id = v.db_office_id
-                  and rt.office_code = o.office_code
-                  and upper(rt.parameters_id) like upper(l_parameters_id_mask) escape '\'
-                  and upper(rt.version) like upper(l_template_version_mask) escape '\'
-                  and rs.template_code = rt.template_code
-                  and upper(rs.version) like upper(l_spec_version_mask) escape '\'
-                  and vr.rating_spec_code = rs.rating_spec_code
-                  and v.location_code = rs.location_code
-                  and upper(v.location_id) like upper(l_location_id_mask) escape '\'
-                  and v.unit_system = 'SI'
-                  and pl.location_code = v.location_code
-                  and tz1.time_zone_code = nvl(pl.time_zone_code, 0)
-                  and tz2.time_zone_name = case
-                                           when p_time_zone is null then tz1.time_zone_name
-                                           else p_time_zone
-                                           end
-                  and vr.effective_date >= case
-                                           when p_effective_date_start is null then c_default_start_date
-                                           else cwms_util.change_timezone(
-                                              p_effective_date_start, 
-                                              tz2.time_zone_name, 
-                                              'UTC')
-                                           end
-                  and vr.effective_date <= case
-                                           when p_effective_date_end is null then c_default_end_date
-                                           else cwms_util.change_timezone(
-                                              p_effective_date_end, 
-                                              tz2.time_zone_name, 
-                                              'UTC')
-                                           end
-              )
-              union all               
-             (select v.db_office_id,
-                      v.location_id,
-                      rt.parameters_id,
-                      rt.version as template_version,
-                      rs.version as spec_version,
-                      tr.effective_date,
-                      tr.transitional_rating_code as rating_code
-                 from at_transitional_rating tr,
-                      at_rating_spec rs,
-                      at_rating_template rt,
-                      av_loc2 v,
-                      at_physical_location pl,
-                      cwms_office o,
-                      cwms_time_zone tz1,
-                      cwms_time_zone tz2
-                where v.db_office_id like upper(l_office_id_mask) escape '\'
-                  and o.office_id = v.db_office_id
-                  and rt.office_code = o.office_code
-                  and upper(rt.parameters_id) like upper(l_parameters_id_mask) escape '\'
-                  and upper(rt.version) like upper(l_template_version_mask) escape '\'
-                  and rs.template_code = rt.template_code
-                  and upper(rs.version) like upper(l_spec_version_mask) escape '\'
-                  and tr.rating_spec_code = rs.rating_spec_code
-                  and v.location_code = rs.location_code
-                  and upper(v.location_id) like upper(l_location_id_mask) escape '\'
-                  and v.unit_system = 'SI'
-                  and pl.location_code = v.location_code
-                  and tz1.time_zone_code = nvl(pl.time_zone_code, 0)
-                  and tz2.time_zone_name = case
-                                           when p_time_zone is null then tz1.time_zone_name
-                                           else p_time_zone
-                                           end
-                  and tr.effective_date >= case
-                                           when p_effective_date_start is null then c_default_start_date
-                                           else cwms_util.change_timezone(
-                                              p_effective_date_start, 
-                                              tz2.time_zone_name, 
-                                              'UTC')
-                                           end
-                  and tr.effective_date <= case
-                                           when p_effective_date_end is null then c_default_end_date
-                                           else cwms_util.change_timezone(
-                                              p_effective_date_end, 
-                                              tz2.time_zone_name, 
-                                              'UTC')
-                                           end
-              )
-        order by db_office_id,
-                 location_id,
-                 parameters_id,
-                 template_version,
-                 spec_version,
-                 effective_date         
+      ( (select distinct
+                location_id,
+                rating_code
+           from (select v.location_id,
+                        r.rating_code
+                   from at_rating r,
+                        at_rating_spec rs,
+                        at_rating_template rt,
+                        av_loc2 v,
+                        at_physical_location pl,
+                        cwms_office o,
+                        cwms_time_zone tz1,
+                        cwms_time_zone tz2
+                  where v.db_office_id like upper(l_office_id_mask) escape '\'
+                    and o.office_id = v.db_office_id
+                    and rt.office_code = o.office_code
+                    and upper(rt.parameters_id) like upper(l_parameters_id_mask) escape '\'
+                    and upper(rt.version) like upper(l_template_version_mask) escape '\'
+                    and rs.template_code = rt.template_code
+                    and upper(rs.version) like upper(l_spec_version_mask) escape '\'
+                    and r.rating_spec_code = rs.rating_spec_code
+                    and v.location_code = rs.location_code
+                    and upper(v.location_id) like upper(l_location_id_mask) escape '\'
+                    and v.unit_system = 'SI'
+                    and pl.location_code = v.location_code
+                    and tz1.time_zone_code = nvl(pl.time_zone_code, 0)
+                    and tz2.time_zone_name = case
+                                                when p_time_zone is null then
+                                                   tz1.time_zone_name
+                                                else
+                                                   p_time_zone
+                                             end
+                    and r.effective_date >= case
+                                               when p_effective_date_start is null then
+                                                  c_default_start_date
+                                               else
+                                                  cwms_util.change_timezone(p_effective_date_start, tz2.time_zone_name, 'UTC')
+                                            end
+                    and r.effective_date <= case
+                                               when p_effective_date_end is null then
+                                                  c_default_end_date
+                                               else
+                                                  cwms_util.change_timezone(p_effective_date_end, tz2.time_zone_name, 'UTC')
+                                            end
+                    and r.ref_rating_code is null -- don't pick up stream rating shifts and offsets
+                  order by v.db_office_id,
+                        v.location_id,
+                        rt.parameters_id,
+                        rt.version,
+                        rs.version,
+                        r.effective_date nulls first)
+         union all               
+        (select distinct
+                location_id,
+                rating_code
+           from (select v.location_id,
+                        vr.virtual_rating_code as rating_code
+                   from at_virtual_rating vr,
+                        at_rating_spec rs,
+                        at_rating_template rt,
+                        av_loc2 v,
+                        at_physical_location pl,
+                        cwms_office o,
+                        cwms_time_zone tz1,
+                        cwms_time_zone tz2
+                  where v.db_office_id like upper(l_office_id_mask) escape '\'
+                    and o.office_id = v.db_office_id
+                    and rt.office_code = o.office_code
+                    and upper(rt.parameters_id) like upper(l_parameters_id_mask) escape '\'
+                    and upper(rt.version) like upper(l_template_version_mask) escape '\'
+                    and rs.template_code = rt.template_code
+                    and upper(rs.version) like upper(l_spec_version_mask) escape '\'
+                    and vr.rating_spec_code = rs.rating_spec_code
+                    and v.location_code = rs.location_code
+                    and upper(v.location_id) like upper(l_location_id_mask) escape '\'
+                    and v.unit_system = 'SI'
+                    and pl.location_code = v.location_code
+                    and tz1.time_zone_code = nvl(pl.time_zone_code, 0)
+                    and tz2.time_zone_name = case
+                                                when p_time_zone is null then
+                                                   tz1.time_zone_name
+                                                else
+                                                   p_time_zone
+                                             end
+                    and vr.effective_date >= case
+                                               when p_effective_date_start is null then
+                                                  c_default_start_date
+                                               else
+                                                  cwms_util.change_timezone(p_effective_date_start, tz2.time_zone_name, 'UTC')
+                                            end
+                    and vr.effective_date <= case
+                                               when p_effective_date_end is null then
+                                                  c_default_end_date
+                                               else
+                                                  cwms_util.change_timezone(p_effective_date_end, tz2.time_zone_name, 'UTC')
+                                            end
+                  order by v.db_office_id,
+                        v.location_id,
+                        rt.parameters_id,
+                        rt.version,
+                        rs.version,
+                        vr.effective_date nulls first))
+         union all               
+        (select distinct
+                location_id,
+                rating_code
+           from (select v.location_id,
+                        tr.transitional_rating_code as rating_code
+                   from at_transitional_rating tr,
+                        at_rating_spec rs,
+                        at_rating_template rt,
+                        av_loc2 v,
+                        at_physical_location pl,
+                        cwms_office o,
+                        cwms_time_zone tz1,
+                        cwms_time_zone tz2
+                  where v.db_office_id like upper(l_office_id_mask) escape '\'
+                    and o.office_id = v.db_office_id
+                    and rt.office_code = o.office_code
+                    and upper(rt.parameters_id) like upper(l_parameters_id_mask) escape '\'
+                    and upper(rt.version) like upper(l_template_version_mask) escape '\'
+                    and rs.template_code = rt.template_code
+                    and upper(rs.version) like upper(l_spec_version_mask) escape '\'
+                    and tr.rating_spec_code = rs.rating_spec_code
+                    and v.location_code = rs.location_code
+                    and upper(v.location_id) like upper(l_location_id_mask) escape '\'
+                    and v.unit_system = 'SI'
+                    and pl.location_code = v.location_code
+                    and tz1.time_zone_code = nvl(pl.time_zone_code, 0)
+                    and tz2.time_zone_name = case
+                                                when p_time_zone is null then
+                                                   tz1.time_zone_name
+                                                else
+                                                   p_time_zone
+                                             end
+                    and tr.effective_date >= case
+                                               when p_effective_date_start is null then
+                                                  c_default_start_date
+                                               else
+                                                  cwms_util.change_timezone(p_effective_date_start, tz2.time_zone_name, 'UTC')
+                                            end
+                    and tr.effective_date <= case
+                                               when p_effective_date_end is null then
+                                                  c_default_end_date
+                                               else
+                                                  cwms_util.change_timezone(p_effective_date_end, tz2.time_zone_name, 'UTC')
+                                            end
+                  order by v.db_office_id,
+                        v.location_id,
+                        rt.parameters_id,
+                        rt.version,
+                        rs.version,
+                        tr.effective_date nulls first))
+                )
       )
    loop
       p_ratings.extend;
@@ -1897,8 +1878,7 @@ end delete_ratings;
 --
 procedure store_ratings_xml(
    p_xml            in xmltype,
-   p_fail_if_exists in varchar2,
-   p_replace_base   in varchar2 default 'F')
+   p_fail_if_exists in varchar2)
 is
    l_xml     xmltype;
    l_node    xmltype;
@@ -1952,7 +1932,7 @@ begin
       l_node := cwms_util.get_xml_node(l_xml, '(/ratings/rating|/ratings/simple-rating|/ratings/virtual-rating|/ratings/transitional-rating|/ratings/usgs-stream-rating)['||i||']');
       exit when l_node is null;                   
       begin
-         store_ratings(l_node, p_fail_if_exists, p_replace_base);
+         store_ratings(l_node, p_fail_if_exists);
       exception
          when others then
             cwms_msg.log_db_message(
@@ -1973,11 +1953,10 @@ end store_ratings_xml;
 --
 procedure store_ratings_xml(
    p_xml            in varchar2,
-   p_fail_if_exists in varchar2,
-   p_replace_base   in varchar2 default 'F')
+   p_fail_if_exists in varchar2)
 is
 begin
-   store_ratings_xml(xmltype(p_xml), p_fail_if_exists, p_replace_base);
+   store_ratings_xml(xmltype(p_xml), p_fail_if_exists);
 end store_ratings_xml;
 
 --------------------------------------------------------------------------------
@@ -1985,11 +1964,10 @@ end store_ratings_xml;
 --
 procedure store_ratings_xml(
    p_xml            in clob,
-   p_fail_if_exists in varchar2,
-   p_replace_base   in varchar2 default 'F')
+   p_fail_if_exists in varchar2)
 is
 begin
-   store_ratings_xml(xmltype(p_xml), p_fail_if_exists, p_replace_base);
+   store_ratings_xml(xmltype(p_xml), p_fail_if_exists);
 end store_ratings_xml;
 
 --------------------------------------------------------------------------------
@@ -2002,6 +1980,7 @@ is
    l_dependent_count pls_integer;
    l_rating          rating_t;
 begin
+   dbms_output.put_line('getting rating for code '||p_rating_code);
    select count(*)
      into l_dependent_count
      from at_rating

@@ -26,8 +26,6 @@ comment on column at_rating_template.version              is 'Version label, for
 comment on column at_rating_template.dep_parameter_code   is 'Reference to parameter';
 comment on column at_rating_template.description          is 'Text description of template';
 
-commit;
-
 ------------------------------
 -- AT_RATING_IND_PARAM_SPEC --
 ------------------------------
@@ -58,8 +56,6 @@ comment on column at_rating_ind_param_spec.parameter_position           is 'Ordi
 comment on column at_rating_ind_param_spec.in_range_rating_method       is 'Reference to in-range rating method for the indpendent parameter';
 comment on column at_rating_ind_param_spec.out_range_low_rating_method  is 'Reference to low out-of-range rating method for the indpendent parameter';
 comment on column at_rating_ind_param_spec.out_range_high_rating_method is 'Reference to high out-of-range rating method for the indpendent parameter';
-
-commit;
 
 --------------------
 -- AT_RATING_SPEC --
@@ -113,8 +109,6 @@ comment on column at_rating_spec.auto_migrate_ext_flag        is 'Specifies whet
 comment on column at_rating_spec.description                  is 'USGS-style rounding specification for dependent parameter';
 comment on column at_rating_spec.description                  is 'Description of rating time series';
 
-commit;
-
 ----------------------------
 -- AT_RATING_IND_ROUNDING --
 ----------------------------
@@ -133,8 +127,6 @@ comment on table  at_rating_ind_rounding                    is 'Rounding specifi
 comment on column at_rating_ind_rounding.rating_spec_code   is 'References rating specification';
 comment on column at_rating_ind_rounding.parameter_position is 'Input parameter ordinal position';
 comment on column at_rating_ind_rounding.rounding_spec      is 'USGS-style rounding specification';
-
-commit;
 
 ---------------
 -- AT_RATING --
@@ -170,8 +162,6 @@ comment on column at_rating.formula          is 'Formula to be used instead of r
 comment on column at_rating.native_units     is 'Units used for i/o and for formula, in format ind1_unit[,ind2_unit[,...]];dep_unit';
 comment on column at_rating.description      is 'Text description of rating specifics';
 
-commit;
-
 -----------------------------
 -- AT_RATING_IND_PARAMETER --
 -----------------------------
@@ -190,8 +180,6 @@ comment on table  at_rating_ind_parameter                       is 'Associates a
 comment on column at_rating_ind_parameter.rating_ind_param_code is 'Synthetic key';
 comment on column at_rating_ind_parameter.rating_code           is 'Reference to parent rating';
 comment on column at_rating_ind_parameter.ind_param_spec_code   is 'Reference to independent parameter specification';
-
-commit;
 
 --------------------------
 -- AT_RATING_VALUE_NOTE --
@@ -219,8 +207,6 @@ comment on column at_rating_value_note.description is 'Note description';
 insert into at_rating_value_note values (1, 53, 'BASE'        , 'Value is on base table');
 insert into at_rating_value_note values (2, 53, 'INTERPOLATED', 'Value is interpolated between adjacent values');
 insert into at_rating_value_note values (3, 53, 'MANUAL'      , 'Value was entered manually');
-
-commit;
 
 --------------------
 -- AT_RATING_VALUE --
@@ -260,8 +246,6 @@ begin
 end;
 /
 
-commit;
-
 -------------------------------
 -- AT_RATING_EXTENSION_VALUE --
 -------------------------------
@@ -291,8 +275,6 @@ comment on column at_rating_extension_value.dep_value                 is 'Depend
 comment on column at_rating_extension_value.dep_rating_ind_param_code is 'Dependent table for rating (for multi-parameter ratings)';
 comment on column at_rating_extension_value.note_code                 is 'Reference to rating value note';
 
-commit;
-
 ------------------------
 -- AT_COMPOUND_RATING --
 ------------------------
@@ -311,8 +293,6 @@ comment on column at_compound_rating.seq       is 'Synthetic key';
 comment on column at_compound_rating.position  is 'Independent parameter position';
 comment on column at_compound_rating.ind_value is 'Independent parameter value';
 comment on column at_compound_rating.parent_id is 'Id specifying upstream lower-position parameter position/value combinations';
-
-commit;
 
 -----------------------
 -- AT_VIRTUAL_RATING --
@@ -343,8 +323,6 @@ comment on column at_virtual_rating.active_flag         is 'Flag (T/F) specifyin
 comment on column at_virtual_rating.connections         is 'String specifying how source ratings are connected to form virtual rating';
 comment on column at_virtual_rating.description         is 'Descriptive text about this virtual rating';
 
-commit;
-
 -------------------------------
 -- AT_VIRTUAL_RATING_ELEMENT --
 -------------------------------
@@ -369,8 +347,6 @@ comment on column at_virtual_rating_element.position                    is 'The 
 comment on column at_virtual_rating_element.rating_spec_code            is 'Foreign key to the rating spec for this source rating if it is a rating';
 comment on column at_virtual_rating_element.rating_expression           is 'Mathematical expression for this source rating if it is an expression. For longer expressions use formula-based ratings.';
 
-commit;
-
 ----------------------------
 -- AT_VRITUAL_RATING_UNIT --
 ----------------------------
@@ -389,8 +365,6 @@ comment on table  at_virtual_rating_unit is 'Holds units for virtual rating elem
 comment on column at_virtual_rating_unit.virtual_rating_element_code is 'Foreign key to the virtual rating element this unit is for';
 comment on column at_virtual_rating_unit.position                    is 'Sequential position of the paramter in the virtual rating element that this unit is for';
 comment on column at_virtual_rating_unit.unit_code                   is 'Foreign key intto the units table for this unit';
-
-commit;
 
 ----------------------------
 -- AT_TRANSITIONAL_RATING --
@@ -419,8 +393,6 @@ comment on column at_transitional_rating.active_flag              is 'Flag (T/F)
 comment on column at_transitional_rating.native_units             is 'Units used for selection and evaluation, in format ind1_unit[,ind2_unit[,...]];dep_unit';
 comment on column at_transitional_rating.description              is 'Descriptive text about this transitional rating';
 
-commit;
-
 --------------------------------
 -- AT_TRANSITIONAL_RATING_SRC --
 --------------------------------
@@ -440,8 +412,6 @@ comment on table  at_transitional_rating_src is 'Holds source ratings for transi
 comment on column at_transitional_rating_src.transitional_rating_code is     'Foreign key to the transitional rating that this alternative rating is for';
 comment on column at_transitional_rating_src.position is                     'The sequential position of this source rating in the transitional rating';
 comment on column at_transitional_rating_src.rating_spec_code is             'Foreign key to the rating spec for this alternative rating';
-
-commit;
 
 --------------------------------
 -- AT_TRANSITIONAL_RATING_SEL --
@@ -465,22 +435,4 @@ comment on column at_transitional_rating_sel.transitional_rating_code is 'Foreig
 comment on column at_transitional_rating_sel.position is 'The sequential order of this selection.  Selections are evaluated in sequential order.';  
 comment on column at_transitional_rating_sel.expression is 'The expression which yields the result of the rating if this condition is null or evaulates to true.';  
 comment on column at_transitional_rating_sel.condition is 'The condition to be evaluated to determine if the expression is used as the result of the rating';  
-
-commit;
-
--------------------------
--- AT_USGS_RATING_SPEC --
--------------------------
-create table at_usgs_rating_hash (
-   rating_spec_code integer,
-   hash_value       varchar2(40),
-   constraint at_usgs_rating_hash_pk  primary key (rating_spec_code) using index,
-   constraint at_usgs_rating_hash_fk1 foreign key (rating_spec_code) references at_rating_spec (rating_spec_code)
-) tablespace cwms_20at_data;
-
-comment on table  at_usgs_rating_hash is 'Holds hash codes for rating text from USGS NWIS';
-comment on column at_usgs_rating_hash.rating_spec_code is 'The rating specification for this hash code';
-comment on column at_usgs_rating_hash.hash_value       is 'The hash value for this rating specification';   
-
-commit;
  

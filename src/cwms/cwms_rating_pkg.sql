@@ -983,31 +983,12 @@ function get_template(
  * @param p_fail_if_exists A flag ('T' or 'F') that specifies if the procedure should
  * fail if one of the ratings already exists.
  *
- * @param p_replace_base A flag('T' or 'F') that specifies whether any existing USGS-style stream rating
- * should be completely replaced even if the base ratings are the same. This flag has no effect on other types of ratings
- * <p>
- * <table class="descr">
- *   <tr>
- *     <th class="descr">Flag</th>
- *     <th class="descr">Behavior</th>
- *   </tr>
- *   <tr>
- *     <td class="descr">'T'</td>
- *     <td class="descr">The existing USGS-style stream rating will be completely replaced with this one, even if the only difference is a new shift</td>
- *   </tr>
- *   <tr>
- *     <td class="descr">'F'</td>
- *     <td class="descr">If this rating differs from the existing one only by the existence of a new shift, only the new shift is stored</td>
- *   </tr>
- * </table>
- *  
  * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the ratings
  * already exists
  */
 procedure store_ratings(
    p_xml            in xmltype,
-   p_fail_if_exists in varchar2,
-   p_replace_base   in varchar2 default 'F');
+   p_fail_if_exists in varchar2);
 /**
  * Stores ratings to the database.
  *
@@ -1022,31 +1003,12 @@ procedure store_ratings(
  * @param p_fail_if_exists A flag ('T' or 'F') that specifies if the procedure should
  * fail if one of the ratings already exists.
  *
- * @param p_replace_base A flag('T' or 'F') that specifies whether any existing USGS-style stream rating
- * should be completely replaced even if the base ratings are the same. This flag has no effect on other types of ratings
- * <p>
- * <table class="descr">
- *   <tr>
- *     <th class="descr">Flag</th>
- *     <th class="descr">Behavior</th>
- *   </tr>
- *   <tr>
- *     <td class="descr">'T'</td>
- *     <td class="descr">The existing USGS-style stream rating will be completely replaced with this one, even if the only difference is a new shift</td>
- *   </tr>
- *   <tr>
- *     <td class="descr">'F'</td>
- *     <td class="descr">If this rating differs from the existing one only by the existence of a new shift, only the new shift is stored</td>
- *   </tr>
- * </table>
- *  
  * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the ratings
  * already exists
  */
 procedure store_ratings(
    p_xml            in varchar2,
-   p_fail_if_exists in varchar2,
-   p_replace_base   in varchar2 default 'F');
+   p_fail_if_exists in varchar2);
 /**
  * Stores ratings to the database.
  *
@@ -1061,31 +1023,12 @@ procedure store_ratings(
  * @param p_fail_if_exists A flag ('T' or 'F') that specifies if the procedure should
  * fail if one of the ratings already exists.
  *
- * @param p_replace_base A flag('T' or 'F') that specifies whether any existing USGS-style stream rating
- * should be completely replaced even if the base ratings are the same. This flag has no effect on other types of ratings
- * <p>
- * <table class="descr">
- *   <tr>
- *     <th class="descr">Flag</th>
- *     <th class="descr">Behavior</th>
- *   </tr>
- *   <tr>
- *     <td class="descr">'T'</td>
- *     <td class="descr">The existing USGS-style stream rating will be completely replaced with this one, even if the only difference is a new shift</td>
- *   </tr>
- *   <tr>
- *     <td class="descr">'F'</td>
- *     <td class="descr">If this rating differs from the existing one only by the existence of a new shift, only the new shift is stored</td>
- *   </tr>
- * </table>
- *  
  * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the ratings
  * already exists
  */
 procedure store_ratings(
    p_xml            in clob,
-   p_fail_if_exists in varchar2,
-   p_replace_base   in varchar2 default 'F');
+   p_fail_if_exists in varchar2);
 /**
  * Stores ratings to the database.
  *
@@ -1099,31 +1042,12 @@ procedure store_ratings(
  * @param p_fail_if_exists A flag ('T' or 'F') that specifies if the procedure should
  * fail if one of the ratings already exists.
  *
- * @param p_replace_base A flag('T' or 'F') that specifies whether any existing USGS-style stream rating
- * should be completely replaced even if the base ratings are the same. This flag has no effect on other types of ratings
- * <p>
- * <table class="descr">
- *   <tr>
- *     <th class="descr">Flag</th>
- *     <th class="descr">Behavior</th>
- *   </tr>
- *   <tr>
- *     <td class="descr">'T'</td>
- *     <td class="descr">The existing USGS-style stream rating will be completely replaced with this one, even if the only difference is a new shift</td>
- *   </tr>
- *   <tr>
- *     <td class="descr">'F'</td>
- *     <td class="descr">If this rating differs from the existing one only by the existence of a new shift, only the new shift is stored</td>
- *   </tr>
- * </table>
- *  
  * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the ratings
  * already exists
  */
 procedure store_ratings(
    p_ratings        in rating_tab_t,
-   p_fail_if_exists in varchar2,
-   p_replace_base   in varchar2 default 'F');   
+   p_fail_if_exists in varchar2);   
 /**
  * Catalogs stored ratings that match specified parameters.  Matching is
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
@@ -1783,31 +1707,12 @@ procedure delete_ratings(
  * @param p_fail_if_exists A flag ('T' or 'F') that specifies if the procedure should
  * fail if one of the templates, specifications, or ratings already exists.
  *
- * @param p_replace_base A flag('T' or 'F') that specifies whether any existing USGS-style stream rating
- * should be completely replaced even if the base ratings are the same. This flag has no effect on other types of ratings
- * <p>
- * <table class="descr">
- *   <tr>
- *     <th class="descr">Flag</th>
- *     <th class="descr">Behavior</th>
- *   </tr>
- *   <tr>
- *     <td class="descr">'T'</td>
- *     <td class="descr">The existing USGS-style stream rating will be completely replaced with this one, even if the only difference is a new shift</td>
- *   </tr>
- *   <tr>
- *     <td class="descr">'F'</td>
- *     <td class="descr">If this rating differs from the existing one only by the existence of a new shift, only the new shift is stored</td>
- *   </tr>
- * </table>
- *  
  * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the templates,
  * specifications, or ratings already exists
  */
 procedure store_ratings_xml(
    p_xml            in xmltype,
-   p_fail_if_exists in varchar2,
-   p_replace_base   in varchar2 default 'F');  
+   p_fail_if_exists in varchar2);  
 /**
  * Stores rating templates, rating specifications, and ratings to the database from a single XML instance.
  *
@@ -1818,31 +1723,12 @@ procedure store_ratings_xml(
  * @param p_fail_if_exists A flag ('T' or 'F') that specifies if the procedure should
  * fail if one of the templates, specifications, or ratings already exists.
  *
- * @param p_replace_base A flag('T' or 'F') that specifies whether any existing USGS-style stream rating
- * should be completely replaced even if the base ratings are the same. This flag has no effect on other types of ratings
- * <p>
- * <table class="descr">
- *   <tr>
- *     <th class="descr">Flag</th>
- *     <th class="descr">Behavior</th>
- *   </tr>
- *   <tr>
- *     <td class="descr">'T'</td>
- *     <td class="descr">The existing USGS-style stream rating will be completely replaced with this one, even if the only difference is a new shift</td>
- *   </tr>
- *   <tr>
- *     <td class="descr">'F'</td>
- *     <td class="descr">If this rating differs from the existing one only by the existence of a new shift, only the new shift is stored</td>
- *   </tr>
- * </table>
- *  
  * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the templates,
  * specifications, or ratings already exists
  */
 procedure store_ratings_xml(
    p_xml            in varchar2,
-   p_fail_if_exists in varchar2,
-   p_replace_base   in varchar2 default 'F');  
+   p_fail_if_exists in varchar2);  
 /**
  * Stores rating templates, rating specifications, and ratings to the database from a single XML instance.
  *
@@ -1853,31 +1739,12 @@ procedure store_ratings_xml(
  * @param p_fail_if_exists A flag ('T' or 'F') that specifies if the procedure should
  * fail if one of the templates, specifications, or ratings already exists.
  *
- * @param p_replace_base A flag('T' or 'F') that specifies whether any existing USGS-style stream rating
- * should be completely replaced even if the base ratings are the same. This flag has no effect on other types of ratings
- * <p>
- * <table class="descr">
- *   <tr>
- *     <th class="descr">Flag</th>
- *     <th class="descr">Behavior</th>
- *   </tr>
- *   <tr>
- *     <td class="descr">'T'</td>
- *     <td class="descr">The existing USGS-style stream rating will be completely replaced with this one, even if the only difference is a new shift</td>
- *   </tr>
- *   <tr>
- *     <td class="descr">'F'</td>
- *     <td class="descr">If this rating differs from the existing one only by the existence of a new shift, only the new shift is stored</td>
- *   </tr>
- * </table>
- *  
  * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the templates,
  * specifications, or ratings already exists
  */
 procedure store_ratings_xml(
    p_xml            in clob,
-   p_fail_if_exists in varchar2,
-   p_replace_base   in varchar2 default 'F');  
+   p_fail_if_exists in varchar2);  
 /**
  * Rates input values with ratings stored in the database.
  *

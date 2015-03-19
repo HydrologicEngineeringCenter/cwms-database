@@ -375,7 +375,6 @@ is
    l_machine     varchar2(64);
    l_result      integer;
    l_max_tries   pls_integer := 25;
-   l_code        integer;
 begin
    if l_msg_level > msg_level_none then
       -----------------------------------------
@@ -384,15 +383,8 @@ begin
       l_now         := cwms_util.current_millis;
       l_now_ts      := cwms_util.to_timestamp(l_now);
       l_msg_id      := get_msg_id;
-      l_office_code := cwms_util.user_office_code; 
-      begin
-         l_document := xmltype(p_short_msg);
-      exception
-         when others then
-            l_code := cwms_text.store_text(p_short_msg, '/_bad_message/'||l_msg_id, null, 'F', cwms_util.user_office_id);
-            commit;
-         raise;  
-      end;
+      l_office_code := cwms_util.user_office_code;
+      l_document    := xmltype(p_short_msg);
       l_msgtype     := l_document.extract('/cwms_message/@type').getstringval();
       l_node        := l_document.extract('/cwms_message/text');
       if l_node is not null then
@@ -597,6 +589,7 @@ function get_message_clob(
    p_message_id in varchar2)
    return clob
 is
+   l_clob clob := null;
 begin
    return cwms_text.retrieve_text('/message_id/'||p_message_id);
 end get_message_clob;
@@ -614,14 +607,7 @@ is
    lf constant varchar2(1) := chr(10);
    l_msg_level integer := nvl(p_msg_level, msg_level_normal);
 begin
-   l_message := replace(l_message, '&', '&'||'amp;');
-   for c in 0..31 loop
-      if c not in (9,10,13) then
-         l_message := replace(l_message, chr(c), '&'||'#'||trim(to_char(c, '0X'))||';');
-      end if;
-   end loop;
    l_message := utl_i18n.escape_reference(l_message, 'us7ascii');
-   commit;
    i := log_message(
       'CWMSDB',
       null,

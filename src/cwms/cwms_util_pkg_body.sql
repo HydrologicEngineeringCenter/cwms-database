@@ -4913,14 +4913,6 @@ AS
       exception
          when utl_http.end_of_body then
             utl_http.end_response(l_resp);
-            
-         when others then
-            begin
-               utl_http.end_response(l_resp);
-            exception
-               when others then null;
-            end;
-            raise;
       end;
       dbms_lob.close(l_clob);
       return l_clob;
