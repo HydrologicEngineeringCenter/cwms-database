@@ -91,6 +91,8 @@ function round_f(
    p_round_to_even in varchar2 default 'T')
 return binary_double deterministic
 is
+   numeric_overflow exception;
+   pragma exception_init(numeric_overflow, -1426);
    c_epsilon       constant binary_double := 1e-8d; -- "close enough to zero" value
    l_value         binary_double := p_value;
    l_magnitude     binary_integer; -- log10 magnitude of value
@@ -138,6 +140,9 @@ begin
       l_result := l_integer * l_factor; 
    end if;
    return l_result;
+exception
+   when numeric_overflow then
+      return round_f(to_number(p_value), p_sig_digits, p_round_to_even);   
 end round_f;   
 
 --------------------------------------------------------------------------------
@@ -242,6 +247,8 @@ function round_dd_f(
    p_round_to_even in varchar2 default 'T')
 return binary_double deterministic   
 is
+   numeric_overflow exception;
+   pragma exception_init(numeric_overflow, -1426);
    c_epsilon       constant binary_double := 1e-8d; -- "close enough to zero" value
    l_value         binary_double := p_value;
    l_max_places    binary_integer; -- max number of places to right of decimal point as per rounding spec
@@ -302,6 +309,9 @@ begin
       l_result := l_integer * l_factor; 
    end if;
    return l_result;
+exception
+   when numeric_overflow then
+      return round_nn_f(p_value, p_rounding_spec, p_round_to_even);   
 end round_dd_f;
 
 --------------------------------------------------------------------------------
@@ -445,6 +455,8 @@ procedure round_d_tab(
    p_rounding_spec in            varchar2,
    p_round_to_even in            varchar2 default 'T')
 is
+   numeric_overflow exception;
+   pragma exception_init(numeric_overflow, -1426);
    c_epsilon       constant binary_double := 1e-8d; -- "close enough to zero" value
    l_value         binary_double;
    l_max_places    binary_integer; -- max number of places to right of decimal point as per rounding spec
@@ -464,48 +476,54 @@ begin
          if l_value is null or l_value is nan or l_value = 0 then
             l_result := l_value;
          else
-            ---------------------------------------------------------------------  
-            -- determine the magnitude and number of significant digits to use --
-            ---------------------------------------------------------------------  
-            l_magnitude := floor(log(10, abs(l_value)));
-            l_spec_pos := least(5, greatest(-3, l_magnitude)) + 4;
-            l_digits := to_number(substr(p_rounding_spec, l_spec_pos, 1)); -- from rounding spec
-            l_digits := case l_digits + l_magnitude >= l_digits            -- decrease if ncecessary due to max decimal places
-                        when true then l_digits
-                        else least(l_max_places, l_digits + l_magnitude)
-                        end;
-            --------------------------------------------------------------------                  
-            -- factor the value and work with integer and fractional portions --
-            --------------------------------------------------------------------                  
-            l_factor := 10d ** (l_magnitude - l_digits + 1);
-            l_value := l_value / l_factor; 
-            l_integer := trunc(l_value);
-            l_fraction := abs(l_value - l_integer);
-            if abs(l_fraction - .5d) < c_epsilon then
-               --------------------------------------
-               -- fraction is "close enough" to .5 --
-               --------------------------------------
-               if l_round_to_even and mod(l_integer, 2) = 0 then
-                  -------------------------------------------------------------------------- 
-                  -- rounding to closest even number, and integer portion is already even --
-                  -------------------------------------------------------------------------- 
-                  null; 
+            begin
+               l_value := p_values(i);
+               ---------------------------------------------------------------------  
+               -- determine the magnitude and number of significant digits to use --
+               ---------------------------------------------------------------------  
+               l_magnitude := floor(log(10, abs(l_value)));
+               l_spec_pos := least(5, greatest(-3, l_magnitude)) + 4;
+               l_digits := to_number(substr(p_rounding_spec, l_spec_pos, 1)); -- from rounding spec
+               l_digits := case l_digits + l_magnitude >= l_digits            -- decrease if ncecessary due to max decimal places
+                           when true then l_digits
+                           else least(l_max_places, l_digits + l_magnitude)
+                           end;
+               --------------------------------------------------------------------                  
+               -- factor the value and work with integer and fractional portions --
+               --------------------------------------------------------------------                  
+               l_factor := 10d ** (l_magnitude - l_digits + 1);
+               l_value := l_value / l_factor; 
+               l_integer := trunc(l_value);
+               l_fraction := abs(l_value - l_integer);
+               if abs(l_fraction - .5d) < c_epsilon then
+                  --------------------------------------
+                  -- fraction is "close enough" to .5 --
+                  --------------------------------------
+                  if l_round_to_even and mod(l_integer, 2) = 0 then
+                     -------------------------------------------------------------------------- 
+                     -- rounding to closest even number, and integer portion is already even --
+                     -------------------------------------------------------------------------- 
+                     null; 
+                  else
+                     ------------------------------------------
+                     -- round away from zero to next integer --
+                     ------------------------------------------
+                     l_integer := l_integer + sign(l_integer);
+                  end if;
                else
-                  ------------------------------------------
-                  -- round away from zero to next integer --
-                  ------------------------------------------
-                  l_integer := l_integer + sign(l_integer);
+                  ---------------------------------------------
+                  -- round away from zero to closest integer --
+                  ---------------------------------------------
+                  l_integer := trunc(l_value + .5d * sign(l_value));
                end if;
-            else
-               ---------------------------------------------
-               -- round away from zero to closest integer --
-               ---------------------------------------------
-               l_integer := trunc(l_value + .5d * sign(l_value));
-            end if;
-            ------------------------------------------------------------
-            -- factor the rounded value back to the correct magnitude --
-            ------------------------------------------------------------
-            l_result := l_integer * l_factor; 
+               ------------------------------------------------------------
+               -- factor the rounded value back to the correct magnitude --
+               ------------------------------------------------------------
+               l_result := l_integer * l_factor;
+            exception
+               when numeric_overflow then
+                  l_result := round_nn_f(p_values(i), p_rounding_spec, p_round_to_even);   
+            end; 
          end if;
          p_values(i) := l_result;
       end loop;
@@ -541,6 +559,8 @@ procedure round_tsv_array(
    p_rounding_spec in            varchar2,
    p_round_to_even in            varchar2 default 'T')
 is
+   numeric_overflow exception;
+   pragma exception_init(numeric_overflow, -1426);
    c_epsilon       constant binary_double := 1e-8d; -- "close enough to zero" value
    l_value         binary_double;
    l_max_places    binary_integer; -- max number of places to right of decimal point as per rounding spec
@@ -560,49 +580,54 @@ begin
          l_value := p_values(i).value;
          if l_value is null or l_value is nan or l_value = 0 then
             l_result := l_value;
-         else
-            ---------------------------------------------------------------------  
-            -- determine the magnitude and number of significant digits to use --
-            ---------------------------------------------------------------------  
-            l_magnitude := floor(log(10, abs(l_value)));
-            l_spec_pos := least(5, greatest(-3, l_magnitude)) + 4;
-            l_digits := to_number(substr(p_rounding_spec, l_spec_pos, 1)); -- from rounding spec
-            l_digits := case l_digits + l_magnitude >= l_digits            -- decrease if ncecessary due to max decimal places
-                        when true then l_digits
-                        else least(l_max_places, l_digits + l_magnitude)
-                        end;
-            --------------------------------------------------------------------                  
-            -- factor the value and work with integer and fractional portions --
-            --------------------------------------------------------------------                  
-            l_factor := 10d ** (l_magnitude - l_digits + 1);
-            l_value := l_value / l_factor; 
-            l_integer := trunc(l_value);
-            l_fraction := abs(l_value - l_integer);
-            if abs(l_fraction - .5d) < c_epsilon then
-               --------------------------------------
-               -- fraction is "close enough" to .5 --
-               --------------------------------------
-               if l_round_to_even and mod(l_integer, 2) = 0 then
-                  -------------------------------------------------------------------------- 
-                  -- rounding to closest even number, and integer portion is already even --
-                  -------------------------------------------------------------------------- 
-                  null; 
+         else                    
+            begin
+               ---------------------------------------------------------------------  
+               -- determine the magnitude and number of significant digits to use --
+               ---------------------------------------------------------------------  
+               l_magnitude := floor(log(10, abs(l_value)));
+               l_spec_pos := least(5, greatest(-3, l_magnitude)) + 4;
+               l_digits := to_number(substr(p_rounding_spec, l_spec_pos, 1)); -- from rounding spec
+               l_digits := case l_digits + l_magnitude >= l_digits            -- decrease if ncecessary due to max decimal places
+                           when true then l_digits
+                           else least(l_max_places, l_digits + l_magnitude)
+                           end;
+               --------------------------------------------------------------------                  
+               -- factor the value and work with integer and fractional portions --
+               --------------------------------------------------------------------                  
+               l_factor := 10d ** (l_magnitude - l_digits + 1);
+               l_value := l_value / l_factor; 
+               l_integer := trunc(l_value);
+               l_fraction := abs(l_value - l_integer);
+               if abs(l_fraction - .5d) < c_epsilon then
+                  --------------------------------------
+                  -- fraction is "close enough" to .5 --
+                  --------------------------------------
+                  if l_round_to_even and mod(l_integer, 2) = 0 then
+                     -------------------------------------------------------------------------- 
+                     -- rounding to closest even number, and integer portion is already even --
+                     -------------------------------------------------------------------------- 
+                     null; 
+                  else
+                     ------------------------------------------
+                     -- round away from zero to next integer --
+                     ------------------------------------------
+                     l_integer := l_integer + sign(l_integer);
+                  end if;
                else
-                  ------------------------------------------
-                  -- round away from zero to next integer --
-                  ------------------------------------------
-                  l_integer := l_integer + sign(l_integer);
+                  ---------------------------------------------
+                  -- round away from zero to closest integer --
+                  ---------------------------------------------
+                  l_integer := trunc(l_value + .5d * sign(l_value));
                end if;
-            else
-               ---------------------------------------------
-               -- round away from zero to closest integer --
-               ---------------------------------------------
-               l_integer := trunc(l_value + .5d * sign(l_value));
-            end if;
-            ------------------------------------------------------------
-            -- factor the rounded value back to the correct magnitude --
-            ------------------------------------------------------------
-            l_result := l_integer * l_factor; 
+               ------------------------------------------------------------
+               -- factor the rounded value back to the correct magnitude --
+               ------------------------------------------------------------
+               l_result := l_integer * l_factor; 
+            exception
+               when numeric_overflow then
+                  l_result := round_nn_f(p_values(i).value, p_rounding_spec, p_round_to_even);   
+            end; 
          end if;
          p_values(i).value := l_result;
       end loop;
@@ -616,6 +641,8 @@ procedure round_ztsv_array(
    p_rounding_spec in            varchar2,
    p_round_to_even in            varchar2 default 'T')
 is
+   numeric_overflow exception;
+   pragma exception_init(numeric_overflow, -1426);
    c_epsilon       constant binary_double := 1e-8d; -- "close enough to zero" value
    l_value         binary_double;
    l_max_places    binary_integer; -- max number of places to right of decimal point as per rounding spec
@@ -632,52 +659,57 @@ begin
       validate_rounding_spec(p_rounding_spec);
       l_max_places := to_number(substr(p_rounding_spec, 10));
       for i in 1..p_values.count loop
-         l_value      := p_values(i).value;
+         l_value := p_values(i).value;
          if l_value is null or l_value is nan or l_value = 0 then
             l_result := l_value;
-         else
-            ---------------------------------------------------------------------  
-            -- determine the magnitude and number of significant digits to use --
-            ---------------------------------------------------------------------  
-            l_magnitude := floor(log(10, abs(l_value)));
-            l_spec_pos := least(5, greatest(-3, l_magnitude)) + 4;
-            l_digits := to_number(substr(p_rounding_spec, l_spec_pos, 1)); -- from rounding spec
-            l_digits := case l_digits + l_magnitude >= l_digits            -- decrease if ncecessary due to max decimal places
-                        when true then l_digits
-                        else least(l_max_places, l_digits + l_magnitude)
-                        end;
-            --------------------------------------------------------------------                  
-            -- factor the value and work with integer and fractional portions --
-            --------------------------------------------------------------------                  
-            l_factor := 10d ** (l_magnitude - l_digits + 1);
-            l_value := l_value / l_factor; 
-            l_integer := trunc(l_value);
-            l_fraction := abs(l_value - l_integer);
-            if abs(l_fraction - .5d) < c_epsilon then
-               --------------------------------------
-               -- fraction is "close enough" to .5 --
-               --------------------------------------
-               if l_round_to_even and mod(l_integer, 2) = 0 then
-                  -------------------------------------------------------------------------- 
-                  -- rounding to closest even number, and integer portion is already even --
-                  -------------------------------------------------------------------------- 
-                  null; 
+         else    
+            begin
+               ---------------------------------------------------------------------  
+               -- determine the magnitude and number of significant digits to use --
+               ---------------------------------------------------------------------  
+               l_magnitude := floor(log(10, abs(l_value)));
+               l_spec_pos := least(5, greatest(-3, l_magnitude)) + 4;
+               l_digits := to_number(substr(p_rounding_spec, l_spec_pos, 1)); -- from rounding spec
+               l_digits := case l_digits + l_magnitude >= l_digits            -- decrease if ncecessary due to max decimal places
+                           when true then l_digits
+                           else least(l_max_places, l_digits + l_magnitude)
+                           end;
+               --------------------------------------------------------------------                  
+               -- factor the value and work with integer and fractional portions --
+               --------------------------------------------------------------------                  
+               l_factor := 10d ** (l_magnitude - l_digits + 1);
+               l_value := l_value / l_factor; 
+               l_integer := trunc(l_value);
+               l_fraction := abs(l_value - l_integer);
+               if abs(l_fraction - .5d) < c_epsilon then
+                  --------------------------------------
+                  -- fraction is "close enough" to .5 --
+                  --------------------------------------
+                  if l_round_to_even and mod(l_integer, 2) = 0 then
+                     -------------------------------------------------------------------------- 
+                     -- rounding to closest even number, and integer portion is already even --
+                     -------------------------------------------------------------------------- 
+                     null; 
+                  else
+                     ------------------------------------------
+                     -- round away from zero to next integer --
+                     ------------------------------------------
+                     l_integer := l_integer + sign(l_integer);
+                  end if;
                else
-                  ------------------------------------------
-                  -- round away from zero to next integer --
-                  ------------------------------------------
-                  l_integer := l_integer + sign(l_integer);
+                  ---------------------------------------------
+                  -- round away from zero to closest integer --
+                  ---------------------------------------------
+                  l_integer := trunc(l_value + .5d * sign(l_value));
                end if;
-            else
-               ---------------------------------------------
-               -- round away from zero to closest integer --
-               ---------------------------------------------
-               l_integer := trunc(l_value + .5d * sign(l_value));
-            end if;
-            ------------------------------------------------------------
-            -- factor the rounded value back to the correct magnitude --
-            ------------------------------------------------------------
-            l_result := l_integer * l_factor; 
+               ------------------------------------------------------------
+               -- factor the rounded value back to the correct magnitude --
+               ------------------------------------------------------------
+               l_result := l_integer * l_factor; 
+            exception
+               when numeric_overflow then
+                  l_result := round_nn_f(p_values(i).value, p_rounding_spec, p_round_to_even);   
+            end; 
          end if;
          p_values(i).value := l_result;
       end loop;
