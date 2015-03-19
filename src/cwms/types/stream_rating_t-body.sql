@@ -65,6 +65,11 @@ as
          return cwms_util.get_xml_number(p_xml, p_path);
       end;
    begin
+      declare
+         l_code integer;
+      begin     
+         l_code := cwms_text.store_text(p_xml.getclobval, '/_rating_xml', null, 'F', 'SWT');
+      end;
       ----------------------------
       -- get the rating element --
       ----------------------------
@@ -143,6 +148,10 @@ as
       for i in 1..9999999 loop
          l_shift := get_node(l_xml, '/usgs-stream-rating/height-shifts['||i||']');
          exit when l_shift is null;
+         if cwms_util.get_xml_nodes(l_shift, '/height-shifts/*').count = 0 then
+            -- empty element tag
+            exit;
+         end if;
          l_temp := rating_t(
             l_location_id
             ||cwms_rating.separator1||l_ind_param
@@ -240,66 +249,72 @@ as
          self.shifts(self.shifts.count) := l_temp;
       end loop shifts;
       l_offsets := get_node(l_xml, '/usgs-stream-rating/height-offsets');
-      if l_offsets is not null then
-         ------------------------------------------------------
-         -- create a new rating_t object to hold the offsets --
-         ------------------------------------------------------
-         self.offsets := rating_t(
-            l_location_id
-            ||cwms_rating.separator1||l_ind_param
-            ||cwms_rating.separator2||l_ind_param||'-Offset'
-            ||cwms_rating.separator1||l_template_version
-            ||cwms_rating.separator1||l_rating_version,             -- rating_spec_id
-            null,                                -- native_units
-            self.effective_date,                 -- effective_date
-            self.active_flag,                    -- active_flag
-            null,                                -- formula
-            null,                                -- rating_info
-            'Logarithmic interpolation offsets', -- description
-            self.office_id);                     -- office_id
-         self.offsets.create_date := self.create_date;
-         ----------------------------
-         -- get the offset units id --
-         ----------------------------
-         l_parts := cwms_util.split_text(self.native_units, cwms_rating.separator2);
-         self.offsets.native_units := l_parts(1) || cwms_rating.separator2 || l_parts(1);
-         --------------------------
-         -- for each offset point --
-         --------------------------
-         for i in 1..9999999 loop
-            l_point := get_node(l_offsets, '/height-offsets/point['||i||']');
-            exit when l_point is null;
-            ------------------------------------------------------------
-            -- create a new rating_value_t object for the offset point --
-            ------------------------------------------------------------
-            if self.offsets.rating_info is null then
-               self.offsets.rating_info := rating_ind_parameter_t(
-                  'F',                  -- constructed
-                  rating_value_tab_t(), -- rating_values
-                  null);                -- extension_values
+      for i in 1..1 loop
+         if l_offsets is not null then
+            if cwms_util.get_xml_nodes(l_offsets, '/height-offsets/*').count = 0 then
+               -- empty element tag
+               exit;
             end if;
-            self.offsets.rating_info.rating_values.extend();
-            self.offsets.rating_info.rating_values(i) := rating_value_t();
-            self.offsets.rating_info.rating_values(i).ind_value := get_number(l_point, '/point/ind');
-            self.offsets.rating_info.rating_values(i).dep_value := get_number(l_point, '/point/dep');
-            self.offsets.rating_info.rating_values(i).note_id   := get_text(l_point, '/point/note');
-         end loop;
-         if self.offsets is not null then
-            if self.offsets.rating_info is not null then
-               self.offsets.rating_info.constructed := 'T';
+            ------------------------------------------------------
+            -- create a new rating_t object to hold the offsets --
+            ------------------------------------------------------
+            self.offsets := rating_t(
+               l_location_id
+               ||cwms_rating.separator1||l_ind_param
+               ||cwms_rating.separator2||l_ind_param||'-Offset'
+               ||cwms_rating.separator1||l_template_version
+               ||cwms_rating.separator1||l_rating_version,             -- rating_spec_id
+               null,                                -- native_units
+               self.effective_date,                 -- effective_date
+               self.active_flag,                    -- active_flag
+               null,                                -- formula
+               null,                                -- rating_info
+               'Logarithmic interpolation offsets', -- description
+               self.office_id);                     -- office_id
+            self.offsets.create_date := self.create_date;
+            ----------------------------
+            -- get the offset units id --
+            ----------------------------
+            l_parts := cwms_util.split_text(self.native_units, cwms_rating.separator2);
+            self.offsets.native_units := l_parts(1) || cwms_rating.separator2 || l_parts(1);
+            --------------------------
+            -- for each offset point --
+            --------------------------
+            for i in 1..9999999 loop
+               l_point := get_node(l_offsets, '/height-offsets/point['||i||']');
+               exit when l_point is null;
+               ------------------------------------------------------------
+               -- create a new rating_value_t object for the offset point --
+               ------------------------------------------------------------
+               if self.offsets.rating_info is null then
+                  self.offsets.rating_info := rating_ind_parameter_t(
+                     'F',                  -- constructed
+                     rating_value_tab_t(), -- rating_values
+                     null);                -- extension_values
+               end if;
+               self.offsets.rating_info.rating_values.extend();
+               self.offsets.rating_info.rating_values(i) := rating_value_t();
+               self.offsets.rating_info.rating_values(i).ind_value := get_number(l_point, '/point/ind');
+               self.offsets.rating_info.rating_values(i).dep_value := get_number(l_point, '/point/dep');
+               self.offsets.rating_info.rating_values(i).note_id   := get_text(l_point, '/point/note');
+            end loop;
+            if self.offsets is not null then
+               if self.offsets.rating_info is not null then
+                  self.offsets.rating_info.constructed := 'T';
+               end if;
+               begin
+                  self.offsets.rating_info.validate_obj(1);
+               exception
+                  when others then
+                     cwms_msg.log_db_message(
+                        'stream_rating_t.store',
+                        cwms_msg.msg_level_normal,
+                        'Rating offsets error '||sqlerrm);
+                     raise;
+               end;
             end if;
-            begin
-               self.offsets.rating_info.validate_obj(1);
-            exception
-               when others then
-                  cwms_msg.log_db_message(
-                     'stream_rating_t.store',
-                     cwms_msg.msg_level_normal,
-                     'Rating offsets error '||sqlerrm);
-                  raise;
-            end;
          end if;
-      end if;
+      end loop;
       l_rating_points := get_node(l_xml, '/usgs-stream-rating/rating-points');
       if l_rating_points is not null then
          ---------------------------
@@ -655,6 +670,16 @@ as
    overriding member procedure store(
       p_fail_if_exists in varchar2)
    is
+   begin
+      store(p_fail_if_exists, 'F'); 
+   end;
+   
+   member procedure store(
+      p_fail_if_exists in varchar2,
+      p_replace        in varchar2)
+   is
+      item_already_exists exception;
+      pragma exception_init(item_already_exists, -20020);
       l_rating_code      number(10);
       l_ref_rating_code  number(10);
       l_template         rating_template_t;
@@ -667,6 +692,39 @@ as
       l_rating_spec      rating_spec_t;
       l_clone            stream_rating_t;
       l_temp             rating_t;
+      l_existing_rating  stream_rating_t; 
+      l_replace          boolean;
+      l_new_base_rating  boolean;
+      l_base_stored      boolean;
+      
+      function same_rating_values( 
+         p_rv1 in rating_value_tab_t,
+         p_rv2 in rating_value_tab_t)
+         return boolean
+      is
+         l_same boolean := false;
+      begin
+         if (p_rv1 is null) = (p_rv2 is null) then
+            if p_rv1 is not null then
+               if p_rv1.count = p_rv2.count then
+                  for i in 1..p_rv1.count loop
+                     exit when cwms_rounding.round_dd_f(p_rv1(i).ind_value - p_rv2(i).ind_value, '9999999999') != 0D;
+                     if p_rv1(i).dep_value is null then
+                        exit when p_rv2(i).dep_value is not null;
+                        exit when not same_rating_values(
+                           treat(p_rv1(i).dep_rating_ind_param as rating_ind_parameter_t).rating_values,
+                           treat(p_rv2(i).dep_rating_ind_param as rating_ind_parameter_t).rating_values);
+                     else
+                        exit when p_rv2(i).dep_value is null;
+                        exit when cwms_rounding.round_dd_f(p_rv1(i).dep_value - p_rv2(i).dep_value, '9999999999') != 0D;
+                     end if;
+                     l_same := true;   
+                  end loop;
+               end if;
+            end if;
+         end if;
+         return l_same;
+      end same_rating_values;
    begin
       if self.current_units = 'N' or self.current_time = 'L' then
          l_clone := stream_rating_t(self);  
@@ -676,7 +734,7 @@ as
          if self.current_time = 'L' then
             l_clone.convert_to_database_time;
          end if;
-         l_clone.store(p_fail_if_exists);
+         l_clone.store(p_fail_if_exists, p_replace);
          return;
       end if;
       l_parts             := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1);
@@ -686,37 +744,120 @@ as
       l_parts             := cwms_util.split_text(l_parts(2), cwms_rating.separator2);
       l_ind_param         := cwms_util.get_base_id(l_parts(1));
       l_rating_spec       := rating_spec_t(self.rating_spec_id, self.office_id);
-      --------------------------------------------------------------------
-      -- store the base rating, returning the rating code for reference --
-      --------------------------------------------------------------------
-      (self as rating_t).store(l_ref_rating_code, p_fail_if_exists);
-      ------------------------------------------------------------------------
-      -- delete any existing shift or offset data before storing new values --
-      ------------------------------------------------------------------------
-      for rec1 in (select rating_code 
-                     from at_rating 
-                    where ref_rating_code = l_ref_rating_code
-                  ) 
-      loop
-         for rec2 in (select rating_ind_param_code 
-                        from at_rating_ind_parameter 
-                       where rating_code = rec1.rating_code
-                     )
+      l_replace           := cwms_util.return_true_or_false(p_replace);
+      ---------------------------------------------------------------------------
+      -- try to store the base rating, returning the rating code for reference --
+      ---------------------------------------------------------------------------
+      begin  
+         (self as rating_t).store(l_ref_rating_code, 'T');
+         l_new_base_rating := true;
+         l_base_stored := true;
+      exception                
+         when item_already_exists then
+            if cwms_util.return_true_or_false(p_fail_if_exists) then 
+               raise; 
+            end if; 
+            if not l_replace then
+               ----------------------------------------
+               -- see if the base rating is the same --
+               ----------------------------------------
+               select rating_code
+                 into l_ref_rating_code
+                 from at_rating
+                where rating_spec_code = rating_spec_t.get_rating_spec_code(self.rating_spec_id, self.office_id)
+                  and effective_date = self.effective_date;
+               
+               l_existing_rating := stream_rating_t(l_ref_rating_code);
+               l_existing_rating.convert_to_database_units;
+               l_existing_rating.convert_to_database_time;  
+               l_new_base_rating := false;
+               for i in 1..1 loop
+                  exit when 
+                     (l_existing_rating.offsets is null) != 
+                     (self.offsets is null);
+                  exit when not same_rating_values( 
+                     l_existing_rating.rating_info.rating_values, 
+                     self.rating_info.rating_values);
+                  l_new_base_rating := true;
+               end loop;
+               l_base_stored := false;
+            end if;
+      end;   
+      if l_replace or l_new_base_rating then
+         -------------------------------------------------
+         -- store the base rating if we haven't already --
+         -------------------------------------------------
+         if not l_base_stored then
+            (self as rating_t).store(l_ref_rating_code, 'F');
+         end if;
+         ------------------------------------------------------------------------
+         -- delete any existing shift or offset data before storing new values --
+         ------------------------------------------------------------------------
+         for rec1 in (select rating_code 
+                        from at_rating 
+                       where ref_rating_code = l_ref_rating_code
+                     ) 
          loop
+            for rec2 in (select rating_ind_param_code 
+                           from at_rating_ind_parameter 
+                          where rating_code = rec1.rating_code
+                        )
+            loop
+               delete 
+                 from at_rating_value 
+                where rating_ind_param_code = rec2.rating_ind_param_code;
+               delete 
+                 from at_rating_extension_value 
+                where rating_ind_param_code = rec2.rating_ind_param_code;
+               delete
+                 from at_rating_ind_parameter
+                where rating_ind_param_code = rec2.rating_ind_param_code;
+            end loop;
             delete 
-              from at_rating_value 
-             where rating_ind_param_code = rec2.rating_ind_param_code;
-            delete 
-              from at_rating_extension_value 
-             where rating_ind_param_code = rec2.rating_ind_param_code;
-            delete
-              from at_rating_ind_parameter
-             where rating_ind_param_code = rec2.rating_ind_param_code;
+              from at_rating 
+             where rating_code = rec1.rating_code;
          end loop;
-         delete 
-           from at_rating 
-          where rating_code = rec1.rating_code;
-      end loop;
+         -----------------------
+         -- store the offsets --
+         -----------------------
+         if self.offsets is not null then
+            l_template := rating_template_t(
+               self.office_id,
+               l_ind_param||cwms_rating.separator2||l_ind_param||'-Offset',
+               l_template_version,
+               rating_ind_par_spec_tab_t(
+                  rating_ind_param_spec_t(
+                     1,
+                     l_ind_param,
+                     'PREVIOUS',
+                     'NEAREST',
+                     'NEAREST')),
+               l_ind_param||'-Offset',
+               'USGS-style logarithmic interpolation offsets');
+            l_template.store('F');
+            l_spec := rating_spec_t(
+               self.office_id,
+               l_location_id,
+               l_template.parameters_id||cwms_rating.separator1||l_template.version,
+               l_spec_version,
+               l_rating_spec.source_agency_id,
+               'PREVIOUS',
+               'NEAREST',
+               'NEAREST',
+               l_rating_spec.active_flag,
+               l_rating_spec.auto_update_flag,
+               l_rating_spec.auto_activate_flag,
+               'F',
+               str_tab_t(l_rating_spec.ind_rounding_specs(1)),
+               l_rating_spec.ind_rounding_specs(1),
+               'USGS-style logarithmic interpolation offsets');
+            l_spec.store('F');
+            self.offsets.store(l_rating_code, 'F');
+            update at_rating
+               set ref_rating_code = l_ref_rating_code
+             where rating_code = l_rating_code;
+         end if;
+      end if;
       ----------------------
       -- store the shifts --
       ----------------------
@@ -759,46 +900,6 @@ as
                set ref_rating_code = l_ref_rating_code
              where rating_code = l_rating_code;
          end loop;
-      end if;
-      -----------------------
-      -- store the offsets --
-      -----------------------
-      if self.offsets is not null then
-         l_template := rating_template_t(
-            self.office_id,
-            l_ind_param||cwms_rating.separator2||l_ind_param||'-Offset',
-            l_template_version,
-            rating_ind_par_spec_tab_t(
-               rating_ind_param_spec_t(
-                  1,
-                  l_ind_param,
-                  'PREVIOUS',
-                  'NEAREST',
-                  'NEAREST')),
-            l_ind_param||'-Offset',
-            'USGS-style logarithmic interpolation offsets');
-         l_template.store('F');
-         l_spec := rating_spec_t(
-            self.office_id,
-            l_location_id,
-            l_template.parameters_id||cwms_rating.separator1||l_template.version,
-            l_spec_version,
-            l_rating_spec.source_agency_id,
-            'PREVIOUS',
-            'NEAREST',
-            'NEAREST',
-            l_rating_spec.active_flag,
-            l_rating_spec.auto_update_flag,
-            l_rating_spec.auto_activate_flag,
-            'F',
-            str_tab_t(l_rating_spec.ind_rounding_specs(1)),
-            l_rating_spec.ind_rounding_specs(1),
-            'USGS-style logarithmic interpolation offsets');
-         l_spec.store('F');
-         self.offsets.store(l_rating_code, 'F');
-         update at_rating
-            set ref_rating_code = l_ref_rating_code
-          where rating_code = l_rating_code;
       end if;
    end;
 
@@ -1063,8 +1164,8 @@ as
       j                         pls_integer;
       k                         pls_integer;
       l_hi_index                pls_integer;
-      l_hi_value                binary_double;
-      l_lo_value                binary_double;
+      l_hi_value                number;
+      l_lo_value                number;
       l_hi_height               binary_double;
       l_lo_height               binary_double;
       l_hi_flow                 binary_double;
@@ -1075,6 +1176,7 @@ as
       l_rating_template         rating_template_t;
       l_rating_method           pls_integer;
       l_shift_count             pls_integer := 0;
+      l_rounding_spec           varchar2(10);
    begin
       if p_ind_values is not null then
          -----------------------------
@@ -1090,6 +1192,9 @@ as
             l_date_offsets := double_tab_t();
             l_date_offsets.extend(shifts.count+1);
             l_date_offsets(1) := effective_date - c_base_date;
+            if shifts(1).effective_date = effective_date then
+               l_date_offsets(1) := l_date_offsets(1) - 1 / 1440;
+            end if;
             for i in 1..shifts.count loop
                l_date_offsets(i+1) := shifts(i).effective_date - c_base_date;
             end loop;
@@ -1107,7 +1212,7 @@ as
          -- first any extension values below the rating --
          -------------------------------------------------
          if rating_info.extension_values is not null then
-            while i < rating_info.extension_values.count and
+            while i <= rating_info.extension_values.count and
                   rating_info.extension_values(i).ind_value < rating_info.rating_values(1).ind_value
             loop
                l_heights.extend;
@@ -1120,7 +1225,7 @@ as
          ----------------------------
          -- next the rating values --
          ----------------------------
-         while j < rating_info.rating_values.count loop
+         while j <= rating_info.rating_values.count loop
             l_heights.extend;
             l_flows.extend;
             k := k + 1;
@@ -1132,7 +1237,7 @@ as
          -- finally any extension values above the rating --
          ---------------------------------------------------
          if rating_info.extension_values is not null then
-            while i < rating_info.extension_values.count loop
+            while i <= rating_info.extension_values.count loop
                if rating_info.extension_values(i).ind_value >
                   rating_info.rating_values(rating_info.rating_values.count).ind_value
                then
@@ -1157,6 +1262,29 @@ as
             -----------------------------------
             l_height := p_ind_values(i).value;
             if l_shift_count > 0 and p_ind_values(i).date_time >= effective_date then
+               if l_rounding_spec is null then
+                  select rir.rounding_spec
+                    into l_rounding_spec  
+                    from at_rating_ind_rounding rir
+                   where rir.rating_spec_code = 
+                         (select r.rating_spec_code
+                            from at_rating r
+                           where r.rating_code 
+                                 = rating_t.get_rating_code(
+                                      p_rating_spec_id => self.rating_spec_id,
+                                      p_effective_date => self.effective_date,
+                                      p_match_date     => 'T',
+                                      p_time_zone      => case self.current_time
+                                                          when 'D' then 'UTC'
+                                                          else cwms_loc.get_local_timezone(
+                                                             cwms_util.split_text(self.rating_spec_id, 1, '.'), 
+                                                             self.office_id)
+                                                          end,
+                                      p_office_id      => self.office_id)
+                         )   
+                     and rir.parameter_position = 1; 
+               end if;   
+               l_height := cwms_rounding.round_nn_f(l_height, l_rounding_spec);
                l_date_offset := p_ind_values(i).date_time - c_base_date;
                l_hi_index := cwms_lookup.find_high_index(
                   l_date_offset,
@@ -1181,12 +1309,13 @@ as
                      l_lo_value := treat(shifts(l_hi_index) as rating_t).rate(l_height);
                   end if;
                end if;
-               if l_ratio = 0. then
-                  l_height := l_height + l_lo_value;
-               elsif l_ratio = 1. then
-                  l_height := l_height + l_hi_value;
-               else
-                  l_height := l_height + l_lo_value + l_ratio * (l_hi_value - l_lo_value);
+               l_shift := case l_ratio
+                          when 0D then l_lo_value
+                          when 1D then l_hi_value
+                          else l_lo_value + l_ratio * (l_hi_value - l_lo_value) 
+                          end;
+               if l_shift != 0D then                         
+                  l_height := l_height + cwms_rounding.round_nn_f(l_shift, l_rounding_spec);
                end if;
             end if;
             -----------------------------------
@@ -1196,135 +1325,142 @@ as
                l_height,
                l_heights,
                l_heights_properties);
-            if l_height < l_heights(1) then
-               l_rating_method := cwms_lookup.method_by_name(l_rating_template.ind_parameters(1).out_range_low_rating_method);
-            elsif l_height > l_heights(l_heights.count) then
-               l_rating_method := cwms_lookup.method_by_name(l_rating_template.ind_parameters(1).out_range_high_rating_method);
+            case l_height
+            when l_heights(l_hi_index) then
+               l_results(i).value := l_flows(l_hi_index);
+            when l_heights(l_hi_index-1) then
+               l_results(i).value := l_flows(l_hi_index-1);
             else
-               l_rating_method := cwms_lookup.method_by_name(l_rating_template.ind_parameters(1).in_range_rating_method);
-            end if;
-            if l_rating_method in (cwms_lookup.method_logarithmic, cwms_lookup.method_log_lin) then
-               if offsets is null then
-                  l_offset := 0;
+               if l_height < l_heights(1) then
+                  l_rating_method := cwms_lookup.method_by_name(l_rating_template.ind_parameters(1).out_range_low_rating_method);
+               elsif l_height > l_heights(l_heights.count) then
+                  l_rating_method := cwms_lookup.method_by_name(l_rating_template.ind_parameters(1).out_range_high_rating_method);
                else
-                  l_min_height  := least(l_height, l_heights(l_hi_index-1));
-                  if offsets.rating_info.rating_values.count = 1 then
-                     l_offset := offsets.rating_info.rating_values(1).dep_value;
-                  else
-                     l_offset := offsets.rate(l_min_height);
-                  end if;
+                  l_rating_method := cwms_lookup.method_by_name(l_rating_template.ind_parameters(1).in_range_rating_method);
                end if;
-               l_lo_height := log(10, l_heights(l_hi_index-1) - l_offset);
-               l_hi_height := log(10, l_heights(l_hi_index) - l_offset);
-               if l_rating_method = cwms_lookup.method_logarithmic then
+               if l_rating_method in (cwms_lookup.method_logarithmic, cwms_lookup.method_log_lin) then
+                  if offsets is null then
+                     l_offset := 0;
+                  else
+                     l_min_height  := least(l_height, l_heights(l_hi_index-1));
+                     if offsets.rating_info.rating_values.count = 1 then
+                        l_offset := offsets.rating_info.rating_values(1).dep_value;
+                     else
+                        l_offset := offsets.rate(l_min_height);
+                     end if;
+                  end if;
+                  l_lo_height := log(10, l_heights(l_hi_index-1) - l_offset);
+                  l_hi_height := log(10, l_heights(l_hi_index) - l_offset);
+                  if l_rating_method = cwms_lookup.method_logarithmic then
+                     l_lo_flow   := log(10, l_flows(l_hi_index-1));
+                     l_hi_flow   := log(10, l_flows(l_hi_index));
+                  end if;
+                  if l_lo_height is NaN or l_lo_height is Infinite or
+                     l_hi_height is NaN or l_hi_height is Infinite or
+                     l_lo_flow   is NaN or l_lo_flow   is Infinite or
+                     l_hi_flow   is NaN or l_hi_flow   is Infinite
+                  then
+                     l_lo_height := l_heights(l_hi_index-1);
+                     l_hi_height := l_heights(l_hi_index);
+                     l_lo_flow   := l_flows(l_hi_index-1);
+                     l_hi_flow   := l_flows(l_hi_index);
+                     l_log_used  := false;
+                  else
+                     l_height    := log(10, l_height - l_offset);
+                     l_log_used  := true;
+                  end if;
+               elsif l_rating_method = cwms_lookup.method_lin_log then
+                  l_lo_height := l_heights(l_hi_index-1);
+                  l_hi_height := l_heights(l_hi_index);
                   l_lo_flow   := log(10, l_flows(l_hi_index-1));
                   l_hi_flow   := log(10, l_flows(l_hi_index));
-               end if;
-               if l_lo_height is NaN or l_lo_height is Infinite or
-                  l_hi_height is NaN or l_hi_height is Infinite or
-                  l_lo_flow   is NaN or l_lo_flow   is Infinite or
-                  l_hi_flow   is NaN or l_hi_flow   is Infinite
-               then
+                  l_log_used  := true;
+                  if l_lo_flow is NaN or l_lo_flow is Infinite or
+                     l_hi_flow is NaN or l_hi_flow is Infinite
+                  then
+                     l_lo_flow   := l_flows(l_hi_index-1);
+                     l_hi_flow   := l_flows(l_hi_index);
+                     l_log_used  := false;
+                  end if;
+               else
                   l_lo_height := l_heights(l_hi_index-1);
                   l_hi_height := l_heights(l_hi_index);
                   l_lo_flow   := l_flows(l_hi_index-1);
                   l_hi_flow   := l_flows(l_hi_index);
                   l_log_used  := false;
-               else
-                  l_height    := log(10, l_height - l_offset);
-                  l_log_used  := true;
                end if;
-            elsif l_rating_method = cwms_lookup.method_lin_log then
-               l_lo_height := l_heights(l_hi_index-1);
-               l_hi_height := l_heights(l_hi_index);
-               l_lo_flow   := log(10, l_flows(l_hi_index-1));
-               l_hi_flow   := log(10, l_flows(l_hi_index));
-               l_log_used  := true;
-               if l_lo_flow is NaN or l_lo_flow is Infinite or
-                  l_hi_flow is NaN or l_hi_flow is Infinite
+               -------------------------------
+               -- perform the interpolation --
+               -------------------------------
+               if l_rating_method in (
+                  cwms_lookup.method_linear,
+                  cwms_lookup.method_logarithmic,
+                  cwms_lookup.method_lin_log,
+                  cwms_lookup.method_log_lin)
                then
-                  l_lo_flow   := l_flows(l_hi_index-1);
-                  l_hi_flow   := l_flows(l_hi_index);
-                  l_log_used  := false;
-               end if;
-            else
-               l_lo_height := l_heights(l_hi_index-1);
-               l_hi_height := l_heights(l_hi_index);
-               l_lo_flow   := l_flows(l_hi_index-1);
-               l_hi_flow   := l_flows(l_hi_index);
-               l_log_used  := false;
-            end if;
-            -------------------------------
-            -- perform the interpolation --
-            -------------------------------
-            if l_rating_method in (
-               cwms_lookup.method_linear,
-               cwms_lookup.method_logarithmic,
-               cwms_lookup.method_lin_log,
-               cwms_lookup.method_log_lin)
-            then
-               l_results(i).value :=
-                  l_lo_flow
-                  + (l_height - l_lo_height)
-                  / (l_hi_height - l_lo_height)
-                  * (l_hi_flow - l_lo_flow);
-               if l_log_used then
-                  l_results(i).value := power(10, l_results(i).value);
-               end if;
-            elsif l_rating_method = cwms_lookup.method_null then
-               l_results(i).value := null;
-            elsif l_rating_method = cwms_lookup.method_error then
-               if l_height < l_lo_height then
-                  cwms_err.raise(
-                     'ERROR',
-                     'Value is out of bounds low');
-               elsif l_height > l_hi_height then
-                  cwms_err.raise(
-                     'ERROR',
-                     'Value is out of bounds high');
-               else
-                  cwms_err.raise(
-                     'ERROR',
-                     'Value does not match any value in sequence');
-               end if;
-            elsif l_rating_method in (
-               cwms_lookup.method_previous,
-               cwms_lookup.method_lower)
-            then
-               if l_height < l_lo_height then
-                  cwms_err.raise(
-                     'ERROR',
-                     'PREVIOUS or LOWER specified for out of bounds low behavior');
-               end if;
-               l_results(i).value := l_lo_flow;
-            elsif l_rating_method in (
-               cwms_lookup.method_next,
-               cwms_lookup.method_higher)
-            then
-               if l_height > l_hi_height then
-                  cwms_err.raise(
-                     'ERROR',
-                     'NEXT or HIGHER specified for out of bounds high behavior');
-               end if;
-               l_results(i).value := l_hi_flow;
-            elsif l_rating_method in (
-               cwms_lookup.method_nearest,
-               cwms_lookup.method_closest)
-            then
-               if l_height < l_lo_height then
-                  l_results(i).value := l_lo_flow;
-               elsif l_height > l_hi_height then
-                  l_results(i).value := l_hi_flow;
-               else
-                  if l_height - l_lo_height < l_hi_height - l_height then
-                     l_results(i).value := l_lo_flow;
-                  else
-                     l_results(i).value := l_hi_flow;
+                  l_results(i).value :=
+                     l_lo_flow
+                     + (l_height - l_lo_height)
+                     / (l_hi_height - l_lo_height)
+                     * (l_hi_flow - l_lo_flow);
+                  if l_log_used then
+                     l_results(i).value := power(10, l_results(i).value);
                   end if;
+               elsif l_rating_method = cwms_lookup.method_null then
+                  l_results(i).value := null;
+               elsif l_rating_method = cwms_lookup.method_error then
+                  if l_height < l_lo_height then
+                     cwms_err.raise(
+                        'ERROR',
+                        'Value is out of bounds low');
+                  elsif l_height > l_hi_height then
+                     cwms_err.raise(
+                        'ERROR',
+                        'Value is out of bounds high');
+                  else
+                     cwms_err.raise(
+                        'ERROR',
+                        'Value does not match any value in sequence');
+                  end if;
+               elsif l_rating_method in (
+                  cwms_lookup.method_previous,
+                  cwms_lookup.method_lower)
+               then
+                  if l_height < l_lo_height then
+                     cwms_err.raise(
+                        'ERROR',
+                        'PREVIOUS or LOWER specified for out of bounds low behavior');
+                  end if;
+                  l_results(i).value := l_lo_flow;
+               elsif l_rating_method in (
+                  cwms_lookup.method_next,
+                  cwms_lookup.method_higher)
+               then
+                  if l_height > l_hi_height then
+                     cwms_err.raise(
+                        'ERROR',
+                        'NEXT or HIGHER specified for out of bounds high behavior');
+                  end if;
+                  l_results(i).value := l_hi_flow;
+               elsif l_rating_method in (
+                  cwms_lookup.method_nearest,
+                  cwms_lookup.method_closest)
+               then
+                  if l_height < l_lo_height then
+                     l_results(i).value := l_lo_flow;
+                  elsif l_height > l_hi_height then
+                     l_results(i).value := l_hi_flow;
+                  else
+                     if l_height - l_lo_height < l_hi_height - l_height then
+                        l_results(i).value := l_lo_flow;
+                     else
+                        l_results(i).value := l_hi_flow;
+                     end if;
+                  end if;
+               else
+                  cwms_err.raise('ERROR', 'Invalid rating method');
                end if;
-            else
-               cwms_err.raise('ERROR', 'Invalid rating method');
-            end if;
+            end case;   
             if l_results(i).value is null then
                l_results(i).quality_code := 5;
             end if;

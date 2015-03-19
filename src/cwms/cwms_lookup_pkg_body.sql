@@ -1,6 +1,72 @@
 create or replace package body cwms_lookup
 as
 
+function eq(
+   p_v1 binary_double, 
+   p_v2 binary_double) 
+   return boolean
+is
+   l_eq boolean := true;
+begin
+   for i in 1..1 loop
+      exit when p_v1 = p_v2;
+      exit when abs(p_v2 - p_v1) < 1e-8d;
+      l_eq := false;
+   end loop;
+   return l_eq;
+end eq;
+
+function ne(
+   p_v1 binary_double, 
+   p_v2 binary_double) 
+   return boolean
+is
+begin
+   pragma inline(eq, 'YES');
+   return not eq(p_v1, p_v2);
+end ne;
+
+function gt(
+   p_v1 binary_double, 
+   p_v2 binary_double) 
+   return boolean
+is
+begin
+   pragma inline(eq, 'YES');
+   return (not eq(p_v1, p_v2)) and p_v1 > p_v2;
+end gt;
+
+function ge(
+   p_v1 binary_double, 
+   p_v2 binary_double) 
+   return boolean
+is
+begin
+   pragma inline(eq, 'YES');
+   return eq(p_v1, p_v2) or p_v1 > p_v2;
+end ge;
+
+function lt(
+   p_v1 binary_double, 
+   p_v2 binary_double) 
+   return boolean
+is
+begin
+   pragma inline(eq, 'YES');
+   return (not eq(p_v1, p_v2)) and p_v1 < p_v2;
+end lt;
+
+
+function le(
+   p_v1 binary_double, 
+   p_v2 binary_double) 
+   return boolean
+is
+begin
+   pragma inline(eq, 'YES');
+   return eq(p_v1, p_v2) or p_v1 < p_v2;
+end le;      
+      
 --------------------------------------------------------------------------------
 -- FUNCTION analyze_sequence
 --------------------------------------------------------------------------------
@@ -74,6 +140,12 @@ is
    l_mid        pls_integer;
    l_in_range   boolean := false;
 begin
+   pragma inline(eq, 'YES');
+   pragma inline(ne, 'YES');
+   pragma inline(gt, 'YES');
+   pragma inline(ge, 'YES');
+   pragma inline(lt, 'YES');
+   pragma inline(le, 'YES');
    --------------------------
    -- general sanity check --
    --------------------------
@@ -117,16 +189,16 @@ begin
       --------------------------------
       -- handle increasing sequence --
       --------------------------------
-      if p_value <= p_sequence(1) then
+      if le(p_value, p_sequence(1)) then
          l_hi := 2;
-      elsif p_value >= p_sequence(p_sequence.count) then
+      elsif ge(p_value, p_sequence(p_sequence.count)) then
          l_hi := p_sequence.count;
       else
          l_lo := 1;
          l_hi := p_sequence.count;
          while l_hi - l_lo > 1 loop
             l_mid := trunc((l_lo + l_hi) / 2);
-            if p_sequence(l_mid) > p_value then
+            if gt(p_sequence(l_mid), p_value) then
                l_hi := l_mid;
             else
                l_lo := l_mid;
@@ -137,16 +209,16 @@ begin
       --------------------------------
       -- handle decreasing sequence --
       --------------------------------
-      if p_value >= p_sequence(1) then
+      if ge(p_value, p_sequence(1)) then
          l_hi := 2;
-      elsif p_value <= p_sequence(p_sequence.count) then
+      elsif le(p_value, p_sequence(p_sequence.count)) then
          l_hi := p_sequence.count;
       else
          l_lo := 1;
          l_hi := p_sequence.count;
          while l_hi - l_lo > 1 loop
             l_mid := trunc((l_lo + l_hi) / 2);
-            if p_sequence(l_mid) < p_value then
+            if lt(p_sequence(l_mid), p_value) then
                l_hi := l_mid;
             else
                l_lo := l_mid;
@@ -170,8 +242,13 @@ is
    l_hi         pls_integer := null;
    l_lo         pls_integer;
    l_mid        pls_integer;
-   l_in_range   boolean := false;
 begin
+   pragma inline(eq, 'YES');
+   pragma inline(ne, 'YES');
+   pragma inline(gt, 'YES');
+   pragma inline(ge, 'YES');
+   pragma inline(lt, 'YES');
+   pragma inline(le, 'YES');
    --------------------------
    -- general sanity check --
    --------------------------
@@ -215,16 +292,16 @@ begin
       --------------------------------
       -- handle increasing sequence --
       --------------------------------
-      if p_value <= p_sequence(1) then
+      if le(p_value, p_sequence(1)) then
          l_hi := 2;
-      elsif p_value >= p_sequence(p_sequence.count) then
+      elsif ge(p_value, p_sequence(p_sequence.count)) then
          l_hi := p_sequence.count;
       else
          l_lo := 1;
          l_hi := p_sequence.count;
          while l_hi - l_lo > 1 loop
             l_mid := trunc((l_lo + l_hi) / 2);
-            if p_sequence(l_mid) > p_value then
+            if gt(p_sequence(l_mid), p_value) then
                l_hi := l_mid;
             else
                l_lo := l_mid;
@@ -235,16 +312,16 @@ begin
       --------------------------------
       -- handle decreasing sequence --
       --------------------------------
-      if p_value >= p_sequence(1) then
+      if ge(p_value, p_sequence(1)) then
          l_hi := 2;
-      elsif p_value <= p_sequence(p_sequence.count) then
+      elsif le(p_value, p_sequence(p_sequence.count)) then
          l_hi := p_sequence.count;
       else
          l_lo := 1;
          l_hi := p_sequence.count;
          while l_hi - l_lo > 1 loop
             l_mid := trunc((l_lo + l_hi) / 2);
-            if p_sequence(l_mid) < p_value then
+            if lt(p_sequence(l_mid), p_value) then
                l_hi := l_mid;
             else
                l_lo := l_mid;
@@ -568,6 +645,12 @@ is
    l_lo_val                  binary_double  := p_sequence(i-1);
    l_ratio                   binary_double;
 begin
+   pragma inline(eq, 'YES');
+   pragma inline(ne, 'YES');
+   pragma inline(gt, 'YES');
+   pragma inline(ge, 'YES');
+   pragma inline(lt, 'YES');
+   pragma inline(le, 'YES');
    --------------------------
    -- general sanity check --
    --------------------------
@@ -700,9 +783,9 @@ begin
    l_in_range :=
       case
          when p_increasing then
-            l_val >= p_sequence(1) and l_val <= p_sequence(p_sequence.count)
+            ge(l_val, p_sequence(1)) and le(l_val, p_sequence(p_sequence.count))
          else
-            l_val <= p_sequence(1) and l_val >= p_sequence(p_sequence.count)
+            le(l_val, p_sequence(1)) and ge(l_val, p_sequence(p_sequence.count))
       end;
    if l_in_range then
       --------------
@@ -710,23 +793,17 @@ begin
       --------------
       case l_in_range_behavior
          when method_null then
-            -------------------------------
-            -- don't use log values here --
-            -------------------------------
-            if p_value = p_sequence(i-1) then
+            if eq(p_value, p_sequence(i-1)) then
                l_ratio := 0.;
-            elsif p_value = p_sequence(i) then
+            elsif eq(p_value, p_sequence(i)) then
                l_ratio := 1.;
             else
                l_ratio := null;
             end if;
          when method_error then
-            -------------------------------
-            -- don't use log values here --
-            -------------------------------
-            if p_value = p_sequence(i-1) then
+            if eq(p_value, p_sequence(i-1)) then
                l_ratio := 0.;
-            elsif p_value = p_sequence(i) then
+            elsif eq(p_value, p_sequence(i)) then
                l_ratio := 1.;
             else
                cwms_err.raise('ERROR', 'Value does not equal any value in sequence');
@@ -748,14 +825,33 @@ begin
             end;
             l_ratio := (l_val - l_lo_val) / (l_hi_val - l_lo_val);
          when method_previous then 
-            l_ratio := 0.;
+            case
+               when p_increasing then
+                  l_ratio := case ge(l_val, l_hi_val)
+                             when true then 1
+                             else 0  
+                             end;
+               else
+                  l_ratio := case le(l_val, l_hi_val)
+                             when true then 1
+                             else 0  
+                             end;
+            end case;
          when method_next then 
-            l_ratio := 1.;
+            case
+               when p_increasing then
+                  l_ratio := case le(l_val, l_lo_val)
+                             when true then 0
+                             else 1  
+                             end;
+               else
+                  l_ratio := case ge(l_val, l_lo_val)
+                             when true then 0
+                             else 1  
+                             end;
+            end case;
          when method_closest then
-            -------------------------------
-            -- don't use log values here --
-            -------------------------------
-            case abs(p_value - p_sequence(i-1)) < abs(p_value - p_sequence(i))
+            case le(abs(p_value - p_sequence(i-1)), abs(p_value - p_sequence(i)))
                when true then l_ratio := 0.;
                else           l_ratio := 1.;
             end case;
@@ -770,9 +866,9 @@ begin
       -- out of range, determine if we are out low or high --
       -------------------------------------------------------
       if p_increasing then
-         l_out_low := p_value < p_sequence(1);
+         l_out_low := lt(p_value, p_sequence(1));
       else
-         l_out_low := p_value > p_sequence(p_sequence.count);
+         l_out_low := gt(p_value, p_sequence(p_sequence.count));
       end if;
       if l_out_low then
          ----------------------
