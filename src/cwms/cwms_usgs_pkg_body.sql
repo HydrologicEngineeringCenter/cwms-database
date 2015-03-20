@@ -3164,11 +3164,10 @@ is
       p_table(p_table.count) := p_text;
    end append;
 begin
-   pragma inline(append, 'YES');
-   
+   l_office_id   := cwms_util.get_db_office_id(p_office_id);
    l_office_code := cwms_util.get_db_office_code(l_office_id);
    for rec in (
-      select loc_alias_id as site_id
+      select cwms_loc.get_location_id(location_code) as location_id
         from at_loc_group_assignment
        where office_code = l_office_code
          and loc_group_code = (select loc_group_code
@@ -3181,7 +3180,7 @@ begin
        order by 1
               )
    loop 
-      generate_production_ratings(rec.site_id, p_office_id);
+      generate_production_ratings(rec.location_id, p_office_id);
    end loop;
 end generate_production_ratings2;
 
