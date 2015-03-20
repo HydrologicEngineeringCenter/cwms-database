@@ -40,6 +40,7 @@ conversion_factors = {
 	'Pa_per_mm-hg'     : Decimal('1.333224e2'),       # pg 52
 	'Pa_per_psi'       : Decimal('6.894757e3'),       # pg 53
 	'C_per_F'          : Decimal('1')/Decimal('1.8'), # pg 48
+	'rad_per_deg'      : Decimal('1.745329e-2'),      # pg 48
 #
 #	gravitational acceleration	
 #
@@ -146,6 +147,7 @@ conversion_definitions = [
 	('cms',         'kcfs',        '[m3/s]/[cms] | [ft3]/m_per_ft^3[m3] | [kcfs]/*_per_k*[ft3/s]'),
 	('cms',         'mgd',         '[m3/s]/[cms] | [gal]/m3_per_gal[m3] | [mgal]/*_per_M*[gal] | s_per_day[s]/[day] | [mgd]/[mgal/day]'),
 	('cms/km2',     'cfs/mi2',     '[m3/s]/[cms] | [ft3]/m_per_ft^3[m3] | km_per_mile^2[km2]/[mi2] | [cfs]/[ft3/s]'),
+	('deg',         'rad',         'rad_per_deg[rad]/[deg]'),
 	('deg',         'rev',         '[rev]/deg_per_rev[deg]'),
 	('dsf',         '1000 m3',     'ft3_per_dsf[ft3]/[dsf] | m_per_ft^3[m3]/[ft3] | [1000 m3]/*_per_k*[m3]'),
 	('dsf',         'ac-ft',       'ft3_per_dsf[ft3]/[dsf] | [ac-ft]/ft2_per_acre[ft3]'),
@@ -456,7 +458,10 @@ conversion_definitions = [
 	('psi',         'kPa',         'Pa_per_psi[Pa]/[psi] | [kPa]/*_per_k*[Pa]'),
 	('psi',         'mb',          'Pa_per_psi[Pa]/[psi] | [bar]/Pa_per_bar[Pa] | m*_per_*[mb]/[bar]'),
 	('psi',         'mm-hg',       'Pa_per_psi[Pa]/[psi] | [mm-hg]/Pa_per_mm-hg[Pa]'),
+	('rad',         'deg',         '[deg]/rad_per_deg[rad]'),
+	('rad',         'rev',         '[rev]/deg_per_rev[deg] | [deg]/rad_per_deg[rad]'),
 	('rev',         'deg',         'deg_per_rev[deg]/[rev]'),
+	('rev',         'rad',         'rad_per_deg[rad]/[deg] | deg_per_rev[deg]/[rev]'),
 	('S',           'mho',         '[mho]/[S]'),
 	('S',           'umho',        'u*_per_*[umho]/[S]'),
 	('S',           'uS',          'u*_per_*[uS]/[S]'),
@@ -538,6 +543,7 @@ english_units = {"English" : [
 	"NTU",
 	"ppm",
 	"psi",
+	"rad",
 	"rev",
 	"rpm",
 	"S",
@@ -603,6 +609,7 @@ si_units = {"SI" : [
 	"n/a",
 	"NTU",
 	"ppm",
+	"rad",
 	"rev",
 	"rpm",
 	"S",
@@ -627,6 +634,7 @@ units_by_unit_system = [
 
 angle_units = {"Angle" : [
 	"deg",
+	"rad",
 	"rev",
 ]}
 

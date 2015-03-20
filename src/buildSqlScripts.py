@@ -4229,6 +4229,7 @@ unitDefs = [
     ["Electric Charge Rate",             "ampere",      "NULL", "Ampere",                        "Current of 6.241E+18 electrons (1 coulomb) per second"             ],
     ["Force",                            "N",           "SI",   "Newtons",                       "Force of 1 Newton"                                                 ],
     ["Length",                           "ftUS",        "EN",   "Survey Feet",                   "Length of 1 US survey foot"                                        ],
+    ["Angle",                            "rad",         "NULL", "Radians",                       "Angle of 1 radian"                                                 ],
 ]
 
 unitDefsById = {}
