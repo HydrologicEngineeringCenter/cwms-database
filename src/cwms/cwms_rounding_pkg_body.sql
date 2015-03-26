@@ -177,7 +177,7 @@ begin
       l_digits := to_number(substr(p_rounding_spec, l_spec_pos, 1)); -- from rounding spec
       l_digits := case l_digits + l_magnitude >= l_digits            -- decrease if ncecessary due to max decimal places
                   when true then l_digits
-                  else least(l_max_places, l_digits + l_magnitude)
+                  else least(l_max_places, l_digits + l_magnitude + 1)
                   end;
       --------------------------------------------------------------------                  
       -- factor the value and work with integer and fractional portions --
@@ -273,7 +273,7 @@ begin
       l_digits := to_number(substr(p_rounding_spec, l_spec_pos, 1)); -- from rounding spec
       l_digits := case l_digits + l_magnitude >= l_digits            -- decrease if ncecessary due to max decimal places
                   when true then l_digits
-                  else least(l_max_places, l_digits + l_magnitude)
+                  else least(l_max_places, l_digits + l_magnitude + 1)
                   end;
       --------------------------------------------------------------------                  
       -- factor the value and work with integer and fractional portions --
@@ -397,6 +397,7 @@ begin
       validate_rounding_spec(p_rounding_spec);
       l_max_places := to_number(substr(p_rounding_spec, 10));
       for i in 1..p_values.count loop
+         l_value := p_values(i);
          if l_value is null or l_value is nan or l_value = 0 then
             l_result := l_value;
          else
@@ -408,7 +409,7 @@ begin
             l_digits := to_number(substr(p_rounding_spec, l_spec_pos, 1)); -- from rounding spec
             l_digits := case l_digits + l_magnitude >= l_digits            -- decrease if ncecessary due to max decimal places
                         when true then l_digits
-                        else least(l_max_places, l_digits + l_magnitude)
+                        else least(l_max_places, l_digits + l_magnitude + 1)
                         end;
             --------------------------------------------------------------------                  
             -- factor the value and work with integer and fractional portions --
@@ -473,6 +474,7 @@ begin
       validate_rounding_spec(p_rounding_spec);
       l_max_places := to_number(substr(p_rounding_spec, 10));
       for i in 1..p_values.count loop
+         l_value := p_values(i);
          if l_value is null or l_value is nan or l_value = 0 then
             l_result := l_value;
          else
@@ -486,7 +488,7 @@ begin
                l_digits := to_number(substr(p_rounding_spec, l_spec_pos, 1)); -- from rounding spec
                l_digits := case l_digits + l_magnitude >= l_digits            -- decrease if ncecessary due to max decimal places
                            when true then l_digits
-                           else least(l_max_places, l_digits + l_magnitude)
+                           else least(l_max_places, l_digits + l_magnitude + 1)
                            end;
                --------------------------------------------------------------------                  
                -- factor the value and work with integer and fractional portions --
@@ -590,7 +592,7 @@ begin
                l_digits := to_number(substr(p_rounding_spec, l_spec_pos, 1)); -- from rounding spec
                l_digits := case l_digits + l_magnitude >= l_digits            -- decrease if ncecessary due to max decimal places
                            when true then l_digits
-                           else least(l_max_places, l_digits + l_magnitude)
+                           else least(l_max_places, l_digits + l_magnitude + 1)
                            end;
                --------------------------------------------------------------------                  
                -- factor the value and work with integer and fractional portions --
@@ -672,7 +674,7 @@ begin
                l_digits := to_number(substr(p_rounding_spec, l_spec_pos, 1)); -- from rounding spec
                l_digits := case l_digits + l_magnitude >= l_digits            -- decrease if ncecessary due to max decimal places
                            when true then l_digits
-                           else least(l_max_places, l_digits + l_magnitude)
+                           else least(l_max_places, l_digits + l_magnitude + 1)
                            end;
                --------------------------------------------------------------------                  
                -- factor the value and work with integer and fractional portions --
