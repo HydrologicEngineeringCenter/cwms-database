@@ -1408,6 +1408,351 @@ begin
       and gate_change_date between l_start_time and l_end_time;
 end set_gate_change_protection;
 
+      
+function get_compound_outlet_code(
+   p_compound_outlet_id in varchar2,
+   p_project_id         in varchar2,
+   p_office_id          in varchar2)
+   return integer
+is
+   l_office_id            varchar2(16);
+   l_compound_outlet_code integer;
+begin
+   l_office_id := cwms_util.get_db_office_id(p_office_id);
+   select compound_outlet_code
+     into l_compound_outlet_code
+     from at_comp_outlet
+    where project_location_code = cwms_loc.get_location_code(l_office_id, p_project_id)
+      and upper(compound_outlet_id) = upper(p_compound_outlet_id);
+      
+   return l_compound_outlet_code;
+exception
+   when no_data_found then
+      cwms_err.raise(
+         'ITEM_DOES_NOT_EXIST', 
+         'Compound outlet', 
+         l_office_id||'/'||p_project_id||'/'||p_compound_outlet_id);         
+end get_compound_outlet_code;
+            
+procedure store_compound_outlet(
+   p_project_id         in varchar2,
+   p_compound_outlet_id in varchar2,
+   p_outlets            in str_tab_tab_t,
+   p_fail_if_exists     in varchar2 default 'T',
+   p_office_id          in varchar2 default null)
+is
+   item_does_not_exist    exception;
+   pragma exception_init(item_does_not_exist, -20034);
+   l_office_id            varchar2(16);
+   l_compound_outlet_code integer;
+   l_exists               boolean;
+   l_fail_if_exists       boolean;
+   l_code                 integer;
+   l_count                integer;
+begin
+   l_office_id := cwms_util.get_db_office_id(p_office_id);
+   l_fail_if_exists := cwms_util.return_true_or_false(p_fail_if_exists);
+   begin
+      l_compound_outlet_code := get_compound_outlet_code(p_compound_outlet_id, p_project_id, l_office_id);
+      l_exists := true;
+   exception
+      when item_does_not_exist then l_exists := false;
+   end;
+   
+   if l_exists then
+      if l_fail_if_exists then
+         cwms_err.raise(
+            'ITEM_ALREADY_EXISTS',
+            'Compound outlet',
+            l_office_id||'/'||p_project_id||'/'||p_compound_outlet_id);
+      end if;
+      delete_compound_outlet(p_project_id, p_compound_outlet_id, cwms_util.delete_data, l_office_id);      
+   else
+      insert
+        into at_comp_outlet
+      values (cwms_seq.nextval, 
+              cwms_loc.get_location_code(l_office_id, p_project_id), 
+              p_compound_outlet_id
+             )
+      return compound_outlet_code 
+        into l_compound_outlet_code;    
+   end if;
+
+   for i in 1..p_outlets.count loop
+      l_code := cwms_loc.get_location_code(l_office_id, p_outlets(i)(1));
+      select count(*)
+        into l_count
+        from at_comp_outlet_conn
+       where outlet_location_code = l_code
+         and compound_outlet_code != l_compound_outlet_code;
+
+      if l_count > 0 then
+         cwms_err.raise(
+            'ERROR',
+            'Oulet '
+            ||l_office_id
+            ||'/'
+            ||p_outlets(i)(1)
+            ||' is already used in another compound outlet.');
+      end if;          
+             
+      if p_outlets(i).count = 1 then
+         insert
+           into at_comp_outlet_conn
+         values (cwms_seq.nextval, l_compound_outlet_code, l_code, null);  
+      else
+         for j in 2..p_outlets(i).count loop
+            if p_outlets(i)(j) is null then
+               insert
+                 into at_comp_outlet_conn
+               values (cwms_seq.nextval, l_compound_outlet_code, l_code, null);  
+            else
+               insert
+                 into at_comp_outlet_conn
+               values (cwms_seq.nextval, l_compound_outlet_code, l_code, cwms_loc.get_location_code(l_office_id, p_outlets(i)(j)));  
+            end if;
+         end loop;
+      end if;
+   end loop;          
+end store_compound_outlet;   
+      
+               
+procedure store_compound_outlet(
+   p_project_id         in varchar2,
+   p_compound_outlet_id in varchar2,
+   p_outlets            in varchar2,
+   p_fail_if_exists     in varchar2 default 'T',
+   p_office_id          in varchar2 default null)
+is
+begin
+   store_compound_outlet(
+      p_project_id,
+      p_compound_outlet_id,
+      cwms_util.parse_string_recordset(p_outlets),
+      p_fail_if_exists,
+      p_office_id);
+end store_compound_outlet;
+   
+procedure rename_compound_outlet(
+   p_project_id             in varchar2,
+   p_old_compound_outlet_id in varchar2,      
+   p_new_compound_outlet_id in varchar2,
+   p_office_id              in varchar2 default null)
+is
+   l_compound_outlet_code integer;
+begin
+   l_compound_outlet_code := get_compound_outlet_code(p_old_compound_outlet_id, p_project_id, p_office_id);
+   update at_comp_outlet
+      set compound_outlet_id = trim(p_new_compound_outlet_id)
+    where compound_outlet_code = l_compound_outlet_code;  
+end rename_compound_outlet;
+   
+procedure delete_compound_outlet(
+   p_project_id         in varchar2,
+   p_compound_outlet_id in varchar2,
+   p_delete_action      in varchar2 default cwms_util.delete_key,
+   p_office_id          in varchar2 default null)
+is
+   l_delete_action        varchar2(32) := trim(upper(p_delete_action));  
+   l_compound_outlet_code integer;
+begin
+   if not l_delete_action in (cwms_util.delete_key, cwms_util.delete_data, cwms_util.delete_all) then
+      cwms_err.raise(
+         'ERROR',
+         'Parameter P_Delete_Action must be one of '''
+         ||cwms_util.delete_key||''', '
+         ||cwms_util.delete_data||''', or'
+         ||cwms_util.delete_key||'''');
+   end if;
+   l_compound_outlet_code := get_compound_outlet_code(p_compound_outlet_id, p_project_id, p_office_id);
+   if l_delete_action in (cwms_util.delete_data, cwms_util.delete_all) then
+      delete 
+        from at_comp_outlet_conn 
+       where compound_outlet_code = l_compound_outlet_code;
+   end if;
+   if l_delete_action in (cwms_util.delete_key, cwms_util.delete_all) then
+      delete
+        from at_comp_outlet
+       where compound_outlet_code = l_compound_outlet_code; 
+   end if;
+end delete_compound_outlet;
+   
+procedure retrieve_compound_outlets(
+   p_compound_outlets out str_tab_tab_t,
+   p_project_id_mask  in varchar2 default '*',
+   p_office_id_mask   in varchar2 default null)
+is
+begin
+   p_compound_outlets := retrieve_compound_outlets_f(p_project_id_mask, p_office_id_mask);
+end retrieve_compound_outlets;   
+   
+procedure retrieve_compound_outlets(
+   p_compound_outlets out varchar2,
+   p_project_id_mask  in varchar2 default '*',
+   p_office_id_mask   in varchar2 default null)
+is
+   l_outlet_tab str_tab_tab_t;
+   l_recordset  varchar2(32767);
+begin
+   l_outlet_tab := retrieve_compound_outlets_f(p_project_id_mask, p_office_id_mask);
+   for rec in 1..l_outlet_tab.count loop
+      if rec > 1 then
+         l_recordset := l_recordset || cwms_util.record_separator;
+      end if;
+      for field in 1..l_outlet_tab(rec).count loop
+         if field > 1 then
+            l_recordset := l_recordset || cwms_util.field_separator;
+         end if;
+         l_recordset := l_recordset || l_outlet_tab(rec)(field);
+      end loop;
+   end loop;
+   p_compound_outlets := substr(l_recordset, 1, length(l_recordset));
+end retrieve_compound_outlets;   
+   
+function retrieve_compound_outlets_f(
+   p_project_id_mask in varchar2 default '*',
+   p_office_id_mask  in varchar2 default null)
+   return str_tab_tab_t
+is
+   l_project_id_mask  varchar2(256);
+   l_office_id_mask   varchar2(16); 
+   l_compound_outlets str_tab_tab_t := str_tab_tab_t();
+   l_tab              str_tab_t;
+begin
+   l_project_id_mask := cwms_util.normalize_wildcards(p_project_id_mask);
+   l_office_id_mask  := cwms_util.normalize_wildcards(nvl(p_office_id_mask, cwms_util.user_office_id)); 
+   for rec1 in (select office_id, 
+                       office_code 
+                  from cwms_office 
+                 where office_id like upper(l_office_id_mask) escape '\'
+                 order by 1
+               )
+   loop
+      for rec2 in (select bl.base_location_id
+                          ||substr('-', length(pl.sub_location_id))
+                          ||pl.sub_location_id as project_id,
+                          p.project_location_code
+                     from at_project p,
+                          at_physical_location pl,
+                          at_base_location bl
+                    where pl.location_code = p.project_location_code
+                      and bl.base_location_code = pl.base_location_code
+                      and bl.db_office_code = rec1.office_code
+                      and upper(bl.base_location_id
+                          ||substr('-', length(pl.sub_location_id))
+                          ||pl.sub_location_id) like upper(l_project_id_mask) escape '\'
+                    order by 1       
+                  )
+      loop
+         select compound_outlet_id
+           bulk collect
+           into l_tab
+           from at_comp_outlet
+          where project_location_code = rec2.project_location_code
+          order by 1;
+          
+         if l_tab.count > 0 then
+            l_compound_outlets.extend;
+            l_compound_outlets(l_compound_outlets.count) := str_tab_t();
+            l_compound_outlets(l_compound_outlets.count).extend(l_tab.count + 2);
+            l_compound_outlets(l_compound_outlets.count)(1) := rec1.office_id;
+            l_compound_outlets(l_compound_outlets.count)(2) := rec2.project_id;
+            for i in 1..l_tab.count loop
+               l_compound_outlets(l_compound_outlets.count)(i+2) := l_tab(i);
+            end loop;
+         end if;  
+      end loop;                        
+   end loop;                
+   return l_compound_outlets;
+end retrieve_compound_outlets_f;
+   
+procedure retrieve_compound_outlet(
+   p_outlets            out str_tab_tab_t,
+   p_compound_outlet_id in  varchar2,
+   p_project_id         in  varchar2, 
+   p_office_id          in  varchar2 default null)   
+is
+begin
+   p_outlets := retrieve_compound_outlet_f(p_compound_outlet_id, p_project_id, p_office_id);
+end retrieve_compound_outlet;   
+   
+procedure retrieve_compound_outlet(
+   p_outlets            out varchar2,
+   p_compound_outlet_id in  varchar2,
+   p_project_id         in  varchar2, 
+   p_office_id          in  varchar2 default null)
+is      
+   l_outlet_tab str_tab_tab_t;
+   l_recordset  varchar2(32767);
+begin
+   l_outlet_tab := retrieve_compound_outlet_f(p_compound_outlet_id, p_project_id, p_office_id);
+   for rec in 1..l_outlet_tab.count loop
+      if rec > 1 then
+         l_recordset := l_recordset || cwms_util.record_separator;
+      end if;
+      for field in 1..l_outlet_tab(rec).count loop
+         if field > 1 then
+            l_recordset := l_recordset || cwms_util.field_separator;
+         end if;
+         l_recordset := l_recordset || l_outlet_tab(rec)(field);
+      end loop;
+   end loop;
+   p_outlets := substr(l_recordset, 1, length(l_recordset));
+end retrieve_compound_outlet;   
+   
+function retrieve_compound_outlet_f(
+   p_compound_outlet_id in  varchar2,
+   p_project_id         in  varchar2, 
+   p_office_id          in  varchar2 default null)   
+   return str_tab_tab_t
+is
+   l_compound_outlet_code integer; 
+   l_downstream           number_tab_t;
+   l_outlet_tab           str_tab_tab_t := str_tab_tab_t();
+begin
+   l_compound_outlet_code := get_compound_outlet_code(p_compound_outlet_id, p_project_id, p_office_id);
+
+   for rec in (select distinct
+                      bl.base_location_id
+                      ||substr('-', length(pl.sub_location_id))
+                      ||pl.sub_location_id as outlet_id,
+                      coc.outlet_location_code
+                 from at_comp_outlet_conn coc, 
+                      at_physical_location pl,
+                      at_base_location bl
+                where coc.compound_outlet_code = l_compound_outlet_code
+                  and pl.location_code = coc.outlet_location_code
+                  and bl.base_location_code = pl.base_location_code
+                order by 1
+              )
+   loop
+      select next_outlet_code
+        bulk collect 
+        into l_downstream
+        from at_comp_outlet_conn
+       where compound_outlet_code = l_compound_outlet_code
+         and outlet_location_code = rec.outlet_location_code;
+          
+      if l_downstream.count = 0 then
+         l_downstream := number_tab_t(null);
+      end if;
+      
+      l_outlet_tab.extend;
+      l_outlet_tab(l_outlet_tab.count) := str_tab_t();
+      l_outlet_tab(l_outlet_tab.count).extend(l_downstream.count+1);
+      l_outlet_tab(l_outlet_tab.count)(1) := rec.outlet_id;
+      for i in 1..l_downstream.count loop
+         if l_downstream(i) is null then
+            l_outlet_tab(l_outlet_tab.count)(i+1) := null;
+         else
+            l_outlet_tab(l_outlet_tab.count)(i+1) := cwms_loc.get_location_id(l_downstream(i));
+         end if;
+      end loop;
+   end loop;              
+   return l_outlet_tab;
+end retrieve_compound_outlet_f;   
+
+
 end cwms_outlet;
 /
 show errors;

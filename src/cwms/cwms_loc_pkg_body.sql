@@ -2526,25 +2526,6 @@ AS
               from at_physical_location
              where location_code = l_location_code;           
          end if;
-                
-            -----------------------
-            -- group assignments --
-            -----------------------
-            delete 
-              from at_loc_group_assignment atlga
-             where atlga.location_code in
-                      (select location_code
-                         from at_physical_location apl
-                        where apl.base_location_code = l_base_location_code);
-            ------------                        
-            -- groups --
-            ------------
-            update at_loc_group
-               set shared_loc_ref_code = null
-             where shared_loc_ref_code in  
-                      (select location_code
-                         from at_physical_location apl
-                        where apl.base_location_code = l_base_location_code);
          -----------------------
          -- group assignments --
          -----------------------
@@ -2555,7 +2536,7 @@ AS
          update at_loc_group_assignment
             set loc_ref_code = null
           where loc_ref_code in (select * from table(l_location_codes));
-				------------
+         ------------
          -- groups --
          ------------             
          update at_loc_group
@@ -2568,8 +2549,8 @@ AS
            from at_vert_datum_offset
           where location_code in (select * from table(l_location_codes));           
          ------------
-				-- basins --
-				------------
+         -- basins --
+         ------------
          update at_basin
             set parent_basin_code = null
           where parent_basin_code in (select * from table (l_location_codes));
@@ -2623,8 +2604,16 @@ AS
            from at_lockage               
           where lockage_location_code in (select * from table (l_location_codes));
 
-         delete from at_lock
-               where lock_location_code in (select * from table (l_location_codes));
+         delete 
+           from at_lock
+          where lock_location_code in (select * from table (l_location_codes));
+         ----------------------------- 
+         -- compound outlet outlets --
+         -----------------------------
+         delete
+           from at_comp_outlet_conn
+          where outlet_location_code in (select * from table (l_location_codes))
+             or next_outlet_code     in (select * from table (l_location_codes));   
          -------------               
          -- outlets --
          -------------   
@@ -2635,6 +2624,21 @@ AS
          delete 
            from at_outlet
           where outlet_location_code in (select * from table (l_location_codes));
+         ------------------------------ 
+         -- compound outlet projects --
+         ------------------------------
+         for rec in (select compound_outlet_id,
+                            get_location_id(project_location_code) as project_id 
+                       from at_comp_outlet 
+                      where project_location_code in (select * from table (l_location_codes))
+                    )
+         loop
+            cwms_outlet.delete_compound_outlet(
+               rec.project_id, 
+               rec.compound_outlet_id, 
+               cwms_util.delete_all, 
+               p_db_office_id);
+         end loop;                     
          --------------               
          -- turbines --
          --------------   

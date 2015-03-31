@@ -15,6 +15,7 @@ DECLARE
 			       'av_active_flag',
 			       'av_basin',                  -- created in at_schema_2...
 			       'av_clob',
+			       'av_compound_outlet',
 			       'av_cwms_media',
 			       'av_document',
 			       'av_document_type',
@@ -171,6 +172,7 @@ END;
 @@cwms/views/av_office.sql
 
 @@cwms/views/av_outlet.sql
+@@cwms/views/av_compound_outlet.sql
 @@cwms/views/av_gate_change.sql
 @@cwms/views/av_gate_setting.sql
 @@cwms/views/av_turbine.sql

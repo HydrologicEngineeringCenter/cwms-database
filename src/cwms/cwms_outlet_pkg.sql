@@ -579,7 +579,179 @@ procedure set_gate_change_protection(
    p_time_zone            in varchar2 default null,
    p_start_time_inclusive in varchar2 default 'T',
    p_end_time_inclusive   in varchar2 default 'T');
-
+/**
+ * Stores information about a compound outlet (gate sequence)
+ *
+ * @param p_project_id         The name of the project that has the compound outlet
+ * @param p_compound_outlet_id The name of the compound outlet (must be unique per project excluding case)
+ * @param p_outlets            The outlet connection information as a table of tables. Every row of the outer table is a table
+ *                             whose first column is the name of one of the project's outlets that comprises the compound outlet. The remaining columns of each
+ *                             row are the names of the project's outlets (if any) that the first column outlet releases water into (the next downstream outlet).
+ *                             If the first column outlet releases water into the downstream channel (i.e., is a downstream-most outlet) then the row may have
+ *                             either one column or two columns with the second column containing NULL.
+ * @param p_fail_if_exists     A flag ('T'/'F') specifying whether to abort if a compound outlet of the specified name already exists for the specified project.
+ *                             If 'F' and the specified compound outlet already exists for the project, all outlet configuration for the existing compound outlet
+ *                             is deleted and replaced with the configuration specified in the p_outlets parameter.
+ * @param p_office_id          The office that owns the compound outlet (and the project and the outlets).  If unspecified or NULL the current session user is used.          
+ */
+procedure store_compound_outlet(
+   p_project_id         in varchar2,
+   p_compound_outlet_id in varchar2,
+   p_outlets            in str_tab_tab_t,
+   p_fail_if_exists     in varchar2 default 'T',
+   p_office_id          in varchar2 default null);
+/**
+ * Stores information about a compound outlet (gate sequence)
+ *
+ * @param p_project_id         The name of the project that has the compound outlet
+ * @param p_compound_outlet_id The name of the compound outlet (must be unique per project excluding case)
+ * @param p_outlets            The outlet connection information as a text recordset. A text recordset is a text representation of a table of tables with the rows
+ *                             of the outer table separated by the ASCII RS (record separator) character (decimal 30) and the rows of each of the outer rows (i.e, the
+ *                             columns or fields of the outer table) separated by the ASCII GS (group separator) character (decimal 29). Every row of the outer table is a table
+ *                             whose first column is the name of one of the project's outlets that comprises the compound outlet. The remaining columns of each
+ *                             row are the names of the project's outlets (if any) that the first column outlet releases water into (the next downstream outlet).
+ *                             If the first column outlet releases water into the downstream channel (i.e., is a downstream-most outlet) then the row may have
+ *                             either one column or two columns with the second column containing NULL.
+ * @param p_fail_if_exists     A flag ('T'/'F') specifying whether to abort if a compound outlet of the specified name already exists for the specified project.
+ *                             If 'F' and the specified compound outlet already exists for the project, all outlet configuration for the existing compound outlet
+ *                             is deleted and replaced with the configuration specified in the p_outlets parameter.
+ * @param p_office_id          The office that owns the compound outlet (and the project and the outlets).  If unspecified or NULL the current session user is used.          
+ */
+procedure store_compound_outlet(
+   p_project_id         in varchar2,
+   p_compound_outlet_id in varchar2,
+   p_outlets            in varchar2,
+   p_fail_if_exists     in varchar2 default 'T',
+   p_office_id          in varchar2 default null);
+/**
+ * Renames a compound outlet in the database.
+ *
+ * @param p_project_id             The name of the project that has the compound outlet
+ * @param p_old_compound_outlet_id The name of the compound outlet as it currently exists in the database.
+ * @param p_new_compound_outlet_id The name to rename the compound outlet to.
+ * @param p_office_id              The office that owns the compound outlet.  If unspecified or NULL the current session user is used.
+ */
+procedure rename_compound_outlet(
+   p_project_id             in varchar2,
+   p_old_compound_outlet_id in varchar2,      
+   p_new_compound_outlet_id in varchar2,
+   p_office_id              in varchar2 default null);
+/**
+ * Deletes a compound outlet from the database.
+ *
+ * @param p_project_id         The name of the project that has the compound outlet
+ * @param p_compound_outlet_id The name of the compound outlet as it currently exists in the database.
+ * @param p_delete_action      Specifies what to delete. 
+ *                             <ul><li><b>cwms_util.delete_key</b> deletes only the header information (will fail if compound outlet has configuration information)</li>
+ *                             <li><b>cwms_util.delete_data</b> deletes only the configuration information</li> 
+ *                             <li><b>cwms_util.delete_all</b> deletes the header and configuration information</li></ul> 
+ * @param p_office_id          The office that owns the compound outlet.  If unspecified or NULL the current session user is used.
+ */
+procedure delete_compound_outlet(
+   p_project_id         in varchar2,
+   p_compound_outlet_id in varchar2,
+   p_delete_action      in varchar2 default cwms_util.delete_key,
+   p_office_id          in varchar2 default null);
+/**
+ * Retrieves the names of compound outlets in the database for specified offices and projects. This procedure takes glob-style wildcards (e.g., '*' and '?') instead of
+ * SQL-style wildcards (e.g., '%' and '_').
+ *
+ * @param p_compound_outlets The compound outlets that belong to the specified offices and projects as a table of tables. Each row of the outer table will contain the
+ *                           names of compound outlets for a specific office and project, and will contiain three or more rows (columns or fields of the outer table).
+ *                           The first two rows of each inner table contain the office and project name for the compound outlets in the remainder of the inner table.
+ *                           Rows three and above of each inner table contain the names of compound outlets for the office and project in the first two rows.
+ * @param p_project_id_mask  Specifies the pattern of project names to match using '*' and '?' as wildcard characters.
+ * @param p_office_id_mask   Specifies the pattern of offices to match using '*' and '?' as wildcard characters. If unspecified or NULL the current session user is used.
+ */
+procedure retrieve_compound_outlets(
+   p_compound_outlets out str_tab_tab_t,
+   p_project_id_mask  in varchar2 default '*',
+   p_office_id_mask   in varchar2 default null);   
+/**
+ * Retrieves the names of compound outlets in the database for specified offices and projects. This procedure takes glob-style wildcards (e.g., '*' and '?') instead of
+ * SQL-style wildcards (e.g., '%' and '_').
+ *
+ * @param p_compound_outlets The compound outlets that belong to the specified offices and projects as a text recordset. A text recordset is a text representation of a table of tables with the rows
+ *                           of the outer table separated by the ASCII RS (record separator) character (decimal 30) and the rows of each of the outer rows (i.e, the
+ *                           columns or fields of the outer table) separated by the ASCII GS (group separator) character (decimal 29). Each row of the outer table will contain the
+ *                           names of compound outlets for a specific office and project, and will contiain three or more rows (columns or fields of the outer table).
+ *                           The first two rows of each inner table contain the office and project name for the compound outlets in the remainder of the inner table.
+ *                           Rows three and above of each inner table contain the names of compound outlets for the office and project in the first two rows.
+ * @param p_project_id_mask  Specifies the pattern of project names to match using '*' and '?' as wildcard characters.
+ * @param p_office_id_mask   Specifies the pattern of offices to match using '*' and '?' as wildcard characters. If unspecified or NULL the current session user is used.
+ */
+procedure retrieve_compound_outlets(
+   p_compound_outlets out varchar2,
+   p_project_id_mask  in varchar2 default '*',
+   p_office_id_mask   in varchar2 default null);   
+/**
+ * Retrieves the names of compound outlets in the database for specified offices and projects. This procedure takes glob-style wildcards (e.g., '*' and '?') instead of
+ * SQL-style wildcards (e.g., '%' and '_').
+ *
+ * @param p_project_id_mask  Specifies the pattern of project names to match using '*' and '?' as wildcard characters.
+ * @param p_office_id_mask   Specifies the pattern of offices to match using '*' and '?' as wildcard characters. If unspecified or NULL the current session user is used.
+ * 
+ * @return The compound outlets that belong to the specified offices and projects as a table of tables. Each row of the outer table will contain the
+ *         names of compound outlets for a specific office and project, and will contiain three or more rows (columns or fields of the outer table).
+ *         The first two rows of each inner table contain the office and project name for the compound outlets in the remainder of the inner table.
+ *         Rows three and above of each inner table contain the names of compound outlets for the office and project in the first two rows.
+ */
+function retrieve_compound_outlets_f(
+   p_project_id_mask in varchar2 default '*',
+   p_office_id_mask  in varchar2 default null)
+   return str_tab_tab_t;
+/**
+ * Retrieves the configuration information for a specified compound outlet
+ *
+ * @param p_outlets            The configuration information for the specified compound outlet as a table of tables. Each row of the outer table will be table of two rows (columns or fields of the outer table).
+ *                             The first column of each row (first row of each inner table) specifies the name of an outlet that makes up the compound outlet.
+ *                             The second column in each row specifies an outlet the the first column output releases into (e.g. a next-downstream outlet of the first column outlet). 
+ *                             If the second column is null, the first column outlet releases directly to the downstream channel (i.e., is a downstream-most outlet in the compound outlet). 
+ * @param p_compound_outlet_id The name of the compound outlet to retrieve the configuration information for
+ * @param p_project_id         The name of the project that has the compound outlet
+ * @param p_office_id          The office that owns the compound outlet (and project and outlets).  If unspecified or NULL the current session user is used.
+ */
+procedure retrieve_compound_outlet(
+   p_outlets            out str_tab_tab_t,
+   p_compound_outlet_id in  varchar2,
+   p_project_id         in  varchar2, 
+   p_office_id          in  varchar2 default null);   
+/**
+ * Retrieves the configuration information for a specified compound outlet
+ *
+ * @param p_outlets            The configuration information for the specified compound outlet as a text recordset. A text recordset is a text representation of a table of tables with the rows
+ *                             of the outer table separated by the ASCII RS (record separator) character (decimal 30) and the rows of each of the outer rows (i.e, the
+ *                             columns or fields of the outer table) separated by the ASCII GS (group separator) character (decimal 29). Each row of the outer table will be table of two rows (columns or 
+ *                             fields of the outer table). The first column of each row (first row of each inner table) specifies the name of an outlet that makes up the compound outlet.
+ *                             The second column in each row specifies an outlet the the first column output releases into (e.g. a next-downstream outlet of the first column outlet). 
+ *                             If the second column is null, the first column outlet releases directly to the downstream channel (i.e., is a downstream-most outlet in the compound outlet). 
+ * @param p_compound_outlet_id The name of the compound outlet to retrieve the configuration information for
+ * @param p_project_id         The name of the project that has the compound outlet
+ * @param p_office_id          The office that owns the compound outlet (and project and outlets).  If unspecified or NULL the current session user is used.
+ */
+procedure retrieve_compound_outlet(
+   p_outlets            out varchar2,
+   p_compound_outlet_id in  varchar2,
+   p_project_id         in  varchar2, 
+   p_office_id          in  varchar2 default null);   
+/**
+ * Retrieves the configuration information for a specified compound outlet
+ *
+ * @param p_compound_outlet_id The name of the compound outlet to retrieve the configuration information for
+ * @param p_project_id         The name of the project that has the compound outlet
+ * @param p_office_id          The office that owns the compound outlet (and project and outlets).  If unspecified or NULL the current session user is used.
+ *
+ * @return The configuration information for the specified compound outlet as a table of tables. Each row of the outer table will be table of two rows (columns or fields of the outer table).
+ *         The first column of each row (first row of each inner table) specifies the name of an outlet that makes up the compound outlet.
+ *         The second column in each row specifies an outlet the the first column output releases into (e.g. a next-downstream outlet of the first column outlet). 
+ *         If the second column is null, the first column outlet releases directly to the downstream channel (i.e., is a downstream-most outlet in the compound outlet). 
+ */
+function retrieve_compound_outlet_f(
+   p_compound_outlet_id in  varchar2,
+   p_project_id         in  varchar2, 
+   p_office_id          in  varchar2 default null)   
+   return str_tab_tab_t;   
+      
 end cwms_outlet;
 /
 show errors;
