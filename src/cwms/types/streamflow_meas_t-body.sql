@@ -241,9 +241,35 @@ as
    is
       l_rec            at_streamflow_meas%rowtype;
       l_exists         boolean;
+
+      function make_meas_number(
+         p_date in date)
+         return varchar2
+      is   
+         l_date timestamp;
+         l_yr   integer;
+         l_hr   integer;
+         l_mi   integer;
+         l_doy  integer;
+         l_2min integer;
+         l_text varchar2(10);
+      begin
+         l_date := cast(p_date as timestamp);
+         l_yr   := extract(year   from l_date);
+         l_hr   := extract(hour   from l_date);
+         l_mi   := extract(minute from l_date);
+         l_doy  := trunc(l_date, 'ddd') - trunc(l_date, 'yyyy') + 1;
+         l_2min := (60 * l_hr + l_mi) / 2;
+         l_text := l_yr||trim(to_char(l_doy, '009'))||trim(to_char(l_2min, '009'));
+         return trim(to_char(to_number(l_text), 'xxxxxxxx'));
+      end make_meas_number;
    begin
       l_rec.location_code := self.location.get_location_code;
-      l_rec.meas_number   := self.meas_number;
+      l_rec.date_time     := cwms_util.change_timezone(self.date_time, nvl(self.time_zone, cwms_loc.get_local_timezone(self.location.get_location_code)), 'UTC');
+      l_rec.meas_number   := case self.meas_number is null
+                             when false then self.meas_number
+                             else make_meas_number(l_rec.date_time)
+                             end;
       begin
          select *
            into l_rec
@@ -261,7 +287,6 @@ as
             'CWMS streamflow measurement',
             self.location.office_id||'/'||self.location.get_location_id||' measurement number '||l_rec.meas_number);
       end if;
-      l_rec.date_time      := cwms_util.change_timezone(self.date_time, nvl(self.time_zone, cwms_loc.get_local_timezone(self.location.get_location_code)), 'UTC');
       l_rec.used           := self.used;
       l_rec.party          := self.party;
       l_rec.agency_id      := self.agency_id;
