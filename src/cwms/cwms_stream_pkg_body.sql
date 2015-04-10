@@ -2254,88 +2254,65 @@ is
    l_flow_unit        varchar2(16);
    l_agencies         str_tab_t;
    l_qualities        str_tab_t;
+   l_time_zone        varchar2(28);
+   l_min_date         date;
+   l_max_date         date;
+   l_min_height       number;
+   l_max_height       number;
+   l_min_flow         number;
+   l_max_flow         number;
 begin
+   l_time_zone := nvl(p_time_zone, 'UTC');
    l_height_unit := cwms_util.get_default_units('Stage', upper(trim(p_unit_system)));
    l_flow_unit   := cwms_util.get_default_units('Flow',  upper(trim(p_unit_system)));
-   if p_agencies is not null then
+   l_min_date    := cwms_util.change_timezone(p_min_date, l_time_zone, 'UTC');
+   l_max_date    := cwms_util.change_timezone(p_max_date, l_time_zone, 'UTC'); 
+   l_min_height  := cwms_util.convert_to_db_units(p_min_height, 'Stage', l_height_unit);
+   l_max_height  := cwms_util.convert_to_db_units(p_max_height, 'Stage', l_height_unit);
+   l_min_flow    := cwms_util.convert_to_db_units(p_min_flow, 'Flow', l_flow_unit);
+   l_max_flow    := cwms_util.convert_to_db_units(p_max_flow, 'Flow', l_flow_unit);
+   if p_agencies is null then
+      select agcy_id
+        bulk collect
+        into l_agencies
+        from cwms_usgs_agency;
+      l_agencies.extend;
+      l_agencies(l_agencies.count) := '@';        
+   else
       select trim(upper(column_value))
         bulk collect
         into l_agencies
         from table(cwms_util.split_text(p_agencies, ','));
-      l_agencies.extend;
-      l_agencies(l_agencies.count) := '@';        
-   end if; 
-   if p_qualities is not null then
+   end if;
+   if p_qualities is null then
+      select qual_id
+        bulk collect
+        into l_qualities
+        from cwms_usgs_meas_qual;
+      l_qualities.extend;
+      l_qualities(l_qualities.count) := '@';        
+   else
       select substr(trim(upper(column_value)), 1, 1)
         bulk collect
         into l_qualities
         from table(cwms_util.split_text(p_qualities, ','));
       l_qualities.extend;
-      l_qualities(l_qualities.count) := '@';        
    end if;
    delete 
      from at_streamflow_meas
-    where exists (select distinct
-                         sm.location_code,
-                         sm.meas_number
-                    from at_streamflow_meas sm,
-                         av_loc2 v2
-                   where v2.db_office_id like nvl(l_office_id_mask, cwms_util.user_office_id) escape '\'
-                     and v2.location_id like l_location_id_mask escape '\'
-                     and sm.location_code = v2.location_code
-                     and sm.date_time 
-                         between 
-                            case
-                            when p_min_date is null then 
-                               sm.date_time
-                            when p_time_zone is null then 
-                               cwms_util.change_timezone(sm.date_time, cwms_loc.get_local_timezone(sm.location_code), 'UTC')
-                            else
-                               cwms_util.change_timezone(sm.date_time, p_time_zone) 
-                            end
-                         and
-                            case
-                            when p_max_date is null then 
-                               sm.date_time
-                            when p_time_zone is null then 
-                               cwms_util.change_timezone(sm.date_time, cwms_loc.get_local_timezone(sm.location_code), 'UTC')
-                            else
-                               cwms_util.change_timezone(sm.date_time, p_time_zone) 
-                             end
-                     and sm.gage_height 
-                         between
-                            case
-                            when p_min_height is null then sm.gage_height
-                            else cwms_util.convert_units(p_min_height, l_height_unit, 'm')
-                            end                             
-                         and
-                            case
-                            when p_max_height is null then sm.gage_height
-                            else cwms_util.convert_units(p_max_height, l_height_unit, 'm')
-                            end                             
-                     and sm.flow 
-                         between
-                            case
-                            when p_min_flow is null then sm.flow
-                            else cwms_util.convert_units(p_min_flow, l_flow_unit, 'cms')
-                            end                             
-                         and
-                            case
-                            when p_max_flow is null then sm.flow
-                            else cwms_util.convert_units(p_max_flow, l_flow_unit, 'cms')
-                            end                             
-                     and sm.meas_number between nvl(p_min_num, sm.meas_number) and nvl(p_max_num, sm.meas_number) 
-                     and nvl(sm.agency_id, '@') in (select * from table(  
-                         case
-                         when l_agencies is not null then l_agencies
-                         else str_tab_t(nvl(sm.agency_id, '@')) 
-                         end)) 
-                     and nvl(sm.quality, '@') in (select * from table(  
-                         case
-                         when l_qualities is not null then l_qualities
-                         else str_tab_t(nvl(sm.quality, '@')) 
-                         end))
-                 );
+    where rowid in (select sm.rowid
+                      from at_streamflow_meas sm,
+                           av_loc2 v2
+                     where v2.db_office_id like nvl(l_office_id_mask, cwms_util.user_office_id) escape '\'
+                       and v2.location_id like l_location_id_mask escape '\'
+                       and sm.location_code = v2.location_code
+                       and sm.date_time between nvl(l_min_date, sm.date_time) and nvl(l_max_date, sm.date_time)  
+                       and sm.gage_height between nvl(l_min_height, sm.gage_height) and nvl(l_max_height, sm.gage_height)
+                       and sm.flow between nvl(l_min_flow, sm.flow) and nvl(l_max_flow, sm.flow)
+                       and sm.meas_number between nvl(p_min_num, sm.meas_number) and nvl(p_max_num, sm.meas_number) 
+                       and nvl(sm.agency_id, '@') in (select * from table(l_agencies))  
+                       and nvl(sm.quality, '@') in (select * from table(l_qualities))
+                   );
           
 end delete_streamflow_meas;
 
