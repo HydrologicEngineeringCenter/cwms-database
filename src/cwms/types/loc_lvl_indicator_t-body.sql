@@ -217,6 +217,180 @@ as
       l_obj.store;
    end store;
 
+   member function get_indicator_expr_values(
+      p_ts        in ztsv_array,
+      p_unit      in varchar2 default null,
+      p_condition in integer  default null,
+      p_eval_time in date     default null,
+      p_time_zone in varchar2 default null)
+      return double_tab_tab_t
+   is                         
+      l_results       double_tab_tab_t;
+      l_unit          varchar2(16);
+      l_default_unit  varchar2(16);
+      l_conditions    number_tab_t;
+      l_eval_times    date_table_type;
+      l_values        double_tab_t;    
+      l_time_zone     varchar2(28); 
+      l_level1_id     varchar2(512);
+      l_level2_id     varchar2(512);
+      l_level_attr_id varchar2(256);
+      l_level1_values double_tab_t;
+      l_level2_values double_tab_t;
+      l_rate          binary_double;       
+      
+      function interval_factor(
+         d1  in date,
+         d2  in date, 
+         dsi in dsinterval_unconstrained)
+         return number 
+      as
+         days number;
+      begin
+         days := extract(day    from dsi)         + 
+                 extract(hour   from dsi) / 24    +
+                 extract(minute from dsi) / 1440  + 
+                 extract(second from dsi) / 86400;
+               
+         return abs(d1 - d2) / days;           
+      end;   
+   begin            
+      l_default_unit := cwms_util.get_default_units(self.parameter_id);
+      l_unit := cwms_util.get_unit_id(nvl(p_unit, l_default_unit)); 
+      l_time_zone := cwms_util.get_timezone(nvl(p_time_zone, 'UTC'));
+      -----------------------------------------
+      -- get the evaluation times and values --
+      -----------------------------------------
+      l_eval_times := date_table_type();
+      l_values := double_tab_t();
+      if p_eval_time is null then
+         l_eval_times.extend(p_ts.count);
+         l_values.extend(p_ts.count);
+         for i in 1..p_ts.count loop
+            l_eval_times(i) := p_ts(i).date_time;
+            l_values(i) := p_ts(i).value;
+         end loop;
+      else      
+         l_eval_times.extend;
+         l_values.extend;
+         l_eval_times(1) := p_eval_time;
+         select value
+           into l_values(1)
+           from table(p_ts)
+          where date_time = (select max(date_time) from table(p_ts) where date_time <= p_eval_time);    
+      end if;
+      if l_time_zone != 'UTC' then
+         for i in 1..l_eval_times.count loop
+            l_eval_times(i) := cwms_util.change_timezone(l_eval_times(i), l_time_zone, 'UTC');
+         end loop;
+      end if;
+      if l_unit != l_default_unit then
+         for i in 1..l_values.count loop
+            l_values(i) := cwms_util.convert_units(l_values(i), l_unit, l_default_unit);
+         end loop;
+      end if;
+      --------------------------------------------------                
+      -- get the level values for the specified times --
+      --------------------------------------------------                
+      l_level1_id := cwms_util.join_text(
+         str_tab_t(
+            self.location_id, 
+            self.parameter_id, 
+            self.parameter_type_id, 
+            self.duration_id, 
+            self.specified_level_id), 
+         '.');
+         
+      if self.ref_specified_level_id is not null then
+         l_level2_id := cwms_util.join_text(
+            str_tab_t(
+               self.location_id, 
+               self.parameter_id, 
+               self.parameter_type_id, 
+               self.duration_id, 
+               self.ref_specified_level_id), 
+            '.');
+      end if;         
+         
+      if self.attr_parameter_id is not null then
+         l_level_attr_id := cwms_util.join_text(
+            str_tab_t(
+               self.attr_parameter_id, 
+               self.attr_parameter_type_id, 
+               self.attr_duration_id), 
+            '.');
+      end if;
+       
+      l_level1_values := cwms_level.retrieve_loc_lvl_values3(
+         p_specified_times   => l_eval_times, 
+         p_location_level_id => l_level1_id, 
+         p_level_units       => l_default_unit, 
+         p_attribute_id      => l_level_attr_id, 
+         p_attribute_value   => self.attr_value, 
+         p_attribute_units   => self.attr_units_id, 
+         p_timezone_id       => 'UTC', 
+         p_office_id         => self.office_id);
+         
+      if l_level2_id is null then
+         l_level2_values := double_tab_t();
+         l_level2_values.extend(l_eval_times.count);
+      else
+         l_level2_values := cwms_level.retrieve_loc_lvl_values3(
+            p_specified_times   => l_eval_times, 
+            p_location_level_id => l_level2_id, 
+            p_level_units       => l_default_unit, 
+            p_attribute_id      => l_level_attr_id, 
+            p_attribute_value   => self.ref_attr_value, 
+            p_attribute_units   => self.attr_units_id, 
+            p_timezone_id       => 'UTC', 
+            p_office_id         => self.office_id);
+      end if;
+      -----------------------------               
+      -- build the results table --
+      -----------------------------               
+      l_results := double_tab_tab_t();
+      l_results.extend(l_eval_times.count);
+      for i in 1..l_results.count loop
+         l_results(i) := double_tab_t();
+         l_results(i).extend(case when p_condition is null then 5 else 1 end);
+      end loop;
+      --------------------------------      
+      -- populate the results table --
+      --------------------------------      
+      for i in 1..l_eval_times.count loop
+         if p_condition is null then
+            for j in 1..5 loop
+               if self.conditions(j).rate_expression is null then
+                  l_results(i)(j) := self.conditions(j).eval_expression(
+                     l_values(i), 
+                     l_level1_values(i), 
+                     l_level2_values(i));
+               else
+               if i > 1 then
+                  l_rate := (l_values(i) - l_values(i-1)) / (l_eval_times(i) - l_eval_times(i-1)); -- per day
+                  l_rate := l_rate / interval_factor(l_eval_times(i), l_eval_times(i-1), self.conditions(j).rate_interval);
+                  l_results(i)(j) := self.conditions(j).eval_rate_expression(l_rate);                  
+               end if;
+               end if;
+            end loop;
+         else   
+            if self.conditions(p_condition).rate_expression is null then
+               l_results(i)(1) := self.conditions(p_condition).eval_expression(
+                  l_values(i), 
+                  l_level1_values(i), 
+                  l_level2_values(i));
+            else
+               if i > 1 then
+                  l_rate := (l_values(i) - l_values(i-1)) / (l_eval_times(i) - l_eval_times(i-1)); -- per day
+                  l_rate := l_rate / interval_factor(l_eval_times(i), l_eval_times(i-1), self.conditions(p_condition).rate_interval);
+                  l_results(i)(1) := self.conditions(p_condition).eval_rate_expression(l_rate);                  
+               end if;
+            end if;
+         end if;   
+      end loop;  
+      return l_results;    
+   end get_indicator_expr_values;      
+
    member function get_indicator_values(
       p_ts        in ztsv_array,
       p_eval_time in date default null)

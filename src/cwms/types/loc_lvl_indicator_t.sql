@@ -63,7 +63,32 @@ is object
    /**
     * Stores the loc_lvl_indicator_t object to the database
     */
-   member procedure store,
+   member procedure store,                
+   /**
+    * Retrieves the computed values of the indicator condition expressions for specified time series values, conditions, and evaluation time 
+    *
+    * @see type ztsv_array
+    * @see type number_tab_tab_t
+    *
+    * @param p_ts        The time series to evaluate the conditions against.
+    * @param p_unit      The unit of the values in p_ts.  If null, the values are expected to be in database storage units.
+    * @param p_condition The condition to evaluate (range = 1..5). If not specified or null, all five condtions will be evalutated.
+    * @param p_eval_time The time at which to evaluate the condition expression(s). If not specified or null, one evaluation will be performed
+    *                    for every p_ts.date_time value.
+    * @param p_time_zone The time zone of p_eval_time (or p_ts.date_time values is p_eval_time is null).  If not specified or NULL, 'UTC' is used.
+    *
+    * @return The computed values if the indicator condition expressions. The outer dimension of the table will have one inner row for
+    *         each evaluation time (one if p_eval_time is not null, one for each p_ts.date_time value otherwise).  The inner rows will
+    *         each have have one value (if p_condition is specified) or five values (one for each condition is p_condition is not specified).
+    *
+    */
+   member function get_indicator_expr_values(
+      p_ts        in ztsv_array,
+      p_unit      in varchar2 default null,
+      p_condition in integer  default null,
+      p_eval_time in date     default null,
+      p_time_zone in varchar2 default null)
+      return double_tab_tab_t,
    /**
     * Retrieves which indicator conditions are set, if any, for the specifed time
     * series values

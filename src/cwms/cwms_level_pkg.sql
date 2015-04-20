@@ -3023,6 +3023,74 @@ procedure rename_loc_lvl_indicator(
    p_ref_attr_value         in  number   default null,
    p_office_id              in  varchar2 default null);
 /**
+ * Evaluates time series values in a location level indicator condition expression and return the results in a time series. If the specified (or default) condition
+ * is a rate expression, the results of the rate expression evaluation will be returned. Otherwise, the results of the level expression will be returned.
+ *
+ * @param p_tsid                   The time series whose values are to be evaluated in the location level indicator condition expression 
+ * @param p_start_time             The start of the time window to retrieve data from p_tsid to evaluate
+ * @param p_end_time               The end of the time window to retrieve data from p_tsid to evaluate
+ * @param p_unit                   The unit of the values in the time series 
+ * @param p_specified_level_id     The specified level identifier to evaluate the indicator condition expression for (L or L1 in the level expression)
+ * @param p_indicator_id           The location level indicator id to evaluate the condition expression for
+ * @param p_attribute_id           The attribute id of the location level to evaluate the indicator condition expression for. If unspecifed or NULL, no attribute will be used.
+ * @param p_attribute_value        The attribute value of the location level to evaluate the indicator condition expression for. May be NULL if no attribute is used.
+ * @param p_attribute_unit         The attribute unit of the location level to evaluate the indicator condition expression for. May be NULL if no attribute is used.
+ * @param p_ref_specified_level_id The referenced specified level (L2 in the level expression), if any
+ * @param p_ref_attribute_value    The attribute value of the referenced specified level (L2 in the level expression), if any
+ * @param p_time_zone              The time zone of p_start_time, p_end_time, and the retrieved data.  If not specified or NULL, the location's local time zone is used.
+ * @param p_condition_number       The condition number whose expression is to be evaluated.  If not specified, the first condition (number 1) will be used.
+ * @param p_office_id              The office that owns the time series, location level, and location level indicator          
+ *
+ * @return The results of the evaluation expressions, one element for every element in the input time series.
+ */   
+function eval_level_indicator_expr(
+   p_tsid                   in varchar2,
+   p_start_time             in date,
+   p_end_time               in date,      
+   p_unit                   in varchar2,
+   p_specified_level_id     in varchar2,
+   p_indicator_id           in varchar2,
+   p_attribute_id           in varchar2      default null,
+   p_attribute_value        in binary_double default null,
+   p_attribute_unit         in varchar2      default null,
+   p_ref_specified_level_id in varchar2      default null,
+   p_ref_attribute_value    in number        default null,
+   p_time_zone              in varchar2      default null,
+   p_condition_number       in integer       default 1,
+   p_office_id              in varchar2      default null)
+   return ztsv_array; 
+/**
+ * Evaluates time series values in a location level indicator condition expression and return the results in a time series. If the specified (or default) condition
+ * is a rate expression, the results of the rate expression evaluation will be returned. Otherwise, the results of the level expression will be returned.
+ *
+ * @param p_ts                     The time series whose values are to be evaluated in the location level indicator condition expression
+ * @param p_unit                   The unit of the values in the time series 
+ * @param p_loc_lvl_indicator_id   The location level indicator id to evaluate the condition expression for
+ * @param p_attribute_id           The attribute id of the location level to evaluate the indicator condition expression for. If unspecifed or NULL, no attribute will be used.
+ * @param p_attribute_value        The attribute value of the location level to evaluate the indicator condition expression for. May be NULL if no attribute is used.
+ * @param p_attribute_unit         The attribute unit of the location level to evaluate the indicator condition expression for. May be NULL if no attribute is used.
+ * @param p_ref_specified_level_id The referenced specified level (L2 in the level expression), if any
+ * @param p_ref_attribute_value    The attribute value of the referenced specified level (L2 in the level expression), if any
+ * @param p_time_zone              The time zone of p_start_time, p_end_time, and the retrieved data.  If not specified or NULL, the location's local time zone is used.
+ * @param p_condition_number       The condition number whose expression is to be evaluated.  If not specified, the first condition (number 1) will be used.
+ * @param p_office_id              The office that owns the time series, location level, and location level indicator          
+ *
+ * @return The results of the evaluation expressions, one element for every element in the input time series.
+ */   
+function eval_level_indicator_expr(
+   p_ts                     in ztsv_array,  
+   p_unit                   in varchar2,
+   p_loc_lvl_indicator_id   in varchar2,
+   p_attribute_id           in varchar2      default null,
+   p_attribute_value        in binary_double default null,
+   p_attribute_unit         in varchar2      default null,
+   p_ref_specified_level_id in varchar2      default null,
+   p_ref_attribute_value    in number        default null,
+   p_time_zone              in varchar2      default null,
+   p_condition_number       in integer       default 1,
+   p_office_id              in varchar2      default null)
+   return ztsv_array; 
+/**
  * Retreieves the values for all Location level indicator conditions that are set at
  * p_eval_time and that match the input parameters.  Each indicator may have multiple condions set. Matching is
  * accomplished with glob-style wildcards, as shown below. SQL-style wildcards may also be used.

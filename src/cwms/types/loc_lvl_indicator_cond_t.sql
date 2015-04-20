@@ -134,7 +134,7 @@ is object
     * Stores a loc_lvl_indicator_cont_t object to the AT_LOC_LEVL_INDICATOR_COND table
     */
    member procedure store(
-      p_level_indicator_code in number),
+      p_level_indicator_code in number),  
    -----------------------------------------------------------------------------
    -- member fields factor and offset must previously be set to provide any
    -- necessary units conversion for the comparison
@@ -142,6 +142,30 @@ is object
    -- p_rate must be specified for the interval indicated in the member field
    -- rate_interval
    -----------------------------------------------------------------------------
+   /**
+    * Evaluates the condition's expression and returns the result
+    *
+    * param p_value   The value (expression variable V) in the object's comparison unit,
+    * param p_level   The level value (expression variable L or L1) in the object's comparison unit,
+    * param p_level_2 The referenced level value (expression variable L2) in the object's comparison unit, if a referenced location level is used
+    *
+    * return The numeric result of evaluation the expression
+    */
+   member function eval_expression(      
+      p_value   in binary_double,
+      p_level   in binary_double,
+      p_level_2 in binary_double)
+   return binary_double,
+   /**
+    * Evaluates the condition's rate expression and returns the result
+    *
+    * param p_rate The rate of change (expression variable R) in the object's rate comparison unit
+    *
+    * return The numeric result of evaluation the rate expression
+    */
+   member function eval_rate_expression(      
+      p_rate in binary_double)
+   return binary_double,
    /**
     * Tests whether the specified parameters cause the location level indicator condition
     * to be set

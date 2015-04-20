@@ -7150,7 +7150,132 @@ begin
       set level_indicator_id = p_new_indicator_id
     where level_indicator_code = l_level_indicator_code; 
 end rename_loc_lvl_indicator;
-            
+     
+function eval_level_indicator_expr(
+   p_tsid                   in varchar2,
+   p_start_time             in date,
+   p_end_time               in date,      
+   p_unit                   in varchar2,
+   p_specified_level_id     in varchar2,
+   p_indicator_id           in varchar2,
+   p_attribute_id           in varchar2      default null,
+   p_attribute_value        in binary_double default null,
+   p_attribute_unit         in varchar2      default null,
+   p_ref_specified_level_id in varchar2      default null,
+   p_ref_attribute_value    in number        default null,
+   p_time_zone              in varchar2      default null,
+   p_condition_number       in integer       default 1,
+   p_office_id              in varchar2      default null)
+   return ztsv_array
+is
+   l_unit         varchar2(16);
+   l_time_zone    varchar2(28);
+   l_ts           ztsv_array;   
+   l_parts        str_tab_t;
+   l_indicator_id varchar2(512);
+   c              sys_refcursor;
+   l_date_time    timestamp with time zone;
+   l_value        binary_double;
+   l_quality      number;
+begin
+   l_unit := cwms_util.get_unit_id(p_unit);      
+   l_time_zone := nvl(
+      cwms_util.get_timezone(p_time_zone), 
+      cwms_loc.get_local_timezone(cwms_util.split_text(p_tsid, 1, '.'), p_office_id));
+      
+   cwms_ts.retrieve_ts(
+      p_at_tsv_rc       => c,      
+      p_cwms_ts_id      => p_tsid, 
+      p_units           => l_unit, 
+      p_start_time      => p_start_time, 
+      p_end_time        => p_end_time, 
+      p_time_zone       => l_time_zone, 
+      p_trim            => 'T', 
+      p_start_inclusive => 'T', 
+      p_end_inclusive   => 'T', 
+      p_previous        => 'F', 
+      p_next            => 'F', 
+      p_version_date    => cwms_util.non_versioned, 
+      p_max_version     => 'T', 
+      p_office_id       => p_office_id);
+      
+   l_ts := ztsv_array();
+   loop    
+      fetch c into l_date_time, l_value, l_quality;
+      exit when c%notfound;
+      l_ts.extend();
+      l_ts(l_ts.count) := ztsv_type(cast(l_date_time as date), l_value, l_quality);
+   end loop;
+   close c;      
+      
+   l_parts := cwms_util.split_text(p_tsid, '.');         
+   l_indicator_id := cwms_util.join_text(
+      str_tab_t(
+         l_parts(1),
+         l_parts(2),
+         l_parts(3),
+         l_parts(5),
+         p_specified_level_id,
+         p_indicator_id),
+      '.');   
+                                                 
+   l_ts := eval_level_indicator_expr(
+      p_ts                     => l_ts,  
+      p_unit                   => l_unit,
+      p_loc_lvl_indicator_id   => l_indicator_id,
+      p_attribute_id           => p_attribute_id,
+      p_attribute_value        => p_attribute_value,
+      p_attribute_unit         => p_attribute_unit,
+      p_ref_specified_level_id => p_ref_specified_level_id,
+      p_ref_attribute_value    => p_ref_attribute_value,
+      p_time_zone              => l_time_zone,
+      p_condition_number       => p_condition_number,
+      p_office_id              => p_office_id);
+      
+   return l_ts;      
+end eval_level_indicator_expr;    
+
+function eval_level_indicator_expr(
+   p_ts                     in ztsv_array,  
+   p_unit                   in varchar2,
+   p_loc_lvl_indicator_id   in varchar2,
+   p_attribute_id           in varchar2      default null,
+   p_attribute_value        in binary_double default null,
+   p_attribute_unit         in varchar2      default null,
+   p_ref_specified_level_id in varchar2      default null,
+   p_ref_attribute_value    in number        default null,
+   p_time_zone              in varchar2      default null,
+   p_condition_number       in integer       default 1,
+   p_office_id              in varchar2      default null)
+   return ztsv_array 
+is
+   l_indicator loc_lvl_indicator_t;
+   l_values    double_tab_tab_t;
+   l_results   ztsv_array;
+begin
+   l_indicator := retrieve_loc_lvl_indicator(
+      p_loc_lvl_indicator_id   => p_loc_lvl_indicator_id, 
+      p_attr_value             => p_attribute_value, 
+      p_attr_units_id          => p_attribute_unit, 
+      p_attr_id                => p_attribute_id, 
+      p_ref_specified_level_id => p_ref_specified_level_id, 
+      p_ref_attr_value         => p_ref_attribute_value, 
+      p_office_id              => p_office_id);
+   l_values := l_indicator.get_indicator_expr_values(
+      p_ts        => p_ts,
+      p_unit      => p_unit,
+      p_condition => p_condition_number,
+      p_eval_time => null,
+      p_time_zone => p_time_zone);
+
+   l_results := ztsv_array();
+   l_results.extend(l_values.count);
+   for i in 1..l_values.count loop
+      l_results(i) := ztsv_type(p_ts(i).date_time, l_values(i)(1), 0);
+   end loop;
+   return l_results;
+end eval_level_indicator_expr;
+       
 --------------------------------------------------------------------------------
 -- PROCEDURE get_level_indicator_values
 --          
