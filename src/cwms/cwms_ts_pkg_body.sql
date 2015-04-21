@@ -2196,19 +2196,25 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            select ts_code, 
-                   interval, 
-                   interval_utc_offset,
-                   base_parameter_id,
-                   location_code
-              into l_ts_code, 
-                   l_interval, 
-                   l_utc_offset,
-                   l_base_parameter_id,
-                   l_location_code
-              from at_cwms_ts_id
-             where upper(db_office_id) = upper(l_office_id)
-               and upper(cwms_ts_id) = upper(p_cwms_ts_id_out);
+            BEGIN
+               select ts_code, 
+                      interval, 
+                      interval_utc_offset,
+                      base_parameter_id,
+                      location_code
+                 into l_ts_code, 
+                      l_interval, 
+                      l_utc_offset,
+                      l_base_parameter_id,
+                      l_location_code
+                 from at_cwms_ts_id
+                where upper(db_office_id) = upper(l_office_id)
+                  and upper(cwms_ts_id) = upper(p_cwms_ts_id_out);
+            EXCEPTION
+               WHEN NO_DATA_FOUND
+               THEN
+                  cwms_err.raise('TS_ID_NOT_FOUND', l_cwms_ts_id, l_office_id);
+            END;
       END;
                           
       if l_base_parameter_id = 'Elev' then
