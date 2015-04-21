@@ -239,21 +239,6 @@ as
       l_level2_values double_tab_t;
       l_rate          binary_double;       
       
-      function interval_factor(
-         d1  in date,
-         d2  in date, 
-         dsi in dsinterval_unconstrained)
-         return number 
-      as
-         days number;
-      begin
-         days := extract(day    from dsi)         + 
-                 extract(hour   from dsi) / 24    +
-                 extract(minute from dsi) / 1440  + 
-                 extract(second from dsi) / 86400;
-               
-         return abs(d1 - d2) / days;           
-      end;   
    begin            
       l_default_unit := cwms_util.get_default_units(self.parameter_id);
       l_unit := cwms_util.get_unit_id(nvl(p_unit, l_default_unit)); 
@@ -368,7 +353,7 @@ as
                else
                if i > 1 then
                   l_rate := (l_values(i) - l_values(i-1)) / (l_eval_times(i) - l_eval_times(i-1)); -- per day
-                  l_rate := l_rate / interval_factor(l_eval_times(i), l_eval_times(i-1), self.conditions(j).rate_interval);
+                  l_rate := l_rate / 24; -- per hour, condition will convert from here to final interval
                   l_results(i)(j) := self.conditions(j).eval_rate_expression(l_rate);                  
                end if;
                end if;
@@ -382,7 +367,7 @@ as
             else
                if i > 1 then
                   l_rate := (l_values(i) - l_values(i-1)) / (l_eval_times(i) - l_eval_times(i-1)); -- per day
-                  l_rate := l_rate / interval_factor(l_eval_times(i), l_eval_times(i-1), self.conditions(p_condition).rate_interval);
+                  l_rate := l_rate / 24; -- per hour, condition will convert from here to final interval
                   l_results(i)(1) := self.conditions(p_condition).eval_rate_expression(l_rate);                  
                end if;
             end if;
