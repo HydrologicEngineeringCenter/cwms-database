@@ -2265,13 +2265,13 @@ begin
    l_time_zone := nvl(p_time_zone, 'UTC');
    l_min_date    := cwms_util.change_timezone(p_min_date, l_time_zone, 'UTC');
    l_max_date    := cwms_util.change_timezone(p_max_date, l_time_zone, 'UTC'); 
-   l_min_height  := cwms_util.convert_to_db_units(p_min_height, 'Stage', l_height_unit);
-   l_max_height  := cwms_util.convert_to_db_units(p_max_height, 'Stage', l_height_unit);
-   l_min_flow    := cwms_util.convert_to_db_units(p_min_flow, 'Flow', l_flow_unit);
-   l_max_flow    := cwms_util.convert_to_db_units(p_max_flow, 'Flow', l_flow_unit);
    if coalesce(p_min_height, p_max_height, p_min_flow, p_max_flow) is not null then
       l_height_unit := cwms_util.get_default_units('Stage', upper(trim(p_unit_system)));
       l_flow_unit   := cwms_util.get_default_units('Flow',  upper(trim(p_unit_system)));
+      l_min_height  := cwms_util.convert_to_db_units(p_min_height, 'Stage', l_height_unit);
+      l_max_height  := cwms_util.convert_to_db_units(p_max_height, 'Stage', l_height_unit);
+      l_min_flow    := cwms_util.convert_to_db_units(p_min_flow, 'Flow', l_flow_unit);
+      l_max_flow    := cwms_util.convert_to_db_units(p_max_flow, 'Flow', l_flow_unit);
    end if;
    if p_agencies is null then
       select agcy_id
