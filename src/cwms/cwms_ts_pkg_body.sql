@@ -1556,7 +1556,7 @@ AS
          OR l_duration_code IS NULL
          OR l_parameter_type_code IS NULL
          OR l_interval_code IS NULL
-         OR (l_interval = 0 AND l_duration <> 0)
+         OR (UPPER (l_parameter_type_id) = 'INST' AND l_duration <> 0)
       THEN
          l_str_error :=
             'ERROR: Invalid Time Series Description: ' || p_cwms_ts_id;
@@ -1588,18 +1588,12 @@ AS
                || ' is not a valid interval';
          END IF;
 
-         IF (l_interval = 0 AND l_duration <> 0) 
+         IF (UPPER (l_parameter_type_id) = 'INST' AND l_duration <> 0) 
          THEN
             l_str_error :=
                   l_str_error
                || CHR (10)
-	       || 'Interval: '
-               || l_interval_id
-               || CHR (10)
-	       || 'Duration: '
-               || l_duration_id
-               || CHR (10)
-               || ' irregular timeseries can not have non-zero duration';
+               || ' Inst parameter type can not have non-zero duration';
          END IF;
 
          IF l_can_create
@@ -6149,6 +6143,14 @@ AS
       END IF;
 
       DBMS_OUTPUT.put_line ('l_utc_offset_new: ' || l_utc_offset_new);
+
+      -------------------------------------------------------------
+      ---- Make sure that 'Inst' Parameter type doesn't have a duration--
+      --------------------------------------------------------------
+      IF (UPPER (l_parameter_type_id_new) = 'INST' AND l_duration_code_new <> 0)
+      THEN
+        raise_application_error (-20205, 'Inst parameter type can not have non-zero duration', TRUE);
+      END IF;
 
       ---------------------------------------------------
       -- Check whether the ts_code has associated data --
