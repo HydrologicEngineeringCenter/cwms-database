@@ -752,7 +752,7 @@ procedure retrieve_specs_obj(
    p_spec_id_mask   in  varchar2 default '*',
    p_office_id_mask in  varchar2 default null)
 is
-   type codes_t is table of boolean index by pls_integer;
+   type codes_t is table of boolean index by varchar2(10);
    l_codes                 codes_t;
    l_parts                 str_tab_t;
    l_location_id_mask      varchar2(49);
@@ -823,8 +823,8 @@ begin
                 )
       )
    loop
-      if not l_codes.exists(rec.rating_spec_code) then
-         l_codes(rec.rating_spec_code) := true;
+      if not l_codes.exists(to_char(rec.rating_spec_code)) then
+         l_codes(to_char(rec.rating_spec_code)) := true;
          p_specs.extend;
          p_specs(p_specs.count) := rating_spec_t(rec.rating_spec_code);
          p_specs(p_specs.count).location_id := rec.location_id;
