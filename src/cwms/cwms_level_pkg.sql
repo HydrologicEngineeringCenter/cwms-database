@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE cwms_level
+cREATE OR REPLACE PACKAGE cwms_level
 /**
  * Facilities for working with location levels.<p>
  *
@@ -1775,6 +1775,15 @@ procedure delete_location_level(
    p_office_id               in  varchar2 default null);
 /**
  * Deletes a location level, optionally deleting any recurring pattern records
+ * 
+ * @param p_location_level_code  The unique numeric value that identifies the location level in the database 
+ * @param p_cascade              A flag ('T' or 'F') that specifies whether to delete any recurring pattern records. If 'F' and such records exist, the routine will fail
+ */
+procedure delete_location_level(
+   p_location_level_code in integer,
+   p_cascade             in  varchar2 default ('F'));
+/**
+ * Deletes a location level, optionally deleting any recurring pattern records
  *
  * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
  * @param p_effective_date     The effective date of the level to delete
@@ -1796,6 +1805,17 @@ procedure delete_location_level_ex(
    p_cascade                 in  varchar2 default ('F'),
    p_delete_indicators       in  varchar2 default ('F'),
    p_office_id               in  varchar2 default null);
+/**
+ * Deletes a location level, optionally deleting any recurring pattern records
+ *
+ * @param p_location_level_code  The unique numeric value that identifies the location level in the database 
+ * @param p_cascade              A flag ('T' or 'F') that specifies whether to delete any recurring pattern records. If 'F' and such records exist, the routine will fail
+ * @param p_delete_indicators    A flag ('T' or 'F') that specifies whether to delete any location level indicators associated with the location level
+ */
+procedure delete_location_level_ex(
+   p_location_level_code in integer,
+   p_cascade             in  varchar2 default ('F'),
+   p_delete_indicators   in  varchar2 default ('F'));
 
 --------------------------------------------------------------------------------
 -- PROCEDURE cat_location_levels

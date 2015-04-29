@@ -4599,11 +4599,6 @@ begin
 end rename_location_level;   
 
 
---------------------------------------------------------------------------------
--- PROCEDURE delete_location_level
---          
--- Deletes the specified Location Level from the database
---------------------------------------------------------------------------------
 procedure delete_location_level(
    p_location_level_id       in  varchar2,
    p_effective_date          in  date     default null,
@@ -4626,12 +4621,18 @@ begin
       'F',
       p_office_id);
 end delete_location_level;
---------------------------------------------------------------------------------
--- PROCEDURE delete_location_level_ex
---
--- Deletes the specified Location Level from the database, and optionally any 
--- associated location level indicators and conditions
---------------------------------------------------------------------------------
+
+procedure delete_location_level(
+   p_location_level_code in integer,
+   p_cascade             in  varchar2 default ('F'))
+is
+begin
+   delete_location_level_ex(
+      p_location_level_code,
+      p_cascade,
+      'F');
+end delete_location_level;   
+
 procedure delete_location_level_ex(
    p_location_level_id       in  varchar2,
    p_effective_date          in  date     default null,
@@ -4644,29 +4645,15 @@ procedure delete_location_level_ex(
    p_office_id               in  varchar2 default null)
 is
    l_location_level_code       number(10);
-   l_location_code             number(10);
-   l_parameter_code            number(10);
-   l_parameter_type_code       number(10);
-   l_duration_code             number(10);
-   l_specified_level_code      number(10);
-   l_attribute_parameter_code  number(10);
-   l_attribute_param_type_code number(10);
-   l_attribute_duration_code   number(10);
-   l_attribute_value           number;
-   l_date                      date;
-   l_cascade                   boolean := cwms_util.return_true_or_false(p_cascade);
-   l_delete_indicators         boolean := cwms_util.return_true_or_false(p_delete_indicators);
    l_location_id               varchar2(49);
    l_parameter_id              varchar2(49);
    l_parameter_type_id         varchar2(16);
    l_duration_id               varchar2(16);
    l_spec_level_id             varchar2(256);
+   l_date                      date;
    l_attribute_parameter_id    varchar2(49);
    l_attribute_param_type_id   varchar2(16);
    l_attribute_duration_id     varchar2(16); 
-   l_seasonal_count            pls_integer;
-   l_level_count               pls_integer;
-   l_indicator_count           pls_integer;
 begin
    l_date := cast(
       from_tz(cast(p_effective_date as timestamp), p_timezone_id)
@@ -4715,27 +4702,63 @@ begin
             end
          || '@' || p_effective_date);
    end if;
+          
+   delete_location_level_ex(
+      l_location_level_code,
+      p_cascade,
+      p_delete_indicators);
+        
+end delete_location_level_ex;
+
+procedure delete_location_level_ex(
+   p_location_level_code in integer,
+   p_cascade             in  varchar2 default ('F'),
+   p_delete_indicators   in  varchar2 default ('F'))
+is
+   l_location_code             number(10);
+   l_parameter_type_code       number(10);
+   l_duration_code             number(10);
+   l_specified_level_code      number(10);
+   l_attribute_parameter_code  number(10);
+   l_attribute_param_type_code number(10);
+   l_attribute_duration_code   number(10);
+   l_attribute_value           number;
+   l_cascade                   boolean := cwms_util.return_true_or_false(p_cascade);
+   l_delete_indicators         boolean := cwms_util.return_true_or_false(p_delete_indicators);
+   l_seasonal_count            pls_integer;
+   l_level_count               pls_integer;
+   l_indicator_count           pls_integer;
+   l_parameter_code            number(10);
+begin
    ----------------------------------------------------
    -- check for seasonal records and p_cascase = 'F' --
    ----------------------------------------------------
    select count(*)
      into l_seasonal_count
      from at_seasonal_location_level
-    where location_level_code = l_location_level_code;
+    where location_level_code = p_location_level_code;
    if l_seasonal_count > 0 and not l_cascade then
-      cwms_err.raise(
-         'ERROR',
-         'Cannot delete location level '
-         || nvl(p_office_id, cwms_util.user_office_id)
-         || '/' || p_location_level_id
-         || case
-               when p_attribute_value is null then
-                  null
-               else
-                  ' (' || p_attribute_value || ' ' || p_attribute_units || ')'
-            end
-         || '@' || p_effective_date
-         || ' with p_cascade = ''F''');
+      declare
+         ll location_level_t := location_level_t(zlocation_level_t(p_location_level_code));
+      begin
+         cwms_err.raise(
+            'ERROR',
+            'Cannot delete location level '
+            ||ll.office_id || '/'
+            ||ll.location_id || '.'
+            ||ll.parameter_id || '.'
+            ||ll.parameter_type_id || '.'
+            ||ll.duration_id || '.'
+            ||ll.specified_level_id
+            || case
+                  when ll.attribute_value is null then
+                     null
+                  else
+                     ' ('||ll.attribute_value || ' ' || ll.attribute_units_id || ')'
+               end
+            || '@' || ll.level_date
+            || ' with p_cascade = ''F''');
+      end;
    end if;
    ------------------------------------------------------------------------------------    
    -- check for indicators and p_delete_indicators = 'F' and no more matching levels --
@@ -4758,8 +4781,9 @@ begin
           l_attribute_param_type_code,
           l_attribute_duration_code,
           l_attribute_value
-     from at_location_level           
-    where location_level_code = l_location_level_code;
+     from at_location_level            
+    where location_level_code = p_location_level_code;
+    
    select count(*)
      into l_level_count
      from at_location_level
@@ -4787,19 +4811,27 @@ begin
          and nvl(cwms_rounding.round_nt_f(attr_value, '9999999999'), '@') = nvl(cwms_rounding.round_nt_f(l_attribute_value, '9999999999'), '@');          
    end if;                
    if l_indicator_count > 0 and not l_delete_indicators then
-      cwms_err.raise(
-         'ERROR',
-         'Cannot delete location level '
-         || nvl(p_office_id, cwms_util.user_office_id)
-         || '/' || p_location_level_id
-         || case
-               when p_attribute_value is null then
-                  null
-               else
-                  ' (' || p_attribute_value || ' ' || p_attribute_units || ')'
-            end
-         || '@' || p_effective_date
-         || ' with p_delete_indicators = ''F''');
+      declare
+         ll location_level_t := location_level_t(zlocation_level_t(p_location_level_code));
+      begin
+         cwms_err.raise(
+            'ERROR',
+            'Cannot delete location level '
+            ||ll.office_id || '/'
+            ||ll.location_id || '.'
+            ||ll.parameter_id || '.'
+            ||ll.parameter_type_id || '.'
+            ||ll.duration_id || '.'
+            ||ll.specified_level_id
+            || case
+                  when ll.attribute_value is null then
+                     null
+                  else
+                     ' ('||ll.attribute_value || ' ' || ll.attribute_units_id || ')'
+               end
+            || '@' || ll.level_date
+            || ' with p_delete_indicators = ''F''');
+      end;
    end if;    
    ---------------------------------
    -- delete any seasonal records --
@@ -4807,7 +4839,7 @@ begin
    if l_seasonal_count > 0 then
       delete
         from at_seasonal_location_level
-       where location_level_code = l_location_level_code;
+       where location_level_code = p_location_level_code;
    end if;
    --------------------------------------    
    -- delete any associated indicators --
@@ -4833,7 +4865,7 @@ begin
                 l_attribute_duration_code,
                 l_attribute_value
            from at_location_level           
-          where location_level_code = l_location_level_code;
+          where location_level_code = p_location_level_code;
          delete
            from at_loc_lvl_indicator_cond
           where level_indicator_code in 
@@ -4867,9 +4899,9 @@ begin
    -------------------------------
    delete
      from at_location_level
-    where location_level_code = l_location_level_code;
-            
-end delete_location_level_ex;
+    where location_level_code = p_location_level_code;
+end delete_location_level_ex;   
+
             
 --------------------------------------------------------------------------------
 -- PROCEDURE cat_location_levels
