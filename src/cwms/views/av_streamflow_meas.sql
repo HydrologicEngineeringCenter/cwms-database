@@ -105,10 +105,10 @@ as
       and vdu3.office_id = vl.db_office_id
       and vdu3.unit_system = vdu1.unit_system
       and vdu3.parameter_id = 'Temp'
-      and cua.agcy_id = sm.agency_id
-      and cumq.qual_id = sm.quality
-      and curcc.ctrl_cond_id = sm.ctrl_cond_id
-      and cufa.adj_id = sm.flow_adj_id;
+      and cua.agcy_id (+) = sm.agency_id
+      and cumq.qual_id (+) = sm.quality
+      and curcc.ctrl_cond_id (+) = sm.ctrl_cond_id
+      and cufa.adj_id (+) = sm.flow_adj_id;
       
 create or replace public synonym cwms_v_streamflow_meas for av_streamflow_meas;      
 
