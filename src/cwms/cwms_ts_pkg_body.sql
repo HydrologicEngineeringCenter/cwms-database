@@ -6130,7 +6130,10 @@ AS
       THEN
          DBMS_OUTPUT.put_line ('l_utc_offset_old-2: ' || l_utc_offset_old);
          l_utc_offset_new := l_utc_offset_old;
-      ELSIF l_interval_code_new = cwms_util.irregular_interval_code
+      ELSE
+         l_utc_offset_new := p_utc_offset_new;
+      END IF;
+      IF l_interval_code_new = cwms_util.irregular_interval_code
       THEN
          l_utc_offset_new := cwms_util.utc_offset_irregular;
       ELSIF l_utc_offset_new < 0 OR l_utc_offset_new >= l_interval_dur_new
@@ -6138,8 +6141,6 @@ AS
          cwms_err.RAISE ('INVALID_UTC_OFFSET',
                          l_utc_offset_new,
                          l_interval_dur_new);
-      ELSE
-         l_utc_offset_new := p_utc_offset_new;
       END IF;
 
       DBMS_OUTPUT.put_line ('l_utc_offset_new: ' || l_utc_offset_new);
@@ -6147,7 +6148,7 @@ AS
       -------------------------------------------------------------
       ---- Make sure that 'Inst' Parameter type doesn't have a duration--
       --------------------------------------------------------------
-      IF (UPPER (l_parameter_type_id_new) = 'INST' AND l_duration_code_new <> 0)
+      IF (UPPER (l_parameter_type_id_new) = 'INST' AND l_duration_id_new <> '0')
       THEN
         raise_application_error (-20205, 'Inst parameter type can not have non-zero duration', TRUE);
       END IF;
