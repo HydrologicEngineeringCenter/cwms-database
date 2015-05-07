@@ -195,6 +195,11 @@ as
       l_cwms_office_code   number := cwms_util.get_office_code('CWMS');
       l_rowid              urowid;
    begin
+                
+      if l_office_code = l_cwms_office_code and cwms_util.user_office_code != l_cwms_office_code then
+         cwms_err.raise('ERROR', 'Must be schema owner to store text as CWMS');
+      end if;
+   
       select count(*)
         into l_count
         from at_clob
