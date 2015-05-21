@@ -3446,7 +3446,693 @@ AS
 	--
 	--
 	END retrieve_location2;
+                                                                       
+   function adjust_location_elevation(
+      p_location      in out nocopy location_obj_t,
+      p_location_code in integer, 
+      p_elev_unit     in varchar2, 
+      p_vert_datum    in varchar2)
+      return varchar2
+   is                
+      l_estimate       varchar2(8)  := 'false';
+      l_elev_unit      varchar2(16) := nvl(trim(p_elev_unit), 'm');
+      l_vert_datum     varchar2(16) := upper(trim(p_vert_datum));
+      l_vert_datum_xml xmltype;
+      l_offset_xml     xmltype;
+   begin  
+      if p_location.elevation is null then
+         p_location.vertical_datum := null;
+         l_estimate := null;
+      else
+         if l_elev_unit != 'm' then
+            p_location.elevation := cwms_util.convert_units(p_location.elevation, 'm', l_elev_unit);
+         end if;
+         if l_vert_datum is not null then
+            l_vert_datum_xml := xmltype(get_vertical_datum_info_f(p_location_code, l_elev_unit));
+            case
+               when regexp_like(l_vert_datum, 'ngvd[ -]?(19)?29', 'i') then
+                  if cwms_util.get_xml_text(l_vert_datum_xml, '/vertical-datum-info/native-datum') != 'NGVD-29' then
+                     l_offset_xml := cwms_util.get_xml_node(l_vert_datum_xml, './vertical-datum-info/offset[to-datum=''NGVD-29'']');
+                     p_location.elevation := p_location.elevation + cwms_util.get_xml_number(l_offset_xml, '/offset/value');
+                     p_location.vertical_datum := 'NGVD29';
+                     l_estimate := cwms_util.get_xml_text(l_offset_xml, '/offset/@estimate');
+                  end if;
+               when regexp_like(l_vert_datum, 'navd[ -]?(19)?88', 'i') then
+                  if cwms_util.get_xml_text(l_vert_datum_xml, '/vertical-datum-info/native-datum') != 'NAVD-88' then
+                     l_offset_xml := cwms_util.get_xml_node(l_vert_datum_xml, './vertical-datum-info/offset[to-datum=''NAVD-88'']');
+                     p_location.elevation := p_location.elevation + cwms_util.get_xml_number(l_offset_xml, '/offset/value');
+                     p_location.vertical_datum := 'NAVD88';
+                     l_estimate := cwms_util.get_xml_text(l_offset_xml, '/offset/@estimate');
+                  end if;
+               else 
+                  cwms_err.raise('ERROR', 'Vertical datum must be eithe NGVD29 or NAVD88');
+            end case;
+         end if; 
+         p_location.elevation := cwms_rounding.round_nn_f(p_location.elevation, '7777777773');
+      end if;
+      return l_estimate;
+   end adjust_location_elevation;   
+   
+   function retrieve_location_xml_f(
+      p_location_code in integer,
+      p_elev_unit     in varchar2 default null,
+      p_vert_datum    in varchar2 default null)
+      return varchar2
+   is
+      l_elev_unit      varchar2(16) := nvl(trim(p_elev_unit), 'm');
+      l_estimate       varchar2(8) := 'false';
+      l_location       location_obj_t;
+      l_xml            varchar2(32767);   
+      l_aliases        str_tab_t;  
+      l_categories     str_tab_t;
+      l_groups         str_tab_t; 
+           
+      function round_latlon(p_input number) return number
+      is
+      begin
+         return cwms_rounding.round_nn_f(p_input, '8888888885');
+      end;  
+     
+      function xmlval(p_name in varchar2, p_value in varchar2, p_attributes in varchar2 default null)
+      return varchar2 is
+         l_xmlval     varchar2(32767);  
+         l_value      varchar2(32767);
+      begin
+         if p_value is not null then
+            l_value := dbms_xmlgen.convert(p_value, dbms_xmlgen.entity_encode);
+         end if;
+         return case l_value is null
+                   when true then '<'||p_name||'/>'
+                   else case p_attributes is null
+                           when true then '<'||p_name||'>'||l_value||'</'||p_name||'>'
+                           else '<'||p_name||' '||p_attributes||'>'||l_value||'</'||p_name||'>'
+                        end 
+                end;
+      end;     
+   begin
+      l_location := retrieve_location(p_location_code);
+      l_estimate := adjust_location_elevation(l_location, p_location_code, l_elev_unit, p_vert_datum);
 
+      select location_id,
+             loc_alias_category,
+             loc_alias_group
+        bulk collect
+        into l_aliases,
+             l_categories,
+             l_groups
+        from av_loc2
+       where location_code = p_location_code
+         and aliased_item is not null
+         and unit_system = 'SI';
+         
+      l_xml := '<location><basic><identity>'      
+      ||xmlval('office', l_location.location_ref.get_office_id)      
+      ||xmlval('name', l_location.location_ref.get_location_id);
+      if l_aliases is null or l_aliases.count = 0 then
+        l_xml := l_xml||'<alternate-names/>';      
+      else
+         l_xml := l_xml||'<alternate-names>';      
+         for i in 1..l_aliases.count loop
+            l_xml := l_xml
+            ||'<alternate-name>'      
+            ||xmlval('category', l_categories(i))      
+            ||xmlval('group',    l_groups(i))      
+            ||xmlval('name',     l_aliases(i))      
+            ||'</alternate-name>';      
+         end loop;      
+        l_xml := l_xml||'</alternate-names>';      
+      end if;
+      l_xml := l_xml||'</identity><label>'
+      ||xmlval('long-name', l_location.long_name)      
+      ||xmlval('public-name', l_location.public_name)      
+      ||xmlval('map-label', l_location.map_label)      
+      ||xmlval('description', l_location.description)      
+      ||'</label><geolocation>'      
+      ||xmlval('latitude', round_latlon(l_location.latitude))      
+      ||xmlval('longitude', round_latlon(l_location.longitude))      
+      ||xmlval('horizontal-datum', l_location.horizontal_datum)
+      ||xmlval('elevation', l_location.elevation, 'unit="'||l_elev_unit||'" estimate="'||l_estimate||'"')         
+      ||xmlval('vertical-datum', l_location.vertical_datum)      
+      ||xmlval('published-latitude', round_latlon(l_location.published_latitude))      
+      ||xmlval('published-longitude', round_latlon(l_location.published_longitude))      
+      ||'</geolocation><political>'      
+      ||xmlval('timezone', l_location.time_zone_name)      
+      ||xmlval('county', l_location.county_name, 'state="'||l_location.state_initial||'"')      
+      ||xmlval('nation', l_location.nation_id)      
+      ||xmlval('nearest-city', l_location.nearest_city)      
+      ||xmlval('bounding-office', l_location.bounding_office_id)      
+      ||'</political><classification>'      
+      ||xmlval('location-kind', l_location.location_kind_id)      
+      ||xmlval('location-type', l_location.location_type)      
+      ||'</classification></basic></location>';
+      return l_xml;
+      end retrieve_location_xml_f;
+
+   procedure retrieve_locations_xml(
+      p_location_xml out clob,
+      p_location_ids in  varchar2,
+      p_root_element in  varchar2 default 'T',
+      p_elev_unit    in  varchar2 default null,
+      p_vert_datum   in  varchar2 default null,
+      p_office_id    in  varchar2 default null)
+   is
+   begin
+      p_location_xml := retrieve_locations_xml_f(
+         p_location_ids, 
+         p_root_element, 
+         p_elev_unit, 
+         p_vert_datum, 
+         p_office_id);
+   end retrieve_locations_xml;
+
+   function retrieve_locations_xml_f(
+      p_location_ids in  varchar2,
+      p_root_element in  varchar2 default 'T',
+      p_elev_unit    in  varchar2 default null,
+      p_vert_datum   in  varchar2 default null,
+      p_office_id    in  varchar2 default null)
+      return clob
+   is
+      type code_index_t is table of boolean index by pls_integer;
+      l_root_element   boolean := cwms_util.is_true(p_root_element);
+      l_xml            clob; 
+      l_name_parts     str_tab_t;
+      l_unit_parts     str_tab_t;
+      l_location_codes number_tab_t;
+      l_processed      code_index_t;
+      
+      procedure write(p_clob in out nocopy clob, p_data in varchar2)
+      is
+      begin
+         dbms_lob.writeappend(p_clob, length(p_data), p_data);
+      end;
+   begin  
+      dbms_lob.createtemporary(l_xml, true);
+      dbms_lob.open(l_xml, dbms_lob.lob_readwrite);
+      if l_root_element then
+         write(l_xml, '<locations xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/Locations.xsd">');
+      else
+         write(l_xml, '<locations>');
+      end if;
+      l_name_parts := cwms_util.split_text(p_location_ids, '|'); 
+      if l_name_parts is not null then
+         l_unit_parts := cwms_util.split_text(p_elev_unit, '|');
+         if l_unit_parts.count not in (1, l_name_parts.count) then
+            cwms_err.raise('ERROR', 'Either a single unit or the same number of units as locations must be specified.');
+         end if;
+         for i in 1..l_unit_parts.count loop
+            case upper(l_unit_parts(i))
+               when 'EN' then l_unit_parts(i) := 'ft';
+               when 'SI' then l_unit_parts(i) := 'm';
+               else null;
+            end case;
+         end loop;
+         for i in 1..l_name_parts.count loop
+            select location_code
+              bulk collect into l_location_codes 
+              from (select location_code
+                      from at_physical_location pl,
+                           at_base_location bl
+                     where bl.base_location_code = pl.base_location_code
+                       and bl.base_location_id
+                           ||substr('-', 1, length(pl.sub_location_id))
+                           ||pl.sub_location_id like cwms_util.normalize_wildcards(upper(trim(l_name_parts(i))))
+                       and bl.db_office_code in (select office_code
+                                                   from cwms_office
+                                                  where office_id = nvl(upper(trim(p_office_id)), office_id)
+                                                )
+                   )
+                   union
+                   (select location_code
+                      from at_loc_group_assignment lga
+                     where loc_alias_id like cwms_util.normalize_wildcards(upper(trim(l_name_parts(i))))
+                       and office_code in (select office_code
+                                             from cwms_office
+                                            where office_id = nvl(upper(trim(p_office_id)), office_id)
+                                          )
+                   ); 
+             
+            for j in 1..l_location_codes.count loop
+               if not l_processed.exists(l_location_codes(j)) then
+                  write(l_xml, retrieve_location_xml_f(l_location_codes(j), l_unit_parts(least(i, l_unit_parts.count)), p_vert_datum));
+                  l_processed(l_location_codes(j)) := true;
+               end if;
+            end loop;              
+         end loop;
+         if l_xml is not null then
+            write(l_xml, '</locations>');
+            dbms_lob.close(l_xml);
+            if l_root_element then
+               select xmlserialize(document xmltype(l_xml) indent)
+                 into l_xml 
+                 from dual;
+            end if; 
+         end if;
+      end if;       
+      return l_xml;
+   end retrieve_locations_xml_f;
+   
+   function retrieve_location_json_f(
+      p_location_code in integer,
+      p_elev_unit     in varchar2,
+      p_vert_datum    in varchar2)
+      return varchar2
+   is
+      l_location     location_obj_t; 
+      l_elev_unit    varchar2(16) := nvl(trim(p_elev_unit), 'm');
+      l_estimate     varchar2(8);
+      l_json         varchar2(32767);   
+      l_aliases      str_tab_t;  
+      l_categories   str_tab_t;
+      l_groups       str_tab_t; 
+     
+      function round_latlon(p_input number) return number
+      is
+      begin
+         return cwms_rounding.round_nn_f(p_input, '8888888885');
+      end; 
+     
+      function jsonval(p_input in number, p_name in varchar2, p_attributes in varchar2) return varchar2
+      is
+      begin
+         return case p_input is null
+                   when true then 'null'
+                   else case p_attributes is null
+                           when true then ''||p_input||''
+                           else '{"'||p_name||'" : '||p_input||', '||p_attributes||'}'  
+                        end
+                end;
+      end;
+     
+      function jsonval(p_input in number) return varchar2
+      is
+      begin
+         return jsonval(p_input, null, null);
+      end;   
+     
+      function jsonval(p_input in varchar, p_name in varchar2, p_attributes in varchar2) return varchar2
+      is
+      begin
+         return case p_input is null
+                   when true then 'null'
+                   else case p_attributes is null
+                           when true then '"'||p_input||'"'
+                           else '{"'||p_name||'" : "'||p_input||'", '||p_attributes||'}'  
+                        end
+                end;
+      end;
+         
+      function jsonval(p_input in varchar) return varchar2
+      is
+      begin
+         return jsonval(p_input, null, null);
+      end;
+   begin
+      l_location := retrieve_location(p_location_code);
+      l_estimate := adjust_location_elevation(l_location, p_location_code, p_elev_unit, p_vert_datum);
+
+      select location_id,
+             loc_alias_category,
+             loc_alias_group
+        bulk collect
+        into l_aliases,
+             l_categories,
+             l_groups
+        from av_loc2
+       where location_code = p_location_code
+         and aliased_item is not null
+         and unit_system = 'SI';  
+         
+      l_json := '{"identity" : {"name" : "'||l_location.location_ref.get_location_id||'"';         
+      if l_aliases is null or l_aliases.count = 0 then
+        l_json := l_json||', "alternate_names" : null';      
+      else
+         l_json := l_json||', "alternate_names" : [';      
+         for i in 1..l_aliases.count loop
+            if i > 1 then
+               l_json := l_json||', ';
+            end if;
+            l_json := l_json
+            ||'{'      
+            ||'"category" : '       ||jsonval(l_categories(i))      
+            ||', "group" : '        ||jsonval(l_groups(i))     
+            ||', "name" : '         ||jsonval(l_aliases(i))      
+            ||'}';      
+         end loop;      
+        l_json := l_json||']';      
+      end if;
+      l_json := l_json
+      ||'}, "label" : {'
+      ||'"long_name" : '            ||jsonval(l_location.long_name)
+      ||', "public_name" : '        ||jsonval(l_location.public_name)      
+      ||', "map_label" : '          ||jsonval(l_location.map_label)      
+      ||', "description" : '        ||jsonval(l_location.description)      
+      ||'}, "geolocation" : {'      
+      ||'"latitude" : '             ||jsonval(round_latlon(l_location.latitude))      
+      ||', "longitude" : '          ||jsonval(round_latlon(l_location.longitude))      
+      ||', "horizontal_datum" : '   ||jsonval(l_location.horizontal_datum)      
+      ||', "elevation" : '          ||jsonval(l_location.elevation, 'value', '"unit" : "'||l_elev_unit||'", "estimate" : '||l_estimate)      
+      ||', "vertical_datum" : '     ||jsonval(l_location.vertical_datum)      
+      ||', "published_latitude" : '  ||jsonval(round_latlon(l_location.published_latitude))      
+      ||', "published_longitude" : '||jsonval(round_latlon(l_location.published_longitude))      
+      ||'}, "political" : {'      
+      ||'"timezone" : '             ||jsonval(l_location.time_zone_name)      
+      ||', "county" : '             ||jsonval(l_location.county_name, 'name', '"state" : "'||l_location.state_initial||'"')      
+      ||', "nation" : '             ||jsonval(l_location.nation_id)      
+      ||', "nearest_city" : '       ||jsonval(l_location.nearest_city)      
+      ||', "bounding_office" : '   ||jsonval(l_location.bounding_office_id)      
+      ||'}, "classification" : {'      
+      ||'"location_kind" : '        ||jsonval(l_location.location_kind_id)      
+      ||', "location_type" : '      ||jsonval(l_location.location_type)      
+      ||'}}';
+      return l_json;
+   end retrieve_location_json_f;
+
+   procedure retrieve_locations_json(
+      p_location_json out clob,
+      p_location_ids  in varchar2,
+      p_root_element  in varchar2 default 'T',
+      p_elev_unit     in varchar2 default null,
+      p_vert_datum    in varchar2 default null,
+      p_office_id     in varchar2 default null)
+   is
+   begin 
+      p_location_json := retrieve_locations_json_f(
+         p_location_ids, 
+         p_root_element, 
+         p_elev_unit, 
+         p_vert_datum, 
+         p_office_id);
+   end retrieve_locations_json;
+
+   function retrieve_locations_json_f(
+      p_location_ids in varchar2,
+      p_root_element in varchar2 default 'T',
+      p_elev_unit    in varchar2 default null,
+      p_vert_datum   in varchar2 default null,
+      p_office_id    in varchar2 default null)
+      return clob
+   is
+      type code_index_t is table of boolean index by pls_integer;
+      l_root_element   boolean := cwms_util.is_true(p_root_element);
+      l_json           clob;
+      l_name_parts     str_tab_t;
+      l_unit_parts     str_tab_t;
+      l_location_codes number_tab_t;
+      l_processed      code_index_t;
+      
+      procedure write(p_clob in out nocopy clob, p_data in varchar2)
+      is
+      begin
+         dbms_lob.writeappend(p_clob, length(p_data), p_data);
+      end;
+   begin
+      dbms_lob.createtemporary(l_json, true);
+      dbms_lob.open(l_json, dbms_lob.lob_readwrite);
+      if l_root_element then
+         write(l_json, '{"locations" : ['||chr(10));
+      else
+         write(l_json, '['||chr(10));
+      end if;
+      l_name_parts := cwms_util.split_text(p_location_ids, '|');
+      if l_name_parts is not null then
+         l_unit_parts := cwms_util.split_text(p_elev_unit, '|');
+         if l_unit_parts.count not in (1, l_name_parts.count) then
+            cwms_err.raise('ERROR', 'Either a single unit or the same number of units as locations must be specified.');
+         end if;
+         for i in 1..l_unit_parts.count loop
+            case upper(l_unit_parts(i))
+               when 'EN' then l_unit_parts(i) := 'ft';
+               when 'SI' then l_unit_parts(i) := 'm';
+               else null;
+            end case;
+         end loop;
+         for i in 1..l_name_parts.count loop
+            select location_code
+              bulk collect into l_location_codes 
+              from (select location_code
+                      from at_physical_location pl,
+                           at_base_location bl
+                     where bl.base_location_code = pl.base_location_code
+                       and bl.base_location_id
+                           ||substr('-', 1, length(pl.sub_location_id))
+                           ||pl.sub_location_id like cwms_util.normalize_wildcards(upper(trim(l_name_parts(i))))
+                       and bl.db_office_code in (select office_code
+                                                   from cwms_office
+                                                  where office_id = nvl(upper(trim(p_office_id)), office_id)
+                                                )
+                   )
+                   union
+                   (select location_code
+                      from at_loc_group_assignment lga
+                     where loc_alias_id like cwms_util.normalize_wildcards(upper(trim(l_name_parts(i))))
+                       and office_code in (select office_code
+                                             from cwms_office
+                                            where office_id = nvl(upper(trim(p_office_id)), office_id)
+                                          )
+                   ); 
+             
+            for j in 1..l_location_codes.count loop
+               if not l_processed.exists(l_location_codes(j)) then
+                  if not (i = 1 and j = 1) then
+                     write(l_json, ','||chr(10));
+                  end if;
+                  write(l_json, retrieve_location_json_f(l_location_codes(j), l_unit_parts(least(i, l_unit_parts.count)), p_vert_datum));
+                  l_processed(l_location_codes(j)) := true;
+               end if;
+            end loop;              
+         end loop;
+         if l_json is not null then
+            if l_root_element then
+               write(l_json, chr(10)||']}');
+            else
+               write(l_json, chr(10)||']');
+            end if;
+            dbms_lob.close(l_json);
+         end if;
+      end if;       
+      return l_json;
+   end retrieve_locations_json_f;
+
+   
+   function retrieve_location_text_f(
+      p_location_code in integer,
+      p_elev_unit     in varchar2,
+      p_vert_datum    in varchar2)
+      return varchar2
+   is
+      l_location     location_obj_t;
+      l_elev_unit    varchar2(16) := nvl(trim(p_elev_unit), 'm');
+      l_estimate     varchar2(8);
+      l_text         varchar2(32767);   
+      l_tab          varchar2(1) := chr(9);          
+      function round_latlon(p_input number) return number
+      is
+      begin
+         return cwms_rounding.round_nn_f(p_input, '8888888885');
+      end; 
+   begin
+      l_location := retrieve_location(p_location_code);
+      l_estimate := adjust_location_elevation(l_location, p_location_code, p_elev_unit, p_vert_datum);
+      if l_estimate is null then
+         l_elev_unit := null;
+      end if;
+      l_text := l_text
+      ||l_location.location_ref.get_office_id      
+      ||l_tab||l_location.location_ref.get_location_id
+      ||l_tab||l_location.long_name
+      ||l_tab||l_location.public_name      
+      ||l_tab||l_location.map_label      
+      ||l_tab||l_location.description      
+      ||l_tab||round_latlon(l_location.latitude)      
+      ||l_tab||round_latlon(l_location.longitude)      
+      ||l_tab||l_location.horizontal_datum      
+      ||l_tab||l_location.elevation      
+      ||l_tab||l_elev_unit
+      ||l_tab||l_estimate
+      ||l_tab||l_location.vertical_datum      
+      ||l_tab||round_latlon(l_location.published_latitude)      
+      ||l_tab||round_latlon(l_location.published_longitude)      
+      ||l_tab||l_location.time_zone_name      
+      ||l_tab||l_location.county_name      
+      ||l_tab||l_location.state_initial      
+      ||l_tab||l_location.nation_id      
+      ||l_tab||l_location.nearest_city      
+      ||l_tab||l_location.bounding_office_id      
+      ||l_tab||l_location.location_kind_id      
+      ||l_tab||l_location.location_type;      
+      return l_text;
+   end retrieve_location_text_f;
+
+   procedure retrieve_locations_text(
+      p_location_text out clob,
+      p_location_ids  in varchar2,
+      p_include_title in varchar2 default 'T',
+      p_elev_unit     in varchar2 default null,
+      p_vert_datum    in varchar2 default null,
+      p_office_id     in varchar2 default null)
+   is
+   begin 
+      p_location_text := retrieve_locations_text_f(
+         p_location_ids, 
+         p_include_title, 
+         p_elev_unit, 
+         p_vert_datum, 
+         p_office_id);
+   end retrieve_locations_text;
+
+   function retrieve_locations_text_f(
+      p_location_ids  in varchar2,
+      p_include_title in varchar2 default 'T',
+      p_elev_unit     in varchar2 default null,
+      p_vert_datum    in varchar2 default null,
+      p_office_id     in varchar2 default null)
+      return clob
+   is
+      type code_index_t is table of boolean index by pls_integer;
+      l_include_title   boolean := cwms_util.is_true(p_include_title);
+      l_head            clob; 
+      l_body            clob;
+      l_name_parts      str_tab_t;
+      l_unit_parts      str_tab_t;
+      l_location_codes  number_tab_t;
+      l_processed       code_index_t;
+      l_aliases         str_tab_t;  
+      l_categories      str_tab_t;
+      l_groups          str_tab_t; 
+      l_office_id       varchar2(16);
+      l_location_id     varchar2(49);
+      l_tab             varchar2(1) := chr(9);          
+      l_nl              varchar2(1) := chr(10);          
+      
+      procedure write(p_clob in out nocopy clob, p_data in varchar2)
+      is
+      begin
+         dbms_lob.writeappend(p_clob, length(p_data), p_data);
+      end;
+   begin
+      dbms_lob.createtemporary(l_head, true);
+      dbms_lob.open(l_head, dbms_lob.lob_readwrite);
+      dbms_lob.createtemporary(l_body, true);
+      dbms_lob.open(l_body, dbms_lob.lob_readwrite);
+      if l_include_title then
+         write(l_head, '# The included locations have the following alternate names:');
+         write(
+            l_body, 
+            '#'||l_nl||'# office'
+            ||l_tab||'name'
+            ||l_tab||'long name'
+            ||l_tab||'public name'
+            ||l_tab||'map label'
+            ||l_tab||'description'
+            ||l_tab||'latitude'
+            ||l_tab||'longitude'
+            ||l_tab||'horizontal datum'
+            ||l_tab||'elevation'
+            ||l_tab||'elevation unit'
+            ||l_tab||'estimated elevation'
+            ||l_tab||'vertical datum'
+            ||l_tab||'published latitude'
+            ||l_tab||'published longitude'
+            ||l_tab||'time zone'
+            ||l_tab||'county'
+            ||l_tab||'state'
+            ||l_tab||'nation'
+            ||l_tab||'nearest city'
+            ||l_tab||'bounding office'
+            ||l_tab||'location kind'
+            ||l_tab||'location type'
+            ||l_nl);
+      end if;
+      l_name_parts := cwms_util.split_text(p_location_ids, '|');
+      if l_name_parts is not null then
+         l_unit_parts := cwms_util.split_text(p_elev_unit, '|');
+         if l_unit_parts.count not in (1, l_name_parts.count) then
+            cwms_err.raise('ERROR', 'Either a single unit or the same number of units as locations must be specified.');
+         end if;
+         for i in 1..l_unit_parts.count loop
+            case upper(l_unit_parts(i))
+               when 'EN' then l_unit_parts(i) := 'ft';
+               when 'SI' then l_unit_parts(i) := 'm';
+               else null;
+            end case;
+         end loop;
+         for i in 1..l_name_parts.count loop
+            select location_code
+              bulk collect into l_location_codes 
+              from (select location_code
+                      from at_physical_location pl,
+                           at_base_location bl
+                     where bl.base_location_code = pl.base_location_code
+                       and bl.base_location_id
+                           ||substr('-', 1, length(pl.sub_location_id))
+                           ||pl.sub_location_id like cwms_util.normalize_wildcards(upper(trim(l_name_parts(i))))
+                       and bl.db_office_code in (select office_code
+                                                   from cwms_office
+                                                  where office_id = nvl(upper(trim(p_office_id)), office_id)
+                                                )
+                   )
+                   union
+                   (select location_code
+                      from at_loc_group_assignment lga
+                     where loc_alias_id like cwms_util.normalize_wildcards(upper(trim(l_name_parts(i))))
+                       and office_code in (select office_code
+                                             from cwms_office
+                                            where office_id = nvl(upper(trim(p_office_id)), office_id)
+                                          )
+                   ); 
+             
+            for j in 1..l_location_codes.count loop
+               if not l_processed.exists(l_location_codes(j)) then
+                  select location_id,
+                         loc_alias_category,
+                         loc_alias_group
+                    bulk collect
+                    into l_aliases,
+                         l_categories,
+                         l_groups
+                    from av_loc2
+                   where location_code = l_location_codes(j)
+                     and aliased_item is not null
+                     and unit_system = 'SI';
+                  
+                  l_location_id := get_location_id(l_location_codes(j));
+                  select office_id
+                    into l_office_id
+                    from at_physical_location pl,
+                         at_base_location bl,
+                         cwms_office o
+                   where pl.location_code = l_location_codes(j)
+                     and bl.base_location_code = pl.base_location_code
+                     and o.office_code = bl.db_office_code; 
+                  write(l_head, l_nl||'#'||l_nl||'# office/name : '||l_office_id||'/'||l_location_id);
+                  for k in 1..l_aliases.count loop
+                     write(
+                        l_head, 
+                        l_nl||'#'
+                        ||l_nl||'#     category/group : '||l_categories(k)||'/'||l_groups(k)
+                        ||l_nl||'#     alternate name : '||l_aliases(k));
+                  end loop;     
+                  write(l_body, retrieve_location_text_f(l_location_codes(j), l_unit_parts(least(i, l_unit_parts.count)), p_vert_datum)||l_nl);
+                  l_processed(l_location_codes(j)) := true;
+               end if;
+            end loop;              
+         end loop;
+         if l_head is not null then  
+            write(l_head, l_nl);
+            dbms_lob.close(l_head);
+         end if;
+         if l_body is not null then
+            dbms_lob.close(l_body);
+         end if;
+         if l_head is not null and l_body is not null then
+            dbms_lob.append(l_head, l_body);
+            return l_head;
+         end if;
+      end if;       
+      return l_body;
+   end retrieve_locations_text_f;
+   
 	--
 	--********************************************************************** -
 	--********************************************************************** -

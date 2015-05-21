@@ -4848,6 +4848,47 @@ IS
       return loc_lvl_cur_max_ind_tab_t
       pipelined;
 
+   procedure retrieve_offices(
+      p_offices out clob,
+      p_format  in  varchar2);
+            
+   function retrieve_offices_f(
+      p_format in varchar2)
+      return clob;
+
+   procedure retrieve_time_zones(
+      p_time_zones out clob,
+      p_format     in  varchar2);
+            
+   function retrieve_time_zones_f(
+      p_format in varchar2)
+      return clob;
+
+   procedure retrieve_units(
+      p_units  out clob,
+      p_format in  varchar2);
+            
+   function retrieve_units_f(
+      p_format in varchar2)
+      return clob;
+
+   procedure retrieve_parameters(
+      p_parameters out clob,
+      p_format     in  varchar2);
+            
+   function retrieve_parameters_f(
+      p_format in varchar2)
+      return clob;
+
+   procedure retrieve_locations(
+      p_locations out clob,
+      p_format    in  varchar2,
+      p_office_id in  varchar2 default null);
+            
+   function retrieve_locations_f(
+      p_format    in varchar2,
+      p_office_id in varchar2 default null)
+      return clob;
 END cwms_cat;
 /
 

@@ -738,6 +738,54 @@ AS
 		p_alias_cursor 				OUT SYS_REFCURSOR,
 		p_db_office_id 			IN 	 VARCHAR2 DEFAULT NULL
 	);
+
+   procedure retrieve_locations_xml(
+      p_location_xml out clob,
+      p_location_ids in  varchar2,
+      p_root_element in  varchar2 default 'T',
+      p_elev_unit    in  varchar2 default null,
+      p_vert_datum   in  varchar2 default null,
+      p_office_id    in  varchar2 default null);
+
+   function retrieve_locations_xml_f(
+      p_location_ids in  varchar2,
+      p_root_element in  varchar2 default 'T',
+      p_elev_unit    in  varchar2 default null,
+      p_vert_datum   in  varchar2 default null,
+      p_office_id    in  varchar2 default null)
+      return clob;
+
+   procedure retrieve_locations_json(
+      p_location_json out clob,
+      p_location_ids  in  varchar2,
+      p_root_element  in  varchar2 default 'T',
+      p_elev_unit     in  varchar2 default null,
+      p_vert_datum    in  varchar2 default null,
+      p_office_id     in  varchar2 default null);
+
+   function retrieve_locations_json_f(
+      p_location_ids in varchar2,
+      p_root_element in varchar2 default 'T',
+      p_elev_unit    in varchar2 default null,
+      p_vert_datum   in varchar2 default null,
+      p_office_id    in varchar2 default null)
+      return clob;
+
+   procedure retrieve_locations_text(
+      p_location_text out clob,
+      p_location_ids  in  varchar2,
+      p_include_title in  varchar2 default 'T',
+      p_elev_unit     in  varchar2 default null,
+      p_vert_datum    in  varchar2 default null,
+      p_office_id     in  varchar2 default null);
+
+   function retrieve_locations_text_f(
+      p_location_ids  in varchar2,
+      p_include_title in varchar2 default 'T',
+      p_elev_unit     in varchar2 default null,
+      p_vert_datum    in varchar2 default null,
+      p_office_id     in varchar2 default null)
+      return clob;
    /**
     * Retreives the time zone of a location
     *
@@ -1521,7 +1569,7 @@ AS
     * @param p_description         A description of the offset
     * @param p_fail_if_exists      A flag ('T'/'F') specifying whether to fail if a vertical datum offset already exists for the location and vertical datum identifers
     * @param p_office_id           The offset that owns the location.  If not specified or NULL the session user's default office is used.
-    */   
+    */
    procedure store_vertical_datum_offset(
       p_location_id         in varchar2,
       p_vertical_datum_id_1 in varchar2,
