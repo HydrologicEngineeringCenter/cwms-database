@@ -2508,7 +2508,7 @@ AS
             -- collect location and all sub-locations --
             --------------------------------------------
             select location_code,
-                   p_location_id || substr ('-', length (sub_location_id)) || sub_location_id
+                   p_location_id || substr ('-', 1, length (sub_location_id)) || sub_location_id
               bulk collect into 
                    l_location_codes, 
                    l_location_ids
