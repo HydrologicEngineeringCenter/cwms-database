@@ -827,7 +827,6 @@ is
    l_end_time         date;
    l_time_zone        varchar2(28);
    l_opening_param    varchar2(49);
-   l_opening_unit     varchar2(16);
    l_change_rec       at_gate_change%rowtype;
    l_setting_rec      at_gate_setting%rowtype;
 begin
@@ -927,8 +926,8 @@ begin
          p_gate_changes(i).elev_pool,
          p_gate_changes(i).elev_units,
          cwms_util.get_default_units('Elev'));
-      l_change_rec.elev_pool := cwms_util.convert_units(
-         p_gate_changes(i).elev_pool,
+      l_change_rec.elev_tailwater := cwms_util.convert_units(
+         p_gate_changes(i).elev_tailwater,
          p_gate_changes(i).elev_units,
          cwms_util.get_default_units('Elev'));
       l_change_rec.old_total_discharge_override := cwms_util.convert_units(
