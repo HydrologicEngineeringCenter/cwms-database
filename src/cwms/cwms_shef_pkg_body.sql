@@ -905,11 +905,13 @@ AS
                      INSERT
                        INTO at_loc_group_assignment (location_code,
                                                      loc_group_code,
-                                                     loc_alias_id)
+                                                     loc_alias_id,
+                                                     office_code)
                      VALUES (
                                l_location_code,
                                l_loc_group_code,
-                               l_shef_loc_id);
+                               l_shef_loc_id,
+                               l_db_office_code);
                   ELSE
                      cwms_err.raise (
                         'ERROR',
