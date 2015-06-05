@@ -113,6 +113,9 @@ as object (
       p_rating_code in number),
    -- not documented
    member procedure init(
+      p_other in rating_t),
+   -- not documented
+   member procedure init(
       p_rating_spec_id in varchar2,
       p_effective_date in date     default null,
       p_match_date     in varchar2 default 'F',
@@ -173,14 +176,22 @@ as object (
     *
     * @return the rating as an XML instance in an CLOB object
     */
-   member function to_clob
+   member function to_clob(
+      self         in out nocopy rating_t,
+      p_timezone   in varchar2 default null,
+      p_units      in varchar2 default null,
+      p_vert_datum in varchar2 default null)  
    return clob,
    /**
     * Retrieves the rating as an XML instance in an XMLTYPE object
     *
     * @return the rating as an XML instance in an XMLTYPE object
     */
-   member function to_xml
+   member function to_xml(
+      self         in out nocopy rating_t,
+      p_timezone   in varchar2 default null,
+      p_units      in varchar2 default null,
+      p_vert_datum in varchar2 default null)  
    return xmltype,
    /**
     * Rate the specified independent values
@@ -413,7 +424,6 @@ as object (
 
 ) not final;
 /
-
 
 create or replace public synonym cwms_t_rating for rating_t;
 

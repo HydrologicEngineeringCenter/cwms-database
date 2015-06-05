@@ -37,6 +37,12 @@ under stream_rating_t
    constructor function vdatum_stream_rating_t(
       p_rating         in stream_rating_t,
       p_current_datum  in varchar2
+   ) return self as result,   
+   /**
+    * Copy constructor
+    */
+   constructor function vdatum_stream_rating_t(
+      p_other in vdatum_stream_rating_t
    ) return self as result,
    /**
     * Modifies the elevations in the rating to be in the specified datum
@@ -54,14 +60,22 @@ under stream_rating_t
     *
     * @return the rating as an XML instance in an CLOB object
     */
-   overriding member function to_clob
+   overriding member function to_clob(
+      self         in out nocopy vdatum_stream_rating_t,
+      p_timezone   in varchar2 default null,
+      p_units      in varchar2 default null,
+      p_vert_datum in varchar2 default null)
       return clob,
    /**
     * Retrieves the rating as an XML instance in an XMLTYPE object
     *
     * @return the rating as an XML instance in an XMLTYPE object
     */
-   overriding member function to_xml
+   overriding member function to_xml(
+      self         in out nocopy vdatum_stream_rating_t,
+      p_timezone   in varchar2 default null,
+      p_units      in varchar2 default null,
+      p_vert_datum in varchar2 default null)
       return xmltype      
 );
 /

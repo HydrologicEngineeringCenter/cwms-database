@@ -1231,7 +1231,7 @@ AS
       SELECT z.time_zone_name
         INTO l_time_zone_name
         FROM mv_time_zone v, cwms_time_zone z
-       WHERE v.time_zone_name = get_timezone (p_time_zone_name)
+       WHERE upper(v.time_zone_name) = upper(get_timezone (p_time_zone_name))
              AND z.time_zone_code = v.time_zone_code;
 
       RETURN l_time_zone_name;
@@ -4384,6 +4384,49 @@ AS
              end;
    end get_xml_node;
    
+   function get_xml_attributes(
+      p_xml  in xmltype,
+      p_path in varchar2)
+      return str_tab_t
+   is
+      l_names      str_tab_t; 
+      l_values     str_tab_t; 
+      l_attributes str_tab_t := str_tab_t();
+      l_flwor      varchar2(32767);
+   begin
+      l_flwor := 'for $e in '||p_path||'/*/@* return name($e)';
+      select element
+        bulk collect
+        into l_names
+        from xmltable(l_flwor 
+                      passing p_xml 
+                      columns element varchar2(128) path '.'
+                     );
+      if l_names is not null and l_names.count > 0 then
+         l_flwor := 'for $e in '||p_path||'/*/@* return $e';
+         select element
+           bulk collect
+           into l_values
+           from xmltable(l_flwor 
+                         passing p_xml 
+                         columns element varchar2(128) path '.'
+                        );
+         select n.text||'='||v.text
+           bulk collect
+           into l_attributes
+           from (select column_value as text,
+                        rownum as seq
+                   from table(l_names)
+                ) n
+                join
+                (select column_value as text,
+                        rownum as seq
+                   from table(l_values)
+                ) v on v.seq=n.seq;                              
+      end if;                     
+      return l_attributes;                     
+   end get_xml_attributes;      
+      
    function get_xml_nodes(
       p_xml        in xmltype,
       p_path       in varchar2,
@@ -5031,7 +5074,153 @@ AS
              )
              where mod(r, l_count) = mod(p_column, l_count);
       return l_results;
-   end get_column;            
+   end get_column;
+   
+   procedure to_json(
+      p_json     in out nocopy clob,
+      p_xml      in     xmltype,
+      p_in_array in     boolean default false)
+   is
+      type bool_by_string_t is table of boolean index by varchar2(32767);         
+      not_a_number exception;
+      pragma exception_init(not_a_number, -6502);
+      l_name     varchar2(128);
+      l_nodes    xml_tab_t; 
+      l_attrs    str_tab_t;
+      l_text     varchar2(32767);
+      l_number   number;
+      l_parts    str_tab_t;
+      l_array    boolean;
+      l_names    str_tab_t;
+      l_node_pos number_tab_t;
+   begin
+      l_name  := p_xml.getrootelement;
+      l_attrs := get_xml_attributes(p_xml, '');
+      l_nodes := get_xml_nodes(p_xml, '/*/*');
+      l_text  := get_xml_text(p_xml, '/');
+      
+      if not p_in_array then                                     
+         append(p_json, ' "'||l_name||'":');
+      end if;  
+      if l_attrs.count = 0 and l_nodes.count = 0 and l_text is null then
+         ----------------------------------
+         -- no attributes and no content --
+         ----------------------------------
+         append(p_json, 'null');
+      else
+         -------------------------------
+         -- attributes and/or content --
+         -------------------------------
+         l_array := l_attrs.count + l_nodes.count + case l_text is null when true then 0 else 1 end > 1;
+         if l_array then append(p_json, '['); end if; 
+         if l_attrs.count > 0 then
+            ----------------
+            -- attributes --
+            ----------------
+            append(p_json, '{');
+            for i in 1..l_attrs.count loop
+               if i > 1 then append(p_json, ', '); end if;
+               append(p_json, replace(regexp_replace(l_attrs(i), '(.+)\s*=\s*(.+)', '"@\1" : "\2"'), '""', '"'));
+            end loop;
+            append(p_json, '}');
+         end if;
+         if l_nodes.count > 0 then
+            ---------------------
+            -- element content --
+            ---------------------
+            if l_attrs.count > 0 then append(p_json, ','); end if;
+            append(p_json, '{');
+            -----------------------------------------------------------------
+            -- determine if there are multiple elements with the same name --
+            -----------------------------------------------------------------
+            l_names := str_tab_t();
+            for i in 1..l_nodes.count loop
+               l_name := l_nodes(i).getrootelement;
+               select count(*) into l_number from table(l_names) where column_value = l_name;
+               if l_number = 0 then
+                  l_names.extend;
+                  l_names(l_names.count) := l_name;
+               end if;
+            end loop;
+            if l_names.count < l_nodes.count then
+               -----------------------------------------------
+               -- at least some elements have the same name --
+               -----------------------------------------------
+               for i in 1..l_names.count loop
+                  l_node_pos := number_tab_t();
+                  -----------------------------
+                  -- index the nodes by name --
+                  -----------------------------
+                  for j in 1..l_nodes.count loop
+                     if l_nodes(j).getrootelement = l_names(i) then
+                        l_node_pos.extend;
+                        l_node_pos(l_node_pos.count) := j;
+                     end if;
+                  end loop;
+                  if i > 1 then append(p_json, ','); end if;
+                  if l_node_pos.count = 1 then
+                     ---------------------------------
+                     -- this name has only one node --
+                     ---------------------------------
+                     to_json(p_json, l_nodes(l_node_pos(1)));
+                  else
+                     ----------------------------------                   
+                     -- this name has multiple nodes --
+                     ----------------------------------                   
+                     append(p_json, '"'||l_names(i)||'":[');
+                     for j in 1..l_node_pos.count loop
+                        if j > 1 then append(p_json, ','); end if;
+                        to_json(p_json, l_nodes(l_node_pos(j)), p_in_array => true);
+                     end loop;
+                     append(p_json, ']');
+                  end if;
+               end loop;
+            else
+               ---------------------------------
+               -- no nodes have the same name --
+               ---------------------------------
+               for i in 1..l_nodes.count loop
+                  if i > 1 then append(p_json, ','); end if;
+                  to_json(p_json, l_nodes(i));
+               end loop;
+            end if;              
+            append(p_json, '}');
+         elsif l_text is not null then
+            -------------------
+            -- CDATA content --
+            -------------------
+            if l_attrs.count > 0 then append(p_json, ','); end if;
+            begin
+               --------------
+               -- numeric? --
+               --------------
+               l_number := to_number(l_text);
+               l_text := regexp_replace(l_text, '(^|[^0-9+-])\.', '\10.'); -- add leading zero for JSON
+            exception
+               -----------------
+               -- not numeric --
+               -----------------
+               when not_a_number then l_text := '"'||replace(l_text, '"', '\"')||'"';
+            end;
+            append(p_json, l_text);
+         end if;
+         if l_array then append(p_json, ']'); end if; 
+      end if;
+   end to_json;
+         
+   function to_json(
+      p_xml in xmltype)
+      return clob
+   is
+      l_json clob;
+   begin
+      dbms_lob.createtemporary(l_json, true);
+      append(l_json, '{');
+      to_json(l_json, p_xml);
+      append(l_json, '}');
+      return l_json;
+   end to_json;      
+               
 
 /*
 BEGIN

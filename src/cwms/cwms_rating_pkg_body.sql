@@ -21,7 +21,7 @@ procedure delete_rating_ind_parameter(
 is
 begin
    -----------------------------
-   -- first the rating values --
+   -- first the rating values --                                               
    -----------------------------
    for rec in
       (  select dep_rating_ind_param_code,
@@ -149,7 +149,6 @@ procedure delete_rating_spec(
    p_delete_action    in varchar2 default cwms_util.delete_key)
 is
 begin
-   dbms_output.put_line(p_delete_action);
    if p_delete_action in (cwms_util.delete_data, cwms_util.delete_all) then
       for rec in
          (  select rating_code
@@ -173,7 +172,6 @@ begin
             where rating_spec_code = p_rating_spec_code
          )
       loop     
-         dbms_output.put_line('deleting rating '||rec.rating_code||' for spec '||p_rating_spec_code);
          delete_rating(rec.rating_code);
       end loop;
    end if;
@@ -193,7 +191,6 @@ begin
       ------------------ 
       -- rating specs --
       ------------------ 
-      dbms_output.put_line('deleting rating spec'||p_rating_spec_code);
       delete
         from at_rating_spec
        where rating_spec_code = p_rating_spec_code;
@@ -1193,10 +1190,10 @@ is
    c_default_end_date   constant date := cast(systimestamp at time zone 'UTC' as date);
 
    l_parts str_tab_t;
-   l_location_id_mask      varchar2(49);
+   l_location_id_mask      varchar2(128);
    l_parameters_id_mask    varchar2(256);
-   l_template_version_mask varchar2(32);
-   l_spec_version_mask     varchar2(32);
+   l_template_version_mask varchar2(64);
+   l_spec_version_mask     varchar2(64);
    l_office_id_mask        varchar2(16) := nvl(p_office_id_mask, cwms_util.user_office_id);
    l_location_id           varchar2(49);
    l_count                 simple_integer := 0;
@@ -1427,7 +1424,7 @@ begin
          l_location_id := l_parts(1);
          l_parts(1) := rec.location_id;
          l_elev_positions := get_elevation_positions(l_parts(2));
-         if l_elev_positions is null then
+         if l_elev_positions is null or l_elev_positions.count = 0 then
             p_ratings(p_ratings.count) := l_stream_rating;
          else
             if l_elev_positions = number_tab_t(1) then
@@ -5421,6 +5418,830 @@ begin
       return l_elev_positions;
 end get_elevation_positions;         
 
+         
+procedure retrieve_ratings(
+   p_results        out clob,
+   p_date_time      out date,
+   p_query_time     out long,
+   p_format_time    out long, 
+   p_template_count out integer,
+   p_spec_count     out integer,
+   p_rating_count   out integer,  
+   p_names          in  varchar2,            
+   p_format         in  varchar2,
+   p_units          in  varchar2 default null,   
+   p_datums         in  varchar2 default null,
+   p_start          in  varchar2 default null,
+   p_end            in  varchar2 default null, 
+   p_timezone       in  varchar2 default null,
+   p_office_id      in  varchar2 default null)
+is
+   type bool_tab is table of boolean index by varchar(512);
+   l_data             clob;  
+   l_format           varchar2(16);
+   l_names            str_tab_t;
+   l_units            str_tab_t;
+   l_datums           str_tab_t;
+   l_start            date;
+   l_end              date;   
+   l_timezone         varchar2(28);
+   l_office_id        varchar2(16);
+   l_parts            str_tab_t; 
+   l_unit             varchar2(16);  
+   l_datum            varchar2(16);  
+   l_count            pls_integer; 
+   l_ratings1         rating_tab_t;
+   l_ratings2         rating_tab_t;
+   l_name_pos         number_tab_t;        
+   l_native_units     varchar2(128);
+   l_rating           rating_t;
+   l_used             bool_tab;
+   l_unique_specs     number_tab_t;
+   l_unique_templates number_tab_t;
+   l_specs            rating_spec_tab_t;
+   l_templates        rating_template_tab_t;
+   l_name             varchar2(512);
+   l_xml              xmltype;
+   l_nodes            xml_tab_t;
+   l_nodes1           xml_tab_t;
+   l_nodes2           xml_tab_t;
+   l_first            boolean;
+   l_is_transitional  boolean;
+   l_is_virtual       boolean;
+   l_is_stream_rating boolean;
+   l_is_concrete      boolean;
+   l_is_vdatum_rating boolean;
+   l_width            pls_integer;
+   l_other_ind        str_tab_t;
+   l_lines            str_tab_t;
+   l_ts1              timestamp;
+   l_ts2              timestamp;
+   l_elapsed_query    interval day (0) to second (6);
+   l_elapsed_format   interval day (0) to second (6);
+   l_query_time       date; 
+   l_attrs            str_tab_t;    
+   
+begin
+   l_query_time := cast(systimestamp at time zone 'UTC' as date);
+   ----------------------------
+   -- process the parameters --
+   ----------------------------
+   -----------
+   -- names --
+   -----------
+   if p_names is null then
+      cwms_err.raise('NULL_ARGUMENT', 'p_names');
+   else
+      l_names := cwms_util.split_text(p_names, '|');
+      for i in 1..l_names.count loop
+         l_names(i) := trim(l_names(i));
+      end loop;
+   end if;
+   ------------
+   -- format --
+   ------------
+   if p_format is null then
+      l_format := 'TAB';
+   else                 
+      l_format := upper(trim(p_format));
+      if l_format not in ('TAB','CSV','XML','JSON') then
+         cwms_err.raise('INVALID_ITEM', l_format, 'rating response format');
+      end if;
+   end if;
+   ------------
+   -- office --
+   ------------
+   if nvl(p_office_id, '*') = '*' then
+      l_office_id := '*';
+   else               
+      begin                                                                              
+         l_office_id := upper(trim(p_office_id));
+         select office_id into l_office_id from cwms_office where office_id = l_office_id;
+      exception
+         when no_data_found then
+            cwms_err.raise('INVALID_OFFICE_ID', l_office_id);
+      end;
+   end if;  
+   -----------
+   -- units --
+   -----------
+   if p_units is null then
+      l_units := str_tab_t();
+      l_units.extend(l_names.count);
+      for i in 1..l_units.count loop
+         l_units(i) := 'NATIVE';
+      end loop;
+   else
+      l_units := cwms_util.split_text(p_units, '|');
+      for i in 1..l_units.count loop
+         l_units(i) := upper(trim(l_units(i)));
+         if l_units(i) not in  ('NATIVE', 'EN', 'SI') then
+            cwms_err.raise('ERROR', 'Expected unit specification of NATIVE, EN, or SI, got '||l_units(i));
+         end if;
+      end loop;
+      l_count := l_units.count - l_names.count; 
+      if l_count > 0 then
+         l_units.trim(l_count);
+      elsif l_count < 0 then
+         l_unit := l_units(l_units.count);
+         l_count := -l_count;
+         l_units.extend(l_count);
+         for i in 1..l_count loop
+            l_units(l_units.count - i + 1) := l_unit;
+         end loop; 
+      end if;
+   end if;   
+   ------------
+   -- datums --
+   ------------
+   if p_datums is null then
+      l_datums := str_tab_t();
+      l_datums.extend(l_names.count);
+      for i in 1..l_datums.count loop
+         l_datums(i) := 'NATIVE';
+      end loop;
+   else
+      l_datums := cwms_util.split_text(p_datums, '|');
+      for i in 1..l_datums.count loop
+         l_datums(i) := trim(l_datums(i));
+         if upper(l_datums(i)) in ('NATIVE', 'NAVD88', 'NGVD29') then
+            l_datums(i) := upper(l_datums(i));
+         else
+            cwms_err.raise('INVALID_ITEM', l_datums(i), 'rating response datum');
+         end if; 
+      end loop;
+      l_count := l_datums.count - l_names.count; 
+      if l_count > 0 then
+         l_datums.trim(l_count);
+      elsif l_count < 0 then
+         l_datum := l_datums(l_datums.count);
+         l_count := -l_count;
+         l_datums.extend(l_count);
+         for i in 1..l_count loop
+            l_datums(l_datums.count - i + 1) := l_datum;
+         end loop; 
+      end if;
+   end if;
+   -----------------      
+   -- time window --
+   ----------------- 
+   if p_timezone is not null then
+      l_timezone := cwms_util.get_time_zone_name(trim(p_timezone));
+      if l_timezone is null then
+         cwms_err.raise('INVALID_ITEM', p_timezone, 'CWMS time zone name');
+      end if;
+   end if;
+   if p_start is not null then
+      l_start := cast(cwms_util.to_timestamp(p_start) as date);
+      if regexp_instr(p_start, '([-+]\d{2}:\d{2}|Z)') > 0 then 
+         if l_timezone is not null then
+            l_start := cwms_util.change_timezone(l_start, 'UTC', l_timezone);
+         end if;
+      end if;
+   end if;
+   if p_end is not null then
+      l_end := cast(cwms_util.to_timestamp(p_end) as date);
+      if regexp_instr(p_end, '([-+]\d{2}:\d{2}|Z)') > 0 then 
+         if l_timezone is not null then
+            l_end := cwms_util.change_timezone(l_end, 'UTC', l_timezone);
+         end if;
+      end if;
+   end if;
+   
+   --
+   -- NOTE - this routine does not yet handle virtual or transitional ratings!!!
+   --
+         
+   l_ts1 := systimestamp;
+   ----------------------   
+   -- retrieve ratings --
+   ----------------------
+   l_ratings1 := rating_tab_t();
+   l_name_pos := number_tab_t();
+   for i in 1..l_names.count loop
+      l_ratings2 := retrieve_ratings_obj_f(l_names(i), l_start, l_end, 'UTC', l_office_id);
+      for j in 1..l_ratings2.count loop
+         l_ratings1.extend;
+         l_ratings1(l_ratings1.count) := l_ratings2(j);
+         l_name_pos.extend();
+         l_name_pos(l_name_pos.count) := i;
+      end loop;
+   end loop;        
+   -----------------------------
+   -- retrieve specifications --
+   -----------------------------
+   l_used.delete;
+   l_unique_specs := number_tab_t();
+   for i in 1..l_ratings1.count loop
+      l_name := l_ratings1(i).office_id||'/'||l_ratings1(i).rating_spec_id;
+      if not l_used.exists(l_name) then
+         l_unique_specs.extend;
+         l_unique_specs(l_unique_specs.count) := i;
+      end if;
+      l_used(l_name) := true;    
+   end loop;  
+   l_specs := rating_spec_tab_t();
+   l_specs.extend(l_unique_specs.count);
+   for i in 1..l_specs.count loop
+      l_rating := l_ratings1(l_unique_specs(i));
+      l_specs(i) := cwms_rating.retrieve_specs_obj_f(l_rating.rating_spec_id, l_rating.office_id)(1);
+   end loop;
+   ----------------------------
+   -- retrieve the templates --
+   ----------------------------
+   l_used.delete;
+   l_unique_templates := number_tab_t();
+   for i in 1..l_unique_specs.count loop
+      l_parts := cwms_util.split_text(l_ratings1(l_unique_specs(i)).rating_spec_id, '.');
+      l_name := l_ratings1(l_unique_specs(i)).office_id||'/'||l_parts(2)||'.'||l_parts(3);
+      if not l_used.exists(l_name) then
+         l_unique_templates.extend;
+         l_unique_templates(l_unique_templates.count) := l_unique_specs(i);
+      end if;
+      l_used(l_name) := true;    
+   end loop;
+   l_templates := rating_template_tab_t();
+   l_templates.extend(l_unique_templates.count);
+   for i in 1..l_templates.count loop
+      l_rating := l_ratings1(l_unique_templates(i));
+      l_parts := cwms_util.split_text(l_rating.rating_spec_id, '.');
+      l_templates(i) := cwms_rating.retrieve_templates_obj_f(l_parts(2)||'.'||l_parts(3), l_rating.office_id)(1);
+   end loop;
+   
+   l_ts2 := systimestamp;
+   l_elapsed_query := l_ts2 - l_ts1;
+
+   l_ts1 := systimestamp;
+   -----------------------------------  
+   -- format the ratings for output --
+   -----------------------------------
+   dbms_lob.createtemporary(l_data, true);
+      cwms_util.append(
+         l_data,
+         '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
+         ||'xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
+      for i in 1..l_templates.count loop 
+         cwms_util.append(l_data, l_templates(i).to_clob);
+      end loop;
+      for i in 1..l_specs.count loop 
+         cwms_util.append(l_data, l_specs(i).to_clob);
+      end loop;
+      for i in 1..l_ratings1.count loop
+            cwms_util.append(l_data, l_ratings1(i).to_clob(
+               p_timezone   => l_timezone, 
+               p_units      => l_units(l_name_pos(i)), 
+               p_vert_datum => l_datums(l_name_pos(i))));
+      end loop;
+      cwms_util.append(l_data, '</ratings>');
+      l_xml := xmltype(l_data);
+      dbms_lob.createtemporary(l_data, true);
+      case 
+      when l_format = 'XML' then
+         ---------
+         -- XML --
+         ---------
+         select xmlserialize(document l_xml as clob indent)
+           into l_data
+           from dual;
+      when l_format = 'JSON' then
+         ----------
+         -- JSON --
+         ----------
+         cwms_util.append(l_data, '{"ratings":[');
+         l_attrs := cwms_util.get_xml_attributes(l_xml, '');
+         if l_attrs.count > 0 then
+            cwms_util.append(l_data, '{');
+            for i in 1..l_attrs.count loop
+               if i = 1 then
+                  cwms_util.append(l_data, regexp_replace(l_attrs(i), '(.+)=(.+)', '"@\1":"\2"'));
+               else
+                  cwms_util.append(l_data, ','||regexp_replace(l_attrs(i), '(.+)=(.+)', '"@\1":"\2"'));
+               end if;
+            end loop;
+            cwms_util.append(l_data, '}');
+            l_first := false;
+         end if;
+         l_nodes := cwms_util.get_xml_nodes(l_xml, '/*/rating-template');
+         if l_nodes.count > 0 then
+            if l_first then
+               l_first := false;         
+               cwms_util.append(l_data, '{"rating-template":[');
+            else
+               cwms_util.append(l_data, ',{"rating-template":[');
+            end if;
+            for i in 1..l_nodes.count loop
+               if i = 1 then
+                  cwms_util.append(l_data, '{"@office-id":"'||cwms_util.get_xml_text(l_nodes(i), '/*/@office-id')||'"');
+               else
+                  cwms_util.append(l_data, ',{"@office-id":"'||cwms_util.get_xml_text(l_nodes(i), '/*/@office-id')||'"');
+               end if;
+               cwms_util.append(l_data, ',"parameters-id":"'||cwms_util.get_xml_text(l_nodes(i), '/*/parameters-id')||'"');
+               cwms_util.append(l_data, ',"version":"'||cwms_util.get_xml_text(l_nodes(i), '/*/version')||'"');
+               l_nodes1 := cwms_util.get_xml_nodes(l_nodes(i), '/*/ind-parameter-specs/ind-parameter-spec');
+               if l_nodes1.count = 1 then
+                  cwms_util.append(l_data, ',"ind-parameter-spec":');
+               else
+                  cwms_util.append(l_data, ',"ind-parameter-spec":[');
+               end if;
+               for j in 1..l_nodes1.count loop
+                  if j = 1 then
+                     cwms_util.append(l_data, '{"parameter":"'||cwms_util.get_xml_text(l_nodes1(j), '/*/parameter')||'"');
+                  else
+                     cwms_util.append(l_data, ',{"parameter":"'||cwms_util.get_xml_text(l_nodes1(j), '/*/parameter')||'"');
+                  end if;
+                  cwms_util.append(l_data, ',"in-range-method":"'||cwms_util.get_xml_text(l_nodes1(j), '/*/in-range-method')||'"');
+                  cwms_util.append(l_data, ',"out-range-low-method":"'||cwms_util.get_xml_text(l_nodes1(j), '/*/out-range-low-method')||'"');
+                  cwms_util.append(l_data, ',"out-range-high-method":"'||cwms_util.get_xml_text(l_nodes1(j), '/*/out-range-high-method')||'"}');
+               end loop; 
+               if l_nodes1.count > 1 then
+                  cwms_util.append(l_data, ']');
+               end if;
+               cwms_util.append(l_data, ',"dep-parameter":"'||cwms_util.get_xml_text(l_nodes(i), '/*/dep-parameter')||'"');
+               cwms_util.append(l_data, ',"description":"'||cwms_util.get_xml_text(l_nodes(i), '/*/description')||'"}');
+            end loop;
+            cwms_util.append(l_data, ']}');
+         end if;
+         l_nodes := cwms_util.get_xml_nodes(l_xml, '/*/rating-spec');
+         if l_nodes.count > 0 then
+            if l_first then
+               l_first := false;         
+               cwms_util.append(l_data, '{"rating-spec":[');
+            else
+               cwms_util.append(l_data, ',{"rating-spec":[');
+            end if;
+            for i in 1..l_nodes.count loop   
+               if i = 1 then
+                  cwms_util.append(l_data, '{"@office-id":"'||cwms_util.get_xml_text(l_nodes(i), '/*/@office-id')||'"');
+               else
+                  cwms_util.append(l_data, ',{"@office-id":"'||cwms_util.get_xml_text(l_nodes(i), '/*/@office-id')||'"');
+               end if;
+               cwms_util.append(l_data, ',"rating-spec-id":"'||cwms_util.get_xml_text(l_nodes(i), '/*/rating-spec-id')||'"');
+               cwms_util.append(l_data, ',"template-id":"'||cwms_util.get_xml_text(l_nodes(i), '/*/template-id')||'"');
+               cwms_util.append(l_data, ',"location-id":"'||cwms_util.get_xml_text(l_nodes(i), '/*/location-id')||'"');
+               cwms_util.append(l_data, ',"version":"'||cwms_util.get_xml_text(l_nodes(i), '/*/version')||'"');
+               cwms_util.append(l_data, ',"soruce-agency":"'||cwms_util.get_xml_text(l_nodes(i), '/*/soruce-agency')||'"');
+               cwms_util.append(l_data, ',"in-range-method":"'||cwms_util.get_xml_text(l_nodes(i), '/*/in-range-method')||'"');
+               cwms_util.append(l_data, ',"out-range-low-method":"'||cwms_util.get_xml_text(l_nodes(i), '/*/out-range-low-method')||'"');
+               cwms_util.append(l_data, ',"out-range-high-method":"'||cwms_util.get_xml_text(l_nodes(i), '/*/out-range-high-method')||'"');
+               cwms_util.append(l_data, ',"active":"'||cwms_util.get_xml_text(l_nodes(i), '/*/active')||'"');
+               l_nodes1 := cwms_util.get_xml_nodes(l_nodes(i), '/*/ind-rounding-specs/ind-rounding-spec');
+               cwms_util.append(l_data, ',"ind-rounding-specs":[');
+               for j in 1..l_nodes1.count loop
+                  if j = 1 then
+                     cwms_util.append(l_data, '"'||cwms_util.get_xml_text(l_nodes1(j), '/')||'"');
+                  else
+                     cwms_util.append(l_data, ',"'||cwms_util.get_xml_text(l_nodes1(j), '/')||'"');
+                  end if;
+               end loop;
+               cwms_util.append(l_data, ']');
+               cwms_util.append(l_data, ',"dep-rounding-spec":"'||cwms_util.get_xml_text(l_nodes(i), '/*/dep-rounding-spec')||'"');
+               cwms_util.append(l_data, ',"description":"'||cwms_util.get_xml_text(l_nodes(i), '/*/description')||'"}');
+            end loop;
+            cwms_util.append(l_data, ']}');
+         end if;
+         l_nodes := cwms_util.get_xml_nodes(l_xml, '/*/simple-rating|/*/usgs-stream-rating|/*/virtual-rating|/*/transitial-rating');
+         if l_nodes.count > 0 then
+            if l_first then
+               l_first := false;         
+               cwms_util.append(l_data, '{"rating":[');
+            else
+               cwms_util.append(l_data, ',{"rating":[');
+            end if;
+            for i in 1..l_nodes.count loop
+               l_name := l_nodes(i).getrootelement;
+               if i = 1 then
+                  cwms_util.append(l_data, '{"'||l_name||'":{');
+               else
+                  cwms_util.append(l_data, '},{"'||l_name||'":{');
+               end if;
+               case l_name
+               when 'simple-rating' then
+                  l_is_transitional  := false;
+                  l_is_virtual       := false;
+                  l_is_stream_rating := false;
+                  l_is_concrete      := true;
+               when 'usgs-stream-rating' then
+                  l_is_transitional  := false;
+                  l_is_virtual       := false;
+                  l_is_stream_rating := true;
+                  l_is_concrete      := true;
+               when 'virtual-rating' then
+                  l_is_transitional  := false;
+                  l_is_virtual       := true;
+                  l_is_stream_rating := false;
+                  l_is_concrete      := false;
+               when 'transitional-rating' then
+                  l_is_transitional  := true;
+                  l_is_virtual       := false;
+                  l_is_stream_rating := false;
+                  l_is_concrete      := false;
+               end case;
+               l_is_vdatum_rating := cwms_util.get_xml_node(l_nodes(i), '/*/vertical-datum-info') is not null;
+               cwms_util.append(l_data, '"@office-id":"'||cwms_util.get_xml_text(l_nodes(i), '/*/@office-id')||'"');
+               cwms_util.append(l_data, ',"rating-spec-id":"'||cwms_util.get_xml_text(l_nodes(i), '/*/rating-spec-id')||'"');
+               if l_is_vdatum_rating then
+                  cwms_util.append(l_data, ',"vertical-datum-info":{');
+                  cwms_util.append(l_data, '"@unit":"'||cwms_util.get_xml_text(l_nodes(i), '/*/vertical-datum-info/@unit')||'"');
+                  cwms_util.append(l_data, ',"native-datum":"'||cwms_util.get_xml_text(l_nodes(i), '/*/vertical-datum-info/native-datum')||'"');
+                  cwms_util.append(l_data, ',"offset":[');
+                  l_nodes1 := cwms_util.get_xml_nodes(l_nodes(i), '/*/vertical-datum-info/offset');
+                  for j in 1..l_nodes1.count loop
+                     if j = 1 then
+                        cwms_util.append(l_data, '{"@estimate":"'||cwms_util.get_xml_text(l_nodes(i), '/*/vertical-datum-info/offset/@estimate')||'"');
+                     else
+                        cwms_util.append(l_data, ',{"@estimate":"'||cwms_util.get_xml_text(l_nodes(i), '/*/vertical-datum-info/offset/@estimate')||'"');
+                     end if;
+                     cwms_util.append(l_data, ',"to-datum":"'||cwms_util.get_xml_text(l_nodes1(j), '/*/to-datum')||'"');
+                     cwms_util.append(l_data, ',"value":"'||regexp_replace(cwms_util.get_xml_text(l_nodes1(j), '/*/to-datum'), '(^|[^0-9])\.', '\10.')||'"}');
+                  end loop;
+                  cwms_util.append(l_data, ']}');
+               end if;
+               cwms_util.append(l_data, ',"units-id":"'||cwms_util.get_xml_text(l_nodes(i), '/*/units-id')||'"');
+               cwms_util.append(l_data, ',"effective-date":"'||cwms_util.get_xml_text(l_nodes(i), '/*/effective-date')||'"');
+               cwms_util.append(l_data, ',"create-date":"'||cwms_util.get_xml_text(l_nodes(i), '/*/create-date')||'"');
+               cwms_util.append(l_data, ',"active":"'||cwms_util.get_xml_text(l_nodes(i), '/*/active')||'"');
+               cwms_util.append(l_data, ',"description":"'||cwms_util.get_xml_text(l_nodes(i), '/*/description')||'"');
+               if l_is_stream_rating then
+                  l_nodes1 := cwms_util.get_xml_nodes(l_nodes(i), '/*/height-shifts');
+                  if l_nodes1.count > 0 then
+                     cwms_util.append(l_data, ',"height-shifts":[');
+                     for j in 1..l_nodes1.count loop
+                        if j = 1 then
+                           cwms_util.append(l_data, '{"effective-date":"'||cwms_util.get_xml_text(l_nodes1(j), '/*/effective-date')||'"');
+                        else
+                           cwms_util.append(l_data, ',{"effective-date":"'||cwms_util.get_xml_text(l_nodes1(j), '/*/effective-date')||'"');
+                        end if;
+                        cwms_util.append(l_data, ',"create-date":"'||cwms_util.get_xml_text(l_nodes1(j), '/*/create-date')||'"');
+                        cwms_util.append(l_data, ',"active":"'||cwms_util.get_xml_text(l_nodes1(j), '/*/active')||'"');
+                        cwms_util.append(l_data, ',"point":[');
+                        l_nodes2 := cwms_util.get_xml_nodes(l_nodes1(j), '/*/point');
+                        for k in 1..l_nodes2.count loop
+                           if k = 1 then
+                              cwms_util.append(l_data, '{"ind":"'||regexp_replace(cwms_util.get_xml_text(l_nodes2(k), '/*/ind'), '(^|[^0-9])\.', '\10.')||'"');
+                           else
+                              cwms_util.append(l_data, ',{"ind":"'||regexp_replace(cwms_util.get_xml_text(l_nodes2(k), '/*/ind'), '(^|[^0-9])\.', '\10.')||'"');
+                           end if;
+                           cwms_util.append(l_data, ',"dep":"'||regexp_replace(cwms_util.get_xml_text(l_nodes2(k), '/*/dep'), '(^|[^0-9])\.', '\10.')||'"}');
+                        end loop;
+                        cwms_util.append(l_data, ']}');
+                     end loop;
+                     cwms_util.append(l_data, ']');
+                  end if;
+                  l_nodes1 := cwms_util.get_xml_nodes(l_nodes(i), '/*/height-offsets/point');
+                  if l_nodes1.count > 0 then
+                     cwms_util.append(l_data, ',"height-offsets":[');
+                     for j in 1..l_nodes1.count loop
+                        if j = 1 then
+                           cwms_util.append(l_data, '{"ind":"'||regexp_replace(cwms_util.get_xml_text(l_nodes1(j), '/*/ind'), '(^|[^0-9])\.', '\10.')||'"');
+                        else
+                           cwms_util.append(l_data, ',{"ind":"'||regexp_replace(cwms_util.get_xml_text(l_nodes1(j), '/*/ind'), '(^|[^0-9])\.', '\10.')||'"');
+                        end if;
+                        cwms_util.append(l_data, ',"dep":"'||regexp_replace(cwms_util.get_xml_text(l_nodes1(j), '/*/dep'), '(^|[^0-9])\.', '\10.')||'"}');
+                     end loop;
+                     cwms_util.append(l_data, ']');
+                  end if;
+               end if;
+               cwms_util.append(l_data, ',"points" : [');
+               l_nodes1 := cwms_util.get_xml_nodes(l_nodes(i), '/*/rating-points');
+               for j in 1..l_nodes1.count loop
+                  if j > 1 then
+                     cwms_util.append(l_data, ',');
+                  end if;   
+                  l_nodes2 := cwms_util.get_xml_nodes(l_nodes1(j), '/*/other-ind', p_order_by => '/*/other-ind/@position');
+                  if l_nodes2.count > 0 then
+                     cwms_util.append(l_data, '{"other-ind" : [');
+                     for k in 1..l_nodes2.count loop
+                        cwms_util.append(
+                           l_data,
+                           case k when 1 then '{"@position":' else ',{"@position":' end 
+                           ||cwms_util.get_xml_text(l_nodes2(k), '/*/@position')
+                           ||',"value":'
+                           ||regexp_replace(cwms_util.get_xml_text(l_nodes2(k), '/*/@value'), '(^|[^0-9])\.', '\10.')
+                           ||'}');
+                     end loop;
+                     cwms_util.append(l_data, ']},');
+                  end if;
+                  l_nodes2 := cwms_util.get_xml_nodes(l_nodes1(j), '/*/point');
+                  if l_nodes2.count > 0 then
+                     cwms_util.append(l_data, '{"points" : [');
+                     for k in 1..l_nodes2.count loop
+                        cwms_util.append(
+                           l_data,
+                           case k when 1 then '{"ind":' else ',{"ind":' end 
+                           ||regexp_replace(cwms_util.get_xml_text(l_nodes2(k), '/*/ind'), '(^|[^0-9])\.', '\10.')
+                           ||',"dep":'
+                           ||regexp_replace(cwms_util.get_xml_text(l_nodes2(k), '/*/dep'), '(^|[^0-9])\.', '\10.'));
+                        l_name := cwms_util.get_xml_text(l_nodes2(k), '/*/note');
+                        if l_name is null then
+                           cwms_util.append(l_data, '}');
+                        else
+                           cwms_util.append(l_data, ',"note":"'||l_name||'"}');
+                        end if;
+                     end loop;
+                     cwms_util.append(l_data, ']}');
+                  end if;
+               end loop;
+               cwms_util.append(l_data, ']}');
+            end loop;
+            cwms_util.append(l_data, '}');
+         end if;
+         cwms_util.append(l_data, ']}]}');
+      when l_format in ('TAB', 'CSV') then
+         ----------------
+         -- TAB or CSV --
+         ----------------
+         l_width := 30;
+         l_first := true;
+         l_nodes := cwms_util.get_xml_nodes(l_xml, '/*/rating-template');
+         for i in 1..l_nodes.count loop
+            if l_first then
+               l_first := false;
+            else
+               cwms_util.append(l_data, chr(10));
+            end if;
+            cwms_util.append(l_data, rpad('# RATING-TEMPLATE '||i||' OF '||l_nodes.count, l_width, ' ')||chr(9)||chr(10));
+            cwms_util.append(l_data, rpad('#   OFFICE', l_width, ' ')||chr(9)||cwms_util.get_xml_text(l_nodes(i), '/*/@office-id')||chr(10));
+            cwms_util.append(l_data, rpad('#   PARAMETERS', l_width, ' ')||chr(9)||cwms_util.get_xml_text(l_nodes(i), '/*/parameters-id')||chr(10));
+            cwms_util.append(l_data, rpad('#   VERSION', l_width, ' ')||chr(9)||cwms_util.get_xml_text(l_nodes(i), '/*/version')||chr(10));
+            l_nodes1 := cwms_util.get_xml_nodes(l_nodes(i), '/*/ind-parameter-specs/ind-parameter-spec');
+            for j in 1..l_nodes1.count loop
+               cwms_util.append(l_data, rpad('#   IND PARAMETER '||j, l_width, ' ')||chr(10));
+               cwms_util.append(l_data, rpad('#     IDENTIFIER', l_width, ' ')||chr(9)||cwms_util.get_xml_text(l_nodes1(j), '/*/parameter')||chr(10));
+               cwms_util.append(l_data, rpad('#     LOOKUP IN RANGE   ', l_width, ' ')||chr(9)||initcap(cwms_util.get_xml_text(l_nodes1(j), '/*/in-range-method'))||chr(10));
+               cwms_util.append(l_data, rpad('#     LOOKUP BELOW      ', l_width, ' ')||chr(9)||initcap(cwms_util.get_xml_text(l_nodes1(j), '/*/out-range-low-method'))||chr(10));
+               cwms_util.append(l_data, rpad('#     LOOKUP ABOVE      ', l_width, ' ')||chr(9)||initcap(cwms_util.get_xml_text(l_nodes1(j), '/*/out-range-high-method'))||chr(10));
+            end loop; 
+            cwms_util.append(l_data, rpad('#   DEP PARAMETER ', l_width, ' ')||chr(10));
+            cwms_util.append(l_data, rpad('#     IDENTIFIER', l_width, ' ')||chr(9)||cwms_util.get_xml_text(l_nodes(i), '/*/dep-parameter')||chr(10));
+            cwms_util.append(l_data, rpad('#   DESCRIPTION', l_width, ' ')||chr(9)||cwms_util.get_xml_text(l_nodes(i), '/*/description')||chr(10));
+         end loop;
+         l_nodes := cwms_util.get_xml_nodes(l_xml, '/*/rating-spec');
+         for i in 1..l_nodes.count loop
+            if l_first then
+               l_first := false;
+            else
+               cwms_util.append(l_data, chr(10));
+            end if;
+            cwms_util.append(l_data, rpad('# RATING-SPEC '||i||' OF '||l_nodes.count, l_width, ' ')||chr(10));
+            cwms_util.append(l_data, rpad('#   OFFICE', l_width, ' ')||chr(9)||cwms_util.get_xml_text(l_nodes(i), '/*/@office-id')||chr(10));
+            cwms_util.append(l_data, rpad('#   IDENTIFIER', l_width, ' ')||chr(9)||cwms_util.get_xml_text(l_nodes(i), '/*/rating-spec-id')||chr(10));
+            cwms_util.append(l_data, rpad('#   TEMPLATE', l_width, ' ')||chr(9)||cwms_util.get_xml_text(l_nodes(i), '/*/template-id')||chr(10));
+            cwms_util.append(l_data, rpad('#   LOCATION', l_width, ' ')||chr(9)||cwms_util.get_xml_text(l_nodes(i), '/*/location-id')||chr(10));
+            cwms_util.append(l_data, rpad('#   VERSION', l_width, ' ')||chr(9)||cwms_util.get_xml_text(l_nodes(i), '/*/version')||chr(10));
+            cwms_util.append(l_data, rpad('#   AGENCY', l_width, ' ')||chr(9)||nvl(cwms_util.get_xml_text(l_nodes(i), '/*/soruce-agency'), 'Not Specified')||chr(10));
+            cwms_util.append(l_data, rpad('#   LOOKUP IN RANGE     ', l_width, ' ')||chr(9)||initcap(cwms_util.get_xml_text(l_nodes(i), '/*/in-range-method'))||chr(10));
+            cwms_util.append(l_data, rpad('#   LOOKUP BELOW        ', l_width, ' ')||chr(9)||initcap(cwms_util.get_xml_text(l_nodes(i), '/*/out-range-low-method'))||chr(10));
+            cwms_util.append(l_data, rpad('#   LOOKUP ABOVE        ', l_width, ' ')||chr(9)||initcap(cwms_util.get_xml_text(l_nodes(i), '/*/out-range-high-method'))||chr(10));
+            cwms_util.append(l_data, rpad('#   ACTIVE', l_width, ' ')||chr(9)||initcap(cwms_util.get_xml_text(l_nodes(i), '/*/active'))||chr(10));
+            cwms_util.append(l_data, rpad('#   ROUNDING', l_width, ' ')||chr(9)||chr(10));
+            l_nodes1 := cwms_util.get_xml_nodes(l_nodes(i), '/*/ind-rounding-specs/ind-rounding-spec');
+            for j in 1..l_nodes1.count loop
+               cwms_util.append(l_data, rpad('#     IND PARAMETER '||j, l_width, ' ')||chr(9)||cwms_util.get_xml_text(l_nodes1(j), '/')||chr(10));
+            end loop;
+            cwms_util.append(l_data, rpad('#     DEP PARAMETER     ', l_width, ' ')||chr(9)||cwms_util.get_xml_text(l_nodes(i), '/*/dep-rounding-spec')||chr(10));
+            cwms_util.append(l_data, rpad('#   DESCRIPTION', l_width, ' ')||nvl(chr(9)||cwms_util.get_xml_text(l_nodes(i), '/*/description'), 'None')||chr(10));
+         end loop;
+         l_nodes := cwms_util.get_xml_nodes(l_xml, '/*/simple-rating|/*/usgs-stream-rating|/*/virtual-rating|/*/transitial-rating');
+         for i in 1..l_nodes.count loop
+            if l_first then
+               l_first := false;                                                    
+            else
+               cwms_util.append(l_data, chr(10));
+            end if;
+            l_name := l_nodes(i).getrootelement;
+            case l_name
+            when 'simple-rating' then
+               l_is_transitional  := false;
+               l_is_virtual       := false;
+               l_is_stream_rating := false;
+               l_is_concrete      := true;
+            when 'usgs-stream-rating' then
+               l_is_transitional  := false;
+               l_is_virtual       := false;
+               l_is_stream_rating := true;
+               l_is_concrete      := true;
+            when 'virtual-rating' then
+               l_is_transitional  := false;
+               l_is_virtual       := true;
+               l_is_stream_rating := false;
+               l_is_concrete      := false;
+            when 'transitional-rating' then
+               l_is_transitional  := true;
+               l_is_virtual       := false;
+               l_is_stream_rating := false;
+               l_is_concrete      := false;
+            end case;
+            l_is_vdatum_rating := cwms_util.get_xml_node(l_nodes(i), '/*/vertical-datum-info') is not null;
+            cwms_util.append(l_data, rpad('# '||upper(l_name)||' '||i||' OF '||l_nodes.count, l_width, ' ')||chr(10));
+            cwms_util.append(l_data, rpad('#   OFFICE', l_width, ' ')||chr(9)||cwms_util.get_xml_text(l_nodes(i), '/*/@office-id')||chr(10));
+            cwms_util.append(l_data, rpad('#   IDENTIFIER', l_width, ' ')||chr(9)||cwms_util.get_xml_text(l_nodes(i), '/*/rating-spec-id')||chr(10));
+            if l_is_vdatum_rating then
+               l_unit := cwms_util.get_xml_text(l_nodes(i), '/*/vertical-datum-info/@unit');
+               cwms_util.append(l_data, rpad('#   VERTICAL DATUM      ', l_width, ' ')||chr(10));
+               cwms_util.append(l_data, rpad('#     NATIVE DATUM      ', l_width, ' ')||chr(9)||cwms_util.get_xml_text(l_nodes(i), '/*/vertical-datum-info/native-datum')||chr(10));
+               l_nodes1 := cwms_util.get_xml_nodes(l_nodes(i), '/*/vertical-datum-info/offset');
+               for j in 1..l_nodes1.count loop
+                  l_name := cwms_util.get_xml_text(l_nodes1(j), '/*/to-datum');
+                  if cwms_util.get_xml_text(l_nodes(i), '/*/vertical-datum-info/offset/@estimate') = 'true' then
+                     cwms_util.append(l_data, rpad('#     OFFSET TO '||l_name, l_width, ' ')||chr(9)||cwms_util.get_xml_text(l_nodes1(j), '/*/value')||' '||l_unit||' (estimated)'||chr(10));
+                  else
+                     cwms_util.append(l_data, rpad('#     OFFSET TO '||l_name, l_width, ' ')||chr(9)||cwms_util.get_xml_text(l_nodes1(j), '/*/value')||' '||l_unit||chr(10));
+                  end if;
+               end loop; 
+               l_name := cwms_util.get_xml_text(l_nodes(i), '/*/units-id/@vertical-datum');
+            end if;
+            l_names := cwms_util.split_text(replace(cwms_util.split_text(cwms_util.get_xml_text(l_nodes(i), '/*/rating-spec-id'), 2, '.'), ';', ','), ',');
+            l_units := cwms_util.split_text(replace(cwms_util.get_xml_text(l_nodes(i), '/*/units-id'), ';', ','), ',');
+            l_datum := regexp_replace(cwms_util.get_xml_text(l_nodes(i), '/*/units-id/@vertical-datum'), '(N[AG]VD)(29|88)', '\1-\2');
+            cwms_util.append(l_data, rpad('#   PARAMETERS', l_width, ' ')||chr(10));
+            for j in 1..l_names.count loop
+               if l_datum is not null and instr(l_names(j), 'Elev') = 1 then
+                  if j < l_names.count then
+                     cwms_util.append(l_data, rpad('#     IND PARAMETER '||j, l_width, ' ')||chr(9)||l_names(j)||' ('||l_units(j)||' '||l_datum||')'||chr(10));
+                  else
+                     cwms_util.append(l_data, rpad('#     DEP PARAMETER ', l_width, ' ')||chr(9)||l_names(j)||' ('||l_units(j)||' '||l_datum||')'||chr(10));
+                  end if;
+               else
+                  if j < l_names.count then
+                     cwms_util.append(l_data, rpad('#     IND PARAMETER '||j, l_width, ' ')||chr(9)||l_names(j)||' ('||l_units(j)||')'||chr(10));
+                  else
+                     cwms_util.append(l_data, rpad('#     DEP PARAMETER ', l_width, ' ')||chr(9)||l_names(j)||' ('||l_units(j)||')'||chr(10));
+                  end if;
+               end if;
+            end loop;
+            cwms_util.append(l_data, rpad('#   DATE EFFECTIVE      ', l_width, ' ')||chr(9)||cwms_util.get_xml_text(l_nodes(i), '/*/effective-date')||chr(10));
+            cwms_util.append(l_data, rpad('#   DATE STORED TO DB   ', l_width, ' ')||chr(9)||cwms_util.get_xml_text(l_nodes(i), '/*/create-date')||chr(10));
+            cwms_util.append(l_data, rpad('#   ACTIVE', l_width, ' ')||chr(9)||initcap(cwms_util.get_xml_text(l_nodes(i), '/*/active'))||chr(10));
+            cwms_util.append(l_data, rpad('#   DESCRIPTION', l_width, ' ')||chr(9)||nvl(cwms_util.get_xml_text(l_nodes(i), '/*/description'), 'None')||chr(10));
+            if l_is_stream_rating then
+               l_nodes1 := cwms_util.get_xml_nodes(l_nodes(i), '/*/height-offsets/point');
+               for j in 1..l_nodes1.count loop
+                  if j = 1 then
+                     cwms_util.append(l_data, rpad('# OFFSETS', l_width, ' ')||chr(10));
+                     cwms_util.append(l_data, rpad('#   OFFSET '||j, l_width, ' ')||chr(9)||cwms_util.get_xml_text(l_nodes1(j), '/*/dep')||chr(10));
+                  else
+                     cwms_util.append(l_data, rpad('#   BREAKPOINT '||(j-1), l_width, ' ')||chr(9)||cwms_util.get_xml_text(l_nodes1(j), '/*/ind')||chr(10));
+                     cwms_util.append(l_data, rpad('#   OFFSET '||j, l_width, ' ')||chr(9)||cwms_util.get_xml_text(l_nodes1(j), '/*/dep')||chr(10));
+                  end if;
+               end loop;
+               l_nodes1 := cwms_util.get_xml_nodes(l_nodes(i), '/*/height-shifts');
+               for j in 1..l_nodes1.count loop
+                  if j = 1 then
+                     cwms_util.append(l_data, rpad('# SHIFTS', l_width, ' ')||chr(10));
+                  end if;
+                  cwms_util.append(l_data, rpad('#   SHIFT '||j||' OF '||l_nodes1.count, l_width, ' ')||chr(10));
+                  cwms_util.append(l_data, rpad('#     DATE EFFECTIVE      ', l_width, ' ')||chr(9)||cwms_util.get_xml_text(l_nodes1(j), '/*/effective-date')||chr(10));
+                  cwms_util.append(l_data, rpad('#     DATE STORED TO DB   ', l_width, ' ')||chr(9)||cwms_util.get_xml_text(l_nodes1(j), '/*/create-date')||chr(10));
+                  l_nodes2 := cwms_util.get_xml_nodes(l_nodes1(j), '/*/point');
+                  for k in 1..l_nodes2.count loop
+                     cwms_util.append(l_data, rpad('#     STAGE '||k, l_width, ' ')||chr(9)||cwms_util.get_xml_text(l_nodes2(k), '/*/ind')||chr(10));
+                     cwms_util.append(l_data, rpad('#     SHIFT '||k, l_width, ' ')||chr(9)||cwms_util.get_xml_text(l_nodes2(k), '/*/dep')||chr(10));
+                  end loop;
+               end loop;
+            end if;
+            l_nodes1 := cwms_util.get_xml_nodes(l_nodes(i), '/*/rating-points');
+            for j in 1..l_nodes1.count loop
+               cwms_util.append(l_data, rpad('VALUE SET '||j||' OF '||l_nodes1.count, l_width, ' ')||chr(10));
+               l_nodes2 := cwms_util.get_xml_nodes(l_nodes1(j), '/*/other-ind', p_order_by => '/*/other_ind/@position');
+               l_other_ind := str_tab_t();
+               l_other_ind.extend(l_nodes2.count);
+               for k in 1..l_nodes2.count loop
+                  l_other_ind(k) := cwms_util.get_xml_text(l_nodes2(k), '/*/@value');
+               end loop;
+               l_nodes2 := cwms_util.get_xml_nodes(l_nodes1(j), '/*/point');
+               for k in 1..l_nodes2.count loop
+                  for m in 1..l_other_ind.count loop
+                     cwms_util.append(l_data, l_other_ind(m)||chr(9));
+                  end loop;
+                  cwms_util.append(l_data, cwms_util.get_xml_text(l_nodes2(k), '/*/ind')||chr(9)||cwms_util.get_xml_text(l_nodes2(k), '/*/dep'));
+                  l_name := cwms_util.get_xml_text(l_nodes2(k), '/*/note');
+                  if l_name is not null then
+                     cwms_util.append(l_data, chr(9)||l_name);
+                  end if;
+                  cwms_util.append(l_data, chr(10));
+               end loop;
+            end loop;
+         end loop;
+         if l_format = 'CSV' then
+            ---------
+            -- CSV --
+            ---------
+            l_data := regexp_replace(
+               regexp_replace(
+                  regexp_replace(
+                     regexp_replace(
+                        regexp_replace(
+                           l_data, 
+                           '^(.+?,.+?)('||chr(9)||')', 
+                           '"\1"\2', 
+                           1, 0, 'm'), 
+                        '('||chr(9)||')(.+?,.+?)('||chr(9)||')', 
+                        '\1"\2"\3'), 
+                     '('||chr(9)||')(.+?,.+?)$', 
+                     '\1"\2"',
+                     1, 0, 'm'), 
+                  '\s*'||chr(9)||'', 
+                  ','), 
+               '^# +', '# ', 
+               1, 0, 'm');
+         end if;
+      end case;
+   
+   l_ts2 := systimestamp;
+   l_elapsed_format := l_ts2 - l_ts1;
+                                      
+   if l_format in ('TAB', 'CSV') then
+      declare
+         l_data2 clob;
+      begin
+         dbms_lob.createtemporary(l_data2, true);
+         select db_unique_name into l_name from v$database;
+         cwms_util.append(l_data2, rpad('# PROCESSED AT', l_width, ' ')||chr(9)||utl_inaddr.get_host_name ||':'||l_name||chr(10));
+         cwms_util.append(l_data2, rpad('# TIME OF QUERY', l_width, ' ')||chr(9)||to_char(l_query_time, 'dd-MON-yyyy hh24:mi')||' UTC'||chr(10));
+         cwms_util.append(l_data2, rpad('# PROCESS QUERY', l_width, ' ')||chr(9)||trunc(1000 * (extract(minute from l_elapsed_query) * 60 + extract(second from l_elapsed_query)))||' milliseconds'||chr(10));
+         cwms_util.append(l_data2, rpad('# FORMAT OUTPUT', l_width, ' ')||chr(9)||trunc(1000 * (extract(minute from l_elapsed_format) * 60 + extract(second from l_elapsed_format)))||' milliseconds'||chr(10));
+         cwms_util.append(l_data2, rpad('# TEMPLATES RETRIEVED', l_width, ' ')||chr(9)||l_templates.count||chr(10));
+         cwms_util.append(l_data2, rpad('# SPECIFICATIONS RETRIEVED', l_width, ' ')||chr(9)||l_specs.count||chr(10));
+         cwms_util.append(l_data2, rpad('# RATINGS RETRIEVED', l_width, ' ')||chr(9)||l_ratings2.count||chr(10)||chr(10));
+         if l_format = 'CSV' then
+            l_data2 := regexp_replace(
+               regexp_replace(
+                  regexp_replace(
+                     regexp_replace(
+                        regexp_replace(
+                           l_data2, 
+                           '^(.+?,.+?)('||chr(9)||')', 
+                           '"\1"\2', 
+                           1, 0, 'm'), 
+                        '('||chr(9)||')(.+?,.+?)('||chr(9)||')', 
+                        '\1"\2"\3'), 
+                     '('||chr(9)||')(.+?,.+?)$', 
+                     '\1"\2"',
+                     1, 0, 'm'), 
+                  '\s*'||chr(9)||'', 
+                  ','), 
+               '^# +', '# ', 
+               1, 0, 'm');
+         end if;
+         cwms_util.append(l_data2, l_data);
+         p_results := l_data2;
+      end;
+   else
+      p_results := l_data;
+   end if;
+      
+   p_date_time      := l_query_time;
+   p_query_time     := trunc(1000 * (extract(minute from l_elapsed_query) * 60 + extract(second from l_elapsed_query)));
+   p_format_time    := trunc(1000 * (extract(minute from l_elapsed_format) *60 +  extract(second from l_elapsed_format)));
+   p_template_count := l_templates.count;
+   p_spec_count     := l_specs.count;
+   p_rating_count   := l_ratings1.count; 
+end retrieve_ratings;   
+
+
+         
+
+function retrieve_ratings(
+   p_names     in varchar2,            
+   p_format    in varchar2,
+   p_units     in varchar2 default null,   
+   p_datums    in varchar2 default null,
+   p_start     in varchar2 default null,
+   p_end       in varchar2 default null,
+   p_timezone  in varchar2 default null,
+   p_office_id in varchar2 default null)
+   return clob
+is
+   l_results        clob;
+   l_date_time      date;
+   l_query_time     long;
+   l_format_time    long; 
+   l_template_count integer;  
+   l_spec_count     integer;  
+   l_rating_count   integer;  
+begin
+   retrieve_ratings(
+      l_results,
+      l_date_time,
+      l_query_time,
+      l_format_time,
+      l_template_count,
+      l_spec_count,
+      l_rating_count,   
+      p_names,            
+      p_format,
+      p_units,   
+      p_datums,
+      p_start,
+      p_end, 
+      p_timezone,
+      p_office_id);
+
+   return l_results;
+end retrieve_ratings;
+
 end;
 /
 show errors;
+
+

@@ -3007,8 +3007,96 @@ function get_dep_parameter(
  */
 function get_elevation_positions(
    p_rating_template_id in varchar2)
-   return number_tab_t;      
+   return number_tab_t;
+/**
+ * Retreives in a number of formats for a combination time window, timezone, formats, and vertical datums
+ *
+ * @param p_results        The ratings, in the specified time zones, formats, and vertical datums
+ * @param p_date_time      The time that the routine was called, in UTC
+ * @param p_query_time     The time the routine took to retrieve the specified ratings, along with their associated specifications and templates, from the database
+ * @param p_format_time    The time the routine took to format the results into the specified format, in milliseconds
+ * @param p_template_count The number of rating templates retrieved by the routine
+ * @param p_spec_count     The number of rating specifications retrieved by the routine
+ * @param p_rating_count   The number of ratings retrieved by the routine
+ * @param p_names          The names (rating specification identifers) of the ratings to retrieve.  Multiple ratings can be specified by
+ *                         <or><li>specifying multiple rating spec ids separated by the <b>'|'</b> character (multiple name positions)</li>
+ *                         <li>specifying a rating spec id with wildcard (<b>'*'</b> and/or <b>'?'</b> characters) (single name position)</li>
+ *                         <li>a combination of 1 and 2 (multiple name positions with one or more positions matching possibly more than one rating)</li></ol>
+ * @param p_format         The format to retrieve the ratings in. Valid formats are <ul><li>TAB</li><li>CSV</li><li>XML</li><li>JSON</li></ul>
+ *                         If the format is unspecified or NULL, the TAB format will be used. 
+ * @param p_units          The units to return the units in.  Valid units are <ul><li>NATIVE</li><li>EN</li><li>SI</li></ul> If the p_names variable (q.v.) has more
+ *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_units variable may also have multiple positions separated by the 
+ *                         <b>'|',</b> charcter. If the p_units variable has fewer positions than the p_name variable, the last unit position is used for all 
+ *                         remaning names. If the units are unspecified or NULL, the NATIVE units will be used for all ratings.
+ * @param p_datums         The vertical datums to return the units in.  Valid datums are <ul><li>NATIVE</li><li>NGVD29</li><li>NAVD88</li></ul> If the p_names variable (q.v.) has more
+ *                         than onename position, (i.e., has one or more <b>'|',</b> charcters), the p_datums variable may also have multiple positions separated by the 
+ *                         <b>'|',</b> charcter. If the p_datums variable has fewer positions than the p_name variable, the last datum position is used for all 
+ *                         remaning names. If the datums are unspecified or NULL, the NATIVE veritcal datum will be used for all ratings.
+ * @param p_start          The start of the time window to retrieve ratings for.  No ratings with effective dates earlier this time will be retrieved.
+ *                         If unspecified or NULL, no restriction will be used for the start of the time window.       
+ * @param p_end            The end of the time window to retrieve ratings for.  No ratings with effective dates later this time will be retrieved.
+ *                         If unspecified or NULL, no restriction will be used for the end of the time window.
+ * @param p_timezone       The time zone to retrieve the ratings in. The p_start and p_end parameters - if used - are also interpreted according to this time zone.
+ *                         If unspecified or NULL, the UTC time zone is used. 
+ * @param p_office_id      The office to retrieve ratings for.  If unspecified or NULL, ratings for all offices in the database that match the other criteria will be retrieved.
+ */         
+procedure retrieve_ratings(
+   p_results        out clob,
+   p_date_time      out date,
+   p_query_time     out long,
+   p_format_time    out long, 
+   p_template_count out integer,
+   p_spec_count     out integer,
+   p_rating_count   out integer,  
+   p_names          in  varchar2,            
+   p_format         in  varchar2,
+   p_units          in  varchar2 default null,   
+   p_datums         in  varchar2 default null,
+   p_start          in  varchar2 default null,
+   p_end            in  varchar2 default null, 
+   p_timezone       in  varchar2 default null,
+   p_office_id      in  varchar2 default null);
+/**
+ * Retreives in a number of formats for a combination time window, timezone, formats, and vertical datums
+ *
+ * @param p_names          The names (rating specification identifers) of the ratings to retrieve.  Multiple ratings can be specified by
+ *                         <or><li>specifying multiple rating spec ids separated by the <b>'|'</b> character (multiple name positions)</li>
+ *                         <li>specifying a rating spec id with wildcard (<b>'*'</b> and/or <b>'?'</b> characters) (single name position)</li>
+ *                         <li>a combination of 1 and 2 (multiple name positions with one or more positions matching possibly more than one rating)</li></ol>
+ * @param p_format         The format to retrieve the ratings in. Valid formats are <ul><li>TAB</li><li>CSV</li><li>XML</li><li>JSON</li></ul>
+ *                         If the format is unspecified or NULL, the TAB format will be used. 
+ * @param p_units          The units to return the units in.  Valid units are <ul><li>NATIVE</li><li>EN</li><li>SI</li></ul>. If the p_names variable (q.v.) has more
+ *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_units variable may also have multiple positions separated by the 
+ *                         <b>'|',</b> charcter. If the p_units variable has fewer positions than the p_name variable, the last unit position is used for all 
+ *                         remaning names. If the units are unspecified or NULL, the NATIVE units will be used for all ratings.
+ * @param p_datums         The vertical datums to return the units in.  Valid datums are <ul><li>NATIVE</li><li>NGVD29</li><li>NAVD88</li></ul>. If the p_names variable (q.v.) has more
+ *                         than onename position, (i.e., has one or more <b>'|',</b> charcters), the p_datums variable may also have multiple positions separated by the 
+ *                         <b>'|',</b> charcter. If the p_datums variable has fewer positions than the p_name variable, the last datum position is used for all 
+ *                         remaning names. If the datums are unspecified or NULL, the NATIVE veritcal datum will be used for all ratings.
+ * @param p_start          The start of the time window to retrieve ratings for.  No ratings with effective dates earlier this time will be retrieved.
+ *                         If unspecified or NULL, no restriction will be used for the start of the time window.       
+ * @param p_end            The end of the time window to retrieve ratings for.  No ratings with effective dates later this time will be retrieved.
+ *                         If unspecified or NULL, no restriction will be used for the end of the time window.
+ * @param p_timezone       The time zone to retrieve the ratings in. The p_start and p_end parameters - if used - are also interpreted according to this time zone.
+ *                         If unspecified or NULL, the UTC time zone is used. 
+ * @param p_office_id      The office to retrieve ratings for.  If unspecified or NULL, ratings for all offices in the database that match the other criteria will be retrieved.
+ *                         The ratings, in the specified time zones, formats, and vertical datums
+ * @return
+ */         
+         
+function retrieve_ratings(
+   p_names       in  varchar2,            
+   p_format      in  varchar2,
+   p_units       in  varchar2 default null,   
+   p_datums      in  varchar2 default null,
+   p_start       in  varchar2 default null,
+   p_end         in  varchar2 default null, 
+   p_timezone    in  varchar2 default null,
+   p_office_id   in  varchar2 default null)
+   return clob;
+      
 end;
+   
    
 /                                                       
 show errors;

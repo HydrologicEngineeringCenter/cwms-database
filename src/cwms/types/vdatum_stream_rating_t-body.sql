@@ -9,25 +9,30 @@ as
       ------------------------------
       -- initialize from p_rating --
       ------------------------------
-      self.office_id      := p_rating.office_id;
-      self.rating_spec_id := p_rating.rating_spec_id;
-      self.effective_date := p_rating.effective_date;
-      self.create_date    := p_rating.create_date;
-      self.active_flag    := p_rating.active_flag;
-      self.formula        := p_rating.formula;
-      self.native_units   := p_rating.native_units;
-      self.description    := p_rating.description;
-      self.rating_info    := p_rating.rating_info;
-      self.current_units  := p_rating.current_units;
-      self.current_time   := p_rating.current_time;
-      self.formula_tokens := p_rating.formula_tokens;
-      self.offsets        := p_rating.offsets;
-      self.shifts         := p_rating.shifts;
+      (self as stream_rating_t).init(p_rating);
       ---------------------------
       -- finish initialization --
       ---------------------------
       self.current_datum  := p_current_datum;
       self.elev_position  := 1; -- only and always
+      return;
+   end;
+   
+   constructor function vdatum_stream_rating_t(
+      p_other in vdatum_stream_rating_t
+   ) return self as result
+   is
+   begin
+      ------------------------------
+      -- initialize from p_rating --
+      ------------------------------
+      (self as stream_rating_t).init(p_other);
+      ---------------------------
+      -- finish initialization --
+      ---------------------------
+      self.native_datum  := p_other.native_datum;
+      self.current_datum := p_other.current_datum;
+      self.elev_position := 1; -- only and always
       return;
    end;
    
@@ -78,7 +83,11 @@ as
             self.office_id));
    end;
    
-   overriding member function to_clob
+   overriding member function to_clob(
+      self         in out nocopy vdatum_stream_rating_t,
+      p_timezone   in varchar2 default null,
+      p_units      in varchar2 default null,
+      p_vert_datum in varchar2 default null)
       return clob
    is
       l_clob        clob;
@@ -86,24 +95,28 @@ as
       l_location_id varchar2(49);
       l_local_datum varchar2(16);
    begin           
-      l_clob := (self as stream_rating_t).to_clob;
-      l_location_id := cwms_util.split_text(self.rating_spec_id, 1, cwms_rating.separator1);
-      l_local_datum := cwms_loc.get_location_vertical_datum(l_location_id, self.office_id);
+      l_clone := self;
+      l_location_id := cwms_util.split_text(l_clone.rating_spec_id, 1, cwms_rating.separator1);
+      l_clob := (l_clone as stream_rating_t).to_clob(p_timezone, p_units, p_vert_datum);
+      l_local_datum := cwms_loc.get_location_vertical_datum(l_location_id, l_clone.office_id);
       if l_local_datum is null then
          l_clob := replace(l_clob, '</rating-spec-id>', '</rating-spec-id><vertical-datum/>');
       else     
-         l_clone := self;
          l_clone.to_native_datum;
          l_clob := replace(l_clob, '</rating-spec-id>', '</rating-spec-id><vertical-datum>'||l_local_datum||'</vertical-datum>');
       end if;   
       return l_clob;
    end;
    
-   overriding member function to_xml
+   overriding member function to_xml(
+      self         in out nocopy vdatum_stream_rating_t,
+      p_timezone   in varchar2 default null,
+      p_units      in varchar2 default null,
+      p_vert_datum in varchar2 default null)
       return xmltype
    is
    begin
-      return xmltype(self.to_clob);
+      return xmltype(self.to_clob(p_timezone, p_units, p_vert_datum));
    end;
          
 end;

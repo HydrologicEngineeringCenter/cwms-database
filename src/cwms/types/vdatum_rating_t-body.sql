@@ -10,23 +10,25 @@ as
       ------------------------------
       -- initialize from p_rating --
       ------------------------------
-      self.office_id      := p_rating.office_id;
-      self.rating_spec_id := p_rating.rating_spec_id;
-      self.effective_date := p_rating.effective_date;
-      self.create_date    := p_rating.create_date;
-      self.active_flag    := p_rating.active_flag;
-      self.formula        := p_rating.formula;
-      self.native_units   := p_rating.native_units;
-      self.description    := p_rating.description;
-      self.rating_info    := p_rating.rating_info;
-      self.current_units  := p_rating.current_units;
-      self.current_time   := p_rating.current_time;
-      self.formula_tokens := p_rating.formula_tokens;
+      (self as rating_t).init(p_rating);
       ---------------------------
       -- finish initialization --
       ---------------------------
+      self.native_datum   := cwms_loc.get_location_vertical_datum(cwms_util.split_text(self.rating_spec_id, 1, cwms_rating.separator1), self.office_id);
       self.current_datum  := p_current_datum;
       self.elev_positions := p_elev_positions;
+      return;
+   end;
+          
+      constructor function vdatum_rating_t(
+      p_other in vdatum_rating_t
+   ) return self as result
+   is
+   begin
+      (self as rating_t).init(p_other);
+      self.native_datum   := p_other.native_datum;
+      self.current_datum  := p_other.current_datum;
+      self.elev_positions := p_other.elev_positions;
       return;
    end;
    
@@ -73,54 +75,75 @@ as
    member procedure to_native_datum
    is
    begin                                       
-      self.to_vertical_datum(
-         cwms_loc.get_location_vertical_datum(
-            cwms_util.split_text(self.rating_spec_id, 1, cwms_rating.separator1), 
-            self.office_id));
+      self.to_vertical_datum(self.native_datum);
    end;      
    
-   overriding member function to_clob
+   overriding member function to_clob(
+      self         in out nocopy vdatum_rating_t,
+      p_timezone   in varchar2 default null,
+      p_units      in varchar2 default null,
+      p_vert_datum in varchar2 default null)
       return clob
    is
+      l_clone       vdatum_rating_t;       
+      l_vert_datum  varchar2(32);
       l_clob        clob;
-      l_clone       vdatum_rating_t;
       l_location_id varchar2(49);
-      l_local_datum varchar2(16);
       l_parts       str_tab_t;  
       l_unit_id     varchar2(16);
       l_vdatum_info varchar2(32767);
-   begin
-      if self.current_datum != self.native_datum then
-         l_clone := self;
+   begin                            
+      l_clone := self;
+      l_vert_datum := upper(trim(p_vert_datum));
+      if l_vert_datum = 'NATIVE' then
          l_clone.to_native_datum;
-      else 
-         l_clob := (self as rating_t).to_clob;
-         l_location_id := cwms_util.split_text(self.rating_spec_id, 1, cwms_rating.separator1);
-         l_local_datum := cwms_loc.get_location_vertical_datum(l_location_id, self.office_id);
-         l_parts       := cwms_util.split_text(replace(self.native_units, cwms_rating.separator2, cwms_rating.separator3), cwms_rating.separator3);
-         if self.elev_positions(1) = -1 then
-            l_unit_id := l_parts(l_parts.count);
-         else
-            l_unit_id := l_parts(self.elev_positions(1));
-         end if; 
-         l_vdatum_info := cwms_loc.get_vertical_datum_info_f(l_location_id, l_unit_id, self.office_id);
-         l_vdatum_info := regexp_replace(l_vdatum_info, '\s+office="\w+"', null); 
-         l_vdatum_info := regexp_replace(l_vdatum_info, '<location>.+</location>', null); 
-         l_vdatum_info := regexp_replace(l_vdatum_info, '(>)\s+(\S)', '\1\2'); 
-         l_vdatum_info := regexp_replace(l_vdatum_info, '(\S)\s+(<)', '\1\2'); 
-         l_clob := replace(
-            l_clob, 
-            '</rating-spec-id>', 
-            '</rating-spec-id>'||l_vdatum_info);
+         l_clone.current_datum := l_clone.native_datum;
+      else
+         l_clone.to_vertical_datum(l_vert_datum);
+         l_clone.current_datum := l_vert_datum;
       end if;
+      l_clob := (l_clone as rating_t).to_clob(p_timezone, p_units, p_vert_datum);
+      l_location_id := cwms_util.split_text(l_clone.rating_spec_id, 1, '.');
+      case
+         when p_units is null or p_units = 'NATIVE' then
+            l_parts       := cwms_util.split_text(replace(l_clone.native_units, ';', ','), ',');
+            if l_clone.elev_positions(1) = -1 then
+               l_unit_id := l_parts(l_parts.count);
+            else
+               l_unit_id := l_parts(l_clone.elev_positions(1));
+            end if;
+         when p_units in ('EN', 'SI') then
+            l_unit_id := cwms_util.get_default_units('Elev', p_units);
+         else    
+            l_parts       := cwms_util.split_text(replace(p_units, ';', ','), ',');
+            if l_clone.elev_positions(1) = -1 then
+               l_unit_id := l_parts(l_parts.count);
+            else
+               l_unit_id := l_parts(l_clone.elev_positions(1));
+            end if;
+      end case;     
+      ------------------------------- 
+      -- handle the vertical datum --
+      -------------------------------     
+      l_vdatum_info := cwms_loc.get_vertical_datum_info_f(l_location_id, l_unit_id, l_clone.office_id); 
+      l_vdatum_info := regexp_replace(l_vdatum_info, '\s+office="\w+"', null); 
+      l_vdatum_info := regexp_replace(l_vdatum_info, '<location>.+</location>', null); 
+      l_vdatum_info := regexp_replace(l_vdatum_info, '(>)\s+(\S)', '\1\2'); 
+      l_vdatum_info := regexp_replace(l_vdatum_info, '(\S)\s+(<)', '\1\2'); 
+      l_clob := replace(l_clob, '</rating-spec-id>', '</rating-spec-id>'||l_vdatum_info);  
+      l_clob := replace(l_clob, '<units-id>', '<units-id vertical-datum="'||l_clone.current_datum||'">');         
       return l_clob;
    end;
       
-   overriding member function to_xml
+   overriding member function to_xml(
+      self         in out nocopy vdatum_rating_t,
+      p_timezone   in varchar2 default null,
+      p_units      in varchar2 default null,
+      p_vert_datum in varchar2 default null)
       return xmltype      
    is
    begin
-      return xmltype(to_clob);
+      return xmltype(to_clob((self as rating_t), p_timezone, p_units, p_vert_datum));
    end;
    
 end;

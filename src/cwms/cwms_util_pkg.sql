@@ -2207,7 +2207,19 @@ AS
       p_condition  in varchar2 default null,
       p_order_by   in varchar2 default null,
       p_descending in varchar2 default 'F')
-   return xml_tab_t;
+   return xml_tab_t;  
+   /**
+    * Retrieves a specified XML attributes from an <code><big>XMLTYPE</big></code>
+    * 
+    * @param p_xml The xml document or fragment to retrieve from  
+    * @param p_path The element to retrieve, in XPath format
+    * 
+    * @return the attributes of specified element, if any, in name=value format                      
+    */       
+   function get_xml_attributes(
+      p_xml  in xmltype,
+      p_path in varchar2)
+      return str_tab_t;
    /**
     * Retrieves the text contained in a specified XML element from an <code><big>XMLTYPE</big></code>
     * 
@@ -2486,8 +2498,11 @@ AS
    function get_column(
       p_table  in str_tab_tab_t,
       p_column in pls_integer)
-      return str_tab_t;      
-      
+      return str_tab_t;
+            
+   function to_json(
+      p_xml in xmltype)
+      return clob;      
 END cwms_util;
 /
 

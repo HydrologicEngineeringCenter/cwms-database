@@ -344,7 +344,17 @@ as
          end if;
       end if;
       self.current_units := 'N';
-      self.current_time := 'D';
+      self.current_time := 'D'; 
+      if self.offsets is not null then
+         self.offsets.current_units := self.current_units;
+         self.offsets.current_time  := self.current_time;
+      end if;
+      if self.shifts is not null then
+         for i in 1..self.shifts.count loop
+            self.shifts(i).current_units := self.current_units;
+            self.shifts(i).current_time  := self.current_time;
+         end loop;
+      end if;
       self.validate_obj;
       return;
    end;
@@ -352,7 +362,15 @@ as
    constructor function stream_rating_t(
       p_other in stream_rating_t)
    return self as result
-   is   
+   is
+   begin
+      init(p_other);   
+      return;
+   end;
+          
+   member procedure init(
+      p_other in stream_rating_t)
+   is 
    begin
       self.office_id      := p_other.office_id;
       self.rating_spec_id := p_other.rating_spec_id;
@@ -367,9 +385,8 @@ as
       self.current_time   := p_other.current_time;
       self.offsets        := p_other.offsets;
       self.shifts         := p_other.shifts;
-      return;
    end;
-
+         
    overriding member procedure init(
       p_rating_code in number)
    is
@@ -404,10 +421,20 @@ as
 
          self.offsets := rating_t(l_offsets_code);
          self.offsets.effective_date := self.effective_date;
-         self.offsets.create_date    := self.create_date;
+         self.offsets.create_date    := self.create_date; 
       exception
          when no_data_found then null;
       end;
+      if self.offsets is not null then
+         self.offsets.current_units := self.current_units;
+         self.offsets.current_time  := self.current_time;
+      end if;
+      if self.shifts is not null then
+         for i in 1..self.shifts.count loop
+            self.shifts(i).current_units := self.current_units;
+            self.shifts(i).current_time  := self.current_time;
+         end loop;
+      end if;
       self.validate_obj;
    end;
 
@@ -602,9 +629,9 @@ as
    overriding member procedure convert_to_database_units
    is
       l_temp rating_t;
-   begin
+   begin               
       (self as rating_t).convert_to_database_units;
-      if self.offsets is not null then
+      if self.offsets is not null then 
          self.offsets.convert_to_database_units;
       end if;
       if self.shifts is not null then
@@ -903,13 +930,20 @@ as
       end if;
    end;
 
-   overriding member function to_clob
+   overriding member function to_clob(
+      self         in out nocopy stream_rating_t,
+      p_timezone   in varchar2 default null,
+      p_units      in varchar2 default null,
+      p_vert_datum in varchar2 default null)
    return clob
    is
       l_text  clob;
       l_clone stream_rating_t;
       l_tzone varchar2(28);
       l_temp  rating_t;
+      l_parts str_tab_t;
+      l_units varchar2(64);       
+      
       function bool_text(
          p_state in boolean)
       return varchar2
@@ -921,35 +955,63 @@ as
                 end;
       end;
    begin
-      if self.current_units = 'D' then
+      if self is of (vdatum_stream_rating_t) then
+         l_clone := vdatum_stream_rating_t(treat(self as vdatum_stream_rating_t));
+      else 
          l_clone := stream_rating_t(self);
+      end if;
+      l_clone.convert_to_database_units;
+      --------------------------
+      -- handle the time zone --
+      --------------------------
+      l_tzone := coalesce(
+         p_timezone,
+         cwms_loc.get_local_timezone(cwms_util.split_text(l_clone.rating_spec_id, cwms_rating.separator1)(1), l_clone.office_id),
+         'UTC');  
+      ----------------------     
+      -- handle the units --
+      ----------------------     
+      if p_units is not null then   
+         if upper(trim(p_units)) != 'NATIVE' then
+            l_parts := cwms_util.split_text(replace(cwms_util.split_text(l_clone.rating_spec_id, 2, '.'), ';', ','), ',');
+            l_units := cwms_util.get_default_units(l_parts(1), upper(trim(p_units)))||';'||cwms_util.get_default_units(l_parts(2), upper(trim(p_units)));
+            l_clone.native_units := l_units;
+            l_parts := cwms_util.split_text(l_units, ';');
+            l_units := l_parts(1)||';'||l_parts(1);
+            if l_clone.offsets is not null then
+               l_clone.offsets.native_units := l_units;
+            end if;
+            if l_clone.shifts is not null then
+               for i in 1..l_clone.shifts.count loop
+                  l_clone.shifts(i).native_units := l_units;
+               end loop;
+            end if;
+         end if;
          l_clone.convert_to_native_units;
-         return l_clone.to_clob;
-      end if;              
-      l_tzone := nvl(cwms_loc.get_local_timezone(cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1)(1), self.office_id), 'UTC');
+      end if;
       dbms_lob.createtemporary(l_text, true);
       dbms_lob.open(l_text, dbms_lob.lob_readwrite);
       cwms_util.append(l_text,
-         '<usgs-stream-rating office-id="'||self.office_id||'">'
-         ||'<rating-spec-id>'||self.rating_spec_id||'</rating-spec-id>'
-         ||'<units-id>'||self.native_units||'</units-id>'
-         ||'<effective-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(self.effective_date, 'UTC', l_tzone), l_tzone)||'</effective-date>');
-      if self.create_date is not null then
-         cwms_util.append(l_text, '<create-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(self.create_date, 'UTC', l_tzone), l_tzone)||'</create-date>');
+         '<usgs-stream-rating office-id="'||l_clone.office_id||'">'
+         ||'<rating-spec-id>'||l_clone.rating_spec_id||'</rating-spec-id>'
+         ||'<units-id>'||l_clone.native_units||'</units-id>'
+         ||'<effective-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(l_clone.effective_date, 'UTC', l_tzone), l_tzone)||'</effective-date>');
+      if l_clone.create_date is not null then
+         cwms_util.append(l_text, '<create-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(l_clone.create_date, 'UTC', l_tzone), l_tzone)||'</create-date>');
       end if;
       cwms_util.append(l_text,
          '<active>'
-         ||bool_text(cwms_util.is_true(self.active_flag))
+         ||bool_text(cwms_util.is_true(l_clone.active_flag))
          ||'</active>');
-      if self.description is not null then
-         cwms_util.append(l_text, '<description>'||self.description||'</description>');
+      if l_clone.description is not null then
+         cwms_util.append(l_text, '<description>'||l_clone.description||'</description>');
       end if;
       -------------------
       -- output shifts --
       -------------------
-      if self.shifts is not null then
-         for i in 1..self.shifts.count loop
-            l_temp := treat(self.shifts(i) as rating_t);
+      if l_clone.shifts is not null then
+         for i in 1..l_clone.shifts.count loop
+            l_temp := treat(l_clone.shifts(i) as rating_t);
             cwms_util.append(l_text,
                '<height-shifts><effective-date>'
                ||cwms_util.get_xml_time(cwms_util.change_timezone(l_temp.effective_date, 'UTC', l_tzone), l_tzone)||'</effective-date>');
@@ -984,19 +1046,19 @@ as
       -------------------
       -- output offsets -
       -------------------
-      if self.offsets is not null then
+      if l_clone.offsets is not null then
          cwms_util.append(l_text, '<height-offsets>');
-         for i in 1..self.offsets.rating_info.rating_values.count loop
+         for i in 1..l_clone.offsets.rating_info.rating_values.count loop
             cwms_util.append(l_text,
                '<point><ind>'
-               ||cwms_rounding.round_dt_f(self.offsets.rating_info.rating_values(i).ind_value, '9999999999')
+               ||cwms_rounding.round_dt_f(l_clone.offsets.rating_info.rating_values(i).ind_value, '9999999999')
                ||'</ind><dep>'
-               ||cwms_rounding.round_dt_f(self.offsets.rating_info.rating_values(i).dep_value, '9999999999')
+               ||cwms_rounding.round_dt_f(l_clone.offsets.rating_info.rating_values(i).dep_value, '9999999999')
                ||'</dep>');
-            if self.offsets.rating_info.rating_values(i).note_id is not null then
+            if l_clone.offsets.rating_info.rating_values(i).note_id is not null then
                cwms_util.append(l_text,
                   '<note>'
-                  ||self.offsets.rating_info.rating_values(i).note_id
+                  ||l_clone.offsets.rating_info.rating_values(i).note_id
                   ||'</note>');
             end if;
             cwms_util.append(l_text, '</point>');
@@ -1007,17 +1069,17 @@ as
       -- rating points --
       -------------------
       cwms_util.append(l_text, '<rating-points>');
-      for i in 1..self.rating_info.rating_values.count loop
+      for i in 1..l_clone.rating_info.rating_values.count loop
          cwms_util.append(l_text,
             '<point><ind>'
-            ||cwms_rounding.round_dt_f(self.rating_info.rating_values(i).ind_value, '9999999999')
+            ||cwms_rounding.round_dt_f(l_clone.rating_info.rating_values(i).ind_value, '9999999999')
             ||'</ind><dep>'
-            ||cwms_rounding.round_dt_f(self.rating_info.rating_values(i).dep_value, '9999999999')
+            ||cwms_rounding.round_dt_f(l_clone.rating_info.rating_values(i).dep_value, '9999999999')
             ||'</dep>');
-         if self.rating_info.rating_values(i).note_id is not null then
+         if l_clone.rating_info.rating_values(i).note_id is not null then
             cwms_util.append(l_text,
                '<note>'
-               ||self.rating_info.rating_values(i).note_id
+               ||l_clone.rating_info.rating_values(i).note_id
                ||'</note>');
          end if;
          cwms_util.append(l_text, '</point>');
@@ -1027,11 +1089,15 @@ as
       return l_text;
    end;
 
-   overriding member function to_xml
+   overriding member function to_xml(
+      self         in out nocopy stream_rating_t,
+      p_timezone   in varchar2 default null,
+      p_units      in varchar2 default null,
+      p_vert_datum in varchar2 default null)
    return xmltype
    is
    begin
-      return xmltype(self.to_clob());
+      return xmltype(self.to_clob(p_timezone, p_units, p_vert_datum));
    end;
 
    overriding member function rate(

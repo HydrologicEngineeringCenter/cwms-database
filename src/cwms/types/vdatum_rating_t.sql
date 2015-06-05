@@ -42,6 +42,13 @@ under rating_t
       p_elev_positions in number_tab_t
    ) return self as result,
    /**
+    * Copy constructor
+    */   
+   constructor function vdatum_rating_t(
+      p_other in vdatum_rating_t
+   ) return self as result,
+      
+   /**
     * Modifies the elevations in the rating to be in the specified datum
     *
     * @param p_vertical_datum The vertical datum to adjust the elevations to
@@ -57,18 +64,27 @@ under rating_t
     *
     * @return the rating as an XML instance in an CLOB object
     */
-   overriding member function to_clob
+   overriding member function to_clob(
+      self         in out nocopy vdatum_rating_t,
+      p_timezone   in varchar2 default null,
+      p_units      in varchar2 default null,
+      p_vert_datum in varchar2 default null)
       return clob,
    /**
     * Retrieves the rating as an XML instance in an XMLTYPE object
     *
     * @return the rating as an XML instance in an XMLTYPE object
     */
-   overriding member function to_xml
+   overriding member function to_xml(
+      self         in out nocopy vdatum_rating_t,
+      p_timezone   in varchar2 default null,
+      p_units      in varchar2 default null,
+      p_vert_datum in varchar2 default null)
       return xmltype      
 );
 /
 
+show errors;
 
 create or replace public synonym cwms_t_vdatum_rating for vdatum_rating_t;
 

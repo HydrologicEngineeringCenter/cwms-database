@@ -570,26 +570,33 @@ as
    return self as result
    is
    begin
-      self.office_id      := p_other.office_id;
-      self.rating_spec_id := p_other.rating_spec_id;
-      self.effective_date := p_other.effective_date;
-      self.create_date    := p_other.create_date;
-      self.active_flag    := p_other.active_flag;
-      self.formula        := p_other.formula;
+      init(p_other);
+      return;
+   end;
+
+   member procedure init(
+      p_other in rating_t)
+   is
+   begin
+      self.office_id       := p_other.office_id;
+      self.rating_spec_id  := p_other.rating_spec_id;
+      self.effective_date  := p_other.effective_date;
+      self.create_date     := p_other.create_date;
+      self.active_flag     := p_other.active_flag;
+      self.formula         := p_other.formula;
       self.connections     := p_other.connections;
-      self.native_units   := p_other.native_units;
-      self.description    := p_other.description;
-      self.rating_info    := p_other.rating_info;
-      self.current_units  := p_other.current_units;
-      self.current_time   := p_other.current_time;
-      self.formula_tokens := p_other.formula_tokens;
+      self.native_units    := p_other.native_units;
+      self.description     := p_other.description;
+      self.rating_info     := p_other.rating_info;
+      self.current_units   := p_other.current_units;
+      self.current_time    := p_other.current_time;
+      self.formula_tokens  := p_other.formula_tokens;
       self.source_ratings  := p_other.source_ratings;
       self.connections_map := p_other.connections_map;
       self.conditions      := p_other.conditions;
       self.evaluations     := p_other.evaluations;
-      return;
    end;
-
+         
    member procedure init(
       p_rating_code in number)
    is
@@ -2238,17 +2245,23 @@ as
       self.store(l_rating_code, p_fail_if_exists);
    end;
 
-   member function to_clob
+   member function to_clob(
+      self         in out nocopy rating_t,
+      p_timezone   in varchar2 default null,
+      p_units      in varchar2 default null,
+      p_vert_datum in varchar2 default null)
    return clob
    is
       l_text               clob;
       l_clone              rating_t;
       l_tzone              varchar2(28);
+      l_units              varchar2(128);
       l_is_virtual         boolean;
       l_is_transitional    boolean;
       l_rating_spec        rating_spec_t;
       l_rating_tag         varchar2(19);
       l_source_rating_type varchar2(17);
+      l_parts              str_tab_t;
 
       function bool_text(
          p_state in boolean)
@@ -2264,123 +2277,151 @@ as
       l_is_virtual := self.connections is not null;
       l_is_transitional := self.evaluations is not null;
       l_rating_tag := case
-                         when l_is_virtual      then 'virtual-rating'
-                         when l_is_transitional then 'transitional-rating'
-                         else                        'simple-rating'
+                      when l_is_virtual      then 'virtual-rating'
+                      when l_is_transitional then 'transitional-rating'
+                      else                        'simple-rating'
                       end;
-      if self.current_units = 'D' and not (l_is_virtual or l_is_transitional) then
+      ---------------------------------------------------------------------------                      
+      -- clone the current rating so we can change its properties if necessary --
+      ---------------------------------------------------------------------------
+      case
+      when self is of (vdatum_rating_t) then
+         l_clone := vdatum_rating_t(treat(self as vdatum_rating_t));
+      else 
          l_clone := rating_t(self);
+      end case;
+      l_clone.convert_to_database_units;
+      --------------------------
+      -- handle the time zone --
+      --------------------------
+      l_tzone := coalesce(
+         p_timezone,
+         cwms_loc.get_local_timezone(cwms_util.split_text(l_clone.rating_spec_id, cwms_rating.separator1)(1), l_clone.office_id),
+         'UTC');
+      ----------------------     
+      -- handle the units --
+      ----------------------     
+      if p_units is not null then   
+         if upper(trim(p_units)) != 'NATIVE' then
+            l_parts := cwms_util.split_text(replace(cwms_util.split_text(l_clone.rating_spec_id, 2, '.'), ';', ','), ',');
+            for i in 1..l_parts.count loop
+               l_units := l_units || case i when 1 then null when l_parts.count then ';' else ',' end;
+               l_units := l_units || cwms_util.get_default_units(l_parts(i), upper(trim(p_units)));
+            end loop;
+            l_clone.native_units := l_units;
+         end if;
          l_clone.convert_to_native_units;
-         l_text := l_clone.to_clob;
+      end if;
+      dbms_lob.createtemporary(l_text, true);
+      dbms_lob.open(l_text, dbms_lob.lob_readwrite);
+      cwms_util.append(l_text, '<'||l_rating_tag||' office-id="'||l_clone.office_id||'"><rating-spec-id>'||l_clone.rating_spec_id||'</rating-spec-id>');
+      if not l_is_virtual then
+         cwms_util.append(l_text, '<units-id>'||l_clone.native_units||'</units-id>');
+      end if;
+      cwms_util.append(l_text, '<effective-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(l_clone.effective_date, 'UTC', l_tzone), l_tzone)||'</effective-date>');
+         if l_clone.create_date is not null then
+            cwms_util.append(l_text, '<create-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(l_clone.create_date, 'UTC', l_tzone), l_tzone)||'</create-date>');
+         end if;
+      cwms_util.append(l_text, '<active>'||bool_text(cwms_util.is_true(l_clone.active_flag))||'</active>');
+      if l_clone.description is null then
+         cwms_util.append(l_text, '<description/>');
       else
-         dbms_lob.createtemporary(l_text, true);
-         dbms_lob.open(l_text, dbms_lob.lob_readwrite);
-         cwms_util.append(l_text, '<'||l_rating_tag||' office-id="'||self.office_id||'"><rating-spec-id>'||self.rating_spec_id||'</rating-spec-id>');
-            l_tzone := nvl(cwms_loc.get_local_timezone(cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1)(1), self.office_id), 'UTC');
-         if not l_is_virtual then
-            cwms_util.append(l_text, '<units-id>'||self.native_units||'</units-id>');
-         end if;
-         cwms_util.append(l_text, '<effective-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(self.effective_date, 'UTC', l_tzone), l_tzone)||'</effective-date>');
-            if self.create_date is not null then
-               cwms_util.append(l_text, '<create-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(self.create_date, 'UTC', l_tzone), l_tzone)||'</create-date>');
-            end if;
-         cwms_util.append(l_text, '<active>'||bool_text(cwms_util.is_true(self.active_flag))||'</active>');
-         if self.description is null then
-            cwms_util.append(l_text, '<description/>');
-         else
-            cwms_util.append(l_text, '<description>'||self.description||'</description>');
-         end if;
-         case
-         when l_is_virtual then
-            ------------------
-            -- virtual only --
-            ------------------
-            cwms_util.append(l_text, '<connections>'||self.connections||'</connections>');
-            cwms_util.append(l_text, '<source-ratings>');
-            for i in 1..self.source_ratings.count loop
-               begin
-                  l_rating_spec := rating_spec_t(trim(cwms_util.split_text(self.source_ratings(i), 1, '{')), self.office_id);
-                  l_source_rating_type := 'rating-spec-id';
-               exception
-                  when others then l_source_rating_type := 'rating-expression';
-               end;
-               cwms_util.append(
-                  l_text,
-                  '<source-rating position="'
+         cwms_util.append(l_text, '<description>'||l_clone.description||'</description>');
+      end if;
+      case
+      when l_is_virtual then
+         ------------------
+         -- virtual only --
+         ------------------
+         cwms_util.append(l_text, '<connections>'||l_clone.connections||'</connections>');
+         cwms_util.append(l_text, '<source-ratings>');
+         for i in 1..l_clone.source_ratings.count loop
+            begin
+               l_rating_spec := rating_spec_t(trim(cwms_util.split_text(l_clone.source_ratings(i), 1, '{')), l_clone.office_id);
+               l_source_rating_type := 'rating-spec-id';
+            exception
+               when others then l_source_rating_type := 'rating-expression';
+            end;
+            cwms_util.append(
+               l_text,
+               '<source-rating position="'
+               ||i
+               ||'"><'
+               ||l_source_rating_type
+               ||'>'
+               ||case l_source_rating_type
+                    when 'rating-expression' then
+                       regexp_replace(cwms_util.to_algebraic(cwms_util.split_text(l_clone.source_ratings(i), 1, '{')), 'ARG(\d+)', 'I\1')
+                       ||' '
+                       ||substr(l_clone.source_ratings(i), instr(l_clone.source_ratings(i), '{'))
+                    else
+                       l_clone.source_ratings(i)
+                 end
+               ||'</'
+               ||l_source_rating_type
+               ||'></source-rating>');
+         end loop;
+         cwms_util.append(l_text, '</source-ratings>');
+      when l_is_transitional then 
+         -----------------------
+         -- transitional only --
+         -----------------------
+         cwms_util.append(l_text, '<select>');
+         if l_clone.conditions is not null then
+            declare
+               l_condition logic_expr_t;
+            begin
+               for i in 1..l_clone.conditions.count loop
+                  l_condition := l_clone.conditions(i);
+                  cwms_util.append(l_text, '<case position="'
                   ||i
-                  ||'"><'
-                  ||l_source_rating_type
-                  ||'>'
-                  ||case l_source_rating_type
-                       when 'rating-expression' then
-                          regexp_replace(cwms_util.to_algebraic(cwms_util.split_text(self.source_ratings(i), 1, '{')), 'ARG(\d+)', 'I\1')
-                          ||' '
-                          ||substr(self.source_ratings(i), instr(self.source_ratings(i), '{'))
-                       else
-                          self.source_ratings(i)
-                    end
-                  ||'</'
-                  ||l_source_rating_type
-                  ||'></source-rating>');
+                  ||'"><when>'
+                  ||regexp_replace(regexp_replace(l_condition.to_xml_text, 'ARG90(\d+)', 'R\1'), 'ARG(\d+)', 'I\1')
+                  ||'</when><then>'
+                  ||regexp_replace(regexp_replace(cwms_util.to_algebraic(l_clone.evaluations(i)), 'ARG90(\d+)', 'R\1'), 'ARG(\d+)', 'I\1')
+                  ||'</then></case>');
+               end loop;
+            end;
+            cwms_util.append(l_text, '<default>'
+            ||regexp_replace(regexp_replace(cwms_util.to_algebraic(l_clone.evaluations(l_clone.evaluations.count)), 'ARG90(\d+)', 'R\1'), 'ARG(\d+)', 'I\1')
+            ||'</default>');
+         end if;
+         cwms_util.append(l_text, '</select>');   
+         if l_clone.source_ratings is not null then
+            cwms_util.append(l_text, '<source-ratings>');
+            for i in 1..l_clone.source_ratings.count loop
+               cwms_util.append(l_text, '<rating-spec-id position="'
+               ||i
+               ||'">'
+               ||l_clone.source_ratings(i)
+               ||'</rating-spec-id>');
             end loop;
             cwms_util.append(l_text, '</source-ratings>');
-         when l_is_transitional then 
-            -----------------------
-            -- transitional only --
-            -----------------------
-            cwms_util.append(l_text, '<select>');
-            if self.conditions is not null then
-               declare
-                  l_condition logic_expr_t;
-               begin
-                  for i in 1..self.conditions.count loop
-                     l_condition := self.conditions(i);
-                     cwms_util.append(l_text, '<case position="'
-                     ||i
-                     ||'"><when>'
-                     ||regexp_replace(regexp_replace(l_condition.to_xml_text, 'ARG90(\d+)', 'R\1'), 'ARG(\d+)', 'I\1')
-                     ||'</when><then>'
-                     ||regexp_replace(regexp_replace(cwms_util.to_algebraic(self.evaluations(i)), 'ARG90(\d+)', 'R\1'), 'ARG(\d+)', 'I\1')
-                     ||'</then></case>');
-                  end loop;
-               end;
-               cwms_util.append(l_text, '<default>'
-               ||regexp_replace(regexp_replace(cwms_util.to_algebraic(self.evaluations(self.evaluations.count)), 'ARG90(\d+)', 'R\1'), 'ARG(\d+)', 'I\1')
-               ||'</default>');
-            end if;
-            cwms_util.append(l_text, '</select>');   
-            if self.source_ratings is not null then
-               cwms_util.append(l_text, '<source-ratings>');
-               for i in 1..self.source_ratings.count loop
-                  cwms_util.append(l_text, '<rating-spec-id position="'
-                  ||i
-                  ||'">'
-                  ||self.source_ratings(i)
-                  ||'</rating-spec-id>');
-               end loop;
-               cwms_util.append(l_text, '</source-ratings>');
-            end if;   
+         end if;   
+      else
+         -------------------
+         -- concrete only --
+         -------------------
+         if l_clone.formula is null then
+            cwms_util.append(l_text, l_clone.rating_info.to_clob);
          else
-            -------------------
-            -- concrete only --
-            -------------------
-            if self.formula is null then
-               cwms_util.append(l_text, self.rating_info.to_clob);
-            else
-               cwms_util.append(l_text, '<formula>'||regexp_replace(upper(self.formula), 'ARG(\d+)', 'I\1')||'</formula>');
-            end if;
-         end case;
-         cwms_util.append(l_text, '</'||l_rating_tag||'>');
-         dbms_lob.close(l_text);
-      end if;
+            cwms_util.append(l_text, '<formula>'||regexp_replace(upper(l_clone.formula), 'ARG(\d+)', 'I\1')||'</formula>');
+         end if;
+      end case;
+      cwms_util.append(l_text, '</'||l_rating_tag||'>');
+      dbms_lob.close(l_text);
       return l_text;
    end;
 
-   member function to_xml
+   member function to_xml(
+      self         in out nocopy rating_t,
+      p_timezone   in varchar2 default null,
+      p_units      in varchar2 default null,
+      p_vert_datum in varchar2 default null)  
    return xmltype
    is
    begin
-      return xmltype(self.to_clob);
+      return xmltype(self.to_clob(p_timezone, p_units, p_vert_datum));
    end;
 
    member function rate(
