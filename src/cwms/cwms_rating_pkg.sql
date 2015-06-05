@@ -3065,11 +3065,11 @@ procedure retrieve_ratings(
  *                         <li>a combination of 1 and 2 (multiple name positions with one or more positions matching possibly more than one rating)</li></ol>
  * @param p_format         The format to retrieve the ratings in. Valid formats are <ul><li>TAB</li><li>CSV</li><li>XML</li><li>JSON</li></ul>
  *                         If the format is unspecified or NULL, the TAB format will be used. 
- * @param p_units          The units to return the units in.  Valid units are <ul><li>NATIVE</li><li>EN</li><li>SI</li></ul>. If the p_names variable (q.v.) has more
+ * @param p_units          The units to return the units in.  Valid units are <ul><li>NATIVE</li><li>EN</li><li>SI</li></ul> If the p_names variable (q.v.) has more
  *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_units variable may also have multiple positions separated by the 
  *                         <b>'|',</b> charcter. If the p_units variable has fewer positions than the p_name variable, the last unit position is used for all 
  *                         remaning names. If the units are unspecified or NULL, the NATIVE units will be used for all ratings.
- * @param p_datums         The vertical datums to return the units in.  Valid datums are <ul><li>NATIVE</li><li>NGVD29</li><li>NAVD88</li></ul>. If the p_names variable (q.v.) has more
+ * @param p_datums         The vertical datums to return the units in.  Valid datums are <ul><li>NATIVE</li><li>NGVD29</li><li>NAVD88</li></ul> If the p_names variable (q.v.) has more
  *                         than onename position, (i.e., has one or more <b>'|',</b> charcters), the p_datums variable may also have multiple positions separated by the 
  *                         <b>'|',</b> charcter. If the p_datums variable has fewer positions than the p_name variable, the last datum position is used for all 
  *                         remaning names. If the datums are unspecified or NULL, the NATIVE veritcal datum will be used for all ratings.
