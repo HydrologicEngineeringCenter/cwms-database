@@ -5195,7 +5195,7 @@ AS
                -- numeric? --
                --------------
                l_number := to_number(l_text);
-               l_text := regexp_replace(l_text, '(^|[^0-9+-])\.', '\10.'); -- add leading zero for JSON
+               l_text := regexp_replace(l_text, '(^|[^0-9])\.', '\10.'); -- add leading zero for JSON
             exception
                -----------------
                -- not numeric --

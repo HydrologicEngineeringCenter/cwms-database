@@ -5479,7 +5479,10 @@ is
    l_elapsed_query    interval day (0) to second (6);
    l_elapsed_format   interval day (0) to second (6);
    l_query_time       date; 
-   l_attrs            str_tab_t;    
+   l_attrs            str_tab_t;
+   l_offices          str_tab_t;
+   l_ids              str_tab_t;
+   l_descriptions     str_tab_t;    
    
 begin
    l_query_time := cast(systimestamp at time zone 'UTC' as date);
@@ -5489,9 +5492,7 @@ begin
    -----------
    -- names --
    -----------
-   if p_names is null then
-      cwms_err.raise('NULL_ARGUMENT', 'p_names');
-   else
+   if p_names is not null then
       l_names := cwms_util.split_text(p_names, '|');
       for i in 1..l_names.count loop
          l_names(i) := trim(l_names(i));
@@ -5511,7 +5512,7 @@ begin
    ------------
    -- office --
    ------------
-   if nvl(p_office_id, '*') = '*' then
+   if p_office_id is null then
       l_office_id := '*';
    else               
       begin                                                                              
@@ -5522,88 +5523,90 @@ begin
             cwms_err.raise('INVALID_OFFICE_ID', l_office_id);
       end;
    end if;  
-   -----------
-   -- units --
-   -----------
-   if p_units is null then
-      l_units := str_tab_t();
-      l_units.extend(l_names.count);
-      for i in 1..l_units.count loop
-         l_units(i) := 'NATIVE';
-      end loop;
-   else
-      l_units := cwms_util.split_text(p_units, '|');
-      for i in 1..l_units.count loop
-         l_units(i) := upper(trim(l_units(i)));
-         if l_units(i) not in  ('NATIVE', 'EN', 'SI') then
-            cwms_err.raise('ERROR', 'Expected unit specification of NATIVE, EN, or SI, got '||l_units(i));
+   if l_names is not null then
+      -----------
+      -- units --
+      -----------
+      if p_units is null then
+         l_units := str_tab_t();
+         l_units.extend(l_names.count);
+         for i in 1..l_units.count loop
+            l_units(i) := 'NATIVE';
+         end loop;
+      else
+         l_units := cwms_util.split_text(p_units, '|');
+         for i in 1..l_units.count loop
+            l_units(i) := upper(trim(l_units(i)));
+            if l_units(i) not in  ('NATIVE', 'EN', 'SI') then
+               cwms_err.raise('ERROR', 'Expected unit specification of NATIVE, EN, or SI, got '||l_units(i));
+            end if;
+         end loop;
+         l_count := l_units.count - l_names.count; 
+         if l_count > 0 then
+            l_units.trim(l_count);
+         elsif l_count < 0 then
+            l_unit := l_units(l_units.count);
+            l_count := -l_count;
+            l_units.extend(l_count);
+            for i in 1..l_count loop
+               l_units(l_units.count - i + 1) := l_unit;
+            end loop; 
          end if;
-      end loop;
-      l_count := l_units.count - l_names.count; 
-      if l_count > 0 then
-         l_units.trim(l_count);
-      elsif l_count < 0 then
-         l_unit := l_units(l_units.count);
-         l_count := -l_count;
-         l_units.extend(l_count);
-         for i in 1..l_count loop
-            l_units(l_units.count - i + 1) := l_unit;
-         end loop; 
-      end if;
-   end if;   
-   ------------
-   -- datums --
-   ------------
-   if p_datums is null then
-      l_datums := str_tab_t();
-      l_datums.extend(l_names.count);
-      for i in 1..l_datums.count loop
-         l_datums(i) := 'NATIVE';
-      end loop;
-   else
-      l_datums := cwms_util.split_text(p_datums, '|');
-      for i in 1..l_datums.count loop
-         l_datums(i) := trim(l_datums(i));
-         if upper(l_datums(i)) in ('NATIVE', 'NAVD88', 'NGVD29') then
-            l_datums(i) := upper(l_datums(i));
-         else
-            cwms_err.raise('INVALID_ITEM', l_datums(i), 'rating response datum');
-         end if; 
-      end loop;
-      l_count := l_datums.count - l_names.count; 
-      if l_count > 0 then
-         l_datums.trim(l_count);
-      elsif l_count < 0 then
-         l_datum := l_datums(l_datums.count);
-         l_count := -l_count;
-         l_datums.extend(l_count);
-         for i in 1..l_count loop
-            l_datums(l_datums.count - i + 1) := l_datum;
-         end loop; 
-      end if;
-   end if;
-   -----------------      
-   -- time window --
-   ----------------- 
-   if p_timezone is not null then
-      l_timezone := cwms_util.get_time_zone_name(trim(p_timezone));
-      if l_timezone is null then
-         cwms_err.raise('INVALID_ITEM', p_timezone, 'CWMS time zone name');
-      end if;
-   end if;
-   if p_start is not null then
-      l_start := cast(cwms_util.to_timestamp(p_start) as date);
-      if regexp_instr(p_start, '([-+]\d{2}:\d{2}|Z)') > 0 then 
-         if l_timezone is not null then
-            l_start := cwms_util.change_timezone(l_start, 'UTC', l_timezone);
+      end if;   
+      ------------
+      -- datums --
+      ------------
+      if p_datums is null then
+         l_datums := str_tab_t();
+         l_datums.extend(l_names.count);
+         for i in 1..l_datums.count loop
+            l_datums(i) := 'NATIVE';
+         end loop;
+      else
+         l_datums := cwms_util.split_text(p_datums, '|');
+         for i in 1..l_datums.count loop
+            l_datums(i) := trim(l_datums(i));
+            if upper(l_datums(i)) in ('NATIVE', 'NAVD88', 'NGVD29') then
+               l_datums(i) := upper(l_datums(i));
+            else
+               cwms_err.raise('INVALID_ITEM', l_datums(i), 'rating response datum');
+            end if; 
+         end loop;
+         l_count := l_datums.count - l_names.count; 
+         if l_count > 0 then
+            l_datums.trim(l_count);
+         elsif l_count < 0 then
+            l_datum := l_datums(l_datums.count);
+            l_count := -l_count;
+            l_datums.extend(l_count);
+            for i in 1..l_count loop
+               l_datums(l_datums.count - i + 1) := l_datum;
+            end loop; 
          end if;
       end if;
-   end if;
-   if p_end is not null then
-      l_end := cast(cwms_util.to_timestamp(p_end) as date);
-      if regexp_instr(p_end, '([-+]\d{2}:\d{2}|Z)') > 0 then 
-         if l_timezone is not null then
-            l_end := cwms_util.change_timezone(l_end, 'UTC', l_timezone);
+      -----------------      
+      -- time window --
+      ----------------- 
+      if p_timezone is not null then
+         l_timezone := cwms_util.get_time_zone_name(trim(p_timezone));
+         if l_timezone is null then
+            cwms_err.raise('INVALID_ITEM', p_timezone, 'CWMS time zone name');
+         end if;
+      end if;
+      if p_start is not null then
+         l_start := cast(cwms_util.to_timestamp(p_start) as date);
+         if regexp_instr(p_start, '([-+]\d{2}:\d{2}|Z)') > 0 then 
+            if l_timezone is not null then
+               l_start := cwms_util.change_timezone(l_start, 'UTC', l_timezone);
+            end if;
+         end if;
+      end if;
+      if p_end is not null then
+         l_end := cast(cwms_util.to_timestamp(p_end) as date);
+         if regexp_instr(p_end, '([-+]\d{2}:\d{2}|Z)') > 0 then 
+            if l_timezone is not null then
+               l_end := cwms_util.change_timezone(l_end, 'UTC', l_timezone);
+            end if;
          end if;
       end if;
    end if;
@@ -5611,71 +5614,201 @@ begin
    --
    -- NOTE - this routine does not yet handle virtual or transitional ratings!!!
    --
-         
-   l_ts1 := systimestamp;
-   ----------------------   
-   -- retrieve ratings --
-   ----------------------
-   l_ratings1 := rating_tab_t();
-   l_name_pos := number_tab_t();
-   for i in 1..l_names.count loop
-      l_ratings2 := retrieve_ratings_obj_f(l_names(i), l_start, l_end, 'UTC', l_office_id);
-      for j in 1..l_ratings2.count loop
-         l_ratings1.extend;
-         l_ratings1(l_ratings1.count) := l_ratings2(j);
-         l_name_pos.extend();
-         l_name_pos(l_name_pos.count) := i;
-      end loop;
-   end loop;        
-   -----------------------------
-   -- retrieve specifications --
-   -----------------------------
-   l_used.delete;
-   l_unique_specs := number_tab_t();
-   for i in 1..l_ratings1.count loop
-      l_name := l_ratings1(i).office_id||'/'||l_ratings1(i).rating_spec_id;
-      if not l_used.exists(l_name) then
-         l_unique_specs.extend;
-         l_unique_specs(l_unique_specs.count) := i;
-      end if;
-      l_used(l_name) := true;    
-   end loop;  
-   l_specs := rating_spec_tab_t();
-   l_specs.extend(l_unique_specs.count);
-   for i in 1..l_specs.count loop
-      l_rating := l_ratings1(l_unique_specs(i));
-      l_specs(i) := cwms_rating.retrieve_specs_obj_f(l_rating.rating_spec_id, l_rating.office_id)(1);
-   end loop;
-   ----------------------------
-   -- retrieve the templates --
-   ----------------------------
-   l_used.delete;
-   l_unique_templates := number_tab_t();
-   for i in 1..l_unique_specs.count loop
-      l_parts := cwms_util.split_text(l_ratings1(l_unique_specs(i)).rating_spec_id, '.');
-      l_name := l_ratings1(l_unique_specs(i)).office_id||'/'||l_parts(2)||'.'||l_parts(3);
-      if not l_used.exists(l_name) then
-         l_unique_templates.extend;
-         l_unique_templates(l_unique_templates.count) := l_unique_specs(i);
-      end if;
-      l_used(l_name) := true;    
-   end loop;
-   l_templates := rating_template_tab_t();
-   l_templates.extend(l_unique_templates.count);
-   for i in 1..l_templates.count loop
-      l_rating := l_ratings1(l_unique_templates(i));
-      l_parts := cwms_util.split_text(l_rating.rating_spec_id, '.');
-      l_templates(i) := cwms_rating.retrieve_templates_obj_f(l_parts(2)||'.'||l_parts(3), l_rating.office_id)(1);
-   end loop;
-   
-   l_ts2 := systimestamp;
-   l_elapsed_query := l_ts2 - l_ts1;
 
-   l_ts1 := systimestamp;
-   -----------------------------------  
-   -- format the ratings for output --
-   -----------------------------------
-   dbms_lob.createtemporary(l_data, true);
+   l_width := 30;
+   if l_names is null then
+      ----------------------------------
+      -- retrieve rating spec catalog --
+      ----------------------------------
+      l_ts1 := systimestamp;
+      select *
+        bulk collect
+        into l_offices,
+             l_ids,
+             l_descriptions
+        from (select o.office_id,
+                     bl.base_location_id
+                     ||substr('-', 1, length(pl.sub_location_id))
+                     ||pl.sub_location_id
+                     ||'.'
+                     ||rt.parameters_id
+                     ||'.'
+                     ||rt.version
+                     ||'.'
+                     ||rs.version as rating_spec_id,
+                     rs.description
+                from at_rating_template rt,
+                     at_rating_spec rs,
+                     at_rating r,  
+                     cwms_office o,
+                     at_physical_location pl,
+                     at_base_location bl 
+               where rt.template_code = rs.template_code
+                 and rs.rating_spec_code = r.rating_spec_code        
+                 and r.ref_rating_code is null
+                 and r.active_flag = 'T'
+                 and rs.active_flag = 'T'
+                 and pl.active_flag = 'T'
+                 and bl.active_flag = 'T' 
+                 and pl.location_code = rs.location_code
+                 and bl.base_location_code = pl.base_location_code
+                 and o.office_code = rt.office_code
+                 and l_office_id like replace(l_office_id, '*', '%')
+              union all
+              select o.office_id,
+                     lga.loc_alias_id
+                     ||'.'
+                     ||rt.parameters_id
+                     ||'.'
+                     ||rt.version
+                     ||'.'
+                     ||rs.version as rating_spec_id,
+                     rs.description
+                from at_rating_template rt,
+                     at_rating_spec rs,
+                     at_rating r,  
+                     cwms_office o,
+                     at_physical_location pl,
+                     at_base_location bl,
+                     at_loc_category lc,
+                     at_loc_group lg,
+                     at_loc_group_assignment lga
+               where rt.template_code = rs.template_code
+                 and rs.rating_spec_code = r.rating_spec_code        
+                 and r.ref_rating_code is null
+                 and r.active_flag = 'T'
+                 and rs.active_flag = 'T'
+                 and pl.active_flag = 'T'
+                 and bl.active_flag = 'T' 
+                 and bl.active_flag = 'T' 
+                 and pl.location_code = rs.location_code
+                 and bl.base_location_code = pl.base_location_code
+                 and lga.location_code = rs.location_code
+                 and lga.loc_alias_id is not null
+                 and lc.loc_category_id = 'Agency Aliases'
+                 and lg.loc_category_code = lc.loc_category_code
+                 and lga.loc_group_code = lg.loc_group_code
+                 and o.office_code = rt.office_code
+                 and l_office_id like replace(l_office_id, '*', '%')
+             )
+       order by 1, 2;             
+                
+      l_ts2 := systimestamp;
+      l_elapsed_query := l_ts2 - l_ts1;
+      l_ts1 := systimestamp;
+         
+      dbms_lob.createtemporary(l_data, true);
+      case
+      when l_format = 'XML' then
+         cwms_util.append(l_data, '<ratings-catalog>');
+         for i in 1..l_ids.count loop
+            cwms_util.append(
+               l_data,
+               '<rating><office>'
+               ||l_offices(i)
+               ||'</office><specification>'
+               ||dbms_xmlgen.convert(l_ids(i), dbms_xmlgen.entity_encode)
+               ||'</specification><description>'
+               ||dbms_xmlgen.convert(l_descriptions(i), dbms_xmlgen.entity_encode)
+               ||'</description></rating>');
+         end loop;
+         cwms_util.append(l_data, '</ratings-catalog>');
+         l_xml := xmltype(l_data);
+         dbms_lob.createtemporary(l_data, true);
+         select xmlserialize(document l_xml as clob indent)
+           into l_data
+           from dual;
+      when l_format = 'JSON' then
+         cwms_util.append(l_data, '{"ratings":[');
+         for i in 1..l_ids.count loop
+            cwms_util.append(
+               l_data,
+               case i when 1 then '{"office":"' else ',{"office":"' end
+               ||l_offices(i)
+               ||'","specification":"'
+               ||l_ids(i)
+               ||'","description":"'
+               ||replace(l_descriptions(i), '"', '\"')
+               ||'"}');
+            end loop;
+         cwms_util.append(l_data, ']}');
+      when l_format in ('TAB', 'CSV') then 
+         for i in 1..l_ids.count loop
+            cwms_util.append(l_data, l_offices(i)||chr(9)||l_ids(i)||chr(9)||l_descriptions(i)||chr(10));
+         end loop;
+      end case;
+      
+      p_template_count := 0;
+      p_spec_count     := l_ids.count;
+      p_rating_count   := 0; 
+   else
+      --------------------------------
+      -- retrieve specified ratings --
+      --------------------------------
+      l_ts1 := systimestamp;
+      ----------------------   
+      -- retrieve ratings --
+      ----------------------
+      l_ratings1 := rating_tab_t();
+      l_name_pos := number_tab_t();
+      for i in 1..l_names.count loop
+         l_ratings2 := retrieve_ratings_obj_f(l_names(i), l_start, l_end, 'UTC', l_office_id);
+         for j in 1..l_ratings2.count loop
+            l_ratings1.extend;
+            l_ratings1(l_ratings1.count) := l_ratings2(j);
+            l_name_pos.extend();
+            l_name_pos(l_name_pos.count) := i;
+         end loop;
+      end loop;        
+      -----------------------------
+      -- retrieve specifications --
+      -----------------------------
+      l_used.delete;
+      l_unique_specs := number_tab_t();
+      for i in 1..l_ratings1.count loop
+         l_name := l_ratings1(i).office_id||'/'||l_ratings1(i).rating_spec_id;
+         if not l_used.exists(l_name) then
+            l_unique_specs.extend;
+            l_unique_specs(l_unique_specs.count) := i;
+         end if;
+         l_used(l_name) := true;    
+      end loop;  
+      l_specs := rating_spec_tab_t();
+      l_specs.extend(l_unique_specs.count);
+      for i in 1..l_specs.count loop
+         l_rating := l_ratings1(l_unique_specs(i));
+         l_specs(i) := cwms_rating.retrieve_specs_obj_f(l_rating.rating_spec_id, l_rating.office_id)(1);
+      end loop;
+      ----------------------------
+      -- retrieve the templates --
+      ----------------------------
+      l_used.delete;
+      l_unique_templates := number_tab_t();
+      for i in 1..l_unique_specs.count loop
+         l_parts := cwms_util.split_text(l_ratings1(l_unique_specs(i)).rating_spec_id, '.');
+         l_name := l_ratings1(l_unique_specs(i)).office_id||'/'||l_parts(2)||'.'||l_parts(3);
+         if not l_used.exists(l_name) then
+            l_unique_templates.extend;
+            l_unique_templates(l_unique_templates.count) := l_unique_specs(i);
+         end if;
+         l_used(l_name) := true;    
+      end loop;
+      l_templates := rating_template_tab_t();
+      l_templates.extend(l_unique_templates.count);
+      for i in 1..l_templates.count loop
+         l_rating := l_ratings1(l_unique_templates(i));
+         l_parts := cwms_util.split_text(l_rating.rating_spec_id, '.');
+         l_templates(i) := cwms_rating.retrieve_templates_obj_f(l_parts(2)||'.'||l_parts(3), l_rating.office_id)(1);
+      end loop;
+      
+      l_ts2 := systimestamp;
+      l_elapsed_query := l_ts2 - l_ts1;
+
+      l_ts1 := systimestamp;
+      -----------------------------------  
+      -- format the ratings for output --
+      -----------------------------------
+      dbms_lob.createtemporary(l_data, true);
       cwms_util.append(
          l_data,
          '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
@@ -5852,7 +5985,7 @@ begin
                         cwms_util.append(l_data, ',{"@estimate":"'||cwms_util.get_xml_text(l_nodes(i), '/*/vertical-datum-info/offset/@estimate')||'"');
                      end if;
                      cwms_util.append(l_data, ',"to-datum":"'||cwms_util.get_xml_text(l_nodes1(j), '/*/to-datum')||'"');
-                     cwms_util.append(l_data, ',"value":"'||regexp_replace(cwms_util.get_xml_text(l_nodes1(j), '/*/to-datum'), '(^|[^0-9])\.', '\10.')||'"}');
+                     cwms_util.append(l_data, ',"value":"'||regexp_replace(cwms_util.get_xml_text(l_nodes1(j), '/*/value'), '(^|[^0-9])\.', '\10.')||'"}');
                   end loop;
                   cwms_util.append(l_data, ']}');
                end if;
@@ -5950,7 +6083,6 @@ begin
          ----------------
          -- TAB or CSV --
          ----------------
-         l_width := 30;
          l_first := true;
          l_nodes := cwms_util.get_xml_nodes(l_xml, '/*/rating-template');
          for i in 1..l_nodes.count loop
@@ -6122,34 +6254,42 @@ begin
                end loop;
             end loop;
          end loop;
-         if l_format = 'CSV' then
-            ---------
-            -- CSV --
-            ---------
-            l_data := regexp_replace(
+      end case;
+      
+      p_template_count := l_templates.count;
+      p_spec_count     := l_specs.count;
+      p_rating_count   := l_ratings1.count; 
+   end if;
+      
+   if l_format = 'CSV' then
+      ---------
+      -- CSV --
+      ---------
+      l_data := regexp_replace(
+         replace(
+            replace(
                regexp_replace(
                   regexp_replace(
                      regexp_replace(
-                        regexp_replace(
-                           l_data, 
-                           '^(.+?,.+?)('||chr(9)||')', 
-                           '"\1"\2', 
-                           1, 0, 'm'), 
-                        '('||chr(9)||')(.+?,.+?)('||chr(9)||')', 
-                        '\1"\2"\3'), 
-                     '('||chr(9)||')(.+?,.+?)$', 
-                     '\1"\2"',
-                     1, 0, 'm'), 
-                  '\s*'||chr(9)||'', 
-                  ','), 
-               '^# +', '# ', 
-               1, 0, 'm');
-         end if;
-      end case;
-   
+                        replace(  
+                           l_data,
+                           chr(10),
+                           chr(10)||chr(10)), 
+                        ' *'||chr(9), chr(10)),
+                     '^(.*,.*)$',
+                     '"\1"',
+                     1, 0, 'm'),  
+                  '([^'||chr(10)||'])'||chr(10), '\1,'), 
+               ','||chr(10), chr(10)),
+            chr(10)||chr(10), chr(10)), 
+         '^# +', '# ', 
+         1, 0, 'm');
+   end if;
+      
    l_ts2 := systimestamp;
    l_elapsed_format := l_ts2 - l_ts1;
-                                      
+      
+            
    if l_format in ('TAB', 'CSV') then
       declare
          l_data2 clob;
@@ -6160,26 +6300,33 @@ begin
          cwms_util.append(l_data2, rpad('# TIME OF QUERY', l_width, ' ')||chr(9)||to_char(l_query_time, 'dd-MON-yyyy hh24:mi')||' UTC'||chr(10));
          cwms_util.append(l_data2, rpad('# PROCESS QUERY', l_width, ' ')||chr(9)||trunc(1000 * (extract(minute from l_elapsed_query) * 60 + extract(second from l_elapsed_query)))||' milliseconds'||chr(10));
          cwms_util.append(l_data2, rpad('# FORMAT OUTPUT', l_width, ' ')||chr(9)||trunc(1000 * (extract(minute from l_elapsed_format) * 60 + extract(second from l_elapsed_format)))||' milliseconds'||chr(10));
-         cwms_util.append(l_data2, rpad('# TEMPLATES RETRIEVED', l_width, ' ')||chr(9)||l_templates.count||chr(10));
-         cwms_util.append(l_data2, rpad('# SPECIFICATIONS RETRIEVED', l_width, ' ')||chr(9)||l_specs.count||chr(10));
-         cwms_util.append(l_data2, rpad('# RATINGS RETRIEVED', l_width, ' ')||chr(9)||l_ratings2.count||chr(10)||chr(10));
+         if l_names is null then
+            cwms_util.append(l_data2, rpad('# TEMPLATES RETRIEVED', l_width, ' ')||chr(9)||'0'||chr(10));
+            cwms_util.append(l_data2, rpad('# SPECIFICATIONS RETRIEVED', l_width, ' ')||chr(9)||l_ids.count||chr(10));
+            cwms_util.append(l_data2, rpad('# RATINGS RETRIEVED', l_width, ' ')||chr(9)||'0'||chr(10)||chr(10));
+         else
+            cwms_util.append(l_data2, rpad('# TEMPLATES RETRIEVED', l_width, ' ')||chr(9)||l_templates.count||chr(10));
+            cwms_util.append(l_data2, rpad('# SPECIFICATIONS RETRIEVED', l_width, ' ')||chr(9)||l_specs.count||chr(10));
+            cwms_util.append(l_data2, rpad('# RATINGS RETRIEVED', l_width, ' ')||chr(9)||l_ratings1.count||chr(10)||chr(10));
+         end if;
          if l_format = 'CSV' then
-            l_data2 := regexp_replace(
-               regexp_replace(
-                  regexp_replace(
+            l_data2 := regexp_replace( 
+               replace(
+                  replace(
                      regexp_replace(
                         regexp_replace(
-                           l_data2, 
-                           '^(.+?,.+?)('||chr(9)||')', 
-                           '"\1"\2', 
-                           1, 0, 'm'), 
-                        '('||chr(9)||')(.+?,.+?)('||chr(9)||')', 
-                        '\1"\2"\3'), 
-                     '('||chr(9)||')(.+?,.+?)$', 
-                     '\1"\2"',
-                     1, 0, 'm'), 
-                  '\s*'||chr(9)||'', 
-                  ','), 
+                           regexp_replace(
+                              replace(  
+                                 l_data2,
+                                 chr(10),
+                                 chr(10)||chr(10)), 
+                              ' *'||chr(9), chr(10)),
+                           '^(.*,.*)$',
+                           '"\1"',
+                           1, 0, 'm'),  
+                        '([^'||chr(10)||'])'||chr(10), '\1,'), 
+                     ','||chr(10), chr(10)),
+                  chr(10)||chr(10), chr(10)), 
                '^# +', '# ', 
                1, 0, 'm');
          end if;
@@ -6189,13 +6336,10 @@ begin
    else
       p_results := l_data;
    end if;
-      
+         
    p_date_time      := l_query_time;
    p_query_time     := trunc(1000 * (extract(minute from l_elapsed_query) * 60 + extract(second from l_elapsed_query)));
    p_format_time    := trunc(1000 * (extract(minute from l_elapsed_format) *60 +  extract(second from l_elapsed_format)));
-   p_template_count := l_templates.count;
-   p_spec_count     := l_specs.count;
-   p_rating_count   := l_ratings1.count; 
 end retrieve_ratings;   
 
 

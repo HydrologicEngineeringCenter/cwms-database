@@ -3009,7 +3009,7 @@ function get_elevation_positions(
    p_rating_template_id in varchar2)
    return number_tab_t;
 /**
- * Retreives in a number of formats for a combination time window, timezone, formats, and vertical datums
+ * Retreives ratings in a number of formats for a combination time window, timezone, formats, and vertical datums
  *
  * @param p_results        The ratings, in the specified time zones, formats, and vertical datums
  * @param p_date_time      The time that the routine was called, in UTC
@@ -3022,6 +3022,7 @@ function get_elevation_positions(
  *                         <or><li>specifying multiple rating spec ids separated by the <b>'|'</b> character (multiple name positions)</li>
  *                         <li>specifying a rating spec id with wildcard (<b>'*'</b> and/or <b>'?'</b> characters) (single name position)</li>
  *                         <li>a combination of 1 and 2 (multiple name positions with one or more positions matching possibly more than one rating)</li></ol>
+ *                         If unspecified or NULL, a listing of rating specifications will be returned.
  * @param p_format         The format to retrieve the ratings in. Valid formats are <ul><li>TAB</li><li>CSV</li><li>XML</li><li>JSON</li></ul>
  *                         If the format is unspecified or NULL, the TAB format will be used. 
  * @param p_units          The units to return the units in.  Valid units are <ul><li>NATIVE</li><li>EN</li><li>SI</li></ul> If the p_names variable (q.v.) has more
@@ -3029,7 +3030,7 @@ function get_elevation_positions(
  *                         <b>'|',</b> charcter. If the p_units variable has fewer positions than the p_name variable, the last unit position is used for all 
  *                         remaning names. If the units are unspecified or NULL, the NATIVE units will be used for all ratings.
  * @param p_datums         The vertical datums to return the units in.  Valid datums are <ul><li>NATIVE</li><li>NGVD29</li><li>NAVD88</li></ul> If the p_names variable (q.v.) has more
- *                         than onename position, (i.e., has one or more <b>'|',</b> charcters), the p_datums variable may also have multiple positions separated by the 
+ *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_datums variable may also have multiple positions separated by the 
  *                         <b>'|',</b> charcter. If the p_datums variable has fewer positions than the p_name variable, the last datum position is used for all 
  *                         remaning names. If the datums are unspecified or NULL, the NATIVE veritcal datum will be used for all ratings.
  * @param p_start          The start of the time window to retrieve ratings for.  No ratings with effective dates earlier this time will be retrieved.
@@ -3048,8 +3049,8 @@ procedure retrieve_ratings(
    p_template_count out integer,
    p_spec_count     out integer,
    p_rating_count   out integer,  
-   p_names          in  varchar2,            
-   p_format         in  varchar2,
+   p_names          in  varchar2 default null,            
+   p_format         in  varchar2 default null,
    p_units          in  varchar2 default null,   
    p_datums         in  varchar2 default null,
    p_start          in  varchar2 default null,
@@ -3057,12 +3058,13 @@ procedure retrieve_ratings(
    p_timezone       in  varchar2 default null,
    p_office_id      in  varchar2 default null);
 /**
- * Retreives in a number of formats for a combination time window, timezone, formats, and vertical datums
+ * Retreives ratings in a number of formats for a combination time window, timezone, formats, and vertical datums
  *
  * @param p_names          The names (rating specification identifers) of the ratings to retrieve.  Multiple ratings can be specified by
  *                         <or><li>specifying multiple rating spec ids separated by the <b>'|'</b> character (multiple name positions)</li>
  *                         <li>specifying a rating spec id with wildcard (<b>'*'</b> and/or <b>'?'</b> characters) (single name position)</li>
  *                         <li>a combination of 1 and 2 (multiple name positions with one or more positions matching possibly more than one rating)</li></ol>
+ *                         If unspecified or NULL, a listing of rating specifications will be returned.
  * @param p_format         The format to retrieve the ratings in. Valid formats are <ul><li>TAB</li><li>CSV</li><li>XML</li><li>JSON</li></ul>
  *                         If the format is unspecified or NULL, the TAB format will be used. 
  * @param p_units          The units to return the units in.  Valid units are <ul><li>NATIVE</li><li>EN</li><li>SI</li></ul> If the p_names variable (q.v.) has more
@@ -3070,7 +3072,7 @@ procedure retrieve_ratings(
  *                         <b>'|',</b> charcter. If the p_units variable has fewer positions than the p_name variable, the last unit position is used for all 
  *                         remaning names. If the units are unspecified or NULL, the NATIVE units will be used for all ratings.
  * @param p_datums         The vertical datums to return the units in.  Valid datums are <ul><li>NATIVE</li><li>NGVD29</li><li>NAVD88</li></ul> If the p_names variable (q.v.) has more
- *                         than onename position, (i.e., has one or more <b>'|',</b> charcters), the p_datums variable may also have multiple positions separated by the 
+ *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_datums variable may also have multiple positions separated by the 
  *                         <b>'|',</b> charcter. If the p_datums variable has fewer positions than the p_name variable, the last datum position is used for all 
  *                         remaning names. If the datums are unspecified or NULL, the NATIVE veritcal datum will be used for all ratings.
  * @param p_start          The start of the time window to retrieve ratings for.  No ratings with effective dates earlier this time will be retrieved.
