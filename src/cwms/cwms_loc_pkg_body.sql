@@ -1,206 +1,206 @@
 CREATE OR REPLACE PACKAGE BODY cwms_loc
 AS
-	--
-	-- num_group_assigned_to_shef return the number of groups -
-	-- currently assigned in the at_shef_decode table.
-	FUNCTION znum_group_assigned_to_shef (
-		p_group_cat_array   IN group_cat_tab_t,
-		p_db_office_code	  IN NUMBER
-	)
-		RETURN NUMBER
-	IS
-		l_tmp   NUMBER;
-	BEGIN
-		SELECT	COUNT (*)
-		  INTO	l_tmp
-		  FROM	at_shef_decode
-		 WHERE	loc_group_code IN
-						(SELECT	 loc_group_code
-							FROM	 (SELECT   a.loc_category_code,
-												  b.loc_group_id
-										 FROM   at_loc_category a,
-												  TABLE (
-													  CAST (
-														  p_group_cat_array AS group_cat_tab_t
-													  )
-												  ) b
-										WHERE   UPPER (a.loc_category_id) =
-													  UPPER (TRIM (b.loc_category_id))
-												  AND a.db_office_code IN
-															(p_db_office_code,
-															 cwms_util.db_office_code_all)) c,
-									 at_loc_group d
-						  WHERE	 UPPER (d.loc_group_id) =
-										 UPPER (TRIM (c.loc_group_id))
-									 AND d.loc_category_code = c.loc_category_code
-									 AND d.db_office_code IN
-											  (p_db_office_code,
-												cwms_util.db_office_code_all));
+   --
+   -- num_group_assigned_to_shef return the number of groups -
+   -- currently assigned in the at_shef_decode table.
+   FUNCTION znum_group_assigned_to_shef (
+      p_group_cat_array   IN group_cat_tab_t,
+      p_db_office_code     IN NUMBER
+   )
+      RETURN NUMBER
+   IS
+      l_tmp   NUMBER;
+   BEGIN
+      SELECT   COUNT (*)
+        INTO   l_tmp
+        FROM   at_shef_decode
+       WHERE   loc_group_code IN
+                  (SELECT    loc_group_code
+                     FROM    (SELECT   a.loc_category_code,
+                                      b.loc_group_id
+                               FROM   at_loc_category a,
+                                      TABLE (
+                                         CAST (
+                                            p_group_cat_array AS group_cat_tab_t
+                                         )
+                                      ) b
+                              WHERE   UPPER (a.loc_category_id) =
+                                         UPPER (TRIM (b.loc_category_id))
+                                      AND a.db_office_code IN
+                                             (p_db_office_code,
+                                              cwms_util.db_office_code_all)) c,
+                            at_loc_group d
+                    WHERE    UPPER (d.loc_group_id) =
+                               UPPER (TRIM (c.loc_group_id))
+                            AND d.loc_category_code = c.loc_category_code
+                            AND d.db_office_code IN
+                                   (p_db_office_code,
+                                    cwms_util.db_office_code_all));
 
-		RETURN l_tmp;
-	END znum_group_assigned_to_shef;
+      RETURN l_tmp;
+   END znum_group_assigned_to_shef;
 
-	FUNCTION num_group_assigned_to_shef (
-		p_group_cat_array   IN group_cat_tab_t,
-		p_db_office_id 	  IN VARCHAR2 DEFAULT NULL
-	)
-		RETURN NUMBER
-	IS
-		l_db_office_code	 NUMBER
-									 := cwms_util.get_db_office_code (p_db_office_id);
-	BEGIN
-		RETURN znum_group_assigned_to_shef (p_group_cat_array,
-														l_db_office_code
-													  );
-	END num_group_assigned_to_shef;
+   FUNCTION num_group_assigned_to_shef (
+      p_group_cat_array   IN group_cat_tab_t,
+      p_db_office_id      IN VARCHAR2 DEFAULT NULL
+   )
+      RETURN NUMBER
+   IS
+      l_db_office_code    NUMBER
+                            := cwms_util.get_db_office_code (p_db_office_id);
+   BEGIN
+      RETURN znum_group_assigned_to_shef (p_group_cat_array,
+                                          l_db_office_code
+                                         );
+   END num_group_assigned_to_shef;
 
-	--loc_cat_grp_rec_tab_t IS TABLE OF loc_cat_grp_rec_t
+   --loc_cat_grp_rec_tab_t IS TABLE OF loc_cat_grp_rec_t
 
-	FUNCTION get_location_id (p_location_code IN NUMBER)
-		RETURN VARCHAR2
-	IS
-		l_location_id	 VARCHAR2 (49);
-	BEGIN
-		IF p_location_code IS NOT NULL
-		THEN
-			SELECT		bl.base_location_id
-						|| SUBSTR ('-', 1, LENGTH (pl.sub_location_id))
-						|| pl.sub_location_id
-			  INTO	l_location_id
-			  FROM	at_physical_location pl, at_base_location bl
-			 WHERE	pl.location_code = p_location_code
-						AND bl.base_location_code = pl.base_location_code;
-		END IF;
+   FUNCTION get_location_id (p_location_code IN NUMBER)
+      RETURN VARCHAR2
+   IS
+      l_location_id    VARCHAR2 (49);
+   BEGIN
+      IF p_location_code IS NOT NULL
+      THEN
+         SELECT      bl.base_location_id
+                  || SUBSTR ('-', 1, LENGTH (pl.sub_location_id))
+                  || pl.sub_location_id
+           INTO   l_location_id
+           FROM   at_physical_location pl, at_base_location bl
+          WHERE   pl.location_code = p_location_code
+                  AND bl.base_location_code = pl.base_location_code;
+      END IF;
 
-		RETURN l_location_id;
-	END get_location_id;
+      RETURN l_location_id;
+   END get_location_id;
 
-	FUNCTION get_location_id (p_location_id_or_alias	 VARCHAR2,
-									  p_office_id					 VARCHAR2 DEFAULT NULL
-									 )
-		RETURN VARCHAR2
-	IS
-		l_office_id   VARCHAR2 (16);
-	BEGIN
-		l_office_id :=
-			NVL (UPPER (TRIM (p_office_id)), cwms_util.user_office_id);
+   FUNCTION get_location_id (p_location_id_or_alias    VARCHAR2,
+                             p_office_id                VARCHAR2 DEFAULT NULL
+                            )
+      RETURN VARCHAR2
+   IS
+      l_office_id   VARCHAR2 (16);
+   BEGIN
+      l_office_id :=
+         NVL (UPPER (TRIM (p_office_id)), cwms_util.user_office_id);
 
-		FOR rec
-			IN (SELECT		 bl.base_location_id
-							 || SUBSTR ('-', 1, LENGTH (pl.sub_location_id))
-							 || pl.sub_location_id
-								 AS location_id
-					FROM	 at_physical_location pl,
-							 at_base_location bl,
-							 cwms_office o
-				  WHERE		  o.office_id = l_office_id
-							 AND bl.db_office_code = o.office_code
-							 AND pl.base_location_code = bl.base_location_code
-							 AND UPPER (bl.base_location_id) =
-									  UPPER (
-										  cwms_util.get_base_id (p_location_id_or_alias
-																		)
-									  )
-							 AND NVL (UPPER (pl.sub_location_id), '.') =
-									  NVL (
-										  UPPER (
-											  cwms_util.get_sub_id (
-												  p_location_id_or_alias
-											  )
-										  ),
-										  '.'
-									  ))
-		LOOP
-			RETURN TRIM (rec.location_id);
-		END LOOP;
+      FOR rec
+         IN (SELECT       bl.base_location_id
+                      || SUBSTR ('-', 1, LENGTH (pl.sub_location_id))
+                      || pl.sub_location_id
+                         AS location_id
+               FROM    at_physical_location pl,
+                      at_base_location bl,
+                      cwms_office o
+              WHERE        o.office_id = l_office_id
+                      AND bl.db_office_code = o.office_code
+                      AND pl.base_location_code = bl.base_location_code
+                      AND UPPER (bl.base_location_id) =
+                             UPPER (
+                                cwms_util.get_base_id (p_location_id_or_alias
+                                                      )
+                             )
+                      AND NVL (UPPER (pl.sub_location_id), '.') =
+                             NVL (
+                                UPPER (
+                                   cwms_util.get_sub_id (
+                                      p_location_id_or_alias
+                                   )
+                                ),
+                                '.'
+                             ))
+      LOOP
+         RETURN TRIM (rec.location_id);
+      END LOOP;
 
-		------------------------------------------------
-		-- if we get here we didn't find the location --
-		------------------------------------------------
-		BEGIN
-			RETURN get_location_id_from_alias (
-						 p_alias_id 	=> p_location_id_or_alias,
-						 p_office_id	=> l_office_id
-					 );
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				cwms_err.raise ('LOCATION_ID_NOT_FOUND', p_location_id_or_alias);
-		END;
-	END get_location_id;
+      ------------------------------------------------
+      -- if we get here we didn't find the location --
+      ------------------------------------------------
+      BEGIN
+         RETURN get_location_id_from_alias (
+                   p_alias_id    => p_location_id_or_alias,
+                   p_office_id   => l_office_id
+                );
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.raise ('LOCATION_ID_NOT_FOUND', p_location_id_or_alias);
+      END;
+   END get_location_id;
 
-	FUNCTION get_location_id (p_location_id_or_alias	 VARCHAR2,
-									  p_office_code				 NUMBER
-									 )
-		RETURN VARCHAR2
-	IS
-		l_office_id   VARCHAR2 (16);
-	BEGIN
-		SELECT	office_id
-		  INTO	l_office_id
-		  FROM	cwms_office
-		 WHERE	office_code = p_office_code;
+   FUNCTION get_location_id (p_location_id_or_alias    VARCHAR2,
+                             p_office_code             NUMBER
+                            )
+      RETURN VARCHAR2
+   IS
+      l_office_id   VARCHAR2 (16);
+   BEGIN
+      SELECT   office_id
+        INTO   l_office_id
+        FROM   cwms_office
+       WHERE   office_code = p_office_code;
 
-		RETURN get_location_id (p_location_id_or_alias, l_office_id);
-	END get_location_id;
+      RETURN get_location_id (p_location_id_or_alias, l_office_id);
+   END get_location_id;
 
 
-	--********************************************************************** -
-	--********************************************************************** -
-	--********************************************************************** -
-	--
-	-- get_location_code returns location_code
-	--
-	------------------------------------------------------------------------------*/
-	FUNCTION get_location_code (p_db_office_id	IN VARCHAR2,
-										 p_location_id 	IN VARCHAR2,
+   --********************************************************************** -
+   --********************************************************************** -
+   --********************************************************************** -
+   --
+   -- get_location_code returns location_code
+   --
+   ------------------------------------------------------------------------------*/
+   FUNCTION get_location_code (p_db_office_id   IN VARCHAR2,
+                               p_location_id    IN VARCHAR2,
                                p_check_aliases  IN VARCHAR2
-										)
-		RETURN NUMBER
-		RESULT_CACHE
-	IS
-		l_db_office_code	 NUMBER := cwms_util.get_office_code (p_db_office_id);
-	BEGIN
-		RETURN get_location_code (p_db_office_code	=> l_db_office_code,
-										  p_location_id		=> p_location_id,
+                              )
+      RETURN NUMBER
+      RESULT_CACHE
+   IS
+      l_db_office_code    NUMBER := cwms_util.get_office_code (p_db_office_id);
+   BEGIN
+      RETURN get_location_code (p_db_office_code   => l_db_office_code,
+                                p_location_id      => p_location_id,
                                 p_check_aliases    => p_check_aliases
-										 );
-	END;
+                               );
+   END;
 
-	--
-	FUNCTION get_location_code (p_db_office_code   IN NUMBER,
-										 p_location_id 	  IN VARCHAR2,
+   --
+   FUNCTION get_location_code (p_db_office_code   IN NUMBER,
+                               p_location_id      IN VARCHAR2,
                                p_check_aliases    IN VARCHAR2
-										)
-		RETURN NUMBER
-		RESULT_CACHE
-	IS
-		l_location_code	NUMBER;
-	BEGIN     
-		IF p_location_id IS NULL
-		THEN         
-			cwms_err.raise ('ERROR',
-								 'The P_LOCATION_ID parameter cannot be NULL'
-								);
-		END IF;
+                              )
+      RETURN NUMBER
+      RESULT_CACHE
+   IS
+      l_location_code   NUMBER;
+   BEGIN     
+      IF p_location_id IS NULL
+      THEN         
+         cwms_err.raise ('ERROR',
+                         'The P_LOCATION_ID parameter cannot be NULL'
+                        );
+      END IF;
 
-		--
-		SELECT	apl.location_code
-		  INTO	l_location_code
-		  FROM	at_physical_location apl, at_base_location abl
-		 WHERE	apl.base_location_code = abl.base_location_code
-					AND UPPER (abl.base_location_id) =
-							 UPPER (cwms_util.get_base_id (p_location_id))
-					AND NVL (UPPER (apl.sub_location_id), '.') =
-							 NVL (UPPER (cwms_util.get_sub_id (p_location_id)), '.')
-					AND abl.db_office_code = p_db_office_code;
+      --
+      SELECT   apl.location_code
+        INTO   l_location_code
+        FROM   at_physical_location apl, at_base_location abl
+       WHERE   apl.base_location_code = abl.base_location_code
+               AND UPPER (abl.base_location_id) =
+                      UPPER (cwms_util.get_base_id (p_location_id))
+               AND NVL (UPPER (apl.sub_location_id), '.') =
+                      NVL (UPPER (cwms_util.get_sub_id (p_location_id)), '.')
+               AND abl.db_office_code = p_db_office_code;
 
-		--
-   	RETURN l_location_code;
-	--
-	EXCEPTION
-		WHEN NO_DATA_FOUND
-		THEN
+      --
+      RETURN l_location_code;
+   --
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
          IF cwms_util.is_true(p_check_aliases) THEN
             DECLARE
                l_office_id   VARCHAR2 (16);
@@ -224,10 +224,10 @@ AS
          ELSE
             RAISE;
          END IF;
-		WHEN OTHERS
-		THEN     
-			RAISE;
-	END get_location_code;
+      WHEN OTHERS
+      THEN     
+         RAISE;
+   END get_location_code;
    
    FUNCTION get_location_code (p_db_office_code   IN NUMBER,
                                p_location_id      IN VARCHAR2
@@ -249,2260 +249,2260 @@ AS
       return get_location_code(p_db_office_id, p_location_id, 'T');
    END get_location_code;
 
-	--********************************************************************** -
-	--********************************************************************** -
-	--
-	-- get_state_code returns state_code
-	--
-	------------------------------------------------------------------------------*/
-	FUNCTION get_state_code (p_state_initial IN VARCHAR2 DEFAULT NULL)
-		RETURN NUMBER
-	IS
-		l_state_code	NUMBER;
-	BEGIN
-		--dbms_output.put_line('function: get_county_code');
-		--
-		-- initialize l_state_initial...
-		IF p_state_initial IS NULL OR p_state_initial = '0'
-		THEN
-			RETURN 0;
-		END IF;
+   --********************************************************************** -
+   --********************************************************************** -
+   --
+   -- get_state_code returns state_code
+   --
+   ------------------------------------------------------------------------------*/
+   FUNCTION get_state_code (p_state_initial IN VARCHAR2 DEFAULT NULL)
+      RETURN NUMBER
+   IS
+      l_state_code   NUMBER;
+   BEGIN
+      --dbms_output.put_line('function: get_county_code');
+      --
+      -- initialize l_state_initial...
+      IF p_state_initial IS NULL OR p_state_initial = '0'
+      THEN
+         RETURN 0;
+      END IF;
 
-		SELECT	state_code
-		  INTO	l_state_code
-		  FROM	cwms_state
-		 WHERE	UPPER (state_initial) = UPPER (p_state_initial);
+      SELECT   state_code
+        INTO   l_state_code
+        FROM   cwms_state
+       WHERE   UPPER (state_initial) = UPPER (p_state_initial);
 
-		RETURN l_state_code;
-	EXCEPTION
-		WHEN NO_DATA_FOUND
-		THEN
-			raise_application_error (
-				-20213,
-				p_state_initial || ' is an invalid State Abreviation',
-				TRUE
-			);
-		WHEN OTHERS
-		THEN
-			RAISE;
-	END get_state_code;
+      RETURN l_state_code;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         raise_application_error (
+            -20213,
+            p_state_initial || ' is an invalid State Abreviation',
+            TRUE
+         );
+      WHEN OTHERS
+      THEN
+         RAISE;
+   END get_state_code;
 
-	--********************************************************************** -
-	--********************************************************************** -
-	--
-	-- get_county_code returns county_code
-	--
-	------------------------------------------------------------------------------*/
-	FUNCTION get_county_code (p_county_name	  IN VARCHAR2 DEFAULT NULL,
-									  p_state_initial   IN VARCHAR2 DEFAULT NULL
-									 )
-		RETURN NUMBER
-	IS
-		l_county_code		NUMBER;
-		l_county_name		VARCHAR2 (40);
-		l_state_initial	VARCHAR2 (2);
-	BEGIN
-		-- initialize l_county_name...
-		IF p_county_name IS NULL
-		THEN
-			l_county_name := 'Unknown County or County N/A';
-		ELSE
-			l_county_name := p_county_name;
-		END IF;
+   --********************************************************************** -
+   --********************************************************************** -
+   --
+   -- get_county_code returns county_code
+   --
+   ------------------------------------------------------------------------------*/
+   FUNCTION get_county_code (p_county_name     IN VARCHAR2 DEFAULT NULL,
+                             p_state_initial   IN VARCHAR2 DEFAULT NULL
+                            )
+      RETURN NUMBER
+   IS
+      l_county_code      NUMBER;
+      l_county_name      VARCHAR2 (40);
+      l_state_initial   VARCHAR2 (2);
+   BEGIN
+      -- initialize l_county_name...
+      IF p_county_name IS NULL
+      THEN
+         l_county_name := 'Unknown County or County N/A';
+      ELSE
+         l_county_name := p_county_name;
+      END IF;
 
-		--
-		-- initialize l_state_initial...
-		IF p_state_initial IS NULL OR p_state_initial = '0'
-		THEN
-			l_state_initial := '00';
-		ELSE
-			l_state_initial := p_state_initial;
-		END IF;
+      --
+      -- initialize l_state_initial...
+      IF p_state_initial IS NULL OR p_state_initial = '0'
+      THEN
+         l_state_initial := '00';
+      ELSE
+         l_state_initial := p_state_initial;
+      END IF;
 
-		--dbms_output.put_line('function: get_county_code_code');
-		SELECT	county_code
-		  INTO	l_county_code
-		  FROM	cwms_county
-		 WHERE	UPPER (county_name) = UPPER (l_county_name)
-					AND state_code = get_state_code (l_state_initial);
+      --dbms_output.put_line('function: get_county_code_code');
+      SELECT   county_code
+        INTO   l_county_code
+        FROM   cwms_county
+       WHERE   UPPER (county_name) = UPPER (l_county_name)
+               AND state_code = get_state_code (l_state_initial);
 
-		RETURN l_county_code;
-	EXCEPTION
-		WHEN NO_DATA_FOUND
-		THEN
-			raise_application_error (
-				-20214,
-					'Could not find '
-				|| p_county_name
-				|| ' county/parish '
-				|| ' in '
-				|| p_state_initial,
-				TRUE
-			);
-		WHEN OTHERS
-		THEN
-			RAISE;
-	END get_county_code;
-
-
-	--********************************************************************** -
-	--********************************************************************** -
-	--
-	-- CONVERT_FROM_TO converts a pararameter from one unit to antoher
-	--
-	------------------------------------------------------------------------------*/
-	FUNCTION convert_from_to (p_orig_value 			 IN NUMBER,
-									  p_from_unit_name		 IN VARCHAR2,
-									  p_to_unit_name			 IN VARCHAR2,
-									  p_abstract_paramname	 IN VARCHAR2
-									 )
-		RETURN NUMBER
-	IS
-		l_return_value   NUMBER;
-	BEGIN
-		--
-		-- retrieve correct unit conversion factor/offset...
-		BEGIN
-			SELECT	p_orig_value * factor + offset
-			  INTO	l_return_value
-			  FROM	cwms_unit_conversion
-			 WHERE	from_unit_id = cwms_util.get_unit_id(p_from_unit_name)
-						AND to_unit_id = cwms_util.get_unit_id(p_to_unit_name);
-
-			RETURN l_return_value;
-		--
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				raise_application_error (
-					-20216,
-						'Unable to find conversion factor from '
-					|| p_from_unit_name
-					|| ' to '
-					|| p_to_unit_name
-					|| ' in CWMS DB',
-					TRUE
-				);
-			WHEN OTHERS
-			THEN
-				RAISE;
-		END;
-	END convert_from_to;
-
-	--********************************************************************** -
-	--********************************************************************** -
-	--
-	-- get_unit_code
-	--
-	------------------------------------------------------------------------------*/
-	FUNCTION get_unit_code (unitname 			  IN VARCHAR2,
-									abstractparamname   IN VARCHAR2
-								  )
-		RETURN NUMBER
-	IS
-		l_unit_code   NUMBER;
-	BEGIN
-		SELECT	unit_code
-		  INTO	l_unit_code
-		  FROM	cwms_unit
-		 WHERE	UPPER (unit_id) = UPPER (cwms_util.get_unit_id(unitname))
-					AND abstract_param_code =
-							 (SELECT   abstract_param_code
-								 FROM   cwms_abstract_parameter
-								WHERE   abstract_param_id = abstractparamname);
-
-		RETURN l_unit_code;
-	EXCEPTION
-		WHEN NO_DATA_FOUND
-		THEN
-			raise_application_error (
-				-20217,
-					'"'
-				|| unitname
-				|| '" is not a recognized '
-				|| abstractparamname
-				|| ' unit',
-				TRUE
-			);
-		WHEN OTHERS
-		THEN
-			RAISE;
-	END get_unit_code;
-
-	FUNCTION is_cwms_id_valid (p_base_loc_id IN VARCHAR2)
-		RETURN BOOLEAN
-	IS
-		l_count	 NUMBER := 0;
-	BEGIN
-		-- Check that cwmsIdNew starts with an alphnumeric and does
-		-- not conatain a period.
-		l_count := REGEXP_INSTR (p_base_loc_id, '[\.]');
-		l_count := l_count + REGEXP_INSTR (p_base_loc_id, '[^[:alnum:]]');
-
-		IF l_count > 0
-		THEN
-			RETURN FALSE;
-		END IF;
-
-		RETURN TRUE;
-	END is_cwms_id_valid;
-
-	--********************************************************************** -
-	--.
-	--  CREATE_LOCATION_RAW2 -
-	--.
-	--********************************************************************** -
-	--
-	PROCEDURE create_location_raw2 (
-		p_base_location_code 		OUT NUMBER,
-		p_location_code				OUT NUMBER,
-		p_base_location_id		IN 	 VARCHAR2,
-		p_sub_location_id 		IN 	 VARCHAR2,
-		p_db_office_code			IN 	 NUMBER,
-		p_location_type			IN 	 VARCHAR2 DEFAULT NULL,
-		p_elevation 				IN 	 NUMBER DEFAULT NULL,
-		p_vertical_datum			IN 	 VARCHAR2 DEFAULT NULL,
-		p_latitude					IN 	 NUMBER DEFAULT NULL,
-		p_longitude 				IN 	 NUMBER DEFAULT NULL,
-		p_horizontal_datum		IN 	 VARCHAR2 DEFAULT NULL,
-		p_public_name				IN 	 VARCHAR2 DEFAULT NULL,
-		p_long_name 				IN 	 VARCHAR2 DEFAULT NULL,
-		p_description				IN 	 VARCHAR2 DEFAULT NULL,
-		p_time_zone_code			IN 	 NUMBER DEFAULT NULL,
-		p_county_code				IN 	 NUMBER DEFAULT NULL,
-		p_active_flag				IN 	 VARCHAR2 DEFAULT 'T',
-		p_location_kind_id		IN 	 VARCHAR2 DEFAULT NULL,
-		p_map_label 				IN 	 VARCHAR2 DEFAULT NULL,
-		p_published_latitude 	IN 	 NUMBER DEFAULT NULL,
-		p_published_longitude	IN 	 NUMBER DEFAULT NULL,
-		p_bounding_office_id 	IN 	 VARCHAR2 DEFAULT NULL,
-		p_nation_id 				IN 	 VARCHAR2 DEFAULT NULL,
-		p_nearest_city 			IN 	 VARCHAR2 DEFAULT NULL,
-		p_db_office_id 			IN 	 VARCHAR2 DEFAULT NULL
-	)
-	IS
-		PRAGMA AUTONOMOUS_TRANSACTION;
-
-		l_hashcode					 NUMBER;
-		l_ret 						 NUMBER;
-		l_base_loc_exists 		 BOOLEAN := TRUE;
-		l_sub_loc_exists			 BOOLEAN := TRUE;
-		l_nation_id 				 VARCHAR2 (48) := NVL (p_nation_id, 'UNITED STATES');
-		l_bounding_office_id 	 VARCHAR2 (16);
-		l_location_kind_code 	 NUMBER := 1; -- SITE
-		l_bounding_office_code	 NUMBER := NULL;
-		l_nation_code				 VARCHAR2 (2);
-		l_cwms_office_code		 NUMBER (10)
-											 := cwms_util.get_office_code ('CWMS');
-	BEGIN
-		IF p_bounding_office_id IS NOT NULL
-		THEN
-			BEGIN
-				SELECT	office_code
-				  INTO	l_bounding_office_code
-				  FROM	cwms_office
-				 WHERE	office_id = UPPER (p_bounding_office_id);
-			EXCEPTION
-				WHEN NO_DATA_FOUND
-				THEN
-					cwms_err.raise ('INVALID_ITEM',
-										 p_bounding_office_id,
-										 'office id'
-										);
-			END;
-		END IF;
-
-		BEGIN
-			SELECT	nation_code
-			  INTO	l_nation_code
-			  FROM	cwms_nation
-			 WHERE	nation_id = UPPER (l_nation_id);
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				cwms_err.raise ('INVALID_ITEM', l_nation_id, 'nation id');
-		END;
-
-		BEGIN
-			-- Check if base_location exists -
-			SELECT	base_location_code
-			  INTO	p_base_location_code
-			  FROM	at_base_location abl
-			 WHERE	UPPER (abl.base_location_id) = UPPER (p_base_location_id)
-						AND abl.db_office_code = p_db_office_code;
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				l_base_loc_exists := FALSE;
-		END;
-
-		IF l_base_loc_exists
-		THEN
-			BEGIN
-				-- Check if sub_location exists -
-				IF p_sub_location_id IS NULL
-				THEN
-					SELECT	location_code
-					  INTO	p_location_code
-					  FROM	at_physical_location apl
-					 WHERE	apl.base_location_code = p_base_location_code
-								AND apl.sub_location_id IS NULL;
-				ELSE
-					SELECT	location_code
-					  INTO	p_location_code
-					  FROM	at_physical_location apl
-					 WHERE	apl.base_location_code = p_base_location_code
-								AND UPPER (apl.sub_location_id) =
-										 UPPER (p_sub_location_id);
-				END IF;
-			EXCEPTION
-				WHEN NO_DATA_FOUND
-				THEN
-					l_sub_loc_exists := FALSE;
-			END;
-		END IF;
-
-		IF NOT l_base_loc_exists OR NOT l_sub_loc_exists
-		THEN
-			---------.
-			---------.
-			-- Create new base and sub locations in database...
-			l_hashcode :=
-				DBMS_UTILITY.get_hash_value (
-						p_db_office_code
-					|| UPPER (p_base_location_id)
-					|| UPPER (p_sub_location_id),
-					0,
-					1073741823
-				);
-			l_ret :=
-				DBMS_LOCK.request (id						=> l_hashcode,
-										 timeout 				=> 0,
-										 lockmode				=> 5,
-										 release_on_commit	=> TRUE
-										);
-
-			IF l_ret > 0
-			THEN
-				DBMS_LOCK.sleep (2);
-			ELSE
-				---------.
-				---------.
-				-- Create new Base Location (if necessary)...
-				--.
-				IF NOT l_base_loc_exists
-				THEN
-					--.
-					-- Insert new Base Location -
-					INSERT
-						  INTO	at_base_location (base_location_code,
-															db_office_code,
-															base_location_id,
-															active_flag
-														  )
-						VALUES	(
-										cwms_seq.NEXTVAL,
-										p_db_office_code,
-										p_base_location_id,
-										p_active_flag
-									)
-					RETURNING	base_location_code
-						  INTO	p_base_location_code;
-
-					--
-					--.Insert new Base Location into at_physical_location -
-					INSERT
-					  INTO	at_physical_location (location_code,
-															 base_location_code,
-															 time_zone_code,
-															 county_code,
-															 location_type,
-															 elevation,
-															 vertical_datum,
-															 longitude,
-															 latitude,
-															 horizontal_datum,
-															 public_name,
-															 long_name,
-															 description,
-															 active_flag,
-															 location_kind,
-															 map_label,
-															 published_latitude,
-															 published_longitude,
-															 office_code,
-															 nation_code,
-															 nearest_city
-															)
-					VALUES	(
-									p_base_location_code,
-									p_base_location_code,
-									p_time_zone_code,
-									p_county_code,
-									p_location_type,
-									p_elevation,
-									p_vertical_datum,
-									p_longitude,
-									p_latitude,
-									p_horizontal_datum,
-									p_public_name,
-									p_long_name,
-									p_description,
-									p_active_flag,
-									l_location_kind_code,
-									p_map_label,
-									p_published_latitude,
-									p_published_longitude,
-									l_bounding_office_code,
-									l_nation_code,
-									p_nearest_city
-								);
-
-					p_location_code := p_base_location_code;
-				END IF;
-
-				---------.
-				---------.
-				-- Create new (Sub) Location (if necessary)...
-				--.
-				IF p_sub_location_id IS NOT NULL
-				THEN
-					INSERT
-						  INTO	at_physical_location (location_code,
-																 base_location_code,
-																 sub_location_id,
-																 time_zone_code,
-																 county_code,
-																 location_type,
-																 elevation,
-																 vertical_datum,
-																 longitude,
-																 latitude,
-																 horizontal_datum,
-																 public_name,
-																 long_name,
-																 description,
-																 active_flag,
-																 location_kind,
-																 map_label,
-																 published_latitude,
-																 published_longitude,
-																 office_code,
-																 nation_code,
-																 nearest_city
-																)
-						VALUES	(
-										cwms_seq.NEXTVAL,
-										p_base_location_code,
-										p_sub_location_id,
-										p_time_zone_code,
-										p_county_code,
-										p_location_type,
-										p_elevation,
-										p_vertical_datum,
-										p_longitude,
-										p_latitude,
-										p_horizontal_datum,
-										p_public_name,
-										p_long_name,
-										p_description,
-										p_active_flag,
-										l_location_kind_code,
-										p_map_label,
-										p_published_latitude,
-										p_published_longitude,
-										l_bounding_office_code,
-										l_nation_code,
-										p_nearest_city
-									)
-					RETURNING	location_code
-						  INTO	p_location_code;
-				END IF;
-			END IF;
-		END IF;
-
-		--
-		COMMIT;											  -- needed to release dbms_lock.
-	--
-	END create_location_raw2;
-
-	--********************************************************************** -
-	--********************************************************************** -
-	--.
-	--  CREATE_LOCATION_RAW -
-	--.
-	--********************************************************************** -
-	--
-	-- The create_location_raw call is called by create_location and -
-	-- rename_location. It's intended to be only called internally because -
-	-- the call accepts raw codeed values such as db_office_code. -
-	--.
-	--*---------------------------------------------------------------------*-
-	--
-	PROCEDURE create_location_raw (
-		p_base_location_code 	  OUT NUMBER,
-		p_location_code			  OUT NUMBER,
-		p_base_location_id	  IN		VARCHAR2,
-		p_sub_location_id 	  IN		VARCHAR2,
-		p_db_office_code		  IN		NUMBER,
-		p_location_type		  IN		VARCHAR2 DEFAULT NULL,
-		p_elevation 			  IN		NUMBER DEFAULT NULL,
-		p_vertical_datum		  IN		VARCHAR2 DEFAULT NULL,
-		p_latitude				  IN		NUMBER DEFAULT NULL,
-		p_longitude 			  IN		NUMBER DEFAULT NULL,
-		p_horizontal_datum	  IN		VARCHAR2 DEFAULT NULL,
-		p_public_name			  IN		VARCHAR2 DEFAULT NULL,
-		p_long_name 			  IN		VARCHAR2 DEFAULT NULL,
-		p_description			  IN		VARCHAR2 DEFAULT NULL,
-		p_time_zone_code		  IN		NUMBER DEFAULT NULL,
-		p_county_code			  IN		NUMBER DEFAULT NULL,
-		p_active_flag			  IN		VARCHAR2 DEFAULT 'T'
-	)
-	IS
-	BEGIN
-		create_location_raw2 (p_base_location_code,
-									 p_location_code,
-									 p_base_location_id,
-									 p_sub_location_id,
-									 p_db_office_code,
-									 p_location_type,
-									 p_elevation,
-									 p_vertical_datum,
-									 p_latitude,
-									 p_longitude,
-									 p_horizontal_datum,
-									 p_public_name,
-									 p_long_name,
-									 p_description,
-									 p_time_zone_code,
-									 p_county_code,
-									 p_active_flag
-									);
-	END create_location_raw;
-
-	--********************************************************************** -
-	--********************************************************************** -
-	--
-	-- UPDATE_LOC -
-	--
-	--*---------------------------------------------------------------------*-
-	--
-	-- This is the v1.4 api call - ported for backward compatibility.
-	--
-	--*---------------------------------------------------------------------*-
-	----
-	---
-	--- This is the 1.4 signature - MUST NOT CHANGE!!!!!!!!!!!!
-	--vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-	PROCEDURE update_loc (
-		p_office_id 		 IN VARCHAR2,
-		p_base_loc_id		 IN VARCHAR2,
-		p_location_type	 IN VARCHAR2 DEFAULT NULL,
-		p_elevation 		 IN NUMBER DEFAULT NULL,
-		p_elev_unit_id 	 IN VARCHAR2 DEFAULT NULL,
-		p_vertical_datum	 IN VARCHAR2 DEFAULT NULL,
-		p_latitude			 IN NUMBER DEFAULT NULL,
-		p_longitude 		 IN NUMBER DEFAULT NULL,
-		p_public_name		 IN VARCHAR2 DEFAULT NULL,
-		p_description		 IN VARCHAR2 DEFAULT NULL,
-		p_timezone_id		 IN VARCHAR2 DEFAULT NULL,
-		p_county_name		 IN VARCHAR2 DEFAULT NULL,
-		p_state_initial	 IN VARCHAR2 DEFAULT NULL,
-		p_ignorenulls		 IN NUMBER DEFAULT cwms_util.true_num
-	)
-	--^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-	--- This is the 1.4 signature - MUST NOT CHANGE!!!!!!!!!!!!
-	---
-	--
-	IS
-		l_loc_new				loc_type_ds;
-		l_horizontal_datum	VARCHAR2 (16) := NULL;
-		l_long_name 			VARCHAR2 (80) := NULL;
-		l_active 				VARCHAR2 (1) := NULL;
-		l_ignorenulls			VARCHAR2 (1) := 'T';
-	BEGIN
-		IF p_ignorenulls <> cwms_util.true_num
-		THEN
-			l_ignorenulls := 'F';
-		END IF;
-
-		update_location (p_office_id,
-							  p_base_loc_id,
-							  p_location_type,
-							  p_elevation,
-							  p_elev_unit_id,
-							  p_vertical_datum,
-							  p_latitude,
-							  p_longitude,
-							  l_horizontal_datum,
-							  p_public_name,
-							  l_long_name,
-							  p_description,
-							  p_timezone_id,
-							  p_county_name,
-							  p_state_initial,
-							  l_active,
-							  p_ignorenulls
-							 );
-	END update_loc;
+      RETURN l_county_code;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         raise_application_error (
+            -20214,
+               'Could not find '
+            || p_county_name
+            || ' county/parish '
+            || ' in '
+            || p_state_initial,
+            TRUE
+         );
+      WHEN OTHERS
+      THEN
+         RAISE;
+   END get_county_code;
 
 
-	PROCEDURE update_location2 (
-		p_location_id				IN VARCHAR2,
-		p_location_type			IN VARCHAR2 DEFAULT NULL,
-		p_elevation 				IN NUMBER DEFAULT NULL,
-		p_elev_unit_id 			IN VARCHAR2 DEFAULT NULL,
-		p_vertical_datum			IN VARCHAR2 DEFAULT NULL,
-		p_latitude					IN NUMBER DEFAULT NULL,
-		p_longitude 				IN NUMBER DEFAULT NULL,
-		p_horizontal_datum		IN VARCHAR2 DEFAULT NULL,
-		p_public_name				IN VARCHAR2 DEFAULT NULL,
-		p_long_name 				IN VARCHAR2 DEFAULT NULL,
-		p_description				IN VARCHAR2 DEFAULT NULL,
-		p_time_zone_id 			IN VARCHAR2 DEFAULT NULL,
-		p_county_name				IN VARCHAR2 DEFAULT NULL,
-		p_state_initial			IN VARCHAR2 DEFAULT NULL,
-		p_active 					IN VARCHAR2 DEFAULT NULL,
-		p_location_kind_id		IN VARCHAR2 DEFAULT NULL,
-		p_map_label 				IN VARCHAR2 DEFAULT NULL,
-		p_published_latitude 	IN NUMBER DEFAULT NULL,
-		p_published_longitude	IN NUMBER DEFAULT NULL,
-		p_bounding_office_id 	IN VARCHAR2 DEFAULT NULL,
-		p_nation_id 				IN VARCHAR2 DEFAULT NULL,
-		p_nearest_city 			IN VARCHAR2 DEFAULT NULL,
-		p_ignorenulls				IN VARCHAR2 DEFAULT 'T',
-		p_db_office_id 			IN VARCHAR2 DEFAULT NULL
-	)
-	IS
-		l_location_code			 at_physical_location.location_code%TYPE;
-		l_time_zone_code			 at_physical_location.time_zone_code%TYPE;
-		l_county_code				 cwms_county.county_code%TYPE;
-		l_location_type			 at_physical_location.location_type%TYPE;
-		l_elevation 				 at_physical_location.elevation%TYPE;
-		l_vertical_datum			 at_physical_location.vertical_datum%TYPE;
-		l_longitude 				 at_physical_location.longitude%TYPE;
-		l_latitude					 at_physical_location.latitude%TYPE;
-		l_horizontal_datum		 at_physical_location.horizontal_datum%TYPE;
-		l_state_code				 cwms_state.state_code%TYPE;
-		l_public_name				 at_physical_location.public_name%TYPE;
-		l_long_name 				 at_physical_location.long_name%TYPE;
-		l_description				 at_physical_location.description%TYPE;
-		l_active_flag				 at_physical_location.active_flag%TYPE;
-		l_location_kind_code 	 at_physical_location.location_kind%TYPE;
-		l_map_label 				 at_physical_location.map_label%TYPE;
-		l_published_latitude 	 at_physical_location.published_latitude%TYPE;
-		l_published_longitude	 at_physical_location.published_longitude%TYPE;
-		l_bounding_office_code	 at_physical_location.office_code%TYPE;
-		l_nation_code				 at_physical_location.nation_code%TYPE;
-		l_nearest_city 			 at_physical_location.nearest_city%TYPE;
-		--
-		l_state_initial			 cwms_state.state_initial%TYPE;
-		l_county_name				 cwms_county.county_name%TYPE;
-		l_ignorenulls				 BOOLEAN := cwms_util.is_true (p_ignorenulls);
-		l_office_code				 NUMBER (10)
-			:= cwms_util.get_office_code (p_db_office_id);
-		l_cwms_office_code		 NUMBER (10)
-											 := cwms_util.get_office_code ('CWMS');
-	BEGIN
-		--.
-		-- dbms_output.put_line('Bienvenue a update_loc');
+   --********************************************************************** -
+   --********************************************************************** -
+   --
+   -- CONVERT_FROM_TO converts a pararameter from one unit to antoher
+   --
+   ------------------------------------------------------------------------------*/
+   FUNCTION convert_from_to (p_orig_value           IN NUMBER,
+                             p_from_unit_name       IN VARCHAR2,
+                             p_to_unit_name          IN VARCHAR2,
+                             p_abstract_paramname    IN VARCHAR2
+                            )
+      RETURN NUMBER
+   IS
+      l_return_value   NUMBER;
+   BEGIN
+      --
+      -- retrieve correct unit conversion factor/offset...
+      BEGIN
+         SELECT   p_orig_value * factor + offset
+           INTO   l_return_value
+           FROM   cwms_unit_conversion
+          WHERE   from_unit_id = cwms_util.get_unit_id(p_from_unit_name)
+                  AND to_unit_id = cwms_util.get_unit_id(p_to_unit_name);
 
-		-- Retrieve the location's Location Code.
-		--
-		l_location_code := get_location_code (p_db_office_id, p_location_id);
-		DBMS_OUTPUT.put_line ('l_location_code: ' || l_location_code);
+         RETURN l_return_value;
+      --
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            raise_application_error (
+               -20216,
+                  'Unable to find conversion factor from '
+               || p_from_unit_name
+               || ' to '
+               || p_to_unit_name
+               || ' in CWMS DB',
+               TRUE
+            );
+         WHEN OTHERS
+         THEN
+            RAISE;
+      END;
+   END convert_from_to;
 
-		--
-		--  If get_location_code did not throw an exception, then a valid base_location_id &.
-		--  office_id pair was passed in, therefore continue to update the.
-		--  at_physical_location table by first retrieving data for the existing location...
-		--
-		SELECT	location_type, elevation, vertical_datum, latitude, longitude,
-					horizontal_datum, public_name, long_name, description,
-					time_zone_code, county_code, active_flag, location_kind,
-					map_label, published_latitude, published_longitude,
-					office_code, nation_code, nearest_city
-		  INTO	l_location_type, l_elevation, l_vertical_datum, l_latitude,
-					l_longitude, l_horizontal_datum, l_public_name, l_long_name,
-					l_description, l_time_zone_code, l_county_code, l_active_flag,
-					l_location_kind_code, l_map_label, l_published_latitude,
-					l_published_longitude, l_bounding_office_code, l_nation_code,
-					l_nearest_city
-		  FROM	at_physical_location
-		 WHERE	location_code = l_location_code;
+   --********************************************************************** -
+   --********************************************************************** -
+   --
+   -- get_unit_code
+   --
+   ------------------------------------------------------------------------------*/
+   FUNCTION get_unit_code (unitname            IN VARCHAR2,
+                           abstractparamname   IN VARCHAR2
+                          )
+      RETURN NUMBER
+   IS
+      l_unit_code   NUMBER;
+   BEGIN
+      SELECT   unit_code
+        INTO   l_unit_code
+        FROM   cwms_unit
+       WHERE   UPPER (unit_id) = UPPER (cwms_util.get_unit_id(unitname))
+               AND abstract_param_code =
+                      (SELECT   abstract_param_code
+                         FROM   cwms_abstract_parameter
+                        WHERE   abstract_param_id = abstractparamname);
 
-		DBMS_OUTPUT.put_line ('l_elevation: ' || l_elevation);
+      RETURN l_unit_code;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         raise_application_error (
+            -20217,
+               '"'
+            || unitname
+            || '" is not a recognized '
+            || abstractparamname
+            || ' unit',
+            TRUE
+         );
+      WHEN OTHERS
+      THEN
+         RAISE;
+   END get_unit_code;
 
-		----------------------------------------------------------
-		----------------------------------------------------------
-		-- Perform validation checks on newly passed parameters...
+   FUNCTION is_cwms_id_valid (p_base_loc_id IN VARCHAR2)
+      RETURN BOOLEAN
+   IS
+      l_count    NUMBER := 0;
+   BEGIN
+      -- Check that cwmsIdNew starts with an alphnumeric and does
+      -- not conatain a period.
+      l_count := REGEXP_INSTR (p_base_loc_id, '[\.]');
+      l_count := l_count + REGEXP_INSTR (p_base_loc_id, '[^[:alnum:]]');
 
-		---------.
-		---------.
-		-- Update location_type...
-		--.
-		IF p_location_type IS NOT NULL
-		THEN
-			l_location_type := p_location_type;
-		ELSIF NOT l_ignorenulls
-		THEN
-			l_location_type := NULL;
-		END IF;
+      IF l_count > 0
+      THEN
+         RETURN FALSE;
+      END IF;
 
-		---------.
-		---------.
-		-- Update any new elvation to the correct DB units...
-		--.
-		IF p_elevation IS NOT NULL
-		THEN
-			l_elevation :=
-				convert_from_to (p_elevation,
-									  p_elev_unit_id,
-									  l_elev_db_unit,
-									  l_abstract_elev_param
-									 );
-		ELSIF NOT l_ignorenulls
-		THEN
-			l_elevation := NULL;
-		END IF;
+      RETURN TRUE;
+   END is_cwms_id_valid;
 
-		---------.
-		---------.
-		-- Update vertical datum...
-		--
-		IF p_vertical_datum IS NOT NULL
-		THEN
-			l_vertical_datum := p_vertical_datum;
-		ELSIF NOT l_ignorenulls
-		THEN
-			l_vertical_datum := NULL;
-		END IF;
+   --********************************************************************** -
+   --.
+   --  CREATE_LOCATION_RAW2 -
+   --.
+   --********************************************************************** -
+   --
+   PROCEDURE create_location_raw2 (
+      p_base_location_code       OUT NUMBER,
+      p_location_code            OUT NUMBER,
+      p_base_location_id      IN     VARCHAR2,
+      p_sub_location_id       IN     VARCHAR2,
+      p_db_office_code         IN     NUMBER,
+      p_location_type         IN     VARCHAR2 DEFAULT NULL,
+      p_elevation             IN     NUMBER DEFAULT NULL,
+      p_vertical_datum         IN     VARCHAR2 DEFAULT NULL,
+      p_latitude               IN     NUMBER DEFAULT NULL,
+      p_longitude             IN     NUMBER DEFAULT NULL,
+      p_horizontal_datum      IN     VARCHAR2 DEFAULT NULL,
+      p_public_name            IN     VARCHAR2 DEFAULT NULL,
+      p_long_name             IN     VARCHAR2 DEFAULT NULL,
+      p_description            IN     VARCHAR2 DEFAULT NULL,
+      p_time_zone_code         IN     NUMBER DEFAULT NULL,
+      p_county_code            IN     NUMBER DEFAULT NULL,
+      p_active_flag            IN     VARCHAR2 DEFAULT 'T',
+      p_location_kind_id      IN     VARCHAR2 DEFAULT NULL,
+      p_map_label             IN     VARCHAR2 DEFAULT NULL,
+      p_published_latitude    IN     NUMBER DEFAULT NULL,
+      p_published_longitude   IN     NUMBER DEFAULT NULL,
+      p_bounding_office_id    IN     VARCHAR2 DEFAULT NULL,
+      p_nation_id             IN     VARCHAR2 DEFAULT NULL,
+      p_nearest_city          IN     VARCHAR2 DEFAULT NULL,
+      p_db_office_id          IN     VARCHAR2 DEFAULT NULL
+   )
+   IS
+      PRAGMA AUTONOMOUS_TRANSACTION;
 
-		---------.
-		---------.
-		-- Update latitude...
-		--
-		IF p_latitude IS NOT NULL
-		THEN
-			IF ABS (p_latitude) > 90
-			THEN
-				raise_application_error (
-					-20219,
-						'INVALID Latitude value: '
-					|| p_latitude
-					|| ' - must be between -90 and +90',
-					TRUE
-				);
-			END IF;
+      l_hashcode                NUMBER;
+      l_ret                    NUMBER;
+      l_base_loc_exists        BOOLEAN := TRUE;
+      l_sub_loc_exists          BOOLEAN := TRUE;
+      l_nation_id              VARCHAR2 (48) := NVL (p_nation_id, 'UNITED STATES');
+      l_bounding_office_id     VARCHAR2 (16);
+      l_location_kind_code     NUMBER := 1; -- SITE
+      l_bounding_office_code    NUMBER := NULL;
+      l_nation_code             VARCHAR2 (2);
+      l_cwms_office_code       NUMBER (10)
+                                  := cwms_util.get_office_code ('CWMS');
+   BEGIN
+      IF p_bounding_office_id IS NOT NULL
+      THEN
+         BEGIN
+            SELECT   office_code
+              INTO   l_bounding_office_code
+              FROM   cwms_office
+             WHERE   office_id = UPPER (p_bounding_office_id);
+         EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+               cwms_err.raise ('INVALID_ITEM',
+                               p_bounding_office_id,
+                               'office id'
+                              );
+         END;
+      END IF;
 
-			l_latitude := p_latitude;
-		ELSIF NOT l_ignorenulls
-		THEN
-			l_latitude := NULL;
-		END IF;
+      BEGIN
+         SELECT   nation_code
+           INTO   l_nation_code
+           FROM   cwms_nation
+          WHERE   nation_id = UPPER (l_nation_id);
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.raise ('INVALID_ITEM', l_nation_id, 'nation id');
+      END;
 
-		---------.
-		---------.
-		-- Update longitude...
-		--
-		IF p_longitude IS NOT NULL
-		THEN
-			IF ABS (p_longitude) > 180
-			THEN
-				raise_application_error (
-					-20218,
-						'INVALID Longitude value: '
-					|| p_longitude
-					|| ' - must be between -180 and +180',
-					TRUE
-				);
-			END IF;
+      BEGIN
+         -- Check if base_location exists -
+         SELECT   base_location_code
+           INTO   p_base_location_code
+           FROM   at_base_location abl
+          WHERE   UPPER (abl.base_location_id) = UPPER (p_base_location_id)
+                  AND abl.db_office_code = p_db_office_code;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            l_base_loc_exists := FALSE;
+      END;
 
-			l_longitude := p_longitude;
-		ELSIF NOT l_ignorenulls
-		THEN
-			l_longitude := NULL;
-		END IF;
+      IF l_base_loc_exists
+      THEN
+         BEGIN
+            -- Check if sub_location exists -
+            IF p_sub_location_id IS NULL
+            THEN
+               SELECT   location_code
+                 INTO   p_location_code
+                 FROM   at_physical_location apl
+                WHERE   apl.base_location_code = p_base_location_code
+                        AND apl.sub_location_id IS NULL;
+            ELSE
+               SELECT   location_code
+                 INTO   p_location_code
+                 FROM   at_physical_location apl
+                WHERE   apl.base_location_code = p_base_location_code
+                        AND UPPER (apl.sub_location_id) =
+                               UPPER (p_sub_location_id);
+            END IF;
+         EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+               l_sub_loc_exists := FALSE;
+         END;
+      END IF;
 
-		---------.
-		---------.
-		-- Update horizontal datum...
-		--
-		IF p_horizontal_datum IS NOT NULL
-		THEN
-			l_horizontal_datum := p_horizontal_datum;
-		ELSIF NOT l_ignorenulls
-		THEN
-			l_horizontal_datum := NULL;
-		END IF;
+      IF NOT l_base_loc_exists OR NOT l_sub_loc_exists
+      THEN
+         ---------.
+         ---------.
+         -- Create new base and sub locations in database...
+         l_hashcode :=
+            DBMS_UTILITY.get_hash_value (
+                  p_db_office_code
+               || UPPER (p_base_location_id)
+               || UPPER (p_sub_location_id),
+               0,
+               1073741823
+            );
+         l_ret :=
+            DBMS_LOCK.request (id                  => l_hashcode,
+                               timeout             => 0,
+                               lockmode            => 5,
+                               release_on_commit   => TRUE
+                              );
 
-		---------.
-		---------.
-		-- Update public_name...
-		--
-		IF p_public_name IS NOT NULL
-		THEN
-			l_public_name := p_public_name;
-		ELSIF NOT l_ignorenulls
-		THEN
-			l_public_name := NULL;
-		END IF;
+         IF l_ret > 0
+         THEN
+            DBMS_LOCK.sleep (2);
+         ELSE
+            ---------.
+            ---------.
+            -- Create new Base Location (if necessary)...
+            --.
+            IF NOT l_base_loc_exists
+            THEN
+               --.
+               -- Insert new Base Location -
+               INSERT
+                    INTO   at_base_location (base_location_code,
+                                             db_office_code,
+                                             base_location_id,
+                                             active_flag
+                                            )
+                  VALUES   (
+                              cwms_seq.NEXTVAL,
+                              p_db_office_code,
+                              p_base_location_id,
+                              p_active_flag
+                           )
+               RETURNING   base_location_code
+                    INTO   p_base_location_code;
 
-		---------.
-		---------.
-		-- Update long_name...
-		--
-		IF p_long_name IS NOT NULL
-		THEN
-			l_long_name := p_long_name;
-		ELSIF NOT l_ignorenulls
-		THEN
-			l_long_name := NULL;
-		END IF;
+               --
+               --.Insert new Base Location into at_physical_location -
+               INSERT
+                 INTO   at_physical_location (location_code,
+                                              base_location_code,
+                                              time_zone_code,
+                                              county_code,
+                                              location_type,
+                                              elevation,
+                                              vertical_datum,
+                                              longitude,
+                                              latitude,
+                                              horizontal_datum,
+                                              public_name,
+                                              long_name,
+                                              description,
+                                              active_flag,
+                                              location_kind,
+                                              map_label,
+                                              published_latitude,
+                                              published_longitude,
+                                              office_code,
+                                              nation_code,
+                                              nearest_city
+                                             )
+               VALUES   (
+                           p_base_location_code,
+                           p_base_location_code,
+                           p_time_zone_code,
+                           p_county_code,
+                           p_location_type,
+                           p_elevation,
+                           p_vertical_datum,
+                           p_longitude,
+                           p_latitude,
+                           p_horizontal_datum,
+                           p_public_name,
+                           p_long_name,
+                           p_description,
+                           p_active_flag,
+                           l_location_kind_code,
+                           p_map_label,
+                           p_published_latitude,
+                           p_published_longitude,
+                           l_bounding_office_code,
+                           l_nation_code,
+                           p_nearest_city
+                        );
 
-		---------.
-		---------.
-		-- Update description...
-		--
-		IF p_description IS NOT NULL
-		THEN
-			l_description := p_description;
-		ELSIF NOT l_ignorenulls
-		THEN
-			l_description := NULL;
-		END IF;
+               p_location_code := p_base_location_code;
+            END IF;
 
-		---------.
-		---------.
-		-- Update time_zone...
-		--
-		IF p_time_zone_id IS NOT NULL
-		THEN
-			l_time_zone_code := cwms_util.get_time_zone_code (p_time_zone_id);
-		ELSIF NOT l_ignorenulls
-		THEN
-			l_time_zone_code := NULL;
-		END IF;
+            ---------.
+            ---------.
+            -- Create new (Sub) Location (if necessary)...
+            --.
+            IF p_sub_location_id IS NOT NULL
+            THEN
+               INSERT
+                    INTO   at_physical_location (location_code,
+                                                 base_location_code,
+                                                 sub_location_id,
+                                                 time_zone_code,
+                                                 county_code,
+                                                 location_type,
+                                                 elevation,
+                                                 vertical_datum,
+                                                 longitude,
+                                                 latitude,
+                                                 horizontal_datum,
+                                                 public_name,
+                                                 long_name,
+                                                 description,
+                                                 active_flag,
+                                                 location_kind,
+                                                 map_label,
+                                                 published_latitude,
+                                                 published_longitude,
+                                                 office_code,
+                                                 nation_code,
+                                                 nearest_city
+                                                )
+                  VALUES   (
+                              cwms_seq.NEXTVAL,
+                              p_base_location_code,
+                              p_sub_location_id,
+                              p_time_zone_code,
+                              p_county_code,
+                              p_location_type,
+                              p_elevation,
+                              p_vertical_datum,
+                              p_longitude,
+                              p_latitude,
+                              p_horizontal_datum,
+                              p_public_name,
+                              p_long_name,
+                              p_description,
+                              p_active_flag,
+                              l_location_kind_code,
+                              p_map_label,
+                              p_published_latitude,
+                              p_published_longitude,
+                              l_bounding_office_code,
+                              l_nation_code,
+                              p_nearest_city
+                           )
+               RETURNING   location_code
+                    INTO   p_location_code;
+            END IF;
+         END IF;
+      END IF;
 
-		---------.
-		---------.
-		-- Check and Update he State/County pair...
-		--
-		IF p_state_initial IS NULL AND p_county_name IS NOT NULL
-		THEN			-- Throw exception - if a county name is passed in one must.
-			-- also pass-in the county's state initials.
-			cwms_err.raise ('STATE_CANNOT_BE_NULL', 'CWMS_LOC');
-		ELSIF p_state_initial IS NOT NULL
-		THEN										 -- Find the corresponding county_code.
-			l_county_code := get_county_code (p_county_name, p_state_initial);
-		ELSIF NOT l_ignorenulls
-		THEN
-			l_county_code := NULL;
-		END IF;
+      --
+      COMMIT;                                   -- needed to release dbms_lock.
+   --
+   END create_location_raw2;
 
-		---------.
-		---------.
-		-- Update active_flag.
-		--.
-		IF p_active IS NOT NULL
-		THEN
-			IF cwms_util.is_true (p_active)
-			THEN
-				l_active_flag := 'T';
-			ELSIF cwms_util.is_false (p_active)
-			THEN
-				l_active_flag := 'F';
-			ELSE
-				cwms_err.raise ('INVALID_T_F_FLAG', 'cwms_loc', 'p_active');
-			END IF;
-		END IF;
+   --********************************************************************** -
+   --********************************************************************** -
+   --.
+   --  CREATE_LOCATION_RAW -
+   --.
+   --********************************************************************** -
+   --
+   -- The create_location_raw call is called by create_location and -
+   -- rename_location. It's intended to be only called internally because -
+   -- the call accepts raw codeed values such as db_office_code. -
+   --.
+   --*---------------------------------------------------------------------*-
+   --
+   PROCEDURE create_location_raw (
+      p_base_location_code      OUT NUMBER,
+      p_location_code           OUT NUMBER,
+      p_base_location_id     IN      VARCHAR2,
+      p_sub_location_id      IN      VARCHAR2,
+      p_db_office_code        IN      NUMBER,
+      p_location_type        IN      VARCHAR2 DEFAULT NULL,
+      p_elevation            IN      NUMBER DEFAULT NULL,
+      p_vertical_datum        IN      VARCHAR2 DEFAULT NULL,
+      p_latitude              IN      NUMBER DEFAULT NULL,
+      p_longitude            IN      NUMBER DEFAULT NULL,
+      p_horizontal_datum     IN      VARCHAR2 DEFAULT NULL,
+      p_public_name           IN      VARCHAR2 DEFAULT NULL,
+      p_long_name            IN      VARCHAR2 DEFAULT NULL,
+      p_description           IN      VARCHAR2 DEFAULT NULL,
+      p_time_zone_code        IN      NUMBER DEFAULT NULL,
+      p_county_code           IN      NUMBER DEFAULT NULL,
+      p_active_flag           IN      VARCHAR2 DEFAULT 'T'
+   )
+   IS
+   BEGIN
+      create_location_raw2 (p_base_location_code,
+                            p_location_code,
+                            p_base_location_id,
+                            p_sub_location_id,
+                            p_db_office_code,
+                            p_location_type,
+                            p_elevation,
+                            p_vertical_datum,
+                            p_latitude,
+                            p_longitude,
+                            p_horizontal_datum,
+                            p_public_name,
+                            p_long_name,
+                            p_description,
+                            p_time_zone_code,
+                            p_county_code,
+                            p_active_flag
+                           );
+   END create_location_raw;
 
-		-------------------
-		-- location kind --  NOT UPDATED
-		-------------------
+   --********************************************************************** -
+   --********************************************************************** -
+   --
+   -- UPDATE_LOC -
+   --
+   --*---------------------------------------------------------------------*-
+   --
+   -- This is the v1.4 api call - ported for backward compatibility.
+   --
+   --*---------------------------------------------------------------------*-
+   ----
+   ---
+   --- This is the 1.4 signature - MUST NOT CHANGE!!!!!!!!!!!!
+   --vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+   PROCEDURE update_loc (
+      p_office_id        IN VARCHAR2,
+      p_base_loc_id       IN VARCHAR2,
+      p_location_type    IN VARCHAR2 DEFAULT NULL,
+      p_elevation        IN NUMBER DEFAULT NULL,
+      p_elev_unit_id     IN VARCHAR2 DEFAULT NULL,
+      p_vertical_datum    IN VARCHAR2 DEFAULT NULL,
+      p_latitude          IN NUMBER DEFAULT NULL,
+      p_longitude        IN NUMBER DEFAULT NULL,
+      p_public_name       IN VARCHAR2 DEFAULT NULL,
+      p_description       IN VARCHAR2 DEFAULT NULL,
+      p_timezone_id       IN VARCHAR2 DEFAULT NULL,
+      p_county_name       IN VARCHAR2 DEFAULT NULL,
+      p_state_initial    IN VARCHAR2 DEFAULT NULL,
+      p_ignorenulls       IN NUMBER DEFAULT cwms_util.true_num
+   )
+   --^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   --- This is the 1.4 signature - MUST NOT CHANGE!!!!!!!!!!!!
+   ---
+   --
+   IS
+      l_loc_new            loc_type_ds;
+      l_horizontal_datum   VARCHAR2 (16) := NULL;
+      l_long_name          VARCHAR2 (80) := NULL;
+      l_active             VARCHAR2 (1) := NULL;
+      l_ignorenulls         VARCHAR2 (1) := 'T';
+   BEGIN
+      IF p_ignorenulls <> cwms_util.true_num
+      THEN
+         l_ignorenulls := 'F';
+      END IF;
+
+      update_location (p_office_id,
+                       p_base_loc_id,
+                       p_location_type,
+                       p_elevation,
+                       p_elev_unit_id,
+                       p_vertical_datum,
+                       p_latitude,
+                       p_longitude,
+                       l_horizontal_datum,
+                       p_public_name,
+                       l_long_name,
+                       p_description,
+                       p_timezone_id,
+                       p_county_name,
+                       p_state_initial,
+                       l_active,
+                       p_ignorenulls
+                      );
+   END update_loc;
+
+
+   PROCEDURE update_location2 (
+      p_location_id            IN VARCHAR2,
+      p_location_type         IN VARCHAR2 DEFAULT NULL,
+      p_elevation             IN NUMBER DEFAULT NULL,
+      p_elev_unit_id          IN VARCHAR2 DEFAULT NULL,
+      p_vertical_datum         IN VARCHAR2 DEFAULT NULL,
+      p_latitude               IN NUMBER DEFAULT NULL,
+      p_longitude             IN NUMBER DEFAULT NULL,
+      p_horizontal_datum      IN VARCHAR2 DEFAULT NULL,
+      p_public_name            IN VARCHAR2 DEFAULT NULL,
+      p_long_name             IN VARCHAR2 DEFAULT NULL,
+      p_description            IN VARCHAR2 DEFAULT NULL,
+      p_time_zone_id          IN VARCHAR2 DEFAULT NULL,
+      p_county_name            IN VARCHAR2 DEFAULT NULL,
+      p_state_initial         IN VARCHAR2 DEFAULT NULL,
+      p_active                IN VARCHAR2 DEFAULT NULL,
+      p_location_kind_id      IN VARCHAR2 DEFAULT NULL,
+      p_map_label             IN VARCHAR2 DEFAULT NULL,
+      p_published_latitude    IN NUMBER DEFAULT NULL,
+      p_published_longitude   IN NUMBER DEFAULT NULL,
+      p_bounding_office_id    IN VARCHAR2 DEFAULT NULL,
+      p_nation_id             IN VARCHAR2 DEFAULT NULL,
+      p_nearest_city          IN VARCHAR2 DEFAULT NULL,
+      p_ignorenulls            IN VARCHAR2 DEFAULT 'T',
+      p_db_office_id          IN VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_location_code          at_physical_location.location_code%TYPE;
+      l_time_zone_code          at_physical_location.time_zone_code%TYPE;
+      l_county_code             cwms_county.county_code%TYPE;
+      l_location_type          at_physical_location.location_type%TYPE;
+      l_elevation              at_physical_location.elevation%TYPE;
+      l_vertical_datum          at_physical_location.vertical_datum%TYPE;
+      l_longitude              at_physical_location.longitude%TYPE;
+      l_latitude                at_physical_location.latitude%TYPE;
+      l_horizontal_datum       at_physical_location.horizontal_datum%TYPE;
+      l_state_code             cwms_state.state_code%TYPE;
+      l_public_name             at_physical_location.public_name%TYPE;
+      l_long_name              at_physical_location.long_name%TYPE;
+      l_description             at_physical_location.description%TYPE;
+      l_active_flag             at_physical_location.active_flag%TYPE;
+      l_location_kind_code     at_physical_location.location_kind%TYPE;
+      l_map_label              at_physical_location.map_label%TYPE;
+      l_published_latitude     at_physical_location.published_latitude%TYPE;
+      l_published_longitude    at_physical_location.published_longitude%TYPE;
+      l_bounding_office_code    at_physical_location.office_code%TYPE;
+      l_nation_code             at_physical_location.nation_code%TYPE;
+      l_nearest_city           at_physical_location.nearest_city%TYPE;
+      --
+      l_state_initial          cwms_state.state_initial%TYPE;
+      l_county_name             cwms_county.county_name%TYPE;
+      l_ignorenulls             BOOLEAN := cwms_util.is_true (p_ignorenulls);
+      l_office_code             NUMBER (10)
+         := cwms_util.get_office_code (p_db_office_id);
+      l_cwms_office_code       NUMBER (10)
+                                  := cwms_util.get_office_code ('CWMS');
+   BEGIN
+      --.
+      -- dbms_output.put_line('Bienvenue a update_loc');
+
+      -- Retrieve the location's Location Code.
+      --
+      l_location_code := get_location_code (p_db_office_id, p_location_id);
+      DBMS_OUTPUT.put_line ('l_location_code: ' || l_location_code);
+
+      --
+      --  If get_location_code did not throw an exception, then a valid base_location_id &.
+      --  office_id pair was passed in, therefore continue to update the.
+      --  at_physical_location table by first retrieving data for the existing location...
+      --
+      SELECT   location_type, elevation, vertical_datum, latitude, longitude,
+               horizontal_datum, public_name, long_name, description,
+               time_zone_code, county_code, active_flag, location_kind,
+               map_label, published_latitude, published_longitude,
+               office_code, nation_code, nearest_city
+        INTO   l_location_type, l_elevation, l_vertical_datum, l_latitude,
+               l_longitude, l_horizontal_datum, l_public_name, l_long_name,
+               l_description, l_time_zone_code, l_county_code, l_active_flag,
+               l_location_kind_code, l_map_label, l_published_latitude,
+               l_published_longitude, l_bounding_office_code, l_nation_code,
+               l_nearest_city
+        FROM   at_physical_location
+       WHERE   location_code = l_location_code;
+
+      DBMS_OUTPUT.put_line ('l_elevation: ' || l_elevation);
+
+      ----------------------------------------------------------
+      ----------------------------------------------------------
+      -- Perform validation checks on newly passed parameters...
+
+      ---------.
+      ---------.
+      -- Update location_type...
+      --.
+      IF p_location_type IS NOT NULL
+      THEN
+         l_location_type := p_location_type;
+      ELSIF NOT l_ignorenulls
+      THEN
+         l_location_type := NULL;
+      END IF;
+
+      ---------.
+      ---------.
+      -- Update any new elvation to the correct DB units...
+      --.
+      IF p_elevation IS NOT NULL
+      THEN
+         l_elevation :=
+            convert_from_to (p_elevation,
+                             p_elev_unit_id,
+                             l_elev_db_unit,
+                             l_abstract_elev_param
+                            );
+      ELSIF NOT l_ignorenulls
+      THEN
+         l_elevation := NULL;
+      END IF;
+
+      ---------.
+      ---------.
+      -- Update vertical datum...
+      --
+      IF p_vertical_datum IS NOT NULL
+      THEN
+         l_vertical_datum := p_vertical_datum;
+      ELSIF NOT l_ignorenulls
+      THEN
+         l_vertical_datum := NULL;
+      END IF;
+
+      ---------.
+      ---------.
+      -- Update latitude...
+      --
+      IF p_latitude IS NOT NULL
+      THEN
+         IF ABS (p_latitude) > 90
+         THEN
+            raise_application_error (
+               -20219,
+                  'INVALID Latitude value: '
+               || p_latitude
+               || ' - must be between -90 and +90',
+               TRUE
+            );
+         END IF;
+
+         l_latitude := p_latitude;
+      ELSIF NOT l_ignorenulls
+      THEN
+         l_latitude := NULL;
+      END IF;
+
+      ---------.
+      ---------.
+      -- Update longitude...
+      --
+      IF p_longitude IS NOT NULL
+      THEN
+         IF ABS (p_longitude) > 180
+         THEN
+            raise_application_error (
+               -20218,
+                  'INVALID Longitude value: '
+               || p_longitude
+               || ' - must be between -180 and +180',
+               TRUE
+            );
+         END IF;
+
+         l_longitude := p_longitude;
+      ELSIF NOT l_ignorenulls
+      THEN
+         l_longitude := NULL;
+      END IF;
+
+      ---------.
+      ---------.
+      -- Update horizontal datum...
+      --
+      IF p_horizontal_datum IS NOT NULL
+      THEN
+         l_horizontal_datum := p_horizontal_datum;
+      ELSIF NOT l_ignorenulls
+      THEN
+         l_horizontal_datum := NULL;
+      END IF;
+
+      ---------.
+      ---------.
+      -- Update public_name...
+      --
+      IF p_public_name IS NOT NULL
+      THEN
+         l_public_name := p_public_name;
+      ELSIF NOT l_ignorenulls
+      THEN
+         l_public_name := NULL;
+      END IF;
+
+      ---------.
+      ---------.
+      -- Update long_name...
+      --
+      IF p_long_name IS NOT NULL
+      THEN
+         l_long_name := p_long_name;
+      ELSIF NOT l_ignorenulls
+      THEN
+         l_long_name := NULL;
+      END IF;
+
+      ---------.
+      ---------.
+      -- Update description...
+      --
+      IF p_description IS NOT NULL
+      THEN
+         l_description := p_description;
+      ELSIF NOT l_ignorenulls
+      THEN
+         l_description := NULL;
+      END IF;
+
+      ---------.
+      ---------.
+      -- Update time_zone...
+      --
+      IF p_time_zone_id IS NOT NULL
+      THEN
+         l_time_zone_code := cwms_util.get_time_zone_code (p_time_zone_id);
+      ELSIF NOT l_ignorenulls
+      THEN
+         l_time_zone_code := NULL;
+      END IF;
+
+      ---------.
+      ---------.
+      -- Check and Update he State/County pair...
+      --
+      IF p_state_initial IS NULL AND p_county_name IS NOT NULL
+      THEN         -- Throw exception - if a county name is passed in one must.
+         -- also pass-in the county's state initials.
+         cwms_err.raise ('STATE_CANNOT_BE_NULL', 'CWMS_LOC');
+      ELSIF p_state_initial IS NOT NULL
+      THEN                               -- Find the corresponding county_code.
+         l_county_code := get_county_code (p_county_name, p_state_initial);
+      ELSIF NOT l_ignorenulls
+      THEN
+         l_county_code := NULL;
+      END IF;
+
+      ---------.
+      ---------.
+      -- Update active_flag.
+      --.
+      IF p_active IS NOT NULL
+      THEN
+         IF cwms_util.is_true (p_active)
+         THEN
+            l_active_flag := 'T';
+         ELSIF cwms_util.is_false (p_active)
+         THEN
+            l_active_flag := 'F';
+         ELSE
+            cwms_err.raise ('INVALID_T_F_FLAG', 'cwms_loc', 'p_active');
+         END IF;
+      END IF;
+
+      -------------------
+      -- location kind --  NOT UPDATED
+      -------------------
       
-		---------------
-		-- map label --
-		---------------
-		IF p_map_label IS NOT NULL
-		THEN
-			l_map_label := p_map_label;
-		ELSIF NOT l_ignorenulls
-		THEN
-			l_map_label := NULL;
-		END IF;
+      ---------------
+      -- map label --
+      ---------------
+      IF p_map_label IS NOT NULL
+      THEN
+         l_map_label := p_map_label;
+      ELSIF NOT l_ignorenulls
+      THEN
+         l_map_label := NULL;
+      END IF;
 
-		------------------------
-		-- published latitude --
-		------------------------
-		IF p_published_latitude IS NOT NULL
-		THEN
-			l_published_latitude := p_published_latitude;
-		ELSIF NOT l_ignorenulls
-		THEN
-			l_published_latitude := NULL;
-		END IF;
+      ------------------------
+      -- published latitude --
+      ------------------------
+      IF p_published_latitude IS NOT NULL
+      THEN
+         l_published_latitude := p_published_latitude;
+      ELSIF NOT l_ignorenulls
+      THEN
+         l_published_latitude := NULL;
+      END IF;
 
-		-------------------------
-		-- published longitude --
-		-------------------------
-		IF p_published_longitude IS NOT NULL
-		THEN
-			l_published_longitude := p_published_longitude;
-		ELSIF NOT l_ignorenulls
-		THEN
-			l_published_longitude := NULL;
-		END IF;
+      -------------------------
+      -- published longitude --
+      -------------------------
+      IF p_published_longitude IS NOT NULL
+      THEN
+         l_published_longitude := p_published_longitude;
+      ELSIF NOT l_ignorenulls
+      THEN
+         l_published_longitude := NULL;
+      END IF;
 
-		-----------------
-		-- office code --
-		-----------------
-		IF p_bounding_office_id IS NOT NULL
-		THEN
-			BEGIN
-				SELECT	office_code
-				  INTO	l_bounding_office_code
-				  FROM	cwms_office
-				 WHERE	office_id = UPPER (p_bounding_office_id);
-			EXCEPTION
-				WHEN NO_DATA_FOUND
-				THEN
-					cwms_err.raise ('INVALID_ITEM',
-										 p_bounding_office_id,
-										 'office id'
-										);
-			END;
-		ELSIF NOT l_ignorenulls
-		THEN
-			l_bounding_office_code := NULL;
-		END IF;
+      -----------------
+      -- office code --
+      -----------------
+      IF p_bounding_office_id IS NOT NULL
+      THEN
+         BEGIN
+            SELECT   office_code
+              INTO   l_bounding_office_code
+              FROM   cwms_office
+             WHERE   office_id = UPPER (p_bounding_office_id);
+         EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+               cwms_err.raise ('INVALID_ITEM',
+                               p_bounding_office_id,
+                               'office id'
+                              );
+         END;
+      ELSIF NOT l_ignorenulls
+      THEN
+         l_bounding_office_code := NULL;
+      END IF;
 
-		-----------------
-		-- nation code --
-		-----------------
-		IF p_nation_id IS NOT NULL
-		THEN
-			BEGIN
-				SELECT	nation_code
-				  INTO	l_nation_code
-				  FROM	cwms_nation
-				 WHERE	nation_id = UPPER (p_nation_id);
-			EXCEPTION
-				WHEN NO_DATA_FOUND
-				THEN
-					cwms_err.raise ('INVALID_ITEM', p_nation_id, 'nation id');
-			END;
-		ELSIF NOT l_ignorenulls
-		THEN
-			l_nation_code := NULL;
-		END IF;
+      -----------------
+      -- nation code --
+      -----------------
+      IF p_nation_id IS NOT NULL
+      THEN
+         BEGIN
+            SELECT   nation_code
+              INTO   l_nation_code
+              FROM   cwms_nation
+             WHERE   nation_id = UPPER (p_nation_id);
+         EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+               cwms_err.raise ('INVALID_ITEM', p_nation_id, 'nation id');
+         END;
+      ELSIF NOT l_ignorenulls
+      THEN
+         l_nation_code := NULL;
+      END IF;
 
-		------------------
-		-- nearest city --
-		------------------
-		IF p_nearest_city IS NOT NULL
-		THEN
-			l_nearest_city := p_nearest_city;
-		ELSIF NOT l_ignorenulls
-		THEN
-			l_nearest_city := NULL;
-		END IF;
-
-
-		--.
-		--*************************************.
-		-- Update at_physical_location table...
-		--.
-		UPDATE	at_physical_location
-			SET	location_type = l_location_type,
-					elevation = l_elevation,
-					vertical_datum = l_vertical_datum,
-					latitude = l_latitude,
-					longitude = l_longitude,
-					horizontal_datum = l_horizontal_datum,
-					public_name = l_public_name,
-					long_name = l_long_name,
-					description = l_description,
-					time_zone_code = l_time_zone_code,
-					county_code = l_county_code,
-					active_flag = l_active_flag,
-					location_kind = l_location_kind_code,
-					map_label = l_map_label,
-					published_latitude = l_published_latitude,
-					published_longitude = l_published_longitude,
-					office_code = l_bounding_office_code,
-					nation_code = l_nation_code,
-					nearest_city = l_nearest_city
-		 WHERE	location_code = l_location_code;
-	EXCEPTION
-		WHEN NO_DATA_FOUND
-		THEN
-			NULL;
-		WHEN OTHERS
-		THEN
-			RAISE;
-	END update_location2;
+      ------------------
+      -- nearest city --
+      ------------------
+      IF p_nearest_city IS NOT NULL
+      THEN
+         l_nearest_city := p_nearest_city;
+      ELSIF NOT l_ignorenulls
+      THEN
+         l_nearest_city := NULL;
+      END IF;
 
 
-	--********************************************************************** -
-	--********************************************************************** -
-	--
-	-- UPDATE_LOCATION -
-	--
-	--*---------------------------------------------------------------------*-
-	--
-	-- Version 2.0 api call -
-	--
-	--*---------------------------------------------------------------------*-
-	--
-	PROCEDURE update_location (p_location_id			IN VARCHAR2,
-										p_location_type		IN VARCHAR2 DEFAULT NULL,
-										p_elevation 			IN NUMBER DEFAULT NULL,
-										p_elev_unit_id 		IN VARCHAR2 DEFAULT NULL,
-										p_vertical_datum		IN VARCHAR2 DEFAULT NULL,
-										p_latitude				IN NUMBER DEFAULT NULL,
-										p_longitude 			IN NUMBER DEFAULT NULL,
-										p_horizontal_datum	IN VARCHAR2 DEFAULT NULL,
-										p_public_name			IN VARCHAR2 DEFAULT NULL,
-										p_long_name 			IN VARCHAR2 DEFAULT NULL,
-										p_description			IN VARCHAR2 DEFAULT NULL,
-										p_time_zone_id 		IN VARCHAR2 DEFAULT NULL,
-										p_county_name			IN VARCHAR2 DEFAULT NULL,
-										p_state_initial		IN VARCHAR2 DEFAULT NULL,
-										p_active 				IN VARCHAR2 DEFAULT NULL,
-										p_ignorenulls			IN VARCHAR2 DEFAULT 'T',
-										p_db_office_id 		IN VARCHAR2 DEFAULT NULL
-									  )
-	IS
-		l_location_code		at_physical_location.location_code%TYPE;
-		l_time_zone_code		at_physical_location.time_zone_code%TYPE;
-		l_county_code			cwms_county.county_code%TYPE;
-		l_location_type		at_physical_location.location_type%TYPE;
-		l_elevation 			at_physical_location.elevation%TYPE;
-		l_vertical_datum		at_physical_location.vertical_datum%TYPE;
-		l_longitude 			at_physical_location.longitude%TYPE;
-		l_latitude				at_physical_location.latitude%TYPE;
-		l_horizontal_datum	at_physical_location.horizontal_datum%TYPE;
-		l_state_code			cwms_state.state_code%TYPE;
-		l_public_name			at_physical_location.public_name%TYPE;
-		l_long_name 			at_physical_location.long_name%TYPE;
-		l_description			at_physical_location.description%TYPE;
-		l_active_flag			at_physical_location.active_flag%TYPE;
-		--
-		l_state_initial		cwms_state.state_initial%TYPE;
-		l_county_name			cwms_county.county_name%TYPE;
-		l_ignorenulls			BOOLEAN := cwms_util.is_true (p_ignorenulls);
-	BEGIN
-		--.
-		-- dbms_output.put_line('Bienvenue a update_loc');
-
-		-- Retrieve the location's Location Code.
-		--
-		l_location_code := get_location_code (p_db_office_id, p_location_id);
-		DBMS_OUTPUT.put_line ('l_location_code: ' || l_location_code);
-
-		--
-		--  If get_location_code did not throw an exception, then a valid base_location_id &.
-		--  office_id pair was passed in, therefore continue to update the.
-		--  at_physical_location table by first retrieving data for the existing location...
-		--
-		SELECT	location_type, elevation, vertical_datum, latitude, longitude,
-					horizontal_datum, public_name, long_name, description,
-					time_zone_code, county_code, active_flag
-		  INTO	l_location_type, l_elevation, l_vertical_datum, l_latitude,
-					l_longitude, l_horizontal_datum, l_public_name, l_long_name,
-					l_description, l_time_zone_code, l_county_code, l_active_flag
-		  FROM	at_physical_location
-		 WHERE	location_code = l_location_code;
-
-		DBMS_OUTPUT.put_line ('l_elevation: ' || l_elevation);
-
-		----------------------------------------------------------
-		----------------------------------------------------------
-		-- Perform validation checks on newly passed parameters...
-
-		---------.
-		---------.
-		-- Update location_type...
-		--.
-		IF p_location_type IS NOT NULL
-		THEN
-			l_location_type := p_location_type;
-		ELSIF NOT l_ignorenulls
-		THEN
-			l_location_type := NULL;
-		END IF;
-
-		---------.
-		---------.
-		-- Update any new elvation to the correct DB units...
-		--.
-		IF p_elevation IS NOT NULL
-		THEN
-			l_elevation :=
-				convert_from_to (p_elevation,
-									  p_elev_unit_id,
-									  l_elev_db_unit,
-									  l_abstract_elev_param
-									 );
-		ELSIF NOT l_ignorenulls
-		THEN
-			l_elevation := NULL;
-		END IF;
-
-		---------.
-		---------.
-		-- Update vertical datum...
-		--
-		IF p_vertical_datum IS NOT NULL
-		THEN
-			l_vertical_datum := p_vertical_datum;
-		ELSIF NOT l_ignorenulls
-		THEN
-			l_vertical_datum := NULL;
-		END IF;
-
-		---------.
-		---------.
-		-- Update latitude...
-		--
-		IF p_latitude IS NOT NULL
-		THEN
-			IF ABS (p_latitude) > 90
-			THEN
-				raise_application_error (
-					-20219,
-						'INVALID Latitude value: '
-					|| p_latitude
-					|| ' - must be between -90 and +90',
-					TRUE
-				);
-			END IF;
-
-			l_latitude := p_latitude;
-		ELSIF NOT l_ignorenulls
-		THEN
-			l_latitude := NULL;
-		END IF;
-
-		---------.
-		---------.
-		-- Update longitude...
-		--
-		IF p_longitude IS NOT NULL
-		THEN
-			IF ABS (p_longitude) > 180
-			THEN
-				raise_application_error (
-					-20218,
-						'INVALID Longitude value: '
-					|| p_longitude
-					|| ' - must be between -180 and +180',
-					TRUE
-				);
-			END IF;
-
-			l_longitude := p_longitude;
-		ELSIF NOT l_ignorenulls
-		THEN
-			l_longitude := NULL;
-		END IF;
-
-		---------.
-		---------.
-		-- Update horizontal datum...
-		--
-		IF p_horizontal_datum IS NOT NULL
-		THEN
-			l_horizontal_datum := p_horizontal_datum;
-		ELSIF NOT l_ignorenulls
-		THEN
-			l_horizontal_datum := NULL;
-		END IF;
-
-		---------.
-		---------.
-		-- Update public_name...
-		--
-		IF p_public_name IS NOT NULL
-		THEN
-			l_public_name := p_public_name;
-		ELSIF NOT l_ignorenulls
-		THEN
-			l_public_name := NULL;
-		END IF;
-
-		---------.
-		---------.
-		-- Update long_name...
-		--
-		IF p_long_name IS NOT NULL
-		THEN
-			l_long_name := p_long_name;
-		ELSIF NOT l_ignorenulls
-		THEN
-			l_long_name := NULL;
-		END IF;
-
-		---------.
-		---------.
-		-- Update description...
-		--
-		IF p_description IS NOT NULL
-		THEN
-			l_description := p_description;
-		ELSIF NOT l_ignorenulls
-		THEN
-			l_description := NULL;
-		END IF;
-
-		---------.
-		---------.
-		-- Update time_zone...
-		--
-		IF p_time_zone_id IS NOT NULL
-		THEN
-			l_time_zone_code := cwms_util.get_time_zone_code (p_time_zone_id);
-		ELSIF NOT l_ignorenulls
-		THEN
-			l_time_zone_code := NULL;
-		END IF;
-
-		---------.
-		---------.
-		-- Check and Update he State/County pair...
-		--
-		IF p_state_initial IS NULL AND p_county_name IS NOT NULL
-		THEN			-- Throw exception - if a county name is passed in one must.
-			-- also pass-in the county's state initials.
-			cwms_err.raise ('STATE_CANNOT_BE_NULL', 'CWMS_LOC');
-		ELSIF p_state_initial IS NOT NULL
-		THEN										 -- Find the corresponding county_code.
-			l_county_code := get_county_code (p_county_name, p_state_initial);
-		ELSIF NOT l_ignorenulls
-		THEN
-			l_county_code := NULL;
-		END IF;
-
-		---------.
-		---------.
-		-- Update active_flag.
-		--.
-		IF p_active IS NOT NULL
-		THEN
-			IF cwms_util.is_true (p_active)
-			THEN
-				l_active_flag := 'T';
-			ELSIF cwms_util.is_false (p_active)
-			THEN
-				l_active_flag := 'F';
-			ELSE
-				cwms_err.raise ('INVALID_T_F_FLAG', 'cwms_loc', 'p_active');
-			END IF;
-		END IF;
-
-		--.
-		--*************************************.
-		-- Update at_physical_location table...
-		--.
-		UPDATE	at_physical_location
-			SET	location_type = l_location_type,
-					elevation = l_elevation,
-					vertical_datum = l_vertical_datum,
-					latitude = l_latitude,
-					longitude = l_longitude,
-					horizontal_datum = l_horizontal_datum,
-					public_name = l_public_name,
-					long_name = l_long_name,
-					description = l_description,
-					time_zone_code = l_time_zone_code,
-					county_code = l_county_code,
-					active_flag = l_active_flag
-		 WHERE	location_code = l_location_code;
-	EXCEPTION
-		WHEN NO_DATA_FOUND
-		THEN
-			NULL;
-		WHEN OTHERS
-		THEN
-			RAISE;
-	END update_location;
-
-	--********************************************************************** -
-	--********************************************************************** -
-	--
-	-- INSERT_LOC -
-	--
-	--*---------------------------------------------------------------------*-
-	--
-	-- This is the v1.4 api call - ported for backward compatibility.
-	--
-	--*---------------------------------------------------------------------*-
-	--
-	---
-	--- This is the 1.4 signature - MUST NOT CHANGE!!!!!!!!!!!!
-	--vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv...
-	PROCEDURE insert_loc (p_office_id		  IN VARCHAR2,
-								 p_base_loc_id 	  IN VARCHAR2,
-								 p_state_initial	  IN VARCHAR2 DEFAULT NULL,
-								 p_county_name 	  IN VARCHAR2 DEFAULT NULL,
-								 p_timezone_name	  IN VARCHAR2 DEFAULT NULL,
-								 p_location_type	  IN VARCHAR2 DEFAULT NULL,
-								 p_latitude 		  IN NUMBER DEFAULT NULL,
-								 p_longitude		  IN NUMBER DEFAULT NULL,
-								 p_elevation		  IN NUMBER DEFAULT NULL,
-								 p_elev_unit_id	  IN VARCHAR2 DEFAULT NULL,
-								 p_vertical_datum   IN VARCHAR2 DEFAULT NULL,
-								 p_public_name 	  IN VARCHAR2 DEFAULT NULL,
-								 p_long_name		  IN VARCHAR2 DEFAULT NULL,
-								 p_description 	  IN VARCHAR2 DEFAULT NULL
-								)
-	--^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-	--- This is the 1.4 signature - MUST NOT CHANGE!!!!!!!!!!!!
-	---
-	--
-	IS
-		l_horizontal_datum	VARCHAR2 (16) := NULL;
-		l_active 				VARCHAR2 (1) := 'T';
-	BEGIN
-		create_location (p_base_loc_id,
-							  p_office_id,
-							  p_location_type,
-							  p_elevation,
-							  p_elev_unit_id,
-							  p_vertical_datum,
-							  p_latitude,
-							  p_longitude,
-							  l_horizontal_datum,
-							  p_public_name,
-							  p_long_name,
-							  p_description,
-							  p_timezone_name,
-							  p_county_name,
-							  p_state_initial,
-							  l_active
-							 );
-	END insert_loc;
+      --.
+      --*************************************.
+      -- Update at_physical_location table...
+      --.
+      UPDATE   at_physical_location
+         SET   location_type = l_location_type,
+               elevation = l_elevation,
+               vertical_datum = l_vertical_datum,
+               latitude = l_latitude,
+               longitude = l_longitude,
+               horizontal_datum = l_horizontal_datum,
+               public_name = l_public_name,
+               long_name = l_long_name,
+               description = l_description,
+               time_zone_code = l_time_zone_code,
+               county_code = l_county_code,
+               active_flag = l_active_flag,
+               location_kind = l_location_kind_code,
+               map_label = l_map_label,
+               published_latitude = l_published_latitude,
+               published_longitude = l_published_longitude,
+               office_code = l_bounding_office_code,
+               nation_code = l_nation_code,
+               nearest_city = l_nearest_city
+       WHERE   location_code = l_location_code;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         NULL;
+      WHEN OTHERS
+      THEN
+         RAISE;
+   END update_location2;
 
 
-	--********************************************************************** -
-	--.
-	--  CREATE_LOCATION2 -
-	--.
-	--********************************************************************** -
-	--
-	PROCEDURE create_location2 (
-		p_location_id				IN VARCHAR2,
-		p_location_type			IN VARCHAR2 DEFAULT NULL,
-		p_elevation 				IN NUMBER DEFAULT NULL,
-		p_elev_unit_id 			IN VARCHAR2 DEFAULT NULL,
-		p_vertical_datum			IN VARCHAR2 DEFAULT NULL,
-		p_latitude					IN NUMBER DEFAULT NULL,
-		p_longitude 				IN NUMBER DEFAULT NULL,
-		p_horizontal_datum		IN VARCHAR2 DEFAULT NULL,
-		p_public_name				IN VARCHAR2 DEFAULT NULL,
-		p_long_name 				IN VARCHAR2 DEFAULT NULL,
-		p_description				IN VARCHAR2 DEFAULT NULL,
-		p_time_zone_id 			IN VARCHAR2 DEFAULT NULL,
-		p_county_name				IN VARCHAR2 DEFAULT NULL,
-		p_state_initial			IN VARCHAR2 DEFAULT NULL,
-		p_active 					IN VARCHAR2 DEFAULT NULL,
-		p_location_kind_id		IN VARCHAR2 DEFAULT NULL,
-		p_map_label 				IN VARCHAR2 DEFAULT NULL,
-		p_published_latitude 	IN NUMBER DEFAULT NULL,
-		p_published_longitude	IN NUMBER DEFAULT NULL,
-		p_bounding_office_id 	IN VARCHAR2 DEFAULT NULL,
-		p_nation_id 				IN VARCHAR2 DEFAULT NULL,
-		p_nearest_city 			IN VARCHAR2 DEFAULT NULL,
-		p_db_office_id 			IN VARCHAR2 DEFAULT NULL
-	)
-	IS
-		l_base_location_id	  at_base_location.base_location_id%TYPE
-										  := cwms_util.get_base_id (p_location_id);
-		--
-		l_sub_location_id 	  at_physical_location.sub_location_id%TYPE
-										  := cwms_util.get_sub_id (p_location_id);
-		--
-		l_db_office_id 		  cwms_office.office_id%TYPE;
-		l_db_office_code		  cwms_office.office_code%TYPE;
-		l_base_location_code   at_base_location.base_location_code%TYPE;
-		l_location_code		  at_physical_location.location_code%TYPE;
-		l_base_loc_exists 	  BOOLEAN;
-		l_loc_exists			  BOOLEAN := FALSE;
-		--
-		l_location_type		  at_physical_location.location_type%TYPE;
-		l_elevation 			  at_physical_location.elevation%TYPE := NULL;
-		l_vertical_datum		  at_physical_location.vertical_datum%TYPE;
-		l_latitude				  at_physical_location.latitude%TYPE := NULL;
-		l_longitude 			  at_physical_location.longitude%TYPE := NULL;
-		l_horizontal_datum	  at_physical_location.horizontal_datum%TYPE;
-		l_public_name			  at_physical_location.public_name%TYPE;
-		l_long_name 			  at_physical_location.long_name%TYPE;
-		l_description			  at_physical_location.description%TYPE;
-		l_time_zone_code		  at_physical_location.time_zone_code%TYPE := NULL;
-		l_county_code			  cwms_county.county_code%TYPE := NULL;
-		l_active_flag			  at_physical_location.active_flag%TYPE;
-		--
-		l_ret 					  NUMBER;
-		l_hashcode				  NUMBER;
-	--
-	BEGIN
-		--
-		--------------------------------------------------------
-		-- Set office_id...
-		--------------------------------------------------------
-		IF p_db_office_id IS NULL
-		THEN
-			l_db_office_id := cwms_util.user_office_id;
-		ELSE
-			l_db_office_id := UPPER (p_db_office_id);
-		END IF;
+   --********************************************************************** -
+   --********************************************************************** -
+   --
+   -- UPDATE_LOCATION -
+   --
+   --*---------------------------------------------------------------------*-
+   --
+   -- Version 2.0 api call -
+   --
+   --*---------------------------------------------------------------------*-
+   --
+   PROCEDURE update_location (p_location_id         IN VARCHAR2,
+                              p_location_type      IN VARCHAR2 DEFAULT NULL,
+                              p_elevation          IN NUMBER DEFAULT NULL,
+                              p_elev_unit_id       IN VARCHAR2 DEFAULT NULL,
+                              p_vertical_datum      IN VARCHAR2 DEFAULT NULL,
+                              p_latitude            IN NUMBER DEFAULT NULL,
+                              p_longitude          IN NUMBER DEFAULT NULL,
+                              p_horizontal_datum   IN VARCHAR2 DEFAULT NULL,
+                              p_public_name         IN VARCHAR2 DEFAULT NULL,
+                              p_long_name          IN VARCHAR2 DEFAULT NULL,
+                              p_description         IN VARCHAR2 DEFAULT NULL,
+                              p_time_zone_id       IN VARCHAR2 DEFAULT NULL,
+                              p_county_name         IN VARCHAR2 DEFAULT NULL,
+                              p_state_initial      IN VARCHAR2 DEFAULT NULL,
+                              p_active             IN VARCHAR2 DEFAULT NULL,
+                              p_ignorenulls         IN VARCHAR2 DEFAULT 'T',
+                              p_db_office_id       IN VARCHAR2 DEFAULT NULL
+                             )
+   IS
+      l_location_code      at_physical_location.location_code%TYPE;
+      l_time_zone_code      at_physical_location.time_zone_code%TYPE;
+      l_county_code         cwms_county.county_code%TYPE;
+      l_location_type      at_physical_location.location_type%TYPE;
+      l_elevation          at_physical_location.elevation%TYPE;
+      l_vertical_datum      at_physical_location.vertical_datum%TYPE;
+      l_longitude          at_physical_location.longitude%TYPE;
+      l_latitude            at_physical_location.latitude%TYPE;
+      l_horizontal_datum   at_physical_location.horizontal_datum%TYPE;
+      l_state_code         cwms_state.state_code%TYPE;
+      l_public_name         at_physical_location.public_name%TYPE;
+      l_long_name          at_physical_location.long_name%TYPE;
+      l_description         at_physical_location.description%TYPE;
+      l_active_flag         at_physical_location.active_flag%TYPE;
+      --
+      l_state_initial      cwms_state.state_initial%TYPE;
+      l_county_name         cwms_county.county_name%TYPE;
+      l_ignorenulls         BOOLEAN := cwms_util.is_true (p_ignorenulls);
+   BEGIN
+      --.
+      -- dbms_output.put_line('Bienvenue a update_loc');
 
-		DBMS_APPLICATION_INFO.set_module ('create_location2', 'get office code');
-		--------------------------------------------------------
-		-- Get the office_code...
-		--------------------------------------------------------
-		l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+      -- Retrieve the location's Location Code.
+      --
+      l_location_code := get_location_code (p_db_office_id, p_location_id);
+      DBMS_OUTPUT.put_line ('l_location_code: ' || l_location_code);
 
-		--.
-		-- Check if a Base Location already exists for this p_location_id...
-		BEGIN
-			SELECT	base_location_code, base_location_id
-			  INTO	l_base_location_code, l_base_location_id
-			  FROM	at_base_location abl
-			 WHERE	UPPER (abl.base_location_id) = l_base_location_id
-						AND abl.db_office_code = l_db_office_code;
+      --
+      --  If get_location_code did not throw an exception, then a valid base_location_id &.
+      --  office_id pair was passed in, therefore continue to update the.
+      --  at_physical_location table by first retrieving data for the existing location...
+      --
+      SELECT   location_type, elevation, vertical_datum, latitude, longitude,
+               horizontal_datum, public_name, long_name, description,
+               time_zone_code, county_code, active_flag
+        INTO   l_location_type, l_elevation, l_vertical_datum, l_latitude,
+               l_longitude, l_horizontal_datum, l_public_name, l_long_name,
+               l_description, l_time_zone_code, l_county_code, l_active_flag
+        FROM   at_physical_location
+       WHERE   location_code = l_location_code;
 
-			l_base_loc_exists := TRUE;
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				l_base_loc_exists := FALSE;
-			WHEN OTHERS
-			THEN
-				RAISE;
-		END;
+      DBMS_OUTPUT.put_line ('l_elevation: ' || l_elevation);
 
-		--.
-		-- If Base Location exists, check if Sub Location already exists...
-		IF l_base_loc_exists
-		THEN
-			BEGIN
-				l_location_code :=
-					get_location_code (l_db_office_id, p_location_id);
-				--.
-				l_loc_exists := TRUE;
-			EXCEPTION
-				WHEN OTHERS 		  -- location_code does not exist so continue...
-				THEN
-					NULL;
-			END;
-		END IF;
+      ----------------------------------------------------------
+      ----------------------------------------------------------
+      -- Perform validation checks on newly passed parameters...
 
-		IF l_loc_exists
-		THEN
-			cwms_err.raise ('LOCATION_ID_ALREADY_EXISTS',
-								 'cwms_loc',
-								 l_db_office_id || ':' || p_location_id
-								);
-		END IF;  
+      ---------.
+      ---------.
+      -- Update location_type...
+      --.
+      IF p_location_type IS NOT NULL
+      THEN
+         l_location_type := p_location_type;
+      ELSIF NOT l_ignorenulls
+      THEN
+         l_location_type := NULL;
+      END IF;
+
+      ---------.
+      ---------.
+      -- Update any new elvation to the correct DB units...
+      --.
+      IF p_elevation IS NOT NULL
+      THEN
+         l_elevation :=
+            convert_from_to (p_elevation,
+                             p_elev_unit_id,
+                             l_elev_db_unit,
+                             l_abstract_elev_param
+                            );
+      ELSIF NOT l_ignorenulls
+      THEN
+         l_elevation := NULL;
+      END IF;
+
+      ---------.
+      ---------.
+      -- Update vertical datum...
+      --
+      IF p_vertical_datum IS NOT NULL
+      THEN
+         l_vertical_datum := p_vertical_datum;
+      ELSIF NOT l_ignorenulls
+      THEN
+         l_vertical_datum := NULL;
+      END IF;
+
+      ---------.
+      ---------.
+      -- Update latitude...
+      --
+      IF p_latitude IS NOT NULL
+      THEN
+         IF ABS (p_latitude) > 90
+         THEN
+            raise_application_error (
+               -20219,
+                  'INVALID Latitude value: '
+               || p_latitude
+               || ' - must be between -90 and +90',
+               TRUE
+            );
+         END IF;
+
+         l_latitude := p_latitude;
+      ELSIF NOT l_ignorenulls
+      THEN
+         l_latitude := NULL;
+      END IF;
+
+      ---------.
+      ---------.
+      -- Update longitude...
+      --
+      IF p_longitude IS NOT NULL
+      THEN
+         IF ABS (p_longitude) > 180
+         THEN
+            raise_application_error (
+               -20218,
+                  'INVALID Longitude value: '
+               || p_longitude
+               || ' - must be between -180 and +180',
+               TRUE
+            );
+         END IF;
+
+         l_longitude := p_longitude;
+      ELSIF NOT l_ignorenulls
+      THEN
+         l_longitude := NULL;
+      END IF;
+
+      ---------.
+      ---------.
+      -- Update horizontal datum...
+      --
+      IF p_horizontal_datum IS NOT NULL
+      THEN
+         l_horizontal_datum := p_horizontal_datum;
+      ELSIF NOT l_ignorenulls
+      THEN
+         l_horizontal_datum := NULL;
+      END IF;
+
+      ---------.
+      ---------.
+      -- Update public_name...
+      --
+      IF p_public_name IS NOT NULL
+      THEN
+         l_public_name := p_public_name;
+      ELSIF NOT l_ignorenulls
+      THEN
+         l_public_name := NULL;
+      END IF;
+
+      ---------.
+      ---------.
+      -- Update long_name...
+      --
+      IF p_long_name IS NOT NULL
+      THEN
+         l_long_name := p_long_name;
+      ELSIF NOT l_ignorenulls
+      THEN
+         l_long_name := NULL;
+      END IF;
+
+      ---------.
+      ---------.
+      -- Update description...
+      --
+      IF p_description IS NOT NULL
+      THEN
+         l_description := p_description;
+      ELSIF NOT l_ignorenulls
+      THEN
+         l_description := NULL;
+      END IF;
+
+      ---------.
+      ---------.
+      -- Update time_zone...
+      --
+      IF p_time_zone_id IS NOT NULL
+      THEN
+         l_time_zone_code := cwms_util.get_time_zone_code (p_time_zone_id);
+      ELSIF NOT l_ignorenulls
+      THEN
+         l_time_zone_code := NULL;
+      END IF;
+
+      ---------.
+      ---------.
+      -- Check and Update he State/County pair...
+      --
+      IF p_state_initial IS NULL AND p_county_name IS NOT NULL
+      THEN         -- Throw exception - if a county name is passed in one must.
+         -- also pass-in the county's state initials.
+         cwms_err.raise ('STATE_CANNOT_BE_NULL', 'CWMS_LOC');
+      ELSIF p_state_initial IS NOT NULL
+      THEN                               -- Find the corresponding county_code.
+         l_county_code := get_county_code (p_county_name, p_state_initial);
+      ELSIF NOT l_ignorenulls
+      THEN
+         l_county_code := NULL;
+      END IF;
+
+      ---------.
+      ---------.
+      -- Update active_flag.
+      --.
+      IF p_active IS NOT NULL
+      THEN
+         IF cwms_util.is_true (p_active)
+         THEN
+            l_active_flag := 'T';
+         ELSIF cwms_util.is_false (p_active)
+         THEN
+            l_active_flag := 'F';
+         ELSE
+            cwms_err.raise ('INVALID_T_F_FLAG', 'cwms_loc', 'p_active');
+         END IF;
+      END IF;
+
+      --.
+      --*************************************.
+      -- Update at_physical_location table...
+      --.
+      UPDATE   at_physical_location
+         SET   location_type = l_location_type,
+               elevation = l_elevation,
+               vertical_datum = l_vertical_datum,
+               latitude = l_latitude,
+               longitude = l_longitude,
+               horizontal_datum = l_horizontal_datum,
+               public_name = l_public_name,
+               long_name = l_long_name,
+               description = l_description,
+               time_zone_code = l_time_zone_code,
+               county_code = l_county_code,
+               active_flag = l_active_flag
+       WHERE   location_code = l_location_code;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         NULL;
+      WHEN OTHERS
+      THEN
+         RAISE;
+   END update_location;
+
+   --********************************************************************** -
+   --********************************************************************** -
+   --
+   -- INSERT_LOC -
+   --
+   --*---------------------------------------------------------------------*-
+   --
+   -- This is the v1.4 api call - ported for backward compatibility.
+   --
+   --*---------------------------------------------------------------------*-
+   --
+   ---
+   --- This is the 1.4 signature - MUST NOT CHANGE!!!!!!!!!!!!
+   --vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv...
+   PROCEDURE insert_loc (p_office_id        IN VARCHAR2,
+                         p_base_loc_id      IN VARCHAR2,
+                         p_state_initial     IN VARCHAR2 DEFAULT NULL,
+                         p_county_name      IN VARCHAR2 DEFAULT NULL,
+                         p_timezone_name     IN VARCHAR2 DEFAULT NULL,
+                         p_location_type     IN VARCHAR2 DEFAULT NULL,
+                         p_latitude         IN NUMBER DEFAULT NULL,
+                         p_longitude        IN NUMBER DEFAULT NULL,
+                         p_elevation        IN NUMBER DEFAULT NULL,
+                         p_elev_unit_id     IN VARCHAR2 DEFAULT NULL,
+                         p_vertical_datum   IN VARCHAR2 DEFAULT NULL,
+                         p_public_name      IN VARCHAR2 DEFAULT NULL,
+                         p_long_name        IN VARCHAR2 DEFAULT NULL,
+                         p_description      IN VARCHAR2 DEFAULT NULL
+                        )
+   --^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   --- This is the 1.4 signature - MUST NOT CHANGE!!!!!!!!!!!!
+   ---
+   --
+   IS
+      l_horizontal_datum   VARCHAR2 (16) := NULL;
+      l_active             VARCHAR2 (1) := 'T';
+   BEGIN
+      create_location (p_base_loc_id,
+                       p_office_id,
+                       p_location_type,
+                       p_elevation,
+                       p_elev_unit_id,
+                       p_vertical_datum,
+                       p_latitude,
+                       p_longitude,
+                       l_horizontal_datum,
+                       p_public_name,
+                       p_long_name,
+                       p_description,
+                       p_timezone_name,
+                       p_county_name,
+                       p_state_initial,
+                       l_active
+                      );
+   END insert_loc;
+
+
+   --********************************************************************** -
+   --.
+   --  CREATE_LOCATION2 -
+   --.
+   --********************************************************************** -
+   --
+   PROCEDURE create_location2 (
+      p_location_id            IN VARCHAR2,
+      p_location_type         IN VARCHAR2 DEFAULT NULL,
+      p_elevation             IN NUMBER DEFAULT NULL,
+      p_elev_unit_id          IN VARCHAR2 DEFAULT NULL,
+      p_vertical_datum         IN VARCHAR2 DEFAULT NULL,
+      p_latitude               IN NUMBER DEFAULT NULL,
+      p_longitude             IN NUMBER DEFAULT NULL,
+      p_horizontal_datum      IN VARCHAR2 DEFAULT NULL,
+      p_public_name            IN VARCHAR2 DEFAULT NULL,
+      p_long_name             IN VARCHAR2 DEFAULT NULL,
+      p_description            IN VARCHAR2 DEFAULT NULL,
+      p_time_zone_id          IN VARCHAR2 DEFAULT NULL,
+      p_county_name            IN VARCHAR2 DEFAULT NULL,
+      p_state_initial         IN VARCHAR2 DEFAULT NULL,
+      p_active                IN VARCHAR2 DEFAULT NULL,
+      p_location_kind_id      IN VARCHAR2 DEFAULT NULL,
+      p_map_label             IN VARCHAR2 DEFAULT NULL,
+      p_published_latitude    IN NUMBER DEFAULT NULL,
+      p_published_longitude   IN NUMBER DEFAULT NULL,
+      p_bounding_office_id    IN VARCHAR2 DEFAULT NULL,
+      p_nation_id             IN VARCHAR2 DEFAULT NULL,
+      p_nearest_city          IN VARCHAR2 DEFAULT NULL,
+      p_db_office_id          IN VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_base_location_id     at_base_location.base_location_id%TYPE
+                                := cwms_util.get_base_id (p_location_id);
+      --
+      l_sub_location_id      at_physical_location.sub_location_id%TYPE
+                                := cwms_util.get_sub_id (p_location_id);
+      --
+      l_db_office_id         cwms_office.office_id%TYPE;
+      l_db_office_code        cwms_office.office_code%TYPE;
+      l_base_location_code   at_base_location.base_location_code%TYPE;
+      l_location_code        at_physical_location.location_code%TYPE;
+      l_base_loc_exists      BOOLEAN;
+      l_loc_exists           BOOLEAN := FALSE;
+      --
+      l_location_type        at_physical_location.location_type%TYPE;
+      l_elevation            at_physical_location.elevation%TYPE := NULL;
+      l_vertical_datum        at_physical_location.vertical_datum%TYPE;
+      l_latitude              at_physical_location.latitude%TYPE := NULL;
+      l_longitude            at_physical_location.longitude%TYPE := NULL;
+      l_horizontal_datum     at_physical_location.horizontal_datum%TYPE;
+      l_public_name           at_physical_location.public_name%TYPE;
+      l_long_name            at_physical_location.long_name%TYPE;
+      l_description           at_physical_location.description%TYPE;
+      l_time_zone_code        at_physical_location.time_zone_code%TYPE := NULL;
+      l_county_code           cwms_county.county_code%TYPE := NULL;
+      l_active_flag           at_physical_location.active_flag%TYPE;
+      --
+      l_ret                  NUMBER;
+      l_hashcode              NUMBER;
+   --
+   BEGIN
+      --
+      --------------------------------------------------------
+      -- Set office_id...
+      --------------------------------------------------------
+      IF p_db_office_id IS NULL
+      THEN
+         l_db_office_id := cwms_util.user_office_id;
+      ELSE
+         l_db_office_id := UPPER (p_db_office_id);
+      END IF;
+
+      DBMS_APPLICATION_INFO.set_module ('create_location2', 'get office code');
+      --------------------------------------------------------
+      -- Get the office_code...
+      --------------------------------------------------------
+      l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+
+      --.
+      -- Check if a Base Location already exists for this p_location_id...
+      BEGIN
+         SELECT   base_location_code, base_location_id
+           INTO   l_base_location_code, l_base_location_id
+           FROM   at_base_location abl
+          WHERE   UPPER (abl.base_location_id) = l_base_location_id
+                  AND abl.db_office_code = l_db_office_code;
+
+         l_base_loc_exists := TRUE;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            l_base_loc_exists := FALSE;
+         WHEN OTHERS
+         THEN
+            RAISE;
+      END;
+
+      --.
+      -- If Base Location exists, check if Sub Location already exists...
+      IF l_base_loc_exists
+      THEN
+         BEGIN
+            l_location_code :=
+               get_location_code (l_db_office_id, p_location_id);
+            --.
+            l_loc_exists := TRUE;
+         EXCEPTION
+            WHEN OTHERS         -- location_code does not exist so continue...
+            THEN
+               NULL;
+         END;
+      END IF;
+
+      IF l_loc_exists
+      THEN
+         cwms_err.raise ('LOCATION_ID_ALREADY_EXISTS',
+                         'cwms_loc',
+                         l_db_office_id || ':' || p_location_id
+                        );
+      END IF;  
       
       check_alias_id(p_location_id, p_location_id, null, null, l_db_office_id);
 
-		----------------------------------------------------------
-		----------------------------------------------------------
-		-- Perform validation checks on newly passed parameters...
-		---------.
-		---------.
-		-- location_type...
-		--.
-		l_location_type := p_location_type;
+      ----------------------------------------------------------
+      ----------------------------------------------------------
+      -- Perform validation checks on newly passed parameters...
+      ---------.
+      ---------.
+      -- location_type...
+      --.
+      l_location_type := p_location_type;
 
-		---------.
-		---------.
-		-- Convert any new elvation to the correct DB units...
-		--.
-		IF p_elevation IS NOT NULL
-		THEN
-			l_elevation :=
-				convert_from_to (p_elevation,
-									  p_elev_unit_id,
-									  l_elev_db_unit,
-									  l_abstract_elev_param
-									 );
-		END IF;
+      ---------.
+      ---------.
+      -- Convert any new elvation to the correct DB units...
+      --.
+      IF p_elevation IS NOT NULL
+      THEN
+         l_elevation :=
+            convert_from_to (p_elevation,
+                             p_elev_unit_id,
+                             l_elev_db_unit,
+                             l_abstract_elev_param
+                            );
+      END IF;
 
-		---------.
-		---------.
-		-- vertical datum...
-		--
-		l_vertical_datum := p_vertical_datum;
+      ---------.
+      ---------.
+      -- vertical datum...
+      --
+      l_vertical_datum := p_vertical_datum;
 
-		---------.
-		---------.
-		-- latitude...
-		--
-		IF p_latitude IS NOT NULL
-		THEN
-			IF ABS (p_latitude) > 90
-			THEN
-				raise_application_error (
-					-20219,
-						'INVALID Latitude value: '
-					|| p_latitude
-					|| ' - must be between -90 and +90',
-					TRUE
-				);
-			END IF;
+      ---------.
+      ---------.
+      -- latitude...
+      --
+      IF p_latitude IS NOT NULL
+      THEN
+         IF ABS (p_latitude) > 90
+         THEN
+            raise_application_error (
+               -20219,
+                  'INVALID Latitude value: '
+               || p_latitude
+               || ' - must be between -90 and +90',
+               TRUE
+            );
+         END IF;
 
-			l_latitude := p_latitude;
-		END IF;
+         l_latitude := p_latitude;
+      END IF;
 
-		---------.
-		---------.
-		-- longitude...
-		--
-		IF p_longitude IS NOT NULL
-		THEN
-			IF ABS (p_longitude) > 180
-			THEN
-				raise_application_error (
-					-20218,
-						'INVALID Longitude value: '
-					|| p_longitude
-					|| ' - must be between -180 and +180',
-					TRUE
-				);
-			END IF;
+      ---------.
+      ---------.
+      -- longitude...
+      --
+      IF p_longitude IS NOT NULL
+      THEN
+         IF ABS (p_longitude) > 180
+         THEN
+            raise_application_error (
+               -20218,
+                  'INVALID Longitude value: '
+               || p_longitude
+               || ' - must be between -180 and +180',
+               TRUE
+            );
+         END IF;
 
-			l_longitude := p_longitude;
-		END IF;
+         l_longitude := p_longitude;
+      END IF;
 
-		---------.
-		---------.
-		--  horizontal datum...
-		--
-		l_horizontal_datum := p_horizontal_datum;
-		---------.
-		---------.
-		-- public_name...
-		--
-		l_public_name := p_public_name;
-		---------.
-		---------.
-		-- long_name...
-		--
-		l_long_name := p_long_name;
-		---------.
-		---------.
-		-- description...
-		--
-		l_description := p_description;
+      ---------.
+      ---------.
+      --  horizontal datum...
+      --
+      l_horizontal_datum := p_horizontal_datum;
+      ---------.
+      ---------.
+      -- public_name...
+      --
+      l_public_name := p_public_name;
+      ---------.
+      ---------.
+      -- long_name...
+      --
+      l_long_name := p_long_name;
+      ---------.
+      ---------.
+      -- description...
+      --
+      l_description := p_description;
 
-		---------.
-		---------.
-		-- time_zone...
-		--
-		IF p_time_zone_id IS NOT NULL
-		THEN
-			l_time_zone_code := cwms_util.get_time_zone_code (p_time_zone_id);
-		END IF;
+      ---------.
+      ---------.
+      -- time_zone...
+      --
+      IF p_time_zone_id IS NOT NULL
+      THEN
+         l_time_zone_code := cwms_util.get_time_zone_code (p_time_zone_id);
+      END IF;
 
-		---------.
-		---------.
-		-- Check and Update he State/County pair...
-		--
-		IF p_state_initial IS NULL AND p_county_name IS NOT NULL
-		THEN			-- Throw exception - if a county name is passed in one must.
-			-- also pass-in the county's state initials.
-			cwms_err.raise ('STATE_CANNOT_BE_NULL', 'CWMS_LOC');
-		ELSIF p_state_initial IS NOT NULL
-		THEN										 -- Find the corresponding county_code.
-			l_county_code := get_county_code (p_county_name, p_state_initial);
-		END IF;
+      ---------.
+      ---------.
+      -- Check and Update he State/County pair...
+      --
+      IF p_state_initial IS NULL AND p_county_name IS NOT NULL
+      THEN         -- Throw exception - if a county name is passed in one must.
+         -- also pass-in the county's state initials.
+         cwms_err.raise ('STATE_CANNOT_BE_NULL', 'CWMS_LOC');
+      ELSIF p_state_initial IS NOT NULL
+      THEN                               -- Find the corresponding county_code.
+         l_county_code := get_county_code (p_county_name, p_state_initial);
+      END IF;
 
-		---------.
-		---------.
-		-- Update active_flag.
-		--.
-		IF p_active IS NOT NULL
-		THEN
-			IF cwms_util.is_true (p_active)
-			THEN
-				l_active_flag := 'T';
-			ELSIF cwms_util.is_false (p_active)
-			THEN
-				l_active_flag := 'F';
-			ELSE
-				cwms_err.raise ('INVALID_T_F_FLAG', 'cwms_loc', 'p_active');
-			END IF;
-		ELSE
-			l_active_flag := 'T';
-		END IF;
+      ---------.
+      ---------.
+      -- Update active_flag.
+      --.
+      IF p_active IS NOT NULL
+      THEN
+         IF cwms_util.is_true (p_active)
+         THEN
+            l_active_flag := 'T';
+         ELSIF cwms_util.is_false (p_active)
+         THEN
+            l_active_flag := 'F';
+         ELSE
+            cwms_err.raise ('INVALID_T_F_FLAG', 'cwms_loc', 'p_active');
+         END IF;
+      ELSE
+         l_active_flag := 'T';
+      END IF;
 
-		---------.
-		---------.
-		-- Create new base and sub locations in database...
-		--.
-		--.
-		create_location_raw2 (l_base_location_code,
-									 l_location_code,
-									 l_base_location_id,
-									 l_sub_location_id,
-									 l_db_office_code,
-									 l_location_type,
-									 l_elevation,
-									 l_vertical_datum,
-									 l_latitude,
-									 l_longitude,
-									 l_horizontal_datum,
-									 l_public_name,
-									 l_long_name,
-									 l_description,
-									 l_time_zone_code,
-									 l_county_code,
-									 l_active_flag,
-									 p_location_kind_id,
-									 p_map_label,
-									 p_published_latitude,
-									 p_published_longitude,
-									 p_bounding_office_id,
-									 p_nation_id,
-									 p_nearest_city,
-									 p_db_office_id
-									);
-	--
-	END create_location2;
+      ---------.
+      ---------.
+      -- Create new base and sub locations in database...
+      --.
+      --.
+      create_location_raw2 (l_base_location_code,
+                            l_location_code,
+                            l_base_location_id,
+                            l_sub_location_id,
+                            l_db_office_code,
+                            l_location_type,
+                            l_elevation,
+                            l_vertical_datum,
+                            l_latitude,
+                            l_longitude,
+                            l_horizontal_datum,
+                            l_public_name,
+                            l_long_name,
+                            l_description,
+                            l_time_zone_code,
+                            l_county_code,
+                            l_active_flag,
+                            p_location_kind_id,
+                            p_map_label,
+                            p_published_latitude,
+                            p_published_longitude,
+                            p_bounding_office_id,
+                            p_nation_id,
+                            p_nearest_city,
+                            p_db_office_id
+                           );
+   --
+   END create_location2;
 
-	--********************************************************************** -
-	--********************************************************************** -
-	--
-	-- CREATE_LOCATION -
-	--
-	--*---------------------------------------------------------------------*-
-	--
-	-- Replaces insert_loc in the 2.0 api -
-	--
-	--*---------------------------------------------------------------------*-
-	--
+   --********************************************************************** -
+   --********************************************************************** -
+   --
+   -- CREATE_LOCATION -
+   --
+   --*---------------------------------------------------------------------*-
+   --
+   -- Replaces insert_loc in the 2.0 api -
+   --
+   --*---------------------------------------------------------------------*-
+   --
 
-	PROCEDURE create_location (p_location_id			IN VARCHAR2,
-										p_location_type		IN VARCHAR2 DEFAULT NULL,
-										p_elevation 			IN NUMBER DEFAULT NULL,
-										p_elev_unit_id 		IN VARCHAR2 DEFAULT NULL,
-										p_vertical_datum		IN VARCHAR2 DEFAULT NULL,
-										p_latitude				IN NUMBER DEFAULT NULL,
-										p_longitude 			IN NUMBER DEFAULT NULL,
-										p_horizontal_datum	IN VARCHAR2 DEFAULT NULL,
-										p_public_name			IN VARCHAR2 DEFAULT NULL,
-										p_long_name 			IN VARCHAR2 DEFAULT NULL,
-										p_description			IN VARCHAR2 DEFAULT NULL,
-										p_time_zone_id 		IN VARCHAR2 DEFAULT NULL,
-										p_county_name			IN VARCHAR2 DEFAULT NULL,
-										p_state_initial		IN VARCHAR2 DEFAULT NULL,
-										p_active 				IN VARCHAR2 DEFAULT NULL,
-										p_db_office_id 		IN VARCHAR2 DEFAULT NULL
-									  )
-	IS
-	BEGIN
-		create_location2 (p_location_id				=> p_location_id,
-								p_location_type			=> p_location_type,
-								p_elevation 				=> p_elevation,
-								p_elev_unit_id 			=> p_elev_unit_id,
-								p_vertical_datum			=> p_vertical_datum,
-								p_latitude					=> p_latitude,
-								p_longitude 				=> p_longitude,
-								p_horizontal_datum		=> p_horizontal_datum,
-								p_public_name				=> p_public_name,
-								p_long_name 				=> p_long_name,
-								p_description				=> p_description,
-								p_time_zone_id 			=> p_time_zone_id,
-								p_county_name				=> p_county_name,
-								p_state_initial			=> p_state_initial,
-								p_active 					=> p_active,
-								p_location_kind_id		=> NULL,
-								p_map_label 				=> NULL,
-								p_published_latitude 	=> NULL,
-								p_published_longitude	=> NULL,
-								p_bounding_office_id 	=> NULL,
-								p_nation_id 				=> NULL,
-								p_nearest_city 			=> NULL,
-								p_db_office_id 			=> p_db_office_id
-							  );
-	END create_location;
+   PROCEDURE create_location (p_location_id         IN VARCHAR2,
+                              p_location_type      IN VARCHAR2 DEFAULT NULL,
+                              p_elevation          IN NUMBER DEFAULT NULL,
+                              p_elev_unit_id       IN VARCHAR2 DEFAULT NULL,
+                              p_vertical_datum      IN VARCHAR2 DEFAULT NULL,
+                              p_latitude            IN NUMBER DEFAULT NULL,
+                              p_longitude          IN NUMBER DEFAULT NULL,
+                              p_horizontal_datum   IN VARCHAR2 DEFAULT NULL,
+                              p_public_name         IN VARCHAR2 DEFAULT NULL,
+                              p_long_name          IN VARCHAR2 DEFAULT NULL,
+                              p_description         IN VARCHAR2 DEFAULT NULL,
+                              p_time_zone_id       IN VARCHAR2 DEFAULT NULL,
+                              p_county_name         IN VARCHAR2 DEFAULT NULL,
+                              p_state_initial      IN VARCHAR2 DEFAULT NULL,
+                              p_active             IN VARCHAR2 DEFAULT NULL,
+                              p_db_office_id       IN VARCHAR2 DEFAULT NULL
+                             )
+   IS
+   BEGIN
+      create_location2 (p_location_id            => p_location_id,
+                        p_location_type         => p_location_type,
+                        p_elevation             => p_elevation,
+                        p_elev_unit_id          => p_elev_unit_id,
+                        p_vertical_datum         => p_vertical_datum,
+                        p_latitude               => p_latitude,
+                        p_longitude             => p_longitude,
+                        p_horizontal_datum      => p_horizontal_datum,
+                        p_public_name            => p_public_name,
+                        p_long_name             => p_long_name,
+                        p_description            => p_description,
+                        p_time_zone_id          => p_time_zone_id,
+                        p_county_name            => p_county_name,
+                        p_state_initial         => p_state_initial,
+                        p_active                => p_active,
+                        p_location_kind_id      => NULL,
+                        p_map_label             => NULL,
+                        p_published_latitude    => NULL,
+                        p_published_longitude   => NULL,
+                        p_bounding_office_id    => NULL,
+                        p_nation_id             => NULL,
+                        p_nearest_city          => NULL,
+                        p_db_office_id          => p_db_office_id
+                       );
+   END create_location;
 
-	--********************************************************************** -
-	--********************************************************************** -
-	--
-	-- RENAME_LOC -
-	--
-	--*---------------------------------------------------------------------*-
-	--
-	-- This is the v1.4 api call - ported for backward compatibility.
-	--
-	--*---------------------------------------------------------------------*-
-	---
-	--- This is the 1.4 signature - MUST NOT CHANGE!!!!!!!!!!!!
-	--vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv...
-	PROCEDURE rename_loc (p_officeid 			IN VARCHAR2,
-								 p_base_loc_id_old	IN VARCHAR2,
-								 p_base_loc_id_new	IN VARCHAR2
-								)
-	IS
-	BEGIN
-		rename_location (p_base_loc_id_old, p_base_loc_id_new, p_officeid);
-	END rename_loc;
+   --********************************************************************** -
+   --********************************************************************** -
+   --
+   -- RENAME_LOC -
+   --
+   --*---------------------------------------------------------------------*-
+   --
+   -- This is the v1.4 api call - ported for backward compatibility.
+   --
+   --*---------------------------------------------------------------------*-
+   ---
+   --- This is the 1.4 signature - MUST NOT CHANGE!!!!!!!!!!!!
+   --vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv...
+   PROCEDURE rename_loc (p_officeid          IN VARCHAR2,
+                         p_base_loc_id_old   IN VARCHAR2,
+                         p_base_loc_id_new   IN VARCHAR2
+                        )
+   IS
+   BEGIN
+      rename_location (p_base_loc_id_old, p_base_loc_id_new, p_officeid);
+   END rename_loc;
 
-	--^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-	--- This is the 1.4 signature - MUST NOT CHANGE!!!!!!!!!!!!
-	---
-	--
-	--********************************************************************** -
-	--********************************************************************** -
-	--
-	-- RENAME_LOCATION -
-	--
-	--*---------------------------------------------------------------------*-
-	--
-	-- Version 2.0 rename_location...
-	--
-	--*---------------------------------------------------------------------*-
-	PROCEDURE rename_location (p_location_id_old   IN VARCHAR2,
-										p_location_id_new   IN VARCHAR2,
-										p_db_office_id 	  IN VARCHAR2 DEFAULT NULL
-									  )
-	IS
-		l_location_id_old 			VARCHAR2 (49) := TRIM (p_location_id_old);
-		l_location_id_new 			VARCHAR2 (49) := TRIM (p_location_id_new);
-		l_base_location_id_old		at_base_location.base_location_id%TYPE
-			:= cwms_util.get_base_id (l_location_id_old);
-		--
-		l_sub_location_id_old		at_physical_location.sub_location_id%TYPE
-												:= cwms_util.get_sub_id (l_location_id_old);
-		--
-		l_base_location_id_new		at_base_location.base_location_id%TYPE
-			:= cwms_util.get_base_id (l_location_id_new);
-		--
-		l_sub_location_id_new		at_physical_location.sub_location_id%TYPE
-												:= cwms_util.get_sub_id (l_location_id_new);
-		--
-		-- l_db_office_code cwms_office.office_code%TYPE;
-		l_base_location_code_old	at_base_location.base_location_code%TYPE;
-		l_base_location_code_new	at_base_location.base_location_code%TYPE;
-		l_location_code_old			at_physical_location.location_code%TYPE;
-		l_location_code_new			at_physical_location.location_code%TYPE;
-		--
-		l_base_location_id_exist	at_base_location.base_location_id%TYPE;
-		l_sub_location_id_exist 	at_physical_location.sub_location_id%TYPE
-												:= NULL;
-		--
-		l_old_loc_is_base_loc		BOOLEAN := FALSE;
-		l_base_id_case_change		BOOLEAN := FALSE;
-		l_sub_id_case_change 		BOOLEAN := FALSE;
-		l_id_case_change				BOOLEAN := FALSE;
-		--
-		l_location_type				at_physical_location.location_type%TYPE;
-		l_elevation 					at_physical_location.elevation%TYPE := NULL;
-		l_vertical_datum				at_physical_location.vertical_datum%TYPE;
-		l_latitude						at_physical_location.latitude%TYPE := NULL;
-		l_longitude 					at_physical_location.longitude%TYPE := NULL;
-		l_horizontal_datum			at_physical_location.horizontal_datum%TYPE;
-		l_public_name					at_physical_location.public_name%TYPE;
-		l_long_name 					at_physical_location.long_name%TYPE;
-		l_description					at_physical_location.description%TYPE;
-		l_time_zone_code				at_physical_location.time_zone_code%TYPE
-												:= NULL;
-		l_county_code					cwms_county.county_code%TYPE := NULL;
-		l_active_flag					at_physical_location.active_flag%TYPE;
-		l_location_kind				at_physical_location.location_kind%TYPE
-												:= NULL;
-		l_map_label 					at_physical_location.map_label%TYPE := NULL;
-		l_published_latitude 		at_physical_location.published_latitude%TYPE
-												:= NULL;
-		l_published_longitude		at_physical_location.published_longitude%TYPE
-			:= NULL;
-		l_office_code					at_physical_location.office_code%TYPE
-												:= NULL;
-		l_nation_code					at_physical_location.nation_code%TYPE
-												:= NULL;
-		l_nearest_city 				at_physical_location.nearest_city%TYPE
-												:= NULL;
-		l_db_office_id 				VARCHAR2 (16)
-			:= cwms_util.get_db_office_id (p_db_office_id);
-		l_db_office_code				cwms_office.office_code%TYPE
-			:= cwms_util.get_db_office_code (l_db_office_id);
-	BEGIN
-		---------.
-		---------.
-		--.
-		--  New location can not already exist...
-		BEGIN
-			l_location_code_new :=
-				get_location_code (l_db_office_id, l_location_id_new);
-		EXCEPTION
-			WHEN OTHERS
-			THEN
-				-- The get_location_code call should throw an exception becasue --
-				-- the new location shouldn't exist.
-				l_location_code_new := NULL;
-		END;
+   --^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   --- This is the 1.4 signature - MUST NOT CHANGE!!!!!!!!!!!!
+   ---
+   --
+   --********************************************************************** -
+   --********************************************************************** -
+   --
+   -- RENAME_LOCATION -
+   --
+   --*---------------------------------------------------------------------*-
+   --
+   -- Version 2.0 rename_location...
+   --
+   --*---------------------------------------------------------------------*-
+   PROCEDURE rename_location (p_location_id_old   IN VARCHAR2,
+                              p_location_id_new   IN VARCHAR2,
+                              p_db_office_id      IN VARCHAR2 DEFAULT NULL
+                             )
+   IS
+      l_location_id_old          VARCHAR2 (49) := TRIM (p_location_id_old);
+      l_location_id_new          VARCHAR2 (49) := TRIM (p_location_id_new);
+      l_base_location_id_old      at_base_location.base_location_id%TYPE
+         := cwms_util.get_base_id (l_location_id_old);
+      --
+      l_sub_location_id_old      at_physical_location.sub_location_id%TYPE
+                                    := cwms_util.get_sub_id (l_location_id_old);
+      --
+      l_base_location_id_new      at_base_location.base_location_id%TYPE
+         := cwms_util.get_base_id (l_location_id_new);
+      --
+      l_sub_location_id_new      at_physical_location.sub_location_id%TYPE
+                                    := cwms_util.get_sub_id (l_location_id_new);
+      --
+      -- l_db_office_code cwms_office.office_code%TYPE;
+      l_base_location_code_old   at_base_location.base_location_code%TYPE;
+      l_base_location_code_new   at_base_location.base_location_code%TYPE;
+      l_location_code_old         at_physical_location.location_code%TYPE;
+      l_location_code_new         at_physical_location.location_code%TYPE;
+      --
+      l_base_location_id_exist   at_base_location.base_location_id%TYPE;
+      l_sub_location_id_exist    at_physical_location.sub_location_id%TYPE
+                                    := NULL;
+      --
+      l_old_loc_is_base_loc      BOOLEAN := FALSE;
+      l_base_id_case_change      BOOLEAN := FALSE;
+      l_sub_id_case_change       BOOLEAN := FALSE;
+      l_id_case_change            BOOLEAN := FALSE;
+      --
+      l_location_type            at_physical_location.location_type%TYPE;
+      l_elevation                at_physical_location.elevation%TYPE := NULL;
+      l_vertical_datum            at_physical_location.vertical_datum%TYPE;
+      l_latitude                  at_physical_location.latitude%TYPE := NULL;
+      l_longitude                at_physical_location.longitude%TYPE := NULL;
+      l_horizontal_datum         at_physical_location.horizontal_datum%TYPE;
+      l_public_name               at_physical_location.public_name%TYPE;
+      l_long_name                at_physical_location.long_name%TYPE;
+      l_description               at_physical_location.description%TYPE;
+      l_time_zone_code            at_physical_location.time_zone_code%TYPE
+                                    := NULL;
+      l_county_code               cwms_county.county_code%TYPE := NULL;
+      l_active_flag               at_physical_location.active_flag%TYPE;
+      l_location_kind            at_physical_location.location_kind%TYPE
+                                    := NULL;
+      l_map_label                at_physical_location.map_label%TYPE := NULL;
+      l_published_latitude       at_physical_location.published_latitude%TYPE
+                                    := NULL;
+      l_published_longitude      at_physical_location.published_longitude%TYPE
+         := NULL;
+      l_office_code               at_physical_location.office_code%TYPE
+                                    := NULL;
+      l_nation_code               at_physical_location.nation_code%TYPE
+                                    := NULL;
+      l_nearest_city             at_physical_location.nearest_city%TYPE
+                                    := NULL;
+      l_db_office_id             VARCHAR2 (16)
+         := cwms_util.get_db_office_id (p_db_office_id);
+      l_db_office_code            cwms_office.office_code%TYPE
+         := cwms_util.get_db_office_code (l_db_office_id);
+   BEGIN
+      ---------.
+      ---------.
+      --.
+      --  New location can not already exist...
+      BEGIN
+         l_location_code_new :=
+            get_location_code (l_db_office_id, l_location_id_new);
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            -- The get_location_code call should throw an exception becasue --
+            -- the new location shouldn't exist.
+            l_location_code_new := NULL;
+      END;
 
-		IF l_location_code_new IS NOT NULL
-		THEN
-			IF UPPER (l_location_id_old) != UPPER (l_location_id_new)
-			THEN
-				-- If l_location_code_new is found then the new location --
-				-- already exists - so throw an exception...
-				cwms_err.raise ('RENAME_LOC_BASE_2', p_location_id_new);
-			END IF;
-		END IF;
+      IF l_location_code_new IS NOT NULL
+      THEN
+         IF UPPER (l_location_id_old) != UPPER (l_location_id_new)
+         THEN
+            -- If l_location_code_new is found then the new location --
+            -- already exists - so throw an exception...
+            cwms_err.raise ('RENAME_LOC_BASE_2', p_location_id_new);
+         END IF;
+      END IF;
 
-		---------.
-		---------.
-		--.
-		-- retrieve existing base_location_code...
-		--.
-		BEGIN
-			SELECT	base_location_code, base_location_id
-			  INTO	l_base_location_code_old, l_base_location_id_exist
-			  FROM	at_base_location abl
-			 WHERE	UPPER (abl.base_location_id) =
-							UPPER (l_base_location_id_old)
-						AND abl.db_office_code = l_db_office_code;
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				cwms_err.raise ('LOCATION_ID_NOT_FOUND',
-									 'rename_location',
-									 p_location_id_old
-									);
-		END;
+      ---------.
+      ---------.
+      --.
+      -- retrieve existing base_location_code...
+      --.
+      BEGIN
+         SELECT   base_location_code, base_location_id
+           INTO   l_base_location_code_old, l_base_location_id_exist
+           FROM   at_base_location abl
+          WHERE   UPPER (abl.base_location_id) =
+                     UPPER (l_base_location_id_old)
+                  AND abl.db_office_code = l_db_office_code;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.raise ('LOCATION_ID_NOT_FOUND',
+                            'rename_location',
+                            p_location_id_old
+                           );
+      END;
 
-		---------.
-		---------.
-		--.
-		-- retrieve existing location data...
-		--.
-		IF l_sub_location_id_old IS NULL  -- A BASE Location is being renamed --
-		THEN
-			SELECT	location_code, time_zone_code, county_code, location_type,
-						elevation, vertical_datum, longitude, latitude,
-						horizontal_datum, public_name, long_name, description,
-						active_flag, location_kind, map_label, published_latitude,
-						published_longitude, office_code, nation_code, nearest_city
-			  INTO	l_location_code_old, l_time_zone_code, l_county_code,
-						l_location_type, l_elevation, l_vertical_datum, l_longitude,
-						l_latitude, l_horizontal_datum, l_public_name, l_long_name,
-						l_description, l_active_flag, l_location_kind, l_map_label,
-						l_published_latitude, l_published_longitude, l_office_code,
-						l_nation_code, l_nearest_city
-			  FROM	at_physical_location apl
-			 WHERE	apl.base_location_code = l_base_location_code_old
-						AND apl.sub_location_id IS NULL;
+      ---------.
+      ---------.
+      --.
+      -- retrieve existing location data...
+      --.
+      IF l_sub_location_id_old IS NULL  -- A BASE Location is being renamed --
+      THEN
+         SELECT   location_code, time_zone_code, county_code, location_type,
+                  elevation, vertical_datum, longitude, latitude,
+                  horizontal_datum, public_name, long_name, description,
+                  active_flag, location_kind, map_label, published_latitude,
+                  published_longitude, office_code, nation_code, nearest_city
+           INTO   l_location_code_old, l_time_zone_code, l_county_code,
+                  l_location_type, l_elevation, l_vertical_datum, l_longitude,
+                  l_latitude, l_horizontal_datum, l_public_name, l_long_name,
+                  l_description, l_active_flag, l_location_kind, l_map_label,
+                  l_published_latitude, l_published_longitude, l_office_code,
+                  l_nation_code, l_nearest_city
+           FROM   at_physical_location apl
+          WHERE   apl.base_location_code = l_base_location_code_old
+                  AND apl.sub_location_id IS NULL;
 
-			--
-			l_old_loc_is_base_loc := TRUE;
-		ELSE														-- For BASE-SUB Locations -
-			BEGIN
-				SELECT	location_code, sub_location_id, time_zone_code,
-							county_code, location_type, elevation, vertical_datum,
-							longitude, latitude, horizontal_datum, public_name,
-							long_name, description, active_flag, location_kind,
-							map_label, published_latitude, published_longitude,
-							office_code, nation_code, nearest_city
-				  INTO	l_location_code_old, l_sub_location_id_exist,
-							l_time_zone_code, l_county_code, l_location_type,
-							l_elevation, l_vertical_datum, l_longitude, l_latitude,
-							l_horizontal_datum, l_public_name, l_long_name,
-							l_description, l_active_flag, l_location_kind,
-							l_map_label, l_published_latitude, l_published_longitude,
-							l_office_code, l_nation_code, l_nearest_city
-				  FROM	at_physical_location apl
-				 WHERE	apl.base_location_code = l_base_location_code_old
-							AND UPPER (apl.sub_location_id) =
-									 UPPER (l_sub_location_id_old);
-			EXCEPTION
-				WHEN NO_DATA_FOUND
-				THEN
-					cwms_err.raise ('LOCATION_ID_NOT_FOUND',
-										 'rename_location',
-										 p_location_id_old
-										);
-			END;
-		END IF;
+         --
+         l_old_loc_is_base_loc := TRUE;
+      ELSE                                          -- For BASE-SUB Locations -
+         BEGIN
+            SELECT   location_code, sub_location_id, time_zone_code,
+                     county_code, location_type, elevation, vertical_datum,
+                     longitude, latitude, horizontal_datum, public_name,
+                     long_name, description, active_flag, location_kind,
+                     map_label, published_latitude, published_longitude,
+                     office_code, nation_code, nearest_city
+              INTO   l_location_code_old, l_sub_location_id_exist,
+                     l_time_zone_code, l_county_code, l_location_type,
+                     l_elevation, l_vertical_datum, l_longitude, l_latitude,
+                     l_horizontal_datum, l_public_name, l_long_name,
+                     l_description, l_active_flag, l_location_kind,
+                     l_map_label, l_published_latitude, l_published_longitude,
+                     l_office_code, l_nation_code, l_nearest_city
+              FROM   at_physical_location apl
+             WHERE   apl.base_location_code = l_base_location_code_old
+                     AND UPPER (apl.sub_location_id) =
+                            UPPER (l_sub_location_id_old);
+         EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+               cwms_err.raise ('LOCATION_ID_NOT_FOUND',
+                               'rename_location',
+                               p_location_id_old
+                              );
+         END;
+      END IF;
 
-		---------.
-		---------.
-		--.
-		-- Confirm that the new location id is valid...
-		--.
-		-- CHECK #1 - If old name is a base location, then new.
-		-- name must also be a base location...
-		--.
-		IF l_old_loc_is_base_loc AND l_sub_location_id_new IS NOT NULL
-		THEN
-			cwms_err.raise ('RENAME_LOC_BASE_1',
-								 p_location_id_old,
-								 p_location_id_new
-								);
-		END IF;
+      ---------.
+      ---------.
+      --.
+      -- Confirm that the new location id is valid...
+      --.
+      -- CHECK #1 - If old name is a base location, then new.
+      -- name must also be a base location...
+      --.
+      IF l_old_loc_is_base_loc AND l_sub_location_id_new IS NOT NULL
+      THEN
+         cwms_err.raise ('RENAME_LOC_BASE_1',
+                         p_location_id_old,
+                         p_location_id_new
+                        );
+      END IF;
 
-		--.
-		-- CHECK #2 - The new location can not already exist...
-		--.
-		-- first check if this is a simple upper/lower case change rename -
-		--.
-		IF UPPER (l_location_id_new) = UPPER (l_location_id_old)
-		THEN
-			-- if old = new then find if base or sub or both have case changes -
-			--.
-			IF l_base_location_id_exist <> l_base_location_id_new
-			THEN
-				l_base_id_case_change := TRUE;
-			END IF;
+      --.
+      -- CHECK #2 - The new location can not already exist...
+      --.
+      -- first check if this is a simple upper/lower case change rename -
+      --.
+      IF UPPER (l_location_id_new) = UPPER (l_location_id_old)
+      THEN
+         -- if old = new then find if base or sub or both have case changes -
+         --.
+         IF l_base_location_id_exist <> l_base_location_id_new
+         THEN
+            l_base_id_case_change := TRUE;
+         END IF;
 
-			--.
-			IF l_sub_location_id_old IS NOT NULL
-			THEN
-				IF l_sub_location_id_exist <> l_sub_location_id_new
-				THEN
-					l_sub_id_case_change := TRUE;
-				END IF;
-			END IF;
+         --.
+         IF l_sub_location_id_old IS NOT NULL
+         THEN
+            IF l_sub_location_id_exist <> l_sub_location_id_new
+            THEN
+               l_sub_id_case_change := TRUE;
+            END IF;
+         END IF;
 
-			--.
-			IF l_base_id_case_change OR l_sub_id_case_change
-			THEN
-				l_id_case_change := TRUE;
-			ELSE
-				cwms_err.raise ('RENAME_LOC_BASE_3', l_location_id_new);
-			END IF;
-		END IF;
+         --.
+         IF l_base_id_case_change OR l_sub_id_case_change
+         THEN
+            l_id_case_change := TRUE;
+         ELSE
+            cwms_err.raise ('RENAME_LOC_BASE_3', l_location_id_new);
+         END IF;
+      END IF;
 
-		---------.
-		---------.
-		--.
-		-- RENAME the location...
-		--.
-		CASE
-			WHEN l_old_loc_is_base_loc
-			THEN												  -- Simple Base Loc Rename --
-				UPDATE	at_base_location abl
-					SET	base_location_id = l_base_location_id_new
-				 WHERE	abl.base_location_code = l_base_location_code_old;
-			--
-			WHEN l_sub_location_id_new IS NULL
-			THEN									  -- Old Loc renamed to new Base Loc --
-				--.
-				-- 1) create a new Base Location with the new Base_Location_ID -
-				--.
-				INSERT
-					  INTO	at_base_location (base_location_code,
-														db_office_code,
-														base_location_id,
-														active_flag
-													  )
-					VALUES	(
-									cwms_seq.NEXTVAL,
-									l_db_office_code,
-									l_base_location_id_new,
-									l_active_flag
-								)
-				RETURNING	base_location_code
-					  INTO	l_base_location_code_new;
+      ---------.
+      ---------.
+      --.
+      -- RENAME the location...
+      --.
+      CASE
+         WHEN l_old_loc_is_base_loc
+         THEN                                      -- Simple Base Loc Rename --
+            UPDATE   at_base_location abl
+               SET   base_location_id = l_base_location_id_new
+             WHERE   abl.base_location_code = l_base_location_code_old;
+         --
+         WHEN l_sub_location_id_new IS NULL
+         THEN                             -- Old Loc renamed to new Base Loc --
+            --.
+            -- 1) create a new Base Location with the new Base_Location_ID -
+            --.
+            INSERT
+                 INTO   at_base_location (base_location_code,
+                                          db_office_code,
+                                          base_location_id,
+                                          active_flag
+                                         )
+               VALUES   (
+                           cwms_seq.NEXTVAL,
+                           l_db_office_code,
+                           l_base_location_id_new,
+                           l_active_flag
+                        )
+            RETURNING   base_location_code
+                 INTO   l_base_location_code_new;
 
-				--.
-				-- 2) update the old location by:
-				--   a) updating its Base Location Code with the newly generated --
-				--   Base_Location_Code, --
-				--   b) setting the sub_location_id to null --
-				--.
-				UPDATE	at_physical_location apl
-					SET	base_location_code = l_base_location_code_new,
-							sub_location_id = NULL
-				 WHERE	apl.location_code = l_location_code_old;
-			ELSE
-				IF UPPER (l_base_location_id_old) =
-						UPPER (l_base_location_id_new)
-				THEN					  -- Simple rename of Base and/or Sub Loc IDs --
-					IF l_base_id_case_change
-					THEN
-						UPDATE	at_base_location abl
-							SET	base_location_id = l_base_location_id_new
-						 WHERE	abl.base_location_code = l_base_location_code_old;
-					END IF;
+            --.
+            -- 2) update the old location by:
+            --   a) updating its Base Location Code with the newly generated --
+            --   Base_Location_Code, --
+            --   b) setting the sub_location_id to null --
+            --.
+            UPDATE   at_physical_location apl
+               SET   base_location_code = l_base_location_code_new,
+                     sub_location_id = NULL
+             WHERE   apl.location_code = l_location_code_old;
+         ELSE
+            IF UPPER (l_base_location_id_old) =
+                  UPPER (l_base_location_id_new)
+            THEN                 -- Simple rename of Base and/or Sub Loc IDs --
+               IF l_base_id_case_change
+               THEN
+                  UPDATE   at_base_location abl
+                     SET   base_location_id = l_base_location_id_new
+                   WHERE   abl.base_location_code = l_base_location_code_old;
+               END IF;
 
-					--
-					UPDATE	at_physical_location apl
-						SET	sub_location_id = l_sub_location_id_new
-					 WHERE	apl.location_code = l_location_code_old;
-				ELSE			  -- rename to a new Base Loc requires new Base Loc --
-					--.
-					--
-					-- 1) create a new Base Location with the new Base Location_name -
-					--.
-					create_location_raw2 (l_base_location_code_new,
-												 l_location_code_new,
-												 l_base_location_id_new,
-												 NULL,
-												 l_db_office_code,
-												 l_location_type,
-												 l_elevation,
-												 l_vertical_datum,
-												 l_latitude,
-												 l_longitude,
-												 l_horizontal_datum,
-												 l_public_name,
-												 l_long_name,
-												 l_description,
-												 l_time_zone_code,
-												 l_county_code,
-												 l_active_flag,
-												 l_location_kind,
-												 l_map_label,
-												 l_published_latitude,
-												 l_published_longitude,
-												 l_office_code,
-												 l_nation_code,
-												 l_nearest_city
-												);
+               --
+               UPDATE   at_physical_location apl
+                  SET   sub_location_id = l_sub_location_id_new
+                WHERE   apl.location_code = l_location_code_old;
+            ELSE           -- rename to a new Base Loc requires new Base Loc --
+               --.
+               --
+               -- 1) create a new Base Location with the new Base Location_name -
+               --.
+               create_location_raw2 (l_base_location_code_new,
+                                     l_location_code_new,
+                                     l_base_location_id_new,
+                                     NULL,
+                                     l_db_office_code,
+                                     l_location_type,
+                                     l_elevation,
+                                     l_vertical_datum,
+                                     l_latitude,
+                                     l_longitude,
+                                     l_horizontal_datum,
+                                     l_public_name,
+                                     l_long_name,
+                                     l_description,
+                                     l_time_zone_code,
+                                     l_county_code,
+                                     l_active_flag,
+                                     l_location_kind,
+                                     l_map_label,
+                                     l_published_latitude,
+                                     l_published_longitude,
+                                     l_office_code,
+                                     l_nation_code,
+                                     l_nearest_city
+                                    );
 
-					--.
-					-- 2) update the old location by:
-					--   a) updating its Base Location Code with the newly generated --
-					--   Base_Location_Code, --
-					--   b) setting the sub_location_id to the new sub_location_id --
-					--.
-					UPDATE	at_physical_location apl
-						SET	base_location_code = l_base_location_code_new,
-								sub_location_id = l_sub_location_id_new
-					 WHERE	apl.location_code = l_location_code_old;
-				END IF;
-		END CASE;
+               --.
+               -- 2) update the old location by:
+               --   a) updating its Base Location Code with the newly generated --
+               --   Base_Location_Code, --
+               --   b) setting the sub_location_id to the new sub_location_id --
+               --.
+               UPDATE   at_physical_location apl
+                  SET   base_location_code = l_base_location_code_new,
+                        sub_location_id = l_sub_location_id_new
+                WHERE   apl.location_code = l_location_code_old;
+            END IF;
+      END CASE;
 
-		COMMIT;
-	--
-	END rename_location;
+      COMMIT;
+   --
+   END rename_location;
 
-	--********************************************************************** -
-	--********************************************************************** -
-	--
-	-- DELETE_LOC -
-	--
-	--*---------------------------------------------------------------------*-
-	--
-	-- This is the v1.4 api call - ported for backward compatibility.
-	--
-	--*---------------------------------------------------------------------*-
-	--
-	--
-	---
-	--- This is the 1.4 signature - MUST NOT CHANGE!!!!!!!!!!!!
-	--vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-	PROCEDURE delete_loc (p_officeid IN VARCHAR2, p_base_loc_id IN VARCHAR2)
-	IS
-	BEGIN
-		delete_location (p_base_loc_id, p_officeid);
-	END delete_loc;
+   --********************************************************************** -
+   --********************************************************************** -
+   --
+   -- DELETE_LOC -
+   --
+   --*---------------------------------------------------------------------*-
+   --
+   -- This is the v1.4 api call - ported for backward compatibility.
+   --
+   --*---------------------------------------------------------------------*-
+   --
+   --
+   ---
+   --- This is the 1.4 signature - MUST NOT CHANGE!!!!!!!!!!!!
+   --vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+   PROCEDURE delete_loc (p_officeid IN VARCHAR2, p_base_loc_id IN VARCHAR2)
+   IS
+   BEGIN
+      delete_location (p_base_loc_id, p_officeid);
+   END delete_loc;
 
-	--^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-	--- This is the 1.4 signature - MUST NOT CHANGE!!!!!!!!!!!!
-	---
-	--
-	--********************************************************************** -
-	--********************************************************************** -
-	--
-	-- DELETE_LOCATION -
-	--
-	--*---------------------------------------------------------------------*-
-	--
-	-- This delete is the new version 2.0 delete_location. It will only -
-	-- delete locations if there are no timeseries identifiers associated -
-	-- with the location to be deleted. -
-	--
-	-- NOTE: Deleting a Base Location will delete ALL associated Sub -
-	-- Locations -
-	-- valid p_delete_actions:
-	--   --
-	--  delete_loc:  This action will delete the location_id only if there
-	--  are no cwms_ts_id's associated with this location_id.
-	--  If there are cwms_ts_id's assciated with the location_id,
-	--  then an exception is thrown.
-	--  delete_ts_data: This action will delete all of the data associated
-	--  with all of the cwms_ts_id's associated with this
-	--  location_id. The location_id and the cwms_ts_id's
-	--  themselves are not deleted.
-	--  delete_ts_id:   This action will delete any cwms_ts_id that has
-	--  no associated data. Only ts_id's that have data
-	--  along with the location_id itself will remain.
-	--  delete_ts_cascade: This action will delete all data and all cwms_ts_id's
-	--  associazted with this location_id. It does not delete
-	--  the location_id.
-	--  delete_loc_cascade: This will delete all data, all cwms_ts_id's, as well
-	--  as the location_id itself.
+   --^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   --- This is the 1.4 signature - MUST NOT CHANGE!!!!!!!!!!!!
+   ---
+   --
+   --********************************************************************** -
+   --********************************************************************** -
+   --
+   -- DELETE_LOCATION -
+   --
+   --*---------------------------------------------------------------------*-
+   --
+   -- This delete is the new version 2.0 delete_location. It will only -
+   -- delete locations if there are no timeseries identifiers associated -
+   -- with the location to be deleted. -
+   --
+   -- NOTE: Deleting a Base Location will delete ALL associated Sub -
+   -- Locations -
+   -- valid p_delete_actions:
+   --   --
+   --  delete_loc:  This action will delete the location_id only if there
+   --  are no cwms_ts_id's associated with this location_id.
+   --  If there are cwms_ts_id's assciated with the location_id,
+   --  then an exception is thrown.
+   --  delete_ts_data: This action will delete all of the data associated
+   --  with all of the cwms_ts_id's associated with this
+   --  location_id. The location_id and the cwms_ts_id's
+   --  themselves are not deleted.
+   --  delete_ts_id:   This action will delete any cwms_ts_id that has
+   --  no associated data. Only ts_id's that have data
+   --  along with the location_id itself will remain.
+   --  delete_ts_cascade: This action will delete all data and all cwms_ts_id's
+   --  associazted with this location_id. It does not delete
+   --  the location_id.
+   --  delete_loc_cascade: This will delete all data, all cwms_ts_id's, as well
+   --  as the location_id itself.
 
-	--
-	--*---------------------------------------------------------------------*-
-	PROCEDURE delete_location (
-		p_location_id		IN VARCHAR2,
-		p_delete_action	IN VARCHAR2 DEFAULT cwms_util.delete_loc,
-		p_db_office_id 	IN VARCHAR2 DEFAULT NULL
-	)
-	IS
-		l_count					  NUMBER;
-		l_base_location_id	  at_base_location.base_location_id%TYPE;
-		--
-		l_sub_location_id 	  at_physical_location.sub_location_id%TYPE;
-		--
-		l_base_location_code   NUMBER;
-		l_location_code		  NUMBER;
-		l_db_office_code		  NUMBER;
-		l_delete_action		  VARCHAR2 (22);
-		l_cursor 				  SYS_REFCURSOR;
-		l_this_is_a_base_loc   BOOLEAN := FALSE;
-		--
-		l_count_ts				  NUMBER := 0;
-		l_cwms_ts_id			  VARCHAR2 (183);
-		l_ts_code				  NUMBER;
-		--
-		l_location_codes		  number_tab_t;
-		l_location_ids 		  str_tab_t;
-	--
-	BEGIN
-		-------------------
-		-- sanity checks --
-		-------------------
-		IF p_location_id IS NULL
-		THEN
-			cwms_err.raise ('ERROR', 'Location identifier must not be null.');
-		END IF;
+   --
+   --*---------------------------------------------------------------------*-
+   PROCEDURE delete_location (
+      p_location_id      IN VARCHAR2,
+      p_delete_action   IN VARCHAR2 DEFAULT cwms_util.delete_loc,
+      p_db_office_id    IN VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_count                 NUMBER;
+      l_base_location_id     at_base_location.base_location_id%TYPE;
+      --
+      l_sub_location_id      at_physical_location.sub_location_id%TYPE;
+      --
+      l_base_location_code   NUMBER;
+      l_location_code        NUMBER;
+      l_db_office_code        NUMBER;
+      l_delete_action        VARCHAR2 (22);
+      l_cursor               SYS_REFCURSOR;
+      l_this_is_a_base_loc   BOOLEAN := FALSE;
+      --
+      l_count_ts              NUMBER := 0;
+      l_cwms_ts_id           VARCHAR2 (183);
+      l_ts_code              NUMBER;
+      --
+      l_location_codes        number_tab_t;
+      l_location_ids         str_tab_t;
+   --
+   BEGIN
+      -------------------
+      -- sanity checks --
+      -------------------
+      IF p_location_id IS NULL
+      THEN
+         cwms_err.raise ('ERROR', 'Location identifier must not be null.');
+      END IF;
 
-		IF p_delete_action IS NULL
-		THEN
-			cwms_err.raise ('ERROR', 'Delete action must not be null.');
-		END IF;
+      IF p_delete_action IS NULL
+      THEN
+         cwms_err.raise ('ERROR', 'Delete action must not be null.');
+      END IF;
 
-		l_delete_action :=
-			NVL (UPPER (TRIM (p_delete_action)), cwms_util.delete_loc);
+      l_delete_action :=
+         NVL (UPPER (TRIM (p_delete_action)), cwms_util.delete_loc);
 
-		IF l_delete_action NOT IN
-				(cwms_util.delete_key,									-- delete loc only
-				 cwms_util.delete_data, 					-- delete all children only
-				 cwms_util.delete_all,					-- delete loc and all children
-				 cwms_util.delete_loc,									-- delete loc only
-				 cwms_util.delete_loc_cascade,		-- delete loc and all children
-				 cwms_util.delete_ts_id,					-- delete child ts ids only
-				 cwms_util.delete_ts_data, 			  -- delete child ts data only
-				 cwms_util.delete_ts_cascade	-- delete child ts data and ids only
-													 )
-		THEN
-			cwms_err.raise ('INVALID_DELETE_ACTION', p_delete_action);
-		END IF;
+      IF l_delete_action NOT IN
+            (cwms_util.delete_key,                           -- delete loc only
+             cwms_util.delete_data,                -- delete all children only
+             cwms_util.delete_all,               -- delete loc and all children
+             cwms_util.delete_loc,                           -- delete loc only
+             cwms_util.delete_loc_cascade,      -- delete loc and all children
+             cwms_util.delete_ts_id,               -- delete child ts ids only
+             cwms_util.delete_ts_data,            -- delete child ts data only
+             cwms_util.delete_ts_cascade   -- delete child ts data and ids only
+                                        )
+      THEN
+         cwms_err.raise ('INVALID_DELETE_ACTION', p_delete_action);
+      END IF;
 
-		l_base_location_id := cwms_util.get_base_id (p_location_id);
-		l_sub_location_id  := cwms_util.get_sub_id (p_location_id);
-		l_db_office_code   := cwms_util.get_office_code (p_db_office_id);
+      l_base_location_id := cwms_util.get_base_id (p_location_id);
+      l_sub_location_id  := cwms_util.get_sub_id (p_location_id);
+      l_db_office_code   := cwms_util.get_office_code (p_db_office_id);
 
-		-- You can only delete a location if that location does not have
-		-- any child records.
-		BEGIN
-			SELECT	base_location_code
-			  INTO	l_base_location_code
-			  FROM	at_base_location abl
-			 WHERE	UPPER (abl.base_location_id) = UPPER (l_base_location_id)
-						AND abl.db_office_code = l_db_office_code;
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				cwms_err.raise ('LOCATION_ID_NOT_FOUND', p_location_id);
-		END;
+      -- You can only delete a location if that location does not have
+      -- any child records.
+      BEGIN
+         SELECT   base_location_code
+           INTO   l_base_location_code
+           FROM   at_base_location abl
+          WHERE   UPPER (abl.base_location_id) = UPPER (l_base_location_id)
+                  AND abl.db_office_code = l_db_office_code;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.raise ('LOCATION_ID_NOT_FOUND', p_location_id);
+      END;
 
-		l_location_code := get_location_code (p_db_office_id, p_location_id);
+      l_location_code := get_location_code (p_db_office_id, p_location_id);
 
-		--
-		IF l_sub_location_id IS NULL
-		THEN
-			l_this_is_a_base_loc := TRUE;
-		END IF;
+      --
+      IF l_sub_location_id IS NULL
+      THEN
+         l_this_is_a_base_loc := TRUE;
+      END IF;
 
-		----------------------------------------------------------------
-		-- Handle the times series separately since there are special --
-		-- delete actions just for time series  --
-		----------------------------------------------------------------
-		IF l_this_is_a_base_loc
-		THEN
-			OPEN l_cursor FOR
-				SELECT	cwms_ts_id
-				  FROM	at_cwms_ts_id
-				 WHERE	base_location_code = l_base_location_code;
-		ELSE
-			OPEN l_cursor FOR
-				SELECT	cwms_ts_id
-				  FROM	at_cwms_ts_id
-				 WHERE	location_code = l_location_code;
-		END IF;
+      ----------------------------------------------------------------
+      -- Handle the times series separately since there are special --
+      -- delete actions just for time series  --
+      ----------------------------------------------------------------
+      IF l_this_is_a_base_loc
+      THEN
+         OPEN l_cursor FOR
+            SELECT   cwms_ts_id
+              FROM   at_cwms_ts_id
+             WHERE   base_location_code = l_base_location_code;
+      ELSE
+         OPEN l_cursor FOR
+            SELECT   cwms_ts_id
+              FROM   at_cwms_ts_id
+             WHERE   location_code = l_location_code;
+      END IF;
 
-		LOOP
-			FETCH l_cursor
-			INTO l_cwms_ts_id;
+      LOOP
+         FETCH l_cursor
+         INTO l_cwms_ts_id;
 
-			EXIT WHEN l_cursor%NOTFOUND;
+         EXIT WHEN l_cursor%NOTFOUND;
 
-			IF l_delete_action IN (cwms_util.delete_key, cwms_util.delete_loc)
-			THEN
-				CLOSE l_cursor;
+         IF l_delete_action IN (cwms_util.delete_key, cwms_util.delete_loc)
+         THEN
+            CLOSE l_cursor;
 
-				cwms_err.raise ('CAN_NOT_DELETE_LOC_1', p_location_id);
-			END IF;
+            cwms_err.raise ('CAN_NOT_DELETE_LOC_1', p_location_id);
+         END IF;
 
-			CASE
-				WHEN l_delete_action IN
-						  (cwms_util.delete_data,
-							cwms_util.delete_all,
-							cwms_util.delete_loc_cascade,
-							cwms_util.delete_ts_cascade)
-				THEN
-					cwms_ts.delete_ts (l_cwms_ts_id,
-											 cwms_util.delete_ts_cascade,
-											 l_db_office_code
-											);
-				WHEN l_delete_action = cwms_util.delete_ts_id
-				THEN
-					BEGIN
-						cwms_ts.delete_ts (l_cwms_ts_id,
-												 cwms_util.delete_ts_id,
-												 l_db_office_code
-												);
-					EXCEPTION
-						WHEN OTHERS
-						THEN
-							NULL; 				 -- exception thrown if ts_id has data.
-					END;
-				WHEN l_delete_action = cwms_util.delete_ts_data
-				THEN
-					cwms_ts.delete_ts (l_cwms_ts_id,
-											 cwms_util.delete_ts_data,
-											 l_db_office_code
-											);
-				ELSE
-					cwms_err.raise ('INVALID_DELETE_ACTION', p_delete_action);
-			END CASE;
+         CASE
+            WHEN l_delete_action IN
+                    (cwms_util.delete_data,
+                     cwms_util.delete_all,
+                     cwms_util.delete_loc_cascade,
+                     cwms_util.delete_ts_cascade)
+            THEN
+               cwms_ts.delete_ts (l_cwms_ts_id,
+                                  cwms_util.delete_ts_cascade,
+                                  l_db_office_code
+                                 );
+            WHEN l_delete_action = cwms_util.delete_ts_id
+            THEN
+               BEGIN
+                  cwms_ts.delete_ts (l_cwms_ts_id,
+                                     cwms_util.delete_ts_id,
+                                     l_db_office_code
+                                    );
+               EXCEPTION
+                  WHEN OTHERS
+                  THEN
+                     NULL;              -- exception thrown if ts_id has data.
+               END;
+            WHEN l_delete_action = cwms_util.delete_ts_data
+            THEN
+               cwms_ts.delete_ts (l_cwms_ts_id,
+                                  cwms_util.delete_ts_data,
+                                  l_db_office_code
+                                 );
+            ELSE
+               cwms_err.raise ('INVALID_DELETE_ACTION', p_delete_action);
+         END CASE;
 
-			--
-			l_count_ts := l_count_ts + 1;
-		END LOOP;
+         --
+         l_count_ts := l_count_ts + 1;
+      END LOOP;
 
-		--
-		CLOSE l_cursor;
+      --
+      CLOSE l_cursor;
 
-		---------------------------------------------
-		-- delete other child records if specified --
-		---------------------------------------------
-		if l_delete_action in
-				(cwms_util.delete_data,
-				 cwms_util.delete_all,
-				 cwms_util.delete_loc_cascade)
-		then 
+      ---------------------------------------------
+      -- delete other child records if specified --
+      ---------------------------------------------
+      if l_delete_action in
+            (cwms_util.delete_data,
+             cwms_util.delete_all,
+             cwms_util.delete_loc_cascade)
+      then 
          if l_this_is_a_base_loc then
             --------------------------------------------
             -- collect location and all sub-locations --
@@ -2597,9 +2597,9 @@ AS
          delete 
            from at_embankment
           where embankment_location_code in (select * from table (l_location_codes));
-			-----------
+         -----------
          -- locks --
-			-----------
+         -----------
          delete 
            from at_lockage               
           where lockage_location_code in (select * from table (l_location_codes));
@@ -2660,7 +2660,7 @@ AS
             loop
                cwms_project.delete_project(
                   l_location_ids (i),
-					   cwms_util.delete_all,
+                  cwms_util.delete_all,
                   p_db_office_id);
             end loop;
          end loop;
@@ -2759,693 +2759,693 @@ AS
          delete 
            from at_a2w_ts_codes_by_loc
           where cwms_loc.get_location_code(db_office_id, location_id) in (select * from table (l_location_codes));           
-		end if;
+      end if;
 
-		--------------------------------------------------------------
-		-- finally, delete the actual location records if specified --
-		--------------------------------------------------------------
-		if l_delete_action in
-				(cwms_util.delete_key,
-				 cwms_util.delete_all,
-				 cwms_util.delete_loc,
-				 cwms_util.delete_loc_cascade)
-		then
-			if l_this_is_a_base_loc
-			then -- Deleting Base Location ----------------------------------------
-				----------------------
-				-- actual locations --
-				----------------------
-				delete 
+      --------------------------------------------------------------
+      -- finally, delete the actual location records if specified --
+      --------------------------------------------------------------
+      if l_delete_action in
+            (cwms_util.delete_key,
+             cwms_util.delete_all,
+             cwms_util.delete_loc,
+             cwms_util.delete_loc_cascade)
+      then
+         if l_this_is_a_base_loc
+         then -- Deleting Base Location ----------------------------------------
+            ----------------------
+            -- actual locations --
+            ----------------------
+            delete 
               from at_physical_location apl
-				 where apl.base_location_code = l_base_location_code;
+             where apl.base_location_code = l_base_location_code;
 
-				delete 
+            delete 
               from at_base_location abl
-				 where abl.base_location_code = l_base_location_code;
-			else -- Deleting a single Sub Location --------------------------------
-				-----------------------
-				-- group assignments --
-				-----------------------
-				delete 
+             where abl.base_location_code = l_base_location_code;
+         else -- Deleting a single Sub Location --------------------------------
+            -----------------------
+            -- group assignments --
+            -----------------------
+            delete 
               from at_loc_group_assignment atlga
-				 where atlga.location_code = l_location_code;
+             where atlga.location_code = l_location_code;
             ------------                        
             -- groups --
             ------------
             update at_loc_group
                set shared_loc_ref_code = null
              where shared_loc_ref_code = l_location_code;
-				---------------------
-				-- actual location --
-				---------------------
-				delete 
+            ---------------------
+            -- actual location --
+            ---------------------
+            delete 
               from at_physical_location apl
-				 where apl.location_code = l_location_code;
-			end if;
-		end if;
+             where apl.location_code = l_location_code;
+         end if;
+      end if;
 
-		commit;
+      commit;
       
-	end delete_location;
+   end delete_location;
 
-	--********************************************************************** -
-	--********************************************************************** -
-	--
-	-- DELETE_LOCATION_CASCADE -
-	--
-	--*---------------------------------------------------------------------*-
-	--
-	-- This delete WILL DELETE any data associated with the location, -
-	-- NO QUESTIONS ASKED -
-	-- SO USE WITH CARE -
-	--
-	-- NOTE: Deleting a Base Location will delete ALL associated Sub -
-	-- Locations Including All DATA -
-	--
-	--*---------------------------------------------------------------------*-
-	PROCEDURE delete_location_cascade (
-		p_location_id	  IN VARCHAR2,
-		p_db_office_id   IN VARCHAR2 DEFAULT NULL
-	)
-	IS
-	BEGIN
-		delete_location (p_location_id, cwms_util.delete_all, p_db_office_id);
-	END delete_location_cascade;
+   --********************************************************************** -
+   --********************************************************************** -
+   --
+   -- DELETE_LOCATION_CASCADE -
+   --
+   --*---------------------------------------------------------------------*-
+   --
+   -- This delete WILL DELETE any data associated with the location, -
+   -- NO QUESTIONS ASKED -
+   -- SO USE WITH CARE -
+   --
+   -- NOTE: Deleting a Base Location will delete ALL associated Sub -
+   -- Locations Including All DATA -
+   --
+   --*---------------------------------------------------------------------*-
+   PROCEDURE delete_location_cascade (
+      p_location_id     IN VARCHAR2,
+      p_db_office_id   IN VARCHAR2 DEFAULT NULL
+   )
+   IS
+   BEGIN
+      delete_location (p_location_id, cwms_util.delete_all, p_db_office_id);
+   END delete_location_cascade;
 
-	--********************************************************************** -
-	--********************************************************************** -
-	--
-	-- COPY_LOCATION -
-	--
-	--*---------------------------------------------------------------------*-
-	PROCEDURE copy_location (p_location_id_old	IN VARCHAR2,
-									 p_location_id_new	IN VARCHAR2,
-									 p_active				IN VARCHAR2 DEFAULT 'T',
-									 p_db_office_id		IN VARCHAR2 DEFAULT NULL
-									)
-	IS
-	BEGIN
-		NULL;
-	END copy_location;
+   --********************************************************************** -
+   --********************************************************************** -
+   --
+   -- COPY_LOCATION -
+   --
+   --*---------------------------------------------------------------------*-
+   PROCEDURE copy_location (p_location_id_old   IN VARCHAR2,
+                            p_location_id_new   IN VARCHAR2,
+                            p_active            IN VARCHAR2 DEFAULT 'T',
+                            p_db_office_id      IN VARCHAR2 DEFAULT NULL
+                           )
+   IS
+   BEGIN
+      NULL;
+   END copy_location;
 
-	--
-	--********************************************************************** -
-	--********************************************************************** -
-	--
-	-- STORE_ALIASES -
-	--
-	-- p_store_rule - Valid store rules are: -
-	--  Delete Insert - This will delete all existing aliases  -
-	--  and insert the new set of aliases -
-	--  in your p_alias_array. This is the -
-	--  Default.  -
-	--  Replace All - This will update any pre-existing  -
-	--  aliases and insert new ones -
-	--
-	-- p_ignorenulls - is only valid when the "Replace All" store rull is    -
-	--   envoked.
-	--   if 'T' then do not update a pre-existing value        -
-	--   with a newly passed-in null value.  -
-	--   if 'F' then update a pre-existing value               -
-	--   with a newly passed-in null value.  -
-	--*--------------------------------------------------------------------- -
-	--
-	--   PROCEDURE store_aliases (
-	--   p_location_id  IN VARCHAR2,
-	--   p_alias_array  IN alias_array,
-	--   p_store_rule   IN VARCHAR2 DEFAULT 'DELETE INSERT',
-	--   p_ignorenulls  IN VARCHAR2 DEFAULT 'T',
-	--   p_db_office_id IN VARCHAR2 DEFAULT NULL
-	--   )
-	--   IS
-	--   l_agency_code  NUMBER;
-	--   l_office_id VARCHAR2 (16);
-	--   l_office_code  NUMBER;
-	--   l_location_code   NUMBER;
-	--   l_array_count  NUMBER   := p_alias_array.COUNT;
-	--   l_count  NUMBER  := 1;
-	--   l_distinct NUMBER;
-	--   l_store_rule   VARCHAR2 (16);
-	--   l_alias_id VARCHAR2 (16);
-	--   l_alias_public_name  VARCHAR2 (32);
-	--   l_alias_long_name VARCHAR2 (80);
-	--   l_insert BOOLEAN;
-	--   l_ignorenulls  BOOLEAN
-	--  := cwms_util.return_true_or_false (p_ignorenulls);
-	--   BEGIN
-	--   --
-	--   IF l_count = 0
-	--   THEN
-	--   cwms_err.RAISE
-	--  ('GENERIC_ERROR',
-	--   'No viable agency/alias data passed to store_aliases.'
-	--  );
-	--   END IF;
+   --
+   --********************************************************************** -
+   --********************************************************************** -
+   --
+   -- STORE_ALIASES -
+   --
+   -- p_store_rule - Valid store rules are: -
+   --  Delete Insert - This will delete all existing aliases  -
+   --  and insert the new set of aliases -
+   --  in your p_alias_array. This is the -
+   --  Default.  -
+   --  Replace All - This will update any pre-existing  -
+   --  aliases and insert new ones -
+   --
+   -- p_ignorenulls - is only valid when the "Replace All" store rull is    -
+   --   envoked.
+   --   if 'T' then do not update a pre-existing value        -
+   --   with a newly passed-in null value.  -
+   --   if 'F' then update a pre-existing value               -
+   --   with a newly passed-in null value.  -
+   --*--------------------------------------------------------------------- -
+   --
+   --   PROCEDURE store_aliases (
+   --   p_location_id  IN VARCHAR2,
+   --   p_alias_array  IN alias_array,
+   --   p_store_rule   IN VARCHAR2 DEFAULT 'DELETE INSERT',
+   --   p_ignorenulls  IN VARCHAR2 DEFAULT 'T',
+   --   p_db_office_id IN VARCHAR2 DEFAULT NULL
+   --   )
+   --   IS
+   --   l_agency_code  NUMBER;
+   --   l_office_id VARCHAR2 (16);
+   --   l_office_code  NUMBER;
+   --   l_location_code   NUMBER;
+   --   l_array_count  NUMBER   := p_alias_array.COUNT;
+   --   l_count  NUMBER  := 1;
+   --   l_distinct NUMBER;
+   --   l_store_rule   VARCHAR2 (16);
+   --   l_alias_id VARCHAR2 (16);
+   --   l_alias_public_name  VARCHAR2 (32);
+   --   l_alias_long_name VARCHAR2 (80);
+   --   l_insert BOOLEAN;
+   --   l_ignorenulls  BOOLEAN
+   --  := cwms_util.return_true_or_false (p_ignorenulls);
+   --   BEGIN
+   --   --
+   --   IF l_count = 0
+   --   THEN
+   --   cwms_err.RAISE
+   --  ('GENERIC_ERROR',
+   --   'No viable agency/alias data passed to store_aliases.'
+   --  );
+   --   END IF;
 
-	--------------------------------------------------------------------
-	---- Check that passed-in aliases are do not contain duplicates...
-	--------------------------------------------------------------------
-	--   SELECT COUNT (*)
-	--   INTO l_distinct
-	--   FROM (SELECT DISTINCT UPPER (t.agency_id)
-	--   FROM TABLE (CAST (p_alias_array AS alias_array)) t);
+   --------------------------------------------------------------------
+   ---- Check that passed-in aliases are do not contain duplicates...
+   --------------------------------------------------------------------
+   --   SELECT COUNT (*)
+   --   INTO l_distinct
+   --   FROM (SELECT DISTINCT UPPER (t.agency_id)
+   --   FROM TABLE (CAST (p_alias_array AS alias_array)) t);
 
-	--   --
-	--   IF l_distinct != l_array_count
-	--   THEN
-	--   cwms_err.RAISE
-	--  ('GENERIC_ERROR',
-	--   'Duplicate Agency/Alias pairs are not permited. Only one Alias is permited per Agency (store_aliases).'
-	--  );
-	--   END IF;
+   --   --
+   --   IF l_distinct != l_array_count
+   --   THEN
+   --   cwms_err.RAISE
+   --  ('GENERIC_ERROR',
+   --   'Duplicate Agency/Alias pairs are not permited. Only one Alias is permited per Agency (store_aliases).'
+   --  );
+   --   END IF;
 
-	--   --
-	--   -- Make sure none of the alias_id's are null
-	--   --
-	--   SELECT COUNT (*)
-	--   INTO l_distinct
-	--   FROM (SELECT t.alias_id
-	--  FROM TABLE (CAST (p_alias_array AS alias_array)) t
-	--   WHERE alias_id IS NULL);
+   --   --
+   --   -- Make sure none of the alias_id's are null
+   --   --
+   --   SELECT COUNT (*)
+   --   INTO l_distinct
+   --   FROM (SELECT t.alias_id
+   --  FROM TABLE (CAST (p_alias_array AS alias_array)) t
+   --   WHERE alias_id IS NULL);
 
-	--   --
-	--   IF l_distinct != 0
-	--   THEN
-	--   cwms_err.RAISE
-	--  ('GENERIC_ERROR',
-	--   'A NULL alias_id was submitted. alias_id may not be NULL. (store_aliases).'
-	--  );
-	--   END IF;
+   --   --
+   --   IF l_distinct != 0
+   --   THEN
+   --   cwms_err.RAISE
+   --  ('GENERIC_ERROR',
+   --   'A NULL alias_id was submitted. alias_id may not be NULL. (store_aliases).'
+   --  );
+   --   END IF;
 
-	--   --
-	--   IF p_db_office_id IS NULL
-	--   THEN
-	--   l_office_id := cwms_util.user_office_id;
-	--   ELSE
-	--   l_office_id := UPPER (p_db_office_id);
-	--   END IF;
+   --   --
+   --   IF p_db_office_id IS NULL
+   --   THEN
+   --   l_office_id := cwms_util.user_office_id;
+   --   ELSE
+   --   l_office_id := UPPER (p_db_office_id);
+   --   END IF;
 
-	--   --
-	--   l_office_code := get_office_code (l_office_id);
-	--   l_location_code := get_location_code (l_office_id, p_location_id);
+   --   --
+   --   l_office_code := get_office_code (l_office_id);
+   --   l_location_code := get_location_code (l_office_id, p_location_id);
 
-	--   --
-	--   IF p_store_rule IS NULL
-	--   THEN
-	--   l_store_rule := cwms_util.delete_all;
-	--   ELSIF UPPER (p_store_rule) = cwms_util.delete_all
-	--   THEN
-	--   l_store_rule := cwms_util.delete_all;
-	--   ELSIF UPPER (p_store_rule) = cwms_util.replace_all
-	--   THEN
-	--   l_store_rule := cwms_util.replace_all;
-	--   ELSE
-	--   cwms_err.RAISE ('GENERIC_ERROR',
-	--  p_store_rule
-	--   || ' is an invalid store rule. (store_aliases)'
-	--  );
-	--   END IF;
+   --   --
+   --   IF p_store_rule IS NULL
+   --   THEN
+   --   l_store_rule := cwms_util.delete_all;
+   --   ELSIF UPPER (p_store_rule) = cwms_util.delete_all
+   --   THEN
+   --   l_store_rule := cwms_util.delete_all;
+   --   ELSIF UPPER (p_store_rule) = cwms_util.replace_all
+   --   THEN
+   --   l_store_rule := cwms_util.replace_all;
+   --   ELSE
+   --   cwms_err.RAISE ('GENERIC_ERROR',
+   --  p_store_rule
+   --   || ' is an invalid store rule. (store_aliases)'
+   --  );
+   --   END IF;
 
-	--   --
-	--   IF l_store_rule = cwms_util.delete_all
-	--   THEN
-	--   DELETE FROM at_loc_group_assignment atlga
-	--  WHERE atlga.location_code = l_location_code;
+   --   --
+   --   IF l_store_rule = cwms_util.delete_all
+   --   THEN
+   --   DELETE FROM at_loc_group_assignment atlga
+   --  WHERE atlga.location_code = l_location_code;
 
-	--   --
-	--   LOOP
-	--  EXIT WHEN l_count > l_array_count;
+   --   --
+   --   LOOP
+   --  EXIT WHEN l_count > l_array_count;
 
-	--  --
-	--  BEGIN
-	--   SELECT agency_code
-	--   INTO l_agency_code
-	--   FROM at_agency_name
-	--  WHERE UPPER (agency_id) =
-	--   UPPER (p_alias_array (l_count).agency_id)
-	--  AND db_office_code IN
-	--  (l_office_code, cwms_util.db_office_code_all);
-	--  EXCEPTION
-	--   WHEN NO_DATA_FOUND
-	--   THEN
-	--  --.
-	--  INSERT INTO at_agency_name
-	--  (agency_code,
-	--   agency_id,
-	--   agency_name,
-	--   db_office_code
-	--  )
-	--   VALUES (cwms_seq.NEXTVAL,
-	--   p_alias_array (l_count).agency_id,
-	--   p_alias_array (l_count).agency_name,
-	--   l_office_code
-	--  )
-	--  RETURNING agency_code
-	--   INTO l_agency_code;
-	--  END;
+   --  --
+   --  BEGIN
+   --   SELECT agency_code
+   --   INTO l_agency_code
+   --   FROM at_agency_name
+   --  WHERE UPPER (agency_id) =
+   --   UPPER (p_alias_array (l_count).agency_id)
+   --  AND db_office_code IN
+   --  (l_office_code, cwms_util.db_office_code_all);
+   --  EXCEPTION
+   --   WHEN NO_DATA_FOUND
+   --   THEN
+   --  --.
+   --  INSERT INTO at_agency_name
+   --  (agency_code,
+   --   agency_id,
+   --   agency_name,
+   --   db_office_code
+   --  )
+   --   VALUES (cwms_seq.NEXTVAL,
+   --   p_alias_array (l_count).agency_id,
+   --   p_alias_array (l_count).agency_name,
+   --   l_office_code
+   --  )
+   --  RETURNING agency_code
+   --   INTO l_agency_code;
+   --  END;
 
-	--  --
-	--  INSERT INTO at_alias_name
-	--  (location_code, agency_code,
-	--   alias_id,
-	--   alias_public_name,
-	--   alias_long_name
-	--  )
-	--   VALUES (l_location_code, l_agency_code,
-	--   p_alias_array (l_count).alias_id,
-	--   p_alias_array (l_count).alias_public_name,
-	--   p_alias_array (l_count).alias_long_name
-	--  );
+   --  --
+   --  INSERT INTO at_alias_name
+   --  (location_code, agency_code,
+   --   alias_id,
+   --   alias_public_name,
+   --   alias_long_name
+   --  )
+   --   VALUES (l_location_code, l_agency_code,
+   --   p_alias_array (l_count).alias_id,
+   --   p_alias_array (l_count).alias_public_name,
+   --   p_alias_array (l_count).alias_long_name
+   --  );
 
-	--  --
-	--  l_count := l_count + 1;
-	--   END LOOP;
-	--   ELSE  -- store_rule is REPLACE ALL -
-	--   LOOP
-	--  EXIT WHEN l_count > l_array_count;
+   --  --
+   --  l_count := l_count + 1;
+   --   END LOOP;
+   --   ELSE  -- store_rule is REPLACE ALL -
+   --   LOOP
+   --  EXIT WHEN l_count > l_array_count;
 
-	--  --
-	--  -- retrieve agency_code...
-	--  BEGIN
-	--   SELECT agency_code
-	--   INTO l_agency_code
-	--   FROM at_agency_name
-	--  WHERE UPPER (agency_id) =
-	--   UPPER (p_alias_array (l_count).agency_id)
-	--  AND db_office_code IN
-	--  (l_office_code, cwms_util.db_office_code_all);
-	--  EXCEPTION
-	--   WHEN NO_DATA_FOUND
-	--   THEN -- No agency_code found, so create one...
-	--  --.
-	--  INSERT INTO at_agency_name
-	--  (agency_code,
-	--   agency_id,
-	--   agency_name,
-	--   db_office_code
-	--  )
-	--   VALUES (cwms_seq.NEXTVAL,
-	--   p_alias_array (l_count).agency_id,
-	--   p_alias_array (l_count).agency_name,
-	--   l_office_code
-	--  )
-	--  RETURNING agency_code
-	--   INTO l_agency_code;
-	--  END;
+   --  --
+   --  -- retrieve agency_code...
+   --  BEGIN
+   --   SELECT agency_code
+   --   INTO l_agency_code
+   --   FROM at_agency_name
+   --  WHERE UPPER (agency_id) =
+   --   UPPER (p_alias_array (l_count).agency_id)
+   --  AND db_office_code IN
+   --  (l_office_code, cwms_util.db_office_code_all);
+   --  EXCEPTION
+   --   WHEN NO_DATA_FOUND
+   --   THEN -- No agency_code found, so create one...
+   --  --.
+   --  INSERT INTO at_agency_name
+   --  (agency_code,
+   --   agency_id,
+   --   agency_name,
+   --   db_office_code
+   --  )
+   --   VALUES (cwms_seq.NEXTVAL,
+   --   p_alias_array (l_count).agency_id,
+   --   p_alias_array (l_count).agency_name,
+   --   l_office_code
+   --  )
+   --  RETURNING agency_code
+   --   INTO l_agency_code;
+   --  END;
 
-	--  --
-	--  --
-	--  -- retrieve existing alias information...
-	--  l_insert := FALSE;
+   --  --
+   --  --
+   --  -- retrieve existing alias information...
+   --  l_insert := FALSE;
 
-	--  BEGIN
-	--   SELECT alias_id, alias_public_name, alias_long_name
-	--   INTO l_alias_id, l_alias_public_name, l_alias_long_name
-	--   FROM at_alias_name
-	--  WHERE location_code = l_location_code
-	--  AND agency_code = l_agency_code;
+   --  BEGIN
+   --   SELECT alias_id, alias_public_name, alias_long_name
+   --   INTO l_alias_id, l_alias_public_name, l_alias_long_name
+   --   FROM at_alias_name
+   --  WHERE location_code = l_location_code
+   --  AND agency_code = l_agency_code;
 
-	--   --
-	--   IF p_alias_array (l_count).alias_public_name IS NULL
-	--  AND NOT l_ignorenulls
-	--   THEN
-	--  l_alias_public_name := NULL;
-	--   END IF;
+   --   --
+   --   IF p_alias_array (l_count).alias_public_name IS NULL
+   --  AND NOT l_ignorenulls
+   --   THEN
+   --  l_alias_public_name := NULL;
+   --   END IF;
 
-	--   IF p_alias_array (l_count).alias_long_name IS NULL
-	--  AND NOT l_ignorenulls
-	--   THEN
-	--  l_alias_long_name := NULL;
-	--   END IF;
-	--  EXCEPTION
-	--   WHEN NO_DATA_FOUND
-	--   THEN
-	--  l_insert := TRUE;
-	--  END;
+   --   IF p_alias_array (l_count).alias_long_name IS NULL
+   --  AND NOT l_ignorenulls
+   --   THEN
+   --  l_alias_long_name := NULL;
+   --   END IF;
+   --  EXCEPTION
+   --   WHEN NO_DATA_FOUND
+   --   THEN
+   --  l_insert := TRUE;
+   --  END;
 
-	--  --
-	--  IF l_insert
-	--  THEN
-	--   --
-	--   INSERT INTO at_alias_name
-	--   (location_code, agency_code,
-	--  alias_id,
-	--  alias_public_name,
-	--  alias_long_name
-	--   )
-	--  VALUES (l_location_code, l_agency_code,
-	--  p_alias_array (l_count).alias_id,
-	--  p_alias_array (l_count).alias_public_name,
-	--  p_alias_array (l_count).alias_long_name
-	--   );
-	--  ELSE
-	--   UPDATE at_alias_name
-	--  SET alias_id = p_alias_array (l_count).alias_id,
-	--  alias_public_name = l_alias_public_name,
-	--  alias_long_name = l_alias_long_name
-	--  WHERE location_code = l_location_code
-	--  AND agency_code = l_agency_code;
-	--  --
-	--  END IF;
+   --  --
+   --  IF l_insert
+   --  THEN
+   --   --
+   --   INSERT INTO at_alias_name
+   --   (location_code, agency_code,
+   --  alias_id,
+   --  alias_public_name,
+   --  alias_long_name
+   --   )
+   --  VALUES (l_location_code, l_agency_code,
+   --  p_alias_array (l_count).alias_id,
+   --  p_alias_array (l_count).alias_public_name,
+   --  p_alias_array (l_count).alias_long_name
+   --   );
+   --  ELSE
+   --   UPDATE at_alias_name
+   --  SET alias_id = p_alias_array (l_count).alias_id,
+   --  alias_public_name = l_alias_public_name,
+   --  alias_long_name = l_alias_long_name
+   --  WHERE location_code = l_location_code
+   --  AND agency_code = l_agency_code;
+   --  --
+   --  END IF;
 
-	--  --
-	--  l_count := l_count + 1;
-	--   END LOOP;
-	--   END IF;
+   --  --
+   --  l_count := l_count + 1;
+   --   END LOOP;
+   --   END IF;
 
-	--   --
-	--   COMMIT;
-	----
-	--   NULL;
-	--   END store_aliases;
+   --   --
+   --   COMMIT;
+   ----
+   --   NULL;
+   --   END store_aliases;
 
-	--   PROCEDURE store_alias (
-	--   p_location_id  IN VARCHAR2,
-	--   p_agency_id IN VARCHAR2,
-	--   p_alias_id IN VARCHAR2,
-	--   p_agency_name  IN VARCHAR2 DEFAULT NULL,
-	--   p_alias_public_name  IN VARCHAR2 DEFAULT NULL,
-	--   p_alias_long_name IN VARCHAR2 DEFAULT NULL,
-	--   p_ignorenulls  IN VARCHAR2 DEFAULT 'T',
-	--   p_db_office_id IN VARCHAR2 DEFAULT NULL
-	--   )
-	--   IS
-	--   l_alias_array  alias_array := alias_array ();
-	--   l_store_rule   VARCHAR2 (16) := 'REPLACE ALL';
-	--   BEGIN
-	--   --
-	--   l_alias_array.EXTEND;
-	--   --
-	--   l_alias_array (1) :=
-	--   alias_type (p_agency_id,
-	--   p_alias_id,
-	--   p_agency_name,
-	--   p_alias_public_name,
-	--   p_alias_long_name
-	--  );
-	--   --
-	--   store_aliases (p_location_id,
-	--   l_alias_array,
-	--   l_store_rule,
-	--   p_ignorenulls,
-	--   p_db_office_id
-	--  );
-	--   END store_alias;
+   --   PROCEDURE store_alias (
+   --   p_location_id  IN VARCHAR2,
+   --   p_agency_id IN VARCHAR2,
+   --   p_alias_id IN VARCHAR2,
+   --   p_agency_name  IN VARCHAR2 DEFAULT NULL,
+   --   p_alias_public_name  IN VARCHAR2 DEFAULT NULL,
+   --   p_alias_long_name IN VARCHAR2 DEFAULT NULL,
+   --   p_ignorenulls  IN VARCHAR2 DEFAULT 'T',
+   --   p_db_office_id IN VARCHAR2 DEFAULT NULL
+   --   )
+   --   IS
+   --   l_alias_array  alias_array := alias_array ();
+   --   l_store_rule   VARCHAR2 (16) := 'REPLACE ALL';
+   --   BEGIN
+   --   --
+   --   l_alias_array.EXTEND;
+   --   --
+   --   l_alias_array (1) :=
+   --   alias_type (p_agency_id,
+   --   p_alias_id,
+   --   p_agency_name,
+   --   p_alias_public_name,
+   --   p_alias_long_name
+   --  );
+   --   --
+   --   store_aliases (p_location_id,
+   --   l_alias_array,
+   --   l_store_rule,
+   --   p_ignorenulls,
+   --   p_db_office_id
+   --  );
+   --   END store_alias;
 
-	--********************************************************************** -
+   --********************************************************************** -
 
-	PROCEDURE store_location2 (
-		p_location_id				IN VARCHAR2,
-		p_location_type			IN VARCHAR2 DEFAULT NULL,
-		p_elevation 				IN NUMBER DEFAULT NULL,
-		p_elev_unit_id 			IN VARCHAR2 DEFAULT NULL,
-		p_vertical_datum			IN VARCHAR2 DEFAULT NULL,
-		p_latitude					IN NUMBER DEFAULT NULL,
-		p_longitude 				IN NUMBER DEFAULT NULL,
-		p_horizontal_datum		IN VARCHAR2 DEFAULT NULL,
-		p_public_name				IN VARCHAR2 DEFAULT NULL,
-		p_long_name 				IN VARCHAR2 DEFAULT NULL,
-		p_description				IN VARCHAR2 DEFAULT NULL,
-		p_time_zone_id 			IN VARCHAR2 DEFAULT NULL,
-		p_county_name				IN VARCHAR2 DEFAULT NULL,
-		p_state_initial			IN VARCHAR2 DEFAULT NULL,
-		p_active 					IN VARCHAR2 DEFAULT NULL,
-		p_location_kind_id		IN VARCHAR2 DEFAULT NULL,
-		p_map_label 				IN VARCHAR2 DEFAULT NULL,
-		p_published_latitude 	IN NUMBER DEFAULT NULL,
-		p_published_longitude	IN NUMBER DEFAULT NULL,
-		p_bounding_office_id 	IN VARCHAR2 DEFAULT NULL,
-		p_nation_id 				IN VARCHAR2 DEFAULT NULL,
-		p_nearest_city 			IN VARCHAR2 DEFAULT NULL,
-		p_ignorenulls				IN VARCHAR2 DEFAULT 'T',
-		p_db_office_id 			IN VARCHAR2 DEFAULT NULL
-	)
-	IS
-		l_cwms_code 	 NUMBER;
-		l_office_id 	 VARCHAR2 (16);
-		l_office_code	 NUMBER;
-	BEGIN
-		--
-		-- check if cwms_id for this office already exists...
-		BEGIN
-			update_location2 (p_location_id,
-									p_location_type,
-									p_elevation,
-									p_elev_unit_id,
-									p_vertical_datum,
-									p_latitude,
-									p_longitude,
-									p_horizontal_datum,
-									p_public_name,
-									p_long_name,
-									p_description,
-									p_time_zone_id,
-									p_county_name,
-									p_state_initial,
-									p_active,
-									p_location_kind_id,
-									p_map_label,
-									p_published_latitude,
-									p_published_longitude,
-									p_bounding_office_id,
-									p_nation_id,
-									p_nearest_city,
-									p_ignorenulls,
-									p_db_office_id
-								  );
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				RAISE;
-			WHEN OTHERS
-			THEN												--l_cwms_code was not found...
-				DBMS_OUTPUT.put_line ('entering create_location');
-				create_location2 (p_location_id,
-										p_location_type,
-										p_elevation,
-										p_elev_unit_id,
-										p_vertical_datum,
-										p_latitude,
-										p_longitude,
-										p_horizontal_datum,
-										p_public_name,
-										p_long_name,
-										p_description,
-										p_time_zone_id,
-										p_county_name,
-										p_state_initial,
-										p_active,
-										p_location_kind_id,
-										p_map_label,
-										p_published_latitude,
-										p_published_longitude,
-										p_bounding_office_id,
-										p_nation_id,
-										p_nearest_city,
-										p_db_office_id
-									  );
-		END;
-	--
+   PROCEDURE store_location2 (
+      p_location_id            IN VARCHAR2,
+      p_location_type         IN VARCHAR2 DEFAULT NULL,
+      p_elevation             IN NUMBER DEFAULT NULL,
+      p_elev_unit_id          IN VARCHAR2 DEFAULT NULL,
+      p_vertical_datum         IN VARCHAR2 DEFAULT NULL,
+      p_latitude               IN NUMBER DEFAULT NULL,
+      p_longitude             IN NUMBER DEFAULT NULL,
+      p_horizontal_datum      IN VARCHAR2 DEFAULT NULL,
+      p_public_name            IN VARCHAR2 DEFAULT NULL,
+      p_long_name             IN VARCHAR2 DEFAULT NULL,
+      p_description            IN VARCHAR2 DEFAULT NULL,
+      p_time_zone_id          IN VARCHAR2 DEFAULT NULL,
+      p_county_name            IN VARCHAR2 DEFAULT NULL,
+      p_state_initial         IN VARCHAR2 DEFAULT NULL,
+      p_active                IN VARCHAR2 DEFAULT NULL,
+      p_location_kind_id      IN VARCHAR2 DEFAULT NULL,
+      p_map_label             IN VARCHAR2 DEFAULT NULL,
+      p_published_latitude    IN NUMBER DEFAULT NULL,
+      p_published_longitude   IN NUMBER DEFAULT NULL,
+      p_bounding_office_id    IN VARCHAR2 DEFAULT NULL,
+      p_nation_id             IN VARCHAR2 DEFAULT NULL,
+      p_nearest_city          IN VARCHAR2 DEFAULT NULL,
+      p_ignorenulls            IN VARCHAR2 DEFAULT 'T',
+      p_db_office_id          IN VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_cwms_code     NUMBER;
+      l_office_id     VARCHAR2 (16);
+      l_office_code    NUMBER;
+   BEGIN
+      --
+      -- check if cwms_id for this office already exists...
+      BEGIN
+         update_location2 (p_location_id,
+                           p_location_type,
+                           p_elevation,
+                           p_elev_unit_id,
+                           p_vertical_datum,
+                           p_latitude,
+                           p_longitude,
+                           p_horizontal_datum,
+                           p_public_name,
+                           p_long_name,
+                           p_description,
+                           p_time_zone_id,
+                           p_county_name,
+                           p_state_initial,
+                           p_active,
+                           p_location_kind_id,
+                           p_map_label,
+                           p_published_latitude,
+                           p_published_longitude,
+                           p_bounding_office_id,
+                           p_nation_id,
+                           p_nearest_city,
+                           p_ignorenulls,
+                           p_db_office_id
+                          );
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            RAISE;
+         WHEN OTHERS
+         THEN                                    --l_cwms_code was not found...
+            DBMS_OUTPUT.put_line ('entering create_location');
+            create_location2 (p_location_id,
+                              p_location_type,
+                              p_elevation,
+                              p_elev_unit_id,
+                              p_vertical_datum,
+                              p_latitude,
+                              p_longitude,
+                              p_horizontal_datum,
+                              p_public_name,
+                              p_long_name,
+                              p_description,
+                              p_time_zone_id,
+                              p_county_name,
+                              p_state_initial,
+                              p_active,
+                              p_location_kind_id,
+                              p_map_label,
+                              p_published_latitude,
+                              p_published_longitude,
+                              p_bounding_office_id,
+                              p_nation_id,
+                              p_nearest_city,
+                              p_db_office_id
+                             );
+      END;
+   --
 
-	--  store_aliases (p_location_id,
-	--   p_alias_array,
-	--   'DELETE INSERT',
-	--   p_ignorenulls,
-	--   p_db_office_id
-	--  );
-	--
-	EXCEPTION
-		WHEN NO_DATA_FOUND
-		THEN
-			NULL;
-		WHEN OTHERS
-		THEN
-			-- Consider logging the error and then re-raise
-			RAISE;
-	END store_location2;
+   --  store_aliases (p_location_id,
+   --   p_alias_array,
+   --   'DELETE INSERT',
+   --   p_ignorenulls,
+   --   p_db_office_id
+   --  );
+   --
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         NULL;
+      WHEN OTHERS
+      THEN
+         -- Consider logging the error and then re-raise
+         RAISE;
+   END store_location2;
 
-	--********************************************************************** -
-	--
-	-- STORE_LOC provides backward compatiblity for the dbi.  It will update a
-	-- location if it already exists by calling update_loc or create a new location
-	-- by calling create_loc.
-	--
-	--*---------------------------------------------------------------------*-
-	--
+   --********************************************************************** -
+   --
+   -- STORE_LOC provides backward compatiblity for the dbi.  It will update a
+   -- location if it already exists by calling update_loc or create a new location
+   -- by calling create_loc.
+   --
+   --*---------------------------------------------------------------------*-
+   --
 
-	PROCEDURE store_location (p_location_id		  IN VARCHAR2,
-									  p_location_type 	  IN VARCHAR2 DEFAULT NULL,
-									  p_elevation			  IN NUMBER DEFAULT NULL,
-									  p_elev_unit_id		  IN VARCHAR2 DEFAULT NULL,
-									  p_vertical_datum	  IN VARCHAR2 DEFAULT NULL,
-									  p_latitude			  IN NUMBER DEFAULT NULL,
-									  p_longitude			  IN NUMBER DEFAULT NULL,
-									  p_horizontal_datum   IN VARCHAR2 DEFAULT NULL,
-									  p_public_name		  IN VARCHAR2 DEFAULT NULL,
-									  p_long_name			  IN VARCHAR2 DEFAULT NULL,
-									  p_description		  IN VARCHAR2 DEFAULT NULL,
-									  p_time_zone_id		  IN VARCHAR2 DEFAULT NULL,
-									  p_county_name		  IN VARCHAR2 DEFAULT NULL,
-									  p_state_initial 	  IN VARCHAR2 DEFAULT NULL,
-									  p_active				  IN VARCHAR2 DEFAULT NULL,
-									  p_ignorenulls		  IN VARCHAR2 DEFAULT 'T',
-									  p_db_office_id		  IN VARCHAR2 DEFAULT NULL
-									 )
-	IS
-	BEGIN
-		--
-		DBMS_OUTPUT.put_line ('entering store_location2');
+   PROCEDURE store_location (p_location_id        IN VARCHAR2,
+                             p_location_type      IN VARCHAR2 DEFAULT NULL,
+                             p_elevation           IN NUMBER DEFAULT NULL,
+                             p_elev_unit_id        IN VARCHAR2 DEFAULT NULL,
+                             p_vertical_datum     IN VARCHAR2 DEFAULT NULL,
+                             p_latitude           IN NUMBER DEFAULT NULL,
+                             p_longitude           IN NUMBER DEFAULT NULL,
+                             p_horizontal_datum   IN VARCHAR2 DEFAULT NULL,
+                             p_public_name        IN VARCHAR2 DEFAULT NULL,
+                             p_long_name           IN VARCHAR2 DEFAULT NULL,
+                             p_description        IN VARCHAR2 DEFAULT NULL,
+                             p_time_zone_id        IN VARCHAR2 DEFAULT NULL,
+                             p_county_name        IN VARCHAR2 DEFAULT NULL,
+                             p_state_initial      IN VARCHAR2 DEFAULT NULL,
+                             p_active              IN VARCHAR2 DEFAULT NULL,
+                             p_ignorenulls        IN VARCHAR2 DEFAULT 'T',
+                             p_db_office_id        IN VARCHAR2 DEFAULT NULL
+                            )
+   IS
+   BEGIN
+      --
+      DBMS_OUTPUT.put_line ('entering store_location2');
 
-		store_location2 (p_location_id		  => p_location_id,
-							  p_location_type 	  => p_location_type,
-							  p_elevation			  => p_elevation,
-							  p_elev_unit_id		  => p_elev_unit_id,
-							  p_vertical_datum	  => p_vertical_datum,
-							  p_latitude			  => p_latitude,
-							  p_longitude			  => p_longitude,
-							  p_horizontal_datum   => p_horizontal_datum,
-							  p_public_name		  => p_public_name,
-							  p_long_name			  => p_long_name,
-							  p_description		  => p_description,
-							  p_time_zone_id		  => p_time_zone_id,
-							  p_county_name		  => p_county_name,
-							  p_state_initial 	  => p_state_initial,
-							  p_active				  => p_active,
-							  p_ignorenulls		  => p_ignorenulls,
-							  p_db_office_id		  => p_db_office_id
-							 );
-	EXCEPTION
-		WHEN NO_DATA_FOUND
-		THEN
-			NULL;
-		WHEN OTHERS
-		THEN
-			-- Consider logging the error and then re-raise
-			RAISE;
-	END store_location;
+      store_location2 (p_location_id        => p_location_id,
+                       p_location_type      => p_location_type,
+                       p_elevation           => p_elevation,
+                       p_elev_unit_id        => p_elev_unit_id,
+                       p_vertical_datum     => p_vertical_datum,
+                       p_latitude           => p_latitude,
+                       p_longitude           => p_longitude,
+                       p_horizontal_datum   => p_horizontal_datum,
+                       p_public_name        => p_public_name,
+                       p_long_name           => p_long_name,
+                       p_description        => p_description,
+                       p_time_zone_id        => p_time_zone_id,
+                       p_county_name        => p_county_name,
+                       p_state_initial      => p_state_initial,
+                       p_active              => p_active,
+                       p_ignorenulls        => p_ignorenulls,
+                       p_db_office_id        => p_db_office_id
+                      );
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         NULL;
+      WHEN OTHERS
+      THEN
+         -- Consider logging the error and then re-raise
+         RAISE;
+   END store_location;
 
-	--
-	--
-	PROCEDURE retrieve_location2 (
-		p_location_id				IN OUT VARCHAR2,
-		p_elev_unit_id 			IN 	 VARCHAR2 DEFAULT 'm',
-		p_location_type				OUT VARCHAR2,
-		p_elevation 					OUT NUMBER,
-		p_vertical_datum				OUT VARCHAR2,
-		p_latitude						OUT NUMBER,
-		p_longitude 					OUT NUMBER,
-		p_horizontal_datum			OUT VARCHAR2,
-		p_public_name					OUT VARCHAR2,
-		p_long_name 					OUT VARCHAR2,
-		p_description					OUT VARCHAR2,
-		p_time_zone_id 				OUT VARCHAR2,
-		p_county_name					OUT VARCHAR2,
-		p_state_initial				OUT VARCHAR2,
-		p_active 						OUT VARCHAR2,
-		p_location_kind_id			OUT VARCHAR2,
-		p_map_label 					OUT VARCHAR2,
-		p_published_latitude 		OUT NUMBER,
-		p_published_longitude		OUT NUMBER,
-		p_bounding_office_id 		OUT VARCHAR2,
-		p_nation_id 					OUT VARCHAR2,
-		p_nearest_city 				OUT VARCHAR2,
-		p_alias_cursor 				OUT SYS_REFCURSOR,
-		p_db_office_id 			IN 	 VARCHAR2 DEFAULT NULL
-	)
-	IS
-		l_office_id 				 VARCHAR2 (16);
-		l_office_code				 NUMBER;
-		l_location_code			 NUMBER;
-		l_bounding_office_code	 NUMBER := NULL;
-		l_nation_code				 VARCHAR (2) := NULL;
-		l_cwms_office_code		 NUMBER := cwms_util.get_office_code ('CWMS');
-	--
-	-- l_alias_cursor   sys_refcursor;
-	--
-	BEGIN
-		l_office_id := cwms_util.get_db_office_id (p_db_office_id);
-		--
-		l_office_code := cwms_util.get_db_office_code (l_office_id);
-		l_location_code := get_location_code (l_office_id, p_location_id);
+   --
+   --
+   PROCEDURE retrieve_location2 (
+      p_location_id            IN OUT VARCHAR2,
+      p_elev_unit_id          IN     VARCHAR2 DEFAULT 'm',
+      p_location_type            OUT VARCHAR2,
+      p_elevation                OUT NUMBER,
+      p_vertical_datum            OUT VARCHAR2,
+      p_latitude                  OUT NUMBER,
+      p_longitude                OUT NUMBER,
+      p_horizontal_datum         OUT VARCHAR2,
+      p_public_name               OUT VARCHAR2,
+      p_long_name                OUT VARCHAR2,
+      p_description               OUT VARCHAR2,
+      p_time_zone_id             OUT VARCHAR2,
+      p_county_name               OUT VARCHAR2,
+      p_state_initial            OUT VARCHAR2,
+      p_active                   OUT VARCHAR2,
+      p_location_kind_id         OUT VARCHAR2,
+      p_map_label                OUT VARCHAR2,
+      p_published_latitude       OUT NUMBER,
+      p_published_longitude      OUT NUMBER,
+      p_bounding_office_id       OUT VARCHAR2,
+      p_nation_id                OUT VARCHAR2,
+      p_nearest_city             OUT VARCHAR2,
+      p_alias_cursor             OUT SYS_REFCURSOR,
+      p_db_office_id          IN     VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_office_id              VARCHAR2 (16);
+      l_office_code             NUMBER;
+      l_location_code          NUMBER;
+      l_bounding_office_code    NUMBER := NULL;
+      l_nation_code             VARCHAR (2) := NULL;
+      l_cwms_office_code       NUMBER := cwms_util.get_office_code ('CWMS');
+   --
+   -- l_alias_cursor   sys_refcursor;
+   --
+   BEGIN
+      l_office_id := cwms_util.get_db_office_id (p_db_office_id);
+      --
+      l_office_code := cwms_util.get_db_office_code (l_office_id);
+      l_location_code := get_location_code (l_office_id, p_location_id);
 
-		--
-		SELECT	al.location_id
-		  INTO	p_location_id
-		  FROM	av_loc al
-		 WHERE	al.location_code = l_location_code AND unit_system = 'SI';
+      --
+      SELECT   al.location_id
+        INTO   p_location_id
+        FROM   av_loc al
+       WHERE   al.location_code = l_location_code AND unit_system = 'SI';
 
-		--
-		BEGIN
-			SELECT	apl.location_type,
-						convert_from_to (apl.elevation, 'm', p_elev_unit_id, 'Length') elev,
-						apl.vertical_datum,
-						apl.latitude, apl.longitude, apl.horizontal_datum,
-						apl.public_name, apl.long_name, apl.description,
-						ctz.time_zone_name, cc.county_name, cs.state_initial,
-						apl.active_flag, clk.location_kind_id, apl.map_label,
-						apl.published_latitude, apl.published_longitude,
-						apl.office_code, apl.nation_code, apl.nearest_city
-			  INTO	p_location_type, p_elevation, p_vertical_datum, p_latitude, p_longitude,
-						p_horizontal_datum, p_public_name, p_long_name,
-						p_description, p_time_zone_id, p_county_name,
-						p_state_initial, p_active, p_location_kind_id, p_map_label,
-						p_published_latitude, p_published_longitude,
-						l_bounding_office_code, l_nation_code, p_nearest_city
-			  FROM	at_physical_location apl,
-						cwms_county cc,
-						cwms_state cs,
-						cwms_time_zone ctz,
-						cwms_location_kind clk
-			 WHERE		 NVL (apl.county_code, 0) = cc.county_code
-						AND NVL (cc.state_code, 0) = cs.state_code
-						AND NVL (apl.time_zone_code, 0) = ctz.time_zone_code
-						AND clk.location_kind_code = apl.location_kind
-						AND apl.location_code = l_location_code;
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				NULL;
-		END;
+      --
+      BEGIN
+         SELECT   apl.location_type,
+                  convert_from_to (apl.elevation, 'm', p_elev_unit_id, 'Length') elev,
+                  apl.vertical_datum,
+                  apl.latitude, apl.longitude, apl.horizontal_datum,
+                  apl.public_name, apl.long_name, apl.description,
+                  ctz.time_zone_name, cc.county_name, cs.state_initial,
+                  apl.active_flag, clk.location_kind_id, apl.map_label,
+                  apl.published_latitude, apl.published_longitude,
+                  apl.office_code, apl.nation_code, apl.nearest_city
+           INTO   p_location_type, p_elevation, p_vertical_datum, p_latitude, p_longitude,
+                  p_horizontal_datum, p_public_name, p_long_name,
+                  p_description, p_time_zone_id, p_county_name,
+                  p_state_initial, p_active, p_location_kind_id, p_map_label,
+                  p_published_latitude, p_published_longitude,
+                  l_bounding_office_code, l_nation_code, p_nearest_city
+           FROM   at_physical_location apl,
+                  cwms_county cc,
+                  cwms_state cs,
+                  cwms_time_zone ctz,
+                  cwms_location_kind clk
+          WHERE       NVL (apl.county_code, 0) = cc.county_code
+                  AND NVL (cc.state_code, 0) = cs.state_code
+                  AND NVL (apl.time_zone_code, 0) = ctz.time_zone_code
+                  AND clk.location_kind_code = apl.location_kind
+                  AND apl.location_code = l_location_code;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            NULL;
+      END;
 
-		IF l_bounding_office_code IS NULL
-		THEN
-			p_bounding_office_id := NULL;
-		ELSE
-			SELECT	office_id
-			  INTO	p_bounding_office_id
-			  FROM	cwms_office
-			 WHERE	office_code = l_bounding_office_code;
-		END IF;
+      IF l_bounding_office_code IS NULL
+      THEN
+         p_bounding_office_id := NULL;
+      ELSE
+         SELECT   office_id
+           INTO   p_bounding_office_id
+           FROM   cwms_office
+          WHERE   office_code = l_bounding_office_code;
+      END IF;
 
-		IF l_nation_code IS NULL
-		THEN
-			p_nation_id := NULL;
-		ELSE
-			SELECT	nation_id
-			  INTO	p_nation_id
-			  FROM	cwms_nation
-			 WHERE	nation_code = l_nation_code;
-		END IF;
+      IF l_nation_code IS NULL
+      THEN
+         p_nation_id := NULL;
+      ELSE
+         SELECT   nation_id
+           INTO   p_nation_id
+           FROM   cwms_nation
+          WHERE   nation_code = l_nation_code;
+      END IF;
 
-		--
-		--   cwms_cat.cat_loc_aliases (l_alias_cursor,
-		--  p_location_id,
-		--  NULL,
-		--  'F',
-		--  l_office_id
-		--   );
-		cwms_cat.cat_loc_aliases (p_cwms_cat			 => p_alias_cursor,
-										  p_location_id		 => p_location_id,
-										  p_loc_category_id	 => NULL,
-										  p_loc_group_id		 => NULL,
-										  p_abbreviated		 => 'T',
-										  p_db_office_id		 => l_office_id
-										 );
-	--
-	-- p_alias_cursor := l_alias_cursor;
-	--
-	--
-	END retrieve_location2;
+      --
+      --   cwms_cat.cat_loc_aliases (l_alias_cursor,
+      --  p_location_id,
+      --  NULL,
+      --  'F',
+      --  l_office_id
+      --   );
+      cwms_cat.cat_loc_aliases (p_cwms_cat          => p_alias_cursor,
+                                p_location_id       => p_location_id,
+                                p_loc_category_id    => NULL,
+                                p_loc_group_id       => NULL,
+                                p_abbreviated       => 'T',
+                                p_db_office_id       => l_office_id
+                               );
+   --
+   -- p_alias_cursor := l_alias_cursor;
+   --
+   --
+   END retrieve_location2;
                                                                        
    function adjust_location_elevation(
       p_location      in out nocopy location_obj_t,
@@ -4133,1165 +4133,1165 @@ AS
       return l_body;
    end retrieve_locations_text_f;
    
-	--
-	--********************************************************************** -
-	--********************************************************************** -
-	--
-	-- RETRIEVE_LOCATION provides backward compatiblity for the dbi. It will update a
-	-- location if it already exists by calling update_loc or create a new location
-	-- by calling create_loc.
-	--
-	--*---------------------------------------------------------------------*-
-	--
-	PROCEDURE retrieve_location (
-		p_location_id			IN OUT VARCHAR2,
-		p_elev_unit_id 		IN 	 VARCHAR2 DEFAULT 'm',
-		p_location_type			OUT VARCHAR2,
-		p_elevation 				OUT NUMBER,
-		p_vertical_datum			OUT VARCHAR2,
-		p_latitude					OUT NUMBER,
-		p_longitude 				OUT NUMBER,
-		p_horizontal_datum		OUT VARCHAR2,
-		p_public_name				OUT VARCHAR2,
-		p_long_name 				OUT VARCHAR2,
-		p_description				OUT VARCHAR2,
-		p_time_zone_id 			OUT VARCHAR2,
-		p_county_name				OUT VARCHAR2,
-		p_state_initial			OUT VARCHAR2,
-		p_active 					OUT VARCHAR2,
-		p_alias_cursor 			OUT SYS_REFCURSOR,
-		p_db_office_id 		IN 	 VARCHAR2 DEFAULT NULL
-	)
-	IS
-		l_location_kind_id		cwms_location_kind.location_kind_id%TYPE;
-		l_map_label 				at_physical_location.map_label%TYPE;
-		l_published_latitude 	at_physical_location.published_latitude%TYPE;
-		l_published_longitude	at_physical_location.published_longitude%TYPE;
-		l_bounding_office_id 	cwms_office.office_id%TYPE;
-		l_nation_id 				cwms_nation.nation_id%TYPE;
-		l_nearest_city 			at_physical_location.nearest_city%TYPE;
-	BEGIN
-		retrieve_location2 (p_location_id,
-								  p_elev_unit_id,
-								  p_location_type,
-								  p_elevation,
-								  p_vertical_datum,
-								  p_latitude,
-								  p_longitude,
-								  p_horizontal_datum,
-								  p_public_name,
-								  p_long_name,
-								  p_description,
-								  p_time_zone_id,
-								  p_county_name,
-								  p_state_initial,
-								  p_active,
-								  l_location_kind_id,
-								  l_map_label,
-								  l_published_latitude,
-								  l_published_longitude,
-								  l_bounding_office_id,
-								  l_nation_id,
-								  l_nearest_city,
-								  p_alias_cursor,
-								  p_db_office_id
-								 );
-	END retrieve_location;
+   --
+   --********************************************************************** -
+   --********************************************************************** -
+   --
+   -- RETRIEVE_LOCATION provides backward compatiblity for the dbi. It will update a
+   -- location if it already exists by calling update_loc or create a new location
+   -- by calling create_loc.
+   --
+   --*---------------------------------------------------------------------*-
+   --
+   PROCEDURE retrieve_location (
+      p_location_id         IN OUT VARCHAR2,
+      p_elev_unit_id       IN     VARCHAR2 DEFAULT 'm',
+      p_location_type         OUT VARCHAR2,
+      p_elevation             OUT NUMBER,
+      p_vertical_datum         OUT VARCHAR2,
+      p_latitude               OUT NUMBER,
+      p_longitude             OUT NUMBER,
+      p_horizontal_datum      OUT VARCHAR2,
+      p_public_name            OUT VARCHAR2,
+      p_long_name             OUT VARCHAR2,
+      p_description            OUT VARCHAR2,
+      p_time_zone_id          OUT VARCHAR2,
+      p_county_name            OUT VARCHAR2,
+      p_state_initial         OUT VARCHAR2,
+      p_active                OUT VARCHAR2,
+      p_alias_cursor          OUT SYS_REFCURSOR,
+      p_db_office_id       IN     VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_location_kind_id      cwms_location_kind.location_kind_id%TYPE;
+      l_map_label             at_physical_location.map_label%TYPE;
+      l_published_latitude    at_physical_location.published_latitude%TYPE;
+      l_published_longitude   at_physical_location.published_longitude%TYPE;
+      l_bounding_office_id    cwms_office.office_id%TYPE;
+      l_nation_id             cwms_nation.nation_id%TYPE;
+      l_nearest_city          at_physical_location.nearest_city%TYPE;
+   BEGIN
+      retrieve_location2 (p_location_id,
+                          p_elev_unit_id,
+                          p_location_type,
+                          p_elevation,
+                          p_vertical_datum,
+                          p_latitude,
+                          p_longitude,
+                          p_horizontal_datum,
+                          p_public_name,
+                          p_long_name,
+                          p_description,
+                          p_time_zone_id,
+                          p_county_name,
+                          p_state_initial,
+                          p_active,
+                          l_location_kind_id,
+                          l_map_label,
+                          l_published_latitude,
+                          l_published_longitude,
+                          l_bounding_office_id,
+                          l_nation_id,
+                          l_nearest_city,
+                          p_alias_cursor,
+                          p_db_office_id
+                         );
+   END retrieve_location;
 
-	--------------------------------------------------------------------------------
-	-- FUNCTION get_local_timezone
-	--------------------------------------------------------------------------------
-	FUNCTION get_local_timezone (p_location_code IN NUMBER)
-		RETURN VARCHAR2
-	IS
-		l_local_tz	 VARCHAR2 (28);
-	BEGIN
-		SELECT	time_zone_name
-		  INTO	l_local_tz
-		  FROM	cwms_time_zone ctz, at_physical_location atp
-		 WHERE	atp.location_code = p_location_code
-					AND ctz.time_zone_code = NVL (atp.time_zone_code, 0);
+   --------------------------------------------------------------------------------
+   -- FUNCTION get_local_timezone
+   --------------------------------------------------------------------------------
+   FUNCTION get_local_timezone (p_location_code IN NUMBER)
+      RETURN VARCHAR2
+   IS
+      l_local_tz    VARCHAR2 (28);
+   BEGIN
+      SELECT   time_zone_name
+        INTO   l_local_tz
+        FROM   cwms_time_zone ctz, at_physical_location atp
+       WHERE   atp.location_code = p_location_code
+               AND ctz.time_zone_code = NVL (atp.time_zone_code, 0);
 
-		IF l_local_tz = 'Unknown or Not Applicable'
-		THEN
-			l_local_tz := 'UTC';
-		END IF;
+      IF l_local_tz = 'Unknown or Not Applicable'
+      THEN
+         l_local_tz := 'UTC';
+      END IF;
 
-		RETURN l_local_tz;
-	END get_local_timezone;
+      RETURN l_local_tz;
+   END get_local_timezone;
 
-	--------------------------------------------------------------------------------
-	-- FUNCTION get_local_timezone
-	--------------------------------------------------------------------------------
-	function get_local_timezone (
-      p_location_id	in varchar2,
-		p_office_id		in varchar2)
-		return varchar2
-	is
+   --------------------------------------------------------------------------------
+   -- FUNCTION get_local_timezone
+   --------------------------------------------------------------------------------
+   function get_local_timezone (
+      p_location_id   in varchar2,
+      p_office_id      in varchar2)
+      return varchar2
+   is
    begin
       return get_local_timezone(get_location_code(p_office_id, p_location_id, 'T'));
    end get_local_timezone;
 
-	FUNCTION get_loc_category_code (p_loc_category_id	 IN VARCHAR2,
-											  p_db_office_code	 IN NUMBER
-											 )
-		RETURN NUMBER
-	IS
-		l_loc_category_code	 NUMBER;
-	BEGIN
-		BEGIN
-			SELECT	atlc.loc_category_code
-			  INTO	l_loc_category_code
-			  FROM	at_loc_category atlc
-			 WHERE	atlc.db_office_code IN (53, p_db_office_code)
-						AND UPPER (atlc.loc_category_id) =
-								 UPPER (TRIM (p_loc_category_id));
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				cwms_err.raise ('ITEM_DOES_NOT_EXIST',
-									 'Category id: ',
-									 p_loc_category_id
-									);
-		END;
+   FUNCTION get_loc_category_code (p_loc_category_id    IN VARCHAR2,
+                                   p_db_office_code    IN NUMBER
+                                  )
+      RETURN NUMBER
+   IS
+      l_loc_category_code    NUMBER;
+   BEGIN
+      BEGIN
+         SELECT   atlc.loc_category_code
+           INTO   l_loc_category_code
+           FROM   at_loc_category atlc
+          WHERE   atlc.db_office_code IN (53, p_db_office_code)
+                  AND UPPER (atlc.loc_category_id) =
+                         UPPER (TRIM (p_loc_category_id));
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.raise ('ITEM_DOES_NOT_EXIST',
+                            'Category id: ',
+                            p_loc_category_id
+                           );
+      END;
 
-		RETURN l_loc_category_code;
-	END get_loc_category_code;
+      RETURN l_loc_category_code;
+   END get_loc_category_code;
 
-	FUNCTION get_loc_group_code (p_loc_category_id	 IN VARCHAR2,
-										  p_loc_group_id		 IN VARCHAR2,
-										  p_db_office_code	 IN NUMBER
-										 )
-		RETURN NUMBER
-	IS
-		l_loc_category_code	 NUMBER;
-		l_loc_group_code		 NUMBER;
-	BEGIN
-		l_loc_category_code :=
-			get_loc_category_code (p_loc_category_id, p_db_office_code);
+   FUNCTION get_loc_group_code (p_loc_category_id    IN VARCHAR2,
+                                p_loc_group_id       IN VARCHAR2,
+                                p_db_office_code    IN NUMBER
+                               )
+      RETURN NUMBER
+   IS
+      l_loc_category_code    NUMBER;
+      l_loc_group_code       NUMBER;
+   BEGIN
+      l_loc_category_code :=
+         get_loc_category_code (p_loc_category_id, p_db_office_code);
 
-		BEGIN
-			SELECT	loc_group_code
-			  INTO	l_loc_group_code
-			  FROM	at_loc_group atlg
-			 WHERE		 atlg.loc_category_code = l_loc_category_code
-						AND UPPER (atlg.loc_group_id) = UPPER (p_loc_group_id)
-						AND db_office_code IN (53, p_db_office_code);
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				cwms_err.raise ('ITEM_DOES_NOT_EXIST',
-									 'group id: ',
-									 p_loc_group_id
-									);
-		END;
+      BEGIN
+         SELECT   loc_group_code
+           INTO   l_loc_group_code
+           FROM   at_loc_group atlg
+          WHERE       atlg.loc_category_code = l_loc_category_code
+                  AND UPPER (atlg.loc_group_id) = UPPER (p_loc_group_id)
+                  AND db_office_code IN (53, p_db_office_code);
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.raise ('ITEM_DOES_NOT_EXIST',
+                            'group id: ',
+                            p_loc_group_id
+                           );
+      END;
 
-		RETURN l_loc_group_code;
-	END get_loc_group_code;
+      RETURN l_loc_group_code;
+   END get_loc_group_code;
 
-	PROCEDURE store_loc_category (
-		p_loc_category_id 	 IN VARCHAR2,
-		p_loc_category_desc	 IN VARCHAR2 DEFAULT NULL,
-		p_fail_if_exists		 IN VARCHAR2 DEFAULT 'F',
-		p_ignore_null			 IN VARCHAR2 DEFAULT 'T',
-		p_db_office_id 		 IN VARCHAR2 DEFAULT NULL
-	)
-	IS
-		l_tmp   NUMBER;
-	BEGIN
-		l_tmp :=
-			store_loc_category_f (p_loc_category_id,
-										 p_loc_category_desc,
-										 p_fail_if_exists,
-										 p_ignore_null,
-										 p_db_office_id
-										);
-	END store_loc_category;
+   PROCEDURE store_loc_category (
+      p_loc_category_id     IN VARCHAR2,
+      p_loc_category_desc    IN VARCHAR2 DEFAULT NULL,
+      p_fail_if_exists       IN VARCHAR2 DEFAULT 'F',
+      p_ignore_null          IN VARCHAR2 DEFAULT 'T',
+      p_db_office_id        IN VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_tmp   NUMBER;
+   BEGIN
+      l_tmp :=
+         store_loc_category_f (p_loc_category_id,
+                               p_loc_category_desc,
+                               p_fail_if_exists,
+                               p_ignore_null,
+                               p_db_office_id
+                              );
+   END store_loc_category;
 
-	FUNCTION store_loc_category_f (
-		p_loc_category_id 	 IN VARCHAR2,
-		p_loc_category_desc	 IN VARCHAR2 DEFAULT NULL,
-		p_fail_if_exists		 IN VARCHAR2 DEFAULT 'F',
-		p_ignore_null			 IN VARCHAR2 DEFAULT 'T',
-		p_db_office_id 		 IN VARCHAR2 DEFAULT NULL
-	)
-		RETURN NUMBER
-	IS
-		l_db_office_id 		 VARCHAR2 (16);
-		l_db_office_code		 NUMBER;
-		l_loc_category_id 	 VARCHAR2 (32) := TRIM (p_loc_category_id);
-		l_loc_category_desc	 VARCHAR2 (128) := TRIM (p_loc_category_desc);
-		l_fail_if_exists		 BOOLEAN := cwms_util.is_true (p_fail_if_exists);
-		l_ignore_null			 BOOLEAN := cwms_util.is_true (p_ignore_null);
-		l_rec 					 at_loc_category%ROWTYPE;
-		l_exists 				 BOOLEAN;
-	BEGIN
-		l_db_office_id := NVL (UPPER (p_db_office_id), cwms_util.user_office_id);
-		l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+   FUNCTION store_loc_category_f (
+      p_loc_category_id     IN VARCHAR2,
+      p_loc_category_desc    IN VARCHAR2 DEFAULT NULL,
+      p_fail_if_exists       IN VARCHAR2 DEFAULT 'F',
+      p_ignore_null          IN VARCHAR2 DEFAULT 'T',
+      p_db_office_id        IN VARCHAR2 DEFAULT NULL
+   )
+      RETURN NUMBER
+   IS
+      l_db_office_id        VARCHAR2 (16);
+      l_db_office_code       NUMBER;
+      l_loc_category_id     VARCHAR2 (32) := TRIM (p_loc_category_id);
+      l_loc_category_desc    VARCHAR2 (128) := TRIM (p_loc_category_desc);
+      l_fail_if_exists       BOOLEAN := cwms_util.is_true (p_fail_if_exists);
+      l_ignore_null          BOOLEAN := cwms_util.is_true (p_ignore_null);
+      l_rec                 at_loc_category%ROWTYPE;
+      l_exists              BOOLEAN;
+   BEGIN
+      l_db_office_id := NVL (UPPER (p_db_office_id), cwms_util.user_office_id);
+      l_db_office_code := cwms_util.get_office_code (l_db_office_id);
 
-		-------------------------------------------
-		-- determine whether the category exists --
-		-------------------------------------------
-		BEGIN
-			SELECT	*
-			  INTO	l_rec
-			  FROM	at_loc_category
-			 WHERE	UPPER (loc_category_id) = UPPER (l_loc_category_id)
-						AND db_office_code IN
-								 (l_db_office_code, cwms_util.db_office_code_all);
+      -------------------------------------------
+      -- determine whether the category exists --
+      -------------------------------------------
+      BEGIN
+         SELECT   *
+           INTO   l_rec
+           FROM   at_loc_category
+          WHERE   UPPER (loc_category_id) = UPPER (l_loc_category_id)
+                  AND db_office_code IN
+                         (l_db_office_code, cwms_util.db_office_code_all);
 
-			l_exists := TRUE;
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				l_exists := FALSE;
-		END;
+         l_exists := TRUE;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            l_exists := FALSE;
+      END;
 
-		--------------------------------
-		-- fail if conditions warrant --
-		--------------------------------
-		IF l_exists
-		THEN
-			IF l_fail_if_exists
-			THEN
-				cwms_err.raise (
-					'ITEM_ALREADY_EXISTS',
-						l_db_office_id
-					|| '/'
-					|| l_loc_category_id
-					|| ' already exists.'
-				);
-			ELSIF l_rec.db_office_code = cwms_util.db_office_code_all
-			THEN
-				-------------------------------------------------------
-				-- this is OK if we're not trying to update anything --
-				-------------------------------------------------------
-				IF (l_ignore_null AND p_loc_category_desc IS NULL)
-					OR (p_loc_category_desc = l_rec.loc_category_desc)
-				THEN
-					RETURN l_rec.loc_category_code;
-				END IF;
+      --------------------------------
+      -- fail if conditions warrant --
+      --------------------------------
+      IF l_exists
+      THEN
+         IF l_fail_if_exists
+         THEN
+            cwms_err.raise (
+               'ITEM_ALREADY_EXISTS',
+                  l_db_office_id
+               || '/'
+               || l_loc_category_id
+               || ' already exists.'
+            );
+         ELSIF l_rec.db_office_code = cwms_util.db_office_code_all
+         THEN
+            -------------------------------------------------------
+            -- this is OK if we're not trying to update anything --
+            -------------------------------------------------------
+            IF (l_ignore_null AND p_loc_category_desc IS NULL)
+               OR (p_loc_category_desc = l_rec.loc_category_desc)
+            THEN
+               RETURN l_rec.loc_category_code;
+            END IF;
 
-				----------------------------------
-				-- can't change a CWMS category --
-				----------------------------------
-				cwms_err.raise (
-					'ITEM_ALREADY_EXISTS',
-						'Cannot store the '
-					|| l_loc_category_id
-					|| ' category because it already exists as a system category.'
-				);
-			END IF;
-		END IF;
+            ----------------------------------
+            -- can't change a CWMS category --
+            ----------------------------------
+            cwms_err.raise (
+               'ITEM_ALREADY_EXISTS',
+                  'Cannot store the '
+               || l_loc_category_id
+               || ' category because it already exists as a system category.'
+            );
+         END IF;
+      END IF;
 
-		---------------------------------
-		-- insert or update the record --
-		---------------------------------
-		IF l_exists
-		THEN
-			IF NOT (l_ignore_null AND p_loc_category_desc IS NULL)
-			THEN
-				l_rec.loc_category_desc := p_loc_category_desc;
-			END IF;
+      ---------------------------------
+      -- insert or update the record --
+      ---------------------------------
+      IF l_exists
+      THEN
+         IF NOT (l_ignore_null AND p_loc_category_desc IS NULL)
+         THEN
+            l_rec.loc_category_desc := p_loc_category_desc;
+         END IF;
 
-			UPDATE	at_loc_category
-				SET	row = l_rec
-			 WHERE	loc_category_code = l_rec.loc_category_code;
-		ELSE
-			l_rec.loc_category_code := cwms_seq.NEXTVAL;
-			l_rec.loc_category_id := p_loc_category_id;
-			l_rec.loc_category_desc := p_loc_category_desc;
-			l_rec.db_office_code := l_db_office_code;
+         UPDATE   at_loc_category
+            SET   row = l_rec
+          WHERE   loc_category_code = l_rec.loc_category_code;
+      ELSE
+         l_rec.loc_category_code := cwms_seq.NEXTVAL;
+         l_rec.loc_category_id := p_loc_category_id;
+         l_rec.loc_category_desc := p_loc_category_desc;
+         l_rec.db_office_code := l_db_office_code;
 
-			INSERT INTO   at_loc_category
-				  VALUES   l_rec;
-		END IF;
+         INSERT INTO   at_loc_category
+              VALUES   l_rec;
+      END IF;
 
-		RETURN l_rec.loc_category_code;
-	END store_loc_category_f;
+      RETURN l_rec.loc_category_code;
+   END store_loc_category_f;
 
-	PROCEDURE create_loc_category (
-		p_loc_category_id 	 IN VARCHAR2,
-		p_loc_category_desc	 IN VARCHAR2 DEFAULT NULL,
-		p_db_office_id 		 IN VARCHAR2 DEFAULT NULL
-	)
-	IS
-	BEGIN
-		store_loc_category (p_loc_category_id,
-								  p_loc_category_desc,
-								  'T',
-								  'F',
-								  p_db_office_id
-								 );
-	END create_loc_category;
+   PROCEDURE create_loc_category (
+      p_loc_category_id     IN VARCHAR2,
+      p_loc_category_desc    IN VARCHAR2 DEFAULT NULL,
+      p_db_office_id        IN VARCHAR2 DEFAULT NULL
+   )
+   IS
+   BEGIN
+      store_loc_category (p_loc_category_id,
+                          p_loc_category_desc,
+                          'T',
+                          'F',
+                          p_db_office_id
+                         );
+   END create_loc_category;
 
-	FUNCTION create_loc_category_f (
-		p_loc_category_id 	 IN VARCHAR2,
-		p_loc_category_desc	 IN VARCHAR2 DEFAULT NULL,
-		p_db_office_id 		 IN VARCHAR2 DEFAULT NULL
-	)
-		RETURN NUMBER
-	IS
-	BEGIN
-		RETURN store_loc_category_f (p_loc_category_id,
-											  p_loc_category_desc,
-											  'T',
-											  'F',
-											  p_db_office_id
-											 );
-	END create_loc_category_f;
+   FUNCTION create_loc_category_f (
+      p_loc_category_id     IN VARCHAR2,
+      p_loc_category_desc    IN VARCHAR2 DEFAULT NULL,
+      p_db_office_id        IN VARCHAR2 DEFAULT NULL
+   )
+      RETURN NUMBER
+   IS
+   BEGIN
+      RETURN store_loc_category_f (p_loc_category_id,
+                                   p_loc_category_desc,
+                                   'T',
+                                   'F',
+                                   p_db_office_id
+                                  );
+   END create_loc_category_f;
 
-	PROCEDURE store_loc_group (p_loc_category_id 	 IN VARCHAR2,
-										p_loc_group_id 		 IN VARCHAR2,
-										p_loc_group_desc		 IN VARCHAR2 DEFAULT NULL,
-										p_fail_if_exists		 IN VARCHAR2 DEFAULT 'F',
-										p_ignore_nulls 		 IN VARCHAR2 DEFAULT 'T',
-										p_shared_alias_id 	 IN VARCHAR2 DEFAULT NULL,
-										p_shared_loc_ref_id	 IN VARCHAR2 DEFAULT NULL,
-										p_db_office_id 		 IN VARCHAR2 DEFAULT NULL
-									  )
-	IS
-		l_rec 				 at_loc_group%ROWTYPE;
-		l_office_code		 NUMBER (10)
-									 := cwms_util.get_db_office_code (p_db_office_id);
-		l_fail_if_exists	 BOOLEAN := cwms_util.is_true (p_fail_if_exists);
-		l_ignore_nulls 	 BOOLEAN := cwms_util.is_true (p_ignore_nulls);
-		l_exists 			 BOOLEAN;
-	BEGIN
-		-----------------------------------------
-		-- determine whether the record exists --
-		-----------------------------------------
-		BEGIN
-			SELECT	g.loc_group_code, g.loc_category_code, g.loc_group_id,
-						g.loc_group_desc, g.db_office_code, g.shared_loc_alias_id,
-						g.shared_loc_ref_code
-			  INTO	l_rec
-			  FROM	at_loc_group g, at_loc_category c
-			 WHERE		 UPPER (c.loc_category_id) = UPPER (p_loc_category_id)
-						AND g.loc_category_code = c.loc_category_code
-						AND UPPER (g.loc_group_id) = UPPER (p_loc_group_id)
-						AND g.db_office_code IN
-								 (l_office_code, cwms_util.db_office_code_all);
+   PROCEDURE store_loc_group (p_loc_category_id     IN VARCHAR2,
+                              p_loc_group_id        IN VARCHAR2,
+                              p_loc_group_desc       IN VARCHAR2 DEFAULT NULL,
+                              p_fail_if_exists       IN VARCHAR2 DEFAULT 'F',
+                              p_ignore_nulls        IN VARCHAR2 DEFAULT 'T',
+                              p_shared_alias_id     IN VARCHAR2 DEFAULT NULL,
+                              p_shared_loc_ref_id    IN VARCHAR2 DEFAULT NULL,
+                              p_db_office_id        IN VARCHAR2 DEFAULT NULL
+                             )
+   IS
+      l_rec              at_loc_group%ROWTYPE;
+      l_office_code       NUMBER (10)
+                            := cwms_util.get_db_office_code (p_db_office_id);
+      l_fail_if_exists    BOOLEAN := cwms_util.is_true (p_fail_if_exists);
+      l_ignore_nulls     BOOLEAN := cwms_util.is_true (p_ignore_nulls);
+      l_exists           BOOLEAN;
+   BEGIN
+      -----------------------------------------
+      -- determine whether the record exists --
+      -----------------------------------------
+      BEGIN
+         SELECT   g.loc_group_code, g.loc_category_code, g.loc_group_id,
+                  g.loc_group_desc, g.db_office_code, g.shared_loc_alias_id,
+                  g.shared_loc_ref_code
+           INTO   l_rec
+           FROM   at_loc_group g, at_loc_category c
+          WHERE       UPPER (c.loc_category_id) = UPPER (p_loc_category_id)
+                  AND g.loc_category_code = c.loc_category_code
+                  AND UPPER (g.loc_group_id) = UPPER (p_loc_group_id)
+                  AND g.db_office_code IN
+                         (l_office_code, cwms_util.db_office_code_all);
 
-			l_exists := TRUE;
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				l_exists := FALSE;
-		END;
+         l_exists := TRUE;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            l_exists := FALSE;
+      END;
 
-		--------------------------------
-		-- fail if conditions warrant --
-		--------------------------------
-		IF l_exists
-		THEN
-			IF l_fail_if_exists
-			THEN
-				cwms_err.raise (
-					'ITEM_ALREADY_EXISTS',
-						'CWMS location group '
-					|| NVL (UPPER (p_db_office_id), cwms_util.user_office_id)
-					|| '/'
-					|| p_loc_category_id
-					|| '/'
-					|| p_loc_group_id
-				);
-			END IF;
+      --------------------------------
+      -- fail if conditions warrant --
+      --------------------------------
+      IF l_exists
+      THEN
+         IF l_fail_if_exists
+         THEN
+            cwms_err.raise (
+               'ITEM_ALREADY_EXISTS',
+                  'CWMS location group '
+               || NVL (UPPER (p_db_office_id), cwms_util.user_office_id)
+               || '/'
+               || p_loc_category_id
+               || '/'
+               || p_loc_group_id
+            );
+         END IF;
 
-			IF l_rec.db_office_code = cwms_util.db_office_code_all
-			THEN
-				cwms_err.raise (
-					'ITEM_ALREADY_EXISTS',
-					'Cannot store location group because it is a CWMS system item.'
-				);
-			END IF;
-		END IF;
+         IF l_rec.db_office_code = cwms_util.db_office_code_all
+         THEN
+            cwms_err.raise (
+               'ITEM_ALREADY_EXISTS',
+               'Cannot store location group because it is a CWMS system item.'
+            );
+         END IF;
+      END IF;
 
-		---------------------------------
-		-- insert or update the record --
-		---------------------------------
-		IF l_exists
-		THEN
-			IF NOT (l_ignore_nulls AND p_loc_group_desc IS NULL)
-			THEN
-				l_rec.loc_group_desc := p_loc_group_desc;
-			END IF;
+      ---------------------------------
+      -- insert or update the record --
+      ---------------------------------
+      IF l_exists
+      THEN
+         IF NOT (l_ignore_nulls AND p_loc_group_desc IS NULL)
+         THEN
+            l_rec.loc_group_desc := p_loc_group_desc;
+         END IF;
 
-			IF NOT (l_ignore_nulls AND p_shared_alias_id IS NULL)
-			THEN
-				l_rec.shared_loc_alias_id := p_shared_alias_id;
-			END IF;
+         IF NOT (l_ignore_nulls AND p_shared_alias_id IS NULL)
+         THEN
+            l_rec.shared_loc_alias_id := p_shared_alias_id;
+         END IF;
 
-			IF NOT (l_ignore_nulls AND p_shared_loc_ref_id IS NULL)
-			THEN
-				l_rec.shared_loc_ref_code :=
-					cwms_loc.get_location_code (l_office_code,
-														 p_shared_loc_ref_id
-														);
-			END IF;
+         IF NOT (l_ignore_nulls AND p_shared_loc_ref_id IS NULL)
+         THEN
+            l_rec.shared_loc_ref_code :=
+               cwms_loc.get_location_code (l_office_code,
+                                           p_shared_loc_ref_id
+                                          );
+         END IF;
 
-			UPDATE	at_loc_group
-				SET	row = l_rec
-			 WHERE	loc_group_code = l_rec.loc_group_code;
-		ELSE
-			l_rec.loc_group_code := cwms_seq.NEXTVAL;
-			l_rec.loc_category_code :=
-				store_loc_category_f (p_loc_category_id,
-											 NULL,
-											 'F',
-											 'T',
-											 p_db_office_id
-											);
-			l_rec.loc_group_id := p_loc_group_id;
-			l_rec.loc_group_desc := p_loc_group_desc;
-			l_rec.db_office_code := l_office_code;
-			l_rec.shared_loc_alias_id := p_shared_alias_id;
+         UPDATE   at_loc_group
+            SET   row = l_rec
+          WHERE   loc_group_code = l_rec.loc_group_code;
+      ELSE
+         l_rec.loc_group_code := cwms_seq.NEXTVAL;
+         l_rec.loc_category_code :=
+            store_loc_category_f (p_loc_category_id,
+                                  NULL,
+                                  'F',
+                                  'T',
+                                  p_db_office_id
+                                 );
+         l_rec.loc_group_id := p_loc_group_id;
+         l_rec.loc_group_desc := p_loc_group_desc;
+         l_rec.db_office_code := l_office_code;
+         l_rec.shared_loc_alias_id := p_shared_alias_id;
 
-			IF p_shared_loc_ref_id IS NOT NULL
-			THEN
-				l_rec.shared_loc_ref_code :=
-					cwms_loc.get_location_code (l_office_code,
-														 p_shared_loc_ref_id
-														);
-			END IF;
+         IF p_shared_loc_ref_id IS NOT NULL
+         THEN
+            l_rec.shared_loc_ref_code :=
+               cwms_loc.get_location_code (l_office_code,
+                                           p_shared_loc_ref_id
+                                          );
+         END IF;
 
-			INSERT INTO   at_loc_group
-				  VALUES   l_rec;
-		END IF;
-	END store_loc_group;
+         INSERT INTO   at_loc_group
+              VALUES   l_rec;
+      END IF;
+   END store_loc_group;
 
-	PROCEDURE create_loc_group (p_loc_category_id	IN VARCHAR2,
-										 p_loc_group_id		IN VARCHAR2,
-										 p_loc_group_desc 	IN VARCHAR2 DEFAULT NULL,
-										 p_db_office_id		IN VARCHAR2 DEFAULT NULL
-										)
-	IS
-	BEGIN
-		cwms_loc.store_loc_group (p_loc_category_id,
-										  p_loc_group_id,
-										  p_loc_group_desc,
-										  'T',
-										  'F',
-										  NULL,
-										  NULL,
-										  p_db_office_id
-										 );
-	END create_loc_group;
-
-
-	PROCEDURE create_loc_group2 (
-		p_loc_category_id 	 IN VARCHAR2,
-		p_loc_group_id 		 IN VARCHAR2,
-		p_loc_group_desc		 IN VARCHAR2 DEFAULT NULL,
-		p_db_office_id 		 IN VARCHAR2 DEFAULT NULL,
-		p_shared_alias_id 	 IN VARCHAR2 DEFAULT NULL,
-		p_shared_loc_ref_id	 IN VARCHAR2 DEFAULT NULL
-	)
-	IS
-	BEGIN
-		store_loc_group (p_loc_category_id,
-							  p_loc_group_id,
-							  p_loc_group_desc,
-							  'T',
-							  'F',
-							  p_shared_alias_id,
-							  p_shared_loc_ref_id,
-							  p_db_office_id
-							 );
-	END create_loc_group2;
-
-	PROCEDURE rename_loc_group (p_loc_category_id	 IN VARCHAR2,
-										 p_loc_group_id_old	 IN VARCHAR2,
-										 p_loc_group_id_new	 IN VARCHAR2,
-										 p_loc_group_desc 	 IN VARCHAR2 DEFAULT NULL,
-										 p_ignore_null 		 IN VARCHAR2 DEFAULT 'T',
-										 p_db_office_id		 IN VARCHAR2 DEFAULT NULL
-										)
-	IS
-		l_db_office_id 			 VARCHAR2 (16);
-		l_db_office_code			 NUMBER;
-		l_loc_category_code		 NUMBER;
-		l_loc_group_code			 NUMBER;
-		l_loc_group_id_old		 VARCHAR2 (32) := TRIM (p_loc_group_id_old);
-		l_loc_group_id_new		 VARCHAR2 (32) := TRIM (p_loc_group_id_new);
-		l_group_already_exists	 BOOLEAN := FALSE;
-		l_ignore_null				 BOOLEAN;
-	BEGIN
-		IF p_db_office_id IS NULL
-		THEN
-			l_db_office_id := cwms_util.user_office_id;
-		ELSE
-			l_db_office_id := UPPER (p_db_office_id);
-		END IF;
-
-		l_db_office_code := cwms_util.get_office_code (l_db_office_id);
-
-		IF NVL (p_ignore_null, 'T') = 'T'
-		THEN
-			l_ignore_null := TRUE;
-		ELSE
-			l_ignore_null := FALSE;
-		END IF;
-
-		-- Does Category exist?.
-		--
-		BEGIN
-			l_loc_category_code :=
-				get_loc_category_code (p_loc_category_id, l_db_office_code);
-		EXCEPTION
-			WHEN OTHERS
-			THEN
-				cwms_err.raise (
-					'ITEM_DOES_NOT_EXIST',
-					'Category id must exist to rename group id - Category id that does not exist: ',
-					p_loc_category_id
-				);
-		END;
-
-		--
-		-- Does NEW Group id already exist?.
-		BEGIN
-			l_loc_group_code :=
-				get_loc_group_code (p_loc_category_id,
-										  p_loc_group_id_new,
-										  l_db_office_code
-										 );
-			l_group_already_exists := TRUE;
-		EXCEPTION
-			WHEN OTHERS
-			THEN
-				l_group_already_exists := FALSE;
-		END;
-
-		IF l_group_already_exists
-		THEN
-			IF UPPER (l_loc_group_id_old) != UPPER (l_loc_group_id_new)
-			THEN										  -- or there's not a case change...
-				cwms_err.raise (
-					'ITEM_ALREADY_EXISTS',
-					'p_loc_group_id_new already exists - can''t rename to: ',
-					p_loc_group_id_new
-				);
-			END IF;
-		END IF;
-
-		--
-		-- Does OLD Group id exist?.
-		BEGIN
-			l_loc_group_code :=
-				get_loc_group_code (p_loc_category_id,
-										  p_loc_group_id_old,
-										  l_db_office_code
-										 );
-		EXCEPTION
-			WHEN OTHERS
-			THEN
-				cwms_err.raise (
-					'ITEM_DOES_NOT_EXIST',
-					'p_loc_group_id_old does not exist - can''t perform rename of: ',
-					p_loc_group_id_old
-				);
-		END;
-
-		--
-		-- all checks passed, perform the rename...
-		IF p_loc_group_desc IS NULL AND l_ignore_null
-		THEN
-			UPDATE	at_loc_group
-				SET	loc_group_id = l_loc_group_id_new
-			 WHERE	loc_group_code = l_loc_group_code;
-		ELSE
-			UPDATE	at_loc_group
-				SET	loc_group_id = l_loc_group_id_new,
-						loc_group_desc = TRIM (p_loc_group_desc)
-			 WHERE	loc_group_code = l_loc_group_code;
-		END IF;
-	--
-	--
-	END rename_loc_group;
-
-	--
-	--********************************************************************** -
-	--********************************************************************** -
-	--
-	-- STORE_ALIAS   -
-	--
-	--*---------------------------------------------------------------------*-
-	--
-	--   PROCEDURE store_alias (
-	--   p_location_id  IN VARCHAR2,
-	--   p_category_id  IN VARCHAR2,
-	--   p_group_id  IN VARCHAR2,
-	--   p_alias_id  IN VARCHAR2,
-	--   p_db_office_id IN VARCHAR2 DEFAULT NULL
-	--   )
-	--   IS
-	--   l_loc_category_code  NUMBER;
-	--   l_loc_group_code  NUMBER;
-	--   l_location_code   NUMBER;
-	--   l_db_office_id VARCHAR2 (16);
-	--   l_db_office_code  NUMBER;
-	--   l_tmp VARCHAR2 (128);
-	--   BEGIN
-	--   IF p_db_office_id IS NULL
-	--   THEN
-	--   l_db_office_id := cwms_util.user_office_id;
-	--   ELSE
-	--   l_db_office_id := UPPER (p_db_office_id);
-	--   END IF;
-
-	--   l_db_office_code := cwms_util.get_office_code (l_db_office_id);
-
-	--   BEGIN
-	--   l_loc_category_code :=
-	--  get_loc_category_code (p_category_id, l_db_office_code);
-	--   EXCEPTION
-	--   WHEN NO_DATA_FOUND
-	--   THEN
-	--  cwms_err.RAISE ('GENERIC_ERROR',
-	--   'The category id: '
-	--  || p_category_id
-	--  || ' does not exist.'
-	--   );
-	--   END;
-
-	--   DBMS_OUTPUT.put_line ('gk 1');
-
-	--   BEGIN
-	--   l_loc_group_code :=
-	--   get_loc_group_code (p_category_id, p_group_id, l_db_office_code);
-	--   EXCEPTION
-	--   WHEN NO_DATA_FOUND
-	--   THEN
-	--  cwms_err.RAISE ('GENERIC_ERROR',
-	--   'There is no group: '
-	--  || p_group_id
-	--  || ' in the '
-	--  || p_category_id
-	--  || ' category.'
-	--   );
-	--   END;
-
-	--   DBMS_OUTPUT.put_line ('gk 2');
-
-	--   BEGIN
-	--   l_location_code := get_location_code (p_db_office_id, p_location_id);
-	--   EXCEPTION
-	--   WHEN NO_DATA_FOUND
-	--   THEN
-	--  cwms_err.RAISE ('GENERIC_ERROR',
-	--   'The '
-	--  || p_location_id
-	--  || ' location id does not exist.'
-	--   );
-	--   END;
-
-	--   DBMS_OUTPUT.put_line ('gk 3');
-
-	--   BEGIN
-	--   SELECT loc_alias_id
-	--   INTO l_tmp
-	--   FROM at_loc_group_assignment
-	--   WHERE location_code = l_location_code
-	--  AND loc_group_code = l_loc_group_code;
-
-	--   UPDATE at_loc_group_assignment
-	--  SET loc_alias_id = trim(p_alias_id)
-	--   WHERE location_code = l_location_code
-	--  AND loc_group_code = l_loc_group_code;
-	--   EXCEPTION
-	--   WHEN NO_DATA_FOUND
-	--   THEN
-	--  INSERT INTO at_loc_group_assignment
-	--  (loc_group_code, location_code, loc_alias_id
-	--  )
-	--   VALUES (l_loc_group_code, l_location_code, trim(p_alias_id)
-	--  );
-	--   END;
-
-	---- MERGE INTO at_loc_group_assignment a
-	---- USING (SELECT loc_group_code, location_code, loc_alias_id
-	---- FROM at_loc_group_assignment
-	---- WHERE loc_group_code = l_loc_group_code
-	---- AND location_code = l_location_code) b
-	---- ON (  a.loc_group_code = l_loc_group_code
-	---- AND a.location_code = l_location_code)
-	---- WHEN MATCHED THEN
-	---- UPDATE
-	---- SET a.loc_alias_id = p_alias_id
-	---- WHEN NOT MATCHED THEN
-	---- INSERT (loc_group_code, location_code, loc_alias_id)
-	---- VALUES (cwms_seq.NEXTVAL, l_location_code, p_alias_id);
-	--   END;
-
-	--
-	--
-	-- assign_groups is used to assign one or more location_id's --
-	-- to a location group.
-	--
-	--   loc_alias_type AS OBJECT (
-	--   location_id VARCHAR2 (49),
-	--   loc_alias_id  VARCHAR2 (16),
-	--
-	PROCEDURE assign_loc_groups (p_loc_category_id	 IN VARCHAR2,
-										  p_loc_group_id		 IN VARCHAR2,
-										  p_loc_alias_array	 IN loc_alias_array,
-										  p_db_office_id		 IN VARCHAR2 DEFAULT NULL
-										 )
-	IS
-		l_db_office_id 		 VARCHAR2 (16);
-		l_db_office_code		 NUMBER;
-		l_loc_category_code	 NUMBER;
-		l_loc_group_code		 NUMBER;
-		l_location_code		 NUMBER;
-		l_cnt 					 NUMBER;
-	BEGIN
-		IF p_db_office_id IS NULL
-		THEN
-			l_db_office_id := cwms_util.user_office_id;
-		ELSE
-			l_db_office_id := UPPER (p_db_office_id);
-		END IF;
-
-		l_db_office_code := cwms_util.get_office_code (l_db_office_id);
-
-		BEGIN
-			l_loc_category_code :=
-				get_loc_category_code (p_loc_category_id, l_db_office_code);
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				cwms_err.raise (
-					'GENERIC_ERROR',
-					'The category id: ' || p_loc_category_id || ' does not exist.'
-				);
-		END;
-
-		BEGIN
-			l_loc_group_code :=
-				get_loc_group_code (p_loc_category_id,
-										  p_loc_group_id,
-										  l_db_office_code
-										 );
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				cwms_err.raise (
-					'ERROR',
-						'There is no group: '
-					|| p_loc_group_id
-					|| ' in the '
-					|| p_loc_category_id
-					|| ' category.'
-				);
-		END;
+   PROCEDURE create_loc_group (p_loc_category_id   IN VARCHAR2,
+                               p_loc_group_id      IN VARCHAR2,
+                               p_loc_group_desc    IN VARCHAR2 DEFAULT NULL,
+                               p_db_office_id      IN VARCHAR2 DEFAULT NULL
+                              )
+   IS
+   BEGIN
+      cwms_loc.store_loc_group (p_loc_category_id,
+                                p_loc_group_id,
+                                p_loc_group_desc,
+                                'T',
+                                'F',
+                                NULL,
+                                NULL,
+                                p_db_office_id
+                               );
+   END create_loc_group;
 
 
-		FOR i IN 1 .. p_loc_alias_array.COUNT
-		LOOP
-			check_alias_id (p_loc_alias_array (i).loc_alias_id,
-								 p_loc_alias_array (i).location_id,
-								 p_loc_category_id,
-								 p_loc_group_id,
-								 l_db_office_id
-								);
-			l_location_code :=
-				get_location_code (l_db_office_id,
-										 p_loc_alias_array (i).location_id
-										);
+   PROCEDURE create_loc_group2 (
+      p_loc_category_id     IN VARCHAR2,
+      p_loc_group_id        IN VARCHAR2,
+      p_loc_group_desc       IN VARCHAR2 DEFAULT NULL,
+      p_db_office_id        IN VARCHAR2 DEFAULT NULL,
+      p_shared_alias_id     IN VARCHAR2 DEFAULT NULL,
+      p_shared_loc_ref_id    IN VARCHAR2 DEFAULT NULL
+   )
+   IS
+   BEGIN
+      store_loc_group (p_loc_category_id,
+                       p_loc_group_id,
+                       p_loc_group_desc,
+                       'T',
+                       'F',
+                       p_shared_alias_id,
+                       p_shared_loc_ref_id,
+                       p_db_office_id
+                      );
+   END create_loc_group2;
 
-			IF l_location_code IS NULL
-			THEN
-				cwms_err.raise (
-					'ERROR',
-						'Unable to assign the Alias_ID: '
-					|| p_loc_alias_array (i).loc_alias_id
-					|| ' under the '
-					|| p_loc_group_id
-					|| ' Group in the '
-					|| p_loc_category_id
-					|| ' Location Category to the Location_ID: '
-					|| p_loc_alias_array (i).location_id
-					|| ' because that Location ID does not exist for your Office_ID: '
-					|| l_db_office_id
-				);
-			ELSE
-				SELECT	COUNT (*)
-				  INTO	l_cnt
-				  FROM	at_loc_group_assignment
-				 WHERE	location_code = l_location_code
-							AND loc_group_code = l_loc_group_code;
+   PROCEDURE rename_loc_group (p_loc_category_id    IN VARCHAR2,
+                               p_loc_group_id_old    IN VARCHAR2,
+                               p_loc_group_id_new    IN VARCHAR2,
+                               p_loc_group_desc     IN VARCHAR2 DEFAULT NULL,
+                               p_ignore_null        IN VARCHAR2 DEFAULT 'T',
+                               p_db_office_id       IN VARCHAR2 DEFAULT NULL
+                              )
+   IS
+      l_db_office_id           VARCHAR2 (16);
+      l_db_office_code          NUMBER;
+      l_loc_category_code       NUMBER;
+      l_loc_group_code          NUMBER;
+      l_loc_group_id_old       VARCHAR2 (32) := TRIM (p_loc_group_id_old);
+      l_loc_group_id_new       VARCHAR2 (32) := TRIM (p_loc_group_id_new);
+      l_group_already_exists    BOOLEAN := FALSE;
+      l_ignore_null             BOOLEAN;
+   BEGIN
+      IF p_db_office_id IS NULL
+      THEN
+         l_db_office_id := cwms_util.user_office_id;
+      ELSE
+         l_db_office_id := UPPER (p_db_office_id);
+      END IF;
 
-				IF l_cnt = 0
-				THEN
-					INSERT
-					  INTO	at_loc_group_assignment (location_code,
-																 loc_group_code,
-																 loc_attribute,
-																 loc_alias_id,
-																 loc_ref_code,
+      l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+
+      IF NVL (p_ignore_null, 'T') = 'T'
+      THEN
+         l_ignore_null := TRUE;
+      ELSE
+         l_ignore_null := FALSE;
+      END IF;
+
+      -- Does Category exist?.
+      --
+      BEGIN
+         l_loc_category_code :=
+            get_loc_category_code (p_loc_category_id, l_db_office_code);
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            cwms_err.raise (
+               'ITEM_DOES_NOT_EXIST',
+               'Category id must exist to rename group id - Category id that does not exist: ',
+               p_loc_category_id
+            );
+      END;
+
+      --
+      -- Does NEW Group id already exist?.
+      BEGIN
+         l_loc_group_code :=
+            get_loc_group_code (p_loc_category_id,
+                                p_loc_group_id_new,
+                                l_db_office_code
+                               );
+         l_group_already_exists := TRUE;
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            l_group_already_exists := FALSE;
+      END;
+
+      IF l_group_already_exists
+      THEN
+         IF UPPER (l_loc_group_id_old) != UPPER (l_loc_group_id_new)
+         THEN                                -- or there's not a case change...
+            cwms_err.raise (
+               'ITEM_ALREADY_EXISTS',
+               'p_loc_group_id_new already exists - can''t rename to: ',
+               p_loc_group_id_new
+            );
+         END IF;
+      END IF;
+
+      --
+      -- Does OLD Group id exist?.
+      BEGIN
+         l_loc_group_code :=
+            get_loc_group_code (p_loc_category_id,
+                                p_loc_group_id_old,
+                                l_db_office_code
+                               );
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            cwms_err.raise (
+               'ITEM_DOES_NOT_EXIST',
+               'p_loc_group_id_old does not exist - can''t perform rename of: ',
+               p_loc_group_id_old
+            );
+      END;
+
+      --
+      -- all checks passed, perform the rename...
+      IF p_loc_group_desc IS NULL AND l_ignore_null
+      THEN
+         UPDATE   at_loc_group
+            SET   loc_group_id = l_loc_group_id_new
+          WHERE   loc_group_code = l_loc_group_code;
+      ELSE
+         UPDATE   at_loc_group
+            SET   loc_group_id = l_loc_group_id_new,
+                  loc_group_desc = TRIM (p_loc_group_desc)
+          WHERE   loc_group_code = l_loc_group_code;
+      END IF;
+   --
+   --
+   END rename_loc_group;
+
+   --
+   --********************************************************************** -
+   --********************************************************************** -
+   --
+   -- STORE_ALIAS   -
+   --
+   --*---------------------------------------------------------------------*-
+   --
+   --   PROCEDURE store_alias (
+   --   p_location_id  IN VARCHAR2,
+   --   p_category_id  IN VARCHAR2,
+   --   p_group_id  IN VARCHAR2,
+   --   p_alias_id  IN VARCHAR2,
+   --   p_db_office_id IN VARCHAR2 DEFAULT NULL
+   --   )
+   --   IS
+   --   l_loc_category_code  NUMBER;
+   --   l_loc_group_code  NUMBER;
+   --   l_location_code   NUMBER;
+   --   l_db_office_id VARCHAR2 (16);
+   --   l_db_office_code  NUMBER;
+   --   l_tmp VARCHAR2 (128);
+   --   BEGIN
+   --   IF p_db_office_id IS NULL
+   --   THEN
+   --   l_db_office_id := cwms_util.user_office_id;
+   --   ELSE
+   --   l_db_office_id := UPPER (p_db_office_id);
+   --   END IF;
+
+   --   l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+
+   --   BEGIN
+   --   l_loc_category_code :=
+   --  get_loc_category_code (p_category_id, l_db_office_code);
+   --   EXCEPTION
+   --   WHEN NO_DATA_FOUND
+   --   THEN
+   --  cwms_err.RAISE ('GENERIC_ERROR',
+   --   'The category id: '
+   --  || p_category_id
+   --  || ' does not exist.'
+   --   );
+   --   END;
+
+   --   DBMS_OUTPUT.put_line ('gk 1');
+
+   --   BEGIN
+   --   l_loc_group_code :=
+   --   get_loc_group_code (p_category_id, p_group_id, l_db_office_code);
+   --   EXCEPTION
+   --   WHEN NO_DATA_FOUND
+   --   THEN
+   --  cwms_err.RAISE ('GENERIC_ERROR',
+   --   'There is no group: '
+   --  || p_group_id
+   --  || ' in the '
+   --  || p_category_id
+   --  || ' category.'
+   --   );
+   --   END;
+
+   --   DBMS_OUTPUT.put_line ('gk 2');
+
+   --   BEGIN
+   --   l_location_code := get_location_code (p_db_office_id, p_location_id);
+   --   EXCEPTION
+   --   WHEN NO_DATA_FOUND
+   --   THEN
+   --  cwms_err.RAISE ('GENERIC_ERROR',
+   --   'The '
+   --  || p_location_id
+   --  || ' location id does not exist.'
+   --   );
+   --   END;
+
+   --   DBMS_OUTPUT.put_line ('gk 3');
+
+   --   BEGIN
+   --   SELECT loc_alias_id
+   --   INTO l_tmp
+   --   FROM at_loc_group_assignment
+   --   WHERE location_code = l_location_code
+   --  AND loc_group_code = l_loc_group_code;
+
+   --   UPDATE at_loc_group_assignment
+   --  SET loc_alias_id = trim(p_alias_id)
+   --   WHERE location_code = l_location_code
+   --  AND loc_group_code = l_loc_group_code;
+   --   EXCEPTION
+   --   WHEN NO_DATA_FOUND
+   --   THEN
+   --  INSERT INTO at_loc_group_assignment
+   --  (loc_group_code, location_code, loc_alias_id
+   --  )
+   --   VALUES (l_loc_group_code, l_location_code, trim(p_alias_id)
+   --  );
+   --   END;
+
+   ---- MERGE INTO at_loc_group_assignment a
+   ---- USING (SELECT loc_group_code, location_code, loc_alias_id
+   ---- FROM at_loc_group_assignment
+   ---- WHERE loc_group_code = l_loc_group_code
+   ---- AND location_code = l_location_code) b
+   ---- ON (  a.loc_group_code = l_loc_group_code
+   ---- AND a.location_code = l_location_code)
+   ---- WHEN MATCHED THEN
+   ---- UPDATE
+   ---- SET a.loc_alias_id = p_alias_id
+   ---- WHEN NOT MATCHED THEN
+   ---- INSERT (loc_group_code, location_code, loc_alias_id)
+   ---- VALUES (cwms_seq.NEXTVAL, l_location_code, p_alias_id);
+   --   END;
+
+   --
+   --
+   -- assign_groups is used to assign one or more location_id's --
+   -- to a location group.
+   --
+   --   loc_alias_type AS OBJECT (
+   --   location_id VARCHAR2 (49),
+   --   loc_alias_id  VARCHAR2 (16),
+   --
+   PROCEDURE assign_loc_groups (p_loc_category_id    IN VARCHAR2,
+                                p_loc_group_id       IN VARCHAR2,
+                                p_loc_alias_array    IN loc_alias_array,
+                                p_db_office_id       IN VARCHAR2 DEFAULT NULL
+                               )
+   IS
+      l_db_office_id        VARCHAR2 (16);
+      l_db_office_code       NUMBER;
+      l_loc_category_code    NUMBER;
+      l_loc_group_code       NUMBER;
+      l_location_code       NUMBER;
+      l_cnt                 NUMBER;
+   BEGIN
+      IF p_db_office_id IS NULL
+      THEN
+         l_db_office_id := cwms_util.user_office_id;
+      ELSE
+         l_db_office_id := UPPER (p_db_office_id);
+      END IF;
+
+      l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+
+      BEGIN
+         l_loc_category_code :=
+            get_loc_category_code (p_loc_category_id, l_db_office_code);
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.raise (
+               'GENERIC_ERROR',
+               'The category id: ' || p_loc_category_id || ' does not exist.'
+            );
+      END;
+
+      BEGIN
+         l_loc_group_code :=
+            get_loc_group_code (p_loc_category_id,
+                                p_loc_group_id,
+                                l_db_office_code
+                               );
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.raise (
+               'ERROR',
+                  'There is no group: '
+               || p_loc_group_id
+               || ' in the '
+               || p_loc_category_id
+               || ' category.'
+            );
+      END;
+
+
+      FOR i IN 1 .. p_loc_alias_array.COUNT
+      LOOP
+         check_alias_id (p_loc_alias_array (i).loc_alias_id,
+                         p_loc_alias_array (i).location_id,
+                         p_loc_category_id,
+                         p_loc_group_id,
+                         l_db_office_id
+                        );
+         l_location_code :=
+            get_location_code (l_db_office_id,
+                               p_loc_alias_array (i).location_id
+                              );
+
+         IF l_location_code IS NULL
+         THEN
+            cwms_err.raise (
+               'ERROR',
+                  'Unable to assign the Alias_ID: '
+               || p_loc_alias_array (i).loc_alias_id
+               || ' under the '
+               || p_loc_group_id
+               || ' Group in the '
+               || p_loc_category_id
+               || ' Location Category to the Location_ID: '
+               || p_loc_alias_array (i).location_id
+               || ' because that Location ID does not exist for your Office_ID: '
+               || l_db_office_id
+            );
+         ELSE
+            SELECT   COUNT (*)
+              INTO   l_cnt
+              FROM   at_loc_group_assignment
+             WHERE   location_code = l_location_code
+                     AND loc_group_code = l_loc_group_code;
+
+            IF l_cnt = 0
+            THEN
+               INSERT
+                 INTO   at_loc_group_assignment (location_code,
+                                                 loc_group_code,
+                                                 loc_attribute,
+                                                 loc_alias_id,
+                                                 loc_ref_code,
                                                  office_code
-																)
-					VALUES	(
-									l_location_code,
-									l_loc_group_code,
-									NULL,
-									p_loc_alias_array (i).loc_alias_id,
-									NULL,
+                                                )
+               VALUES   (
+                           l_location_code,
+                           l_loc_group_code,
+                           NULL,
+                           p_loc_alias_array (i).loc_alias_id,
+                           NULL,
                            l_db_office_code
-								);
-				ELSE
-					UPDATE	at_loc_group_assignment
-						SET	loc_attribute = NULL,
-								loc_alias_id = p_loc_alias_array (i).loc_alias_id,
-								loc_ref_code = NULL
-					 WHERE	location_code = l_location_code
-								AND loc_group_code = l_loc_group_code;
-				END IF;
-			END IF;
-		END LOOP;
-	--
-	-- When we upgraded to 11.2.0.2.0 the update portion of this merge ran
-	-- into table mutating errors because get_location_code() selects from
-	-- table AT_LOC_GROUP_ASSIGNMENT
-	--
-	--  MERGE INTO  at_loc_group_assignment a
-	--  USING  (SELECT get_location_code (l_db_office_id, plaa.location_id) location_code,
-	--  plaa.loc_alias_id
-	--   FROM TABLE (p_loc_alias_array) plaa) b
-	--  ON  (a.loc_group_code = l_loc_group_code
-	--  AND a.location_code = b.location_code)
-	--  WHEN MATCHED
-	--  THEN
-	--  UPDATE SET
-	--  a.loc_attribute = NULL,
-	--  a.loc_alias_id = b.loc_alias_id,
-	--  a.loc_ref_code = NULL
-	--  WHEN NOT MATCHED
-	--  THEN
-	--  INSERT (location_code,
-	--  loc_group_code,
-	--  loc_attribute,
-	--  loc_alias_id,
-	--  loc_ref_code
-	--   )
-	--   VALUES  (
-	--   b.location_code,
-	--   l_loc_group_code,
-	--   NULL,
-	--   b.loc_alias_id,
-	--   NULL
-	--   );
+                        );
+            ELSE
+               UPDATE   at_loc_group_assignment
+                  SET   loc_attribute = NULL,
+                        loc_alias_id = p_loc_alias_array (i).loc_alias_id,
+                        loc_ref_code = NULL
+                WHERE   location_code = l_location_code
+                        AND loc_group_code = l_loc_group_code;
+            END IF;
+         END IF;
+      END LOOP;
+   --
+   -- When we upgraded to 11.2.0.2.0 the update portion of this merge ran
+   -- into table mutating errors because get_location_code() selects from
+   -- table AT_LOC_GROUP_ASSIGNMENT
+   --
+   --  MERGE INTO  at_loc_group_assignment a
+   --  USING  (SELECT get_location_code (l_db_office_id, plaa.location_id) location_code,
+   --  plaa.loc_alias_id
+   --   FROM TABLE (p_loc_alias_array) plaa) b
+   --  ON  (a.loc_group_code = l_loc_group_code
+   --  AND a.location_code = b.location_code)
+   --  WHEN MATCHED
+   --  THEN
+   --  UPDATE SET
+   --  a.loc_attribute = NULL,
+   --  a.loc_alias_id = b.loc_alias_id,
+   --  a.loc_ref_code = NULL
+   --  WHEN NOT MATCHED
+   --  THEN
+   --  INSERT (location_code,
+   --  loc_group_code,
+   --  loc_attribute,
+   --  loc_alias_id,
+   --  loc_ref_code
+   --   )
+   --   VALUES  (
+   --   b.location_code,
+   --   l_loc_group_code,
+   --   NULL,
+   --   b.loc_alias_id,
+   --   NULL
+   --   );
 
-	END assign_loc_groups;
+   END assign_loc_groups;
 
-	--
-	-- assign_groups is used to assign one or more location_id's --
-	-- to a location group.
-	--
-	--   loc_alias_type2 AS OBJECT (
-	--   location_id VARCHAR2 (49),
-	--   loc_attribute NUMBER,
-	--   loc_alias_id  VARCHAR2 (128)
-	--
-	PROCEDURE assign_loc_groups2 (p_loc_category_id   IN VARCHAR2,
-											p_loc_group_id 	  IN VARCHAR2,
-											p_loc_alias_array   IN loc_alias_array2,
-											p_db_office_id 	  IN VARCHAR2 DEFAULT NULL
-										  )
-	IS
-		l_db_office_id 		 VARCHAR2 (16);
-		l_db_office_code		 NUMBER;
-		l_loc_category_code	 NUMBER;
-		l_loc_group_code		 NUMBER;
-	BEGIN
-		IF p_db_office_id IS NULL
-		THEN
-			l_db_office_id := cwms_util.user_office_id;
-		ELSE
-			l_db_office_id := UPPER (p_db_office_id);
-		END IF;
+   --
+   -- assign_groups is used to assign one or more location_id's --
+   -- to a location group.
+   --
+   --   loc_alias_type2 AS OBJECT (
+   --   location_id VARCHAR2 (49),
+   --   loc_attribute NUMBER,
+   --   loc_alias_id  VARCHAR2 (128)
+   --
+   PROCEDURE assign_loc_groups2 (p_loc_category_id   IN VARCHAR2,
+                                 p_loc_group_id      IN VARCHAR2,
+                                 p_loc_alias_array   IN loc_alias_array2,
+                                 p_db_office_id      IN VARCHAR2 DEFAULT NULL
+                                )
+   IS
+      l_db_office_id        VARCHAR2 (16);
+      l_db_office_code       NUMBER;
+      l_loc_category_code    NUMBER;
+      l_loc_group_code       NUMBER;
+   BEGIN
+      IF p_db_office_id IS NULL
+      THEN
+         l_db_office_id := cwms_util.user_office_id;
+      ELSE
+         l_db_office_id := UPPER (p_db_office_id);
+      END IF;
 
-		l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+      l_db_office_code := cwms_util.get_office_code (l_db_office_id);
 
-		BEGIN
-			l_loc_category_code :=
-				get_loc_category_code (p_loc_category_id, l_db_office_code);
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				cwms_err.raise (
-					'GENERIC_ERROR',
-					'The category id: ' || p_loc_category_id || ' does not exist.'
-				);
-		END;
+      BEGIN
+         l_loc_category_code :=
+            get_loc_category_code (p_loc_category_id, l_db_office_code);
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.raise (
+               'GENERIC_ERROR',
+               'The category id: ' || p_loc_category_id || ' does not exist.'
+            );
+      END;
 
-		BEGIN
-			l_loc_group_code :=
-				get_loc_group_code (p_loc_category_id,
-										  p_loc_group_id,
-										  l_db_office_code
-										 );
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				cwms_err.raise (
-					'GENERIC_ERROR',
-						'There is no group: '
-					|| p_loc_group_id
-					|| ' in the '
-					|| p_loc_category_id
-					|| ' category.'
-				);
-		END;
+      BEGIN
+         l_loc_group_code :=
+            get_loc_group_code (p_loc_category_id,
+                                p_loc_group_id,
+                                l_db_office_code
+                               );
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.raise (
+               'GENERIC_ERROR',
+                  'There is no group: '
+               || p_loc_group_id
+               || ' in the '
+               || p_loc_category_id
+               || ' category.'
+            );
+      END;
 
 
-		FOR i IN 1 .. p_loc_alias_array.COUNT
-		LOOP
-			check_alias_id (p_loc_alias_array (i).loc_alias_id,
-								 p_loc_alias_array (i).location_id,
-								 p_loc_category_id,
-								 p_loc_group_id,
-								 l_db_office_id
-								);
-		END LOOP;
+      FOR i IN 1 .. p_loc_alias_array.COUNT
+      LOOP
+         check_alias_id (p_loc_alias_array (i).loc_alias_id,
+                         p_loc_alias_array (i).location_id,
+                         p_loc_category_id,
+                         p_loc_group_id,
+                         l_db_office_id
+                        );
+      END LOOP;
 
-		MERGE INTO	 at_loc_group_assignment a
-			  USING	 (SELECT   get_location_code (l_db_office_id, plaa.location_id) location_code,
-									  plaa.loc_attribute, plaa.loc_alias_id
-							 FROM   TABLE (p_loc_alias_array) plaa) b
-				  ON	 (a.loc_group_code = l_loc_group_code
-						  AND a.location_code = b.location_code)
-		WHEN MATCHED
-		THEN
-			UPDATE SET
-				a.loc_attribute = b.loc_attribute,
-				a.loc_alias_id = b.loc_alias_id
-		WHEN NOT MATCHED
-		THEN
-			INSERT		 (location_code,
-							  loc_group_code,
-							  loc_attribute,
-							  loc_alias_id,
+      MERGE INTO    at_loc_group_assignment a
+           USING    (SELECT   get_location_code (l_db_office_id, plaa.location_id) location_code,
+                             plaa.loc_attribute, plaa.loc_alias_id
+                      FROM   TABLE (p_loc_alias_array) plaa) b
+              ON    (a.loc_group_code = l_loc_group_code
+                    AND a.location_code = b.location_code)
+      WHEN MATCHED
+      THEN
+         UPDATE SET
+            a.loc_attribute = b.loc_attribute,
+            a.loc_alias_id = b.loc_alias_id
+      WHEN NOT MATCHED
+      THEN
+         INSERT       (location_code,
+                       loc_group_code,
+                       loc_attribute,
+                       loc_alias_id,
                        office_code
-							 )
-				 VALUES	 (
-								 b.location_code,
-								 l_loc_group_code,
-								 b.loc_attribute,
-								 b.loc_alias_id,
+                      )
+             VALUES    (
+                         b.location_code,
+                         l_loc_group_code,
+                         b.loc_attribute,
+                         b.loc_alias_id,
                          l_db_office_code
-							 );
-	END assign_loc_groups2;
+                      );
+   END assign_loc_groups2;
 
-	--
-	-- assign_groups is used to assign one or more location_id's --
-	-- to a location group.
-	--
-	--   loc_alias_type3 AS OBJECT (
-	--   location_id VARCHAR2 (49),
-	--   loc_attribute NUMBER,
-	--   loc_alias_id  VARCHAR2 (128),
-	--   loc_ref_id  VARCHAR2 (49)
-	--
-	PROCEDURE assign_loc_groups3 (p_loc_category_id   IN VARCHAR2,
-											p_loc_group_id 	  IN VARCHAR2,
-											p_loc_alias_array   IN loc_alias_array3,
-											p_db_office_id 	  IN VARCHAR2 DEFAULT NULL
-										  )
-	IS
-		l_db_office_id 		 VARCHAR2 (16);
-		l_db_office_code		 NUMBER;
-		l_loc_category_code	 NUMBER;
-		l_loc_group_code		 NUMBER;
-	BEGIN
-		IF p_db_office_id IS NULL
-		THEN
-			l_db_office_id := cwms_util.user_office_id;
-		ELSE
-			l_db_office_id := UPPER (p_db_office_id);
-		END IF;
+   --
+   -- assign_groups is used to assign one or more location_id's --
+   -- to a location group.
+   --
+   --   loc_alias_type3 AS OBJECT (
+   --   location_id VARCHAR2 (49),
+   --   loc_attribute NUMBER,
+   --   loc_alias_id  VARCHAR2 (128),
+   --   loc_ref_id  VARCHAR2 (49)
+   --
+   PROCEDURE assign_loc_groups3 (p_loc_category_id   IN VARCHAR2,
+                                 p_loc_group_id      IN VARCHAR2,
+                                 p_loc_alias_array   IN loc_alias_array3,
+                                 p_db_office_id      IN VARCHAR2 DEFAULT NULL
+                                )
+   IS
+      l_db_office_id        VARCHAR2 (16);
+      l_db_office_code       NUMBER;
+      l_loc_category_code    NUMBER;
+      l_loc_group_code       NUMBER;
+   BEGIN
+      IF p_db_office_id IS NULL
+      THEN
+         l_db_office_id := cwms_util.user_office_id;
+      ELSE
+         l_db_office_id := UPPER (p_db_office_id);
+      END IF;
 
-		l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+      l_db_office_code := cwms_util.get_office_code (l_db_office_id);
 
-		BEGIN
-			l_loc_category_code :=
-				get_loc_category_code (p_loc_category_id, l_db_office_code);
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				cwms_err.raise (
-					'GENERIC_ERROR',
-					'The category id: ' || p_loc_category_id || ' does not exist.'
-				);
-		END;
+      BEGIN
+         l_loc_category_code :=
+            get_loc_category_code (p_loc_category_id, l_db_office_code);
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.raise (
+               'GENERIC_ERROR',
+               'The category id: ' || p_loc_category_id || ' does not exist.'
+            );
+      END;
 
-		BEGIN
-			l_loc_group_code :=
-				get_loc_group_code (p_loc_category_id,
-										  p_loc_group_id,
-										  l_db_office_code
-										 );
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				cwms_err.raise (
-					'GENERIC_ERROR',
-						'There is no group: '
-					|| p_loc_group_id
-					|| ' in the '
-					|| p_loc_category_id
-					|| ' category.'
-				);
-		END;
+      BEGIN
+         l_loc_group_code :=
+            get_loc_group_code (p_loc_category_id,
+                                p_loc_group_id,
+                                l_db_office_code
+                               );
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.raise (
+               'GENERIC_ERROR',
+                  'There is no group: '
+               || p_loc_group_id
+               || ' in the '
+               || p_loc_category_id
+               || ' category.'
+            );
+      END;
 
-		FOR i IN 1 .. p_loc_alias_array.COUNT
-		LOOP
-			check_alias_id (p_loc_alias_array (i).loc_alias_id,
-								 p_loc_alias_array (i).location_id,
-								 p_loc_category_id,
-								 p_loc_group_id,
-								 l_db_office_id
-								);
-		END LOOP;
+      FOR i IN 1 .. p_loc_alias_array.COUNT
+      LOOP
+         check_alias_id (p_loc_alias_array (i).loc_alias_id,
+                         p_loc_alias_array (i).location_id,
+                         p_loc_category_id,
+                         p_loc_group_id,
+                         l_db_office_id
+                        );
+      END LOOP;
 
-		MERGE INTO	 at_loc_group_assignment a
-			  USING	 (SELECT   get_location_code (p_db_office_id => l_db_office_id, p_location_id => plaa.location_id, p_check_aliases => 'F') location_code,
-									  plaa.loc_attribute, plaa.loc_alias_id,
-									  plaa.loc_ref_id
-							 FROM   TABLE (p_loc_alias_array) plaa) b
-				  ON	 (a.loc_group_code = l_loc_group_code
-						  AND a.location_code = b.location_code)
-		WHEN MATCHED
-		THEN
-			UPDATE SET
-				a.loc_attribute = b.loc_attribute,
-				a.loc_alias_id = b.loc_alias_id,
-				a.loc_ref_code =
-					DECODE (
-						b.loc_ref_id,
-						NULL, NULL,
-						get_location_code (p_db_office_code   => l_db_office_code,
-												 p_location_id 	  => b.loc_ref_id,
+      MERGE INTO    at_loc_group_assignment a
+           USING    (SELECT   get_location_code (p_db_office_id => l_db_office_id, p_location_id => plaa.location_id, p_check_aliases => 'F') location_code,
+                             plaa.loc_attribute, plaa.loc_alias_id,
+                             plaa.loc_ref_id
+                      FROM   TABLE (p_loc_alias_array) plaa) b
+              ON    (a.loc_group_code = l_loc_group_code
+                    AND a.location_code = b.location_code)
+      WHEN MATCHED
+      THEN
+         UPDATE SET
+            a.loc_attribute = b.loc_attribute,
+            a.loc_alias_id = b.loc_alias_id,
+            a.loc_ref_code =
+               DECODE (
+                  b.loc_ref_id,
+                  NULL, NULL,
+                  get_location_code (p_db_office_code   => l_db_office_code,
+                                     p_location_id      => b.loc_ref_id,
                                      p_check_aliases    => 'F'
-												)
-					)
-		WHEN NOT MATCHED
-		THEN
-			INSERT		 (location_code,
-							  loc_group_code,
-							  loc_attribute,
-							  loc_alias_id,
-							  loc_ref_code,
+                                    )
+               )
+      WHEN NOT MATCHED
+      THEN
+         INSERT       (location_code,
+                       loc_group_code,
+                       loc_attribute,
+                       loc_alias_id,
+                       loc_ref_code,
                        office_code
-							 )
-				 VALUES	 (
-								 b.location_code,
-								 l_loc_group_code,
-								 b.loc_attribute,
-								 b.loc_alias_id,
-								 DECODE (
-									 b.loc_ref_id,
-									 NULL, NULL,
-									 get_location_code (
-										 p_db_office_code   => l_db_office_code,
-										 p_location_id 	  => b.loc_ref_id,
+                      )
+             VALUES    (
+                         b.location_code,
+                         l_loc_group_code,
+                         b.loc_attribute,
+                         b.loc_alias_id,
+                         DECODE (
+                            b.loc_ref_id,
+                            NULL, NULL,
+                            get_location_code (
+                               p_db_office_code   => l_db_office_code,
+                               p_location_id      => b.loc_ref_id,
                                p_check_aliases    => 'F'
-									 )
-								 ),
+                            )
+                         ),
                          l_db_office_code
-							 );
-	END assign_loc_groups3;
+                      );
+   END assign_loc_groups3;
 
-	-- creates it and will rename the aliases if they already exist.
-	PROCEDURE assign_loc_group (p_loc_category_id	IN VARCHAR2,
-										 p_loc_group_id		IN VARCHAR2,
-										 p_location_id 		IN VARCHAR2,
-										 p_loc_alias_id		IN VARCHAR2 DEFAULT NULL,
-										 p_db_office_id		IN VARCHAR2 DEFAULT NULL
-										)
-	IS
-		l_loc_alias_array   loc_alias_array
-			:= loc_alias_array (loc_alias_type (p_location_id, p_loc_alias_id));
-	BEGIN
-		assign_loc_groups (p_loc_category_id	=> p_loc_category_id,
-								 p_loc_group_id		=> p_loc_group_id,
-								 p_loc_alias_array	=> l_loc_alias_array,
-								 p_db_office_id		=> p_db_office_id
-								);
-	END assign_loc_group;
+   -- creates it and will rename the aliases if they already exist.
+   PROCEDURE assign_loc_group (p_loc_category_id   IN VARCHAR2,
+                               p_loc_group_id      IN VARCHAR2,
+                               p_location_id       IN VARCHAR2,
+                               p_loc_alias_id      IN VARCHAR2 DEFAULT NULL,
+                               p_db_office_id      IN VARCHAR2 DEFAULT NULL
+                              )
+   IS
+      l_loc_alias_array   loc_alias_array
+         := loc_alias_array (loc_alias_type (p_location_id, p_loc_alias_id));
+   BEGIN
+      assign_loc_groups (p_loc_category_id   => p_loc_category_id,
+                         p_loc_group_id      => p_loc_group_id,
+                         p_loc_alias_array   => l_loc_alias_array,
+                         p_db_office_id      => p_db_office_id
+                        );
+   END assign_loc_group;
 
-	PROCEDURE assign_loc_group2 (p_loc_category_id	 IN VARCHAR2,
-										  p_loc_group_id		 IN VARCHAR2,
-										  p_location_id		 IN VARCHAR2,
-										  p_loc_attribute 	 IN NUMBER DEFAULT NULL,
-										  p_loc_alias_id		 IN VARCHAR2 DEFAULT NULL,
-										  p_db_office_id		 IN VARCHAR2 DEFAULT NULL
-										 )
-	IS
-		l_loc_alias_array2	loc_alias_array2
-			:= loc_alias_array2 (
-					loc_alias_type2 (p_location_id,
-										  p_loc_attribute,
-										  p_loc_alias_id
-										 )
-				);
-	BEGIN
-		assign_loc_groups2 (p_loc_category_id	 => p_loc_category_id,
-								  p_loc_group_id		 => p_loc_group_id,
-								  p_loc_alias_array	 => l_loc_alias_array2,
-								  p_db_office_id		 => p_db_office_id
-								 );
-	END assign_loc_group2;
+   PROCEDURE assign_loc_group2 (p_loc_category_id    IN VARCHAR2,
+                                p_loc_group_id       IN VARCHAR2,
+                                p_location_id       IN VARCHAR2,
+                                p_loc_attribute     IN NUMBER DEFAULT NULL,
+                                p_loc_alias_id       IN VARCHAR2 DEFAULT NULL,
+                                p_db_office_id       IN VARCHAR2 DEFAULT NULL
+                               )
+   IS
+      l_loc_alias_array2   loc_alias_array2
+         := loc_alias_array2 (
+               loc_alias_type2 (p_location_id,
+                                p_loc_attribute,
+                                p_loc_alias_id
+                               )
+            );
+   BEGIN
+      assign_loc_groups2 (p_loc_category_id    => p_loc_category_id,
+                          p_loc_group_id       => p_loc_group_id,
+                          p_loc_alias_array    => l_loc_alias_array2,
+                          p_db_office_id       => p_db_office_id
+                         );
+   END assign_loc_group2;
 
-	PROCEDURE assign_loc_group3 (p_loc_category_id	 IN VARCHAR2,
-										  p_loc_group_id		 IN VARCHAR2,
-										  p_location_id		 IN VARCHAR2,
-										  p_loc_attribute 	 IN NUMBER DEFAULT NULL,
-										  p_loc_alias_id		 IN VARCHAR2 DEFAULT NULL,
-										  p_ref_loc_id 		 IN VARCHAR2 DEFAULT NULL,
-										  p_db_office_id		 IN VARCHAR2 DEFAULT NULL
-										 )
-	IS
-		l_loc_alias_array   loc_alias_array3;
-	BEGIN
-		l_loc_alias_array :=
-			loc_alias_array3 (
-				loc_alias_type3 (
-					p_location_id,
-					p_loc_attribute,
-					p_loc_alias_id,
+   PROCEDURE assign_loc_group3 (p_loc_category_id    IN VARCHAR2,
+                                p_loc_group_id       IN VARCHAR2,
+                                p_location_id       IN VARCHAR2,
+                                p_loc_attribute     IN NUMBER DEFAULT NULL,
+                                p_loc_alias_id       IN VARCHAR2 DEFAULT NULL,
+                                p_ref_loc_id        IN VARCHAR2 DEFAULT NULL,
+                                p_db_office_id       IN VARCHAR2 DEFAULT NULL
+                               )
+   IS
+      l_loc_alias_array   loc_alias_array3;
+   BEGIN
+      l_loc_alias_array :=
+         loc_alias_array3 (
+            loc_alias_type3 (
+               p_location_id,
+               p_loc_attribute,
+               p_loc_alias_id,
                p_ref_loc_id
-				)
-			);
-		assign_loc_groups3 (p_loc_category_id	 => p_loc_category_id,
-								  p_loc_group_id		 => p_loc_group_id,
-								  p_loc_alias_array	 => l_loc_alias_array,
-								  p_db_office_id		 => p_db_office_id
-								 );
-	END assign_loc_group3;
+            )
+         );
+      assign_loc_groups3 (p_loc_category_id    => p_loc_category_id,
+                          p_loc_group_id       => p_loc_group_id,
+                          p_loc_alias_array    => l_loc_alias_array,
+                          p_db_office_id       => p_db_office_id
+                         );
+   END assign_loc_group3;
 
-	-------------------------------------------------------------------------------
-	-------------------------------------------------------------------------------
-	-- unassign_loc_groups and
-	-- unassign_loc_group
-	--
-	--These procedures unassign (delete) group/location pairs. The -
-	--unassign_loc_groups procedure accepts an array of locations so that one or -
-	--more group/location pairs can be unassigned. The unassign_loc_group procedure -
-	--only accepts a single group location pair for unassignment.
-	--
-	--Both calls allow the possibility to unassign all group/location pairs by -
-	--setting the p_unassign_all parameter to "T" for TURE. The default value for -
-	--this parameter is "F" for FALSE.
-	--
-	--For the unassign_loc_groups call, the p_location_array uses the CWMS -
-	--"char_49_array_type" table type, which is an array of table type varchar2(49).
+   -------------------------------------------------------------------------------
+   -------------------------------------------------------------------------------
+   -- unassign_loc_groups and
+   -- unassign_loc_group
+   --
+   --These procedures unassign (delete) group/location pairs. The -
+   --unassign_loc_groups procedure accepts an array of locations so that one or -
+   --more group/location pairs can be unassigned. The unassign_loc_group procedure -
+   --only accepts a single group location pair for unassignment.
+   --
+   --Both calls allow the possibility to unassign all group/location pairs by -
+   --setting the p_unassign_all parameter to "T" for TURE. The default value for -
+   --this parameter is "F" for FALSE.
+   --
+   --For the unassign_loc_groups call, the p_location_array uses the CWMS -
+   --"char_49_array_type" table type, which is an array of table type varchar2(49).
 
-	--Note that you cannot unassign group/location pairs if a group/location pair -
-	--is being referenced by a SHEF decode entry.
-	-------------------------------------------------------------------------------
-	-------------------------------------------------------------------------------
+   --Note that you cannot unassign group/location pairs if a group/location pair -
+   --is being referenced by a SHEF decode entry.
+   -------------------------------------------------------------------------------
+   -------------------------------------------------------------------------------
 procedure unassign_loc_groups(
    p_loc_category_id in varchar2,
    p_loc_group_id    in varchar2,
@@ -5340,712 +5340,712 @@ begin
             'Cannot unassign Location/Group pair(s). One or more group assignments are still assigned.');
    end;
 end unassign_loc_groups;
-	-------------------------------------------------------------------------------
-	-------------------------------------------------------------------------------
-	-- unassign_loc_group --
-	-- See description for unassign_loc_groups above.--
-	-------------------------------------------------------------------------------
-	-------------------------------------------------------------------------------
-	PROCEDURE unassign_loc_group (p_loc_category_id   IN VARCHAR2,
-											p_loc_group_id 	  IN VARCHAR2,
-											p_location_id		  IN VARCHAR2,
-											p_unassign_all 	  IN VARCHAR2 DEFAULT 'F',
-											p_db_office_id 	  IN VARCHAR2 DEFAULT NULL
-										  )
-	IS
-		l_location_array	 char_49_array_type
-									 := char_49_array_type (TRIM (p_location_id));
-	BEGIN
-		unassign_loc_groups (p_loc_category_id   => p_loc_category_id,
-									p_loc_group_id 	  => p_loc_group_id,
-									p_location_array	  => l_location_array,
-									p_unassign_all 	  => p_unassign_all,
-									p_db_office_id 	  => p_db_office_id
-								  );
-	END unassign_loc_group;
+   -------------------------------------------------------------------------------
+   -------------------------------------------------------------------------------
+   -- unassign_loc_group --
+   -- See description for unassign_loc_groups above.--
+   -------------------------------------------------------------------------------
+   -------------------------------------------------------------------------------
+   PROCEDURE unassign_loc_group (p_loc_category_id   IN VARCHAR2,
+                                 p_loc_group_id      IN VARCHAR2,
+                                 p_location_id        IN VARCHAR2,
+                                 p_unassign_all      IN VARCHAR2 DEFAULT 'F',
+                                 p_db_office_id      IN VARCHAR2 DEFAULT NULL
+                                )
+   IS
+      l_location_array    char_49_array_type
+                            := char_49_array_type (TRIM (p_location_id));
+   BEGIN
+      unassign_loc_groups (p_loc_category_id   => p_loc_category_id,
+                           p_loc_group_id      => p_loc_group_id,
+                           p_location_array     => l_location_array,
+                           p_unassign_all      => p_unassign_all,
+                           p_db_office_id      => p_db_office_id
+                          );
+   END unassign_loc_group;
 
-	PROCEDURE delete_loc_group (p_loc_group_code   IN NUMBER,
-										 p_cascade			  IN VARCHAR2 DEFAULT 'F'
-										)
-	IS
-	BEGIN
-		IF cwms_util.is_true (p_cascade)
-		THEN
-			DELETE FROM   at_loc_group_assignment
-					WHERE   loc_group_code = p_loc_group_code;
+   PROCEDURE delete_loc_group (p_loc_group_code   IN NUMBER,
+                               p_cascade           IN VARCHAR2 DEFAULT 'F'
+                              )
+   IS
+   BEGIN
+      IF cwms_util.is_true (p_cascade)
+      THEN
+         DELETE FROM   at_loc_group_assignment
+               WHERE   loc_group_code = p_loc_group_code;
 
-			UPDATE	at_rating_spec
-				SET	source_agency_code = NULL
-			 WHERE	source_agency_code = p_loc_group_code;
-		END IF;
+         UPDATE   at_rating_spec
+            SET   source_agency_code = NULL
+          WHERE   source_agency_code = p_loc_group_code;
+      END IF;
 
-		--------------------------------------------------------------------
-		-- delete the group (will fail if there are location assignments) --
-		--------------------------------------------------------------------
-		DELETE FROM   at_loc_group
-				WHERE   loc_group_code = p_loc_group_code;
-	END delete_loc_group;
+      --------------------------------------------------------------------
+      -- delete the group (will fail if there are location assignments) --
+      --------------------------------------------------------------------
+      DELETE FROM   at_loc_group
+            WHERE   loc_group_code = p_loc_group_code;
+   END delete_loc_group;
 
-	PROCEDURE delete_loc_group (p_loc_category_id	IN VARCHAR2,
-										 p_loc_group_id		IN VARCHAR2,
-										 p_cascade				IN VARCHAR2 DEFAULT 'F',
-										 p_db_office_id		IN VARCHAR2 DEFAULT NULL
-										)
-	IS
-		l_loc_group_code	 NUMBER (10);
-		l_db_office_code	 NUMBER := cwms_util.get_office_code (p_db_office_id);
-	BEGIN
-		IF l_db_office_code = cwms_util.db_office_code_all
-		THEN
-			cwms_err.raise (
-				'ERROR',
-				'Groups owned by the CWMS office id can not be deleted.'
-			);
-		END IF;
+   PROCEDURE delete_loc_group (p_loc_category_id   IN VARCHAR2,
+                               p_loc_group_id      IN VARCHAR2,
+                               p_cascade            IN VARCHAR2 DEFAULT 'F',
+                               p_db_office_id      IN VARCHAR2 DEFAULT NULL
+                              )
+   IS
+      l_loc_group_code    NUMBER (10);
+      l_db_office_code    NUMBER := cwms_util.get_office_code (p_db_office_id);
+   BEGIN
+      IF l_db_office_code = cwms_util.db_office_code_all
+      THEN
+         cwms_err.raise (
+            'ERROR',
+            'Groups owned by the CWMS office id can not be deleted.'
+         );
+      END IF;
 
-		------------------------------------------
-		-- get the the category and group codes --
-		------------------------------------------
-		l_loc_group_code :=
-			get_loc_group_code (p_loc_category_id	 => p_loc_category_id,
-									  p_loc_group_id		 => p_loc_group_id,
-									  p_db_office_code	 => l_db_office_code
-									 );
-		delete_loc_group (p_loc_group_code	 => l_loc_group_code,
-								p_cascade			 => p_cascade
-							  );
-	END delete_loc_group;
+      ------------------------------------------
+      -- get the the category and group codes --
+      ------------------------------------------
+      l_loc_group_code :=
+         get_loc_group_code (p_loc_category_id    => p_loc_category_id,
+                             p_loc_group_id       => p_loc_group_id,
+                             p_db_office_code    => l_db_office_code
+                            );
+      delete_loc_group (p_loc_group_code    => l_loc_group_code,
+                        p_cascade          => p_cascade
+                       );
+   END delete_loc_group;
 
-	-- can only delete if there are no assignments to this group.
-	PROCEDURE delete_loc_group (p_loc_category_id	IN VARCHAR2,
-										 p_loc_group_id		IN VARCHAR2,
-										 p_db_office_id		IN VARCHAR2 DEFAULT NULL
-										)
-	IS
-		l_loc_group_code	 NUMBER (10);
-		l_db_office_code	 NUMBER := cwms_util.get_office_code (p_db_office_id);
-	BEGIN
-		delete_loc_group (p_loc_category_id   => p_loc_category_id,
-								p_loc_group_id 	  => p_loc_group_id,
-								p_cascade			  => 'F',
-								p_db_office_id 	  => p_db_office_id
-							  );
-	END delete_loc_group;
+   -- can only delete if there are no assignments to this group.
+   PROCEDURE delete_loc_group (p_loc_category_id   IN VARCHAR2,
+                               p_loc_group_id      IN VARCHAR2,
+                               p_db_office_id      IN VARCHAR2 DEFAULT NULL
+                              )
+   IS
+      l_loc_group_code    NUMBER (10);
+      l_db_office_code    NUMBER := cwms_util.get_office_code (p_db_office_id);
+   BEGIN
+      delete_loc_group (p_loc_category_id   => p_loc_category_id,
+                        p_loc_group_id      => p_loc_group_id,
+                        p_cascade           => 'F',
+                        p_db_office_id      => p_db_office_id
+                       );
+   END delete_loc_group;
 
-	PROCEDURE delete_loc_cat (p_loc_category_id	 IN VARCHAR2,
-									  p_cascade 			 IN VARCHAR2 DEFAULT 'F',
-									  p_db_office_id		 IN VARCHAR2 DEFAULT NULL
-									 )
-	IS
-		l_loc_category_code	 NUMBER (10);
-		l_db_office_code		 NUMBER;
-	BEGIN
-		---------------------------
-		-- get the category code --
-		---------------------------
+   PROCEDURE delete_loc_cat (p_loc_category_id    IN VARCHAR2,
+                             p_cascade           IN VARCHAR2 DEFAULT 'F',
+                             p_db_office_id       IN VARCHAR2 DEFAULT NULL
+                            )
+   IS
+      l_loc_category_code    NUMBER (10);
+      l_db_office_code       NUMBER;
+   BEGIN
+      ---------------------------
+      -- get the category code --
+      ---------------------------
 
-		l_loc_category_code :=
-			get_loc_category_code (
-				p_loc_category_id   => p_loc_category_id,
-				p_db_office_code	  => cwms_util.get_office_code (p_db_office_id)
-			);
+      l_loc_category_code :=
+         get_loc_category_code (
+            p_loc_category_id   => p_loc_category_id,
+            p_db_office_code     => cwms_util.get_office_code (p_db_office_id)
+         );
 
-		---------------------------------------------------
-		-- delete groups in this caegory if specified  --
-		-- (will fail if there are location assignments) --
-		---------------------------------------------------
-		IF cwms_util.is_true (p_cascade)
-		THEN
-			NULL;
+      ---------------------------------------------------
+      -- delete groups in this caegory if specified  --
+      -- (will fail if there are location assignments) --
+      ---------------------------------------------------
+      IF cwms_util.is_true (p_cascade)
+      THEN
+         NULL;
 
-			FOR loc_group_code_rec
-				IN (SELECT	 loc_group_code
-						FROM	 at_loc_group
-					  WHERE	 loc_category_code = l_loc_category_code)
-			LOOP
-				delete_loc_group (
-					p_loc_group_code	 => loc_group_code_rec.loc_group_code,
-					p_cascade				 => 'T'
-				);
-			END LOOP;
-		END IF;
+         FOR loc_group_code_rec
+            IN (SELECT    loc_group_code
+                  FROM    at_loc_group
+                 WHERE    loc_category_code = l_loc_category_code)
+         LOOP
+            delete_loc_group (
+               p_loc_group_code    => loc_group_code_rec.loc_group_code,
+               p_cascade             => 'T'
+            );
+         END LOOP;
+      END IF;
 
-		---------------------------------------------------------------
-		-- delete the category (will fail if there are still groups) --
-		---------------------------------------------------------------
-		DELETE FROM   at_loc_category
-				WHERE   loc_category_code = l_loc_category_code;
-	END delete_loc_cat;
+      ---------------------------------------------------------------
+      -- delete the category (will fail if there are still groups) --
+      ---------------------------------------------------------------
+      DELETE FROM   at_loc_category
+            WHERE   loc_category_code = l_loc_category_code;
+   END delete_loc_cat;
 
-	PROCEDURE rename_loc_category (
-		p_loc_category_id_old	IN VARCHAR2,
-		p_loc_category_id_new	IN VARCHAR2,
-		p_loc_category_desc		IN VARCHAR2 DEFAULT NULL,
-		p_ignore_null				IN VARCHAR2 DEFAULT 'T',
-		p_db_office_id 			IN VARCHAR2 DEFAULT NULL
-	)
-	IS
-		l_db_office_id 				 VARCHAR2 (16);
-		l_db_office_code				 NUMBER;
-		l_loc_category_code_old 	 NUMBER;
-		l_loc_category_code_new 	 NUMBER;
-		l_loc_category_id_old		 VARCHAR2 (32) := TRIM (p_loc_category_id_old);
-		l_loc_category_id_new		 VARCHAR2 (32) := TRIM (p_loc_category_id_new);
-		l_category_already_exists	 BOOLEAN := FALSE;
-		l_ignore_null					 BOOLEAN;
-		l_cat_owned_by_cwms			 BOOLEAN;
-	BEGIN
-		IF p_db_office_id IS NULL
-		THEN
-			l_db_office_id := cwms_util.user_office_id;
-		ELSE
-			l_db_office_id := UPPER (p_db_office_id);
-		END IF;
+   PROCEDURE rename_loc_category (
+      p_loc_category_id_old   IN VARCHAR2,
+      p_loc_category_id_new   IN VARCHAR2,
+      p_loc_category_desc      IN VARCHAR2 DEFAULT NULL,
+      p_ignore_null            IN VARCHAR2 DEFAULT 'T',
+      p_db_office_id          IN VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_db_office_id              VARCHAR2 (16);
+      l_db_office_code             NUMBER;
+      l_loc_category_code_old     NUMBER;
+      l_loc_category_code_new     NUMBER;
+      l_loc_category_id_old       VARCHAR2 (32) := TRIM (p_loc_category_id_old);
+      l_loc_category_id_new       VARCHAR2 (32) := TRIM (p_loc_category_id_new);
+      l_category_already_exists    BOOLEAN := FALSE;
+      l_ignore_null                BOOLEAN;
+      l_cat_owned_by_cwms          BOOLEAN;
+   BEGIN
+      IF p_db_office_id IS NULL
+      THEN
+         l_db_office_id := cwms_util.user_office_id;
+      ELSE
+         l_db_office_id := UPPER (p_db_office_id);
+      END IF;
 
-		l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+      l_db_office_code := cwms_util.get_office_code (l_db_office_id);
 
-		IF NVL (p_ignore_null, 'T') = 'T'
-		THEN
-			l_ignore_null := TRUE;
-		ELSE
-			l_ignore_null := FALSE;
-		END IF;
+      IF NVL (p_ignore_null, 'T') = 'T'
+      THEN
+         l_ignore_null := TRUE;
+      ELSE
+         l_ignore_null := FALSE;
+      END IF;
 
-		-- Is the p_loc_category_OLD owned by CWMS?...
-		---
-		BEGIN
-			SELECT	loc_category_code
-			  INTO	l_loc_category_code_old
-			  FROM	at_loc_category
-			 WHERE	UPPER (loc_category_id) = UPPER (l_loc_category_id_old)
-						AND db_office_code = (SELECT	 office_code
-														FROM	 cwms_office
-													  WHERE	 office_id = 'CWMS');
+      -- Is the p_loc_category_OLD owned by CWMS?...
+      ---
+      BEGIN
+         SELECT   loc_category_code
+           INTO   l_loc_category_code_old
+           FROM   at_loc_category
+          WHERE   UPPER (loc_category_id) = UPPER (l_loc_category_id_old)
+                  AND db_office_code = (SELECT    office_code
+                                          FROM    cwms_office
+                                         WHERE    office_id = 'CWMS');
 
-			l_cat_owned_by_cwms := TRUE;
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				l_cat_owned_by_cwms := FALSE;
-		END;
+         l_cat_owned_by_cwms := TRUE;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            l_cat_owned_by_cwms := FALSE;
+      END;
 
-		IF l_cat_owned_by_cwms
-		THEN
-			cwms_err.raise (
-				'ITEM_ALREADY_EXISTS',
-				'The ' || l_loc_category_id_old
-				|| ' category is owned by the system. You cannot rename this category.'
-			);
-		END IF;
+      IF l_cat_owned_by_cwms
+      THEN
+         cwms_err.raise (
+            'ITEM_ALREADY_EXISTS',
+            'The ' || l_loc_category_id_old
+            || ' category is owned by the system. You cannot rename this category.'
+         );
+      END IF;
 
-		-- Is the p_loc_category_NEW owned by CWMS?...
-		---
-		BEGIN
-			SELECT	loc_category_code
-			  INTO	l_loc_category_code_new
-			  FROM	at_loc_category
-			 WHERE	UPPER (loc_category_id) = UPPER (l_loc_category_id_new)
-						AND db_office_code = (SELECT	 office_code
-														FROM	 cwms_office
-													  WHERE	 office_id = 'CWMS');
+      -- Is the p_loc_category_NEW owned by CWMS?...
+      ---
+      BEGIN
+         SELECT   loc_category_code
+           INTO   l_loc_category_code_new
+           FROM   at_loc_category
+          WHERE   UPPER (loc_category_id) = UPPER (l_loc_category_id_new)
+                  AND db_office_code = (SELECT    office_code
+                                          FROM    cwms_office
+                                         WHERE    office_id = 'CWMS');
 
-			l_cat_owned_by_cwms := TRUE;
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				l_cat_owned_by_cwms := FALSE;
-		END;
+         l_cat_owned_by_cwms := TRUE;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            l_cat_owned_by_cwms := FALSE;
+      END;
 
-		IF l_cat_owned_by_cwms
-		THEN
-			cwms_err.raise (
-				'ITEM_ALREADY_EXISTS',
-				'The ' || l_loc_category_id_new
-				|| ' category is owned by the system. You cannot rename to this category.'
-			);
-		END IF;
+      IF l_cat_owned_by_cwms
+      THEN
+         cwms_err.raise (
+            'ITEM_ALREADY_EXISTS',
+            'The ' || l_loc_category_id_new
+            || ' category is owned by the system. You cannot rename to this category.'
+         );
+      END IF;
 
-		-- Does Category exist?.
-		--
-		BEGIN
-			l_loc_category_code_old :=
-				get_loc_category_code (l_loc_category_id_old, l_db_office_code);
-		EXCEPTION
-			WHEN OTHERS
-			THEN
-				cwms_err.raise (
-					'ITEM_DOES_NOT_EXIST',
-					'Category id must exist to rename it - Category id that does not exist: ',
-					l_loc_category_id_old
-				);
-		END;
+      -- Does Category exist?.
+      --
+      BEGIN
+         l_loc_category_code_old :=
+            get_loc_category_code (l_loc_category_id_old, l_db_office_code);
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            cwms_err.raise (
+               'ITEM_DOES_NOT_EXIST',
+               'Category id must exist to rename it - Category id that does not exist: ',
+               l_loc_category_id_old
+            );
+      END;
 
-		--
-		-- Does NEW Category id already exist?.
-		BEGIN
-			l_loc_category_code_new :=
-				get_loc_category_code (l_loc_category_id_new, l_db_office_code);
-			l_category_already_exists := TRUE;
-		EXCEPTION
-			WHEN OTHERS
-			THEN
-				l_category_already_exists := FALSE;
-		END;
+      --
+      -- Does NEW Category id already exist?.
+      BEGIN
+         l_loc_category_code_new :=
+            get_loc_category_code (l_loc_category_id_new, l_db_office_code);
+         l_category_already_exists := TRUE;
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            l_category_already_exists := FALSE;
+      END;
 
-		IF l_category_already_exists
-		THEN
-			IF UPPER (l_loc_category_id_old) != UPPER (l_loc_category_id_new)
-			THEN										  -- or there's not a case change...
-				cwms_err.raise (
-					'ITEM_ALREADY_EXISTS',
-					'p_loc_category_id_new already exists - can''t rename to: ',
-					l_loc_category_id_old
-				);
-			END IF;
-		END IF;
+      IF l_category_already_exists
+      THEN
+         IF UPPER (l_loc_category_id_old) != UPPER (l_loc_category_id_new)
+         THEN                                -- or there's not a case change...
+            cwms_err.raise (
+               'ITEM_ALREADY_EXISTS',
+               'p_loc_category_id_new already exists - can''t rename to: ',
+               l_loc_category_id_old
+            );
+         END IF;
+      END IF;
 
-		--
-		-- all checks passed, perform the rename...
-		IF p_loc_category_desc IS NULL AND l_ignore_null
-		THEN
-			UPDATE	at_loc_category
-				SET	loc_category_id = l_loc_category_id_new
-			 WHERE	loc_category_code = l_loc_category_code_old;
-		ELSE
-			UPDATE	at_loc_category
-				SET	loc_category_id = l_loc_category_id_new,
-						loc_category_desc = TRIM (p_loc_category_desc)
-			 WHERE	loc_category_code = l_loc_category_code_old;
-		END IF;
-	--
-	--
-	END rename_loc_category;
+      --
+      -- all checks passed, perform the rename...
+      IF p_loc_category_desc IS NULL AND l_ignore_null
+      THEN
+         UPDATE   at_loc_category
+            SET   loc_category_id = l_loc_category_id_new
+          WHERE   loc_category_code = l_loc_category_code_old;
+      ELSE
+         UPDATE   at_loc_category
+            SET   loc_category_id = l_loc_category_id_new,
+                  loc_category_desc = TRIM (p_loc_category_desc)
+          WHERE   loc_category_code = l_loc_category_code_old;
+      END IF;
+   --
+   --
+   END rename_loc_category;
 
-	--
-	-- used to assign one or more groups to an existing category.
-	--
-	PROCEDURE assign_loc_grps_cat2 (
-		p_loc_category_id   IN VARCHAR2,
-		p_loc_group_array   IN group_array2,
-		p_db_office_id 	  IN VARCHAR2 DEFAULT NULL
-	)
-	IS
-		l_db_office_id 		 VARCHAR2 (16);
-		l_db_office_code		 NUMBER;
-		l_loc_category_code	 NUMBER;
-		l_loc_group_code		 NUMBER;
-		l_loc_category_id 	 VARCHAR2 (32) := TRIM (p_loc_category_id);
-		l_loc_group_id 		 VARCHAR2 (32);
-		l_loc_group_desc		 VARCHAR2 (128);
-		l_tmp 					 NUMBER;
-	BEGIN
-		IF p_db_office_id IS NULL
-		THEN
-			l_db_office_id := cwms_util.user_office_id;
-		ELSE
-			l_db_office_id := UPPER (p_db_office_id);
-		END IF;
+   --
+   -- used to assign one or more groups to an existing category.
+   --
+   PROCEDURE assign_loc_grps_cat2 (
+      p_loc_category_id   IN VARCHAR2,
+      p_loc_group_array   IN group_array2,
+      p_db_office_id      IN VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_db_office_id        VARCHAR2 (16);
+      l_db_office_code       NUMBER;
+      l_loc_category_code    NUMBER;
+      l_loc_group_code       NUMBER;
+      l_loc_category_id     VARCHAR2 (32) := TRIM (p_loc_category_id);
+      l_loc_group_id        VARCHAR2 (32);
+      l_loc_group_desc       VARCHAR2 (128);
+      l_tmp                 NUMBER;
+   BEGIN
+      IF p_db_office_id IS NULL
+      THEN
+         l_db_office_id := cwms_util.user_office_id;
+      ELSE
+         l_db_office_id := UPPER (p_db_office_id);
+      END IF;
 
-		l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+      l_db_office_code := cwms_util.get_office_code (l_db_office_id);
 
-		IF l_db_office_code = cwms_util.db_office_code_all
-		THEN
-			cwms_err.raise ('GENERIC_ERROR',
-								 'Cannot assign system office groups with this call.'
-								);
-		END IF;
+      IF l_db_office_code = cwms_util.db_office_code_all
+      THEN
+         cwms_err.raise ('GENERIC_ERROR',
+                         'Cannot assign system office groups with this call.'
+                        );
+      END IF;
 
-		-- get the category_code...
-		BEGIN
-			l_loc_category_code :=
-				get_loc_category_code (l_loc_category_id, l_db_office_code);
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				NULL;
-		END;
+      -- get the category_code...
+      BEGIN
+         l_loc_category_code :=
+            get_loc_category_code (l_loc_category_id, l_db_office_code);
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            NULL;
+      END;
 
-		l_tmp := p_loc_group_array.COUNT;
+      l_tmp := p_loc_group_array.COUNT;
 
-		IF l_tmp > 0
-		THEN
-			FOR i IN 1 .. l_tmp
-			LOOP
-				l_loc_group_id := TRIM (p_loc_group_array (i).GROUP_ID);
-				l_loc_group_desc := TRIM (p_loc_group_array (i).group_desc);
+      IF l_tmp > 0
+      THEN
+         FOR i IN 1 .. l_tmp
+         LOOP
+            l_loc_group_id := TRIM (p_loc_group_array (i).GROUP_ID);
+            l_loc_group_desc := TRIM (p_loc_group_array (i).group_desc);
 
-				BEGIN
-					--
-					-- If the group_id already exists, then update -
-					-- the group_id and group_desc...
-					SELECT	loc_group_code
-					  INTO	l_loc_group_code
-					  FROM	at_loc_group
-					 WHERE		 UPPER (loc_group_id) = UPPER (l_loc_group_id)
-								AND loc_category_code = l_loc_category_code
-								AND db_office_code = l_db_office_code;
+            BEGIN
+               --
+               -- If the group_id already exists, then update -
+               -- the group_id and group_desc...
+               SELECT   loc_group_code
+                 INTO   l_loc_group_code
+                 FROM   at_loc_group
+                WHERE       UPPER (loc_group_id) = UPPER (l_loc_group_id)
+                        AND loc_category_code = l_loc_category_code
+                        AND db_office_code = l_db_office_code;
 
-					UPDATE	at_loc_group
-						SET	loc_group_id = l_loc_group_id,
-								loc_group_desc = l_loc_group_desc,
-								shared_loc_alias_id =
-									p_loc_group_array (i).shared_alias_id,
-								shared_loc_ref_code =
-									get_location_code (
-										l_db_office_code,
-										p_loc_group_array (i).shared_loc_ref_id
-									)
-					 WHERE	loc_group_code = l_loc_group_code;
+               UPDATE   at_loc_group
+                  SET   loc_group_id = l_loc_group_id,
+                        loc_group_desc = l_loc_group_desc,
+                        shared_loc_alias_id =
+                           p_loc_group_array (i).shared_alias_id,
+                        shared_loc_ref_code =
+                           get_location_code (
+                              l_db_office_code,
+                              p_loc_group_array (i).shared_loc_ref_id
+                           )
+                WHERE   loc_group_code = l_loc_group_code;
 
-					l_loc_group_code := NULL;
-				EXCEPTION
-					WHEN NO_DATA_FOUND
-					THEN
-						BEGIN
-							--
-							-- Check if the group_id is a CWMS owned -
-							-- group_id, if it is, do nothing...
-							SELECT	loc_group_code
-							  INTO	l_loc_group_code
-							  FROM	at_loc_group
-							 WHERE	UPPER (loc_group_id) = UPPER (l_loc_group_id)
-										AND loc_category_code = l_loc_category_code
-										AND db_office_code =
-												 cwms_util.db_office_code_all;
-						EXCEPTION
-							WHEN NO_DATA_FOUND
-							THEN
-								--
-								-- Insert a new group_id...
-								INSERT
-								  INTO	at_loc_group (loc_group_code,
-															  loc_category_code,
-															  loc_group_id,
-															  loc_group_desc,
-															  shared_loc_alias_id,
-															  shared_loc_ref_code,
-															  db_office_code
-															 )
-								VALUES	(
-												cwms_seq.NEXTVAL,
-												l_loc_category_code,
-												l_loc_group_id,
-												l_loc_group_desc,
-												l_db_office_code,
-												p_loc_group_array (i).shared_alias_id,
-												get_location_code (
-													l_db_office_code,
-													p_loc_group_array (i).shared_loc_ref_id
-												)
-											);
-						END;
-				END;
-			END LOOP;
-		END IF;
-	END assign_loc_grps_cat2;
-
-
-	--
-	-- used to assign a group to an existing category.
-	--
-	PROCEDURE assign_loc_grp_cat2 (
-		p_loc_category_id 	 IN VARCHAR2,
-		p_loc_group_id 		 IN VARCHAR2,
-		p_loc_group_desc		 IN VARCHAR2 DEFAULT NULL,
-		p_shared_alias_id 	 IN VARCHAR2 DEFAULT NULL,
-		p_shared_loc_ref_id	 IN VARCHAR2 DEFAULT NULL,
-		p_db_office_id 		 IN VARCHAR2 DEFAULT NULL
-	)
-	IS
-		l_loc_group_array   group_array2
-			:= group_array2 (
-					group_type2 (TRIM (p_loc_group_id),
-									 TRIM (p_loc_group_desc),
-									 p_shared_alias_id,
-									 p_shared_loc_ref_id
-									)
-				);
-	BEGIN
-		assign_loc_grps_cat2 (p_loc_category_id,
-									 l_loc_group_array,
-									 p_db_office_id
-									);
-	END assign_loc_grp_cat2;
-
-	--
-	-- used to assign one or more groups to an existing category.
-	--
-	PROCEDURE assign_loc_grps_cat (
-		p_loc_category_id   IN VARCHAR2,
-		p_loc_group_array   IN group_array,
-		p_db_office_id 	  IN VARCHAR2 DEFAULT NULL
-	)
-	IS
-		l_loc_group_array   group_array2 := group_array2 ();
-	BEGIN
-		l_loc_group_array.EXTEND (p_loc_group_array.COUNT);
-
-		FOR i IN 1 .. p_loc_group_array.COUNT
-		LOOP
-			l_loc_group_array (i) :=
-				group_type2 (p_loc_group_array (i).GROUP_ID,
-								 p_loc_group_array (i).group_desc,
-								 NULL,
-								 NULL
-								);
-		END LOOP;
-
-		assign_loc_grps_cat2 (p_loc_category_id,
-									 l_loc_group_array,
-									 p_db_office_id
-									);
-	END assign_loc_grps_cat;
-
-	--
-	-- used to assign a group to an existing category.
-	--
-	PROCEDURE assign_loc_grp_cat (
-		p_loc_category_id   IN VARCHAR2,
-		p_loc_group_id 	  IN VARCHAR2,
-		p_loc_group_desc	  IN VARCHAR2 DEFAULT NULL,
-		p_db_office_id 	  IN VARCHAR2 DEFAULT NULL
-	)
-	IS
-	BEGIN
-		assign_loc_grp_cat2 (p_loc_category_id 	 => p_loc_category_id,
-									p_loc_group_id 		 => p_loc_group_id,
-									p_loc_group_desc		 => p_loc_group_desc,
-									p_shared_alias_id 	 => NULL,
-									p_shared_loc_ref_id	 => NULL,
-									p_db_office_id 		 => p_db_office_id
-								  );
-	END assign_loc_grp_cat;
-
-	FUNCTION retrieve_location (p_location_code IN NUMBER)
-		RETURN location_obj_t
-	IS
-		l_location_obj   location_obj_t := NULL;
-		l_location_ref   location_ref_t := NULL;
-
-		FUNCTION elev_unit (p_office_id IN VARCHAR2)
-			RETURN VARCHAR2
-		IS
-			l_unit	  VARCHAR2 (16);
-			l_factor   NUMBER;
-		BEGIN
-			cwms_util.user_display_unit (l_unit,
-												  l_factor,
-												  'Elev',
-												  1.0,
-												  NULL,
-												  p_office_id
-												 );
-			RETURN l_unit;
-		END;
-
-		FUNCTION elev_factor (p_office_id IN VARCHAR2)
-			RETURN NUMBER
-		IS
-			l_unit	  VARCHAR2 (16);
-			l_factor   NUMBER;
-		BEGIN
-			cwms_util.user_display_unit (l_unit,
-												  l_factor,
-												  'Elev',
-												  1.0,
-												  NULL,
-												  p_office_id
-												 );
-			RETURN l_factor;
-		END;
-	BEGIN
-		FOR rec IN (SELECT	o.office_id office_id, o.office_code office_code,
-									pl.location_code location_code,
-									bl.base_location_id base_location_id,
-									pl.sub_location_id sub_location_id,
-									s.state_initial state_initial,
-									c.county_name county_name,
-									tz.time_zone_name time_zone_name,
-									pl.location_type location_type,
-									pl.latitude latitude, pl.longitude longitude,
-									pl.horizontal_datum horizontal_datum,
-									pl.elevation elevation,
-									pl.vertical_datum vertical_datum,
-									pl.public_name public_name, pl.long_name long_name,
-									pl.description description,
-									pl.active_flag active_flag,
-									lk.location_kind_id location_kind_id,
-									pl.map_label map_label,
-									pl.published_latitude published_latitude,
-									pl.published_longitude published_longitude,
-									o2.office_id bounding_office_id,
-									o2.public_name bounding_office_name,
-									n.nation_id nation_id,
-									pl.nearest_city nearest_city
-						  FROM	at_physical_location pl
-									LEFT OUTER JOIN at_base_location bl
-										ON (pl.base_location_code =
-												 bl.base_location_code)
-									LEFT OUTER JOIN cwms_location_kind lk
-										ON (pl.location_kind = lk.location_kind_code)
-									LEFT OUTER JOIN cwms_time_zone tz
-										ON (pl.time_zone_code = tz.time_zone_code)
-									LEFT OUTER JOIN cwms_county c
-										ON (pl.county_code = c.county_code)
-									LEFT OUTER JOIN cwms_state s
-										ON (c.state_code = s.state_code)
-									LEFT OUTER JOIN cwms_nation n
-										ON (pl.nation_code = n.nation_code)
-									LEFT OUTER JOIN cwms_office o
-										ON (bl.db_office_code = o.office_code)
-									LEFT OUTER JOIN cwms_office o2
-										ON (pl.office_code = o2.office_code)
-						 WHERE	pl.location_code = p_location_code)
-		LOOP
-			l_location_ref :=
-				NEW location_ref_t (rec.base_location_id,
-										  rec.sub_location_id,
-										  rec.office_id
-										 );
-			l_location_obj :=
-				NEW location_obj_t (l_location_ref,
-										  rec.state_initial,
-										  rec.county_name,
-										  rec.time_zone_name,
-										  rec.location_type,
-										  rec.latitude,
-										  rec.longitude,
-										  rec.horizontal_datum,
-										  rec.elevation * elev_factor (rec.office_id),
-										  elev_unit (rec.office_id),
-										  rec.vertical_datum,
-										  rec.public_name,
-										  rec.long_name,
-										  rec.description,
-										  rec.active_flag,
-										  rec.location_kind_id,
-										  rec.map_label,
-										  rec.published_latitude,
-										  rec.published_longitude,
-										  rec.bounding_office_id,
-										  rec.bounding_office_name,
-										  rec.nation_id,
-										  rec.nearest_city
-										 );
-		END LOOP;
-
-		RETURN l_location_obj;
-	END retrieve_location;
-
-	FUNCTION retrieve_location (p_location_id 	IN VARCHAR2,
-										 p_db_office_id	IN VARCHAR2 DEFAULT NULL
-										)
-		RETURN location_obj_t
-	IS
-	BEGIN
-		RETURN retrieve_location (
-					 get_location_code (p_db_office_id, p_location_id)
-				 );
-	END retrieve_location;
-
-	PROCEDURE store_location (p_location			IN location_obj_t,
-									  p_fail_if_exists	IN VARCHAR2 DEFAULT 'T'
-									 )
-	IS
-		l_location_code	NUMBER;
-	BEGIN
-		l_location_code := store_location_f (p_location, p_fail_if_exists);
-	END store_location;
-
-	FUNCTION store_location_f (p_location			 IN location_obj_t,
-										p_fail_if_exists	 IN VARCHAR2 DEFAULT 'T'
-									  )
-		RETURN NUMBER
-	IS
-		l_location_code			NUMBER;
-		location_id_not_found	EXCEPTION;
-		PRAGMA EXCEPTION_INIT (location_id_not_found, -20025);
-	BEGIN
-		BEGIN
-			l_location_code :=
-				cwms_loc.get_location_code (
-					p_location.location_ref.get_office_id,
-					p_location.location_ref.get_location_id
-				);
-		EXCEPTION
-			WHEN location_id_not_found
-			THEN
-				NULL;
-		END;
-
-		IF l_location_code IS NOT NULL
-		THEN
-			IF cwms_util.is_true (p_fail_if_exists)
-			THEN
-				cwms_err.raise ('LOCATION_ID_ALREADY_EXISTS',
-									 p_location.location_ref.get_office_id,
-									 p_location.location_ref.get_location_id
-									);
-			END IF;
-		END IF;
-
-		cwms_loc.store_location2 (p_location.location_ref.get_location_id,
-										  p_location.location_type,
-										  p_location.elevation,
-										  p_location.elev_unit_id,
-										  p_location.vertical_datum,
-										  p_location.latitude,
-										  p_location.longitude,
-										  p_location.horizontal_datum,
-										  p_location.public_name,
-										  p_location.long_name,
-										  p_location.description,
-										  p_location.time_zone_name,
-										  p_location.county_name,
-										  p_location.state_initial,
-										  p_location.active_flag,
-										  p_location.location_kind_id,
-										  p_location.map_label,
-										  p_location.published_latitude,
-										  p_location.published_longitude,
-										  p_location.bounding_office_id,
-										  p_location.nation_id,
-										  p_location.nearest_city,
-										  'T',
-										  p_location.location_ref.get_office_id
-										 );
-
-		l_location_code :=
-			cwms_loc.get_location_code (p_location.location_ref.get_office_id,
-												 p_location.location_ref.get_location_id
-												);
-
-		RETURN l_location_code;
-	END store_location_f;
+               l_loc_group_code := NULL;
+            EXCEPTION
+               WHEN NO_DATA_FOUND
+               THEN
+                  BEGIN
+                     --
+                     -- Check if the group_id is a CWMS owned -
+                     -- group_id, if it is, do nothing...
+                     SELECT   loc_group_code
+                       INTO   l_loc_group_code
+                       FROM   at_loc_group
+                      WHERE   UPPER (loc_group_id) = UPPER (l_loc_group_id)
+                              AND loc_category_code = l_loc_category_code
+                              AND db_office_code =
+                                     cwms_util.db_office_code_all;
+                  EXCEPTION
+                     WHEN NO_DATA_FOUND
+                     THEN
+                        --
+                        -- Insert a new group_id...
+                        INSERT
+                          INTO   at_loc_group (loc_group_code,
+                                               loc_category_code,
+                                               loc_group_id,
+                                               loc_group_desc,
+                                               shared_loc_alias_id,
+                                               shared_loc_ref_code,
+                                               db_office_code
+                                              )
+                        VALUES   (
+                                    cwms_seq.NEXTVAL,
+                                    l_loc_category_code,
+                                    l_loc_group_id,
+                                    l_loc_group_desc,
+                                    l_db_office_code,
+                                    p_loc_group_array (i).shared_alias_id,
+                                    get_location_code (
+                                       l_db_office_code,
+                                       p_loc_group_array (i).shared_loc_ref_id
+                                    )
+                                 );
+                  END;
+            END;
+         END LOOP;
+      END IF;
+   END assign_loc_grps_cat2;
 
 
-	function get_location_id_from_alias (
-		p_alias_id		 in varchar2,
-		p_group_id		 in varchar2 default null,
-		p_category_id	 in varchar2 default null,
-		p_office_id 	 in varchar2 default null)
-		return varchar2
-	is  
+   --
+   -- used to assign a group to an existing category.
+   --
+   PROCEDURE assign_loc_grp_cat2 (
+      p_loc_category_id     IN VARCHAR2,
+      p_loc_group_id        IN VARCHAR2,
+      p_loc_group_desc       IN VARCHAR2 DEFAULT NULL,
+      p_shared_alias_id     IN VARCHAR2 DEFAULT NULL,
+      p_shared_loc_ref_id    IN VARCHAR2 DEFAULT NULL,
+      p_db_office_id        IN VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_loc_group_array   group_array2
+         := group_array2 (
+               group_type2 (TRIM (p_loc_group_id),
+                            TRIM (p_loc_group_desc),
+                            p_shared_alias_id,
+                            p_shared_loc_ref_id
+                           )
+            );
+   BEGIN
+      assign_loc_grps_cat2 (p_loc_category_id,
+                            l_loc_group_array,
+                            p_db_office_id
+                           );
+   END assign_loc_grp_cat2;
+
+   --
+   -- used to assign one or more groups to an existing category.
+   --
+   PROCEDURE assign_loc_grps_cat (
+      p_loc_category_id   IN VARCHAR2,
+      p_loc_group_array   IN group_array,
+      p_db_office_id      IN VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_loc_group_array   group_array2 := group_array2 ();
+   BEGIN
+      l_loc_group_array.EXTEND (p_loc_group_array.COUNT);
+
+      FOR i IN 1 .. p_loc_group_array.COUNT
+      LOOP
+         l_loc_group_array (i) :=
+            group_type2 (p_loc_group_array (i).GROUP_ID,
+                         p_loc_group_array (i).group_desc,
+                         NULL,
+                         NULL
+                        );
+      END LOOP;
+
+      assign_loc_grps_cat2 (p_loc_category_id,
+                            l_loc_group_array,
+                            p_db_office_id
+                           );
+   END assign_loc_grps_cat;
+
+   --
+   -- used to assign a group to an existing category.
+   --
+   PROCEDURE assign_loc_grp_cat (
+      p_loc_category_id   IN VARCHAR2,
+      p_loc_group_id      IN VARCHAR2,
+      p_loc_group_desc     IN VARCHAR2 DEFAULT NULL,
+      p_db_office_id      IN VARCHAR2 DEFAULT NULL
+   )
+   IS
+   BEGIN
+      assign_loc_grp_cat2 (p_loc_category_id     => p_loc_category_id,
+                           p_loc_group_id        => p_loc_group_id,
+                           p_loc_group_desc       => p_loc_group_desc,
+                           p_shared_alias_id     => NULL,
+                           p_shared_loc_ref_id    => NULL,
+                           p_db_office_id        => p_db_office_id
+                          );
+   END assign_loc_grp_cat;
+
+   FUNCTION retrieve_location (p_location_code IN NUMBER)
+      RETURN location_obj_t
+   IS
+      l_location_obj   location_obj_t := NULL;
+      l_location_ref   location_ref_t := NULL;
+
+      FUNCTION elev_unit (p_office_id IN VARCHAR2)
+         RETURN VARCHAR2
+      IS
+         l_unit     VARCHAR2 (16);
+         l_factor   NUMBER;
+      BEGIN
+         cwms_util.user_display_unit (l_unit,
+                                      l_factor,
+                                      'Elev',
+                                      1.0,
+                                      NULL,
+                                      p_office_id
+                                     );
+         RETURN l_unit;
+      END;
+
+      FUNCTION elev_factor (p_office_id IN VARCHAR2)
+         RETURN NUMBER
+      IS
+         l_unit     VARCHAR2 (16);
+         l_factor   NUMBER;
+      BEGIN
+         cwms_util.user_display_unit (l_unit,
+                                      l_factor,
+                                      'Elev',
+                                      1.0,
+                                      NULL,
+                                      p_office_id
+                                     );
+         RETURN l_factor;
+      END;
+   BEGIN
+      FOR rec IN (SELECT   o.office_id office_id, o.office_code office_code,
+                           pl.location_code location_code,
+                           bl.base_location_id base_location_id,
+                           pl.sub_location_id sub_location_id,
+                           s.state_initial state_initial,
+                           c.county_name county_name,
+                           tz.time_zone_name time_zone_name,
+                           pl.location_type location_type,
+                           pl.latitude latitude, pl.longitude longitude,
+                           pl.horizontal_datum horizontal_datum,
+                           pl.elevation elevation,
+                           pl.vertical_datum vertical_datum,
+                           pl.public_name public_name, pl.long_name long_name,
+                           pl.description description,
+                           pl.active_flag active_flag,
+                           lk.location_kind_id location_kind_id,
+                           pl.map_label map_label,
+                           pl.published_latitude published_latitude,
+                           pl.published_longitude published_longitude,
+                           o2.office_id bounding_office_id,
+                           o2.public_name bounding_office_name,
+                           n.nation_id nation_id,
+                           pl.nearest_city nearest_city
+                    FROM   at_physical_location pl
+                           LEFT OUTER JOIN at_base_location bl
+                              ON (pl.base_location_code =
+                                     bl.base_location_code)
+                           LEFT OUTER JOIN cwms_location_kind lk
+                              ON (pl.location_kind = lk.location_kind_code)
+                           LEFT OUTER JOIN cwms_time_zone tz
+                              ON (pl.time_zone_code = tz.time_zone_code)
+                           LEFT OUTER JOIN cwms_county c
+                              ON (pl.county_code = c.county_code)
+                           LEFT OUTER JOIN cwms_state s
+                              ON (c.state_code = s.state_code)
+                           LEFT OUTER JOIN cwms_nation n
+                              ON (pl.nation_code = n.nation_code)
+                           LEFT OUTER JOIN cwms_office o
+                              ON (bl.db_office_code = o.office_code)
+                           LEFT OUTER JOIN cwms_office o2
+                              ON (pl.office_code = o2.office_code)
+                   WHERE   pl.location_code = p_location_code)
+      LOOP
+         l_location_ref :=
+            NEW location_ref_t (rec.base_location_id,
+                                rec.sub_location_id,
+                                rec.office_id
+                               );
+         l_location_obj :=
+            NEW location_obj_t (l_location_ref,
+                                rec.state_initial,
+                                rec.county_name,
+                                rec.time_zone_name,
+                                rec.location_type,
+                                rec.latitude,
+                                rec.longitude,
+                                rec.horizontal_datum,
+                                rec.elevation * elev_factor (rec.office_id),
+                                elev_unit (rec.office_id),
+                                rec.vertical_datum,
+                                rec.public_name,
+                                rec.long_name,
+                                rec.description,
+                                rec.active_flag,
+                                rec.location_kind_id,
+                                rec.map_label,
+                                rec.published_latitude,
+                                rec.published_longitude,
+                                rec.bounding_office_id,
+                                rec.bounding_office_name,
+                                rec.nation_id,
+                                rec.nearest_city
+                               );
+      END LOOP;
+
+      RETURN l_location_obj;
+   END retrieve_location;
+
+   FUNCTION retrieve_location (p_location_id    IN VARCHAR2,
+                               p_db_office_id   IN VARCHAR2 DEFAULT NULL
+                              )
+      RETURN location_obj_t
+   IS
+   BEGIN
+      RETURN retrieve_location (
+                get_location_code (p_db_office_id, p_location_id)
+             );
+   END retrieve_location;
+
+   PROCEDURE store_location (p_location         IN location_obj_t,
+                             p_fail_if_exists   IN VARCHAR2 DEFAULT 'T'
+                            )
+   IS
+      l_location_code   NUMBER;
+   BEGIN
+      l_location_code := store_location_f (p_location, p_fail_if_exists);
+   END store_location;
+
+   FUNCTION store_location_f (p_location          IN location_obj_t,
+                              p_fail_if_exists    IN VARCHAR2 DEFAULT 'T'
+                             )
+      RETURN NUMBER
+   IS
+      l_location_code         NUMBER;
+      location_id_not_found   EXCEPTION;
+      PRAGMA EXCEPTION_INIT (location_id_not_found, -20025);
+   BEGIN
+      BEGIN
+         l_location_code :=
+            cwms_loc.get_location_code (
+               p_location.location_ref.get_office_id,
+               p_location.location_ref.get_location_id
+            );
+      EXCEPTION
+         WHEN location_id_not_found
+         THEN
+            NULL;
+      END;
+
+      IF l_location_code IS NOT NULL
+      THEN
+         IF cwms_util.is_true (p_fail_if_exists)
+         THEN
+            cwms_err.raise ('LOCATION_ID_ALREADY_EXISTS',
+                            p_location.location_ref.get_office_id,
+                            p_location.location_ref.get_location_id
+                           );
+         END IF;
+      END IF;
+
+      cwms_loc.store_location2 (p_location.location_ref.get_location_id,
+                                p_location.location_type,
+                                p_location.elevation,
+                                p_location.elev_unit_id,
+                                p_location.vertical_datum,
+                                p_location.latitude,
+                                p_location.longitude,
+                                p_location.horizontal_datum,
+                                p_location.public_name,
+                                p_location.long_name,
+                                p_location.description,
+                                p_location.time_zone_name,
+                                p_location.county_name,
+                                p_location.state_initial,
+                                p_location.active_flag,
+                                p_location.location_kind_id,
+                                p_location.map_label,
+                                p_location.published_latitude,
+                                p_location.published_longitude,
+                                p_location.bounding_office_id,
+                                p_location.nation_id,
+                                p_location.nearest_city,
+                                'T',
+                                p_location.location_ref.get_office_id
+                               );
+
+      l_location_code :=
+         cwms_loc.get_location_code (p_location.location_ref.get_office_id,
+                                     p_location.location_ref.get_location_id
+                                    );
+
+      RETURN l_location_code;
+   END store_location_f;
+
+
+   function get_location_id_from_alias (
+      p_alias_id       in varchar2,
+      p_group_id       in varchar2 default null,
+      p_category_id    in varchar2 default null,
+      p_office_id     in varchar2 default null)
+      return varchar2
+   is  
       l_office_code   number(10);  
       l_location_code number(10);
       l_office_id     varchar2(16);
-		l_location_id   varchar2(49); 
+      l_location_id   varchar2(49); 
       l_parts         str_tab_t;
-	begin
-		-------------------
-		-- sanity checks --
-		-------------------
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
       l_office_code := cwms_util.get_db_office_code(upper(trim(p_office_id)));
       select office_id into l_office_id from cwms_office where office_code = l_office_code;
 
-   	-----------------------------------------
-		-- retrieve and return the location id --
-		-----------------------------------------
+      -----------------------------------------
+      -- retrieve and return the location id --
+      -----------------------------------------
       begin
          select distinct
                 a.location_code
@@ -6087,27 +6087,27 @@ end unassign_loc_groups;
                'Alias (' || p_alias_id || ') matches more than one location.');
       end;
 
-		if l_location_id is null and l_location_code is not null then
+      if l_location_id is null and l_location_code is not null then
          l_location_id := cwms_loc.get_location_id(l_location_code);
       end if;
       return l_location_id;
-	end get_location_id_from_alias;
+   end get_location_id_from_alias;
 
 
-	function get_location_code_from_alias (
-		p_alias_id    in varchar2,
-		p_group_id    in varchar2 default null,
-		p_category_id in varchar2 default null,
-		p_office_id   in varchar2 default null)
-		return number
-	is
-		l_location_code number(10);
+   function get_location_code_from_alias (
+      p_alias_id    in varchar2,
+      p_group_id    in varchar2 default null,
+      p_category_id in varchar2 default null,
+      p_office_id   in varchar2 default null)
+      return number
+   is
+      l_location_code number(10);
       l_location_id   varchar2(256);
       l_office_id     varchar2(16);
-	begin
-		-------------------
-		-- sanity checks --
-		-------------------
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
       l_office_id := cwms_util.get_db_office_id(p_office_id);
                        
       l_location_id := get_location_id_from_alias(p_alias_id, p_group_id, p_category_id, l_office_id);
@@ -6120,7 +6120,7 @@ end unassign_loc_groups;
          
       return l_location_code; 
          
-	end get_location_code_from_alias;
+   end get_location_code_from_alias;
 
    procedure check_alias_id (p_alias_id      in varchar2,
                              p_location_id   in varchar2,
@@ -6209,345 +6209,345 @@ end unassign_loc_groups;
       end if;
    end check_alias_id;
 
-	FUNCTION check_alias_id_f (p_alias_id		 IN VARCHAR2,
-										p_location_id	 IN VARCHAR2,
-										p_category_id	 IN VARCHAR2,
-										p_group_id		 IN VARCHAR2,
-										p_office_id 	 IN VARCHAR2 DEFAULT NULL
-									  )
-		RETURN VARCHAR2
-	IS
-	BEGIN
-		check_alias_id (p_alias_id,
-							 p_location_id,
-							 p_category_id,
-							 p_group_id,
-							 p_office_id
-							);
-		RETURN p_alias_id;
-	END check_alias_id_f;
+   FUNCTION check_alias_id_f (p_alias_id       IN VARCHAR2,
+                              p_location_id    IN VARCHAR2,
+                              p_category_id    IN VARCHAR2,
+                              p_group_id       IN VARCHAR2,
+                              p_office_id     IN VARCHAR2 DEFAULT NULL
+                             )
+      RETURN VARCHAR2
+   IS
+   BEGIN
+      check_alias_id (p_alias_id,
+                      p_location_id,
+                      p_category_id,
+                      p_group_id,
+                      p_office_id
+                     );
+      RETURN p_alias_id;
+   END check_alias_id_f;
 
-	PROCEDURE store_url (p_location_id		 IN VARCHAR2,
-								p_url_id 			 IN VARCHAR2,
-								p_url_address		 IN VARCHAR2,
-								p_fail_if_exists	 IN VARCHAR2,
-								p_ignore_nulls 	 IN VARCHAR2,
-								p_url_title 		 IN VARCHAR2 DEFAULT NULL,
-								p_office_id 		 IN VARCHAR2 DEFAULT NULL
-							  )
-	IS
-		l_fail_if_exists	 BOOLEAN;
-		l_ignore_nulls 	 BOOLEAN;
-		l_exists 			 BOOLEAN;
-		l_rec 				 at_location_url%ROWTYPE;
-	BEGIN
-		-------------------
-		-- sanity checks --
-		-------------------
-		IF p_location_id IS NULL
-		THEN
-			cwms_err.raise ('ERROR', 'Location identifier must not be null.');
-		END IF;
+   PROCEDURE store_url (p_location_id       IN VARCHAR2,
+                        p_url_id           IN VARCHAR2,
+                        p_url_address       IN VARCHAR2,
+                        p_fail_if_exists    IN VARCHAR2,
+                        p_ignore_nulls     IN VARCHAR2,
+                        p_url_title        IN VARCHAR2 DEFAULT NULL,
+                        p_office_id        IN VARCHAR2 DEFAULT NULL
+                       )
+   IS
+      l_fail_if_exists    BOOLEAN;
+      l_ignore_nulls     BOOLEAN;
+      l_exists           BOOLEAN;
+      l_rec              at_location_url%ROWTYPE;
+   BEGIN
+      -------------------
+      -- sanity checks --
+      -------------------
+      IF p_location_id IS NULL
+      THEN
+         cwms_err.raise ('ERROR', 'Location identifier must not be null.');
+      END IF;
 
-		IF p_url_id IS NULL
-		THEN
-			cwms_err.raise ('ERROR', 'URL identifier must not be null.');
-		END IF;
+      IF p_url_id IS NULL
+      THEN
+         cwms_err.raise ('ERROR', 'URL identifier must not be null.');
+      END IF;
 
-		------------------------------
-		-- see if the record exists --
-		------------------------------
-		l_rec.location_code := get_location_code (p_office_id, p_location_id);
-		l_rec.url_id := p_url_id;
+      ------------------------------
+      -- see if the record exists --
+      ------------------------------
+      l_rec.location_code := get_location_code (p_office_id, p_location_id);
+      l_rec.url_id := p_url_id;
 
-		BEGIN
-			SELECT	*
-			  INTO	l_rec
-			  FROM	at_location_url
-			 WHERE	location_code = l_rec.location_code
-						AND url_id = l_rec.url_id;
+      BEGIN
+         SELECT   *
+           INTO   l_rec
+           FROM   at_location_url
+          WHERE   location_code = l_rec.location_code
+                  AND url_id = l_rec.url_id;
 
-			l_exists := TRUE;
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				l_exists := FALSE;
-		END;
+         l_exists := TRUE;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            l_exists := FALSE;
+      END;
 
-		IF l_exists
-		THEN
-			IF l_fail_if_exists
-			THEN
-				cwms_err.raise (
-					'ITEM_ALREADY_EXISTS',
-					'CWMS Location URL',
-						NVL (UPPER (p_office_id), cwms_util.user_office_id)
-					|| '/'
-					|| p_location_id
-					|| '/'
-					|| p_url_id
-				);
-			END IF;
-		ELSE
-			IF p_url_address IS NULL
-			THEN
-				cwms_err.raise ('ERROR',
-									 'URL address must not be null on new record.'
-									);
-			END IF;
-		END IF;
+      IF l_exists
+      THEN
+         IF l_fail_if_exists
+         THEN
+            cwms_err.raise (
+               'ITEM_ALREADY_EXISTS',
+               'CWMS Location URL',
+                  NVL (UPPER (p_office_id), cwms_util.user_office_id)
+               || '/'
+               || p_location_id
+               || '/'
+               || p_url_id
+            );
+         END IF;
+      ELSE
+         IF p_url_address IS NULL
+         THEN
+            cwms_err.raise ('ERROR',
+                            'URL address must not be null on new record.'
+                           );
+         END IF;
+      END IF;
 
-		-------------------------
-		-- populate the record --
-		-------------------------
-		IF p_url_address IS NOT NULL
-		THEN
-			l_rec.url_address := p_url_address;
-		END IF;
+      -------------------------
+      -- populate the record --
+      -------------------------
+      IF p_url_address IS NOT NULL
+      THEN
+         l_rec.url_address := p_url_address;
+      END IF;
 
-		IF p_url_title IS NOT NULL OR NOT l_ignore_nulls
-		THEN
-			l_rec.url_title := p_url_title;
-		END IF;
+      IF p_url_title IS NOT NULL OR NOT l_ignore_nulls
+      THEN
+         l_rec.url_title := p_url_title;
+      END IF;
 
-		---------------------------------
-		-- insert or update the record --
-		---------------------------------
-		IF l_exists
-		THEN
-			UPDATE	at_location_url
-				SET	row = l_rec
-			 WHERE	location_code = l_rec.location_code
-						AND url_id = l_rec.url_id;
-		ELSE
-			INSERT INTO   at_location_url
-				  VALUES   l_rec;
-		END IF;
-	END store_url;
+      ---------------------------------
+      -- insert or update the record --
+      ---------------------------------
+      IF l_exists
+      THEN
+         UPDATE   at_location_url
+            SET   row = l_rec
+          WHERE   location_code = l_rec.location_code
+                  AND url_id = l_rec.url_id;
+      ELSE
+         INSERT INTO   at_location_url
+              VALUES   l_rec;
+      END IF;
+   END store_url;
 
-	PROCEDURE retrieve_url (p_url_address		 OUT VARCHAR2,
-									p_url_title 		 OUT VARCHAR2,
-									p_location_id	 IN	  VARCHAR2,
-									p_url_id 		 IN	  VARCHAR2,
-									p_office_id 	 IN	  VARCHAR2 DEFAULT NULL
-								  )
-	IS
-		l_rec   at_location_url%ROWTYPE;
-	BEGIN
-		-------------------
-		-- sanity checks --
-		-------------------
-		IF p_location_id IS NULL
-		THEN
-			cwms_err.raise ('ERROR', 'Location identifier must not be null.');
-		END IF;
+   PROCEDURE retrieve_url (p_url_address       OUT VARCHAR2,
+                           p_url_title        OUT VARCHAR2,
+                           p_location_id    IN     VARCHAR2,
+                           p_url_id        IN     VARCHAR2,
+                           p_office_id     IN     VARCHAR2 DEFAULT NULL
+                          )
+   IS
+      l_rec   at_location_url%ROWTYPE;
+   BEGIN
+      -------------------
+      -- sanity checks --
+      -------------------
+      IF p_location_id IS NULL
+      THEN
+         cwms_err.raise ('ERROR', 'Location identifier must not be null.');
+      END IF;
 
-		IF p_url_id IS NULL
-		THEN
-			cwms_err.raise ('ERROR', 'URL identifier must not be null.');
-		END IF;
+      IF p_url_id IS NULL
+      THEN
+         cwms_err.raise ('ERROR', 'URL identifier must not be null.');
+      END IF;
 
-		-------------------------
-		-- retrieve the record --
-		-------------------------
-		l_rec.location_code := get_location_code (p_office_id, p_location_id);
-		l_rec.url_id := p_url_id;
+      -------------------------
+      -- retrieve the record --
+      -------------------------
+      l_rec.location_code := get_location_code (p_office_id, p_location_id);
+      l_rec.url_id := p_url_id;
 
-		BEGIN
-			SELECT	*
-			  INTO	l_rec
-			  FROM	at_location_url
-			 WHERE	location_code = l_rec.location_code
-						AND url_id = l_rec.url_id;
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				cwms_err.raise (
-					'ITEM_DOES_NOT_EXIST',
-					'CWMS Location URL',
-						NVL (UPPER (p_office_id), cwms_util.user_office_id)
-					|| '/'
-					|| p_location_id
-					|| '/'
-					|| p_url_id
-				);
-		END;
+      BEGIN
+         SELECT   *
+           INTO   l_rec
+           FROM   at_location_url
+          WHERE   location_code = l_rec.location_code
+                  AND url_id = l_rec.url_id;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.raise (
+               'ITEM_DOES_NOT_EXIST',
+               'CWMS Location URL',
+                  NVL (UPPER (p_office_id), cwms_util.user_office_id)
+               || '/'
+               || p_location_id
+               || '/'
+               || p_url_id
+            );
+      END;
 
-		---------------------------
-		-- set the out variables --
-		---------------------------
-		p_url_address := l_rec.url_address;
-		p_url_title := l_rec.url_title;
-	END retrieve_url;
+      ---------------------------
+      -- set the out variables --
+      ---------------------------
+      p_url_address := l_rec.url_address;
+      p_url_title := l_rec.url_title;
+   END retrieve_url;
 
-	PROCEDURE delete_url (p_location_id   IN VARCHAR2,
-								 p_url_id		  IN VARCHAR2, 		-- NULL = all urls
-								 p_office_id	  IN VARCHAR2 DEFAULT NULL
-								)
-	IS
-	BEGIN
-		-------------------
-		-- sanity checks --
-		-------------------
-		IF p_location_id IS NULL
-		THEN
-			cwms_err.raise ('ERROR', 'Location identifier must not be null.');
-		END IF;
+   PROCEDURE delete_url (p_location_id   IN VARCHAR2,
+                         p_url_id        IN VARCHAR2,       -- NULL = all urls
+                         p_office_id     IN VARCHAR2 DEFAULT NULL
+                        )
+   IS
+   BEGIN
+      -------------------
+      -- sanity checks --
+      -------------------
+      IF p_location_id IS NULL
+      THEN
+         cwms_err.raise ('ERROR', 'Location identifier must not be null.');
+      END IF;
 
-		---------------------
-		-- delete the urls --
-		---------------------
-		BEGIN
-			DELETE FROM   at_location_url
-					WHERE   location_code =
-								  get_location_code (p_office_id, p_location_id)
-							  AND url_id = NVL (p_url_id, url_id);
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				cwms_err.raise (
-					'ITEM_DOES_NOT_EXIST',
-					'CWMS Location URL',
-						NVL (UPPER (p_office_id), cwms_util.user_office_id)
-					|| '/'
-					|| p_location_id
-					|| '/'
-					|| NVL (p_url_id, '<any>')
-				);
-		END;
-	END delete_url;
+      ---------------------
+      -- delete the urls --
+      ---------------------
+      BEGIN
+         DELETE FROM   at_location_url
+               WHERE   location_code =
+                          get_location_code (p_office_id, p_location_id)
+                       AND url_id = NVL (p_url_id, url_id);
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.raise (
+               'ITEM_DOES_NOT_EXIST',
+               'CWMS Location URL',
+                  NVL (UPPER (p_office_id), cwms_util.user_office_id)
+               || '/'
+               || p_location_id
+               || '/'
+               || NVL (p_url_id, '<any>')
+            );
+      END;
+   END delete_url;
 
-	PROCEDURE rename_url (p_location_id   IN VARCHAR2,
-								 p_old_url_id	  IN VARCHAR2,
-								 p_new_url_id	  IN VARCHAR2,
-								 p_office_id	  IN VARCHAR2 DEFAULT NULL
-								)
-	IS
-	BEGIN
-		-------------------
-		-- sanity checks --
-		-------------------
-		IF p_location_id IS NULL
-		THEN
-			cwms_err.raise ('ERROR', 'Location identifier must not be null.');
-		END IF;
+   PROCEDURE rename_url (p_location_id   IN VARCHAR2,
+                         p_old_url_id     IN VARCHAR2,
+                         p_new_url_id     IN VARCHAR2,
+                         p_office_id     IN VARCHAR2 DEFAULT NULL
+                        )
+   IS
+   BEGIN
+      -------------------
+      -- sanity checks --
+      -------------------
+      IF p_location_id IS NULL
+      THEN
+         cwms_err.raise ('ERROR', 'Location identifier must not be null.');
+      END IF;
 
-		IF p_old_url_id IS NULL
-		THEN
-			cwms_err.raise ('ERROR',
-								 'Existing URL identifier must not be null.'
-								);
-		END IF;
+      IF p_old_url_id IS NULL
+      THEN
+         cwms_err.raise ('ERROR',
+                         'Existing URL identifier must not be null.'
+                        );
+      END IF;
 
-		IF p_new_url_id IS NULL
-		THEN
-			cwms_err.raise ('ERROR', 'New URL identifier must not be null.');
-		END IF;
+      IF p_new_url_id IS NULL
+      THEN
+         cwms_err.raise ('ERROR', 'New URL identifier must not be null.');
+      END IF;
 
-		--------------------
-		-- rename the url --
-		--------------------
-		BEGIN
-			UPDATE	at_location_url
-				SET	url_id = p_new_url_id
-			 WHERE	location_code =
-							get_location_code (p_office_id, p_location_id)
-						AND url_id = p_old_url_id;
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				cwms_err.raise (
-					'ITEM_DOES_NOT_EXIST',
-					'CWMS Location URL',
-						NVL (UPPER (p_office_id), cwms_util.user_office_id)
-					|| '/'
-					|| p_location_id
-					|| '/'
-					|| p_old_url_id
-				);
-		END;
-	END rename_url;
+      --------------------
+      -- rename the url --
+      --------------------
+      BEGIN
+         UPDATE   at_location_url
+            SET   url_id = p_new_url_id
+          WHERE   location_code =
+                     get_location_code (p_office_id, p_location_id)
+                  AND url_id = p_old_url_id;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.raise (
+               'ITEM_DOES_NOT_EXIST',
+               'CWMS Location URL',
+                  NVL (UPPER (p_office_id), cwms_util.user_office_id)
+               || '/'
+               || p_location_id
+               || '/'
+               || p_old_url_id
+            );
+      END;
+   END rename_url;
 
-	PROCEDURE cat_urls (p_url_catalog			  OUT SYS_REFCURSOR,
-							  p_location_id_mask   IN		VARCHAR2 DEFAULT '*',
-							  p_url_id_mask		  IN		VARCHAR2 DEFAULT '*',
-							  p_url_address_mask   IN		VARCHAR2 DEFAULT '*',
-							  p_url_title_mask	  IN		VARCHAR2 DEFAULT '*',
-							  p_office_id_mask	  IN		VARCHAR2 DEFAULT NULL
-							 )
-	IS
-		l_location_id_mask	VARCHAR2 (49);
-		l_url_id_mask			VARCHAR2 (32);
-		l_url_address_mask	VARCHAR2 (1024);
-		l_url_title_mask		VARCHAR2 (256);
-		l_office_id_mask		VARCHAR2 (16);
-	BEGIN
-		----------------------
-		-- set up the masks --
-		----------------------
-		l_location_id_mask :=
-			cwms_util.normalize_wildcards (UPPER (p_location_id_mask));
-		l_url_id_mask := cwms_util.normalize_wildcards (UPPER (p_url_id_mask));
-		l_url_address_mask :=
-			cwms_util.normalize_wildcards (UPPER (p_url_address_mask));
-		l_url_title_mask :=
-			cwms_util.normalize_wildcards (UPPER (p_url_title_mask));
-		l_office_id_mask :=
-			cwms_util.normalize_wildcards (
-				UPPER (NVL (p_url_address_mask, cwms_util.user_office_id))
-			);
+   PROCEDURE cat_urls (p_url_catalog           OUT SYS_REFCURSOR,
+                       p_location_id_mask   IN      VARCHAR2 DEFAULT '*',
+                       p_url_id_mask        IN      VARCHAR2 DEFAULT '*',
+                       p_url_address_mask   IN      VARCHAR2 DEFAULT '*',
+                       p_url_title_mask     IN      VARCHAR2 DEFAULT '*',
+                       p_office_id_mask     IN      VARCHAR2 DEFAULT NULL
+                      )
+   IS
+      l_location_id_mask   VARCHAR2 (49);
+      l_url_id_mask         VARCHAR2 (32);
+      l_url_address_mask   VARCHAR2 (1024);
+      l_url_title_mask      VARCHAR2 (256);
+      l_office_id_mask      VARCHAR2 (16);
+   BEGIN
+      ----------------------
+      -- set up the masks --
+      ----------------------
+      l_location_id_mask :=
+         cwms_util.normalize_wildcards (UPPER (p_location_id_mask));
+      l_url_id_mask := cwms_util.normalize_wildcards (UPPER (p_url_id_mask));
+      l_url_address_mask :=
+         cwms_util.normalize_wildcards (UPPER (p_url_address_mask));
+      l_url_title_mask :=
+         cwms_util.normalize_wildcards (UPPER (p_url_title_mask));
+      l_office_id_mask :=
+         cwms_util.normalize_wildcards (
+            UPPER (NVL (p_url_address_mask, cwms_util.user_office_id))
+         );
 
-		-----------------------
-		-- perform the query --
-		-----------------------
-		OPEN p_url_catalog FOR
-			SELECT	  o.office_id,
-						  bl.base_location_id || SUBSTR ('-', 1, LENGTH (pl.sub_location_id)) || pl.sub_location_id AS location_id,
-						  lu.url_id, lu.url_address, lu.url_title
-				 FROM   at_location_url lu,
-						  at_physical_location pl,
-						  at_base_location bl,
-						  cwms_office o
-				WHERE 		o.office_id LIKE l_office_id_mask ESCAPE '\'
-						  AND bl.db_office_code = o.office_code
-						  AND pl.base_location_code = bl.base_location_code
-						  AND UPPER (
-										bl.base_location_id
-									|| SUBSTR ('-', 1, LENGTH (pl.sub_location_id))
-									|| pl.sub_location_id
-								) LIKE
-									l_location_id_mask ESCAPE '\'
-						  AND lu.location_code = pl.location_code
-						  AND UPPER (lu.url_id) LIKE l_url_id_mask ESCAPE '\'
-						  AND UPPER (lu.url_address) LIKE
-									l_url_address_mask ESCAPE '\'
-						  AND UPPER (lu.url_title) LIKE l_url_title_mask ESCAPE '\'
-			ORDER BY   o.office_id,
-						  bl.base_location_id,
-						  pl.sub_location_id NULLS FIRST,
-						  lu.url_id;
-	END cat_urls;
+      -----------------------
+      -- perform the query --
+      -----------------------
+      OPEN p_url_catalog FOR
+         SELECT     o.office_id,
+                    bl.base_location_id || SUBSTR ('-', 1, LENGTH (pl.sub_location_id)) || pl.sub_location_id AS location_id,
+                    lu.url_id, lu.url_address, lu.url_title
+             FROM   at_location_url lu,
+                    at_physical_location pl,
+                    at_base_location bl,
+                    cwms_office o
+            WHERE       o.office_id LIKE l_office_id_mask ESCAPE '\'
+                    AND bl.db_office_code = o.office_code
+                    AND pl.base_location_code = bl.base_location_code
+                    AND UPPER (
+                              bl.base_location_id
+                           || SUBSTR ('-', 1, LENGTH (pl.sub_location_id))
+                           || pl.sub_location_id
+                        ) LIKE
+                           l_location_id_mask ESCAPE '\'
+                    AND lu.location_code = pl.location_code
+                    AND UPPER (lu.url_id) LIKE l_url_id_mask ESCAPE '\'
+                    AND UPPER (lu.url_address) LIKE
+                           l_url_address_mask ESCAPE '\'
+                    AND UPPER (lu.url_title) LIKE l_url_title_mask ESCAPE '\'
+         ORDER BY   o.office_id,
+                    bl.base_location_id,
+                    pl.sub_location_id NULLS FIRST,
+                    lu.url_id;
+   END cat_urls;
 
-	FUNCTION cat_urls_f (p_location_id_mask	IN VARCHAR2 DEFAULT '*',
-								p_url_id_mask			IN VARCHAR2 DEFAULT '*',
-								p_url_address_mask	IN VARCHAR2 DEFAULT '*',
-								p_url_title_mask		IN VARCHAR2 DEFAULT '*',
-								p_office_id_mask		IN VARCHAR2 DEFAULT NULL
-							  )
-		RETURN SYS_REFCURSOR
-	IS
-		l_cursor   SYS_REFCURSOR;
-	BEGIN
-		cat_urls (l_cursor,
-					 p_location_id_mask,
-					 p_url_id_mask,
-					 p_url_address_mask,
-					 p_url_title_mask,
-					 p_office_id_mask
-					);
+   FUNCTION cat_urls_f (p_location_id_mask   IN VARCHAR2 DEFAULT '*',
+                        p_url_id_mask         IN VARCHAR2 DEFAULT '*',
+                        p_url_address_mask   IN VARCHAR2 DEFAULT '*',
+                        p_url_title_mask      IN VARCHAR2 DEFAULT '*',
+                        p_office_id_mask      IN VARCHAR2 DEFAULT NULL
+                       )
+      RETURN SYS_REFCURSOR
+   IS
+      l_cursor   SYS_REFCURSOR;
+   BEGIN
+      cat_urls (l_cursor,
+                p_location_id_mask,
+                p_url_id_mask,
+                p_url_address_mask,
+                p_url_title_mask,
+                p_office_id_mask
+               );
 
-		RETURN l_cursor;
-	END cat_urls_f;
+      RETURN l_cursor;
+   END cat_urls_f;
 
    function get_loc_kind_names(
       p_location_code in number)
@@ -8431,7 +8431,53 @@ end unassign_loc_groups;
    begin
       delete_local_vert_datum_name(get_location_code(p_office_id, p_location_id));
    end delete_local_vert_datum_name;
-            
+                                      
+      
+   function is_vert_datum_offset_estimated(
+      p_location_code in integer,
+      p_from_datum    in varchar2,
+      p_to_datum      in varchar2)
+      return varchar2
+   is
+      l_offset         binary_double;
+      l_effective_date date;
+      l_estimate       varchar2(1);
+   begin
+      get_vertical_datum_offset(
+         l_offset,
+         l_effective_date,
+         l_estimate,
+         p_location_code,
+         p_from_datum,
+         p_to_datum);
+         
+      return l_estimate;         
+   end is_vert_datum_offset_estimated;      
+      
+   function is_vert_datum_offset_estimated(
+      p_location_id in varchar2,
+      p_from_datum  in varchar2,
+      p_to_datum    in varchar2,
+      p_office_id   in varchar2 default null)
+      return varchar2
+   is
+      l_offset         binary_double;
+      l_effective_date date;
+      l_estimate       varchar2(1);
+   begin
+      get_vertical_datum_offset(
+         l_offset,
+         l_effective_date,
+         l_estimate,
+         p_location_id,
+         p_from_datum,
+         p_to_datum,
+         p_office_id=>p_office_id);
+         
+      return l_estimate;         
+   end is_vert_datum_offset_estimated;            
+   
+   
    function get_location_kind_ancestors(
       p_location_kind_id  in varchar2,
       p_include_this_kind in varchar2 default 'F')
@@ -8603,7 +8649,1113 @@ end unassign_loc_groups;
          end if;
       end if;
       return l_descendants;
-   end get_location_kind_descendants;      
+   end get_location_kind_descendants;
+
+   function get_location_ids(
+      p_location_code in integer,
+      p_exclude       in varchar2 default null)
+      return varchar2
+   is
+      l_names str_tab_t;
+   begin
+      select name
+        bulk collect
+        into l_names
+        from (select distinct
+                     loc_alias_id as name
+                from at_loc_group_assignment
+               where location_code = p_location_code
+                 and loc_alias_id is not null
+              union all
+              select bl.base_location_id
+                     ||substr('-', 1, length(pl.sub_location_id))
+                     ||pl.sub_location_id as name
+                from at_physical_location pl,
+                     at_base_location bl
+               where pl.location_code = p_location_code
+                 and bl.base_location_code = pl.base_location_code
+             )
+       where name != case when p_exclude is null then '.' else p_exclude end
+       order by 1;
+       return cwms_util.join_text(l_names, '.');
+   end get_location_ids;
+   
+   procedure retrieve_locations(
+      p_results        out clob,
+      p_date_time      out date,
+      p_query_time     out long,
+      p_format_time    out long, 
+      p_location_count out integer,  
+      p_names          in  varchar2 default null,            
+      p_format         in  varchar2 default null,
+      p_units          in  varchar2 default null,   
+      p_datums         in  varchar2 default null,
+      p_office_id      in  varchar2 default null)
+   is
+      l_data                 clob;
+      l_names                str_tab_t;
+      l_format               varchar2(16);
+      l_units                str_tab_t;
+      l_datums               str_tab_t;
+      l_office_id            varchar2(16);
+      l_location_id_mask     varchar2(256);
+      l_ts1                  timestamp;
+      l_ts2                  timestamp;
+      l_query_time           date;
+      l_elapsed_query        interval day (0) to second (6);
+      l_elapsed_format       interval day (0) to second (6);
+      l_count                pls_integer; 
+      l_temp                 varchar2(256);    
+      l_location_codes       str_tab_t;
+      l_offices              str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
+      l_location_ids         str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
+      l_alternate_names      str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
+      l_long_names           str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
+      l_public_names         str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
+      l_map_labels           str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
+      l_descriptions         str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
+      l_latitudes            str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
+      l_longitudes           str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
+      l_horizontal_datums    str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
+      l_elevations           str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
+      l_elevation_units      str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
+      l_elevation_estimated  str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
+      l_vertical_datums      str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
+      l_published_latitudes  str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
+      l_published_longitudes str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
+      l_time_zones           str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
+      l_counties             str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
+      l_states               str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
+      l_nations              str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
+      l_nearest_cities       str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
+      l_bounding_offices     str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
+      l_location_kinds       str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
+      l_location_types       str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
+      l_reduced_count        pls_integer := 50;
+      l_minimal_count        pls_integer := 250;
+      l_width                pls_integer := 24;
+   begin
+   l_query_time := cast(systimestamp at time zone 'UTC' as date);
+   ----------------------------
+   -- process the parameters --
+   ----------------------------
+   -----------
+   -- names --
+   -----------
+   if p_names is null then
+      l_names := str_tab_t();
+      l_names.extend;
+      l_names(1) := '*';
+   else
+      l_names := cwms_util.split_text(p_names, '|');
+      for i in 1..l_names.count loop
+         l_names(i) := trim(l_names(i));
+      end loop;
+   end if;
+   ------------
+   -- format --
+   ------------
+   if p_format is null then
+      l_format := 'TAB';
+   else                 
+      l_format := upper(trim(p_format));
+      if l_format not in ('TAB','CSV','XML','JSON') then
+         cwms_err.raise('INVALID_ITEM', l_format, 'rating response format');
+      end if;
+   end if;
+   ------------
+   -- office --
+   ------------
+   if p_office_id is null then
+      l_office_id := '*';
+   else               
+      begin                                                                              
+         l_office_id := upper(trim(p_office_id));
+         select office_id into l_office_id from cwms_office where office_id = l_office_id;
+      exception
+         when no_data_found then
+            cwms_err.raise('INVALID_OFFICE_ID', l_office_id);
+      end;
+   end if;  
+   -----------
+   -- units --
+   -----------
+   if p_units is null then
+      l_units := str_tab_t();
+      l_units.extend(l_names.count);
+      for i in 1..l_units.count loop
+         l_units(i) := 'EN';
+      end loop;
+   else
+      l_units := cwms_util.split_text(p_units, '|');
+      for i in 1..l_units.count loop
+         l_units(i) := upper(trim(l_units(i)));
+         if l_units(i) not in  ('EN', 'SI') then
+            cwms_err.raise('ERROR', 'Expected unit specification of EN or SI, got '||l_units(i));
+         end if;
+      end loop;
+      l_count := l_units.count - l_names.count; 
+      if l_count > 0 then
+         l_units.trim(l_count);
+      elsif l_count < 0 then
+         l_temp := l_units(l_units.count);
+         l_count := -l_count;
+         l_units.extend(l_count);
+         for i in 1..l_count loop
+            l_units(l_units.count - i + 1) := l_temp;
+         end loop; 
+      end if;
+   end if;   
+   ------------
+   -- datums --
+   ------------
+   if p_datums is null then
+      l_datums := str_tab_t();
+      l_datums.extend(l_names.count);
+      for i in 1..l_datums.count loop
+         l_datums(i) := 'NATIVE';
+      end loop;
+   else
+      l_datums := cwms_util.split_text(p_datums, '|');
+      for i in 1..l_datums.count loop
+         l_datums(i) := trim(l_datums(i));
+         if upper(l_datums(i)) in ('NATIVE', 'NAVD88', 'NGVD29') then
+            l_datums(i) := upper(l_datums(i));
+         else
+            cwms_err.raise('INVALID_ITEM', l_datums(i), 'rating response datum');
+         end if; 
+      end loop;
+      l_count := l_datums.count - l_names.count; 
+      if l_count > 0 then
+         l_datums.trim(l_count);
+      elsif l_count < 0 then
+         l_temp := l_datums(l_datums.count);
+         l_count := -l_count;
+         l_datums.extend(l_count);
+         for i in 1..l_count loop
+            l_datums(l_datums.count - i + 1) := l_temp;
+         end loop;       
+      end if;
+   end if;   
+   
+   l_ts1 := systimestamp;
+   for i in 1..l_names.count loop
+      l_location_id_mask := cwms_util.normalize_wildcards(upper(l_names(i)));
+      select distinct
+             office_id,
+             location_id,
+             alternate_names,                                                                               
+             long_name,
+             public_name,
+             map_label,
+             description,
+             latitude,
+             longitude,
+             horizontal_datum,
+             elevation,
+             elevation_unit,
+             elevation_estimated,
+             vertical_datum,
+             published_latitude,
+             published_longitude,
+             time_zone_name,
+             county,
+             state_initial,
+             nation_id,
+             nearest_city,
+             bounding_office,
+             location_kind,
+             location_type
+        bulk collect
+        into l_offices(1),
+             l_location_ids(1),
+             l_alternate_names(1),
+             l_long_names(1),
+             l_public_names(1),
+             l_map_labels(1),
+             l_descriptions(1),
+             l_latitudes(1),
+             l_longitudes(1),
+             l_horizontal_datums(1),
+             l_elevations(1),
+             l_elevation_units(1),
+             l_elevation_estimated(1),
+             l_vertical_datums(1),
+             l_published_latitudes(1),
+             l_published_longitudes(1),
+             l_time_zones(1),
+             l_counties(1),
+             l_states(1),
+             l_nations(1),
+             l_nearest_cities(1),
+             l_bounding_offices(1),
+             l_location_kinds(1),
+             l_location_types(1)     
+        from (select loc.office_id,
+                     loc.location_id,
+                     get_location_ids(loc.location_code, loc.location_id) as alternate_names,
+                     loc.long_name,
+                     loc.public_name,
+                     loc.map_label,
+                     loc.description,
+                     cwms_rounding.round_dt_f(loc.latitude, '7777777777') as latitude,
+                     cwms_rounding.round_dt_f(loc.longitude, '7777777777') as longitude,
+                     loc.horizontal_datum,
+                     case
+                     when l_units(i) = 'SI' then
+                        case 
+                        when loc.vertical_datum is null then
+                           cwms_rounding.round_dt_f(loc.elevation, '7777777777')
+                        else
+                           cwms_rounding.round_dt_f(
+                              loc.elevation + cwms_loc.get_vertical_datum_offset(
+                                 loc.location_code, 
+                                 loc.vertical_datum, 
+                                 replace(l_datums(i), 'NATIVE', loc.vertical_datum), 
+                                 sysdate, 
+                                 case when l_units(i) = 'SI' then 'm' else 'ft' end),
+                              '7777777777')
+                        end
+                     else
+                        case 
+                        when loc.vertical_datum is null then
+                           cwms_rounding.round_dt_f(
+                              cwms_util.convert_units(loc.elevation, 'm', 'ft'),
+                              '7777777777')
+                        else
+                           cwms_rounding.round_dt_f(
+                              cwms_util.convert_units(
+                                 loc.elevation + cwms_loc.get_vertical_datum_offset(
+                                    loc.location_code, 
+                                    loc.vertical_datum, 
+                                    replace(l_datums(i), 'NATIVE', loc.vertical_datum), 
+                                    sysdate, 
+                                    case when l_units(i) = 'SI' then 'm' else 'ft' end),
+                                 'm',
+                                 'ft'),
+                              '7777777777')
+                        end                           
+                     end as elevation,
+                     case when l_units(i) = 'EN' then 'ft' else 'm' end as elevation_unit,
+                     case
+                     when loc.vertical_datum is null then
+                        'false'
+                     else 
+                        case 
+                        when cwms_loc.is_vert_datum_offset_estimated(
+                                loc.location_code, 
+                                loc.vertical_datum, 
+                                replace(l_datums(i), 'NATIVE', loc.vertical_datum)) = 'T' 
+                        then 'true' 
+                        else 'false'
+                        end
+                     end as elevation_estimated,
+                     replace(l_datums(i), 'NATIVE', loc.vertical_datum) as vertical_datum,
+                     cwms_rounding.round_dt_f(loc.published_latitude, '7777777777') as published_latitude,
+                     cwms_rounding.round_dt_f(loc.published_longitude, '7777777777') as published_longitude,
+                     tz.time_zone_name,
+                     case
+                     when county.county_id = '000' then null
+                     else county.county_name
+                     end as county,
+                     state.state_initial,
+                     nation.nation_id,
+                     loc.nearest_city,
+                     office.office_id as bounding_office,
+                     kind.location_kind_id as location_kind,
+                     loc.location_type 
+                from (select pl.location_code,
+                             o.office_id,
+                             bl.base_location_id
+                             ||substr('-', 1, length(pl.sub_location_id))
+                             ||pl.sub_location_id as location_id,
+                             pl.long_name,
+                             pl.public_name,
+                             pl.map_label,
+                             pl.description,
+                             pl.latitude,
+                             pl.longitude,
+                             pl.horizontal_datum,
+                             pl.elevation,
+                             pl.vertical_datum,
+                             pl.published_latitude,
+                             pl.published_longitude,
+                             pl.time_zone_code,
+                             pl.county_code,
+                             pl.nation_code,
+                             pl.nearest_city,
+                             pl.office_code,
+                             pl.location_kind,
+                             pl.location_type
+                        from at_physical_location pl,
+                             at_base_location bl,
+                             cwms_office o
+                       where o.office_id like replace(l_office_id, '*', '%')
+                         and upper(bl.base_location_id||substr('-', 1, length(pl.sub_location_id))||pl.sub_location_id) like l_location_id_mask
+                         and bl.db_office_code = o.office_code
+                         and pl.base_location_code = bl.base_location_code
+                      ) loc
+                      left outer join
+                      (select time_zone_code,
+                              time_zone_name
+                         from cwms_time_zone
+                      ) tz on tz.time_zone_code = loc.time_zone_code
+                      left outer join
+                      (select county_code,
+                              county_id,
+                              state_code,
+                              county_name
+                         from cwms_county 
+                      ) county on county.county_code = loc.county_code
+                      left outer join
+                      (select state_code,
+                              state_initial
+                         from cwms_state
+                      ) state on state.state_code = county.state_code
+                      left outer join
+                      (select nation_code,
+                              nation_id
+                         from cwms_nation
+                      ) nation on nation.nation_code = loc.nation_code
+                      left outer join
+                      (select office_code,
+                              office_id
+                         from cwms_office     
+                      ) office on office.office_code = loc.office_code
+                      left outer join
+                      (select location_kind_code,
+                              location_kind_id
+                         from cwms_location_kind     
+                      ) kind on kind.location_kind_code = loc.location_kind         
+              union all          
+              select loc.office_id,
+                     loc.location_id,
+                     get_location_ids(loc.location_code, loc.location_id) as alternate_names,
+                     loc.long_name,
+                     loc.public_name,
+                     loc.map_label,
+                     loc.description,
+                     cwms_rounding.round_dt_f(loc.latitude, '7777777777') as latitude,
+                     cwms_rounding.round_dt_f(loc.longitude, '7777777777') as longitude,
+                     loc.horizontal_datum,
+                     case
+                     when l_units(i) = 'SI' then
+                        case 
+                        when loc.vertical_datum is null then
+                           cwms_rounding.round_dt_f(loc.elevation, '7777777777')
+                        else
+                           cwms_rounding.round_dt_f(
+                              loc.elevation + cwms_loc.get_vertical_datum_offset(
+                                 loc.location_code, 
+                                 loc.vertical_datum, 
+                                 replace(l_datums(i), 'NATIVE', loc.vertical_datum), 
+                                 sysdate, 
+                                 case when l_units(i) = 'SI' then 'm' else 'ft' end),
+                              '7777777777')
+                        end
+                     else
+                        case 
+                        when loc.vertical_datum is null then
+                           cwms_rounding.round_dt_f(
+                              cwms_util.convert_units(loc.elevation, 'm', 'ft'),
+                              '7777777777')
+                        else
+                           cwms_rounding.round_dt_f(
+                              cwms_util.convert_units(
+                                 loc.elevation + cwms_loc.get_vertical_datum_offset(
+                                    loc.location_code, 
+                                    loc.vertical_datum, 
+                                    replace(l_datums(i), 'NATIVE', loc.vertical_datum), 
+                                    sysdate, 
+                                    case when l_units(i) = 'SI' then 'm' else 'ft' end),
+                                 'm',
+                                 'ft'),
+                              '7777777777')
+                        end                           
+                     end as elevation,
+                     case when l_units(i) = 'EN' then 'ft' else 'm' end as elevation_unit,
+                     case
+                     when loc.vertical_datum is null then
+                        'false'
+                     else 
+                        case 
+                        when cwms_loc.is_vert_datum_offset_estimated(
+                                loc.location_code, 
+                                loc.vertical_datum, 
+                                replace(l_datums(i), 'NATIVE', loc.vertical_datum)) = 'T' 
+                        then 'true' 
+                        else 'false'
+                        end
+                     end as elevation_estimated,
+                     replace(l_datums(i), 'NATIVE', loc.vertical_datum) as vertical_datum,
+                     cwms_rounding.round_dt_f(loc.published_latitude, '7777777777') as published_latitude,
+                     cwms_rounding.round_dt_f(loc.published_longitude, '7777777777') as published_longitude,
+                     tz.time_zone_name,
+                     case
+                     when county.county_id = '000' then null
+                     else county.county_name
+                     end as county,
+                     state.state_initial,
+                     nation.nation_id,
+                     loc.nearest_city,
+                     office.office_id as bounding_office,
+                     kind.location_kind_id as location_kind,
+                     loc.location_type 
+                from (select pl.location_code,
+                             o.office_id,
+                             lga.loc_alias_id as location_id,
+                             pl.long_name,
+                             pl.public_name,
+                             pl.map_label,
+                             pl.description,
+                             pl.latitude,
+                             pl.longitude,
+                             pl.horizontal_datum,
+                             pl.elevation,
+                             pl.vertical_datum,
+                             pl.published_latitude,
+                             pl.published_longitude,
+                             pl.time_zone_code,
+                             pl.county_code,
+                             pl.nation_code,
+                             pl.nearest_city,
+                             pl.office_code,
+                             pl.location_kind,
+                             pl.location_type
+                        from at_physical_location pl,
+                             at_base_location bl,
+                             cwms_office o,
+                             at_loc_group_assignment lga,
+                             at_loc_group lg,
+                             at_loc_category lc
+                       where o.office_id like replace(l_office_id, '*', '%')
+                         and bl.db_office_code = o.office_code
+                         and pl.base_location_code = bl.base_location_code
+                         and lga.loc_alias_id like l_location_id_mask
+                         and lga.location_code = pl.location_code
+                         and lg.loc_group_code = lga.loc_group_code
+                         and lc.loc_category_code = lg.loc_category_code
+                         and lc.loc_category_id = 'Agency Aliases'
+                      ) loc
+                      left outer join
+                      (select time_zone_code,
+                              time_zone_name
+                         from cwms_time_zone
+                      ) tz on tz.time_zone_code = loc.time_zone_code
+                      left outer join
+                      (select county_code,
+                              county_id,
+                              state_code,
+                              county_name
+                         from cwms_county 
+                      ) county on county.county_code = loc.county_code
+                      left outer join
+                      (select state_code,
+                              state_initial
+                         from cwms_state
+                      ) state on state.state_code = county.state_code
+                      left outer join
+                      (select nation_code,
+                              nation_id
+                         from cwms_nation
+                      ) nation on nation.nation_code = loc.nation_code
+                      left outer join
+                      (select office_code,
+                              office_id
+                         from cwms_office     
+                      ) office on office.office_code = loc.office_code
+                      left outer join
+                      (select location_kind_code,
+                              location_kind_id
+                         from cwms_location_kind     
+                      ) kind on kind.location_kind_code = loc.location_kind         
+             );
+                   
+      l_count := l_offices(1).count;             
+      l_offices(2).extend(l_count);
+      for j in 1..l_count loop l_offices(2)(l_offices(2).count - j + 1) := l_offices(1)(j); end loop;
+      l_location_ids(2).extend(l_count);
+      for j in 1..l_count loop l_location_ids(2)(l_location_ids(2).count - j + 1) := l_location_ids(1)(j); end loop;
+      l_alternate_names(2).extend(l_count);
+      for j in 1..l_count loop l_alternate_names(2)(l_alternate_names(2).count - j + 1) := l_alternate_names(1)(j); end loop;
+      l_long_names(2).extend(l_count);
+      for j in 1..l_count loop l_long_names(2)(l_long_names(2).count - j + 1) := l_long_names(1)(j); end loop;
+      l_public_names(2).extend(l_count);
+      for j in 1..l_count loop l_public_names(2)(l_public_names(2).count - j + 1) := l_public_names(1)(j); end loop;
+      l_map_labels(2).extend(l_count);
+      for j in 1..l_count loop l_map_labels(2)(l_map_labels(2).count - j + 1) := l_map_labels(1)(j); end loop;
+      l_descriptions(2).extend(l_count);
+      for j in 1..l_count loop l_descriptions(2)(l_descriptions(2).count - j + 1) := l_descriptions(1)(j); end loop;
+      l_latitudes(2).extend(l_count);
+      for j in 1..l_count loop l_latitudes(2)(l_latitudes(2).count - j + 1) := l_latitudes(1)(j); end loop;
+      l_longitudes(2).extend(l_count);
+      for j in 1..l_count loop l_longitudes(2)(l_longitudes(2).count - j + 1) := l_longitudes(1)(j); end loop;
+      l_horizontal_datums(2).extend(l_count);
+      for j in 1..l_count loop l_horizontal_datums(2)(l_horizontal_datums(2).count - j + 1) := l_horizontal_datums(1)(j); end loop;
+      l_elevations(2).extend(l_count);
+      for j in 1..l_count loop l_elevations(2)(l_elevations(2).count - j + 1) := l_elevations(1)(j); end loop;
+      l_elevation_units(2).extend(l_count);
+      for j in 1..l_count loop l_elevation_units(2)(l_elevation_units(2).count - j + 1) := l_elevation_units(1)(j); end loop;
+      l_elevation_estimated(2).extend(l_count);
+      for j in 1..l_count loop l_elevation_estimated(2)(l_elevation_estimated(2).count - j + 1) := l_elevation_estimated(1)(j); end loop;
+      l_vertical_datums(2).extend(l_count);
+      for j in 1..l_count loop l_vertical_datums(2)(l_vertical_datums(2).count - j + 1) := l_vertical_datums(1)(j); end loop;
+      l_published_latitudes(2).extend(l_count);
+      for j in 1..l_count loop l_published_latitudes(2)(l_published_latitudes(2).count - j + 1) := l_published_latitudes(1)(j); end loop;
+      l_published_longitudes(2).extend(l_count);
+      for j in 1..l_count loop l_published_longitudes(2)(l_published_longitudes(2).count - j + 1) := l_published_longitudes(1)(j); end loop;
+      l_time_zones(2).extend(l_count);
+      for j in 1..l_count loop l_time_zones(2)(l_time_zones(2).count - j + 1) := l_time_zones(1)(j); end loop;
+      l_counties(2).extend(l_count);
+      for j in 1..l_count loop l_counties(2)(l_counties(2).count - j + 1) := l_counties(1)(j); end loop;
+      l_states(2).extend(l_count);
+      for j in 1..l_count loop l_states(2)(l_states(2).count - j + 1) := l_states(1)(j); end loop;
+      l_nations(2).extend(l_count);
+      for j in 1..l_count loop l_nations(2)(l_nations(2).count - j + 1) := l_nations(1)(j); end loop;
+      l_nearest_cities(2).extend(l_count);
+      for j in 1..l_count loop l_nearest_cities(2)(l_nearest_cities(2).count - j + 1) := l_nearest_cities(1)(j); end loop;
+      l_bounding_offices(2).extend(l_count);
+      for j in 1..l_count loop l_bounding_offices(2)(l_bounding_offices(2).count - j + 1) := l_bounding_offices(1)(j); end loop;
+      l_location_kinds(2).extend(l_count);
+      for j in 1..l_count loop l_location_kinds(2)(l_location_kinds(2).count - j + 1) := l_location_kinds(1)(j); end loop;
+      l_location_types(2).extend(l_count);      
+      for j in 1..l_count loop l_location_types(2)(l_location_types(2).count - j + 1) := l_location_types(1)(j); end loop;
+   end loop;
+   l_count := l_offices(2).count;
+   
+   select cv01,cv02,cv03,cv04,cv05,cv06,cv07,cv08,cv09,cv10,
+          cv11,cv12,cv13,cv14,cv15,cv16,cv17,cv18,cv19,cv20,
+          cv21,cv22,cv23,cv24
+     bulk collect
+     into l_offices(1),              
+          l_location_ids(1),         
+          l_alternate_names(1),           
+          l_long_names(1),           
+          l_public_names(1),         
+          l_map_labels(1),           
+          l_descriptions(1),         
+          l_latitudes(1),            
+          l_longitudes(1),           
+          l_horizontal_datums(1),    
+          l_elevations(1),           
+          l_elevation_units(1),      
+          l_elevation_estimated(1),  
+          l_vertical_datums(1),      
+          l_published_latitudes(1),  
+          l_published_longitudes(1), 
+          l_time_zones(1),           
+          l_counties(1),             
+          l_states(1),               
+          l_nations(1),  
+          l_nearest_cities(1),
+          l_bounding_offices(1),     
+          l_location_kinds(1),       
+          l_location_types(1)       
+     from (select column_value as cv01, rownum as seq from table(l_offices(2)))              t01
+     join (select column_value as cv02, rownum as seq from table(l_location_ids(2)))         t02 on t02.seq = t01.seq         
+     join (select column_value as cv03, rownum as seq from table(l_alternate_names(2)))      t03 on t03.seq = t01.seq           
+     join (select column_value as cv04, rownum as seq from table(l_long_names(2)))           t04 on t04.seq = t01.seq           
+     join (select column_value as cv05, rownum as seq from table(l_public_names(2)))         t05 on t05.seq = t01.seq         
+     join (select column_value as cv06, rownum as seq from table(l_map_labels(2)))           t06 on t06.seq = t01.seq           
+     join (select column_value as cv07, rownum as seq from table(l_descriptions(2)))         t07 on t07.seq = t01.seq         
+     join (select column_value as cv08, rownum as seq from table(l_latitudes(2)))            t08 on t08.seq = t01.seq            
+     join (select column_value as cv09, rownum as seq from table(l_longitudes(2)))           t09 on t09.seq = t01.seq           
+     join (select column_value as cv10, rownum as seq from table(l_horizontal_datums(2)))    t10 on t10.seq = t01.seq    
+     join (select column_value as cv11, rownum as seq from table(l_elevations(2)))           t11 on t11.seq = t01.seq           
+     join (select column_value as cv12, rownum as seq from table(l_elevation_units(2)))      t12 on t12.seq = t01.seq      
+     join (select column_value as cv13, rownum as seq from table(l_elevation_estimated(2)))  t13 on t13.seq = t01.seq  
+     join (select column_value as cv14, rownum as seq from table(l_vertical_datums(2)))      t14 on t14.seq = t01.seq      
+     join (select column_value as cv15, rownum as seq from table(l_published_latitudes(2)))  t15 on t15.seq = t01.seq  
+     join (select column_value as cv16, rownum as seq from table(l_published_longitudes(2))) t16 on t16.seq = t01.seq 
+     join (select column_value as cv17, rownum as seq from table(l_time_zones(2)))           t17 on t17.seq = t01.seq           
+     join (select column_value as cv18, rownum as seq from table(l_counties(2)))             t18 on t18.seq = t01.seq             
+     join (select column_value as cv19, rownum as seq from table(l_states(2)))               t19 on t19.seq = t01.seq               
+     join (select column_value as cv20, rownum as seq from table(l_nations(2)))              t20 on t20.seq = t01.seq              
+     join (select column_value as cv21, rownum as seq from table(l_nearest_cities(2)))       t21 on t21.seq = t01.seq              
+     join (select column_value as cv22, rownum as seq from table(l_bounding_offices(2)))     t22 on t22.seq = t01.seq     
+     join (select column_value as cv23, rownum as seq from table(l_location_kinds(2)))       t23 on t23.seq = t01.seq       
+     join (select column_value as cv24, rownum as seq from table(l_location_types(2)))       t24 on t24.seq = t01.seq
+    order by 1, 2;  
+   
+   l_ts2 := systimestamp;
+   l_elapsed_query := l_ts2 - l_ts1;
+   l_ts1 := systimestamp;
+
+   dbms_lob.createtemporary(l_data, true);
+   case
+   when l_format = 'XML' then
+      ---------
+      -- XML --
+      ---------
+      cwms_util.append(l_data, '<locations xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/Locations.xsd">');
+      case
+      when l_count <= l_reduced_count then
+         -----------------
+         -- full output --
+         -----------------
+         for i in 1..l_count loop  
+            cwms_util.append(
+               l_data, 
+               '<location><basic><identity><office>'
+               ||l_offices(1)(i)
+               ||'</office><name>'
+               ||dbms_xmlgen.convert(l_location_ids(1)(i), dbms_xmlgen.entity_encode)
+               ||'</name><alternate-names>'
+               ||case
+                 when l_alternate_names(1)(i) is null then null
+                 else '<name>'||replace(dbms_xmlgen.convert(l_alternate_names(1)(i), dbms_xmlgen.entity_encode), '.', '</name><name>')||'</name>'
+                 end
+               ||'</alternate-names></identity><label><long-name>'
+               ||dbms_xmlgen.convert(l_long_names(1)(i), dbms_xmlgen.entity_encode)
+               ||'</long-name><public-name>'
+               ||dbms_xmlgen.convert(l_public_names(1)(i), dbms_xmlgen.entity_encode)
+               ||'</public-name><map-label>'
+               ||dbms_xmlgen.convert(l_map_labels(1)(i), dbms_xmlgen.entity_encode)
+               ||'</map-label><description>'
+               ||dbms_xmlgen.convert(l_descriptions(1)(i), dbms_xmlgen.entity_encode)
+               ||'</description></label><geolocation><latitude>'
+               ||l_latitudes(1)(i)
+               ||'</latitude><longitude>'
+               ||l_longitudes(1)(i)
+               ||'</longitude><horizontal-datum>'
+               ||l_horizontal_datums(1)(i)
+               ||'</horizontal-datum><elevation unit="'
+               ||l_elevation_units(1)(i)
+               ||'" estimate="'
+               ||nvl(l_elevation_estimated(1)(i), 'false')
+               ||'" vertical-datum="'
+               ||l_vertical_datums(1)(i)
+               ||'">'
+               ||l_elevations(1)(i)
+               ||'</elevation><published-latitude>'
+               ||l_published_latitudes(1)(i)
+               ||'</published-latitude><published-longitude>'
+               ||l_published_longitudes(1)(i)
+               ||'</published-longitude></geolocation><political><timezone>'
+               ||l_time_zones(1)(i)
+               ||'</timezone><county>'
+               ||l_counties(1)(i)
+               ||'</county><state>'
+               ||l_states(1)(i)
+               ||'</state><nation>'
+               ||l_nations(1)(i)
+               ||'</nation><nearest-city>'
+               ||l_nearest_cities(1)(i)
+               ||'</nearest-city><bounding-office>'
+               ||l_bounding_offices(1)(i)
+               ||'</bounding-office></political><classification><location-kind>'
+               ||l_location_kinds(1)(i)
+               ||'</location-kind><location-type>'
+               ||l_location_types(1)(i)
+               ||'</location-type></classification></basic></location>');
+         end loop;
+      when l_count <= l_minimal_count then
+         --------------------
+         -- reduced output --
+         --------------------
+         for i in 1..l_count loop  
+            cwms_util.append(
+               l_data, 
+               '<location><basic-reduced><identity><office>'
+               ||l_offices(1)(i)
+               ||'</office><name>'
+               ||dbms_xmlgen.convert(l_location_ids(1)(i), dbms_xmlgen.entity_encode)
+               ||'</name><alternate-names>'
+               ||case
+                 when l_alternate_names(1)(i) is null then null
+                 else '<name>'||replace(dbms_xmlgen.convert(l_alternate_names(1)(i), dbms_xmlgen.entity_encode), '.', '</name><name>')||'</name>'
+                 end
+               ||'</alternate-names></identity><label><public-name>'
+               ||dbms_xmlgen.convert(l_public_names(1)(i), dbms_xmlgen.entity_encode)
+               ||'</public-name></label><geolocation><latitude>'
+               ||l_latitudes(1)(i)
+               ||'</latitude><longitude>'
+               ||l_longitudes(1)(i)
+               ||'</longitude></geolocation><political><state>'
+               ||l_states(1)(i)
+               ||'</state><nation>'
+               ||l_nations(1)(i)
+               ||'</nation></political><classification><location-kind>'
+               ||l_location_kinds(1)(i)
+               ||'</location-kind></classification></basic-reduced></location>');
+         end loop;
+      else
+         for i in 1..l_count loop
+            --------------------  
+            -- minimal output --
+            --------------------  
+            cwms_util.append(
+               l_data, 
+               '<location><basic-minimal><office>'
+               ||l_offices(1)(i)
+               ||'</office><name>'
+               ||dbms_xmlgen.convert(l_location_ids(1)(i), dbms_xmlgen.entity_encode)
+               ||'</name><alternate-names>'
+               ||case
+                 when l_alternate_names(1)(i) is null then null
+                 else '<name>'||replace(dbms_xmlgen.convert(l_alternate_names(1)(i), dbms_xmlgen.entity_encode), '.', '</name><name>')||'</name>'
+                 end
+               ||'</alternate-names><public-name>'
+               ||dbms_xmlgen.convert(l_public_names(1)(i), dbms_xmlgen.entity_encode)
+               ||'</public-name></basic-minimal></location>');
+         end loop;
+      end case;
+      cwms_util.append(l_data, '</locations>');
+      select xmlserialize(document xmltype(l_data) as clob indent)
+        into l_data
+        from dual;
+   when l_format = 'JSON' then
+      ----------
+      -- JSON --
+      ----------
+      cwms_util.append(l_data, '{"locations":[');
+      case
+      when l_count <= l_reduced_count then
+         -----------------
+         -- full output --
+         -----------------
+         for i in 1..l_count loop
+            cwms_util.append(
+               l_data, 
+               case
+               when i = 1 then 
+                  '{"basic":{"identity":{"office":"'
+               else
+                  ',{"basic":{"identity":{"office":"'
+               end
+               ||l_offices(1)(i)
+               ||'","name":"'
+               ||l_location_ids(1)(i)
+               ||'","alternate-names":'
+               ||case
+                 when l_alternate_names(1)(i) is null then 'null'
+                 else '["'||replace(l_alternate_names(1)(i), '.', '","')||'"]'
+                 end
+               ||'},"label":{"long-name":"'
+               ||l_long_names(1)(i)
+               ||'","public-name":"'
+               ||l_public_names(1)(i)
+               ||'","map-label":"'
+               ||l_map_labels(1)(i)
+               ||'","description":"'
+               ||l_descriptions(1)(i)
+               ||'"},"geolocation":{"latitude":'
+               ||nvl(l_latitudes(1)(i), 'null')
+               ||',"longitude":'
+               ||nvl(l_longitudes(1)(i), 'null')
+               ||',"horizontal-datum":"'
+               ||l_horizontal_datums(1)(i)
+               ||'","elevation":[{"@unit":"'
+               ||l_elevation_units(1)(i)
+               ||'","@estimate":"'
+               ||nvl(l_elevation_estimated(1)(i), 'false')
+               ||'","@vertical-datum":"'
+               ||l_vertical_datums(1)(i)
+               ||'"},'
+               ||nvl(l_elevations(1)(i), 'null')
+               ||'],"published-latitude":'
+               ||nvl(l_published_latitudes(1)(i), 'null')
+               ||',"published-longitude":'
+               ||nvl(l_published_longitudes(1)(i), 'null')
+               ||'},"political":{"timezone":"'
+               ||l_time_zones(1)(i)
+               ||'","county":"'
+               ||l_counties(1)(i)
+               ||'","state":"'
+               ||l_states(1)(i)
+               ||'","nation":"'
+               ||l_nations(1)(i)
+               ||'","nearest-city":"'
+               ||l_nearest_cities(1)(i)
+               ||'","bounding-office":"'
+               ||l_bounding_offices(1)(i)
+               ||'"},"classification":{"location-kind":"'
+               ||l_location_kinds(1)(i)
+               ||'","location-type":"'
+               ||l_location_types(1)(i)
+               ||'"}}}');
+         end loop;
+      when l_count <= l_minimal_count then
+         --------------------
+         -- reduced output --
+         --------------------
+         for i in 1..l_count loop  
+            cwms_util.append(
+               l_data, 
+               case
+               when i = 1 then 
+                  '{"basic-reduced":{"identity":{"office":"'
+               else
+                  ',{"basic-reduced":{"identity":{"office":"'
+               end
+               ||l_offices(1)(i)
+               ||'","name":"'
+               ||l_location_ids(1)(i)
+               ||'","alternate-names":'
+               ||case
+                 when l_alternate_names(1)(i) is null then 'null'
+                 else '["'||replace(l_alternate_names(1)(i), '.', '","')||'"]'
+                 end
+               ||'},"label":{"public-name":"'
+               ||l_public_names(1)(i)
+               ||'"},"geolocation":{"latitude":'
+               ||nvl(l_latitudes(1)(i), 'null')
+               ||',"longitude":'
+               ||nvl(l_longitudes(1)(i), 'null')
+               ||'},"political":{"state":"'
+               ||l_states(1)(i)
+               ||'","nation":"'
+               ||l_nations(1)(i)
+               ||'"},"classification":{"location-kind":"'
+               ||l_location_kinds(1)(i)
+               ||'"}}}');
+         end loop;
+      else
+         for i in 1..l_count loop
+            --------------------  
+            -- minimal output --
+            --------------------  
+            cwms_util.append(
+               l_data, 
+               case
+               when i = 1 then 
+                  '{"basic-minimal":{"office":"'
+               else
+                  ',{"basic-minimal":{"office":"'
+               end
+               ||l_offices(1)(i)
+               ||'","name":"'
+               ||l_location_ids(1)(i)
+               ||'","alternate-names":'
+               ||case
+                 when l_alternate_names(1)(i) is null then 'null'
+                 else '["'||replace(l_alternate_names(1)(i), '.', '","')||'"]'
+                 end
+               ||',"public-name":"'
+               ||l_public_names(1)(i)
+               ||'"}}');
+         end loop;
+      end case;
+      cwms_util.append(l_data, ']}');
+   when l_format in ('TAB', 'CSV') then
+      ----------------
+      -- TAB or CSV --
+      ----------------
+      case
+      when l_count <= l_reduced_count then
+         -----------------
+         -- full output --
+         -----------------
+         for i in 1..l_count loop
+            cwms_util.append(
+               l_data,
+               chr(10)||'# IDENTITY'||chr(10)
+               ||rpad('#   OFFICE', l_width, ' ')||chr(9)||l_offices(1)(i)||chr(10)
+               ||rpad('#   NAME', l_width, ' ')||chr(9)||l_location_ids(1)(i)||chr(10)
+               ||'#   ALTERNATE_NAMES'||chr(10)
+               ||case
+                 when l_alternate_names(1)(i) is null then null
+                 else rpad('#     NAME', l_width, ' ')
+                      ||chr(9)
+                      ||replace(l_alternate_names(1)(i), '.', chr(10)||rpad('#     NAME', l_width, ' ')||chr(9))
+                      ||chr(10)
+                 end
+               ||'# LABEL'||chr(10) 
+               ||rpad('#   LONG NAME', l_width, ' ')||chr(9)||l_long_names(1)(i)||chr(10)
+               ||rpad('#   PUBLIC NAME', l_width, ' ')||chr(9)||l_public_names(1)(i)||chr(10)
+               ||rpad('#   MAP LABEL', l_width, ' ')||chr(9)||l_map_labels(1)(i)||chr(10)
+               ||rpad('#   DESCRIPTION', l_width, ' ')||chr(9)||l_descriptions(1)(i)||chr(10)
+               ||'# GEOLOCATION'||chr(10) 
+               ||rpad('#   LATITUDE', l_width, ' ')||chr(9)||l_latitudes(1)(i)||chr(10)
+               ||rpad('#   LONGITUDE', l_width, ' ')||chr(9)||l_longitudes(1)(i)||chr(10)
+               ||rpad('#     HORIZONTAL DATUM', l_width, ' ')||chr(9)||l_horizontal_datums(1)(i)||chr(10)
+               ||rpad('#   ELEVATION', l_width, ' ')||chr(9)
+               ||case
+                 when l_elevations(1)(i) is null then
+                  null
+                 else 
+                    l_elevations(1)(i)
+                    ||' '||l_elevation_units(1)(i)
+                    ||case
+                      when l_vertical_datums(1)(i) is null then null
+                      else ' '||l_vertical_datums(1)(i)
+                      end
+                    ||case
+                      when l_elevation_estimated(1)(i) = 'true' then ' estimated'
+                      else null
+                      end
+                 end
+                 ||chr(10)    
+               ||rpad('#   PUBLISHED LATITUDE', l_width, ' ')||chr(9)||l_published_latitudes(1)(i)||chr(10)
+               ||rpad('#   PUBLISHED LONGITUDE', l_width, ' ')||chr(9)||l_published_longitudes(1)(i)||chr(10)
+               ||'# POLITICAL'||chr(10) 
+               ||rpad('#   TIME ZONE', l_width, ' ')||chr(9)||l_time_zones(1)(i)||chr(10)
+               ||rpad('#   COUNTY', l_width, ' ')||chr(9)||l_counties(1)(i)||chr(10)
+               ||rpad('#   STATE', l_width, ' ')||chr(9)||l_states(1)(i)||chr(10)
+               ||rpad('#   NATION', l_width, ' ')||chr(9)||l_nations(1)(i)||chr(10)
+               ||rpad('#   NEAREST CITY', l_width, ' ')||chr(9)||l_nearest_cities(1)(i)||chr(10)
+               ||rpad('#   BOUNDING OFFICE', l_width, ' ')||chr(9)||l_bounding_offices(1)(i)||chr(10)
+               ||'# CLASSIFICATION'||chr(10) 
+               ||rpad('#   LOCATION KIND', l_width, ' ')||chr(9)||l_location_kinds(1)(i)||chr(10)
+               ||rpad('#   LOCATION TYPE', l_width, ' ')||chr(9)||l_location_types(1)(i)||chr(10));
+         end loop;
+      when l_count <= l_minimal_count then
+         --------------------
+         -- reduced output --
+         --------------------
+         for i in 1..l_count loop
+            cwms_util.append(
+               l_data,
+               chr(10)||'# IDENTITY'||chr(10)
+               ||rpad('#   OFFICE', l_width, ' ')||chr(9)||l_offices(1)(i)||chr(10)
+               ||rpad('#   NAME', l_width, ' ')||chr(9)||l_location_ids(1)(i)||chr(10)
+               ||'#   ALTERNATE_NAMES'||chr(10)
+               ||case
+                 when l_alternate_names(1)(i) is null then null
+                 else rpad('#     NAME', l_width, ' ')
+                      ||chr(9)
+                      ||replace(l_alternate_names(1)(i), '.', chr(10)||rpad('#     NAME', l_width, ' ')||chr(9))
+                      ||chr(10)
+                 end
+               ||'# LABEL'||chr(10) 
+               ||rpad('#   PUBLIC NAME', l_width, ' ')||chr(9)||l_public_names(1)(i)||chr(10)
+               ||'# GEOLOCATION'||chr(10) 
+               ||rpad('#   LATITUDE', l_width, ' ')||chr(9)||l_latitudes(1)(i)||chr(10)
+               ||rpad('#   LONGITUDE', l_width, ' ')||chr(9)||l_longitudes(1)(i)||chr(10)
+               ||'# POLITICAL'||chr(10) 
+               ||rpad('#   STATE', l_width, ' ')||chr(9)||l_states(1)(i)||chr(10)
+               ||rpad('#   NATION', l_width, ' ')||chr(9)||l_nations(1)(i)||chr(10)
+               ||'# CLASSIFICATION'||chr(10) 
+               ||rpad('#   LOCATION KIND', l_width, ' ')||chr(9)||l_location_kinds(1)(i)||chr(10));
+         end loop;
+      else
+         for i in 1..l_count loop
+            --------------------  
+            -- minimal output --
+            --------------------  
+            cwms_util.append(
+               l_data,
+               chr(10)||rpad('# OFFICE', l_width, ' ')||chr(9)||l_offices(1)(i)||chr(10)
+               ||rpad('# NAME', l_width, ' ')||chr(9)||l_location_ids(1)(i)||chr(10)
+               ||'# ALTERNATE_NAMES'||chr(10)
+               ||case
+                 when l_alternate_names(1)(i) is null then null
+                 else rpad('#   NAME', l_width, ' ')
+                      ||chr(9)
+                      ||replace(l_alternate_names(1)(i), '.', chr(10)||rpad('#   NAME', l_width, ' ')||chr(9))
+                      ||chr(10)
+                 end
+               ||rpad('# PUBLIC NAME', l_width, ' ')||chr(9)||l_public_names(1)(i)||chr(10));
+         end loop;
+      end case;
+   end case;
+      
+   if l_format = 'CSV' then
+      ---------
+      -- CSV --
+      ---------
+      l_data := regexp_replace(
+         replace(
+            replace(
+               regexp_replace(
+                  regexp_replace(
+                     regexp_replace(
+                        replace(  
+                           l_data,
+                           chr(10),
+                           chr(10)||chr(10)), 
+                        ' *'||chr(9), chr(10)),
+                     '^(.*,.*)$',
+                     '"\1"',
+                     1, 0, 'm'),  
+                  '([^'||chr(10)||'])'||chr(10), '\1,'), 
+               ','||chr(10), chr(10)),
+            chr(10)||chr(10), chr(10)), 
+         '^# +', '# ', 
+         1, 0, 'm');
+   end if;
+      
+   l_ts2 := systimestamp;
+   l_elapsed_format := l_ts2 - l_ts1;
+
+      
+   if l_format in ('TAB', 'CSV') then
+      declare
+         l_data2 clob;
+         l_name  varchar2(32767);
+      begin
+         dbms_lob.createtemporary(l_data2, true);
+         select db_unique_name into l_name from v$database;
+         cwms_util.append(l_data2, rpad('# PROCESSED AT', l_width, ' ')||chr(9)||utl_inaddr.get_host_name ||':'||l_name||chr(10));
+         cwms_util.append(l_data2, rpad('# TIME OF QUERY', l_width, ' ')||chr(9)||to_char(l_query_time, 'dd-MON-yyyy hh24:mi')||' UTC'||chr(10));
+         cwms_util.append(l_data2, rpad('# PROCESS QUERY', l_width, ' ')||chr(9)||trunc(1000 * (extract(minute from l_elapsed_query) * 60 + extract(second from l_elapsed_query)))||' milliseconds'||chr(10));
+         cwms_util.append(l_data2, rpad('# FORMAT OUTPUT', l_width, ' ')||chr(9)||trunc(1000 * (extract(minute from l_elapsed_format) * 60 + extract(second from l_elapsed_format)))||' milliseconds'||chr(10));
+         cwms_util.append(l_data2, rpad('# LOCATIONS RETRIEVED', l_width, ' ')||chr(9)||l_count||chr(10));
+         if l_format = 'CSV' then
+            l_data2 := regexp_replace( 
+               replace(
+                  replace(
+                     regexp_replace(
+                        regexp_replace(
+                           regexp_replace(
+                              replace(  
+                                 l_data2,
+                                 chr(10),
+                                 chr(10)||chr(10)), 
+                              ' *'||chr(9), chr(10)),
+                           '^(.*,.*)$',
+                           '"\1"',
+                           1, 0, 'm'),  
+                        '([^'||chr(10)||'])'||chr(10), '\1,'), 
+                     ','||chr(10), chr(10)),
+                  chr(10)||chr(10), chr(10)), 
+               '^# +', '# ', 
+               1, 0, 'm');
+         end if;
+         cwms_util.append(l_data2, l_data);
+         p_results := l_data2;
+      end;
+   else
+      p_results := l_data;
+   end if;
+   
+   p_date_time      := l_query_time;
+   p_query_time     := trunc(1000 * (extract(minute from l_elapsed_query) * 60 + extract(second from l_elapsed_query)));
+   p_format_time    := trunc(1000 * (extract(minute from l_elapsed_format) *60 +  extract(second from l_elapsed_format)));
+   p_location_count := l_count;
+   
+   end retrieve_locations;      
+      
+   function retrieve_locations(
+      p_names       in  varchar2 default null,            
+      p_format      in  varchar2 default null,
+      p_units       in  varchar2 default null,   
+      p_datums      in  varchar2 default null,
+      p_office_id   in  varchar2 default null)
+      return clob
+   is
+      l_results        clob;
+      l_date_time      date;
+      l_query_time     long;
+      l_format_time    long; 
+      l_location_count integer;  
+   begin
+      retrieve_locations(
+            l_results,
+            l_date_time,
+            l_query_time,
+            l_format_time, 
+            l_location_count,  
+            p_names,            
+            p_format,
+            p_units,   
+            p_datums,
+            p_office_id);
+            
+      dbms_output.put_line(l_query_time);
+      dbms_output.put_line(l_format_time);
+      return l_results;            
+   end retrieve_locations;      
    
 END cwms_loc;
 /

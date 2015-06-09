@@ -2000,6 +2000,19 @@ AS
       p_unit          in varchar2,
       p_office_id     in varchar2 default null)
       return binary_double;
+      
+   function is_vert_datum_offset_estimated(
+      p_location_code in integer,
+      p_from_datum    in varchar2,
+      p_to_datum      in varchar2)
+      return varchar2;      
+      
+   function is_vert_datum_offset_estimated(
+      p_location_id in varchar2,
+      p_from_datum  in varchar2,
+      p_to_datum    in varchar2,
+      p_office_id   in varchar2 default null)
+      return varchar2;      
    /**
     * Retrieves a XML string containing the elevation, native datum, and elevation offsets to other datums for the specified location
     *
@@ -2398,7 +2411,83 @@ AS
       p_location_kind_code in integer,
       p_include_this_kind  in varchar2 default 'F',
       p_include_all_levels in varchar2 default 'T')
-      return number_tab_t;      
+      return number_tab_t;
+            
+   function get_location_ids(
+      p_location_code in integer,
+      p_exclude       in varchar2 default null)
+      return varchar2;
+
+   /**
+    * Retreives locations in a number of formats for a combination time window, timezone, formats, and vertical datums
+    *
+    * @param p_results        The locations, in the specified time zones, formats, and vertical datums
+    * @param p_date_time      The time that the routine was called, in UTC
+    * @param p_query_time     The time the routine took to retrieve the specified locations from the database
+    * @param p_format_time    The time the routine took to format the results into the specified format, in milliseconds
+    * @param p_location_count The number of locations retrieved by the routine
+    * @param p_names          The names (location identifers) of the locations to retrieve.  Multiple locations can be specified by
+    *                         <or><li>specifying multiple location ids separated by the <b>'|'</b> character (multiple name positions)</li>
+    *                         <li>specifying a location id with wildcard (<b>'*'</b> and/or <b>'?'</b> characters) (single name position)</li>
+    *                         <li>a combination of 1 and 2 (multiple name positions with one or more positions matching possibly more than one location)</li></ol>
+    *                         If unspecified or NULL, a listing of locations in the database will be returned.
+    * @param p_format         The format to retrieve the locations in. Valid formats are <ul><li>TAB</li><li>CSV</li><li>XML</li><li>JSON</li></ul>
+    *                         If the format is unspecified or NULL, the TAB format will be used. 
+    * @param p_units          The units to return the units in.  Valid units are <ul><li>EN</li><li>SI</li></ul> If the p_names variable (q.v.) has more
+    *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_units variable may also have multiple positions separated by the 
+    *                         <b>'|',</b> charcter. If the p_units variable has fewer positions than the p_name variable, the last unit position is used for all 
+    *                         remaning names. If the units are unspecified or NULL, EN units will be used for all locations.
+    * @param p_datums         The vertical datums to return the units in.  Valid datums are <ul><li>NATIVE</li><li>NGVD29</li><li>NAVD88</li></ul> If the p_names variable (q.v.) has more
+    *                         than onename position, (i.e., has one or more <b>'|',</b> charcters), the p_datums variable may also have multiple positions separated by the 
+    *                         <b>'|',</b> charcter. If the p_datums variable has fewer positions than the p_name variable, the last datum position is used for all 
+    *                         remaning names. If the datums are unspecified or NULL, the NATIVE veritcal datum will be used for all locations.
+    * @param p_office_id      The office to retrieve locations for.  If unspecified or NULL, locations for all offices in the database that match the other criteria will be retrieved.
+    */         
+   procedure retrieve_locations(
+      p_results        out clob,
+      p_date_time      out date,
+      p_query_time     out long,
+      p_format_time    out long, 
+      p_location_count out integer,  
+      p_names          in  varchar2 default null,            
+      p_format         in  varchar2 default null,
+      p_units          in  varchar2 default null,   
+      p_datums         in  varchar2 default null,
+      p_office_id      in  varchar2 default null);
+   /**
+    * Retreives locations in a number of formats for a combination time window, timezone, formats, and vertical datums
+    *
+    * @param p_date_time      The time that the routine was called, in UTC
+    * @param p_query_time     The time the routine took to retrieve the specified locations from the database
+    * @param p_format_time    The time the routine took to format the results into the specified format, in milliseconds
+    * @param p_location_count The number of locations retrieved by the routine
+    * @param p_names          The names (location identifers) of the locations to retrieve.  Multiple locations can be specified by
+    *                         <or><li>specifying multiple location ids separated by the <b>'|'</b> character (multiple name positions)</li>
+    *                         <li>specifying a location id with wildcard (<b>'*'</b> and/or <b>'?'</b> characters) (single name position)</li>
+    *                         <li>a combination of 1 and 2 (multiple name positions with one or more positions matching possibly more than one location)</li></ol>
+    *                         If unspecified or NULL, a listing of locations in the database will be returned.
+    * @param p_format         The format to retrieve the locations in. Valid formats are <ul><li>TAB</li><li>CSV</li><li>XML</li><li>JSON</li></ul>
+    *                         If the format is unspecified or NULL, the TAB format will be used. 
+    * @param p_units          The units to return the units in.  Valid units are <ul><li>EN</li><li>SI</li></ul> If the p_names variable (q.v.) has more
+    *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_units variable may also have multiple positions separated by the 
+    *                         <b>'|',</b> charcter. If the p_units variable has fewer positions than the p_name variable, the last unit position is used for all 
+    *                         remaning names. If the units are unspecified or NULL, EN units will be used for all locations.
+    * @param p_datums         The vertical datums to return the units in.  Valid datums are <ul><li>NATIVE</li><li>NGVD29</li><li>NAVD88</li></ul> If the p_names variable (q.v.) has more
+    *                         than onename position, (i.e., has one or more <b>'|',</b> charcters), the p_datums variable may also have multiple positions separated by the 
+    *                         <b>'|',</b> charcter. If the p_datums variable has fewer positions than the p_name variable, the last datum position is used for all 
+    *                         remaning names. If the datums are unspecified or NULL, the NATIVE veritcal datum will be used for all locations.
+    * @param p_office_id      The office to retrieve locations for.  If unspecified or NULL, locations for all offices in the database that match the other criteria will be retrieved.
+    *
+    * @return The locations, in the specified time zones, formats, and vertical datums
+    */         
+   function retrieve_locations(
+      p_names       in  varchar2 default null,            
+      p_format      in  varchar2 default null,
+      p_units       in  varchar2 default null,   
+      p_datums      in  varchar2 default null,
+      p_office_id   in  varchar2 default null)
+      return clob;
+
 END cwms_loc;
 /
 
