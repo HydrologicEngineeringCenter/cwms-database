@@ -2457,10 +2457,6 @@ AS
    /**
     * Retreives locations in a number of formats for a combination time window, timezone, formats, and vertical datums
     *
-    * @param p_date_time      The time that the routine was called, in UTC
-    * @param p_query_time     The time the routine took to retrieve the specified locations from the database
-    * @param p_format_time    The time the routine took to format the results into the specified format, in milliseconds
-    * @param p_location_count The number of locations retrieved by the routine
     * @param p_names          The names (location identifers) of the locations to retrieve.  Multiple locations can be specified by
     *                         <or><li>specifying multiple location ids separated by the <b>'|'</b> character (multiple name positions)</li>
     *                         <li>specifying a location id with wildcard (<b>'*'</b> and/or <b>'?'</b> characters) (single name position)</li>

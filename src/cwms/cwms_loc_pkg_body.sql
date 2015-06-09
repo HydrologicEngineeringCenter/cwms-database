@@ -910,7 +910,7 @@ AS
       -- Retrieve the location's Location Code.
       --
       l_location_code := get_location_code (p_db_office_id, p_location_id);
-      DBMS_OUTPUT.put_line ('l_location_code: ' || l_location_code);
+      -- DBMS_OUTPUT.put_line ('l_location_code: ' || l_location_code);
 
       --
       --  If get_location_code did not throw an exception, then a valid base_location_id &.
@@ -931,7 +931,7 @@ AS
         FROM   at_physical_location
        WHERE   location_code = l_location_code;
 
-      DBMS_OUTPUT.put_line ('l_elevation: ' || l_elevation);
+      -- DBMS_OUTPUT.put_line ('l_elevation: ' || l_elevation);
 
       ----------------------------------------------------------
       ----------------------------------------------------------
@@ -1299,7 +1299,7 @@ AS
       -- Retrieve the location's Location Code.
       --
       l_location_code := get_location_code (p_db_office_id, p_location_id);
-      DBMS_OUTPUT.put_line ('l_location_code: ' || l_location_code);
+      -- DBMS_OUTPUT.put_line ('l_location_code: ' || l_location_code);
 
       --
       --  If get_location_code did not throw an exception, then a valid base_location_id &.
@@ -1315,7 +1315,7 @@ AS
         FROM   at_physical_location
        WHERE   location_code = l_location_code;
 
-      DBMS_OUTPUT.put_line ('l_elevation: ' || l_elevation);
+      -- DBMS_OUTPUT.put_line ('l_elevation: ' || l_elevation);
 
       ----------------------------------------------------------
       ----------------------------------------------------------
@@ -3219,7 +3219,7 @@ AS
             RAISE;
          WHEN OTHERS
          THEN                                    --l_cwms_code was not found...
-            DBMS_OUTPUT.put_line ('entering create_location');
+            -- DBMS_OUTPUT.put_line ('entering create_location');
             create_location2 (p_location_id,
                               p_location_type,
                               p_elevation,
@@ -3294,7 +3294,7 @@ AS
    IS
    BEGIN
       --
-      DBMS_OUTPUT.put_line ('entering store_location2');
+      -- DBMS_OUTPUT.put_line ('entering store_location2');
 
       store_location2 (p_location_id        => p_location_id,
                        p_location_type      => p_location_type,
@@ -9752,8 +9752,8 @@ end unassign_loc_groups;
             p_datums,
             p_office_id);
             
-      dbms_output.put_line(l_query_time);
-      dbms_output.put_line(l_format_time);
+      -- dbms_output.put_line(l_query_time);
+      -- dbms_output.put_line(l_format_time);
       return l_results;            
    end retrieve_locations;      
    
