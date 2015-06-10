@@ -5422,8 +5422,8 @@ end get_elevation_positions;
 procedure retrieve_ratings(
    p_results        out clob,
    p_date_time      out date,
-   p_query_time     out long,
-   p_format_time    out long, 
+   p_query_time     out integer,
+   p_format_time    out integer, 
    p_template_count out integer,
    p_spec_count     out integer,
    p_rating_count   out integer,  
@@ -6345,7 +6345,7 @@ end retrieve_ratings;
 
          
 
-function retrieve_ratings(
+function retrieve_ratings_f(
    p_names     in varchar2,            
    p_format    in varchar2,
    p_units     in varchar2 default null,   
@@ -6358,8 +6358,8 @@ function retrieve_ratings(
 is
    l_results        clob;
    l_date_time      date;
-   l_query_time     long;
-   l_format_time    long; 
+   l_query_time     integer;
+   l_format_time    integer; 
    l_template_count integer;  
    l_spec_count     integer;  
    l_rating_count   integer;  
@@ -6382,7 +6382,7 @@ begin
       p_office_id);
 
    return l_results;
-end retrieve_ratings;
+end retrieve_ratings_f;
 
 end;
 /

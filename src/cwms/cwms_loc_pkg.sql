@@ -2446,8 +2446,8 @@ AS
    procedure retrieve_locations(
       p_results        out clob,
       p_date_time      out date,
-      p_query_time     out long,
-      p_format_time    out long, 
+      p_query_time     out integer,
+      p_format_time    out integer, 
       p_location_count out integer,  
       p_names          in  varchar2 default null,            
       p_format         in  varchar2 default null,
@@ -2476,7 +2476,7 @@ AS
     *
     * @return The locations, in the specified time zones, formats, and vertical datums
     */         
-   function retrieve_locations(
+   function retrieve_locations_f(
       p_names       in  varchar2 default null,            
       p_format      in  varchar2 default null,
       p_units       in  varchar2 default null,   

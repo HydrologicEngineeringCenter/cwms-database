@@ -8683,8 +8683,8 @@ end unassign_loc_groups;
    procedure retrieve_locations(
       p_results        out clob,
       p_date_time      out date,
-      p_query_time     out long,
-      p_format_time    out long, 
+      p_query_time     out integer,
+      p_format_time    out integer, 
       p_location_count out integer,  
       p_names          in  varchar2 default null,            
       p_format         in  varchar2 default null,
@@ -9726,7 +9726,7 @@ end unassign_loc_groups;
    
    end retrieve_locations;      
       
-   function retrieve_locations(
+   function retrieve_locations_f(
       p_names       in  varchar2 default null,            
       p_format      in  varchar2 default null,
       p_units       in  varchar2 default null,   
@@ -9736,8 +9736,8 @@ end unassign_loc_groups;
    is
       l_results        clob;
       l_date_time      date;
-      l_query_time     long;
-      l_format_time    long; 
+      l_query_time     integer;
+      l_format_time    integer; 
       l_location_count integer;  
    begin
       retrieve_locations(
@@ -9755,7 +9755,7 @@ end unassign_loc_groups;
       -- dbms_output.put_line(l_query_time);
       -- dbms_output.put_line(l_format_time);
       return l_results;            
-   end retrieve_locations;      
+   end retrieve_locations_f;      
    
 END cwms_loc;
 /
