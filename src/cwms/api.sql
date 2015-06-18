@@ -116,6 +116,9 @@
 @@cwms_data_dissem_pkg
 @@cwms_data_dissem_pkg_body
 
+@@cwms_mail_pkg
+@@cwms_mail_pkg_body
+
 @@cwms/functions/str2tbl.sql
 
 @@cwms/procedures/download_file
