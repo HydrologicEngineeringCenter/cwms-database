@@ -4879,16 +4879,6 @@ IS
    function retrieve_parameters_f(
       p_format in varchar2)
       return clob;
-
-   procedure retrieve_locations(
-      p_locations out clob,
-      p_format    in  varchar2,
-      p_office_id in  varchar2 default null);
-            
-   function retrieve_locations_f(
-      p_format    in varchar2,
-      p_office_id in varchar2 default null)
-      return clob;
 END cwms_cat;
 /
 
