@@ -1036,8 +1036,42 @@ as
       p_delete_action in varchar2 default cwms_util.delete_key,
       p_office_id     in varchar2 default null)
    is
+      l_office_code   number(10);
+      l_std_text_code number(10);
+      l_delete_key    boolean := false;
+      l_delete_data   boolean := false;
    begin
-      null;
+      l_office_code := cwms_util.get_db_office_code(p_office_id);
+      case upper(trim(p_delete_action))
+      when cwms_util.delete_key then
+         l_delete_key := true;
+      when cwms_util.delete_data then
+         l_delete_data := true;
+      when cwms_util.delete_all then
+         l_delete_key  := true;
+         l_delete_data := true;
+      else
+         cwms_err.raise('INVALID_ITEM', p_delete_action, 'delete action');
+      end case;
+      
+      select std_text_code
+        into l_std_text_code
+        from at_std_text
+       where upper(std_text_id) = upper(trim(p_std_text_id))
+         and office_code = l_office_code;
+         
+      if l_delete_data then
+         delete
+           from at_tsv_std_text
+          where std_text_code = l_std_text_code;    
+      end if;
+      
+      if l_delete_key then
+         delete
+           from at_std_text
+          where std_text_code = l_std_text_code; 
+      end if;
+      
    end delete_std_text;
 
    procedure cat_std_text(
@@ -1045,15 +1079,44 @@ as
       p_std_text_id_mask in     varchar2 default '*',
       p_office_id_mask   in     varchar2 default null)
    is
+      l_std_text_id_mask varchar2(32);
+      l_office_id_mask   varchar2(32);
    begin
-      null;
+      l_std_text_id_mask := cwms_util.normalize_wildcards(upper(trim(p_std_text_id_mask)));
+      l_office_id_mask   := cwms_util.normalize_wildcards(upper(trim(p_office_id_mask)));
+      open p_cursor for
+         select a.office_id,
+                a.std_text_id,
+                b.value
+           from (select o.office_id,
+                        s.std_text_id,
+                        s.clob_code
+                   from at_std_text s,
+                        cwms_office o
+                  where o.office_id like l_office_id_mask escape '\'
+                    and s.office_code = o.office_code
+                    and s.std_text_id like l_office_id_mask escape '\'
+                ) a
+                left outer join
+                (select clob_code,
+                        value
+                   from at_clob     
+                ) b on b.clob_code = a.clob_code;         
    end cat_std_text;
 
-   function cat_std_text_f(p_std_text_id_mask in varchar2 default '*', p_office_id_mask in varchar2 default null)
+   function cat_std_text_f(
+      p_std_text_id_mask in varchar2 default '*', 
+      p_office_id_mask   in varchar2 default null)
       return sys_refcursor
    is
+      l_cursor sys_refcursor;
    begin
-      return null;
+      cat_std_text(
+         l_cursor,
+         p_std_text_id_mask,
+         p_office_id_mask);
+         
+      return l_cursor;
    end cat_std_text_f;
 
    procedure store_ts_std_text(

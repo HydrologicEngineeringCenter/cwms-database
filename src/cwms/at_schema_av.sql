@@ -54,6 +54,7 @@ DECLARE
 			       'av_specified_level',
 			       'av_specified_level_ui',
 			       'av_state',
+                'av_std_text',
 			       'av_stream',                    -- located in at_schema_2
 			       'av_stream_location',           -- located in at_schema_2
 			       'av_streamflow_meas',
@@ -186,6 +187,7 @@ END;
 @@cwms/views/av_gage_sensor.sql
 
 @@cwms/views/av_streamflow_meas.sql
+@@cwms/views/av_std_text.sql
 
 
 --------------------------------------------------------------------------------

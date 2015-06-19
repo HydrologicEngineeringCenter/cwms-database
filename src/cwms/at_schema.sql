@@ -3227,6 +3227,9 @@ create table at_tsv_std_text(
 /
 create index at_tsv_std_text_idx1 on at_tsv_std_text(data_entry_date) tablespace cwms_20_tsv
 /
+create index at_tsv_std_text_idx2 on at_tsv_std_text(std_text_code) tablespace cwms_20_tsv
+/
+
 comment on table  at_tsv_std_text                 is 'Contains references to standard text from a time series';
 comment on column at_tsv_std_text.ts_code         is 'The time series';
 comment on column at_tsv_std_text.date_time       is 'The date/time in the time series for the reference';
