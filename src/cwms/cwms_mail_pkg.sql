@@ -1,4 +1,3 @@
-@@defines.sql
 create or replace package cwms_mail
 /**
  * Routines for sending email from CWMS
@@ -39,4 +38,3 @@ end cwms_mail;
 /
 show errors;
 
-create or replace public synonym cwms_mail for &cwms_schema..cwms_mail;

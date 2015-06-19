@@ -267,3 +267,5 @@ as
    end send_mail;
 
 end cwms_mail;
+/
+show errors;
