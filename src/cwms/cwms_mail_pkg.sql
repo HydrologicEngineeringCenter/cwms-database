@@ -1,3 +1,4 @@
+@@defines.sql
 create or replace package cwms_mail
 /**
  * Routines for sending email from CWMS
