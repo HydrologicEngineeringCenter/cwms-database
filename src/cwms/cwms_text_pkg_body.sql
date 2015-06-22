@@ -850,7 +850,7 @@ as
          cwms_err.raise('NULL_ARGUMENT', 'P_STD_TEXT_ID');
       end if;
 
-      l_std_text_id    := trim(p_std_text_id);
+      l_std_text_id    := upper(trim(p_std_text_id));
       l_fail_if_exists := cwms_util.return_true_or_false(p_fail_if_exists);
       l_office_code    := cwms_util.get_office_code(p_office_id);
 
@@ -876,7 +876,7 @@ as
          select *
            into l_rec
            from at_std_text
-          where office_code in (l_office_code, cwms_util.db_office_code_all) and upper(std_text_id) = p_std_text_id;
+          where office_code in (l_office_code, cwms_util.db_office_code_all) and std_text_id = l_std_text_id;
 
          l_exists := true;
       exception
@@ -912,8 +912,8 @@ as
                l_rec.clob_code      :=
                   store_text(
                      p_text           => p_std_text,
-                     p_id             => '/Standard Text/' || p_std_text_id,
-                     p_description    => 'Actual text for standard text identifier ' || p_std_text_id,
+                     p_id             => '/Standard Text/' || l_std_text_id,
+                     p_description    => 'Actual text for standard text identifier ' || l_std_text_id,
                      p_fail_if_exists => 'F',
                      p_office_id      => l_office_id);
             end if;
@@ -944,7 +944,7 @@ as
          -----------------------------------
          -- update the at_std_text record --
          -----------------------------------
-         l_rec.std_text_id := p_std_text_id; -- to change case if necessary
+         l_rec.std_text_id := l_std_text_id; -- to change case if necessary
 
          update at_std_text
             set row = l_rec;
@@ -959,8 +959,8 @@ as
             l_rec.clob_code      :=
                store_text(
                   p_text           => p_std_text,
-                  p_id             => '/Standard Text/' || p_std_text_id,
-                  p_description    => 'Actual text for standard text identifier ' || p_std_text_id,
+                  p_id             => '/Standard Text/' || l_std_text_id,
+                  p_description    => 'Actual text for standard text identifier ' || l_std_text_id,
                   p_fail_if_exists => 'F',
                   p_office_id      => l_office_id);
          end if;
@@ -970,7 +970,7 @@ as
          ---------------------------------------
          l_rec.std_text_code := cwms_seq.nextval;
          l_rec.office_code   := l_office_code;
-         l_rec.std_text_id   := p_std_text_id;
+         l_rec.std_text_id   := l_std_text_id;
 
          insert into at_std_text
               values l_rec;
@@ -1007,7 +1007,7 @@ as
          select clob_code
            into l_clob_code
            from at_std_text
-          where office_code in (l_office_code, cwms_util.db_office_code_all) and upper(std_text_id) = upper(p_std_text_id);
+          where office_code in (l_office_code, cwms_util.db_office_code_all) and std_text_id = upper(p_std_text_id);
       exception
          when no_data_found then
             select office_id
@@ -1463,7 +1463,7 @@ as
          select std_text_code
            into l_std_text_code
            from at_std_text
-          where office_code in (l_office_code, cwms_util.db_office_code_all) and std_text_id = p_std_text_id;
+          where office_code in (l_office_code, cwms_util.db_office_code_all) and std_text_id = upper(trim(p_std_text_id));
       exception
          when no_data_found then
             cwms_err.raise('ITEM_DOES_NOT_EXIST', 'CWMS standard text for office ' || l_office_id, p_std_text_id);
