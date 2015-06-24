@@ -3082,8 +3082,8 @@ procedure retrieve_ratings(
  * @param p_timezone       The time zone to retrieve the ratings in. The p_start and p_end parameters - if used - are also interpreted according to this time zone.
  *                         If unspecified or NULL, the UTC time zone is used. 
  * @param p_office_id      The office to retrieve ratings for.  If unspecified or NULL, ratings for all offices in the database that match the other criteria will be retrieved.
- *                         The ratings, in the specified time zones, formats, and vertical datums
- * @return
+ *                         
+ * @return                 The ratings, in the specified time zones, formats, and vertical datums
  */         
          
 function retrieve_ratings_f(
