@@ -3012,12 +3012,13 @@ AS
     * @param p_date_time      The time that the routine was called, in UTC
     * @param p_query_time     The time the routine took to retrieve the specified time series from the database
     * @param p_format_time    The time the routine took to format the results into the specified format, in milliseconds
-    * @param p__count         The number of time series retrieved by the routine
+    * @param p_ts_count       The number of time series retrieved by the routine
+    * @param p_value_count    The number of values retrieved by the routine
     * @param p_names          The names (time series identifers) of the time series to retrieve.  Multiple time series can be specified by
     *                         <or><li>specifying multiple time series ids separated by the <b>'|'</b> character (multiple name positions)</li>
     *                         <li>specifying a time series spec id with wildcard (<b>'*'</b> and/or <b>'?'</b> characters) (single name position)</li>
     *                         <li>a combination of 1 and 2 (multiple name positions with one or more positions matching possibly more than one time series)</li></ol>
-    *                         If unspecified or NULL, a listing of time series identifiers will be returned.
+    *                         If unspecified or NULL, a listing of time series identifiers with data in the specified or default time window will be returned.
     * @param p_format         The format to retrieve the time series in. Valid formats are <ul><li>TAB</li><li>CSV</li><li>XML</li><li>JSON</li></ul>
     *                         If the format is unspecified or NULL, the TAB format will be used. 
     * @param p_units          The units to return the units in.  Valid units are <ul><li>NATIVE</li><li>EN</li><li>SI</li></ul> If the p_names variable (q.v.) has more
@@ -3041,7 +3042,8 @@ AS
       p_date_time      out date,
       p_query_time     out integer,
       p_format_time    out integer, 
-      p_count          out integer,  
+      p_ts_count       out integer,
+      p_value_count    out integer,
       p_names          in  varchar2 default null,            
       p_format         in  varchar2 default null,
       p_units          in  varchar2 default null,   
@@ -3057,7 +3059,7 @@ AS
     *                         <or><li>specifying multiple time series ids separated by the <b>'|'</b> character (multiple name positions)</li>
     *                         <li>specifying a time series spec id with wildcard (<b>'*'</b> and/or <b>'?'</b> characters) (single name position)</li>
     *                         <li>a combination of 1 and 2 (multiple name positions with one or more positions matching possibly more than one time series)</li></ol>
-    *                         If unspecified or NULL, a listing of time series identifiers will be returned.
+    *                         If unspecified or NULL, a listing of time series identifiers with data in the specified or default time window will be returned.
     * @param p_format         The format to retrieve the time series in. Valid formats are <ul><li>TAB</li><li>CSV</li><li>XML</li><li>JSON</li></ul>
     *                         If the format is unspecified or NULL, the TAB format will be used. 
     * @param p_units          The units to return the units in.  Valid units are <ul><li>NATIVE</li><li>EN</li><li>SI</li></ul> If the p_names variable (q.v.) has more

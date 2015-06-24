@@ -10545,7 +10545,8 @@ end retrieve_existing_item_counts;
       p_date_time      out date,
       p_query_time     out integer,
       p_format_time    out integer, 
-      p_count          out integer,  
+      p_ts_count       out integer,
+      p_value_count    out integer,
       p_names          in  varchar2 default null,            
       p_format         in  varchar2 default null,
       p_units          in  varchar2 default null,   
@@ -10734,6 +10735,7 @@ end retrieve_existing_item_counts;
       -- retreive the data --
       -----------------------
       dbms_lob.createtemporary(l_data, true);
+      l_value_count := 0;
       if l_names is null then
          --------------------------------------------------------------
          -- retrieve catalog of time series with data in time window --
@@ -11252,6 +11254,7 @@ end retrieve_existing_item_counts;
                   end;
                   fetch c bulk collect into l_tsv;
                   close c;
+                  l_value_count := l_value_count + l_tsv.count;
                   l_ts2 := systimestamp;
                   l_elapsed_query := l_elapsed_query + l_ts2 - l_ts1;
                   l_ts1 := systimestamp;
@@ -11656,7 +11659,7 @@ end retrieve_existing_item_counts;
             cwms_util.append(l_data2, rpad('# PROCESS QUERY', l_width, ' ')||chr(9)||trunc(1000 * (extract(minute from l_elapsed_query) * 60 + extract(second from l_elapsed_query)))||' milliseconds'||chr(10));
             cwms_util.append(l_data2, rpad('# FORMAT OUTPUT', l_width, ' ')||chr(9)||trunc(1000 * (extract(minute from l_elapsed_format) * 60 + extract(second from l_elapsed_format)))||' milliseconds'||chr(10));
             cwms_util.append(l_data2, rpad('# TIME SERIES RETRIEVED', l_width, ' ')||chr(9)||l_tsids.count||chr(10));
-            cwms_util.append(l_data2, rpad('# VALUES RETRIEVED', l_width, ' ')||chr(9)||'0'||chr(10));
+            cwms_util.append(l_data2, rpad('# VALUES RETRIEVED', l_width, ' ')||chr(9)||l_value_count||chr(10));
             if l_format = 'CSV' then
                l_data2 := regexp_replace( 
                   replace(
@@ -11685,9 +11688,11 @@ end retrieve_existing_item_counts;
          p_results := l_data;
       end if;
             
-      p_date_time      := l_query_time;
-      p_query_time     := trunc(1000 * (extract(minute from l_elapsed_query) * 60 + extract(second from l_elapsed_query)));
-      p_format_time    := trunc(1000 * (extract(minute from l_elapsed_format) *60 +  extract(second from l_elapsed_format)));
+      p_date_time   := l_query_time;
+      p_query_time  := trunc(1000 * (extract(minute from l_elapsed_query) * 60 + extract(second from l_elapsed_query)));
+      p_format_time := trunc(1000 * (extract(minute from l_elapsed_format) *60 +  extract(second from l_elapsed_format)));
+      p_ts_count    := l_tsids.count;
+      p_value_count := l_value_count;
    end retrieve_time_series;   
             
    function retrieve_time_series_f(
@@ -11705,14 +11710,16 @@ end retrieve_existing_item_counts;
       l_date_time      date;
       l_query_time     integer;
       l_format_time    integer; 
-      l_count          integer;  
+      l_ts_count       integer;
+      l_value_count    integer;
    begin
       retrieve_time_series(
          l_results,
          l_date_time,
          l_query_time,
          l_format_time,
-         l_count,   
+         l_ts_count,
+         l_value_count,
          p_names,            
          p_format,
          p_units,   
