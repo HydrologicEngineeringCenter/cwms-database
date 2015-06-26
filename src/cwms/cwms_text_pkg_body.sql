@@ -1791,7 +1791,10 @@ as
          -------------------
          open l_cursor for
               select cwms_util.change_timezone(d.date_1, 'UTC', l_time_zone) as date_time,
-                     cwms_util.change_timezone(d.date_2, 'UTC', l_time_zone) as version_date,
+                     cwms_util.change_timezone(d.date_2, 'UTC', case 
+                                                                when d.date_2 = cwms_util.non_versioned then 'UTC' 
+                                                                else l_time_zone 
+                                                                end) as version_date,
                      cwms_util.change_timezone(t.data_entry_date, 'UTC', l_time_zone) as data_entry_date,
                      s.std_text_id,
                      t.attribute,
@@ -1818,7 +1821,10 @@ as
          ----------------------
          open l_cursor for
               select cwms_util.change_timezone(d.date_1, 'UTC', l_time_zone) as date_time,
-                     cwms_util.change_timezone(d.date_2, 'UTC', l_time_zone) as version_date,
+                     cwms_util.change_timezone(d.date_2, 'UTC', case 
+                                                                when d.date_2 = cwms_util.non_versioned then 'UTC' 
+                                                                else l_time_zone 
+                                                                end) as version_date,
                      cwms_util.change_timezone(t.data_entry_date, 'UTC', l_time_zone) as data_entry_date,
                      s.std_text_id,
                      t.attribute
@@ -3046,7 +3052,10 @@ as
       ------------------
       open l_cursor for
            select cwms_util.change_timezone(d.date_1, 'UTC', l_time_zone) as date_time,
-                  cwms_util.change_timezone(d.date_2, 'UTC', l_time_zone) as version_date,
+                  cwms_util.change_timezone(d.date_2, 'UTC', case 
+                                                             when d.date_2 = cwms_util.non_versioned then 'UTC' 
+                                                             else l_time_zone 
+                                                             end) as version_date,
                   cwms_util.change_timezone(t.data_entry_date, 'UTC', l_time_zone) as data_entry_date,
                   c.id,
                   t.attribute,
