@@ -1087,7 +1087,7 @@ as
       open p_cursor for
          select a.office_id,
                 a.std_text_id,
-                b.value
+                b.value as std_text
            from (select o.office_id,
                         s.std_text_id,
                         s.clob_code
