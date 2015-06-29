@@ -1798,7 +1798,7 @@ as
                      cwms_util.change_timezone(t.data_entry_date, 'UTC', l_time_zone) as data_entry_date,
                      s.std_text_id,
                      t.attribute,
-                     c.value
+                     c.value as std_text
                 from table(l_date_time_versions) d,
                      at_tsv_std_text t,
                      at_std_text s,
@@ -3057,9 +3057,9 @@ as
                                                              else l_time_zone 
                                                              end) as version_date,
                   cwms_util.change_timezone(t.data_entry_date, 'UTC', l_time_zone) as data_entry_date,
-                  c.id,
+                  c.id as text_id,
                   t.attribute,
-                  c.value
+                  c.value as text
              from table(l_date_time_versions) d, at_tsv_text t, at_clob c
             where t.ts_code = l_ts_code
               and t.date_time = d.date_1
