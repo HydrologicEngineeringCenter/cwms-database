@@ -1278,7 +1278,6 @@ is
    l_office_code               number;
    l_fail_if_exists            boolean;
    l_spec_level_code           number(10);
-   l_loc_level_code            number(10);
    l_interval_origin           date;
    l_location_code             number(10);
    l_location_tz_code          number(10);
@@ -5182,7 +5181,6 @@ is
    l_duration_code            number(10);
    l_specified_level_code     number(10);
    l_level_indicator_code     number(10);
-   l_attr_units_code          number(10);
    l_attr_parameter_code      number(10);
    l_attr_parameter_type_code number(10);
    l_attr_duration_code       number(10);
@@ -7574,7 +7572,6 @@ is
    l_ts_value               binary_double;
    l_ts_quality             number;
    l_ts                     ztsv_array := new ztsv_array();
-   l_transaction_time       date;
    l_units_out              varchar2(16);
    l_cwms_ts_id_out         varchar2(183);
 begin       

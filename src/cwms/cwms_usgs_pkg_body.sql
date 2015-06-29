@@ -669,7 +669,6 @@ is
    l_lines      str_tab_t;
    l_cols       str_tab_t;
    l_ts         ztsv_array_tab;
-   l_line_num   pls_integer;
    l_col_count  pls_integer;
    l_col_info   col_t;
    l_date_time  timestamp with time zone;
@@ -2643,9 +2642,6 @@ is
    l_hash_value     varchar2(40);
    l_first          boolean := true;  
    l_active         boolean;
-   l_auto_update    boolean;
-   l_auto_activate  boolean;
-   l_auto_migrate   boolean;
 begin
    --------------------------------------------------------
    -- process the rating into the CWMS XML rating format --
@@ -3024,8 +3020,6 @@ is
    l_office_id        varchar2(16) := cwms_util.get_db_office_id(p_office_id);
    l_office_code      integer := cwms_util.get_db_office_code(l_office_id);
    l_location_id      varchar2(49);
-   l_parameters_id    varchar2(64);
-   l_template_version varchar2(9); 
    l_rating_text      clob;   
    l_rating_exsa      clob;  
    l_hash_value       varchar2(40); 

@@ -1412,7 +1412,6 @@ AS
       l_version               VARCHAR2 (50);
       l_office_code           NUMBER;
       l_location_code         NUMBER;
-      l_ts_code_nv            NUMBER;
       l_ret                   NUMBER;
       l_hashcode              NUMBER;
       l_str_error             VARCHAR2 (256);
@@ -3783,8 +3782,6 @@ AS
       l_office_id           VARCHAR2 (16);
       l_office_code         NUMBER;
       l_location_code       NUMBER;
-      t1count               NUMBER;
-      t2count               NUMBER;
       l_ucount              NUMBER;
       l_store_date          TIMESTAMP (3) DEFAULT SYSTIMESTAMP AT TIME ZONE 'UTC';
       l_ts_code             NUMBER;
@@ -3792,7 +3789,6 @@ AS
       l_interval_value      NUMBER;
       l_utc_offset          NUMBER;
       existing_utc_offset   NUMBER;
-      table_cnt             NUMBER;
       mindate               DATE;
       maxdate               DATE;
       l_sql_txt             VARCHAR2 (10000);
@@ -3814,7 +3810,6 @@ AS
       i_max_iterations      NUMBER := 100;
       --
       l_date_times          date_table_type;
-      l_valid_times         date_table_type;
       l_min_interval        number;
       l_count               number;
       l_value_offset        binary_double := 0; 
@@ -6341,9 +6336,6 @@ AS
                            p_max_version    IN     VARCHAR2 DEFAULT 'T',
                            p_db_office_id   IN     VARCHAR2 DEFAULT NULL)
    IS
-      l_whichretrieve     VARCHAR2 (10);
-      l_numvals           INTEGER;
-      l_errnum            INTEGER;
       l_ts_interval       NUMBER;
       l_ts_offset         NUMBER;
       l_versioned         NUMBER;

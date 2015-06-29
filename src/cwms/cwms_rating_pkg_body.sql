@@ -5200,7 +5200,6 @@ is
    l_values        double_tab_tab_t;
    l_parameters    str_tab_t;
    l_units         str_tab_t;
-   l_opening_index pls_integer;
    l_opening_pos   pls_integer;
    l_min_opening   binary_double;
 begin

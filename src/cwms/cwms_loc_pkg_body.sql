@@ -815,7 +815,6 @@ AS
    ---
    --
    IS
-      l_loc_new            loc_type_ds;
       l_horizontal_datum   VARCHAR2 (16) := NULL;
       l_long_name          VARCHAR2 (80) := NULL;
       l_active             VARCHAR2 (1) := NULL;
@@ -3181,7 +3180,6 @@ AS
       p_db_office_id          IN VARCHAR2 DEFAULT NULL
    )
    IS
-      l_cwms_code     NUMBER;
       l_office_id     VARCHAR2 (16);
       l_office_code    NUMBER;
    BEGIN
@@ -6053,7 +6051,6 @@ end unassign_loc_groups;
       p_office_id   in varchar2 default null)
    is
       l_location_code         integer;
-      l_streamgage_compatible boolean;
    begin
       l_location_code := get_location_code(p_office_id, p_location_id); 
       case check_location_kind(l_location_code)

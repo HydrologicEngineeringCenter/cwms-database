@@ -1352,10 +1352,7 @@ is
       office_id      varchar2(16),
       forecast_date  date,          
       issue_date     date,         
-      cwms_ts_id      varchar2(183),
-      version_date   date,          
-      min_time       date,          
-      max_time       date,
+      cwms_ts_id     varchar2(183),
       time_zone_name varchar2(28));
    type ts_rec_t is record (
       date_time    date,

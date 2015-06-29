@@ -1948,7 +1948,6 @@ is
    l_job_id    varchar2(32) := rawtohex(sys_guid());
    l_office_id varchar2(16) := nvl(p_office_id, cwms_util.user_office_id);
    l_log_msg   varchar2(4000);
-   l_rt_msg    varchar2(4000);
    l_to_dss    varchar2(8) := null;
    l_reported  timestamp := systimestamp;
    l_rec       at_xchg_datastore_dss%rowtype;

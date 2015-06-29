@@ -818,7 +818,6 @@ AS
       l_num_open_paran        NUMBER := 0;
       l_char_position         NUMBER := 0;
       l_num_element           NUMBER := 0;
-      l_t                     VARCHAR2 (1);
       l_tmp_string            VARCHAR2 (100) := NULL;
       l_is_closing_quotes     BOOLEAN;
    BEGIN
@@ -2394,7 +2393,6 @@ AS
       --   public static final String MINUTE_TIME_INTERVAL = "mi";
       l_num_yr    NUMBER;
       l_num_mo    NUMBER;
-      l_num_wk    NUMBER;
       l_num_dy    NUMBER;
       l_num_hr    NUMBER;
       l_num_mi    NUMBER;
@@ -3171,8 +3169,6 @@ AS
       p_expr in varchar2)                                                                                                                 
       return str_tab_tab_t
    is              
-      type logic_info_t     is record(op varchar2(5), pos pls_integer, precedence pls_integer);
-      type logic_info_tab_t is table of logic_info_t; 
       c_re           constant varchar2(22) := '\W?('||cwms_util.join_text(cwms_util.combinators, '|')||')\W?';
       l_expr         varchar2(32767);
       l_temp         varchar2(32676);
@@ -3182,8 +3178,6 @@ AS
       l_replacements str_tab_t;
       l_table1       str_tab_t;
       l_table2       str_tab_tab_t;
-      l_logic_info   logic_info_tab_t;
-      l_break        pls_integer;
       l_start        pls_integer;
       l_end          pls_integer;  
       

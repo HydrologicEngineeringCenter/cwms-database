@@ -50,7 +50,6 @@ AS
 		l_prop_category					VARCHAR2 (256);
 		l_prop_id							VARCHAR2 (256);
 		l_query								VARCHAR2 (32767);
-		l_output 							VARCHAR (1000);
 		l_pos                         PLS_INTEGER;
 	BEGIN
 		p_cwms_cat := NULL;
@@ -118,7 +117,6 @@ AS
 		l_prop_comment 					VARCHAR2 (256);
 		l_table_row 						at_properties%ROWTYPE;
 		l_updated							BOOLEAN;
-		l_fetch_again						BOOLEAN;
 		l_success_count					BINARY_INTEGER := 0;
 		l_duplicate_count 				BINARY_INTEGER := 0;
 
