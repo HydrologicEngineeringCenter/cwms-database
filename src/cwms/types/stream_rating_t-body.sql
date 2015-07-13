@@ -776,6 +776,8 @@ as
       -- try to store the base rating, returning the rating code for reference --
       ---------------------------------------------------------------------------
       begin  
+         l_new_base_rating := false;
+         l_base_stored := false;
          (self as rating_t).store(l_ref_rating_code, 'T');
          l_new_base_rating := true;
          l_base_stored := true;
