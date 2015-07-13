@@ -29,5 +29,5 @@ as
           cwms_office o
     where ept.db_office_code = o.office_code;
       
-create public synonym cwms_v_embank_protection_type for av_embank_protection_type;
+create or replace public synonym cwms_v_embank_protection_type for av_embank_protection_type;
 

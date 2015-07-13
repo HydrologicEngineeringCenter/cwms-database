@@ -28,5 +28,5 @@ as
      from at_embank_structure_type ept, cwms_office o
     where ept.db_office_code = o.office_code;
       
-create public synonym cwms_v_embank_structure_type for av_embank_structure_type;
+create or replace public synonym cwms_v_embank_structure_type for av_embank_structure_type;
 

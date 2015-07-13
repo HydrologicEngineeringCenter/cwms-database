@@ -86,5 +86,5 @@ as
       and e.downstream_prot_type_code = ept2.protection_type_code(+)
       and e.structure_type_code = est.structure_type_code;
       
-create public synonym cwms_v_embankment for av_embankment;
+create or replace public synonym cwms_v_embankment for av_embankment;
 
