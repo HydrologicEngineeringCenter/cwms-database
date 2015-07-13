@@ -17,6 +17,7 @@ CREATE type gate_change_obj_t
  * @member discharge_units              The discharge unit
  * @member change_notes                 Notes about the gate change
  * @member protected                    A flag ('T' or 'F') specifying whether this gate change is protected from future updates
+ * @member reference_elev               An additional reference elevation if required to describe this gate change
  */
 AS
   object
@@ -35,7 +36,8 @@ AS
       new_total_discharge_override binary_double, --NEW_TOTAL_DISCHARGE_OVERRIDE
       discharge_units  varchar2(16), 
       change_notes VARCHAR2(255 BYTE), --GATE_CHANGE_NOTES
-      protected varchar2(1) --PROTECTED_FLAG
+      protected varchar2(1), --PROTECTED_FLAG
+      reference_elev binary_double
 );
 /
 

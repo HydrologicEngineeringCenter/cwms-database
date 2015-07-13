@@ -982,6 +982,10 @@ begin
       end;
       l_change_rec.gate_change_notes := p_gate_changes(i).change_notes;
       l_change_rec.protected := upper(p_gate_changes(i).protected);
+      l_change_rec.reference_elev := cwms_util.convert_units(
+         p_gate_changes(i).reference_elev,
+         p_gate_changes(i).elev_units,
+         cwms_util.get_default_units('Elev'));
       insert into at_gate_change values l_change_rec;
       -------------------------------------
       -- insert new gate setting records --
@@ -996,6 +1000,10 @@ begin
                p_gate_changes(i).settings(j).opening,
                p_gate_changes(i).settings(j).opening_units,
                cwms_util.get_default_units(l_opening_param));
+            l_setting_rec.invert_elev := cwms_util.convert_units(
+               p_gate_changes(i).settings(j).invert_elev,
+               p_gate_changes(i).elev_units,
+               cwms_util.get_default_units('Elev'));
             insert into at_gate_setting values l_setting_rec;               
          end loop;         
       end if;
@@ -1155,7 +1163,11 @@ begin
                l_flow_unit),
             l_flow_unit,
             l_gate_changes(i).gate_change_notes,
-            l_gate_changes(i).protected);
+            l_gate_changes(i).protected,
+            cwms_util.convert_units(
+               l_gate_changes(i).reference_elev,
+               'm',
+               l_elev_unit));
          ---------------------------------
          -- discharge_computation field --
          ---------------------------------            
@@ -1203,7 +1215,11 @@ begin
                      cwms_util.get_default_units(l_opening_param, 'SI'), 
                      l_opening_unit),
                   l_opening_param, 
-                  l_opening_unit);                  
+                  l_opening_unit,
+                  cwms_util.convert_units(
+                     l_gate_settings(j).invert_elev,
+                     'm',
+                     l_elev_unit));                  
             end loop;
          end if;          
                                  

@@ -1799,7 +1799,8 @@ CREATE TABLE at_gate_change
   discharge_computation_code   NUMBER(10)    NOT NULL,
   release_reason_code          NUMBER(10)    NOT NULL,
   gate_change_notes            VARCHAR2(255 BYTE),
-  protected                    VARCHAR2(1)   NOT NULL
+  protected                    VARCHAR2(1)   NOT NULL,
+  reference_elev               BINARY_DOUBLE
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -1829,7 +1830,8 @@ COMMENT ON COLUMN at_gate_change.new_total_discharge_override IS 'The total disc
 COMMENT ON COLUMN at_gate_change.discharge_computation_code IS 'The code for the discharge computation method for the gate change. Values are restricted by a foreign key to a lookup table.';
 COMMENT ON COLUMN at_gate_change.release_reason_code IS 'The code for the release reason (or purpose) issued for the gate change.  Values are restricted by a foreign key to a lookup table.';
 COMMENT ON COLUMN at_gate_change.gate_change_notes IS 'Any notes pertinent to this gate change';
-COMMENT ON COLUMN at_gate_change.gate_change_notes IS 'Specifies whether this gate change is protected from inadvertent overwrites';
+COMMENT ON COLUMN at_gate_change.protected IS 'Specifies whether this gate change is protected from inadvertent overwrites';
+COMMENT ON COLUMN at_gate_change.reference_elev IS 'An additional reference elevation if required to describe this gate change';
 
 ALTER TABLE at_gate_change ADD (
   CONSTRAINT at_gate_change_pk
@@ -2131,10 +2133,11 @@ end at_comp_outlet_conn_tr1;
 
 CREATE TABLE at_gate_setting
 (
-  gate_setting_code                   NUMBER(10)      NOT NULL,
-  gate_change_code                  NUMBER(10)      NOT NULL,
-  outlet_location_code                        NUMBER(10)      NOT NULL,
-  gate_opening              BINARY_DOUBLE     NOT NULL
+  gate_setting_code     NUMBER(10)    NOT NULL,
+  gate_change_code      NUMBER(10)    NOT NULL,
+  outlet_location_code  NUMBER(10)    NOT NULL,
+  gate_opening          BINARY_DOUBLE NOT NULL,
+  invert_elev           BINARY_DOUBLE
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -2159,6 +2162,7 @@ COMMENT ON COLUMN at_gate_setting.gate_setting_code IS 'The unique record for th
 COMMENT ON COLUMN at_gate_setting.gate_change_code IS 'The gate change record to which this setting is associated.  See AT_GATE_CHANGE.';
 COMMENT ON COLUMN at_gate_setting.outlet_location_code IS 'The unique gate that is being set. This location code also in AT_PHYSICAL_LOCATION';
 COMMENT ON COLUMN at_gate_setting.gate_opening IS 'The new gate opening.  This may be a dial opening rather than an actual opening';
+COMMENT ON COLUMN at_gate_setting.invert_elev IS 'The invert elevation if the gate supports variable inverts';
 
 ALTER TABLE at_gate_setting ADD (
   CONSTRAINT at_gate_setting_pk

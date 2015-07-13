@@ -9,6 +9,7 @@ CREATE type gate_setting_obj_t
  * @member opening             The opening value
  * @member opening_parameter   The opening parameter
  * @member opening_units       The opening unit
+ * @member invert_elev         The invert elevation for gates that support variable inverts
  */
 AS
   object
@@ -17,7 +18,8 @@ AS
   outlet_location_ref location_ref_t,
   opening binary_double,
   opening_parameter varchar2(49),
-  opening_units varchar2(16)
+  opening_units varchar2(16),
+  invert_elev binary_double
   );
 /
 
