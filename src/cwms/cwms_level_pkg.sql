@@ -1,3 +1,4 @@
+set define off
 CREATE OR REPLACE PACKAGE cwms_level
 /**
  * Facilities for working with location levels.<p>
@@ -835,6 +836,11 @@ function retrieve_location_level(
  *   <li>If the level <b>varies in a recurring pattern</b>, the time series will include values at any pattern breakpoints in the time window. The quality_codes of all elements will be zero</li>
  *   <li>If the level <b>varies irregularly</b>, the time series will include values of at any times of the representing time series that are in the time window.  The quality codes of times within the time window will be the quality codes of the representing time series. The quality codes of the elements at the beginning and end of the time window may be zero</li>
  * </ul>
+ * The quality code of each returned value will be one of the following
+ * <ul>
+ *   <li><b>0:&nbsp;</b>The value for all times between the previous value time and this one is the same as the previous value</li>
+ *   <li><b>1:&nbsp;</b>The value for all times between the previous value time and this one is interpolated between the previous value and this one</li>
+ * </ul>
  * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
  * @param p_level_units        The value unit to retrieve the level values in
  * @param p_start_time         The start of the time window
@@ -877,6 +883,11 @@ procedure retrieve_location_level_values(
  *   <li>If the level <b>varies in a recurring pattern</b>, the time series will include values at any pattern breakpoints in the time window. The quality_codes of all elements will be zero</li>
  *   <li>If the level <b>varies irregularly</b>, the time series will include values of at any times of the representing time series that are in the time window.  The quality codes of times within the time window will be the quality codes of the representing time series. The quality codes of the elements at the beginning and end of the time window may be zero</li>
  * </ul>
+ * The quality code of each returned value will be one of the following
+ * <ul>
+ *   <li><b>0:&nbsp;</b>The value for all times between the previous value time and this one is the same as the previous value</li>
+ *   <li><b>1:&nbsp;</b>The value for all times between the previous value time and this one is interpolated between the previous value and this one</li>
+ * </ul>
  */
 function retrieve_location_level_values(
    p_location_level_id       in  varchar2,
@@ -902,6 +913,11 @@ function retrieve_location_level_values(
  *   <li>If the level <b>is constant</b>, the time series will be of length 2 and the quality_codes of both elements will be zero</li>
  *   <li>If the level <b>varies in a recurring pattern</b>, the time series will include values at any pattern breakpoints in the time window. The quality_codes of all elements will be zero</li>
  *   <li>If the level <b>varies irregularly</b>, the time series will include values of at any times of the representing time series that are in the time window.  The quality codes of times within the time window will be the quality codes of the representing time series. The quality codes of the elements at the beginning and end of the time window may be zero</li>
+ * </ul>
+ * The quality code of each returned value will be one of the following
+ * <ul>
+ *   <li><b>0:&nbsp;</b>The value for all times between the previous value time and this one is the same as the previous value</li>
+ *   <li><b>1:&nbsp;</b>The value for all times between the previous value time and this one is interpolated between the previous value and this one</li>
  * </ul>
  * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
  * @param p_level_units        The value unit to retrieve the level values in
@@ -947,6 +963,11 @@ procedure retrieve_loc_lvl_values2(
  *   <li>If the level <b>varies in a recurring pattern</b>, the time series will include values at any pattern breakpoints in the time window. The quality_codes of all elements will be zero</li>
  *   <li>If the level <b>varies irregularly</b>, the time series will include values of at any times of the representing time series that are in the time window.  The quality codes of times within the time window will be the quality codes of the representing time series. The quality codes of the elements at the beginning and end of the time window may be zero</li>
  * </ul>
+ * The quality code of each returned value will be one of the following
+ * <ul>
+ *   <li><b>0:&nbsp;</b>The value for all times between the previous value time and this one is the same as the previous value</li>
+ *   <li><b>1:&nbsp;</b>The value for all times between the previous value time and this one is interpolated between the previous value and this one</li>
+ * </ul>
  */
 function retrieve_loc_lvl_values2(
    p_location_level_id       in  varchar2,
@@ -963,7 +984,19 @@ function retrieve_loc_lvl_values2(
  * Retrieves a time series of location level values for a specified location level
  * and specified times
  *
- * @param p_level_values       The location level values as a ztsv_array
+ * @param p_level_values       The location level values as a ztsv_array. The time series contains
+ * values at the spcified start and end times of the time window and may contain
+ * values at intermediate times. Each record in the recordset contains fields for date/time, value, and quality code. See <a href="cwms_util.parse_string_recordset">cwms_util.parse_string_recordset</a>.
+ * <ul>
+ *   <li>If the level <b>is constant</b>, the time series will be of length 2 and the quality_codes of both elements will be zero</li>
+ *   <li>If the level <b>varies in a recurring pattern</b>, the time series will include values at any pattern breakpoints in the time window. The quality_codes of all elements will be zero</li>
+ *   <li>If the level <b>varies irregularly</b>, the time series will include values of at any times of the representing time series that are in the time window.  The quality codes of times within the time window will be the quality codes of the representing time series. The quality codes of the elements at the beginning and end of the time window may be zero</li>
+ * </ul>
+ * The quality code of each returned value will be one of the following
+ * <ul>
+ *   <li><b>0:&nbsp;</b>The value for all times between the previous value time and this one is the same as the previous value</li>
+ *   <li><b>1:&nbsp;</b>The value for all times between the previous value time and this one is interpolated between the previous value and this one</li>
+ * </ul>
  * @param p_specified_times    The times to retrieve the location level values for (only date_time member is used from each element)
  * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
  * @param p_level_units        The value unit to retrieve the level values in
@@ -996,7 +1029,19 @@ procedure retrieve_loc_lvl_values3(
  * @param p_timezone_id        The time zone of the time window. Retrieved dates are also in this time zone
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
  *
- * @return The location level values as a ztsv_array
+ * @return The location level values as a ztsv_array. The time series contains
+ * values at the spcified start and end times of the time window and may contain
+ * values at intermediate times. Each record in the recordset contains fields for date/time, value, and quality code. See <a href="cwms_util.parse_string_recordset">cwms_util.parse_string_recordset</a>.
+ * <ul>
+ *   <li>If the level <b>is constant</b>, the time series will be of length 2 and the quality_codes of both elements will be zero</li>
+ *   <li>If the level <b>varies in a recurring pattern</b>, the time series will include values at any pattern breakpoints in the time window. The quality_codes of all elements will be zero</li>
+ *   <li>If the level <b>varies irregularly</b>, the time series will include values of at any times of the representing time series that are in the time window.  The quality codes of times within the time window will be the quality codes of the representing time series. The quality codes of the elements at the beginning and end of the time window may be zero</li>
+ * </ul>
+ * The quality code of each returned value will be one of the following
+ * <ul>
+ *   <li><b>0:&nbsp;</b>The value for all times between the previous value time and this one is the same as the previous value</li>
+ *   <li><b>1:&nbsp;</b>The value for all times between the previous value time and this one is interpolated between the previous value and this one</li>
+ * </ul>
  */
 function retrieve_loc_lvl_values3(
    p_specified_times         in  ztsv_array,
@@ -1061,7 +1106,19 @@ function retrieve_loc_lvl_values3(
  * Retrieves a time series of location level values for a specified location level
  * and times taken from a specified time series
  *
- * @param p_level_values       The location level values as a ztsv_array
+ * @param p_level_values       The location level values as a ztsv_array. The time series contains
+ * values at the spcified start and end times of the time window and may contain
+ * values at intermediate times. Each record in the recordset contains fields for date/time, value, and quality code. See <a href="cwms_util.parse_string_recordset">cwms_util.parse_string_recordset</a>.
+ * <ul>
+ *   <li>If the level <b>is constant</b>, the time series will be of length 2 and the quality_codes of both elements will be zero</li>
+ *   <li>If the level <b>varies in a recurring pattern</b>, the time series will include values at any pattern breakpoints in the time window. The quality_codes of all elements will be zero</li>
+ *   <li>If the level <b>varies irregularly</b>, the time series will include values of at any times of the representing time series that are in the time window.  The quality codes of times within the time window will be the quality codes of the representing time series. The quality codes of the elements at the beginning and end of the time window may be zero</li>
+ * </ul>
+ * The quality code of each returned value will be one of the following
+ * <ul>
+ *   <li><b>0:&nbsp;</b>The value for all times between the previous value time and this one is the same as the previous value</li>
+ *   <li><b>1:&nbsp;</b>The value for all times between the previous value time and this one is interpolated between the previous value and this one</li>
+ * </ul>
  * @param p_ts_id              A time series to take the times from (using the specified time window)
  * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
  * @param p_level_units        The value unit to retrieve the level values in
@@ -1127,6 +1184,11 @@ function retrieve_loc_lvl_values3(
  *   <li>If the level <b>varies in a recurring pattern</b>, the time series will include values at any pattern breakpoints in the time window. The quality_codes of all elements will be zero</li>
  *   <li>If the level <b>varies irregularly</b>, the time series will include values of at any times of the representing time series that are in the time window.  The quality codes of times within the time window will be the quality codes of the representing time series. The quality codes of the elements at the beginning and end of the time window may be zero</li>
  * </ul>
+ * The quality code of each returned value will be one of the following
+ * <ul>
+ *   <li><b>0:&nbsp;</b>The value for all times between the previous value time and this one is the same as the previous value</li>
+ *   <li><b>1:&nbsp;</b>The value for all times between the previous value time and this one is interpolated between the previous value and this one</li>
+ * </ul>
  * @param p_ts_id                       The time series identifier
  * @param p_spec_level_id               The specified level identifier
  * @param p_level_units                 The value unit to retrieve the level values in
@@ -1180,6 +1242,11 @@ procedure retrieve_location_level_values(
  *   <li>If the level <b>varies in a recurring pattern</b>, the time series will include values at any pattern breakpoints in the time window. The quality_codes of all elements will be zero</li>
  *   <li>If the level <b>varies irregularly</b>, the time series will include values of at any times of the representing time series that are in the time window.  The quality codes of times within the time window will be the quality codes of the representing time series. The quality codes of the elements at the beginning and end of the time window may be zero</li>
  * </ul>
+ * The quality code of each returned value will be one of the following
+ * <ul>
+ *   <li><b>0:&nbsp;</b>The value for all times between the previous value time and this one is the same as the previous value</li>
+ *   <li><b>1:&nbsp;</b>The value for all times between the previous value time and this one is interpolated between the previous value and this one</li>
+ * </ul>
  */
 function retrieve_location_level_values(
    p_ts_id                   in  varchar2,
@@ -1196,8 +1263,7 @@ function retrieve_location_level_values(
    p_office_id               in  varchar2 default null)
    return ztsv_array;
 /**
- * Retrieves a time series of location level values for a specified location level
- * and a time
+ * Retrieves a location level value for a specified location level and time
  *
  * @param p_level_value        The location level value
  * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
@@ -1220,8 +1286,7 @@ procedure retrieve_location_level_value(
    p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null);
 /**
- * Retrieves a time series of location level values for a specified location level
- * and a time
+ * Retrieves a location level value for a specified location level and time
  *
  * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
  * @param p_level_units        The value unit to retrieve the level value in

@@ -3021,7 +3021,7 @@ AS
     *                         If unspecified or NULL, a listing of time series identifiers with data in the specified or default time window will be returned.
     * @param p_format         The format to retrieve the time series in. Valid formats are <ul><li>TAB</li><li>CSV</li><li>XML</li><li>JSON</li></ul>
     *                         If the format is unspecified or NULL, the TAB format will be used. 
-    * @param p_units          The units to return the units in.  Valid units are <ul><li>NATIVE</li><li>EN</li><li>SI</li></ul> If the p_names variable (q.v.) has more
+    * @param p_units          The units to return the time series in.  Valid units are <ul><li>EN</li><li>SI</li><li>actual unit of parameter (e.g. ft, cfs)</li></ul> If the p_names variable (q.v.) has more
     *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_units variable may also have multiple positions separated by the 
     *                         <b>'|',</b> charcter. If the p_units variable has fewer positions than the p_name variable, the last unit position is used for all 
     *                         remaning names. If the units are unspecified or NULL, the NATIVE units will be used for all time series.
@@ -3062,7 +3062,7 @@ AS
     *                         If unspecified or NULL, a listing of time series identifiers with data in the specified or default time window will be returned.
     * @param p_format         The format to retrieve the time series in. Valid formats are <ul><li>TAB</li><li>CSV</li><li>XML</li><li>JSON</li></ul>
     *                         If the format is unspecified or NULL, the TAB format will be used. 
-    * @param p_units          The units to return the units in.  Valid units are <ul><li>NATIVE</li><li>EN</li><li>SI</li></ul> If the p_names variable (q.v.) has more
+    * @param p_units          The units to return the time series in.  Valid units are <ul><li>EN</li><li>SI</li><li>actual unit of parameter (e.g. ft, cfs)</li></ul> If the p_names variable (q.v.) has more
     *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_units variable may also have multiple positions separated by the 
     *                         <b>'|',</b> charcter. If the p_units variable has fewer positions than the p_name variable, the last unit position is used for all 
     *                         remaning names. If the units are unspecified or NULL, the NATIVE units will be used for all time series.
