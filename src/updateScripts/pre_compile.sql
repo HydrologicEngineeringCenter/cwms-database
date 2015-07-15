@@ -634,6 +634,7 @@ PROMPT Dropping CWMS_ENV public synonym
 
 drop public synonym cwms_env;
 
+PROMPT Modifying constraints
 -----------------------------
 -- add not null constraint --
 -----------------------------
@@ -760,6 +761,12 @@ ALTER TABLE CWMS_20.AT_STORE_RULE_ORDER ADD (
   ENABLE VALIDATE);
 
 COMMIT;
+
+PROMPT Modifying AT_LOCATION_LEVEL table
+
+ALTER TABLE AT_LOCATION_LEVEL ADD (EXPIRATION_DATE DATE);
+COMMENT ON COLUMN AT_LOCATION_LEVEL.EXPIRATION_DATE IS 'Date/time at which this level expires';
+
 whenever sqlerror exit; 
 
 

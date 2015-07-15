@@ -1,4 +1,4 @@
-cREATE OR REPLACE PACKAGE cwms_level
+CREATE OR REPLACE PACKAGE cwms_level
 /**
  * Facilities for working with location levels.<p>
  *
@@ -495,6 +495,51 @@ procedure store_location_level3(
    p_fail_if_exists          in  varchar2 default 'T',
    p_office_id               in  varchar2 default null);
 /**
+ * Stores (inserts or updates) a location level to the database
+ *
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_level_value        The level value, if the level is constant
+ * @param p_level_units        The value unit of p_level_value or p_seasonal_values
+ * @param p_level_comment      A comment about the location level
+ * @param p_effective_date     The effective date for the location level. Applies from this time forward
+ * @param p_timezone_id        The time zone of p_effective_date and p_interval_origin, if applicable
+ * @param p_attribute_value    The value of the attribute, if applicable
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_comment  A comment about the attribute, if applicable
+ * @param p_interval_origin    The start of any pattern interval, if the level varies in a recurring pattern
+ * @param p_interval_months    The length of the pattern interval, if the level varies in a recurring pattern and the interval is expressed in months and/or years
+ * @param p_interval_minutes   The length of the pattern interval, if the level varies in a recurring pattern and the interval is expressed in hours and/or days
+ * @param p_interpolate        A flag ('T' or 'F') that specifies whether the level value changes linearly from one pattern or time series value to the next ('T') or takes on the preceding value ('F'), if the level varies in a recurring pattern
+ * @param p_tsid               The time series identifier that represents the location level, if the level varies irregularly
+ * @param p_expiration_date    The date/time that the location level expires
+ * @param p_seasonal_values    The recurring pattern values, if the level varies in a recurring pattern
+ * @param p_fail_if_exists     A flag ('T' or 'F') that specifies whether the routine should fail if the location level already exists in the database
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and the location level already exists in the database
+ */
+procedure store_location_level4(
+   p_location_level_id       in  varchar2,
+   p_level_value             in  number,
+   p_level_units             in  varchar2,
+   p_level_comment           in  varchar2 default null,
+   p_effective_date          in  date     default null,
+   p_timezone_id             in  varchar2 default null,
+   p_attribute_value         in  number   default null,
+   p_attribute_units         in  varchar2 default null,
+   p_attribute_id            in  varchar2 default null,
+   p_attribute_comment       in  varchar2 default null,
+   p_interval_origin         in  date     default null,
+   p_interval_months         in  integer  default null,
+   p_interval_minutes        in  integer  default null,
+   p_interpolate             in  varchar2 default 'T',
+   p_tsid                    in  varchar2 default null,
+   p_expiration_date         in  date     default null,
+   p_seasonal_values         in  seasonal_value_tab_t default null,
+   p_fail_if_exists          in  varchar2 default 'T',
+   p_office_id               in  varchar2 default null);
+/**
  * Retrieves a location level from the database. To retrieve an irregularly varying level
  * using a time series, use <a href="retrieve_location_level3">store_location_level3</a>.
  *
@@ -663,6 +708,67 @@ procedure retrieve_location_level3(
    p_interval_minutes        out integer,
    p_interpolate             out varchar2,
    p_tsid                    out varchar2,
+   p_seasonal_values         out seasonal_value_tab_t,
+   p_location_level_id       in  varchar2,
+   p_level_units             in  varchar2,
+   p_date                    in  date,
+   p_timezone_id             in  varchar2 default 'UTC',
+   p_attribute_id            in  varchar2 default null,
+   p_attribute_value         in  number   default null,
+   p_attribute_units         in  varchar2 default null,
+   p_match_date              in  varchar2 default 'F',
+   p_office_id               in  varchar2 default null);
+/**
+ * Retrieves a location level from the database
+ *
+ * @param p_level_value        The level value, if the level is constant
+ * @param p_level_comment      A comment about the location level
+ * @param p_effective_date     The effective date for the location level. Applies from this time forward
+ * @param p_interval_origin    The start of any pattern interval, if the level varies in a recurring pattern
+ * @param p_interval_months    The length of the pattern interval, if the level varies in a recurring pattern and the interval is expressed in months and/or years
+ * @param p_interval_minutes   The length of the pattern interval, if the level varies in a recurring pattern and the interval is expressed in hours and/or days
+ * @param p_interpolate        A flag ('T' or 'F') that specifies whether the level value changes linearly from one pattern value to the next ('T') or takes on the preceding value ('F'), if the level varies in a recurring pattern
+ * @param p_tsid               The time series identifier that represents the location level, if the level varies irregularly
+ * @param p_expiration_date    The date/time that the location level expires
+ * @param p_seasonal_values    The recurring pattern values, if the level varies in a recurring pattern
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_level_units        The value unit of p_level_value or p_seasonal_values
+ * @param p_date               The date for which to retrieve the level
+ * @param p_timezone_id        The time zone of p_date. Retrieved dates are also in this time zone
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_value    The value of the attribute, if applicable
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_match_date         A flag ('T' or 'F') that specifies whether p_date is interpreted as an effective date.
+ * <p>
+ * <table class="descr"">
+ *   <tr>
+ *     <th class="descr">p_match_date</th>
+ *     <th class="descr">If p_date matches an effective date</th>
+ *     <th class="descr">If p_date does not match an effective date</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">'T'</td>
+ *     <td class="descr">Retrieves the level with the matched effecitve date</td>
+ *     <td class="descr">Retrieves NULL</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">'F'</td>
+ *     <td class="descr">Retrieves the level with the matched effecitve date</td>
+ *     <td class="descr">Retrieves the level with the latest effecitve date before p_date</td>
+ *   </tr>
+ * </table>
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ */
+procedure retrieve_location_level4(
+   p_level_value             out number,
+   p_level_comment           out varchar2,
+   p_effective_date          out date,
+   p_interval_origin         out date,
+   p_interval_months         out integer,
+   p_interval_minutes        out integer,
+   p_interpolate             out varchar2,
+   p_tsid                    out varchar2,
+   p_expiration_date         out date,
    p_seasonal_values         out seasonal_value_tab_t,
    p_location_level_id       in  varchar2,
    p_level_units             in  varchar2,
@@ -1409,7 +1515,7 @@ procedure lookup_level_by_attribute(
  * @param p_in_range_behavior  Specifies the lookup behavior if the specified attribute is in the range of attributes for the specified level and date.
  * Valid values are
  * <p>
- * <table class="descr"">
+ * <table class="descr">
  *   <tr>
  *     <th class="descr">p_in_range_behavior</th>
  *     <th class="descr">lookup behavior</th>

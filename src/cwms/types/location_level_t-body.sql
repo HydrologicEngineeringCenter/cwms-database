@@ -80,6 +80,7 @@ as
                                   when true  then null
                                   when false then cwms_ts.get_ts_id(p_obj.ts_code)
                                end;
+      self.expiration_date := p_obj.expiration_date;
       if p_obj.seasonal_level_values is not null then
          self.seasonal_values := new seasonal_value_tab_t();
          for i in 1..p_obj.seasonal_level_values.count loop
@@ -254,6 +255,7 @@ as
             when true  then null
             when false then cwms_ts.get_ts_code(self.tsid, l_office_code)
          end,
+         self.expiration_date,
          l_seasonal_level_values,
          self.indicators);
       return l_obj;

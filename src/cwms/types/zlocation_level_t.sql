@@ -20,6 +20,7 @@ is object(
    time_interval                 interval day(3) to second(0),
    interpolate                   varchar2(1),
    ts_code                       number(10),
+   expiration_date               date,
    seasonal_level_values         seasonal_loc_lvl_tab_t,
    indicators                    loc_lvl_indicator_tab_t,
 
@@ -49,7 +50,8 @@ is object(
       p_calendar_interval             in interval year to month,
       p_time_interval                 in interval day to second,
       p_interpolate                   in varchar2,
-      p_ts_code                       number,
+      p_ts_code                       in number,
+      p_expiration_date               in date,
       p_seasonal_values               in seasonal_loc_lvl_tab_t,
       p_indicators                    in loc_lvl_indicator_tab_t),
 

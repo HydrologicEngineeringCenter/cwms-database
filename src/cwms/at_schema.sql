@@ -1483,6 +1483,7 @@ CREATE TABLE AT_LOCATION_LEVEL
    TIME_INTERVAL                 INTERVAL DAY(3) TO SECOND(0),
    INTERPOLATE                   VARCHAR2(1) DEFAULT 'T',
    TS_CODE                       NUMBER(10),
+   EXPIRATION_DATE               DATE,
    CONSTRAINT AT_LOCATION_LEVEL_PK  PRIMARY KEY (LOCATION_LEVEL_CODE) USING INDEX TABLESPACE CWMS_20AT_DATA
 )
 TABLESPACE CWMS_20AT_DATA
@@ -1525,6 +1526,7 @@ COMMENT ON COLUMN AT_LOCATION_LEVEL.TIME_INTERVAL                 IS 'Interval p
 COMMENT ON COLUMN AT_LOCATION_LEVEL.INTERVAL_ORIGIN               IS 'Origin time in UTC for interval period - required if calendar interval is not null or time interval is not null';
 COMMENT ON COLUMN AT_LOCATION_LEVEL.INTERPOLATE                   IS 'Values between offset are interpolated bewteen dates (T) or take the most recent value (F).';
 COMMENT ON COLUMN AT_LOCATION_LEVEL.TS_CODE                       IS 'References a time series that serves as location level';
+COMMENT ON COLUMN AT_LOCATION_LEVEL.EXPIRATION_DATE               IS 'Date/time at which this level expires';
 
 
 ALTER TABLE AT_LOCATION_LEVEL ADD CONSTRAINT AT_LOCATION_LEVEL_CK1 CHECK (

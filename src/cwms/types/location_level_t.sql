@@ -32,6 +32,7 @@ create type location_level_t
  * @member interpolate                 A flag ('T' or 'F') specifying whether to interpolate for level values at offsets between the specified offsets into the interval
  * @member seasonal_values             The values of the location level if it is a recurring pattern of values (not constant value or time series)
  * @member tsid                        The time series identifier representing the location level if it is a time series (not constant value or recurring pattern)
+ * @member expiration_date             The date/time at which this level expires
  * @member indicators                  The location level indicators associated with this location level
  */
 is object (
@@ -56,6 +57,7 @@ is object (
    interval_minutes            integer,
    interpolate                 varchar2(1),
    tsid                        varchar2(183),
+   expiration_date             date,
    seasonal_values             seasonal_value_tab_t,
    indicators                  loc_lvl_indicator_tab_t,
    -- not documented

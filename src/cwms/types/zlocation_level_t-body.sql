@@ -72,6 +72,7 @@ as
          l_rec.time_interval,
          l_rec.interpolate,
          l_rec.ts_code,
+         l_rec.expiration_date,
          l_seasonal_values,
          l_indicators);
       return;
@@ -106,7 +107,8 @@ as
       p_calendar_interval             in interval year to month,
       p_time_interval                 in interval day to second,
       p_interpolate                   in varchar2,
-      p_ts_code                       number,
+      p_ts_code                       in number,
+      p_expiration_date               in date,
       p_seasonal_values               in seasonal_loc_lvl_tab_t,
       p_indicators                    in loc_lvl_indicator_tab_t)
    as
@@ -154,7 +156,8 @@ as
       self.calendar_interval             := p_calendar_interval;
       self.time_interval                 := p_time_interval;
       self.interpolate                   := p_interpolate;
-      self.ts_code                       :=  p_ts_code;
+      self.ts_code                       := p_ts_code;
+      self.expiration_date               := p_expiration_date;
       self.seasonal_level_values         := p_seasonal_values;
       self.indicators                    := p_indicators;
    end init;
@@ -200,6 +203,7 @@ as
       l_rec.time_interval                 := self.time_interval;
       l_rec.interpolate                   := self.interpolate;
       l_rec.ts_code                       := self.ts_code;
+      l_rec.expiration_date               := self.expiration_date;
       --------------------------------------
       -- insert or update the main record --
       --------------------------------------

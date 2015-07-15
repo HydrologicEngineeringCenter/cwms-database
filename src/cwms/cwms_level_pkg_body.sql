@@ -128,6 +128,7 @@ procedure get_location_level_codes(
    p_parameter_type_code       out number,
    p_duration_code             out number,
    p_effective_date_out        out date,
+   p_expiration_date_out       out date,
    p_attribute_parameter_code  out number,
    p_attribute_param_type_code out number,
    p_attribute_duration_code   out number,
@@ -295,9 +296,11 @@ begin
          ------------------------
          select distinct
                 location_level_code,
-                location_level_date
+                location_level_date,
+                expiration_date
            into p_location_level_code,
-                p_effective_date_out
+                p_effective_date_out,
+                p_expiration_date_out
            from at_location_level
           where location_code = p_location_code
             and specified_level_code = p_spec_level_code
@@ -318,9 +321,11 @@ begin
          -- earlier date OK --
          ---------------------
          select location_level_code,
-                location_level_date
+                location_level_date,
+                expiration_date
            into p_location_level_code,
-                p_effective_date_out
+                p_effective_date_out,
+                p_expiration_date_out
            from at_location_level
           where location_code = p_location_code
             and specified_level_code = p_spec_level_code
@@ -384,6 +389,7 @@ is
    l_parameter_type_code       number(10);
    l_duration_code             number(10);
    l_effective_date            date;
+   l_expiration_date           date;
    l_attribute_parameter_code  number(10);
    l_attribute_param_type_code number(10);
    l_attribute_duration_code   number(10);
@@ -396,6 +402,7 @@ begin
       l_parameter_type_code,
       l_duration_code,
       l_effective_date,
+      l_expiration_date,
       l_attribute_parameter_code,
       l_attribute_param_type_code,
       l_attribute_duration_code,
@@ -1271,6 +1278,7 @@ procedure create_location_level(
    p_interval_minutes        in  integer default null,
    p_interpolate             in  varchar2 default 'T',
    p_tsid                    in  varchar2 default null,
+   p_expiration_date         in  date, 
    p_seasonal_values         in  seasonal_value_tab_t default null,
    p_office_id               in  varchar2 default null)
 is          
@@ -1293,8 +1301,10 @@ is
    l_attr_offset               binary_double;
    l_attribute_value           number;
    l_effective_date            date;
+   l_expiration_date           date;
    l_timezone_id               varchar2(28);
    l_effective_date_out        date;
+   l_expiration_date_out       date;
    l_attribute_parameter_code  number(10);
    l_attribute_param_type_code number(10);
    l_attribute_duration_code   number(10);
@@ -1386,6 +1396,10 @@ begin
       nvl(p_effective_date, date '1900-01-01'),
       l_timezone_id, 
       'UTC');
+   l_expiration_date := cwms_util.change_timezone(
+      p_expiration_date,
+      l_timezone_id, 
+      'UTC');
    get_location_level_codes(
       l_location_level_code,
       l_spec_level_code,
@@ -1394,6 +1408,7 @@ begin
       l_parameter_type_code,
       l_duration_code,
       l_effective_date_out,
+      l_expiration_date_out,
       l_attribute_parameter_code,
       l_attribute_param_type_code,
       l_attribute_duration_code,
@@ -1463,7 +1478,8 @@ begin
                 p_attribute_comment,
                 null, null, null,
                 l_interpolate,
-                l_ts_code);
+                l_ts_code,
+                l_expiration_date);
       else  
          ---------------------
          -- seasonal values --
@@ -1501,7 +1517,8 @@ begin
                    null,
                    l_time_interval,
                    l_interpolate,
-                   l_ts_code);
+                   l_ts_code,
+                   l_expiration_date);
          else
             -----------------------
             -- calendar interval --
@@ -1526,7 +1543,8 @@ begin
                    l_calendar_interval,
                    null,
                    l_interpolate,
-                   l_ts_code);
+                   l_ts_code,
+                   l_expiration_date);
          end if;
          for i in 1..p_seasonal_values.count loop
             insert
@@ -1565,7 +1583,8 @@ begin
                 calendar_interval = null,
                 time_interval = null,
                 interpolate = l_interpolate,
-                ts_code = l_ts_code
+                ts_code = l_ts_code,
+                expiration_date = l_expiration_date
           where location_level_code = l_location_level_code;
          delete
            from at_seasonal_location_level
@@ -1595,7 +1614,8 @@ begin
                 interval_origin = l_interval_origin,
                 calendar_interval = l_calendar_interval,
                 time_interval = l_time_interval,
-                interpolate = l_interpolate
+                interpolate = l_interpolate,
+                expiration_date = l_expiration_date
           where location_level_code = l_location_level_code;
          delete
            from at_seasonal_location_level
@@ -1687,6 +1707,7 @@ begin
       p_interval_minutes,
       p_interpolate,
       null,
+      null,
       p_seasonal_values,
       p_office_id);               
             
@@ -1760,10 +1781,87 @@ begin
       p_interval_minutes,
       p_interpolate,
       p_tsid,
+      null,
       p_seasonal_values,
       p_office_id);
 
 end store_location_level3;
+
+   
+procedure store_location_level4(
+   p_location_level_id       in  varchar2,
+   p_level_value             in  number,
+   p_level_units             in  varchar2,
+   p_level_comment           in  varchar2 default null,
+   p_effective_date          in  date     default null,
+   p_timezone_id             in  varchar2 default null,
+   p_attribute_value         in  number   default null,
+   p_attribute_units         in  varchar2 default null,
+   p_attribute_id            in  varchar2 default null,
+   p_attribute_comment       in  varchar2 default null,
+   p_interval_origin         in  date     default null,
+   p_interval_months         in  integer  default null,
+   p_interval_minutes        in  integer  default null,
+   p_interpolate             in  varchar2 default 'T',
+   p_tsid                    in  varchar2 default null,
+   p_expiration_date         in  date     default null, 
+   p_seasonal_values         in  seasonal_value_tab_t default null,
+   p_fail_if_exists          in  varchar2 default 'T',
+   p_office_id               in  varchar2 default null)
+is
+   l_location_level_code     number(10);
+   l_location_id             varchar2(49);
+   l_parameter_id            varchar2(49);
+   l_parameter_type_id       varchar2(16);
+   l_duration_id             varchar2(16);
+   l_specified_level_id      varchar2(256);
+   l_attribute_parameter_id  varchar2(49);
+   l_attribute_param_type_id varchar2(16);
+   l_attribute_duration_id   varchar2(16);
+begin
+   parse_location_level_id(
+      l_location_id,
+      l_parameter_id,
+      l_parameter_type_id,
+      l_duration_id,
+      l_specified_level_id,
+      p_location_level_id);
+
+   parse_attribute_id(
+      l_attribute_parameter_id,
+      l_attribute_param_type_id,
+      l_attribute_duration_id,
+      p_attribute_id);
+
+   create_location_level(
+      l_location_level_code,
+      p_fail_if_exists,
+      l_specified_level_id,
+      l_location_id,
+      l_parameter_id,
+      l_parameter_type_id,
+      l_duration_id,
+      p_level_value,
+      p_level_units,
+      p_level_comment,
+      p_effective_date,
+      p_timezone_id,
+      p_attribute_value,
+      p_attribute_units,
+      l_attribute_parameter_id,
+      l_attribute_param_type_id,
+      l_attribute_duration_id,
+      p_attribute_comment,
+      p_interval_origin,
+      p_interval_months,
+      p_interval_minutes,
+      p_interpolate,
+      p_tsid,
+      p_expiration_date,
+      p_seasonal_values,
+      p_office_id);
+
+end store_location_level4;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE store_location_level
@@ -1901,7 +1999,7 @@ begin
       p_office_id);
 end store_location_level2;   
 
-procedure retrieve_location_level3(
+procedure retrieve_location_level4(
    p_level_value             out number,
    p_level_comment           out varchar2,
    p_effective_date          out date,
@@ -1910,6 +2008,7 @@ procedure retrieve_location_level3(
    p_interval_minutes        out integer,
    p_interpolate             out varchar2,
    p_tsid                    out varchar2,
+   p_expiration_date         out date,
    p_seasonal_values         out seasonal_value_tab_t,
    p_spec_level_id           in  varchar2,
    p_location_id             in  varchar2,
@@ -1969,6 +2068,7 @@ begin
       l_parameter_type_code,
       l_duration_code,
       l_date,
+      p_expiration_date,
       l_attribute_parameter_code,
       l_attribute_param_type_code,
       l_attribute_duration_code,
@@ -2028,6 +2128,7 @@ begin
                                 when true  then null
                                 when false then cwms_ts.get_ts_id(l_rec.ts_code)
                              end;
+   p_expiration_date      := l_rec.expiration_date;
    if l_rec.location_level_value is null then
       ---------------------
       -- seasonal values --
@@ -2053,7 +2154,7 @@ begin
       p_seasonal_values := null;
       p_level_value := l_rec.location_level_value * l_factor + l_offset;
    end if;
-end retrieve_location_level3;
+end retrieve_location_level4;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level
@@ -2091,9 +2192,10 @@ procedure retrieve_location_level(
    p_match_date              in  varchar2 default 'F',
    p_office_id               in  varchar2 default null)
 is
-   l_tsid varchar2(183);
+   l_tsid            varchar2(183);
+   l_expiration_date date;
 begin
-   retrieve_location_level3(
+   retrieve_location_level4(
       p_level_value,
       p_level_comment,
       p_effective_date,
@@ -2102,6 +2204,7 @@ begin
       p_interval_minutes,
       p_interpolate,
       l_tsid,
+      l_expiration_date,
       p_seasonal_values,
       p_spec_level_id,
       p_location_id,
@@ -2223,6 +2326,7 @@ is
    l_attribute_parameter_id  varchar2(49);
    l_attribute_param_type_id varchar2(16);
    l_attribute_duration_id   varchar2(16);
+   l_expiration_date         date;
 begin
    parse_location_level_id(
       l_location_id,
@@ -2236,7 +2340,7 @@ begin
       l_attribute_param_type_id,
       l_attribute_duration_id,
       p_attribute_id);
-   retrieve_location_level3(
+   retrieve_location_level4(
       p_level_value,
       p_level_comment,
       p_effective_date,
@@ -2245,6 +2349,7 @@ begin
       p_interval_minutes,
       p_interpolate,
       p_tsid,
+      l_expiration_date,
       p_seasonal_values,
       l_specified_level_id,
       l_location_id,
@@ -2262,6 +2367,76 @@ begin
       p_match_date,
       p_office_id);
 end retrieve_location_level3;
+
+procedure retrieve_location_level4(
+   p_level_value             out number,
+   p_level_comment           out varchar2,
+   p_effective_date          out date,
+   p_interval_origin         out date,
+   p_interval_months         out integer,
+   p_interval_minutes        out integer,
+   p_interpolate             out varchar2,
+   p_tsid                    out varchar2,
+   p_expiration_date         out date,
+   p_seasonal_values         out seasonal_value_tab_t,
+   p_location_level_id       in  varchar2,
+   p_level_units             in  varchar2,
+   p_date                    in  date,
+   p_timezone_id             in  varchar2 default 'UTC',
+   p_attribute_id            in  varchar2 default null,
+   p_attribute_value         in  number   default null,
+   p_attribute_units         in  varchar2 default null,
+   p_match_date              in  varchar2 default 'F',
+   p_office_id               in  varchar2 default null)
+is
+   l_location_id             varchar2(49);
+   l_parameter_id            varchar2(49);
+   l_parameter_type_id       varchar2(16);
+   l_duration_id             varchar2(16);
+   l_specified_level_id      varchar2(256);
+   l_attribute_parameter_id  varchar2(49);
+   l_attribute_param_type_id varchar2(16);
+   l_attribute_duration_id   varchar2(16);
+begin
+   parse_location_level_id(
+      l_location_id,
+      l_parameter_id,
+      l_parameter_type_id,
+      l_duration_id,
+      l_specified_level_id,
+      p_location_level_id);
+   parse_attribute_id(
+      l_attribute_parameter_id,
+      l_attribute_param_type_id,
+      l_attribute_duration_id,
+      p_attribute_id);
+   retrieve_location_level4(
+      p_level_value,
+      p_level_comment,
+      p_effective_date,
+      p_interval_origin,
+      p_interval_months,
+      p_interval_minutes,
+      p_interpolate,
+      p_tsid,
+      p_expiration_date,
+      p_seasonal_values,
+      l_specified_level_id,
+      l_location_id,
+      l_parameter_id,
+      l_parameter_type_id,
+      l_duration_id,
+      p_level_units,
+      p_date,
+      p_timezone_id,
+      p_attribute_value,
+      p_attribute_units,
+      l_attribute_parameter_id,
+      l_attribute_param_type_id,
+      l_attribute_duration_id,
+      p_match_date,
+      p_office_id);
+end retrieve_location_level4;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level2
@@ -2444,6 +2619,7 @@ is
    type encoded_date_t is table of boolean index by binary_integer;
    l_encoded_dates             encoded_date_t;
    l_rec                       at_location_level%rowtype;
+   l_level_values              ztsv_array;
    l_spec_level_code           number(10);
    l_location_level_code       number(10);
    l_start_time                date;
@@ -2453,6 +2629,7 @@ is
    l_parameter_type_code       number(10);
    l_duration_code             number(10);
    l_effective_date            date;
+   l_expiration_date           date;
    l_factor                    binary_double;
    l_offset                    binary_double;
    l_office_code               number := cwms_util.get_office_code(p_office_id);
@@ -2521,6 +2698,7 @@ begin
          l_parameter_type_code,
          l_duration_code,
          l_effective_date,
+         l_expiration_date,
          l_attribute_parameter_code,
          l_attribute_param_type_code,
          l_attribute_duration_code,
@@ -2559,6 +2737,7 @@ begin
             l_parameter_type_code,
             l_duration_code,
             l_effective_date,
+            l_expiration_date,
             l_attribute_parameter_code,
             l_attribute_param_type_code,
             l_attribute_duration_code,
@@ -2601,6 +2780,7 @@ begin
          l_parameter_type_code,
          l_duration_code,
          l_effective_date,
+         l_expiration_date,
          l_attribute_parameter_code,
          l_attribute_param_type_code,
          l_attribute_duration_code,
@@ -2631,13 +2811,13 @@ begin
       end if;
       l_encoded_dates(encode_date(l_effective_date)) := true;
    end if;
-   p_level_values := new ztsv_array();
+   l_level_values := new ztsv_array();
    if l_encoded_dates.count > 1 then
       -------------------------------------------
       -- working with multiple effective dates --
       -------------------------------------------
       declare
-         l_level_values       ztsv_array;
+         l_values       ztsv_array;
          l_encoded_start_time integer := l_encoded_dates.first;
          l_encoded_end_time   integer := l_encoded_dates.next(l_encoded_start_time);
       begin
@@ -2648,7 +2828,7 @@ begin
             -- recurse for the sub time window --
             -------------------------------------
             retrieve_loc_lvl_values_utc(
-               l_level_values,
+               l_values,
                p_location_id,
                p_parameter_id,
                p_parameter_type_id,
@@ -2663,14 +2843,14 @@ begin
                p_attribute_param_type_id,
                p_attribute_duration_id,
                p_office_id);
-            for i in 1..l_level_values.count loop
-               p_level_values.extend;
-               p_level_values(p_level_values.count) := l_level_values(i);
+            for i in 1..l_values.count loop
+               l_level_values.extend;
+               l_level_values(l_level_values.count) := l_values(i);
             end loop;
             l_encoded_start_time := l_encoded_dates.next(l_encoded_start_time);
             l_encoded_end_time   := nvl(l_encoded_dates.next(l_encoded_start_time), encode_date(p_end_time_utc));
          end loop;
-         p_level_values(p_level_values.count).date_time := nvl(p_level_values(p_level_values.count).date_time, p_end_time_utc);
+         l_level_values(l_level_values.count).date_time := nvl(l_level_values(l_level_values.count).date_time, p_end_time_utc);
       end;
    else
       ------------------------------------------
@@ -2788,8 +2968,8 @@ begin
                end if;
             end if;
          end if;
-         p_level_values.extend;
-         p_level_values(1) := new ztsv_type(p_start_time_utc, l_value, get_quality(l_rec));
+         l_level_values.extend;
+         l_level_values(1) := new ztsv_type(p_start_time_utc, l_value, get_quality(l_rec));
          if p_end_time_utc is null then
             --------------------------------------------------
             -- called from retrieve_location_level_value(), --
@@ -2805,15 +2985,15 @@ begin
                   l_date_next,
                   l_value_next,
                   l_rec,
-                  p_level_values(p_level_values.count).date_time + 1 / 86400,
+                  l_level_values(l_level_values.count).date_time + 1 / 86400,
                   'AFTER',
                   'UTC');
-               p_level_values.extend;
+               l_level_values.extend;
                if l_date_next <= p_end_time_utc then
                   -------------------------------------
                   -- on or before end of time window --
                   -------------------------------------
-                  p_level_values(p_level_values.count) :=
+                  l_level_values(l_level_values.count) :=
                      new ztsv_type(l_date_next, l_value_next * l_factor + l_offset, get_quality(l_rec));
                else
                   -------------------------------
@@ -2838,7 +3018,7 @@ begin
                   else
                      l_value := l_value_prev * l_factor + l_offset;
                   end if;
-                  p_level_values(p_level_values.count) :=
+                  l_level_values(l_level_values.count) :=
                      new ztsv_type(p_end_time_utc, l_value, get_quality(l_rec));
                end if;
                if l_date_next > p_end_time_utc then
@@ -2886,14 +3066,14 @@ begin
                if l_ts(1).date_time < p_start_time_utc then
                   l_first := 2;
                   if l_ts(2).date_time > p_start_time_utc then
-                     p_level_values.extend;
-                     p_level_values(1) := ztsv_type(p_start_time_utc, null, get_quality(l_rec));
+                     l_level_values.extend;
+                     l_level_values(1) := ztsv_type(p_start_time_utc, null, get_quality(l_rec));
                      if l_rec.interpolate = 'T' then
                         a := 1;
                         b := 2;
-                        p_level_values(1).value := l_ts(a).value + (p_start_time_utc  - l_ts(a).date_time) / (l_ts(b).date_time - l_ts(a).date_time) * (l_ts(b).value - l_ts(a).value);
+                        l_level_values(1).value := l_ts(a).value + (p_start_time_utc  - l_ts(a).date_time) / (l_ts(b).date_time - l_ts(a).date_time) * (l_ts(b).value - l_ts(a).value);
                      else
-                        p_level_values(1).value := l_ts(1).value;
+                        l_level_values(1).value := l_ts(1).value;
                      end if;
                   end if;
                else
@@ -2905,19 +3085,19 @@ begin
                   l_last := l_ts.count;
                end if;
                for i in l_first..l_last loop
-                  p_level_values.extend;
-                  p_level_values(p_level_values.count) := l_ts(i);
+                  l_level_values.extend;
+                  l_level_values(l_level_values.count) := l_ts(i);
                end loop;
                if l_ts(l_ts.count).date_time > p_end_time_utc then
                   if l_ts(l_ts.count - 1).date_time < p_end_time_utc then
-                     p_level_values.extend;
-                     p_level_values(p_level_values.count) := ztsv_type(p_end_time_utc, null, get_quality(l_rec));
+                     l_level_values.extend;
+                     l_level_values(l_level_values.count) := ztsv_type(p_end_time_utc, null, get_quality(l_rec));
                      if l_rec.interpolate = 'T' then
                         a := l_ts.count - 1;
                         b := l_ts.count;
-                        p_level_values(p_level_values.count).value := l_ts(a).value + (p_end_time_utc  - l_ts(a).date_time) / (l_ts(b).date_time - l_ts(a).date_time) * (l_ts(b).value - l_ts(a).value);
+                        l_level_values(l_level_values.count).value := l_ts(a).value + (p_end_time_utc  - l_ts(a).date_time) / (l_ts(b).date_time - l_ts(a).date_time) * (l_ts(b).value - l_ts(a).value);
                      else
-                        p_level_values(p_level_values.count).value := l_ts(l_ts.count - 1).value;
+                        l_level_values(l_level_values.count).value := l_ts(l_ts.count - 1).value;
                      end if;
                   end if;
                end if;
@@ -2928,11 +3108,76 @@ begin
          -- constant value --
          --------------------
          l_value := l_rec.location_level_value * l_factor + l_offset;
-         p_level_values.extend(2);
-         p_level_values(1) := new ztsv_type(p_start_time_utc, l_value, 0);
-         p_level_values(2) := new ztsv_type(p_end_time_utc,   l_value, 0);
+         l_level_values.extend(2);
+         l_level_values(1) := new ztsv_type(p_start_time_utc, l_value, get_quality(l_rec));
+         l_level_values(2) := new ztsv_type(p_end_time_utc,   l_value, get_quality(l_rec));
+      end if;
+      if l_rec.expiration_date is not null then
+         -----------------------------------------------------------------------------
+         -- level has expiration date - see if it expires before end of time window --
+         -----------------------------------------------------------------------------
+         declare
+            l_next   pls_integer;
+            l_prev   pls_integer;
+            l_values ztsv_array;
+         begin
+            select min(seq)
+              into l_next
+              from ( select date_time,
+                            rownum as seq
+                       from table(l_level_values)
+                   )
+             where date_time > l_rec.expiration_date;
+             
+            if l_next is not null then
+               ---------------------------------------------
+               -- level expires before end of time window --
+               ---------------------------------------------
+               if l_next = 1 then
+                  ---------------------------------------------
+                  -- level is expired for entire time window --
+                  ---------------------------------------------
+                  l_values := ztsv_array(
+                     ztsv_type(l_level_values(1).date_time, null, get_quality(l_rec)),
+                     ztsv_type(l_level_values(l_level_values.count).date_time, null, get_quality(l_rec)));
+               else
+                  ----------------------------------------------
+                  -- level is expired for part of time window --
+                  ----------------------------------------------
+                  select ztsv_type(date_time, value, quality_code)
+                    bulk collect
+                    into l_values
+                    from table(l_level_values)
+                   where rownum < l_next; 
+                   
+                  l_prev := l_next - 1;
+                  if l_rec.interpolate = 'T' then
+                     declare
+                        t  date := l_rec.expiration_date;
+                        t1 date := l_level_values(l_prev).date_time;
+                        t2 date := l_level_values(l_next).date_time;
+                        v  binary_double;
+                        v1 binary_double := l_level_values(l_prev).value;
+                        v2 binary_double := l_level_values(l_next).value;
+                     begin
+                        v := v1 + (v2 - v1) * (t - t1) / (t2 - t1);
+                        l_values.extend;
+                        l_values(l_values.count) := ztsv_type(t-1/1440, v, get_quality(l_rec));
+                     end;
+                  else
+                     l_values.extend;
+                     l_values(l_values.count) := ztsv_type(l_rec.expiration_date-1, l_level_values(l_prev).value, get_quality(l_rec));
+                  end if;
+                  l_values.extend(2);
+                  l_values(l_values.count-1) := ztsv_type(l_rec.expiration_date, null, get_quality(l_rec));
+                  l_values(l_values.count  ) := ztsv_type(l_level_values(l_level_values.count).date_time, null, get_quality(l_rec));
+               end if;
+               l_level_values := l_values;
+            end if;
+         end;
       end if;
    end if;
+   p_level_values := l_level_values;
 end retrieve_loc_lvl_values_utc;
 
 --------------------------------------------------------------------------------
@@ -3005,10 +3250,10 @@ begin
       p_attribute_duration_id   =>  p_attribute_duration_id,
       p_office_id               =>  p_office_id);
      
-   ------------------------------------------------------------------------   
-   -- convert the times back to the specified time zone and zero quality --
-   ------------------------------------------------------------------------
-   select ztsv_type(cwms_util.change_timezone(date_time, 'UTC', l_timezone_id), value, 0)
+   -------------------------------------------------------   
+   -- convert the times back to the specified time zone --
+   -------------------------------------------------------
+   select ztsv_type(cwms_util.change_timezone(date_time, 'UTC', l_timezone_id), value, quality_code)
      bulk collect
      into l_level_values
      from table(p_level_values);

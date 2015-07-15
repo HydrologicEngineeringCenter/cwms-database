@@ -34,6 +34,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_LEVEL',
  * @field specified_level_id  The specified level portion of the location level  
  * @field location_code       The unique numeric code that identifies the location in the database
  * @field location_level_code The unique numeric code that identifies the location level in the database
+ * @field expiration_date     The date/time at which the level expires
  */
 ');
 
@@ -61,7 +62,8 @@ AS
                   duration_id,
                   specified_level_id,
                   location_code,
-                  location_level_code
+                  location_level_code,
+                  expiration_date
          FROM   ( 
                   --
                   -- CONSTANT LEVEL
@@ -92,7 +94,8 @@ AS
                             a_ll.location_level_comment AS level_comment,
                             a_ll.attribute_comment AS attribute_comment,
                             a_ll.location_code,
-                            a_ll.location_level_code
+                            a_ll.location_level_code,
+                            a_ll.expiration_date
                      FROM   at_location_level a_ll,
                             at_specified_level a_sl,
                             at_physical_location a_pl,
@@ -158,7 +161,8 @@ AS
                                  a_ll.location_level_comment AS level_comment,
                                  a_ll.attribute_comment AS attribute_comment,
                                  a_ll.location_code,
-                                 a_ll.location_level_code
+                                 a_ll.location_level_code,
+                                 a_ll.expiration_date
                         FROM     at_location_level a_ll,
                                  at_seasonal_location_level a_sll,
                                  at_specified_level a_sl,
@@ -227,7 +231,8 @@ AS
                                  a_ll.location_level_comment AS level_comment,
                                  a_ll.attribute_comment AS attribute_comment,
                                  a_ll.location_code,
-                                 a_ll.location_level_code
+                                 a_ll.location_level_code,
+                                 a_ll.expiration_date
                         FROM     at_location_level a_ll,
                                  at_specified_level a_sl,
                                  at_physical_location a_pl,
@@ -312,7 +317,8 @@ AS
                                  a_ll.location_level_comment AS level_comment,
                                  a_ll.attribute_comment AS attribute_comment,
                                  a_ll.location_code,
-                                 a_ll.location_level_code
+                                 a_ll.location_level_code,
+                                 a_ll.expiration_date
                         FROM     at_location_level a_ll,
                                  at_seasonal_location_level a_sll,
                                  at_specified_level a_sl,
@@ -399,7 +405,8 @@ AS
                             a_ll.location_level_comment AS level_comment,
                             a_ll.attribute_comment AS attribute_comment,
                             a_ll.location_code,
-                            a_ll.location_level_code
+                            a_ll.location_level_code,
+                            a_ll.expiration_date
                      FROM   at_location_level a_ll,
                             at_specified_level a_sl,
                             at_physical_location a_pl,
@@ -454,7 +461,8 @@ AS
                                  a_ll.location_level_comment AS level_comment,
                                  a_ll.attribute_comment AS attribute_comment,
                                  a_ll.location_code,
-                                 a_ll.location_level_code
+                                 a_ll.location_level_code,
+                                 a_ll.expiration_date
                         FROM     at_location_level a_ll,
                                  at_specified_level a_sl,
                                  at_physical_location a_pl,
