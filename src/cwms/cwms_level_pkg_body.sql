@@ -2192,7 +2192,7 @@ procedure retrieve_location_level(
    p_match_date              in  varchar2 default 'F',
    p_office_id               in  varchar2 default null)
 is
-   l_tsid            varchar2(183);
+   l_tsid varchar2(183);
    l_expiration_date date;
 begin
    retrieve_location_level4(
@@ -2597,7 +2597,7 @@ end retrieve_location_level;
 -- Retreives a time series of Location Level values for a specified time window
 --          
 -- The returned QUALITY_CODE values of the time series will be zero or one,
--- depending on whether the level is set to interpolate (1=interpolate, 2=no).
+-- depending on whether the level is set to interpolate (1=interpolate, 0=no).
 --------------------------------------------------------------------------------
 procedure retrieve_loc_lvl_values_utc(
    p_level_values            out ztsv_array,
@@ -2671,6 +2671,7 @@ is
       end if;  
       return l_quality; 
    end;
+   
 begin
    -------------------------------------------------------
    -- get_location_level_codes() will try to create the --
@@ -3060,7 +3061,7 @@ begin
             l_ts := ztsv_array();
             l_ts.extend(l_dates.count);
             for i in 1..l_dates.count loop
-               l_ts(i) := ztsv_type(l_dates(i), l_values(i), l_quality(i));
+               l_ts(i) := ztsv_type(l_dates(i), l_values(i), get_quality(l_rec));
             end loop;
             if l_ts is not null and l_ts.count > 0 then
                if l_ts(1).date_time < p_start_time_utc then
@@ -3185,7 +3186,8 @@ end retrieve_loc_lvl_values_utc;
 --          
 -- Retreives a time series of Location Level values for a specified time window
 --          
--- The returned QUALITY_CODE values of the time series will be zero.
+-- The returned QUALITY_CODE values of the time series will be zero or one,
+-- depending on whether the level is set to interpolate (1=interpolate, 0=no).
 --------------------------------------------------------------------------------
 procedure retrieve_location_level_values(
    p_level_values            out ztsv_array,
@@ -3266,7 +3268,8 @@ end;
 --          
 -- Retreives a time series of Location Level values for a specified time window
 --          
--- The returned QUALITY_CODE values of the time series will be zero.
+-- The returned QUALITY_CODE values of the time series will be zero or one,
+-- depending on whether the level is set to interpolate (1=interpolate, 0=no).
 --------------------------------------------------------------------------------
 procedure retrieve_location_level_values(
    p_level_values            out ztsv_array,
@@ -3325,7 +3328,8 @@ end retrieve_location_level_values;
 --          
 -- Returns a time series of Location Level values for a specified time window
 --          
--- The returned QUALITY_CODE values of the time series will be zero.
+-- The returned QUALITY_CODE values of the time series will be zero or one,
+-- depending on whether the level is set to interpolate (1=interpolate, 0=no).
 --------------------------------------------------------------------------------
 function retrieve_location_level_values(
    p_location_level_id       in  varchar2,
@@ -3756,7 +3760,8 @@ end retrieve_loc_lvl_values3;
 --          
 -- The Location Level Identifier is computed from p_ts_id and p_spec_level_id
 --          
--- The returned QUALITY_CODE values of the time series will be zero.
+-- The returned QUALITY_CODE values of the time series will be zero or one,
+-- depending on whether the level is set to interpolate (1=interpolate, 0=no).
 --------------------------------------------------------------------------------
 procedure retrieve_location_level_values(
    p_level_values            out ztsv_array,
@@ -3813,7 +3818,8 @@ end retrieve_location_level_values;
 --          
 -- The Location Level Identifier is computed from p_ts_id and p_spec_level_id
 --          
--- The returned QUALITY_CODE values of the time series will be zero.
+-- The returned QUALITY_CODE values of the time series will be zero or one,
+-- depending on whether the level is set to interpolate (1=interpolate, 0=no).
 --------------------------------------------------------------------------------
 function retrieve_location_level_values(
    p_ts_id                   in  varchar2,
