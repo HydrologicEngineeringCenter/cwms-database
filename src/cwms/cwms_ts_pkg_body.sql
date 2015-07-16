@@ -9455,7 +9455,10 @@ end retrieve_existing_item_counts;
       l_max_date_utc       DATE;
       l_version_date_utc   DATE;
    BEGIN
-      IF p_version_date = cwms_util.non_versioned
+      IF p_version_date IS NULL
+      THEN
+         l_version_date_utc := cwms_util.non_versioned;
+      ELSIF p_version_date = cwms_util.non_versioned
       THEN
          l_version_date_utc := p_version_date;
       ELSE
@@ -9485,7 +9488,10 @@ end retrieve_existing_item_counts;
       l_max_date_utc       DATE;
       l_version_date_utc   DATE;
    BEGIN
-      IF p_version_date = cwms_util.non_versioned
+      IF p_version_date IS NULL
+      THEN
+         l_version_date_utc := cwms_util.non_versioned;
+      ELSIF p_version_date = cwms_util.non_versioned
       THEN
          l_version_date_utc := p_version_date;
       ELSE

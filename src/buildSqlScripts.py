@@ -11550,11 +11550,11 @@ def main() :
     '''
     
     sys.stderr.write("Building usgsAgencyLoadTemplate\n")
-    usgsAgencyLoadTemplate = ""
+    usgsAgencyLoadTemplate = "set define off;\n"
     for agcy_id, agcy_name in usgsAgencies :
         usgsAgencyLoadTemplate += "insert into @TABLE values('%s', '%s');\n" % (agcy_id, agcy_name)
         
-    usgsAgencyLoadTemplate += "COMMIT;\n"
+    usgsAgencyLoadTemplate += "set define on;\nCOMMIT;\n"
     
     sys.stderr.write("Building usgsTimeZoneCreationTemplate\n")
     usgsTimeZoneCreationTemplate = \
