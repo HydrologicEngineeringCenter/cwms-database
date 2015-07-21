@@ -824,6 +824,20 @@ function retrieve_location_level(
    p_match_date              in  varchar2 default 'F',
    p_office_id               in  varchar2 default null)
    return location_level_t;
+--
+-- not documented
+--
+function get_prev_effective_date(
+   p_location_level_code in integer,
+   p_timezone            in varchar2 default 'UTC')
+   return date;
+--
+-- not documented
+--
+function get_next_effective_date(
+   p_location_level_code in integer,
+   p_timezone            in varchar2 default 'UTC')
+   return date;
 /**
  * Retrieves a time series of location level values for a specified location level
  * and a time window
@@ -3439,6 +3453,90 @@ procedure get_level_indicator_max_values(
    p_indicator_id_mask    in  varchar2 default null,
    p_unit_system          in  varchar2 default null,
    p_office_id            in  varchar2 default null); 
+
+/**
+ * Retreives location level values as time series in a number of formats for a combination time window, timezone, formats, and vertical datums
+ *
+ * @param p_results        The location level values as time series, in the specified time zones, formats, and vertical datums
+ * @param p_date_time      The time that the routine was called, in UTC
+ * @param p_query_time     The time the routine took to retrieve the specified location levels from the database
+ * @param p_format_time    The time the routine took to format the results into the specified format, in milliseconds
+ * @param p_count          The number of location levels retrieved by the routine
+ * @param p_names          The names (location levels identifers) of the location levels to retrieve.  Multiple location levels can be specified by
+ *                         <or><li>specifying multiple location levels ids separated by the <b>'|'</b> character (multiple name positions)</li>
+ *                         <li>specifying a location levels spec id with wildcard (<b>'*'</b> and/or <b>'?'</b> characters) (single name position)</li>
+ *                         <li>a combination of 1 and 2 (multiple name positions with one or more positions matching possibly more than one location levels)</li></ol>
+ *                         If unspecified or NULL, a listing of location levels identifiers with data in the specified or default time window will be returned.
+ * @param p_format         The format to retrieve the location levels in. Valid formats are <ul><li>TAB</li><li>CSV</li><li>XML</li><li>JSON</li></ul>
+ *                         If the format is unspecified or NULL, the TAB format will be used. 
+ * @param p_units          The units to return the location levels in.  Valid units are <ul><li>EN</li><li>SI</li><li>actual unit of parameter (e.g. ft, cfs)</li></ul> If the p_names variable (q.v.) has more
+ *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_units variable may also have multiple positions separated by the 
+ *                         <b>'|',</b> charcter. If the p_units variable has fewer positions than the p_name variable, the last unit position is used for all 
+ * @param p_datums         The vertical datums to return the units in.  Valid datums are <ul><li>NATIVE</li><li>NGVD29</li><li>NAVD88</li></ul> If the p_names variable (q.v.) has more
+ *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_datums variable may also have multiple positions separated by the 
+ *                         <b>'|',</b> charcter. If the p_datums variable has fewer positions than the p_name variable, the last datum position is used for all 
+ *                         remaning names. If the datums are unspecified or NULL, the NATIVE veritcal datum will be used for all location levels.
+ * @param p_start          The start of the time window to retrieve location levels for.  No location levels values earlier this time will be retrieved.
+ *                         If unspecified or NULL, a value of 24 hours prior to the specified or default end of the time window will be used. for the start of the time window       
+ * @param p_end            The end of the time window to retrieve location levels for.  No location levels values later this time will be retrieved.
+ *                         If unspecified or NULL, the current time will be used for the end of the time window.
+ * @param p_timezone       The time zone to retrieve the location levels in. The p_start and p_end parameters - if used - are also interpreted according to this time zone.
+ *                         If unspecified or NULL, the UTC time zone is used. 
+ * @param p_office_id      The office to retrieve location levels for.  If unspecified or NULL, location levels for all offices in the database that match the other criteria will be retrieved.
+ */         
+procedure retrieve_location_levels(
+   p_results        out clob,
+   p_date_time      out date,
+   p_query_time     out integer,
+   p_format_time    out integer, 
+   p_count          out integer,
+   p_names          in  varchar2 default null,            
+   p_format         in  varchar2 default null,
+   p_units          in  varchar2 default null,   
+   p_datums         in  varchar2 default null,
+   p_start          in  varchar2 default null,
+   p_end            in  varchar2 default null, 
+   p_timezone       in  varchar2 default null,
+   p_office_id      in  varchar2 default null);
+/**
+ * Retreives location level values as time series in a number of formats for a combination time window, timezone, formats, and vertical datums
+ *
+ * @param p_names          The names (location levels identifers) of the location levels to retrieve.  Multiple location levels can be specified by
+ *                         <or><li>specifying multiple location levels ids separated by the <b>'|'</b> character (multiple name positions)</li>
+ *                         <li>specifying a location levels spec id with wildcard (<b>'*'</b> and/or <b>'?'</b> characters) (single name position)</li>
+ *                         <li>a combination of 1 and 2 (multiple name positions with one or more positions matching possibly more than one location levels)</li></ol>
+ *                         If unspecified or NULL, a listing of location levels identifiers with data in the specified or default time window will be returned.
+ * @param p_format         The format to retrieve the location levels in. Valid formats are <ul><li>TAB</li><li>CSV</li><li>XML</li><li>JSON</li></ul>
+ *                         If the format is unspecified or NULL, the TAB format will be used. 
+ * @param p_units          The units to return the location levels in.  Valid units are <ul><li>EN</li><li>SI</li><li>actual unit of parameter (e.g. ft, cfs)</li></ul> If the p_names variable (q.v.) has more
+ *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_units variable may also have multiple positions separated by the 
+ *                         <b>'|',</b> charcter. If the p_units variable has fewer positions than the p_name variable, the last unit position is used for all 
+ *                         remaning names. If the units are unspecified or NULL, the NATIVE units will be used for all time series.
+ * @param p_datums         The vertical datums to return the units in.  Valid datums are <ul><li>NATIVE</li><li>NGVD29</li><li>NAVD88</li></ul> If the p_names variable (q.v.) has more
+ *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_datums variable may also have multiple positions separated by the 
+ *                         <b>'|',</b> charcter. If the p_datums variable has fewer positions than the p_name variable, the last datum position is used for all 
+ *                         remaning names. If the datums are unspecified or NULL, the NATIVE veritcal datum will be used for all location levels.
+ * @param p_start          The start of the time window to retrieve location levels for.  No location levels values earlier this time will be retrieved.
+ *                         If unspecified or NULL, a value of 24 hours prior to the specified or default end of the time window will be used. for the start of the time window       
+ * @param p_end            The end of the time window to retrieve location levels for.  No location levels values later this time will be retrieved.
+ *                         If unspecified or NULL, the current time will be used for the end of the time window.
+ * @param p_timezone       The time zone to retrieve the location levels in. The p_start and p_end parameters - if used - are also interpreted according to this time zone.
+ *                         If unspecified or NULL, the UTC time zone is used. 
+ * @param p_office_id      The office to retrieve location levels for.  If unspecified or NULL, location levels for all offices in the database that match the other criteria will be retrieved.
+ *                         
+ * @return                 The location level values as time series, in the specified time zones, formats, and vertical datums
+ */         
+         
+function retrieve_location_levels_f(
+   p_names       in  varchar2,            
+   p_format      in  varchar2,
+   p_units       in  varchar2 default null,   
+   p_datums      in  varchar2 default null,
+   p_start       in  varchar2 default null,
+   p_end         in  varchar2 default null, 
+   p_timezone    in  varchar2 default null,
+   p_office_id   in  varchar2 default null)
+   return clob;
 
 END cwms_level;
 /
