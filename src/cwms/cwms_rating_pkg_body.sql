@@ -5592,24 +5592,19 @@ begin
             cwms_err.raise('INVALID_ITEM', p_timezone, 'CWMS time zone name');
          end if;
       end if;
-      if p_start is not null then
-         l_start := cast(cwms_util.to_timestamp(p_start) as date);
-         if regexp_instr(p_start, '([-+]\d{2}:\d{2}|Z)') > 0 then 
-            if l_timezone is not null then
-               l_start := cwms_util.change_timezone(l_start, 'UTC', l_timezone);
-            end if;
-         end if;
-      end if;
-      if p_end is not null then
+      if p_end is null then
+         l_end := cwms_util.change_timezone(sysdate, 'UTC', l_timezone);
+      else
          l_end := cast(cwms_util.to_timestamp(p_end) as date);
-         if regexp_instr(p_end, '([-+]\d{2}:\d{2}|Z)') > 0 then 
-            if l_timezone is not null then
-               l_end := cwms_util.change_timezone(l_end, 'UTC', l_timezone);
-            end if;
-         end if;
+         l_end := cwms_util.change_timezone(l_end, 'UTC', l_timezone);
+      end if;
+      if p_start is null then
+         l_start := l_end - 1;
+      else
+         l_start := cast(cwms_util.to_timestamp(p_start) as date);
+         l_start := cwms_util.change_timezone(l_start, 'UTC', l_timezone);
       end if;
    end if;
-   
    --
    -- NOTE - this routine does not yet handle virtual or transitional ratings!!!
    --

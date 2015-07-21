@@ -10717,17 +10717,13 @@ end retrieve_existing_item_counts;
          l_end := cwms_util.change_timezone(sysdate, 'UTC', l_timezone);
       else
          l_end := cast(cwms_util.to_timestamp(p_end) as date);
-         if regexp_instr(p_end, '([-+]\d{2}:\d{2}|Z)') > 0 then 
-            l_end := cwms_util.change_timezone(l_end, 'UTC', l_timezone);
-         end if;
+         l_end := cwms_util.change_timezone(l_end, 'UTC', l_timezone);
       end if;
       if p_start is null then
          l_start := l_end - 1;
       else
          l_start := cast(cwms_util.to_timestamp(p_start) as date);
-         if regexp_instr(p_start, '([-+]\d{2}:\d{2}|Z)') > 0 then 
-            l_start := cwms_util.change_timezone(l_start, 'UTC', l_timezone);
-         end if;
+         l_start := cwms_util.change_timezone(l_start, 'UTC', l_timezone);
       end if;
       -----------------------
       -- retreive the data --
