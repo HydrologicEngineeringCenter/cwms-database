@@ -9279,10 +9279,10 @@ end retrieve_existing_item_counts;
    IS
       l_min_date_utc       DATE;
       l_version_date_utc   DATE;
-   BEGIN
-      IF p_version_date = cwms_util.non_versioned
+   begin
+      IF p_version_date is null or p_version_date = cwms_util.non_versioned
       THEN
-         l_version_date_utc := p_version_date;
+         l_version_date_utc := cwms_util.non_versioned;
       ELSE
          l_version_date_utc :=
             cwms_util.change_timezone (p_version_date, p_time_zone, 'UTC');
@@ -9305,9 +9305,9 @@ end retrieve_existing_item_counts;
       l_min_date_utc       DATE;
       l_version_date_utc   DATE;
    BEGIN
-      IF p_version_date = cwms_util.non_versioned
+      IF p_version_date is null or p_version_date = cwms_util.non_versioned
       THEN
-         l_version_date_utc := p_version_date;
+         l_version_date_utc := cwms_util.non_versioned;
       ELSE
          l_version_date_utc :=
             cwms_util.change_timezone (p_version_date, p_time_zone, 'UTC');
@@ -9381,9 +9381,9 @@ end retrieve_existing_item_counts;
       l_max_date_utc       DATE;
       l_version_date_utc   DATE;
    BEGIN
-      IF p_version_date = cwms_util.non_versioned
+      IF p_version_date is null or p_version_date = cwms_util.non_versioned
       THEN
-         l_version_date_utc := p_version_date;
+         l_version_date_utc := cwms_util.non_versioned;
       ELSE
          l_version_date_utc :=
             cwms_util.change_timezone (p_version_date, p_time_zone, 'UTC');
@@ -9406,9 +9406,9 @@ end retrieve_existing_item_counts;
       l_max_date_utc       DATE;
       l_version_date_utc   DATE;
    BEGIN
-      IF p_version_date = cwms_util.non_versioned
+      IF p_version_date is null or p_version_date = cwms_util.non_versioned
       THEN
-         l_version_date_utc := p_version_date;
+         l_version_date_utc := cwms_util.non_versioned;
       ELSE
          l_version_date_utc :=
             cwms_util.change_timezone (p_version_date, p_time_zone, 'UTC');
