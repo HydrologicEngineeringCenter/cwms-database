@@ -2075,7 +2075,7 @@ function retrieve_streamflow_meas_objs(
    return streamflow_meas_tab_t
 is
    l_loc_tab          number_tab_t;
-   l_meas_num_tab     number_tab_t;
+   l_meas_num_tab     str_tab_t;
    l_meas_tab         streamflow_meas_tab_t;
    l_location_id_mask varchar2(256) := cwms_util.normalize_wildcards(p_location_id_mask);
    l_office_id_mask   varchar2(64)  := cwms_util.normalize_wildcards(p_office_id_mask);
