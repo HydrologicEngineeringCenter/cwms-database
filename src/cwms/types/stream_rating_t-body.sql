@@ -973,24 +973,22 @@ as
       ----------------------     
       -- handle the units --
       ----------------------     
-      if p_units is not null then   
-         if upper(trim(p_units)) != 'NATIVE' then
-            l_parts := cwms_util.split_text(replace(cwms_util.split_text(l_clone.rating_spec_id, 2, '.'), ';', ','), ',');
-            l_units := cwms_util.get_default_units(l_parts(1), upper(trim(p_units)))||';'||cwms_util.get_default_units(l_parts(2), upper(trim(p_units)));
-            l_clone.native_units := l_units;
-            l_parts := cwms_util.split_text(l_units, ';');
-            l_units := l_parts(1)||';'||l_parts(1);
-            if l_clone.offsets is not null then
-               l_clone.offsets.native_units := l_units;
-            end if;
-            if l_clone.shifts is not null then
-               for i in 1..l_clone.shifts.count loop
-                  l_clone.shifts(i).native_units := l_units;
-               end loop;
-            end if;
+      if p_units is not null and upper(trim(p_units)) != 'NATIVE' then
+         l_parts := cwms_util.split_text(replace(cwms_util.split_text(l_clone.rating_spec_id, 2, '.'), ';', ','), ',');
+         l_units := cwms_util.get_default_units(l_parts(1), upper(trim(p_units)))||';'||cwms_util.get_default_units(l_parts(2), upper(trim(p_units)));
+         l_clone.native_units := l_units;
+         l_parts := cwms_util.split_text(l_units, ';');
+         l_units := l_parts(1)||';'||l_parts(1);
+         if l_clone.offsets is not null then
+            l_clone.offsets.native_units := l_units;
          end if;
-         l_clone.convert_to_native_units;
+         if l_clone.shifts is not null then
+            for i in 1..l_clone.shifts.count loop
+               l_clone.shifts(i).native_units := l_units;
+            end loop;
+         end if;
       end if;
+      l_clone.convert_to_native_units;
       dbms_lob.createtemporary(l_text, true);
       dbms_lob.open(l_text, dbms_lob.lob_readwrite);
       cwms_util.append(l_text,
