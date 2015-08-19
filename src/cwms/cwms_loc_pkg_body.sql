@@ -8078,8 +8078,6 @@ end unassign_loc_groups;
       l_elevation_units      str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
       l_elevation_estimated  str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
       l_vertical_datums      str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
-      l_published_latitudes  str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
-      l_published_longitudes str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
       l_time_zones           str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
       l_counties             str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
       l_states               str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
@@ -8213,8 +8211,6 @@ end unassign_loc_groups;
              elevation_unit,
              elevation_estimated,
              vertical_datum,
-             published_latitude,
-             published_longitude,
              time_zone_name,
              county,
              state_initial,
@@ -8238,8 +8234,6 @@ end unassign_loc_groups;
              l_elevation_units(1),
              l_elevation_estimated(1),
              l_vertical_datums(1),
-             l_published_latitudes(1),
-             l_published_longitudes(1),
              l_time_zones(1),
              l_counties(1),
              l_states(1),
@@ -8557,10 +8551,6 @@ end unassign_loc_groups;
       for j in 1..l_count loop l_elevation_estimated(2)(l_elevation_estimated(2).count - j + 1) := l_elevation_estimated(1)(j); end loop;
       l_vertical_datums(2).extend(l_count);
       for j in 1..l_count loop l_vertical_datums(2)(l_vertical_datums(2).count - j + 1) := l_vertical_datums(1)(j); end loop;
-      l_published_latitudes(2).extend(l_count);
-      for j in 1..l_count loop l_published_latitudes(2)(l_published_latitudes(2).count - j + 1) := l_published_latitudes(1)(j); end loop;
-      l_published_longitudes(2).extend(l_count);
-      for j in 1..l_count loop l_published_longitudes(2)(l_published_longitudes(2).count - j + 1) := l_published_longitudes(1)(j); end loop;
       l_time_zones(2).extend(l_count);
       for j in 1..l_count loop l_time_zones(2)(l_time_zones(2).count - j + 1) := l_time_zones(1)(j); end loop;
       l_counties(2).extend(l_count);
@@ -8582,7 +8572,7 @@ end unassign_loc_groups;
    
    select cv01,cv02,cv03,cv04,cv05,cv06,cv07,cv08,cv09,cv10,
           cv11,cv12,cv13,cv14,cv15,cv16,cv17,cv18,cv19,cv20,
-          cv21,cv22,cv23,cv24
+          cv21,cv22
      bulk collect
      into l_offices(1),              
           l_location_ids(1),         
@@ -8598,8 +8588,6 @@ end unassign_loc_groups;
           l_elevation_units(1),      
           l_elevation_estimated(1),  
           l_vertical_datums(1),      
-          l_published_latitudes(1),  
-          l_published_longitudes(1), 
           l_time_zones(1),           
           l_counties(1),             
           l_states(1),               
@@ -8622,16 +8610,14 @@ end unassign_loc_groups;
      join (select column_value as cv12, rownum as seq from table(l_elevation_units(2)))      t12 on t12.seq = t01.seq      
      join (select column_value as cv13, rownum as seq from table(l_elevation_estimated(2)))  t13 on t13.seq = t01.seq  
      join (select column_value as cv14, rownum as seq from table(l_vertical_datums(2)))      t14 on t14.seq = t01.seq      
-     join (select column_value as cv15, rownum as seq from table(l_published_latitudes(2)))  t15 on t15.seq = t01.seq  
-     join (select column_value as cv16, rownum as seq from table(l_published_longitudes(2))) t16 on t16.seq = t01.seq 
-     join (select column_value as cv17, rownum as seq from table(l_time_zones(2)))           t17 on t17.seq = t01.seq           
-     join (select column_value as cv18, rownum as seq from table(l_counties(2)))             t18 on t18.seq = t01.seq             
-     join (select column_value as cv19, rownum as seq from table(l_states(2)))               t19 on t19.seq = t01.seq               
-     join (select column_value as cv20, rownum as seq from table(l_nations(2)))              t20 on t20.seq = t01.seq              
-     join (select column_value as cv21, rownum as seq from table(l_nearest_cities(2)))       t21 on t21.seq = t01.seq              
-     join (select column_value as cv22, rownum as seq from table(l_bounding_offices(2)))     t22 on t22.seq = t01.seq     
-     join (select column_value as cv23, rownum as seq from table(l_location_kinds(2)))       t23 on t23.seq = t01.seq       
-     join (select column_value as cv24, rownum as seq from table(l_location_types(2)))       t24 on t24.seq = t01.seq
+     join (select column_value as cv15, rownum as seq from table(l_time_zones(2)))           t15 on t15.seq = t01.seq           
+     join (select column_value as cv16, rownum as seq from table(l_counties(2)))             t16 on t16.seq = t01.seq             
+     join (select column_value as cv17, rownum as seq from table(l_states(2)))               t17 on t17.seq = t01.seq               
+     join (select column_value as cv18, rownum as seq from table(l_nations(2)))              t18 on t18.seq = t01.seq              
+     join (select column_value as cv19, rownum as seq from table(l_nearest_cities(2)))       t19 on t19.seq = t01.seq              
+     join (select column_value as cv20, rownum as seq from table(l_bounding_offices(2)))     t20 on t20.seq = t01.seq     
+     join (select column_value as cv21, rownum as seq from table(l_location_kinds(2)))       t21 on t21.seq = t01.seq       
+     join (select column_value as cv22, rownum as seq from table(l_location_types(2)))       t22 on t22.seq = t01.seq
     order by 1, 2;  
    
    l_ts2 := systimestamp;
@@ -8684,11 +8670,7 @@ end unassign_loc_groups;
                ||l_vertical_datums(1)(i)
                ||'">'
                ||l_elevations(1)(i)
-               ||'</elevation><published-latitude>'
-               ||l_published_latitudes(1)(i)
-               ||'</published-latitude><published-longitude>'
-               ||l_published_longitudes(1)(i)
-               ||'</published-longitude></geolocation><political><timezone>'
+               ||'</elevation></geolocation><political><timezone>'
                ||l_time_zones(1)(i)
                ||'</timezone><county>'
                ||l_counties(1)(i)
@@ -8788,10 +8770,10 @@ end unassign_loc_groups;
                  when l_alternate_names(1)(i) is null then 'null'
                  else '["'||replace(l_alternate_names(1)(i), '.', '","')||'"]'
                  end
-               ||'},"label":{"long-name":"'
-               ||l_long_names(1)(i)
-               ||'","public-name":"'
+               ||'},"label":{"public-name":"'
                ||l_public_names(1)(i)
+               ||'","long-name":"'
+               ||l_long_names(1)(i)
                ||'","map-label":"'
                ||l_map_labels(1)(i)
                ||'","description":"'
@@ -8802,26 +8784,28 @@ end unassign_loc_groups;
                ||nvl(l_longitudes(1)(i), 'null')
                ||',"horizontal-datum":"'
                ||l_horizontal_datums(1)(i)
-               ||'","elevation":[{"@unit":"'
-               ||l_elevation_units(1)(i)
-               ||'","@estimate":"'
-               ||nvl(l_elevation_estimated(1)(i), 'false')
-               ||'","@vertical-datum":"'
-               ||l_vertical_datums(1)(i)
-               ||'"},'
+               ||'","elevation":'
                ||nvl(l_elevations(1)(i), 'null')
-               ||'],"published-latitude":'
-               ||nvl(l_published_latitudes(1)(i), 'null')
-               ||',"published-longitude":'
-               ||nvl(l_published_longitudes(1)(i), 'null')
-               ||'},"political":{"timezone":"'
-               ||l_time_zones(1)(i)
-               ||'","county":"'
-               ||l_counties(1)(i)
+               ||case
+                 when l_elevations(1)(i) is null then
+                    null
+                 else 
+                    ',"elevation-unit":"'
+                    ||l_elevation_units(1)(i)
+                    ||'","vertical-datum":"'
+                    ||l_vertical_datums(1)(i)
+                    ||'","estimated-elevation":"'
+                    ||nvl(l_elevation_estimated(1)(i), 'false')
+                    ||'"'
+                 end     
+               ||'},"political":{"nation":"'
+               ||l_nations(1)(i)
                ||'","state":"'
                ||l_states(1)(i)
-               ||'","nation":"'
-               ||l_nations(1)(i)
+               ||'","county":"'
+               ||l_counties(1)(i)
+               ||'","timezone":"'
+               ||l_time_zones(1)(i)
                ||'","nearest-city":"'
                ||l_nearest_cities(1)(i)
                ||'","bounding-office":"'
@@ -8859,10 +8843,10 @@ end unassign_loc_groups;
                ||nvl(l_latitudes(1)(i), 'null')
                ||',"longitude":'
                ||nvl(l_longitudes(1)(i), 'null')
-               ||'},"political":{"state":"'
-               ||l_states(1)(i)
-               ||'","nation":"'
+               ||'},"political":{"nation":"'
                ||l_nations(1)(i)
+               ||'","state":"'
+               ||l_states(1)(i)
                ||'"},"classification":{"location-kind":"'
                ||l_location_kinds(1)(i)
                ||'"}}}');
@@ -8943,8 +8927,6 @@ end unassign_loc_groups;
                       end
                  end
                  ||chr(10)    
-               ||rpad('#   PUBLISHED LATITUDE', l_width, ' ')||chr(9)||l_published_latitudes(1)(i)||chr(10)
-               ||rpad('#   PUBLISHED LONGITUDE', l_width, ' ')||chr(9)||l_published_longitudes(1)(i)||chr(10)
                ||'# POLITICAL'||chr(10) 
                ||rpad('#   TIME ZONE', l_width, ' ')||chr(9)||l_time_zones(1)(i)||chr(10)
                ||rpad('#   COUNTY', l_width, ' ')||chr(9)||l_counties(1)(i)||chr(10)
