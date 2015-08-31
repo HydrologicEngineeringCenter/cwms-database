@@ -228,8 +228,22 @@ begin
                           )
     where location_code = l_location_code;                                 
    
-end store_stream;   
-
+end store_stream;
+--------------------------------------------------------------------------------
+-- procedure store_streams
+--------------------------------------------------------------------------------
+procedure store_streams(
+   p_streams        in out nocopy stream_tab_t,
+   p_fail_if_exists in varchar2,
+   p_ignore_nulls   in varchar2)
+is
+begin
+   if p_streams is not null then
+      for i in 1..p_streams.count loop
+         p_streams(i).store(p_fail_if_exists, p_ignore_nulls);
+      end loop;
+   end if;
+end store_streams;
 --------------------------------------------------------------------------------
 -- procedure retrieve_stream
 --------------------------------------------------------------------------------
@@ -301,6 +315,21 @@ begin
    p_average_slope := l_rec.average_slope;
    p_comments := l_rec.comments;
 end retrieve_stream;   
+--------------------------------------------------------------------------------
+-- function retrieve_stream_f
+--------------------------------------------------------------------------------
+function retrieve_stream_f(
+   p_stream_id     in varchar2,
+   p_station_units in varchar2,
+   p_office_id     in varchar2 default null)
+   return stream_t
+is
+   l_stream stream_t;
+begin
+   l_stream := stream_t(p_stream_id, p_office_id);
+   l_stream.convert_to_unit(p_station_units);
+   return l_stream;
+end retrieve_stream_f;
 --------------------------------------------------------------------------------
 -- procedure delete_stream
 --------------------------------------------------------------------------------

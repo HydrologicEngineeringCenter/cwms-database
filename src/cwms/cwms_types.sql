@@ -164,6 +164,9 @@ end;
 @@cwms/types/logic_expr_t
 @@cwms/types/logic_expr_tab_t
 @@cwms/types/logic_expr_t-body
+@@cwms/types/stream_t
+@@cwms/types/stream_tab_t
+@@cwms/types/stream_t-body
 
 -- HOST pwd
 @@rowcps_types

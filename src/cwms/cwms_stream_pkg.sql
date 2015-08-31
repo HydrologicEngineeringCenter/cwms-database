@@ -51,6 +51,19 @@ procedure store_stream(
    p_comments             in varchar2 default null,
    p_office_id            in varchar2 default null);
 /**
+ * Stores a stream to the database
+ *
+ * @param p_streams        The stream objects to store
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies whether the routine should fail if one of the specified streams already exists in the database
+ * @param p_ignore_nulls   A flag ('T' or 'F') that specifies whether to ignore NULL values when updating. If 'T' no data will be overwritten with a NULL
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and the one of specified streams already exists in the database
+ */
+procedure store_streams(
+   p_streams        in out nocopy stream_tab_t,
+   p_fail_if_exists in varchar2,
+   p_ignore_nulls   in varchar2);
+/**
  * Retrieves a stream from the database
  *
  * @param p_stationing_starts_ds A flag ('T' or 'F') that specifies if the zero station is at the downstream-most point. If 'F' stationing starts upstream instead
@@ -81,6 +94,18 @@ procedure retrieve_stream(
    p_stream_id            in  varchar2,
    p_station_units        in  varchar2,
    p_office_id            in  varchar2 default null);
+/**
+ * Retrieves a stream from the database
+ *
+ * @param p_stream_id     The stream location identifier
+ * @param p_station_units The unit for stream stationing and length
+ * @param p_office_id     The office that owns the stream location. If not specified or NULL, the session user's default office is used.
+ */
+function retrieve_stream_f(
+   p_stream_id     in varchar2,
+   p_station_units in varchar2,
+   p_office_id     in varchar2 default null)
+   return stream_t;
 /**
  * Deletes a stream from the database
  *
