@@ -10,7 +10,6 @@ AS
                                p_email          IN VARCHAR2,
                                p_control_code   IN VARCHAR2)
    IS
-   l_msgid NUMBER;
    BEGIN
       IF ( ( (UPPER (p_control_code)) = 'C') OR ( (UPPER (p_control_code)) = 'A'))
       THEN
@@ -22,34 +21,24 @@ AS
                                          p_office,
                                          p_phone,
                                          p_email);
+         commit;
       ELSIF ( (UPPER (p_control_code)) = 'D')
       THEN
          CWMS_SEC.DELETE_UPASS_USER (p_userid);
       ELSE
-         l_msgid := CWMS_MSG.LOG_MESSAGE ('UPASS',
-                               NULL,
-                               NULL,
-                               NULL,
-                               SYSTIMESTAMP AT TIME ZONE 'UTC',
-                               'Invalid UPASS update code',
-                               CWMS_MSG.MSG_LEVEL_NORMAL,
-                               TRUE,
-                               FALSE);
+	CWMS_MSG.LOG_DB_MESSAGE ('UPASS',
+                                  CWMS_MSG.MSG_LEVEL_NORMAL,
+                                  'Invalid UPASS update code');
+        commit;
       END IF;
    EXCEPTION
       WHEN OTHERS
       THEN
-         l_msgid := CWMS_MSG.LOG_MESSAGE (
+	CWMS_MSG.LOG_DB_MESSAGE (
             'UPASS',
-            NULL,
-            NULL,
-            NULL,
-            SYSTIMESTAMP AT TIME ZONE 'UTC',
-            'Exception while update user metadata in UPASS: '
-            || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE,
             CWMS_MSG.MSG_LEVEL_NORMAL,
-            TRUE,
-            FALSE);
+               'Exception while update user metadata in UPASS: '
+            || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
    END update_cwms_user;
 END cwms_upass;
 /

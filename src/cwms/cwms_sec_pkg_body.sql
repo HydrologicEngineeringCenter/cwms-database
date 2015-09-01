@@ -890,19 +890,21 @@ AS
       SELECT COUNT (*)
         INTO l_count
         FROM AT_SEC_CWMS_USERS
-       WHERE USERID = p_userid;
+       WHERE USERID = UPPER(p_userid);
 
       IF (l_count = 0)
       THEN
          INSERT INTO AT_SEC_CWMS_USERS (userid,
                                         fullname,
                                         org,
+                                        office,
                                         phone,
                                         email,
                                         createdby)
               VALUES (p_userid,
                       p_fullname,
                       p_org,
+                      p_office,
                       p_phone,
                       p_email,
                       CWMS_UTIL.GET_USER_ID);
@@ -910,10 +912,11 @@ AS
          UPDATE AT_SEC_CWMS_USERS
             SET fullname = p_fullname,
                 org = p_org,
+                office = p_office,
                 phone = p_phone,
                 email = p_email,
                 createdby = CWMS_UTIL.GET_USER_ID
-          WHERE userid = p_userid;
+          WHERE userid = UPPER(p_userid);
       END IF;
    END UPDATE_USER_DATA;
 
@@ -2514,15 +2517,30 @@ AS
                    at_sec_cwms_users s
                 ON A.USERNAME = S.userid;
    END get_db_users;
-   PROCEDURE DELETE_UPASS_USER (p_userid IN VARCHAR2)
+   PROCEDURE delete_upass_user (p_userid IN VARCHAR2)
    IS
    BEGIN
-      DELETE FROM AT_SEC_CWMS_USERS
-            WHERE USERID = UPPER (p_userid);
+    IF (USER = 'UPASSADM')
+      THEN
+         DELETE FROM at_sec_users
+               WHERE username = UPPER (p_userid);
 
-      DELETE_USER (p_userid);
-      COMMIT;
-   END DELETE_UPASS_USER;
+         DELETE FROM at_sec_locked_users
+               WHERE username = UPPER (p_userid);
+
+         DELETE FROM at_sec_user_office
+               WHERE username = UPPER (p_userid);
+
+         DELETE FROM at_sec_cwms_users
+               WHERE USERID = UPPER (p_userid);
+
+         COMMIT;
+         CWMS_MSG.LOG_DB_MESSAGE (
+            'UPASS',
+            CWMS_MSG.MSG_LEVEL_NORMAL,
+            'User ' || UPPER (p_userid) || ' is deleted by UPASS');
+    END IF;
+   END delete_upass_user;
    PROCEDURE set_pd_user_passwd (p_pd_password   IN VARCHAR2,
                                   p_pd_username   IN VARCHAR2)
    IS
