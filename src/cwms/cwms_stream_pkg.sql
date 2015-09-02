@@ -19,7 +19,7 @@ function get_stream_code(
  * @param p_stream_id            The stream location identifier
  * @param p_fail_if_exists       A flag ('T' or 'F') that specifies whether the routine should fail if the specified stream already exists in the database
  * @param p_ignore_nulls         A flag ('T' or 'F') that specifies whether to ignore NULL values when updating. If 'T' no data will be overwritten with a NULL
- * @param p_station_units        The unit for stream stationing
+ * @param p_station_unit         The unit for stream stationing
  * @param p_stationing_starts_ds A flag ('T' or 'F') that specifies if the zero station is at the downstream-most point. If 'F' stationing starts upstream instead
  * @param p_flows_into_stream    The location identifier of the receiving stream this stream flows into, if any
  * @param p_flows_into_station   The station on the receiving stream, if any, of the confluence with this stream
@@ -38,7 +38,7 @@ procedure store_stream(
    p_stream_id            in varchar2,
    p_fail_if_exists       in varchar2,
    p_ignore_nulls         in varchar2,
-   p_station_units        in varchar2 default null,
+   p_station_unit         in varchar2 default null,
    p_stationing_starts_ds in varchar2 default null,
    p_flows_into_stream    in varchar2 default null,
    p_flows_into_station   in binary_double default null,
@@ -77,7 +77,7 @@ procedure store_streams(
  * @param p_average_slope        The average slope of the stream
  * @param p_comments             Any comments about the stream
  * @param p_stream_id            The stream location identifier
- * @param p_station_units        The unit for stream stationing
+ * @param p_station_unit         The unit for stream stationing
  * @param p_office_id            The office that owns the stream location. If not specified or NULL, the session user's default office is used.
  */
 procedure retrieve_stream(
@@ -92,18 +92,18 @@ procedure retrieve_stream(
    p_average_slope        out binary_double,
    p_comments             out varchar2 ,
    p_stream_id            in  varchar2,
-   p_station_units        in  varchar2,
+   p_station_unit         in  varchar2,
    p_office_id            in  varchar2 default null);
 /**
  * Retrieves a stream from the database
  *
  * @param p_stream_id     The stream location identifier
- * @param p_station_units The unit for stream stationing and length
+ * @param p_station_unit  The unit for stream stationing and length
  * @param p_office_id     The office that owns the stream location. If not specified or NULL, the session user's default office is used.
  */
 function retrieve_stream_f(
    p_stream_id     in varchar2,
-   p_station_units in varchar2,
+   p_station_unit  in varchar2,
    p_office_id     in varchar2 default null)
    return stream_t;
 /**
@@ -137,7 +137,7 @@ function retrieve_stream_f(
  * @param p_office_id      The office that owns the stream location. If not specified or NULL, the session user's default office is used.
  */
 procedure delete_stream(
-   p_stream_id      in varchar2,
+   p_stream_id     in varchar2,
    p_delete_action in varchar2 default cwms_util.delete_key,
    p_office_id     in varchar2 default null);
 /**
@@ -319,7 +319,7 @@ procedure rename_stream(
  * wildcard characters as shown above instead of sql-style wildcard characters for pattern
  * matching.
  *
- * @param p_station_units The units for stations and length
+ * @param p_station_unit The unit for stations and length
  *
  * @param p_stationing_starts_ds_mask  The stream location pattern to match. Use 'T', 'F', or '*'
  *
@@ -364,7 +364,7 @@ procedure rename_stream(
 procedure cat_streams(
    p_stream_catalog              out sys_refcursor,
    p_stream_id_mask              in  varchar2 default '*',
-   p_station_units               in  varchar2 default 'km',
+   p_station_unit                in  varchar2 default 'km',
    p_stationing_starts_ds_mask   in  varchar2 default '*',
    p_flows_into_stream_id_mask   in  varchar2 default '*',
    p_flows_into_station_min      in  binary_double default null,
@@ -404,7 +404,7 @@ procedure cat_streams(
  * wildcard characters as shown above instead of sql-style wildcard characters for pattern
  * matching.
  *
- * @param p_station_units The units for stations and length
+ * @param p_station_unit The unit for stations and length
  *
  * @param p_stationing_starts_ds_mask  The stream location pattern to match. Use 'T', 'F', or '*'
  *
@@ -532,7 +532,7 @@ procedure cat_streams(
  */
 function cat_streams_f(
    p_stream_id_mask              in varchar2 default '*',
-   p_station_units               in varchar2 default 'km',
+   p_station_unit                in varchar2 default 'km',
    p_stationing_starts_ds_mask   in varchar2 default '*',
    p_flows_into_stream_id_mask   in varchar2 default '*',
    p_flows_into_station_min      in binary_double default null,
@@ -1077,11 +1077,11 @@ procedure delete_stream_location2(
  * wildcard characters as shown above instead of sql-style wildcard characters for pattern
  * matching.
  *
- * @param p_station_unit The units for stations
+ * @param p_station_unit The unit for stations
  *
- * @param p_stage_unit The units for stage
+ * @param p_stage_unit The unit for stage
  *
- * @param p_area_unit The units for area
+ * @param p_area_unit The unit for area
  *
  * @param p_office_id_mask  The office pattern to match.  If the routine is called
  * without this parameter, or if this parameter is set to NULL, the session user's
@@ -1125,11 +1125,11 @@ procedure cat_stream_locations(
  * wildcard characters as shown above instead of sql-style wildcard characters for pattern
  * matching.
  *
- * @param p_station_unit The units for stations
+ * @param p_station_unit The unit for stations
  *
- * @param p_stage_unit The units for stage
+ * @param p_stage_unit The unit for stage
  *
- * @param p_area_unit The units for area
+ * @param p_area_unit The unit for area
  *
  * @param p_office_id_mask  The office pattern to match.  If the routine is called
  * without this parameter, or if this parameter is set to NULL, the session user's
@@ -1243,6 +1243,7 @@ function cat_stream_locations_f(
  * @param p_station          The station on the stream to retrieve location(s) upstream from
  * @param p_station_unit     The station unit
  * @param p_all_us_locations A flag ('T' or 'F') specifying whether to retrieve only the next upstream location ('F') or all upstream locations ('T')
+ * @param p_same_stream_only A flag ('T' or 'F') specifying whether to restrict upstream locations to the same stream ('T') or allow crossing confluences and bifurcations ('F')
  * @param p_office_id        The office owning the stream. If not specified or NULL, the session user's default office is used.
  */
 procedure get_us_locations(
@@ -1251,6 +1252,7 @@ procedure get_us_locations(
    p_station          in  binary_double,
    p_station_unit     in  varchar2,
    p_all_us_locations in  varchar2 default 'F',
+   p_same_stream_only in  varchar2 default 'F',
    p_office_id        in  varchar2 default null);
 /**
  * Retrieves the next or all stream location(s) upstream from a stream station
@@ -1259,6 +1261,7 @@ procedure get_us_locations(
  * @param p_station          The station on the stream to retrieve location(s) upstream from
  * @param p_station_unit     The station unit
  * @param p_all_us_locations A flag ('T' or 'F') specifying whether to retrieve only the next upstream location ('F') or all upstream locations ('T')
+ * @param p_same_stream_only A flag ('T' or 'F') specifying whether to restrict upstream locations to the same stream ('T') or allow crossing confluences and bifurcations ('F')
  * @param p_office_id        The office owning the stream. If not specified or NULL, the session user's default office is used.
  *
  * @return A collection containing the upstream location(s)
@@ -1268,6 +1271,7 @@ function get_us_locations_f(
    p_station          in binary_double,
    p_station_unit     in varchar2,
    p_all_us_locations in varchar2 default 'F',
+   p_same_stream_only in varchar2 default 'F',
    p_office_id        in varchar2 default null)
    return str_tab_t;
 /**
@@ -1278,6 +1282,7 @@ function get_us_locations_f(
  * @param p_station          The station on the stream to retrieve location(s) downstream from
  * @param p_station_unit     The station unit
  * @param p_all_ds_locations A flag ('T' or 'F') specifying whether to retrieve only the next downstream location ('F') or all downstream locations ('T')
+ * @param p_same_stream_only A flag ('T' or 'F') specifying whether to restrict upstream locations to the same stream ('T') or allow crossing confluences and bifurcations ('F')
  * @param p_office_id        The office owning the stream. If not specified or NULL, the session user's default office is used.
  */
 procedure get_ds_locations(
@@ -1286,6 +1291,7 @@ procedure get_ds_locations(
    p_station          in  binary_double,
    p_station_unit     in  varchar2,
    p_all_ds_locations in  varchar2 default 'F',
+   p_same_stream_only in  varchar2 default 'F',
    p_office_id        in  varchar2 default null);
 /**
  * Retrieves the next or all stream location(s) downstream from a stream station
@@ -1294,6 +1300,7 @@ procedure get_ds_locations(
  * @param p_station          The station on the stream to retrieve location(s) downstream from
  * @param p_station_unit     The station unit
  * @param p_all_ds_locations A flag ('T' or 'F') specifying whether to retrieve only the next downstream location ('F') or all downstream locations ('T')
+ * @param p_same_stream_only A flag ('T' or 'F') specifying whether to restrict upstream locations to the same stream ('T') or allow crossing confluences and bifurcations ('F')
  * @param p_office_id        The office owning the stream. If not specified or NULL, the session user's default office is used.
  *
  * @return A collection containing the downstream location(s)
@@ -1303,70 +1310,555 @@ function get_ds_locations_f(
    p_station          in binary_double,
    p_station_unit     in varchar2,
    p_all_ds_locations in varchar2 default 'F',
+   p_same_stream_only in varchar2 default 'F',
    p_office_id        in varchar2 default null)
    return str_tab_t;
 /**
  * Retrieves the next or all stream location(s) upstream from a stream location
  *
  * @param p_us_locations     A collection containing the upstream location(s)
- * @param p_stream_id        The stream identifier
- * @param p_location_id      The location on the stream to retrieve location(s) upstream from
+ * @param p_location_id      The location on a stream to retrieve location(s) upstream from
  * @param p_all_us_locations A flag ('T' or 'F') specifying whether to retrieve only the next upstream location ('F') or all upstream locations ('T')
+ * @param p_same_stream_only A flag ('T' or 'F') specifying whether to restrict upstream locations to the same stream ('T') or allow crossing confluences and bifurcations ('F')
  * @param p_office_id        The office owning the stream. If not specified or NULL, the session user's default office is used.
  */
 procedure get_us_locations(
    p_us_locations     out str_tab_t,
-   p_stream_id        in  varchar2,
    p_location_id      in  varchar2,
    p_all_us_locations in  varchar2 default 'F',
+   p_same_stream_only in  varchar2 default 'F',
    p_office_id        in  varchar2 default null);
 /**
  * Retrieves the next or all stream location(s) upstream from a stream location
  *
- * @param p_stream_id        The stream identifier
- * @param p_location_id      The location on the stream to retrieve location(s) upstream from
+ * @param p_location_id      The location on a stream to retrieve location(s) upstream from
  * @param p_all_us_locations A flag ('T' or 'F') specifying whether to retrieve only the next upstream location ('F') or all upstream locations ('T')
+ * @param p_same_stream_only A flag ('T' or 'F') specifying whether to restrict upstream locations to the same stream ('T') or allow crossing confluences and bifurcations ('F')
  * @param p_office_id        The office owning the stream. If not specified or NULL, the session user's default office is used.
  *
  * @return A collection containing the upstream location(s)
  */
 function get_us_locations_f(
-   p_stream_id        in varchar2,
    p_location_id      in varchar2,
    p_all_us_locations in varchar2 default 'F',
+   p_same_stream_only in varchar2 default 'F',
    p_office_id        in varchar2 default null)
    return str_tab_t;
 /**
  * Retrieves the next or all stream location(s) downstream from a stream location
  *
  * @param p_us_locations     A collection containing the downstream location(s)
- * @param p_stream_id        The stream identifier
- * @param p_location_id      The location on the stream to retrieve location(s) downstream from
+ * @param p_location_id      The location on a stream to retrieve location(s) downstream from
  * @param p_all_ds_locations A flag ('T' or 'F') specifying whether to retrieve only the next downstream location ('F') or all downstream locations ('T')
+ * @param p_same_stream_only A flag ('T' or 'F') specifying whether to restrict upstream locations to the same stream ('T') or allow crossing confluences and bifurcations ('F')
  * @param p_office_id        The office owning the stream. If not specified or NULL, the session user's default office is used.
  */
 procedure get_ds_locations(
    p_ds_locations     out str_tab_t,
-   p_stream_id        in  varchar2,
    p_location_id      in  varchar2,
    p_all_ds_locations in  varchar2 default 'F',
+   p_same_stream_only in  varchar2 default 'F',
    p_office_id        in  varchar2 default null);
 /**
  * Retrieves the next or all stream location(s) downstream from a stream location
  *
- * @param p_stream_id        The stream identifier
- * @param p_location_id      The location on the stream to retrieve location(s) downstream from
+ * @param p_location_id      The location on a stream to retrieve location(s) downstream from
  * @param p_all_ds_locations A flag ('T' or 'F') specifying whether to retrieve only the next downstream location ('F') or all downstream locations ('T')
+ * @param p_same_stream_only A flag ('T' or 'F') specifying whether to restrict upstream locations to the same stream ('T') or allow crossing confluences and bifurcations ('F')
  * @param p_office_id        The office owning the stream. If not specified or NULL, the session user's default office is used.
  *
  * @return A collection containing the downstream location(s)
  */
 function get_ds_locations_f(
-   p_stream_id        in varchar2,
    p_location_id      in varchar2,
    p_all_ds_locations in varchar2 default 'F',
+   p_same_stream_only in varchar2 default 'F',
    p_office_id        in varchar2 default null)
    return str_tab_t;
+/**
+ * Retrieves the next or all stream location(s) upstream from a stream station
+ *
+ * @param p_us_locations  A cursor containing the upstream location(s), stream(s), and station(s). The cursor contains
+ * the following columns:
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">location_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the upstream location</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">stream_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the stream</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">station</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The station of the location on the stream</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">r</td>
+ *     <td class="descr">bank</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">The bank of the stream the location is on, if any</td>
+ *   </tr>
+ * </table>
+ * @param p_stream_id        The stream identifier
+ * @param p_station          The station on the stream to retrieve location(s) upstream from
+ * @param p_station_unit     The station unit
+ * @param p_all_us_locations A flag ('T' or 'F') specifying whether to retrieve only the next upstream location ('F') or all upstream locations ('T')
+ * @param p_same_stream_only A flag ('T' or 'F') specifying whether to restrict upstream locations to the same stream ('T') or allow crossing confluences and bifurcations ('F')
+ * @param p_office_id        The office owning the stream. If not specified or NULL, the session user's default office is used.
+ */
+procedure get_us_locations2(
+   p_us_locations     out sys_refcursor,
+   p_stream_id        in  varchar,
+   p_station          in  binary_double,
+   p_station_unit     in  varchar,
+   p_all_us_locations in  varchar default 'F',
+   p_same_stream_only in  varchar default 'F',
+   p_office_id        in  varchar default null);
+/**
+ * Retrieves the next or all stream location(s) upstream from a stream station
+ *
+ * @param p_stream_id        The stream identifier
+ * @param p_station          The station on the stream to retrieve location(s) upstream from
+ * @param p_station_unit     The station unit
+ * @param p_all_us_locations A flag ('T' or 'F') specifying whether to retrieve only the next upstream location ('F') or all upstream locations ('T')
+ * @param p_same_stream_only A flag ('T' or 'F') specifying whether to restrict upstream locations to the same stream ('T') or allow crossing confluences and bifurcations ('F')
+ * @param p_office_id        The office owning the stream. If not specified or NULL, the session user's default office is used.
+ *
+ * @return A cursor containing the upstream location(s), stream(s), and station(s). The cursor contains
+ * the following columns:
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">location_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the upstream location</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">stream_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the stream</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">station</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The station of the location on the stream</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">r</td>
+ *     <td class="descr">bank</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">The bank of the stream the location is on, if any</td>
+ *   </tr>
+ * </table>
+ */
+function get_us_locations2_f(
+   p_stream_id        in varchar,
+   p_station          in binary_double,
+   p_station_unit     in varchar,
+   p_all_us_locations in varchar default 'F',
+   p_same_stream_only in varchar default 'F',
+   p_office_id        in varchar default null)
+   return sys_refcursor;
+/**
+ * Retrieves the next or all stream location(s) downstream from a stream station
+ *
+ * @param p_ds_locations A cursor containing the downstream location(s), stream(s), and station(s). The cursor contains
+ * the following columns:
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">location_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the downstream location</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">stream_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the stream</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">station</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The station of the location on the stream</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">r</td>
+ *     <td class="descr">bank</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">The bank of the stream the location is on, if any</td>
+ *   </tr>
+ * </table>
+ * @param p_stream_id        The stream identifier
+ * @param p_station          The station on the stream to retrieve location(s) downstream from
+ * @param p_station_unit     The station unit
+ * @param p_all_ds_locations A flag ('T' or 'F') specifying whether to retrieve only the next downstream location ('F') or all downstream locations ('T')
+ * @param p_same_stream_only A flag ('T' or 'F') specifying whether to restrict upstream locations to the same stream ('T') or allow crossing confluences and bifurcations ('F')
+ * @param p_office_id        The office owning the stream. If not specified or NULL, the session user's default office is used.
+ */
+procedure get_ds_locations2(
+   p_ds_locations     out sys_refcursor,
+   p_stream_id        in  varchar,
+   p_station          in  binary_double,
+   p_station_unit     in  varchar,
+   p_all_ds_locations in  varchar default 'F',
+   p_same_stream_only in  varchar default 'F',
+   p_office_id        in  varchar default null);
+/**
+ * Retrieves the next or all stream location(s) downstream from a stream station
+ *
+ * @param p_stream_id        The stream identifier
+ * @param p_station          The station on the stream to retrieve location(s) downstream from
+ * @param p_station_unit     The station unit
+ * @param p_all_ds_locations A flag ('T' or 'F') specifying whether to retrieve only the next downstream location ('F') or all downstream locations ('T')
+ * @param p_same_stream_only A flag ('T' or 'F') specifying whether to restrict upstream locations to the same stream ('T') or allow crossing confluences and bifurcations ('F')
+ * @param p_office_id        The office owning the stream. If not specified or NULL, the session user's default office is used.
+ *
+ * @return A cursor containing the downstream location(s), stream(s), and station(s). The cursor contains
+ * the following columns:
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">location_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the downstream location</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">stream_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the stream</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">station</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The station of the location on the stream</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">r</td>
+ *     <td class="descr">bank</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">The bank of the stream the location is on, if any</td>
+ *   </tr>
+ * </table>
+ */
+function get_ds_locations2_f(
+   p_stream_id        in varchar,
+   p_station          in binary_double,
+   p_station_unit     in varchar,
+   p_all_ds_locations in varchar default 'F',
+   p_same_stream_only in varchar default 'F',
+   p_office_id        in varchar default null)
+   return sys_refcursor;
+/**
+ * Retrieves the next or all stream location(s) upstream from a stream location
+ *
+ * @param p_us_locations     A cursor containing the upstream location(s), stream(s), and station(s). The cursor contains
+ * the following columns:
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">location_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the upstream location</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">stream_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the stream</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">station</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The station of the location on the stream</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">r</td>
+ *     <td class="descr">bank</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">The bank of the stream the location is on, if any</td>
+ *   </tr>
+ * </table>
+ * @param p_location_id      The location on a stream to retrieve location(s) upstream from
+ * @param p_station_unit     The station to return the stations in
+ * @param p_all_us_locations A flag ('T' or 'F') specifying whether to retrieve only the next upstream location ('F') or all upstream locations ('T')
+ * @param p_same_stream_only A flag ('T' or 'F') specifying whether to restrict upstream locations to the same stream ('T') or allow crossing confluences and bifurcations ('F')
+ * @param p_office_id        The office owning the stream. If not specified or NULL, the session user's default office is used.
+ */
+procedure get_us_locations2(
+   p_us_locations     out sys_refcursor,
+   p_location_id      in  varchar,
+   p_station_unit     in  varchar,
+   p_all_us_locations in  varchar default 'F',
+   p_same_stream_only in  varchar default 'F',
+   p_office_id        in  varchar default null);
+/**
+ * Retrieves the next or all stream location(s) upstream from a stream location
+ *
+ * @param p_location_id      The location on a stream to retrieve location(s) upstream from
+ * @param p_station_unit     The station to return the stations in
+ * @param p_all_us_locations A flag ('T' or 'F') specifying whether to retrieve only the next upstream location ('F') or all upstream locations ('T')
+ * @param p_same_stream_only A flag ('T' or 'F') specifying whether to restrict upstream locations to the same stream ('T') or allow crossing confluences and bifurcations ('F')
+ * @param p_office_id        The office owning the stream. If not specified or NULL, the session user's default office is used.
+ *
+ * @return A cursor containing the upstream location(s), stream(s), and station(s). The cursor contains
+ * the following columns:
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">location_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the upstream location</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">stream_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the stream</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">station</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The station of the location on the stream</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">r</td>
+ *     <td class="descr">bank</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">The bank of the stream the location is on, if any</td>
+ *   </tr>
+ * </table>
+ */
+function get_us_locations2_f(
+   p_location_id      in varchar,
+   p_station_unit     in  varchar,
+   p_all_us_locations in varchar default 'F',
+   p_same_stream_only in varchar default 'F',
+   p_office_id        in varchar default null)
+   return sys_refcursor;
+/**
+ * Retrieves the next or all stream location(s) downstream from a stream location
+ *
+ * @param p_us_locations A cursor containing the downstream location(s), stream(s), and station(s). The cursor contains
+ * the following columns:
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">location_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the downstream location</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">stream_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the stream</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">station</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The station of the location on the stream</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">r</td>
+ *     <td class="descr">bank</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">The bank of the stream the location is on, if any</td>
+ *   </tr>
+ * </table>
+ * @param p_location_id      The location on a stream to retrieve location(s) downstream from
+ * @param p_station_unit     The unit to return the stations in 
+ * @param p_all_ds_locations A flag ('T' or 'F') specifying whether to retrieve only the next downstream location ('F') or all downstream locations ('T')
+ * @param p_same_stream_only A flag ('T' or 'F') specifying whether to restrict upstream locations to the same stream ('T') or allow crossing confluences and bifurcations ('F')
+ * @param p_office_id        The office owning the stream. If not specified or NULL, the session user's default office is used.
+ */
+procedure get_ds_locations2(
+   p_ds_locations     out sys_refcursor,
+   p_location_id      in  varchar,
+   p_station_unit     in  varchar,
+   p_all_ds_locations in  varchar default 'F',
+   p_same_stream_only in  varchar default 'F',
+   p_office_id        in  varchar default null);
+/**
+ * Retrieves the next or all stream location(s) downstream from a stream location
+ *
+ * @param p_location_id      The location on a stream to retrieve location(s) downstream from
+ * @param p_station_unit     The unit to return the stations in 
+ * @param p_all_ds_locations A flag ('T' or 'F') specifying whether to retrieve only the next downstream location ('F') or all downstream locations ('T')
+ * @param p_same_stream_only A flag ('T' or 'F') specifying whether to restrict upstream locations to the same stream ('T') or allow crossing confluences and bifurcations ('F')
+ * @param p_office_id        The office owning the stream. If not specified or NULL, the session user's default office is used.
+ *
+ * @return A cursor containing the downstream location(s), stream(s), and station(s). The cursor contains
+ * the following columns:
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">location_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the downstream location</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">stream_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the stream</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">station</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The station of the location on the stream</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">r</td>
+ *     <td class="descr">bank</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">The bank of the stream the location is on, if any</td>
+ *   </tr>
+ * </table>
+ */
+function get_ds_locations2_f(
+   p_location_id      in varchar,
+   p_station_unit     in varchar,
+   p_all_ds_locations in varchar default 'F',
+   p_same_stream_only in varchar default 'F',
+   p_office_id        in varchar default null)
+   return sys_refcursor;
+/**
+ * Retrieves whether a location is upstream of a specified anchor point on a stream
+ *
+ * @param p_stream_id    The stream the anchor point is on
+ * @param p_station      The station of the anchor point on the stream
+ * @param p_station_unit The unit for the p_station parameter
+ * @param p_location_id  The location in question 
+ * @param p_office_id    The office that owns the stream and the location in the database.  If not specified or NULL, the session user's default office is used
+ *
+ * @return A flag (T/F) specifying whether the location is upstream of the anchor point
+ */
+function is_upstream_of(
+   p_stream_id    in varchar2,
+   p_station      in binary_double,
+   p_station_unit in varchar2,
+   p_location_id  in varchar2,
+   p_office_id    in varchar2 default null)
+   return varchar2; 
+/**
+ * Retrieves whether a location is upstream of a specified anchor point on a stream
+ *
+ * @param p_anchor_location_id The location at the anchor point on the stream
+ * @param p_location_id        The location in question 
+ * @param p_office_id          The office that owns the locations in the database.  If not specified or NULL, the session user's default office is used
+ *
+ * @return A flag (T/F) specifying whether the location is upstream of the anchor point
+ */
+function is_upstream_of(
+   p_anchor_location_id in varchar2,
+   p_location_id        in varchar2,
+   p_office_id          in varchar2 default null)
+   return varchar2; 
+/**
+ * Retrieves whether a location is downstream of a specified anchor point on a stream
+ *
+ * @param p_stream_id    The stream the anchor point is on
+ * @param p_station      The station of the anchor point on the stream
+ * @param p_station_unit The unit for the p_station parameter
+ * @param p_location_id  The location in question 
+ * @param p_office_id    The office that owns the stream and the location in the database. If not specified or NULL, the session user's default office is used
+ *
+ * @return A flag (T/F) specifying whether the location is downstream of the anchor point
+ */
+function is_downstream_of(
+   p_stream_id    in varchar2,
+   p_station      in binary_double,
+   p_station_unit in varchar2,
+   p_location_id  in varchar2,
+   p_office_id    in varchar2 default null)
+   return varchar2; 
+/**
+ * Retrieves whether a location is downstream of a specified anchor point on a stream
+ *
+ * @param p_anchor_location_id The location at the anchor point on the stream
+ * @param p_location_id        The location in question 
+ * @param p_office_id          The office that owns the locations in the database.  If not specified or NULL, the session user's default office is used
+ *
+ * @return A flag (T/F) specifying whether the location is downstream of the anchor point
+ */
+function is_downstream_of(
+   p_anchor_location_id in varchar2,
+   p_location_id        in varchar2,
+   p_office_id          in varchar2 default null)
+   return varchar2;
 /**
  * Stores one or more stream flow measurements specified in an XML document
  *
@@ -1416,7 +1908,7 @@ procedure store_streamflow_meas_xml(
  *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
- * @param p_unit_system      The unit system (EN/SI) to return the measurements in. If not specified, the measurements will be returned in English units 
+ * @param p_unit_system      The unit system (EN/SI) to return the measurements in. If not specified, the measurements will be returned in English unit 
  * @param p_min_date         The earliest date to return measurements for, in the time zone indicated by the p_time_zone parameters. If not specified, no earliest date will be used
  * @param p_max_date         The latest date to return measurements for, in the time zone indicated by the p_time_zone parameters. If not specified, no latest date will be used
  * @param p_min_height       The minimum gage height to return measurements for. If not specified, no minimum gage height will be used

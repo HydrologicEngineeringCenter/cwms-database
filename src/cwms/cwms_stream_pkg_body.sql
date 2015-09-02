@@ -2,7 +2,7 @@ create or replace package body cwms_stream
 as
    
 --------------------------------------------------------------------------------
--- procedure get_stream_code
+-- function get_stream_code
 --------------------------------------------------------------------------------
 function get_stream_code(
    p_office_id in varchar2,
@@ -36,7 +36,7 @@ procedure store_stream(
    p_stream_id            in varchar2,
    p_fail_if_exists       in varchar2,
    p_ignore_nulls         in varchar2,
-   p_station_units        in varchar2 default null,
+   p_station_unit         in varchar2 default null,
    p_stationing_starts_ds in varchar2 default null,
    p_flows_into_stream    in varchar2 default null,
    p_flows_into_station   in binary_double default null,
@@ -57,7 +57,7 @@ is
    l_diverting_stream_code number(10);
    l_receiving_stream_code number(10);
    l_office_id             varchar2(16) := nvl(upper(p_office_id), cwms_util.user_office_id); 
-   l_station_units         varchar2(16) := cwms_util.get_unit_id(p_station_units, l_office_id);
+   l_station_unit         varchar2(16) := cwms_util.get_unit_id(p_station_unit, l_office_id);
    l_rec                   at_stream%rowtype;
    l_location_kind_id      varchar2(32);
 begin
@@ -106,14 +106,14 @@ begin
          ||'/'
          ||p_stream_id);
    end if; 
-   if p_station_units is null then
+   if p_station_unit is null then
       if p_flows_into_station is not null or
          p_diverts_from_station is not null or
          p_length is not null
       then
          cwms_err.raise(
             'ERROR',
-            'Station and/or length values supplied without units.');
+            'Station and/or length values supplied without unit.');
       end if;
    end if;
    if not l_exists or not l_ignore_nulls then
@@ -186,7 +186,7 @@ begin
       l_rec.diverting_stream_code := l_diverting_stream_code;
    end if;
    if p_diverts_from_station is not null or not l_ignore_nulls then
-      l_rec.diversion_station := cwms_util.convert_units(p_diverts_from_station, l_station_units, 'km');
+      l_rec.diversion_station := cwms_util.convert_units(p_diverts_from_station, l_station_unit, 'km');
    end if;
    if p_diverts_from_bank is not null or not l_ignore_nulls then
       l_rec.diversion_bank := upper(p_diverts_from_bank);
@@ -195,13 +195,13 @@ begin
       l_rec.receiving_stream_code := l_receiving_stream_code;
    end if;
    if p_flows_into_station is not null or not l_ignore_nulls then
-      l_rec.confluence_station := cwms_util.convert_units(p_flows_into_station, l_station_units, 'km');
+      l_rec.confluence_station := cwms_util.convert_units(p_flows_into_station, l_station_unit, 'km');
    end if;
    if p_flows_into_bank is not null or not l_ignore_nulls then
       l_rec.confluence_bank := upper(p_flows_into_bank);
    end if;
    if p_length is not null or not l_ignore_nulls then
-      l_rec.stream_length := cwms_util.convert_units(p_length, l_station_units, 'km');
+      l_rec.stream_length := cwms_util.convert_units(p_length, l_station_unit, 'km');
    end if;
    if p_average_slope is not null or not l_ignore_nulls then
       l_rec.average_slope := p_average_slope;
@@ -259,12 +259,12 @@ procedure retrieve_stream(
    p_average_slope        out binary_double,
    p_comments             out varchar2 ,
    p_stream_id            in  varchar2,
-   p_station_units        in  varchar2,
+   p_station_unit        in  varchar2,
    p_office_id            in  varchar2 default null)
 is
    l_office_id     varchar2(16) := nvl(upper(p_office_id), cwms_util.user_office_id);
    l_rec           at_stream%rowtype;
-   l_station_units varchar2(16) := cwms_util.get_unit_id(p_station_units, l_office_id);
+   l_station_unit varchar2(16) := cwms_util.get_unit_id(p_station_unit, l_office_id);
 begin
    ------------------
    -- sanity check --
@@ -297,7 +297,7 @@ begin
              at_physical_location pl
        where pl.location_code = l_rec.receiving_stream_code
          and bl.base_location_code = pl.base_location_code;
-      p_flows_into_station := cwms_util.convert_units(l_rec.confluence_station, 'km', l_station_units);
+      p_flows_into_station := cwms_util.convert_units(l_rec.confluence_station, 'km', l_station_unit);
       p_flows_into_bank := l_rec.confluence_bank;         
    end if;    
    if l_rec.diverting_stream_code is not null then
@@ -308,10 +308,10 @@ begin
              at_physical_location pl
        where pl.location_code = l_rec.diverting_stream_code
          and bl.base_location_code = pl.base_location_code;
-      p_diverts_from_station := cwms_util.convert_units(l_rec.diversion_station, 'km', l_station_units);
+      p_diverts_from_station := cwms_util.convert_units(l_rec.diversion_station, 'km', l_station_unit);
       p_diverts_from_bank := l_rec.diversion_bank;         
    end if;    
-   p_length := cwms_util.convert_units(l_rec.stream_length, 'km', l_station_units);
+   p_length := cwms_util.convert_units(l_rec.stream_length, 'km', l_station_unit);
    p_average_slope := l_rec.average_slope;
    p_comments := l_rec.comments;
 end retrieve_stream;   
@@ -320,14 +320,14 @@ end retrieve_stream;
 --------------------------------------------------------------------------------
 function retrieve_stream_f(
    p_stream_id     in varchar2,
-   p_station_units in varchar2,
+   p_station_unit in varchar2,
    p_office_id     in varchar2 default null)
    return stream_t
 is
    l_stream stream_t;
 begin
    l_stream := stream_t(p_stream_id, p_office_id);
-   l_stream.convert_to_unit(p_station_units);
+   l_stream.convert_to_unit(p_station_unit);
    return l_stream;
 end retrieve_stream_f;
 --------------------------------------------------------------------------------
@@ -469,7 +469,7 @@ end rename_stream;
 procedure cat_streams(          
    p_stream_catalog              out sys_refcursor,
    p_stream_id_mask              in  varchar2 default '*',
-   p_station_units               in  varchar2 default 'km',
+   p_station_unit               in  varchar2 default 'km',
    p_stationing_starts_ds_mask   in  varchar2 default '*',
    p_flows_into_stream_id_mask   in  varchar2 default '*',
    p_flows_into_station_min      in  binary_double default null,
@@ -494,14 +494,14 @@ is
    l_diverts_from_bank_mask      varchar2(1)   := upper(cwms_util.normalize_wildcards(p_diverts_from_bank_mask));
    l_comments_mask               varchar2(256) := upper(cwms_util.normalize_wildcards(p_comments_mask));
    l_office_id_mask              varchar2(16)  := upper(cwms_util.normalize_wildcards(nvl(p_office_id_mask, cwms_util.user_office_id)));
-   l_flows_into_station_min      binary_double := -binary_double_max_normal;
-   l_flows_into_station_max      binary_double :=  binary_double_max_normal;
-   l_diverts_from_station_min    binary_double := -binary_double_max_normal;
-   l_diverts_from_station_max    binary_double :=  binary_double_max_normal;
-   l_length_min                  binary_double := -binary_double_max_normal;
-   l_length_max                  binary_double :=  binary_double_max_normal;
-   l_average_slope_min           binary_double := -binary_double_max_normal;
-   l_average_slope_max           binary_double :=  binary_double_max_normal;
+   l_flows_into_station_min      binary_double := nvl(cwms_util.convert_units(p_flows_into_station_min, p_station_unit, 'km'), -binary_double_max_normal);
+   l_flows_into_station_max      binary_double := nvl(cwms_util.convert_units(p_flows_into_station_max, p_station_unit, 'km'), binary_double_max_normal);
+   l_diverts_from_station_min    binary_double := nvl(cwms_util.convert_units(p_diverts_from_station_min, p_station_unit, 'km'), -binary_double_max_normal);
+   l_diverts_from_station_max    binary_double := nvl(cwms_util.convert_units(p_diverts_from_station_max, p_station_unit, 'km'), binary_double_max_normal);
+   l_length_min                  binary_double := nvl(cwms_util.convert_units(p_length_min, p_station_unit, 'km'), -binary_double_max_normal);
+   l_length_max                  binary_double := nvl(cwms_util.convert_units(p_length_max, p_station_unit, 'km'), binary_double_max_normal);
+   l_average_slope_min           binary_double := nvl(p_average_slope_min, -binary_double_max_normal);
+   l_average_slope_max           binary_double := nvl(p_average_slope_max, binary_double_max_normal);
 begin
    open p_stream_catalog for
       select stream.office_id,
@@ -525,12 +525,12 @@ begin
                         when zero_station = 'US' then 'F'
                       end as stationing_starts_ds,
                       receiving_stream_code,
-                      cwms_util.convert_units(confluence_station, 'km', cwms_util.get_unit_id(p_station_units, o.office_id)) as flows_into_station,
+                      cwms_util.convert_units(confluence_station, 'km', cwms_util.get_unit_id(p_station_unit, o.office_id)) as flows_into_station,
                       confluence_bank as flows_into_bank,
                       diverting_stream_code,
-                      cwms_util.convert_units(diversion_station, 'km', cwms_util.get_unit_id(p_station_units, o.office_id)) as diverts_from_station,
+                      cwms_util.convert_units(diversion_station, 'km', cwms_util.get_unit_id(p_station_unit, o.office_id)) as diverts_from_station,
                       diversion_bank as diverts_from_bank,
-                      cwms_util.convert_units(stream_length, 'km', cwms_util.get_unit_id(p_station_units, o.office_id)) as stream_length,
+                      cwms_util.convert_units(stream_length, 'km', cwms_util.get_unit_id(p_station_unit, o.office_id)) as stream_length,
                       average_slope,
                       comments
                  from at_physical_location pl,
@@ -544,17 +544,13 @@ begin
                   and bl.db_office_code = o.office_code
                   and pl.base_location_code = bl.base_location_code
                   and s.stream_location_code = pl.location_code
-                  and (not cwms_util.convert_units(confluence_station, 'km', cwms_util.get_unit_id(p_station_units, o.office_id)) < l_flows_into_station_min) 
-                  and (not cwms_util.convert_units(confluence_station, 'km', cwms_util.get_unit_id(p_station_units, o.office_id)) > l_flows_into_station_max)
-                  and confluence_bank like l_flows_into_bank_mask 
-                  and (not cwms_util.convert_units(diversion_station, 'km', cwms_util.get_unit_id(p_station_units, o.office_id)) < l_diverts_from_station_min) 
-                  and (not cwms_util.convert_units(diversion_station, 'km', cwms_util.get_unit_id(p_station_units, o.office_id)) > l_diverts_from_station_max)
-                  and diversion_bank like l_diverts_from_bank_mask 
-                  and (not cwms_util.convert_units(stream_length, 'km', cwms_util.get_unit_id(p_station_units, o.office_id)) < l_length_min) 
-                  and (not cwms_util.convert_units(stream_length, 'km', cwms_util.get_unit_id(p_station_units, o.office_id)) > l_length_max) 
-                  and (not average_slope < l_average_slope_min) 
-                  and (not average_slope > l_average_slope_max)
-                  and upper(comments) like l_comments_mask escape '\'
+                  and nvl(confluence_station, l_flows_into_station_min) between l_flows_into_station_min and l_flows_into_station_max
+                  and nvl(confluence_bank, '%') like l_flows_into_bank_mask
+                  and nvl(diversion_station, l_diverts_from_station_min) between l_diverts_from_station_min and l_diverts_from_station_max
+                  and nvl(diversion_bank, '%') like l_diverts_from_bank_mask
+                  and nvl(stream_length, l_length_min) between l_length_min and l_length_max
+                  and nvl(average_slope, l_average_slope_min) between l_average_slope_min and l_average_slope_max
+                  and upper(nvl(comments, '%')) like l_comments_mask escape '\'
             ) stream
             left outer join
             (  select bl.base_location_id
@@ -591,7 +587,7 @@ end cat_streams;
 --------------------------------------------------------------------------------
 function cat_streams_f(          
    p_stream_id_mask              in varchar2 default '*',
-   p_station_units               in varchar2 default 'km',
+   p_station_unit               in varchar2 default 'km',
    p_stationing_starts_ds_mask   in varchar2 default '*',
    p_flows_into_stream_id_mask   in varchar2 default '*',
    p_flows_into_station_min      in binary_double default null,
@@ -614,7 +610,7 @@ begin
    cat_streams(
       l_cursor,
       p_stream_id_mask,
-      p_station_units,
+      p_station_unit,
       p_stationing_starts_ds_mask,
       p_flows_into_stream_id_mask,
       p_flows_into_station_min,
@@ -1284,9 +1280,9 @@ is
    l_stream_id_mask   varchar2(49) := cwms_util.normalize_wildcards(upper(p_stream_id_mask)); 
    l_location_id_mask varchar2(49) := cwms_util.normalize_wildcards(upper(p_location_id_mask)); 
    l_office_id_mask   varchar2(16) := cwms_util.normalize_wildcards(upper(nvl(p_office_id_mask, cwms_util.user_office_id)));
-   l_station_unit     varchar2(16) := nvl(p_station_unit, 'km');
-   l_stage_unit       varchar2(16) := nvl(p_station_unit, 'm');
-   l_area_unit        varchar2(16) := nvl(p_station_unit, 'm2');
+   l_station_unit     varchar2(16) := cwms_util.get_unit_id(nvl(p_station_unit, 'km'));
+   l_stage_unit       varchar2(16) := cwms_util.get_unit_id(nvl(p_stage_unit, 'm'));
+   l_area_unit        varchar2(16) := cwms_util.get_unit_id(nvl(p_area_unit, 'm2'));
 begin
     open p_stream_location_catalog for
       select o.office_id,
@@ -1296,36 +1292,34 @@ begin
              bl2.base_location_id
              ||substr('-', 1, length(pl2.sub_location_id))
              ||pl2.sub_location_id as location_id,
-             cwms_util.convert_units(sl.station, 'km', cwms_util.get_unit_id(l_station_unit, o.office_id)) as station,
-             cwms_util.convert_units(sl.published_station, 'km', cwms_util.get_unit_id(l_station_unit, o.office_id)) as pulished_station,
-             cwms_util.convert_units(sl.navigation_station, 'km', cwms_util.get_unit_id(l_station_unit, o.office_id)) as navigation_station,
-             sl.bank,
-             cwms_util.convert_units(sl.lowest_measurable_stage, 'm', cwms_util.get_unit_id(l_stage_unit, o.office_id)) as lowest_measurable_stage,
-             cwms_util.convert_units(sl.drainage_area, 'm2', cwms_util.get_unit_id(l_area_unit, o.office_id)) as drainage_area,
-             cwms_util.convert_units(sl.ungaged_area, 'm2', cwms_util.get_unit_id(l_area_unit, o.office_id)) as ungaged_area,
-             cwms_util.get_unit_id(l_station_unit, o.office_id) as station_unit,
-             cwms_util.get_unit_id(l_stage_unit, o.office_id) as stage_unit,
-             cwms_util.get_unit_id(l_area_unit, o.office_id) as area_unit
+             cwms_util.convert_units(station, 'km', l_station_unit) as station,
+             cwms_util.convert_units(published_station, 'km', l_station_unit) as published_station,
+             cwms_util.convert_units(navigation_station, 'km', l_station_unit) as navigation_station,
+             bank,
+             cwms_util.convert_units(lowest_measurable_stage, 'm', l_stage_unit) as lowest_measurable_stage,
+             cwms_util.convert_units(drainage_area, 'm2', l_area_unit) as drainage_area,
+             cwms_util.convert_units(ungaged_area, 'm2', l_area_unit) as ungaged_drainage_area,
+             l_station_unit as station_unit,
+             l_stage_unit as stage_unit,
+             l_area_unit as area_unit
         from at_physical_location pl1,
              at_physical_location pl2,
              at_base_location bl1,
              at_base_location bl2,
              at_stream_location sl,
              cwms_office o
-       where o.office_id like l_office_id_mask escape '\'
-         and bl1.db_office_code = o.office_code              
+       where pl1.location_code = sl.stream_location_code
+         and bl1.base_location_code = pl1.base_location_code
          and upper(bl1.base_location_id
              ||substr('-', 1, length(pl1.sub_location_id))
-             ||pl1.sub_location_id) like l_stream_id_mask escape '\'
-         and bl2.db_office_code = o.office_code              
+             ||pl1.sub_location_id) like l_stream_id_mask escape '\' 
+         and pl2.location_code = sl.location_code
+         and bl2.base_location_code = pl2.base_location_code
          and upper(bl2.base_location_id
              ||substr('-', 1, length(pl2.sub_location_id))
-             ||pl2.sub_location_id) like l_location_id_mask escape '\'
-    order by bl1.base_location_id,
-             pl1.sub_location_id,
-             sl.station,           -- if station is not null
-             bl2.base_location_id, -- if station is null
-             pl2.sub_location_id;  -- if station is null           
+             ||pl2.sub_location_id) like l_stream_id_mask escape '\'
+         and o.office_code = bl1.db_office_code    
+       order by 1, 2, 4, 3;
 end cat_stream_locations;   
    
 --------------------------------------------------------------------------------
@@ -1365,9 +1359,9 @@ function get_next_location_code_f(
    p_station      in binary_double default null) -- in km
    return number   
 is
-   l_direction        varchar2(2);
-   l_zero_station     varchar2(2);
-   l_us_location_code number(10);
+   l_direction          varchar2(2);
+   l_zero_station       varchar2(2);
+   l_next_location_code number(10);
 begin
    -------------------
    -- sanity checks --
@@ -1392,29 +1386,39 @@ begin
    
    begin
       if l_zero_station = l_direction then
+         ------------------------------------------
+         -- get location with next lower station --
+         ------------------------------------------
          select location_code
-           into l_us_location_code
+           into l_next_location_code
            from at_stream_location
-          where station = 
-                ( select min(station)
-                   from at_stream_location
-                   where station < nvl(p_station, binary_double_max_normal)
+          where stream_location_code = p_stream_code
+            and station = 
+                (select max(station)
+                  from at_stream_location
+                  where stream_location_code = p_stream_code
+                    and station < nvl(p_station, binary_double_max_normal)
                 );
       else
+         -------------------------------------------
+         -- get location with next higher station --
+         -------------------------------------------
          select location_code
-           into l_us_location_code
+           into l_next_location_code
            from at_stream_location
-          where station = 
-                ( select min(station)
-                   from at_stream_location
-                   where station > nvl(p_station, -binary_double_max_normal)
+          where stream_location_code = p_stream_code
+            and station = 
+                (select min(station)
+                  from at_stream_location
+                  where stream_location_code = p_stream_code
+                    and station > nvl(p_station, -binary_double_max_normal)
                 );
       end if;
    exception
       when no_data_found then null;
-   end;      
+   end;
    
-   return l_us_location_code;    
+   return l_next_location_code;    
 end get_next_location_code_f;   
 
 --------------------------------------------------------------------------------
@@ -1490,7 +1494,7 @@ begin
              bulk collect into l_stream_codes
         from at_stream
        where diverting_stream_code = p_stream_code
-         and confluence_station between l_station_1 and l_station_2;
+         and diversion_station between l_station_1 and l_station_2;
    end if;      
       
    return l_stream_codes;            
@@ -1543,7 +1547,8 @@ procedure get_us_location_codes(
    p_location_codes   in out nocopy number_tab_t,
    p_stream_code      in number,
    p_station          in binary_double, -- in km
-   p_all_us_locations in boolean default false)
+   p_all_us_locations in boolean default false,
+   p_same_stream_only in boolean default false)
 is
    l_location_code  number(10);
    l_stream_codes   number_tab_t;
@@ -1583,7 +1588,8 @@ begin
             p_location_codes,
             p_stream_code,
             l_station,
-            true);
+            true,
+            p_same_stream_only);
       end if;        
    else
       ---------------------------------------------------------------------------
@@ -1595,36 +1601,59 @@ begin
          l_station := -binary_double_max_normal;
       end if;
    end if;
-   -----------------------------------------------------------------------                
-   -- find all tribs that flow into this one upstream of here but below --
-   -- the next upstream location (if any)                               --
-   -----------------------------------------------------------------------                
-   l_stream_codes := get_confluences_between_f(p_stream_code, p_station, l_station);
-   if l_stream_codes is not null then
-      for i in 1..l_stream_codes.count loop
-         ----------------------------------------------
-         -- set the station to beyond the confluence --
-         -- (taking station direction into account)  --
-         ----------------------------------------------
-         select zero_station
-           into l_zero_station
+   if not p_same_stream_only then
+      -----------------------------------------------------------------------                
+      -- find all tribs that flow into this one upstream of here but below --
+      -- the next upstream location (if any)                               --
+      -----------------------------------------------------------------------                
+      l_stream_codes := get_confluences_between_f(p_stream_code, p_station, l_station);
+      if l_stream_codes is not null and l_stream_codes.count > 0 then
+         for i in 1..l_stream_codes.count loop
+            ----------------------------------------------
+            -- set the station to beyond the confluence --
+            -- (taking station direction into account)  --
+            ----------------------------------------------
+            select zero_station
+              into l_zero_station
+              from at_stream
+             where stream_location_code = l_stream_codes(i);
+             
+            if l_zero_station = 'DS' then
+               l_station := -binary_double_max_normal;
+            else
+               l_station := binary_double_max_normal;
+            end if;
+            ------------------------------------------------
+            -- get all the upstream stations on the tribs --
+            ------------------------------------------------
+            get_us_location_codes(
+               p_location_codes,
+               l_stream_codes(i),
+               l_station,
+               p_all_us_locations);         
+         end loop;
+      end if;
+      ---------------------------------------------------------------
+      -- at the head - continue up diverting stream if appropriate --
+      ---------------------------------------------------------------
+      if l_station in (binary_double_max_normal, -binary_double_max_normal) and
+         (p_all_us_locations or p_location_codes.count = 0)
+      then
+         l_stream_codes := number_tab_t(null);
+         select diverting_stream_code,
+                diversion_station
+           into l_stream_codes(1),
+                l_station
            from at_stream
-          where stream_location_code = l_stream_codes(i);
-          
-         if l_zero_station = 'DS' then
-            l_station := -binary_double_max_normal;
-         else
-            l_station := binary_double_max_normal;
+          where stream_location_code = p_stream_code;
+         if l_stream_codes(1) is not null then
+            get_us_location_codes(
+               p_location_codes,
+               l_stream_codes(1),
+               l_station,
+               p_all_us_locations);         
          end if;
-         ------------------------------------------------
-         -- get all the upstream stations on the tribs --
-         ------------------------------------------------
-         get_us_location_codes(
-            p_location_codes,
-            l_stream_codes(i),
-            l_station,
-            p_all_us_locations);         
-      end loop;
+      end if;
    end if;
 end get_us_location_codes;   
 
@@ -1637,7 +1666,8 @@ procedure get_ds_location_codes(
    p_location_codes   in out nocopy number_tab_t,
    p_stream_code      in number,
    p_station          in binary_double, -- in km
-   p_all_ds_locations in boolean default false)
+   p_all_ds_locations in boolean default false,
+   p_same_stream_only in boolean default false)
 is
    l_location_code  number(10);
    l_stream_codes   number_tab_t;
@@ -1677,7 +1707,8 @@ begin
             p_location_codes,
             p_stream_code,
             l_station,
-            true);
+            true,
+            p_same_stream_only);
       end if;        
    else
       -------------------------------------------------------------------------------
@@ -1689,36 +1720,59 @@ begin
          l_station := binary_double_max_normal;
       end if;
    end if;
-   ------------------------------------------------------------------------------                
-   -- find all diversions that flow out of this one upstream of here but below --
-   -- the next upstream location (if any)                                      --
-   ------------------------------------------------------------------------------                
-   l_stream_codes := get_bifurcations_between_f(p_stream_code, p_station, l_station);
-   if l_stream_codes is not null then
-      for i in 1..l_stream_codes.count loop
-         ---------------------------------------------------
-         -- set the station to beyond the upstream extent --
-         -- (taking station direction into account)       --
-         ---------------------------------------------------
-         select zero_station
-           into l_zero_station
+   if not p_same_stream_only then
+      --------------------------------------------------------------------------------                
+      -- find all diversions that flow out of this one downstream of here but above --
+      -- the next downstream location (if any)                                      --
+      --------------------------------------------------------------------------------                
+      l_stream_codes := get_bifurcations_between_f(p_stream_code, p_station, l_station);
+      if l_stream_codes is not null and l_stream_codes.count > 0 then
+         for i in 1..l_stream_codes.count loop
+            ---------------------------------------------------
+            -- set the station to beyond the upstream extent --
+            -- (taking station direction into account)       --
+            ---------------------------------------------------
+            select zero_station
+              into l_zero_station
+              from at_stream
+             where stream_location_code = l_stream_codes(i);
+             
+            if l_zero_station = 'DS' then
+               l_station := binary_double_max_normal;
+            else
+               l_station := -binary_double_max_normal;
+            end if;
+            -------------------------------------------------------
+            -- get all the downstream stations on the diversions --
+            -------------------------------------------------------
+            get_ds_location_codes(
+               p_location_codes,
+               l_stream_codes(i),
+               l_station,
+               p_all_ds_locations);         
+         end loop;
+      end if;
+      ------------------------------------------------------------------
+      -- at the mouth - continue down receiving stream if appropriate --
+      ------------------------------------------------------------------
+      if l_station in (binary_double_max_normal, -binary_double_max_normal) and
+         (p_all_ds_locations or p_location_codes.count = 0)
+      then
+         l_stream_codes := number_tab_t(null);
+         select receiving_stream_code,
+                confluence_station
+           into l_stream_codes(1),
+                l_station
            from at_stream
-          where stream_location_code = l_stream_codes(i);
-          
-         if l_zero_station = 'DS' then
-            l_station := binary_double_max_normal;
-         else
-            l_station := -binary_double_max_normal;
+          where stream_location_code = p_stream_code;
+         if l_stream_codes(1) is not null then
+            get_ds_location_codes(
+               p_location_codes,
+               l_stream_codes(1),
+               l_station,
+               p_all_ds_locations);         
          end if;
-         -------------------------------------------------------
-         -- get all the downstream stations on the diversions --
-         -------------------------------------------------------
-         get_ds_location_codes(
-            p_location_codes,
-            l_stream_codes(i),
-            l_station,
-            p_all_ds_locations);         
-      end loop;
+      end if;
    end if;
 end get_ds_location_codes;
 
@@ -1731,6 +1785,7 @@ procedure get_us_locations(
    p_station          in  binary_double,
    p_station_unit     in  varchar2,
    p_all_us_locations in  varchar2 default 'F',
+   p_same_stream_only in  varchar2 default 'F',
    p_office_id        in  varchar2 default null)
 is
    l_office_id      varchar2(16);
@@ -1760,17 +1815,19 @@ begin
       l_location_codes,
       l_stream_code,
       cwms_util.convert_units(p_station, cwms_util.get_unit_id(p_station_unit), 'km'),
-      cwms_util.is_true(p_all_us_locations));
+      cwms_util.is_true(p_all_us_locations),
+      cwms_util.is_true(p_same_stream_only));
    select bl.base_location_id
           ||substr('-', 1, length(pl.sub_location_id))
           ||pl.sub_location_id
           bulk collect
      into p_us_locations
-     from at_stream s,
+     from table(l_location_codes) lc,
+          at_stream_location sl,
           at_physical_location pl,      
           at_base_location bl
-    where s.stream_location_code in (select * from table(l_location_codes))
-      and pl.location_code = s.stream_location_code
+    where sl.location_code = lc.column_value
+      and pl.location_code = sl.location_code
       and bl.base_location_code = pl.base_location_code; 
 end get_us_locations;      
 
@@ -1782,6 +1839,7 @@ function get_us_locations_f(
    p_station          in binary_double,
    p_station_unit     in varchar2,
    p_all_us_locations in varchar2 default 'F',
+   p_same_stream_only in varchar2 default 'F',
    p_office_id        in varchar2 default null)
    return str_tab_t
 is
@@ -1793,7 +1851,10 @@ begin
       p_station,
       p_station_unit,
       p_all_us_locations,
+      p_same_stream_only,
       p_office_id);
+      
+   return l_locations;      
 end get_us_locations_f;   
 
 --------------------------------------------------------------------------------
@@ -1805,6 +1866,7 @@ procedure get_ds_locations(
    p_station          in  binary_double,
    p_station_unit     in  varchar2,
    p_all_ds_locations in  varchar2 default 'F',
+   p_same_stream_only in  varchar2 default 'F',
    p_office_id        in  varchar2 default null)
 is   
    l_office_id      varchar2(16);
@@ -1834,17 +1896,19 @@ begin
       l_location_codes,
       l_stream_code,
       cwms_util.convert_units(p_station, cwms_util.get_unit_id(p_station_unit), 'km'),
-      cwms_util.is_true(p_all_ds_locations));
+      cwms_util.is_true(p_all_ds_locations),
+      cwms_util.is_true(p_same_stream_only));
    select bl.base_location_id
           ||substr('-', 1, length(pl.sub_location_id))
           ||pl.sub_location_id
           bulk collect
      into p_ds_locations
-     from at_stream s,
+     from table(l_location_codes) lc,
+          at_stream_location sl,
           at_physical_location pl,      
           at_base_location bl
-    where s.stream_location_code in (select * from table(l_location_codes))
-      and pl.location_code = s.stream_location_code
+    where sl.location_code = lc.column_value
+      and pl.location_code = sl.location_code
       and bl.base_location_code = pl.base_location_code; 
 end get_ds_locations;      
 
@@ -1856,6 +1920,7 @@ function get_ds_locations_f(
    p_station          in binary_double,
    p_station_unit     in varchar2,
    p_all_ds_locations in varchar2 default 'F',
+   p_same_stream_only in varchar2 default 'F',
    p_office_id        in varchar2 default null)
    return str_tab_t
 is
@@ -1867,7 +1932,10 @@ begin
       p_station,
       p_station_unit,
       p_all_ds_locations,
+      p_same_stream_only,
       p_office_id);
+      
+   return l_locations;      
 end get_ds_locations_f;
 
 --------------------------------------------------------------------------------
@@ -1875,9 +1943,9 @@ end get_ds_locations_f;
 --------------------------------------------------------------------------------
 procedure get_us_locations(
    p_us_locations     out str_tab_t,
-   p_stream_id        in  varchar2,
    p_location_id      in  varchar2,
    p_all_us_locations in  varchar2 default 'F',
+   p_same_stream_only in  varchar2 default 'F',
    p_office_id        in  varchar2 default null)
 is
    l_station       binary_double;
@@ -1894,24 +1962,18 @@ begin
          '<NULL>',
          'CWMS location identifier.');
    end if;
-   if p_stream_id is null then
-      cwms_err.raise(
-         'INVALID_ITEM',
-         '<NULL>',
-         'CWMS stream identifier.');
-   end if;
    -------------------------------
    -- get the codes and station --
    -------------------------------
    l_office_id := nvl(upper(p_office_id), cwms_util.user_office_id);
    l_location_code := cwms_loc.get_location_code(l_office_id, p_location_id);
-   l_stream_code := get_stream_code(l_office_id, p_stream_id);
    begin
-      select station
-        into l_station
+      select stream_location_code,
+             station
+        into l_stream_code,
+             l_station
         from at_stream_location
-       where location_code = l_location_code
-         and stream_location_code = l_stream_code;
+       where location_code = l_location_code;
    exception
       when no_data_found then
          cwms_err.raise(
@@ -1920,20 +1982,18 @@ begin
             ||l_office_id
             ||'/'
             ||p_location_id
-            ||' does not exist as a stream location on stream '
-            ||l_office_id
-            ||'/'
-            ||p_stream_id);
+            ||' is not a stream location');
    end; 
    -----------------------------  
    -- call the base procedure --
    -----------------------------
    get_us_locations(
       p_us_locations,
-      p_stream_id,
+      cwms_loc.get_location_id(l_stream_code),
       l_station,
       'km',
       p_all_us_locations,
+      p_same_stream_only,
       l_office_id);
 end get_us_locations;   
 
@@ -1941,9 +2001,9 @@ end get_us_locations;
 -- funtion get_us_locations_f 
 --------------------------------------------------------------------------------
 function get_us_locations_f(
-   p_stream_id        in varchar2,
    p_location_id      in varchar2,
    p_all_us_locations in varchar2 default 'F',
+   p_same_stream_only in varchar2 default 'F',
    p_office_id        in varchar2 default null)
    return str_tab_t
 is
@@ -1951,9 +2011,9 @@ is
 begin
    get_us_locations(
       l_us_locations,
-      p_stream_id,
       p_location_id,
       p_all_us_locations,
+      p_same_stream_only,
       p_office_id);
       
    return l_us_locations;      
@@ -1964,9 +2024,9 @@ end get_us_locations_f;
 --------------------------------------------------------------------------------
 procedure get_ds_locations(
    p_ds_locations     out str_tab_t,
-   p_stream_id        in  varchar2,
    p_location_id      in  varchar2,
    p_all_ds_locations in  varchar2 default 'F',
+   p_same_stream_only in  varchar2 default 'F',
    p_office_id        in  varchar2 default null)
 is   
    l_station       binary_double;
@@ -1983,24 +2043,18 @@ begin
          '<NULL>',
          'CWMS location identifier.');
    end if;
-   if p_stream_id is null then
-      cwms_err.raise(
-         'INVALID_ITEM',
-         '<NULL>',
-         'CWMS stream identifier.');
-   end if;
    -------------------------------
    -- get the codes and station --
    -------------------------------
    l_office_id := nvl(upper(p_office_id), cwms_util.user_office_id);
    l_location_code := cwms_loc.get_location_code(l_office_id, p_location_id);
-   l_stream_code := get_stream_code(l_office_id, p_stream_id);
    begin
-      select station
-        into l_station
+      select stream_location_code,
+             station
+        into l_stream_code,
+             l_station
         from at_stream_location
-       where location_code = l_location_code
-         and stream_location_code = l_stream_code;
+       where location_code = l_location_code;
    exception
       when no_data_found then
          cwms_err.raise(
@@ -2009,29 +2063,28 @@ begin
             ||l_office_id
             ||'/'
             ||p_location_id
-            ||' does not exist as a stream location on stream '
-            ||l_office_id
-            ||'/'
-            ||p_stream_id);
+            ||' is not a stream location');
    end; 
    -----------------------------  
    -- call the base procedure --
    -----------------------------
    get_ds_locations(
       p_ds_locations,
-      p_stream_id,
+      cwms_loc.get_location_id(l_stream_code),
       l_station,
       'km',
       p_all_ds_locations,
+      p_same_stream_only,
       l_office_id);
 end get_ds_locations;
+
 --------------------------------------------------------------------------------
--- funtion get_ds_locations_f 
+-- function get_ds_locations_f 
 --------------------------------------------------------------------------------
 function get_ds_locations_f(
-   p_stream_id        in varchar2,
    p_location_id      in varchar2,
    p_all_ds_locations in varchar2 default 'F',
+   p_same_stream_only in varchar2 default 'F',
    p_office_id        in varchar2 default null)
    return str_tab_t
 is
@@ -2039,14 +2092,371 @@ is
 begin
    get_ds_locations(
       l_ds_locations,
-      p_stream_id,
       p_location_id,
       p_all_ds_locations,
+      p_same_stream_only,
       p_office_id);
       
    return l_ds_locations;      
 end get_ds_locations_f;   
+
+--------------------------------------------------------------------------------
+-- procedure get_us_locations2
+--------------------------------------------------------------------------------
+procedure get_us_locations2(
+   p_us_locations     out sys_refcursor,
+   p_stream_id        in  varchar,
+   p_station          in  binary_double,
+   p_station_unit     in  varchar,
+   p_all_us_locations in  varchar default 'F',
+   p_same_stream_only in  varchar default 'F',
+   p_office_id        in  varchar default null)
+is
+   l_locations str_tab_t;
+begin
+   l_locations := get_us_locations_f(
+      p_stream_id,
+      p_station,
+      p_station_unit,
+      p_all_us_locations,
+      p_same_stream_only,
+      p_office_id);
    
+   open p_us_locations for
+      select loc.column_value as location_id,
+             cwms_loc.get_location_id(sl.stream_location_code) as stream_id,
+             cwms_util.convert_units(sl.station, 'km', p_station_unit) as station,
+             sl.bank
+        from table(l_locations) loc,
+             at_stream_location sl
+       where sl.location_code = cwms_loc.get_location_code(p_office_id, loc.column_value);      
+end get_us_locations2;
+
+--------------------------------------------------------------------------------
+-- function get_us_locations2_f
+--------------------------------------------------------------------------------
+function get_us_locations2_f(
+   p_stream_id        in varchar,
+   p_station          in binary_double,
+   p_station_unit     in varchar,
+   p_all_us_locations in varchar default 'F',
+   p_same_stream_only in varchar default 'F',
+   p_office_id        in varchar default null)
+   return sys_refcursor
+is
+   l_us_locations sys_refcursor;
+begin
+   get_us_locations2(
+      l_us_locations,
+      p_stream_id,
+      p_station,
+      p_station_unit,
+      p_all_us_locations,
+      p_same_stream_only,
+      p_office_id);
+   
+   return l_us_locations;
+end get_us_locations2_f;
+
+--------------------------------------------------------------------------------
+-- procedure get_ds_locations2
+--------------------------------------------------------------------------------
+procedure get_ds_locations2(
+   p_ds_locations     out sys_refcursor,
+   p_stream_id        in  varchar,
+   p_station          in  binary_double,
+   p_station_unit     in  varchar,
+   p_all_ds_locations in  varchar default 'F',
+   p_same_stream_only in  varchar default 'F',
+   p_office_id        in  varchar default null)
+is
+   l_locations str_tab_t;
+begin
+   l_locations := get_ds_locations_f(
+      p_stream_id,
+      p_station,
+      p_station_unit,
+      p_all_ds_locations,
+      p_same_stream_only,
+      p_office_id);
+   
+   open p_ds_locations for
+      select loc.column_value as location_id,
+             cwms_loc.get_location_id(sl.stream_location_code) as stream_id,
+             cwms_util.convert_units(sl.station, 'km', p_station_unit) as station,
+             sl.bank
+        from table(l_locations) loc,
+             at_stream_location sl
+       where sl.location_code = cwms_loc.get_location_code(p_office_id, loc.column_value);      
+end get_ds_locations2;
+
+--------------------------------------------------------------------------------
+-- function get_ds_locations2_f
+--------------------------------------------------------------------------------
+function get_ds_locations2_f(
+   p_stream_id        in varchar,
+   p_station          in binary_double,
+   p_station_unit     in varchar,
+   p_all_ds_locations in varchar default 'F',
+   p_same_stream_only in varchar default 'F',
+   p_office_id        in varchar default null)
+   return sys_refcursor
+is
+   l_ds_locations sys_refcursor;
+begin
+   get_ds_locations2(
+      l_ds_locations,
+      p_stream_id,
+      p_station,
+      p_station_unit,
+      p_all_ds_locations,
+      p_same_stream_only,
+      p_office_id);
+   
+   return l_ds_locations;
+end get_ds_locations2_f;
+
+--------------------------------------------------------------------------------
+-- procedure get_us_locations2
+--------------------------------------------------------------------------------
+procedure get_us_locations2(
+   p_us_locations     out sys_refcursor,
+   p_location_id      in  varchar,
+   p_station_unit     in  varchar,
+   p_all_us_locations in  varchar default 'F',
+   p_same_stream_only in  varchar default 'F',
+   p_office_id        in  varchar default null)
+is
+   l_locations str_tab_t;
+begin
+   l_locations := get_us_locations_f(
+      p_location_id,
+      p_all_us_locations,
+      p_same_stream_only,
+      p_office_id);
+   
+   open p_us_locations for
+      select loc.column_value as location_id,
+             cwms_loc.get_location_id(sl.stream_location_code) as stream_id,
+             cwms_util.convert_units(sl.station, 'km', p_station_unit) as station,
+             sl.bank
+        from table(l_locations) loc,
+             at_stream_location sl
+       where sl.location_code = cwms_loc.get_location_code(p_office_id, loc.column_value);      
+end get_us_locations2;
+
+--------------------------------------------------------------------------------
+-- function get_us_locations2_f
+--------------------------------------------------------------------------------
+function get_us_locations2_f(
+   p_location_id      in varchar,
+   p_station_unit     in varchar,
+   p_all_us_locations in varchar default 'F',
+   p_same_stream_only in varchar default 'F',
+   p_office_id        in varchar default null)
+   return sys_refcursor
+is
+   l_us_locations sys_refcursor;
+begin
+   get_us_locations2(
+      l_us_locations,
+      p_location_id,
+      p_station_unit,
+      p_all_us_locations,
+      p_same_stream_only,
+      p_office_id);
+      
+   return l_us_locations;      
+end get_us_locations2_f;   
+
+--------------------------------------------------------------------------------
+-- procedure get_ds_locations2
+--------------------------------------------------------------------------------
+procedure get_ds_locations2(
+   p_ds_locations     out sys_refcursor,
+   p_location_id      in  varchar,
+   p_station_unit     in  varchar,
+   p_all_ds_locations in  varchar default 'F',
+   p_same_stream_only in  varchar default 'F',
+   p_office_id        in  varchar default null)
+is
+   l_locations str_tab_t;
+begin
+   l_locations := get_ds_locations_f(
+      p_location_id,
+      p_all_ds_locations,
+      p_same_stream_only,
+      p_office_id);
+   
+   open p_ds_locations for
+      select loc.column_value as location_id,
+             cwms_loc.get_location_id(sl.stream_location_code) as stream_id,
+             cwms_util.convert_units(sl.station, 'km', p_station_unit) as station,
+             sl.bank
+        from table(l_locations) loc,
+             at_stream_location sl
+       where sl.location_code = cwms_loc.get_location_code(p_office_id, loc.column_value);      
+end get_ds_locations2;
+
+--------------------------------------------------------------------------------
+-- function get_ds_locations2_f
+--------------------------------------------------------------------------------
+function get_ds_locations2_f(
+   p_location_id      in varchar,
+   p_station_unit     in varchar,
+   p_all_ds_locations in varchar default 'F',
+   p_same_stream_only in varchar default 'F',
+   p_office_id        in varchar default null)
+   return sys_refcursor
+is
+   l_ds_locations sys_refcursor;
+begin
+   get_ds_locations2(
+      l_ds_locations,
+      p_location_id,
+      p_station_unit,
+      p_all_ds_locations,
+      p_same_stream_only,
+      p_office_id);
+      
+   return l_ds_locations;      
+end get_ds_locations2_f;
+
+--------------------------------------------------------------------------------
+-- function is_upstream_of 
+--------------------------------------------------------------------------------
+function is_upstream_of(
+   p_stream_id    in varchar2,
+   p_station      in binary_double,
+   p_station_unit in varchar2,
+   p_location_id  in varchar2,
+   p_office_id    in varchar2 default null)
+   return varchar2
+is
+   l_result       varchar2(1);
+   l_location_ids str_tab_t;
+   l_count        pls_integer;
+begin
+   l_location_ids := get_us_locations_f(
+      p_stream_id        => p_stream_id,
+      p_station          => p_station,
+      p_station_unit     => p_station_unit,
+      p_all_us_locations => 'T',
+      p_same_stream_only => 'F',
+      p_office_id        => p_office_id);
+   
+   select count(*)
+     into l_count
+     from table(l_location_ids)
+    where upper(column_value) = upper(p_location_id);
+    
+   if l_count > 0 then
+      l_result := 'T';
+   else 
+      l_result := 'F';
+   end if;
+   return l_result;      
+end is_upstream_of;
+   
+--------------------------------------------------------------------------------
+-- function is_upstream_of 
+--------------------------------------------------------------------------------
+function is_upstream_of(
+   p_anchor_location_id in varchar2,
+   p_location_id        in varchar2,
+   p_office_id          in varchar2 default null)
+   return varchar2
+is
+   l_result       varchar2(1);
+   l_location_ids str_tab_t;
+   l_count        pls_integer;
+begin
+   l_location_ids := get_us_locations_f(
+      p_location_id      => p_anchor_location_id,
+      p_all_us_locations => 'T',
+      p_same_stream_only => 'F',
+      p_office_id        => p_office_id);
+   
+   select count(*)
+     into l_count
+     from table(l_location_ids)
+    where upper(column_value) = upper(p_location_id);
+    
+   if l_count > 0 then
+      l_result := 'T';
+   else 
+      l_result := 'F';
+   end if;
+   return l_result;      
+end is_upstream_of; 
+
+--------------------------------------------------------------------------------
+-- function is_downstream_of 
+--------------------------------------------------------------------------------
+function is_downstream_of(
+   p_stream_id    in varchar2,
+   p_station      in binary_double,
+   p_station_unit in varchar2,
+   p_location_id  in varchar2,
+   p_office_id    in varchar2 default null)
+   return varchar2
+is
+   l_result       varchar2(1);
+   l_location_ids str_tab_t;
+   l_count        pls_integer;
+begin
+   l_location_ids := get_ds_locations_f(
+      p_stream_id        => p_stream_id,
+      p_station          => p_station,
+      p_station_unit     => p_station_unit,
+      p_all_ds_locations => 'T',
+      p_same_stream_only => 'F',
+      p_office_id        => p_office_id);
+   
+   select count(*)
+     into l_count
+     from table(l_location_ids)
+    where upper(column_value) = upper(p_location_id);
+    
+   if l_count > 0 then
+      l_result := 'T';
+   else 
+      l_result := 'F';
+   end if;
+   return l_result;      
+end is_downstream_of;
+   
+--------------------------------------------------------------------------------
+-- function is_downstream_of 
+--------------------------------------------------------------------------------
+function is_downstream_of(
+   p_anchor_location_id in varchar2,
+   p_location_id        in varchar2,
+   p_office_id          in varchar2 default null)
+   return varchar2
+is
+   l_result       varchar2(1);
+   l_location_ids str_tab_t;
+   l_count        pls_integer;
+begin
+   l_location_ids := get_ds_locations_f(
+      p_location_id      => p_anchor_location_id,
+      p_all_ds_locations => 'T',
+      p_same_stream_only => 'F',
+      p_office_id        => p_office_id);
+   
+   select count(*)
+     into l_count
+     from table(l_location_ids)
+    where upper(column_value) = upper(p_location_id);
+    
+   if l_count > 0 then
+      l_result := 'T';
+   else 
+      l_result := 'F';
+   end if;
+   return l_result;      
+end is_downstream_of; 
 
 --------------------------------------------------------------------------------
 -- store_streamflow_meas_xml 
