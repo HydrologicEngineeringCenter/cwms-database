@@ -1317,7 +1317,7 @@ begin
          and bl2.base_location_code = pl2.base_location_code
          and upper(bl2.base_location_id
              ||substr('-', 1, length(pl2.sub_location_id))
-             ||pl2.sub_location_id) like l_stream_id_mask escape '\'
+             ||pl2.sub_location_id) like l_location_id_mask escape '\'
          and o.office_code = bl1.db_office_code    
        order by 1, 2, 4, 3;
 end cat_stream_locations;   
