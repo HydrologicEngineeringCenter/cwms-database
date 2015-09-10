@@ -1349,19 +1349,19 @@ begin
 end cat_stream_locations_f;               
 
 --------------------------------------------------------------------------------
--- function get_next_location_code_f
+-- function get_next_location_codes_f
 --
 -- return  the next-upstream or next-downstream stream location on this stream  
 --------------------------------------------------------------------------------
-function get_next_location_code_f(
+function get_next_location_codes_f(
    p_stream_code  in number,
    p_direction    in varchar2, 
    p_station      in binary_double default null) -- in km
-   return number   
+   return number_tab_t   
 is
-   l_direction          varchar2(2);
-   l_zero_station       varchar2(2);
-   l_next_location_code number(10);
+   l_direction           varchar2(2);
+   l_zero_station        varchar2(2);
+   l_next_location_codes number_tab_t;
 begin
    -------------------
    -- sanity checks --
@@ -1390,7 +1390,8 @@ begin
          -- get location with next lower station --
          ------------------------------------------
          select location_code
-           into l_next_location_code
+           bulk collect
+           into l_next_location_codes
            from at_stream_location
           where stream_location_code = p_stream_code
             and station = 
@@ -1404,7 +1405,8 @@ begin
          -- get location with next higher station --
          -------------------------------------------
          select location_code
-           into l_next_location_code
+           bulk collect
+           into l_next_location_codes
            from at_stream_location
           where stream_location_code = p_stream_code
             and station = 
@@ -1418,36 +1420,36 @@ begin
       when no_data_found then null;
    end;
    
-   return l_next_location_code;    
-end get_next_location_code_f;   
+   return l_next_location_codes;    
+end get_next_location_codes_f;   
 
 --------------------------------------------------------------------------------
--- function get_us_location_code_f
+-- function get_us_location_codes_f
 --
 -- return  the next-upstream stream location on this stream  
 --------------------------------------------------------------------------------
-function get_us_location_code_f(
+function get_us_location_codes_f(
    p_stream_code  in number,
    p_station      in binary_double default null) -- in km
-   return number
+   return number_tab_t
 is
 begin
-   return get_next_location_code_f(p_stream_code, 'US', p_station);
-end get_us_location_code_f;      
+   return get_next_location_codes_f(p_stream_code, 'US', p_station);
+end get_us_location_codes_f;      
 
 --------------------------------------------------------------------------------
--- function get_ds_location_code_f
+-- function get_ds_location_codes_f
 --
 -- return  the next-downstream stream location on this stream  
 --------------------------------------------------------------------------------
-function get_ds_location_code_f(
+function get_ds_location_codes_f(
    p_stream_code  in number,
    p_station      in binary_double default null) -- in km
-   return number
+   return number_tab_t
 is
 begin
-   return get_next_location_code_f(p_stream_code, 'DS', p_station);
-end get_ds_location_code_f;      
+   return get_next_location_codes_f(p_stream_code, 'DS', p_station);
+end get_ds_location_codes_f;      
 
 --------------------------------------------------------------------------------
 -- function get_junctions_between_f
@@ -1550,7 +1552,7 @@ procedure get_us_location_codes(
    p_all_us_locations in boolean default false,
    p_same_stream_only in boolean default false)
 is
-   l_location_code  number(10);
+   l_location_codes number_tab_t;
    l_stream_codes   number_tab_t;
    l_zero_station   varchar2(2);
    l_station        binary_double;
@@ -1565,20 +1567,22 @@ begin
    --------------------------------------------------- 
    -- get the next upstream location on this stream --
    --------------------------------------------------- 
-   l_location_code := get_us_location_code_f(p_stream_code, p_station);
-   if l_location_code is not null then
+   l_location_codes := get_us_location_codes_f(p_stream_code, p_station);
+   if l_location_codes.count > 0 then
       ----------------------------------
       -- add the location to our list --
       ----------------------------------
-      p_location_codes.extend;
-      p_location_codes(p_location_codes.count) := l_location_code;
+      for i in 1..l_location_codes.count loop
+         p_location_codes.extend;
+         p_location_codes(p_location_codes.count) := l_location_codes(i);
+      end loop;
       ------------------------------------- 
       -- get the station of the location --
       ------------------------------------- 
       select station 
         into l_station
         from at_stream_location
-       where location_code = l_location_code
+       where location_code = l_location_codes(1) -- all same station if more than one
         and stream_location_code = p_stream_code;
       -----------------------------------------------------        
       -- get all further upstream locations if specified --
@@ -1669,7 +1673,7 @@ procedure get_ds_location_codes(
    p_all_ds_locations in boolean default false,
    p_same_stream_only in boolean default false)
 is
-   l_location_code  number(10);
+   l_location_codes number_tab_t;
    l_stream_codes   number_tab_t;
    l_zero_station   varchar2(2);
    l_station        binary_double;
@@ -1684,20 +1688,22 @@ begin
    ----------------------------------------------------- 
    -- get the next downstream location on this stream --
    ----------------------------------------------------- 
-   l_location_code := get_ds_location_code_f(p_stream_code, p_station);
-   if l_location_code is not null then
+   l_location_codes := get_ds_location_codes_f(p_stream_code, p_station);
+   if l_location_codes.count > 0 then
       ----------------------------------
       -- add the location to our list --
       ----------------------------------
-      p_location_codes.extend;
-      p_location_codes(p_location_codes.count) := l_location_code;
+      for i in 1..l_location_codes.count loop
+         p_location_codes.extend;
+         p_location_codes(p_location_codes.count) := l_location_codes(i);
+      end loop;
       ------------------------------------- 
       -- get the station of the location --
       ------------------------------------- 
       select station 
         into l_station
         from at_stream_location
-       where location_code = l_location_code
+       where location_code = l_location_codes(1) -- all same station if more than one
         and stream_location_code = p_stream_code;
       -------------------------------------------------------        
       -- get all further downstream locations if specified --
