@@ -9346,6 +9346,66 @@ end retrieve_existing_item_counts;
       RETURN l_max_date_utc;
    END get_ts_max_date_utc;
 
+   FUNCTION get_ts_max_date_utc_2 (
+      p_ts_code            IN NUMBER,
+      p_version_date_utc   IN DATE DEFAULT cwms_util.non_versioned,
+      p_year               IN NUMBER DEFAULT NULL)
+      RETURN DATE
+   IS
+      l_max_date_utc   DATE;
+   BEGIN
+      FOR rec IN (  SELECT table_name
+                         , TO_NUMBER(TO_CHAR(start_date, 'YYYY')) table_year
+                      FROM at_ts_table_properties
+                  ORDER BY start_date DESC)
+      LOOP
+  
+         CASE
+          WHEN p_year IS NULL THEN
+          --Process for the max date time for this at_tsv_xxxx table
+             BEGIN
+               EXECUTE IMMEDIATE
+                  'select max(date_time)
+                     from '||rec.table_name||'
+                    where ts_code = :1
+                      and version_date = :2'
+                  INTO l_max_date_utc
+                  USING p_ts_code, p_version_date_utc;
+            
+            EXCEPTION
+             WHEN no_data_found THEN 
+              l_max_date_utc := NULL;
+            END;
+
+        WHEN p_year = rec.table_year THEN
+
+          --Process ONLY for one year
+          BEGIN
+            EXECUTE IMMEDIATE
+            'select max(date_time)
+               from '||rec.table_name||'
+              where ts_code = :1
+                and version_date = :2'
+            INTO l_max_date_utc
+            USING p_ts_code, p_version_date_utc;
+        
+        EXCEPTION
+         WHEN no_data_found THEN 
+          l_max_date_utc := NULL;
+        END;
+        ELSE
+          --do nothing
+          NULL;
+
+        END CASE;
+
+         EXIT WHEN l_max_date_utc IS NOT NULL;
+
+      END LOOP;
+
+      RETURN l_max_date_utc;
+   END get_ts_max_date_utc_2;
+
    FUNCTION get_ts_max_date2_utc (
       p_ts_code            IN NUMBER,
       p_version_date_utc   IN DATE DEFAULT cwms_util.non_versioned)

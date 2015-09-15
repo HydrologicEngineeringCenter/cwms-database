@@ -2599,6 +2599,30 @@ AS
       p_version_date_utc   IN DATE DEFAULT cwms_util.non_versioned)
       RETURN DATE;
 
+ /**
+    * Retrieves the latest time series data date in the database for a time series but returns NULL if no records exist in the at_tsv_xxxx table
+    *
+    * @see constant cwms_util.non_versioned
+    *
+    * @param p_ts_code          The unique numeric code identifying the time series
+    * @param p_version_date_utc The version date of the time series in UTC
+    * @param p_year             The optional year to search in; entering this year will speed the query by searching additional tsv tables
+    *
+    * PL/SQL usage to obtain the max date in the current year
+    * CWMS_TS.GET_TS_MAX_DATE_UTC_2(p_ts_code
+    *                               , TO_DATE('1111-11-11','YYYY-MM-DD')
+    *                               , TO_NUMBER(TO_CHAR(SYSDATE,'YYYY'))
+    *                                ) ts_max_date
+    *
+    * @return The latest time series data date in the database for the time series, in UTC
+    */
+
+   FUNCTION get_ts_max_date_utc_2 (
+      p_ts_code            IN NUMBER,
+      p_version_date_utc   IN DATE DEFAULT cwms_util.non_versioned,
+      p_year               IN NUMBER DEFAULT NULL)
+      RETURN DATE;      
+
    /**
     * Retrieves the latest non-null time series data date in the database for a time series
     *
