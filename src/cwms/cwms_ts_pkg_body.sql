@@ -4879,15 +4879,27 @@ AS
       ---------------------------------
       -- archive and publish message --
       ---------------------------------
-      time_series_updated (
-         l_ts_code,
-         l_cwms_ts_id,
-         l_office_id,
-         l_timeseries_data (l_timeseries_data.FIRST).date_time,
-         l_timeseries_data (l_timeseries_data.LAST).date_time,
-         FROM_TZ (CAST (l_version_date AS TIMESTAMP), 'UTC'),
-         l_store_date,
-         upper(p_store_rule));
+      declare
+         l_first_time timestamp with time zone;
+         l_last_time  timestamp with time zone;
+      begin
+         select min(date_time)
+           into l_first_time
+           from table(l_timeseries_data);
+         select max(date_time)
+           into l_last_time
+           from table(l_timeseries_data);
+         time_series_updated (
+            l_ts_code,
+            l_cwms_ts_id,
+            l_office_id,
+            l_first_time,
+            l_last_time,
+            FROM_TZ (CAST (l_version_date AS TIMESTAMP), 'UTC'),
+            l_store_date,
+            upper(p_store_rule));
+      end;
+     
 
       DBMS_APPLICATION_INFO.set_module (NULL, NULL);
       COMMIT;
