@@ -3430,7 +3430,7 @@ AS
       c_no_repl_method_mask   constant integer := 4294936575; -- 1111 1111 1111 1111 1000 0111 1111 1111
       c_repl_cause_factor     constant integer := 256;        -- 2 ** 8 for shifting 8 bits
       c_repl_method_factor    constant integer := 2048;       -- 2 ** 11 for shifting 11 bits
-      l_quality_code                   integer := p_quality_code;
+      l_quality_code                   integer;
       l_repl_cause                     integer;
       l_repl_method                    integer;
       l_different                      boolean;
@@ -3444,96 +3444,101 @@ AS
          return num1 + num2 - bitand(num1, num2);
       end;
    begin
-      begin
-         --------------------------------------------
-         -- first see if the code is already clean --
-         --------------------------------------------
-         select quality_code
-           into l_quality_code
-           from cwms_data_quality
-          where quality_code = p_quality_code;
-      exception
-         when no_data_found
-         then
-            -----------------------------------------------
-            -- clear all bits if screened bit is not set --
-            -----------------------------------------------
-            if bitand(l_quality_code, c_screened) = 0 then
-               l_quality_code := 0;
-            else
-               ---------------------------------------------------------------------
-               -- ensure only used bits are set(also counteracts sign-extension) --
-               ---------------------------------------------------------------------
-               l_quality_code := bitand(l_quality_code, c_used_bits);
-
-               -----------------------------------------
-               -- ensure only one validity bit is set --
-               -----------------------------------------
-               if bitand(l_quality_code, c_missing) != 0 then
-                  l_quality_code := bitand(l_quality_code, c_missing_mask);
-               elsif bitand(l_quality_code, c_rejected) != 0 then
-                  l_quality_code := bitand(l_quality_code, c_rejected_mask);
-               elsif bitand(l_quality_code, c_questioned) != 0 then
-                  l_quality_code := bitand(l_quality_code, c_questioned_mask);
-               elsif bitand(l_quality_code, c_ok) != 0 then
-                  l_quality_code := bitand(l_quality_code, c_ok_mask);
-               end if;
-
-               --------------------------------------------------------
-               -- ensure the replacement cause is not greater than 4 --
-               --------------------------------------------------------
-               l_repl_cause := trunc(bitand(l_quality_code, c_repl_cause_mask) / c_repl_cause_factor);
-
-               if l_repl_cause > 4 then
-                  l_repl_cause := 4;
-                  l_quality_code := bitor(bitand(l_quality_code, c_no_repl_cause_mask), l_repl_cause * c_repl_cause_factor);
-               end if;
-
-               ---------------------------------------------------------
-               -- ensure the replacement method is not greater than 4 --
-               ---------------------------------------------------------
-               l_repl_method := trunc(bitand(l_quality_code, c_repl_method_mask)/ c_repl_method_factor);
-
-               if l_repl_method > 4 then
-                  l_repl_method := 4;
-                  l_quality_code := bitor(bitand(l_quality_code, c_no_repl_method_mask), l_repl_method * c_repl_method_factor);
-               end if;
-
-               --------------------------------------------------------------------------------------------------------------
-               -- ensure that if 2 of replacement cause, replacement method, and different are 0, the remaining one is too --
-               --------------------------------------------------------------------------------------------------------------
-               l_different := bitand(l_quality_code, c_different_mask) != 0;
-
-               if l_repl_cause = 0 then
-                  if l_repl_method = 0 and l_different then
-                     l_quality_code := bitand(l_quality_code, c_not_different_mask);
-                     l_different := false;
-                  elsif(not l_different) and l_repl_method != 0 then
-                     l_repl_method := 0;
-                     l_quality_code := bitand(l_quality_code, c_no_repl_method_mask);
+      if p_quality_code is null then
+         l_quality_code := 0;
+      else
+         l_quality_code := p_quality_code;
+         begin
+            --------------------------------------------
+            -- first see if the code is already clean --
+            --------------------------------------------
+            select quality_code
+              into l_quality_code
+              from cwms_data_quality
+             where quality_code = l_quality_code;
+         exception
+            when no_data_found
+            then
+               -----------------------------------------------
+               -- clear all bits if screened bit is not set --
+               -----------------------------------------------
+               if bitand(l_quality_code, c_screened) = 0 then
+                  l_quality_code := 0;
+               else
+                  ---------------------------------------------------------------------
+                  -- ensure only used bits are set(also counteracts sign-extension) --
+                  ---------------------------------------------------------------------
+                  l_quality_code := bitand(l_quality_code, c_used_bits);
+   
+                  -----------------------------------------
+                  -- ensure only one validity bit is set --
+                  -----------------------------------------
+                  if bitand(l_quality_code, c_missing) != 0 then
+                     l_quality_code := bitand(l_quality_code, c_missing_mask);
+                  elsif bitand(l_quality_code, c_rejected) != 0 then
+                     l_quality_code := bitand(l_quality_code, c_rejected_mask);
+                  elsif bitand(l_quality_code, c_questioned) != 0 then
+                     l_quality_code := bitand(l_quality_code, c_questioned_mask);
+                  elsif bitand(l_quality_code, c_ok) != 0 then
+                     l_quality_code := bitand(l_quality_code, c_ok_mask);
                   end if;
-               elsif l_repl_method = 0 and not l_different then
-                  l_repl_cause := 0;
-                  l_quality_code := bitand(l_quality_code, c_no_repl_cause_mask);
-               end if;
-
-               ------------------------------------------------------------------------------------------------------------------------------
-               -- ensure that if 2 of replacement cause, replacement method, and different are NOT 0, the remaining one is set accordingly --
-               ------------------------------------------------------------------------------------------------------------------------------
-               if l_repl_cause != 0 then
-                  if l_repl_method != 0 and not l_different then
-                     l_quality_code := bitor(l_quality_code, c_different_mask);
-                     l_different := true;
-                  elsif l_different and l_repl_method = 0 then
-                     l_repl_method := 2;                           -- EXPLICIT
-                     l_quality_code := bitor(l_quality_code, l_repl_method * c_repl_method_factor);
+   
+                  --------------------------------------------------------
+                  -- ensure the replacement cause is not greater than 4 --
+                  --------------------------------------------------------
+                  l_repl_cause := trunc(bitand(l_quality_code, c_repl_cause_mask) / c_repl_cause_factor);
+   
+                  if l_repl_cause > 4 then
+                     l_repl_cause := 4;
+                     l_quality_code := bitor(bitand(l_quality_code, c_no_repl_cause_mask), l_repl_cause * c_repl_cause_factor);
                   end if;
-               elsif l_repl_method != 0 and l_different then
-                  l_repl_cause := 3;                                 -- MANUAL
-                  l_quality_code := bitor(l_quality_code, l_repl_cause * c_repl_cause_factor);
+   
+                  ---------------------------------------------------------
+                  -- ensure the replacement method is not greater than 4 --
+                  ---------------------------------------------------------
+                  l_repl_method := trunc(bitand(l_quality_code, c_repl_method_mask)/ c_repl_method_factor);
+   
+                  if l_repl_method > 4 then
+                     l_repl_method := 4;
+                     l_quality_code := bitor(bitand(l_quality_code, c_no_repl_method_mask), l_repl_method * c_repl_method_factor);
+                  end if;
+   
+                  --------------------------------------------------------------------------------------------------------------
+                  -- ensure that if 2 of replacement cause, replacement method, and different are 0, the remaining one is too --
+                  --------------------------------------------------------------------------------------------------------------
+                  l_different := bitand(l_quality_code, c_different_mask) != 0;
+   
+                  if l_repl_cause = 0 then
+                     if l_repl_method = 0 and l_different then
+                        l_quality_code := bitand(l_quality_code, c_not_different_mask);
+                        l_different := false;
+                     elsif(not l_different) and l_repl_method != 0 then
+                        l_repl_method := 0;
+                        l_quality_code := bitand(l_quality_code, c_no_repl_method_mask);
+                     end if;
+                  elsif l_repl_method = 0 and not l_different then
+                     l_repl_cause := 0;
+                     l_quality_code := bitand(l_quality_code, c_no_repl_cause_mask);
+                  end if;
+   
+                  ------------------------------------------------------------------------------------------------------------------------------
+                  -- ensure that if 2 of replacement cause, replacement method, and different are NOT 0, the remaining one is set accordingly --
+                  ------------------------------------------------------------------------------------------------------------------------------
+                  if l_repl_cause != 0 then
+                     if l_repl_method != 0 and not l_different then
+                        l_quality_code := bitor(l_quality_code, c_different_mask);
+                        l_different := true;
+                     elsif l_different and l_repl_method = 0 then
+                        l_repl_method := 2;                           -- EXPLICIT
+                        l_quality_code := bitor(l_quality_code, l_repl_method * c_repl_method_factor);
+                     end if;
+                  elsif l_repl_method != 0 and l_different then
+                     l_repl_cause := 3;                                 -- MANUAL
+                     l_quality_code := bitor(l_quality_code, l_repl_cause * c_repl_cause_factor);
+                  end if;
                end if;
-            end if;
-      end;
+         end;
+      end if;
 
       return l_quality_code;
    end clean_quality_code;
