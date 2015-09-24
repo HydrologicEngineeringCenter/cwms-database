@@ -83,6 +83,122 @@ END apex_log_error;
    RETURN temp_1 || delim|| temp_2 || delim || temp_3 || delim || temp_4 || delim || temp_5;
 
   END f_get_loc_attribs_by_xy;
+
+
+   FUNCTION f_get_loc_home_tools_by_loc (f_location_code IN cwms_v_loc.location_code%TYPE
+                                        ,f_app_id        IN NUMBER
+                                        ,f_session_id    IN NUMBER
+                                        ) RETURN VARCHAR2 IS
+  
+  num_LL      NUMBER DEFAULT 0;
+  temp_out    VARCHAR2(1999);
+  BEGIN
+  
+   FOR x  IN (SELECT locatioN_code
+                   , location_id   
+                FROM cwms_v_loc
+               WHERE unit_system = 'EN'
+                 AND locatioN_code = f_location_code
+                 ) LOOP
+                    temp_out :=
+                    '<a href="f?p='
+                           || TO_CHAR(f_APP_ID)
+                           || ':'
+                           || 14
+                           || ':'
+                           || TO_CHAR(f_SESSION_id)
+                           || '::::P14_SEARCH_STRING:'
+                           || x.location_id
+                           || '"><img src="#WORKSPACE_IMAGES#Search-16.png" title="Search" alt="Search"></a>';
+                   END LOOP;
+  
+      temp_out := REPLACE(temp_out
+                      , '#WORKSPACE_IMAGES#Search-16.png'
+                      , 'http://cpc-cwmsdb3.usace.army.mil:8082/apex/wwv_flow_file_mgr.get_file?p_security_group_id=1589520410177877&p_fname=Search-16.png'
+                         );
+  
+    num_ll := f_get_loc_num_ll(f_locatioN_code, 'ALL');
+    IF num_ll > 0 THEN
+    
+      temp_out := temp_Out || ' ' || '<img src="#WORKSPACE_IMAGES#Location_level-16.png" title="' || TO_CHAR(num_ll) || ' LL Exist" alt="LL Exist"></a>x' || TO_CHAR(num_ll) ;
+      temp_out := REPLACE(temp_out
+                      , '#WORKSPACE_IMAGES#Location_level-16.png'
+                      , 'http://cpc-cwmsdb3.usace.army.mil:8082/apex/wwv_flow_file_mgr.get_file?p_security_group_id=1589520410177877&p_fname=Location_level-16.png'
+                         );
+      temp_out := '<a href="f?p='
+                           || TO_CHAR(f_APP_ID)
+                           || ':'
+                           || 364
+                           || ':'
+                           || TO_CHAR(f_SESSION_id)
+                           || '::::F99_LOCATION_CODE:'
+                           || f_location_code
+                           || '"> ' || temp_out;                  
+                         
+    ELSE
+      temp_out := temp_Out || ' ' || '<img src="#WORKSPACE_IMAGES#Location_level-16.png" title="No LLs" alt="No LLs"></a>';
+      temp_out := REPLACE(temp_out
+                      , '#WORKSPACE_IMAGES#Location_level-16.png'
+                      , 'http://cpc-cwmsdb3.usace.army.mil:8082/apex/wwv_flow_file_mgr.get_file?p_security_group_id=1589520410177877&p_fname=Location_level-16.png'
+                         );
+  
+    END IF;
+  
+  
+  RETURN Temp_out;                   
+  
+  END f_get_loc_home_tools_By_loc;
+
+FUNCTION f_get_loc_num_ll(f_location_code IN cwms_v_loc.location_code%TYPE
+                            ,f_location_level_kind IN VARCHAR2 DEFAULT 'ALL'
+                            ) RETURN NUMBER IS
+  temp_out NUMBER DEFAULT 0;
+  BEGIN                            
+
+    IF f_location_level_kind = 'ALL' THEN
+
+      SELECT COUNT(location_code) 
+        INTO temp_out
+        FROM at_location_level
+      WHERE locatioN_code = f_location_code;
+
+    ELSE
+    
+     CASE f_location_level_kind 
+      WHEN 'CONSTANT' THEN
+       SELECT COUNT(location_code) 
+         INTO temp_out
+         FROM at_location_level
+        WHERE locatioN_code = f_location_code
+          AND interval_origin IS NULL
+          AND ts_code IS NULL;
+      WHEN 'SEASONAL' THEN
+       SELECT COUNT(location_code) 
+         INTO temp_out
+         FROM at_location_level
+        WHERE locatioN_code = f_location_code
+          AND interval_origin IS NOT NULL
+          AND ts_code IS NULL;
+      WHEN 'TS_ID' THEN 
+       SELECT COUNT(location_code) 
+         INTO temp_out
+         FROM at_location_level
+        WHERE locatioN_code = f_location_code
+          AND ts_code IS NOT NULL;
+      ELSE NULL;
+    END CASE;
+    
+    END IF;
+
+
+
+   RETURN temp_out;
+
+  END;
+
+
+
+
   FUNCTION f_get_tz_by_xy(p_latitude       IN cwms_v_loc.latitude%TYPE
                          ,p_longitude      IN cwms_v_loc.longitude%TYPE
                          ) RETURN cwms_v_loc.time_zone_name%TYPE IS
@@ -106,7 +222,10 @@ temp_time_zone_name  cwms_v_loc.time_zone_name%TYPE;
    RETURN temp_time_zone_name;
   END;
 
-    FUNCTION f_validate_loc_for_nh(f_location_id          IN cwms_v_loc.locatioN_id%TYPE
+
+
+
+    FUNCTION f_validate_loc_for_ur(f_location_id          IN cwms_v_loc.locatioN_id%TYPE
                                 ) RETURN VARCHAR2 IS
                         temp_out VARCHAR2(1999);
                         num_issues NUMBER DEFAULT 0;
@@ -231,7 +350,7 @@ FOR x IN (
   BEGIN
 
 
-   temp_issues := f_validate_loc_for_nh(f_locatioN_id);
+   temp_issues := f_validate_loc_for_ur(f_locatioN_id);
 
    IF temp_issues IS NULL THEN
      NULL;
@@ -1472,6 +1591,294 @@ end;
 
 
   END;
+
+
+
+ PROCEDURE preload_ll_to_tsv(p_location_code  IN cwms_v_loc.location_code%TYPE
+                              ,p_ll_code        IN cwms_v_location_level.location_level_code%TYPE
+                              ,p_cwms_ts_id     OUT cwms_v_ts_id.cwms_ts_id%TYPE
+                              ) IS
+  BEGIN
+  
+   NULL;
+   
+    IF p_location_code IS NOT NULL AND p_ll_code IS NOT NULL THEN
+    
+    
+     SELECT location_id
+       INTO p_cwms_ts_id
+       FROM cwms_v_loc
+      WHERE locatioN_code = p_location_code
+        AND unit_system   = 'EN';
+    
+    FOR x IN (
+     SELECT DISTINCT location_level_id, specified_level_id
+       FROM cwms_v_location_level
+      WHERE location_level_code = p_ll_code
+            )
+            LOOP
+             p_cwms_ts_id := REPLACE(x.location_level_id, x.specified_level_Id, 'Rule Curve Demo');
+             p_cwms_ts_id := REPLACE(p_cwms_ts_id, 'Rule Curve Demo', '0.Rule Curve Demo');
+            END LOOP;
+    
+    
+   -- Baldhill_Dam.Precip-inc.Total.1Hour.1Hour.rev
+    END IF;
+   
+   
+   
+  END;
+
+   PROCEDURE load_ll_to_tsv(p_collection_name     IN  VARCHAR2
+                          , p_location_level_code IN cwms_V_location_level.location_level_code%TYPE
+                          , p_unit_system         IN cwms_V_location_level.unit_system%TYPE
+                          , p_add_point_method    IN VARCHAR2 DEFAULT 'LI'--LI, S, M
+                          , p_preview_tf          IN VARCHAR2 DEFAULT 'T'
+                          , p_cwms_ts_id_new      IN cwms_v_ts_id.cwms_ts_id%TYPE
+                          , p_store_rule_code     IN cwms_store_rule.store_rule_code%TYPE
+                           ) IS
+
+  temp_date     cwms_v_tsv.date_time%TYPE;
+  loop_i        NUMBER       DEFAULT 1;
+  temp_level    NUMBER;
+  num_ll        NUMBER DEFAULT 0;
+  
+  num_ts_id     NUMBER DEFAULT 0;
+
+--Variables needed by API
+  temp_db_Office_id             cwms_v_location_level.office_id%TYPE;
+  temp_location_level_id        cwms_v_location_level.location_level_id%TYPE;
+  temp_time_zone_name           cwms_v_loc.time_zone_name%TYPE;
+  temp_location_id              cwms_v_loc.location_id%TYPE;
+  temp_level_unit               cwms_v_location_level.level_unit%TYPE;
+
+  LL_kind       VARCHAR2(19) DEFAULT 'CONSTANT'; --constant or  seasonal
+  temp_constant_level NUMBER DEFAULT 0;
+
+--tsv variables
+
+      temp_tsv_value             cwms_t_tsv;
+      temp_tsv_value_array       cwms_t_tsv_array;
+      temp_store_rule            cwms_store_rule.store_rule_id%TYPE;
+
+
+
+   BEGIN
+    
+    temp_date := TO_DATE('01-JAN-' || TO_CHAR(SYSDATE, 'YYYY'), 'DD-MON-YYYY');
+
+    --API requirements
+    SELECT COUNT(location_level_code), office_id, location_id
+         , location_level_id
+         , level_unit
+      INTO num_ll
+         , temp_db_Office_id
+         , temp_location_id
+         , temp_location_level_id
+         , temp_level_unit
+      FROM cwms_v_Location_level
+    WHERE location_level_code = p_location_level_code 
+      AND unit_System = p_unit_system
+   GROUP BY office_id, location_id, location_level_id,level_unit;
+  
+    SELECT DISTINCT time_Zone_name 
+      INTO temp_time_zone_name
+      FROM cwms_v_Loc
+     WHERE locatioN_id = temp_locatioN_id 
+       AND db_office_id = temp_db_Office_id;
+  
+    
+    --Determine if it's a constant or seasonal LLI
+    IF num_ll = 1 THEN
+     --It's a constant value
+      LL_kind := 'CONSTANT';
+      
+      --Get the value for use later
+      SELECT ROUND(constant_level, 8) constant_level
+        INTO temp_level
+        FROM cwms_v_location_level
+      WHERE location_level_code = p_location_level_code
+        AND unit_system         = p_unit_system;
+
+    ELSE
+      ll_kind := 'SEASONAL';
+    END IF;
+    
+
+    
+    APEX_COLLECTION.CREATE_OR_TRUNCATE_COLLECTION(
+                                                  p_collection_name => p_collection_name
+                                                 );
+
+
+
+ 
+    CASE
+      WHEN p_add_point_method IN ('LI','M') THEN
+    FOR x IN 1..365 LOOP
+      
+      IF ll_kind = 'SEASONAL' THEN
+      
+          FOR y IN (
+                     SELECT date_Time, value
+                        FROM TABLE(
+                            SELECT o2.tsvs 
+                                FROM (
+                                    SELECT 
+                                    cwms_level.retrieve_location_level_values(
+                                       temp_location_level_id,
+                                       temp_level_unit,
+                                       temp_date ,
+                                       NULL,
+                                       NULL,
+                                       NULL,
+                                       NULL ,
+                                       temp_time_zone_name,
+                                       temp_db_Office_id 
+                                       ) tsvs
+                                    FROM dual
+                                  ) o2
+                                )
+                   ) LOOP
+                      temp_level := y.value;
+                     END LOOP;
+         
+         END IF;  
+    
+          APEX_COLLECTION.ADD_MEMBER (
+                                    p_collection_name => p_collection_name
+                                  , p_c001 => 'LI or M A ' || LL_kind || ' record for loop ' || loop_i || ' w value of ' || TO_CHAR(temp_level) || ' w date of ' || ' and llc of ' || p_location_level_code
+                                          || ' API:' || temp_db_Office_id || '-' || temp_location_level_id || '-' || temp_time_zone_name
+                                  , p_c002 => 1
+                                  , p_n001 => temp_level
+                                  , p_n002 => 1
+                                  , p_d001 => temp_date 
+                                    );
+    
+       temp_date  := temp_date + 1;
+       loop_i     := loop_i + 1;
+       
+    END LOOP;
+    
+    WHEN p_add_point_method = 'S' THEN
+    
+     NULL;
+     FOR y IN (SELECT ll2.*
+                  FROM(
+                    SELECT ll.*
+                         , TO_DATE(seasonal_month || '/' || seasonal_day || '/2015' || time_offset2, 'MM/DD/YYYY HH24:MI:SS') seasonal_date
+                         , TO_NUMBER(TO_CHAR(TO_DATE(seasonal_month || '/' || seasonal_day || '/2015' || time_offset2, 'MM/DD/YYYY HH24:MI:SS'),'DDD')) day_of_year2
+                      FROM (
+                            SELECT office_id
+                                 , location_level_id
+                                 , unit_System
+                                 , level_unit
+                                 , interval_origin
+                                 , calendar_interval
+                                 , calendar_offset
+                                 , time_offset
+                                 , ROUND(TO_NUMBER(seasonal_level), 6) seasonal_level
+                                 , TO_NUMBER(SUBSTR(calendar_offset, 4,2)) Month_Offset
+                                 , TO_NUMBER(SUBSTR(time_offset,1,3)) Day_offset
+                                 , 1 + TO_NUMBER(SUBSTR(calendar_offset, 4,2)) Seasonal_Month
+                                 , 1 + TO_NUMBER(SUBSTR(time_offset,1,3)) Seasonal_Day
+                                 , SUBSTR(time_offset, 5) time_offset2
+                              FROM cwms_v_location_level
+                             WHERE location_level_code = p_Location_level_code
+                               AND unit_System = p_unit_system
+                          ) ll
+                    ) ll2
+                  WHERE 
+                  ll2.seasonal_month IS NOT NULL
+                    AND ll2.seasonal_day IS NOT NULL
+                    AND ll2.time_offset2 IS NOT NULL
+                   ORDER BY seasonal_date
+          ) LOOP
+             APEX_COLLECTION.ADD_MEMBER (
+                                            p_collection_name => p_collection_name
+                                          , p_c001 => 'Step A ' || LL_kind || ' record for loop ' || loop_i || ' w value of ' || TO_CHAR(y.seasonal_level) || ' w date of ' || ' and llc of ' || p_location_level_code
+                                                  || ' API:' || temp_db_Office_id || '-' || temp_location_level_id || '-' || temp_time_zone_name
+                                          , p_c002 => 1
+                                          , p_n001 => y.seasonal_level
+                                          , p_n002 => 1
+                                          , p_d001 => y.seasonal_date 
+                                            );
+            
+               loop_i     := loop_i + 1;
+          END LOOP;
+     
+     
+    ELSE NULL;
+   END CASE;
+    
+     IF p_preview_tf = 'F' AND p_cwms_ts_id_new IS NOT NULL THEN
+      -- Create the TS ID and TSV
+        --Create the TS ID
+        
+           SELECT COUNT(cwms_ts_id) 
+             INTO num_ts_id
+             FROM cwms_v_ts_id
+            WHERE db_Office_id = temp_db_office_id
+              AND cwms_ts_id  = p_cwms_ts_id_new
+                ;
+          
+           IF num_ts_id = 0 THEN
+           --Create new TS ID
+        
+            cwms_ts.create_ts (p_cwms_ts_id         => p_cwms_ts_id_new
+                              , p_utc_offset        => NULL
+                              , p_interval_forward  =>   NULL
+                              , p_interval_backward =>   NULL
+                              , p_versioned         =>  'F'
+                              , p_active_flag       =>  'T'
+                              , p_office_id         => temp_db_office_id
+                              
+                               );
+           END IF; 
+      
+      
+   
+         --Initialize the arrays
+      temp_tsv_value_array := cwms_t_tsv_array ();
+      
+          --Process the tsvs
+          FOR y IN (SELECT *
+                      FROM apex_collections
+                     WHERE collection_name = p_collection_name
+                   ) LOOP
+                        --Set the cwms_t_tsv type to the date/time
+        
+                           --Add the record to the array
+                           temp_tsv_Value := cwms_t_tsv (y.d001
+                                                       , y.n001
+                                                       , y.n002);
+                           temp_tsv_value_array.EXTEND ();
+                           temp_tsv_value_array (temp_tsv_value_array.LAST) := temp_tsv_Value;
+  
+                    END LOOP;
+  
+
+      --Store TS Code
+      
+        SELECT store_rule_id
+        INTO temp_store_rule
+        FROM cwms_store_rule
+       WHERE store_Rule_code = p_store_rule_code;
+
+
+      cwms_ts.store_ts (p_cwms_ts_id        => p_cwms_ts_id_new,
+                        p_units             => temp_level_unit,
+                        p_timeseries_data   => temp_tsv_value_array,
+                        p_store_rule        => temp_store_rule,
+                        p_override_prot     => 'F',
+                        p_version_date      => cwms_util.non_versioned,
+                        p_office_id         => temp_db_office_id);
+      
+     END IF;
+    
+   END;
+
+
   PROCEDURE preload_Upload_tsv (p_store_rule_code  IN OUT cwms_store_rule.store_Rule_code%TYPE) IS
 
   BEGIN
@@ -1492,6 +1899,21 @@ end;
           FROM cwms_store_rule;
    END;
   END;
+
+PROCEDURE p_delete_location_level(p_location_level_code IN cwms_v_Location_level.locatioN_level_code%TYPE
+                                    ) IS
+   BEGIN
+     DELETE at_location_level
+       WHERE locatioN_level_code = p_Location_level_code;
+   
+   
+     NULL;
+   END;
+   
+
+
+
+  
 
    PROCEDURE p_clean_location_type(p_db_office_id       IN cwms_v_loc.db_Office_id%TYPE
                                   ,p_location_type_old  IN cwms_v_loc.location_type%TYPE
