@@ -222,7 +222,57 @@ temp_time_zone_name  cwms_v_loc.time_zone_name%TYPE;
    RETURN temp_time_zone_name;
   END;
 
+ FUNCTION f_get_ll_home_container (f_location_code IN CWMS_V_LOC.location_code%TYPE) RETURN VARCHAR2 IS
+   temp_out VARCHAR2(1999);
+   BEGIN
+   FOR x IN (SELECT parameter_id, num_ll, rownum row_num
+                FROM (
+              SELECT parameter_id, COUNT(parameter_id) num_ll
+                          FROM (SELECT DISTINCT location_level_id, parameter_id 
+                                  FROM cwms_v_location_level
+                                 WHERE location_code = f_location_code
+                                )
+                         GROUP BY parameter_id
+                          ORDER BY 2 DESC
+                          )
+            
 
+              ) LOOP
+             IF x.row_Num = 1 THEN temp_out := '<li><a href="#tabs-1">' || x.parameter_id || '</a></li>'; END IF;
+             IF x.row_num = 2 THEN temp_out := temp_out || '
+             <li><a href="#tabs-2">' || x.parameter_id || '</a></li>';  END IF;
+             IF x.row_num = 3 THEN temp_out := temp_out || '
+             <li><a href="#tabs-3">' || x.parameter_id || '</a></li>';  END IF;
+             IF x.row_num = 4 THEN temp_out := temp_out || '
+             <li><a href="#tabs-4">' || x.parameter_id || '</a></li>';  END IF;
+             IF x.row_num = 5 THEN temp_out := temp_out || '
+             <li><a href="#tabs-5">' || x.parameter_id || '</a></li>';  END IF;
+             IF x.row_num = 6 THEN temp_out := temp_out || '
+             <li><a href="#tabs-6">' || x.parameter_id || '</a></li>';  END IF;
+             IF x.row_num = 7 THEN temp_out := temp_out || '
+             <li><a href="#tabs-7">' || x.parameter_id || '</a></li>';  END IF;
+             IF x.row_num = 8 THEN temp_out := temp_out || '
+             <li><a href="#tabs-8">' || x.parameter_id || '</a></li>';  END IF;
+          
+            END LOOP;
+   
+   
+   IF temp_out IS NOT NULL THEN
+    Temp_out :=    '<div id="tabs">
+<ul> ' || temp_out ||' 
+    </ul>
+</div>';
+   ELSE 
+         Temp_out :=    '<div id="tabs">
+<ul> '  ||' 
+    </ul>
+</div>';
+
+   END IF;
+
+  RETURN temp_out;
+
+   END;
 
 
     FUNCTION f_validate_loc_for_ur(f_location_id          IN cwms_v_loc.locatioN_id%TYPE
