@@ -38,7 +38,19 @@ AS
       p_latitude  IN cwms_v_loc.latitude%TYPE ,
       p_longitude IN cwms_v_loc.longitude%TYPE )
     RETURN cwms_v_loc.time_zone_name%TYPE;
-  FUNCTION f_validate_loc_for_nh(
+
+   FUNCTION f_get_loc_num_ll(f_location_code IN cwms_v_loc.location_code%TYPE
+                            ,f_location_level_kind IN VARCHAR2 DEFAULT 'ALL'
+                            ) RETURN NUMBER;
+
+   FUNCTION f_get_loc_home_tools_by_loc (f_location_code IN cwms_v_loc.location_code%TYPE
+                                        ,f_app_id        IN NUMBER
+                                        ,f_session_id    IN NUMBER
+                                        ) RETURN VARCHAR2;
+                                          
+   FUNCTION f_get_ll_home_container (f_location_code IN CWMS_V_LOC.location_code%TYPE) RETURN VARCHAR2;
+
+  FUNCTION f_validate_loc_for_ur(
       f_location_id IN cwms_v_loc.locatioN_id%TYPE )
     RETURN VARCHAR2;
     
@@ -124,6 +136,23 @@ AS
       p_description     OUT cwms_store_rule.description%TYPE ,
       p_store_rule_id   OUT cwms_store_rule.store_rule_id%TYPE,
       p_sort_order    OUT AT_STORE_RULE_ORDER.sort_order%TYPE );
+
+   PROCEDURE preload_ll_to_tsv(p_location_code  IN cwms_v_loc.location_code%TYPE
+                              ,p_ll_code        IN cwms_v_location_level.location_level_code%TYPE
+                              ,p_cwms_ts_id     OUT cwms_v_ts_id.cwms_ts_id%TYPE
+                              );
+
+   PROCEDURE load_ll_to_tsv(p_collection_name       IN  VARCHAR2
+                          , p_location_level_code   IN cwms_V_location_level.location_level_code%TYPE
+                          , p_unit_system           IN cwms_V_location_level.unit_system%TYPE
+                          , p_add_point_method      IN VARCHAR2 DEFAULT 'LI'
+                          , p_preview_tf            IN VARCHAR2 DEFAULT 'T'
+                          , p_cwms_ts_id_new        IN cwms_v_ts_id.cwms_ts_id%TYPE
+                          , p_store_rule_code       IN cwms_store_rule.store_rule_code%TYPE
+                           );
+
+
+  
   PROCEDURE load_tsc_parallel(
       p_ts_code_left        IN cwms_v_ts_id.ts_code%TYPE ,
       p_ts_code_right       IN cwms_v_ts_id.ts_code%TYPE ,
