@@ -819,16 +819,25 @@ procedure store_gate_changes(
    p_end_time_inclusive   in varchar2 default 'T',
    p_override_protection  in varchar2 default 'F')
 is
+   type db_units_by_opening_units_t is table of varchar2(16) index by varchar2(16);
    l_proj_loc_code    number(10);
    l_office_code      number(10);
    l_office_id        varchar2(16);
-   l_gate_change_date date;
+   l_change_date      date;
    l_start_time       date;
    l_end_time         date;
    l_time_zone        varchar2(28);
-   l_opening_param    varchar2(49);
    l_change_rec       at_gate_change%rowtype;
    l_setting_rec      at_gate_setting%rowtype;
+   l_dates            date_table_type;
+   l_existing         gate_change_tab_t;
+   l_new_change_date  date;
+   l_gate_codes       number_tab_t;
+   l_count            pls_integer;
+   l_db_units         db_units_by_opening_units_t;
+   l_units1           str_tab_t;
+   l_units2           str_tab_t;
+   l_db_unit          varchar2(16);
 begin
    -------------------
    -- sanity checks --
@@ -857,87 +866,38 @@ begin
    end if;      
    for i in 1..p_gate_changes.count loop
       if i = 1 then
-         l_proj_loc_code    := p_gate_changes(i).project_location_ref.get_location_code;
-         l_office_id        := upper(p_gate_changes(i).project_location_ref.get_office_id);
-         l_office_code      := p_gate_changes(i).project_location_ref.get_office_code;
-         l_gate_change_date := p_gate_changes(i).change_date; 
+         l_proj_loc_code := p_gate_changes(i).project_location_ref.get_location_code;
+         l_office_id     := upper(trim(p_gate_changes(i).project_location_ref.get_office_id));
+         l_office_code   := p_gate_changes(i).project_location_ref.get_office_code;
+         l_change_date   := p_gate_changes(i).change_date; 
       else
          if p_gate_changes(i).project_location_ref.get_location_code != l_proj_loc_code then
             cwms_err.raise(
                'ERROR',
                'Multiple projects found in gate changes.');
          end if;
-         if p_gate_changes(i).change_date <=l_gate_change_date then
+         if p_gate_changes(i).change_date <= l_change_date then
             cwms_err.raise(
                'ERROR',
                'Gate changes are not in ascending time order.');
          end if;
       end if;
-   end loop;      
-   ---------------------------------
-   -- get the start and end times --
-   ---------------------------------
-   l_start_time := nvl(p_start_time, p_gate_changes(1).change_date);
-   l_end_time   := nvl(p_end_time,   p_gate_changes(p_gate_changes.count).change_date);
-   l_time_zone  := nvl(p_time_zone, cwms_loc.get_local_timezone(l_proj_loc_code));
-   l_start_time := cwms_util.change_timezone(l_start_time, l_time_zone, 'UTC');
-   l_end_time   := cwms_util.change_timezone(l_end_time,   l_time_zone, 'UTC');
-   ---------------------------------------------------------
-   -- delete any existing gate changes in the time window --
-   ---------------------------------------------------------
-   delete_gate_changes(
-      p_gate_changes(1).project_location_ref,
-      l_start_time,
-      l_end_time,
-      'UTC',
-      p_start_time_inclusive,
-      p_end_time_inclusive,
-      p_override_protection);
-   ----------------------------
-   -- insert the new records --
-   ----------------------------
-   for i in 1..p_gate_changes.count loop
-      ------------------------
-      -- more sanity checks --
-      ------------------------
-      if upper(p_gate_changes(i).discharge_computation.office_id) != l_office_id then
+      if upper(trim(p_gate_changes(i).discharge_computation.office_id)) != l_office_id then
          cwms_err.raise(
             'ERROR',
-            'Gate change for office '
+            'gate change for office '
             ||l_office_id
             ||' cannot reference discharge computation for office '
             ||upper(p_gate_changes(i).discharge_computation.office_id));
       end if;   
-      if upper(p_gate_changes(i).release_reason.office_id) != l_office_id then
+      if upper(trim(p_gate_changes(i).release_reason.office_id)) != l_office_id then
          cwms_err.raise(
             'ERROR',
-            'Gate change for office '
+            'gate change for office '
             ||l_office_id
             ||' cannot reference release reason for office '
             ||upper(p_gate_changes(i).release_reason.office_id));
       end if;
-      ---------------------------------------
-      -- insert the new gate change record --
-      ---------------------------------------   
-      l_change_rec.gate_change_code := cwms_seq.nextval;
-      l_change_rec.project_location_code := l_proj_loc_code;
-      l_change_rec.gate_change_date := cwms_util.change_timezone(p_gate_changes(i).change_date, l_time_zone, 'UTC');
-      l_change_rec.elev_pool := cwms_util.convert_units(
-         p_gate_changes(i).elev_pool,
-         p_gate_changes(i).elev_units,
-         cwms_util.get_default_units('Elev'));
-      l_change_rec.elev_tailwater := cwms_util.convert_units(
-         p_gate_changes(i).elev_tailwater,
-         p_gate_changes(i).elev_units,
-         cwms_util.get_default_units('Elev'));
-      l_change_rec.old_total_discharge_override := cwms_util.convert_units(
-         p_gate_changes(i).old_total_discharge_override,
-         p_gate_changes(i).discharge_units,
-         cwms_util.get_default_units('Flow'));
-      l_change_rec.new_total_discharge_override := cwms_util.convert_units(
-         p_gate_changes(i).new_total_discharge_override,
-         p_gate_changes(i).discharge_units,
-         cwms_util.get_default_units('Flow'));
       begin
          select discharge_comp_code
            into l_change_rec.discharge_computation_code
@@ -980,33 +940,214 @@ begin
                ||'/ACTIVE='
                ||p_gate_changes(i).release_reason.active);
       end;
+   end loop;      
+   ---------------------------------
+   -- get the start and end times --
+   ---------------------------------
+   l_start_time := nvl(p_start_time, p_gate_changes(1).change_date);
+   l_end_time   := nvl(p_end_time,   p_gate_changes(p_gate_changes.count).change_date);
+   l_time_zone  := nvl(p_time_zone, cwms_loc.get_local_timezone(l_proj_loc_code));
+   if l_time_zone is not null then
+      l_start_time := cwms_util.change_timezone(l_start_time, l_time_zone, 'UTC');
+      l_end_time   := cwms_util.change_timezone(l_end_time,   l_time_zone, 'UTC');
+   end if;
+   -------------------------------------------------------------
+   -- delete any existing gate changes in the time window     --
+   -- that doesn't have a corrsponding time in the input data --
+   -------------------------------------------------------------
+   select cwms_util.change_timezone(change_date, nvl(l_time_zone, 'UTC'), 'UTC')
+     bulk collect
+     into l_dates
+     from table(p_gate_changes);
+     
+   l_existing := retrieve_gate_changes_f(
+      p_project_location => p_gate_changes(1).project_location_ref,
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time);
+      
+   for rec in 
+      (select change_date
+        from table(l_existing)
+       where change_date not in (select * from table(l_dates))
+      )
+   loop
+      delete_gate_changes(
+         p_project_location    => p_gate_changes(1).project_location_ref,
+         p_start_time          => rec.change_date,
+         p_end_time            => rec.change_date,
+         p_override_protection => p_override_protection);
+   end loop;
+   
+   ---------------------------
+   -- insert/update records --
+   ---------------------------
+   for i in 1..p_gate_changes.count loop
+      l_new_change_date := cwms_util.change_timezone(p_gate_changes(i).change_date, nvl(l_time_zone, 'UTC'), 'UTC');
+      -----------------------------------------
+      -- retrieve any existing change record --
+      -----------------------------------------
+      begin
+         select *
+           into l_change_rec
+           from at_gate_change
+          where project_location_code = l_proj_loc_code
+            and gate_change_date = l_new_change_date;
+      exception
+         when no_data_found then
+            l_change_rec.gate_change_code := null;
+            l_change_rec.project_location_code := l_proj_loc_code;
+            l_change_rec.gate_change_date := l_new_change_date;
+      end;
+      --------------------------------
+      -- populate the change record --
+      --------------------------------
+      l_change_rec.gate_change_date := l_new_change_date;
+      l_change_rec.elev_pool := cwms_util.convert_units(
+         p_gate_changes(i).elev_pool,
+         p_gate_changes(i).elev_units,
+         cwms_util.get_default_units('Elev'));
+      l_change_rec.elev_tailwater := cwms_util.convert_units(
+         p_gate_changes(i).elev_tailwater,
+         p_gate_changes(i).elev_units,
+         cwms_util.get_default_units('Elev'));
+      l_change_rec.old_total_discharge_override := cwms_util.convert_units(
+         p_gate_changes(i).old_total_discharge_override,
+         p_gate_changes(i).discharge_units,
+         cwms_util.get_default_units('Flow'));
+      l_change_rec.new_total_discharge_override := cwms_util.convert_units(
+         p_gate_changes(i).new_total_discharge_override,
+         p_gate_changes(i).discharge_units,
+         cwms_util.get_default_units('Flow'));
+      select discharge_comp_code
+        into l_change_rec.discharge_computation_code
+        from at_gate_ch_computation_code
+       where db_office_code = l_office_code
+         and upper(discharge_comp_display_value) = upper(p_gate_changes(i).discharge_computation.display_value)
+         and upper(discharge_comp_tooltip) = upper(p_gate_changes(i).discharge_computation.tooltip)
+         and discharge_comp_active = upper(p_gate_changes(i).discharge_computation.active); 
+      select release_reason_code
+        into l_change_rec.release_reason_code
+        from at_gate_release_reason_code
+       where db_office_code = l_office_code
+         and upper(release_reason_display_value) = upper(p_gate_changes(i).release_reason.display_value)
+         and upper(release_reason_tooltip) = upper(p_gate_changes(i).release_reason.tooltip)
+         and release_reason_active = upper(p_gate_changes(i).release_reason.active); 
       l_change_rec.gate_change_notes := p_gate_changes(i).change_notes;
       l_change_rec.protected := upper(p_gate_changes(i).protected);
       l_change_rec.reference_elev := cwms_util.convert_units(
          p_gate_changes(i).reference_elev,
          p_gate_changes(i).elev_units,
          cwms_util.get_default_units('Elev'));
-      insert into at_gate_change values l_change_rec;
       -------------------------------------
-      -- insert new gate setting records --
+      -- insert/update the change record --
       -------------------------------------
-      if p_gate_changes(i).settings is not null and p_gate_changes(i).settings.count > 0 then
-         for j in 1..p_gate_changes(i).settings.count loop
-            l_setting_rec.gate_setting_code := cwms_seq.nextval;
-            l_setting_rec.gate_change_code := l_change_rec.gate_change_code;
-            l_setting_rec.outlet_location_code := p_gate_changes(i).settings(j).outlet_location_ref.get_location_code;
-            l_opening_param := get_outlet_opening_param(l_setting_rec.outlet_location_code);
-            l_setting_rec.gate_opening := cwms_util.convert_units(
-               p_gate_changes(i).settings(j).opening,
-               p_gate_changes(i).settings(j).opening_units,
-               cwms_util.get_default_units(l_opening_param));
-            l_setting_rec.invert_elev := cwms_util.convert_units(
-               p_gate_changes(i).settings(j).invert_elev,
-               p_gate_changes(i).elev_units,
-               cwms_util.get_default_units('Elev'));
-            insert into at_gate_setting values l_setting_rec;               
-         end loop;         
+      if l_change_rec.gate_change_code is null then
+         l_change_rec.gate_change_code := cwms_seq.nextval;
+         insert into at_gate_change values l_change_rec;
+      else
+         update at_gate_change 
+            set row = l_change_rec
+          where gate_change_code = l_change_rec.gate_change_code; 
       end if;
+      -------------------------------------------------------------------------
+      -- collect the gate location codes from the input data for this change --
+      -------------------------------------------------------------------------
+      l_gate_codes := number_tab_t();
+      l_count := nvl(p_gate_changes(i).settings, gate_setting_tab_t()).count;
+      l_gate_codes.extend(l_count);
+      for j in 1..l_count loop
+         l_gate_codes(j) := p_gate_changes(i).settings(j).outlet_location_ref.get_location_code;
+      end loop;
+      -------------------------------------------------------------------------------
+      -- delete any existing gate setting record not in input data for this change --
+      -------------------------------------------------------------------------------
+      delete 
+        from at_gate_setting
+       where gate_change_code = l_change_rec.gate_change_code
+         and outlet_location_code not in (select * from table(l_gate_codes));
+      ---------------------------------
+      -- insert/update gate settings --
+      ---------------------------------
+      for j in 1..l_gate_codes.count loop
+         ------------------------------------------
+         -- retrieve any existing setting record --
+         ------------------------------------------
+         begin
+            select *
+              into l_setting_rec
+              from at_gate_setting
+             where gate_change_code = l_change_rec.gate_change_code
+               and outlet_location_code = l_gate_codes(j);
+         exception
+            when no_data_found then
+               l_setting_rec.gate_setting_code := null;
+               l_setting_rec.gate_change_code := l_change_rec.gate_change_code;
+               l_setting_rec.outlet_location_code := l_gate_codes(j);
+         end;
+         ---------------------------------
+         -- populate the setting record --
+         ---------------------------------
+         if p_gate_changes(i).settings(j).opening_parameter is null then
+            if l_db_units.count = 0 then
+               select cu1.unit_id, 
+                      cu2.unit_id
+                 bulk collect
+                 into l_units1,
+                      l_units2 
+                 from cwms_unit cu1,
+                      cwms_unit cu2,
+                      cwms_base_parameter bp
+                where bp.base_parameter_id in ('%', 'Opening', 'Rotation')
+                  and bp.abstract_param_code = cu1.abstract_param_code
+                  and cu2.unit_code = bp.unit_code;
+                  
+               for k in 1..l_units1.count loop
+                  l_db_units(l_units1(k)) := l_units2(k);
+               end loop;
+            end if;
+            begin
+               l_db_unit := l_db_units(cwms_util.get_unit_id(p_gate_changes(i).settings(j).opening_units));
+            exception
+               when others then
+                  cwms_err.raise(
+                     'ERROR', 
+                     'Cannot determine database storage unit for opening unit "'
+                     ||p_gate_changes(i).settings(j).opening_units
+                     ||'"');
+            end;
+         else
+            begin
+               l_db_unit := cwms_util.get_default_units(p_gate_changes(i).settings(j).opening_parameter);
+            exception
+               when others then
+                  cwms_err.raise(
+                     'ERROR', 
+                     'Cannot determine database storage unit for opening parameter "'
+                     ||p_gate_changes(i).settings(j).opening_parameter
+                     ||'"');
+            end;
+         end if;
+         l_setting_rec.gate_opening := cwms_util.convert_units(
+            p_gate_changes(i).settings(j).opening,
+            p_gate_changes(i).settings(j).opening_units,
+            l_db_unit);
+         l_setting_rec.invert_elev := cwms_util.convert_units(
+            p_gate_changes(i).settings(j).invert_elev,
+            --p_gate_changes(i).settings(j).elev_units, !! modify object to have this !!
+            p_gate_changes(i).elev_units,
+            cwms_util.get_default_units('Elev'));  
+         --------------------------------------
+         -- insert/update the setting record --
+         --------------------------------------
+         if l_setting_rec.gate_setting_code is null then
+            l_setting_rec.gate_setting_code := cwms_seq.nextval;
+            insert into at_gate_setting values l_setting_rec;               
+         else
+            update at_gate_setting
+               set row = l_setting_rec
+             where gate_setting_code = l_setting_rec.gate_setting_code;  
+         end if;
+      end loop;         
    end loop;       
 end store_gate_changes;
 --------------------------------------------------------------------------------

@@ -546,15 +546,20 @@ procedure store_turbine_changes(
    p_end_time_inclusive   in varchar2 default 'T',
    p_override_protection  in varchar2 default 'F')
 is
-   l_proj_loc_code number(10);
-   l_office_code   number(10);
-   l_office_id     varchar2(16);
-   l_change_date   date;
-   l_start_time    date;
-   l_end_time      date;
-   l_time_zone     varchar2(28);
-   l_change_rec    at_turbine_change%rowtype;
-   l_setting_rec   at_turbine_setting%rowtype;
+   l_proj_loc_code    number(10);
+   l_office_code      number(10);
+   l_office_id        varchar2(16);
+   l_change_date      date;
+   l_start_time       date;
+   l_end_time         date;
+   l_time_zone        varchar2(28);
+   l_change_rec       at_turbine_change%rowtype;
+   l_setting_rec      at_turbine_setting%rowtype;
+   l_dates            date_table_type;
+   l_existing         turbine_change_tab_t;
+   l_new_change_date  date;
+   l_turbine_codes    number_tab_t;
+   l_count            pls_integer;
 begin
    -------------------
    -- sanity checks --
@@ -583,52 +588,23 @@ begin
    end if;      
    for i in 1..p_turbine_changes.count loop
       if i = 1 then
-         l_proj_loc_code    := p_turbine_changes(i).project_location_ref.get_location_code;
-         l_office_id        := upper(p_turbine_changes(i).project_location_ref.get_office_id);
-         l_office_code      := p_turbine_changes(i).project_location_ref.get_office_code;
-         l_change_date := p_turbine_changes(i).change_date; 
+         l_proj_loc_code := p_turbine_changes(i).project_location_ref.get_location_code;
+         l_office_id     := upper(trim(p_turbine_changes(i).project_location_ref.get_office_id));
+         l_office_code   := p_turbine_changes(i).project_location_ref.get_office_code;
+         l_change_date   := p_turbine_changes(i).change_date; 
       else
          if p_turbine_changes(i).project_location_ref.get_location_code != l_proj_loc_code then
             cwms_err.raise(
                'ERROR',
                'Multiple projects found in turbine changes.');
          end if;
-         if p_turbine_changes(i).change_date <=l_change_date then
+         if p_turbine_changes(i).change_date <= l_change_date then
             cwms_err.raise(
                'ERROR',
                'Gate changes are not in ascending time order.');
          end if;
       end if;
-   end loop;      
-   ---------------------------------
-   -- get the start and end times --
-   ---------------------------------
-   l_start_time := nvl(p_start_time, p_turbine_changes(1).change_date);
-   l_end_time   := nvl(p_end_time,   p_turbine_changes(p_turbine_changes.count).change_date);
-   l_time_zone  := nvl(p_time_zone, cwms_loc.get_local_timezone(l_proj_loc_code));
-   if l_time_zone is not null then
-      l_start_time := cwms_util.change_timezone(l_start_time, l_time_zone, 'UTC');
-      l_end_time   := cwms_util.change_timezone(l_end_time,   l_time_zone, 'UTC');
-   end if;
-   ------------------------------------------------------------
-   -- delete any existing turbine changes in the time window --
-   ------------------------------------------------------------
-   delete_turbine_changes(
-      p_turbine_changes(1).project_location_ref,
-      l_start_time,
-      l_end_time,
-      'UTC',
-      p_start_time_inclusive,
-      p_end_time_inclusive,
-      p_override_protection);
-   ----------------------------
-   -- insert the new records --
-   ----------------------------
-   for i in 1..p_turbine_changes.count loop
-      ------------------------
-      -- more sanity checks --
-      ------------------------
-      if upper(p_turbine_changes(i).discharge_computation.office_id) != l_office_id then
+      if upper(trim(p_turbine_changes(i).discharge_computation.office_id)) != l_office_id then
          cwms_err.raise(
             'ERROR',
             'Turbine change for office '
@@ -636,7 +612,7 @@ begin
             ||' cannot reference discharge computation for office '
             ||upper(p_turbine_changes(i).discharge_computation.office_id));
       end if;   
-      if upper(p_turbine_changes(i).setting_reason.office_id) != l_office_id then
+      if upper(trim(p_turbine_changes(i).setting_reason.office_id)) != l_office_id then
          cwms_err.raise(
             'ERROR',
             'Turbine change for office '
@@ -644,28 +620,6 @@ begin
             ||' cannot reference release reason for office '
             ||upper(p_turbine_changes(i).setting_reason.office_id));
       end if;
-      ------------------------------------------
-      -- insert the new turbine change record --
-      ------------------------------------------
-      l_change_rec.turbine_change_code := cwms_seq.nextval;
-      l_change_rec.project_location_code := l_proj_loc_code;
-      l_change_rec.turbine_change_datetime := cwms_util.change_timezone(p_turbine_changes(i).change_date, l_time_zone, 'UTC');
-      l_change_rec.elev_pool := cwms_util.convert_units(
-         p_turbine_changes(i).elev_pool,
-         p_turbine_changes(i).elev_units,
-         cwms_util.get_default_units('Elev'));
-      l_change_rec.elev_tailwater := cwms_util.convert_units(
-         p_turbine_changes(i).elev_tailwater,
-         p_turbine_changes(i).elev_units,
-         cwms_util.get_default_units('Elev'));
-      l_change_rec.old_total_discharge_override := cwms_util.convert_units(
-         p_turbine_changes(i).old_total_discharge_override,
-         p_turbine_changes(i).discharge_units,
-         cwms_util.get_default_units('Flow'));
-      l_change_rec.new_total_discharge_override := cwms_util.convert_units(
-         p_turbine_changes(i).new_total_discharge_override,
-         p_turbine_changes(i).discharge_units,
-         cwms_util.get_default_units('Flow'));
       begin
          select turbine_comp_code
            into l_change_rec.turbine_discharge_comp_code
@@ -708,30 +662,171 @@ begin
                ||'/ACTIVE='
                ||p_turbine_changes(i).setting_reason.active);
       end;
+   end loop;      
+   ---------------------------------
+   -- get the start and end times --
+   ---------------------------------
+   l_start_time := nvl(p_start_time, p_turbine_changes(1).change_date);
+   l_end_time   := nvl(p_end_time,   p_turbine_changes(p_turbine_changes.count).change_date);
+   l_time_zone  := nvl(p_time_zone, cwms_loc.get_local_timezone(l_proj_loc_code));
+   if l_time_zone is not null then
+      l_start_time := cwms_util.change_timezone(l_start_time, l_time_zone, 'UTC');
+      l_end_time   := cwms_util.change_timezone(l_end_time,   l_time_zone, 'UTC');
+   end if;
+   -------------------------------------------------------------
+   -- delete any existing turbine changes in the time window  --
+   -- that doesn't have a corrsponding time in the input data --
+   -------------------------------------------------------------
+   select cwms_util.change_timezone(change_date, nvl(l_time_zone, 'UTC'), 'UTC')
+     bulk collect
+     into l_dates
+     from table(p_turbine_changes);
+     
+   l_existing := retrieve_turbine_changes_f(
+      p_project_location => p_turbine_changes(1).project_location_ref,
+      p_start_time       => l_start_time,
+      p_end_time         => l_end_time);
+      
+   for rec in 
+      (select change_date
+        from table(l_existing)
+       where change_date not in (select * from table(l_dates))
+      )
+   loop
+      delete_turbine_changes(
+         p_project_location    => p_turbine_changes(1).project_location_ref,
+         p_start_time          => rec.change_date,
+         p_end_time            => rec.change_date,
+         p_override_protection => p_override_protection);
+   end loop;
+   
+   ---------------------------
+   -- insert/update records --
+   ---------------------------
+   for i in 1..p_turbine_changes.count loop
+      l_new_change_date := cwms_util.change_timezone(p_turbine_changes(i).change_date, nvl(l_time_zone, 'UTC'), 'UTC');
+      -----------------------------------------
+      -- retrieve any existing change record --
+      -----------------------------------------
+      begin
+         select *
+           into l_change_rec
+           from at_turbine_change
+          where project_location_code = l_proj_loc_code
+            and turbine_change_datetime = l_new_change_date;
+      exception
+         when no_data_found then
+            l_change_rec.turbine_change_code := null;
+            l_change_rec.project_location_code := l_proj_loc_code;
+            l_change_rec.turbine_change_datetime := l_new_change_date;
+      end;
+      --------------------------------
+      -- populate the change record --
+      --------------------------------
+      l_change_rec.turbine_change_datetime := l_new_change_date;
+      l_change_rec.elev_pool := cwms_util.convert_units(
+         p_turbine_changes(i).elev_pool,
+         p_turbine_changes(i).elev_units,
+         cwms_util.get_default_units('Elev'));
+      l_change_rec.elev_tailwater := cwms_util.convert_units(
+         p_turbine_changes(i).elev_tailwater,
+         p_turbine_changes(i).elev_units,
+         cwms_util.get_default_units('Elev'));
+      l_change_rec.old_total_discharge_override := cwms_util.convert_units(
+         p_turbine_changes(i).old_total_discharge_override,
+         p_turbine_changes(i).discharge_units,
+         cwms_util.get_default_units('Flow'));
+      l_change_rec.new_total_discharge_override := cwms_util.convert_units(
+         p_turbine_changes(i).new_total_discharge_override,
+         p_turbine_changes(i).discharge_units,
+         cwms_util.get_default_units('Flow'));
+      select turbine_comp_code
+        into l_change_rec.turbine_discharge_comp_code
+        from at_turbine_computation_code
+       where db_office_code = l_office_code
+         and upper(turbine_comp_display_value) = upper(p_turbine_changes(i).discharge_computation.display_value)
+         and upper(turbine_comp_tooltip) = upper(p_turbine_changes(i).discharge_computation.tooltip)
+         and turbine_comp_active = upper(p_turbine_changes(i).discharge_computation.active); 
+      select turb_set_reason_code
+        into l_change_rec.turbine_setting_reason_code
+        from at_turbine_setting_reason
+       where db_office_code = l_office_code
+         and upper(turb_set_reason_display_value) = upper(p_turbine_changes(i).setting_reason.display_value)
+         and upper(turb_set_reason_tooltip) = upper(p_turbine_changes(i).setting_reason.tooltip)
+         and turb_set_reason_active = upper(p_turbine_changes(i).setting_reason.active); 
       l_change_rec.turbine_change_notes := p_turbine_changes(i).change_notes;
       l_change_rec.protected := upper(p_turbine_changes(i).protected);
-      insert into at_turbine_change values l_change_rec;
-      ----------------------------------------
-      -- insert new turbine setting records --
-      ----------------------------------------
-      if p_turbine_changes(i).settings is not null and p_turbine_changes(i).settings.count > 0 then
-         for j in 1..p_turbine_changes(i).settings.count loop
-            l_setting_rec.turbine_setting_code := cwms_seq.nextval;
-            l_setting_rec.turbine_change_code := l_change_rec.turbine_change_code;
-            l_setting_rec.turbine_location_code := p_turbine_changes(i).settings(j).turbine_location_ref.get_location_code;
-            l_setting_rec.old_discharge := cwms_util.convert_units(
-               p_turbine_changes(i).settings(j).old_discharge,
-               p_turbine_changes(i).settings(j).discharge_units,
-               cwms_util.get_default_units('Flow'));
-            l_setting_rec.new_discharge := cwms_util.convert_units(
-               p_turbine_changes(i).settings(j).new_discharge,
-               p_turbine_changes(i).settings(j).discharge_units,
-               cwms_util.get_default_units('Flow'));  
-            l_setting_rec.scheduled_load := p_turbine_changes(i).settings(j).scheduled_load;                
-            l_setting_rec.real_power := p_turbine_changes(i).settings(j).real_power;                
-            insert into at_turbine_setting values l_setting_rec;               
-         end loop;         
+      -------------------------------------
+      -- insert/update the change record --
+      -------------------------------------
+      if l_change_rec.turbine_change_code is null then
+         l_change_rec.turbine_change_code := cwms_seq.nextval;
+         insert into at_turbine_change values l_change_rec;
+      else
+         update at_turbine_change 
+            set row = l_change_rec
+          where turbine_change_code = l_change_rec.turbine_change_code; 
       end if;
+      ----------------------------------------------------------------------------
+      -- collect the turbine location codes from the input data for this change --
+      ----------------------------------------------------------------------------
+      l_turbine_codes := number_tab_t();
+      l_count := nvl(p_turbine_changes(i).settings, turbine_setting_tab_t()).count;
+      l_turbine_codes.extend(l_count);
+      for j in 1..l_count loop
+         l_turbine_codes(j) := p_turbine_changes(i).settings(j).turbine_location_ref.get_location_code;
+      end loop;
+      ----------------------------------------------------------------------------------
+      -- delete any existing turbine setting record not in input data for this change --
+      ----------------------------------------------------------------------------------
+      delete 
+        from at_turbine_setting
+       where turbine_change_code = l_change_rec.turbine_change_code
+         and turbine_location_code not in (select * from table(l_turbine_codes));
+      ------------------------------------
+      -- insert/update turbine settings --
+      ------------------------------------
+      for j in 1..l_turbine_codes.count loop
+         ------------------------------------------
+         -- retrieve any existing setting record --
+         ------------------------------------------
+         begin
+            select *
+              into l_setting_rec
+              from at_turbine_setting
+             where turbine_change_code = l_change_rec.turbine_change_code
+               and turbine_location_code = l_turbine_codes(j);
+         exception
+            when no_data_found then
+               l_setting_rec.turbine_setting_code := null;
+               l_setting_rec.turbine_change_code := l_change_rec.turbine_change_code;
+               l_setting_rec.turbine_location_code := l_turbine_codes(j);
+         end;
+         ---------------------------------
+         -- populate the setting record --
+         ---------------------------------
+         l_setting_rec.old_discharge := cwms_util.convert_units(
+            p_turbine_changes(i).settings(j).old_discharge,
+            p_turbine_changes(i).settings(j).discharge_units,
+            cwms_util.get_default_units('Flow'));
+         l_setting_rec.new_discharge := cwms_util.convert_units(
+            p_turbine_changes(i).settings(j).new_discharge,
+            p_turbine_changes(i).settings(j).discharge_units,
+            cwms_util.get_default_units('Flow'));  
+         l_setting_rec.scheduled_load := p_turbine_changes(i).settings(j).scheduled_load;                
+         l_setting_rec.real_power := p_turbine_changes(i).settings(j).real_power;
+         --------------------------------------
+         -- insert/update the setting record --
+         --------------------------------------
+         if l_setting_rec.turbine_setting_code is null then
+            l_setting_rec.turbine_setting_code := cwms_seq.nextval;
+            insert into at_turbine_setting values l_setting_rec;               
+         else
+            update at_turbine_setting
+               set row = l_setting_rec
+             where turbine_setting_code = l_setting_rec.turbine_setting_code;  
+         end if;
+      end loop;         
    end loop;       
 end store_turbine_changes;
 --------------------------------------------------------------------------------
