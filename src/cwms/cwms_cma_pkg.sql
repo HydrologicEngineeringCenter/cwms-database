@@ -50,9 +50,7 @@ AS
                                           
    FUNCTION f_get_ll_home_container (f_location_code IN CWMS_V_LOC.location_code%TYPE) RETURN VARCHAR2;
 
-  FUNCTION f_validate_loc_for_ur(
-      f_location_id IN cwms_v_loc.locatioN_id%TYPE )
-    RETURN VARCHAR2;
+   FUNCTION f_validate_loc_for_ur (f_location_id IN cwms_v_loc.locatioN_id%TYPE )    RETURN VARCHAR2;
     
       FUNCTION f_validate_loc_by_loc_types (f_location_code   IN cwms_v_loc.location_code%TYPE
                                     
@@ -63,6 +61,13 @@ AS
       f_map_or_rpt_or_both IN VARCHAR2 DEFAULT 'Both' ,
       f_html_link_or_text  IN VARCHAR2 DEFAULT 'HTML' )
     RETURN VARCHAR2;
+
+   FUNCTION get_ts_max_date_utc_2 (
+      p_ts_code            IN NUMBER,
+      p_version_date_utc   IN DATE DEFAULT cwms_util.non_versioned,
+      p_year               IN NUMBER DEFAULT NULL)
+      RETURN DATE;   
+
   FUNCTION orcl_2_unix(
       f_oracle_date IN DATE )
     RETURN NUMBER;
@@ -152,13 +157,19 @@ AS
                            );
 
 
-  
+
   PROCEDURE load_tsc_parallel(
       p_ts_code_left        IN cwms_v_ts_id.ts_code%TYPE ,
       p_ts_code_right       IN cwms_v_ts_id.ts_code%TYPE ,
       p_new_collection_name IN VARCHAR2 DEFAULT 'TS_PARALLEL_COMPARE' );
   PROCEDURE preload_Upload_tsv(
                     p_store_rule_code  IN OUT cwms_store_rule.store_Rule_code%TYPE);
+  
+   PROCEDURE p_delete_location_level(p_location_level_code IN cwms_v_Location_level.locatioN_level_code%TYPE
+                                    );
+
+   PROCEDURE p_clear_a2w_ts_code (p_ts_code IN cwms_v_ts_id.ts_code%TYPE);
+   
   PROCEDURE p_refresh_a2w_ts_codes(
       p_db_office_id IN at_a2w_ts_codes_by_loc.db_office_id%TYPE ,
       p_location_id  IN at_a2w_ts_codes_by_loc.location_id%TYPE DEFAULT NULL );
@@ -229,10 +240,16 @@ AS
       p_debug_or_plsql IN VARCHAR2 DEFAULT 'DEBUG' ,
       p_fire_sql       IN VARCHAR2 DEFAULT 'F' ,
       p_out OUT CLOB );
-  PROCEDURE p_preload_location(
-      p_db_office_id IN cwms_v_loc.db_office_id%TYPE ,
-      p_locatioN_id  IN cwms_v_loc.location_id%TYPE ,
-      p_lock_id OUT VARCHAR2 );
+  PROCEDURE  p_preload_location (
+      p_db_office_id          IN     cwms_v_loc.db_office_id%TYPE,
+      p_locatioN_id           IN     cwms_v_loc.location_id%TYPE,
+      p_locatioN_type_api     IN OUT cwms_v_location_Type.location_type%TYPE,
+      p_api_read_only            OUT VARCHAR2,
+      p_lock_project_id          OUT VARCHAR2,
+      p_num_locs_project_of      OUT NUMBER,
+      p_outlet_project_id        OUT cwms_v_project.project_id%TYPE,
+      p_turbine_project_id       OUT cwms_v_project.project_id%TYPE);
+  
   PROCEDURE p_load_loc_by_station_5(
       p_db_office_id IN cwms_v_loc.db_Office_id%TYPE ,
       p_locatioN_id  IN cwms_v_loc.locatioN_id%TYPE DEFAULT NULL );
@@ -265,22 +282,25 @@ AS
   );
   */
   
-  PROCEDURE p_load_a2w_by_location( p_db_office_id           IN at_a2w_ts_codes_by_loc.db_office_id%TYPE
-                                  , p_location_id            IN at_a2w_ts_codes_by_loc.db_office_id%TYPE
-                                  , p_display_flag           IN at_a2w_ts_codes_by_loc.display_flag%TYPE
-                                  , p_notes                  IN at_a2w_ts_codes_by_loc.notes%TYPE
-                                  , p_num_ts_codes           IN at_a2w_ts_codes_by_loc.num_ts_codes%TYPE
-                                  , p_ts_code_elev           IN at_a2w_ts_codes_by_loc.ts_code_elev%TYPE
-                                  , p_ts_code_inflow         IN at_a2w_ts_codes_by_loc.ts_code_inflow%TYPE
-                                  , p_ts_code_outflow        IN at_a2w_ts_codes_by_loc.ts_code_outflow%TYPE
-                                  , p_ts_code_sur_release    IN at_a2w_ts_codes_by_loc.ts_code_sur_release%TYPE  
-                                  , p_ts_code_precip         IN at_a2w_ts_codes_by_loc.ts_code_precip%TYPE    
-                                  , p_ts_code_stage          IN at_a2w_ts_codes_by_loc.ts_code_stage%TYPE   
-                                  , p_ts_code_stor_drought   IN at_a2w_ts_codes_by_loc.ts_code_stor_drought%TYPE   
-                                  , p_ts_code_stor_Flood     IN at_a2w_ts_codes_by_loc.ts_code_stor_Flood%TYPE 
-                                  , p_lake_summary_tf        IN at_a2w_ts_codes_by_loc.lake_summary_Tf%TYPE
-                                  , p_error_msg              OUT VARCHAR2
-                                  );
+  PROCEDURE p_load_a2w_by_location (
+      p_db_office_id           IN     at_a2w_ts_codes_by_loc.db_office_id%TYPE,
+      p_location_id            IN     at_a2w_ts_codes_by_loc.db_office_id%TYPE,
+      p_display_flag           IN     at_a2w_ts_codes_by_loc.display_flag%TYPE,
+      p_notes                  IN     at_a2w_ts_codes_by_loc.notes%TYPE,
+      p_num_ts_codes           IN     at_a2w_ts_codes_by_loc.num_ts_codes%TYPE,
+      p_ts_code_elev           IN     at_a2w_ts_codes_by_loc.ts_code_elev%TYPE,
+      p_ts_code_inflow         IN     at_a2w_ts_codes_by_loc.ts_code_inflow%TYPE,
+      p_ts_code_outflow        IN     at_a2w_ts_codes_by_loc.ts_code_outflow%TYPE,
+      p_ts_code_sur_release    IN     at_a2w_ts_codes_by_loc.ts_code_sur_release%TYPE,
+      p_ts_code_precip         IN     at_a2w_ts_codes_by_loc.ts_code_precip%TYPE,
+      p_ts_code_stage          IN     at_a2w_ts_codes_by_loc.ts_code_stage%TYPE,
+      p_ts_code_stor_drought   IN     at_a2w_ts_codes_by_loc.ts_code_stor_drought%TYPE,
+      p_ts_code_stor_Flood     IN     at_a2w_ts_codes_by_loc.ts_code_stor_Flood%TYPE,
+      p_ts_code_elev_tw        IN     at_a2w_ts_codes_by_loc.ts_code_elev_tw%TYPE,
+      p_ts_code_stage_tw       IN     at_a2w_ts_codes_by_loc.ts_code_stage_tw%TYPE,
+      p_ts_code_rule_Curve_elev IN     at_a2w_ts_codes_by_loc.ts_code_rule_curve_elev%TYPE,
+      p_lake_summary_tf        IN     at_a2w_ts_codes_by_loc.lake_summary_Tf%TYPE,
+      p_error_msg                 OUT VARCHAR2);
 
   
   PROCEDURE p_chart_by_ts_code(

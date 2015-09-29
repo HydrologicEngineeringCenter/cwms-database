@@ -417,6 +417,67 @@ FOR x IN (
 
   END;
 
+
+FUNCTION get_ts_max_date_utc_2 (
+      p_ts_code            IN NUMBER,
+      p_version_date_utc   IN DATE DEFAULT cwms_util.non_versioned,
+      p_year               IN NUMBER DEFAULT NULL)
+      RETURN DATE
+   IS
+      l_max_date_utc   DATE;
+   BEGIN
+      FOR rec IN (  SELECT table_name
+                         , TO_NUMBER(TO_CHAR(start_date, 'YYYY')) table_year
+                      FROM at_ts_table_properties
+                  ORDER BY start_date DESC)
+      LOOP
+  
+         CASE
+          WHEN p_year IS NULL THEN
+          --Process for the max date time for this at_tsv_xxxx table
+             BEGIN
+               EXECUTE IMMEDIATE
+                  'select max(date_time)
+                     from '||rec.table_name||'
+                    where ts_code = :1
+                      and version_date = :2'
+                  INTO l_max_date_utc
+                  USING p_ts_code, p_version_date_utc;
+            
+            EXCEPTION
+             WHEN no_data_found THEN 
+              l_max_date_utc := NULL;
+            END;
+
+        WHEN p_year = rec.table_year THEN
+
+          --Process ONLY for one year
+          BEGIN
+            EXECUTE IMMEDIATE
+            'select max(date_time)
+               from '||rec.table_name||'
+              where ts_code = :1
+                and version_date = :2'
+            INTO l_max_date_utc
+            USING p_ts_code, p_version_date_utc;
+        
+        EXCEPTION
+         WHEN no_data_found THEN 
+          l_max_date_utc := NULL;
+        END;
+        ELSE
+          --do nothing
+          NULL;
+
+        END CASE;
+
+         EXIT WHEN l_max_date_utc IS NOT NULL;
+
+      END LOOP;
+
+      RETURN l_max_date_utc;
+   END get_ts_max_date_utc_2;
+
    FUNCTION orcl_2_unix(f_oracle_date IN DATE
                         ) RETURN NUMBER IS
  BEGIN
@@ -4007,74 +4068,91 @@ END;
 
    END;
 
-    PROCEDURE p_load_a2w_by_location( p_db_office_id           IN at_a2w_ts_codes_by_loc.db_office_id%TYPE
-                                  , p_location_id             IN at_a2w_ts_codes_by_loc.db_office_id%TYPE
-                                  , p_display_flag           IN at_a2w_ts_codes_by_loc.display_flag%TYPE
-                                  , p_notes                 IN at_a2w_ts_codes_by_loc.notes%TYPE
-                                  , p_num_ts_codes          IN at_a2w_ts_codes_by_loc.num_ts_codes%TYPE
-                                  , p_ts_code_elev           IN at_a2w_ts_codes_by_loc.ts_code_elev%TYPE
-                                  , p_ts_code_inflow         IN at_a2w_ts_codes_by_loc.ts_code_inflow%TYPE
-                                  , p_ts_code_outflow        IN at_a2w_ts_codes_by_loc.ts_code_outflow%TYPE
-                                  , p_ts_code_sur_release    IN at_a2w_ts_codes_by_loc.ts_code_sur_release%TYPE
-                                  , p_ts_code_precip         IN at_a2w_ts_codes_by_loc.ts_code_precip%TYPE
-                                  , p_ts_code_stage          IN at_a2w_ts_codes_by_loc.ts_code_stage%TYPE
-                                  , p_ts_code_stor_drought   IN at_a2w_ts_codes_by_loc.ts_code_stor_drought%TYPE
-                                  , p_ts_code_stor_Flood     IN at_a2w_ts_codes_by_loc.ts_code_stor_Flood%TYPE
-                                  , p_lake_summary_tf        IN at_a2w_ts_codes_by_loc.lake_summary_Tf%TYPE
-                                  , p_error_msg              OUT VARCHAR2
-                                  ) IS
+    PROCEDURE p_load_a2w_by_location (
+      p_db_office_id           IN     at_a2w_ts_codes_by_loc.db_office_id%TYPE,
+      p_location_id            IN     at_a2w_ts_codes_by_loc.db_office_id%TYPE,
+      p_display_flag           IN     at_a2w_ts_codes_by_loc.display_flag%TYPE,
+      p_notes                  IN     at_a2w_ts_codes_by_loc.notes%TYPE,
+      p_num_ts_codes           IN     at_a2w_ts_codes_by_loc.num_ts_codes%TYPE,
+      p_ts_code_elev           IN     at_a2w_ts_codes_by_loc.ts_code_elev%TYPE,
+      p_ts_code_inflow         IN     at_a2w_ts_codes_by_loc.ts_code_inflow%TYPE,
+      p_ts_code_outflow        IN     at_a2w_ts_codes_by_loc.ts_code_outflow%TYPE,
+      p_ts_code_sur_release    IN     at_a2w_ts_codes_by_loc.ts_code_sur_release%TYPE,
+      p_ts_code_precip         IN     at_a2w_ts_codes_by_loc.ts_code_precip%TYPE,
+      p_ts_code_stage          IN     at_a2w_ts_codes_by_loc.ts_code_stage%TYPE,
+      p_ts_code_stor_drought   IN     at_a2w_ts_codes_by_loc.ts_code_stor_drought%TYPE,
+      p_ts_code_stor_Flood     IN     at_a2w_ts_codes_by_loc.ts_code_stor_Flood%TYPE,
+      p_ts_code_elev_tw        IN     at_a2w_ts_codes_by_loc.ts_code_elev_tw%TYPE,
+      p_ts_code_stage_tw       IN     at_a2w_ts_codes_by_loc.ts_code_stage_tw%TYPE,
+      p_ts_code_rule_Curve_elev IN     at_a2w_ts_codes_by_loc.ts_code_rule_curve_elev%TYPE,
+      p_lake_summary_tf        IN     at_a2w_ts_codes_by_loc.lake_summary_Tf%TYPE,
+      p_error_msg                 OUT VARCHAR2)
+   IS
+      temp_location_code   cwms_v_loc.location_code%TYPE;
    BEGIN
+      p_error_msg := NULL;
 
-    p_error_msg := NULL;
-
-    UPDATE at_a2w_ts_codes_by_loc
-       SET date_refreshed        = SYSDATE
-        , display_flag           = p_display_flag
-        , notes                  = p_notes
-        , num_ts_codes           = p_num_ts_codes
-        , ts_code_elev           = p_ts_code_elev
-        , ts_code_inflow         = p_ts_code_inflow
-        , ts_code_outflow        = p_ts_code_outflow
-        , ts_code_sur_release    = p_ts_code_sur_release
-        , ts_code_precip         = p_ts_code_precip
-        , ts_code_stage          = p_ts_code_stage
-        , ts_code_stor_drought   = p_ts_code_stor_drought
-        , ts_code_stor_flood     = p_ts_code_stor_flood
-        , lake_summary_tf        = p_lake_summary_tf
-     WHERE db_office_id = p_db_office_id
-       AND locatioN_id  = p_location_id;
-    EXCEPTION
-     WHEN no_data_found THEN
-      INSERT INTO at_a2w_ts_codes_by_loc(db_Office_id, location_id, date_refreshed)
-                                                       VALUES
-                                        (p_db_office_id, p_location_id, SYSDATE);
+      SELECT location_code
+        INTO temp_location_code
+        FROM cwms_v_loc
+       WHERE     Unit_system = 'EN'
+             AND location_id = p_location_id
+             AND db_Office_id = p_db_Office_id;
 
 
-    UPDATE at_a2w_ts_codes_by_loc
-       SET date_refreshed        = SYSDATE
-        , display_flag           = p_display_flag
-        , notes                  = p_notes
-        , num_ts_codes           = p_num_ts_codes
-        , ts_code_elev           = p_ts_code_elev
-        , ts_code_inflow         = p_ts_code_inflow
-        , ts_code_outflow        = p_ts_code_outflow
-        , ts_code_sur_release    = p_ts_code_sur_release
-        , ts_code_precip         = p_ts_code_precip
-        , ts_code_stage          = p_ts_code_stage
-        , ts_code_stor_drought   = p_ts_code_stor_drought
-        , ts_code_stor_flood     = p_ts_code_stor_flood
-        , lake_summary_tf        = p_lake_summary_tf
-     WHERE db_office_id = p_db_office_id
-       AND locatioN_id  = p_location_id;
+      UPDATE at_a2w_ts_codes_by_loc
+         SET date_refreshed = SYSDATE,
+             display_flag = p_display_flag,
+             notes = p_notes,
+             num_ts_codes = p_num_ts_codes,
+             ts_code_elev = p_ts_code_elev,
+             ts_code_inflow = p_ts_code_inflow,
+             ts_code_outflow = p_ts_code_outflow,
+             ts_code_sur_release = p_ts_code_sur_release,
+             ts_code_precip = p_ts_code_precip,
+             ts_code_stage = p_ts_code_stage,
+             ts_code_stor_drought = p_ts_code_stor_drought,
+             ts_code_stor_flood   = p_ts_code_stor_flood,
+             ts_code_elev_tw      = p_ts_code_elev_tw,
+             ts_code_stage_tw     = p_ts_code_stage_tw,
+             ts_code_rule_curve_Elev = p_ts_code_rule_curve_elev,
+             lake_summary_tf = p_lake_summary_tf
+       WHERE  db_office_id = p_db_office_id
+         AND locatioN_code = temp_location_code;
+
+  EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         INSERT
+           INTO at_a2w_ts_codes_by_loc (db_Office_id,
+                                        location_code,
+                                        date_refreshed)
+         VALUES (p_db_office_id, temp_location_code, SYSDATE);
 
 
-
-
-
-     WHEN OTHERS THEN
-      p_error_msg := SQLERRM;
-
-
+         UPDATE at_a2w_ts_codes_by_loc
+            SET date_refreshed = SYSDATE,
+                display_flag = p_display_flag,
+                notes = p_notes,
+                num_ts_codes = p_num_ts_codes,
+                ts_code_elev         = p_ts_code_elev,
+                ts_code_inflow       = p_ts_code_inflow,
+                ts_code_outflow      = p_ts_code_outflow,
+                ts_code_sur_release  = p_ts_code_sur_release,
+                ts_code_precip       = p_ts_code_precip,
+                ts_code_stage        = p_ts_code_stage,
+                ts_code_stor_drought = p_ts_code_stor_drought,
+                ts_code_stor_flood   = p_ts_code_stor_flood,
+                ts_code_elev_tw      = p_ts_code_elev_tw,
+                ts_code_stage_tw     = p_ts_code_stage_tw,
+                ts_code_rule_curve_Elev = p_ts_code_rule_curve_elev,
+                lake_summary_tf         = p_lake_summary_tf
+    
+          WHERE     db_office_id = p_db_office_id
+                AND locatioN_code = temp_location_code;
+      WHEN OTHERS
+      THEN
+         p_error_msg := SQLERRM;
    END;
 
   PROCEDURE  p_chart_by_ts_code(  p_ts_code    IN cwms_v_ts_id.TS_CODE%TYPE
