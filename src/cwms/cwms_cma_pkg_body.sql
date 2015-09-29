@@ -2064,7 +2064,67 @@ PROCEDURE p_delete_location_level(p_location_level_code IN cwms_v_Location_level
                END LOOP;
 
    END;
-
+   PROCEDURE p_clear_a2w_ts_code (p_ts_code IN cwms_v_ts_id.ts_code%TYPE) IS 
+   BEGIN
+    NULL;
+    
+    UPDATE at_a2w_ts_codes_by_loc
+       SET ts_code_elev = NULL
+     WHERE ts_code_elev = p_ts_code;
+    
+    UPDATE at_a2w_ts_codes_by_loc
+       SET ts_code_stage = NULL
+     WHERE ts_code_stage = p_ts_code;
+    
+    UPDATE at_a2w_ts_codes_by_loc
+       SET ts_code_precip = NULL
+     WHERE ts_code_precip = p_ts_code;
+    
+    UPDATE at_a2w_ts_codes_by_loc
+       SET ts_code_inflow = NULL
+     WHERE ts_code_inflow = p_ts_code;
+     
+   UPDATE at_a2w_ts_codes_by_loc
+       SET ts_code_outflow = NULL
+     WHERE ts_code_outflow = p_ts_code;
+    
+    UPDATE at_a2w_ts_codes_by_loc
+       SET ts_code_sur_release = NULL
+     WHERE ts_code_sur_release = p_ts_code;
+   
+    UPDATE at_a2w_ts_codes_by_loc
+       SET ts_code_stor_drought = NULL
+     WHERE ts_code_stor_drought = p_ts_code;
+    
+    UPDATE at_a2w_ts_codes_by_loc
+       SET ts_code_stor_flood = NULL
+     WHERE ts_code_stor_flood = p_ts_code;
+   
+    UPDATE at_a2w_ts_codes_by_loc
+       SET ts_code_elev_Tw = NULL
+     WHERE ts_code_elev_Tw = p_ts_code;
+   
+    UPDATE at_a2w_ts_codes_by_loc
+       SET ts_code_stage_tw = NULL
+     WHERE ts_code_stage_tw = p_ts_code;
+    
+    UPDATE at_a2w_ts_codes_by_loc
+       SET ts_code_rule_curve_elev = NULL
+     WHERE ts_code_rule_curve_elev = p_ts_code;
+   
+         FOR x IN (SELECT DISTINCT location_code, db_Office_id
+                  FROM cwms_v_ts_id
+                WHERE ts_code = p_ts_code
+                ) LOOP
+      
+      p_set_a2w_num_tsids (
+                            p_db_Office_id    => x.db_office_id,
+                            p_locatioN_code   => x.locatioN_code ,
+                            p_user_id         => 'SYSTEM'
+                          );
+                  END LOOP;   
+   
+  END ; --p_clear_a2w_ts_code
    PROCEDURE p_preload_location(p_db_office_id       IN cwms_v_loc.db_office_id%TYPE
                               ,p_locatioN_id        IN cwms_v_loc.location_id%TYPE
                               ,p_lock_id            OUT VARCHAR2

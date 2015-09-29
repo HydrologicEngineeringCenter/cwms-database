@@ -240,6 +240,12 @@ AS
       p_debug_or_plsql IN VARCHAR2 DEFAULT 'DEBUG' ,
       p_fire_sql       IN VARCHAR2 DEFAULT 'F' ,
       p_out OUT CLOB );
+
+p_preload_location(p_db_office_id       IN cwms_v_loc.db_office_id%TYPE
+                              ,p_locatioN_id        IN cwms_v_loc.location_id%TYPE
+                              ,p_lock_id            OUT VARCHAR2
+                              );
+/*
   PROCEDURE  p_preload_location (
       p_db_office_id          IN     cwms_v_loc.db_office_id%TYPE,
       p_locatioN_id           IN     cwms_v_loc.location_id%TYPE,
@@ -248,7 +254,7 @@ AS
       p_lock_project_id          OUT VARCHAR2,
       p_num_locs_project_of      OUT NUMBER,
       p_outlet_project_id        OUT cwms_v_project.project_id%TYPE,
-      p_turbine_project_id       OUT cwms_v_project.project_id%TYPE);
+      p_turbine_project_id       OUT cwms_v_project.project_id%TYPE);*/
   
   PROCEDURE p_load_loc_by_station_5(
       p_db_office_id IN cwms_v_loc.db_Office_id%TYPE ,
