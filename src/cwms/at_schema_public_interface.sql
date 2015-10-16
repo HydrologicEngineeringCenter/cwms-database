@@ -241,8 +241,12 @@ END;
 GRANT EXECUTE ON &cwms_schema..download_file TO public;
 create public synonym DOWNLOAD_FILE for &cwms_schema..DOWNLOAD_FILE;
 --
-GRANT EXECUTE ON &cwms_schema..p_chart_by_ts_code TO public;
-create public synonym P_CHART_BY_TS_CODE for &cwms_schema..P_CHART_BY_TS_CODE;
+-----------------------------------------------
+-- removed until CMS spec and body are fixed --
+-- MDP  16 Oct 2015                          --
+-----------------------------------------------
+-- GRANT EXECUTE ON &cwms_schema..p_chart_by_ts_code TO public;
+-- create public synonym P_CHART_BY_TS_CODE for &cwms_schema..P_CHART_BY_TS_CODE;
 --
 -- FUNCTION Synonyms...
 --
