@@ -2477,6 +2477,7 @@ AS
                        WHERE username NOT IN
                                 ('ANONYMOUS',
                                  'APPQOSSYS',
+				 'CCP',
                                  '&cwms_schema',
                                  'CWMS_DBX',
                                  'CWMS_DBA',
@@ -2494,6 +2495,7 @@ AS
                                  'ORDSYS',
                                  'OUTLN',
                                  'ORDPLUGINS',
+				 'RDL',
                                  'SI_INFORMTN_SCHEMA',
                                  'SPATIAL_CSW_ADMIN_USR',
                                  'SPATIAL_WFS_ADMIN_USR',
