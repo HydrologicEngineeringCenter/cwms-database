@@ -116,7 +116,7 @@
 -- JDK  16 Oct 2015 - testing build fail
 --JDK   21 OCT 2015 - CDATA tests
 -----------------------------------------------
-@@cwms_cma_pkg
+--@@cwms_cma_pkg
 --@@cwms_cma_pkg_body
 
 @@cwms_data_dissem_pkg
