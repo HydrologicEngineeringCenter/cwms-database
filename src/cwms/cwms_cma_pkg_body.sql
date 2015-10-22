@@ -6110,6 +6110,9 @@ WHERE location_level_id = 'AGNI4.Elev-Pool.Inst.0.Flood' and office_id = 'MVR'
                                     p_delim              => ':');
          WHEN c_str_stream
          THEN
+ NULL;
+/*
+
             cwms_stream.store_stream (
                p_stream_id              => temp_locatioN_id,
                p_fail_if_exists         => p_strm_fail_if_exists,
@@ -6126,6 +6129,7 @@ WHERE location_level_id = 'AGNI4.Elev-Pool.Inst.0.Flood' and office_id = 'MVR'
                p_average_slope          => p_strm_average_slope,
                p_comments               => p_strm_comments,
                p_office_id              => p_db_office_id);
+         */
          ELSE
             NULL;
       END CASE;                                          --p_location_Type_new
