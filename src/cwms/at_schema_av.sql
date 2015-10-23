@@ -80,6 +80,9 @@ DECLARE
 			       'av_store_rule_ui',
 			       'av_text_filter',
 			       'av_text_filter_element',
+			       'av_usgs_agency',
+			       'av_usgs_parameter',
+			       'av_usgs_rating',
 			       'av_loc_ts_id_count',
 			       'av_property',
 			       'av_vert_datum_offset'
@@ -126,6 +129,7 @@ END;
 @@cwms/views/av_screening_id.sql
 @@cwms/views/av_text_filter.sql
 @@cwms/views/av_text_filter_element.sql
+@@cwms/views/av_usgs_agency.sql
 @@cwms/views/av_usgs_parameter.sql
 @@cwms/views/av_usgs_rating.sql
 @@cwms/views/av_cwms_ts_id.sql
