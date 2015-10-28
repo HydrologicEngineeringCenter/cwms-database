@@ -902,6 +902,7 @@ AS
          := cwms_util.get_office_code (p_db_office_id);
       l_cwms_office_code       NUMBER (10)
                                   := cwms_util.get_office_code ('CWMS');
+      l_old_time_zone_code      number(10);                                  
    BEGIN
       --.
       -- dbms_output.put_line('Bienvenue a update_loc');
@@ -1078,6 +1079,50 @@ AS
       IF p_time_zone_id IS NOT NULL
       THEN
          l_time_zone_code := cwms_util.get_time_zone_code (p_time_zone_id);
+         select time_zone_code
+           into l_old_time_zone_code
+           from at_physical_location
+          where location_code = l_location_code;
+         if l_time_zone_code = l_old_time_zone_code then
+            null;
+         else
+            declare
+               l_tmp          integer;
+            begin
+               for rec in (select tss.ts_code,
+                                  -tss.interval_utc_offset as interval_utc_offset,
+                                  ci.interval,
+                                  tsi.cwms_ts_id
+                             from at_cwms_ts_spec tss,
+                                  at_cwms_ts_id   tsi,
+                                  cwms_interval   ci
+                            where tss.location_code = l_location_code
+                              and tsi.ts_code = tss.ts_code
+                              and tss.interval_utc_offset < 0
+                              and tss.interval_utc_offset != cwms_util.utc_offset_irregular
+                              and ci.interval_id = substr(tsi.interval_id, 2)
+                          )
+               loop
+                  select count(*) 
+                    into l_tmp
+                    from (select local_time, 
+                                 cwms_ts.get_time_on_before_interval(
+                                    local_time, 
+                                    rec.interval_utc_offset, 
+                                    rec.interval) as interval_time
+                            from (select cwms_util.change_timezone(date_time, 'UTC', p_time_zone_id) as local_time 
+                                    from av_tsv where ts_code = rec.ts_code
+                                 )
+                         )
+                   where local_time != interval_time;
+                  if l_tmp > 0 then
+                     cwms_err.raise(
+                        'ERROR', 
+                        'Cannot change time zone.  Time series is incompatible with new time zone: '||rec.cwms_ts_id);
+                  end if;
+               end loop;
+            end;
+         end if;
       ELSIF NOT l_ignorenulls
       THEN
          l_time_zone_code := NULL;
@@ -1291,6 +1336,7 @@ AS
       l_state_initial      cwms_state.state_initial%TYPE;
       l_county_name         cwms_county.county_name%TYPE;
       l_ignorenulls         BOOLEAN := cwms_util.is_true (p_ignorenulls);
+      l_old_time_zone_code      number(10);                                  
    BEGIN
       --.
       -- dbms_output.put_line('Bienvenue a update_loc');
@@ -1462,6 +1508,50 @@ AS
       IF p_time_zone_id IS NOT NULL
       THEN
          l_time_zone_code := cwms_util.get_time_zone_code (p_time_zone_id);
+         select time_zone_code
+           into l_old_time_zone_code
+           from at_physical_location
+          where location_code = l_location_code;
+         if l_time_zone_code = l_old_time_zone_code then
+            null;
+         else
+            declare
+               l_tmp          integer;
+            begin
+               for rec in (select tss.ts_code,
+                                  -tss.interval_utc_offset as interval_utc_offset,
+                                  ci.interval,
+                                  tsi.cwms_ts_id
+                             from at_cwms_ts_spec tss,
+                                  at_cwms_ts_id   tsi,
+                                  cwms_interval   ci
+                            where tss.location_code = l_location_code
+                              and tsi.ts_code = tss.ts_code
+                              and tss.interval_utc_offset < 0
+                              and tss.interval_utc_offset != cwms_util.utc_offset_irregular
+                              and ci.interval_id = substr(tsi.interval_id, 2)
+                          )
+               loop
+                  select count(*) 
+                    into l_tmp
+                    from (select local_time, 
+                                 cwms_ts.get_time_on_before_interval(
+                                    local_time, 
+                                    rec.interval_utc_offset, 
+                                    rec.interval) as interval_time
+                            from (select cwms_util.change_timezone(date_time, 'UTC', p_time_zone_id) as local_time 
+                                    from av_tsv where ts_code = rec.ts_code
+                                 )
+                         )
+                   where local_time != interval_time;
+                  if l_tmp > 0 then
+                     cwms_err.raise(
+                        'ERROR', 
+                        'Cannot change time zone.  Time series is incompatible with new time zone: '||rec.cwms_ts_id);
+                  end if;
+               end loop;
+            end;
+         end if;
       ELSIF NOT l_ignorenulls
       THEN
          l_time_zone_code := NULL;
@@ -3216,8 +3306,11 @@ AS
          THEN
             RAISE;
          WHEN OTHERS
-         THEN                                    --l_cwms_code was not found...
-            -- DBMS_OUTPUT.put_line ('entering create_location');
+         THEN 
+            CASE
+            WHEN instr(lower(sqlerrm), 'time zone') > 0 THEN
+               RAISE;
+            ELSE
             create_location2 (p_location_id,
                               p_location_type,
                               p_elevation,
@@ -3242,6 +3335,7 @@ AS
                               p_nearest_city,
                               p_db_office_id
                              );
+            END CASE;
       END;
    --
 

@@ -801,29 +801,33 @@ AS
       l_snap_forward_minutes_old    NUMBER;
       l_snap_backward_minutes_new   NUMBER;
       l_snap_backward_minutes_old   NUMBER;
-      l_time_zone_code_old          NUMBER;
-      l_time_zone_code_new          NUMBER;
       l_ts_active_new               VARCHAR2 (1) := UPPER (p_ts_active_flag);
       l_ts_active_old               VARCHAR2 (1);
+      l_interval_id                 varchar2(16);
+      l_tz                          varchar2(28);
+      l_location_code               NUMBER;
+      l_irregular_interval          NUMBER;
       l_tmp                         NUMBER := NULL;
    BEGIN
       --
       --
       BEGIN
-         SELECT a.interval_utc_offset,
+         SELECT a.location_code,
+                a.interval_utc_offset,
                 a.interval_backward,
                 a.interval_forward,
                 a.active_flag,
-                a.time_zone_code,
-                b.INTERVAL
-           INTO l_interval_utc_offset_old,
+                b.interval,
+                c.interval_id
+           INTO l_location_code,
+                l_interval_utc_offset_old,
                 l_snap_backward_minutes_old,
                 l_snap_forward_minutes_old,
                 l_ts_active_old,
-                l_time_zone_code_old,
-                l_ts_interval
-           FROM at_cwms_ts_spec a, cwms_interval b
-          WHERE a.interval_code = b.interval_code AND a.ts_code = p_ts_code;
+                l_ts_interval,
+                l_interval_id
+           FROM at_cwms_ts_spec a, cwms_interval b, at_cwms_ts_id c
+          WHERE a.interval_code = b.interval_code AND a.ts_code = p_ts_code and c.ts_code = p_ts_code;
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -851,8 +855,56 @@ AS
          --
          IF l_ts_interval = 0
          THEN
-            IF    p_interval_utc_offset IS NOT NULL
-               OR p_interval_utc_offset != cwms_util.utc_offset_irregular
+            --
+            -- irregular time series
+            --
+            IF l_interval_id LIKE '~%'
+            THEN
+               --
+               -- pseudo-irregular 
+               --
+               IF p_interval_utc_offset != cwms_util.utc_offset_irregular
+               THEN
+                  SELECT INTERVAL
+                    INTO l_irregular_interval
+                    FROM cwms_interval
+                   WHERE interval_id = substr(l_interval_id, 2); 
+                   
+                  IF p_interval_utc_offset >= l_irregular_interval
+                  THEN
+                     cwms_err.RAISE ('INVALID_UTC_OFFSET',
+                                     p_interval_utc_offset,
+                                     l_interval_id);
+                  end if;
+                  --
+                  -- see if we can change interval
+                  --
+                  l_tz := cwms_loc.get_local_timezone(l_location_code);
+                  SELECT COUNT (*) 
+                    INTO l_tmp
+                    FROM (SELECT local_time, 
+                                 cwms_ts.get_time_on_before_interval(
+                                    local_time, 
+                                    p_interval_utc_offset, 
+                                    l_irregular_interval) as interval_time
+                            FROM (SELECT cwms_util.change_timezone(date_time, 'UTC', l_tz) AS local_time 
+                                    FROM av_tsv WHERE ts_code = p_ts_code
+                                 )
+                         )
+                   WHERE local_time != interval_time;
+                  
+                  IF l_tmp > 0
+                  THEN
+                     cwms_err.RAISE ('CANNOT_CHANGE_OFFSET',
+                                     get_ts_id (p_ts_code));
+                  END IF;
+               END IF;
+               l_interval_utc_offset_new := p_interval_utc_offset;
+            ELSE
+               --
+               -- straight irregular
+               --
+               IF p_interval_utc_offset != cwms_util.utc_offset_irregular
             THEN
                cwms_err.RAISE ('INVALID_UTC_OFFSET',
                                p_interval_utc_offset,
@@ -860,7 +912,11 @@ AS
             ELSE
                l_interval_utc_offset_new := cwms_util.utc_offset_irregular;
             END IF;
+            END IF;
          ELSE
+            --
+            -- regular time series
+            --
             IF p_interval_utc_offset = cwms_util.utc_offset_undefined
             THEN
                l_interval_utc_offset_new := cwms_util.utc_offset_undefined;
@@ -904,7 +960,7 @@ AS
       ---- Confirm that snap back/forward times are valid....
       ----
       IF    l_interval_utc_offset_new != cwms_util.utc_offset_undefined
-         OR l_interval_utc_offset_new != cwms_util.utc_offset_irregular
+         AND l_interval_utc_offset_new != cwms_util.utc_offset_irregular
       THEN
          IF    p_snap_forward_minutes IS NOT NULL
             OR p_snap_backward_minutes IS NOT NULL
@@ -913,7 +969,7 @@ AS
             l_snap_backward_minutes_new := NVL (p_snap_backward_minutes, 0);
 
             IF l_snap_forward_minutes_new + l_snap_backward_minutes_new >=
-                  l_ts_interval
+                  greatest(l_ts_interval, nvl(l_irregular_interval, 0))
             THEN
                cwms_err.RAISE ('INVALID_SNAP_WINDOW');
             END IF;
@@ -927,12 +983,10 @@ AS
       END IF;
 
       --
-      IF p_local_reg_time_zone_id IS NULL
+      IF     l_ts_interval = 0
+         AND l_interval_utc_offset_new != cwms_util.utc_offset_irregular
       THEN
-         l_time_zone_code_new := l_time_zone_code_old;
-      ELSE
-         l_time_zone_code_new :=
-            cwms_util.get_time_zone_code (p_local_reg_time_zone_id);
+         l_interval_utc_offset_new := -l_interval_utc_offset_new;
       END IF;
 
       --
@@ -940,7 +994,6 @@ AS
          SET a.interval_utc_offset = l_interval_utc_offset_new,
              a.interval_forward = l_snap_forward_minutes_new,
              a.interval_backward = l_snap_backward_minutes_new,
-             a.time_zone_code = l_time_zone_code_new,
              a.active_flag = l_ts_active_new
        WHERE a.ts_code = p_ts_code;
    --
@@ -2975,7 +3028,7 @@ AS
       IS
       BEGIN
          DBMS_APPLICATION_INFO.set_action (text);
-         DBMS_OUTPUT.put_line (text);
+         -- DBMS_OUTPUT.put_line (text);
       END;
    BEGIN
       --
@@ -3087,7 +3140,7 @@ AS
       IS
       BEGIN
          DBMS_APPLICATION_INFO.set_action (text);
-         DBMS_OUTPUT.put_line (text);
+         -- DBMS_OUTPUT.put_line (text);
       END;
    BEGIN
       --
@@ -3724,7 +3777,7 @@ AS
          cwms_err.raise ('INVALID_T_F_FLAG_OLD', p_override_prot);
       END IF;
 
-      DBMS_OUTPUT.put_line ('tag wie gehts2?');
+      -- DBMS_OUTPUT.put_line ('tag wie gehts2?');
       store_ts (p_cwms_ts_id,
                 p_units,
                 p_timeseries_data,
@@ -3789,6 +3842,12 @@ AS
       l_count               number;
       l_value_offset        binary_double := 0; 
    --
+      l_tz_code             integer;
+      l_loc_tz              varchar2(28);
+      l_irr_interval        integer;
+      l_irr_offset          integer;
+      l_filtered_ts_data    tsv_array;
+   --
       function bitor (num1 in integer, num2 in integer)
          return integer
       is
@@ -3828,6 +3887,8 @@ AS
          when ts_id_not_found then
             null;
       end;                                        
+
+      l_location_code := cwms_loc.get_location_code(l_office_code, cwms_Util.split_text(l_cwms_ts_id, 1, '.', 1));
 
       l_version_date := trunc(NVL(p_version_date, cwms_util.non_versioned), 'mi');
       if l_version_date = cwms_util.all_version_dates then
@@ -4008,8 +4069,61 @@ AS
 
       ELSE
          DBMS_APPLICATION_INFO.set_action ('Incoming data set is irregular');
+         if existing_utc_offset = cwms_util.utc_offset_irregular then
+            null;
+         else
+            l_irr_offset := -existing_utc_offset;
+            select ci.interval
+              into l_irr_interval
+              from cwms_interval ci,
+                   at_cwms_ts_id ts
+             where ts.ts_code = l_ts_code
+               and ci.interval_id = substr(ts.interval_id, 2);
+            ------------------------------------------------------------
+            -- filter out data not on interval offset (from local tz) --
+            ------------------------------------------------------------
+            select time_zone_code
+              into l_tz_code
+              from at_physical_location
+             where location_code = l_location_code;
 
-         l_utc_offset := cwms_util.UTC_OFFSET_IRREGULAR;
+            if l_tz_code > 0 then
+               select time_zone_name
+                 into l_loc_tz
+                 from cwms_time_zone 
+                where time_zone_code = l_tz_code;
+            
+               select cwms_util.change_timezone(trunc(cast(date_time at time zone 'UTC' as date), 'mi'), 'UTC', l_loc_tz)
+                 bulk collect 
+                 into l_date_times
+                 from table(l_timeseries_data);
+            
+               l_count := 0; 
+               l_filtered_ts_data := tsv_array();
+               l_filtered_ts_data.extend(l_timeseries_data.count);
+               for i in 1..l_timeseries_data.count loop
+                  if get_time_on_before_interval(
+                        l_date_times(i), 
+                        l_irr_offset, 
+                        l_irr_interval) = l_date_times(i)
+                  then
+                     l_filtered_ts_data(i-l_count) := l_timeseries_data(i);
+                  else
+                     l_count := l_count + 1;
+                  end if;
+               end loop;
+               case
+               when l_count = l_timeseries_data.count then
+                  dbms_application_info.set_action ('Returning due to no data passed constrained pseudo-regular filter');
+                  return;      -- have already created ts_code if it didn't exist
+               when l_count > 0 then
+                  l_filtered_ts_data.trim(l_count);
+               else
+                  null; -- no times filetered out
+               end case;
+               l_timeseries_data := l_filtered_ts_data;
+            end if;
+         end if;
       END IF;
                     
 
@@ -4019,7 +4133,6 @@ AS
       l_units := cwms_util.get_unit_id(p_units, l_office_id);
       if l_units is null then l_units := p_units; end if;
       if l_base_parameter_id = 'Elev' then
-         l_location_code := cwms_loc.get_location_code(l_office_code, cwms_Util.split_text(l_cwms_ts_id, 1, '.', 1));
          l_value_offset  := cwms_loc.get_vertical_datum_offset(l_location_code, l_units);
       end if;
 
@@ -4085,24 +4198,24 @@ AS
         INTO mindate, maxdate
         FROM TABLE (CAST (l_timeseries_data AS tsv_array)) t;
 
-      DBMS_OUTPUT.put_line (
-            '*****************************'
-         || CHR (10)
-         || 'IN STORE_TS'
-         || CHR (10)
-         || 'TS Description: '
-         || l_cwms_ts_id
-         || CHR (10)
-         || '       TS CODE: '
-         || l_ts_code
-         || CHR (10)
-         || '    Store Rule: '
-         || p_store_rule
-         || CHR (10)
-         || '      Override: '
-         || p_override_prot
-         || CHR (10)
-         || '*****************************');
+--      DBMS_OUTPUT.put_line (
+--            '*****************************'
+--         || CHR (10)
+--         || 'IN STORE_TS'
+--         || CHR (10)
+--         || 'TS Description: '
+--         || l_cwms_ts_id
+--         || CHR (10)
+--         || '       TS CODE: '
+--         || l_ts_code
+--         || CHR (10)
+--         || '    Store Rule: '
+--         || p_store_rule
+--         || CHR (10)
+--         || '      Override: '
+--         || p_override_prot
+--         || CHR (10)
+--         || '*****************************');
 
       /*
      A WHILE LOOP was added to catch primary key violations when multiple
@@ -4854,8 +4967,8 @@ AS
                         l_store_date,
                         l_store_date;
             END LOOP;
-                  DBMS_OUTPUT.put_line (
-                     'CASE 7: delete-insert FALSE Completed.');
+--                  DBMS_OUTPUT.put_line (
+--                     'CASE 7: delete-insert FALSE Completed.');
          ELSE
             cwms_err.raise ('INVALID_STORE_RULE',
                             NVL (p_store_rule, '<NULL>'));
@@ -5993,7 +6106,7 @@ AS
         FROM at_cwms_ts_spec acts
        WHERE ts_code = l_ts_code_old;
 
-      DBMS_OUTPUT.put_line ('l_utc_offset_old-1: ' || l_utc_offset_old);
+--      DBMS_OUTPUT.put_line ('l_utc_offset_old-1: ' || l_utc_offset_old);
 
       --------------------------------------------------------
       -- Confirm new cwms_ts_id does not exist...
@@ -6110,7 +6223,7 @@ AS
       --------------------------------------------------------
       IF p_utc_offset_new IS NULL
       THEN
-         DBMS_OUTPUT.put_line ('l_utc_offset_old-2: ' || l_utc_offset_old);
+--         DBMS_OUTPUT.put_line ('l_utc_offset_old-2: ' || l_utc_offset_old);
          l_utc_offset_new := l_utc_offset_old;
       ELSE
          l_utc_offset_new := p_utc_offset_new;
@@ -6125,7 +6238,7 @@ AS
                          l_interval_dur_new);
       END IF;
 
-      DBMS_OUTPUT.put_line ('l_utc_offset_new: ' || l_utc_offset_new);
+--      DBMS_OUTPUT.put_line ('l_utc_offset_new: ' || l_utc_offset_new);
 
       -------------------------------------------------------------
       ---- Make sure that 'Inst' Parameter type doesn't have a duration--
@@ -6424,7 +6537,7 @@ AS
                --
                -- nonl_versioned, irregular, inclusive retrieval
                --
-               DBMS_OUTPUT.put_line ('RETRIEVE_TS #1');
+--               DBMS_OUTPUT.put_line ('RETRIEVE_TS #1');
 
                --
                OPEN p_at_tsv_rc FOR
@@ -6454,7 +6567,7 @@ AS
                   THEN                              -- l_max_version is TRUE -
                      --latest version_date query -
                      --
-                     DBMS_OUTPUT.put_line ('RETRIEVE_TS #2');
+--                     DBMS_OUTPUT.put_line ('RETRIEVE_TS #2');
 
                      --
                      OPEN p_at_tsv_rc FOR
@@ -6495,7 +6608,7 @@ AS
                   ELSE                              --l_max_version is FALSE -
                      -- first version_date query -
                      --
-                     DBMS_OUTPUT.put_line ('RETRIEVE_TS #3');
+--                     DBMS_OUTPUT.put_line ('RETRIEVE_TS #3');
 
                      --
                      OPEN p_at_tsv_rc FOR
@@ -6538,7 +6651,7 @@ AS
                   --
                   --selected version_date query -
                   --
-                  DBMS_OUTPUT.put_line ('RETRIEVE_TS #4');
+--                  DBMS_OUTPUT.put_line ('RETRIEVE_TS #4');
 
                   --
                   OPEN p_at_tsv_rc FOR
@@ -6578,7 +6691,7 @@ AS
             THEN
                -- nonl_versioned, irregular, noninclusive retrieval -
                --
-               DBMS_OUTPUT.put_line ('gk - RETRIEVE_TS #5 ');
+--               DBMS_OUTPUT.put_line ('gk - RETRIEVE_TS #5 ');
 
                --
                OPEN p_at_tsv_rc FOR
@@ -6600,7 +6713,7 @@ AS
                   THEN
                      --latest version_date query
                      --
-                     DBMS_OUTPUT.put_line ('RETRIEVE_TS #6');
+--                     DBMS_OUTPUT.put_line ('RETRIEVE_TS #6');
 
                      --
                      OPEN p_at_tsv_rc FOR
@@ -6631,7 +6744,7 @@ AS
                         ORDER BY date_time ASC;
                   ELSE                         -- p_version_date IS NOT NULL -
                      --
-                     DBMS_OUTPUT.put_line ('RETRIEVE_TS #7');
+--                     DBMS_OUTPUT.put_line ('RETRIEVE_TS #7');
 
                      --
                      OPEN p_at_tsv_rc FOR
@@ -6663,7 +6776,7 @@ AS
                   END IF;                      -- p_version_date IS NOT NULL -
                ELSE                                -- l_max_version is FALSE -
                   --
-                  DBMS_OUTPUT.put_line ('RETRIEVE_TS #8');
+--                  DBMS_OUTPUT.put_line ('RETRIEVE_TS #8');
 
                   --
                   OPEN p_at_tsv_rc FOR
@@ -6711,8 +6824,8 @@ AS
             --
             -- non_versioned, regular ts query
             --
-            DBMS_OUTPUT.put_line (
-               'RETRIEVE_TS #9 - non versioned, regular ts query');
+--            DBMS_OUTPUT.put_line (
+--               'RETRIEVE_TS #9 - non versioned, regular ts query');
 
             --
 
@@ -6765,7 +6878,7 @@ AS
                IF l_max_version
                THEN
                   --
-                  DBMS_OUTPUT.put_line ('RETRIEVE_TS #10');
+--                  DBMS_OUTPUT.put_line ('RETRIEVE_TS #10');
 
                   --
                   OPEN p_at_tsv_rc FOR
@@ -6814,7 +6927,7 @@ AS
                      GROUP BY date_time;
                ELSE                                -- l_max_version is FALSE -
                   --
-                  DBMS_OUTPUT.put_line ('RETRIEVE_TS #11');
+--                  DBMS_OUTPUT.put_line ('RETRIEVE_TS #11');
 
                   --
                   OPEN p_at_tsv_rc FOR
@@ -6864,7 +6977,7 @@ AS
                END IF;                                      -- l_max_version -
             ELSE                               -- p_version_date IS NOT NULL -
                --
-               DBMS_OUTPUT.put_line ('RETRIEVE_TS #12');
+--               DBMS_OUTPUT.put_line ('RETRIEVE_TS #12');
 
                --
                OPEN p_at_tsv_rc FOR
@@ -10257,8 +10370,8 @@ end retrieve_existing_item_counts;
 
       IF UPPER (l_user_id) != UPPER ('&cwms_schema')
       THEN
-         DBMS_OUTPUT.put_line ('User ID = ' || l_user_id);
-         DBMS_OUTPUT.put_line ('Must be : ' || '&cwms_schema');
+--         DBMS_OUTPUT.put_line ('User ID = ' || l_user_id);
+--         DBMS_OUTPUT.put_line ('Must be : ' || 'CWMS_20');
          raise_application_error (
             -20999,
             'Must be &cwms_schema user to start job ' || l_job_id,
@@ -10270,18 +10383,18 @@ end retrieve_existing_item_counts;
       -------------------------------------------
       IF job_count > 0
       THEN
-         DBMS_OUTPUT.put ('Dropping existing job ' || l_job_id || '...');
+--         DBMS_OUTPUT.put ('Dropping existing job ' || l_job_id || '...');
          DBMS_SCHEDULER.drop_job (l_job_id);
 
          --------------------------------
          -- verify that it was dropped --
          --------------------------------
-         IF job_count = 0
-         THEN
-            DBMS_OUTPUT.put_line ('done.');
-         ELSE
-            DBMS_OUTPUT.put_line ('failed.');
-         END IF;
+--         IF job_count = 0
+--         THEN
+--            DBMS_OUTPUT.put_line ('done.');
+--         ELSE
+--            DBMS_OUTPUT.put_line ('failed.');
+--         END IF;
       END IF;
 
       IF job_count = 0
@@ -10311,12 +10424,13 @@ end retrieve_existing_item_counts;
 
             IF job_count = 1
             THEN
-               DBMS_OUTPUT.put_line (
-                     'Job '
-                  || l_job_id
-                  || ' successfully scheduled to execute every '
-                  || l_run_interval
-                  || ' minutes.');
+               null;
+--               DBMS_OUTPUT.put_line (
+--                     'Job '
+--                  || l_job_id
+--                  || ' successfully scheduled to execute every '
+--                  || l_run_interval
+--                  || ' minutes.');
             ELSE
                cwms_err.raise ('ITEM_NOT_CREATED', 'job', l_job_id);
             END IF;
