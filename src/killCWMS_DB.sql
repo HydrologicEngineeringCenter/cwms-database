@@ -98,8 +98,8 @@ begin
     order by username) 
    loop
       begin
-         dbms_output.put_line('drop user ' || rec.username);
-         execute immediate 'drop user ' || rec.username;
+         dbms_output.put_line('drop user ' || rec.username || ' cascade');
+         execute immediate 'drop user ' || rec.username || ' cascade';
       exception
          when others then 
             dbms_output.put_line('==> Cannot drop user ' || rec.username || ': ' || sqlerrm);

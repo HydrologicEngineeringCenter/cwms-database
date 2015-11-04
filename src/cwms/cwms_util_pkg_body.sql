@@ -5215,7 +5215,30 @@ AS
       return l_json;
    end to_json;      
                
+   FUNCTION is_irregular_code (
+      p_interval_code   IN CWMS_INTERVAL.INTERVAL_CODE%TYPE)
+      RETURN BOOLEAN
+   IS
+      l_interval_dur   CWMS_INTERVAL.INTERVAL%TYPE;
+   BEGIN
+      BEGIN
+         SELECT interval
+           INTO l_interval_dur
+           FROM cwms_interval ci
+          WHERE interval_code = p_interval_code;
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            RAISE;
+      END;
 
+      IF (l_interval_dur = 0)
+      THEN
+         RETURN TRUE;
+      ELSE
+         RETURN FALSE;
+      END IF;
+   END is_irregular_code;
 /*
 BEGIN
  -- anything put here will be executed on every mod_plsql call

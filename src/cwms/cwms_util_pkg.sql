@@ -151,9 +151,10 @@ AS
     */       
    db_office_code_all CONSTANT               NUMBER := 53;
    /**
-    * Code in CWMS_INTERVAL table that represents irregular intervals 
-    */       
-   irregular_interval_code CONSTANT          NUMBER := 29;
+    * Code in CWMS_INTERVAL table that represents irregular intervals
+    * Commented out. User is_irregular_code function
+    */
+   --irregular_interval_code CONSTANT          NUMBER := 29;
    /**
     * Field separator used in text recordset representation (ASCII GS char)
     */       
@@ -2503,6 +2504,17 @@ AS
    function to_json(
       p_xml in xmltype)
       return clob;      
+   /**
+    * Returns true if the interval code is irregular otherwise return false
+    *
+    * @param p_interval_code  interval code
+    *
+    * @return Returns true if the interval code is irregular otherwise return false
+    * @exception if p_interval_code is an invalid code
+    */
+   function is_irregular_code(
+      p_interval_code  in CWMS_INTERVAL.INTERVAL_CODE%TYPE)
+      return BOOLEAN; 
 END cwms_util;
 /
 

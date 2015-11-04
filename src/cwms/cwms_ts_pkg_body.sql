@@ -6223,21 +6223,30 @@ AS
       --------------------------------------------------------
       IF p_utc_offset_new IS NULL
       THEN
---         DBMS_OUTPUT.put_line ('l_utc_offset_old-2: ' || l_utc_offset_old);
-         l_utc_offset_new := l_utc_offset_old;
-      ELSE
-         l_utc_offset_new := p_utc_offset_new;
-      END IF;
-      IF l_interval_code_new = cwms_util.irregular_interval_code
-      THEN
-         l_utc_offset_new := cwms_util.utc_offset_irregular;
-      ELSIF l_utc_offset_new < 0 OR l_utc_offset_new >= l_interval_dur_new
-      THEN
-         cwms_err.RAISE ('INVALID_UTC_OFFSET',
-                         l_utc_offset_new,
-                         l_interval_dur_new);
-      END IF;
+         DBMS_OUTPUT.put_line ('l_utc_offset_old-2: ' || l_utc_offset_old);
 
+         IF CWMS_UTIL.IS_IRREGULAR_CODE (l_interval_code_new)
+         THEN
+            l_utc_offset_new := cwms_util.utc_offset_irregular;
+         ELSIF CWMS_UTIL.IS_IRREGULAR_CODE (l_interval_code_old)
+         THEN
+            l_utc_offset_new := cwms_util.utc_offset_undefined;
+         ELSE
+            l_utc_offset_new := l_utc_offset_old;
+         END IF;
+      ELSE
+         IF CWMS_UTIL.IS_IRREGULAR_CODE (l_interval_code_new)
+         THEN
+            l_utc_offset_new := cwms_util.utc_offset_irregular;
+         ELSIF p_utc_offset_new >= l_interval_dur_new
+         THEN
+            cwms_err.RAISE ('INVALID_UTC_OFFSET',
+                            p_utc_offset_new,
+                            l_interval_dur_new);
+         ELSE
+            l_utc_offset_new := p_utc_offset_new;
+         END IF;
+      END IF;
 --      DBMS_OUTPUT.put_line ('l_utc_offset_new: ' || l_utc_offset_new);
 
       -------------------------------------------------------------
@@ -6253,7 +6262,7 @@ AS
       ---------------------------------------------------
       SELECT COUNT (*)
         INTO l_tmp
-        FROM at_tsv
+        FROM av_tsv
        WHERE ts_code = l_ts_code_old;
 
       l_has_data := l_tmp > 0;
@@ -6266,25 +6275,26 @@ AS
          --------------------------------------------------------------
          -- Do not allow the interval to change, except to irregular --
          --------------------------------------------------------------
-         IF     l_interval_code_old <> cwms_util.irregular_interval_code
-            AND l_interval_code_new <> l_interval_code_old
+         IF NOT CWMS_UTIL.IS_IRREGULAR_CODE (l_interval_code_new)
          THEN
-            cwms_err.RAISE (
-               'GENERIC_ERROR',
-               'Cannot change to a regular interval when data is present');
-         END IF;
+            IF l_interval_code_new <> l_interval_code_old
+            THEN
+               cwms_err.RAISE (
+                  'GENERIC_ERROR',
+                  'Cannot change to a regular interval when data is present');
+            END IF;
 
-         ----------------------------------------------------
-         -- Do not allow the interval UTC offset to change --
-         ----------------------------------------------------
-         IF l_utc_offset_new <> l_utc_offset_old
-         THEN
-            cwms_err.RAISE (
-               'GENERIC_ERROR',
-               'Cannot change interval offsets when data is present');
+            ----------------------------------------------------
+            -- Do not allow the interval UTC offset to change --
+            ----------------------------------------------------
+            IF l_utc_offset_new <> l_utc_offset_old
+            THEN
+               cwms_err.RAISE (
+                  'GENERIC_ERROR',
+                  'Cannot change interval offsets when data is present');
+            END IF;
          END IF;
       END IF;
-
       ----------------------------------------------------
       -- Determine the new location_code --
       ----------------------------------------------------
