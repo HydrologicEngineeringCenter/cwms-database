@@ -4058,7 +4058,7 @@ durations = [
     [26,    '1Month',       43200,  'Measurement applies over 1 month, time stamped at period end'],
     [27,    '1Year',        525600, 'Measurement applies over 1 year, time stamped at period end'],
     [28,    '1Decade',      5256000,    'Measurement applies over 1 decade, time stamped at period end'],
-    [29,    '0',            0,  'Measurement applies intantaneously at time stamp'],
+    [29,    '0',            0,  'Measurement applies intantaneously at time stamp or from previous time stamp'],
     [30,    '1MinuteBOP',   1,  'Measurement applies over 1 minute, time stamped at period beginning'],
     [31,    '2MinutesBOP',  2,  'Measurement applies over 2 minutes, time stamped at period beginning'],
     [32,    '3MinutesBOP',  3,  'Measurement applies over 3 minutes, time stamped at period beginning'],
@@ -4089,6 +4089,7 @@ durations = [
     [57,    '1DecadeBOP',   5256000,    'Measurement applies over 1 decade, time stamped at period beginning'],
     [58,    '10Minutes',    10, 'Measurement applies over 10 minutes, time stamped at period end'],
     [59,    '10MinutesBOP', 10, 'Measurement applies over 10 minutes, time stamped at period beginning']
+    [60,    '0BOP',         0,  'Measurement applies intantaneously at time stamp or until next time stamp'],
 ]
 
 #---------------------#
