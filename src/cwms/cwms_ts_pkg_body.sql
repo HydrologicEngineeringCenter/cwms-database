@@ -4069,7 +4069,7 @@ AS
 
       ELSE
          DBMS_APPLICATION_INFO.set_action ('Incoming data set is irregular');
-         if existing_utc_offset = cwms_util.utc_offset_irregular then
+         if existing_utc_offset in (cwms_util.utc_offset_irregular, cwms_util.utc_offset_undefined) then
             null;
          else
             l_irr_offset := -existing_utc_offset;
@@ -6275,8 +6275,15 @@ AS
          --------------------------------------------------------------
          -- Do not allow the interval to change, except to irregular --
          --------------------------------------------------------------
-         IF NOT CWMS_UTIL.IS_IRREGULAR_CODE (l_interval_code_new)
+         IF CWMS_UTIL.IS_IRREGULAR_CODE (l_interval_code_new)
          THEN
+            IF NVL(l_utc_offset_new, cwms_util.utc_offset_irregular) <> cwms_util.utc_offset_irregular
+            THEN
+               cwms_err.RAISE (
+                  'GENERIC_ERROR',
+                  'Cannot change to a constrained pseudo-regular interval when data is present');
+            end if;
+         ELSE
             IF l_interval_code_new <> l_interval_code_old
             THEN
                cwms_err.RAISE (
