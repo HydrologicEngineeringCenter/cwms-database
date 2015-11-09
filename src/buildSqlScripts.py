@@ -4088,8 +4088,8 @@ durations = [
     [56,    '1YearBOP',     525600, 'Measurement applies over 1 year, time stamped at period beginning'],
     [57,    '1DecadeBOP',   5256000,    'Measurement applies over 1 decade, time stamped at period beginning'],
     [58,    '10Minutes',    10, 'Measurement applies over 10 minutes, time stamped at period end'],
-    [59,    '10MinutesBOP', 10, 'Measurement applies over 10 minutes, time stamped at period beginning']
-    [60,    '0BOP',         0,  'Measurement applies intantaneously at time stamp or until next time stamp'],
+    [59,    '10MinutesBOP', 10, 'Measurement applies over 10 minutes, time stamped at period beginning'],
+    [60,    '0BOP',         0,  'Measurement applies intantaneously at time stamp or until next time stamp']
 ]
 
 #---------------------#
