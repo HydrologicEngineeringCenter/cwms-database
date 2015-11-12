@@ -5209,12 +5209,13 @@ as
       return str_tab_t
    is
       type filter_elements_t is table of at_text_filter_element%rowtype;
-      l_office_id   varchar2(16) := cwms_util.get_db_office_id(p_office_id);
-      l_office_code integer := cwms_util.get_db_office_code(l_office_id);
-      l_header_rec  at_text_filter%rowtype;
-      l_elements    filter_elements_t;
-      l_filters     str_tab_t;
-      l_is_regex    boolean;
+      l_office_id        varchar2(16) := cwms_util.get_db_office_id(p_office_id);
+      l_office_code      integer := cwms_util.get_db_office_code(l_office_id);
+      l_header_rec       at_text_filter%rowtype;
+      l_elements         filter_elements_t;
+      l_filters          str_tab_t;
+      l_case_insensitive str_tab_t;
+      l_is_regex         boolean;
       l_included str_tab_t := str_tab_t();
       l_excluded str_tab_t := str_tab_t();
       l_matched  str_tab_t := str_tab_t();
@@ -5247,9 +5248,15 @@ as
       if p_values is not null and l_elements is not null then
          l_is_regex := l_header_rec.is_regex = 'T';
          if not l_is_regex then
-            select cwms_util.normalize_wildcards(filter_text)      
+            select cwms_util.normalize_wildcards(filter_text),
+                   case
+                   when regex_flags is null then 'F'
+                   when instr(regex_flags, 'i') > 0 then 'T'
+                   else 'F'
+                   end
               bulk collect
-              into l_filters
+              into l_filters,
+                   l_case_insensitive
               from at_text_filter_element
              where text_filter_code = l_header_rec.text_filter_code
              order by element_sequence;
@@ -5285,11 +5292,19 @@ as
                      end if;
                   end if;
                else
-                  select *
-                    bulk collect
-                    into l_matched
-                    from table(l_excluded)
-                   where column_value like l_filters(i); 
+                  if l_case_insensitive(i) = 'T' then
+                     select *
+                       bulk collect
+                       into l_matched
+                       from table(l_excluded)
+                      where upper(column_value) like upper(l_filters(i)); 
+                  else
+                     select *
+                       bulk collect
+                       into l_matched
+                       from table(l_excluded)
+                      where column_value like l_filters(i); 
+                  end if;
                end if;
                l_included := l_included multiset union all l_matched;
                l_excluded := l_excluded multiset except all l_matched;
@@ -5317,11 +5332,19 @@ as
                      end if;
                   end if;
                else
-                  select *
-                    bulk collect
-                    into l_matched
-                    from table(l_included)
-                   where column_value like l_filters(i); 
+                  if l_case_insensitive(i) = 'T' then
+                     select *
+                       bulk collect
+                       into l_matched
+                       from table(l_included)
+                      where upper(column_value) like upper(l_filters(i)); 
+                  else
+                     select *
+                       bulk collect
+                       into l_matched
+                       from table(l_included)
+                      where column_value like l_filters(i); 
+                  end if;
                end if;
                l_included := l_included multiset except all l_matched;
                l_excluded := l_excluded multiset union all l_matched;
@@ -5357,12 +5380,13 @@ as
    is                      
       type filter_element_t is record(include boolean, flags varchar2(16), text varchar2(256));
       type filter_element_tab_t is table of filter_element_t;
-      l_regex    boolean := cwms_util.is_true(p_regex);
-      l_filter   filter_element_tab_t;
-      l_parts    str_tab_t;
-      l_included str_tab_t := str_tab_t();
-      l_excluded str_tab_t := str_tab_t();
-      l_matched  str_tab_t := str_tab_t();
+      l_regex            boolean := cwms_util.is_true(p_regex);
+      l_filter           filter_element_tab_t;
+      l_case_insensitive str_tab_t;
+      l_parts            str_tab_t;
+      l_included         str_tab_t := str_tab_t();
+      l_excluded         str_tab_t := str_tab_t();
+      l_matched          str_tab_t := str_tab_t();
    begin   
       if p_filter is null then
          l_included := p_values;
@@ -5389,17 +5413,15 @@ as
                'ERROR', 
                'Filter element must start with ''INCLUDE'' or ''EXCLUDE'' (or some beginning portion)');
             end if; 
-            if l_regex then
+            l_filter(i).text := trim(l_parts(2));
+            if regexp_like(l_filter(i).text, 'f(l(a(gs?)?)?)?\s*=\s*[cimnx]*\s*:.+', 'i') then
+               l_parts := cwms_util.split_text(l_filter(i).text, ':', 1);
                l_filter(i).text := trim(l_parts(2));
-               if regexp_like(l_filter(i).text, 'f(l(a(gs?)?)?)?\s*=\s*[cimnx]*\s*:.+', 'i') then
-                  l_parts := cwms_util.split_text(l_filter(i).text, ':', 1);
-                  l_filter(i).text := trim(l_parts(2));
-                  l_parts := cwms_util.split_text(l_parts(1), '=', 1);
-                  l_filter(i).flags := lower(trim(l_parts(2)));
-               end if;
-               l_parts := cwms_util.split_text(l_parts(2), ':', 1);
-            else
-               l_filter(i).text := cwms_util.normalize_wildcards(trim(l_parts(2))); 
+               l_parts := cwms_util.split_text(l_parts(1), '=', 1);
+               l_filter(i).flags := lower(trim(l_parts(2)));
+            end if;
+            if not l_regex then
+               l_filter(i).text := cwms_util.normalize_wildcards(l_filter(i).text); 
             end if;
          end loop;
          ---------------------      
@@ -5427,11 +5449,19 @@ as
                       where regexp_like(column_value, l_filter(i).text); 
                   end if;
                else
-                  select *
-                    bulk collect
-                    into l_matched
-                    from table(l_excluded)
-                   where column_value like l_filter(i).text; 
+                  if l_filter(i).flags is not null and instr(l_filter(i).flags, 'i') > 0 then
+                     select *
+                       bulk collect
+                       into l_matched
+                       from table(l_excluded)
+                      where upper(column_value) like upper(l_filter(i).text); 
+                  else
+                     select *
+                       bulk collect
+                       into l_matched
+                       from table(l_excluded)
+                      where column_value like l_filter(i).text; 
+                  end if;
                end if;
                l_included := l_included multiset union all l_matched;
                l_excluded := l_excluded multiset except all l_matched;
@@ -5451,11 +5481,19 @@ as
                       where regexp_like(column_value, l_filter(i).text); 
                   end if;
                else
-                  select *
-                    bulk collect
-                    into l_matched
-                    from table(l_included)
-                   where column_value like l_filter(i).text; 
+                  if l_filter(i).flags is not null and instr(l_filter(i).flags, 'i') > 0 then
+                     select *
+                       bulk collect
+                       into l_matched
+                       from table(l_included)
+                      where upper(column_value) like upper(l_filter(i).text); 
+                  else
+                     select *
+                       bulk collect
+                       into l_matched
+                       from table(l_included)
+                      where column_value like l_filter(i).text; 
+                  end if;
                end if;
                l_included := l_included multiset except all l_matched;
                l_excluded := l_excluded multiset union all l_matched;
