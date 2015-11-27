@@ -48,6 +48,7 @@ AS
       IF l_cnt > 0
       THEN
          SET_CWMS_ENV (l_attribute, l_office_id);
+         SET_SESSION_PRIVILEGES; 
       ELSE
          l_username := cwms_util.get_user_id;
          cwms_err.raise (
@@ -59,5 +60,73 @@ AS
             || ' does not have any assigned privileges for that office.');
       END IF;
    END set_session_office_id;
+
+   PROCEDURE set_session_privileges
+   IS
+      l_office_id   VARCHAR2 (16);
+      l_username    VARCHAR2 (32);
+      l_readonly    BOOLEAN;
+      l_cnt         NUMBER;
+   BEGIN
+      l_readonly := TRUE;
+      l_cnt := 0;
+      l_username := user;
+
+
+      SELECT SYS_CONTEXT ('CWMS_ENV', 'SESSION_OFFICE_ID')
+        INTO l_office_id
+        FROM DUAL;
+
+      IF l_office_id IS NULL
+      THEN
+         BEGIN
+            SELECT a.office_id
+              INTO l_office_id
+              FROM cwms_office a, at_sec_user_office b
+             WHERE     b.username = l_username
+                   AND a.office_code = b.db_office_code;
+         EXCEPTION
+            WHEN OTHERS
+            THEN
+               NULL;
+         END;
+      END IF;
+
+      SELECT COUNT (*)
+        INTO l_cnt
+        FROM TABLE (cwms_sec.get_assigned_priv_groups_tab)
+       WHERE     db_office_id = l_office_id
+             AND user_group_id IN ('CCP Mgr',
+                                   'CCP Proc',
+                                   'CWMS DBA Users',
+                                   'CWMS PD Users',
+                                   'CWMS User Admins',
+                                   'Data Acquisition Mgr',
+                                   'Data Exchange Mgr',
+                                   'TS ID Creator',
+                                   'VT Mgr');
+
+      IF (l_cnt > 0)
+      THEN
+         l_readonly := FALSE;
+      END IF;
+
+      SELECT COUNT (*)
+        INTO l_cnt
+        FROM DUAL
+       WHERE  l_username IN ('&cwms_schema','CWMS_STR_ADM');
+
+      IF (l_cnt > 0)
+      THEN
+         l_readonly := FALSE;
+      END IF;
+
+      IF (l_readonly)
+      THEN
+         set_cwms_env ('CWMS_PRIVILEGE', 'READ_ONLY');
+      ELSE
+         set_cwms_env ('CWMS_PRIVILEGE', 'CAN_WRITE');
+      END IF;
+   END set_session_privileges;
 END cwms_env;
 /

@@ -9,9 +9,8 @@ AS
  */
 
 
-   PROCEDURE set_cwms_env (p_attribute IN VARCHAR2,p_value IN VARCHAR2);
-
    PROCEDURE set_session_office_id (p_office_id IN VARCHAR2);
+   PROCEDURE set_session_privileges;
 END cwms_env;
 /
 

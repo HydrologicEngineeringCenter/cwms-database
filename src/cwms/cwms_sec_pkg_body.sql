@@ -960,6 +960,7 @@ AS
       l_username           VARCHAR2 (31) := UPPER (TRIM (p_username));
       l_user_group_code    NUMBER;
       l_count              NUMBER;
+      l_cmd                VARCHAR(1024);
    BEGIN
       confirm_user_admin_priv (l_db_office_code);
 
@@ -1008,6 +1009,8 @@ AS
                            NULL);
       END IF;
 
+      l_cmd := 'CREATE OR REPLACE TRIGGER ' || p_username || '_logon_trigger AFTER LOGON ON ' ||  p_username || '.SCHEMA BEGIN cwms_20.cwms_env.set_session_privileges; END;';
+      execute immediate l_cmd;
       COMMIT;
    END CREATE_USER;
 
