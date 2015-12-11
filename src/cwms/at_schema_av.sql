@@ -46,6 +46,7 @@ DECLARE
 			       'av_project_purposes_ui',
 			       'av_screened_ts_ids',
 			       'av_screening_assignments',
+			       'av_screening_control',
 			       'av_screening_criteria',
 			       'av_screening_dur_mag',
 			       'av_screening_id',
@@ -124,6 +125,7 @@ END;
 @@cwms/views/av_project_purposes_ui.sql
 @@cwms/views/av_screened_ts_ids.sql
 @@cwms/views/av_screening_assignments.sql
+@@cwms/views/av_screening_control.sql
 @@cwms/views/av_screening_criteria.sql
 @@cwms/views/av_screening_dur_mag.sql
 @@cwms/views/av_screening_id.sql

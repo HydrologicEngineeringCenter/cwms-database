@@ -6,7 +6,7 @@ BEGIN
                FROM user_tables
               WHERE table_name LIKE 'AT_%' AND TEMPORARY = 'N')
    LOOP
-      l_trig := replace(c.table_name,'AT_','TR_');
+      l_trig := replace(c.table_name,'AT_','ST_');
       l_cmd :=
             'CREATE OR REPLACE TRIGGER '
          || l_trig
@@ -20,7 +20,7 @@ BEGIN
              l_priv   VARCHAR2 (16);
              BEGIN
              SELECT SYS_CONTEXT (''CWMS_ENV'', ''CWMS_PRIVILEGE'') INTO l_priv FROM DUAL;
-             IF (l_priv = ''READ_ONLY'')
+             IF ((l_priv is NULL OR l_priv <> ''CAN_WRITE'') AND user<>UPPER(''&cwms_schema''))
              THEN
      
                CWMS_20.CWMS_ERR.RAISE(''NO_WRITE_PRIVILEGE'');

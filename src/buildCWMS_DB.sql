@@ -260,6 +260,7 @@ begin
    cwms_shef.start_update_shef_spec_map_job;
 end;
 /
+set define on
 @@cwms/create_sec_triggers
 --
 -- all done

@@ -65,10 +65,10 @@ AS
    IS
       l_office_id   VARCHAR2 (16);
       l_username    VARCHAR2 (32);
-      l_readonly    BOOLEAN;
+      l_canwrite    BOOLEAN;
       l_cnt         NUMBER;
    BEGIN
-      l_readonly := TRUE;
+      l_canwrite := FALSE;
       l_cnt := 0;
       l_username := user;
 
@@ -106,25 +106,13 @@ AS
                                    'TS ID Creator',
                                    'VT Mgr');
 
-      IF (l_cnt > 0)
+      IF(l_cnt > 0)
       THEN
-         l_readonly := FALSE;
+         l_canwrite := TRUE;
       END IF;
 
-      SELECT COUNT (*)
-        INTO l_cnt
-        FROM DUAL
-       WHERE  l_username IN ('&cwms_schema','CWMS_STR_ADM');
-
-      IF (l_cnt > 0)
+      IF (l_canwrite)
       THEN
-         l_readonly := FALSE;
-      END IF;
-
-      IF (l_readonly)
-      THEN
-         set_cwms_env ('CWMS_PRIVILEGE', 'READ_ONLY');
-      ELSE
          set_cwms_env ('CWMS_PRIVILEGE', 'CAN_WRITE');
       END IF;
    END set_session_privileges;

@@ -8143,7 +8143,7 @@ def main() :
         "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest', test_passwd, group_list, '&office_id');
         --
         -- hectest_ro
-        group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('TS ID Creator', 'CWMS Users', 'Viewer Users');
+        group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS Users', 'Viewer Users');
         "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_ro', test_passwd, group_list, '&office_id');
         --
         -- hectest_dba

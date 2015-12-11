@@ -28,6 +28,7 @@ DECLARE
 	view_names   id_array_t
 		:= id_array_t ('av_a2w_ts_codes_by_loc',
                                'av_base_parameter_units',
+                               'av_base_param_display_units',
                                'av_cities_sp',
                                'av_county_sp',
                                'av_lock',
@@ -132,6 +133,9 @@ prompt create view av_a2w_ts_codes_by_loc
 --
 prompt create view av_base_parameter_units
 @@cwms/views/av_base_parameter_units.sql
+--
+prompt create view av_base_param_display_units
+@@cwms/views/av_base_parm_display_units.sql
 --
 prompt create view av_cities_sp
 @@cwms/views/av_cities_sp.sql

@@ -133,6 +133,7 @@ AS
                                 p_user_group_id   IN VARCHAR2,
                                 p_db_office_id    IN VARCHAR2 DEFAULT NULL);
 
+   PROCEDURE create_logon_trigger (p_username IN VARCHAR2);
    PROCEDURE create_user (p_username             IN VARCHAR2,
                           p_password             IN VARCHAR2,
                           p_user_group_id_list   IN char_32_array_type,

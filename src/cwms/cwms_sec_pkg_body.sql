@@ -920,6 +920,22 @@ AS
       END IF;
    END UPDATE_USER_DATA;
 
+   PROCEDURE create_logon_trigger (p_username IN VARCHAR2)
+   IS
+      l_cmd   VARCHAR (1024);
+   BEGIN
+      l_cmd :=
+            'CREATE OR REPLACE TRIGGER '
+         || p_username
+         || '_logon_trigger AFTER LOGON ON '
+         || p_username
+         || '.SCHEMA BEGIN cwms_20.cwms_env.set_session_privileges; END;';
+
+      EXECUTE IMMEDIATE l_cmd;
+
+      COMMIT;
+   END;
+
    ----------------------------------------------------------------------------
    -- create_user
    ----------------------------------------------------------------------------
@@ -960,7 +976,6 @@ AS
       l_username           VARCHAR2 (31) := UPPER (TRIM (p_username));
       l_user_group_code    NUMBER;
       l_count              NUMBER;
-      l_cmd                VARCHAR(1024);
    BEGIN
       confirm_user_admin_priv (l_db_office_code);
 
@@ -1008,9 +1023,7 @@ AS
                            NULL,
                            NULL);
       END IF;
-
-      l_cmd := 'CREATE OR REPLACE TRIGGER ' || p_username || '_logon_trigger AFTER LOGON ON ' ||  p_username || '.SCHEMA BEGIN cwms_20.cwms_env.set_session_privileges; END;';
-      execute immediate l_cmd;
+      create_logon_trigger(p_username);
       COMMIT;
    END CREATE_USER;
 
