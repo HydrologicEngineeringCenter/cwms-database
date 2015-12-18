@@ -12,6 +12,7 @@ VERSIONS:
    1.4   12Jul2012   MDP   Added API Usage Note to main page
    1.5   23May2014   MDP   Added web links
    1.6   12Sep2014   MDP   Fixed deprecation handling
+   1.6.1 15Dec2015   MDP   Added dump of offending text on unexpected tag 
 
 JAVADOCS:
    Standard javadoc syntax applies as shown below, but the list of tags is a
@@ -972,7 +973,9 @@ class JDoc :
                self._exceptions.append(section)
             elif tag == '@see' :
                self._see_also.append(section)
-            else : raise ValueError('Unexpected tag: %s' % tag)
+            else : 
+               sys.stderr.write("\n%s\n" % text)
+               raise ValueError('Unexpected tag: %s' % tag)
          else :
             if self._description : raise ValueError('Cannot have multiple descriptions.')
             self._description = section.strip()
