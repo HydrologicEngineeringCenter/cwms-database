@@ -127,6 +127,7 @@ as
       l_ignore_nulls   boolean := cwms_util.return_true_or_false(p_ignore_nulls);
       l_exists         boolean;
    begin
+      cwms_util.check_office_permission(p_office_id);
       begin
          select *
            into l_rec
@@ -195,11 +196,7 @@ as
       l_cwms_office_code   number := cwms_util.get_office_code('CWMS');
       l_rowid              urowid;
    begin
-                
-      if l_office_code = l_cwms_office_code and cwms_util.user_office_code != l_cwms_office_code then
-         cwms_err.raise('ERROR', 'Must be schema owner to store text as CWMS');
-      end if;
-   
+      cwms_util.check_office_permission(p_office_id);
       select count(*)
         into l_count
         from at_clob
@@ -456,6 +453,7 @@ as
       l_cwms_office_code   number := cwms_util.get_office_code('CWMS');
       l_ignore_nulls       boolean := cwms_util.return_true_or_false(p_ignore_nulls);
    begin
+      cwms_util.check_office_permission(p_office_id);
       if l_ignore_nulls then
          if p_text is null then
             if p_description is not null then
@@ -482,9 +480,10 @@ as
    --
    -- append to text
    --
-   procedure append_text(p_new_text in out nocopy clob, -- the text to append, unlimited length
-                                                       p_id in varchar2, -- identifier of text to append to (256 chars max)
-                                                                        p_office_id in varchar2 default null) -- office id, defaults current user's office
+   procedure append_text(
+      p_new_text  in out nocopy clob, -- the text to append, unlimited length
+      p_id        in varchar2, -- identifier of text to append to (256 chars max)
+      p_office_id in varchar2 default null) -- office id, defaults current user's office
    is
       l_existing_text   clob;
       l_code            number(10);
@@ -497,10 +496,6 @@ as
            into l_office_code, l_existing_text
            from at_clob
           where clob_code = l_code;
-
-         if l_office_code = cwms_util.db_office_code_all then
-            cwms_err.raise('ERROR', 'Cannot update text owned by the CWMS Office ID.');
-         end if;
 
          cwms_util.append(l_existing_text, p_new_text);
 
@@ -522,9 +517,10 @@ as
    --
    -- append to text
    --
-   procedure append_text(p_new_text in varchar2, -- the text to append, limited to varchar2 max size
-                                                p_id in varchar2, -- identifier of text to append to (256 chars max)
-                                                                 p_office_id in varchar2 default null) -- office id, defaults current user's office
+   procedure append_text(
+      p_new_text  in varchar2, -- the text to append, limited to varchar2 max size
+      p_id        in varchar2, -- identifier of text to append to (256 chars max)
+      p_office_id in varchar2 default null) -- office id, defaults current user's office
    is
       l_existing_text   clob;
       l_code            number(10);
@@ -573,6 +569,7 @@ as
       l_id            varchar2(256) := upper(p_id);
       l_office_code   number := cwms_util.get_office_code(p_office_id);
    begin
+      cwms_util.check_office_permission(p_office_id);
       delete 
         from at_blob
        where office_code = l_office_code and id = l_id;
@@ -588,6 +585,7 @@ as
       l_id            varchar2(256) := upper(p_id);
       l_office_code   number := cwms_util.get_office_code(p_office_id);
    begin
+      cwms_util.check_office_permission(p_office_id);
       delete 
         from at_clob
        where office_code = l_office_code and id = l_id;
@@ -799,9 +797,10 @@ as
    --
    -- get code for id
    --
-   procedure get_text_code(p_text_code out number, -- the code for use in foreign keys
-                                                  p_id in varchar2, -- identifier with which to retrieve text (256 chars max)
-                                                                   p_office_id in varchar2 default null) -- office id, defaults current user's office
+   procedure get_text_code(
+      p_text_code out number, -- the code for use in foreign keys
+      p_id        in varchar2, -- identifier with which to retrieve text (256 chars max)
+      p_office_id in varchar2 default null) -- office id, defaults current user's office
    is
       l_office_code        number := cwms_util.get_office_code(p_office_id);
       l_cwms_office_code   number := cwms_util.get_office_code('CWMS');
@@ -815,8 +814,9 @@ as
    --
    -- get code for id
    --
-   function get_text_code(p_id in varchar2, -- identifier with which to retrieve text (256 chars max)
-                                           p_office_id in varchar2 default null) -- office id, defaults current user's office
+   function get_text_code(
+      p_id        in varchar2, -- identifier with which to retrieve text (256 chars max)
+      p_office_id in varchar2 default null) -- office id, defaults current user's office
       return number -- the code for use in foreign keys
    is
       l_text_code   number;
@@ -977,13 +977,18 @@ as
       end if;
    end store_std_text;
 
-   procedure retrieve_std_text(p_std_text out clob, p_std_text_id in varchar2, p_office_id in varchar2 default null)
+   procedure retrieve_std_text(
+      p_std_text    out clob, 
+      p_std_text_id in  varchar2, 
+      p_office_id   in  varchar2 default null)
    is
    begin
       p_std_text := retrieve_std_text_f(p_std_text_id, p_office_id);
    end retrieve_std_text;
 
-   function retrieve_std_text_f(p_std_text_id in varchar2, p_office_id in varchar2 default null)
+   function retrieve_std_text_f(
+      p_std_text_id in varchar2, 
+      p_office_id   in varchar2 default null)
       return clob
    is
       l_std_text      clob;
@@ -1041,6 +1046,7 @@ as
       l_delete_key    boolean := false;
       l_delete_data   boolean := false;
    begin
+      cwms_util.check_office_permission(p_office_id);
       l_office_code := cwms_util.get_db_office_code(p_office_id);
       case upper(trim(p_delete_action))
       when cwms_util.delete_key then
@@ -1127,8 +1133,14 @@ as
       p_data_entry_date_utc in timestamp,
       p_attribute           in number)
    is
-      l_rec   at_tsv_std_text%rowtype;
+      l_rec       at_tsv_std_text%rowtype;
+      l_office_id varchar2(16);
    begin
+      select db_office_id
+        into l_office_id
+        from at_cwms_ts_id
+       where ts_code = p_ts_code; 
+      cwms_util.check_office_permission(l_office_id);
       l_rec.ts_code         := p_ts_code;
       l_rec.date_time       := p_date_time_utc;
       l_rec.version_date    := nvl(p_version_date_utc, cast(p_data_entry_date_utc as date));
@@ -1183,7 +1195,13 @@ as
       l_is_versioned         boolean;
       l_off_interval_count   integer;
       l_store_date           timestamp := sys_extract_utc(systimestamp);
+      l_office_id            varchar2(16);
    begin
+      select db_office_id
+        into l_office_id
+        from at_cwms_ts_id
+       where ts_code = p_ts_code; 
+      cwms_util.check_office_permission(l_office_id);
       if p_version_dates_utc is null then
          ------------------------------------------------------------
          -- need to validate date/times and retrieve version dates --
@@ -1372,6 +1390,7 @@ as
       -------------------
       -- sanity checks --
       -------------------
+      cwms_util.check_office_permission(p_office_id);
       if p_tsid is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
@@ -1590,6 +1609,7 @@ as
       l_office_id          varchar2(16);
       l_office_code        number(10);
    begin
+      cwms_util.check_office_permission(p_office_id);
       -------------------
       -- sanity checks --
       -------------------
@@ -1982,6 +2002,7 @@ as
       -------------------
       -- sanity checks --
       -------------------
+      cwms_util.check_office_permission(p_office_id);
       if p_tsid is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
@@ -2050,8 +2071,14 @@ as
       p_data_entry_date_utc in timestamp,
       p_attribute           in number)
    is
-      l_rec   at_tsv_text%rowtype;
+      l_rec       at_tsv_text%rowtype;
+      l_office_id varchar2(16);
    begin
+      select db_office_id
+        into l_office_id
+        from at_cwms_ts_id
+       where ts_code = p_ts_code; 
+      cwms_util.check_office_permission(l_office_id);
       l_rec.ts_code         := p_ts_code;
       l_rec.date_time       := p_date_time_utc;
       l_rec.version_date    := nvl(p_version_date_utc, cast(p_data_entry_date_utc as date));
@@ -2106,7 +2133,13 @@ as
       l_is_versioned         boolean;
       l_off_interval_count   integer;
       l_store_date           timestamp := sys_extract_utc(systimestamp);
+      l_office_id            varchar2(16);
    begin
+      select db_office_id
+        into l_office_id
+        from at_cwms_ts_id
+       where ts_code = p_ts_code; 
+      cwms_util.check_office_permission(l_office_id);
       if p_version_dates_utc is null then
          ------------------------------------------------------------
          -- need to validate date/times and retrieve version dates --
@@ -2307,6 +2340,7 @@ as
       -------------------
       -- sanity checks --
       -------------------
+      cwms_util.check_office_permission(p_office_id);
       if p_tsid is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
@@ -2524,6 +2558,7 @@ as
       l_office_id          varchar2(16);
       l_office_code        number(10);
    begin
+      cwms_util.check_office_permission(p_office_id);
       -------------------
       -- sanity checks --
       -------------------
@@ -2653,6 +2688,7 @@ as
       -------------------
       -- sanity checks --
       -------------------
+      cwms_util.check_office_permission(p_office_id);
       if p_tsid is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
@@ -2868,6 +2904,7 @@ as
       -------------------
       -- sanity checks --
       -------------------
+      cwms_util.check_office_permission(p_office_id);
       if p_tsid is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
@@ -3210,6 +3247,7 @@ as
       l_ts_code              number(10);
       l_date_time_versions   date2_tab_t := date2_tab_t();
    begin
+      cwms_util.check_office_permission(p_office_id);
       -------------------
       -- sanity checks --
       -------------------
@@ -3284,6 +3322,7 @@ as
       -------------------
       -- sanity checks --
       -------------------
+      cwms_util.check_office_permission(p_office_id);
       if p_text_id is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TEXT_ID');
       end if;
@@ -3333,8 +3372,14 @@ as
       p_data_entry_date_utc in timestamp,
       p_attribute           in number)
    is
-      l_rec   at_tsv_binary%rowtype;
+      l_rec       at_tsv_binary%rowtype;
+      l_office_id varchar2(16);
    begin
+      select db_office_id
+        into l_office_id
+        from at_cwms_ts_id
+       where ts_code = p_ts_code; 
+      cwms_util.check_office_permission(l_office_id);
       l_rec.ts_code         := p_ts_code;
       l_rec.date_time       := p_date_time_utc;
       l_rec.version_date    := nvl(p_version_date_utc, cast(p_data_entry_date_utc as date));
@@ -3389,7 +3434,13 @@ as
       l_is_versioned         boolean;
       l_off_interval_count   integer;
       l_store_date           timestamp := sys_extract_utc(systimestamp);
+      l_office_id            varchar2(16);
    begin
+      select db_office_id
+        into l_office_id
+        from at_cwms_ts_id
+       where ts_code = p_ts_code; 
+      cwms_util.check_office_permission(l_office_id);
       if p_version_dates_utc is null then
          ------------------------------------------------------------
          -- need to validate date/times and retrieve version dates --
@@ -3580,6 +3631,7 @@ as
       -------------------
       -- sanity checks --
       -------------------
+      cwms_util.check_office_permission(p_office_id);
       if p_tsid is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
@@ -3809,6 +3861,7 @@ as
       -------------------
       -- sanity checks --
       -------------------
+      cwms_util.check_office_permission(p_office_id);
       if p_tsid is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
@@ -3941,6 +3994,7 @@ as
       -------------------
       -- sanity checks --
       -------------------
+      cwms_util.check_office_permission(p_office_id);
       if p_tsid is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
@@ -4156,6 +4210,7 @@ as
       -------------------
       -- sanity checks --
       -------------------
+      cwms_util.check_office_permission(p_office_id);
       if p_tsid is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
@@ -4575,6 +4630,7 @@ as
       -------------------
       -- sanity checks --
       -------------------
+      cwms_util.check_office_permission(p_office_id);
       if p_tsid is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
@@ -4661,6 +4717,7 @@ as
       -------------------
       -- sanity checks --
       -------------------
+      cwms_util.check_office_permission(p_office_id);
       if p_binary_id is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_BINARY_ID');
       end if;
@@ -4717,6 +4774,7 @@ as
       -------------------
       -- sanity checks --
       -------------------
+      cwms_util.check_office_permission(p_office_id);
       if p_file_extension is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_FILE_EXTENSION');
       end if;
@@ -4790,7 +4848,9 @@ as
       end if;
    end store_file_extension;
 
-   procedure delete_file_extension(p_file_extension in varchar2, p_office_id in varchar2 default null)
+   procedure delete_file_extension(
+      p_file_extension in varchar2, 
+      p_office_id      in varchar2 default null)
    is
       l_file_extension   varchar2(16);
       l_office_code      number(10);
@@ -4799,6 +4859,7 @@ as
       -------------------
       -- sanity checks --
       -------------------
+      cwms_util.check_office_permission(p_office_id);
       if p_file_extension is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_FILE_EXTENSION');
       end if;
@@ -4841,7 +4902,9 @@ as
       p_cursor := cat_file_extensions_f(p_file_extension_mask, p_office_id_mask);
    end cat_file_extensions;
 
-   function cat_file_extensions_f(p_file_extension_mask in varchar2 default '*', p_office_id_mask in varchar2 default null)
+   function cat_file_extensions_f(
+      p_file_extension_mask in varchar2 default '*', 
+      p_office_id_mask      in varchar2 default null)
       return sys_refcursor
    is
       l_file_extension_mask   varchar2(16);
@@ -4900,7 +4963,9 @@ as
       p_cursor := cat_media_types_f(p_media_type_mask, p_office_id_mask);
    end cat_media_types;
 
-   function cat_media_types_f(p_media_type_mask in varchar2 default '*', p_office_id_mask in varchar2 default null)
+   function cat_media_types_f(
+      p_media_type_mask in varchar2 default '*', 
+      p_office_id_mask  in varchar2 default null)
       return sys_refcursor
    is
       l_media_type_mask   varchar2(84);
@@ -4950,15 +5015,19 @@ as
       p_office_id      in varchar2 default null)
    is      
       type filter_elements_t is table of at_text_filter_element%rowtype; 
-      l_header_rec     at_text_filter%rowtype;
-      l_elements       filter_elements_t;
-      l_exists         boolean;
-      l_fail_if_exists boolean := cwms_util.is_true(p_fail_if_exists);
-      l_is_regex       boolean := cwms_util.is_true(p_uses_regex);
-      l_office_id      varchar2(16) := cwms_util.get_db_office_id(p_office_id);
-      l_office_code    integer := cwms_util.get_db_office_code(l_office_id);
-      l_parts          str_tab_t;
-   begin                     
+      c_element_pattern1 constant varchar2(57) := '^\s*(i(n(c(l(u(de?)?)?)?)?)?|e(x(c(l(u(de?)?)?)?)?)?)\s*:';
+      c_element_pattern2 constant varchar2(35) := '\s*:\s*f(l(a(gs?)?)?)?\s*=.*$';
+      l_header_rec       at_text_filter%rowtype;
+      l_elements         filter_elements_t;
+      l_exists           boolean;
+      l_fail_if_exists   boolean := cwms_util.is_true(p_fail_if_exists);
+      l_is_regex         boolean := cwms_util.is_true(p_uses_regex);
+      l_office_id        varchar2(16) := cwms_util.get_db_office_id(p_office_id);
+      l_office_code      integer := cwms_util.get_db_office_code(l_office_id);
+      l_parts            str_tab_t;
+      l_pos              integer;
+   begin
+      cwms_util.check_office_permission(p_office_id);
       -------------------------------------------------
       -- get the existing header record if it exists --
       -------------------------------------------------
@@ -4974,20 +5043,26 @@ as
          when no_data_found then l_exists := false; 
       end;
       if l_exists then
-         if l_header_rec.office_code = cwms_util.db_office_code_all then
-            if l_office_code != cwms_util.db_office_code_all then
-               cwms_err.raise(
-                  'ERROR',
-                  'Text filter '
-                  ||l_header_rec.text_filter_id
-                  ||' is owned by CWMS - cannot update.');
-            end if;
-         end if;
          if l_fail_if_exists then
+            select office_id
+              into l_office_id
+              from cwms_office
+             where office_code = l_header_rec.office_code; 
             cwms_err.raise(
                'ITEM_ALREADY_EXISTS',
                'Text filter',
                l_office_id||'/'||l_header_rec.text_filter_id);
+         elsif l_header_rec.office_code = cwms_util.db_office_code_all and l_office_code != cwms_util.db_office_code_all then
+            cwms_err.raise(
+               'ERROR',
+               'Cannot store text filter '
+               ||l_office_id
+               ||'/'
+               ||l_header_rec.text_filter_id
+               ||' because '
+               ||'CWMS/'
+               ||l_header_rec.text_filter_id
+               ||' exists');
          end if;
          ------------------------------------------
          -- exists, delete the existing elements --
@@ -5028,34 +5103,42 @@ as
             l_elements(i).text_filter_code := l_header_rec.text_filter_code;
             l_elements(i).element_sequence := i;
             l_elements(i).regex_flags := l_header_rec.regex_flags; -- may be overwritten       
-            l_parts := cwms_util.split_text(p_text_filter(i), ':', 1);
-            if l_parts.count != 2 then
+            l_pos := regexp_instr(p_text_filter(i), c_element_pattern1, 1, 1, 1, 'i'); 
+            if l_pos = 0 then
                cwms_err.raise(
                   'ERROR',
-                  'Filter element must be like (INCLUDE|EXCLUDE):<filter>');
+                  'Filter element must be like (INCLUDE|EXCLUDE):<filter>[:FLAGS=<flags>]'
+                  ||chr(10)
+                  ||'<'||p_text_filter(i)||'>');
             end if;
-            l_parts(1) := upper(trim(l_parts(1)));    
-            case
-               when instr('INCLUDE', l_parts(1)) = 1 then
+            l_parts := str_tab_t(
+               lower(trim(substr(p_text_filter(i), 1, l_pos-1))),
+               substr(p_text_filter(i), l_pos));
+            if substr(l_parts(1), 1, 1) = 'i' then
                   l_elements(i).include := 'T';
-               when instr('EXCLUDE', l_parts(1)) = 1 then
-                  l_elements(i).include := 'F';
-               else   
-                  cwms_err.raise(
-                  'ERROR', 
-                  'Filter element must start with ''INCLUDE'' or ''EXCLUDE'' (or some beginning portion thereof)');
-            end case;
-            if l_is_regex then
-               l_elements(i).filter_text := trim(l_parts(2));
-               if regexp_like(l_elements(i).filter_text, 'f(l(a(gs?)?)?)?\s*=\s*[cimnx]*\s*:.+', 'i') then
-                  l_parts := cwms_util.split_text(l_elements(i).filter_text, ':', 1);
-                  l_elements(i).filter_text := trim(l_parts(2));
-                  l_parts := cwms_util.split_text(l_parts(1), '=', 1);
-                  l_elements(i).regex_flags := lower(trim(l_parts(2))); -- overwrites common flags
-               end if;
-               l_parts := cwms_util.split_text(l_parts(2), ':', 1);
             else
-               l_elements(i).filter_text := trim(l_parts(2)); 
+                  l_elements(i).include := 'F';
+            end if;
+            l_pos := regexp_instr(l_parts(2), c_element_pattern2, 1, 1, 0, 'i');
+            if l_pos = 0 then
+               l_elements(i).filter_text := l_parts(2);
+               l_elements(i).regex_flags := null;
+            else   
+               l_elements(i).filter_text := substr(l_parts(2), 1, l_pos - 1);
+               l_parts(2) := regexp_replace(substr(l_parts(2), l_pos), '\s+', null, 1, 0);
+               l_parts(2) := lower(trim(substr(l_parts(2), instr(l_parts(2), '=') + 1))); 
+               if instr(l_parts(2), 'm') != 0 then
+                  l_elements(i).regex_flags := l_elements(i).regex_flags || 'm';
+               end if;
+               if instr(l_parts(2), 'n') != 0 then
+                  l_elements(i).regex_flags := l_elements(i).regex_flags || 'n';
+               end if;
+               if instr(l_parts(2), 'x') != 0 then
+                  l_elements(i).regex_flags := l_elements(i).regex_flags || 'x';
+               end if;
+               if instr(l_parts(2), 'i') != 0 then
+                  l_elements(i).regex_flags := l_elements(i).regex_flags || 'i';
+               end if;
             end if;
          end loop;
          forall i in 1..l_elements.count
@@ -5075,6 +5158,7 @@ as
       l_elements    filter_elements_t;
       l_text_filter str_tab_t;
    begin
+      cwms_util.check_office_permission(p_office_id);
       l_header_rec.text_filter_id := trim(p_text_filter_id);
       begin
          select *
@@ -5123,6 +5207,7 @@ as
       l_office_id   varchar2(16) := cwms_util.get_db_office_id(p_office_id);
       l_office_code integer := cwms_util.get_db_office_code(l_office_id);
    begin                     
+      cwms_util.check_office_permission(p_office_id);
       l_header_rec.text_filter_id := trim(p_text_filter_id);
       begin
          select *
@@ -5166,6 +5251,7 @@ as
       l_office_id   varchar2(16) := cwms_util.get_db_office_id(p_office_id);
       l_office_code integer := cwms_util.get_db_office_code(l_office_id);
    begin                     
+      cwms_util.check_office_permission(p_office_id);
       l_header_old.text_filter_id := trim(p_old_text_filter_id);
       begin
          select *
@@ -5292,7 +5378,7 @@ as
                      end if;
                   end if;
                else
-                  if l_case_insensitive(i) = 'T' then
+                  if l_case_insensitive(i) = 'T' or instr(l_header_rec.regex_flags, 'i') > 0 then
                      select *
                        bulk collect
                        into l_matched
@@ -5332,7 +5418,7 @@ as
                      end if;
                   end if;
                else
-                  if l_case_insensitive(i) = 'T' then
+                  if l_case_insensitive(i) = 'T' or instr(l_header_rec.regex_flags, 'i') > 0 then
                      select *
                        bulk collect
                        into l_matched
@@ -5380,13 +5466,16 @@ as
    is                      
       type filter_element_t is record(include boolean, flags varchar2(16), text varchar2(256));
       type filter_element_tab_t is table of filter_element_t;
+      c_element_pattern1 constant varchar2(57) := '^\s*(i(n(c(l(u(de?)?)?)?)?)?|e(x(c(l(u(de?)?)?)?)?)?)\s*:';
+      c_element_pattern2 constant varchar2(35) := '\s*:\s*f(l(a(gs?)?)?)?\s*=.*$';
       l_regex            boolean := cwms_util.is_true(p_regex);
       l_filter           filter_element_tab_t;
+      l_pos              integer;
       l_case_insensitive str_tab_t;
       l_parts            str_tab_t;
-      l_included         str_tab_t := str_tab_t();
-      l_excluded         str_tab_t := str_tab_t();
-      l_matched          str_tab_t := str_tab_t();
+      l_included         str_tab_t;
+      l_excluded         str_tab_t;
+      l_matched          str_tab_t;
    begin   
       if p_filter is null then
          l_included := p_values;
@@ -5397,28 +5486,44 @@ as
          l_filter := filter_element_tab_t();
          l_filter.extend(p_filter.count);
          for i in 1..p_filter.count loop
-            l_parts := cwms_util.split_text(p_filter(i), ':', 1);
-            if l_parts.count != 2 then
+         
+            l_pos := regexp_instr(p_filter(i), c_element_pattern1, 1, 1, 1, 'i'); 
+            if l_pos = 0 then
                cwms_err.raise(
                   'ERROR',
-                  'Filter element must be like (INCLUDE|EXCLUDE):<filter>');
+                  'Filter element must be like (INCLUDE|EXCLUDE):<filter>[:FLAGS=<flags>]'
+                  ||chr(10)
+                  ||'<'||p_filter(i)||'>');
             end if;
-            l_parts(1) := upper(trim(l_parts(1)));
-            if instr('INCLUDE', l_parts(1)) = 1 then
-               l_filter(i).include := true;
-            elsif instr('EXCLUDE', l_parts(1)) = 1 then
-               l_filter(i).include := false;
+            l_parts := str_tab_t(
+               lower(trim(substr(p_filter(i), 1, l_pos-1))),
+               substr(p_filter(i), l_pos));
+            if substr(l_parts(1), 1, 1) = 'i' then
+                  l_filter(i).include := true;
+            else
+                  l_filter(i).include := false;
+            end if;
+
+            l_pos := regexp_instr(l_parts(2), c_element_pattern2, 1, 1, 0, 'i');
+            if l_pos = 0 then
+               l_filter(i).text := l_parts(2);
+               l_filter(i).flags := null;
             else   
-               cwms_err.raise(
-               'ERROR', 
-               'Filter element must start with ''INCLUDE'' or ''EXCLUDE'' (or some beginning portion)');
-            end if; 
-            l_filter(i).text := trim(l_parts(2));
-            if regexp_like(l_filter(i).text, 'f(l(a(gs?)?)?)?\s*=\s*[cimnx]*\s*:.+', 'i') then
-               l_parts := cwms_util.split_text(l_filter(i).text, ':', 1);
-               l_filter(i).text := trim(l_parts(2));
-               l_parts := cwms_util.split_text(l_parts(1), '=', 1);
-               l_filter(i).flags := lower(trim(l_parts(2)));
+               l_filter(i).text := substr(l_parts(2), 1, l_pos - 1);
+               l_parts(2) := regexp_replace(substr(l_parts(2), l_pos), '\s+', null, 1, 0);
+               l_parts(2) := lower(trim(substr(l_parts(2), instr(l_parts(2), '=') + 1))); 
+               if instr(l_parts(2), 'm') != 0 then
+                  l_filter(i).flags := l_filter(i).flags || 'm';
+               end if;
+               if instr(l_parts(2), 'n') != 0 then
+                  l_filter(i).flags := l_filter(i).flags || 'n';
+               end if;
+               if instr(l_parts(2), 'x') != 0 then
+                  l_filter(i).flags := l_filter(i).flags || 'x';
+               end if;
+               if instr(l_parts(2), 'i') != 0 then
+                  l_filter(i).flags := l_filter(i).flags || 'i';
+               end if;
             end if;
             if not l_regex then
                l_filter(i).text := cwms_util.normalize_wildcards(l_filter(i).text); 
@@ -5428,9 +5533,11 @@ as
          -- filter the text --
          ---------------------
          if l_filter(1).include then
+            l_included := str_tab_t();
             l_excluded := p_values;
          else
             l_included := p_values;
+            l_excluded := p_values;
          end if;
          for i in 1..l_filter.count loop
             if l_filter(i).include then
@@ -5449,7 +5556,7 @@ as
                       where regexp_like(column_value, l_filter(i).text); 
                   end if;
                else
-                  if l_filter(i).flags is not null and instr(l_filter(i).flags, 'i') > 0 then
+                  if instr(l_filter(i).flags, 'i') > 0 then
                      select *
                        bulk collect
                        into l_matched
@@ -5481,7 +5588,7 @@ as
                       where regexp_like(column_value, l_filter(i).text); 
                   end if;
                else
-                  if l_filter(i).flags is not null and instr(l_filter(i).flags, 'i') > 0 then
+                  if instr(l_filter(i).flags, 'i') > 0 then
                      select *
                        bulk collect
                        into l_matched
