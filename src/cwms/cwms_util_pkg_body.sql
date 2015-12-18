@@ -5239,6 +5239,43 @@ AS
          RETURN FALSE;
       END IF;
    END is_irregular_code;
+
+   procedure check_office_permission(
+      p_office_id     in varchar2,
+      p_user_group_id in varchar2 default null)
+   is
+      l_user_id       varchar2(30); 
+      l_office_id     varchar2(16);
+      l_user_group_id varchar2(32);
+   begin
+      l_user_id := get_user_id;
+      if l_user_id != '&cwms_schema' then
+         l_office_id := cwms_util.get_db_office_id(p_office_id);
+         if p_user_group_id is null then
+            l_user_group_id := 'All Users';
+         else
+            l_user_group_id := p_user_group_id;
+         end if;
+         select db_office_id 
+           into l_office_id     
+           from table(cwms_sec.get_assigned_priv_groups_tab)
+          where upper(user_group_id) = upper(l_user_group_id)
+            and is_member = 'T'
+            and db_office_id = l_office_id; 
+      end if;
+   exception 
+      when no_data_found then
+         cwms_err.raise(
+            'ERROR', 
+            'User '
+            ||get_user_id
+            ||' does not have '
+            ||l_user_group_id
+            ||' permission for office '
+            ||l_office_id);
+   end check_office_permission;
+
+
 /*
 BEGIN
  -- anything put here will be executed on every mod_plsql call

@@ -2500,7 +2500,12 @@ AS
       p_table  in str_tab_tab_t,
       p_column in pls_integer)
       return str_tab_t;
-            
+   /**
+    * Converts an XML document fragment into the equivalent JSON object
+    *
+    * @param p_xml the XML to convert
+    * @return the equivalen JSON object
+    */
    function to_json(
       p_xml in xmltype)
       return clob;      
@@ -2514,7 +2519,17 @@ AS
     */
    function is_irregular_code(
       p_interval_code  in CWMS_INTERVAL.INTERVAL_CODE%TYPE)
-      return BOOLEAN; 
+      return boolean;
+   /**
+    * Checks whether the current user has permissions for the specified office
+    *
+    * @param p_office_id the office to check for permissions for the current user
+    * @param p_user_group_id if specified, the specific user permission to check - otherwise the 'All Users' permission is checked
+    * @exception if the user does not have the permission for the specified office
+    */
+   procedure check_office_permission(
+      p_office_id     in varchar2,
+      p_user_group_id in varchar2 default null); 
 END cwms_util;
 /
 
