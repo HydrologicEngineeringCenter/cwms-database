@@ -4,13 +4,13 @@ DECLARE
 BEGIN
    FOR c IN (SELECT table_name
                FROM user_tables
-              WHERE table_name LIKE 'AT_%' AND TEMPORARY = 'N')
+              WHERE table_name LIKE 'AT_%' AND TEMPORARY = 'N' AND table_name <> 'AT_PROPERTIES')
    LOOP
       l_trig := replace(c.table_name,'AT_','ST_');
       l_cmd :=
             'CREATE OR REPLACE TRIGGER '
          || l_trig
-         || ' AFTER DELETE OR INSERT OR UPDATE
+         || ' BEFORE DELETE OR INSERT OR UPDATE
               ON '
          || c.table_name
          || ' REFERENCING NEW AS NEW OLD AS OLD

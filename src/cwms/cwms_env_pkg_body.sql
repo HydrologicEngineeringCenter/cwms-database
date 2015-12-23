@@ -61,6 +61,12 @@ AS
       END IF;
    END set_session_office_id;
 
+   PROCEDURE clear_session_privileges
+   IS
+   BEGIN
+    set_cwms_env ('CWMS_PRIVILEGE', 'READ_ONLY');
+   END;
+
    PROCEDURE set_session_privileges
    IS
       l_office_id   VARCHAR2 (16);
@@ -70,7 +76,8 @@ AS
    BEGIN
       l_canwrite := FALSE;
       l_cnt := 0;
-      l_username := user;
+      l_username := CWMS_UTIL.GET_USER_ID;
+      set_cwms_env ('CWMS_PRIVILEGE', 'READ_ONLY'); 
 
 
       SELECT SYS_CONTEXT ('CWMS_ENV', 'SESSION_OFFICE_ID')
