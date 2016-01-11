@@ -225,13 +225,6 @@ AS
    PROCEDURE get_db_users (p_db_users       OUT SYS_REFCURSOR,
                            p_db_office_id       VARCHAR2);
 
-   PROCEDURE update_user_data (p_userid     IN VARCHAR2,
-                               p_fullname   IN VARCHAR2,
-                               p_org        IN VARCHAR2,
-                               p_office     IN VARCHAR2,
-                               p_phone      IN VARCHAR2,
-                               p_email      IN VARCHAR2);
-   PROCEDURE DELETE_UPASS_USER (p_userid IN VARCHAR2);
    PROCEDURE set_pd_user_passwd (p_pd_password   IN VARCHAR2,
                                   p_pd_username   IN VARCHAR2);
 END cwms_sec;

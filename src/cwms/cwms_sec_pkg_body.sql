@@ -625,7 +625,7 @@ AS
 
       IF (l_count = 0)
       THEN
-         update_user_data (p_username,
+         cwms_upass.update_user_data (p_username,
                            NULL,
                            NULL,
                            NULL,
@@ -878,48 +878,6 @@ AS
       set_dbi_user (p_dbi_username, p_db_office_id);
    END create_cwmsdbi_db_user;
 
-   PROCEDURE update_user_data (p_userid     IN VARCHAR2,
-                               p_fullname   IN VARCHAR2,
-                               p_org        IN VARCHAR2,
-                               p_office     IN VARCHAR2,
-                               p_phone      IN VARCHAR2,
-                               p_email      IN VARCHAR2)
-   IS
-      l_count   NUMBER;
-   BEGIN
-      SELECT COUNT (*)
-        INTO l_count
-        FROM AT_SEC_CWMS_USERS
-       WHERE USERID = UPPER(p_userid);
-
-      IF (l_count = 0)
-      THEN
-         INSERT INTO AT_SEC_CWMS_USERS (userid,
-                                        fullname,
-                                        org,
-                                        office,
-                                        phone,
-                                        email,
-                                        createdby)
-              VALUES (p_userid,
-                      p_fullname,
-                      p_org,
-                      p_office,
-                      p_phone,
-                      p_email,
-                      CWMS_UTIL.GET_USER_ID);
-      ELSE
-         UPDATE AT_SEC_CWMS_USERS
-            SET fullname = p_fullname,
-                org = p_org,
-                office = p_office,
-                phone = p_phone,
-                email = p_email,
-                createdby = CWMS_UTIL.GET_USER_ID
-          WHERE userid = UPPER(p_userid);
-      END IF;
-   END UPDATE_USER_DATA;
-
    PROCEDURE create_logon_trigger (p_username IN VARCHAR2)
    IS
       l_cmd   VARCHAR (1024);
@@ -1016,7 +974,7 @@ AS
 
       IF (l_count = 0)
       THEN
-         update_user_data (p_username,
+         cwms_upass.update_user_data (p_username,
                            NULL,
                            NULL,
                            NULL,
@@ -2481,7 +2439,9 @@ AS
    PROCEDURE get_db_users (p_db_users       OUT SYS_REFCURSOR,
                            p_db_office_id       VARCHAR2)
    IS
+	l_upass_id VARCHAR2(32);
    BEGIN
+      l_upass_id := CWMS_PROPERTIES.GET_PROPERTY('CWMSDB','sec.upass.id','','CWMS');
       OPEN p_db_users FOR
          SELECT CASE
                    WHEN s.fullname IS NULL THEN a.username
@@ -2518,7 +2478,7 @@ AS
                                  'SYS',
                                  'SYSTEM',
                                  'SYSMAN',
-                                 'UPASSADM',
+                                 l_upass_id,
                                  'WMSYS',
                                  'XDB',
                                  'XS$NULL')
@@ -2535,36 +2495,11 @@ AS
                    at_sec_cwms_users s
                 ON A.USERNAME = S.userid;
    END get_db_users;
-   PROCEDURE delete_upass_user (p_userid IN VARCHAR2)
-   IS
-   BEGIN
-    IF (USER = 'UPASSADM')
-      THEN
-         DELETE FROM at_sec_users
-               WHERE username = UPPER (p_userid);
-
-         DELETE FROM at_sec_locked_users
-               WHERE username = UPPER (p_userid);
-
-         DELETE FROM at_sec_user_office
-               WHERE username = UPPER (p_userid);
-
-         DELETE FROM at_sec_cwms_users
-               WHERE USERID = UPPER (p_userid);
-
-         COMMIT;
-         CWMS_MSG.LOG_DB_MESSAGE (
-            'UPASS',
-            CWMS_MSG.MSG_LEVEL_NORMAL,
-            'User ' || UPPER (p_userid) || ' is deleted by UPASS');
-    END IF;
-   END delete_upass_user;
    PROCEDURE set_pd_user_passwd (p_pd_password   IN VARCHAR2,
                                   p_pd_username   IN VARCHAR2)
    IS
    BEGIN
-      cwms_dba.cwms_user_admin.set_user_password (p_pd_username,
-                                                  p_pd_password);
+	NULL;
    END;
 END cwms_sec;
 /

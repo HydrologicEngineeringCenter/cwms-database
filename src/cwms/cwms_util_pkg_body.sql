@@ -411,9 +411,16 @@ AS
    IS
       l_office_id   VARCHAR2 (16);
       l_username    VARCHAR2 (32);
+      l_upass_id    VARCHAR2 (32) := 'UPASSADM';
    BEGIN
       l_username := get_user_id;
 
+      BEGIN
+        SELECT prop_value INTO l_upass_id FROM at_properties where prop_id='sec.upass.id' and prop_category='CWMS' and office_code=53;
+      EXCEPTION WHEN OTHERS
+      THEN
+        NULL;
+      END;
 
       SELECT SYS_CONTEXT ('CWMS_ENV', 'SESSION_OFFICE_ID')
         INTO l_office_id
