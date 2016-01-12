@@ -2501,6 +2501,16 @@ AS
    BEGIN
 	NULL;
    END;
+   PROCEDURE update_user_data (p_userid     IN VARCHAR2,
+                               p_fullname   IN VARCHAR2,
+                               p_org        IN VARCHAR2,
+                               p_office     IN VARCHAR2,
+                               p_phone      IN VARCHAR2,
+                               p_email      IN VARCHAR2)
+   IS
+   BEGIN
+      cwms_upass.update_user_data(p_userid,p_fullname,p_org,p_office,p_phone,p_email);
+   END update_user_data;
 END cwms_sec;
 /
 show errors

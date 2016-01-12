@@ -227,5 +227,12 @@ AS
 
    PROCEDURE set_pd_user_passwd (p_pd_password   IN VARCHAR2,
                                   p_pd_username   IN VARCHAR2);
+   PROCEDURE update_user_data (p_userid     IN VARCHAR2,
+                               p_fullname   IN VARCHAR2,
+                               p_org        IN VARCHAR2,
+                               p_office     IN VARCHAR2,
+                               p_phone      IN VARCHAR2,
+                               p_email      IN VARCHAR2);
+
 END cwms_sec;
 /
