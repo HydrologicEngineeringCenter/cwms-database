@@ -5282,6 +5282,48 @@ AS
             ||l_office_id);
    end check_office_permission;
 
+   function cat_scheduled_jobs(
+      p_job_name_mask in varchar2 default '*')
+      return sys_refcursor
+   is
+      l_cursor sys_refcursor;
+   begin
+      open l_cursor for
+         select j.job_name,
+                j.repeat_interval,
+                j.run_count,
+                j.failure_count,
+                j.state,
+                cast(j.last_start_date as date) as last_start_time,
+                j.last_run_duration,
+                cast(j.next_run_date as date) as next_run_time,
+                d.status
+           from user_scheduler_jobs j,
+                user_scheduler_job_run_details d
+          where j.job_name like normalize_wildcards(upper(p_job_name_mask))
+            and d.job_name = j.job_name
+            and cast(d.actual_start_date as date) = cast(j.last_start_date as date)
+          order by 1;
+          
+      return l_cursor;          
+   end cat_scheduled_jobs;
+   
+   function cat_scheduled_job_history(
+      p_job_name in varchar2)
+      return sys_refcursor
+   is
+      l_cursor sys_refcursor;
+   begin
+      open l_cursor for
+         select cast(actual_start_date as date) as start_time,
+                run_duration,
+                status
+           from user_scheduler_job_run_details
+          where job_name = upper(p_job_name)
+          order by 1;
+      
+      return l_cursor;
+   end cat_scheduled_job_history;
 
 /*
 BEGIN

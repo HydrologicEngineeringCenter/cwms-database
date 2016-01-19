@@ -2529,7 +2529,134 @@ AS
     */
    procedure check_office_permission(
       p_office_id     in varchar2,
-      p_user_group_id in varchar2 default null); 
+      p_user_group_id in varchar2 default null);
+   /**
+    * Retrieves catalog of scheduled jobs
+    *
+    * @param p_job_name_mask A mask specifying which job names to catalog.  If not specified, all jobs are cataloged.
+    * Matching is accomplished with glob-style wildcards, as shown below.
+    * <p>
+    * <table class="descr">
+    *   <tr>
+    *     <th class="descr">Wildcard</th>
+    *     <th class="descr">Meaning</th>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">*</td>
+    *     <td class="descr">Match zero or more characters</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">?</td>
+    *     <td class="descr">Match a single character</td>
+    *   </tr>
+    * </table>
+    *
+    * @return a cursor containing the following columns, ordered by job_name
+    * <p>
+    * <table class="descr">
+    *   <tr>
+    *     <th class="descr">Column No.</th>
+    *     <th class="descr">Column Name</th>
+    *     <th class="descr">Data Type</th>
+    *     <th class="descr">Contents</th>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">1</td>
+    *     <td class="descr">job_name</td>
+    *     <td class="descr">varchar2(128)</td>
+    *     <td class="descr">The name of the scheduled job</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">2</td>
+    *     <td class="descr">repeat_interval</td>
+    *     <td class="descr">varchar2(4000)</td>
+    *     <td class="descr">How often the job is executed</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">3</td>
+    *     <td class="descr">run_count</td>
+    *     <td class="descr">number</td>
+    *     <td class="descr">The number of times the job has executed since being started</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">4</td>
+    *     <td class="descr">failure_count</td>
+    *     <td class="descr">number</td>
+    *     <td class="descr">The number of times the job has failed since being started</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">5</td>
+    *     <td class="descr">state</td>
+    *     <td class="descr">varchar2(15)</td>
+    *     <td class="descr">The current state of the job</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">6</td>
+    *     <td class="descr">last_start_time</td>
+    *     <td class="descr">date</td>
+    *     <td class="descr">The last time the job was executed</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">7</td>
+    *     <td class="descr">last_run_duration</td>
+    *     <td class="descr">ds_interval_unconstrained</td>
+    *     <td class="descr">The amount of elapsed time for the last job execution</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">8</td>
+    *     <td class="descr">next_start_time</td>
+    *     <td class="descr">date</td>
+    *     <td class="descr">The next time that the job is scheduled to execute</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">9</td>
+    *     <td class="descr">status</td>
+    *     <td class="descr">varchar2(30)</td>
+    *     <td class="descr">The status of the last job execution</td>
+    *   </tr>
+    * </table>
+    */
+   function cat_scheduled_jobs(
+      p_job_name_mask in varchar2 default '*')
+      return sys_refcursor;
+   /**
+    * Retrieves catalog of the run history for a scheduled job
+    *
+    * @param p_job_name Specifies which job names to return the history for.
+    *
+    * @return a cursor containing the following columns, ordered by start_time
+    * <p>
+    * <table class="descr">
+    *   <tr>
+    *     <th class="descr">Column No.</th>
+    *     <th class="descr">Column Name</th>
+    *     <th class="descr">Data Type</th>
+    *     <th class="descr">Contents</th>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">1</td>
+    *     <td class="descr">start_time</td>
+    *     <td class="descr">date</td>
+    *     <td class="descr">The time the job was executed</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">2</td>
+    *     <td class="descr">run_duration</td>
+    *     <td class="descr">ds_interval_unconstrained</td>
+    *     <td class="descr">The elapsed time of the job execution</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">3</td>
+    *     <td class="descr">status</td>
+    *     <td class="descr">varchar2(30)</td>
+    *     <td class="descr">The status time of the job execution</td>
+    *   </tr>
+    * </table>
+    */
+   function cat_scheduled_job_history(
+      p_job_name in varchar2)
+      return sys_refcursor;
+      
 END cwms_util;
 /
 
