@@ -2441,7 +2441,7 @@ AS
    IS
 	l_upass_id VARCHAR2(32);
    BEGIN
-      l_upass_id := CWMS_PROPERTIES.GET_PROPERTY('CWMSDB','sec.upass.id','','CWMS');
+      l_upass_id := CWMS_PROPERTIES.GET_PROPERTY('CWMSDB','sec.upass.id','UPASSADM','CWMS');
       OPEN p_db_users FOR
          SELECT CASE
                    WHEN s.fullname IS NULL THEN a.username
