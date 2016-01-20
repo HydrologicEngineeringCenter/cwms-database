@@ -5300,7 +5300,7 @@ AS
                 d.status
            from user_scheduler_jobs j,
                 user_scheduler_job_run_details d
-          where j.job_name like normalize_wildcards(upper(p_job_name_mask))
+          where j.job_name like normalize_wildcards(upper(p_job_name_mask)) escape '\'
             and d.job_name = j.job_name
             and cast(d.actual_start_date as date) = cast(j.last_start_date as date)
           order by 1;
