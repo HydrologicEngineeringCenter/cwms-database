@@ -5863,17 +5863,6 @@ comment on column at_text_filter_element.filter_text      is 'The filter element
 comment on column at_text_filter_element.regex_flags      is 'Regex flags (match parameter) for this element only';
 commit;
 
-create global temporary table at_usgs_param_locations (
-   time_entered   date,
-   office_code    integer,
-   usgs_parameter integer,
-   location_id    varchar2(32),
-   constraint at_usgs_param_location_pk  primary key (time_entered, office_code, usgs_parameter,location_id)     
-)
-on commit delete rows;
-
-comment on table at_usgs_param_locations is 'Used to speed up selection of locations to process for USGS parameters';
-
 create table at_usgs_parameter(
    office_code              integer,
    usgs_parameter_code      integer,
@@ -5885,7 +5874,9 @@ create table at_usgs_parameter(
    constraint at_usgs_parameter_pk  primary key (office_code, usgs_parameter_code),
    constraint at_usgs_parameter_fk1 foreign key (cwms_parameter_code) references at_parameter (parameter_code),
    constraint at_usgs_parameter_fk2 foreign key (cwms_parameter_type_code) references cwms_parameter_type (parameter_type_code),
-   constraint at_usgs_parameter_fk3 foreign key (cwms_unit_code) references cwms_unit (unit_code)
+   constraint at_usgs_parameter_fk3 foreign key (cwms_unit_code) references cwms_unit (unit_code),
+   constraint at_usgs_parameter_fk4 foreign key (office_code) references cwms_office (office_code),
+   constraint at_usgs_parameter_fk5 foreign key (usgs_parameter_code) references cwms_usgs_parameter (usgs_parameter_code)
 ) tablespace cwms_20at_data
 /
 
@@ -5900,7 +5891,7 @@ comment on column at_usgs_parameter.offset                   is 'CWMS = USGS * f
 -- 00010 - Temp-Water.Inst in C
 insert 
   into at_usgs_parameter 
- values(53,
+ values((select office_code from cwms_office where office_id = '&host_office'),
         10,
         (select parameter_code 
            from at_parameter 
@@ -5923,7 +5914,7 @@ insert
 -- 00021 - Temp-Air.Inst in F
 insert 
   into at_usgs_parameter 
- values(53,
+ values((select office_code from cwms_office where office_id = '&host_office'),
         21,
         (select parameter_code 
            from at_parameter 
@@ -5946,7 +5937,7 @@ insert
 -- 00045 - Precip.Total in in
 insert 
   into at_usgs_parameter 
- values(53,
+ values((select office_code from cwms_office where office_id = '&host_office'),
         45,
         (select parameter_code 
            from at_parameter 
@@ -5972,7 +5963,7 @@ insert
 -- combination with instantaneous gage heights on hourly or sub-hourly data!
 insert 
   into at_usgs_parameter 
- values(53,
+ values((select office_code from cwms_office where office_id = '&host_office'),
         60,
         (select parameter_code 
            from at_parameter 
@@ -5995,7 +5986,7 @@ insert
 -- 00061 - Flow.Inst in cfs
 insert 
   into at_usgs_parameter 
- values(53,
+ values((select office_code from cwms_office where office_id = '&host_office'),
         61,
         (select parameter_code 
            from at_parameter 
@@ -6018,7 +6009,7 @@ insert
 -- 00062 - Elev.Inst in ft
 insert 
   into at_usgs_parameter 
- values(53,
+ values((select office_code from cwms_office where office_id = '&host_office'),
         62,
         (select parameter_code 
            from at_parameter 
@@ -6041,7 +6032,7 @@ insert
 -- 00065 - Stage.Inst in ft
 insert 
   into at_usgs_parameter 
- values(53,
+ values((select office_code from cwms_office where office_id = '&host_office'),
         65,
         (select parameter_code 
            from at_parameter 
@@ -6064,7 +6055,7 @@ insert
 -- 00095 - Cond.Inst in umho/cm
 insert 
   into at_usgs_parameter 
- values(53,
+ values((select office_code from cwms_office where office_id = '&host_office'),
         95,
         (select parameter_code 
            from at_parameter 
@@ -6087,7 +6078,7 @@ insert
 -- 00096 - Conc-Salinity.Inst in mg/l
 insert 
   into at_usgs_parameter 
- values(53,
+ values((select office_code from cwms_office where office_id = '&host_office'),
         96,
         (select parameter_code 
            from at_parameter 
@@ -6110,7 +6101,7 @@ insert
 -- 72036 - Stor.Inst in ac-ft
 insert 
   into at_usgs_parameter 
- values(53,
+ values((select office_code from cwms_office where office_id = '&host_office'),
         72036,
         (select parameter_code 
            from at_parameter 

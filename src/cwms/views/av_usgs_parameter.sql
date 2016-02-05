@@ -4,13 +4,13 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_USGS_PARAMETER',
  *
  * @since CWMS 2.2
  *
- * @param office_id           The office that owns the conversion.  CWMS records are useable by all but can be overridden 
- * @param usgs_parameter_code The 5-digit USGS parameter code to convert
- * @param parameter_id        The CWMS Parameter to use
- * @param parameter_type_id   The CWMS Parameter Type to use
- * @param unit_id             The CWMS Unit (possibly after conversion)
- * @param factor              CWMS = USGS * factor + offset
- * @param offset              CWMS = USGS * factor + offset
+ * @member office_id           The office that owns the conversion 
+ * @member usgs_parameter_code The 5-digit USGS parameter code to convert
+ * @member parameter_id        The CWMS Parameter
+ * @member parameter_type_id   The CWMS Parameter Type
+ * @member unit_id             The CWMS Unit
+ * @member factor              CWMS = USGS * factor + offset
+ * @member offset              CWMS = USGS * factor + offset
  */
 ');
 create or replace force view av_usgs_parameter(
@@ -44,4 +44,7 @@ as
       and bp.base_parameter_code = p.base_parameter_code
       and pt.parameter_type_code = up.cwms_parameter_type_code
       and u.unit_code = up.cwms_unit_code
+/
+
+create or replace public synonym cwms_v_usgs_parameter for av_usgs_parameter
 /

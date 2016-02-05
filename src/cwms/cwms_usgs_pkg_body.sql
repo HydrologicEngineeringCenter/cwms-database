@@ -84,28 +84,10 @@ begin
          -----------------------
          -- get all locations --
          -----------------------
-         select location_id
+         select distinct location_id
            bulk collect 
            into l_locations 
-           from (select bl.base_location_id
-                        ||substr('-', 1, length(pl.sub_location_id))
-                        ||pl.sub_location_id as location_id
-                   from at_physical_location pl,
-                        at_base_location bl
-                  where bl.base_location_code = pl.base_location_code
-                    and bl.db_office_code = l_office_code
-                    and pl.location_code > 0
-                ) -- locations
-                union
-                (select loc_alias_id
-                        ||substr('-', 1, length(pl.sub_location_id))
-                        ||pl.sub_location_id as location_id
-                   from at_loc_group_assignment lga,
-                        at_physical_location pl
-                  where lga.office_code = l_office_code
-                        and lga.location_code in (pl.base_location_code, pl.location_code)
-                        and loc_alias_id is not null
-                ) -- partially-aliased locations
+           from av_loc2
           order by location_id;  
       else
          l_locations := p_locations;
@@ -134,11 +116,21 @@ function get_auto_ts_locations(
    return str_tab_t
 is
 begin
-   return get_auto_ts_locations(null, p_office_id);
+   return get_auto_param_ts_locations(null, p_office_id);
 end get_auto_ts_locations;      
 
-function get_auto_ts_locations(
+function get_auto_param_ts_locations(
    p_parameter in integer,
+   p_office_id in varchar2 default null)
+   return str_tab_t
+is
+begin
+   return get_parameter_ts_locations(p_parameter, null, p_office_id);
+end get_auto_param_ts_locations;
+
+function get_parameter_ts_locations(
+   p_parameter in integer,
+   p_filter_id in varchar2 default null, 
    p_office_id in varchar2 default null)
    return str_tab_t
 is
@@ -148,82 +140,81 @@ is
    l_locations         str_tab_t;
    l_filtered          str_tab_t;
    l_filter_must_exist varchar2(1) := 'T';
-   l_parameter         integer;
 begin
-   l_parameter      := nvl(p_parameter, -1);
-   l_office_id      := cwms_util.get_db_office_id(p_office_id);
-   l_office_code    := cwms_util.get_db_office_code(l_office_id);
-   l_text_filter_id := get_auto_ts_filter_id(l_office_id);
-   -----------------------------------------------
-   -- try to get locations from temporary table --
-   -----------------------------------------------
-   begin
-      select location_id
-        bulk collect
-        into l_locations
-        from at_usgs_param_locations
-       where time_entered > sysdate - 1 /24
-         and office_code = l_office_code
-         and usgs_parameter = l_parameter; 
-   exception                              
-      when no_data_found then null; 
-   end;
-   if l_locations.count = 0 then
-      --------------------------------------
-      -- no locations were found in table --
-      --------------------------------------
-      if l_text_filter_id is not null then
-         if p_parameter is not null then
-            l_text_filter_id := l_text_filter_id||'.'||trim(to_char(p_parameter, '00009'));
-            l_filter_must_exist := 'F';
-         end if;
-         -----------------------------------
-         -- get the locations to retrieve --
-         -----------------------------------
-         l_filtered := filter_locations(l_text_filter_id, l_filter_must_exist, null, l_office_id);
-         if l_filtered.count > 0 then
-            --------------------------------------------
-            -- get the USGS aliases for the locations --
-            --------------------------------------------
-            select distinct
-                   location_id
-              bulk collect
-              into l_locations
-              from av_loc2
-             where aliased_item = 'LOCATION'                              
-               and loc_alias_category = 'Agency Aliases'
-               and loc_alias_group = 'USGS Station Number'
-               and location_code in (select location_code
-                                       from av_loc2
-                                      where location_id in (select * from table(l_filtered))
-                                        and db_office_id = l_office_id 
-                                    );
-         end if;  
-         -----------------------------------------------------
-         -- store the locations for (near) future reference --
-         -----------------------------------------------------
-         if l_locations.count = 0 then
-            insert into at_usgs_param_locations
-            values (sysdate, l_office_code, l_parameter, '<none>');
-         else
-            forall i in indices of l_locations
-               insert into at_usgs_param_locations
-               values (sysdate, l_office_code, l_parameter, l_locations(i));
-         end if;                                              
-      end if;
+   l_office_id   := cwms_util.get_db_office_id(p_office_id);
+   l_office_code := cwms_util.get_db_office_code(l_office_id);
+   --------------------------------
+   -- get the base filter to use --
+   --------------------------------
+   case p_filter_id is null
+   when true  then l_text_filter_id := get_auto_ts_filter_id(l_office_id);
+   when false then l_text_filter_id := p_filter_id;
+   end case;
+   --------------------------------
+   -- get the filtered locations --
+   --------------------------------
+   if l_text_filter_id is null then
+      ---------------------------------------------------------
+      -- no filter specified and no auto-ts-filter on record --
+      ---------------------------------------------------------
+      l_filtered := str_tab_t();
    else
-      -----------------------------------
-      -- locations were found in table --
-      -----------------------------------
-      if l_locations.count = 1 and l_locations(1) = '<none>' then
-         ------------------------------------------
-         -- ...but only the "no locations" token --
-         ------------------------------------------
-         l_locations.trim;
+      if p_parameter is null then
+         ------------------------------
+         -- use just the base filter --
+         ------------------------------
+         l_filtered := filter_locations(
+            p_filter_id  => l_text_filter_id, 
+            p_must_exist => l_filter_must_exist, 
+            p_locations  => null, 
+            p_office_id  => l_office_id);
+      else
+         -------------------------------
+         -- first use the base filter --
+         -------------------------------
+         l_filtered := filter_locations(
+            p_filter_id  => l_text_filter_id, 
+            p_must_exist => l_filter_must_exist, 
+            p_locations  => null,
+            p_office_id  => l_office_id);
+         ------------------------------------------------
+         -- next use the parameter filter if it exists --
+         ------------------------------------------------
+         l_filtered := filter_locations(
+            p_filter_id  => l_text_filter_id||'.'||lpad(to_char(p_parameter), 5, '0'),
+            p_must_exist => 'F', 
+            p_locations  => l_filtered, 
+            p_office_id  => l_office_id);
       end if;
    end if;
+   --------------------------------------------
+   -- get the USGS aliases for the locations --
+   --------------------------------------------
+   select lga.loc_alias_id
+     bulk collect
+     into l_locations
+     from at_loc_group_assignment lga,
+          at_loc_group lg,
+          at_loc_category lc
+    where location_code in 
+          (select location_code
+             from (select location_code,
+                          lag (location_code, 1, 0) over (order by location_code) as prev
+                     from av_loc2 
+                   where location_id in 
+                          (select column_value
+                             from table(l_filtered)
+                          )
+                  )
+            where location_code != prev
+          )
+      and lc.loc_category_id = 'Agency Aliases'
+      and lg.loc_category_code = lc.loc_category_code
+      and lg.loc_group_id = 'USGS Station Number'
+      and lga.loc_group_code = lg.loc_group_code;
+      
    return l_locations;
-end get_auto_ts_locations;      
+end get_parameter_ts_locations;      
 
 function get_parameters(
    p_office_id in varchar2 default null)
@@ -236,7 +227,7 @@ begin
      bulk collect
      into l_parameter_codes
      from at_usgs_parameter
-    where office_code in (cwms_util.get_db_office_code(p_office_id), cwms_util.db_office_code_all)
+    where office_code = cwms_util.get_db_office_code(p_office_id)
     order by usgs_parameter_code;  
    return l_parameter_codes;
 end get_parameters; 
@@ -254,7 +245,7 @@ is
 begin
    l_all_parameters := get_parameters(p_office_id => p_office_id);
    for i in 1..l_all_parameters.count loop
-      l_locations := get_auto_ts_locations(l_all_parameters(i), p_office_id);
+      l_locations := get_auto_param_ts_locations(l_all_parameters(i), p_office_id);
       select count(*)
         into l_count
         from table(l_locations)
@@ -1296,6 +1287,7 @@ is
    l_end_time   varchar2(10);
    l_sites_txt  varchar2(32767);
    l_sites_tab  str_tab_t; 
+   l_sites_tab2 str_tab_t; 
    l_set_tab    str_tab_t;
    l_set_count  pls_integer;
    l_set_min    pls_integer;
@@ -1328,21 +1320,32 @@ begin
                                      from at_loc_category 
                                     where loc_category_id = 'Agency Aliases'
                                   ); 
+      l_data := to_clob(p_sites);                                  
       select trim(column_value)
         bulk collect
-        into l_sites_tab
-        from table(cwms_util.split_text(p_sites, ','));
-      for i in 1..l_sites_tab.count loop    
-                 
-         l_loc_code := cwms_loc.get_location_code(l_office_id, l_sites_tab(i));
+        into l_sites_tab2
+        from table(cwms_util.split_text(l_data, ','));
+      l_sites_tab := str_tab_t();        
+      for i in 1..l_sites_tab2.count loop
+         l_sites_tab.extend;
+         begin
+            l_loc_code := cwms_loc.get_location_code(l_office_id, l_sites_tab2(i), 'T');
          select loc_alias_id
-           into l_sites_tab(i)
+              into l_sites_tab(l_sites_tab.count)
            from at_loc_group_assignment
           where location_code = l_loc_code
             and loc_group_code = l_group_code; 
+         exception
+            when others then
+               cwms_msg.log_db_message(
+                  'cwms_usgs.retrieve_and_store_stream_meas',
+                  cwms_msg.msg_level_normal,
+                  dbms_utility.format_error_stack||chr(10)||dbms_utility.format_error_backtrace);
+               l_sites_tab.trim;
+         end;
       end loop;        
    end if;
-   if l_sites_tab is null or l_sites_tab.count = 0 then
+   if l_sites_tab.count = 0 then
       cwms_msg.log_db_message(
          'cwms_usgs.retrieve_and_store_stream_meas', 
          cwms_msg.msg_level_detailed, 
@@ -3023,12 +3026,43 @@ is
    l_rating_text      clob;   
    l_rating_exsa      clob;  
    l_hash_value       varchar2(40); 
-   l_count            pls_integer := 0;
+   l_rating_count     pls_integer := 0;
+   l_update_count     pls_integer := 0;
+   i                  pls_integer := 0;
 begin
    cwms_msg.log_db_message(
       'update_existing_ratings', 
       cwms_msg.msg_level_basic, 
       'Updating USGS ratings started for '||l_office_id);
+   select count(*)
+     into l_rating_count
+     from (select a.site_number,
+                  a.rating_type,
+                  a.location_code,
+                  a.parameters_id,
+                  b.hash_value 
+             from (select aur.column_value as rating_spec_code,
+                          lga.loc_alias_id as site_number,
+                          lower(substr(rt.version, 6)) as rating_type,
+                          rs.location_code,
+                          rt.parameters_id
+                     from table(cwms_usgs.get_auto_update_ratings(l_office_id)) aur,
+                          at_rating_spec rs,
+                          at_rating_template rt,
+                          at_loc_category lc,
+                          at_loc_group lg,
+                          at_loc_group_assignment lga
+                    where rs.rating_spec_code = aur.column_value
+                      and rs.template_code = rt.template_code
+                      and lc.loc_category_id = 'Agency Aliases'
+                      and lg.loc_category_code = lc.loc_category_code
+                      and lg.loc_group_id = 'USGS Station Number'
+                      and lga.loc_group_code = lg.loc_group_code
+                      and lga.location_code = rs.location_code
+                  ) a
+             left outer join at_usgs_rating_hash b
+             on b.rating_spec_code = a.rating_spec_code
+          );
    for rec in (select a.site_number,
                       a.rating_type,
                       a.location_code,
@@ -3057,6 +3091,7 @@ begin
                  on b.rating_spec_code = a.rating_spec_code
               )    
    loop
+      i := i + 1;
       --------------------------------------------       
       -- get the rating from the USGS NWIS site --
       --------------------------------------------
@@ -3100,7 +3135,11 @@ begin
       cwms_msg.log_db_message(
          'update_existing_ratings', 
          cwms_msg.msg_level_verbose, 
-         'Checking USGS rating for '
+         ''
+         ||i
+         ||' of '
+         ||l_rating_count
+         ||' Checking USGS rating for '
          ||cwms_loc.get_location_id(rec.location_code)
          ||'.'
          ||rec.parameters_id
@@ -3127,13 +3166,13 @@ begin
             ||upper(rec.rating_type)
             ||'.USGS');
          process_and_store_rating_text(rec.rating_type, l_rating_text, l_rating_exsa, l_office_id);
-         l_count := l_count + 1;
+         l_update_count := l_update_count + 1;
       end if; 
    end loop;                 
    cwms_msg.log_db_message(
       'update_existing_ratings', 
       cwms_msg.msg_level_basic, 
-      'Updating USGS ratings ended for '||l_office_id||': '||l_count||' rating(s) updated');
+      'Updating USGS ratings ended for '||l_office_id||': '||l_update_count||' rating(s) updated');
 end update_existing_ratings;
 
 procedure generate_production_ratings2(

@@ -182,7 +182,23 @@ function get_auto_ts_interval(
    return integer;
 /**
  * Retrieves the list of locations that will be processed for a specified parameter. This function uses a text filter with a
- * name based on the one returned by get_auto_ts_filter_id function; it has a five-character parameter as a suffix. For example,
+ * name based on the one specified (or returned from the get_auto_ts_filter_id function); it has a five-character parameter as a suffix. For example,
+ * if the main text filter is named USGS_Auto_TS, the text filter for USGS parameter 65 would be USGS_Auto_TS.00065.
+ *
+ * @param p_parameter The USGS parameter to retrieve the locations for, specified as an integer.
+ * @param p_filter_id The name of the text filter to use for locations. If not specified or null, the filter returned by the get_auto_ts_filter_id function is used. 
+ * @param p_office_id The office to retrieve locations for. If NULL or not spcecified, the session user's default office is used.
+ *
+ * @see get_auto_ts_filter_id
+ */   
+function get_parameter_ts_locations(
+   p_parameter in integer,
+   p_filter_id in varchar2 default null,
+   p_office_id in varchar2 default null)
+   return str_tab_t;   
+/**
+ * Retrieves the list of locations that will be processed for a specified parameter. This function uses a text filter with a
+ * name based on the one returned from the get_auto_ts_filter_id function; it has a five-character parameter as a suffix. For example,
  * if the main text filter is named USGS_Auto_TS, the text filter for USGS parameter 65 would be USGS_Auto_TS.00065.
  *
  * @param p_parameter The USGS parameter to retrieve the locations for, specified as an integer.
@@ -190,7 +206,7 @@ function get_auto_ts_interval(
  *
  * @see get_auto_ts_filter_id
  */   
-function get_auto_ts_locations(
+function get_auto_param_ts_locations(
    p_parameter in integer,
    p_office_id in varchar2 default null)
    return str_tab_t;   
