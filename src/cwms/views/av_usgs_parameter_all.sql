@@ -9,6 +9,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_USGS_PARAMETER_A
  * @member base_parameter_id      The corrseponding CWMS base parameter id
  * @member sub_parameter_id       The corrseponding CWMS sub-parameter id, if any
  * @member parameter_id           The corrseponding full CWMS parameter id
+ * @member parameter_type_id      The corresponding CWMS parameter type
  * @member unit_id                The corrseponding CWMS unit id
  * @member cwms_conversion_factor Factor in CWMS = USGS * factor + offset
  * @member cwms_conversion_offset Offset in CWMS = USGS * factor + offset
@@ -25,7 +26,8 @@ create or replace force view av_usgs_parameter_all (
    usgs_parameter_id, 
    base_parameter_id, 
    sub_parameter_id, 
-   parameter_id, 
+   parameter_id,
+   parameter_type_id,
    unit_id,                               
    cwms_conversion_factor, 
    cwms_conversion_offset, 
@@ -43,6 +45,7 @@ select usgs_parameter_code,
        bp.base_parameter_id
        ||substr('-', 1, length(up.cwms_sub_parameter_id))             
        ||up.cwms_sub_parameter_id as parameter_id,
+       pt.parameter_type_id,
        cu.unit_id,
        up.cwms_conversion_factor,
        up.cwms_conversion_offset,
@@ -56,8 +59,10 @@ select usgs_parameter_code,
        ||cwms_sub_parameter_id as cwms_parameter_name
   from cwms_usgs_parameter up,
        cwms_base_parameter bp,
+       cwms_parameter_type pt,
        cwms_unit cu
  where bp.base_parameter_code = up.cwms_base_parameter_code
+   and pt.parameter_type_code = up.cwms_parameter_type_code
    and cu.unit_code = up.cwms_unit_code;
 /
 
