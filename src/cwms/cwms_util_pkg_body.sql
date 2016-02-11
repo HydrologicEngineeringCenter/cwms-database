@@ -2621,112 +2621,169 @@ AS
       RETURN l_factor_and_offset;
    END get_factor_and_offset;
 
-   FUNCTION convert_units (p_value          IN BINARY_DOUBLE,
-                           p_from_unit_id   IN VARCHAR2,
-                           p_to_unit_id     IN VARCHAR2)
-      RETURN BINARY_DOUBLE
-      RESULT_CACHE
-   IS
-      l_factor_and_offset   double_tab_t;
-      l_converted           binary_double;
-   BEGIN
+   function convert_units (
+      p_value          in binary_double,
+      p_from_unit_id   in varchar2,
+      p_to_unit_id     in varchar2)
+      return binary_double
+      result_cache
+   is
+      l_factor    cwms_unit_conversion.factor%type;
+      l_offset    cwms_unit_conversion.offset%type;
+      l_function  cwms_unit_conversion.function%type;
+      l_converted binary_double;
+   begin
       if p_value is not null then
-         l_factor_and_offset :=
-            get_factor_and_offset (p_from_unit_id, p_to_unit_id);
-         l_converted :=  p_value * l_factor_and_offset (1) + l_factor_and_offset (2);
+         select factor,
+                offset,
+                function
+           into l_factor,
+                l_offset,
+                l_function
+           from cwms_unit_conversion
+          where from_unit_id = cwms_util.get_unit_id(p_from_unit_id)
+            and to_unit_id = cwms_util.get_unit_id(p_to_unit_id);
+            
+         if l_factor is null then
+            l_converted := cwms_util.eval_expression(l_function, double_tab_t(p_value));
+         else
+            l_converted := p_value * l_factor + l_offset;
+         end if;
       end if;
-      RETURN l_converted;
-   EXCEPTION
-      WHEN NO_DATA_FOUND
-      THEN
+      return l_converted;
+   exception
+      when no_data_found
+      then
          cwms_err.raise (
             'ERROR',
-               'Cannot convert from unit '
+            'Cannot convert from unit '
             || p_from_unit_id
             || ' to unit '
             || p_to_unit_id);
-   END convert_units;
+   end convert_units;
 
-   FUNCTION convert_units (p_value            IN BINARY_DOUBLE,
-                           p_from_unit_code   IN NUMBER,
-                           p_to_unit_code     IN NUMBER)
-      RETURN BINARY_DOUBLE
-      RESULT_CACHE
-   IS
-      l_factor   BINARY_DOUBLE;
-      l_offset   BINARY_DOUBLE;
-   BEGIN
-      SELECT factor, offset
-        INTO l_factor, l_offset
-        FROM cwms_unit_conversion
-       WHERE from_unit_code = p_from_unit_code
-             AND to_unit_code = p_to_unit_code;
-
-      RETURN p_value * l_factor + l_offset;
-   EXCEPTION
-      WHEN NO_DATA_FOUND
-      THEN
+   function convert_units (
+      p_value            in binary_double,
+      p_from_unit_code   in number,
+      p_to_unit_code     in number)
+      return binary_double
+      result_cache
+   is
+      l_factor    cwms_unit_conversion.factor%type;
+      l_offset    cwms_unit_conversion.offset%type;
+      l_function  cwms_unit_conversion.function%type;
+      l_converted binary_double;
+   begin
+      if p_value is not null then
+         select factor,
+                offset,
+                function
+           into l_factor,
+                l_offset,
+                l_function
+           from cwms_unit_conversion
+          where from_unit_code = p_from_unit_code
+            and to_unit_code = p_to_unit_code;
+            
+         if l_factor is null then
+            l_converted := cwms_util.eval_expression(l_function, double_tab_t(p_value));
+         else
+            l_converted := p_value * l_factor + l_offset;
+         end if;
+      end if;
+      return l_converted;
+   exception
+      when no_data_found
+      then
          cwms_err.raise (
             'ERROR',
-               'Cannot convert from unit '
-            || get_unit_id2 (p_from_unit_code)
+            'Cannot convert from unit '
+            || p_from_unit_code
             || ' to unit '
-            || get_unit_id2 (p_to_unit_code));
-   END convert_units;
+            || p_to_unit_code);
+   end convert_units;
 
-   FUNCTION convert_units (p_value            IN BINARY_DOUBLE,
-                           p_from_unit_code   IN NUMBER,
-                           p_to_unit_id       IN VARCHAR2)
-      RETURN BINARY_DOUBLE
-      RESULT_CACHE
-   IS
-      l_factor   BINARY_DOUBLE;
-      l_offset   BINARY_DOUBLE;
-   BEGIN
-      SELECT factor, offset
-        INTO l_factor, l_offset
-        FROM cwms_unit_conversion
-       WHERE from_unit_code = p_from_unit_code
-             AND to_unit_id = get_unit_id (p_to_unit_id);
-
-      RETURN p_value * l_factor + l_offset;
-   EXCEPTION
-      WHEN NO_DATA_FOUND
-      THEN
+   function convert_units (
+      p_value            in binary_double,
+      p_from_unit_code   in number,
+      p_to_unit_id       in varchar2)
+      return binary_double
+      result_cache
+   is
+      l_factor    cwms_unit_conversion.factor%type;
+      l_offset    cwms_unit_conversion.offset%type;
+      l_function  cwms_unit_conversion.function%type;
+      l_converted binary_double;
+   begin
+      if p_value is not null then
+         select factor,
+                offset,
+                function
+           into l_factor,
+                l_offset,
+                l_function
+           from cwms_unit_conversion
+          where from_unit_code = p_from_unit_code
+            and to_unit_id = cwms_util.get_unit_id(p_to_unit_id);
+            
+         if l_factor is null then
+            l_converted := cwms_util.eval_expression(l_function, double_tab_t(p_value));
+         else
+            l_converted := p_value * l_factor + l_offset;
+         end if;
+      end if;
+      return l_converted;
+   exception
+      when no_data_found
+      then
          cwms_err.raise (
             'ERROR',
-               'Cannot convert from unit '
-            || get_unit_id2 (p_from_unit_code)
+            'Cannot convert from unit '
+            || p_from_unit_code
             || ' to unit '
             || p_to_unit_id);
-   END convert_units;
+   end convert_units;
 
-   FUNCTION convert_units (p_value          IN BINARY_DOUBLE,
-                           p_from_unit_id   IN VARCHAR2,
-                           p_to_unit_code   IN NUMBER)
-      RETURN BINARY_DOUBLE
-      RESULT_CACHE
-   IS
-      l_factor   BINARY_DOUBLE;
-      l_offset   BINARY_DOUBLE;
-   BEGIN
-      SELECT factor, offset
-        INTO l_factor, l_offset
-        FROM cwms_unit_conversion
-       WHERE from_unit_id = get_unit_id (p_from_unit_id)
-             AND to_unit_code = p_to_unit_code;
-
-      RETURN p_value * l_factor + l_offset;
-   EXCEPTION
-      WHEN NO_DATA_FOUND
-      THEN
+   function convert_units (
+      p_value          in binary_double,
+      p_from_unit_id   in varchar2,
+      p_to_unit_code   in number)
+      return binary_double
+      result_cache
+   is
+      l_factor    cwms_unit_conversion.factor%type;
+      l_offset    cwms_unit_conversion.offset%type;
+      l_function  cwms_unit_conversion.function%type;
+      l_converted binary_double;
+   begin
+      if p_value is not null then
+         select factor,
+                offset,
+                function
+           into l_factor,
+                l_offset,
+                l_function
+           from cwms_unit_conversion
+          where from_unit_id = cwms_util.get_unit_id(p_from_unit_id)
+            and to_unit_code = p_to_unit_code;
+            
+         if l_factor is null then
+            l_converted := cwms_util.eval_expression(l_function, double_tab_t(p_value));
+         else
+            l_converted := p_value * l_factor + l_offset;
+         end if;
+      end if;
+      return l_converted;
+   exception
+      when no_data_found
+      then
          cwms_err.raise (
             'ERROR',
-               'Cannot convert from unit '
+            'Cannot convert from unit '
             || p_from_unit_id
             || ' to unit '
-            || get_unit_id2 (p_to_unit_code));
-   END convert_units;
+            || p_to_unit_code);
+   end convert_units;
 
    --
    -- sign-extends 32-bit integers so they can be retrieved by

@@ -1,12 +1,15 @@
 from decimal import *
+from mathComputations import Computation
 import re, string, StringIO
 
 getcontext().prec = 16 # floating point precision to use
 
-regexQuant = r'(([a-z0-9_ /*-]+_per_[a-z0-9_ /*-]+)(\^(\d+))?)'
-regexUnit  = r'(\[(.+?)\])'
-regexIdent = '%s?%s/%s?%s' % (regexQuant, regexUnit, regexQuant, regexUnit)
-patternIdent = re.compile(regexIdent, re.I)
+regexQuant    = r'(([a-z0-9_ /*-]+_per_[a-z0-9_ /*-]+)(\^(\d+))?)'
+regexUnit     = r'(\[(.+?)\])'
+regexFunction = r'function%s/%s' % (regexUnit, regexUnit)
+regexIdent    = '(%s?%s/%s?%s|%s)' % (regexQuant, regexUnit, regexQuant, regexUnit, regexFunction)
+patternIdent  = re.compile(regexIdent, re.I)
+patternFunc   = re.compile(regexFunction, re.I)
 
 #
 # Base unit conversion factors to be used in the dimensional analysis
@@ -82,6 +85,13 @@ offsets = {
 	'F_to_C' : Decimal('-32') * conversion_factors['C_per_F'],
 }
 #
+# Functions for conversions that require them (used instead of factors and offsets)
+#
+functions = {
+	'Hz_to_B' : 'ARG 0|2|^|1000|/',
+	'B_to_Hz' : 'ARG 0|1000|*|.5|^'
+}
+#
 # Conversion definitions in dimensional analysis format
 #
 # Conversion identities are separated by  the | character
@@ -129,6 +139,9 @@ conversion_definitions = [
 	('acre',        'km2',         'ft2_per_acre[ft2]/[acre] | m_per_ft^2[m2]/[ft2] | [km2]/*_per_k*^2[m2]'),
 	('acre',        'm2',          'ft2_per_acre[ft2]/[acre] | m_per_ft^2[m2]/[ft2]'),
 	('acre',        'mile2',       'ft2_per_acre[ft2]/[acre] | [mile2]/ft_per_mile^2[ft2]'),
+	('B',           'Hz',          'function[Hz]/[B]'),
+	('B',           'kHz',         'function[Hz]/[B] | [kHz]/*_per_k*[Hz]'),
+	('B',           'MHz',         'function[Hz]/[B] | [MHz]/*_per_M*[Hz]'),
 	('C',           'F',           '[F]/C_per_F[C]'),
 	('cfs',         'cms',         '[ft3/s]/[cfs] | m_per_ft^3[m3]/[ft3] | [cms]/[m3/s]'),
 	('cfs',         'gpm',         '[ft3/s]/[cfs] | m_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3] | s_per_min[s]/[min] | [gpm]/[gal/min]'),
@@ -231,6 +244,9 @@ conversion_definitions = [
 	('ha',          'km2',         'm2_per_ha[m2]/[ha] | [km2]/*_per_k*^2[m2]'),
 	('ha',          'm2',          'm2_per_ha[m2]/[ha]'),
 	('ha',          'mile2',       'm2_per_ha[m2]/[ha] | [ft2]/m_per_ft^2[m2] | [mile2]/ft_per_mile^2[ft2]'),
+	('Hz',          'B',           'function[B]/[Hz]'),
+	('Hz',          'kHz',         '[kHz]/*_per_k*[Hz]'),
+	('Hz',          'MHz',         '[MHz]/*_per_M*[Hz]'),
 	('hr',          'min',         'min_per_hr[min]/[hr]'),
 	('hr',          'sec',         's_per_hr[sec]/[hr]'),
 	('in',          'cm',          '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | c*_per_*[cm]/[m]'),	
@@ -284,6 +300,9 @@ conversion_definitions = [
 	('kgal',        'm3',          '*_per_k*[gal]/[kgal] | m3_per_gal[m3]/[gal]'),     
 	('kgal',        'mgal',        '*_per_k*[gal]/[kgal] | [mgal]/*_per_M*[gal]'),
 	('kgal',        'mile3',       '*_per_k*[gal]/[kgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [mile3]/ft_per_mile^3[ft3]'),  
+	('kHz',         'B',           '*_per_k*[Hz]/[kHz] | function[B]/[Hz]'),
+	('kHz',         'Hz',          '*_per_k*[Hz]/[kHz]'),
+	('kHz',         'MHz',         '*_per_k*[Hz]/[kHz] | [MHz]/*_per_M*[Hz]'),
 	('km',          'cm',          '*_per_k*[m]/[km] | c*_per_*[cm]/[m]'),
 	('km',          'ft',          '*_per_k*[m]/[km] | [ft]/m_per_ft[m]'),
 	('km',          'ftUS',        '*_per_k*[m]/[km] | [ft]/m_per_ft[m] | ftUS_per_ft[ftUS]/[ft]'),
@@ -383,6 +402,9 @@ conversion_definitions = [
 	('mho',         'S',           '[S]/[mho]'),
 	('mho',         'umho',        'u*_per_*[umho]/[mho]'),
 	('mho',         'uS',          '[S]/[mho] | u*_per_*[uS]/[S]'),
+	('MHz',         'B',           '*_per_M*[Hz]/[MHz] | function[B]/[Hz]'),
+	('MHz',         'Hz',          '*_per_M*[Hz]/[MHz]'),
+	('MHz',         'kHz',         '*_per_M*[Hz]/[MHz] | [kHz]/*_per_k*[Hz]'),
 	('mi',          'cm',          'ft_per_mile[ft]/[mi] | m_per_ft[m]/[ft] | c*_per_*[cm]/[m]'),
 	('mi',          'ft',          'ft_per_mile[ft]/[mi]'),
 	('mi',          'ftUS',        'ft_per_mile[ft]/[mi] | ftUS_per_ft[ftUS]/[ft]'),
@@ -494,10 +516,11 @@ conversion_definitions = [
 
 english_units = {"English" : [
 	"$",
-	"%",
+	"%",                
 	"ac-ft",
 	"acre",
-	"ampere",
+	"ampere",  
+	"B",
 	"cfs",
 	"cfs/mi2",
 	"deg",
@@ -514,6 +537,7 @@ english_units = {"English" : [
 	"GW",
 	"GWh",
 	"hr",
+	"Hz",
 	"in",
 	"in-hg",
 	"in/day",
@@ -524,6 +548,7 @@ english_units = {"English" : [
 	"kaf",
 	"kcfs",
 	"kgal",
+	"kHz",
 	"kW",
 	"kWh",
 	"langley",
@@ -532,6 +557,7 @@ english_units = {"English" : [
 	"mgal",
 	"mgd",
 	"mho",
+	"MHz",
 	"mi",
 	"mile2",
 	"mile3",
@@ -567,6 +593,7 @@ si_units = {"SI" : [
 	"1000 m2",
 	"1000 m3",
 	"ampere",
+	"B",
 	"C",
 	"cm",
 	"cms",
@@ -579,8 +606,10 @@ si_units = {"SI" : [
 	"GWh",
 	"ha",
 	"hr",
+	"Hz",
 	"J/m2",
 	"JTU",
+	"kHz",
 	"km",
 	"km2",
 	"km3",
@@ -597,6 +626,7 @@ si_units = {"SI" : [
 	"mb",
 	"mg/l",
 	"mho",
+	"MHz",
 	"min",
 	"mm",
 	"mm-hg",
@@ -697,10 +727,17 @@ energy_units = {"Energy" : [
 	"TWh",
 	"Wh",
 ]}
-
+        
 force_units = {"Force" : [
 	"lb",
 	"N",
+]}
+        
+frequency_units = {"Frequency" : [
+	"B",
+	"Hz",
+	"kHz",
+	"MHz",
 ]}
 
 hydrogen_ion_concentration_index_units = {"Hydrogen Ion Concentration" : [
@@ -819,6 +856,7 @@ units_by_param = [
 	electromotive_potential_units,
 	energy_units,
 	force_units,
+	frequency_units,
 	hydrogen_ion_concentration_index_units,
 	irradiance_units,
 	irradiation_units,
@@ -869,6 +907,7 @@ unit_aliases = {
 	"ac-ft"    : ["AC-FT","ACFT","acft","acre-feet","acre-ft"],
 	"acre"     : ["acres"],
 	"ampere"   : ["amp","AMP","Amp","AMPERE","Ampere","Amperes","AMPERES","amperes","AMPS","amps","Amps"],
+	"B"        : ["b", "b_unit", "b-unit", "B_UNIT", "B-UNIT"],
 	"C"        : ["Celcius","Centigrade","DEG C","deg C","DEG-C","Deg-C","DegC","degC"],
 	"cfs"      : ["CFS","cu-ft/sec","cuft/sec","cusecs","ft3/sec"],
 	"cm"       : ["centimeter","centimeters"],
@@ -884,11 +923,13 @@ unit_aliases = {
 	"gpm"      : ["Gal/min","gallons per minute","GPM"],
 	"ha"       : ["hectare","hectares"],
 	"hr"       : ["hour","hours"],
+	"Hz"       : ["cycles/s", "cycles/sec", "hz", "HZ"],
 	"in"       : ["IN","inch","inches","INCHES"],
 	"JTU"      : ["jtu"],
 	"kaf"      : ["1000 ac-ft"],
 	"kcfs"     : ["1000 cfs","1000 cu-ft/sec","1000 ft3/sec","KCFS"],
 	"kgal"     : ["1000 gallon","1000 gallons","KGAL","TGAL","tgal"],
+	"kHz"      : ["khz", "KHZ", "KHz"],
 	"km"       : ["kilometer","kilometers"],
 	"km2"      : ["sq km","sq.km","sqkm"],
 	"km3"      : ["cu km"],
@@ -901,6 +942,7 @@ unit_aliases = {
 	"mg/l"     : ["millgrams/liter","milligrams per liter"],
 	"mgal"     : ["MGAL","million gallon","millon gallons"],
 	"mgd"      : ["MGD","million gallons/day"],
+	"MHz"      : ["mhz", "mHz", "MHZ"],
 	"mi"       : ["mile","miles"],
 	"mile2"    : ["mi2","sq mi","sq mile","sq miles","square miles"],
 	"mile3"    : ["cu mile","cu miles"],
@@ -971,91 +1013,152 @@ def process_conversion_definition(from_unit, definition) :
 	#--------------------------------#
 	n_units = []
 	d_units = []
-	factor  = Decimal('1.0')
 	identities = map(string.strip, definition.split('|'))
-	try    : n, d = map(string.strip, from_unit.split('/'))
-	except : n, d = from_unit.strip(), None
-	n_units.extend(expand_units(n))
-	d_units.extend(expand_units(d))
-	for identity in identities :
-		m = patternIdent.match(identity)
-		assert m is not None
-		n_quant = m.group(2)
-		n_power = m.group(4)
-		n_unit  = m.group(6)
-		d_quant = m.group(8)
-		d_power = m.group(10)
-		d_unit  = m.group(12)
-		if n_quant :
-			if n_power :
-				factor *= conversion_factors[n_quant] ** Decimal(n_power)
+	id_count = len(identities)
+	func_ids = []
+	for i in range(id_count) :
+		if patternFunc.match(identities[i]) :  
+			if i in (0, id_count-1) :
+				func_ids.append(i)
 			else :
-				factor *= conversion_factors[n_quant]
-		if d_quant :
-			if d_power :
-				factor /= conversion_factors[d_quant] ** Decimal(d_power)
+				raise Exception("Function can only appear in first or last identity: %s" % definition)
+	if len(func_ids) > 1 :
+		raise Exception("Only one function can appear in an identity: %s" % definition)
+	elif len(func_ids) == 1 :
+		#-----------------------#
+		# non-linear conversion #
+		#-----------------------#
+		m = patternFunc.match(identities[func_ids[0]])
+		_to_unit = m.group(2)
+		_from_unit = m.group(4)
+		func_name = "%s_to_%s" % (_from_unit, _to_unit)
+		func_body = functions[func_name]
+		if id_count == 1 :
+			unit = _to_unit
+		else :
+			if func_ids[0] == 0:
+				factor, dummy, unit = process_conversion_definition(_to_unit, " | ".join(identities[1:]))
+				func_body  += "|%s|*" % factor
+				try    : offset = offsets["%s_to_%s" % (_to_unit, unit)]
+				except : offset = None
+				if offset :
+					if offset < 0 :
+						func_body  += "|%s|-" % offset
+					else :
+						func_body  += "|%s|+" % offset
+						
 			else :
-				factor /= conversion_factors[d_quant]
-		try    : n, d = map(string.strip, n_unit.split('/'))
-		except : n, d = n_unit.strip(), None
+				factor, dummy, unit = process_conversion_definition(_from_unit, " | ".join(identities[:-1]))
+				try    : offset = offsets["%s_to_%s" % (from_unit, _from_unit)]
+				except : offset = None
+				if offset :
+					if offset < 0 :
+						func_body = func_body.replace("ARG 0", "ARG 0|%s|*|%s|-" % (factor, offset))
+					else :
+						func_body = func_body.replace("ARG 0", "ARG 0|%s|*|%s|+" % (factor, offset))
+				else :
+					func_body = func_body.replace("ARG 0", "ARG 0|%s|*" % factor)
+				unit = _to_unit
+		factor = offset = None
+	else :
+		#-------------------#
+		# linear conversion #
+		#-------------------#
+		try    : n, d = map(string.strip, from_unit.split('/'))
+		except : n, d = from_unit.strip(), None
 		n_units.extend(expand_units(n))
 		d_units.extend(expand_units(d))
-		try    : n, d = map(string.strip, d_unit.split('/'))
-		except : n, d = d_unit.strip(), None
-		d_units.extend(expand_units(n))
-		n_units.extend(expand_units(d))
-	#------------------#
-	# reduce the units #
-	#------------------#
-	while True :
-		reduced = False
-		for unit in n_units :
-			if unit in d_units :
-				n_units.remove(unit)
-				d_units.remove(unit)
-				reduced = True
-				break                                                                                         
-		if not reduced : break
-	failed = False		
-	if len(n_units) == 1 :
-		n_units = n_units[0]
-	elif n_units == len(n_units) * [n_units[0]] :
-		n_units = '%s%d' % (n_units[0], len(n_units))
-	else :
-		failed = True
-	if len(d_units) == 0 :
-		d_units = None
-	elif len(d_units) == 1 :
-		d_units = d_units[0]
-	elif d_units == len(d_units) * [d_units[0]] :
-		d_units = '%s%d' % (d_units[0], len(d_units))
-	else :
-		failed = True
-	if failed :
-		raise Exception('Unexpected units: %s / %s' % (n_units, d_units))		
-	if d_units : 
-		unit = '%s/%s' % (n_units, d_units)
-	else :
-		unit = n_units		
-	return factor, unit
+		factor    = Decimal('1.0')
+		for identity in identities :
+			m = patternIdent.match(identity)
+			assert m is not None
+			func_body = None
+			n_quant   = m.group(3)
+			n_power   = m.group(5)
+			n_unit    = m.group(7)
+			d_quant   = m.group(9)
+			d_power   = m.group(11)
+			d_unit    = m.group(13)
+			if n_quant :
+				if n_power :
+					factor *= conversion_factors[n_quant] ** Decimal(n_power)
+				else :
+					factor *= conversion_factors[n_quant]
+			if d_quant :
+				if d_power :
+					factor /= conversion_factors[d_quant] ** Decimal(d_power)
+				else :
+					factor /= conversion_factors[d_quant]
+			
+			try    : n, d = map(string.strip, n_unit.split('/'))
+			except : n, d = n_unit.strip(), None
+			n_units.extend(expand_units(n))
+			d_units.extend(expand_units(d))
+			try    : n, d = map(string.strip, d_unit.split('/'))
+			except : n, d = d_unit.strip(), None
+			d_units.extend(expand_units(n))
+			n_units.extend(expand_units(d))
+		#------------------#
+		# reduce the units #
+		#------------------#
+		while True :
+			reduced = False
+			for unit in n_units :
+				if unit in d_units :
+					n_units.remove(unit)
+					d_units.remove(unit)
+					reduced = True
+					break                                                                                         
+			if not reduced : break
+		failed = False		
+		if len(n_units) == 1 :
+			n_units = n_units[0]
+		elif n_units == len(n_units) * [n_units[0]] :
+			n_units = '%s%d' % (n_units[0], len(n_units))
+		else :
+			failed = True
+		if len(d_units) == 0 :
+			d_units = None
+		elif len(d_units) == 1 :
+			d_units = d_units[0]
+		elif d_units == len(d_units) * [d_units[0]] :
+			d_units = '%s%d' % (d_units[0], len(d_units))
+		else :
+			failed = True
+		if failed :
+			raise Exception('Unexpected units: %s / %s' % (n_units, d_units))		
+		if d_units : 
+			unit = '%s/%s' % (n_units, d_units)
+		else :
+			unit = n_units
+		func_body = None
+	return factor, func_body, unit
 
 conversions = {}
 for from_unit, to_unit, definition in conversion_definitions :
-	factor, unit = process_conversion_definition(from_unit, definition)
+	factor, func_body, unit = process_conversion_definition(from_unit, definition)
 	if unit != to_unit :
 		raise Exception('Expected unit %s, got %s' % (to_unit, unit))
 	conversion_to = conversions.setdefault(from_unit, {})
-	try    : offset = offsets['%s_to_%s' % (from_unit, to_unit)]
-	except : offset = Decimal('0')
-	conversion_to[to_unit] = {"factor" : factor, "offset" : offset}
+	if factor is None : 
+		offset = None
+	else :
+		try    : offset = offsets['%s_to_%s' % (from_unit, to_unit)]
+		except : offset = Decimal('0')
+	conversion_to[to_unit] = {"factor" : factor, "offset" : offset, "function" : func_body}
 	
 def convert(value, from_unit, to_unit) :       
 	try :
-		factor = conversions[from_unit][to_unit]["factor"]
-		offset = conversions[from_unit][to_unit]["offset"]
+		factor   = conversions[from_unit][to_unit]["factor"]
+		offset   = conversions[from_unit][to_unit]["offset"]
+		function = conversions[from_unit][to_unit]["function"]
 	except :
 		raise Exception("No conversion defined from '%s' to '%s'" % (from_unit, to_unit))
-	return value * factor + offset
+	if function :
+		result = Computation(function).compute(1.0) 
+	else :		
+		result = value * factor + offset  
+	return result
 		
 def get_java_resource_format() :
 	buf = StringIO.StringIO()
@@ -1079,9 +1182,11 @@ def get_java_resource_format() :
 							if not to_unit in to_unit_system_units.values()[0] : continue
 							to_unit_system = to_unit_system_units.keys()[0]
 							conversion = conversions[unit][to_unit] 
-							factor, offset = conversion["factor"], conversion["offset"]
+							factor, offset, function = conversion["factor"], conversion["offset"], conversion["function"]
 							buf2.write("%s;%s>%s;%s;" % (unit_system, unit, to_unit_system, to_unit))
-							if offset :
+							if function :
+								buf2.write("%s\n" % function)
+							elif offset :
 								if offset < 0 :
 									buf2.write("ARG 0|%s|*|%s|-\n" % (factor, -offset))
 								else :
@@ -1099,11 +1204,15 @@ def get_java_resource_format() :
 if __name__ == "__main__" :
 	# for from_unit in sorted(conversions.keys()) :
 	# 	for to_unit in sorted(conversions[from_unit].keys()) :
-	# 		factor = conversions[from_unit][to_unit]["factor"]
-	# 		offset = conversions[from_unit][to_unit]["offset"]
-	# 		if int(offset) :
-	# 			print("1 %s = %s + %s (%s) %s" % (from_unit, factor, offset, convert(1, from_unit, to_unit), to_unit))
+	# 		factor   = conversions[from_unit][to_unit]["factor"]
+	# 		offset   = conversions[from_unit][to_unit]["offset"]
+	# 		function = conversions[from_unit][to_unit]["function"]
+	# 		if function :
+	# 			print("1 %s = %s (%s) %s " % (from_unit, function, convert(1, from_unit, to_unit), to_unit))
 	# 		else :
-	# 			print("1 %s = %s (%s) %s " % (from_unit, factor, convert(1, from_unit, to_unit), to_unit))
+	# 			if int(offset) :
+	# 				print("1 %s = %s + %s (%s) %s" % (from_unit, factor, offset, convert(1, from_unit, to_unit), to_unit))
+	# 			else :
+	# 				print("1 %s = %s (%s) %s " % (from_unit, factor, convert(1, from_unit, to_unit), to_unit))
 
 	print get_java_resource_format()

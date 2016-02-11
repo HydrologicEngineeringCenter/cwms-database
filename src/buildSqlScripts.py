@@ -4125,6 +4125,7 @@ abstractParams = [
     "Volume",
     "Volume Rate",
     "Electric Charge Rate",
+    "Frequency",
 ]
 
 #-------#
@@ -4232,6 +4233,10 @@ unitDefs = [
     ["Force",                            "N",           "SI",   "Newtons",                       "Force of 1 Newton"                                                 ],
     ["Length",                           "ftUS",        "EN",   "Survey Feet",                   "Length of 1 US survey foot"                                        ],
     ["Angle",                            "rad",         "NULL", "Radians",                       "Angle of 1 radian"                                                 ],
+    ["Frequency",                        "Hz",          "NULL", "Hertz",                         "Frequency of 1 occurrence or cycle per second"                     ],
+    ["Frequency",                        "kHz",         "NULL", "kiloHertz",                     "Frequency of 1E+03 occurrences or cycles per second"               ],
+    ["Frequency",                        "MHz",         "NULL", "MegaHertz",                     "Frequency of 1E+06 occurrences or cycles per second"               ],
+    ["Frequency",                        "B",           "NULL", "B-unit",                        "Frequency in Hz^2/1000, used by vibrating wire piezometers"        ],
 ]
 
 unitDefsById = {}
@@ -4408,14 +4413,21 @@ for absParam in sorted(unitsByAbsParam.keys()) :
 	for fromUnit in allUnits :
 		for toUnit in allUnits :
 			if toUnit == fromUnit : 
-				unitConversionsByUnitIds[absParam, fromUnit, toUnit] = {"FACTOR" : 1, "OFFSET" : 0}
+				factor, offset, function = 1, 0, None
+				unitConversionsByUnitIds[absParam, fromUnit, toUnit] = {"FACTOR" : 1, "OFFSET" : 0, "FUNCTION" : None}
 			else :
 				if fromUnit in cannotConvert and toUnit in cannotConvert : continue
 				unitConversions.convert(1, fromUnit, toUnit) # will raise exception if can't convert
-				unitConversionsByUnitIds[absParam, fromUnit, toUnit] = {
-					"FACTOR" : unitConversions.conversions[fromUnit][toUnit]["factor"],
-					"OFFSET" : unitConversions.conversions[fromUnit][toUnit]["offset"] 
-				}
+				conversion = unitConversions.conversions[fromUnit][toUnit]
+				factor   = conversion["factor"],
+				offset   = conversion["offset"],
+				function = conversion["function"]
+				
+			unitConversionsByUnitIds[(absParam, fromUnit, toUnit)] = {
+				"FACTOR"   : factor,
+				"OFFSET"   : offset,
+				"FUNCTION" : function
+			}
 
 #--------------#
 # Data quality #
@@ -4573,6 +4585,7 @@ parameters = [
     [13,    "Linear Speed",                     "EvapRate", "Evaporation Rate",   "mm/day",  "mm/day",  "in/day",      "Rate of liquid water evaporation"                                            ],
     [35,    "Count",                            "Fish",     "Fish Count",         "unit",    "unit",    "unit",        "Fish Count."                                                                 ],
     [14,    "Volume Rate",                      "Flow",     "Flow Rate",          "cms",     "cms",     "cfs",         "Volume rate of moving water"                                                 ],
+    [47,    "Frequency",                        "Freq",     "Frequency",          "Hz",      "Hz",      "Hz",          "The number of cycles or occurrences per time unit"                           ],
     [15,    "Length",                           "Frost",    "Ground Frost",       "cm",      "cm",      "in",          "Depth of frost penetration into the ground (non-permafrost)"                 ],
     [45,    "Length",                           "Head",     "Head",               "m",       "m",       "ft",          "Difference between two elevations in a column of water"                      ],
     [40,    "Length",                           "Height",   "Height",             "m",       "m",       "ft",          "The height of a surface above an arbitrary datum"                            ],
@@ -10106,11 +10119,16 @@ def main() :
       ABSTRACT_PARAM_CODE NUMBER(10)              NOT NULL,
       FROM_UNIT_CODE      NUMBER(10)              NOT NULL,
       TO_UNIT_CODE        NUMBER(10)              NOT NULL,
-      FACTOR              BINARY_DOUBLE           NOT NULL,
-      OFFSET              BINARY_DOUBLE           NOT NULL, 
-      CONSTRAINT CWMS_UNIT_CONVERSION_PK
-     PRIMARY KEY
-     (FROM_UNIT_ID, TO_UNIT_ID)
+      FACTOR              BINARY_DOUBLE,
+      OFFSET              BINARY_DOUBLE,
+      FUNCTION            VARCHAR2(64),
+      CONSTRAINT @TABLE_PK  PRIMARY KEY (FROM_UNIT_ID, TO_UNIT_ID),
+      CONSTRAINT @TABLE_FK1 FOREIGN KEY (FROM_UNIT_CODE) REFERENCES @unitTableName (UNIT_CODE),
+      CONSTRAINT @TABLE_FK2 FOREIGN KEY (TO_UNIT_CODE) REFERENCES @unitTableName (UNIT_CODE),
+      CONSTRAINT @TABLE_FK3 FOREIGN KEY (FROM_UNIT_ID, ABSTRACT_PARAM_CODE) REFERENCES @unitTableName (UNIT_ID, ABSTRACT_PARAM_CODE),
+      CONSTRAINT @TABLE_FK4 FOREIGN KEY (TO_UNIT_ID, ABSTRACT_PARAM_CODE) REFERENCES @unitTableName (UNIT_ID, ABSTRACT_PARAM_CODE),
+      CONSTRAINT @TABLE_CK1 CHECK ((FACTOR IS NULL AND OFFSET IS NULL) OR (FACTOR IS NOT NULL AND OFFSET IS NOT NULL)),
+      CONSTRAINT @TABLE_CK2 CHECK ((FACTOR IS NULL AND FUNCTION IS NOT NULL) OR (FACTOR IS NOT NULL AND FUNCTION IS NULL))
     )
     ORGANIZATION INDEX
     LOGGING
@@ -10130,13 +10148,8 @@ def main() :
     /
     
     -----------------------------
-    -- @TABLE constraints
+    -- @TABLE indexes
     --
-    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK1 FOREIGN KEY (FROM_UNIT_CODE) REFERENCES @unitTableName (UNIT_CODE);
-    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK2 FOREIGN KEY (TO_UNIT_CODE) REFERENCES @unitTableName (UNIT_CODE);
-    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK3 FOREIGN KEY (FROM_UNIT_ID, ABSTRACT_PARAM_CODE) REFERENCES @unitTableName (UNIT_ID, ABSTRACT_PARAM_CODE);
-    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK4 FOREIGN KEY (TO_UNIT_ID, ABSTRACT_PARAM_CODE) REFERENCES @unitTableName (UNIT_ID, ABSTRACT_PARAM_CODE);
-    
     
     CREATE UNIQUE INDEX CWMS_UNIT_CONVERSION_U01 ON CWMS_UNIT_CONVERSION
     (FROM_UNIT_CODE, TO_UNIT_CODE)
@@ -10159,12 +10172,13 @@ def main() :
     -- @TABLE comments
     --
     COMMENT ON TABLE @TABLE IS 'Contains linear conversion factors for units';
-    COMMENT ON COLUMN @TABLE.FROM_UNIT_ID IS   'Source units      (x in y=mx+b)';
-    COMMENT ON COLUMN @TABLE.TO_UNIT_ID IS     'Destination units (y in y=mx+b)';
-    COMMENT ON COLUMN @TABLE.FROM_UNIT_CODE IS 'Source units      (x in y=mx+b)';
-    COMMENT ON COLUMN @TABLE.TO_UNIT_CODE IS   'Destination units (y in y=mx+b)';
-    COMMENT ON COLUMN @TABLE.FACTOR IS         'Ratio of units    (m in y=mx+b)';
-    COMMENT ON COLUMN @TABLE.OFFSET IS         'Offset of units   (b in y=mx+b)';
+    COMMENT ON COLUMN @TABLE.FROM_UNIT_ID IS   'Source unit';
+    COMMENT ON COLUMN @TABLE.TO_UNIT_ID IS     'Destination unit';
+    COMMENT ON COLUMN @TABLE.FROM_UNIT_CODE IS 'Source unit';
+    COMMENT ON COLUMN @TABLE.TO_UNIT_CODE IS   'Destination unit';
+    COMMENT ON COLUMN @TABLE.FACTOR IS         'Ratio of units    (m in y=mx+b for linear conversions)';
+    COMMENT ON COLUMN @TABLE.OFFSET IS         'Offset of units   (b in y=mx+b for non-linear conversions)';
+    COMMENT ON COLUMN @TABLE.FUNCTION IS       'Non-linear conversion function';
     
     -----------------------------
     -- @TABLE_UNIT trigger
@@ -10244,15 +10258,19 @@ def main() :
     conversionUnitIds = unitConversionsByUnitIds.keys()
     conversionUnitIds.sort()
     for abstractParam, fromUnit, toUnit in conversionUnitIds :
-        conversion = unitConversionsByUnitIds[abstractParam, fromUnit, toUnit]
-        conversionLoadTemplate +="INSERT INTO %s (FROM_UNIT_ID, TO_UNIT_ID, ABSTRACT_PARAM_CODE, FROM_UNIT_CODE, TO_UNIT_CODE, FACTOR, OFFSET) VALUES (\n" % conversionTableName
+        conversion = unitConversionsByUnitIds[(abstractParam, fromUnit, toUnit)]
+        offset = conversion["OFFSET"]
+        factor = conversion["FACTOR"]
+        function = conversion["FUNCTION"]
+        conversionLoadTemplate +="INSERT INTO %s (FROM_UNIT_ID, TO_UNIT_ID, ABSTRACT_PARAM_CODE, FROM_UNIT_CODE, TO_UNIT_CODE, FACTOR, OFFSET, FUNCTION) VALUES (\n" % conversionTableName
         conversionLoadTemplate +="\t'%s',\n" % fromUnit
         conversionLoadTemplate +="\t'%s',\n" % toUnit
         conversionLoadTemplate +="\t%d, -- %s\n" % (abstractParamCodes[abstractParam], abstractParam)
         conversionLoadTemplate +="\t%d,\n" % unitDefsById["%s.%s" % (abstractParam, fromUnit)]["CODE"]
         conversionLoadTemplate +="\t%d,\n" % unitDefsById["%s.%s" % (abstractParam, toUnit)]["CODE"]
-        conversionLoadTemplate +="\t%s,\n" % conversion["FACTOR"]
-        conversionLoadTemplate +="\t%s\n" % conversion["OFFSET"]
+        conversionLoadTemplate +="\t%s,\n" % (factor, 'NULL')[factor == (None,)]
+        conversionLoadTemplate +="\t%s,\n" % (offset, 'NULL')[offset == (None,)]
+        conversionLoadTemplate +="\t%s\n"  % ("'%s'" % str(function).replace("ARG 0", "ARG1").replace("|", " "), 'NULL')[function is None]
         conversionLoadTemplate +=");\n"
     conversionLoadTemplate +="COMMIT;\n"
     
