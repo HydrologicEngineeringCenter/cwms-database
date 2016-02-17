@@ -758,6 +758,21 @@ INSERT INTO cwms_sec_user_groups (
               )
   VALUES   (-3, 'CCP Reviewer', 'Users who will be allowed to review (i.e., read only) an office’s CCP computations.'
               );
+
+INSERT INTO cwms_sec_user_groups (
+                                                 user_group_code,
+                                                 user_group_id,
+                                                 user_group_desc
+              )
+  VALUES   (-4, 'RDL Reviewer', 'Users who will be allowed to review (i.e., read only) an office’s RDL configurations.'
+              );
+INSERT INTO cwms_sec_user_groups (
+                                                 user_group_code,
+                                                 user_group_id,
+                                                 user_group_desc
+              )
+  VALUES   (-5, 'RDL Mgr', 'Users that will be managing (i.e., adding/modifying) RDL configurations.' 
+              );
 COMMIT;
 --
 --=============================================================================

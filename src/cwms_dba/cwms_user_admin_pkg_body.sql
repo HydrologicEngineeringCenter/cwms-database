@@ -208,5 +208,28 @@ AS
       check_dynamic_sql(l_sql_string);                        
 		EXECUTE IMMEDIATE l_sql_string;   
 	END;
+   PROCEDURE grant_rdl_role (p_role VARCHAR2, p_username VARCHAR2)
+   IS
+      l_cmd     VARCHAR2 (64);
+   BEGIN
+      l_cmd := 'GRANT ' || p_role || ' TO ' || p_username;
+
+      EXECUTE IMMEDIATE l_cmd;
+   END grant_rdl_role;
+
+   PROCEDURE revoke_rdl_role (p_role VARCHAR2, p_username VARCHAR2)
+   IS
+      l_cmd     VARCHAR2 (64);
+   BEGIN
+     BEGIN
+      l_cmd := 'REVOKE ' || p_role || ' FROM ' || p_username;
+
+      EXECUTE IMMEDIATE l_cmd;
+      EXCEPTION
+        WHEN OTHERS
+        THEN
+           NULL;
+       END;
+   END revoke_rdl_role;
 END cwms_user_admin;
 /

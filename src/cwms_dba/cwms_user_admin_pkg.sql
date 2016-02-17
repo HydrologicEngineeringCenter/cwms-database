@@ -28,5 +28,7 @@ AS
 	PROCEDURE set_user_password (p_username	IN VARCHAR2,
 										  p_password	IN VARCHAR2
 										 );
+        PROCEDURE grant_rdl_role (p_role VARCHAR2, p_username VARCHAR2);
+	PROCEDURE revoke_rdl_role (p_role VARCHAR2, p_username VARCHAR2);
 END cwms_user_admin;
 /

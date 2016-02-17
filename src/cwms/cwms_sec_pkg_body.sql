@@ -841,6 +841,15 @@ AS
 
          insert_noaccess_entry (p_username, p_db_office_code);
          COMMIT;
+         IF (p_user_group_id = 'RDL Reviewer')
+         THEN
+            cwms_dba.cwms_user_admin.grant_rdl_role ('RDLREAD', l_username);
+         END IF;
+
+         IF (p_user_group_id = 'RDL Mgr')
+         THEN
+            cwms_dba.cwms_user_admin.grant_rdl_role ('RDLCRUD', l_username);
+         END IF;
       EXCEPTION
          WHEN DUP_VAL_ON_INDEX
          THEN
@@ -1186,6 +1195,15 @@ AS
                   AND username = UPPER (p_username);
 
       COMMIT;
+      IF (p_user_group_id = 'RDL Reviewer')
+      THEN
+         cwms_dba.cwms_user_admin.revoke_rdl_role ('RDLREAD', p_username);
+      END IF;
+
+      IF (p_user_group_id = 'RDL Mgr')
+      THEN
+         cwms_dba.cwms_user_admin.revoke_rdl_role ('RDLCRUD', p_username);
+      END IF;
    END remove_user_from_group;
 
    ----------------------------------------------------------------------------

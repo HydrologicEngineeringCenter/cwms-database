@@ -262,6 +262,7 @@ end;
 /
 set define on
 @@cwms/create_sec_triggers
+@@cwms/add_rdl_policy
 --
 -- all done
 --
