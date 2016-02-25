@@ -1040,26 +1040,30 @@ begin
 end store_ratings;
 
 --------------------------------------------------------------------------------
--- CAT_RATINGS
+-- CAT_RATINGS_EX
 --
-procedure cat_ratings(
-   p_cat_cursor           out sys_refcursor,
-   p_spec_id_mask         in  varchar2 default '*',
-   p_effective_date_start in  date     default null,
-   p_effective_date_end   in  date     default null,
-   p_time_zone            in  varchar2 default null,
-   p_office_id_mask       in  varchar2 default null)
+function cat_ratings_ex(
+   p_effective_tw         in varchar2,
+   p_spec_id_mask         in varchar2 default '*',
+   p_start_date           in date     default null,
+   p_end_date             in date     default null,
+   p_time_zone            in varchar2 default null,
+   p_office_id_mask       in varchar2 default null)
+   return sys_refcursor
 is
    c_default_start_date constant date := date '1700-01-01';
-   c_default_end_date   constant date := cast(systimestamp at time zone 'UTC' as date);
+   c_default_end_date   constant date := date '2300-01-01';
 
-   l_parts str_tab_t;
+   l_crsr                  sys_refcursor;
+   l_effective_tw          boolean;
+   l_parts                 str_tab_t;
    l_location_id_mask      varchar2(49);
    l_parameters_id_mask    varchar2(256);
    l_template_version_mask varchar2(32);
    l_spec_version_mask     varchar2(32);
    l_office_id_mask        varchar2(16) := nvl(p_office_id_mask, cwms_util.user_office_id);
 begin
+   l_effective_tw := cwms_util.return_true_or_false(p_effective_tw);
    l_parts := cwms_util.split_text(p_spec_id_mask, separator1);
    case l_parts.count
       when 1 then
@@ -1093,62 +1097,202 @@ begin
    l_template_version_mask := cwms_util.normalize_wildcards(l_template_version_mask);
    l_spec_version_mask     := cwms_util.normalize_wildcards(l_spec_version_mask);
 
-   open p_cat_cursor for
-      select o.office_id,
-             bl.base_location_id
-             ||substr('-', 1, length(pl.sub_location_id))
-             ||pl.sub_location_id
-             ||separator1||rt.parameters_id
-             ||separator1||rt.version
-             ||separator1||rs.version as specification_id,
-             cwms_util.change_timezone(r.effective_date, 'UTC', tz2.time_zone_name) as effective_date,
-             cwms_util.change_timezone(r.create_date, 'UTC', tz2.time_zone_name) as create_date
-        from at_rating r,
-             at_rating_spec rs,
-             at_rating_template rt,
-             at_physical_location pl,
-             at_base_location bl,
-             cwms_office o,
-             cwms_time_zone tz1,
-             cwms_time_zone tz2
-       where o.office_id like upper(l_office_id_mask) escape '\'
-         and rt.office_code = o.office_code
-         and upper(rt.parameters_id) like upper(l_parameters_id_mask) escape '\'
-         and upper(rt.version) like upper(l_template_version_mask) escape '\'
-         and rs.template_code = rt.template_code
-         and upper(rs.version) like upper(l_spec_version_mask) escape '\'
-         and r.rating_spec_code = rs.rating_spec_code
-         and pl.location_code = rs.location_code
-         and bl.base_location_code = pl.base_location_code
-         and upper(bl.base_location_id
-             ||substr('-', 1, length(pl.sub_location_id))
-             ||pl.sub_location_id) like upper(l_location_id_mask) escape '\'
-         and tz1.time_zone_code = nvl(pl.time_zone_code, 0)
-         and tz2.time_zone_name = case
-                                     when p_time_zone is null then
-                                        tz1.time_zone_name
-                                     else
-                                        p_time_zone
-                                  end
-         and r.effective_date >= case
-                                    when p_effective_date_start is null then
-                                       c_default_start_date
-                                    else
-                                       cwms_util.change_timezone(p_effective_date_start, tz2.time_zone_name, 'UTC')
-                                 end
-         and r.effective_date <= case
-                                    when p_effective_date_end is null then
-                                       c_default_end_date
-                                    else
-                                       cwms_util.change_timezone(p_effective_date_end, tz2.time_zone_name, 'UTC')
-                                 end
-    order by o.office_id,
-             bl.base_location_id,
-             pl.sub_location_id,
-             rt.parameters_id,
-             rt.version,
-             rs.version,
-             r.effective_date nulls first;
+   open l_crsr for
+      select q2.office_id,
+             q1.location_id||'.'||q2.spec as specification_id,
+             q2.effective_date,
+             q2.create_date
+        from (select distinct
+                     location_code,
+                     location_id
+                from av_loc2  
+             ) q1,
+             (select o.office_id,
+                     rs.location_code,
+                     rt.parameters_id
+                     ||separator1||rt.version
+                     ||separator1||rs.version as spec,
+                     cwms_util.change_timezone(r.effective_date, 'UTC', tz2.time_zone_name) as effective_date,
+                     cwms_util.change_timezone(r.create_date, 'UTC', tz2.time_zone_name) as create_date
+                from at_rating r,
+                     at_rating_spec rs,
+                     at_rating_template rt,
+                     at_physical_location pl,
+                     cwms_office o,
+                     cwms_time_zone tz1,
+                     cwms_time_zone tz2
+               where o.office_id like upper(l_office_id_mask) escape '\'
+                 and rt.office_code = o.office_code
+                 and upper(rt.parameters_id) like upper(l_parameters_id_mask) escape '\'
+                 and upper(rt.version) like upper(l_template_version_mask) escape '\'
+                 and rs.template_code = rt.template_code
+                 and upper(rs.version) like upper(l_spec_version_mask) escape '\'
+                 and r.rating_spec_code = rs.rating_spec_code
+                 and r.ref_rating_code is null
+                 and pl.location_code = rs.location_code
+                 and tz1.time_zone_code = nvl(pl.time_zone_code, 0)
+                 and tz2.time_zone_name = case
+                                          when p_time_zone is null then tz1.time_zone_name
+                                          else p_time_zone
+                                          end
+                 and (r.effective_date >= case 
+                                          when p_start_date is null then c_default_start_date
+                                          else cwms_util.change_timezone(p_start_date, tz2.time_zone_name, 'UTC')
+                                          end
+                      or (p_effective_tw = 'T'
+                          and rs.out_range_low_rating_method in
+                                 (select rating_method_code 
+                                    from cwms_rating_method 
+                                   where rating_method_id in ('NEXT', 'NEAREST')
+                                 )
+                         )
+                     )
+                 and (r.effective_date <= case
+                                          when p_end_date is null then c_default_end_date
+                                          else cwms_util.change_timezone(p_start_date, tz2.time_zone_name, 'UTC')
+                                          end
+                      or (p_effective_tw = 'T'
+                          and rs.out_range_high_rating_method in
+                                 (select rating_method_code 
+                                    from cwms_rating_method 
+                                   where rating_method_id in ('PREVIOUS', 'NEAREST')
+                                 )
+                         )
+                     )
+              union all                     
+              select o.office_id,
+                     rs.location_code,
+                     rt.parameters_id
+                     ||separator1||rt.version
+                     ||separator1||rs.version as spec,
+                     cwms_util.change_timezone(tr.effective_date, 'UTC', tz2.time_zone_name) as effective_date,
+                     cwms_util.change_timezone(tr.create_date, 'UTC', tz2.time_zone_name) as create_date
+                from at_transitional_rating tr,
+                     at_rating_spec rs,
+                     at_rating_template rt,
+                     at_physical_location pl,
+                     cwms_office o,
+                     cwms_time_zone tz1,
+                     cwms_time_zone tz2
+               where o.office_id like upper(l_office_id_mask) escape '\'
+                 and rt.office_code = o.office_code
+                 and upper(rt.parameters_id) like upper(l_parameters_id_mask) escape '\'
+                 and upper(rt.version) like upper(l_template_version_mask) escape '\'
+                 and rs.template_code = rt.template_code
+                 and upper(rs.version) like upper(l_spec_version_mask) escape '\'
+                 and tr.rating_spec_code = rs.rating_spec_code
+                 and pl.location_code = rs.location_code
+                 and tz1.time_zone_code = nvl(pl.time_zone_code, 0)
+                 and tz2.time_zone_name = case
+                                          when p_time_zone is null then tz1.time_zone_name
+                                          else p_time_zone
+                                          end
+                 and (tr.effective_date >= case 
+                                          when p_start_date is null then c_default_start_date
+                                          else cwms_util.change_timezone(p_start_date, tz2.time_zone_name, 'UTC')
+                                          end
+                      or (p_effective_tw = 'T'
+                          and rs.out_range_low_rating_method in
+                                 (select rating_method_code 
+                                    from cwms_rating_method 
+                                   where rating_method_id in ('NEXT', 'NEAREST')
+                                 )
+                         )
+                     )
+                 and (tr.effective_date <= case
+                                          when p_end_date is null then c_default_end_date
+                                          else cwms_util.change_timezone(p_start_date, tz2.time_zone_name, 'UTC')
+                                          end
+                      or (p_effective_tw = 'T'
+                          and rs.out_range_high_rating_method in
+                                 (select rating_method_code 
+                                    from cwms_rating_method 
+                                   where rating_method_id in ('PREVIOUS', 'NEAREST')
+                                 )
+                         )
+                     )
+              union all                     
+              select o.office_id,
+                     rs.location_code,
+                     rt.parameters_id
+                     ||separator1||rt.version
+                     ||separator1||rs.version as spec,
+                     cwms_util.change_timezone(vr.effective_date, 'UTC', tz2.time_zone_name) as effective_date,
+                     cwms_util.change_timezone(vr.create_date, 'UTC', tz2.time_zone_name) as create_date
+                from at_virtual_rating vr,
+                     at_rating_spec rs,
+                     at_rating_template rt,
+                     at_physical_location pl,
+                     cwms_office o,
+                     cwms_time_zone tz1,
+                     cwms_time_zone tz2
+               where o.office_id like upper(l_office_id_mask) escape '\'
+                 and rt.office_code = o.office_code
+                 and upper(rt.parameters_id) like upper(l_parameters_id_mask) escape '\'
+                 and upper(rt.version) like upper(l_template_version_mask) escape '\'
+                 and rs.template_code = rt.template_code
+                 and upper(rs.version) like upper(l_spec_version_mask) escape '\'
+                 and vr.rating_spec_code = rs.rating_spec_code
+                 and pl.location_code = rs.location_code
+                 and tz1.time_zone_code = nvl(pl.time_zone_code, 0)
+                 and tz2.time_zone_name = case
+                                          when p_time_zone is null then tz1.time_zone_name
+                                          else p_time_zone
+                                          end
+                 and (vr.effective_date >= case 
+                                          when p_start_date is null then c_default_start_date
+                                          else cwms_util.change_timezone(p_start_date, tz2.time_zone_name, 'UTC')
+                                          end
+                      or (p_effective_tw = 'T'
+                          and rs.out_range_low_rating_method in
+                                 (select rating_method_code 
+                                    from cwms_rating_method 
+                                   where rating_method_id in ('NEXT', 'NEAREST')
+                                 )
+                         )
+                     )
+                 and (vr.effective_date <= case
+                                          when p_end_date is null then c_default_end_date
+                                          else cwms_util.change_timezone(p_start_date, tz2.time_zone_name, 'UTC')
+                                          end
+                      or (p_effective_tw = 'T'
+                          and rs.out_range_high_rating_method in
+                                 (select rating_method_code 
+                                    from cwms_rating_method 
+                                   where rating_method_id in ('PREVIOUS', 'NEAREST')
+                                 )
+                         )
+                     )
+             ) q2
+       where q1.location_code = q2.location_code
+         and upper(q1.location_id) like upper(l_location_id_mask) escape '\'
+    order by q2.office_id,
+             q1.location_id,
+             q2.spec,
+             q2.effective_date nulls first;
+             
+   return l_crsr;
+end cat_ratings_ex;
+
+--------------------------------------------------------------------------------
+-- CAT_RATINGS
+--
+procedure cat_ratings(
+   p_cat_cursor           out sys_refcursor,
+   p_spec_id_mask         in  varchar2 default '*',
+   p_effective_date_start in  date     default null,
+   p_effective_date_end   in  date     default null,
+   p_time_zone            in  varchar2 default null,
+   p_office_id_mask       in  varchar2 default null)
+is
+begin
+   p_cat_cursor := cat_ratings_ex(
+      p_effective_tw   => 'F',
+      p_spec_id_mask   => p_spec_id_mask,
+      p_start_date     => p_effective_date_start,
+      p_end_date       => p_effective_date_end,
+      p_time_zone      => p_time_zone,
+      p_office_id_mask => p_office_id_mask);
 end cat_ratings;
 
 --------------------------------------------------------------------------------
@@ -1162,21 +1306,60 @@ function cat_ratings_f(
    p_office_id_mask       in varchar2 default null)
    return sys_refcursor
 is
-   l_cursor sys_refcursor;
 begin
-   cat_ratings(
-      l_cursor,
-      p_spec_id_mask,
-      p_effective_date_start,
-      p_effective_date_end,
-      p_time_zone,
-      p_office_id_mask);
-
-   return l_cursor;
+   return cat_ratings_ex(
+      p_effective_tw   => 'F',
+      p_spec_id_mask   => p_spec_id_mask,
+      p_start_date     => p_effective_date_start,
+      p_end_date       => p_effective_date_end,
+      p_time_zone      => p_time_zone,
+      p_office_id_mask => p_office_id_mask);
 end cat_ratings_f;
 
 --------------------------------------------------------------------------------
--- RETRIEVE_RATINGS
+-- cat_eff_ratings
+--
+procedure cat_eff_ratings(
+   p_cat_cursor           out sys_refcursor,
+   p_spec_id_mask         in  varchar2 default '*',
+   p_start_date           in  date     default null,
+   p_end_date             in  date     default null,
+   p_time_zone            in  varchar2 default null,
+   p_office_id_mask       in  varchar2 default null)
+is
+begin
+   p_cat_cursor := cat_ratings_ex(
+      p_effective_tw   => 'T',
+      p_spec_id_mask   => p_spec_id_mask,
+      p_start_date     => p_start_date,
+      p_end_date       => p_end_date,
+      p_time_zone      => p_time_zone,
+      p_office_id_mask => p_office_id_mask);
+end cat_eff_ratings;
+
+--------------------------------------------------------------------------------
+-- cat_eff_ratings_F
+--
+function cat_eff_ratings_f(
+   p_spec_id_mask         in varchar2 default '*',
+   p_start_date           in date     default null,
+   p_end_date             in date     default null,
+   p_time_zone            in varchar2 default null,
+   p_office_id_mask       in varchar2 default null)
+   return sys_refcursor
+is
+begin
+   return cat_ratings_ex(
+      p_effective_tw   => 'T',
+      p_spec_id_mask   => p_spec_id_mask,
+      p_start_date     => p_start_date,
+      p_end_date       => p_end_date,
+      p_time_zone      => p_time_zone,
+      p_office_id_mask => p_office_id_mask);
+end cat_eff_ratings_f;
+
+--------------------------------------------------------------------------------
+-- RETRIEVE_RATINGS_OBJ
 --
 procedure retrieve_ratings_obj(
    p_ratings              out rating_tab_t,
@@ -1186,268 +1369,74 @@ procedure retrieve_ratings_obj(
    p_time_zone            in  varchar2 default null,
    p_office_id_mask       in  varchar2 default null)
 is
-   c_default_start_date constant date := date '1700-01-01';
-   c_default_end_date   constant date := cast(systimestamp at time zone 'UTC' as date);
-
-   l_parts str_tab_t;
-   l_location_id_mask      varchar2(128);
-   l_parameters_id_mask    varchar2(256);
-   l_template_version_mask varchar2(64);
-   l_spec_version_mask     varchar2(64);
-   l_office_id_mask        varchar2(16) := nvl(p_office_id_mask, cwms_util.user_office_id);
-   l_location_id           varchar2(49);
-   l_count                 simple_integer := 0;
-   l_rating                rating_t;
-   l_stream_rating         stream_rating_t;
-   l_elev_positions        number_tab_t;
-   l_local_datum           varchar2(16);
+   type cat_rec_t is record(office varchar2(16), rating_spec varchar2(512), effective_date date, create_date date);
+   type cat_tab_t is table of cat_rec_t;
+   l_cat_cursor   sys_refcursor;
+   l_cat_records  cat_tab_t;
 begin
-   l_parts := cwms_util.split_text(p_spec_id_mask, separator1);
-   case l_parts.count
-      when 1 then
-         l_location_id_mask      := l_parts(1);
-         l_parameters_id_mask    := '*';
-         l_template_version_mask := '*';
-         l_spec_version_mask     := '*';
-      when 2 then
-         l_location_id_mask      := l_parts(1);
-         l_parameters_id_mask    := l_parts(2);
-         l_template_version_mask := '*';
-         l_spec_version_mask     := '*';
-      when 3 then
-         l_location_id_mask      := l_parts(1);
-         l_parameters_id_mask    := l_parts(2);
-         l_template_version_mask := l_parts(3);
-         l_spec_version_mask     := '*';
-      when 4 then
-         l_location_id_mask      := l_parts(1);
-         l_parameters_id_mask    := l_parts(2);
-         l_template_version_mask := l_parts(3);
-         l_spec_version_mask     := l_parts(4);
-      else
-         cwms_err.raise(
-            'INVALID_ITEM',
-            p_spec_id_mask,
-            'rating specification id mask');
-   end case;
-   l_location_id_mask      := cwms_util.normalize_wildcards(l_location_id_mask);
-   l_parameters_id_mask    := cwms_util.normalize_wildcards(l_parameters_id_mask);
-   l_template_version_mask := cwms_util.normalize_wildcards(l_template_version_mask);
-   l_spec_version_mask     := cwms_util.normalize_wildcards(l_spec_version_mask);
-   l_office_id_mask        := cwms_util.normalize_wildcards(l_office_id_mask);
-
+   l_cat_cursor := cat_ratings_ex(
+      p_effective_tw   => 'F',
+      p_spec_id_mask   => p_spec_id_mask,
+      p_start_date     => p_effective_date_start,
+      p_end_date       => p_effective_date_end,
+      p_time_zone      => p_time_zone,
+      p_office_id_mask => p_office_id_mask);
+      
+   fetch l_cat_cursor bulk collect into l_cat_records;
+   close l_cat_cursor;
+   
    p_ratings := rating_tab_t();
-   for rec in
-      (select db_office_id,
-              location_id,
-              parameters_id,
-              template_version,
-              spec_version,
-              effective_date,
-              rating_code
-         from (select v.db_office_id,
-                      v.location_id,
-                      rt.parameters_id,
-                      rt.version as template_version,
-                      rs.version as spec_version,
-                      r.effective_date,
-                      r.rating_code
-                 from at_rating r,
-                      at_rating_spec rs,
-                      at_rating_template rt,
-                      av_loc2 v,
-                      at_physical_location pl,
-                      cwms_office o,
-                      cwms_time_zone tz1,
-                      cwms_time_zone tz2
-                where v.db_office_id like upper(l_office_id_mask) escape '\'
-                  and o.office_id = v.db_office_id
-                  and rt.office_code = o.office_code
-                  and upper(rt.parameters_id) like upper(l_parameters_id_mask) escape '\'
-                  and upper(rt.version) like upper(l_template_version_mask) escape '\'
-                  and rs.template_code = rt.template_code
-                  and upper(rs.version) like upper(l_spec_version_mask) escape '\'
-                  and r.rating_spec_code = rs.rating_spec_code
-                  and v.location_code = rs.location_code
-                  and upper(v.location_id) like upper(l_location_id_mask) escape '\'
-                  and v.unit_system = 'SI'
-                  and pl.location_code = v.location_code
-                  and tz1.time_zone_code = nvl(pl.time_zone_code, 0)
-                  and tz2.time_zone_name = case
-                                           when p_time_zone is null then tz1.time_zone_name
-                                           else p_time_zone
-                                           end
-                  and r.effective_date >= case
-                                          when p_effective_date_start is null then c_default_start_date
-                                          else cwms_util.change_timezone(
-                                             p_effective_date_start, 
-                                             tz2.time_zone_name, 
-                                             'UTC')
-                                          end
-                  and r.effective_date <= case
-                                          when p_effective_date_end is null then c_default_end_date
-                                          else cwms_util.change_timezone(
-                                             p_effective_date_end, 
-                                             tz2.time_zone_name, 
-                                             'UTC')
-                                          end
-                  and r.ref_rating_code is null  -- don't pick up stream rating shifts and offsets
-              )
-              union all               
-              (select v.db_office_id,
-                      v.location_id,
-                      rt.parameters_id,
-                      rt.version as template_version,
-                      rs.version as spec_version,
-                      vr.effective_date,
-                      vr.virtual_rating_code as rating_code
-                 from at_virtual_rating vr,
-                      at_rating_spec rs,
-                      at_rating_template rt,
-                      av_loc2 v,
-                      at_physical_location pl,
-                      cwms_office o,
-                      cwms_time_zone tz1,
-                      cwms_time_zone tz2
-                where v.db_office_id like upper(l_office_id_mask) escape '\'
-                  and o.office_id = v.db_office_id
-                  and rt.office_code = o.office_code
-                  and upper(rt.parameters_id) like upper(l_parameters_id_mask) escape '\'
-                  and upper(rt.version) like upper(l_template_version_mask) escape '\'
-                  and rs.template_code = rt.template_code
-                  and upper(rs.version) like upper(l_spec_version_mask) escape '\'
-                  and vr.rating_spec_code = rs.rating_spec_code
-                  and v.location_code = rs.location_code
-                  and upper(v.location_id) like upper(l_location_id_mask) escape '\'
-                  and v.unit_system = 'SI'
-                  and pl.location_code = v.location_code
-                  and tz1.time_zone_code = nvl(pl.time_zone_code, 0)
-                  and tz2.time_zone_name = case
-                                           when p_time_zone is null then tz1.time_zone_name
-                                           else p_time_zone
-                                           end
-                  and vr.effective_date >= case
-                                           when p_effective_date_start is null then c_default_start_date
-                                           else cwms_util.change_timezone(
-                                              p_effective_date_start, 
-                                              tz2.time_zone_name, 
-                                              'UTC')
-                                           end
-                  and vr.effective_date <= case
-                                           when p_effective_date_end is null then c_default_end_date
-                                           else cwms_util.change_timezone(
-                                              p_effective_date_end, 
-                                              tz2.time_zone_name, 
-                                              'UTC')
-                                           end
-              )
-              union all               
-             (select v.db_office_id,
-                      v.location_id,
-                      rt.parameters_id,
-                      rt.version as template_version,
-                      rs.version as spec_version,
-                      tr.effective_date,
-                      tr.transitional_rating_code as rating_code
-                 from at_transitional_rating tr,
-                      at_rating_spec rs,
-                      at_rating_template rt,
-                      av_loc2 v,
-                      at_physical_location pl,
-                      cwms_office o,
-                      cwms_time_zone tz1,
-                      cwms_time_zone tz2
-                where v.db_office_id like upper(l_office_id_mask) escape '\'
-                  and o.office_id = v.db_office_id
-                  and rt.office_code = o.office_code
-                  and upper(rt.parameters_id) like upper(l_parameters_id_mask) escape '\'
-                  and upper(rt.version) like upper(l_template_version_mask) escape '\'
-                  and rs.template_code = rt.template_code
-                  and upper(rs.version) like upper(l_spec_version_mask) escape '\'
-                  and tr.rating_spec_code = rs.rating_spec_code
-                  and v.location_code = rs.location_code
-                  and upper(v.location_id) like upper(l_location_id_mask) escape '\'
-                  and v.unit_system = 'SI'
-                  and pl.location_code = v.location_code
-                  and tz1.time_zone_code = nvl(pl.time_zone_code, 0)
-                  and tz2.time_zone_name = case
-                                           when p_time_zone is null then tz1.time_zone_name
-                                           else p_time_zone
-                                           end
-                  and tr.effective_date >= case
-                                           when p_effective_date_start is null then c_default_start_date
-                                           else cwms_util.change_timezone(
-                                              p_effective_date_start, 
-                                              tz2.time_zone_name, 
-                                              'UTC')
-                                           end
-                  and tr.effective_date <= case
-                                           when p_effective_date_end is null then c_default_end_date
-                                           else cwms_util.change_timezone(
-                                              p_effective_date_end, 
-                                              tz2.time_zone_name, 
-                                              'UTC')
-                                           end
-              )
-        order by db_office_id,
-                 location_id,
-                 parameters_id,
-                 template_version,
-                 spec_version,
-                 effective_date         
-      )
-   loop
-      p_ratings.extend;
-      select count(*)
-        into l_count
-        from at_rating
-       where ref_rating_code = rec.rating_code;
-      if l_count = 0 then
-         l_rating := rating_t(rec.rating_code);
-         l_parts  := cwms_util.split_text(l_rating.rating_spec_id, separator1);
-         l_location_id := l_parts(1);
-         l_parts(1) := rec.location_id;
-         l_elev_positions := get_elevation_positions(l_parts(2));
-         if l_elev_positions is null then
-            p_ratings(p_ratings.count) := l_rating;
-         else
-            l_local_datum := cwms_loc.get_location_vertical_datum(l_location_id, l_rating.office_id);
-            if l_local_datum is null then
-               p_ratings(p_ratings.count) := l_rating;
-            else
-               p_ratings(p_ratings.count) := vdatum_rating_t(l_rating, l_local_datum, l_elev_positions);
-            end if;
-         end if;
-      else
-         l_stream_rating := stream_rating_t(rec.rating_code);
-         l_parts  := cwms_util.split_text(l_stream_rating.rating_spec_id, separator1);
-         l_location_id := l_parts(1);
-         l_parts(1) := rec.location_id;
-         l_elev_positions := get_elevation_positions(l_parts(2));
-         if l_elev_positions is null or l_elev_positions.count = 0 then
-            p_ratings(p_ratings.count) := l_stream_rating;
-         else
-            if l_elev_positions = number_tab_t(1) then
-               null;
-            else
-               cwms_err.raise(
-                  'ERROR',
-                  l_stream_rating.office_id
-                  ||'/'
-                  ||l_stream_rating.rating_spec_id
-                  ||' doesn''t have ind parameter 1 as the first and only elevation parameter');
-            end if;
-            l_local_datum := cwms_loc.get_location_vertical_datum(l_location_id, l_stream_rating.office_id);
-            if l_local_datum is null then
-               p_ratings(p_ratings.count) := l_stream_rating;
-            else
-               p_ratings(p_ratings.count) := vdatum_stream_rating_t(l_stream_rating, l_local_datum);
-            end if;
-         end if;
-      end if;
-      p_ratings(p_ratings.count).rating_spec_id := cwms_util.join_text(l_parts, separator1);
+   p_ratings.extend(l_cat_records.count);
+   for i in 1..l_cat_records.count loop
+      p_ratings(i) := new rating_t(
+         p_rating_spec_id => l_cat_records(i).rating_spec,
+         p_effective_date => l_cat_records(i).effective_date,
+         p_match_date     => 'T',
+         p_time_zone      => p_time_zone,
+         p_office_id      => l_cat_records(i).office);
    end loop;
+   
 end retrieve_ratings_obj;
+
+--------------------------------------------------------------------------------
+-- RETRIEVE_EFF_RATINGS_OBJ
+--
+procedure retrieve_eff_ratings_obj(
+   p_ratings              out rating_tab_t,
+   p_spec_id_mask         in  varchar2 default '*',
+   p_start_date           in  date     default null,
+   p_end_date             in  date     default null,
+   p_time_zone            in  varchar2 default null,
+   p_office_id_mask       in  varchar2 default null)
+is
+   type cat_rec_t is record(office varchar2(16), rating_spec varchar2(512), effective_date date, create_date date);
+   type cat_tab_t is table of cat_rec_t;
+   l_cat_cursor   sys_refcursor;
+   l_cat_records  cat_tab_t;
+begin
+   l_cat_cursor := cat_ratings_ex(
+      p_effective_tw   => 'T',
+      p_spec_id_mask   => p_spec_id_mask,
+      p_start_date     => p_start_date,
+      p_end_date       => p_end_date,
+      p_time_zone      => p_time_zone,
+      p_office_id_mask => p_office_id_mask);
+      
+   fetch l_cat_cursor bulk collect into l_cat_records;
+   close l_cat_cursor;
+   
+   p_ratings := rating_tab_t();
+   p_ratings.extend(l_cat_records.count);
+   for i in 1..l_cat_records.count loop
+      p_ratings(i) := new rating_t(
+         p_rating_spec_id => l_cat_records(i).rating_spec,
+         p_effective_date => l_cat_records(i).effective_date,
+         p_match_date     => 'T',
+         p_time_zone      => p_time_zone,
+         p_office_id      => l_cat_records(i).office);
+   end loop;
+   
+END retrieve_eff_ratings_obj;
 
 --------------------------------------------------------------------------------
 -- RETRIEVE_RATINGS_OBJ_F
@@ -1473,18 +1462,47 @@ begin
    return l_ratings;
 end retrieve_ratings_obj_f;
 
+--------------------------------------------------------------------------------
+-- RETRIEVE_EFF_RATINGS_OBJ_F
+--
+function retrieve_eff_ratings_obj_f(
+   p_spec_id_mask         in  varchar2 default '*',
+   p_start_date           in  date     default null,
+   p_end_date             in  date     default null,
+   p_time_zone            in  varchar2 default null,
+   p_office_id_mask       in  varchar2 default null)
+   return rating_tab_t
+is
+   l_ratings rating_tab_t;
+BEGIN
+   retrieve_eff_ratings_obj(
+      l_ratings,
+      p_spec_id_mask,
+      p_start_date,
+      p_end_date,
+      p_time_zone,
+      p_office_id_mask);
+
+   return l_ratings;
+end retrieve_eff_ratings_obj_f;
+
+--------------------------------------------------------------------------------
+-- RETREIVE_RATINGS_XML_DATA
+--
 procedure retreive_ratings_xml_data(
    p_templates            in out nocopy clob,
    p_specs                in out nocopy clob,
    p_ratings              in out nocopy clob,
+   p_effective_tw         in  varchar2,
    p_spec_id_mask         in  varchar2 default '*',
-   p_effective_date_start in  date     default null,
-   p_effective_date_end   in  date     default null,
+   p_start_date           in  date     default null,
+   p_end_date             in  date     default null,
    p_time_zone            in  varchar2 default null,
    p_recurse              in  boolean  default true,
    p_office_id_mask       in  varchar2 default null)
 is
    l_ratings       rating_tab_t;
+   l_effective_tw  boolean;
    l_spec_id_mask  varchar2(1024);
    l_template_clob clob;
    l_spec_clob     clob;
@@ -1493,13 +1511,24 @@ is
    l_spec          rating_spec_t;
    l_template      rating_template_t;
 begin
-   retrieve_ratings_obj(
-      l_ratings,
-      p_spec_id_mask,
-      p_effective_date_start,
-      p_effective_date_end,
-      p_time_zone,
-      p_office_id_mask);
+   l_effective_tw := cwms_util.return_true_or_false(p_effective_tw);
+   if l_effective_tw then
+      retrieve_ratings_obj(
+         l_ratings,
+         p_spec_id_mask,
+         p_start_date,
+         p_end_date,
+         p_time_zone,
+         p_office_id_mask);
+   else
+      retrieve_eff_ratings_obj(
+         l_ratings,
+         p_spec_id_mask,
+         p_start_date,
+         p_end_date,
+         p_time_zone,
+         p_office_id_mask);
+   end if;
    l_spec_id_mask := cwms_util.normalize_wildcards(p_spec_id_mask);
       
    for i in 1..l_ratings.count loop 
@@ -1543,9 +1572,10 @@ begin
                l_template_clob,
                l_spec_clob,
                l_rating_clob,
+               p_effective_tw,
                l_spec_id_mask,
-               p_effective_date_start,
-               p_effective_date_end,
+               p_start_date,
+               p_end_date,
                p_time_zone, 
                p_recurse,
                l_ratings(i).office_id);
@@ -1570,9 +1600,10 @@ end retreive_ratings_xml_data;
 -- RETRIEVE_RATINGS_XML_DATA
 --
 function retrieve_ratings_xml_data(
+   p_effective_tw         in varchar2,
    p_spec_id_mask         in varchar2 default '*',
-   p_effective_date_start in date     default null,
-   p_effective_date_end   in date     default null,
+   p_start_date           in date     default null,
+   p_end_date             in date     default null,
    p_time_zone            in varchar2 default null,
    p_retrieve_templates   in boolean  default true,
    p_retrieve_specs       in boolean  default true,
@@ -1608,9 +1639,10 @@ begin
       l_template_clob,
       l_spec_clob,
       l_rating_clob,
+      p_effective_tw,
       p_spec_id_mask,
-      p_effective_date_start,
-      p_effective_date_end,
+      p_start_date,
+      p_end_date,
       p_time_zone,
       p_recurse,
       p_office_id_mask);
@@ -1704,9 +1736,10 @@ procedure retrieve_ratings_xml(
 is
 begin
    p_ratings := retrieve_ratings_xml_data(
+      p_effective_tw         => 'F',
       p_spec_id_mask         => p_spec_id_mask, 
-      p_effective_date_start => p_effective_date_start, 
-      p_effective_date_end   => p_effective_date_end, 
+      p_start_date           => p_effective_date_start, 
+      p_end_date             => p_effective_date_end, 
       p_time_zone            => p_time_zone, 
       p_retrieve_templates   => false,
       p_retrieve_specs       => false,
@@ -1714,6 +1747,31 @@ begin
       p_recurse              => false, 
       p_office_id_mask       => p_office_id_mask);
 end retrieve_ratings_xml;
+
+--------------------------------------------------------------------------------
+-- RETRIEVE_EFF_RATINGS_XML
+--
+procedure retrieve_eff_ratings_xml(
+   p_ratings              out clob,
+   p_spec_id_mask         in  varchar2 default '*',
+   p_start_date           in  date     default null,
+   p_end_date             in  date     default null,
+   p_time_zone            in  varchar2 default null,
+   p_office_id_mask       in  varchar2 default null)
+is
+begin
+   p_ratings := retrieve_ratings_xml_data(
+      p_effective_tw         => 'T',
+      p_spec_id_mask         => p_spec_id_mask, 
+      p_start_date           => p_start_date, 
+      p_end_date             => p_end_date, 
+      p_time_zone            => p_time_zone, 
+      p_retrieve_templates   => false,
+      p_retrieve_specs       => false,
+      p_retrieve_ratings     => true, 
+      p_recurse              => false, 
+      p_office_id_mask       => p_office_id_mask);
+end retrieve_eff_ratings_xml;
    
 --------------------------------------------------------------------------------
 -- RETRIEVE_RATINGS_XML2
@@ -1728,9 +1786,10 @@ procedure retrieve_ratings_xml2(
 is
 begin
    p_ratings := retrieve_ratings_xml_data(
+      p_effective_tw         => 'F',
       p_spec_id_mask         => p_spec_id_mask, 
-      p_effective_date_start => p_effective_date_start, 
-      p_effective_date_end   => p_effective_date_end, 
+      p_start_date           => p_effective_date_start, 
+      p_end_date             => p_effective_date_end, 
       p_time_zone            => p_time_zone, 
       p_retrieve_templates   => true,
       p_retrieve_specs       => true,
@@ -1738,6 +1797,31 @@ begin
       p_recurse              => false, 
       p_office_id_mask       => p_office_id_mask);
 end retrieve_ratings_xml2;
+   
+--------------------------------------------------------------------------------
+-- RETRIEVE_EFF_RATINGS_XML2
+--
+procedure retrieve_eff_ratings_xml2(
+   p_ratings              out clob,
+   p_spec_id_mask         in  varchar2 default '*',
+   p_start_date           in  date     default null,
+   p_end_date             in  date     default null,
+   p_time_zone            in  varchar2 default null,
+   p_office_id_mask       in  varchar2 default null)
+is
+begin
+   p_ratings := retrieve_ratings_xml_data(
+      p_effective_tw         => 'T',
+      p_spec_id_mask         => p_spec_id_mask, 
+      p_start_date           => p_start_date, 
+      p_end_date             => p_end_date, 
+      p_time_zone            => p_time_zone, 
+      p_retrieve_templates   => true,
+      p_retrieve_specs       => true,
+      p_retrieve_ratings     => true, 
+      p_recurse              => false, 
+      p_office_id_mask       => p_office_id_mask);
+end retrieve_eff_ratings_xml2;
 
 --------------------------------------------------------------------------------
 -- RETRIEVE_RATINGS_XML3
@@ -1752,9 +1836,10 @@ procedure retrieve_ratings_xml3(
 is
 begin
    p_ratings := retrieve_ratings_xml_data(
+      p_effective_tw         => 'F',
       p_spec_id_mask         => p_spec_id_mask, 
-      p_effective_date_start => p_effective_date_start, 
-      p_effective_date_end   => p_effective_date_end, 
+      p_start_date           => p_effective_date_start, 
+      p_end_date             => p_effective_date_end, 
       p_time_zone            => p_time_zone, 
       p_retrieve_templates   => true,
       p_retrieve_specs       => true,
@@ -1762,6 +1847,31 @@ begin
       p_recurse              => true, 
       p_office_id_mask       => p_office_id_mask);
 end retrieve_ratings_xml3;
+
+--------------------------------------------------------------------------------
+-- RETRIEVE_EFF_RATINGS_XML3
+--
+procedure retrieve_eff_ratings_xml3(
+   p_ratings              out clob,
+   p_spec_id_mask         in  varchar2 default '*',
+   p_start_date           in  date     default null,
+   p_end_date             in  date     default null,
+   p_time_zone            in  varchar2 default null,
+   p_office_id_mask       in  varchar2 default null)
+is
+begin
+   p_ratings := retrieve_ratings_xml_data(
+      p_effective_tw         => 'T',
+      p_spec_id_mask         => p_spec_id_mask, 
+      p_start_date           => p_start_date, 
+      p_end_date             => p_end_date, 
+      p_time_zone            => p_time_zone, 
+      p_retrieve_templates   => true,
+      p_retrieve_specs       => true,
+      p_retrieve_ratings     => true, 
+      p_recurse              => true, 
+      p_office_id_mask       => p_office_id_mask);
+end retrieve_eff_ratings_xml3;
 
 --------------------------------------------------------------------------------
 -- RETRIEVE_RATINGS_XML_F
@@ -1788,6 +1898,30 @@ begin
 end retrieve_ratings_xml_f;
 
 --------------------------------------------------------------------------------
+-- RETRIEVE_EFF_RATINGS_XML_F
+--
+function retrieve_eff_ratings_xml_f(
+   p_spec_id_mask         in  varchar2 default '*',
+   p_start_date           in  date     default null,
+   p_end_date             in  date     default null,
+   p_time_zone            in  varchar2 default null,
+   p_office_id_mask       in  varchar2 default null)
+   return clob
+is
+   l_ratings clob;
+begin
+   retrieve_eff_ratings_xml(
+      l_ratings,
+      p_spec_id_mask,
+      p_start_date,
+      p_end_date,
+      p_time_zone,
+      p_office_id_mask);
+
+   return l_ratings;
+end retrieve_eff_ratings_xml_f;
+
+--------------------------------------------------------------------------------
 -- RETRIEVE_RATINGS_XML2_F
 --
 function retrieve_ratings_xml2_f(
@@ -1812,6 +1946,30 @@ begin
 end retrieve_ratings_xml2_f;
 
 --------------------------------------------------------------------------------
+-- RETRIEVE_EFF_RATINGS_XML2_F
+--
+function retrieve_eff_ratings_xml2_f(
+   p_spec_id_mask         in  varchar2 default '*',
+   p_start_date           in  date     default null,
+   p_end_date             in  date     default null,
+   p_time_zone            in  varchar2 default null,
+   p_office_id_mask       in  varchar2 default null)
+   return clob
+is
+   l_ratings clob;
+begin
+   retrieve_eff_ratings_xml2(
+      l_ratings,
+      p_spec_id_mask,
+      p_start_date,
+      p_end_date,
+      p_time_zone,
+      p_office_id_mask);
+
+   return l_ratings;
+end retrieve_eff_ratings_xml2_f;
+
+--------------------------------------------------------------------------------
 -- RETRIEVE_RATINGS_XML3_F
 --
 function retrieve_ratings_xml3_f(
@@ -1834,6 +1992,30 @@ begin
 
    return l_ratings;
 end retrieve_ratings_xml3_f;
+
+--------------------------------------------------------------------------------
+-- RETRIEVE_EFF_RATINGS_XML3_F
+--
+function retrieve_eff_ratings_xml3_f(
+   p_spec_id_mask         in  varchar2 default '*',
+   p_start_date           in  date     default null,
+   p_end_date             in  date     default null,
+   p_time_zone            in  varchar2 default null,
+   p_office_id_mask       in  varchar2 default null)
+   return clob
+is
+   l_ratings clob;
+begin
+   retrieve_eff_ratings_xml3(
+      l_ratings,
+      p_spec_id_mask,
+      p_start_date,
+      p_end_date,
+      p_time_zone,
+      p_office_id_mask);
+
+   return l_ratings;
+end retrieve_eff_ratings_xml3_f;
 
 --------------------------------------------------------------------------------
 -- DELETE_RATINGS

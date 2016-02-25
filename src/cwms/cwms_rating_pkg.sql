@@ -1230,6 +1230,92 @@ procedure cat_ratings(
  *   </tr>
  * </table>
  *
+ * @param p_cat_cursor A cursor containing all matching rating templates.  The cursor contains
+ * the following columns:
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the template</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">specification_id</td>
+ *     <td class="descr">varchar2(372)</td>
+ *     <td class="descr">The rating specification</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">effective_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The date/time that the rating went into effect, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">create_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The date/time that the rating was loaded into the database, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_start_date The start time of the time window that the returned ratings will be effective in. If specified
+ * and not NULL, no ratings will be matched that are not effective on or after than this date/time.
+ * If not specified or NULL, no lower bound for effecive time window will be used.
+ *
+ * @param p_effective_date_end The end time of the time window that the returned ratings will be effective in. If specified
+ * and not NULL, no ratings will be matched that are not effective on or before than this date/time.
+ * If not specified or NULL, no upper bound for effecive time window will be used.
+ *
+ * @param p_time_zone The time zone in which to intepret the effective time window.  If not
+ * specified or NULL, the effective time window for each rating specification will be the
+ * local time zone of that specification's location.  The output effective and create dates will
+ * also be in this time zone, or in each specification's local time zone if not specified or NULL.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ */
+procedure cat_eff_ratings(
+   p_cat_cursor           out sys_refcursor,
+   p_spec_id_mask         in  varchar2 default '*',
+   p_start_date           in  date     default null,
+   p_end_date             in  date     default null,
+   p_time_zone            in  varchar2 default null,
+   p_office_id_mask       in  varchar2 default null);
+/**
+ * Catalogs stored ratings that match specified parameters.  Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
  * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
  * wildcard characters as shown above instead of sql-style wildcard characters for pattern
  * matching.
@@ -1293,6 +1379,92 @@ function cat_ratings_f(
    p_spec_id_mask         in varchar2 default '*',
    p_effective_date_start in date     default null,
    p_effective_date_end   in date     default null,
+   p_time_zone            in varchar2 default null,
+   p_office_id_mask       in varchar2 default null)
+   return sys_refcursor;
+/**
+ * Catalogs stored ratings that match specified parameters.  Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_start_date The start time of the time window that the returned ratings will be effective in. If specified
+ * and not NULL, no ratings will be matched that are not effective on or after than this date/time.
+ * If not specified or NULL, no lower bound for effecive time window will be used.
+ *
+ * @param p_end_date The end time of the time window that the returned ratings will be effective in. If specified
+ * and not NULL, no ratings will be matched that are not effective on or before than this date/time.
+ * If not specified or NULL, no upper bound for effecive time window will be used.
+ *
+ * @param p_time_zone The time zone in which to intepret the effective time window.  If not
+ * specified or NULL, the effective time window for each rating specification will be the
+ * local time zone of that specification's location.  The output effective and create dates will
+ * also be in this time zone, or in each specification's local time zone if not specified or NULL.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @return A cursor containing all matching rating templates.  The cursor contains
+ * the following columns:
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the template</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">specification_id</td>
+ *     <td class="descr">varchar2(372)</td>
+ *     <td class="descr">The rating specification</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">effective_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The date/time that the rating went into effect, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">create_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The date/time that the rating was loaded into the database, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
+ *   </tr>
+ * </table>
+ */
+function cat_eff_ratings_f(
+   p_spec_id_mask         in varchar2 default '*',
+   p_start_date           in date     default null,
+   p_end_date             in date     default null,
    p_time_zone            in varchar2 default null,
    p_office_id_mask       in varchar2 default null)
    return sys_refcursor;
@@ -1377,6 +1549,62 @@ procedure retrieve_ratings_obj(
  * @see type rating_t
  * @see type stream_rating_t
  *
+ * @param p_ratings The ratings that match the input parameters.  May contain rating_t
+ * and/or stream_rating_t objects
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_start_date The start time of the time window that the returned ratings will be effective in. If specified
+ * and not NULL, no ratings will be matched that are not effective on or after than this date/time.
+ * If not specified or NULL, no lower bound for effecive time window will be used.
+ *
+ * @param p_end_date The end time of the time window that the returned ratings will be effective in. If specified
+ * and not NULL, no ratings will be matched that are not effective on or before than this date/time.
+ * If not specified or NULL, no upper bound for effecive time window will be used.
+ *
+ * @param p_time_zone The time zone in which to intepret the effective time window.  If not
+ * specified or NULL, the effective time window for each rating specification will be the
+ * local time zone of that specification's location.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ */
+procedure retrieve_eff_ratings_obj(
+   p_ratings              out rating_tab_t,
+   p_spec_id_mask         in  varchar2 default '*',
+   p_start_date           in  date     default null,
+   p_end_date             in  date     default null,
+   p_time_zone            in  varchar2 default null,
+   p_office_id_mask       in  varchar2 default null);
+/**
+ * Retrieves ratings that match specified parameters.  Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @see type rating_tab_t
+ * @see type rating_t
+ * @see type stream_rating_t
+ *
  * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
  * wildcard characters as shown above instead of sql-style wildcard characters for pattern
  * matching.
@@ -1407,6 +1635,62 @@ function retrieve_ratings_obj_f(
    p_spec_id_mask         in  varchar2 default '*',
    p_effective_date_start in  date     default null,
    p_effective_date_end   in  date     default null,
+   p_time_zone            in  varchar2 default null,
+   p_office_id_mask       in  varchar2 default null)
+   return rating_tab_t;
+/**
+ * Retrieves ratings that match specified parameters.  Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @see type rating_tab_t
+ * @see type rating_t
+ * @see type stream_rating_t
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_start_date The start time of the time window that the returned ratings will be effective in. If specified
+ * and not NULL, no ratings will be matched that are not effective on or after than this date/time.
+ * If not specified or NULL, no lower bound for effecive time window will be used.
+ *
+ * @param p_end_date The end time of the time window that the returned ratings will be effective in. If specified
+ * and not NULL, no ratings will be matched that are not effective on or before than this date/time.
+ * If not specified or NULL, no upper bound for effecive time window will be used.
+ *
+ * @param p_time_zone The time zone in which to intepret the effective time window.  If not
+ * specified or NULL, the effective time window for each rating specification will be the
+ * local time zone of that specification's location.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @return The ratings that match the input parameters.  May contain rating_t
+ * and/or stream_rating_t objects
+ */
+function retrieve_eff_ratings_obj_f(
+   p_spec_id_mask         in  varchar2 default '*',
+   p_start_date           in  date     default null,
+   p_end_date             in  date     default null,
    p_time_zone            in  varchar2 default null,
    p_office_id_mask       in  varchar2 default null)
    return rating_tab_t;
@@ -1463,6 +1747,58 @@ procedure retrieve_ratings_xml(
    p_time_zone            in  varchar2 default null,
    p_office_id_mask       in  varchar2 default null);
 /**
+ * Retrieves ratings that match specified parameters.  Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_ratings The ratings that match the input parameters, in XML format as a CLOB
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_start_date The start time of the time window that the returned ratings will be effective in. If specified
+ * and not NULL, no ratings will be matched that are not effective on or after than this date/time.
+ * If not specified or NULL, no lower bound for effecive time window will be used.
+ *
+ * @param p_end_date The end time of the time window that the returned ratings will be effective in. If specified
+ * and not NULL, no ratings will be matched that are not effective on or before than this date/time.
+ * If not specified or NULL, no upper bound for effecive time window will be used.
+ *
+ * @param p_time_zone The time zone in which to intepret the effective time window.  If not
+ * specified or NULL, the effective time window for each rating specification will be the
+ * local time zone of that specification's location. The output effective and create dates will
+ * also be in this time zone, or in each specification's local time zone if not specified or NULL.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ */
+procedure retrieve_eff_ratings_xml(
+   p_ratings              out clob,
+   p_spec_id_mask         in  varchar2 default '*',
+   p_start_date           in  date     default null,
+   p_end_date             in  date     default null,
+   p_time_zone            in  varchar2 default null,
+   p_office_id_mask       in  varchar2 default null);
+/**
  * Retrieves ratings that match specified parameters, plus rating specifications and templates.
  * Matching is accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
@@ -1513,6 +1849,59 @@ procedure retrieve_ratings_xml2(
    p_spec_id_mask         in  varchar2 default '*',
    p_effective_date_start in  date     default null,
    p_effective_date_end   in  date     default null,
+   p_time_zone            in  varchar2 default null,
+   p_office_id_mask       in  varchar2 default null);
+/**
+ * Retrieves ratings that match specified parameters, plus rating specifications and templates.
+ * Matching is accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_ratings The ratings that match the input parameters, in XML format as a CLOB
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching. If the first character is '-' (hyphen), no rating values will be included in the output, 
+ * and the remaining characters are interpreted as the specification pattern to match.
+ *
+ * @param p_start_date The start time of the time window that the returned ratings will be effective in. If specified
+ * and not NULL, no ratings will be matched that are not effective on or after than this date/time.
+ * If not specified or NULL, no lower bound for effecive time window will be used.
+ *
+ * @param p_end_date The end time of the time window that the returned ratings will be effective in. If specified
+ * and not NULL, no ratings will be matched that are not effective on or before than this date/time.
+ * If not specified or NULL, no upper bound for effecive time window will be used.
+ *
+ * @param p_time_zone The time zone in which to intepret the effective time window.  If not
+ * specified or NULL, the effective time window for each rating specification will be the
+ * local time zone of that specification's location. The output effective and create dates will
+ * also be in this time zone, or in each specification's local time zone if not specified or NULL.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ */
+procedure retrieve_eff_ratings_xml2(
+   p_ratings              out clob,
+   p_spec_id_mask         in  varchar2 default '*',
+   p_start_date           in  date     default null,
+   p_end_date             in  date     default null,
    p_time_zone            in  varchar2 default null,
    p_office_id_mask       in  varchar2 default null);
 /**
@@ -1569,6 +1958,59 @@ procedure retrieve_ratings_xml3(
    p_time_zone            in  varchar2 default null,
    p_office_id_mask       in  varchar2 default null);
 /**
+ * Retrieves ratings that match specified parameters, plus rating specifications and templates as well as ratings, parameters, and templates for any source ratings used (transitional and virtual ratings only).
+ * Matching is accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_ratings The ratings that match the input parameters, in XML format as a CLOB
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching. If the first character is '-' (hyphen), no rating values will be included in the output, 
+ * and the remaining characters are interpreted as the specification pattern to match.
+ *
+ * @param p_start_date The start time of the time window that the returned ratings will be effective in. If specified
+ * and not NULL, no ratings will be matched that are not effective on or after than this date/time.
+ * If not specified or NULL, no lower bound for effecive time window will be used.
+ *
+ * @param p_end_date The end time of the time window that the returned ratings will be effective in. If specified
+ * and not NULL, no ratings will be matched that are not effective on or before than this date/time.
+ * If not specified or NULL, no upper bound for effecive time window will be used.
+ *
+ * @param p_time_zone The time zone in which to intepret the effective time window.  If not
+ * specified or NULL, the effective time window for each rating specification will be the
+ * local time zone of that specification's location. The output effective and create dates will
+ * also be in this time zone, or in each specification's local time zone if not specified or NULL.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ */
+procedure retrieve_eff_ratings_xml3(
+   p_ratings              out clob,
+   p_spec_id_mask         in  varchar2 default '*',
+   p_start_date           in  date     default null,
+   p_end_date             in  date     default null,
+   p_time_zone            in  varchar2 default null,
+   p_office_id_mask       in  varchar2 default null);
+/**
  * Retrieves ratings that match specified parameters.  Matching is
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
@@ -1617,6 +2059,58 @@ function retrieve_ratings_xml_f(
    p_spec_id_mask         in  varchar2 default '*',
    p_effective_date_start in  date     default null,
    p_effective_date_end   in  date     default null,
+   p_time_zone            in  varchar2 default null,
+   p_office_id_mask       in  varchar2 default null)
+   return clob;
+/**
+ * Retrieves ratings that match specified parameters.  Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_start_date The start time of the time window that the returned ratings will be effective in. If specified
+ * and not NULL, no ratings will be matched that are not effective on or after than this date/time.
+ * If not specified or NULL, no lower bound for effecive time window will be used.
+ *
+ * @param p_end_date The end time of the time window that the returned ratings will be effective in. If specified
+ * and not NULL, no ratings will be matched that are not effective on or before than this date/time.
+ * If not specified or NULL, no upper bound for effecive time window will be used.
+ *
+ * @param p_time_zone The time zone in which to intepret the effective time window.  If not
+ * specified or NULL, the effective time window for each rating specification will be the
+ * local time zone of that specification's location. The output effective and create dates will
+ * also be in this time zone, or in each specification's local time zone if not specified or NULL.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @return The ratings that match the input parameters, in XML format as a CLOB
+ */
+function retrieve_eff_ratings_xml_f(
+   p_spec_id_mask         in  varchar2 default '*',
+   p_start_date           in  date     default null,
+   p_end_date             in  date     default null,
    p_time_zone            in  varchar2 default null,
    p_office_id_mask       in  varchar2 default null)
    return clob;
@@ -1673,6 +2167,58 @@ function retrieve_ratings_xml2_f(
    p_office_id_mask       in  varchar2 default null)
    return clob;
 /**
+ * Retrieves ratings that match specified parameters, plus rating specifications and templates.
+ * Matching is accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_start_date The start time of the time window that the returned ratings will be effective in. If specified
+ * and not NULL, no ratings will be matched that are not effective on or after than this date/time.
+ * If not specified or NULL, no lower bound for effecive time window will be used.
+ *
+ * @param p_end_date The end time of the time window that the returned ratings will be effective in. If specified
+ * and not NULL, no ratings will be matched that are not effective on or before than this date/time.
+ * If not specified or NULL, no upper bound for effecive time window will be used.
+ *
+ * @param p_time_zone The time zone in which to intepret the effective time window.  If not
+ * specified or NULL, the effective time window for each rating specification will be the
+ * local time zone of that specification's location. The output effective and create dates will
+ * also be in this time zone, or in each specification's local time zone if not specified or NULL.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @return The ratings that match the input parameters, in XML format as a CLOB
+ */
+function retrieve_eff_ratings_xml2_f(
+   p_spec_id_mask         in  varchar2 default '*',
+   p_start_date           in  date     default null,
+   p_end_date             in  date     default null,
+   p_time_zone            in  varchar2 default null,
+   p_office_id_mask       in  varchar2 default null)
+   return clob;
+/**
  * Retrieves ratings that match specified parameters, plus rating specifications and templates as well as ratings, parameters, and templates for any source ratings used (transitional and virtual ratings only).
  * Matching is accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
@@ -1721,6 +2267,58 @@ function retrieve_ratings_xml3_f(
    p_spec_id_mask         in  varchar2 default '*',
    p_effective_date_start in  date     default null,
    p_effective_date_end   in  date     default null,
+   p_time_zone            in  varchar2 default null,
+   p_office_id_mask       in  varchar2 default null)
+   return clob;
+/**
+ * Retrieves ratings that match specified parameters, plus rating specifications and templates as well as ratings, parameters, and templates for any source ratings used (transitional and virtual ratings only).
+ * Matching is accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_start_date The start time of the time window that the returned ratings will be effective in. If specified
+ * and not NULL, no ratings will be matched that are not effective on or after than this date/time.
+ * If not specified or NULL, no lower bound for effecive time window will be used.
+ *
+ * @param p_end_date The end time of the time window that the returned ratings will be effective in. If specified
+ * and not NULL, no ratings will be matched that are not effective on or before than this date/time.
+ * If not specified or NULL, no upper bound for effecive time window will be used.
+ *
+ * @param p_time_zone The time zone in which to intepret the effective time window.  If not
+ * specified or NULL, the effective time window for each rating specification will be the
+ * local time zone of that specification's location. The output effective and create dates will
+ * also be in this time zone, or in each specification's local time zone if not specified or NULL.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @return The ratings that match the input parameters, in XML format as a CLOB
+ */
+function retrieve_eff_ratings_xml3_f(
+   p_spec_id_mask         in  varchar2 default '*',
+   p_start_date           in  date     default null,
+   p_end_date             in  date     default null,
    p_time_zone            in  varchar2 default null,
    p_office_id_mask       in  varchar2 default null)
    return clob;
