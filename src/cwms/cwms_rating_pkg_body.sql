@@ -1268,7 +1268,7 @@ begin
       -----------------------------------------------------------------------------
       for i in 1..l_ratings.count loop
          l_code_str := l_ratings(i).rating_spec_code;
-         if l_ratings2(l_code_str).effective_dates is null then
+         if not l_ratings2.exists(l_code_str) then
             l_ratings2(l_code_str).rating_codes := int_tab_t();
             l_ratings2(l_code_str).effective_dates := date_tab_t();
             l_ratings2(l_code_str).timezone := l_ratings(i).timezone;
@@ -1276,6 +1276,8 @@ begin
             l_ratings2(l_code_str).out_range_low := l_ratings(i).out_range_low;
             l_ratings2(l_code_str).out_range_high := l_ratings(i).out_range_high;
          end if;
+         l_ratings2(l_code_str).rating_codes.extend;
+         l_ratings2(l_code_str).rating_codes(l_ratings2(l_code_str).rating_codes.count) := l_ratings(i).rating_code;
          l_ratings2(l_code_str).effective_dates.extend;
          l_ratings2(l_code_str).effective_dates(l_ratings2(l_code_str).effective_dates.count) := l_ratings(i).effective_date;
       end loop;
@@ -1306,7 +1308,7 @@ begin
                -- effective date in time window --
                -----------------------------------
                l_codes.extend;
-               l_codes(l_codes(l_codes.count)) := l_ratings2(l_code_str).rating_codes(i); 
+               l_codes(l_codes.count) := l_ratings2(l_code_str).rating_codes(i); 
             when l_ratings2(l_code_str).effective_dates(i) < l_start_date then
                ------------------------------------------
                -- effective date is before time window --
@@ -1314,13 +1316,13 @@ begin
                if i = l_ratings2(l_code_str).effective_dates.count then
                   if l_ratings2(l_code_str).out_range_high in ('PREVIOUS', 'NEAREST') then
                      l_codes.extend;
-                     l_codes(l_codes(l_codes.count)) := l_ratings2(l_code_str).rating_codes(i); 
+                     l_codes(l_codes.count) := l_ratings2(l_code_str).rating_codes(i); 
                   end if;
                else
                   if l_ratings2(l_code_str).effective_dates(i+1) > l_start_date then
                      if l_ratings2(l_code_str).in_range not in ('NULL', 'ERROR') then
                         l_codes.extend;
-                        l_codes(l_codes(l_codes.count)) := l_ratings2(l_code_str).rating_codes(i); 
+                        l_codes(l_codes.count) := l_ratings2(l_code_str).rating_codes(i); 
                      end if;
                   end if;
                end if;
@@ -1330,7 +1332,7 @@ begin
                -----------------------------------------
                if i = 1 and l_ratings2(l_code_str).out_range_low in ('NEXT', 'NEAREST') then
                   l_codes.extend;
-                  l_codes(l_codes(l_codes.count)) := l_ratings2(l_code_str).rating_codes(i); 
+                  l_codes(l_codes.count) := l_ratings2(l_code_str).rating_codes(i); 
                end if;
             end case;
          end loop;
