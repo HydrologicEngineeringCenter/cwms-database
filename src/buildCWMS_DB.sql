@@ -262,6 +262,7 @@ end;
 /
 set define on
 @@cwms/create_sec_triggers
+@@cwms/at_tsv_count_trig
 @@cwms/add_rdl_policy
 --
 -- all done
