@@ -4333,6 +4333,30 @@ END cat_ts_id;
          pipe row(l_output_row);
       end loop;
    end cat_loc_lvl_cur_max_ind;
+   
+   function iso_duration(
+      p_intvl in dsinterval_unconstrained)
+      return varchar2
+   is
+      l_hours   integer := extract(hour   from p_intvl);
+      l_minutes integer := extract(minute from p_intvl);
+      l_seconds number  := extract(second from p_intvl);
+      l_iso     varchar2(17) := 'PT';
+   begin
+      if l_hours > 0 then
+         l_iso := l_iso || l_hours || 'H';
+      end if;
+      if l_minutes > 0 then
+         l_iso := l_iso || l_minutes || 'M';
+      end if;
+      if l_seconds > 0 then
+         l_iso := l_iso || trim(to_char(l_seconds, '0.999')) || 'S';
+      end if;
+      if l_iso = 'PT' then
+         l_iso := l_iso || '0S';
+      end if;
+      return l_iso;
+   end;
       
    procedure retrieve_offices(
       p_offices out clob,
@@ -4348,18 +4372,19 @@ END cat_ts_id;
    is
       type rec_t is record(office_id varchar2(16), long_name varchar2(80), office_type varchar2(32), reports_to_office varchar2(16));
       type tab_t is table of rec_t;
-      l_format   varchar2(16) := lower(trim(p_format));
-      l_offices  tab_t;
-      l_clob     clob;
-      l_tab      varchar2(1) := chr(9);
-      l_nl       varchar2(1) := chr(10);
-      
-      procedure write(p_clob in out nocopy clob, p_data in varchar2)
-      is
-      begin
-         dbms_lob.writeappend(p_clob, length(p_data), p_data);
-      end;
+      l_format         varchar2(16) := lower(trim(p_format));
+      l_offices        tab_t;
+      l_data           clob;
+      l_tab            varchar2(1) := chr(9);
+      l_nl             varchar2(1) := chr(10);
+      l_ts1            timestamp;
+      l_ts2            timestamp;
+      l_query_time     date;
+      l_elapsed_query  interval day (0) to second (6);
+      l_elapsed_format interval day (0) to second (6);
    begin
+      l_query_time := sysdate;
+      l_ts1 := systimestamp;
       select office_id,
              long_name,
              case office_type
@@ -4375,61 +4400,129 @@ END cat_ts_id;
         into l_offices     
         from av_office
        order by office_id;
-                    
-      case l_format
-         when 'tab' then
-            dbms_lob.createtemporary(l_clob, true);
-            dbms_lob.open(l_clob, dbms_lob.lob_readwrite);   
-            write(l_clob, '# office id'||l_tab||'long name'||l_tab||'office type'||l_tab||'reports to office'||l_nl);
-            for i in 1..l_offices.count loop
-               write(
-                  l_clob, 
-                  l_offices(i).office_id           ||l_tab
-                  ||l_offices(i).long_name         ||l_tab
-                  ||l_offices(i).office_type       ||l_tab
-                  ||l_offices(i).reports_to_office ||l_nl);
-            end loop;
-            dbms_lob.close(l_clob);
-         when 'xml' then
-            dbms_lob.createtemporary(l_clob, true);
-            dbms_lob.open(l_clob, dbms_lob.lob_readwrite);   
-            write(l_clob, '<office-catalog>');
-            for i in 1..l_offices.count loop
-               write(
-                  l_clob,
-                  '<office><id>'
-                  ||l_offices(i).office_id||'</id><name>'
-                  ||l_offices(i).long_name||'</name><type>'
-                  ||l_offices(i).office_type||'</type><reports-to>'
-                  ||l_offices(i).reports_to_office||'</reports-to>'
-                  ||'</office>');
-            end loop;
-            write(l_clob, '</office-catalog>');
-            dbms_lob.close(l_clob);
-            select xmlserialize(document xmltype(l_clob) indent)
-              into l_clob 
-              from dual;
-         when 'json' then
-            dbms_lob.createtemporary(l_clob, true);
-            dbms_lob.open(l_clob, dbms_lob.lob_readwrite);   
-            write(l_clob, '{"office_catalog" :'||l_nl||'  ['||l_nl);
-            for i in 1..l_offices.count loop
-               if i > 1 then
-                  write(l_clob, ','||l_nl);
-               end if;
-               write(
-                  l_clob,
-                  '    {"id" : "'||l_offices(i).office_id||'"'
-                  ||', "name" : "'||l_offices(i).long_name||'"'
-                  ||', "type" : "'||l_offices(i).office_type||'"'
-                  ||', "reports_to" : "'||l_offices(i).reports_to_office||'"}');
-            end loop;
-            write(l_clob, l_nl||'  ]'||l_nl||'}');
-            dbms_lob.close(l_clob);
-         else
-            cwms_err.raise('ERROR', p_format||' must be ''tab'', ''xml'', or ''json''');
+      l_ts2 := systimestamp;
+      l_elapsed_query := l_ts2 - l_ts1;
+      l_ts1 := systimestamp;
+                 
+      dbms_lob.createtemporary(l_data, true);
+      case 
+      when l_format in ('tab', 'csv') then
+         ----------------
+         -- TAB or CSV --
+         ----------------
+         cwms_util.append(l_data, '#Office Name'||l_tab||'Long Name'||l_tab||'Office Type'||l_tab||'Reports To Office'||l_nl);
+         for i in 1..l_offices.count loop
+            cwms_util.append(
+               l_data, 
+               l_offices(i).office_id           ||l_tab
+               ||l_offices(i).long_name         ||l_tab
+               ||l_offices(i).office_type       ||l_tab
+               ||l_offices(i).reports_to_office ||l_nl);
+         end loop;
+         if l_format = 'csv' then
+            l_data := cwms_util.tab_to_csv(l_data);
+         end if;
+      when l_format = 'xml' then
+         ---------
+         -- XML --
+         ---------
+         cwms_util.append(l_data, '<offices>');
+         for i in 1..l_offices.count loop
+            cwms_util.append(
+               l_data,
+               '<office><name>'
+               ||l_offices(i).office_id||'</name><long-name>'
+               ||l_offices(i).long_name||'</long-name><type>'
+               ||l_offices(i).office_type||'</type><reports-to>'
+               ||l_offices(i).reports_to_office||'</reports-to>'
+               ||'</office>');
+         end loop;
+         cwms_util.append(l_data, '</offices>');
+      when l_format = 'json' then
+         ----------
+         -- JSON --
+         ----------
+         cwms_util.append(l_data, '{"offices":{"offices":[');
+         for i in 1..l_offices.count loop
+            cwms_util.append(
+               l_data,
+               case i when 1 then '{"name":"' else ',{"name":"' end
+               ||l_offices(i).office_id
+               ||'","long-name":"'
+               ||l_offices(i).long_name
+               ||'","type":"'
+               ||l_offices(i).office_type
+               ||'","reports-to":"'
+               ||l_offices(i).reports_to_office
+               ||'"}');
+         end loop;
+         cwms_util.append(l_data, ']}}');
+      else
+         cwms_err.raise('ERROR', p_format||' must be ''tab'', ''csv'', ''xml'', or ''json''');
       end case; 
-      return l_clob;       
+      l_ts2 := systimestamp;
+      l_elapsed_format := l_ts2 - l_ts1;
+
+      declare
+         l_data2 clob;
+         l_name  varchar2(32767);
+      begin
+         dbms_lob.createtemporary(l_data2, true);
+         select db_unique_name into l_name from v$database;
+         case
+         when l_format = 'xml' then
+            cwms_util.append(
+               l_data2, 
+               '<query-info><processed-at>'
+               ||utl_inaddr.get_host_name
+               ||':'
+               ||l_name
+               ||'</processed-at><time-of-query>'
+               ||to_char(l_query_time, 'yyyy-mm-dd"T"hh24:mi:ss')
+               ||'Z</time-of-query><process-query>'
+               ||iso_duration(l_elapsed_query)
+               ||'</process-query><format-output>'
+               ||iso_duration(l_elapsed_format)
+               ||'</format-output><requested-format>'
+               ||upper(l_format)
+               ||'</requested-format><offices-retrieved>'
+               ||l_offices.count
+               ||'</offices-retrieved></query-info>');
+            l_data := regexp_replace(l_data, '^(<offices.*?>)', '\1'||l_data2, 1, 1);
+         when l_format = 'json' then
+            cwms_util.append(
+               l_data2, 
+               '{"query-info":{"processed-at":"'
+               ||utl_inaddr.get_host_name
+               ||':'
+               ||l_name
+               ||'","time-of-query":"'
+               ||to_char(l_query_time, 'yyyy-mm-dd"T"hh24:mi:ss')
+               ||'Z","process-query":"'
+               ||iso_duration(l_elapsed_query)
+               ||'","format-output":"'
+               ||iso_duration(l_elapsed_format)
+               ||'","requested-format":"'
+               ||upper(l_format)
+               ||'","locations-retrieved":'
+               ||l_offices.count
+               ||'}');
+            l_data := regexp_replace(l_data, '\{("offices":\[)', l_data2||',\1', 1, 1);
+         when l_format in ('tab', 'csv') then
+            cwms_util.append(l_data2, '#Processed At'     ||l_tab||utl_inaddr.get_host_name ||':'||l_name||l_nl);
+            cwms_util.append(l_data2, '#Time Of Query'    ||l_tab||to_char(l_query_time, 'dd-Mon-yyyy hh24:mi')||' UTC'||l_nl);
+            cwms_util.append(l_data2, '#Process Query'    ||l_tab||trunc(1000 * (extract(minute from l_elapsed_query) * 60 + extract(second from l_elapsed_query)))||' Milliseconds'||l_nl);
+            cwms_util.append(l_data2, '#Format Output'    ||l_tab||trunc(1000 * (extract(minute from l_elapsed_format) * 60 + extract(second from l_elapsed_format)))||' Milliseconds'||l_nl);
+            cwms_util.append(l_data2, '#Requested Format' ||l_tab||upper(l_format)||l_nl);
+            cwms_util.append(l_data2, '#Offices Retrieved'||l_tab||l_offices.count||l_nl||l_nl);
+            if l_format = 'csv' then
+               l_data2 := cwms_util.tab_to_csv(l_data2);
+            end if;
+            l_data := regexp_replace(l_data, '^', l_data2, 1, 1);
+         end case;
+      end;
+      
+      return l_data;       
    end retrieve_offices_f;
       
    procedure retrieve_time_zones(
@@ -4446,21 +4539,23 @@ END cat_ts_id;
    is
       type rec_t is record(time_zone_name varchar2(28), utc_offset varchar2(6), dst_offset varchar2(6));
       type tab_t is table of rec_t;
-      l_format     varchar2(16) := lower(trim(p_format));
-      l_time_zones tab_t;
-      l_clob       clob;
-      l_tab        varchar2(1) := chr(9);
-      l_nl         varchar2(1) := chr(10);
+      l_format         varchar2(16) := lower(trim(p_format));
+      l_time_zones     tab_t;
+      l_data           clob;
+      l_tab            varchar2(1) := chr(9);
+      l_nl             varchar2(1) := chr(10);
+      l_ts1            timestamp;
+      l_ts2            timestamp;
+      l_query_time     date;
+      l_elapsed_query  interval day (0) to second (6);
+      l_elapsed_format interval day (0) to second (6);
       
-      procedure write(p_clob in out nocopy clob, p_data in varchar2)
-      is
-      begin
-         dbms_lob.writeappend(p_clob, length(p_data), p_data);
-      end;
    begin
+      l_query_time := sysdate;
+      l_ts1 := systimestamp;
       select time_zone_name, 
-             to_char(extract(hour from utc_offset), '09')||':'||trim(to_char(abs(extract(minute from utc_offset)), '09')) as utc_offset, 
-             to_char(extract(hour from dst_offset), '09')||':'||trim(to_char(abs(extract(minute from dst_offset)), '09')) as dst_offset
+             to_char(extract(hour from utc_offset), 'S09')||':'||trim(to_char(abs(extract(minute from utc_offset)), '09')) as utc_offset, 
+             to_char(extract(hour from dst_offset), 'S09')||':'||trim(to_char(abs(extract(minute from dst_offset)), '09')) as dst_offset
         bulk collect
         into l_time_zones              
         from (select time_zone_name, 
@@ -4476,59 +4571,124 @@ END cat_ts_id;
                      cwms_time_zone_alias tza
                where tz.time_zone_name = tza.time_zone_name
              )
-       order by time_zone_name;                
-                    
-      case l_format
-         when 'tab' then
-            dbms_lob.createtemporary(l_clob, true);
-            dbms_lob.open(l_clob, dbms_lob.lob_readwrite);   
-            write(l_clob, '# time zone name'||l_tab||'utc offset'||l_tab||'dst offset'||l_nl);
-            for i in 1..l_time_zones.count loop
-               write(
-                  l_clob, 
-                  l_time_zones(i).time_zone_name ||l_tab
-                  ||l_time_zones(i).utc_offset   ||l_tab
-                  ||l_time_zones(i).dst_offset   ||l_nl);
-            end loop;
-            dbms_lob.close(l_clob);
-         when 'xml' then
-            dbms_lob.createtemporary(l_clob, true);
-            dbms_lob.open(l_clob, dbms_lob.lob_readwrite);   
-            write(l_clob, '<time-zone-catalog>');
-            for i in 1..l_time_zones.count loop
-               write(
-                  l_clob,
-                  '<time-zone><name>'
-                  ||l_time_zones(i).time_zone_name||'</name><utc-offset>'
-                  ||l_time_zones(i).utc_offset||'</utc-offset><dst-offset>'
-                  ||l_time_zones(i).dst_offset||'</dst-offset>'
-                  ||'</time-zone>');
-            end loop;
-            write(l_clob, '</time-zone-catalog>');
-            dbms_lob.close(l_clob);
-            select xmlserialize(document xmltype(l_clob) indent)
-              into l_clob 
-              from dual;
-         when 'json' then
-            dbms_lob.createtemporary(l_clob, true);
-            dbms_lob.open(l_clob, dbms_lob.lob_readwrite);   
-            write(l_clob, '{"time_zone_catalog" :'||l_nl||'  ['||l_nl);
-            for i in 1..l_time_zones.count loop
-               if i > 1 then
-                  write(l_clob, ','||l_nl);
-               end if;
-               write(
-                  l_clob,
-                  '    {"name" : "'||l_time_zones(i).time_zone_name||'"'
-                  ||', "utc_offset" : "'||l_time_zones(i).utc_offset||'"'
-                  ||', "dst_offset" : "'||l_time_zones(i).dst_offset||'"}');
-            end loop;
-            write(l_clob, l_nl||'  ]'||l_nl||'}');
-            dbms_lob.close(l_clob);
-         else
-            cwms_err.raise('ERROR', p_format||' must be ''tab'', ''xml'', or ''json''');
+       order by time_zone_name;  
+      l_ts2 := systimestamp;
+      l_elapsed_query := l_ts2 - l_ts1;
+      l_ts1 := systimestamp;
+      dbms_lob.createtemporary(l_data, true);
+      case
+      when l_format in ('tab', 'csv') then
+         ----------------
+         -- TAB or CSV --
+         ----------------
+         cwms_util.append(l_data, '#Time Zone Name'||l_tab||'Utc Offset'||l_tab||'Dst Offset'||l_nl);
+         for i in 1..l_time_zones.count loop
+            cwms_util.append(
+               l_data, 
+               l_time_zones(i).time_zone_name ||l_tab
+               ||l_time_zones(i).utc_offset   ||l_tab
+               ||l_time_zones(i).dst_offset   ||l_nl);
+         end loop;
+         if l_format = 'csv' then
+            l_data := cwms_util.tab_to_csv(l_data);
+         end if;
+      when l_format = 'xml' then
+         ---------
+         -- XML --
+         ---------
+         cwms_util.append(l_data, '<time-zones>');
+         for i in 1..l_time_zones.count loop
+            cwms_util.append(
+               l_data,
+               '<time-zone><name>'
+               ||l_time_zones(i).time_zone_name||'</name><utc-offset>'
+               ||l_time_zones(i).utc_offset||'</utc-offset><dst-offset>'
+               ||l_time_zones(i).dst_offset||'</dst-offset>'
+               ||'</time-zone>');
+         end loop;
+         cwms_util.append(l_data, '</time-zones>');
+      when l_format = 'json' then
+         ----------
+         -- JSON --
+         ----------
+         cwms_util.append(l_data, '{"time-zones":{"time-zones":[');
+         for i in 1..l_time_zones.count loop
+            cwms_util.append(
+               l_data,
+               case i when 1 then '{"name":"' else ',{"name":"' end
+               ||l_time_zones(i).time_zone_name
+               ||'","utc-offset":"'
+               ||l_time_zones(i).utc_offset
+               ||'","dst-offset":"'
+               ||l_time_zones(i).dst_offset
+               ||'"}');
+         end loop;
+         cwms_util.append(l_data, ']}}');
+      else
+         cwms_err.raise('ERROR', p_format||' must be ''tab'', ''xml'', or ''json''');
       end case; 
-      return l_clob;       
+      l_ts2 := systimestamp;
+      l_elapsed_format := l_ts2 - l_ts1;
+
+      declare
+         l_data2 clob;
+         l_name  varchar2(32767);
+      begin
+         dbms_lob.createtemporary(l_data2, true);
+         select db_unique_name into l_name from v$database;
+         case
+         when l_format = 'xml' then
+            cwms_util.append(
+               l_data2, 
+               '<query-info><processed-at>'
+               ||utl_inaddr.get_host_name
+               ||':'
+               ||l_name
+               ||'</processed-at><time-of-query>'
+               ||to_char(l_query_time, 'yyyy-mm-dd"T"hh24:mi:ss')
+               ||'Z</time-of-query><process-query>'
+               ||iso_duration(l_elapsed_query)
+               ||'</process-query><format-output>'
+               ||iso_duration(l_elapsed_format)
+               ||'</format-output><requested-format>'
+               ||upper(l_format)
+               ||'</requested-format><time-zones-retrieved>'
+               ||l_time_zones.count
+               ||'</time-zones-retrieved></query-info>');
+            l_data := regexp_replace(l_data, '^(<time-zones.*?>)', '\1'||l_data2, 1, 1);
+         when l_format = 'json' then
+            cwms_util.append(
+               l_data2, 
+               '{"query-info":{"processed-at":"'
+               ||utl_inaddr.get_host_name
+               ||':'
+               ||l_name
+               ||'","time-of-query":"'
+               ||to_char(l_query_time, 'yyyy-mm-dd"T"hh24:mi:ss')
+               ||'Z","process-query":"'
+               ||iso_duration(l_elapsed_query)
+               ||'","format-output":"'
+               ||iso_duration(l_elapsed_format)
+               ||'","requested-format":"'
+               ||upper(l_format)
+               ||'","time-zones-retrieved":'
+               ||l_time_zones.count
+               ||'}');
+            l_data := regexp_replace(l_data, '\{("time-zones":\[)', l_data2||',\1', 1, 1);
+         when l_format in ('tab', 'csv') then
+            cwms_util.append(l_data2, '#Processed At'        ||l_tab||utl_inaddr.get_host_name ||':'||l_name||l_nl);
+            cwms_util.append(l_data2, '#Time Of Query'       ||l_tab||to_char(l_query_time, 'dd-Mon-yyyy hh24:mi')||' UTC'||l_nl);
+            cwms_util.append(l_data2, '#Process Query'       ||l_tab||trunc(1000 * (extract(minute from l_elapsed_query) * 60 + extract(second from l_elapsed_query)))||' Milliseconds'||l_nl);
+            cwms_util.append(l_data2, '#Format Output'       ||l_tab||trunc(1000 * (extract(minute from l_elapsed_format) * 60 + extract(second from l_elapsed_format)))||' Milliseconds'||l_nl);
+            cwms_util.append(l_data2, '#Requested Format'    ||l_tab||upper(l_format)||l_nl);
+            cwms_util.append(l_data2, '#Time Zones Retrieved'||l_tab||l_time_zones.count||l_nl||l_nl);
+            if l_format = 'csv' then
+               l_data2 := cwms_util.tab_to_csv(l_data2);
+            end if;
+            l_data := regexp_replace(l_data, '^', l_data2, 1, 1);
+         end case;
+      end;
+      return l_data;       
    end retrieve_time_zones_f;
 
    procedure retrieve_units(
@@ -4543,21 +4703,34 @@ END cat_ts_id;
       p_format in varchar2)
       return clob
    is
-      type rec_t is record(abstract_param varchar2(32), unit varchar2(32), unit_system varchar2(5), long_name varchar2(80), description varchar2(80));
-      type tab_t is table of rec_t;
-      l_format varchar2(16) := lower(trim(p_format));
-      l_units  tab_t;
-      l_clob   clob;
-      l_tab    varchar2(1) := chr(9);
-      l_nl     varchar2(1) := chr(10);
+      type unit_rec_t is record(
+         abstract_param varchar2(32),
+         code integer,
+         name varchar2(32), 
+         unit_system varchar2(5), 
+         long_name varchar2(80),
+         description varchar2(80));
+      type unit_tab_t is table of unit_rec_t;
+      type alternates_t is table of str_tab_t index by varchar2(16);
+      l_format         varchar2(16) := lower(trim(p_format));
+      l_units          unit_tab_t;
+      l_names_by_code  alternates_t;
+      l_alt_names      str_tab_t;
+      l_data           clob;
+      l_tab            varchar2(1) := chr(9);
+      l_nl             varchar2(1) := chr(10);
+      l_ts1            timestamp;
+      l_ts2            timestamp;
+      l_query_time     date;
+      l_elapsed_query  interval day (0) to second (6);
+      l_elapsed_format interval day (0) to second (6);
+      l_code_str       varchar2(16);
       
-      procedure write(p_clob in out nocopy clob, p_data in varchar2)
-      is
-      begin
-         dbms_lob.writeappend(p_clob, length(p_data), p_data);
-      end;
-   begin          
+   begin
+      l_query_time := sysdate;
+      l_ts1 := systimestamp;
       select abstract_param_id,
+             unit_code,
              unit_id,
              nvl(unit_system, 'SI+EN'),
              long_name,
@@ -4566,6 +4739,7 @@ END cat_ts_id;
         into l_units     
         from cwms_abstract_parameter ap,
              (select abstract_param_code,
+                     unit_code,
                      unit_id,
                      unit_system,
                      long_name,
@@ -4573,6 +4747,7 @@ END cat_ts_id;
                 from cwms_unit
               union all
               select cu.abstract_param_code,
+                     cu.unit_code,
                      ca.alias_id as unit_id,
                      cu.unit_system,
                      cu.long_name,
@@ -4584,65 +4759,185 @@ END cat_ts_id;
              ) u                 
        where ap.abstract_param_code = u.abstract_param_code
        order by abstract_param_id,
-                upper(unit_id);       
-                    
-      case l_format
-         when 'tab' then
-            dbms_lob.createtemporary(l_clob, true);
-            dbms_lob.open(l_clob, dbms_lob.lob_readwrite);   
-            write(l_clob, '# abstract parameter'||l_tab||'unit'||l_tab||'unit system'||l_tab||'long name'||l_tab||'description'||l_nl);
-            for i in 1..l_units.count loop
-               write(
-                  l_clob, 
-                  l_units(i).abstract_param ||l_tab
-                  ||l_units(i).unit         ||l_tab
-                  ||l_units(i).unit_system  ||l_tab
-                  ||l_units(i).long_name    ||l_tab
-                  ||l_units(i).description  ||l_nl);
-            end loop;
-            dbms_lob.close(l_clob);
-         when 'xml' then
-            dbms_lob.createtemporary(l_clob, true);
-            dbms_lob.open(l_clob, dbms_lob.lob_readwrite);   
-            write(l_clob, '<unit-catalog>');
-            for i in 1..l_units.count loop
-               write(
-                  l_clob,
-                  '<unit><abstract-parameter>'
-                  ||l_units(i).abstract_param ||'</abstract-parameter><name>'
-                  ||l_units(i).unit           ||'</name><unit-system>'
-                  ||l_units(i).unit_system    ||'</unit-system><long-name>'
-                  ||l_units(i).long_name      ||'</long-name><description>'
-                  ||l_units(i).description    ||'</description>'
-                  ||'</unit>');
-            end loop;
-            write(l_clob, '</unit-catalog>');
-            dbms_lob.close(l_clob);
-            select xmlserialize(document xmltype(l_clob) indent)
-              into l_clob 
-              from dual;
-         when 'json' then
-            dbms_lob.createtemporary(l_clob, true);
-            dbms_lob.open(l_clob, dbms_lob.lob_readwrite);   
-            write(l_clob, '{"unit_catalog" :'||l_nl||'  ['||l_nl);
-            for i in 1..l_units.count loop
-               if i > 1 then
-                  write(l_clob, ','||l_nl);
-               end if;
-               write(
-                  l_clob,
-                  '    {"abstract_param" : "'||l_units(i).abstract_param ||'"'
-                  ||', "name" : "'           ||l_units(i).unit           ||'"'
-                  ||', "unit_system" : "'    ||l_units(i).unit_system    ||'"'
-                  ||', "long_name" : "'      ||l_units(i).long_name      ||'"'
-                  ||', "description" : "'    ||l_units(i).description    ||'"}');
-            end loop;
-            write(l_clob, l_nl||'  ]'||l_nl||'}');
-            dbms_lob.close(l_clob);
-         else
-            cwms_err.raise('ERROR', p_format||' must be ''tab'', ''xml'', or ''json''');
+                upper(unit_id);
+                
+      for i in 1..l_units.count loop
+         l_code_str := to_char(l_units(i).code);
+         if not l_names_by_code.exists(l_code_str) then
+            l_names_by_code(l_code_str) := str_tab_t();
+         end if;
+            l_names_by_code(l_code_str).extend;
+            l_names_by_code(l_code_str)(l_names_by_code(l_code_str).count) := l_units(i).name;
+      end loop;
+                
+      l_ts2 := systimestamp;
+      l_elapsed_query := l_ts2 - l_ts1;
+      l_ts1 := systimestamp;
+      dbms_lob.createtemporary(l_data, true);
+      case
+      when l_format in ('tab', 'csv') then
+         ----------------
+         -- TAB or CSV --
+         ----------------
+         cwms_util.append(l_data, '#Abstract Parameter'||l_tab||'Name'||l_tab||'Unit System'||l_tab||'Long Name'||l_tab||'Description'||l_tab||'Alternate Names'||l_nl);
+         for i in 1..l_units.count loop
+            cwms_util.append(
+               l_data, 
+               l_units(i).abstract_param ||l_tab
+               ||l_units(i).name         ||l_tab
+               ||l_units(i).unit_system  ||l_tab
+               ||l_units(i).long_name    ||l_tab
+               ||l_units(i).description);
+            l_code_str := to_char(l_units(i).code);
+            if l_names_by_code(l_code_str).count > 1 then
+               select column_value
+                 bulk collect
+                 into l_alt_names
+                 from table(l_names_by_code(l_code_str))
+                where column_value != l_units(i).name;
+               cwms_util.append(l_data, l_tab||cwms_util.join_text(l_alt_names, l_tab));    
+            end if;
+            cwms_util.append(l_data, l_nl);
+         end loop;
+         if l_format = 'csv' then
+            l_data := cwms_util.tab_to_csv(l_data);
+         end if;
+      when l_format = 'xml' then
+         ---------
+         -- XML --
+         ---------
+         cwms_util.append(l_data, '<units>');
+         for i in 1..l_units.count loop
+            cwms_util.append(
+               l_data,
+               '<unit><abstract-parameter>'
+               ||l_units(i).abstract_param ||'</abstract-parameter><name>'
+               ||l_units(i).name           ||'</name><unit-system>'
+               ||l_units(i).unit_system    ||'</unit-system><long-name>'
+               ||l_units(i).long_name      ||'</long-name><description>'
+               ||l_units(i).description    ||'</description><alternate-names>');
+            l_code_str := to_char(l_units(i).code);
+            if l_names_by_code(l_code_str).count > 1 then
+               select column_value
+                 bulk collect
+                 into l_alt_names
+                 from table(l_names_by_code(l_code_str))
+                where column_value != l_units(i).name;
+               cwms_util.append(
+                  l_data, 
+                  '<name>'
+                  ||cwms_util.join_text(l_alt_names, '</name><name>')
+                  ||'</name>');    
+            end if;
+            cwms_util.append(l_data, '</alternate-names></unit>');
+         end loop;
+         cwms_util.append(l_data, '</units>');
+      when l_format = 'json' then
+         ----------
+         -- JSON --
+         ----------
+         cwms_util.append(l_data, '{"units":{"units":[');
+         for i in 1..l_units.count loop
+            cwms_util.append(
+               l_data,
+               case i
+               when 1 then '{"abstract-parameter":"' else ',{"abstract-parameter":"' end
+               ||l_units(i).abstract_param 
+               ||'","name":"'
+               ||l_units(i).name
+               ||'","unit-system":"'
+               ||l_units(i).unit_system
+               ||'","long-name":"'
+               ||l_units(i).long_name
+               ||'","description":"'
+               ||l_units(i).description
+               ||'","alternate-names":[');
+            l_code_str := to_char(l_units(i).code);
+            if l_names_by_code(l_code_str).count > 1 then
+               select column_value
+                 bulk collect
+                 into l_alt_names
+                 from table(l_names_by_code(l_code_str))
+                where column_value != l_units(i).name;
+               cwms_util.append(
+                  l_data, 
+                  '"'
+                  ||cwms_util.join_text(l_alt_names, '","')
+                  ||'"');    
+            end if;
+            cwms_util.append(l_data, ']}');
+         end loop;
+         cwms_util.append(l_data, ']}}');
+      else
+         cwms_err.raise('ERROR', p_format||' must be ''tab'', ''xml'', or ''json''');
       end case; 
-      return l_clob;
+      l_ts2 := systimestamp;
+      l_elapsed_format := l_ts2 - l_ts1;
+
+      declare
+         l_data2 clob;
+         l_name  varchar2(32767);
+      begin
+         dbms_lob.createtemporary(l_data2, true);
+         select db_unique_name into l_name from v$database;
+         case
+         when l_format = 'xml' then
+            cwms_util.append(
+               l_data2, 
+               '<query-info><processed-at>'
+               ||utl_inaddr.get_host_name
+               ||':'
+               ||l_name
+               ||'</processed-at><time-of-query>'
+               ||to_char(l_query_time, 'yyyy-mm-dd"T"hh24:mi:ss')
+               ||'Z</time-of-query><process-query>'
+               ||iso_duration(l_elapsed_query)
+               ||'</process-query><format-output>'
+               ||iso_duration(l_elapsed_format)
+               ||'</format-output><requested-format>'
+               ||upper(l_format)
+               ||'</requested-format><total-units-retrieved>'
+               ||l_units.count
+               ||'</total-units-retrieved><unique-units-retrieved>'
+               ||l_names_by_code.count
+               ||'</unique-units-retrieved></query-info>');
+            l_data := regexp_replace(l_data, '^(<units.*?>)', '\1'||l_data2, 1, 1);
+         when l_format = 'json' then
+            cwms_util.append(
+               l_data2, 
+               '{"query-info":{"processed-at":"'
+               ||utl_inaddr.get_host_name
+               ||':'
+               ||l_name
+               ||'","time-of-query":"'
+               ||to_char(l_query_time, 'yyyy-mm-dd"T"hh24:mi:ss')
+               ||'Z","process-query":"'
+               ||iso_duration(l_elapsed_query)
+               ||'","format-output":"'
+               ||iso_duration(l_elapsed_format)
+               ||'","requested-format":"'
+               ||upper(l_format)
+               ||'","total-units-retrieved":'
+               ||l_units.count
+               ||',"unique-units-retrieved":'
+               ||l_names_by_code.count
+               ||'}');
+            l_data := regexp_replace(l_data, '\{"units":\[', l_data2||','||'"units":[', 1, 1);
+         when l_format in ('tab', 'csv') then
+            cwms_util.append(l_data2, '#Processed At'          ||l_tab||utl_inaddr.get_host_name ||':'||l_name||l_nl);
+            cwms_util.append(l_data2, '#Time Of Query'         ||l_tab||to_char(l_query_time, 'dd-Mon-yyyy hh24:mi')||' UTC'||l_nl);
+            cwms_util.append(l_data2, '#Process Query'         ||l_tab||trunc(1000 * (extract(minute from l_elapsed_query) * 60 + extract(second from l_elapsed_query)))||' Milliseconds'||l_nl);
+            cwms_util.append(l_data2, '#Format Output'         ||l_tab||trunc(1000 * (extract(minute from l_elapsed_format) * 60 + extract(second from l_elapsed_format)))||' Milliseconds'||l_nl);
+            cwms_util.append(l_data2, '#Requested Format'      ||l_tab||upper(l_format)||l_nl);
+            cwms_util.append(l_data2, '#Total Units Retrieved' ||l_tab||l_units.count||l_nl);
+            cwms_util.append(l_data2, '#Unique Units Retrieved'||l_tab||l_names_by_code.count||l_nl||l_nl);
+            if l_format = 'csv' then
+               l_data2 := cwms_util.tab_to_csv(l_data2);
+            end if;
+            l_data := regexp_replace(l_data, '^', l_data2, 1, 1);
+         end case;
+      end;
+      return l_data;
    end retrieve_units_f;
 
    procedure retrieve_parameters(
@@ -4657,98 +4952,223 @@ END cat_ts_id;
       p_format in varchar2)
       return clob
    is
-      type rec_t is record(abstract_param varchar2(32), base_param varchar2(16), en_unit varchar2(16), si_unit varchar2(16), long_name varchar2(80), description varchar2(160));
+      type rec_t is record(
+         abstract_param varchar2(32), 
+         base_param     varchar2(16),
+         sub_param      varchar2(32),
+         office         varchar2(16),
+         en_unit        varchar2(16), 
+         si_unit        varchar2(16), 
+         long_name      varchar2(80), 
+         description varchar2(160));
       type tab_t is table of rec_t;
-      l_format varchar2(16) := lower(trim(p_format));
-      l_params tab_t;
-      l_clob   clob;
-      l_tab    varchar2(1) := chr(9);
-      l_nl     varchar2(1) := chr(10);
+      l_format         varchar2(16) := lower(trim(p_format));
+      l_params         tab_t;
+      l_data           clob;
+      l_tab            varchar2(1) := chr(9);
+      l_nl             varchar2(1) := chr(10);
+      l_ts1            timestamp;
+      l_ts2            timestamp;
+      l_query_time     date;
+      l_elapsed_query  interval day (0) to second (6);
+      l_elapsed_format interval day (0) to second (6);
       
-      procedure write(p_clob in out nocopy clob, p_data in varchar2)
-      is
-      begin
-         dbms_lob.writeappend(p_clob, length(p_data), p_data);
-      end;
-   begin          
-      select ap.abstract_param_id,
-             bp.base_parameter_id,
-             u1.unit_id as en_unit,
-             u2.unit_id as si_unit,
-             bp.long_name,
-             bp.description
+   begin
+      l_query_time := sysdate;
+      l_ts1 := systimestamp;
+      select abstract_param_id,
+             base_parameter_id,
+             sub_parameter_id,
+             office,
+             en_unit,
+             si_unit,
+             long_name,
+             description
         bulk collect
-        into l_params     
-        from cwms_abstract_parameter ap,
-             cwms_base_parameter bp,
-             cwms_unit u1,
-             cwms_unit u2
-       where ap.abstract_param_code = bp.abstract_param_code
-         and u1.unit_code = bp.display_unit_code_en
-         and u2.unit_code = bp.display_unit_code_si
+        into l_params
+        from (select ap.abstract_param_id,
+                     bp.base_parameter_id,
+                     null as sub_parameter_id,
+                     'All' as office,
+                     u1.unit_id as en_unit,
+                     u2.unit_id as si_unit,
+                     bp.long_name,
+                     bp.description
+                from cwms_abstract_parameter ap,
+                     cwms_base_parameter bp,
+                     cwms_unit u1,
+                     cwms_unit u2
+               where ap.abstract_param_code = bp.abstract_param_code
+                 and u1.unit_code = bp.display_unit_code_en
+                 and u2.unit_code = bp.display_unit_code_si
+              union all    
+              select ap.abstract_param_id,
+                     bp.base_parameter_id,
+                     p.sub_parameter_id,
+                     replace(o.office_id, 'CWMS', 'All') as office,
+                     u1.unit_id as en_unit,
+                     u2.unit_id as si_unit,
+                     bp.long_name,
+                     case 
+                     when p.sub_parameter_desc is null then bp.description||'-'||p.sub_parameter_id
+                     else p.sub_parameter_desc
+                     end as description
+                from at_parameter p,
+                     cwms_abstract_parameter ap,
+                     cwms_base_parameter bp,
+                     cwms_unit u1,
+                     cwms_unit u2,
+                     cwms_office o
+               where p.sub_parameter_id is not null
+                 and bp.base_parameter_code = p.base_parameter_code
+                 and ap.abstract_param_code = bp.abstract_param_code
+                 and u1.unit_code = bp.display_unit_code_en
+                 and u2.unit_code = bp.display_unit_code_si
+                 and o.office_code = p.db_office_code
+            )
        order by abstract_param_id,
-                base_parameter_id;
-                    
-      case l_format
-         when 'tab' then
-            dbms_lob.createtemporary(l_clob, true);
-            dbms_lob.open(l_clob, dbms_lob.lob_readwrite);   
-            write(l_clob, '# abstract parameter'||l_tab||'parameter'||l_tab||'default english unit'||l_tab||'default si unit'||l_tab||'long name'||l_tab||'description'||l_nl);
-            for i in 1..l_params.count loop
-               write(
-                  l_clob, 
-                  l_params(i).abstract_param ||l_tab
-                  ||l_params(i).base_param   ||l_tab
-                  ||l_params(i).en_unit      ||l_tab
-                  ||l_params(i).si_unit      ||l_tab
-                  ||l_params(i).long_name    ||l_tab
-                  ||l_params(i).description  ||l_nl);
-            end loop;
-            dbms_lob.close(l_clob);
-         when 'xml' then
-            dbms_lob.createtemporary(l_clob, true);
-            dbms_lob.open(l_clob, dbms_lob.lob_readwrite);   
-            write(l_clob, '<parameter-catalog>');
-            for i in 1..l_params.count loop
-               write(
-                  l_clob,
-                  '<parameter><abstract-parameter>'
-                  ||l_params(i).abstract_param ||'</abstract-parameter><name>'
-                  ||l_params(i).base_param     ||'</name><default-english-unit>'
-                  ||l_params(i).en_unit        ||'</default-english-unit><default-si-unit>'
-                  ||l_params(i).si_unit        ||'</default-si-unit><long-name>'
-                  ||l_params(i).long_name      ||'</long-name><description>'
-                  ||l_params(i).description    ||'</description>'
-                  ||'</parameter>');
-            end loop;
-            write(l_clob, '</parameter-catalog>');
-            dbms_lob.close(l_clob);
-            select xmlserialize(document xmltype(l_clob) indent)
-              into l_clob 
-              from dual;
-         when 'json' then
-            dbms_lob.createtemporary(l_clob, true);
-            dbms_lob.open(l_clob, dbms_lob.lob_readwrite);   
-            write(l_clob, '{"parameter_catalog" :'||l_nl||'  ['||l_nl);
-            for i in 1..l_params.count loop
-               if i > 1 then
-                  write(l_clob, ','||l_nl);
-               end if;
-               write(
-                  l_clob,
-                  '    {"abstract_param" : "'     ||l_params(i).abstract_param ||'"'
-                  ||', "name" : "'                ||l_params(i).base_param     ||'"'
-                  ||', "default_english_unit" : "'||l_params(i).en_unit        ||'"'
-                  ||', "default_si_unit" : "'     ||l_params(i).en_unit        ||'"'
-                  ||', "long_name" : "'           ||l_params(i).long_name      ||'"'
-                  ||', "description" : "'         ||l_params(i).description    ||'"}');
-            end loop;
-            write(l_clob, l_nl||'  ]'||l_nl||'}');
-            dbms_lob.close(l_clob);
-         else
-            cwms_err.raise('ERROR', p_format||' must be ''tab'', ''xml'', or ''json''');
+                base_parameter_id,
+                sub_parameter_id nulls first,
+                office;
+      l_ts2 := systimestamp;
+      l_elapsed_query := l_ts2 - l_ts1;
+      l_ts1 := systimestamp;
+      dbms_lob.createtemporary(l_data, true);
+      case
+      when l_format in ('tab', 'csv') then
+         ----------------
+         -- TAB or CSV --
+         ----------------
+         cwms_util.append(l_data, '#Abstract Parameter'||l_tab||'Parameter'||l_tab||'Office'||l_tab||'Default English Unit'||l_tab||'Default SI Unit'||l_tab||'Long Name'||l_tab||'Description'||l_nl);
+         for i in 1..l_params.count loop
+            cwms_util.append(
+               l_data, 
+               l_params(i).abstract_param ||l_tab
+               ||l_params(i).base_param
+               ||substr('-', 1, length(l_params(i).sub_param))
+               ||l_params(i).sub_param    ||l_tab
+               ||l_params(i).office       ||l_tab
+               ||l_params(i).en_unit      ||l_tab
+               ||l_params(i).si_unit      ||l_tab
+               ||l_params(i).long_name    ||l_tab
+               ||l_params(i).description  ||l_nl);
+         end loop;
+         if l_format = 'csv' then
+            l_data := cwms_util.tab_to_csv(l_data);
+         end if;
+      when l_format = 'xml' then
+         ---------
+         -- XML --
+         ---------
+         cwms_util.append(l_data, '<parameters>');
+         for i in 1..l_params.count loop
+            cwms_util.append(
+               l_data,
+               '<parameter><abstract-parameter>'
+               ||l_params(i).abstract_param ||'</abstract-parameter><name>'
+               ||l_params(i).base_param
+               ||substr('-', 1, length(l_params(i).sub_param))
+               ||l_params(i).sub_param      ||'</name><office>'
+               ||l_params(i).office         ||'</office><default-english-unit>'
+               ||l_params(i).en_unit        ||'</default-english-unit><default-si-unit>'
+               ||l_params(i).si_unit        ||'</default-si-unit><long-name>'
+               ||l_params(i).long_name      ||'</long-name><description>'
+               ||l_params(i).description    ||'</description>'
+               ||'</parameter>');
+         end loop;
+         cwms_util.append(l_data, '</parameters>');
+      when l_format = 'json' then
+         ----------
+         -- JSON --
+         ----------
+         cwms_util.append(l_data, '{"parameters":{"parameters":[');
+         for i in 1..l_params.count loop
+            cwms_util.append(
+               l_data,
+               case i when 1 then '{"abstract-param":"' else ',{"abstract-param":"' end
+               ||l_params(i).abstract_param 
+               ||'","name":"'
+               ||l_params(i).base_param
+               ||substr('-', 1, length(l_params(i).sub_param))
+               ||l_params(i).sub_param
+               ||'","office":"'
+               ||l_params(i).office
+               ||'","default-english-unit":"'
+               ||l_params(i).en_unit
+               ||'","default-si-unit":"'
+               ||l_params(i).en_unit
+               ||'","long-name":"'
+               ||l_params(i).long_name
+               ||'","description":"'
+               ||l_params(i).description
+               ||'"}');
+         end loop;
+         cwms_util.append(l_data,']}}');
+      else
+         cwms_err.raise('ERROR', p_format||' must be ''tab'', ''xml'', or ''json''');
       end case; 
-      return l_clob;
+      l_ts2 := systimestamp;
+      l_elapsed_format := l_ts2 - l_ts1;
+
+      declare
+         l_data2 clob;
+         l_name  varchar2(32767);
+      begin
+         dbms_lob.createtemporary(l_data2, true);
+         select db_unique_name into l_name from v$database;
+         case
+         when l_format = 'xml' then
+            cwms_util.append(
+               l_data2, 
+               '<query-info><processed-at>'
+               ||utl_inaddr.get_host_name
+               ||':'
+               ||l_name
+               ||'</processed-at><time-of-query>'
+               ||to_char(l_query_time, 'yyyy-mm-dd"T"hh24:mi:ss')
+               ||'Z</time-of-query> <process-query>'
+               ||iso_duration(l_elapsed_query)
+               ||'</process-query><format-output>'
+               ||iso_duration(l_elapsed_format)
+               ||'</format-output><requested-format>'
+               ||upper(l_format)
+               ||'</requested-format><parameters-retrieved>'
+               ||l_params.count
+               ||'</parameters-retrieved></query-info>');
+            l_data := regexp_replace(l_data, '^(<parameters.*?>)', '\1'||l_data2, 1, 1);
+         when l_format = 'json' then
+            cwms_util.append(
+               l_data2, 
+               '{"query-info":{"processed-at":"'
+               ||utl_inaddr.get_host_name
+               ||':'
+               ||l_name
+               ||'","time-of-query":"'
+               ||to_char(l_query_time, 'yyyy-mm-dd"T"hh24:mi:ss')
+               ||'Z","process-query":"'
+               ||iso_duration(l_elapsed_query)
+               ||'","format-output":"'
+               ||iso_duration(l_elapsed_format)
+               ||'","requested-format":"'
+               ||upper(l_format)
+               ||'","parameters-retrieved":'
+               ||l_params.count
+               ||'}');
+            l_data := regexp_replace(l_data, '\{("parameters":\[)', l_data2||',\1', 1, 1);
+         when l_format in ('tab', 'csv') then
+            cwms_util.append(l_data2, '#Processed At'         ||l_tab||utl_inaddr.get_host_name ||':'||l_name||l_nl);
+            cwms_util.append(l_data2, '#Time Of Query'        ||l_tab||to_char(l_query_time, 'dd-Mon-yyyy hh24:mi')||' UTC'||l_nl);
+            cwms_util.append(l_data2, '#Process Query'        ||l_tab||trunc(1000 * (extract(minute from l_elapsed_query) * 60 + extract(second from l_elapsed_query)))||' Milliseconds'||l_nl);
+            cwms_util.append(l_data2, '#Format Output'        ||l_tab||trunc(1000 * (extract(minute from l_elapsed_format) * 60 + extract(second from l_elapsed_format)))||' Milliseconds'||l_nl);
+            cwms_util.append(l_data2, '#Requested Format'     ||l_tab||upper(l_format)||l_nl);
+            cwms_util.append(l_data2, '#Parameters Retrieved' ||l_tab||l_params.count||l_nl||l_nl);
+            if l_format = 'csv' then
+               l_data2 := cwms_util.tab_to_csv(l_data2);
+            end if;
+            l_data := regexp_replace(l_data, '^', l_data2, 1, 1);
+         end case;
+      end;
+      return l_data;
    end retrieve_parameters_f;
     
 END cwms_cat;

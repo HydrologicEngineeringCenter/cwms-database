@@ -10732,60 +10732,113 @@ end retrieve_existing_item_counts;
       p_timezone       in  varchar2 default null,
       p_office_id      in  varchar2 default null)
    is
-      type rec_t is record(ts_code integer, office varchar2(16), name varchar2(512));
-      type rec_tab_t is table of rec_t;
-      type idx_t is table of str_tab_t index by pls_integer;
-      type bool_t is table of boolean index by pls_integer;
+      type tsid_rec_t is record(ts_code integer, office varchar2(16), name varchar2(512));
+      type tsid_tab_t is table of tsid_rec_t;
+      type tsid_tab_tab_t is table of tsid_tab_t;
+      type idx_t is table of str_tab_t index by varchar2(32767);
+      type bool_t is table of boolean index by varchar2(32767);
+      type indexes_rec_t is record(i integer, j integer);
+      type indexes_tab_t is table of indexes_rec_t index by varchar2(32767);
       type tsv_t is record(date_time date, value binary_double, quality_code integer);
       type tsv_tab_t is table of tsv_t;
-      l_data             clob;  
-      l_format           varchar2(16);
-      l_names            str_tab_t;
-      l_units            str_tab_t;
-      l_datums           str_tab_t;
-      l_start            date;
-      l_end              date;   
-      l_timezone         varchar2(28);
-      l_office_id        varchar2(16);
-      l_codes1           number_tab_t;
-      l_codes2           number_tab_t;
-      l_parts            str_tab_t; 
-      l_unit             varchar2(16);  
-      l_datum            varchar2(16);  
-      l_count            pls_integer;
-      l_value_count      integer;      
-      l_name_pos         number_tab_t;        
-      l_name             varchar2(512);
-      l_xml              xmltype;
-      l_nodes            xml_tab_t;
-      l_nodes1           xml_tab_t;
-      l_nodes2           xml_tab_t;
-      l_first            boolean;
-      l_width            pls_integer;
-      l_other_ind        str_tab_t;
-      l_lines            str_tab_t;
-      l_ts1              timestamp;
-      l_ts2              timestamp;
-      l_elapsed_query    interval day (0) to second (6);
-      l_elapsed_format   interval day (0) to second (6);
-      l_query_time       date; 
-      l_attrs            str_tab_t;
-      l_offices          str_tab_t;
-      l_ids              str_tab_t;
-      l_descriptions     str_tab_t;  
-      c                  sys_refcursor;
-      l_tsids            rec_tab_t := rec_tab_t();  
-      l_tsids2           idx_t;
-      l_used             bool_t;
-      l_quality_used     bool_t;
-      l_text             varchar2(32767);
-      l_tsv              tsv_tab_t;
-      l_intvl            pls_integer;
-      l_intvl_str        varchar2(16);
-      l_estimated        boolean;
-      l_is_elev          boolean;
+      type values_by_code_t is table of tsv_tab_t index by varchar2(32767);
+      type segment_t is record(start_time date, end_time date, first_index integer, last_index integer);
+      type seg_tab_t is table of segment_t;
+      l_data               clob;  
+      l_format             varchar2(16);
+      l_names              str_tab_t;
+      l_normalized_names   str_tab_t;
+      l_units              str_tab_t;
+      l_datums             str_tab_t;
+      l_alternate_names    str_tab_t;
+      l_start              date;
+      l_end                date;   
+      l_start_utc          date;
+      l_end_utc            date;   
+      l_timezone           varchar2(28);
+      l_office_id          varchar2(16);
+      l_code               integer;
+      l_code_str           varchar2(32767);
+      l_codes1             number_tab_t;
+      l_codes2             number_tab_t;
+      l_codes3             number_tab_t;
+      l_parts              str_tab_t; 
+      l_unit               varchar2(16);  
+      l_datum              varchar2(16);  
+      l_count              pls_integer;
+      l_tsid_count         integer := 0;
+      l_unique_tsid_count  integer := 0;
+      l_value_count        integer := 0;      
+      l_unique_value_count integer := 0;
+      l_name_pos           number_tab_t;        
+      l_name               varchar2(512);
+      l_xml                xmltype;
+      l_nodes              xml_tab_t;
+      l_nodes1             xml_tab_t;
+      l_nodes2             xml_tab_t;
+      l_first              boolean;
+      l_width              pls_integer;
+      l_other_ind          str_tab_t;
+      l_lines              str_tab_t;
+      l_ts1                timestamp;
+      l_ts2                timestamp;
+      l_elapsed_query      interval day (0) to second (6);
+      l_elapsed_format     interval day (0) to second (6);
+      l_query_time         date; 
+      l_attrs              str_tab_t;
+      l_offices            str_tab_t;
+      l_ids                str_tab_t;
+      l_descriptions       str_tab_t;  
+      c                    sys_refcursor;
+      l_tsids              tsid_tab_tab_t;  
+      l_tsids2             idx_t;
+      l_used               bool_t;
+      l_quality_used       bool_t;
+      l_text               varchar2(32767);
+      l_tsv                tsv_tab_t;
+      l_segments           seg_tab_t;
+      l_segment_number     pls_integer;
+      l_last_non_null      integer;
+      l_intvl              pls_integer;
+      l_intvl_str          varchar2(16);
+      l_estimated          boolean;
+      l_is_elev            boolean;
+      l_indexes            indexes_tab_t;
+      l_values_by_code     values_by_code_t;
+      l_max_size           integer;
+      l_max_time           interval day (0) to second (3);
+      l_max_size_msg       varchar2(17) := 'MAX SIZE EXCEEDED';
+      l_max_time_msg       varchar2(17) := 'MAX TIME EXCEEDED';
+   
+   function iso_duration(
+      p_intvl in dsinterval_unconstrained)
+      return varchar2
+   is
+      l_hours   integer := extract(hour   from p_intvl);
+      l_minutes integer := extract(minute from p_intvl);
+      l_seconds number  := extract(second from p_intvl);
+      l_iso     varchar2(17) := 'PT';
+   begin
+      if l_hours > 0 then
+         l_iso := l_iso || l_hours || 'H';
+      end if;
+      if l_minutes > 0 then
+         l_iso := l_iso || l_minutes || 'M';
+      end if;
+      if l_seconds > 0 then
+         l_iso := l_iso || trim(to_char(l_seconds, '0.999')) || 'S';
+      end if;
+      if l_iso = 'PT' then
+         l_iso := l_iso || '0S';
+      end if;
+      return l_iso;
+   end;
+   
    begin
       l_query_time := cast(systimestamp at time zone 'UTC' as date);
+   
+      l_max_size := to_number(cwms_properties.get_property('CWMS-RADAR', 'results.max-size', '5242880', 'CWMS')); -- 5 MB default
+      l_max_time := to_dsinterval(cwms_properties.get_property('CWMS-RADAR', 'query.max-time', '00 00:00:30', 'CWMS')); -- 30 sec default
       ----------------------------
       -- process the parameters --
       ----------------------------
@@ -10892,422 +10945,312 @@ end retrieve_existing_item_counts;
          end if;
       end if;
       if p_end is null then
-         l_end := cwms_util.change_timezone(sysdate, 'UTC', l_timezone);
+         l_end_utc := sysdate;
+         l_end     := cwms_util.change_timezone(l_end_utc, 'UTC', l_timezone);
       else
-         l_end := cast(cwms_util.to_timestamp(p_end) as date);
-         l_end := cwms_util.change_timezone(l_end, 'UTC', l_timezone);
+         l_end     := cast(from_tz(cwms_util.to_timestamp(p_end), l_timezone) as date);
+         l_end_utc := cwms_util.change_timezone(l_end, l_timezone, 'UTC');
       end if;
       if p_start is null then
-         l_start := l_end - 1;
+         l_start     := l_end - 1;
+         l_start_utc := l_end_utc - 1;
       else
-         l_start := cast(cwms_util.to_timestamp(p_start) as date);
-         l_start := cwms_util.change_timezone(l_start, 'UTC', l_timezone);
+         l_start     := cast(from_tz(cwms_util.to_timestamp(p_start), l_timezone) as date);
+         l_start_utc := cwms_util.change_timezone(l_start, l_timezone, 'UTC');
       end if;
       -----------------------
       -- retreive the data --
       -----------------------
       dbms_lob.createtemporary(l_data, true);
       l_value_count := 0;
-      if l_names is null then
-         --------------------------------------------------------------
-         -- retrieve catalog of time series with data in time window --
-         --------------------------------------------------------------
-         l_ts1 := systimestamp;
-         l_elapsed_format := l_ts1 - l_ts1;
-         for rec in (select table_name 
-                       from at_ts_table_properties
-                      where start_date <= l_end
-                        and end_date > l_start
-                    )
-         loop
-            open c for 
-               'select distinct 
-                       tsv.ts_code 
-                  from '||rec.table_name||' tsv,
-                       at_cwms_ts_id tsid,
-                       cwms_office o
-                 where o.office_id like :office
-                   and tsid.db_office_code = o.office_code
-                   and tsv.ts_code = tsid.ts_code
-                   and tsv.date_time between :begin and :end'
-               using l_office_id, l_start, l_end;
-            fetch c bulk collect into l_codes1;
-            close c;
-            select column_value
-              bulk collect
-              into l_codes2
-              from (select column_value from table(l_codes1)
-                    union all
-                    select column_value from table(l_codes2)
-                   );
-         end loop;
-      
-         select ts_code,
-                office_id as office,
-                cwms_ts_id as name 
-           bulk collect
-           into l_tsids
-           from at_cwms_ts_id ts,
-                cwms_office o
-          where ts.ts_code in (select * from table(l_codes2))
-            and o.office_code = ts.db_office_code
-          union
-          select tsga.ts_code,
-                 o.office_id as office,
-                 tsga.ts_alias_id as name
-            from at_ts_group_assignment tsga,
-                 cwms_office o
-           where tsga.ts_code in (select * from table(l_codes2))
-             and o.office_code = tsga.office_code
-          union
-          select ts.ts_code,
-                 o.office_id as office,
-                 lga.loc_alias_id
-                 ||'.'||ts.parameter_id
-                 ||'.'||ts.parameter_type_id
-                 ||'.'||ts.interval_id
-                 ||'.'||ts.duration_id
-                 ||'.'||ts.version_id as name
-            from at_cwms_ts_id ts,
-                 at_loc_group_assignment lga,
-                 cwms_office o
-           where ts.ts_code in (select * from table(l_codes2))
-             and lga.location_code = ts.location_code
-             and o.office_code = ts.db_office_code
-          union
-          select ts.ts_code,
-                 o.office_id as office,
-                 lga.loc_alias_id
-                 ||substr('-', 1, length(pl.sub_location_id))
-                 ||pl.sub_location_id
-                 ||'.'||ts.parameter_id
-                 ||'.'||ts.parameter_type_id
-                 ||'.'||ts.interval_id
-                 ||'.'||ts.duration_id
-                 ||'.'||ts.version_id as name
-            from at_cwms_ts_id ts,
-                 at_physical_location pl,
-                 at_base_location bl,
-                 at_loc_group_assignment lga,
-                 cwms_office o
-           where ts.ts_code in (select * from table(l_codes2))
-             and pl.location_code = ts.location_code
-             and bl.base_location_code = pl.base_location_code
-             and lga.location_code = bl.base_location_code
-             and o.office_code = ts.db_office_code
-           order by 2,3;
+      l_tsids := tsid_tab_tab_t();
+      l_ts1 := systimestamp;
+      l_elapsed_query := l_ts1 - l_ts1;
+      l_elapsed_format := l_elapsed_query;
+      begin
+         if l_names is null then
+            --------------------------------------------------------------
+            -- retrieve catalog of time series with data in time window --
+            --------------------------------------------------------------
+            l_tsids.extend;
+            for rec in (select table_name 
+                          from at_ts_table_properties
+                         where start_date <= l_end_utc
+                           and end_date > l_start_utc
+                       )
+            loop
+               open c for 
+                  'select distinct 
+                          tsv.ts_code 
+                     from '||rec.table_name||' tsv,
+                          at_cwms_ts_id tsid,
+                          cwms_office o
+                    where o.office_id like :office
+                      and tsid.db_office_code = o.office_code
+                      and tsv.ts_code = tsid.ts_code
+                      and tsv.date_time between :begin and :end'
+                  using l_office_id, l_start_utc, l_end_utc;
+               fetch c bulk collect into l_codes1;
+               close c;
+               select column_value
+                 bulk collect
+                 into l_codes3
+                 from (select column_value from table(l_codes1)
+                       union all
+                       select column_value from table(l_codes2)
+                      );
+               l_codes2 := l_codes3;
+            end loop;
             
-         for i in 1..l_tsids.count loop
-            if not l_tsids2.exists(l_tsids(i).ts_code) then
-               l_tsids2(l_tsids(i).ts_code) := str_tab_t();
-            end if;
-            l_tsids2(l_tsids(i).ts_code).extend;
-            l_tsids2(l_tsids(i).ts_code)(l_tsids2(l_tsids(i).ts_code).count) := l_tsids(i).name;
-         end loop;
-                
-         l_ts2 := systimestamp;
-         l_elapsed_query := l_ts2 - l_ts1;
-         l_ts1 := systimestamp;
-         
-         case
-         when l_format = 'XML' then
-            -----------------
-            -- XML Catalog --
-            -----------------
-            cwms_util.append(
-               l_data, 
-               '<time-series-catalog><!-- Catalog of time series that contain data between '
-               ||cwms_util.get_xml_time(l_start, l_timezone)
-               ||' and '
-               ||cwms_util.get_xml_time(l_end, l_timezone)
-               ||' -->');
-            for i in 1..l_tsids.count loop
-               l_text := '<time-series><office>'
-                  ||l_tsids(i).office
-                  ||'</office><name>'
-                  ||dbms_xmlgen.convert(l_tsids(i).name, dbms_xmlgen.entity_encode)
-                  ||'</name><alternate-names>'; 
-               for j in 1..l_tsids2(l_tsids(i).ts_code).count loop
-                  if l_tsids2(l_tsids(i).ts_code)(j) != l_tsids(i).name then
-                     l_text := l_text 
-                        ||'<name>'
-                        ||dbms_xmlgen.convert(l_tsids2(l_tsids(i).ts_code)(j), dbms_xmlgen.entity_encode)
-                        ||'</name>';
-                  end if;
-                  cwms_util.append(l_data, l_text);
-               end loop;
-               cwms_util.append(l_data, '</alternate-names></time-series>');
-            end loop;
-            cwms_util.append(l_data, '</time-series-catalog>');
-            l_xml := xmltype(l_data);
-            dbms_lob.createtemporary(l_data, true);
-            select xmlserialize(document l_xml as clob indent)
-              into l_data
-              from dual;
-         when l_format = 'JSON' then
-            ------------------
-            -- JSON catalog --
-            ------------------
-            cwms_util.append(
-               l_data, 
-               '{"comment":"Catalog of time series that contain data between '
-               ||cwms_util.get_xml_time(l_start, l_timezone)
-               ||' and '
-               ||cwms_util.get_xml_time(l_end, l_timezone)
-               ||'","time-series":[');
-            for i in 1..l_tsids.count loop
-               l_text := case i when 1 then '{"office":"' else ',{"office":"' end
-                  ||l_tsids(i).office
-                  ||'","name":"'
-                  ||replace(l_tsids(i).name, '"', '\"')
-                  ||'","alternate-names":[';
-               l_first := true;   
-               for j in 1..l_tsids2(l_tsids(i).ts_code).count loop
-                  if l_tsids2(l_tsids(i).ts_code)(j) != l_tsids(i).name then
-                     case l_first
-                     when true then
-                        l_first := false;
-                        l_text := l_text ||'"'||replace(l_tsids2(l_tsids(i).ts_code)(j), '"', '\"')||'"';
-                     else
-                        l_text := l_text ||',"'||replace(l_tsids2(l_tsids(i).ts_code)(j), '"', '\"')||'"';
-                     end case;
-                  end if;
-               end loop;
-               cwms_util.append(l_data, l_text||']}');
-            end loop;
-            cwms_util.append(l_data, ']}');
-         when l_format in ('TAB', 'CSV') then
-            ------------------------
-            -- TAB or CSV catalog --
-            ------------------------
-            l_width := 30;
-            cwms_util.append(
-               l_data, 
-               '# Catalog of time series that contain data between '
-               ||to_char(l_start, 'dd-MON-yyyy hh24:mi')
-               ||' and '
-               ||to_char(l_end, 'dd-MON-yyyy hh24:mi')
-               ||' ('
-               ||l_timezone
-               ||')'
-               ||chr(10));
-            for i in 1..l_tsids.count loop
-               l_text := chr(10)
-               ||rpad('# OFFICE', l_width, ' ')||chr(9)||l_tsids(i).office||chr(10)
-               ||rpad('# NAME', l_width, ' ')  ||chr(9)||l_tsids(i).name  ||chr(10);
-               for j in 1..l_tsids2(l_tsids(i).ts_code).count loop
-                  if l_tsids2(l_tsids(i).ts_code)(j) != l_tsids(i).name then
-                     l_text := l_text||rpad('# ALTERNATE NAME', l_width, ' ')||chr(9)||l_tsids2(l_tsids(i).ts_code)(j)||chr(10);
-                  end if;
-               end loop;
-               cwms_util.append(l_data, l_text);
-            end loop;
-         end case;
-         p_results := l_data;
-      else
-         ----------------------------------------------
-         -- retrieve time series data in time window --
-         ----------------------------------------------
-         l_width := 30;
-         l_ts1 := systimestamp;
-         l_elapsed_query := l_ts1 - l_ts1;
-         l_elapsed_format := l_elapsed_query;
-         <<names>>
-         for i in 1..l_names.count loop
-            l_names(i) := upper(cwms_util.normalize_wildcards(l_names(i)));
+            l_unique_tsid_count := l_codes2.count;
+            
             select ts_code,
-                   office_id as office,
-                   cwms_ts_id as name
+                   db_office_id,
+                   cwms_ts_id 
               bulk collect
-              into l_tsids
-              from at_cwms_ts_id ts,
-                   cwms_office o
-             where upper(ts.cwms_ts_id) like l_names(i) escape '\' 
-               and o.office_code = ts.db_office_code
-               and o.office_id like l_office_id
-             union
-             select tsga.ts_code,
-                    o.office_id as office,
-                    tsga.ts_alias_id as name
-               from at_ts_group_assignment tsga,
-                    cwms_office o
-              where upper(tsga.ts_alias_id) like l_names(i) escape '\'
-                and o.office_code = tsga.office_code
-                and o.office_id like l_office_id
-             union
-             select ts.ts_code,
-                    o.office_id as office,
-                    lga.loc_alias_id
-                    ||'.'||ts.parameter_id
-                    ||'.'||ts.parameter_type_id
-                    ||'.'||ts.interval_id
-                    ||'.'||ts.duration_id
-                    ||'.'||ts.version_id as name
-               from at_cwms_ts_id ts,
-                    at_loc_group_assignment lga,
-                    cwms_office o
-              where upper(lga.loc_alias_id
-                          ||'.'||ts.parameter_id
-                          ||'.'||ts.parameter_type_id
-                          ||'.'||ts.interval_id
-                          ||'.'||ts.duration_id
-                          ||'.'||ts.version_id) like l_names(i) escape '\'
-                and lga.location_code = ts.location_code
-                and o.office_code = ts.db_office_code
-                and o.office_id like l_office_id
-             union
-             select ts.ts_code,
-                    o.office_id as office,
-                    lga.loc_alias_id
-                    ||substr('-', 1, length(pl.sub_location_id))
-                    ||pl.sub_location_id
-                    ||'.'||ts.parameter_id
-                    ||'.'||ts.parameter_type_id
-                    ||'.'||ts.interval_id
-                    ||'.'||ts.duration_id
-                    ||'.'||ts.version_id as name
-               from at_cwms_ts_id ts,
-                    at_physical_location pl,
-                    at_base_location bl,
-                    at_loc_group_assignment lga,
-                    cwms_office o
-              where upper(lga.loc_alias_id
-                          ||substr('-', 1, length(pl.sub_location_id))
-                          ||pl.sub_location_id
-                          ||'.'||ts.parameter_id
-                          ||'.'||ts.parameter_type_id
-                          ||'.'||ts.interval_id
-                          ||'.'||ts.duration_id
-                          ||'.'||ts.version_id) like l_names(i) escape '\'
-                and pl.location_code = ts.location_code
-                and bl.base_location_code = pl.base_location_code
-                and lga.location_code = bl.base_location_code
-                and o.office_code = ts.db_office_code
-                and o.office_id like l_office_id;
+              into l_tsids(1)
+              from av_cwms_ts_id2 ts
+             where ts_code in (select * from table(l_codes2))
+             order by db_office_id, cwms_ts_id;
+             
             l_ts2 := systimestamp;
-            l_elapsed_query := l_elapsed_query + l_ts2 - l_ts1;
+            l_elapsed_query := l_ts2 - l_ts1;
+            if l_elapsed_query > l_max_time then
+               cwms_err.raise('ERROR', l_max_time_msg);
+            end if;
+            l_tsid_count := l_tsids(1).count;
+            
+            for i in 1..l_tsids(1).count loop
+               if not l_tsids2.exists(l_tsids(1)(i).ts_code) then
+                  l_tsids2(l_tsids(1)(i).ts_code) := str_tab_t();
+               end if;
+               l_tsids2(l_tsids(1)(i).ts_code).extend;
+               l_tsids2(l_tsids(1)(i).ts_code)(l_tsids2(l_tsids(1)(i).ts_code).count) := l_tsids(1)(i).name;
+            end loop;
+                   
+            l_ts2 := systimestamp;
+            l_elapsed_query := l_ts2 - l_ts1;
+            if l_elapsed_query > l_max_time then
+               cwms_err.raise('ERROR', l_max_time_msg);
+            end if;
             l_ts1 := systimestamp;
+            
             case
             when l_format = 'XML' then
-               ----------------
-               -- XML Header --
-               ----------------
+               -----------------
+               -- XML Catalog --
+               -----------------
                cwms_util.append(
                   l_data, 
-                  '<time-series-values start-time="'
+                  '<time-series-catalog><!-- Catalog of time series that contain data between '
                   ||cwms_util.get_xml_time(l_start, l_timezone)
-                  ||'" end-time="'
+                  ||' and '
                   ||cwms_util.get_xml_time(l_end, l_timezone)
-                  ||'">!!QUALITY_CODES!!');
+                  ||' -->');
+               for i in 1..l_tsids(1).count loop
+                  cwms_util.append(
+                     l_data,
+                     '<time-series><office>'
+                     ||l_tsids(1)(i).office
+                     ||'</office><name>'
+                     ||dbms_xmlgen.convert(l_tsids(1)(i).name, dbms_xmlgen.entity_encode)
+                     ||'</name><alternate-names>'); 
+                  for j in 1..l_tsids2(l_tsids(1)(i).ts_code).count loop
+                     if l_tsids2(l_tsids(1)(i).ts_code)(j) != l_tsids(1)(i).name then
+                        cwms_util.append(
+                           l_data,
+                           '<name>'
+                           ||dbms_xmlgen.convert(l_tsids2(l_tsids(1)(i).ts_code)(j), dbms_xmlgen.entity_encode)
+                           ||'</name>');
+                     end if;
+                  end loop;
+                  cwms_util.append(l_data, '</alternate-names></time-series>');
+                  if dbms_lob.getlength(l_data) > l_max_size then
+                     cwms_err.raise('ERROR', l_max_size_msg);
+                  end if;
+               end loop;
+               cwms_util.append(l_data, '</time-series-catalog>');
             when l_format = 'JSON' then
-               -----------------
-               -- JSON Header --
-               -----------------
+               ------------------
+               -- JSON catalog --
+               ------------------
                cwms_util.append(
                   l_data, 
-                  '{"comment":"Time window is '
+                  '{"time-series-catalog":{"comment":"Catalog of time series that contain data between '
                   ||cwms_util.get_xml_time(l_start, l_timezone)
-                  ||' to '
+                  ||' and '
                   ||cwms_util.get_xml_time(l_end, l_timezone)
-                  ||'",!!QUALITY_CODES!!,"time-series":[');
+                  ||'","time-series":[');
+               for i in 1..l_tsids(1).count loop
+                  l_text := case i when 1 then '{"office":"' else ',{"office":"' end
+                     ||l_tsids(1)(i).office
+                     ||'","name":"'
+                     ||replace(l_tsids(1)(i).name, '"', '\"')
+                     ||'","alternate-names":[';
+                  l_first := true;   
+                  for j in 1..l_tsids2(l_tsids(1)(i).ts_code).count loop
+                     if l_tsids2(l_tsids(1)(i).ts_code)(j) != l_tsids(1)(i).name then
+                        case l_first
+                        when true then
+                           l_first := false;
+                           l_text := l_text ||'"'||replace(l_tsids2(l_tsids(1)(i).ts_code)(j), '"', '\"')||'"';
+                        else
+                           l_text := l_text ||',"'||replace(l_tsids2(l_tsids(1)(i).ts_code)(j), '"', '\"')||'"';
+                        end case;
+                     end if;
+                  end loop;
+                  cwms_util.append(l_data, l_text||']}');
+                  if dbms_lob.getlength(l_data) > l_max_size then
+                     cwms_err.raise('ERROR', l_max_size_msg);
+                  end if;
+               end loop;
+               cwms_util.append(l_data, ']}}');
             when l_format in ('TAB', 'CSV') then
-               -----------------------
-               -- TAB or CSV Header --
-               -----------------------
+               ------------------------
+               -- TAB or CSV catalog --
+               ------------------------
+               l_width := 30;
                cwms_util.append(
                   l_data, 
-                  '# TIME WINDOW'
-                  ||chr(10)
-                  ||rpad('#   START', l_width, ' ')
-                  ||chr(9)
-                  ||to_char(l_start, 'dd-MON-yyyy hh24:mi')
-                  ||chr(10)
-                  ||rpad('#   END', l_width, ' ')
-                  ||chr(9)
-                  ||to_char(l_end, 'dd-MON-yyyy hh24:mi')
-                  ||chr(10)
-                  ||rpad('#   TIME ZONE', l_width, ' ')
-                  ||chr(9)
+                  '#Catalog of time series that contain data between '
+                  ||to_char(l_start, 'dd-Mon-yyyy hh24:mi')
+                  ||' and '
+                  ||to_char(l_end, 'dd-Mon-yyyy hh24:mi')
+                  ||' ('
                   ||l_timezone
-                  ||chr(10)
-                  ||'!!QUALITY_CODES!!'
+                  ||')'
                   ||chr(10));
+               cwms_util.append(l_data, '#Office'||chr(9)||'Name'||chr(9)||'Alternate Names'||chr(10));
+               for i in 1..l_tsids(1).count loop
+                  select column_value
+                    bulk collect
+                    into l_alternate_names
+                    from table(l_tsids2(l_tsids(1)(i).ts_code))
+                   where column_value != l_tsids(1)(i).name
+                   order by 1;
+                  cwms_util.append(
+                     l_data,
+                     l_tsids(1)(i).office
+                     ||chr(9)
+                     ||l_tsids(1)(i).name
+                     ||chr(9)
+                     ||cwms_util.join_text(l_alternate_names, chr(9))
+                     ||chr(10));
+                  if dbms_lob.getlength(l_data) > l_max_size then
+                     cwms_err.raise('ERROR', l_max_size_msg);
+                  end if;
+               end loop;
+            else
+               cwms_err.raise('ERROR', 'Unexpected format : '''||l_format||'''');
             end case;
+            p_results := l_data;
             l_ts2 := systimestamp;
             l_elapsed_format := l_elapsed_format + l_ts2 - l_ts1;
             l_ts1 := systimestamp;
-            l_first := true;
-            <<tsids>>
-            for j in 1..l_tsids.count loop
-               if not l_used.exists(l_tsids(j).ts_code) then
-                  l_used(l_tsids(j).ts_code) := true;
-                  --------------------------------------------------------------------------------------------
-                  -- select all ts_ids for this ts_code, make sure that one that matches the input is first --
-                  --------------------------------------------------------------------------------------------
-                  select case when upper(name) like upper(l_names(i)) escape '\' then 1 else 0 end, 
-                         name
+         else
+            ----------------------------------------------
+            -- retrieve time series data in time window --
+            ----------------------------------------------
+            l_normalized_names := str_tab_t();
+            l_normalized_names.extend(l_names.count);
+            l_tsids.extend(l_names.count);
+            <<names>>
+            for i in 1..l_names.count loop
+               l_normalized_names(i) := upper(cwms_util.normalize_wildcards(l_names(i)));
+               for rec in (select table_name 
+                             from at_ts_table_properties
+                            where start_date <= l_end_utc
+                              and end_date > l_start_utc
+                          )
+               loop
+                  open c for 
+                     'select distinct 
+                             tsv.ts_code 
+                        from '||rec.table_name||' tsv,
+                             av_cwms_ts_id2 v
+                       where v.db_office_id like :office
+                         and upper(v.cwms_ts_id) like :name escape ''\'' 
+                         and tsv.ts_code = v.ts_code
+                         and tsv.date_time between :begin and :end'
+                     using l_office_id, l_normalized_names(i), l_start_utc, l_end_utc;
+                  fetch c bulk collect into l_codes1;
+                  close c;
+                  select column_value
                     bulk collect
-                    into l_codes1, -- dummy, not used except to recieve whether a name matches the input
-                         l_ids
-                    from (select cwms_ts_id as name 
-                            from at_cwms_ts_id ts,
-                                 cwms_office o
-                           where ts.ts_code = l_tsids(j).ts_code
-                             and o.office_code = ts.db_office_code
-                           union
-                           select tsga.ts_alias_id as name
-                             from at_ts_group_assignment tsga,
-                                  cwms_office o
-                            where tsga.ts_code = l_tsids(j).ts_code
-                              and o.office_code = tsga.office_code
-                           union
-                           select lga.loc_alias_id
-                                  ||'.'||ts.parameter_id
-                                  ||'.'||ts.parameter_type_id
-                                  ||'.'||ts.interval_id
-                                  ||'.'||ts.duration_id
-                                  ||'.'||ts.version_id as name
-                             from at_cwms_ts_id ts,
-                                  at_loc_group_assignment lga,
-                                  cwms_office o
-                            where ts.ts_code = l_tsids(j).ts_code
-                              and lga.location_code = ts.location_code
-                              and o.office_code = ts.db_office_code
-                           union
-                           select lga.loc_alias_id
-                                  ||substr('-', 1, length(pl.sub_location_id))
-                                  ||pl.sub_location_id
-                                  ||'.'||ts.parameter_id
-                                  ||'.'||ts.parameter_type_id
-                                  ||'.'||ts.interval_id
-                                  ||'.'||ts.duration_id
-                                  ||'.'||ts.version_id as name
-                             from at_cwms_ts_id ts,
-                                  at_physical_location pl,
-                                  at_base_location bl,
-                                  at_loc_group_assignment lga,
-                                  cwms_office o
-                            where ts.ts_code = l_tsids(j).ts_code
-                              and pl.location_code = ts.location_code
-                              and bl.base_location_code = pl.base_location_code
-                              and lga.location_code = bl.base_location_code
-                              and o.office_code = ts.db_office_code
-                         )
-                   order by 1 desc, 2;
+                    into l_codes3
+                    from (select column_value from table(l_codes1)
+                          union
+                          select column_value from table(l_codes2)
+                         );
+                  l_codes2 := l_codes3;
+               end loop;
+               select distinct
+                      ts_code,
+                      db_office_id,
+                      cwms_ts_id
+                 bulk collect
+                 into l_tsids(i)
+                 from av_cwms_ts_id2
+                where ts_code in (select column_value from table(l_codes2))
+                  and upper(cwms_ts_id) like l_normalized_names(i) escape '\';
+               l_tsid_count := l_tsid_count + l_tsids(i).count;
+               l_ts2 := systimestamp;
+               l_elapsed_query := l_ts2 - l_ts1;
+               if l_elapsed_query > l_max_time then
+                  cwms_err.raise('ERROR', l_max_time_msg);
+               end if;
+            end loop names;
+            l_unique_tsid_count := l_codes2.count;
+   
+            for i in 1..l_tsids.count loop
+               for j in 1..l_tsids(i).count loop
+                  l_text := l_tsids(i)(j).office||'/'||l_tsids(i)(j).name;
+                  l_indexes(l_text).i := i;
+                  l_indexes(l_text).j := j;
+               end loop;
+            end loop;
+            
+            l_text := l_indexes.first;
+            <<tsids>>
+            loop
+               exit when l_text is null;
+               l_intvl_str := cwms_util.split_text(l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).name, 4, '.');
+               l_intvl := cwms_ts.get_interval(l_intvl_str);
+               if l_format not in ('TAB', 'CSV') then
+                  case
+                  when l_intvl  = 5256000 then l_intvl_str := 'P10Y';
+                  when l_intvl >= 525600  then l_intvl_str := 'P' ||(l_intvl/525600)||'Y';
+                  when l_intvl >= 43200   then l_intvl_str := 'P' ||(l_intvl/43200) ||'M';
+                  when l_intvl >= 1440    then l_intvl_str := 'P' ||(l_intvl/1440)  ||'D';
+                  when l_intvl >= 60      then l_intvl_str := 'PT'||(l_intvl/60)    ||'H';
+                  else                         l_intvl_str := 'PT'||(l_intvl)       ||'M'; 
+                  end case;
+               end if;
+               l_code := l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).ts_code;
+               select distinct
+                      cwms_ts_id
+                 bulk collect
+                 into l_alternate_names
+                 from av_cwms_ts_id2
+                where ts_code = l_code
+                  and cwms_ts_id != l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).name
+                order by 1;
+               l_code_str := to_char(l_code);
+               if not l_values_by_code.exists(l_code_str) then
                   declare
                      l_errmsg       varchar2(32767);
                      l_native_datum varchar2(32);
                      l_unit_spec    varchar2(64);
-                     l_xml          xmltype;
+                     l_xml          xmltype; 
                   begin
                      --------------------------------
                      -- get the actual unit to use --
                      --------------------------------
-                     l_parts := cwms_util.split_text(l_ids(1), '.');
-                     if l_units(i) in ('EN', 'SI') then
-                        l_unit := cwms_util.get_default_units(l_parts(2), l_units(i));
+                     l_parts := cwms_util.split_text(l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).name, '.');
+                     if l_units(l_indexes(l_text).i) in ('EN', 'SI') then
+                        l_unit := cwms_util.get_default_units(l_parts(2), l_units(l_indexes(l_text).i));
                      else 
-                        l_unit := l_units(i);
+                        l_unit := l_units(l_indexes(l_text).i);
                         declare
                            l_converted binary_double;
                         begin
@@ -11322,17 +11265,18 @@ end retrieve_existing_item_counts;
                      ---------------------------------
                      if instr(upper(l_parts(2)), 'ELEV') = 1 then
                         l_is_elev := true;
-                        l_datum := upper(l_datums(i));
-                        l_xml := xmltype(cwms_loc.get_vertical_datum_info_f(l_parts(1), l_unit, l_tsids(j).office));
+                        l_datum := upper(l_datums(l_indexes(l_text).i));
+                        l_xml := xmltype(cwms_loc.get_vertical_datum_info_f(l_parts(1), l_unit, l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).office));
                         l_native_datum := cwms_util.get_xml_text(l_xml, '/*/native-datum');
                         if l_native_datum not in ('NAVD-88', 'NGVD-29') then
-                           l_native_datum := cwms_loc.get_local_vert_datum_name_f(l_parts(1), l_tsids(j).office);
+                           l_native_datum := cwms_loc.get_local_vert_datum_name_f(l_parts(1), l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).office);
                         end if;
-                        if l_datum = 'NATIVE' then
+                        case
+                        when l_datum = 'NATIVE' then
                            l_unit_spec := l_unit;
                            l_estimated := false;
                            l_datum := nvl(replace(l_native_datum, '-', null), 'Unknown');
-                        elsif l_datum = replace(l_native_datum, '-', null) then
+                        when l_datum = replace(l_native_datum, '-', null) then
                            l_unit_spec := l_unit;
                            l_estimated := false;
                         else
@@ -11342,16 +11286,15 @@ end retrieve_existing_item_counts;
                            end if;
                            l_estimated := cwms_util.get_xml_text(l_xml, '/*/@estimate') = 'true';
                            l_unit_spec := 'U='||l_unit||'|V='||l_datum;
-                        end if;
+                        end case;
                      else
                         l_is_elev   := false;
                         l_unit_spec := l_unit;
                         l_estimated := false;
                      end if;
-                     
                      retrieve_ts (
                         p_at_tsv_rc         => c,
-                        p_cwms_ts_id        => l_ids(1),
+                        p_cwms_ts_id        => l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).name,
                         p_units             => l_unit_spec,
                         p_start_time        => l_start,
                         p_end_time          => l_end,
@@ -11363,502 +11306,812 @@ end retrieve_existing_item_counts;
                         p_next              => 'F',
                         p_version_date      => NULL,
                         p_max_version       => 'T',
-                        p_office_id         => l_tsids(j).office);                      
+                        p_office_id         => l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).office);
+                        
+                     fetch c bulk collect into l_values_by_code(l_code_str);
+                     close c;
                   exception
                      when others then
                         l_ts2 := systimestamp;
                         l_elapsed_query := l_elapsed_query + l_ts2 - l_ts1;
                         l_ts1 := systimestamp;
                         l_errmsg := regexp_replace(cwms_util.split_text(sqlerrm, 1, chr(10)), '^\w{3}-\d{5}: ', null);
-                        l_data := replace(l_data, '!!QUALITY_CODES!!', null);
+                        if l_text = l_indexes.first then
+                           case
+                           when l_format = 'XML' then
+                              ----------------
+                              -- XML Header --
+                              ----------------
+                              cwms_util.append(l_data, '<time-series>!!Quality Codes!!');
+                           when l_format = 'JSON' then
+                              -----------------
+                              -- JSON Header --
+                              -----------------
+                              cwms_util.append(l_data, '{"time-series":!!Quality Codes!!{"time-series":[');
+                           when l_format in ('TAB', 'CSV') then
+                              -----------------------
+                              -- TAB or CSV Header --
+                              -----------------------
+                              cwms_util.append(l_data, '!!Quality Codes!!');
+                           else
+                              cwms_err.raise('ERROR', 'Unexpected format : '''||l_format||'''');
+                           end case;
+                        end if;
                         case
                         when l_format = 'XML' then
                            ---------------
                            -- XML Error --
                            ---------------
-                           l_text := '<time-series><office>'
-                              ||l_tsids(j).office
+                           cwms_util.append(
+                              l_data,
+                              '<time-series><office>'
+                              ||l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).office
                               ||'</office><name>'
-                              ||dbms_xmlgen.convert(l_ids(1), dbms_xmlgen.entity_encode)
-                              ||'</name><alternate-names>';
-                           for k in 2..l_ids.count loop
-                              l_text := l_text
-                                 ||'<name>'
-                                 ||dbms_xmlgen.convert(l_ids(k), dbms_xmlgen.entity_encode)
-                                 ||'</name>';
+                              ||dbms_xmlgen.convert(l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).name, dbms_xmlgen.entity_encode)
+                              ||'</name><alternate-names>');
+                           for i in 1..l_alternate_names.count loop
+                              cwms_util.append(
+                                 l_data,
+                                 '<name>'
+                                 ||dbms_xmlgen.convert(l_alternate_names(i), dbms_xmlgen.entity_encode)
+                                 ||'</name>');
                            end loop;
-                           l_text := l_text
-                              ||'</alternate-names><error>'
+                           cwms_util.append(
+                              l_data,
+                              '</alternate-names><error>'
                               ||dbms_xmlgen.convert(l_errmsg, dbms_xmlgen.entity_encode)
-                              ||'</error></time-series>';
+                              ||'</error></time-series>');
                         when l_format = 'JSON' then
                            ----------------
                            -- JSON Error --
                            ----------------
-                           l_text := case l_first when true then '{"office":"' else ',{"office":"' end
-                              ||l_tsids(j).office
+                           cwms_util.append(
+                              l_data,
+                              case l_text = l_indexes.first
+                              when true then '{"office":"' 
+                              else ',{"office":"' 
+                              end
+                              ||l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).office
                               ||'","name":"'
-                              ||replace(l_ids(1), '"', '\"')
-                              ||'","alternate-names":[';
-                           l_first := false;   
-                           for k in 2..l_ids.count loop
-                              l_text := l_text||case k when 2 then '"' else ',"' end||replace(l_ids(k), '"', '\"')||'"';
+                              ||replace(l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).name, '"', '\"')
+                              ||'","alternate-names":[');
+                           for i in 1..l_alternate_names.count loop
+                              cwms_util.append(
+                                 l_data,
+                                 case i when 1 then '"' else ',"' end
+                                 ||replace(l_alternate_names(i), '"', '\"')
+                                 ||'"');
                            end loop;
-                           l_text := l_text||'],"error":"'||replace(l_errmsg, '"', '\"')||'"}';
-                        when l_format in ('TAB', 'XML') then
+                           cwms_util.append(
+                              l_data, 
+                              '],"error":"'
+                              ||replace(l_errmsg, '"', '\"')
+                              ||'"}');
+                        when l_format in ('TAB', 'CSV') then
                            ----------------------
                            -- TAB or CSV Error --
                            ----------------------
-                           l_text := chr(10)
-                              ||rpad('# OFFICE', l_width, ' ')||chr(9)||l_tsids(j).office||chr(10)
-                              ||rpad('# NAME', l_width, ' ')  ||chr(9)||l_ids(1)         ||chr(10);
-                           for k in 2..l_ids.count loop
-                              l_text := l_text||rpad('# ALTERNATE NAME', l_width, ' ')||chr(9)||l_ids(k)||chr(10);
-                           end loop;
-                           l_text := l_text||rpad('# ERROR', l_width, ' ')||chr(9)||l_errmsg||chr(10);
+                           cwms_util.append(
+                              l_data,
+                              chr(10)
+                              ||'#Office = '
+                              ||l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).office
+                              ||chr(9)
+                              ||'Name = '
+                              ||l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).name
+                              ||chr(9)
+                              ||'Interval = '
+                              ||case
+                                when l_intvl = 0 then 'Irregular'
+                                else l_intvl_str
+                                end
+                              ||chr(9)
+                              ||'Time Zone = '
+                              ||l_timezone
+                              ||chr(9)
+                              ||'Unit = '
+                              ||l_unit
+                              ||case
+                                when l_is_elev then
+                                   ' '
+                                   ||l_datum
+                                   ||case l_estimated
+                                     when true then ' estimated'
+                                     else null
+                                     end
+                                else null
+                                end
+                              ||chr(9)
+                              ||'Alternate Names = '
+                              ||cwms_util.join_text(l_alternate_names, chr(9))
+                              ||chr(10)
+                              ||'#Error'
+                              ||chr(9)
+                              ||l_errmsg
+                              ||chr(10));
+                        else
+                           cwms_err.raise('ERROR', 'Unexpected format : '''||l_format||'''');
                         end case;
-                        cwms_util.append(l_data, l_text);
                         l_ts2 := systimestamp;
                         l_elapsed_format := l_elapsed_format + l_ts2 - l_ts1;
                         l_ts1 := systimestamp;
-                        l_text := null;
+                        l_text := l_indexes.next(l_text);
                         continue tsids;
                   end;
-                  fetch c bulk collect into l_tsv;
-                  close c;
-                  l_value_count := l_value_count + l_tsv.count;
-                  l_ts2 := systimestamp;
-                  l_elapsed_query := l_elapsed_query + l_ts2 - l_ts1;
-                  l_ts1 := systimestamp;
-                  l_intvl := cwms_ts.get_interval(cwms_util.split_text(l_ids(1), 4, '.'));
-                  case
-                  when l_intvl  = 5256000 then l_intvl_str := 'P10Y';
-                  when l_intvl >= 525600  then l_intvl_str := 'P' ||(l_intvl/525600)||'Y';
-                  when l_intvl >= 43200   then l_intvl_str := 'P' ||(l_intvl/43200) ||'M';
-                  when l_intvl >= 1440    then l_intvl_str := 'P' ||(l_intvl/1440)  ||'D';
-                  when l_intvl >= 60      then l_intvl_str := 'PT'||(l_intvl/60)    ||'H';
-                  else                         l_intvl_str := 'PT'||(l_intvl)       ||'M'; 
-                  end case;
+                  l_unique_value_count := l_unique_value_count + l_values_by_code(l_code_str).count;
+               end if;
+               l_value_count := l_value_count + l_values_by_code(l_code_str).count;
+               
+               l_ts2 := systimestamp;
+               l_elapsed_query := l_elapsed_query + l_ts2 - l_ts1;
+               if l_elapsed_query > l_max_time then
+                  cwms_err.raise('ERROR', l_max_time_msg);
+               end if;
+               l_ts1 := systimestamp;
+               if l_intvl = 0 then
+                  for i in 1..l_values_by_code(l_code_str).count loop
+                     if l_values_by_code(l_code_str)(i).quality_code > 2147483647 then
+                        l_values_by_code(l_code_str)(i).quality_code := l_tsv(i).quality_code - 4294967296;
+                     end if;
+                     l_quality_used(to_char(l_values_by_code(l_code_str)(i).quality_code)) := true;
+                  end loop;
+               else
+                  l_segments := seg_tab_t();
+                  for i in 1..l_values_by_code(l_code_str).count loop
+                     if l_segments.count > 1 and l_segments(l_segments.count-1).last_index is null then
+                        l_segments(l_segments.count-1).last_index := i-1;
+                        l_segments(l_segments.count-1).end_time := l_values_by_code(l_code_str)(i-1).date_time;
+                     end if;
+                     if l_values_by_code(l_code_str)(i).value is null then
+                        continue;
+                     end if;
+                     if l_values_by_code(l_code_str)(i).quality_code > 2147483647 then
+                        l_values_by_code(l_code_str)(i).quality_code := l_values_by_code(l_code_str)(i).quality_code - 4294967296;
+                     end if;
+                     l_quality_used(to_char(l_values_by_code(l_code_str)(i).quality_code)) := true;
+                     if i = 1 or l_values_by_code(l_code_str)(i-1).value is null then
+                        l_segments.extend;
+                        if l_segments.count > 1 then
+                           l_segments(l_segments.count-1).last_index  := l_last_non_null;
+                           l_segments(l_segments.count-1).end_time    := l_values_by_code(l_code_str)(l_last_non_null).date_time;
+                        end if;
+                        l_segments(l_segments.count).start_time  := l_values_by_code(l_code_str)(i).date_time;
+                        l_segments(l_segments.count).end_time    := null;
+                        l_segments(l_segments.count).first_index := i;
+                        l_segments(l_segments.count).last_index  := null;
+                     end if;
+                     l_last_non_null := i;
+                  end loop;
+                  if l_segments.count > 0 and l_segments(l_segments.count).last_index is null then
+                     l_segments(l_segments.count).last_index := l_values_by_code(l_code_str).count;
+                     l_segments(l_segments.count).end_time := l_values_by_code(l_code_str)(l_values_by_code(l_code_str).count).date_time;
+                  end if;
+               end if;
+               if l_text = l_indexes.first then
                   case
                   when l_format = 'XML' then
-                     --------------
-                     -- XML DATA --
-                     --------------
-                     l_text := '<time-series><office>'
-                        ||l_tsids(j).office
-                        ||'</office><name>'
-                        ||dbms_xmlgen.convert(l_ids(1), dbms_xmlgen.entity_encode)
-                        ||'</name><alternate-names>';
-                     for k in 2..l_ids.count loop
-                        l_text := l_text
-                           ||'<name>'
-                           ||dbms_xmlgen.convert(l_ids(k), dbms_xmlgen.entity_encode)
-                           ||'</name>';
+                     ----------------
+                     -- XML Header --
+                     ----------------
+                     cwms_util.append(l_data, '<time-series>!!Quality Codes!!');
+                  when l_format = 'JSON' then
+                     -----------------
+                     -- JSON Header --
+                     -----------------
+                     cwms_util.append(l_data, '{"time-series":!!Quality Codes!!{"time-series":[');
+                  when l_format in ('TAB', 'CSV') then
+                     -----------------------
+                     -- TAB or CSV Header --
+                     -----------------------
+                     cwms_util.append(l_data, '!!Quality Codes!!');
+                  end case;
+               end if;
+               case
+               when l_format = 'XML' then
+                  --------------
+                  -- XML DATA --
+                  --------------
+                  cwms_util.append(
+                     l_data,
+                     '<time-series><office>'
+                     ||l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).office
+                     ||'</office><name>'
+                     ||dbms_xmlgen.convert(l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).name, dbms_xmlgen.entity_encode)
+                     ||'</name><alternate-names>');
+                  for i in 1..l_alternate_names.count loop
+                     cwms_util.append(
+                        l_data,
+                        '<name>'
+                        ||dbms_xmlgen.convert(l_alternate_names(i), dbms_xmlgen.entity_encode)
+                        ||'</name>');
+                  end loop;
+                  cwms_util.append(l_data, '</alternate-names>');
+                  if l_intvl = 0 then
+                     cwms_util.append(
+                        l_data, '<irregular-interval-values unit="'
+                        ||l_unit
+                        ||case l_is_elev
+                          when true then
+                             ' '
+                             ||l_datum
+                             ||case l_estimated
+                                when true then ' estimated'
+                                else null
+                                end
+                          else null
+                          end
+                        ||'" first-time="'
+                        ||cwms_util.get_xml_time(l_values_by_code(l_code_str)(1).date_time, l_timezone)
+                        ||'" last-time="'
+                        ||cwms_util.get_xml_time(l_values_by_code(l_code_str)(l_values_by_code(l_code_str).count).date_time, l_timezone)
+                        ||'" value-count="'
+                        ||l_values_by_code(l_code_str).count 
+                        ||'"><!-- date-time value quality-code -->'
+                        ||chr(10));
+                     for i in 1..l_values_by_code(l_code_str).count loop
+                        continue when l_values_by_code(l_code_str)(i).date_time is null;
+                        cwms_util.append(
+                           l_data,
+                           cwms_util.get_xml_time(l_values_by_code(l_code_str)(i).date_time, l_timezone)
+                           ||' '
+                           ||nvl(cwms_rounding.round_dt_f(l_values_by_code(l_code_str)(i).value, '7777777777'), 'null')
+                           ||' '
+                           ||l_values_by_code(l_code_str)(i).quality_code
+                           ||chr(10));
                      end loop;
-                     cwms_util.append(l_data, l_text||'</alternate-names>');
-                     if l_intvl = 0 then
-                        l_text := '<irregular-interval-values unit="'||l_unit;
-                        if l_is_elev then
-                           l_text := l_text||'" datum="'||l_datum;
-                           if l_estimated then
-                              l_text := l_text||'" estimated="true';
-                           end if;
-                        end if;
-                        l_text := l_text||'">';
-                        cwms_util.append(l_data, l_text);
-                        for k in 1..l_tsv.count loop
-                           continue when l_tsv(k).date_time is null;
-                           cwms_util.append(
-                              l_data,
-                              chr(10)
-                              ||cwms_util.get_xml_time(l_tsv(k).date_time, l_timezone)
-                              ||' '
-                              ||nvl(cwms_rounding.round_dt_f(l_tsv(k).value, '7777777777'), 'null')
-                              ||' '
-                              ||l_tsv(k).quality_code);
-                           l_quality_used(case l_tsv(k).quality_code > 2147483647 
-                                          when false then l_tsv(k).quality_code
-                                          else l_tsv(k).quality_code - 4294967296
-                                          end
-                                         ) := true;   
-                        end loop;
-                        cwms_util.append(l_data, ' </irregular-interval-values></time-series>');
-                     else
-                        l_text := '<regular-interval-values unit="'||l_unit||'" interval="'||l_intvl_str;
-                        if l_is_elev then
-                           l_text := l_text||'" datum="'||l_datum;
-                           if l_estimated then
-                              l_text := l_text||'" estimated="true';
-                           end if;
-                        end if;
-                        l_text := l_text||'">'||chr(10);
-                        cwms_util.append(l_data, l_text);
-                        l_count := 0;
-                        for k in 1..l_tsv.count loop
-                           if l_tsv(k).value is null then
-                              if k > 1 and l_tsv(k-1).value is not null then
-                                 cwms_util.append(l_data, '</segment>');
-                              end if;
-                              continue;
-                           else
-                              l_count := l_count + 1;
-                              if k = 1 or l_tsv(k-1).value is null then
-                                 cwms_util.append(l_data, '<segment start-time="'||cwms_util.get_xml_time(l_tsv(k).date_time, l_timezone)||'">');
-                              end if;
-                           end if;
-                           cwms_util.append(
-                              l_data,
-                              chr(10)
-                              ||cwms_rounding.round_dt_f(l_tsv(k).value, '7777777777')
-                              ||' '
-                              ||l_tsv(k).quality_code);
-                           l_quality_used(case l_tsv(k).quality_code > 2147483647 
-                                          when false then l_tsv(k).quality_code
-                                          else l_tsv(k).quality_code - 4294967296
-                                          end
-                                         ) := true;   
-                        end loop;
+                     cwms_util.append(l_data, chr(10)||'</irregular-interval-values></time-series>');
+                  else
+                     cwms_util.append(
+                        l_data,
+                        '<regular-interval-values interval="'
+                        ||l_intvl_str
+                        ||'" unit="'
+                        ||l_unit
+                        ||case l_is_elev
+                          when true then
+                             ' '
+                             ||l_datum
+                             ||case l_estimated
+                                when true then ' estimated'
+                                else null
+                                end
+                          else null
+                          end
+                        ||'" segment-count="'
+                        ||l_segments.count
+                        ||'">'
+                        ||chr(10));
+                     for i in 1..l_segments.count loop
                         cwms_util.append(
                            l_data, 
-                           case when l_count = 0 then null else '</segment>' end
-                           ||'</regular-interval-values></time-series>');
-                     end if;
-                  when l_format = 'JSON' then
-                     ---------------
-                     -- JSON DATA --
-                     ---------------
-                     l_text := case l_first when true then '{"office":"' else ',{"office":"' end
-                        ||l_tsids(j).office
-                        ||'","name":"'
-                        ||replace(l_ids(1), '"', '\"')
-                        ||'","alternate-names":[';
-                     l_first := false;   
-                     for k in 2..l_ids.count loop
-                        l_text := l_text||case k when 2 then '"' else ',"' end||replace(l_ids(k), '"', '\"')||'"';
-                     end loop;
-                     cwms_util.append(l_data, l_text||']');
-                     
-                     if l_intvl = 0 then
-                        l_text := ',"irregular-interval-values":{"unit":"'||l_unit||'"';
-                        if l_is_elev then
-                           l_text := l_text||',"datum":"'||l_datum||'"';
-                           if l_estimated then
-                              l_text := l_text||',"estimated":"true"';
-                           end if;
-                        end if;
-                        l_text := l_text||',"values":[';
-                        cwms_util.append(l_data, l_text);
-                        for k in 1..l_tsv.count loop
-                           continue when l_tsv(k).date_time is null;
+                           '<segment position="'
+                           ||i
+                           ||'" first-time="'
+                           ||cwms_util.get_xml_time(l_segments(i).start_time, l_timezone)
+                           ||'" last-time="'
+                           ||cwms_util.get_xml_time(l_segments(i).end_time, l_timezone)
+                           ||'" value-count="'
+                           ||(l_segments(i).last_index - l_segments(i).first_index + 1) 
+                           ||'"><!-- value quality-code -->'
+                           ||chr(10));
+                        for j in l_segments(i).first_index..l_segments(i).last_index loop
                            cwms_util.append(
                               l_data,
-                              case when k = 1 then '{"t":"' else ',{"t":"' end
-                              ||cwms_util.get_xml_time(l_tsv(k).date_time, l_timezone)
-                              ||'","v":'
-                              ||regexp_replace(nvl(cwms_rounding.round_dt_f(l_tsv(k).value, '7777777777'), 'null'), '(^|[^0-9])\.', '\10.')
-                              ||',"q":'
-                              ||l_tsv(k).quality_code
-                              ||'}');
-                           l_quality_used(case l_tsv(k).quality_code > 2147483647 
-                                          when false then l_tsv(k).quality_code
-                                          else l_tsv(k).quality_code - 4294967296
-                                          end
-                                         ) := true;   
+                              cwms_rounding.round_dt_f(l_values_by_code(l_code_str)(j).value, '7777777777')
+                              ||' '
+                              ||l_values_by_code(l_code_str)(j).quality_code
+                              ||chr(10));
+                        end loop;
+                        cwms_util.append(l_data, '</segment>');
+                     end loop;
+                     cwms_util.append(l_data, chr(10)||'</regular-interval-values></time-series>');
+                  end if;
+               when l_format = 'JSON' then
+                  ---------------
+                  -- JSON DATA --
+                  ---------------
+                  cwms_util.append(
+                     l_data,
+                     case l_text = l_indexes.first 
+                     when true then '{"office":"' 
+                     else ',{"office":"' 
+                     end
+                     ||l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).office
+                     ||'","name":"'
+                     ||replace(l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).name, '"', '\"')
+                     ||'","alternate-names":[');
+                  for i in 1..l_alternate_names.count loop
+                     cwms_util.append(
+                        l_data,
+                        case i 
+                        when 1 then '"' 
+                        else ',"' 
+                        end
+                        ||replace(l_alternate_names(i), '"', '\"')
+                        ||'"');
+                  end loop;
+                  cwms_util.append(l_data, ']');
+                  if l_intvl = 0 then
+                     cwms_util.append(
+                        l_data,
+                        ',"irregular-interval-values":{"unit":"'
+                        ||l_unit
+                        ||case l_is_elev
+                          when true then
+                             ' '
+                             ||l_datum
+                             ||case l_estimated
+                                when true then ' estimated'
+                                else null
+                                end
+                          else null
+                          end
+                        ||'","comment":"time, value, quality code","values":[');
+                     for i in 1..l_values_by_code(l_code_str).count loop
+                        continue when l_values_by_code(l_code_str)(i).date_time is null;
+                        cwms_util.append(
+                           l_data,
+                           case when i = 1 then '["' else ',["' end
+                           ||cwms_util.get_xml_time(l_values_by_code(l_code_str)(i).date_time, l_timezone)
+                           ||'",'
+                           ||regexp_replace(nvl(cwms_rounding.round_dt_f(l_values_by_code(l_code_str)(i).value, '7777777777'), 'null'), '(^|[^0-9])\.', '\10.')
+                           ||','
+                           ||l_values_by_code(l_code_str)(i).quality_code
+                           ||']');
+                     end loop;
+                     cwms_util.append(l_data, ']}}');
+                  else
+                     cwms_util.append(
+                        l_data,
+                        ',"regular-interval-values":{"interval":"'
+                        ||l_intvl_str
+                        ||'","unit":"'
+                        ||l_unit
+                        ||case l_is_elev
+                          when true then
+                             ' '
+                             ||l_datum
+                             ||case l_estimated
+                                when true then ' estimated'
+                                else null
+                                end
+                          else null
+                          end
+                        ||'","segment-count":'
+                        ||l_segments.count
+                        ||',"segments":[');
+                     for i in 1..l_segments.count loop
+                        cwms_util.append(
+                           l_data, 
+                           case
+                           when i = 1 then '{"first-time":"'
+                           else ',{"first-time":"'
+                           end
+                           ||cwms_util.get_xml_time(l_segments(i).start_time, l_timezone)
+                           ||'","last-time":"'
+                           ||cwms_util.get_xml_time(l_segments(i).end_time, l_timezone)
+                           ||'","value-count":'
+                           ||(l_segments(i).last_index - l_segments(i).first_index + 1)
+                           ||',"comment":"value, quality code","values":[');
+                        for j in l_segments(i).first_index..l_segments(i).last_index loop
+                           cwms_util.append(
+                              l_data,
+                              case
+                              when j = l_segments(i).first_index then '['
+                              else ',['
+                              end
+                              ||regexp_replace(cwms_rounding.round_dt_f(l_values_by_code(l_code_str)(j).value, '7777777777'), '^\.', '0.', 1, 1)
+                              ||','
+                              ||l_values_by_code(l_code_str)(j).quality_code
+                              ||']');
                         end loop;
                         cwms_util.append(l_data, ']}');
-                     else
-                        l_text := ',"regular-interval-values":{"unit":"'||l_unit||'","interval":"'||l_intvl_str||'"';
-                        if l_is_elev then
-                           l_text := l_text||',"datum":"'||l_datum||'"';
-                           if l_estimated then
-                              l_text := l_text||',"estimated":"true"';
-                           end if;
-                        end if;
-                        l_text := l_text||',"segments":[';
-                        cwms_util.append(l_data, l_text);
-                        l_count := 0;
-                        for k in 1..l_tsv.count loop
-                           if l_tsv(k).value is null then
-                              if k > 1 and l_tsv(k-1).value is not null then
-                                 cwms_util.append(l_data, ']');
-                              end if;
-                              continue;
-                           else
-                              l_count := l_count + 1;
-                              if k = 1 or l_tsv(k-1).value is null then
-                                 cwms_util.append(
-                                    l_data, 
-                                    case when k=1 then '{"start-time":"' else ',{"start-time":"' end
-                                    ||cwms_util.get_xml_time(l_tsv(k).date_time, l_timezone)
-                                    ||'","values":[');
-                                 l_text := null;   
-                              else
-                                 l_text := ',';
-                              end if;
-                           end if;
-                           cwms_util.append(
-                              l_data,
-                              l_text
-                              ||'{"v":'
-                              ||regexp_replace(cwms_rounding.round_dt_f(l_tsv(k).value, '7777777777'), '(^|[^0-9])\.', '\10.')
-                              ||',"q":'
-                              ||l_tsv(k).quality_code
-                              ||'}');
-                           l_quality_used(case l_tsv(k).quality_code > 2147483647 
-                                          when false then l_tsv(k).quality_code
-                                          else l_tsv(k).quality_code - 4294967296
-                                          end
-                                         ) := true;   
-                        end loop;
-                        cwms_util.append(
-                        l_data, 
-                        case when l_count = 0 then null else ']}' end
-                        ||']}');
-                     end if;
-                     cwms_util.append(l_data, '}');
-                  when l_format in ('TAB', 'CSV') then
-                     ---------------------
-                     -- TAB or CSV DATA --
-                     ---------------------
-                     l_intvl_str := cwms_util.split_text(l_ids(1), 4, '.');
-                     l_text := chr(10)
-                        ||rpad('# OFFICE', l_width, ' ')||chr(9)||l_tsids(j).office||chr(10)
-                        ||rpad('# NAME', l_width, ' ')  ||chr(9)||l_ids(1)         ||chr(10);
-                     for k in 2..l_ids.count loop
-                        l_text := l_text||rpad('# ALTERNATE NAME', l_width, ' ')||chr(9)||l_ids(k)||chr(10);
                      end loop;
-                     cwms_util.append(l_data, l_text);
-                     if l_intvl = 0 then
-                        l_text := '# IRREGULAR INTERVAL VALUES'
-                           ||chr(10)
-                           ||rpad('#   UNIT', l_width, ' ')
+                     cwms_util.append(l_data, ']}}');
+                  end if;
+               when l_format in ('TAB', 'CSV') then
+                  ---------------------
+                  -- TAB or CSV DATA --
+                  ---------------------
+                  cwms_util.append(
+                     l_data,
+                     chr(10)
+                     ||'#Office = '
+                     ||l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).office
+                     ||chr(9)
+                     ||'Name = '
+                     ||l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).name
+                     ||chr(9)
+                     ||'Interval = '
+                     ||case
+                       when l_intvl = 0 then 'Irregular'
+                       else l_intvl_str
+                       end
+                     ||chr(9)
+                     ||'Time Zone = '
+                     ||l_timezone
+                     ||chr(9)
+                     ||'Unit = '
+                     ||l_unit
+                     ||case
+                       when l_is_elev then
+                          ' '
+                          ||l_datum
+                          ||case l_estimated
+                            when true then
+                               ' estimated'
+                            else 
+                               null
+                            end
+                       else 
+                          null
+                       end
+                     ||chr(9)
+                     ||'Alternate Names = '
+                     ||cwms_util.join_text(l_alternate_names, chr(9))
+                     ||chr(10));
+                  if l_intvl = 0 then
+                     --------------------------------
+                     -- irregular time series data --
+                     --------------------------------
+                     cwms_util.append(
+                        l_data, 
+                        '#Time'
+                        ||chr(9)
+                        ||'Value'
+                        ||chr(9)
+                        ||'Quality Code'
+                        ||chr(10));
+                     for i in 1..l_values_by_code(l_code_str).count loop
+                        continue when l_values_by_code(l_code_str)(i).date_time is null;
+                        cwms_util.append(
+                           l_data,
+                           to_char(l_values_by_code(l_code_str)(i).date_time, 'dd-Mon-yyyy hh24:mi')
                            ||chr(9)
-                           ||l_unit
-                           ||chr(10)
-                           ||rpad('#   TIME ZONE', l_width, ' ')
+                           ||nvl(cwms_rounding.round_dt_f(l_values_by_code(l_code_str)(i).value, '7777777777'), 'null')
                            ||chr(9)
-                           ||l_timezone
-                           ||chr(10);
-                        if l_is_elev then
-                           l_text := l_text||rpad('#   DATUM', l_width, ' ')||chr(9)||l_datum||chr(10);
-                           if l_estimated then
-                              l_text := l_text||rpad('#   ESTIMATED', l_width, ' ')||chr(9)||'True'||chr(10);
-                           end if;
-                        end if;
-                        cwms_util.append(l_data, l_text);
-                        for k in 1..l_tsv.count loop
-                           continue when l_tsv(k).date_time is null;
+                           ||l_values_by_code(l_code_str)(i).quality_code
+                           ||chr(10));
+                     end loop;
+                  else
+                     ------------------------------
+                     -- regular time series data --
+                     ------------------------------
+                     for i in 1..l_segments.count loop
+                        cwms_util.append(
+                           l_data, 
+                           '#Segment '
+                           ||i
+                           ||' of '
+                           ||l_segments.count
+                           ||chr(9)
+                           ||'First Time = '
+                           ||to_char(l_segments(i).start_time, 'dd-Mon-yyyy hh24:mi')
+                           ||chr(9)
+                           ||'Last Time = '
+                           ||to_char(l_segments(i).end_time, 'dd-Mon-yyyy hh24:mi')
+                           ||chr(9)
+                           ||'Count = '
+                           ||(l_segments(i).last_index - l_segments(i).first_index + 1) 
+                           ||chr(10)
+                           ||'#Value'
+                           ||chr(9)
+                           ||'Quality Code'
+                           ||chr(10));
+                        for j in l_segments(i).first_index..l_segments(i).last_index loop
                            cwms_util.append(
                               l_data,
-                              to_char(l_tsv(k).date_time, 'dd-Mon-yyyy hh24:mi')
+                              cwms_rounding.round_dt_f(l_values_by_code(l_code_str)(j).value, '7777777777')
                               ||chr(9)
-                              ||nvl(cwms_rounding.round_dt_f(l_tsv(k).value, '7777777777'), 'null')
-                              ||chr(9)
-                              ||l_tsv(k).quality_code
+                              ||l_values_by_code(l_code_str)(j).quality_code
                               ||chr(10));
-                           l_quality_used(case l_tsv(k).quality_code > 2147483647 
-                                          when false then l_tsv(k).quality_code
-                                          else l_tsv(k).quality_code - 4294967296
-                                          end
-                                         ) := true;   
                         end loop;
-                     else
-                        l_text := '# REGULAR INTERVAL VALUES'
-                           ||chr(10)
-                           ||rpad('#   UNIT', l_width, ' ')
-                           ||chr(9)
-                           ||l_unit
-                           ||chr(10)
-                           ||rpad('#   INTERVAL', l_width, ' ')
-                           ||chr(9)
-                           ||l_intvl_str
-                           ||chr(10);
-                        if l_is_elev then
-                           l_text := l_text||rpad('#   DATUM', l_width, ' ')||chr(9)||l_datum||chr(10);
-                           if l_estimated then
-                              l_text := l_text||rpad('#   ESTIMATED', l_width, ' ')||chr(9)||'True'||chr(10);
-                           end if;
-                        end if;
-                        cwms_util.append(l_data, l_text);
-                        for k in 1..l_tsv.count loop
-                           if l_tsv(k).value is null then
-                              continue;
-                           else
-                              if k = 1 or l_tsv(k-1).value is null then
-                                 cwms_util.append(
-                                    l_data, 
-                                    '#   SEGMENT'
-                                    ||chr(10)
-                                    ||rpad('#     START_TIME', l_width, ' ')
-                                    ||chr(9)
-                                    ||to_char(l_tsv(k).date_time, 'dd-Mon-yyyy hh24:mi'
-                                    ||chr(10)));
-                              end if;
-                           end if;
-                           cwms_util.append(
-                              l_data,
-                              cwms_rounding.round_dt_f(l_tsv(k).value, '7777777777')
-                              ||chr(9)
-                              ||l_tsv(k).quality_code
-                              ||chr(10));
-                           l_quality_used(case l_tsv(k).quality_code > 2147483647 
-                                          when false then l_tsv(k).quality_code
-                                          else l_tsv(k).quality_code - 4294967296
-                                          end
-                                         ) := true;   
-                        end loop;
-                     end if;
-                  end case;
-                  l_ts2 := systimestamp;
-                  l_elapsed_format := l_elapsed_format + l_ts2 - l_ts1;
-                  l_ts1 := systimestamp;
+                     end loop;
+                  end if;
+               end case;
+               l_ts2 := systimestamp;
+               l_elapsed_format := l_elapsed_format + l_ts2 - l_ts1;
+               l_ts1 := systimestamp;
+               l_text := l_indexes.next(l_text);
+               if dbms_lob.getlength(l_data) > l_max_size then
+                  cwms_err.raise('ERROR', l_max_size_msg);
                end if;
             end loop tsids;
-         end loop names;
-      end if;
-      ---------------------------------------
-      -- get the quality code descriptions --
-      ---------------------------------------
-      l_codes1.delete;
-      l_codes1.extend(l_quality_used.count);
-      for i in 1..l_quality_used.count loop
-         case 
-         when i = 1 then l_codes1(i) := l_quality_used.first;
-         else l_codes1(i) := l_quality_used.next(l_codes1(i-1));
-         end case;
-      end loop;
-      select qcode
-        bulk collect
-        into l_codes2
-        from (select case
-                     when column_value >= 0 then column_value
-                     else column_value + 4294967296
-                     end as qcode
-                from table(l_codes1)
-             )
-       order by 1;             
-       select cwms_ts.get_quality_description(column_value)
-        bulk collect
-        into l_names
-        from table(l_codes2);   
-      l_ts2 := systimestamp;
-      l_elapsed_query := l_elapsed_query + l_ts2 - l_ts1;
-      l_ts1 := systimestamp;
-      case
-      when l_format = 'XML' then
-         ----------------
-         -- XML Wrapup --
-         ----------------
-         l_text := '<quality-codes><!-- The following quality codes are used in this dataset-->';
-         for i in 1..l_names.count loop
-            l_text := l_text
-               ||'<code value="'
-               ||l_codes2(i)
-               ||'">'
-               ||l_names(i)
-               ||'</code>';
+         end if;
+         ---------------------------------------
+         -- get the quality code descriptions --
+         ---------------------------------------
+         l_codes1 := number_tab_t();
+         l_codes1.extend(l_quality_used.count);
+         for i in 1..l_quality_used.count loop
+            case 
+            when i = 1 then l_codes1(i) := to_number(l_quality_used.first);
+            else l_codes1(i) := to_number(l_quality_used.next(l_codes1(i-1)));
+            end case;
          end loop;
-         l_text := l_text||'</quality-codes>';
-         l_data := replace(l_data, '!!QUALITY_CODES!!', l_text);
-         cwms_util.append(l_data, '</time-series-values>');
-         select xmlserialize(document xmltype(l_data) as clob indent)
-           into l_data
-           from dual;
-      when l_format = 'JSON' then
-         -----------------
-         -- JSON Wrapup --
-         -----------------
-         l_text := '"quality-codes":{"comment":"The following quality codes are used in this dataset","codes":[';
-         for i in 1..l_names.count loop
-            l_text := l_text
-               ||case when i = 1 then '{' else ',{' end 
-               ||'"code":'
-               ||l_codes2(i)
-               ||',"meaning":"'
-               ||l_names(i)
-               ||'"}';
-         end loop;
-         l_text := l_text||']}';
-         l_data := replace(l_data, '!!QUALITY_CODES!!', l_text);
-         cwms_util.append(l_data, ']}');
-      when l_format in ('TAB', 'CSV') then
-         l_text := '# QUALITY CODES USED';
-         for i in 1..l_names.count loop
-            l_text := l_text||chr(10)||l_codes2(i)||chr(9)||l_names(i);
-         end loop;
-         l_data := replace(l_data, '!!QUALITY_CODES!!', l_text);
-         -----------------------
-         -- TAB or CSV Wrapup --
-         -----------------------
-         if l_format = 'CSV' then
+         select qcode
+           bulk collect
+           into l_codes2
+           from (select case
+                        when column_value >= 0 then column_value
+                        else column_value + 4294967296
+                        end as qcode
+                   from table(l_codes1)
+                )
+          order by 1;             
+          select cwms_ts.get_quality_description(column_value)
+           bulk collect
+           into l_lines
+           from table(l_codes2);   
+         l_ts2 := systimestamp;
+         l_elapsed_query := l_elapsed_query + l_ts2 - l_ts1;
+         l_ts1 := systimestamp;
+         case
+         when l_format = 'XML' then
             ----------------
-            -- CSV Wrapup --
+            -- XML Wrapup --
             ----------------
-            l_data := regexp_replace(
-               replace(
-                  replace(
-                     regexp_replace(
-                        regexp_replace(
-                           regexp_replace(
-                              replace(  
-                                 l_data,
-                                 chr(10),
-                                 chr(10)||chr(10)), 
-                              ' *'||chr(9), chr(10)),
-                           '^(.*,.*)$',
-                           '"\1"',
-                           1, 0, 'm'),  
-                        '([^'||chr(10)||'])'||chr(10), '\1,'), 
-                     ','||chr(10), chr(10)),
-                  chr(10)||chr(10), chr(10)), 
-               '^# +', '# ', 
-               1, 0, 'm');
-         end if;            
-      end case;
-         
-      l_ts2 := systimestamp;
-      l_elapsed_format := l_elapsed_format + l_ts2 - l_ts1;
-         
-               
-      if l_format in ('TAB', 'CSV') then
-         declare
-            l_data2 clob;
-         begin
-            dbms_lob.createtemporary(l_data2, true);
-            select db_unique_name into l_name from v$database;
-            cwms_util.append(l_data2, rpad('# PROCESSED AT', l_width, ' ')||chr(9)||utl_inaddr.get_host_name ||':'||l_name||chr(10));
-            cwms_util.append(l_data2, rpad('# TIME OF QUERY', l_width, ' ')||chr(9)||to_char(l_query_time, 'dd-MON-yyyy hh24:mi')||' UTC'||chr(10));
-            cwms_util.append(l_data2, rpad('# PROCESS QUERY', l_width, ' ')||chr(9)||trunc(1000 * (extract(minute from l_elapsed_query) * 60 + extract(second from l_elapsed_query)))||' milliseconds'||chr(10));
-            cwms_util.append(l_data2, rpad('# FORMAT OUTPUT', l_width, ' ')||chr(9)||trunc(1000 * (extract(minute from l_elapsed_format) * 60 + extract(second from l_elapsed_format)))||' milliseconds'||chr(10));
-            cwms_util.append(l_data2, rpad('# TIME SERIES RETRIEVED', l_width, ' ')||chr(9)||l_tsids.count||chr(10));
-            cwms_util.append(l_data2, rpad('# VALUES RETRIEVED', l_width, ' ')||chr(9)||l_value_count||chr(10));
+            if l_names is not null then
+               l_text := '<quality-codes><!-- The following quality codes are used in this dataset-->';
+               for i in 1..l_lines.count loop
+                  l_text := l_text
+                     ||'<code value="'
+                     ||l_codes2(i)
+                     ||'" meaning="'
+                     ||l_lines(i)
+                     ||'"/>';
+               end loop;
+               l_text := l_text||'</quality-codes>';
+               l_data := replace(l_data, '!!Quality Codes!!', l_text);
+               cwms_util.append(l_data, '</time-series>');
+            end if;
+         when l_format = 'JSON' then
+            -----------------
+            -- JSON Wrapup --
+            -----------------
+            l_text := '{"quality-codes":{"comment":"The following quality codes are used in this dataset","codes":[';
+            for i in 1..l_lines.count loop
+               l_text := l_text
+                  ||case when i = 1 then '{' else ',{' end 
+                  ||'"code":'
+                  ||l_codes2(i)
+                  ||',"meaning":"'
+                  ||l_lines(i)
+                  ||'"}';
+            end loop;
+            l_text := l_text||']},';
+            l_data := replace(l_data, '!!Quality Codes!!{', l_text);
+            if l_names is not null then
+               cwms_util.append(l_data, ']}}');
+            end if;
+         when l_format in ('TAB', 'CSV') then
+            l_text := '#Quality Codes Used';
+            for i in 1..l_lines.count loop
+               l_text := l_text||chr(9)||l_codes2(i)||' = '||l_lines(i);
+            end loop;
+            l_text := l_text||chr(10);
+            l_data := replace(l_data, '!!Quality Codes!!', l_text);
+            -----------------------
+            -- TAB or CSV Wrapup --
+            -----------------------
             if l_format = 'CSV' then
-               l_data2 := regexp_replace( 
-                  replace(
-                     replace(
-                        regexp_replace(
-                           regexp_replace(
-                              regexp_replace(
-                                 replace(  
-                                    l_data2,
-                                    chr(10),
-                                    chr(10)||chr(10)), 
-                                 ' *'||chr(9), chr(10)),
-                              '^(.*,.*)$',
-                              '"\1"',
-                              1, 0, 'm'),  
-                           '([^'||chr(10)||'])'||chr(10), '\1,'), 
-                        ','||chr(10), chr(10)),
-                     chr(10)||chr(10), chr(10)), 
-                  '^# +', '# ', 
-                  1, 0, 'm');
+               ----------------
+               -- CSV Wrapup --
+               ----------------
+               l_data := cwms_util.tab_to_csv(l_data);
+            end if;            
+         end case;
+            
+         l_ts2 := systimestamp;
+         l_elapsed_format := l_elapsed_format + l_ts2 - l_ts1;
+         
+      exception
+         when others then 
+            case
+            when instr(sqlerrm, l_max_time_msg) > 0 then
+               dbms_lob.createtemporary(l_data, true);
+               case l_format
+               when  'XML' then
+                  if l_names is null then
+                     cwms_util.append(l_data, '<time-series-catalog><error>Query exceeded maximum time of '||l_max_time||'</error></time-series-catalog>');
+                  else
+                     cwms_util.append(l_data, '<time-series><error>Query exceeded maximum time of '||l_max_time||'</error></time-series>');
+                  end if;
+               when 'JSON' then
+                  if l_names is null then
+                     cwms_util.append(l_data, '{"time-series-catalog":{"error":"Query exceeded maximum time of '||l_max_time||'"}}');
+                  else
+                     cwms_util.append(l_data, '{"time-series":{"error":"Query exceeded maximum time of '||l_max_time||'"}}');
+                  end if;
+               when 'TAB' then
+                  cwms_util.append(l_data, 'ERROR'||chr(9)||'Query exceeded maximum time of '||l_max_time||chr(10));
+               when 'CSV' then
+                  cwms_util.append(l_data, 'ERROR,Query exceeded maximum time of '||l_max_time||chr(10));
+               end case;
+            when instr(sqlerrm, l_max_size_msg) > 0 then
+               dbms_lob.createtemporary(l_data, true);
+               case l_format
+               when  'XML' then
+                  if l_names is null then
+                     cwms_util.append(l_data, '<time-series-catalog><error>Query exceeded maximum size of '||l_max_size||' characters</error></time-series-catalog>');
+                  else
+                     cwms_util.append(l_data, '<time-series><error>Query exceeded maximum size of '||l_max_size||' characters</error></time-series>');
+                  end if;
+               when 'JSON' then
+                  if l_names is null then
+                     cwms_util.append(l_data, '{"time-series-catalog":{"error":"Query exceeded maximum size of '||l_max_size||' characters"}}');
+                  else
+                     cwms_util.append(l_data, '{"time-series":{"error":"Query exceeded maximum size of '||l_max_size||' characters"}}');
+                  end if;
+               when 'TAB' then
+                  cwms_util.append(l_data, 'ERROR'||chr(9)||'Query exceeded maximum size of '||l_max_size||' characters'||chr(10));
+               when 'CSV' then
+                  cwms_util.append(l_data, 'ERROR,Query exceeded maximum size of '||l_max_size||' characters'||chr(10));
+               end case;
+            else raise;
+            end case;
+      end;
+               
+      declare
+         l_data2 clob;
+      begin
+         dbms_lob.createtemporary(l_data2, true);
+         select db_unique_name into l_name from v$database;
+         case
+         when l_format = 'XML' then
+            ---------
+            -- XML --
+            ---------
+            cwms_util.append(
+               l_data2, 
+               '<query-info><processed-at>'
+               ||utl_inaddr.get_host_name
+               ||':'
+               ||l_name
+               ||'</processed-at><time-of-query>'
+               ||cwms_util.get_xml_time(l_query_time, 'UTC')
+               ||'</time-of-query><process-query>'
+               ||iso_duration(l_elapsed_query)
+               ||'</process-query><format-output>'
+               ||iso_duration(l_elapsed_format)
+               ||'</format-output><requested-start-time>'
+               ||cwms_util.get_xml_time(l_start, l_timezone)
+               ||'</requested-start-time><requested-end-time>'
+               ||cwms_util.get_xml_time(l_end, l_timezone)
+               ||'</requested-end-time><requested-format>'
+               ||l_format
+               ||'</requested-format><requested-office>'
+               ||l_office_id
+               ||'</requested-office>');
+            if l_names is null then
+               cwms_util.append(
+                  l_data2,
+                  '<total-time-series-cataloged>'
+                  ||l_tsid_count
+                  ||'</total-time-series-cataloged><unique-time-series-cataloged>'
+                  ||l_unique_tsid_count
+                  ||'</unique-time-series-cataloged></query-info>');
+            else
+               for i in 1..l_names.count loop
+                  cwms_util.append(
+                     l_data2,
+                     '<requested-item><name>'
+                     ||l_names(i)
+                     ||'</name><unit>'
+                     ||l_units(i)
+                     ||'</unit><datum>'
+                     ||l_datums(i)
+                     ||'</datum></requested-item>');
+               end loop;
+               cwms_util.append(
+                  l_data2,
+                  '<total-time-series-retrieved>'
+                  ||l_tsid_count
+                  ||'</total-time-series-retrieved><unique-time-series-retrieved>'
+                  ||l_unique_tsid_count
+                  ||'</unique-time-series-retrieved><total-values-retrieved>'
+                  ||l_value_count
+                  ||'</total-values-retrieved><unique-values-retrieved>'
+                  ||l_unique_value_count
+                  ||'</unique-values-retrieved></query-info>');
+            end if;
+            l_data := regexp_replace(l_data, '^(<time-series.*?>)', '\1'||l_data2, 1, 1);
+            p_results := l_data;
+         when l_format = 'JSON' then
+            ----------
+            -- JSON --
+            ----------
+            cwms_util.append(
+               l_data2, 
+               '{"query-info":{"processed-at":"'
+               ||utl_inaddr.get_host_name
+               ||':'
+               ||l_name
+               ||'","time-of-query":"'
+               ||cwms_util.get_xml_time(l_query_time, 'UTC')
+               ||'","process-query":"'
+               ||iso_duration(l_elapsed_query)
+               ||'","format-output":"'
+               ||iso_duration(l_elapsed_format)
+               ||'","requested-start-time":"'
+               ||cwms_util.get_xml_time(l_start, l_timezone)
+               ||'","requested-end-time":"'
+               ||cwms_util.get_xml_time(l_end, l_timezone)
+               ||'","requested-format":"'
+               ||l_format
+               ||'","requested-office":"'
+               ||l_office_id
+               ||'"');
+            if l_names is null then
+               cwms_util.append(
+                  l_data2, 
+                  ',"total-time-series-cataloged":'
+                  ||l_tsid_count
+                  ||',"unique-time-series-cataloged":'
+                  ||l_unique_tsid_count
+                  ||'}');
+            else
+               cwms_util.append(l_data2, ',"requested-items":[');
+               for i in 1..l_names.count loop
+                  cwms_util.append(
+                     l_data2,
+                     case
+                     when i = 1 then '{"name":"'
+                     else ',{"name":"'
+                     end
+                     ||l_names(i)
+                     ||'","unit":"'
+                     ||l_units(i)
+                     ||'","datum":"'
+                     ||l_datums(i)
+                     ||'"}');
+               end loop;
+               cwms_util.append(
+                  l_data2, 
+                  '],"total-time-series-retrieved":'
+                  ||l_tsid_count
+                  ||',"unique-time-series-retrieved":'
+                  ||l_unique_tsid_count
+                  ||',"total-values-retrieved":'
+                  ||l_value_count
+                  ||',"unique-values-retrieved":'
+                  ||l_unique_value_count
+                  ||'}');
+            end if;
+            l_data := regexp_replace(l_data, '^({"time-series.*?":){', '\1'||l_data2||',', 1, 1);
+            p_results := l_data;
+         when l_format in ('TAB', 'CSV') then
+            ----------------
+            -- TAB or CSV --
+            ----------------
+            select db_unique_name into l_name from v$database;
+            cwms_util.append(l_data2, '#Processed At'||chr(9)||utl_inaddr.get_host_name ||':'||l_name||chr(10));
+            cwms_util.append(l_data2, '#Time of Query'||chr(9)||to_char(l_query_time, 'dd-Mon-yyyy hh24:mi')||' UTC'||chr(10));
+            cwms_util.append(l_data2, '#Process Query'||chr(9)||trunc(1000 * (extract(minute from l_elapsed_query) * 60 + extract(second from l_elapsed_query)))||' milliseconds'||chr(10));
+            cwms_util.append(l_data2, '#Format Output'||chr(9)||trunc(1000 * (extract(minute from l_elapsed_format) * 60 + extract(second from l_elapsed_format)))||' milliseconds'||chr(10));
+            cwms_util.append(l_data2, '#Requested Start Time'||chr(9)||to_char(l_start, 'dd-Mon-yyyy hh24:mi')||' '||l_timezone||chr(10));
+            cwms_util.append(l_data2, '#Requested End Time'||chr(9)||to_char(l_end, 'dd-Mon-yyyy hh24:mi')||' '||l_timezone||chr(10));
+            cwms_util.append(l_data2, '#Requested Format'||chr(9)||l_format||chr(10));
+            cwms_util.append(l_data2, '#Requested Office'||chr(9)||l_office_id||chr(10));
+            if l_names is null then
+               cwms_util.append(l_data2, '#Total Time Series Cataloged'||chr(9)||l_tsid_count||chr(10));
+               cwms_util.append(l_data2, '#Unique Time Series Cataloged'||chr(9)||l_unique_tsid_count||chr(10)||chr(10));
+            else
+               cwms_util.append(l_data2, '#Requested Names"'||chr(9)||cwms_util.join_text(l_names, chr(9))||chr(10));
+               cwms_util.append(l_data2, '#Requested Units"'||chr(9)||cwms_util.join_text(l_units, chr(9))||chr(10));
+               cwms_util.append(l_data2, '#Requested Datums"'||chr(9)||cwms_util.join_text(l_datums, chr(9))||chr(10));
+               cwms_util.append(l_data2, '#Total Time Series Retrieved'||chr(9)||l_tsid_count||chr(10));
+               cwms_util.append(l_data2, '#Unique Time Series Retrieved'||chr(9)||l_unique_tsid_count||chr(10));
+               cwms_util.append(l_data2, '#Total Values Retrieved'||chr(9)||l_value_count||chr(10));
+               cwms_util.append(l_data2, '#Unique Values Retrieved'||chr(9)||l_unique_value_count||chr(10)||chr(10));
+            end if;
+            if l_format = 'CSV' then
+               l_data2 := cwms_util.tab_to_csv(l_data2);
             end if;
             cwms_util.append(l_data2, l_data);
             p_results := l_data2;
-         end;
-      else
-         p_results := l_data;
-      end if;
+         end case;
+      end;
             
       p_date_time   := l_query_time;
       p_query_time  := trunc(1000 * (extract(minute from l_elapsed_query) * 60 + extract(second from l_elapsed_query)));

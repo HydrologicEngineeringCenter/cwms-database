@@ -1743,7 +1743,10 @@ AS
                           1,
                           1,
                           1) != LENGTH (l_str) + 1
-      THEN
+      then
+         if length(l_str) = 10 then
+            return to_timestamp(l_str||'T00:00');
+         end if;
          cwms_err.raise ('INVALID_ITEM', l_str, 'dateTime-formatted string');
       END IF;
 
@@ -4383,48 +4386,63 @@ AS
    -- Append routines --
    ---------------------
 
-   PROCEDURE append (p_dst IN OUT NOCOPY CLOB, p_src IN CLOB)
-   IS
-   BEGIN
-      DBMS_LOB.append (p_dst, p_src);
-   END append;
+   procedure append(
+      p_dst in out nocopy clob, 
+      p_src in clob)
+   is
+   begin
+      if p_src is not null then
+         dbms_lob.append(p_dst, p_src);
+      end if;
+   end append;
 
-   PROCEDURE append (p_dst IN OUT NOCOPY CLOB, p_src IN VARCHAR2)
-   IS
-   BEGIN
-      DBMS_LOB.writeappend (p_dst, LENGTH (p_src), p_src);
-   END append;
+   procedure append(
+      p_dst in out nocopy clob, 
+      p_src in varchar2)
+   is
+   begin
+      if p_src is not null then
+         dbms_lob.writeappend(p_dst, length(p_src), p_src);
+      end if;
+   end append;
 
-   PROCEDURE append (p_dst IN OUT NOCOPY CLOB, p_src IN XMLTYPE)
-   IS
-      l_src   CLOB := p_src.getclobval;
-   BEGIN
-      append (p_dst, l_src);
-   END append;
+   procedure append(
+      p_dst in out nocopy clob, 
+      p_src in xmltype)
+   is
+   begin
+      append(p_dst, p_src.getclobval);
+   end append;
 
-   PROCEDURE append (p_dst IN OUT NOCOPY XMLTYPE, p_src IN CLOB)
-   IS
-      l_dst   CLOB := p_dst.getclobval;
-   BEGIN
-      append (l_dst, p_src);
-      p_dst := xmltype (l_dst);
-   END append;
+   procedure append(
+      p_dst in out nocopy xmltype, 
+      p_src in clob)
+   is
+      l_dst   clob := p_dst.getclobval;
+   begin
+      append(l_dst, p_src);
+      p_dst := xmltype(l_dst);
+   end append;
 
-   PROCEDURE append (p_dst IN OUT NOCOPY XMLTYPE, p_src IN VARCHAR2)
-   IS
-      l_dst   CLOB := p_dst.getclobval;
-   BEGIN
-      append (l_dst, p_src);
-      p_dst := xmltype (l_dst);
-   END append;
+   procedure append(
+      p_dst in out nocopy xmltype, 
+      p_src in varchar2)
+   is
+      l_dst   clob := p_dst.getclobval;
+   begin
+      append(l_dst, p_src);
+      p_dst := xmltype(l_dst);
+   end append;
 
-   PROCEDURE append (p_dst IN OUT NOCOPY XMLTYPE, p_src IN XMLTYPE)
-   IS
-      l_dst   CLOB := p_dst.getclobval;
-   BEGIN
-      append (l_dst, p_src);
-      p_dst := xmltype (l_dst);
-   END append;
+   procedure append(
+      p_dst in out nocopy xmltype, 
+      p_src in xmltype)
+   is
+      l_dst   clob := p_dst.getclobval;
+   begin
+      append(l_dst, p_src);
+      p_dst := xmltype(l_dst);
+   end append;
 
    --------------------------
    -- XML Utility routines --
@@ -5381,6 +5399,60 @@ AS
       
       return l_cursor;
    end cat_scheduled_job_history;
+
+   function tab_to_csv(
+      p_tab in clob)
+      return clob
+   is
+      l_table str_tab_tab_t;
+      l_csv   clob;
+   begin
+      dbms_lob.createtemporary(l_csv, true);
+      select cwms_util.split_text(column_value, chr(9))
+        bulk collect
+        into l_table
+        from table(cwms_util.split_text(p_tab, chr(10)));
+      for i in 1..l_table.count loop
+         for j in 1..l_table(i).count loop
+            if instr(l_table(i)(j), ',') > 0 then
+               l_table(i)(j) := '"'||l_table(i)(j)||'"';
+            end if;
+         end loop;
+         if i > 1 then
+            cwms_util.append(l_csv, chr(10)||cwms_util.join_text(l_table(i), ',')); 
+         else
+            cwms_util.append(l_csv, cwms_util.join_text(l_table(i), ',')); 
+         end if;
+      end loop;
+      return l_csv;
+   end tab_to_csv;
+   
+   function tab_to_csv(
+      p_tab in varchar2)
+      return varchar2
+   is
+      l_table str_tab_tab_t;
+      l_csv   varchar2(32767);
+   begin
+      dbms_lob.createtemporary(l_csv, true);
+      select cwms_util.split_text(column_value, chr(9))
+        bulk collect
+        into l_table
+        from table(cwms_util.split_text(p_tab, chr(10)));
+      for i in 1..l_table.count loop
+         for j in 1..l_table(i).count loop
+            if instr(l_table(i)(j), ',') > 0 then
+               l_table(i)(j) := '"'||l_table(i)(j)||'"';
+            end if;
+         end loop;
+         if i > 1 then
+            l_csv := l_csv||chr(10)||cwms_util.join_text(l_table(i), ','); 
+         else
+            l_csv := l_csv||cwms_util.join_text(l_table(i), ','); 
+         end if;
+      end loop;
+      return l_csv;
+   end tab_to_csv;
 
 /*
 BEGIN

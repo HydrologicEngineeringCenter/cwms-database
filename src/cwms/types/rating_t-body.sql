@@ -3728,22 +3728,108 @@ as
       end if;
 
       if cwms_util.is_true(p_match_date) then
-         select rating_code
-           into l_rating_code
-           from at_rating
-          where rating_spec_code = l_rating_spec_code
-            and effective_date = l_effective_date;
+         --------------------------
+         -- match effective date --
+         --------------------------
+         ----------------------
+         -- concrete ratings --
+         ----------------------
+         begin
+            select rating_code
+              into l_rating_code
+              from at_rating
+             where rating_spec_code = l_rating_spec_code
+               and effective_date = l_effective_date;
+         exception
+            when no_data_found then null;
+         end;
+         if l_rating_code is null then
+            --------------------------
+            -- transitional ratings --
+            --------------------------
+            begin
+               select transitional_rating_code
+                 into l_rating_code
+                 from at_transitional_rating
+                where rating_spec_code = l_rating_spec_code
+                  and effective_date = l_effective_date;
+            exception
+               when no_data_found then null;
+            end;
+         end if;
+         if l_rating_code is null then null;
+            ---------------------
+            -- virtual ratings --
+            ---------------------
+            begin
+               select virtual_rating_code
+                 into l_rating_code
+                 from at_virtual_rating
+                where rating_spec_code = l_rating_spec_code
+                  and effective_date = l_effective_date;
+            exception
+               when no_data_found then null;
+            end;
+         end if;
       else
-         select rating_code
-           into l_rating_code
-           from at_rating
-          where rating_spec_code = l_rating_spec_code
-            and effective_date =
-                ( select max(effective_date)
-                    from at_rating
-                   where rating_spec_code = l_rating_spec_code
-                     and effective_date <= l_effective_date
-                );
+         ---------------------------------
+         -- effective on specified date --
+         ---------------------------------
+         ----------------------
+         -- concrete ratings --
+         ----------------------
+         begin
+            select rating_code
+              into l_rating_code
+              from at_rating
+             where rating_spec_code = l_rating_spec_code
+               and effective_date =
+                   ( select max(effective_date)
+                       from at_rating
+                      where rating_spec_code = l_rating_spec_code
+                        and effective_date <= l_effective_date
+                   );
+         exception
+            when no_data_found then null;
+         end;
+         if l_rating_code is null then
+            --------------------------
+            -- transitional ratings --
+            --------------------------
+            begin
+               select transitional_rating_code
+                 into l_rating_code
+                 from at_transitional_rating
+                where rating_spec_code = l_rating_spec_code
+                  and effective_date =
+                      ( select max(effective_date)
+                          from at_rating
+                         where rating_spec_code = l_rating_spec_code
+                           and effective_date <= l_effective_date
+                      );
+            exception
+               when no_data_found then null;
+            end;
+         end if;
+         if l_rating_code is null then null;
+            ---------------------
+            -- virtual ratings --
+            ---------------------
+            begin
+               select virtual_rating_code
+                 into l_rating_code
+                 from at_virtual_rating
+                where rating_spec_code = l_rating_spec_code
+                  and effective_date =
+                      ( select max(effective_date)
+                          from at_rating
+                         where rating_spec_code = l_rating_spec_code
+                           and effective_date <= l_effective_date
+                      );
+            exception
+               when no_data_found then null;
+            end;
+         end if;
       end if;
 
       return l_rating_code;

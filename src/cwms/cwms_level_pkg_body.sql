@@ -2754,6 +2754,7 @@ is
    end;
    
 begin
+   l_level_values := ztsv_array();
    -------------------------------------------------------
    -- get_location_level_codes() will try to create the --
    -- specified level if it doesn't exist, so test here --
@@ -2892,7 +2893,6 @@ begin
       end if;
       l_encoded_dates(encode_date(l_effective_date)) := true;
    end if;
-   l_level_values := new ztsv_array();
    if l_encoded_dates.count > 1 then
       -------------------------------------------
       -- working with multiple effective dates --
@@ -8110,13 +8110,18 @@ is
    type bool_t is table of boolean index by varchar2(32767);
    type tsv_t is record(date_time date, value binary_double, quality_code integer);
    type tsv_tab_t is table of tsv_t;
+   type segment_t is record(start_time date, end_time date, first_index integer, last_index integer, interp varchar2(5));
+   type seg_tab_t is table of segment_t;
    l_data             clob;  
    l_format           varchar2(16);
    l_names            str_tab_t;
+   l_names_sql        str_tab_t; 
    l_units            str_tab_t;
    l_datums           str_tab_t;
    l_start            date;
-   l_end              date;   
+   l_start_utc        date;
+   l_end              date;  
+   l_end_utc          date;
    l_timezone         varchar2(28);
    l_office_id        varchar2(16);
    l_codes1           number_tab_t;
@@ -8125,7 +8130,8 @@ is
    l_unit             varchar2(16);
    l_attr_unit        varchar2(16);
    l_datum            varchar2(16);  
-   l_count            pls_integer;
+   l_count            pls_integer := 0;
+   l_unique_count     pls_integer := 0;
    l_name_pos         number_tab_t;        
    l_name             varchar2(512);
    l_xml              xmltype;
@@ -8157,8 +8163,39 @@ is
    l_is_elev          boolean;
    l_level_values     ztsv_array_tab;
    l_code             pls_integer;
+   l_segments         seg_tab_t;
+   l_max_size         integer;
+   l_max_time         interval day (0) to second (3);
+   l_max_size_msg     varchar2(17) := 'MAX SIZE EXCEEDED';
+   l_max_time_msg     varchar2(17) := 'MAX TIME EXCEEDED';
+   
+   function iso_duration(
+      p_intvl in dsinterval_unconstrained)
+      return varchar2
+   is
+      l_hours   integer := extract(hour   from p_intvl);
+      l_minutes integer := extract(minute from p_intvl);
+      l_seconds number  := extract(second from p_intvl);
+      l_iso     varchar2(17) := 'PT';
+   begin
+      if l_hours > 0 then
+         l_iso := l_iso || l_hours || 'H';
+      end if;
+      if l_minutes > 0 then
+         l_iso := l_iso || l_minutes || 'M';
+      end if;
+      if l_seconds > 0 then
+         l_iso := l_iso || trim(to_char(l_seconds, '0.999')) || 'S';
+      end if;
+      if l_iso = 'PT' then
+         l_iso := l_iso || '0S';
+      end if;
+      return l_iso;
+   end;
 begin
    l_query_time := cast(systimestamp at time zone 'UTC' as date);
+   l_max_size := to_number(cwms_properties.get_property('CWMS-RADAR', 'results.max-size', '5242880', 'CWMS')); -- 5 MB default
+   l_max_time := to_dsinterval(cwms_properties.get_property('CWMS-RADAR', 'query.max-time', '00 00:00:30', 'CWMS')); -- 30 sec default
    ----------------------------
    -- process the parameters --
    ----------------------------
@@ -8276,1453 +8313,1639 @@ begin
       end if;
    end if;
    if p_end is null then
-      l_end := cwms_util.change_timezone(sysdate, 'UTC', l_timezone);
+      l_end_utc := sysdate;
+      l_end     := cwms_util.change_timezone(l_end_utc, 'UTC', l_timezone);
    else
-      l_end := cast(cwms_util.to_timestamp(p_end) as date);
-      l_end := cwms_util.change_timezone(l_end, 'UTC', l_timezone);
+      l_end     := cast(from_tz(cwms_util.to_timestamp(p_end), l_timezone) as date);
+      l_end_utc := cwms_util.change_timezone(l_end, l_timezone, 'UTC');
    end if;
    if p_start is null then
-      l_start := l_end - 1;
+      l_start     := l_end - 1;
+      l_start_utc := l_end_utc - 1;
    else
-      l_start := cast(cwms_util.to_timestamp(p_start) as date);
-      l_start := cwms_util.change_timezone(l_start, 'UTC', l_timezone);
+      l_start     := cast(from_tz(cwms_util.to_timestamp(p_start), l_timezone) as date);
+      l_start_utc := cwms_util.change_timezone(l_start, l_timezone, 'UTC');
    end if;
    -----------------------
    -- retreive the data --
    -----------------------
    dbms_lob.createtemporary(l_data, true);
-   if l_names is null then
-      -----------------------------------------
-      -- retrieve catalog of location levels --
-      -----------------------------------------
-      l_ts1 := systimestamp;
-      l_elapsed_format := l_ts1 - l_ts1;
-            
-      select ll.location_level_code, 
-             o.office_id,
-             bl.base_location_id
-             ||substr('-', 1, length(pl.sub_location_id))
-             ||pl.sub_location_id
-             ||'.'
-             ||bp1.base_parameter_id
-             ||substr('-', 1, length(p1.sub_parameter_id))
-             ||p1.sub_parameter_id
-             ||'.'
-             ||pt1.parameter_type_id
-             ||'.'
-             ||d1.duration_id
-             ||'.'
-             ||sl.specified_level_id,
-             case
-             when l_unit = 'EN' then
-                cwms_util.get_default_units(
-                   bp1.base_parameter_id
-                   ||substr('-', 1, length(p1.sub_parameter_id))
-                   ||p1.sub_parameter_id,
-                   'EN')
-             when l_unit = 'SI' then
-                cwms_util.get_default_units(
-                   bp1.base_parameter_id
-                   ||substr('-', 1, length(p1.sub_parameter_id))
-                   ||p1.sub_parameter_id,
-                   'SI')
-             else
-               l_unit
-             end,
-             bp2.base_parameter_id
-             ||substr('-', 1, length(p2.sub_parameter_id))
-             ||p2.sub_parameter_id
-             ||substr('.', 1, length(pt2.parameter_type_id))
-             ||pt2.parameter_type_id
-             ||substr('.', length(d2.duration_id))
-             ||d2.duration_id,
-             case
-             when l_unit = 'EN' then
-                cwms_util.convert_units(
-                   ll.attribute_value,
-                   cwms_util.get_default_units(
-                      bp2.base_parameter_id
-                      ||substr('-', 1, length(p2.sub_parameter_id))
-                      ||p2.sub_parameter_id,
-                      'SI'),
-                   cwms_util.get_default_units(
-                      bp2.base_parameter_id
-                      ||substr('-', 1, length(p2.sub_parameter_id))
-                      ||p2.sub_parameter_id,
-                      'EN'))
-             else
-                ll.attribute_value
-             end,
-             case
-             when l_unit = 'EN' then
-                cwms_util.get_default_units(
-                   bp2.base_parameter_id
-                   ||substr('-', 1, length(p2.sub_parameter_id))
-                   ||p2.sub_parameter_id,
-                   'EN')
-             else
-                cwms_util.get_default_units(
-                   bp2.base_parameter_id
-                   ||substr('-', 1, length(p2.sub_parameter_id))
-                   ||p2.sub_parameter_id,
-                   'SI')
-             end
-        bulk collect
-        into l_lvlids
-        from at_location_level ll,
-             at_physical_location pl,
-             at_base_location bl,
-             cwms_base_parameter bp1,
-             cwms_base_parameter bp2,
-             at_parameter p1,
-             at_parameter p2,
-             cwms_parameter_type pt1,
-             cwms_parameter_type pt2,
-             cwms_duration d1,
-             cwms_duration d2,
-             at_specified_level sl,
-             cwms_office o
-       where pl.location_code = ll.location_code
-         and p1.parameter_code = ll.parameter_code
-         and pt1.parameter_type_code = ll.parameter_type_code
-         and d1.duration_code = ll.duration_code
-         and sl.specified_level_code = ll.specified_level_code
-         and ll.location_level_date < cwms_util.change_timezone(l_end, l_timezone, 'UTC')
-         and (ll.expiration_date is null or 
-              ll.expiration_date > cwms_util.change_timezone(l_start, l_timezone, 'UTC')
-             )
-         and (get_next_effective_date(ll.location_level_code, l_timezone) is null or
-              get_next_effective_date(ll.location_level_code, l_timezone) > l_start
-             ) 
-         and bl.base_location_code = pl.base_location_code
-         and bp1.base_parameter_code = p1.base_parameter_code
-         and o.office_code = bl.db_office_code
-         and o.office_id like l_office_id escape '\'
-         and p2.parameter_code(+) = ll.attribute_parameter_code
-         and bp2.base_parameter_code(+) = p2.base_parameter_code
-         and pt2.parameter_type_code(+) = ll.attribute_parameter_type_code
-         and d2.duration_code(+) = ll.attribute_duration_code
-      union  
-      select ll.location_level_code, 
-             o.office_id,
-             lga.loc_alias_id
-             ||'.'
-             ||bp1.base_parameter_id
-             ||substr('-', 1, length(p1.sub_parameter_id))
-             ||p1.sub_parameter_id
-             ||'.'
-             ||pt1.parameter_type_id
-             ||'.'
-             ||d1.duration_id
-             ||'.'
-             ||sl.specified_level_id,
-             case
-             when l_unit = 'EN' then
-                cwms_util.get_default_units(
-                   bp1.base_parameter_id
-                   ||substr('-', 1, length(p1.sub_parameter_id))
-                   ||p1.sub_parameter_id,
-                   'EN')
-             when l_unit = 'SI' then
-                cwms_util.get_default_units(
-                   bp1.base_parameter_id
-                   ||substr('-', 1, length(p1.sub_parameter_id))
-                   ||p1.sub_parameter_id,
-                   'SI')
-             else
-               l_unit
-             end,
-             bp2.base_parameter_id
-             ||substr('-', 1, length(p2.sub_parameter_id))
-             ||p2.sub_parameter_id
-             ||substr('.', 1, length(pt2.parameter_type_id))
-             ||pt2.parameter_type_id
-             ||substr('.', length(d2.duration_id))
-             ||d2.duration_id,
-             case
-             when l_unit = 'EN' then
-                cwms_util.convert_units(
-                   ll.attribute_value,
-                   cwms_util.get_default_units(
-                      bp2.base_parameter_id
-                      ||substr('-', 1, length(p2.sub_parameter_id))
-                      ||p2.sub_parameter_id,
-                      'SI'),
-                   cwms_util.get_default_units(
-                      bp2.base_parameter_id
-                      ||substr('-', 1, length(p2.sub_parameter_id))
-                      ||p2.sub_parameter_id,
-                      'EN'))
-             else
-                ll.attribute_value
-             end,
-             case
-             when l_unit = 'EN' then
-                cwms_util.get_default_units(
-                   bp2.base_parameter_id
-                   ||substr('-', 1, length(p2.sub_parameter_id))
-                   ||p2.sub_parameter_id,
-                   'EN')
-             else
-                cwms_util.get_default_units(
-                   bp2.base_parameter_id
-                   ||substr('-', 1, length(p2.sub_parameter_id))
-                   ||p2.sub_parameter_id,
-                   'SI')
-             end
-        from at_location_level ll,
-             at_loc_category lc,
-             at_loc_group lg,
-             at_loc_group_assignment lga,
-             cwms_base_parameter bp1,
-             cwms_base_parameter bp2,
-             at_parameter p1,
-             at_parameter p2,
-             cwms_parameter_type pt1,
-             cwms_parameter_type pt2,
-             cwms_duration d1,
-             cwms_duration d2,
-             at_specified_level sl,
-             cwms_office o
-       where lga.location_code = ll.location_code
-         and p1.parameter_code = ll.parameter_code
-         and pt1.parameter_type_code = ll.parameter_type_code
-         and d1.duration_code = ll.duration_code
-         and sl.specified_level_code = ll.specified_level_code
-         and ll.location_level_date < cwms_util.change_timezone(l_end, l_timezone, 'UTC')
-         and (ll.expiration_date is null or 
-              ll.expiration_date > cwms_util.change_timezone(l_start, l_timezone, 'UTC')
-             )
-         and (get_next_effective_date(ll.location_level_code, l_timezone) is null or
-              get_next_effective_date(ll.location_level_code, l_timezone) > l_start
-             ) 
-         and lga.loc_alias_id is not null
-         and lg.loc_group_code = lga.loc_group_code
-         and lc.loc_category_code = lg.loc_category_code
-         and lc.loc_category_id = 'Agency Aliases'
-         and bp1.base_parameter_code = p1.base_parameter_code
-         and o.office_code = lga.office_code
-         and o.office_id like l_office_id escape '\'
-         and p2.parameter_code(+) = ll.attribute_parameter_code
-         and bp2.base_parameter_code(+) = p2.base_parameter_code
-         and pt2.parameter_type_code(+) = ll.attribute_parameter_type_code
-         and d2.duration_code(+) = ll.attribute_duration_code
-      union  
-      select ll.location_level_code, 
-             o.office_id,
-             lga.loc_alias_id
-             ||substr('-', 1, length(pl.sub_location_id))
-             ||pl.sub_location_id
-             ||'.'
-             ||bp1.base_parameter_id
-             ||substr('-', 1, length(p1.sub_parameter_id))
-             ||p1.sub_parameter_id
-             ||'.'
-             ||pt1.parameter_type_id
-             ||'.'
-             ||d1.duration_id
-             ||'.'
-             ||sl.specified_level_id,
-             case
-             when l_unit = 'EN' then
-                cwms_util.get_default_units(
-                   bp1.base_parameter_id
-                   ||substr('-', 1, length(p1.sub_parameter_id))
-                   ||p1.sub_parameter_id,
-                   'EN')
-             when l_unit = 'SI' then
-                cwms_util.get_default_units(
-                   bp1.base_parameter_id
-                   ||substr('-', 1, length(p1.sub_parameter_id))
-                   ||p1.sub_parameter_id,
-                   'SI')
-             else
-               l_unit
-             end,
-             bp2.base_parameter_id
-             ||substr('-', 1, length(p2.sub_parameter_id))
-             ||p2.sub_parameter_id
-             ||substr('.', 1, length(pt2.parameter_type_id))
-             ||pt2.parameter_type_id
-             ||substr('.', length(d2.duration_id))
-             ||d2.duration_id,
-             case
-             when l_unit = 'EN' then
-                cwms_util.convert_units(
-                   ll.attribute_value,
-                   cwms_util.get_default_units(
-                      bp2.base_parameter_id
-                      ||substr('-', 1, length(p2.sub_parameter_id))
-                      ||p2.sub_parameter_id,
-                      'SI'),
-                   cwms_util.get_default_units(
-                      bp2.base_parameter_id
-                      ||substr('-', 1, length(p2.sub_parameter_id))
-                      ||p2.sub_parameter_id,
-                      'EN'))
-             else
-                ll.attribute_value
-             end,
-             case
-             when l_unit = 'EN' then
-                cwms_util.get_default_units(
-                   bp2.base_parameter_id
-                   ||substr('-', 1, length(p2.sub_parameter_id))
-                   ||p2.sub_parameter_id,
-                   'EN')
-             else
-                cwms_util.get_default_units(
-                   bp2.base_parameter_id
-                   ||substr('-', 1, length(p2.sub_parameter_id))
-                   ||p2.sub_parameter_id,
-                   'SI')
-             end
-        from at_location_level ll,
-             at_loc_category lc,
-             at_loc_group lg,
-             at_loc_group_assignment lga,
-             at_physical_location pl,
-             at_base_location bl,
-             cwms_base_parameter bp1,
-             cwms_base_parameter bp2,
-             at_parameter p1,
-             at_parameter p2,
-             cwms_parameter_type pt1,
-             cwms_parameter_type pt2,
-             cwms_duration d1,
-             cwms_duration d2,
-             at_specified_level sl,
-             cwms_office o
-       where pl.location_code = ll.location_code
-         and pl.sub_location_id is not null
-         and bl.base_location_code = pl.base_location_code
-         and bl.base_location_code = lga.location_code
-         and p1.parameter_code = ll.parameter_code
-         and pt1.parameter_type_code = ll.parameter_type_code
-         and d1.duration_code = ll.duration_code
-         and sl.specified_level_code = ll.specified_level_code
-         and ll.location_level_date < cwms_util.change_timezone(l_end, l_timezone, 'UTC')
-         and (ll.expiration_date is null or 
-              ll.expiration_date > cwms_util.change_timezone(l_start, l_timezone, 'UTC')
-             )
-         and (get_next_effective_date(ll.location_level_code, l_timezone) is null or
-              get_next_effective_date(ll.location_level_code, l_timezone) > l_start
-             ) 
-         and lga.loc_alias_id is not null
-         and lg.loc_group_code = lga.loc_group_code
-         and lc.loc_category_code = lg.loc_category_code
-         and lc.loc_category_id = 'Agency Aliases'
-         and bp1.base_parameter_code = p1.base_parameter_code
-         and o.office_code = lga.office_code
-         and o.office_id like l_office_id escape '\'
-         and p2.parameter_code(+) = ll.attribute_parameter_code
-         and bp2.base_parameter_code(+) = p2.base_parameter_code
-         and pt2.parameter_type_code(+) = ll.attribute_parameter_type_code
-         and d2.duration_code(+) = ll.attribute_duration_code
-       order by 2, 3, 4, 5;                
-      
-      for i in 1..l_lvlids.count loop
-         if not l_lvlids2.exists(l_lvlids(i).lvl_code) then
-            l_lvlids2(l_lvlids(i).lvl_code) := str_tab_t();
-         end if;
-         l_lvlids2(l_lvlids(i).lvl_code).extend;
-         l_lvlids2(l_lvlids(i).lvl_code)(l_lvlids2(l_lvlids(i).lvl_code).count) := l_lvlids(i).name;
-      end loop;
-      
-      l_ts2 := systimestamp;
-      l_elapsed_query := l_ts2 - l_ts1;
-      l_ts1 := systimestamp;
-      
-      case
-      when l_format = 'XML' then
-         -----------------
-         -- XML Catalog --
-         -----------------
-         cwms_util.append(
-            l_data, 
-            '<location-level-catalog><!-- Catalog of location levels that are effective between '
-            ||cwms_util.get_xml_time(l_start, l_timezone)
-            ||' and '
-            ||cwms_util.get_xml_time(l_end, l_timezone)
-            ||' -->');
-         l_count := 0;
-         for i in 1..l_lvlids.count loop
-            if i = 1 
-               or l_lvlids(i).office != l_lvlids(i-1).office
-               or l_lvlids(i).name != l_lvlids(i-1).name
-               or nvl(l_lvlids(i).attr_name, '.') != nvl(l_lvlids(i-1).attr_name, '.')
-            then
-               if l_text is not null then
-                  cwms_util.append(l_data, l_text||'</values></attribute></location-level>');
-               end if;
-               l_text := '<location-level><office>'
-                  ||l_lvlids(i).office
-                  ||'</office><name>'
-                  ||dbms_xmlgen.convert(l_lvlids(i).name, dbms_xmlgen.entity_encode)
-                  ||'</name><alternate-names>'; 
-               for j in 1..l_lvlids2(l_lvlids(i).lvl_code).count loop
-                  if l_lvlids2(l_lvlids(i).lvl_code)(j) != l_lvlids(i).name then
-                     l_text := l_text 
-                        ||'<name>'
-                        ||dbms_xmlgen.convert(l_lvlids2(l_lvlids(i).lvl_code)(j), dbms_xmlgen.entity_encode)
-                        ||'</name>';
-                  end if;
-               end loop;
-               cwms_util.append(l_data, l_text||'</alternate-names>');
-               if l_lvlids(i).attr_name is null then
-                  cwms_util.append(l_data, '</location-level>');
-                  l_text := null;
-                  continue;
-               else
-                  cwms_util.append(l_data, '<attribute><name>'
-                  ||l_lvlids(i).attr_name
-                  ||'</name><values unit="'
-                  ||l_lvlids(i).attr_unit
-                  ||'">');
-                  l_text := null;
-               end if;
-            end if;
-            l_name := cwms_rounding.round_dt_f(l_lvlids(i).attr_value, '7777777777');
-            l_text := l_text||'<value>'||l_name||'</value>';
-         end loop;
-         cwms_util.append(l_data, '</location-level-catalog>');
-         l_xml := xmltype(l_data);
-         dbms_lob.createtemporary(l_data, true);
-         select xmlserialize(document l_xml as clob indent)
-           into l_data
-           from dual;
-      when l_format = 'JSON' then
-         ------------------
-         -- JSON Catalog --
-         ------------------
-         cwms_util.append(
-            l_data, 
-            '{"comment":"Catalog of location levels that are effective between '
-            ||cwms_util.get_xml_time(l_start, l_timezone)
-            ||' and '
-            ||cwms_util.get_xml_time(l_end, l_timezone)
-            ||'","location-level":[');
-         l_count := 0;
-         for i in 1..l_lvlids.count loop
-            if i = 1 
-               or l_lvlids(i).office != l_lvlids(i-1).office
-               or l_lvlids(i).name != l_lvlids(i-1).name
-               or nvl(l_lvlids(i).attr_name, '.') != nvl(l_lvlids(i-1).attr_name, '.')
-            then
-               if l_text is not null then
-                  cwms_util.append(l_data, substr(l_text, 1, length(l_text)-1)||']}}');
-               end if;
-               l_text := case i when 1 then '{"office":"' else ',{"office":"' end
-                  ||l_lvlids(i).office
-                  ||'","name":"'
-                  ||replace(l_lvlids(i).name, '"', '\"')
-                  ||'","alternate-names":[';
-               l_first := true;   
-               for j in 1..l_lvlids2(l_lvlids(i).lvl_code).count loop
-                  if l_lvlids2(l_lvlids(i).lvl_code)(j) != l_lvlids(i).name then
-                     case l_first
-                     when true then
-                        l_first := false;
-                        l_text := l_text ||'"'||replace(l_lvlids2(l_lvlids(i).lvl_code)(j), '"', '\"')||'"';
-                     else
-                        l_text := l_text ||',"'||replace(l_lvlids2(l_lvlids(i).lvl_code)(j), '"', '\"')||'"';
-                     end case;
-                  end if;
-               end loop;
-               l_text := l_text || ']';
-               if l_lvlids(i).attr_name is null then
-                  cwms_util.append(l_data, l_text||'}');
-                  l_text := null;
-                  continue;
-               else
-                  cwms_util.append(l_data, l_text||',"attribute":{"name":"'
-                  ||replace(l_lvlids(i).attr_name, '"', '\"')
-                  ||'","unit":"'
-                  ||replace(l_lvlids(i).attr_unit, '"', '\"')
-                  ||'","values":[');
-                  l_text := null;
-               end if;
-            end if;
-            l_name := cwms_rounding.round_dt_f(l_lvlids(i).attr_value, '7777777777');
-            l_text := l_text||regexp_replace(l_name, '(^|[^0-9])\.', '\10.')||',';
-         end loop;
-         cwms_util.append(l_data, ']}');
-      when l_format in ('TAB', 'CSV') then
-         ------------------------
-         -- TAB or CSV Catalog --
-         ------------------------
-         l_width := 30;
-         cwms_util.append(
-            l_data, 
-            '# Catalog of location levels that are effective between '
-            ||to_char(l_start, 'dd-MON-yyyy hh24:mi')
-            ||' and '
-            ||to_char(l_end, 'dd-MON-yyyy hh24:mi')
-            ||' ('
-            ||l_timezone
-            ||')'
-            ||chr(10));
-         l_count := 0;
-         for i in 1..l_lvlids.count loop
-            if i = 1 
-               or l_lvlids(i).office != l_lvlids(i-1).office
-               or l_lvlids(i).name != l_lvlids(i-1).name
-               or nvl(l_lvlids(i).attr_name, '.') != nvl(l_lvlids(i-1).attr_name, '.')
-            then
-               l_count := l_count + 1;
-               if l_text is not null then
-                  cwms_util.append(l_data, l_text);
-               end if;
-               l_text := chr(10)
-               ||rpad('# OFFICE', l_width, ' ')||chr(9)||l_lvlids(i).office||chr(10)
-               ||rpad('# NAME', l_width, ' ')  ||chr(9)||l_lvlids(i).name  ||chr(10);
-               for j in 1..l_lvlids2(l_lvlids(i).lvl_code).count loop
-                  if l_lvlids2(l_lvlids(i).lvl_code)(j) != l_lvlids(i).name then
-                     l_text := l_text||rpad('# ALTERNATE NAME', l_width, ' ')||chr(9)||l_lvlids2(l_lvlids(i).lvl_code)(j)||chr(10);
-                  end if;
-               end loop;
-               if l_lvlids(i).attr_name is not null then
-                  l_text := l_text
-                  ||rpad('# ATTRIBUTE NAME',  l_width, ' ')||chr(9)||l_lvlids(i).attr_name||chr(10)
-                  ||rpad('# ATTRIBUTE VALUE', l_width, ' ')||chr(9)||cwms_rounding.round_dt_f(l_lvlids(i).attr_value, '7777777777')||' '||l_lvlids(i).attr_unit||chr(10);
-               end if;
-            else
-               l_name := cwms_rounding.round_dt_f(l_lvlids(i).attr_value, '7777777777');
-               l_text := l_text||rpad('# ATTRIBUTE VALUE', l_width, ' ')||chr(9)||l_name||' '||l_lvlids(i).attr_unit||chr(10);
-               continue;
-            end if;
-            cwms_util.append(l_data, l_text);
-            l_text := null;
-         end loop;
-      end case;
-      p_results := l_data;
-   else
-      --------------------------------------------------------
-      -- retrieve location level values data in time window --
-      --------------------------------------------------------
-      l_width := 30;
-      l_ts1 := systimestamp;
-      l_elapsed_query := l_ts1 - l_ts1;
-      l_elapsed_format := l_elapsed_query;
-
-      case
-      when l_format = 'XML' then
-         ----------------
-         -- XML Header --
-         ----------------
-         cwms_util.append(
-            l_data, 
-            '<location-level-values start-time="'
-            ||cwms_util.get_xml_time(l_start, l_timezone)
-            ||'" end-time="'
-            ||cwms_util.get_xml_time(l_end, l_timezone)
-            ||'">');
-      when l_format = 'JSON' then
-         -----------------
-         -- JSON Header --
-         -----------------
-         cwms_util.append(
-            l_data, 
-            '{"comment":"Time window is '
-            ||cwms_util.get_xml_time(l_start, l_timezone)
-            ||' to '
-            ||cwms_util.get_xml_time(l_end, l_timezone)
-            ||'","location-levels":[');
-      when l_format in ('TAB', 'CSV') then
-         -----------------------
-         -- TAB or CSV Header --
-         -----------------------
-         cwms_util.append(
-            l_data, 
-            '# TIME WINDOW'
-            ||chr(10)
-            ||rpad('#   START', l_width, ' ')
-            ||chr(9)
-            ||to_char(l_start, 'dd-MON-yyyy hh24:mi')
-            ||chr(10)
-            ||rpad('#   END', l_width, ' ')
-            ||chr(9)
-            ||to_char(l_end, 'dd-MON-yyyy hh24:mi')
-            ||chr(10)
-            ||rpad('#   TIME ZONE', l_width, ' ')
-            ||chr(9)
-            ||l_timezone
-            ||chr(10));
-      end case;
-
-      l_ts2 := systimestamp;
-      l_elapsed_format := l_elapsed_format + l_ts2 - l_ts1;
-      l_ts1 := systimestamp;
-      
-      <<names>>
-      for i in 1..l_names.count loop
-         l_names(i) := upper(cwms_util.normalize_wildcards(l_names(i)));
-         l_parts := cwms_util.split_text(l_units(i), ';');
-         l_unit := case
-                   when upper(l_parts(1)) in ('EN', 'SI') then upper(l_parts(1))
-                   else l_parts(1)
-                   end;
-         l_attr_unit := case l_parts.count > 1
-                        when true then l_parts(2)
-                        else l_parts(1)
-                        end;
-         select distinct 
-                ll.location_level_code, 
-                o.office_id,
-                bl.base_location_id
-                ||substr('-', 1, length(pl.sub_location_id))
-                ||pl.sub_location_id
-                ||'.'
-                ||bp1.base_parameter_id
-                ||substr('-', 1, length(p1.sub_parameter_id))
-                ||p1.sub_parameter_id
-                ||'.'
-                ||pt1.parameter_type_id
-                ||'.'
-                ||d1.duration_id
-                ||'.'
-                ||sl.specified_level_id,
-                case
-                when l_unit = 'EN' then
-                   cwms_util.get_default_units(
-                      bp1.base_parameter_id
-                      ||substr('-', 1, length(p1.sub_parameter_id))
-                      ||p1.sub_parameter_id,
-                      'EN')
-                when l_unit = 'SI' then
-                   cwms_util.get_default_units(
-                      bp1.base_parameter_id
-                      ||substr('-', 1, length(p1.sub_parameter_id))
-                      ||p1.sub_parameter_id,
-                      'SI')
-                else
-                  l_unit
-                end,
-                bp2.base_parameter_id
-                ||substr('-', 1, length(p2.sub_parameter_id))
-                ||p2.sub_parameter_id
-                ||substr('.', 1, length(pt2.parameter_type_id))
-                ||pt2.parameter_type_id
-                ||substr('.', length(d2.duration_id))
-                ||d2.duration_id,
-                case
-                when l_attr_unit = 'EN' then
-                   cwms_util.convert_units(
-                      ll.attribute_value,
-                      cwms_util.get_default_units(
-                         bp2.base_parameter_id
-                         ||substr('-', 1, length(p2.sub_parameter_id))
-                         ||p2.sub_parameter_id,
-                         'SI'),
-                      cwms_util.get_default_units(
-                         bp2.base_parameter_id
-                         ||substr('-', 1, length(p2.sub_parameter_id))
-                         ||p2.sub_parameter_id,
-                         'EN'))
-                when l_attr_unit = 'SI' then
-                   ll.attribute_value
-                else
-                   cwms_util.convert_units(
-                      ll.attribute_value,
-                      cwms_util.get_default_units(
-                         bp2.base_parameter_id
-                         ||substr('-', 1, length(p2.sub_parameter_id))
-                         ||p2.sub_parameter_id,
-                         'SI'),
-                      l_attr_unit)
-                end,
-                case
-                when l_attr_unit = 'EN' then
-                   cwms_util.get_default_units(
-                      bp2.base_parameter_id
-                      ||substr('-', 1, length(p2.sub_parameter_id))
-                      ||p2.sub_parameter_id,
-                      'EN')
-                when l_attr_unit = 'SI' then
-                   cwms_util.get_default_units(
-                      bp2.base_parameter_id
-                      ||substr('-', 1, length(p2.sub_parameter_id))
-                      ||p2.sub_parameter_id,
-                      'SI')
-                else
-                  l_attr_unit
-                end
+   begin
+      if l_names is null then
+         -----------------------------------------
+         -- retrieve catalog of location levels --
+         -----------------------------------------
+         l_ts1 := systimestamp;
+         l_elapsed_format := l_ts1 - l_ts1;
+         select *
            bulk collect
            into l_lvlids
-           from at_location_level ll,
-                at_physical_location pl,
-                at_base_location bl,
-                cwms_base_parameter bp1,
-                cwms_base_parameter bp2,
-                at_parameter p1,
-                at_parameter p2,
-                cwms_parameter_type pt1,
-                cwms_parameter_type pt2,
-                cwms_duration d1,
-                cwms_duration d2,
-                at_specified_level sl,
-                cwms_office o
-          where upper(bl.base_location_id
-                ||substr('-', 1, length(pl.sub_location_id))
-                ||pl.sub_location_id
-                ||'.'
-                ||bp1.base_parameter_id
-                ||substr('-', 1, length(p1.sub_parameter_id))
-                ||p1.sub_parameter_id
-                ||'.'
-                ||pt1.parameter_type_id
-                ||'.'
-                ||d1.duration_id
-                ||'.'
-                ||sl.specified_level_id) like upper(l_names(i)) escape '\'
-            and pl.location_code = ll.location_code
-            and p1.parameter_code = ll.parameter_code
-            and pt1.parameter_type_code = ll.parameter_type_code
-            and d1.duration_code = ll.duration_code
-            and sl.specified_level_code = ll.specified_level_code
-            and ll.location_level_date < cwms_util.change_timezone(l_end, l_timezone, 'UTC')
-            and (ll.expiration_date is null or 
-                 ll.expiration_date > cwms_util.change_timezone(l_start, l_timezone, 'UTC')
+           from (select ll.location_level_code, 
+                        o.office_id,
+                        bl.base_location_id
+                        ||substr('-', 1, length(pl.sub_location_id))
+                        ||pl.sub_location_id
+                        ||'.'
+                        ||bp1.base_parameter_id
+                        ||substr('-', 1, length(p1.sub_parameter_id))
+                        ||p1.sub_parameter_id
+                        ||'.'
+                        ||pt1.parameter_type_id
+                        ||'.'
+                        ||d1.duration_id
+                        ||'.'
+                        ||sl.specified_level_id,
+                        case
+                        when l_unit = 'EN' then
+                           cwms_util.get_default_units(
+                              bp1.base_parameter_id
+                              ||substr('-', 1, length(p1.sub_parameter_id))
+                              ||p1.sub_parameter_id,
+                              'EN')
+                        when l_unit = 'SI' then
+                           cwms_util.get_default_units(
+                              bp1.base_parameter_id
+                              ||substr('-', 1, length(p1.sub_parameter_id))
+                              ||p1.sub_parameter_id,
+                              'SI')
+                        else
+                          l_unit
+                        end,
+                        bp2.base_parameter_id
+                        ||substr('-', 1, length(p2.sub_parameter_id))
+                        ||p2.sub_parameter_id
+                        ||substr('.', 1, length(pt2.parameter_type_id))
+                        ||pt2.parameter_type_id
+                        ||substr('.', length(d2.duration_id))
+                        ||d2.duration_id,
+                        case
+                        when l_unit = 'EN' then
+                           cwms_util.convert_units(
+                              ll.attribute_value,
+                              cwms_util.get_default_units(
+                                 bp2.base_parameter_id
+                                 ||substr('-', 1, length(p2.sub_parameter_id))
+                                 ||p2.sub_parameter_id,
+                                 'SI'),
+                              cwms_util.get_default_units(
+                                 bp2.base_parameter_id
+                                 ||substr('-', 1, length(p2.sub_parameter_id))
+                                 ||p2.sub_parameter_id,
+                                 'EN'))
+                        else
+                           ll.attribute_value
+                        end,
+                        case
+                        when l_unit = 'EN' then
+                           cwms_util.get_default_units(
+                              bp2.base_parameter_id
+                              ||substr('-', 1, length(p2.sub_parameter_id))
+                              ||p2.sub_parameter_id,
+                              'EN')
+                        else
+                           cwms_util.get_default_units(
+                              bp2.base_parameter_id
+                              ||substr('-', 1, length(p2.sub_parameter_id))
+                              ||p2.sub_parameter_id,
+                              'SI')
+                        end
+                   from at_location_level ll,
+                        at_physical_location pl,
+                        at_base_location bl,
+                        cwms_base_parameter bp1,
+                        cwms_base_parameter bp2,
+                        at_parameter p1,
+                        at_parameter p2,
+                        cwms_parameter_type pt1,
+                        cwms_parameter_type pt2,
+                        cwms_duration d1,
+                        cwms_duration d2,
+                        at_specified_level sl,
+                        cwms_office o
+                  where pl.location_code = ll.location_code
+                    and p1.parameter_code = ll.parameter_code
+                    and pt1.parameter_type_code = ll.parameter_type_code
+                    and d1.duration_code = ll.duration_code
+                    and sl.specified_level_code = ll.specified_level_code
+                    and ll.location_level_date < l_end_utc
+                    and (ll.expiration_date is null or 
+                         ll.expiration_date > l_start_utc
+                        )
+                    and (get_next_effective_date(ll.location_level_code) is null or
+                         get_next_effective_date(ll.location_level_code) > l_start_utc
+                        ) 
+                    and bl.base_location_code = pl.base_location_code
+                    and bp1.base_parameter_code = p1.base_parameter_code
+                    and o.office_code = bl.db_office_code
+                    and o.office_id like l_office_id escape '\'
+                    and p2.parameter_code(+) = ll.attribute_parameter_code
+                    and bp2.base_parameter_code(+) = p2.base_parameter_code
+                    and pt2.parameter_type_code(+) = ll.attribute_parameter_type_code
+                    and d2.duration_code(+) = ll.attribute_duration_code
+                 union 
+                 select ll.location_level_code, 
+                        o.office_id,
+                        lga.loc_alias_id
+                        ||'.'
+                        ||bp1.base_parameter_id
+                        ||substr('-', 1, length(p1.sub_parameter_id))
+                        ||p1.sub_parameter_id
+                        ||'.'
+                        ||pt1.parameter_type_id
+                        ||'.'
+                        ||d1.duration_id
+                        ||'.'
+                        ||sl.specified_level_id,
+                        case
+                        when l_unit = 'EN' then
+                           cwms_util.get_default_units(
+                              bp1.base_parameter_id
+                              ||substr('-', 1, length(p1.sub_parameter_id))
+                              ||p1.sub_parameter_id,
+                              'EN')
+                        when l_unit = 'SI' then
+                           cwms_util.get_default_units(
+                              bp1.base_parameter_id
+                              ||substr('-', 1, length(p1.sub_parameter_id))
+                              ||p1.sub_parameter_id,
+                              'SI')
+                        else
+                          l_unit
+                        end,
+                        bp2.base_parameter_id
+                        ||substr('-', 1, length(p2.sub_parameter_id))
+                        ||p2.sub_parameter_id
+                        ||substr('.', 1, length(pt2.parameter_type_id))
+                        ||pt2.parameter_type_id
+                        ||substr('.', length(d2.duration_id))
+                        ||d2.duration_id,
+                        case
+                        when l_unit = 'EN' then
+                           cwms_util.convert_units(
+                              ll.attribute_value,
+                              cwms_util.get_default_units(
+                                 bp2.base_parameter_id
+                                 ||substr('-', 1, length(p2.sub_parameter_id))
+                                 ||p2.sub_parameter_id,
+                                 'SI'),
+                              cwms_util.get_default_units(
+                                 bp2.base_parameter_id
+                                 ||substr('-', 1, length(p2.sub_parameter_id))
+                                 ||p2.sub_parameter_id,
+                                 'EN'))
+                        else
+                           ll.attribute_value
+                        end,
+                        case
+                        when l_unit = 'EN' then
+                           cwms_util.get_default_units(
+                              bp2.base_parameter_id
+                              ||substr('-', 1, length(p2.sub_parameter_id))
+                              ||p2.sub_parameter_id,
+                              'EN')
+                        else
+                           cwms_util.get_default_units(
+                              bp2.base_parameter_id
+                              ||substr('-', 1, length(p2.sub_parameter_id))
+                              ||p2.sub_parameter_id,
+                              'SI')
+                        end
+                   from at_location_level ll,
+                        at_loc_category lc,
+                        at_loc_group lg,
+                        at_loc_group_assignment lga,
+                        cwms_base_parameter bp1,
+                        cwms_base_parameter bp2,
+                        at_parameter p1,
+                        at_parameter p2,
+                        cwms_parameter_type pt1,
+                        cwms_parameter_type pt2,
+                        cwms_duration d1,
+                        cwms_duration d2,
+                        at_specified_level sl,
+                        cwms_office o
+                  where lga.location_code = ll.location_code
+                    and p1.parameter_code = ll.parameter_code
+                    and pt1.parameter_type_code = ll.parameter_type_code
+                    and d1.duration_code = ll.duration_code
+                    and sl.specified_level_code = ll.specified_level_code
+                    and ll.location_level_date < l_end_utc
+                    and (ll.expiration_date is null or 
+                         ll.expiration_date > l_start_utc
+                        )
+                    and (get_next_effective_date(ll.location_level_code) is null or
+                         get_next_effective_date(ll.location_level_code) > l_start_utc
+                        ) 
+                    and lga.loc_alias_id is not null
+                    and lg.loc_group_code = lga.loc_group_code
+                    and lc.loc_category_code = lg.loc_category_code
+                    and lc.loc_category_id = 'Agency Aliases'
+                    and bp1.base_parameter_code = p1.base_parameter_code
+                    and o.office_code = lga.office_code
+                    and o.office_id like l_office_id escape '\'
+                    and p2.parameter_code(+) = ll.attribute_parameter_code
+                    and bp2.base_parameter_code(+) = p2.base_parameter_code
+                    and pt2.parameter_type_code(+) = ll.attribute_parameter_type_code
+                    and d2.duration_code(+) = ll.attribute_duration_code
+                 union
+                 select ll.location_level_code, 
+                        o.office_id,
+                        lga.loc_alias_id
+                        ||substr('-', 1, length(pl.sub_location_id))
+                        ||pl.sub_location_id
+                        ||'.'
+                        ||bp1.base_parameter_id
+                        ||substr('-', 1, length(p1.sub_parameter_id))
+                        ||p1.sub_parameter_id
+                        ||'.'
+                        ||pt1.parameter_type_id
+                        ||'.'
+                        ||d1.duration_id
+                        ||'.'
+                        ||sl.specified_level_id,
+                        case
+                        when l_unit = 'EN' then
+                           cwms_util.get_default_units(
+                              bp1.base_parameter_id
+                              ||substr('-', 1, length(p1.sub_parameter_id))
+                              ||p1.sub_parameter_id,
+                              'EN')
+                        when l_unit = 'SI' then
+                           cwms_util.get_default_units(
+                              bp1.base_parameter_id
+                              ||substr('-', 1, length(p1.sub_parameter_id))
+                              ||p1.sub_parameter_id,
+                              'SI')
+                        else
+                          l_unit
+                        end,
+                        bp2.base_parameter_id
+                        ||substr('-', 1, length(p2.sub_parameter_id))
+                        ||p2.sub_parameter_id
+                        ||substr('.', 1, length(pt2.parameter_type_id))
+                        ||pt2.parameter_type_id
+                        ||substr('.', length(d2.duration_id))
+                        ||d2.duration_id,
+                        case
+                        when l_unit = 'EN' then
+                           cwms_util.convert_units(
+                              ll.attribute_value,
+                              cwms_util.get_default_units(
+                                 bp2.base_parameter_id
+                                 ||substr('-', 1, length(p2.sub_parameter_id))
+                                 ||p2.sub_parameter_id,
+                                 'SI'),
+                              cwms_util.get_default_units(
+                                 bp2.base_parameter_id
+                                 ||substr('-', 1, length(p2.sub_parameter_id))
+                                 ||p2.sub_parameter_id,
+                                 'EN'))
+                        else
+                           ll.attribute_value
+                        end,
+                        case
+                        when l_unit = 'EN' then
+                           cwms_util.get_default_units(
+                              bp2.base_parameter_id
+                              ||substr('-', 1, length(p2.sub_parameter_id))
+                              ||p2.sub_parameter_id,
+                              'EN')
+                        else
+                           cwms_util.get_default_units(
+                              bp2.base_parameter_id
+                              ||substr('-', 1, length(p2.sub_parameter_id))
+                              ||p2.sub_parameter_id,
+                              'SI')
+                        end
+                   from at_location_level ll,
+                        at_loc_category lc,
+                        at_loc_group lg,
+                        at_loc_group_assignment lga,
+                        at_physical_location pl,
+                        at_base_location bl,
+                        cwms_base_parameter bp1,
+                        cwms_base_parameter bp2,
+                        at_parameter p1,
+                        at_parameter p2,
+                        cwms_parameter_type pt1,
+                        cwms_parameter_type pt2,
+                        cwms_duration d1,
+                        cwms_duration d2,
+                        at_specified_level sl,
+                        cwms_office o
+                  where pl.location_code = ll.location_code
+                    and pl.sub_location_id is not null
+                    and bl.base_location_code = pl.base_location_code
+                    and bl.base_location_code = lga.location_code
+                    and p1.parameter_code = ll.parameter_code
+                    and pt1.parameter_type_code = ll.parameter_type_code
+                    and d1.duration_code = ll.duration_code
+                    and sl.specified_level_code = ll.specified_level_code
+                    and ll.location_level_date < l_end_utc
+                    and (ll.expiration_date is null or 
+                         ll.expiration_date > l_start_utc
+                        )
+                    and (get_next_effective_date(ll.location_level_code) is null or
+                         get_next_effective_date(ll.location_level_code) > l_start_utc
+                        ) 
+                    and lga.loc_alias_id is not null
+                    and lg.loc_group_code = lga.loc_group_code
+                    and lc.loc_category_code = lg.loc_category_code
+                    and lc.loc_category_id = 'Agency Aliases'
+                    and bp1.base_parameter_code = p1.base_parameter_code
+                    and o.office_code = lga.office_code
+                    and o.office_id like l_office_id escape '\'
+                    and p2.parameter_code(+) = ll.attribute_parameter_code
+                    and bp2.base_parameter_code(+) = p2.base_parameter_code
+                    and pt2.parameter_type_code(+) = ll.attribute_parameter_type_code
+                    and d2.duration_code(+) = ll.attribute_duration_code
                 )
-            and (get_next_effective_date(ll.location_level_code, l_timezone) is null or
-                 get_next_effective_date(ll.location_level_code, l_timezone) > l_start
-                ) 
-            and bl.base_location_code = pl.base_location_code
-            and bp1.base_parameter_code = p1.base_parameter_code
-            and o.office_code = bl.db_office_code
-            and o.office_id like l_office_id escape '\'
-            and p2.parameter_code(+) = ll.attribute_parameter_code
-            and bp2.base_parameter_code(+) = p2.base_parameter_code
-            and pt2.parameter_type_code(+) = ll.attribute_parameter_type_code
-            and d2.duration_code(+) = ll.attribute_duration_code
-         union  
-         select distinct
-                ll.location_level_code, 
-                o.office_id,
-                lga.loc_alias_id
-                ||'.'
-                ||bp1.base_parameter_id
-                ||substr('-', 1, length(p1.sub_parameter_id))
-                ||p1.sub_parameter_id
-                ||'.'
-                ||pt1.parameter_type_id
-                ||'.'
-                ||d1.duration_id
-                ||'.'
-                ||sl.specified_level_id,
-                case
-                when l_unit = 'EN' then
-                   cwms_util.get_default_units(
-                      bp1.base_parameter_id
-                      ||substr('-', 1, length(p1.sub_parameter_id))
-                      ||p1.sub_parameter_id,
-                      'EN')
-                when l_unit = 'SI' then
-                   cwms_util.get_default_units(
-                      bp1.base_parameter_id
-                      ||substr('-', 1, length(p1.sub_parameter_id))
-                      ||p1.sub_parameter_id,
-                      'SI')
-                else
-                  l_unit
-                end,
-                bp2.base_parameter_id
-                ||substr('-', 1, length(p2.sub_parameter_id))
-                ||p2.sub_parameter_id
-                ||substr('.', 1, length(pt2.parameter_type_id))
-                ||pt2.parameter_type_id
-                ||substr('.', length(d2.duration_id))
-                ||d2.duration_id,
-                case
-                when l_attr_unit = 'EN' then
-                   cwms_util.convert_units(
-                      ll.attribute_value,
-                      cwms_util.get_default_units(
-                         bp2.base_parameter_id
-                         ||substr('-', 1, length(p2.sub_parameter_id))
-                         ||p2.sub_parameter_id,
-                         'SI'),
-                      cwms_util.get_default_units(
-                         bp2.base_parameter_id
-                         ||substr('-', 1, length(p2.sub_parameter_id))
-                         ||p2.sub_parameter_id,
-                         'EN'))
-                when l_attr_unit = 'SI' then
-                   ll.attribute_value
-                else
-                   cwms_util.convert_units(
-                      ll.attribute_value,
-                      cwms_util.get_default_units(
-                         bp2.base_parameter_id
-                         ||substr('-', 1, length(p2.sub_parameter_id))
-                         ||p2.sub_parameter_id,
-                         'SI'),
-                      l_attr_unit)
-                end,
-                case
-                when l_attr_unit = 'EN' then
-                   cwms_util.get_default_units(
-                      bp2.base_parameter_id
-                      ||substr('-', 1, length(p2.sub_parameter_id))
-                      ||p2.sub_parameter_id,
-                      'EN')
-                when l_attr_unit = 'SI' then
-                   cwms_util.get_default_units(
-                      bp2.base_parameter_id
-                      ||substr('-', 1, length(p2.sub_parameter_id))
-                      ||p2.sub_parameter_id,
-                      'SI')
-                else
-                  l_attr_unit
-                end
-           from at_location_level ll,
-                at_loc_category lc,
-                at_loc_group lg,
-                at_loc_group_assignment lga,
-                cwms_base_parameter bp1,
-                cwms_base_parameter bp2,
-                at_parameter p1,
-                at_parameter p2,
-                cwms_parameter_type pt1,
-                cwms_parameter_type pt2,
-                cwms_duration d1,
-                cwms_duration d2,
-                at_specified_level sl,
-                cwms_office o
-          where upper(lga.loc_alias_id
-                ||'.'
-                ||bp1.base_parameter_id
-                ||substr('-', 1, length(p1.sub_parameter_id))
-                ||p1.sub_parameter_id
-                ||'.'
-                ||pt1.parameter_type_id
-                ||'.'
-                ||d1.duration_id
-                ||'.'
-                ||sl.specified_level_id) like upper(l_names(i)) escape '\'
-            and lga.location_code = ll.location_code
-            and p1.parameter_code = ll.parameter_code
-            and pt1.parameter_type_code = ll.parameter_type_code
-            and d1.duration_code = ll.duration_code
-            and sl.specified_level_code = ll.specified_level_code
-            and ll.location_level_date < cwms_util.change_timezone(l_end, l_timezone, 'UTC')
-            and (ll.expiration_date is null or 
-                 ll.expiration_date > cwms_util.change_timezone(l_start, l_timezone, 'UTC')
-                )
-            and (get_next_effective_date(ll.location_level_code, l_timezone) is null or
-                 get_next_effective_date(ll.location_level_code, l_timezone) > l_start
-                ) 
-            and lga.loc_alias_id is not null
-            and lg.loc_group_code = lga.loc_group_code
-            and lc.loc_category_code = lg.loc_category_code
-            and lc.loc_category_id = 'Agency Aliases'
-            and bp1.base_parameter_code = p1.base_parameter_code
-            and o.office_code = lga.office_code
-            and o.office_id like l_office_id escape '\'
-            and p2.parameter_code(+) = ll.attribute_parameter_code
-            and bp2.base_parameter_code(+) = p2.base_parameter_code
-            and pt2.parameter_type_code(+) = ll.attribute_parameter_type_code
-            and d2.duration_code(+) = ll.attribute_duration_code
-         union  
-         select distinct
-                ll.location_level_code, 
-                o.office_id,
-                lga.loc_alias_id
-                ||substr('-', 1, length(pl.sub_location_id))
-                ||pl.sub_location_id
-                ||'.'
-                ||bp1.base_parameter_id
-                ||substr('-', 1, length(p1.sub_parameter_id))
-                ||p1.sub_parameter_id
-                ||'.'
-                ||pt1.parameter_type_id
-                ||'.'
-                ||d1.duration_id
-                ||'.'
-                ||sl.specified_level_id,
-                case
-                when l_unit = 'EN' then
-                   cwms_util.get_default_units(
-                      bp1.base_parameter_id
-                      ||substr('-', 1, length(p1.sub_parameter_id))
-                      ||p1.sub_parameter_id,
-                      'EN')
-                when l_unit = 'SI' then
-                   cwms_util.get_default_units(
-                      bp1.base_parameter_id
-                      ||substr('-', 1, length(p1.sub_parameter_id))
-                      ||p1.sub_parameter_id,
-                      'SI')
-                else
-                  l_unit
-                end,
-                bp2.base_parameter_id
-                ||substr('-', 1, length(p2.sub_parameter_id))
-                ||p2.sub_parameter_id
-                ||substr('.', 1, length(pt2.parameter_type_id))
-                ||pt2.parameter_type_id
-                ||substr('.', length(d2.duration_id))
-                ||d2.duration_id,
-                case
-                when l_attr_unit = 'EN' then
-                   cwms_util.convert_units(
-                      ll.attribute_value,
-                      cwms_util.get_default_units(
-                         bp2.base_parameter_id
-                         ||substr('-', 1, length(p2.sub_parameter_id))
-                         ||p2.sub_parameter_id,
-                         'SI'),
-                      cwms_util.get_default_units(
-                         bp2.base_parameter_id
-                         ||substr('-', 1, length(p2.sub_parameter_id))
-                         ||p2.sub_parameter_id,
-                         'EN'))
-                when l_attr_unit = 'SI' then
-                   ll.attribute_value
-                else
-                   cwms_util.convert_units(
-                      ll.attribute_value,
-                      cwms_util.get_default_units(
-                         bp2.base_parameter_id
-                         ||substr('-', 1, length(p2.sub_parameter_id))
-                         ||p2.sub_parameter_id,
-                         'SI'),
-                      l_attr_unit)
-                end,
-                case
-                when l_attr_unit = 'EN' then
-                   cwms_util.get_default_units(
-                      bp2.base_parameter_id
-                      ||substr('-', 1, length(p2.sub_parameter_id))
-                      ||p2.sub_parameter_id,
-                      'EN')
-                when l_attr_unit = 'SI' then
-                   cwms_util.get_default_units(
-                      bp2.base_parameter_id
-                      ||substr('-', 1, length(p2.sub_parameter_id))
-                      ||p2.sub_parameter_id,
-                      'SI')
-                else
-                  l_attr_unit
-                end
-           from at_location_level ll,
-                at_loc_category lc,
-                at_loc_group lg,
-                at_loc_group_assignment lga,
-                at_physical_location pl,
-                at_base_location bl,
-                cwms_base_parameter bp1,
-                cwms_base_parameter bp2,
-                at_parameter p1,
-                at_parameter p2,
-                cwms_parameter_type pt1,
-                cwms_parameter_type pt2,
-                cwms_duration d1,
-                cwms_duration d2,
-                at_specified_level sl,
-                cwms_office o
-          where upper(lga.loc_alias_id
-                ||substr('-', 1, length(pl.sub_location_id))
-                ||pl.sub_location_id
-                ||'.'
-                ||bp1.base_parameter_id
-                ||substr('-', 1, length(p1.sub_parameter_id))
-                ||p1.sub_parameter_id
-                ||'.'
-                ||pt1.parameter_type_id
-                ||'.'
-                ||d1.duration_id
-                ||'.'
-                ||sl.specified_level_id) like upper(l_names(i)) escape '\'
-            and pl.location_code = ll.location_code
-            and pl.sub_location_id is not null
-            and bl.base_location_code = pl.base_location_code
-            and bl.base_location_code = lga.location_code
-            and p1.parameter_code = ll.parameter_code
-            and pt1.parameter_type_code = ll.parameter_type_code
-            and d1.duration_code = ll.duration_code
-            and sl.specified_level_code = ll.specified_level_code
-            and ll.location_level_date < cwms_util.change_timezone(l_end, l_timezone, 'UTC')
-            and (ll.expiration_date is null or 
-                 ll.expiration_date > cwms_util.change_timezone(l_start, l_timezone, 'UTC')
-                )
-            and (get_next_effective_date(ll.location_level_code, l_timezone) is null or
-                 get_next_effective_date(ll.location_level_code, l_timezone) > l_start
-                ) 
-            and lga.loc_alias_id is not null
-            and lg.loc_group_code = lga.loc_group_code
-            and lc.loc_category_code = lg.loc_category_code
-            and lc.loc_category_id = 'Agency Aliases'
-            and bp1.base_parameter_code = p1.base_parameter_code
-            and o.office_code = lga.office_code
-            and o.office_id like l_office_id escape '\'
-            and p2.parameter_code(+) = ll.attribute_parameter_code
-            and bp2.base_parameter_code(+) = p2.base_parameter_code
-            and pt2.parameter_type_code(+) = ll.attribute_parameter_type_code
-            and d2.duration_code(+) = ll.attribute_duration_code
           order by 2, 3, 5, 6;                
-   
-         l_lvlids2.delete;      
+         l_ts2 := systimestamp;
+         l_elapsed_query := l_ts2 - l_ts1;
+         if l_elapsed_query > l_max_time then
+            cwms_err.raise('ERROR', l_max_time_msg);
+         end if;
          for i in 1..l_lvlids.count loop
             if not l_lvlids2.exists(l_lvlids(i).lvl_code) then
-               l_parts := cwms_util.split_text(l_lvlids(i).name, '.');
-               l_code := cwms_loc.get_location_code(l_lvlids(i).office, l_parts(1));
-               select location_id||'.'||l_parts(2)||'.'||l_parts(3)||'.'||l_parts(4)||'.'||l_parts(5)
-                 bulk collect
-                 into l_lvlids2(l_lvlids(i).lvl_code)
-                 from (select location_id
-                         from (select bl.base_location_id
-                                      ||substr('-', 1, length(pl.sub_location_id))
-                                      ||pl.sub_location_id as location_id
-                                 from at_physical_location pl,
-                                      at_base_location bl
-                                where pl.location_code = l_code
-                                  and bl.base_location_code = pl.base_location_code
-                               union
-                               select loc_alias_id as location_id
-                                 from at_loc_group_assignment lga,
-                                      at_loc_group lg,
-                                      at_loc_category lc
-                                where lga.location_code = l_code        
-                                  and lg.loc_group_code = lga.loc_group_code
-                                  and lc.loc_category_code = lg.loc_category_code
-                                  and lc.loc_category_id = 'Agency Aliases'
-                               union
-                               select loc_alias_id
-                                      ||substr('-', 1, length(pl.sub_location_id))
-                                      ||pl.sub_location_id as location_id
-                                 from at_physical_location pl,
-                                      at_base_location bl,
-                                      at_loc_group_assignment lga,
-                                      at_loc_group lg,
-                                      at_loc_category lc
-                                where pl.location_code = l_code
-                                  and bl.base_location_code = pl.base_location_code
-                                  and lga.location_code = bl.base_location_code        
-                                  and lg.loc_group_code = lga.loc_group_code
-                                  and lc.loc_category_code = lg.loc_category_code
-                                  and lc.loc_category_id = 'Agency Aliases'
-                              )
-                        order by 1
-                      );
+               l_lvlids2(l_lvlids(i).lvl_code) := str_tab_t();
             end if;
+            l_lvlids2(l_lvlids(i).lvl_code).extend;
+            l_lvlids2(l_lvlids(i).lvl_code)(l_lvlids2(l_lvlids(i).lvl_code).count) := l_lvlids(i).name;
          end loop;
-   
-         l_level_values := ztsv_array_tab();
-         l_level_values.extend(l_lvlids.count);
-         <<levels>>
-         for j in 1..l_lvlids.count loop
-            l_name:= l_lvlids(j).name||'/'||l_lvlids(j).attr_name||'/'||l_lvlids(j).attr_value||'/'||l_lvlids(j).attr_unit;
-            if l_used.exists(l_name) then
-               continue levels;
-            end if;
-            l_used(l_name) := true;
-            l_parts := cwms_util.split_text(l_lvlids(j).name, '.');
-            if instr(upper(l_parts(2)), 'ELEV') = 1 then
-               l_datum := case
-                          when l_datums(i) != 'NATIVE' then l_datums(i)
-                          else cwms_loc.get_local_vert_datum_name_f(l_parts(1), l_lvlids(j).office)
-                          end;
-            else
-               l_datum := null;
-            end if;
-            l_level_values(j) := retrieve_location_level_values(
-               l_lvlids(j).name,
-               case
-               when l_datum is null then l_lvlids(j).unit
-               else 'U='||l_lvlids(j).unit||'|V='||l_datum
-               end,
-               l_start,
-               l_end,
-               l_lvlids(j).attr_name,
-               l_lvlids(j).attr_value,
-               l_lvlids(j).attr_unit,
-               l_timezone,
-               l_lvlids(j).office);
-         end loop;
-         
+         l_unique_count := l_lvlids2.count;
          l_ts2 := systimestamp;
-         l_elapsed_query := l_elapsed_query + l_ts2 - l_ts1;
+         l_elapsed_query := l_ts2 - l_ts1;
+         if l_elapsed_query > l_max_time then
+            cwms_err.raise('ERROR', l_max_time_msg);
+         end if;
          l_ts1 := systimestamp;
-   
+         
          case
          when l_format = 'XML' then
-            --------------
-            -- XML Data --
-            --------------
+            -----------------
+            -- XML Catalog --
+            -----------------
+            cwms_util.append(
+               l_data, 
+               '<location-levels-catalog><!-- Catalog of location levels that are effective between '
+               ||cwms_util.get_xml_time(l_start, l_timezone)
+               ||' and '
+               ||cwms_util.get_xml_time(l_end, l_timezone)
+               ||' -->');
             l_count := 0;
-            for j in 1..l_lvlids.count loop
-               if l_level_values(j) is not null then
+            for i in 1..l_lvlids.count loop
+               if i = 1 
+                  or l_lvlids(i).office != l_lvlids(i-1).office
+                  or l_lvlids(i).name != l_lvlids(i-1).name
+                  or nvl(l_lvlids(i).attr_name, '@') != nvl(l_lvlids(i-1).attr_name, '@')
+                  or nvl(cwms_rounding.round_dt_f(l_lvlids(i).attr_value, '7777777777'), '@') != nvl(cwms_rounding.round_dt_f(l_lvlids(i-1).attr_value, '7777777777'), '@')
+                  or nvl(l_lvlids(i).attr_unit, '@') != nvl(l_lvlids(i-1).attr_unit, '@') 
+               then
                   l_count := l_count + 1;
-                  l_parts := cwms_util.split_text(l_lvlids(j).name, '.');
-                  if instr(upper(l_parts(2)), 'ELEV') = 1 then
-                     l_name := cwms_loc.get_location_vertical_datum(l_parts(1), l_lvlids(j).office);
-                     case
-                     when l_name is null then
-                        l_datum := 'unknown';
-                        l_estimated := false;
-                     when l_datums(i) in ('NATIVE', l_name) then
-                        l_datum := l_name;
-                        l_estimated := false;
-                     else
-                        l_datum := l_datums(i);
-                        l_estimated := cwms_loc.is_vert_datum_offset_estimated(
-                           l_parts(1),
-                           l_name,
-                           l_datum,
-                           l_lvlids(j).office) = 'T';
-                     end case;
-                  else
-                     l_datum := null;
-                  end if;
-                  l_text := '<location-level><office>'
-                  ||l_lvlids(j).office
-                  ||'</office><name>'
-                  ||l_lvlids(j).name
-                  ||'</name><alternate-names>';
-                  for k in 1..l_lvlids2(l_lvlids(j).lvl_code).count loop
-                     if l_lvlids2(l_lvlids(j).lvl_code)(k) != l_lvlids(j).name then
-                        l_text := l_text
-                        ||'<name>'
-                        ||l_lvlids2(l_lvlids(j).lvl_code)(k)
-                        ||'</name>';
+                  cwms_util.append(
+                     l_data,
+                     '<location-level><office>'
+                     ||l_lvlids(i).office
+                     ||'</office><name>'
+                     ||dbms_xmlgen.convert(l_lvlids(i).name, dbms_xmlgen.entity_encode)
+                     ||'</name><alternate-names>'); 
+                  for j in 1..l_lvlids2(l_lvlids(i).lvl_code).count loop
+                     if l_lvlids2(l_lvlids(i).lvl_code)(j) != l_lvlids(i).name then
+                        cwms_util.append(
+                           l_data,
+                           '<name>'
+                           ||dbms_xmlgen.convert(l_lvlids2(l_lvlids(i).lvl_code)(j), dbms_xmlgen.entity_encode)
+                           ||'</name>');
                      end if;
                   end loop;
-                  if l_lvlids(j).attr_name is not null then
-                     l_text := l_text
-                     ||'<attribute><name>'
-                     ||l_lvlids(j).attr_name
-                     ||'</name>'
-                     ||'<value unit="'
-                     ||l_lvlids(j).attr_unit
-                     ||'">'
-                     ||cwms_rounding.round_dt_f(l_lvlids(j).attr_value, '7777777777')
-                     ||'</value></attribute>';
+                  cwms_util.append(l_data, l_text||'</alternate-names>');
+                  if l_lvlids(i).attr_name is not null then
+                     cwms_util.append(
+                        l_data, 
+                        '<attribute><name>'
+                        ||l_lvlids(i).attr_name
+                        ||'</name><value unit="'
+                        ||l_lvlids(i).attr_unit
+                        ||'">'
+                        ||cwms_rounding.round_dt_f(l_lvlids(i).attr_value, '7777777777')
+                        ||'</value></attribute>');
                   end if;
-                  l_text := l_text
-                  ||'</alternate-names><values unit="'
-                  ||l_lvlids(j).unit
-                  ||'"';
-                  if l_datum is not null then
-                     l_text := l_text
-                     ||' datum="'
-                     ||l_datum
-                     ||'" estimate='
-                     ||case l_estimated when true then '"true"' else '"false"' end;
-                  end if;
-                  l_text := l_text||'>';
-                  l_interp := null;
-                  for k in 1..l_level_values(j).count loop
-                     if length(l_text) > 16000 then
-                        cwms_util.append(l_data, l_text);
-                        l_text := null;
-                     end if;
-                     if l_level_values(j)(k).value is not null and l_level_values(j)(k).quality_code != nvl(l_interp, -1) then
-                        if l_interp is not null then
-                           l_text := l_text||chr(10)||'</segment>';
-                        end if;
-                        l_text := l_text
-                        ||'<segment interpolate="'
-                        ||case when l_level_values(j)(k).quality_code = 0 then 'false' else 'true' end
-                        ||'">';
-                     end if;
-                     if l_level_values(j)(k).value is null then
-                        if l_interp is not null then
-                           l_text := l_text||chr(10)||'</segment>';
-                        end if;
-                        l_interp := null;
-                     else
-                        l_text := l_text
-                        ||chr(10)
-                        ||cwms_util.get_xml_time(l_level_values(j)(k).date_time, l_timezone)
-                        ||' '
-                        ||cwms_rounding.round_dt_f(l_level_values(j)(k).value, '7777777777');
-                     end if;
-                     l_interp := case
-                                 when l_level_values(j)(k).value is null then null
-                                 else l_level_values(j)(k).quality_code
-                                 end;
-                  end loop;
-                  if l_interp is null then
-                     l_text := l_text||chr(10)||'</values></location-level>';
-                  else
-                     l_text := l_text||chr(10)||'</segment></values></location-level>';
-                  end if;
-                  cwms_util.append(l_data, l_text);
+                  cwms_util.append(l_data, '</location-level>');
+               end if;
+               if dbms_lob.getlength(l_data) > l_max_size then
+                  cwms_err.raise('ERROR', l_max_size_msg);
                end if;
             end loop;
+            cwms_util.append(l_data, '</location-levels-catalog>');
          when l_format = 'JSON' then
-            ---------------
-            -- JSON Data --
-            ---------------
+            ------------------
+            -- JSON Catalog --
+            ------------------
+            cwms_util.append(
+               l_data, 
+               '{"location-levels-catalog":{"comment":"Catalog of location levels that are effective between '
+               ||cwms_util.get_xml_time(l_start, l_timezone)
+               ||' and '
+               ||cwms_util.get_xml_time(l_end, l_timezone)
+               ||'","location-levels":[');
             l_count := 0;
-            for j in 1..l_lvlids.count loop
-               if l_level_values(j) is not null then
+            for i in 1..l_lvlids.count loop
+               if i = 1 
+                  or l_lvlids(i).office != l_lvlids(i-1).office
+                  or l_lvlids(i).name != l_lvlids(i-1).name
+                  or nvl(l_lvlids(i).attr_name, '@') != nvl(l_lvlids(i-1).attr_name, '@')
+                  or nvl(cwms_rounding.round_dt_f(l_lvlids(i).attr_value, '7777777777'), '@') != nvl(cwms_rounding.round_dt_f(l_lvlids(i-1).attr_value, '7777777777'), '@')
+                  or nvl(l_lvlids(i).attr_unit, '@') != nvl(l_lvlids(i-1).attr_unit, '@') 
+               then
                   l_count := l_count + 1;
-                  l_parts := cwms_util.split_text(l_lvlids(j).name, '.');
-                  if instr(upper(l_parts(2)), 'ELEV') = 1 then
-                     l_name := cwms_loc.get_location_vertical_datum(l_parts(1), l_lvlids(j).office);
-                     case
-                     when l_name is null then
-                        l_datum := 'unknown';
-                        l_estimated := false;
-                     when l_datums(i) in ('NATIVE', l_name) then
-                        l_datum := l_name;
-                        l_estimated := false;
-                     else
-                        l_datum := l_datums(i);
-                        l_estimated := cwms_loc.is_vert_datum_offset_estimated(
-                           l_parts(1),
-                           l_name,
-                           l_datum,
-                           l_lvlids(j).office) = 'T';
-                     end case;
-                  else
-                     l_datum := null;
-                  end if;
-                  l_text := case when l_count=1 then '{"office":"' else ',{"office":"' end
-                  ||l_lvlids(j).office
-                  ||'","name":"'
-                  ||l_lvlids(j).name
-                  ||'","alternate-names":["';
-                  select cwms_util.join_text(
-                     cast(multiset(select column_value 
-                                     from table(l_lvlids2(l_lvlids(j).lvl_code)) 
-                                    where column_value != l_lvlids(j).name
-                                  ) as str_tab_t), '","')
-                    into l_text2
-                    from dual;
-                  l_text := l_text
-                  ||l_text2
-                  ||'"]';
-                  if l_lvlids(j).attr_name is not null then
-                     l_text := l_text
-                     ||',"attribute":{"name":"'
-                     ||l_lvlids(j).attr_name
+                  cwms_util.append(
+                     l_data,
+                     case i when 1 then '{"office":"' else ',{"office":"' end
+                     ||l_lvlids(i).office
+                     ||'","name":"'
+                     ||replace(l_lvlids(i).name, '"', '\"')
+                     ||'","alternate-names":[');
+                  l_first := true;   
+                  for j in 1..l_lvlids2(l_lvlids(i).lvl_code).count loop
+                     if l_lvlids2(l_lvlids(i).lvl_code)(j) != l_lvlids(i).name then
+                        case l_first
+                        when true then
+                           l_first := false;
+                           cwms_util.append(l_data, '"'||replace(l_lvlids2(l_lvlids(i).lvl_code)(j), '"', '\"')||'"');
+                        else
+                           cwms_util.append(l_data, ',"'||replace(l_lvlids2(l_lvlids(i).lvl_code)(j), '"', '\"')||'"');
+                        end case;
+                     end if;
+                  end loop;
+                  cwms_util.append(l_data, ']');
+                  if l_lvlids(i).attr_name is not null then
+                     cwms_util.append(
+                     l_data, 
+                     ',"attribute":{"name":"'
+                     ||replace(l_lvlids(i).attr_name, '"', '\"')
                      ||'","unit":"'
-                     ||l_lvlids(j).attr_unit
+                     ||replace(l_lvlids(i).attr_unit, '"', '\"')
                      ||'","value":'
-                     ||regexp_replace(cwms_rounding.round_dt_f(l_lvlids(j).attr_value, '7777777777'), '(^|[^0-9])\.', '\10.')
-                     ||'}';
-                  end if;                  
-
-                  l_text := l_text
-                  ||',"values":{"unit":"'
-                  ||l_lvlids(j).unit
-                  ||'"';
-                  if l_datum is not null then
-                     l_text := l_text
-                     ||',"datum":"'
-                     ||l_datum
-                     ||'","estimated":'
-                     ||case l_estimated when true then '"true"' else '"false"' end;
+                     ||regexp_replace(cwms_rounding.round_dt_f(l_lvlids(i).attr_value, '7777777777'), '^\.', '0.')
+                     ||'}');
                   end if;
-                  l_text := l_text
-                  ||',"segments":[';
-                  declare
-                     l_interp_str str_tab_t := str_tab_t();
-                     l_vals       str_tab_tab_t := str_tab_tab_t();
-                  begin
+                  cwms_util.append(l_data, l_text||'}');
+               end if;
+               if dbms_lob.getlength(l_data) > l_max_size then
+                  cwms_err.raise('ERROR', l_max_size_msg);
+               end if;
+            end loop;
+            cwms_util.append(l_data, ']}}');
+         when l_format in ('TAB', 'CSV') then
+            ------------------------
+            -- TAB or CSV Catalog --
+            ------------------------
+            l_count := 0;
+            cwms_util.append(
+               l_data, 
+               '# Catalog of location levels that are effective between '
+               ||to_char(l_start, 'dd-Mon-yyyy hh24:mi')
+               ||' and '
+               ||to_char(l_end, 'dd-Mon-yyyy hh24:mi')
+               ||' '
+               ||l_timezone
+               ||chr(10)
+               ||chr(10)
+               ||'#Office'
+               ||chr(9)
+               ||'Name'
+               ||chr(9)
+               ||'Attribute'
+               ||chr(9)
+               ||'Alternate Names'
+               ||chr(10));
+            for i in 1..l_lvlids.count loop
+               if i = 1 or l_text != l_lvlids(i).office
+                  ||chr(9)
+                  ||l_lvlids(i).name
+                  ||chr(9)
+                  ||case l_lvlids(i).attr_name is not null
+                    when true then l_lvlids(i).attr_name
+                                   ||'='
+                                   ||cwms_rounding.round_dt_f(l_lvlids(i).attr_value, '7777777777')
+                                   ||' '
+                                   ||l_lvlids(i).attr_unit
+                    else null
+                    end
+               then
+                  l_count := l_count + 1;
+                  l_text := l_lvlids(i).office
+                  ||chr(9)
+                  ||l_lvlids(i).name
+                  ||chr(9)
+                  ||case l_lvlids(i).attr_name is not null
+                    when true then l_lvlids(i).attr_name
+                                   ||'='
+                                   ||cwms_rounding.round_dt_f(l_lvlids(i).attr_value, '7777777777')
+                                   ||' '
+                                   ||l_lvlids(i).attr_unit
+                    else null
+                    end;
+                  cwms_util.append(l_data, l_text);
+                     for j in 1..l_lvlids2(l_lvlids(i).lvl_code).count loop
+                        if l_lvlids2(l_lvlids(i).lvl_code)(j) != l_lvlids(i).name then
+                           cwms_util.append(l_data, chr(9)||l_lvlids2(l_lvlids(i).lvl_code)(j));
+                        end if;
+                     end loop;
+                  cwms_util.append(l_data, chr(10));
+               end if;
+               if dbms_lob.getlength(l_data) > l_max_size then
+                  cwms_err.raise('ERROR', l_max_size_msg);
+               end if;
+            end loop;
+         end case;
+         p_results := l_data;
+         
+         l_ts2 := systimestamp;
+         l_elapsed_format := l_ts2 - l_ts1;
+      else
+         --------------------------------------------------------
+         -- retrieve location level values data in time window --
+         --------------------------------------------------------
+         l_ts1 := systimestamp;
+         l_elapsed_query := l_ts1 - l_ts1;
+         l_elapsed_format := l_elapsed_query;
+         l_names_sql := str_tab_t();
+         l_names_sql.extend(l_names.count);
+         l_count := 0;
+         <<names>>
+         for i in 1..l_names.count loop
+            l_names_sql(i) := upper(cwms_util.normalize_wildcards(l_names(i)));
+            l_parts := cwms_util.split_text(l_units(i), ';');
+            l_unit := case
+                      when upper(l_parts(1)) in ('EN', 'SI') then upper(l_parts(1))
+                      else l_parts(1)
+                      end;
+            l_attr_unit := case l_parts.count > 1
+                           when true then l_parts(2)
+                           else l_parts(1)
+                           end;
+            select distinct 
+                   ll.location_level_code, 
+                   o.office_id,
+                   bl.base_location_id
+                   ||substr('-', 1, length(pl.sub_location_id))
+                   ||pl.sub_location_id
+                   ||'.'
+                   ||bp1.base_parameter_id
+                   ||substr('-', 1, length(p1.sub_parameter_id))
+                   ||p1.sub_parameter_id
+                   ||'.'
+                   ||pt1.parameter_type_id
+                   ||'.'
+                   ||d1.duration_id
+                   ||'.'
+                   ||sl.specified_level_id,
+                   case
+                   when l_unit = 'EN' then
+                      cwms_util.get_default_units(
+                         bp1.base_parameter_id
+                         ||substr('-', 1, length(p1.sub_parameter_id))
+                         ||p1.sub_parameter_id,
+                         'EN')
+                   when l_unit = 'SI' then
+                      cwms_util.get_default_units(
+                         bp1.base_parameter_id
+                         ||substr('-', 1, length(p1.sub_parameter_id))
+                         ||p1.sub_parameter_id,
+                         'SI')
+                   else
+                     l_unit
+                   end,
+                   bp2.base_parameter_id
+                   ||substr('-', 1, length(p2.sub_parameter_id))
+                   ||p2.sub_parameter_id
+                   ||substr('.', 1, length(pt2.parameter_type_id))
+                   ||pt2.parameter_type_id
+                   ||substr('.', length(d2.duration_id))
+                   ||d2.duration_id,
+                   case
+                   when l_attr_unit = 'EN' then
+                      cwms_util.convert_units(
+                         ll.attribute_value,
+                         cwms_util.get_default_units(
+                            bp2.base_parameter_id
+                            ||substr('-', 1, length(p2.sub_parameter_id))
+                            ||p2.sub_parameter_id,
+                            'SI'),
+                         cwms_util.get_default_units(
+                            bp2.base_parameter_id
+                            ||substr('-', 1, length(p2.sub_parameter_id))
+                            ||p2.sub_parameter_id,
+                            'EN'))
+                   when l_attr_unit = 'SI' then
+                      ll.attribute_value
+                   else
+                      cwms_util.convert_units(
+                         ll.attribute_value,
+                         cwms_util.get_default_units(
+                            bp2.base_parameter_id
+                            ||substr('-', 1, length(p2.sub_parameter_id))
+                            ||p2.sub_parameter_id,
+                            'SI'),
+                         l_attr_unit)
+                   end,
+                   case
+                   when l_attr_unit = 'EN' then
+                      cwms_util.get_default_units(
+                         bp2.base_parameter_id
+                         ||substr('-', 1, length(p2.sub_parameter_id))
+                         ||p2.sub_parameter_id,
+                         'EN')
+                   when l_attr_unit = 'SI' then
+                      cwms_util.get_default_units(
+                         bp2.base_parameter_id
+                         ||substr('-', 1, length(p2.sub_parameter_id))
+                         ||p2.sub_parameter_id,
+                         'SI')
+                   else
+                     l_attr_unit
+                   end
+              bulk collect
+              into l_lvlids
+              from at_location_level ll,
+                   at_physical_location pl,
+                   at_base_location bl,
+                   cwms_base_parameter bp1,
+                   cwms_base_parameter bp2,
+                   at_parameter p1,
+                   at_parameter p2,
+                   cwms_parameter_type pt1,
+                   cwms_parameter_type pt2,
+                   cwms_duration d1,
+                   cwms_duration d2,
+                   at_specified_level sl,
+                   cwms_office o
+             where upper(bl.base_location_id
+                   ||substr('-', 1, length(pl.sub_location_id))
+                   ||pl.sub_location_id
+                   ||'.'
+                   ||bp1.base_parameter_id
+                   ||substr('-', 1, length(p1.sub_parameter_id))
+                   ||p1.sub_parameter_id
+                   ||'.'
+                   ||pt1.parameter_type_id
+                   ||'.'
+                   ||d1.duration_id
+                   ||'.'
+                   ||sl.specified_level_id) like upper(l_names_sql(i)) escape '\'
+               and pl.location_code = ll.location_code
+               and p1.parameter_code = ll.parameter_code
+               and pt1.parameter_type_code = ll.parameter_type_code
+               and d1.duration_code = ll.duration_code
+               and sl.specified_level_code = ll.specified_level_code
+               and ll.location_level_date < cwms_util.change_timezone(l_end, l_timezone, 'UTC')
+               and (ll.expiration_date is null or 
+                    ll.expiration_date > cwms_util.change_timezone(l_start, l_timezone, 'UTC')
+                   )
+               and (get_next_effective_date(ll.location_level_code, l_timezone) is null or
+                    get_next_effective_date(ll.location_level_code, l_timezone) > l_start
+                   ) 
+               and bl.base_location_code = pl.base_location_code
+               and bp1.base_parameter_code = p1.base_parameter_code
+               and o.office_code = bl.db_office_code
+               and o.office_id like l_office_id escape '\'
+               and p2.parameter_code(+) = ll.attribute_parameter_code
+               and bp2.base_parameter_code(+) = p2.base_parameter_code
+               and pt2.parameter_type_code(+) = ll.attribute_parameter_type_code
+               and d2.duration_code(+) = ll.attribute_duration_code
+            union  
+            select distinct
+                   ll.location_level_code, 
+                   o.office_id,
+                   lga.loc_alias_id
+                   ||'.'
+                   ||bp1.base_parameter_id
+                   ||substr('-', 1, length(p1.sub_parameter_id))
+                   ||p1.sub_parameter_id
+                   ||'.'
+                   ||pt1.parameter_type_id
+                   ||'.'
+                   ||d1.duration_id
+                   ||'.'
+                   ||sl.specified_level_id,
+                   case
+                   when l_unit = 'EN' then
+                      cwms_util.get_default_units(
+                         bp1.base_parameter_id
+                         ||substr('-', 1, length(p1.sub_parameter_id))
+                         ||p1.sub_parameter_id,
+                         'EN')
+                   when l_unit = 'SI' then
+                      cwms_util.get_default_units(
+                         bp1.base_parameter_id
+                         ||substr('-', 1, length(p1.sub_parameter_id))
+                         ||p1.sub_parameter_id,
+                         'SI')
+                   else
+                     l_unit
+                   end,
+                   bp2.base_parameter_id
+                   ||substr('-', 1, length(p2.sub_parameter_id))
+                   ||p2.sub_parameter_id
+                   ||substr('.', 1, length(pt2.parameter_type_id))
+                   ||pt2.parameter_type_id
+                   ||substr('.', length(d2.duration_id))
+                   ||d2.duration_id,
+                   case
+                   when l_attr_unit = 'EN' then
+                      cwms_util.convert_units(
+                         ll.attribute_value,
+                         cwms_util.get_default_units(
+                            bp2.base_parameter_id
+                            ||substr('-', 1, length(p2.sub_parameter_id))
+                            ||p2.sub_parameter_id,
+                            'SI'),
+                         cwms_util.get_default_units(
+                            bp2.base_parameter_id
+                            ||substr('-', 1, length(p2.sub_parameter_id))
+                            ||p2.sub_parameter_id,
+                            'EN'))
+                   when l_attr_unit = 'SI' then
+                      ll.attribute_value
+                   else
+                      cwms_util.convert_units(
+                         ll.attribute_value,
+                         cwms_util.get_default_units(
+                            bp2.base_parameter_id
+                            ||substr('-', 1, length(p2.sub_parameter_id))
+                            ||p2.sub_parameter_id,
+                            'SI'),
+                         l_attr_unit)
+                   end,
+                   case
+                   when l_attr_unit = 'EN' then
+                      cwms_util.get_default_units(
+                         bp2.base_parameter_id
+                         ||substr('-', 1, length(p2.sub_parameter_id))
+                         ||p2.sub_parameter_id,
+                         'EN')
+                   when l_attr_unit = 'SI' then
+                      cwms_util.get_default_units(
+                         bp2.base_parameter_id
+                         ||substr('-', 1, length(p2.sub_parameter_id))
+                         ||p2.sub_parameter_id,
+                         'SI')
+                   else
+                     l_attr_unit
+                   end
+              from at_location_level ll,
+                   at_loc_category lc,
+                   at_loc_group lg,
+                   at_loc_group_assignment lga,
+                   cwms_base_parameter bp1,
+                   cwms_base_parameter bp2,
+                   at_parameter p1,
+                   at_parameter p2,
+                   cwms_parameter_type pt1,
+                   cwms_parameter_type pt2,
+                   cwms_duration d1,
+                   cwms_duration d2,
+                   at_specified_level sl,
+                   cwms_office o
+             where upper(lga.loc_alias_id
+                   ||'.'
+                   ||bp1.base_parameter_id
+                   ||substr('-', 1, length(p1.sub_parameter_id))
+                   ||p1.sub_parameter_id
+                   ||'.'
+                   ||pt1.parameter_type_id
+                   ||'.'
+                   ||d1.duration_id
+                   ||'.'
+                   ||sl.specified_level_id) like upper(l_names_sql(i)) escape '\'
+               and lga.location_code = ll.location_code
+               and p1.parameter_code = ll.parameter_code
+               and pt1.parameter_type_code = ll.parameter_type_code
+               and d1.duration_code = ll.duration_code
+               and sl.specified_level_code = ll.specified_level_code
+               and ll.location_level_date < cwms_util.change_timezone(l_end, l_timezone, 'UTC')
+               and (ll.expiration_date is null or 
+                    ll.expiration_date > cwms_util.change_timezone(l_start, l_timezone, 'UTC')
+                   )
+               and (get_next_effective_date(ll.location_level_code, l_timezone) is null or
+                    get_next_effective_date(ll.location_level_code, l_timezone) > l_start
+                   ) 
+               and lga.loc_alias_id is not null
+               and lg.loc_group_code = lga.loc_group_code
+               and lc.loc_category_code = lg.loc_category_code
+               and lc.loc_category_id = 'Agency Aliases'
+               and bp1.base_parameter_code = p1.base_parameter_code
+               and o.office_code = lga.office_code
+               and o.office_id like l_office_id escape '\'
+               and p2.parameter_code(+) = ll.attribute_parameter_code
+               and bp2.base_parameter_code(+) = p2.base_parameter_code
+               and pt2.parameter_type_code(+) = ll.attribute_parameter_type_code
+               and d2.duration_code(+) = ll.attribute_duration_code
+            union  
+            select distinct
+                   ll.location_level_code, 
+                   o.office_id,
+                   lga.loc_alias_id
+                   ||substr('-', 1, length(pl.sub_location_id))
+                   ||pl.sub_location_id
+                   ||'.'
+                   ||bp1.base_parameter_id
+                   ||substr('-', 1, length(p1.sub_parameter_id))
+                   ||p1.sub_parameter_id
+                   ||'.'
+                   ||pt1.parameter_type_id
+                   ||'.'
+                   ||d1.duration_id
+                   ||'.'
+                   ||sl.specified_level_id,
+                   case
+                   when l_unit = 'EN' then
+                      cwms_util.get_default_units(
+                         bp1.base_parameter_id
+                         ||substr('-', 1, length(p1.sub_parameter_id))
+                         ||p1.sub_parameter_id,
+                         'EN')
+                   when l_unit = 'SI' then
+                      cwms_util.get_default_units(
+                         bp1.base_parameter_id
+                         ||substr('-', 1, length(p1.sub_parameter_id))
+                         ||p1.sub_parameter_id,
+                         'SI')
+                   else
+                     l_unit
+                   end,
+                   bp2.base_parameter_id
+                   ||substr('-', 1, length(p2.sub_parameter_id))
+                   ||p2.sub_parameter_id
+                   ||substr('.', 1, length(pt2.parameter_type_id))
+                   ||pt2.parameter_type_id
+                   ||substr('.', length(d2.duration_id))
+                   ||d2.duration_id,
+                   case
+                   when l_attr_unit = 'EN' then
+                      cwms_util.convert_units(
+                         ll.attribute_value,
+                         cwms_util.get_default_units(
+                            bp2.base_parameter_id
+                            ||substr('-', 1, length(p2.sub_parameter_id))
+                            ||p2.sub_parameter_id,
+                            'SI'),
+                         cwms_util.get_default_units(
+                            bp2.base_parameter_id
+                            ||substr('-', 1, length(p2.sub_parameter_id))
+                            ||p2.sub_parameter_id,
+                            'EN'))
+                   when l_attr_unit = 'SI' then
+                      ll.attribute_value
+                   else
+                      cwms_util.convert_units(
+                         ll.attribute_value,
+                         cwms_util.get_default_units(
+                            bp2.base_parameter_id
+                            ||substr('-', 1, length(p2.sub_parameter_id))
+                            ||p2.sub_parameter_id,
+                            'SI'),
+                         l_attr_unit)
+                   end,
+                   case
+                   when l_attr_unit = 'EN' then
+                      cwms_util.get_default_units(
+                         bp2.base_parameter_id
+                         ||substr('-', 1, length(p2.sub_parameter_id))
+                         ||p2.sub_parameter_id,
+                         'EN')
+                   when l_attr_unit = 'SI' then
+                      cwms_util.get_default_units(
+                         bp2.base_parameter_id
+                         ||substr('-', 1, length(p2.sub_parameter_id))
+                         ||p2.sub_parameter_id,
+                         'SI')
+                   else
+                     l_attr_unit
+                   end
+              from at_location_level ll,
+                   at_loc_category lc,
+                   at_loc_group lg,
+                   at_loc_group_assignment lga,
+                   at_physical_location pl,
+                   at_base_location bl,
+                   cwms_base_parameter bp1,
+                   cwms_base_parameter bp2,
+                   at_parameter p1,
+                   at_parameter p2,
+                   cwms_parameter_type pt1,
+                   cwms_parameter_type pt2,
+                   cwms_duration d1,
+                   cwms_duration d2,
+                   at_specified_level sl,
+                   cwms_office o
+             where upper(lga.loc_alias_id
+                   ||substr('-', 1, length(pl.sub_location_id))
+                   ||pl.sub_location_id
+                   ||'.'
+                   ||bp1.base_parameter_id
+                   ||substr('-', 1, length(p1.sub_parameter_id))
+                   ||p1.sub_parameter_id
+                   ||'.'
+                   ||pt1.parameter_type_id
+                   ||'.'
+                   ||d1.duration_id
+                   ||'.'
+                   ||sl.specified_level_id) like upper(l_names_sql(i)) escape '\'
+               and pl.location_code = ll.location_code
+               and pl.sub_location_id is not null
+               and bl.base_location_code = pl.base_location_code
+               and bl.base_location_code = lga.location_code
+               and p1.parameter_code = ll.parameter_code
+               and pt1.parameter_type_code = ll.parameter_type_code
+               and d1.duration_code = ll.duration_code
+               and sl.specified_level_code = ll.specified_level_code
+               and ll.location_level_date < cwms_util.change_timezone(l_end, l_timezone, 'UTC')
+               and (ll.expiration_date is null or 
+                    ll.expiration_date > cwms_util.change_timezone(l_start, l_timezone, 'UTC')
+                   )
+               and (get_next_effective_date(ll.location_level_code, l_timezone) is null or
+                    get_next_effective_date(ll.location_level_code, l_timezone) > l_start
+                   ) 
+               and lga.loc_alias_id is not null
+               and lg.loc_group_code = lga.loc_group_code
+               and lc.loc_category_code = lg.loc_category_code
+               and lc.loc_category_id = 'Agency Aliases'
+               and bp1.base_parameter_code = p1.base_parameter_code
+               and o.office_code = lga.office_code
+               and o.office_id like l_office_id escape '\'
+               and p2.parameter_code(+) = ll.attribute_parameter_code
+               and bp2.base_parameter_code(+) = p2.base_parameter_code
+               and pt2.parameter_type_code(+) = ll.attribute_parameter_type_code
+               and d2.duration_code(+) = ll.attribute_duration_code
+             order by 2, 3, 5, 6;
+             
+            l_ts2 := systimestamp;
+            l_elapsed_query := l_ts2 - l_ts1;
+            if l_elapsed_query > l_max_time then
+               cwms_err.raise('ERROR', l_max_time_msg);
+            end if;
+      
+            l_lvlids2.delete;      
+            for i in 1..l_lvlids.count loop
+               if not l_lvlids2.exists(l_lvlids(i).lvl_code) then
+                  l_parts := cwms_util.split_text(l_lvlids(i).name, '.');
+                  l_code := cwms_loc.get_location_code(l_lvlids(i).office, l_parts(1));
+                  select location_id||'.'||l_parts(2)||'.'||l_parts(3)||'.'||l_parts(4)||'.'||l_parts(5)
+                    bulk collect
+                    into l_lvlids2(l_lvlids(i).lvl_code)
+                    from (select location_id
+                            from (select bl.base_location_id
+                                         ||substr('-', 1, length(pl.sub_location_id))
+                                         ||pl.sub_location_id as location_id
+                                    from at_physical_location pl,
+                                         at_base_location bl
+                                   where pl.location_code = l_code
+                                     and bl.base_location_code = pl.base_location_code
+                                  union
+                                  select loc_alias_id as location_id
+                                    from at_loc_group_assignment lga,
+                                         at_loc_group lg,
+                                         at_loc_category lc
+                                   where lga.location_code = l_code        
+                                     and lg.loc_group_code = lga.loc_group_code
+                                     and lc.loc_category_code = lg.loc_category_code
+                                     and lc.loc_category_id = 'Agency Aliases'
+                                  union
+                                  select loc_alias_id
+                                         ||substr('-', 1, length(pl.sub_location_id))
+                                         ||pl.sub_location_id as location_id
+                                    from at_physical_location pl,
+                                         at_base_location bl,
+                                         at_loc_group_assignment lga,
+                                         at_loc_group lg,
+                                         at_loc_category lc
+                                   where pl.location_code = l_code
+                                     and bl.base_location_code = pl.base_location_code
+                                     and lga.location_code = bl.base_location_code        
+                                     and lg.loc_group_code = lga.loc_group_code
+                                     and lc.loc_category_code = lg.loc_category_code
+                                     and lc.loc_category_id = 'Agency Aliases'
+                                 )
+                           order by 1
+                         );
+               end if;
+            end loop;
+            l_unique_count := l_unique_count + l_lvlids2.count;
+            l_ts2 := systimestamp;
+            l_elapsed_query := l_ts2 - l_ts1;
+            if l_elapsed_query > l_max_time then
+               cwms_err.raise('ERROR', l_max_time_msg);
+            end if;
+      
+            l_level_values := ztsv_array_tab();
+            l_level_values.extend(l_lvlids.count);
+            <<levels>>
+            for j in 1..l_lvlids.count loop
+               l_name:= l_lvlids(j).name||'/'||l_lvlids(j).attr_name||'/'||l_lvlids(j).attr_value||'/'||l_lvlids(j).attr_unit;
+               if l_used.exists(l_name) then
+                  continue levels;
+               end if;
+               l_used(l_name) := true;
+               l_parts := cwms_util.split_text(l_lvlids(j).name, '.');
+               if instr(upper(l_parts(2)), 'ELEV') = 1 then
+                  l_datum := case
+                             when l_datums(i) != 'NATIVE' then l_datums(i)
+                             else cwms_loc.get_local_vert_datum_name_f(l_parts(1), l_lvlids(j).office)
+                             end;
+               else
+                  l_datum := null;
+               end if;
+               l_level_values(j) := retrieve_location_level_values(
+                  l_lvlids(j).name,
+                  case
+                  when l_datum is null then l_lvlids(j).unit
+                  else 'U='||l_lvlids(j).unit||'|V='||l_datum
+                  end,
+                  l_start,
+                  l_end,
+                  l_lvlids(j).attr_name,
+                  l_lvlids(j).attr_value,
+                  l_lvlids(j).attr_unit,
+                  l_timezone,
+                  l_lvlids(j).office);
+            end loop;
+            
+            l_ts2 := systimestamp;
+            l_elapsed_query := l_ts2 - l_ts1;
+            if l_elapsed_query > l_max_time then
+               cwms_err.raise('ERROR', l_max_time_msg);
+            end if;
+            l_ts1 := systimestamp;
+      
+            case
+            when l_format = 'XML' then
+               --------------
+               -- XML Data --
+               --------------
+               for j in 1..l_lvlids.count loop
+                  if l_level_values(j) is not null then
+                     l_count := l_count + 1;
+                     l_parts := cwms_util.split_text(l_lvlids(j).name, '.');
+                     if instr(upper(l_parts(2)), 'ELEV') = 1 then
+                        l_name := cwms_loc.get_location_vertical_datum(l_parts(1), l_lvlids(j).office);
+                        case
+                        when l_name is null then
+                           l_datum := 'unknown';
+                           l_estimated := false;
+                        when l_datums(i) in ('NATIVE', l_name) then
+                           l_datum := l_name;
+                           l_estimated := false;
+                        else
+                           l_datum := l_datums(i);
+                           l_estimated := cwms_loc.is_vert_datum_offset_estimated(
+                              l_parts(1),
+                              l_name,
+                              l_datum,
+                              l_lvlids(j).office) = 'T';
+                        end case;
+                     else
+                        l_datum := null;
+                     end if;
+                     if l_count = 1 then
+                        cwms_util.append(l_data, '<location-levels>');
+                     end if;
+                     cwms_util.append(
+                        l_data,
+                        '<location-level><office>'
+                        ||l_lvlids(j).office
+                        ||'</office><name>'
+                        ||l_lvlids(j).name
+                        ||'</name><alternate-names>');
+                     for k in 1..l_lvlids2(l_lvlids(j).lvl_code).count loop
+                        if l_lvlids2(l_lvlids(j).lvl_code)(k) != l_lvlids(j).name then
+                           cwms_util.append(
+                              l_data,
+                              '<name>'
+                              ||l_lvlids2(l_lvlids(j).lvl_code)(k)
+                              ||'</name>');
+                        end if;
+                     end loop;
+                     if l_lvlids(j).attr_name is not null then
+                        cwms_util.append(
+                           l_data,
+                           '<attribute><name>'
+                           ||l_lvlids(j).attr_name
+                           ||'</name>'
+                           ||'<value unit="'
+                           ||l_lvlids(j).attr_unit
+                           ||'">'
+                           ||cwms_rounding.round_dt_f(l_lvlids(j).attr_value, '7777777777')
+                           ||'</value></attribute>');
+                     end if;
+                     cwms_util.append(
+                        l_data,
+                        '</alternate-names><values unit="'
+                        ||l_lvlids(j).unit
+                        ||'"');
+                     if l_datum is not null then
+                        cwms_util.append(
+                           l_data,
+                           ' datum="'
+                           ||l_datum
+                           ||'" estimate='
+                           ||case l_estimated when true then '"true"' else '"false"' end);
+                     end if;
+                     cwms_util.append(l_data, '>');
+                     l_segments := seg_tab_t();
+                     l_interp := -1;
+                     for k in 1..l_level_values(j).count loop
+                        if l_level_values(j)(k).quality_code != l_interp then
+                           l_segments.extend;
+                           l_segments(l_segments.count).start_time := l_level_values(j)(k).date_time;
+                           l_segments(l_segments.count).first_index := k;
+                           l_segments(l_segments.count).interp := case when l_level_values(j)(k).quality_code = 0 then 'false' else 'true' end;
+                           l_interp := l_level_values(j)(k).quality_code;
+                        end if;
+                        l_segments(l_segments.count).last_index := k;
+                        l_segments(l_segments.count).end_time := l_level_values(j)(k).date_time;
+                     end loop;
+                     for k in 1..l_segments.count loop
+                        cwms_util.append(
+                           l_data,
+                           '<segment position="'
+                           ||k
+                           ||'" interpolate="'
+                           ||l_segments(k).interp
+                           ||'">'
+                           ||chr(10));
+                        for m in l_segments(k).first_index..l_segments(k).last_index loop
+                           continue when m > l_segments(k).first_index
+                                     and m < l_segments(k).last_index
+                                     and l_level_values(j)(m).value = l_level_values(j)(m-1).value  
+                                     and l_level_values(j)(m).value = l_level_values(j)(m+1).value;  
+                           cwms_util.append(
+                              l_data,
+                              cwms_util.get_xml_time(l_level_values(j)(m).date_time, l_timezone)
+                              ||' '
+                              ||regexp_replace(cwms_rounding.round_dt_f(l_level_values(j)(m).value, '7777777777'), '^\.', '0.')
+                              ||chr(10));
+                        end loop;
+                        cwms_util.append(l_data, '</segment>');
+                     end loop;
+                     cwms_util.append(l_data, '</values></location-level>');
+                  end if;
+                  if dbms_lob.getlength(l_data) > l_max_size then
+                     cwms_err.raise('ERROR', l_max_size_msg);
+                  end if;
+               end loop;
+            when l_format = 'JSON' then
+               ---------------
+               -- JSON Data --
+               ---------------
+               for j in 1..l_lvlids.count loop
+                  if l_level_values(j) is not null then
+                     l_count := l_count + 1;
+                     l_parts := cwms_util.split_text(l_lvlids(j).name, '.');
+                     if instr(upper(l_parts(2)), 'ELEV') = 1 then
+                        l_name := cwms_loc.get_location_vertical_datum(l_parts(1), l_lvlids(j).office);
+                        case
+                        when l_name is null then
+                           l_datum := 'unknown';
+                           l_estimated := false;
+                        when l_datums(i) in ('NATIVE', l_name) then
+                           l_datum := l_name;
+                           l_estimated := false;
+                        else
+                           l_datum := l_datums(i);
+                           l_estimated := cwms_loc.is_vert_datum_offset_estimated(
+                              l_parts(1),
+                              l_name,
+                              l_datum,
+                              l_lvlids(j).office) = 'T';
+                        end case;
+                     else
+                        l_datum := null;
+                     end if;
+                     if l_count = 1 then
+                        cwms_util.append(l_data, '{"location-levels":{"location-levels":[');
+                     end if;
+                     cwms_util.append(
+                        l_data,
+                        case when l_count=1 then '{"office":"' else ',{"office":"' end
+                        ||l_lvlids(j).office
+                        ||'","name":"'
+                        ||l_lvlids(j).name
+                        ||'","alternate-names":[');
+                     l_first := true;
+                     for k in 1..l_lvlids2(l_lvlids(j).lvl_code).count loop
+                        if l_lvlids2(l_lvlids(j).lvl_code)(k) != l_lvlids(j).name then
+                           cwms_util.append(
+                              l_data, 
+                              case l_first when true then '"' else ',"' end
+                              ||l_lvlids2(l_lvlids(j).lvl_code)(k)
+                              ||'"');
+                           l_first := false;
+                        end if;
+                     end loop;
+                     cwms_util.append(l_data, ']');
+                     if l_lvlids(j).attr_name is not null then
+                        cwms_util.append(
+                           l_data, 
+                           ',"attribute":{"name":"'
+                           ||l_lvlids(j).attr_name
+                           ||'","unit":"'
+                           ||l_lvlids(j).attr_unit
+                           ||'","value":'
+                           ||regexp_replace(cwms_rounding.round_dt_f(l_lvlids(j).attr_value, '7777777777'), '^\.', '0.')
+                           ||'}');
+                     end if;          
+                     cwms_util.append(
+                        l_data,
+                        ',"values":{"parameter":"'
+                        ||cwms_util.split_text(l_lvlids(j).name, 2, '.')
+                        ||' ('
+                        ||l_lvlids(j).unit
+                        ||case l_datum is null
+                          when true then ')"'
+                          else case l_estimated
+                               when true then ' '||l_datum||' estimated)"'
+                               else ' '||l_datum||')"'
+                               end
+                          end);
+                     l_segments := seg_tab_t();
+                     l_interp := -1;
+                     for k in 1..l_level_values(j).count loop
+                        if l_level_values(j)(k).quality_code != l_interp then
+                           l_segments.extend;
+                           l_segments(l_segments.count).start_time := l_level_values(j)(k).date_time;
+                           l_segments(l_segments.count).first_index := k;
+                           l_segments(l_segments.count).interp := case when l_level_values(j)(k).quality_code = 0 then 'false' else 'true' end;
+                           l_interp := l_level_values(j)(k).quality_code;
+                        end if;
+                        l_segments(l_segments.count).last_index := k;
+                        l_segments(l_segments.count).end_time := l_level_values(j)(k).date_time;
+                     end loop;
+                     cwms_util.append(l_data, ',"segments":[');
+                     for k in 1..l_segments.count loop
+                        cwms_util.append(
+                           l_data,
+                           '{"interpolate":"'
+                           ||l_segments(k).interp
+                           ||'","values":[');
+                        for m in l_segments(k).first_index..l_segments(k).last_index loop
+                           continue when m > l_segments(k).first_index
+                                     and m < l_segments(k).last_index
+                                     and l_level_values(j)(m).value = l_level_values(j)(m-1).value  
+                                     and l_level_values(j)(m).value = l_level_values(j)(m+1).value;  
+                           cwms_util.append(
+                              l_data,
+                              case m when 1 then '["' else ',["' end
+                              ||cwms_util.get_xml_time(l_level_values(j)(m).date_time, l_timezone)
+                              ||'",'
+                              ||regexp_replace(cwms_rounding.round_dt_f(l_level_values(j)(m).value, '7777777777'), '^\.', '0.')
+                              ||']');
+                        end loop;
+                        cwms_util.append(l_data, ']}');
+                     end loop;
+                     cwms_util.append(l_data, ']}}');
+                  end if;
+                  if dbms_lob.getlength(l_data) > l_max_size then
+                     cwms_err.raise('ERROR', l_max_size_msg);
+                  end if;
+               end loop;
+            when l_format in ('TAB', 'CSV') then
+               ---------------------
+               -- TAB or CSV Data --
+               ---------------------
+               cwms_util.append(
+                  l_data, 
+                  '#Office'
+                  ||chr(9)
+                  ||'Name'
+                  ||chr(9)
+                  ||'Attribute'
+                  ||chr(9)
+                  ||'Alternate Names'
+                  ||chr(10));
+               for j in 1..l_lvlids.count loop
+                  if l_level_values(j) is not null then
+                     l_count := l_count + 1;
+                     l_parts := cwms_util.split_text(l_lvlids(j).name, '.');
+                     if instr(upper(l_parts(2)), 'ELEV') = 1 then
+                        l_name := cwms_loc.get_location_vertical_datum(l_parts(1), l_lvlids(j).office);
+                        case
+                        when l_name is null then
+                           l_datum := null;
+                        when l_datums(i) in ('NATIVE', l_name) then
+                           l_datum := l_name;
+                        else
+                           l_datum := l_datums(i);
+                           if cwms_loc.is_vert_datum_offset_estimated(
+                              l_parts(1),
+                              l_name,
+                              l_datum,
+                              l_lvlids(j).office) = 'T'
+                           then
+                              l_datum := l_datum||' estimated';
+                           end if;
+                        end case;
+                     else
+                        l_datum := null;
+                     end if;
+                     cwms_util.append(
+                        l_data,
+                        chr(10)
+                        ||l_lvlids(j).office
+                        ||chr(9)
+                        ||l_lvlids(j).name
+                        ||chr(9)
+                        ||case l_lvlids(j).attr_name is not null
+                          when true then l_lvlids(j).attr_name
+                                         ||'='
+                                         ||trim(cwms_rounding.round_dt_f(l_lvlids(j).attr_value, '7777777777')
+                                                ||' '
+                                                ||l_lvlids(j).attr_unit)
+                                                ||case instr(nvl(l_lvlids(j).attr_unit, '@'), 'Elev')
+                                                  when 1 then l_datum
+                                                  else null
+                                                  end
+                          else null
+                          end);
+                     if l_lvlids2.exists(l_lvlids(j).lvl_code) then
+                        for k in 1..l_lvlids2(l_lvlids(j).lvl_code).count loop
+                           if l_lvlids2(l_lvlids(j).lvl_code)(k) != l_lvlids(j).name then
+                              cwms_util.append(l_data, chr(9)||l_lvlids2(l_lvlids(j).lvl_code)(k));
+                           end if;
+                        end loop;
+                     end if;
+                     cwms_util.append(l_data, chr(10));
                      l_interp := null;
                      for k in 1..l_level_values(j).count loop
-                        if l_level_values(j)(k).value is not null then
-                           if l_level_values(j)(k).quality_code != nvl(l_interp, -1) then
-                              l_interp_str.extend();
-                              l_vals.extend();
-                              l_interp_str(l_interp_str.count) := case when l_level_values(j)(k).quality_code = 0 then '"false"' else '"true"' end;
-                              l_vals(l_vals.count) := str_tab_t();
-                           end if;
-                           l_vals(l_vals.count).extend;
-                           l_vals(l_vals.count)(l_vals(l_vals.count).count) := '{"t":"'
-                           ||cwms_util.get_xml_time(l_level_values(j)(k).date_time, l_timezone)
-                           ||'","v":'
-                           ||regexp_replace(cwms_rounding.round_dt_f(l_level_values(j)(k).value, '7777777777'), '(^|[^0-9])\.', '\10.')
-                           ||'}';
+                        if l_level_values(j)(k).value is not null and l_level_values(j)(k).quality_code != nvl(l_interp, -1) then
+                           cwms_util.append(
+                              l_data,
+                              '#Segment'
+                              ||chr(9)
+                              ||'Interpolate='
+                              ||case 
+                                when l_level_values(j)(k).quality_code = 0 then 'False'
+                                else 'True'
+                                end
+                              ||chr(10)
+                              ||'#Date-Time '
+                              ||l_timezone
+                              ||chr(9)
+                              ||cwms_util.split_text(l_lvlids(j).name, 2, '.')
+                              || ' ('
+                              ||l_lvlids(j).unit
+                              ||case instr(cwms_util.split_text(l_lvlids(j).name, 2, '.'), 'Elev')
+                                when 1 then
+                                   case l_datum is not null
+                                   when true then ' '||l_datum
+                                   else null
+                                   end
+                                else null
+                                end
+                              ||')'  
+                              ||chr(10));
+                        end if;
+                        if l_level_values(j)(k).value is null then
+                           l_interp := null;
+                        else
+                           cwms_util.append(
+                              l_data,
+                              to_char(l_level_values(j)(k).date_time, 'dd-Mon-yyyy hh24:mi')
+                              ||chr(9)
+                              ||cwms_rounding.round_dt_f(l_level_values(j)(k).value, '7777777777')||chr(10));
                         end if;
                         l_interp := case
                                     when l_level_values(j)(k).value is null then null
                                     else l_level_values(j)(k).quality_code
                                     end;
                      end loop;
-                     l_first := true;
-                     for k in 1..l_vals.count loop
-                        if length(l_text) > 16000 then
-                           cwms_util.append(l_data, l_text);
-                           l_text := null;
-                        end if;
-                        select cwms_util.join_text(
-                           cast(multiset(select column_value 
-                                           from table(l_vals(k)) 
-                                        ) as str_tab_t), ',')
-                          into l_text2
-                          from dual;
-                        if l_vals(k).count > 0 then
-                           if l_first then
-                              l_first := false;
-                           else
-                              l_text := l_text||',';
-                           end if;
-                           l_text := l_text
-                           ||'{"interpolate":'
-                           ||l_interp_str(k)
-                           ||',"values":['
-                           ||l_text2
-                           ||']}';
-                        end if;
-                     end loop;
-                  end;
-                  l_text := l_text||']}}';
-                  cwms_util.append(l_data, l_text);
+                  end if;
+                  if dbms_lob.getlength(l_data) > l_max_size then
+                     cwms_err.raise('ERROR', l_max_size_msg);
+                  end if;
+               end loop;
+            end case;
+            
+            l_ts2 := systimestamp;
+            l_elapsed_format := l_elapsed_format + l_ts2 - l_ts1;
+            l_ts1 := systimestamp;
+         end loop;
+      end if;
+   exception
+      when others then 
+         case
+         when instr(sqlerrm, l_max_time_msg) > 0 then
+            dbms_lob.createtemporary(l_data, true);
+            case l_format
+            when  'XML' then
+               if l_names is null then
+                  cwms_util.append(l_data, '<location-levels-catalog><error>Query exceeded maximum time of '||l_max_time||'</error></location-levels-catalog>');
+               else
+                  cwms_util.append(l_data, '<location-levels><error>Query exceeded maximum time of '||l_max_time||'</error></location-levels>');
                end if;
-            end loop;
-         when l_format in ('TAB', 'CSV') then
-            ---------------------
-            -- TAB or CSV Data --
-            ---------------------
-            l_count := 0;
-            for j in 1..l_lvlids.count loop
-               if l_level_values(j) is not null then
-                  l_count := l_count + 1;
-                  l_parts := cwms_util.split_text(l_lvlids(j).name, '.');
-                  if instr(upper(l_parts(2)), 'ELEV') = 1 then
-                     l_name := cwms_loc.get_location_vertical_datum(l_parts(1), l_lvlids(j).office);
-                     case
-                     when l_name is null then
-                        l_datum := 'unknown';
-                        l_estimated := false;
-                     when l_datums(i) in ('NATIVE', l_name) then
-                        l_datum := l_name;
-                        l_estimated := false;
-                     else
-                        l_datum := l_datums(i);
-                        l_estimated := cwms_loc.is_vert_datum_offset_estimated(
-                           l_parts(1),
-                           l_name,
-                           l_datum,
-                           l_lvlids(j).office) = 'T';
-                     end case;
-                  else
-                     l_datum := null;
-                  end if;
-                  l_text := chr(10)
-                  ||rpad('# OFFICE', l_width, ' ')||chr(9)||l_lvlids(j).office||chr(10)
-                  ||rpad('# NAME', l_width, ' ')||chr(9)||l_lvlids(j).name||chr(10);
-                  if l_lvlids2.exists(l_lvlids(j).lvl_code) then
-                     for k in 1..l_lvlids2(l_lvlids(j).lvl_code).count loop
-                        if l_lvlids2(l_lvlids(j).lvl_code)(k) != l_lvlids(j).name then
-                           l_text := l_text
-                           ||rpad('# ALTERNATE NAME', l_width, ' ')||chr(9)||l_lvlids2(l_lvlids(j).lvl_code)(k)||chr(10);
-                        end if;
-                     end loop;
-                  end if;
-                  if l_lvlids(j).attr_name is not null then
-                     l_text := l_text
-                     ||rpad('# ATTRIBUTE NAME',  l_width, ' ')||chr(9)||l_lvlids(j).attr_name||chr(10)
-                     ||rpad('# ATTRIBUTE VALUE', l_width, ' ')||chr(9)||cwms_rounding.round_dt_f(l_lvlids(j).attr_value, '7777777777')||' '||l_lvlids(j).attr_unit||chr(10);
-                  end if;
-                  l_text := l_text
-                  ||'# VALUES'||chr(10)
-                  ||rpad('#   UNIT', l_width, ' ')||chr(9)||l_lvlids(i).unit||chr(10);
-                  if l_datum is not null then
-                     l_text := l_text
-                     ||rpad('#   DATUM', l_width, ' ')||chr(9)||l_datum||chr(10)
-                     ||rpad('#   ESTIMATED', l_width, ' ')||chr(9)||case l_estimated when true then 'True' else 'False' end||chr(10);
-                  end if;
-                  l_interp := null;
-                  for k in 1..l_level_values(j).count loop
-                     if length(l_text) > 16000 then
-                        cwms_util.append(l_data, l_text);
-                        l_text := null;
-                     end if;
-                     if l_level_values(j)(k).value is not null and l_level_values(j)(k).quality_code != nvl(l_interp, -1) then
-                        l_text := l_text
-                        ||'#   SEGMENT'||chr(10)
-                        ||rpad('#     INTERPOLATE', l_width, ' ')||chr(9)||case when l_level_values(j)(k).quality_code = 0 then 'False' else 'True' end||chr(10);
-                     end if;
-                     if l_level_values(j)(k).value is null then
-                        l_interp := null;
-                     else
-                        l_text := l_text
-                        ||to_char(cwms_util.change_timezone(l_level_values(j)(k).date_time, 'UTC', l_timezone), 'dd-Mon-yyyy hh24:mi')
-                        ||chr(9)
-                        ||cwms_rounding.round_dt_f(l_level_values(j)(k).value, '7777777777')||chr(10);
-                     end if;
-                     l_interp := case
-                                 when l_level_values(j)(k).value is null then null
-                                 else l_level_values(j)(k).quality_code
-                                 end;
-                  end loop;
-                  cwms_util.append(l_data, l_text);
+            when 'JSON' then
+               if l_names is null then
+                  cwms_util.append(l_data, '{"location-levels-catalog":{"error":"Query exceeded maximum time of '||l_max_time||'"}}');
+               else
+                  cwms_util.append(l_data, '{"location-levels":{"error":"Query exceeded maximum time of '||l_max_time||'"}}');
                end if;
-            end loop;
+            when 'TAB' then
+               cwms_util.append(l_data, 'ERROR'||chr(9)||'Query exceeded maximum time of '||l_max_time||chr(10));
+            when 'CSV' then
+               cwms_util.append(l_data, 'ERROR,Query exceeded maximum time of '||l_max_time||chr(10));
+            end case;
+         when instr(sqlerrm, l_max_size_msg) > 0 then
+            dbms_lob.createtemporary(l_data, true);
+            case l_format
+            when  'XML' then
+               if l_names is null then
+                  cwms_util.append(l_data, '<location-levels-catalog><error>Query exceeded maximum size of '||l_max_size||' characters</error></location-levels-catalog>');
+               else
+                  cwms_util.append(l_data, '<location-levels><error>Query exceeded maximum size of '||l_max_size||' characters</error></location-levels>');
+               end if;
+            when 'JSON' then
+               if l_names is null then
+                  cwms_util.append(l_data, '{"location-levels-catalog":{"error":"Query exceeded maximum size of '||l_max_size||' characters"}}');
+               else
+                  cwms_util.append(l_data, '{"location-levels":{"error":"Query exceeded maximum size of '||l_max_size||' characters"}}');
+               end if;
+            when 'TAB' then
+               cwms_util.append(l_data, 'ERROR'||chr(9)||'Query exceeded maximum size of '||l_max_size||' characters'||chr(10));
+            when 'CSV' then
+               cwms_util.append(l_data, 'ERROR,Query exceeded maximum size of '||l_max_size||' characters'||chr(10));
+            end case;
+         else raise;
          end case;
-         
-         l_ts2 := systimestamp;
-         l_elapsed_format := l_elapsed_format + l_ts2 - l_ts1;
-         l_ts1 := systimestamp;
-      end loop;
-      case
-      when l_format = 'XML' then
-         ----------------
-         -- XML Wrapup --
-         ----------------
-         cwms_util.append(l_data, '</location-level-values>');
---         update at_clob set value = l_data where id = '/_TEST/LEVEL';
---         commit;
-         select xmlserialize(document xmltype(l_data) as clob indent)
-           into l_data
-           from dual;
-      when l_format = 'JSON' then
-         -----------------
-         -- JSON Wrapup --
-         -----------------
-         cwms_util.append(l_data, ']}');
-      when l_format in ('TAB', 'CSV') then
-         -----------------------
-         -- TAB or CSV Wrapup --
-         -----------------------
-         null;
-      end case;
-   end if;
+   end;
    
-   if l_format in ('TAB', 'CSV') then
-      declare
-         l_data2 clob;
-      begin
-         dbms_lob.createtemporary(l_data2, true);
-         select db_unique_name into l_name from v$database;
-         cwms_util.append(l_data2, rpad('# PROCESSED AT', l_width, ' ')||chr(9)||utl_inaddr.get_host_name ||':'||l_name||chr(10));
-         cwms_util.append(l_data2, rpad('# TIME OF QUERY', l_width, ' ')||chr(9)||to_char(l_query_time, 'dd-MON-yyyy hh24:mi')||' UTC'||chr(10));
-         cwms_util.append(l_data2, rpad('# PROCESS QUERY', l_width, ' ')||chr(9)||trunc(1000 * (extract(minute from l_elapsed_query) * 60 + extract(second from l_elapsed_query)))||' milliseconds'||chr(10));
-         cwms_util.append(l_data2, rpad('# FORMAT OUTPUT', l_width, ' ')||chr(9)||trunc(1000 * (extract(minute from l_elapsed_format) * 60 + extract(second from l_elapsed_format)))||' milliseconds'||chr(10));
-         cwms_util.append(l_data2, rpad('# LOCATION LEVELS RETRIEVED', l_width, ' ')||chr(9)||l_count||chr(10));
+   declare
+      l_data2 clob;
+   begin
+      dbms_lob.createtemporary(l_data2, true);
+      select db_unique_name into l_name from v$database;
+      case 
+      when l_format = 'XML' then
+         ---------
+         -- XML --
+         ---------
+         if l_names is not null then
+            cwms_util.append(l_data, '</location-levels>');
+            l_ts2 := systimestamp;
+            l_elapsed_format := l_elapsed_format + l_ts2 - l_ts1;
+            l_ts1 := systimestamp;
+         end if;            
+         cwms_util.append(
+            l_data2, 
+            '<query-info><processed-at>'
+            ||utl_inaddr.get_host_name
+            ||':'
+            ||l_name
+            ||'</processed-at><time-of-query>'
+            ||to_char(l_query_time, 'yyyy-mm-dd"T"hh24:mi:ss')
+            ||'Z</time-of-query><process-query>'
+            ||iso_duration(l_elapsed_query)
+            ||'</process-query><format-output>'
+            ||iso_duration(l_elapsed_format)
+            ||'</format-output><requested-format>'
+            ||l_format
+            ||'</requested-format><requested-start-time>'
+            ||cwms_util.get_xml_time(l_start, l_timezone)
+            ||'</requested-start-time><requested-end-time>'
+            ||cwms_util.get_xml_time(l_end, l_timezone)
+            ||'</requested-end-time><requested-office>'
+            ||l_office_id
+            ||'</requested-office>');
+            if l_names is null then
+               cwms_util.append(
+                  l_data2,
+                  '<requested-unit>'
+                  ||l_unit
+                  ||'</requested-unit>');
+               cwms_util.append(
+                  l_data2, 
+                  '<total-location-levels-cataloged>'
+                  ||l_count
+                  ||'</total-location-levels-cataloged><unique-location-levels-cataloged>'
+                  ||l_unique_count
+                  ||'</unique-location-levels-cataloged></query-info>');
+            else
+               for i in 1..l_names.count loop
+                  cwms_util.append(
+                     l_data2,
+                     '<requested-items position="'||i||'"><name>'
+                     ||l_names(i)
+                     ||'</name><unit>'
+                     ||l_units(i)
+                     ||'</unit><datum>'
+                     ||l_datums(i)
+                     ||'</datum></requested-items>');
+               end loop;
+               cwms_util.append(
+                  l_data2, 
+                  '<total-location-levels-retrieved>'
+                  ||l_count
+                  ||'</total-location-levels-retrieved><unique-location-levels-retrieved>'
+                  ||l_unique_count
+                  ||'</unique-location-levels-retrieved></query-info>');
+            end if;
+         l_data := regexp_replace(l_data, '(<location-levels(-catalog)?>)', '\1'||l_data2, 1, 1);
+         p_results := l_data;
+      when l_format = 'JSON' then
+         ----------
+         -- JSON --
+         ----------
+         if l_names is not null and instr(substr(l_data, 1, 50), '"error"') = 0 then
+            cwms_util.append(l_data, ']}}');
+         end if;
+         cwms_util.append(
+            l_data2, 
+            '{"query-info":{"processed-at":"'
+            ||utl_inaddr.get_host_name
+            ||':'
+            ||l_name
+            ||'","time-of-query":"'
+            ||to_char(l_query_time, 'yyyy-mm-dd"T"hh24:mi:ss')
+            ||'Z","process-query":"'
+            ||iso_duration(l_elapsed_query)
+            ||'","format-output":"'
+            ||iso_duration(l_elapsed_format)
+            ||'","requested-format":"'
+            ||l_format
+            ||'","requested-start-time":"'
+            ||cwms_util.get_xml_time(l_start, l_timezone)
+            ||'","requested-end-time":"'
+            ||cwms_util.get_xml_time(l_end, l_timezone)
+            ||'","requested-office":"'
+            ||l_office_id
+            ||'"');
+            if l_names is null then
+               cwms_util.append(
+                  l_data2,
+                  ',"requested-unit":"'
+                  ||l_unit
+                  ||'"');
+               cwms_util.append(
+                  l_data2, 
+                  ',"total-location-levels-cataloged":'
+                  ||l_count
+                  ||',"unique-location-levels-cataloged":'
+                  ||l_unique_count
+                  ||'},');
+            else
+               cwms_util.append(l_data2, ',"requested-items":[');
+               for i in 1..l_names.count loop
+                  cwms_util.append(
+                     l_data2,
+                     case i when 1 then '{"name":"' else ',{"name":"' end
+                     ||l_names(i)
+                     ||'","unit":"'
+                     ||l_units(i)
+                     ||'","datum":"'
+                     ||l_datums(i)
+                     ||'"}');
+               end loop;
+               cwms_util.append(l_data2, ']');
+               cwms_util.append(
+                  l_data2, 
+                  ',"total-location-levels-retrieved":'
+                  ||l_count
+                  ||',"unique-location-levels-retrieved":'
+                  ||l_unique_count
+                  ||'},');
+            end if;
+         l_data := regexp_replace(l_data, '^({"location-levels.*?":){', '\1'||l_data2, 1, 1);
+         p_results := l_data;
+      when l_format in ('TAB', 'CSV') then
+         ----------------
+         -- TAB or CSV --
+         ----------------
+         cwms_util.append(l_data2, '#Processed At'||chr(9)||utl_inaddr.get_host_name ||':'||l_name||chr(10));
+         cwms_util.append(l_data2, '#Time Of Query'||chr(9)||to_char(l_query_time, 'dd-Mon-yyyy hh24:mi')||' UTC'||chr(10));
+         cwms_util.append(l_data2, '#Process Query'||chr(9)||trunc(1000 * (extract(minute from l_elapsed_query) * 60 + extract(second from l_elapsed_query)))||' milliseconds'||chr(10));
+         cwms_util.append(l_data2, '#Format Output'||chr(9)||trunc(1000 * (extract(minute from l_elapsed_format) * 60 + extract(second from l_elapsed_format)))||' milliseconds'||chr(10));
+         cwms_util.append(l_data2, '#Requested Start Time'||chr(9)||to_char(l_start, 'dd-Mon-yyyy hh24:mi')||' '||l_timezone||chr(10));
+         cwms_util.append(l_data2, '#Requested End Time'||chr(9)||to_char(l_end, 'dd-Mon-yyyy hh24:mi')||' '||l_timezone||chr(10));
+         cwms_util.append(l_data2, '#Requested Format'   ||chr(9)||l_format||chr(10));
+         cwms_util.append(l_data2, '#Requested Office'   ||chr(9)||l_office_id||chr(10));
+         if l_names is not null then
+            cwms_util.append(l_data2, '#Requested Names'    ||chr(9)||cwms_util.join_text(l_names, chr(9))||chr(10));
+            cwms_util.append(l_data2, '#Requested Units'    ||chr(9)||cwms_util.join_text(l_units, chr(9))||chr(10));
+            cwms_util.append(l_data2, '#Requested Datums'   ||chr(9)||cwms_util.join_text(l_datums, chr(9))||chr(10));
+            cwms_util.append(l_data2, '#Total Location Levels Cataloged'||chr(9)||l_count||chr(10));
+            cwms_util.append(l_data2, '#Unique Location Levels Cataloged'||chr(9)||l_unique_count||chr(10)||chr(10));
+         else
+            cwms_util.append(l_data2, '#Total Location Levels Retrieved'||chr(9)||l_count||chr(10));
+            cwms_util.append(l_data2, '#Unique Location Levels Retrieved'||chr(9)||l_unique_count||chr(10)||chr(10));
+         end if;
          cwms_util.append(l_data2, l_data);
          if l_format = 'CSV' then
-            l_data2 := regexp_replace( 
-               replace(
-                  replace(
-                     regexp_replace(
-                        regexp_replace(
-                           regexp_replace(
-                              replace(  
-                                 l_data2,
-                                 chr(10),
-                                 chr(10)||chr(10)), 
-                              ' *'||chr(9), chr(10)),
-                           '^(.*,.*)$',
-                           '"\1"',
-                           1, 0, 'm'),  
-                        '([^'||chr(10)||'])'||chr(10), '\1,'), 
-                     ','||chr(10), chr(10)),
-                  chr(10)||chr(10), chr(10)), 
-               '^# +', '# ', 
-               1, 0, 'm');
+            l_data2 := cwms_util.tab_to_csv(l_data2);
          end if;
          p_results := l_data2;
-      end;
-   else
-      p_results := l_data;
-   end if;
+      end case;
+   end;
          
    p_date_time   := l_query_time;
    p_query_time  := trunc(1000 * (extract(minute from l_elapsed_query) * 60 + extract(second from l_elapsed_query)));

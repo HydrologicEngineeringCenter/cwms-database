@@ -6911,25 +6911,25 @@ end unassign_loc_groups;
             end;
          end if;           
       end if;
-      if l_offset is null then 
-         ---------------------
-         -- declare failure --
-         ---------------------
-         declare
-            l_location location_ref_t := location_ref_t(p_location_code);
-         begin
-            cwms_err.raise(
-               'ERROR',
-               'No vertical offset exists for '
-               ||l_location.get_office_id
-               ||'/'
-               ||l_location.get_location_id
-               ||' from '
-               ||l_vertical_datum_id_1
-               ||' to '
-               ||l_vertical_datum_id_2);              
-         end;
-      end if;
+--      if l_offset is null then 
+--         ---------------------
+--         -- declare failure --
+--         ---------------------
+--         declare
+--            l_location location_ref_t := location_ref_t(p_location_code);
+--         begin
+--            cwms_err.raise(
+--               'ERROR',
+--               'No vertical offset exists for '
+--               ||l_location.get_office_id
+--               ||'/'
+--               ||l_location.get_location_id
+--               ||' from '
+--               ||l_vertical_datum_id_1
+--               ||' to '
+--               ||l_vertical_datum_id_2);              
+--         end;
+--      end if;
       p_offset := l_offset;
       p_effective_date := l_effective_date;
       if l_description is null or instr(upper(l_description), 'ESTIMATE') = 0 then
@@ -7418,21 +7418,23 @@ end unassign_loc_groups;
                p_location_code,
                l_native_datum,
                rec.vertical_datum_id);
-            l_vert_datum_info := l_vert_datum_info
-               ||'  <offset estimate="'
-               || case l_estimate when 'T' then 'true' else 'false' end
-               ||'">'
-               ||chr(10)
-               ||'    <to-datum>'
-               ||rec.vertical_datum_id
-               ||'</to-datum>'
-               ||chr(10)
-               ||'    <value>'
-               ||cwms_rounding.round_dt_f(cwms_util.convert_units(l_datum_offset, 'm', l_unit), l_rounding_spec)
-               ||'</value>'
-               ||chr(10)
-               ||'  </offset>'
-               ||chr(10);
+            if l_datum_offset is not null then
+               l_vert_datum_info := l_vert_datum_info
+                  ||'  <offset estimate="'
+                  || case l_estimate when 'T' then 'true' else 'false' end
+                  ||'">'
+                  ||chr(10)
+                  ||'    <to-datum>'
+                  ||rec.vertical_datum_id
+                  ||'</to-datum>'
+                  ||chr(10)
+                  ||'    <value>'
+                  ||regexp_replace(cwms_rounding.round_dt_f(cwms_util.convert_units(l_datum_offset, 'm', l_unit), l_rounding_spec), '^\.', '0.', 1, 1)
+                  ||'</value>'
+                  ||chr(10)
+                  ||'  </offset>'
+                  ||chr(10);
+            end if;
          exception
             when others then
                if instr(sqlerrm, 'No vertical offset exists') = 1 then null; end if;
@@ -8143,6 +8145,34 @@ end unassign_loc_groups;
       p_datums         in  varchar2 default null,
       p_office_id      in  varchar2 default null)
    is
+      type loc_rec_t is record(
+         location_code       at_physical_location.location_code%type,
+         office_id           cwms_office.office_id%type,
+         location_id         av_loc2.location_id%type,
+         long_name           at_physical_location.long_name%type,
+         public_name         at_physical_location.public_name%type,
+         description         at_physical_location.description%type,
+         latitude            at_physical_location.latitude%type,
+         longitude           at_physical_location.longitude%type,
+         horizontal_datum    at_physical_location.horizontal_datum%type,
+         elevation           at_physical_location.elevation%type,
+         elevation_unit      cwms_unit.unit_id%type,
+         elevation_estimated varchar2(1),
+         vertical_datum      at_physical_location.vertical_datum%type,
+         time_zone_name      cwms_time_zone.time_zone_name%type,
+         county              cwms_county.county_name%type,
+         state_initial       cwms_state.state_initial%type,
+         nation_id           cwms_nation.nation_id%type,
+         nearest_city        at_physical_location.nearest_city%type,
+         bounding_office     cwms_office.office_id%type,
+         location_kind       cwms_location_kind.location_kind_id%type,
+         location_type       at_physical_location.location_type%type);                                                                          
+      type loc_tab_t is table of loc_rec_t;
+      type loc_tab_tab_t is table of loc_tab_t;
+      type vchar_set_t is table of boolean index by varchar2(32767);
+      type indexes_rec_t is record(i integer, j integer);
+      type indexes_tab_t is table of indexes_rec_t index by varchar2(32767);
+      type str_tab_tab_tab_t is table of str_tab_tab_t;
       l_data                 clob;
       l_names                str_tab_t;
       l_format               varchar2(16);
@@ -8155,36 +8185,41 @@ end unassign_loc_groups;
       l_query_time           date;
       l_elapsed_query        interval day (0) to second (6);
       l_elapsed_format       interval day (0) to second (6);
-      l_count                pls_integer; 
-      l_temp                 varchar2(256);    
-      l_location_codes       str_tab_t;
-      l_offices              str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
-      l_location_ids         str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
-      l_alternate_names      str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
-      l_long_names           str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
-      l_public_names         str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
-      l_map_labels           str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
-      l_descriptions         str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
-      l_latitudes            str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
-      l_longitudes           str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
-      l_horizontal_datums    str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
-      l_elevations           str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
-      l_elevation_units      str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
-      l_elevation_estimated  str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
-      l_vertical_datums      str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
-      l_time_zones           str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
-      l_counties             str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
-      l_states               str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
-      l_nations              str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
-      l_nearest_cities       str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
-      l_bounding_offices     str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
-      l_location_kinds       str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
-      l_location_types       str_tab_tab_t := str_tab_tab_t(null, str_tab_t());
-      l_reduced_count        pls_integer := 50;
-      l_minimal_count        pls_integer := 250;
-      l_width                pls_integer := 24;
+      l_count                pls_integer;
+      l_unique_count         pls_integer;
+      l_temp                 varchar2(256);
+      l_alternate_names      str_tab_tab_tab_t;
+      l_locations            loc_tab_tab_t;
+      l_unique_codes         vchar_set_t;
+      l_indexes              indexes_tab_t;
+      l_text                 varchar2(32767);
+
+      function iso_duration(
+         p_intvl in dsinterval_unconstrained)
+         return varchar2
+      is
+         l_hours   integer := extract(hour   from p_intvl);
+         l_minutes integer := extract(minute from p_intvl);
+         l_seconds number  := extract(second from p_intvl);
+         l_iso     varchar2(17) := 'PT';
+      begin
+         if l_hours > 0 then
+            l_iso := l_iso || l_hours || 'H';
+         end if;
+         if l_minutes > 0 then
+            l_iso := l_iso || l_minutes || 'M';
+         end if;
+         if l_seconds > 0 then
+            l_iso := l_iso || trim(to_char(l_seconds, '0.999')) || 'S';
+         end if;
+         if l_iso = 'PT' then
+            l_iso := l_iso || '0S';
+         end if;
+         return l_iso;
+      end;
+      
    begin
-   l_query_time := cast(systimestamp at time zone 'UTC' as date);
+   l_query_time := sysdate;
    ----------------------------
    -- process the parameters --
    ----------------------------
@@ -8288,432 +8323,258 @@ end unassign_loc_groups;
    end if;   
    
    l_ts1 := systimestamp;
+   
+   l_count := 0;
+   l_locations := loc_tab_tab_t();
+   l_alternate_names := str_tab_tab_tab_t();
    for i in 1..l_names.count loop
+      l_locations.extend;
+      l_locations(i) := loc_tab_t();
       l_location_id_mask := cwms_util.normalize_wildcards(upper(l_names(i)));
       select distinct
-             office_id,
-             location_id,
-             alternate_names,                                                                               
-             long_name,
-             public_name,
-             map_label,
-             description,
-             latitude,
-             longitude,
-             horizontal_datum,
-             elevation,
-             elevation_unit,
-             elevation_estimated,
-             vertical_datum,
-             time_zone_name,
-             county,
-             state_initial,
-             nation_id,
-             nearest_city,
-             bounding_office,
-             location_kind,
-             location_type
+             v2.location_code,
+             v2.db_office_id,
+             v2.location_id,
+             pl1.long_name,
+             pl1.public_name,
+             pl1.description,
+             coalesce(pl1.latitude, pl2.latitude),
+             coalesce(pl1.longitude, pl2.longitude),
+             coalesce(pl1.horizontal_datum, pl2.horizontal_datum),
+             -- elevation
+             case
+             when pl1.elevation is null then
+                -- sub-location elevation is null, use base-location elevation
+                case
+                when pl2.elevation is null then null
+                else
+                   case
+                   when l_units(i) = 'SI' then
+                      case
+                      when pl2.vertical_datum is null then
+                         pl2.elevation
+                      else
+                         pl2.elevation + cwms_loc.get_vertical_datum_offset(
+                            pl2.location_code,
+                            pl2.vertical_datum,
+                            replace(l_datums(i), 'NATIVE', pl2.vertical_datum),
+                            sysdate,
+                            case when l_units(i) = 'SI' then 'm' else 'ft' end)
+                      end
+                   else
+                      case
+                      when pl2.vertical_datum is null then
+                         cwms_util.convert_units(pl2.elevation, 'm', 'ft')
+                      else
+                         cwms_util.convert_units(
+                            pl2.elevation + cwms_loc.get_vertical_datum_offset(
+                               pl2.location_code,
+                               pl2.vertical_datum,
+                               replace(l_datums(i), 'NATIVE', pl2.vertical_datum),
+                               sysdate,
+                               case when l_units(i) = 'SI' then 'm' else 'ft' end),
+                            'm', 'ft')
+                      end
+                   end
+                end
+             else
+                -- sub-location elevation is not null, so use it
+                case
+                when l_units(i) = 'SI' then
+                   -- SI units
+                   case
+                   when pl1.vertical_datum is null then
+                      -- sub-location vertical datum is null, so use base-location vertical datum with sub-location elevation
+                      case
+                      when pl2.vertical_datum is null then
+                         pl1.elevation
+                      else
+                         pl1.elevation + cwms_loc.get_vertical_datum_offset(
+                            pl2.location_code,
+                            pl2.vertical_datum,
+                            replace(l_datums(i), 'NATIVE', pl2.vertical_datum),
+                            sysdate,
+                            case when l_units(i) = 'SI' then 'm' else 'ft' end)
+                      end
+                   else
+                      -- sub-location vertical datum is not null so use it with sub-location elevation
+                      pl1.elevation + cwms_loc.get_vertical_datum_offset(
+                         pl1.location_code,
+                         pl1.vertical_datum,
+                         replace(l_datums(i), 'NATIVE', pl1.vertical_datum),
+                         sysdate,
+                         case when l_units(i) = 'SI' then 'm' else 'ft' end)
+                   end
+                else
+                   -- English units
+                   case
+                   when pl1.vertical_datum is null then
+                      -- sub-location vertical datum is null, so use base-location vertical datum with sub-location elevation
+                      case
+                      when pl2.vertical_datum is null then
+                         cwms_util.convert_units(pl1.elevation, 'm', 'ft')
+                      else
+                         cwms_util.convert_units(
+                            pl1.elevation + cwms_loc.get_vertical_datum_offset(
+                               pl2.location_code,
+                               pl2.vertical_datum,
+                               replace(l_datums(i), 'NATIVE', pl2.vertical_datum),
+                               sysdate,
+                               case when l_units(i) = 'SI' then 'm' else 'ft' end),
+                            'm', 'ft')
+                      end
+                   else
+                      -- sub-location vertical datum is not null so use it with sub-location elevation
+                      cwms_util.convert_units(
+                         pl1.elevation + cwms_loc.get_vertical_datum_offset(
+                            pl1.location_code,
+                            pl1.vertical_datum,
+                            replace(l_datums(i), 'NATIVE', pl1.vertical_datum),
+                            sysdate,
+                            case when l_units(i) = 'SI' then 'm' else 'ft' end),
+                         'm', 'ft')
+                   end
+                end
+             end,
+             -- elevation unit
+             case 
+             when coalesce(pl1.elevation, pl2.elevation) is null then null
+             else
+                case when l_units(i) = 'SI' then 'm' else 'ft' end
+             end,
+             -- elevation is estimated
+             case 
+             when coalesce(pl1.elevation, pl2.elevation) is null then null
+             else
+                case
+                when pl1.vertical_datum is null then
+                   case
+                   when pl2.vertical_datum is null then 'F'
+                   else
+                      cwms_loc.is_vert_datum_offset_estimated(
+                        pl2.location_code,
+                        pl2.vertical_datum,
+                        replace(l_datums(i), 'NATIVE', pl1.vertical_datum))
+                   end
+                else
+                   cwms_loc.is_vert_datum_offset_estimated(
+                     pl1.location_code,
+                     pl1.vertical_datum,
+                     replace(l_datums(i), 'NATIVE', pl1.vertical_datum))
+                end
+             end,
+             -- vertical datum
+             l_datums(i),
+             -- time zone
+             case
+             when pl1.time_zone_code is null then
+                case
+                when pl2.time_zone_code is null then null
+                else tz2.time_zone_name
+                end
+             else tz1.time_zone_name
+             end,
+             -- county
+             case
+             when pl1.county_code is null then
+                case
+                when pl2.county_code is null then null
+                else c2.county_name
+                end
+             else c1.county_name
+             end,
+             -- state
+             case
+             when pl1.county_code is null then
+                case
+                when pl2.county_code is null then null
+                else s2.state_initial
+                end
+             else s1.state_initial
+             end,
+             -- nation
+             case
+             when pl1.nation_code is null then
+                case
+                when pl2.nation_code is null then null
+                else n2.nation_id
+                end
+             else n1.nation_id
+             end,
+             case
+             when pl1.nearest_city is null then
+                case
+                when pl2.nearest_city is null then null
+                else pl2.nearest_city
+                end
+             else pl1.nearest_city
+             end,
+             -- bounding office
+             case
+             when pl1.office_code is null then
+                case
+                when pl2.office_code is null then null
+                else o2.office_id
+                end
+             else o1.office_id
+             end,
+             lk.location_kind_id,
+             pl1.location_type
         bulk collect
-        into l_offices(1),
-             l_location_ids(1),
-             l_alternate_names(1),
-             l_long_names(1),
-             l_public_names(1),
-             l_map_labels(1),
-             l_descriptions(1),
-             l_latitudes(1),
-             l_longitudes(1),
-             l_horizontal_datums(1),
-             l_elevations(1),
-             l_elevation_units(1),
-             l_elevation_estimated(1),
-             l_vertical_datums(1),
-             l_time_zones(1),
-             l_counties(1),
-             l_states(1),
-             l_nations(1),
-             l_nearest_cities(1),
-             l_bounding_offices(1),
-             l_location_kinds(1),
-             l_location_types(1)     
-        from (select loc.office_id,
-                     loc.location_id,
-                     get_location_ids(loc.location_code, loc.location_id) as alternate_names,
-                     loc.long_name,
-                     loc.public_name,
-                     loc.map_label,
-                     loc.description,
-                     cwms_rounding.round_dt_f(loc.latitude, '7777777777') as latitude,
-                     cwms_rounding.round_dt_f(loc.longitude, '7777777777') as longitude,
-                     loc.horizontal_datum,
-                     case
-                     when l_units(i) = 'SI' then
-                        case 
-                        when loc.vertical_datum is null then
-                           cwms_rounding.round_dt_f(loc.elevation, '7777777777')
-                        else
-                           cwms_rounding.round_dt_f(
-                              loc.elevation + cwms_loc.get_vertical_datum_offset(
-                                 loc.location_code, 
-                                 loc.vertical_datum, 
-                                 replace(l_datums(i), 'NATIVE', loc.vertical_datum), 
-                                 sysdate, 
-                                 case when l_units(i) = 'SI' then 'm' else 'ft' end),
-                              '7777777777')
-                        end
-                     else
-                        case 
-                        when loc.vertical_datum is null then
-                           cwms_rounding.round_dt_f(
-                              cwms_util.convert_units(loc.elevation, 'm', 'ft'),
-                              '7777777777')
-                        else
-                           cwms_rounding.round_dt_f(
-                              cwms_util.convert_units(
-                                 loc.elevation + cwms_loc.get_vertical_datum_offset(
-                                    loc.location_code, 
-                                    loc.vertical_datum, 
-                                    replace(l_datums(i), 'NATIVE', loc.vertical_datum), 
-                                    sysdate, 
-                                    case when l_units(i) = 'SI' then 'm' else 'ft' end),
-                                 'm',
-                                 'ft'),
-                              '7777777777')
-                        end                           
-                     end as elevation,
-                     case when l_units(i) = 'EN' then 'ft' else 'm' end as elevation_unit,
-                     case
-                     when loc.vertical_datum is null then
-                        'false'
-                     else 
-                        case 
-                        when cwms_loc.is_vert_datum_offset_estimated(
-                                loc.location_code, 
-                                loc.vertical_datum, 
-                                replace(l_datums(i), 'NATIVE', loc.vertical_datum)) = 'T' 
-                        then 'true' 
-                        else 'false'
-                        end
-                     end as elevation_estimated,
-                     replace(l_datums(i), 'NATIVE', loc.vertical_datum) as vertical_datum,
-                     cwms_rounding.round_dt_f(loc.published_latitude, '7777777777') as published_latitude,
-                     cwms_rounding.round_dt_f(loc.published_longitude, '7777777777') as published_longitude,
-                     tz.time_zone_name,
-                     case
-                     when county.county_id = '000' then null
-                     else county.county_name
-                     end as county,
-                     state.state_initial,
-                     nation.nation_id,
-                     loc.nearest_city,
-                     office.office_id as bounding_office,
-                     kind.location_kind_id as location_kind,
-                     loc.location_type 
-                from (select pl.location_code,
-                             o.office_id,
-                             bl.base_location_id
-                             ||substr('-', 1, length(pl.sub_location_id))
-                             ||pl.sub_location_id as location_id,
-                             pl.long_name,
-                             pl.public_name,
-                             pl.map_label,
-                             pl.description,
-                             pl.latitude,
-                             pl.longitude,
-                             pl.horizontal_datum,
-                             pl.elevation,
-                             pl.vertical_datum,
-                             pl.published_latitude,
-                             pl.published_longitude,
-                             pl.time_zone_code,
-                             pl.county_code,
-                             pl.nation_code,
-                             pl.nearest_city,
-                             pl.office_code,
-                             pl.location_kind,
-                             pl.location_type
-                        from at_physical_location pl,
-                             at_base_location bl,
-                             cwms_office o
-                       where o.office_id like replace(l_office_id, '*', '%')
-                         and upper(bl.base_location_id||substr('-', 1, length(pl.sub_location_id))||pl.sub_location_id) like l_location_id_mask
-                         and bl.db_office_code = o.office_code
-                         and pl.base_location_code = bl.base_location_code
-                      ) loc
-                      left outer join
-                      (select time_zone_code,
-                              time_zone_name
-                         from cwms_time_zone
-                      ) tz on tz.time_zone_code = loc.time_zone_code
-                      left outer join
-                      (select county_code,
-                              county_id,
-                              state_code,
-                              county_name
-                         from cwms_county 
-                      ) county on county.county_code = loc.county_code
-                      left outer join
-                      (select state_code,
-                              state_initial
-                         from cwms_state
-                      ) state on state.state_code = county.state_code
-                      left outer join
-                      (select nation_code,
-                              nation_id
-                         from cwms_nation
-                      ) nation on nation.nation_code = loc.nation_code
-                      left outer join
-                      (select office_code,
-                              office_id
-                         from cwms_office     
-                      ) office on office.office_code = loc.office_code
-                      left outer join
-                      (select location_kind_code,
-                              location_kind_id
-                         from cwms_location_kind     
-                      ) kind on kind.location_kind_code = loc.location_kind         
-              union all          
-              select loc.office_id,
-                     loc.location_id,
-                     get_location_ids(loc.location_code, loc.location_id) as alternate_names,
-                     loc.long_name,
-                     loc.public_name,
-                     loc.map_label,
-                     loc.description,
-                     cwms_rounding.round_dt_f(loc.latitude, '7777777777') as latitude,
-                     cwms_rounding.round_dt_f(loc.longitude, '7777777777') as longitude,
-                     loc.horizontal_datum,
-                     case
-                     when l_units(i) = 'SI' then
-                        case 
-                        when loc.vertical_datum is null then
-                           cwms_rounding.round_dt_f(loc.elevation, '7777777777')
-                        else
-                           cwms_rounding.round_dt_f(
-                              loc.elevation + cwms_loc.get_vertical_datum_offset(
-                                 loc.location_code, 
-                                 loc.vertical_datum, 
-                                 replace(l_datums(i), 'NATIVE', loc.vertical_datum), 
-                                 sysdate, 
-                                 case when l_units(i) = 'SI' then 'm' else 'ft' end),
-                              '7777777777')
-                        end
-                     else
-                        case 
-                        when loc.vertical_datum is null then
-                           cwms_rounding.round_dt_f(
-                              cwms_util.convert_units(loc.elevation, 'm', 'ft'),
-                              '7777777777')
-                        else
-                           cwms_rounding.round_dt_f(
-                              cwms_util.convert_units(
-                                 loc.elevation + cwms_loc.get_vertical_datum_offset(
-                                    loc.location_code, 
-                                    loc.vertical_datum, 
-                                    replace(l_datums(i), 'NATIVE', loc.vertical_datum), 
-                                    sysdate, 
-                                    case when l_units(i) = 'SI' then 'm' else 'ft' end),
-                                 'm',
-                                 'ft'),
-                              '7777777777')
-                        end                           
-                     end as elevation,
-                     case when l_units(i) = 'EN' then 'ft' else 'm' end as elevation_unit,
-                     case
-                     when loc.vertical_datum is null then
-                        'false'
-                     else 
-                        case 
-                        when cwms_loc.is_vert_datum_offset_estimated(
-                                loc.location_code, 
-                                loc.vertical_datum, 
-                                replace(l_datums(i), 'NATIVE', loc.vertical_datum)) = 'T' 
-                        then 'true' 
-                        else 'false'
-                        end
-                     end as elevation_estimated,
-                     replace(l_datums(i), 'NATIVE', loc.vertical_datum) as vertical_datum,
-                     cwms_rounding.round_dt_f(loc.published_latitude, '7777777777') as published_latitude,
-                     cwms_rounding.round_dt_f(loc.published_longitude, '7777777777') as published_longitude,
-                     tz.time_zone_name,
-                     case
-                     when county.county_id = '000' then null
-                     else county.county_name
-                     end as county,
-                     state.state_initial,
-                     nation.nation_id,
-                     loc.nearest_city,
-                     office.office_id as bounding_office,
-                     kind.location_kind_id as location_kind,
-                     loc.location_type 
-                from (select pl.location_code,
-                             o.office_id,
-                             lga.loc_alias_id as location_id,
-                             pl.long_name,
-                             pl.public_name,
-                             pl.map_label,
-                             pl.description,
-                             pl.latitude,
-                             pl.longitude,
-                             pl.horizontal_datum,
-                             pl.elevation,
-                             pl.vertical_datum,
-                             pl.published_latitude,
-                             pl.published_longitude,
-                             pl.time_zone_code,
-                             pl.county_code,
-                             pl.nation_code,
-                             pl.nearest_city,
-                             pl.office_code,
-                             pl.location_kind,
-                             pl.location_type
-                        from at_physical_location pl,
-                             at_base_location bl,
-                             cwms_office o,
-                             at_loc_group_assignment lga,
-                             at_loc_group lg,
-                             at_loc_category lc
-                       where o.office_id like replace(l_office_id, '*', '%')
-                         and bl.db_office_code = o.office_code
-                         and pl.base_location_code = bl.base_location_code
-                         and lga.loc_alias_id like l_location_id_mask
-                         and lga.location_code = pl.location_code
-                         and lg.loc_group_code = lga.loc_group_code
-                         and lc.loc_category_code = lg.loc_category_code
-                         and lc.loc_category_id = 'Agency Aliases'
-                      ) loc
-                      left outer join
-                      (select time_zone_code,
-                              time_zone_name
-                         from cwms_time_zone
-                      ) tz on tz.time_zone_code = loc.time_zone_code
-                      left outer join
-                      (select county_code,
-                              county_id,
-                              state_code,
-                              county_name
-                         from cwms_county 
-                      ) county on county.county_code = loc.county_code
-                      left outer join
-                      (select state_code,
-                              state_initial
-                         from cwms_state
-                      ) state on state.state_code = county.state_code
-                      left outer join
-                      (select nation_code,
-                              nation_id
-                         from cwms_nation
-                      ) nation on nation.nation_code = loc.nation_code
-                      left outer join
-                      (select office_code,
-                              office_id
-                         from cwms_office     
-                      ) office on office.office_code = loc.office_code
-                      left outer join
-                      (select location_kind_code,
-                              location_kind_id
-                         from cwms_location_kind     
-                      ) kind on kind.location_kind_code = loc.location_kind         
-             );
-                   
-      l_count := l_offices(1).count;             
-      l_offices(2).extend(l_count);
-      for j in 1..l_count loop l_offices(2)(l_offices(2).count - j + 1) := l_offices(1)(j); end loop;
-      l_location_ids(2).extend(l_count);
-      for j in 1..l_count loop l_location_ids(2)(l_location_ids(2).count - j + 1) := l_location_ids(1)(j); end loop;
-      l_alternate_names(2).extend(l_count);
-      for j in 1..l_count loop l_alternate_names(2)(l_alternate_names(2).count - j + 1) := l_alternate_names(1)(j); end loop;
-      l_long_names(2).extend(l_count);
-      for j in 1..l_count loop l_long_names(2)(l_long_names(2).count - j + 1) := l_long_names(1)(j); end loop;
-      l_public_names(2).extend(l_count);
-      for j in 1..l_count loop l_public_names(2)(l_public_names(2).count - j + 1) := l_public_names(1)(j); end loop;
-      l_map_labels(2).extend(l_count);
-      for j in 1..l_count loop l_map_labels(2)(l_map_labels(2).count - j + 1) := l_map_labels(1)(j); end loop;
-      l_descriptions(2).extend(l_count);
-      for j in 1..l_count loop l_descriptions(2)(l_descriptions(2).count - j + 1) := l_descriptions(1)(j); end loop;
-      l_latitudes(2).extend(l_count);
-      for j in 1..l_count loop l_latitudes(2)(l_latitudes(2).count - j + 1) := l_latitudes(1)(j); end loop;
-      l_longitudes(2).extend(l_count);
-      for j in 1..l_count loop l_longitudes(2)(l_longitudes(2).count - j + 1) := l_longitudes(1)(j); end loop;
-      l_horizontal_datums(2).extend(l_count);
-      for j in 1..l_count loop l_horizontal_datums(2)(l_horizontal_datums(2).count - j + 1) := l_horizontal_datums(1)(j); end loop;
-      l_elevations(2).extend(l_count);
-      for j in 1..l_count loop l_elevations(2)(l_elevations(2).count - j + 1) := l_elevations(1)(j); end loop;
-      l_elevation_units(2).extend(l_count);
-      for j in 1..l_count loop l_elevation_units(2)(l_elevation_units(2).count - j + 1) := l_elevation_units(1)(j); end loop;
-      l_elevation_estimated(2).extend(l_count);
-      for j in 1..l_count loop l_elevation_estimated(2)(l_elevation_estimated(2).count - j + 1) := l_elevation_estimated(1)(j); end loop;
-      l_vertical_datums(2).extend(l_count);
-      for j in 1..l_count loop l_vertical_datums(2)(l_vertical_datums(2).count - j + 1) := l_vertical_datums(1)(j); end loop;
-      l_time_zones(2).extend(l_count);
-      for j in 1..l_count loop l_time_zones(2)(l_time_zones(2).count - j + 1) := l_time_zones(1)(j); end loop;
-      l_counties(2).extend(l_count);
-      for j in 1..l_count loop l_counties(2)(l_counties(2).count - j + 1) := l_counties(1)(j); end loop;
-      l_states(2).extend(l_count);
-      for j in 1..l_count loop l_states(2)(l_states(2).count - j + 1) := l_states(1)(j); end loop;
-      l_nations(2).extend(l_count);
-      for j in 1..l_count loop l_nations(2)(l_nations(2).count - j + 1) := l_nations(1)(j); end loop;
-      l_nearest_cities(2).extend(l_count);
-      for j in 1..l_count loop l_nearest_cities(2)(l_nearest_cities(2).count - j + 1) := l_nearest_cities(1)(j); end loop;
-      l_bounding_offices(2).extend(l_count);
-      for j in 1..l_count loop l_bounding_offices(2)(l_bounding_offices(2).count - j + 1) := l_bounding_offices(1)(j); end loop;
-      l_location_kinds(2).extend(l_count);
-      for j in 1..l_count loop l_location_kinds(2)(l_location_kinds(2).count - j + 1) := l_location_kinds(1)(j); end loop;
-      l_location_types(2).extend(l_count);      
-      for j in 1..l_count loop l_location_types(2)(l_location_types(2).count - j + 1) := l_location_types(1)(j); end loop;
+        into l_locations(i)
+        from av_loc2 v2,
+             at_physical_location pl1,
+             at_physical_location pl2,
+             cwms_time_zone tz1,
+             cwms_time_zone tz2,
+             cwms_county c1,
+             cwms_county c2,
+             cwms_state s1,
+             cwms_state s2,
+             cwms_nation n1,
+             cwms_nation n2,
+             cwms_office o1,
+             cwms_office o2,
+             cwms_location_kind lk
+       where upper(v2.location_id) like l_location_id_mask
+         and pl1.location_code = v2.location_code
+         and tz1.time_zone_code = nvl(pl1.time_zone_code, 0)
+         and c1.county_code = nvl(pl1.county_code, 0)
+         and s1.state_code = c1.state_code
+         and n1.nation_code = nvl(pl1.nation_code, 'US')
+         and o1.office_code = nvl(pl1.office_code, 0)
+         and lk.location_kind_code = pl1.location_kind
+         and pl2.location_code = pl1.base_location_code
+         and tz2.time_zone_code = nvl(pl2.time_zone_code, 0)
+         and c2.county_code = nvl(pl2.county_code, 0)
+         and s2.state_code = c2.state_code
+         and n2.nation_code = nvl(pl2.nation_code, 'US')
+         and o2.office_code = nvl(pl2.office_code, 0);
+         
+      l_count := l_count + l_locations(i).count;
+   
+      l_alternate_names.extend;
+      l_alternate_names(i) := str_tab_tab_t();
+      for j in 1..l_locations(i).count loop
+         l_alternate_names(i).extend;
+         l_temp := to_char(l_locations(i)(j).location_code);
+         if not l_unique_codes.exists(l_temp) then
+            l_unique_codes(l_temp) := true;
+         end if;
+         l_text := l_locations(i)(j).office_id||'/'||l_locations(i)(j).location_id;
+         l_indexes(l_text).i := i;
+         l_indexes(l_text).j := j;
+         select distinct 
+                location_id
+           bulk collect
+           into l_alternate_names(i)(j)
+           from av_loc2
+          where location_code = l_locations(i)(j).location_code
+            and location_id != l_locations(i)(j).location_id
+          order by 1;  
+      end loop;
    end loop;
-   l_count := l_offices(2).count;
-   
-   select cv01,cv02,cv03,cv04,cv05,cv06,cv07,cv08,cv09,cv10,
-          cv11,cv12,cv13,cv14,cv15,cv16,cv17,cv18,cv19,cv20,
-          cv21,cv22
-     bulk collect
-     into l_offices(1),              
-          l_location_ids(1),         
-          l_alternate_names(1),           
-          l_long_names(1),           
-          l_public_names(1),         
-          l_map_labels(1),           
-          l_descriptions(1),         
-          l_latitudes(1),            
-          l_longitudes(1),           
-          l_horizontal_datums(1),    
-          l_elevations(1),           
-          l_elevation_units(1),      
-          l_elevation_estimated(1),  
-          l_vertical_datums(1),      
-          l_time_zones(1),           
-          l_counties(1),             
-          l_states(1),               
-          l_nations(1),  
-          l_nearest_cities(1),
-          l_bounding_offices(1),     
-          l_location_kinds(1),       
-          l_location_types(1)       
-     from (select column_value as cv01, rownum as seq from table(l_offices(2)))              t01
-     join (select column_value as cv02, rownum as seq from table(l_location_ids(2)))         t02 on t02.seq = t01.seq         
-     join (select column_value as cv03, rownum as seq from table(l_alternate_names(2)))      t03 on t03.seq = t01.seq           
-     join (select column_value as cv04, rownum as seq from table(l_long_names(2)))           t04 on t04.seq = t01.seq           
-     join (select column_value as cv05, rownum as seq from table(l_public_names(2)))         t05 on t05.seq = t01.seq         
-     join (select column_value as cv06, rownum as seq from table(l_map_labels(2)))           t06 on t06.seq = t01.seq           
-     join (select column_value as cv07, rownum as seq from table(l_descriptions(2)))         t07 on t07.seq = t01.seq         
-     join (select column_value as cv08, rownum as seq from table(l_latitudes(2)))            t08 on t08.seq = t01.seq            
-     join (select column_value as cv09, rownum as seq from table(l_longitudes(2)))           t09 on t09.seq = t01.seq           
-     join (select column_value as cv10, rownum as seq from table(l_horizontal_datums(2)))    t10 on t10.seq = t01.seq    
-     join (select column_value as cv11, rownum as seq from table(l_elevations(2)))           t11 on t11.seq = t01.seq           
-     join (select column_value as cv12, rownum as seq from table(l_elevation_units(2)))      t12 on t12.seq = t01.seq      
-     join (select column_value as cv13, rownum as seq from table(l_elevation_estimated(2)))  t13 on t13.seq = t01.seq  
-     join (select column_value as cv14, rownum as seq from table(l_vertical_datums(2)))      t14 on t14.seq = t01.seq      
-     join (select column_value as cv15, rownum as seq from table(l_time_zones(2)))           t15 on t15.seq = t01.seq           
-     join (select column_value as cv16, rownum as seq from table(l_counties(2)))             t16 on t16.seq = t01.seq             
-     join (select column_value as cv17, rownum as seq from table(l_states(2)))               t17 on t17.seq = t01.seq               
-     join (select column_value as cv18, rownum as seq from table(l_nations(2)))              t18 on t18.seq = t01.seq              
-     join (select column_value as cv19, rownum as seq from table(l_nearest_cities(2)))       t19 on t19.seq = t01.seq              
-     join (select column_value as cv20, rownum as seq from table(l_bounding_offices(2)))     t20 on t20.seq = t01.seq     
-     join (select column_value as cv21, rownum as seq from table(l_location_kinds(2)))       t21 on t21.seq = t01.seq       
-     join (select column_value as cv22, rownum as seq from table(l_location_types(2)))       t22 on t22.seq = t01.seq
-    order by 1, 2;  
-   
+     
    l_ts2 := systimestamp;
    l_elapsed_query := l_ts2 - l_ts1;
    l_ts1 := systimestamp;
@@ -8721,436 +8582,351 @@ end unassign_loc_groups;
    dbms_lob.createtemporary(l_data, true);
    case
    when l_format = 'XML' then
+      null;
       ---------
       -- XML --
       ---------
-      cwms_util.append(l_data, '<locations xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/Locations.xsd">');
-      case
-      when l_count <= l_reduced_count then
-         -----------------
-         -- full output --
-         -----------------
-         for i in 1..l_count loop  
+      cwms_util.append(l_data, '<locations>');
+      l_text := l_indexes.first;
+      loop
+         exit when l_text is null;
+         cwms_util.append(
+            l_data, 
+            '<location><identity><office>'
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).office_id
+            ||'</office><name>'
+            ||dbms_xmlgen.convert(l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).location_id, dbms_xmlgen.entity_encode)
+            ||'</name>');
+         cwms_util.append(l_data, '<alternate-names>');
+         for i in 1..l_alternate_names(l_indexes(l_text).i)(l_indexes(l_text).j).count loop
             cwms_util.append(
-               l_data, 
-               '<location><basic><identity><office>'
-               ||l_offices(1)(i)
-               ||'</office><name>'
-               ||dbms_xmlgen.convert(l_location_ids(1)(i), dbms_xmlgen.entity_encode)
-               ||'</name><alternate-names>'
-               ||case
-                 when l_alternate_names(1)(i) is null then null
-                 else '<name>'||replace(dbms_xmlgen.convert(l_alternate_names(1)(i), dbms_xmlgen.entity_encode), '.', '</name><name>')||'</name>'
-                 end
-               ||'</alternate-names></identity><label><long-name>'
-               ||dbms_xmlgen.convert(l_long_names(1)(i), dbms_xmlgen.entity_encode)
-               ||'</long-name><public-name>'
-               ||dbms_xmlgen.convert(l_public_names(1)(i), dbms_xmlgen.entity_encode)
-               ||'</public-name><map-label>'
-               ||dbms_xmlgen.convert(l_map_labels(1)(i), dbms_xmlgen.entity_encode)
-               ||'</map-label><description>'
-               ||dbms_xmlgen.convert(l_descriptions(1)(i), dbms_xmlgen.entity_encode)
-               ||'</description></label><geolocation><latitude>'
-               ||l_latitudes(1)(i)
-               ||'</latitude><longitude>'
-               ||l_longitudes(1)(i)
-               ||'</longitude><horizontal-datum>'
-               ||l_horizontal_datums(1)(i)
-               ||'</horizontal-datum><elevation unit="'
-               ||l_elevation_units(1)(i)
-               ||'" estimate="'
-               ||nvl(l_elevation_estimated(1)(i), 'false')
-               ||'" vertical-datum="'
-               ||l_vertical_datums(1)(i)
-               ||'">'
-               ||l_elevations(1)(i)
-               ||'</elevation></geolocation><political><timezone>'
-               ||l_time_zones(1)(i)
-               ||'</timezone><county>'
-               ||l_counties(1)(i)
-               ||'</county><state>'
-               ||l_states(1)(i)
-               ||'</state><nation>'
-               ||l_nations(1)(i)
-               ||'</nation><nearest-city>'
-               ||l_nearest_cities(1)(i)
-               ||'</nearest-city><bounding-office>'
-               ||l_bounding_offices(1)(i)
-               ||'</bounding-office></political><classification><location-kind>'
-               ||l_location_kinds(1)(i)
-               ||'</location-kind><location-type>'
-               ||l_location_types(1)(i)
-               ||'</location-type></classification></basic></location>');
+               l_data,
+               '<name>'
+               ||dbms_xmlgen.convert(l_alternate_names(l_indexes(l_text).i)(l_indexes(l_text).j)(i), dbms_xmlgen.entity_encode)
+               ||'</name>');
          end loop;
-      when l_count <= l_minimal_count then
-         --------------------
-         -- reduced output --
-         --------------------
-         for i in 1..l_count loop  
-            cwms_util.append(
-               l_data, 
-               '<location><basic-reduced><identity><office>'
-               ||l_offices(1)(i)
-               ||'</office><name>'
-               ||dbms_xmlgen.convert(l_location_ids(1)(i), dbms_xmlgen.entity_encode)
-               ||'</name><alternate-names>'
-               ||case
-                 when l_alternate_names(1)(i) is null then null
-                 else '<name>'||replace(dbms_xmlgen.convert(l_alternate_names(1)(i), dbms_xmlgen.entity_encode), '.', '</name><name>')||'</name>'
-                 end
-               ||'</alternate-names></identity><label><public-name>'
-               ||dbms_xmlgen.convert(l_public_names(1)(i), dbms_xmlgen.entity_encode)
-               ||'</public-name></label><geolocation><latitude>'
-               ||l_latitudes(1)(i)
-               ||'</latitude><longitude>'
-               ||l_longitudes(1)(i)
-               ||'</longitude></geolocation><political><state>'
-               ||l_states(1)(i)
-               ||'</state><nation>'
-               ||l_nations(1)(i)
-               ||'</nation></political><classification><location-kind>'
-               ||l_location_kinds(1)(i)
-               ||'</location-kind></classification></basic-reduced></location>');
-         end loop;
-      else
-         for i in 1..l_count loop
-            --------------------  
-            -- minimal output --
-            --------------------  
-            cwms_util.append(
-               l_data, 
-               '<location><basic-minimal><office>'
-               ||l_offices(1)(i)
-               ||'</office><name>'
-               ||dbms_xmlgen.convert(l_location_ids(1)(i), dbms_xmlgen.entity_encode)
-               ||'</name><alternate-names>'
-               ||case
-                 when l_alternate_names(1)(i) is null then null
-                 else '<name>'||replace(dbms_xmlgen.convert(l_alternate_names(1)(i), dbms_xmlgen.entity_encode), '.', '</name><name>')||'</name>'
-                 end
-               ||'</alternate-names><public-name>'
-               ||dbms_xmlgen.convert(l_public_names(1)(i), dbms_xmlgen.entity_encode)
-               ||'</public-name></basic-minimal></location>');
-         end loop;
-      end case;
+         cwms_util.append(l_data, '</alternate-names>');
+         cwms_util.append(
+            l_data, 
+            '</identity><label><public-name>'
+            ||dbms_xmlgen.convert(l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).public_name, dbms_xmlgen.entity_encode)
+            ||'</public-name><long-name>'
+            ||dbms_xmlgen.convert(l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).long_name, dbms_xmlgen.entity_encode)
+            ||'</long-name><description>'
+            ||dbms_xmlgen.convert(l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).description, dbms_xmlgen.entity_encode)
+            ||'</description></label><geolocation><latitude>'
+            ||cwms_rounding.round_dt_f(l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).latitude, '7777777777')
+            ||'</latitude><longitude>'
+            ||cwms_rounding.round_dt_f(l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).longitude, '7777777777')
+            ||'</longitude><horizontal-datum>'
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).horizontal_datum
+            ||'</horizontal-datum>'
+            ||case
+              when l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).elevation is null then '<elevation/>'
+              else
+                 '<elevation unit="'
+                 ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).elevation_unit
+                 ||'" estimate="'
+                 ||case when l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).elevation_estimated = 'T' then 'true' else 'false' end
+                 ||'" vertical-datum="'
+                 ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).vertical_datum
+                 ||'">'
+                 ||cwms_rounding.round_dt_f(l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).elevation, '7777777777')
+                 ||'</elevation>'
+            end
+            ||'</geolocation><political><timezone>'
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).time_zone_name
+            ||'</timezone><county>'
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).county
+            ||'</county><state>'
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).state_initial
+            ||'</state><nation>'
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).nation_id
+            ||'</nation><nearest-city>'
+            ||dbms_xmlgen.convert(l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).nearest_city, dbms_xmlgen.entity_encode)
+            ||'</nearest-city><bounding-office>'
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).bounding_office
+            ||'</bounding-office></political><classification><location-kind>'
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).location_kind
+            ||'</location-kind><location-type>'
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).location_type
+            ||'</location-type></classification></location>');
+         l_text := l_indexes.next(l_text);
+      end loop;
       cwms_util.append(l_data, '</locations>');
-      select xmlserialize(document xmltype(l_data) as clob indent)
-        into l_data
-        from dual;
+      l_data := regexp_replace(l_data, '<([^>]+)></\1>', '<\1/>', 1, 0);
    when l_format = 'JSON' then
+      null;
       ----------
       -- JSON --
       ----------
-      cwms_util.append(l_data, '{"locations":[');
-      case
-      when l_count <= l_reduced_count then
-         -----------------
-         -- full output --
-         -----------------
-         for i in 1..l_count loop
+      cwms_util.append(l_data, '{"locations":{"locations":[');
+      l_text := l_indexes.first;
+      loop
+         exit when l_text is null;
+         cwms_util.append(
+            l_data, 
+            case
+            when l_text = l_indexes.first then 
+               '{"identity":{"office":"'
+            else
+               ',{"identity":{"office":"'
+            end
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).office_id
+            ||'","name":"'
+            ||replace(l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).location_id, '"', '\"')
+            ||'","alternate-names":[');
+         for i in 1..l_alternate_names(l_indexes(l_text).i)(l_indexes(l_text).j).count loop
             cwms_util.append(
-               l_data, 
-               case
-               when i = 1 then 
-                  '{"basic":{"identity":{"office":"'
-               else
-                  ',{"basic":{"identity":{"office":"'
-               end
-               ||l_offices(1)(i)
-               ||'","name":"'
-               ||l_location_ids(1)(i)
-               ||'","alternate-names":'
-               ||case
-                 when l_alternate_names(1)(i) is null then 'null'
-                 else '["'||replace(l_alternate_names(1)(i), '.', '","')||'"]'
-                 end
-               ||'},"label":{"public-name":"'
-               ||l_public_names(1)(i)
-               ||'","long-name":"'
-               ||l_long_names(1)(i)
-               ||'","map-label":"'
-               ||l_map_labels(1)(i)
-               ||'","description":"'
-               ||l_descriptions(1)(i)
-               ||'"},"geolocation":{"latitude":'
-               ||nvl(l_latitudes(1)(i), 'null')
-               ||',"longitude":'
-               ||nvl(l_longitudes(1)(i), 'null')
-               ||',"horizontal-datum":"'
-               ||l_horizontal_datums(1)(i)
-               ||'","elevation":'
-               ||nvl(l_elevations(1)(i), 'null')
-               ||case
-                 when l_elevations(1)(i) is null then
-                    null
-                 else 
-                    ',"elevation-unit":"'
-                    ||l_elevation_units(1)(i)
-                    ||'","vertical-datum":"'
-                    ||l_vertical_datums(1)(i)
-                    ||'","estimated-elevation":"'
-                    ||nvl(l_elevation_estimated(1)(i), 'false')
-                    ||'"'
-                 end     
-               ||'},"political":{"nation":"'
-               ||l_nations(1)(i)
-               ||'","state":"'
-               ||l_states(1)(i)
-               ||'","county":"'
-               ||l_counties(1)(i)
-               ||'","timezone":"'
-               ||l_time_zones(1)(i)
-               ||'","nearest-city":"'
-               ||l_nearest_cities(1)(i)
-               ||'","bounding-office":"'
-               ||l_bounding_offices(1)(i)
-               ||'"},"classification":{"location-kind":"'
-               ||l_location_kinds(1)(i)
-               ||'","location-type":"'
-               ||l_location_types(1)(i)
-               ||'"}}}');
+               l_data,
+               case i
+               when 1 then '"'||replace(l_alternate_names(l_indexes(l_text).i)(l_indexes(l_text).j)(i), '"', '\"')||'"'
+               else ',"'||replace(l_alternate_names(l_indexes(l_text).i)(l_indexes(l_text).j)(i), '"', '\"')||'"'
+               end);
          end loop;
-      when l_count <= l_minimal_count then
-         --------------------
-         -- reduced output --
-         --------------------
-         for i in 1..l_count loop  
-            cwms_util.append(
-               l_data, 
-               case
-               when i = 1 then 
-                  '{"basic-reduced":{"identity":{"office":"'
-               else
-                  ',{"basic-reduced":{"identity":{"office":"'
-               end
-               ||l_offices(1)(i)
-               ||'","name":"'
-               ||l_location_ids(1)(i)
-               ||'","alternate-names":'
-               ||case
-                 when l_alternate_names(1)(i) is null then 'null'
-                 else '["'||replace(l_alternate_names(1)(i), '.', '","')||'"]'
-                 end
-               ||'},"label":{"public-name":"'
-               ||l_public_names(1)(i)
-               ||'"},"geolocation":{"latitude":'
-               ||nvl(l_latitudes(1)(i), 'null')
-               ||',"longitude":'
-               ||nvl(l_longitudes(1)(i), 'null')
-               ||'},"political":{"nation":"'
-               ||l_nations(1)(i)
-               ||'","state":"'
-               ||l_states(1)(i)
-               ||'"},"classification":{"location-kind":"'
-               ||l_location_kinds(1)(i)
-               ||'"}}}');
-         end loop;
-      else
-         for i in 1..l_count loop
-            --------------------  
-            -- minimal output --
-            --------------------  
-            cwms_util.append(
-               l_data, 
-               case
-               when i = 1 then 
-                  '{"basic-minimal":{"office":"'
-               else
-                  ',{"basic-minimal":{"office":"'
-               end
-               ||l_offices(1)(i)
-               ||'","name":"'
-               ||l_location_ids(1)(i)
-               ||'","alternate-names":'
-               ||case
-                 when l_alternate_names(1)(i) is null then 'null'
-                 else '["'||replace(l_alternate_names(1)(i), '.', '","')||'"]'
-                 end
-               ||',"public-name":"'
-               ||l_public_names(1)(i)
-               ||'"}}');
-         end loop;
-      end case;
-      cwms_util.append(l_data, ']}');
+         cwms_util.append(
+            l_data,
+            ']},"label":{"public-name":"'
+            ||replace(l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).public_name, '"', '\"')
+            ||'","long-name":"'
+            ||replace(l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).long_name, '"', '\"')
+            ||'","description":"'
+            ||replace(l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).description, '"', '\"')
+            ||'"},"geolocation":{"latitude":'
+            ||case
+              when l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).latitude is null then 'null'
+              else cwms_rounding.round_dt_f(l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).latitude, '7777777777')
+              end
+            ||',"longitude":'
+            ||case
+              when l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).longitude is null then 'null'
+              else cwms_rounding.round_dt_f(l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).longitude, '7777777777')
+              end
+            ||',"horizontal-datum":"'
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).horizontal_datum
+            ||'","elevation":'
+            ||case
+              when l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).elevation is null then 'null'
+              else '{"value":'
+                   ||cwms_rounding.round_dt_f(l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).elevation, '7777777777')
+                   ||',"unit":"'
+                   ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).elevation_unit
+                   ||'","datum":"'
+                   ||nvl(l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).vertical_datum, null)
+                   ||'","estimate":'
+                   ||case when l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).elevation_estimated = 'T' then '"true"' else '"false"' end
+                   ||'}'
+              end
+            ||'},"political":{"nation":"'
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).nation_id
+            ||'","state":"'
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).state_initial
+            ||'","county":"'
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).county
+            ||'","timezone":"'
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).time_zone_name
+            ||'","nearest-city":"'
+            ||replace(l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).nearest_city, '"', '\"')
+            ||'","bounding-office":"'
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).bounding_office
+            ||'"},"classification":{"location-kind":"'
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).location_kind
+            ||'","location-type":"'
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).location_type
+            ||'"}}');
+         l_text := l_indexes.next(l_text);            
+      end loop;
+      cwms_util.append(l_data, ']}}');
+      l_data := replace(l_data, '""', 'null');
    when l_format in ('TAB', 'CSV') then
       ----------------
       -- TAB or CSV --
       ----------------
-      case
-      when l_count <= l_reduced_count then
-         -----------------
-         -- full output --
-         -----------------
-         for i in 1..l_count loop
-            cwms_util.append(
-               l_data,
-               chr(10)||'# IDENTITY'||chr(10)
-               ||rpad('#   OFFICE', l_width, ' ')||chr(9)||l_offices(1)(i)||chr(10)
-               ||rpad('#   NAME', l_width, ' ')||chr(9)||l_location_ids(1)(i)||chr(10)
-               ||'#   ALTERNATE_NAMES'||chr(10)
-               ||case
-                 when l_alternate_names(1)(i) is null then null
-                 else rpad('#     NAME', l_width, ' ')
-                      ||chr(9)
-                      ||replace(l_alternate_names(1)(i), '.', chr(10)||rpad('#     NAME', l_width, ' ')||chr(9))
-                      ||chr(10)
-                 end
-               ||'# LABEL'||chr(10) 
-               ||rpad('#   LONG NAME', l_width, ' ')||chr(9)||l_long_names(1)(i)||chr(10)
-               ||rpad('#   PUBLIC NAME', l_width, ' ')||chr(9)||l_public_names(1)(i)||chr(10)
-               ||rpad('#   MAP LABEL', l_width, ' ')||chr(9)||l_map_labels(1)(i)||chr(10)
-               ||rpad('#   DESCRIPTION', l_width, ' ')||chr(9)||l_descriptions(1)(i)||chr(10)
-               ||'# GEOLOCATION'||chr(10) 
-               ||rpad('#   LATITUDE', l_width, ' ')||chr(9)||l_latitudes(1)(i)||chr(10)
-               ||rpad('#   LONGITUDE', l_width, ' ')||chr(9)||l_longitudes(1)(i)||chr(10)
-               ||rpad('#     HORIZONTAL DATUM', l_width, ' ')||chr(9)||l_horizontal_datums(1)(i)||chr(10)
-               ||rpad('#   ELEVATION', l_width, ' ')||chr(9)
-               ||case
-                 when l_elevations(1)(i) is null then
-                  null
-                 else 
-                    l_elevations(1)(i)
-                    ||' '||l_elevation_units(1)(i)
-                    ||case
-                      when l_vertical_datums(1)(i) is null then null
-                      else ' '||l_vertical_datums(1)(i)
-                      end
-                    ||case
-                      when l_elevation_estimated(1)(i) = 'true' then ' estimated'
-                      else null
-                      end
-                 end
-                 ||chr(10)    
-               ||'# POLITICAL'||chr(10) 
-               ||rpad('#   TIME ZONE', l_width, ' ')||chr(9)||l_time_zones(1)(i)||chr(10)
-               ||rpad('#   COUNTY', l_width, ' ')||chr(9)||l_counties(1)(i)||chr(10)
-               ||rpad('#   STATE', l_width, ' ')||chr(9)||l_states(1)(i)||chr(10)
-               ||rpad('#   NATION', l_width, ' ')||chr(9)||l_nations(1)(i)||chr(10)
-               ||rpad('#   NEAREST CITY', l_width, ' ')||chr(9)||l_nearest_cities(1)(i)||chr(10)
-               ||rpad('#   BOUNDING OFFICE', l_width, ' ')||chr(9)||l_bounding_offices(1)(i)||chr(10)
-               ||'# CLASSIFICATION'||chr(10) 
-               ||rpad('#   LOCATION KIND', l_width, ' ')||chr(9)||l_location_kinds(1)(i)||chr(10)
-               ||rpad('#   LOCATION TYPE', l_width, ' ')||chr(9)||l_location_types(1)(i)||chr(10));
-         end loop;
-      when l_count <= l_minimal_count then
-         --------------------
-         -- reduced output --
-         --------------------
-         for i in 1..l_count loop
-            cwms_util.append(
-               l_data,
-               chr(10)||'# IDENTITY'||chr(10)
-               ||rpad('#   OFFICE', l_width, ' ')||chr(9)||l_offices(1)(i)||chr(10)
-               ||rpad('#   NAME', l_width, ' ')||chr(9)||l_location_ids(1)(i)||chr(10)
-               ||'#   ALTERNATE_NAMES'||chr(10)
-               ||case
-                 when l_alternate_names(1)(i) is null then null
-                 else rpad('#     NAME', l_width, ' ')
-                      ||chr(9)
-                      ||replace(l_alternate_names(1)(i), '.', chr(10)||rpad('#     NAME', l_width, ' ')||chr(9))
-                      ||chr(10)
-                 end
-               ||'# LABEL'||chr(10) 
-               ||rpad('#   PUBLIC NAME', l_width, ' ')||chr(9)||l_public_names(1)(i)||chr(10)
-               ||'# GEOLOCATION'||chr(10) 
-               ||rpad('#   LATITUDE', l_width, ' ')||chr(9)||l_latitudes(1)(i)||chr(10)
-               ||rpad('#   LONGITUDE', l_width, ' ')||chr(9)||l_longitudes(1)(i)||chr(10)
-               ||'# POLITICAL'||chr(10) 
-               ||rpad('#   STATE', l_width, ' ')||chr(9)||l_states(1)(i)||chr(10)
-               ||rpad('#   NATION', l_width, ' ')||chr(9)||l_nations(1)(i)||chr(10)
-               ||'# CLASSIFICATION'||chr(10) 
-               ||rpad('#   LOCATION KIND', l_width, ' ')||chr(9)||l_location_kinds(1)(i)||chr(10));
-         end loop;
-      else
-         for i in 1..l_count loop
-            --------------------  
-            -- minimal output --
-            --------------------  
-            cwms_util.append(
-               l_data,
-               chr(10)||rpad('# OFFICE', l_width, ' ')||chr(9)||l_offices(1)(i)||chr(10)
-               ||rpad('# NAME', l_width, ' ')||chr(9)||l_location_ids(1)(i)||chr(10)
-               ||'# ALTERNATE_NAMES'||chr(10)
-               ||case
-                 when l_alternate_names(1)(i) is null then null
-                 else rpad('#   NAME', l_width, ' ')
-                      ||chr(9)
-                      ||replace(l_alternate_names(1)(i), '.', chr(10)||rpad('#   NAME', l_width, ' ')||chr(9))
-                      ||chr(10)
-                 end
-               ||rpad('# PUBLIC NAME', l_width, ' ')||chr(9)||l_public_names(1)(i)||chr(10));
-         end loop;
-      end case;
+      cwms_util.append(
+         l_data,
+         cwms_util.join_text(
+            str_tab_t(
+               '#Office',
+               'Name',
+               'Public Name',
+               'Long Name',
+               'Description',
+               'Latitude',
+               'Longitude',
+               'Horiz. Datum',
+               'Elevation',
+               'Time Zone',
+               'Nation',
+               'State',
+               'County',
+               'Nearest City',
+               'Bounding Office',
+               'Location Kind',
+               'Location Type',
+               'Alternate Names'),
+         chr(9))
+         ||chr(10));
+      l_text := l_indexes.first;
+      loop
+         exit when l_text is null;
+         cwms_util.append(
+            l_data,
+            l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).office_id||chr(9)
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).location_id||chr(9)
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).public_name||chr(9)
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).long_name||chr(9)
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).description||chr(9)
+            ||cwms_rounding.round_dt_f(l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).latitude, '7777777777')||chr(9)
+            ||cwms_rounding.round_dt_f(l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).longitude, '7777777777')||chr(9)
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).horizontal_datum||chr(9)
+            ||case
+              when l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).elevation is null then null
+              else 
+                 cwms_rounding.round_dt_f(l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).elevation, '7777777777')
+                 ||' '||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).elevation_unit
+                 ||case
+                   when l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).vertical_datum is null then null
+                   else ' '||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).vertical_datum
+                   end
+                 ||case
+                   when l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).elevation_estimated = 'T' then ' estimated'
+                   else null
+                   end
+              end
+            ||chr(9)    
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).time_zone_name||chr(9)
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).nation_id||chr(9)
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).state_initial||chr(9)
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).county||chr(9)
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).nearest_city||chr(9)
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).bounding_office||chr(9)
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).location_kind||chr(9)
+            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).location_type
+            ||case
+              when l_alternate_names(l_indexes(l_text).i)(l_indexes(l_text).j) is null then null
+              else chr(9)||cwms_util.join_text(l_alternate_names(l_indexes(l_text).i)(l_indexes(l_text).j), chr(9))
+              end
+            ||chr(10));
+         l_text := l_indexes.next(l_text);
+      end loop;
    end case;
       
    if l_format = 'CSV' then
       ---------
       -- CSV --
       ---------
-      l_data := regexp_replace(
-         replace(
-            replace(
-               regexp_replace(
-                  regexp_replace(
-                     regexp_replace(
-                        replace(  
-                           l_data,
-                           chr(10),
-                           chr(10)||chr(10)), 
-                        ' *'||chr(9), chr(10)),
-                     '^(.*,.*)$',
-                     '"\1"',
-                     1, 0, 'm'),  
-                  '([^'||chr(10)||'])'||chr(10), '\1,'), 
-               ','||chr(10), chr(10)),
-            chr(10)||chr(10), chr(10)), 
-         '^# +', '# ', 
-         1, 0, 'm');
+      l_data := cwms_util.tab_to_csv(l_data);
    end if;
       
    l_ts2 := systimestamp;
    l_elapsed_format := l_ts2 - l_ts1;
 
       
-   if l_format in ('TAB', 'CSV') then
-      declare
-         l_data2 clob;
-         l_name  varchar2(32767);
-      begin
-         dbms_lob.createtemporary(l_data2, true);
-         select db_unique_name into l_name from v$database;
-         cwms_util.append(l_data2, rpad('# PROCESSED AT', l_width, ' ')||chr(9)||utl_inaddr.get_host_name ||':'||l_name||chr(10));
-         cwms_util.append(l_data2, rpad('# TIME OF QUERY', l_width, ' ')||chr(9)||to_char(l_query_time, 'dd-MON-yyyy hh24:mi')||' UTC'||chr(10));
-         cwms_util.append(l_data2, rpad('# PROCESS QUERY', l_width, ' ')||chr(9)||trunc(1000 * (extract(minute from l_elapsed_query) * 60 + extract(second from l_elapsed_query)))||' milliseconds'||chr(10));
-         cwms_util.append(l_data2, rpad('# FORMAT OUTPUT', l_width, ' ')||chr(9)||trunc(1000 * (extract(minute from l_elapsed_format) * 60 + extract(second from l_elapsed_format)))||' milliseconds'||chr(10));
-         cwms_util.append(l_data2, rpad('# LOCATIONS RETRIEVED', l_width, ' ')||chr(9)||l_count||chr(10));
+   declare
+      l_data2 clob;
+      l_name  varchar2(32767);
+   begin
+      dbms_lob.createtemporary(l_data2, true);
+      select db_unique_name into l_name from v$database;
+      case
+      when l_format = 'XML' then
+         cwms_util.append(
+            l_data2, 
+            '<query-info><processed-at>'
+            ||utl_inaddr.get_host_name
+            ||':'
+            ||l_name
+            ||'</processed-at><time-of-query>'
+            ||to_char(l_query_time, 'yyyy-mm-dd"T"hh24:mi:ss')
+            ||'Z</time-of-query><process-query>'
+            ||iso_duration(l_elapsed_query)
+            ||'</process-query><format-output>'
+            ||iso_duration(l_elapsed_format)
+            ||'</format-output><requested-format>'
+            ||l_format
+            ||'</requested-format><requested-office>'
+            ||l_office_id
+            ||'</requested-office>');
+            for i in 1..l_names.count loop
+               cwms_util.append(
+                  l_data2,
+                  '<requested-item><name>'
+                  ||l_names(i)
+                  ||'</name><unit>'
+                  ||l_units(i)
+                  ||'</unit><datum>'
+                  ||l_datums(i)
+                  ||'</datum></requested-item>');
+            end loop;
+         cwms_util.append(
+            l_data2, 
+            '<total-locations-retrieved>'
+            ||l_count
+            ||'</total-locations-retrieved><unique-locations_retrieved>'
+            ||l_unique_codes.count
+            ||'</unique-locations_retrieved></query-info>');
+         l_data := regexp_replace(l_data, '^(<locations.*?>)', '\1'||l_data2, 1, 1);
+         p_results := l_data;
+      when l_format = 'JSON' then
+         cwms_util.append(
+            l_data2, 
+            '"query-info":{"processed-at":"'
+            ||utl_inaddr.get_host_name
+            ||':'
+            ||l_name
+            ||'","time-of-query":"'
+            ||to_char(l_query_time, 'yyyy-mm-dd"T"hh24:mi:ss')
+            ||'Z","process-query":"'
+            ||iso_duration(l_elapsed_query)
+            ||'","format-output":"'
+            ||iso_duration(l_elapsed_format)
+            ||'","requested-format":"'
+            ||l_format
+            ||'","requested-office":"'
+            ||l_office_id
+            ||'","requested-items":[');
+         for i in 1..l_names.count loop
+            cwms_util.append(
+               l_data2,
+               case
+               when i = 1 then '{"name":"'
+               else  ',{"name":"'
+               end
+               ||l_names(i)
+               ||'","unit":"'
+               ||l_units(i)
+               ||'","datum":"'
+               ||l_datums(i)
+               ||'"}');
+         end loop;
+         cwms_util.append(
+            l_data2, 
+            '],"total-locations-retrieved":'
+            ||l_count
+            ||',"unique-locations-retrieved":'
+            ||l_unique_codes.count
+            ||'},');
+         l_data := regexp_replace(l_data, '^({"locations":{)', '\1'||l_data2, 1, 1);
+         p_results := l_data;
+      when l_format in ('TAB', 'CSV') then
+         cwms_util.append(l_data2, '#Processed At'       ||chr(9)||utl_inaddr.get_host_name ||':'||l_name||chr(10));
+         cwms_util.append(l_data2, '#Time Of Query'      ||chr(9)||to_char(l_query_time, 'Dd-Mon-Yyyy Hh24:Mi')||' UTC'||chr(10));
+         cwms_util.append(l_data2, '#Process Query'      ||chr(9)||trunc(1000 * (extract(minute from l_elapsed_query) * 60 + extract(second from l_elapsed_query)))||' Milliseconds'||chr(10));
+         cwms_util.append(l_data2, '#Format Output'      ||chr(9)||trunc(1000 * (extract(minute from l_elapsed_format) * 60 + extract(second from l_elapsed_format)))||' Milliseconds'||chr(10));
+         cwms_util.append(l_data2, '#Requested Format'   ||chr(9)||l_format||chr(10));
+         cwms_util.append(l_data2, '#Requested Office'   ||chr(9)||l_office_id||chr(10));
+         cwms_util.append(l_data2, '#Requested Names'    ||chr(9)||cwms_util.join_text(l_names, chr(9))||chr(10));
+         cwms_util.append(l_data2, '#Requested Units'    ||chr(9)||cwms_util.join_text(l_units, chr(9))||chr(10));
+         cwms_util.append(l_data2, '#Requested Datums'   ||chr(9)||cwms_util.join_text(l_datums, chr(9))||chr(10));
+         cwms_util.append(l_data2, '#Total Locations Retrieved'||chr(9)||l_count||chr(10));
+         cwms_util.append(l_data2, '#Unique Locations Retrieved'||chr(9)||l_unique_codes.count||chr(10)||chr(10));
          if l_format = 'CSV' then
-            l_data2 := regexp_replace( 
-               replace(
-                  replace(
-                     regexp_replace(
-                        regexp_replace(
-                           regexp_replace(
-                              replace(  
-                                 l_data2,
-                                 chr(10),
-                                 chr(10)||chr(10)), 
-                              ' *'||chr(9), chr(10)),
-                           '^(.*,.*)$',
-                           '"\1"',
-                           1, 0, 'm'),  
-                        '([^'||chr(10)||'])'||chr(10), '\1,'), 
-                     ','||chr(10), chr(10)),
-                  chr(10)||chr(10), chr(10)), 
-               '^# +', '# ', 
-               1, 0, 'm');
+            l_data2 := cwms_util.tab_to_csv(l_data2);
          end if;
          cwms_util.append(l_data2, l_data);
          p_results := l_data2;
-      end;
-   else
-      p_results := l_data;
-   end if;
+      end case;
+   end;
    
    p_date_time      := l_query_time;
    p_query_time     := trunc(1000 * (extract(minute from l_elapsed_query) * 60 + extract(second from l_elapsed_query)));

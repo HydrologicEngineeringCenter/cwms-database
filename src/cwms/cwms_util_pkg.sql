@@ -2656,6 +2656,24 @@ AS
    function cat_scheduled_job_history(
       p_job_name in varchar2)
       return sys_refcursor;
+   /**
+    * Converts a tab-separated-value string into a comma-separated-value string
+    *
+    * @param p_tab The string to convert 
+    * @return The converted string, with any values containing commas quoted
+    */
+   function tab_to_csv(
+      p_tab in clob)
+      return clob;
+   /**
+    * Converts a tab-separated-value string into a comma-separated-value string
+    *
+    * @param p_tab The string to convert 
+    * @return The converted string, with any values containing commas quoted
+    */
+   function tab_to_csv(
+      p_tab in varchar2)
+      return varchar2;
       
 END cwms_util;
 /
