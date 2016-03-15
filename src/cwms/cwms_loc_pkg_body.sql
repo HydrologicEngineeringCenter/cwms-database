@@ -8186,7 +8186,6 @@ end unassign_loc_groups;
       l_elapsed_query        interval day (0) to second (6);
       l_elapsed_format       interval day (0) to second (6);
       l_count                pls_integer;
-      l_unique_count         pls_integer;
       l_temp                 varchar2(256);
       l_alternate_names      str_tab_tab_tab_t;
       l_locations            loc_tab_tab_t;

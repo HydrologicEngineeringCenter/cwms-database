@@ -10770,34 +10770,22 @@ end retrieve_existing_item_counts;
       l_unique_tsid_count  integer := 0;
       l_value_count        integer := 0;      
       l_unique_value_count integer := 0;
-      l_name_pos           number_tab_t;        
       l_name               varchar2(512);
       l_xml                xmltype;
-      l_nodes              xml_tab_t;
-      l_nodes1             xml_tab_t;
-      l_nodes2             xml_tab_t;
       l_first              boolean;
-      l_width              pls_integer;
-      l_other_ind          str_tab_t;
       l_lines              str_tab_t;
       l_ts1                timestamp;
       l_ts2                timestamp;
       l_elapsed_query      interval day (0) to second (6);
       l_elapsed_format     interval day (0) to second (6);
       l_query_time         date; 
-      l_attrs              str_tab_t;
-      l_offices            str_tab_t;
-      l_ids                str_tab_t;
-      l_descriptions       str_tab_t;  
       c                    sys_refcursor;
       l_tsids              tsid_tab_tab_t;  
       l_tsids2             idx_t;
-      l_used               bool_t;
       l_quality_used       bool_t;
       l_text               varchar2(32767);
       l_tsv                tsv_tab_t;
       l_segments           seg_tab_t;
-      l_segment_number     pls_integer;
       l_last_non_null      integer;
       l_intvl              pls_integer;
       l_intvl_str          varchar2(16);
@@ -11109,7 +11097,6 @@ end retrieve_existing_item_counts;
                ------------------------
                -- TAB or CSV catalog --
                ------------------------
-               l_width := 30;
                cwms_util.append(
                   l_data, 
                   '#Catalog of time series that contain data between '

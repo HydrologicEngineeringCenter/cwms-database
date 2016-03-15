@@ -6003,8 +6003,6 @@ is
    l_unique_spec_count   pls_integer := 0;
    l_rating_count        pls_integer := 0;
    l_unique_rating_count pls_integer := 0;
-   l_name_pos            number_tab_t;        
-   l_native_units        varchar2(128);
    l_rating              rating_t;
    l_templates_used      bool_tab_t;
    l_specs_used          bool_tab_t;
@@ -6015,27 +6013,11 @@ is
    l_name                varchar2(512);
    l_value               varchar2(16);
    l_xml                 xmltype;
-   l_nodes               xml_tab_t;
-   l_nodes1              xml_tab_t;
-   l_nodes2              xml_tab_t;
-   l_first               boolean;
-   l_is_transitional     boolean;
-   l_is_virtual          boolean;
-   l_is_stream_rating    boolean;
-   l_is_concrete         boolean;
-   l_is_vdatum_rating    boolean;
-   l_is_estimated        bool_tab_t;
-   l_param_names         str_tab_t;
-   l_ind_param_names     str_tab_t;
-   l_param_units         str_tab_t;
-   l_other_ind           str_tab_t;
-   l_lines               str_tab_t;
    l_ts1                 timestamp;
    l_ts2                 timestamp;
    l_elapsed_query       interval day (0) to second (6);
    l_elapsed_format      interval day (0) to second (6);
    l_query_time          date; 
-   l_attrs               str_tab_t;
    l_offices             str_tab_t;
    l_ids                 str_tab_t;
    l_descriptions        str_tab_t;    
@@ -6406,7 +6388,6 @@ begin
          ----------------------
          l_ratings := rating_tab_tab_t();
          l_ratings.extend(l_names.count);
-         l_name_pos := number_tab_t();
          l_codes := number_tab_t();
          l_codes.extend(3);
          for i in 1..l_names.count loop
@@ -6605,7 +6586,6 @@ begin
          cwms_util.append(l_data, '</ratings>');
          l_xml := xmltype(l_data);
          dbms_lob.createtemporary(l_data, true);
-         l_first := true;
          case 
          when l_format = 'XML' then
             --------------

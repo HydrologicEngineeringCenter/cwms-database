@@ -8108,9 +8108,7 @@ is
    type rec_tab_t is table of rec_t;
    type idx_t is table of str_tab_t index by pls_integer;
    type bool_t is table of boolean index by varchar2(32767);
-   type tsv_t is record(date_time date, value binary_double, quality_code integer);
-   type tsv_tab_t is table of tsv_t;
-   type segment_t is record(start_time date, end_time date, first_index integer, last_index integer, interp varchar2(5));
+   type segment_t is record(first_index integer, last_index integer, interp varchar2(5));
    type seg_tab_t is table of segment_t;
    l_data             clob;  
    l_format           varchar2(16);
@@ -8124,43 +8122,28 @@ is
    l_end_utc          date;
    l_timezone         varchar2(28);
    l_office_id        varchar2(16);
-   l_codes1           number_tab_t;
-   l_codes2           number_tab_t;
    l_parts            str_tab_t; 
    l_unit             varchar2(16);
    l_attr_unit        varchar2(16);
    l_datum            varchar2(16);  
    l_count            pls_integer := 0;
    l_unique_count     pls_integer := 0;
-   l_name_pos         number_tab_t;        
    l_name             varchar2(512);
-   l_xml              xmltype;
-   l_nodes            xml_tab_t;
-   l_nodes1           xml_tab_t;
-   l_nodes2           xml_tab_t;
    l_first            boolean;
-   l_width            pls_integer;
-   l_other_ind        str_tab_t;
-   l_lines            str_tab_t;
    l_ts1              timestamp;
    l_ts2              timestamp;
    l_elapsed_query    interval day (0) to second (6);
    l_elapsed_format   interval day (0) to second (6);
    l_query_time       date; 
    l_attrs            str_tab_t;
-   l_offices          str_tab_t;
-   l_ids              str_tab_t;
-   l_descriptions     str_tab_t;  
    c                  sys_refcursor;
    l_lvlids           rec_tab_t := rec_tab_t();  
    l_lvlids2          idx_t;
    l_used             bool_t;
    l_text             varchar2(32767);
    l_text2            varchar2(32767);
-   l_tsv              tsv_tab_t;
    l_interp           pls_integer;
    l_estimated        boolean;
-   l_is_elev          boolean;
    l_level_values     ztsv_array_tab;
    l_code             pls_integer;
    l_segments         seg_tab_t;
@@ -9459,13 +9442,11 @@ begin
                      for k in 1..l_level_values(j).count loop
                         if l_level_values(j)(k).quality_code != l_interp then
                            l_segments.extend;
-                           l_segments(l_segments.count).start_time := l_level_values(j)(k).date_time;
                            l_segments(l_segments.count).first_index := k;
                            l_segments(l_segments.count).interp := case when l_level_values(j)(k).quality_code = 0 then 'false' else 'true' end;
                            l_interp := l_level_values(j)(k).quality_code;
                         end if;
                         l_segments(l_segments.count).last_index := k;
-                        l_segments(l_segments.count).end_time := l_level_values(j)(k).date_time;
                      end loop;
                      for k in 1..l_segments.count loop
                         cwms_util.append(
@@ -9575,13 +9556,11 @@ begin
                      for k in 1..l_level_values(j).count loop
                         if l_level_values(j)(k).quality_code != l_interp then
                            l_segments.extend;
-                           l_segments(l_segments.count).start_time := l_level_values(j)(k).date_time;
                            l_segments(l_segments.count).first_index := k;
                            l_segments(l_segments.count).interp := case when l_level_values(j)(k).quality_code = 0 then 'false' else 'true' end;
                            l_interp := l_level_values(j)(k).quality_code;
                         end if;
                         l_segments(l_segments.count).last_index := k;
-                        l_segments(l_segments.count).end_time := l_level_values(j)(k).date_time;
                      end loop;
                      cwms_util.append(l_data, ',"segments":[');
                      for k in 1..l_segments.count loop
