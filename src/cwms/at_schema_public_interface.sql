@@ -67,15 +67,15 @@ BEGIN
 	--
 	-- drop collected public synonyms
 	--
-	DBMS_OUTPUT.put_line ('--');
+	--DBMS_OUTPUT.put_line ('--');
 
-	FOR i IN 1 .. l_public_synonyms.COUNT
-	LOOP
-		l_sql_statement := 'DROP PUBLIC SYNONYM "' || l_public_synonyms (i) || '"';
-		DBMS_OUTPUT.put_line ('-- ' || l_sql_statement);
+	--FOR i IN 1 .. l_public_synonyms.COUNT
+	--LOOP
+		--l_sql_statement := 'DROP PUBLIC SYNONYM "' || l_public_synonyms (i) || '"';
+		--DBMS_OUTPUT.put_line ('-- ' || l_sql_statement);
 
-		EXECUTE IMMEDIATE l_sql_statement;
-	END LOOP;
+		--EXECUTE IMMEDIATE l_sql_statement;
+	--END LOOP;
 
 	--
 	-- create public synonyms for collected packages
@@ -85,7 +85,7 @@ BEGIN
 	FOR i IN 1 .. l_package_names.COUNT
 	LOOP
 		l_sql_statement :=
-				'CREATE PUBLIC SYNONYM '
+				'CREATE OR REPLACE PUBLIC SYNONYM '
 			|| l_package_names (i)
 			|| ' FOR &cwms_schema'
 			|| '.'
@@ -121,7 +121,7 @@ BEGIN
 		END IF;
 
 		l_sql_statement :=
-				'CREATE PUBLIC SYNONYM '
+				'CREATE OR REPLACE PUBLIC SYNONYM '
 			|| l_synonym
 			|| ' FOR &cwms_schema'
 			|| '.'
@@ -159,7 +159,7 @@ BEGIN
 		FOR j IN 2 .. 999999
 		LOOP
 			l_sql_statement :=
-					'CREATE PUBLIC SYNONYM '
+					'CREATE OR REPLACE PUBLIC SYNONYM '
 				|| l_synonym
 				|| ' FOR &cwms_schema'
 				|| '.'
@@ -239,7 +239,7 @@ END;
 -- PROCEDURE Synonyms...
 --
 GRANT EXECUTE ON &cwms_schema..download_file TO public;
-create public synonym DOWNLOAD_FILE for &cwms_schema..DOWNLOAD_FILE;
+create or replace public synonym DOWNLOAD_FILE for &cwms_schema..DOWNLOAD_FILE;
 --
 -----------------------------------------------
 -- removed until CMS spec and body are fixed --
@@ -251,10 +251,10 @@ create public synonym DOWNLOAD_FILE for &cwms_schema..DOWNLOAD_FILE;
 -- FUNCTION Synonyms...
 --
 GRANT EXECUTE ON &cwms_schema..str2tbl TO CWMS_USER;
-create public synonym str2tbl for &cwms_schema..str2tbl;
+create or replace public synonym str2tbl for &cwms_schema..str2tbl;
 --
 GRANT EXECUTE ON &cwms_schema..stragg TO CWMS_USER;
-create public synonym stragg for &cwms_schema..stragg;
+create or replace public synonym stragg for &cwms_schema..stragg;
 
 -----------------------------------------------
 -- New GRANTS on TABLES for public interface --
