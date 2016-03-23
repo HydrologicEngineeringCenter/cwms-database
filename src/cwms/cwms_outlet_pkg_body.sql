@@ -489,7 +489,7 @@ is
    l_rec at_outlet%rowtype;
    l_rating_group     varchar2(65) ;
    l_code             integer;
-   l_location_kind_id varchar2(32) ;
+   l_location_kind_id cwms_location_kind.location_kind_id%type;
 begin
    -------------------
    -- sanity checks --
@@ -511,7 +511,7 @@ begin
       end;
       if l_code             is not null then
          l_location_kind_id := cwms_loc.check_location_kind(l_code) ;
-         if l_location_kind_id not in('OUTLET', 'SITE') then
+         if l_location_kind_id not in('OUTLET', 'STREAMGAGE', 'SITE') then
             cwms_err.raise( 'ERROR', 'Cannot switch location ' ||p_outlets(i) .structure_location.location_ref.office_id ||'/' ||p_outlets(i) .structure_location.location_ref.get_location_id ||' from type ' ||l_location_kind_id ||' to type OUTLET') ;
          end if;
       end if;
@@ -531,20 +531,27 @@ begin
       -----------------------------------------------
       begin
          l_rec.outlet_location_code := p_outlets(i) .structure_location.location_ref.get_location_code('F') ;
-         l_exists                   := true;
+         l_exists                   := true; -- Location Exists
+         l_location_kind_id         := cwms_loc.check_location_kind(l_rec.outlet_location_code) ;
+         if l_location_kind_id       = 'OUTLET' then
          if l_fail_if_exists then
             cwms_err.raise( 'ITEM_ALREADY_EXISTS', 'CWMS outlet', p_outlets(i) .structure_location.location_ref.get_office_id ||'/' ||p_outlets(i) .structure_location.location_ref.get_location_id) ;
          end if;
+         end if;
       exception
       when no_data_found then
-         l_exists := false;
+         l_exists := false; -- Location Does not exist
+      cwms_loc.store_location(p_outlets(i) .structure_location, 'F') ;
       end;
       -----------------------
       -- create the record --
       -----------------------
-      cwms_loc.store_location(p_outlets(i) .structure_location, 'F') ;
-      if not l_exists then
          l_rec.outlet_location_code := p_outlets(i) .structure_location.location_ref.get_location_code('T') ;
+      if l_location_kind_id       = 'OUTLET' then
+          update at_outlet
+         set project_location_code    = l_rec.project_location_code
+           where outlet_location_code = l_rec.outlet_location_code;
+      else
           insert into at_outlet values l_rec;
       end if;
       -----------------------------------------------------
