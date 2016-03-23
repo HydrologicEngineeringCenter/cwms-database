@@ -62,6 +62,7 @@ AS
                 createdby = CWMS_UTIL.GET_USER_ID
           WHERE userid = UPPER(p_userid);
       END IF;
+      COMMIT;
    END UPDATE_USER_DATA;
 
    PROCEDURE update_cwms_user (p_userid         IN VARCHAR2,
