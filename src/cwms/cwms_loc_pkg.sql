@@ -9,9 +9,26 @@ CREATE OR REPLACE PACKAGE cwms_loc
  * @since CWMS 2.0
  */
 AS
+
+   c_str_site         CONSTANT VARCHAR2 (4) DEFAULT 'SITE';
+   c_str_streamgage   CONSTANT VARCHAR2 (10) DEFAULT 'STREAMGAGE';
+   c_str_embankment   CONSTANT VARCHAR2 (10) DEFAULT 'EMBANKMENT';
+   c_str_basin        CONSTANT VARCHAR2 (5) DEFAULT 'BASIN';
+   c_str_stream       CONSTANT VARCHAR2 (6) DEFAULT 'STREAM';
+   c_str_lock         CONSTANT VARCHAR2 (4) DEFAULT 'LOCK';
+   c_str_project      CONSTANT VARCHAR2 (7) DEFAULT 'PROJECT';
+   c_str_outlet       CONSTANT VARCHAR2 (6) DEFAULT 'OUTLET';
+   c_str_turbine      CONSTANT VARCHAR2 (7) DEFAULT 'TURBINE';
    -- leave these undocumented for now
 	l_elev_db_unit 			VARCHAR2 (16) := 'm';
 	l_abstract_elev_param	VARCHAR2 (32) := 'Length';
+   --
+    TYPE cat_loc_kind_rec_t
+      IS RECORD (location_kind_id cwms_location_kind.location_kind_id%TYPE);
+
+   -- not documented
+   TYPE cat_loc_kind_tab_t IS TABLE OF cat_loc_kind_rec_t;
+
    /**
     * Retrieves an actual location identifier given an identifier that may or may not be a location alias
     *
@@ -2369,6 +2386,57 @@ AS
       p_location_code in integer,
       p_exclude       in varchar2 default null)
       return varchar2;
+
+   /**
+ * Generates a single column SYS_REFCURSOR that contains the LOCATION_KIND_IDs
+ * that this p_location_id can be changed to.
+ *
+ * @param p_loc_kind_ids - a single column ref cursor of LOCATION_KIND_IDs.
+ * @param p_location_id - The location_id to check
+ * @param p_office_id - The owning office of p_location_id.
+ *
+ * @exception This function does not return any exceptions.
+ */
+   PROCEDURE get_valid_loc_kind_ids (p_loc_kind_ids      OUT SYS_REFCURSOR,
+                                 p_location_id    IN     VARCHAR2,
+                                 p_office_id      IN     VARCHAR2);
+/**
+ * Generates a pipelined single column collection of LOCATION_KIND_IDs
+ * that this p_location_id can be changed to.
+ *
+ * @param p_loc_kind_ids - a single column ref cursor of LOCATION_KIND_IDs.
+ * @param p_location_id - The location_id to check
+ * @param p_office_id - The owning office of p_location_id.
+ *
+ * @exception This function does not return any exceptions.
+ */
+   FUNCTION get_valid_loc_kind_ids_tab (p_location_id   IN VARCHAR2,
+                                    p_office_id     IN VARCHAR2)
+      RETURN cat_loc_kind_tab_t
+      PIPELINED;
+/**
+ * Checks if this p_location_id's LOCATION_KIND_ID can be change/reverted to 
+ * a more primitive LOCATION_KIND. If it can, the function returns the
+ * KIND that it can be reverted back to.
+ *
+ * Return values are:
+ *   SITE -       meaning that this p_location_id's LOCATION_KIND_ID can be
+ *                set back to a SITE.
+ *   STREAMGAGE - meaning that this p_location_id's LOCATION_KIND_ID can
+ *                be changed to a STREAMGAGE.
+ *   ERROR -      meaning that this p_location_id's LOCATION_KIND_ID cannot
+ *                be changed. This is usually because this p_location_id
+ *                is referenced by other objects in the database.
+ *
+ * @param p_location_id - The location_id to check
+ * @param p_office_id - The owning office of p_location_id.
+ *
+ * @exception This function does not return any exceptions.
+ */
+   FUNCTION can_revert_loc_kind_to (p_location_id   IN VARCHAR2,
+                                p_office_id     IN VARCHAR2)
+      RETURN VARCHAR2;
+
 
    /**
     * Retreives locations in a number of formats for a combination time window, timezone, formats, and vertical datums

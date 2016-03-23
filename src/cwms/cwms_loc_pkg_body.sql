@@ -2847,7 +2847,7 @@ AS
          ----------------------------------
          delete 
            from at_a2w_ts_codes_by_loc
-          where cwms_loc.get_location_code(db_office_id, location_id) in (select * from table (l_location_codes));           
+          where location_code in (select * from table (l_location_codes));           
       end if;
 
       --------------------------------------------------------------
@@ -6080,7 +6080,7 @@ end unassign_loc_groups;
          l_multiple := true; 
       end case;
       if l_multiple then
-         cwms_err.raise('ERROR', 'Location has multiple types: '||cwms_util.join_text(l_type_names, ', '));
+         cwms_err.raise('ERROR', 'Location' || ' ' || p_location_code || '/' || cwms_loc.get_location_id(p_location_code) || ' has multiple types: '||cwms_util.join_text(l_type_names, ', '));
       end if;
       return l_location_kind_id;
    end check_location_kind;
@@ -8103,6 +8103,139 @@ end unassign_loc_groups;
       end if;
       return l_descendants;
    end get_location_kind_descendants;
+
+   PROCEDURE get_valid_loc_kind_ids (p_loc_kind_ids      OUT SYS_REFCURSOR,
+                                 p_location_id    IN     VARCHAR2,
+                                 p_office_id      IN     VARCHAR2)
+   IS
+      l_loc_kind_id   cwms_location_kind.location_kind_id%TYPE;
+   BEGIN
+      BEGIN
+         l_loc_kind_id :=
+            cwms_loc.check_location_kind (p_location_id   => p_location_id,
+                                          p_office_id     => p_office_id);
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            l_loc_kind_id := 'ERROR';
+      END;
+   
+      CASE l_loc_kind_id
+         WHEN c_str_site
+         THEN
+            OPEN p_loc_kind_ids FOR
+               SELECT *
+                 FROM TABLE (
+                         str2tbl (
+                            p_str => 'SITE, BASIN, STREAM, STREAMGAGE, PROJECT, LOCK, OUTLET, EMBANKMENT, TURBINE'));
+         WHEN c_str_streamgage
+         THEN
+            OPEN p_loc_kind_ids FOR
+               SELECT *
+                 FROM TABLE (
+                         str2tbl (
+                            p_str => 'STREAMGAGE, PROJECT, LOCK, OUTLET, EMBANKMENT, TURBINE'));
+         ELSE
+            OPEN p_loc_kind_ids FOR
+               SELECT * FROM TABLE (str2tbl (p_str => l_loc_kind_id));
+      END CASE;
+   END;
+   
+   FUNCTION get_valid_loc_kind_ids_tab (p_location_id   IN VARCHAR2,
+                                    p_office_id     IN VARCHAR2)
+      RETURN cat_loc_kind_tab_t
+      PIPELINED
+   IS
+      query_cursor   SYS_REFCURSOR;
+      output_row     cat_loc_kind_rec_t;
+   BEGIN
+      get_valid_loc_kind_ids (query_cursor, p_location_id, p_office_id);
+                   
+      LOOP
+         FETCH query_cursor INTO output_row;
+   
+         EXIT WHEN query_cursor%NOTFOUND;
+         PIPE ROW (output_row);
+      END LOOP;
+   
+      CLOSE query_cursor;
+   END;
+
+   FUNCTION can_revert_loc_kind_to (p_location_id   IN VARCHAR2,
+                                p_office_id     IN VARCHAR2)
+      RETURN VARCHAR2
+   IS
+      l_loc_code        at_physical_location.location_code%TYPE;
+      l_loc_kind_id     cwms_location_kind.location_kind_id%TYPE;
+   BEGIN
+      l_loc_code :=
+         CWMS_LOC.get_location_code (p_db_office_id   => p_office_id,
+                                     p_location_id    => p_location_id);
+      
+      l_loc_kind_id :=
+         cwms_loc.check_location_kind (p_location_id   => p_location_id,
+                                       p_office_id     => p_office_id);
+      
+      BEGIN
+         CASE l_loc_kind_id
+            WHEN c_str_outlet
+            THEN
+               DELETE FROM at_outlet
+                     WHERE outlet_location_code = l_loc_code;
+               ROLLBACK;
+               RETURN 'STREAMGAGE';
+            WHEN c_str_embankment
+            THEN
+               DELETE FROM at_embankment
+                     WHERE embankment_location_code = l_loc_code;
+               ROLLBACK;
+               RETURN 'STREAMGAGE';
+            WHEN c_str_lock
+            THEN
+               DELETE FROM at_lock
+                     WHERE lock_location_code = l_loc_code;
+               ROLLBACK;
+               RETURN 'STREAMGAGE';
+            WHEN c_str_turbine
+            THEN
+               DELETE FROM at_turbine
+                     WHERE turbine_location_code = l_loc_code;
+               ROLLBACK;
+               RETURN 'STREAMGAGE';
+            WHEN c_str_project
+            THEN
+               DELETE FROM at_project
+                     WHERE project_location_code = l_loc_code;
+               ROLLBACK;
+               RETURN 'STREAMGAGE';
+            WHEN c_str_basin
+            THEN
+               DELETE FROM at_basin
+                     WHERE basin_location_code = l_loc_code;
+               ROLLBACK;
+               RETURN 'SITE';
+            WHEN c_str_stream
+            THEN
+               DELETE FROM at_stream
+                     WHERE stream_location_code = l_loc_code;
+               ROLLBACK;
+               RETURN 'SITE';
+            WHEN c_str_streamgage
+            THEN
+               DELETE FROM at_stream_location
+                     WHERE location_code = l_loc_code;
+               ROLLBACK;
+               RETURN 'SITE';
+         END CASE;
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            ROLLBACK;
+      END;
+
+      ROLLBACK;
+      RETURN 'ERROR';
+   END;
 
    function get_location_ids(
       p_location_code in integer,
