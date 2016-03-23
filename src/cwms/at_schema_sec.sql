@@ -756,7 +756,7 @@ INSERT INTO cwms_sec_user_groups (
                                                  user_group_id,
                                                  user_group_desc
               )
-  VALUES   (-3, 'CCP Reviewer', 'Users who will be allowed to review (i.e., read only) an office’s CCP computations.'
+  VALUES   (-3, 'CCP Reviewer', 'Users who will be allowed to review (i.e., read only) an office''s CCP computations.'
               );
 
 INSERT INTO cwms_sec_user_groups (
