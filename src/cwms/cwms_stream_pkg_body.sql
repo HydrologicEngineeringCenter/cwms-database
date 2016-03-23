@@ -810,6 +810,7 @@ as
       l_ignore_nulls   boolean      := cwms_util.is_true(p_ignore_nulls) ;
       l_exists         boolean;
       l_rec at_stream_location%rowtype;
+      l_location_kind cwms_location_kind.location_kind_id%type;
    begin
       -------------------
       -- sanity checks --
@@ -828,6 +829,10 @@ as
       end if;
       if p_bank is not null and upper(p_bank) not in('L', 'R') then
          cwms_err.raise( 'INVALID_ITEM', p_bank, 'stream bank, must be ''L'' or ''R''.') ;
+      end if;
+      l_location_kind := cwms_loc.check_location_kind(p_location_id, p_office_id) ;
+      if l_location_kind not in('OUTLET', 'EMBANKMENT', 'LOCK', 'TURBINE', 'PROJECT', 'STREAMGAGE', 'SITE') then
+         cwms_err.raise('ERROR', 'A Stream Location record can not be created for a Location of KIND: ' || l_location_kind) ;
       end if;
       ------------------------------------------
       -- get the existing record if it exists --
@@ -881,17 +886,28 @@ as
       if l_exists then
           update at_stream_location
          set row                  = l_rec
-           where location_code    = l_rec.location_code
-         and stream_location_code = l_rec.stream_location_code;
+           where location_code = l_rec.location_code;
       else
           insert into at_stream_location values l_rec;
+      end if;
+      ---------------------------
+      -- set the location kind --
+      ---------------------------
+      if l_location_kind in('SITE', 'STREAMGAGE') then
+          update at_physical_location
+         set location_kind =
+            (
+                select location_kind_code
+                  from cwms_location_kind
+                 where location_kind_id = 'STREAMGAGE'
+            )
+           where location_code = l_rec.location_code;
       end if;
    end store_stream_location;
 --------------------------------------------------------------------------------
 -- procedure retrieve_stream_location
 --------------------------------------------------------------------------------
-   procedure retrieve_stream_location
-      (
+   procedure retrieve_stream_location(
          p_station out binary_double,
          p_published_station out binary_double,
          p_navigation_station out binary_double,
@@ -904,8 +920,7 @@ as
          p_station_unit in varchar2,
          p_stage_unit   in varchar2,
          p_area_unit    in varchar2,
-         p_office_id    in varchar2 default null
-      )
+         p_office_id    in varchar2 default null)
    is
       l_office_id            varchar2(16) := nvl(upper(p_office_id), cwms_util.user_office_id) ;
       l_station_unit         varchar2(16) := cwms_util.get_unit_id(p_station_unit, l_office_id) ;
