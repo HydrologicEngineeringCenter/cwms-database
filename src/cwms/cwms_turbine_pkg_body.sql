@@ -315,7 +315,7 @@ begin
       end;
       if l_code is not null then
          l_location_kind_id := cwms_loc.check_location_kind(l_code);
-         if l_location_kind_id not in ('TURBINE', 'SITE') then
+         if l_location_kind_id not in ('TURBINE', 'SITE', 'STREAMGAGE') then
             cwms_err.raise(
                'ERROR',
                'Cannot switch location '
@@ -341,7 +341,21 @@ begin
          l_rec.turbine_location_code := p_turbines(i).structure_location.location_ref.get_location_code('F');
          l_exists := true;
          l_location_type := cwms_loc.get_location_type(l_rec.turbine_location_code);
-         if l_location_type not in ('NONE', 'TURBINE') then
+         if l_location_type in ('TURBINE', 'SITE', 'STREAMGAGE') then
+            if l_location_type = 'TURBINE' then
+               l_exists := true; -- location has an at_turbine entry
+         if l_fail_if_exists then
+            cwms_err.raise(
+               'ITEM_ALREADY_EXISTS',
+                     'CWMS turbine',
+               p_turbines(i).structure_location.location_ref.get_office_id
+               ||'/'
+               ||p_turbines(i).structure_location.location_ref.get_location_id);
+         end if;
+            else
+               l_exists := false; -- location exists, but there's no at_turbine entry
+            end if;
+         else
             cwms_err.raise(
                'ERROR',
                'CWMS location '             
@@ -350,26 +364,24 @@ begin
                ||p_turbines(i).structure_location.location_ref.get_location_id
                ||' exists but is identified as type '||l_location_type);
          end if;
-         if l_fail_if_exists then
-            cwms_err.raise(
-               'ITEM_ALREADY_EXISTS',
-               'CWMS turnbine',
-               p_turbines(i).structure_location.location_ref.get_office_id
-               ||'/'
-               ||p_turbines(i).structure_location.location_ref.get_location_id);
-         end if;
       exception
          when no_data_found then
-            l_exists := false;
+            l_exists := false; -- location does not exists
       end;
       end;
       -----------------------
       -- create the record --
       -----------------------
       cwms_loc.store_location(p_turbines(i).structure_location, 'F');
-      if not l_exists then
+      --
          l_rec.turbine_location_code := p_turbines(i).structure_location.location_ref.get_location_code('T');
          l_rec.project_location_code := l_project.project_location.location_ref.get_location_code('F');
+      --
+      if  l_exists then
+         update at_turbine 
+            set project_location_code = l_rec.project_location_code 
+          where turbine_location_code = l_rec.turbine_location_code;
+      else
          insert into at_turbine values l_rec; 
       end if;
       ---------------------------      
