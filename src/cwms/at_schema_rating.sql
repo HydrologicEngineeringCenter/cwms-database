@@ -110,7 +110,6 @@ comment on column at_rating_spec.active_flag                  is 'Specifies whet
 comment on column at_rating_spec.auto_update_flag             is 'Specifies whether updates by the source agency should be stored automatically';
 comment on column at_rating_spec.auto_activate_flag           is 'Specifies whether updates by the source agency should be activated automatically';
 comment on column at_rating_spec.auto_migrate_ext_flag        is 'Specifies whether automatically stored updates should have existing extensions applied automatically';
-comment on column at_rating_spec.description                  is 'USGS-style rounding specification for dependent parameter';
 comment on column at_rating_spec.description                  is 'Description of rating time series';
 
 commit;
@@ -145,6 +144,7 @@ create table at_rating
    rating_spec_code number(10),
    effective_date   date        not null,
    ref_rating_code  number(10),
+   transition_date  date,
    create_date      date        not null,
    active_flag      varchar2(1) not null,
    formula          varchar2(1000),
@@ -154,7 +154,8 @@ create table at_rating
    constraint at_rating_u1  unique (rating_spec_code, effective_date) using index,
    constraint at_rating_fk1 foreign key (rating_spec_code) references at_rating_spec (rating_spec_code),
    constraint at_rating_fk2 foreign key (ref_rating_code) references at_rating (rating_code),
-   constraint at_rating_ck1 check (active_flag in ('T', 'F'))
+   constraint at_rating_ck1 check (active_flag in ('T', 'F')),
+   constraint at_rating_ck2 check (transition_date is null or transition_date < effective_date)
 )
 organization index
 tablespace CWMS_20AT_DATA;
@@ -164,6 +165,7 @@ comment on column at_rating.rating_code      is 'Synthetic key';
 comment on column at_rating.rating_spec_code is 'References rating specification';
 comment on column at_rating.ref_rating_code  is 'References a parent rating (for shift, offsets, etc...)';
 comment on column at_rating.effective_date   is 'The earliest time the rating is in effect';
+comment on column at_rating.transition_date  is 'The time to start transition (interpolation) from previous rating';
 comment on column at_rating.create_date      is 'The time the rating is loaded into the database';
 comment on column at_rating.active_flag      is 'Specifies whether the rating is active';
 comment on column at_rating.formula          is 'Formula to be used instead of rating values';
@@ -321,6 +323,7 @@ create table at_virtual_rating (
    virtual_rating_code number(10)   not null,
    rating_spec_code    number(10)   not null,
    effective_date      date         not null,
+   transition_date     date,
    create_date         date         not null,
    active_flag         varchar2(1)  not null,
    connections         varchar2(80) not null,
@@ -329,7 +332,8 @@ create table at_virtual_rating (
    constraint at_virtual_rating_u1  unique (rating_spec_code, effective_date) using index,
    constraint at_virtual_rating_fk1 foreign key (rating_spec_code) references at_rating_spec (rating_spec_code),
    constraint at_virtual_rating_ck1 check (active_flag in ('T', 'F')),
-   constraint at_virtual_rating_ck2 check (regexp_instr(connections, 'R\d(D|I\d)=(I\d|R\d(D|I\d))(,R\d(D|I\d)=(I\d|R\d(D|I\d)))*', 1, 1, 0, 'i') = 1)
+   constraint at_virtual_rating_ck2 check (regexp_instr(connections, 'R\d(D|I\d)=(I\d|R\d(D|I\d))(,R\d(D|I\d)=(I\d|R\d(D|I\d)))*', 1, 1, 0, 'i') = 1),
+   constraint at_virtual_rating_ck3 check (transition_date is null or transition_date < effective_date)
 )
 organization index
 tablespace CWMS_20AT_DATA;
@@ -338,6 +342,7 @@ comment on table  at_virtual_rating is 'Holds information about virtual ratings'
 comment on column at_virtual_rating.virtual_rating_code is 'Synthetic key';
 comment on column at_virtual_rating.rating_spec_code    is 'Foreign key to rating specification for this virtual rating';
 comment on column at_virtual_rating.effective_date      is 'Earliest date/time this rating was in effect';
+comment on column at_virtual_rating.transition_date     is 'The time to start transition (interpolation) from previous rating';
 comment on column at_virtual_rating.create_date         is 'Date/time this rating was stored to database';
 comment on column at_virtual_rating.active_flag         is 'Flag (T/F) specifying whether this rating is active';
 comment on column at_virtual_rating.connections         is 'String specifying how source ratings are connected to form virtual rating';
@@ -372,7 +377,7 @@ comment on column at_virtual_rating_element.rating_expression           is 'Math
 commit;
 
 ----------------------------
--- AT_VRITUAL_RATING_UNIT --
+-- AT_VIRTUAL_RATING_UNIT --
 ----------------------------
 create table at_virtual_rating_unit (
    virtual_rating_element_code number(10),
@@ -399,6 +404,7 @@ create table at_transitional_rating(
    transitional_rating_code number(10)    not null,
    rating_spec_code         number(10)    not null,
    effective_date           date          not null,
+   transition_date          date,
    create_date              date          not null,
    active_flag              varchar2(1)   not null,
    native_units             varchar2(256) not null,
@@ -406,7 +412,8 @@ create table at_transitional_rating(
    constraint at_transitional_rating_pk  primary key (transitional_rating_code),
    constraint at_transitional_rating_u1  unique(rating_spec_code, effective_date) using index,
    constraint at_transitional_rating_fk1 foreign key(rating_spec_code) references at_rating_spec(rating_spec_code), 
-   constraint at_transitional_rating_ck1 check (active_flag in ('T', 'F'))
+   constraint at_transitional_rating_ck1 check (active_flag in ('T', 'F')),
+   constraint at_transitional_rating_ck2 check (transition_date is null or transition_date < effective_date)
 ) organization index
   tablespace cwms_20at_data;
 
@@ -414,6 +421,7 @@ comment on table  at_transitional_rating is 'Holds information about transitiona
 comment on column at_transitional_rating.transitional_rating_code is 'Synthetic key';
 comment on column at_transitional_rating.rating_spec_code         is 'Foreign key to rating specification for this transitional rating';
 comment on column at_transitional_rating.effective_date           is 'Earliest date/time this rating was in effect';
+comment on column at_transitional_rating.transition_date          is 'The time to start transition (interpolation) from previous rating';
 comment on column at_transitional_rating.create_date              is 'Date/time this rating was stored to database';
 comment on column at_transitional_rating.active_flag              is 'Flag (T/F) specifying whether this rating is active';
 comment on column at_transitional_rating.native_units             is 'Units used for selection and evaluation, in format ind1_unit[,ind2_unit[,...]];dep_unit';

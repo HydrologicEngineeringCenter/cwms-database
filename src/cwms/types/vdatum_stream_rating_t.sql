@@ -10,22 +10,23 @@ create type vdatum_stream_rating_t
  */
 under stream_rating_t
 (
--- office_id      varchar2(16),
--- rating_spec_id varchar2(372),
--- effective_date date,
--- create_date    date,
--- active_flag    varchar2(1),
--- formula        varchar2(1000),
--- native_units   varchar2(256),
--- description    varchar2(256),
--- rating_info    rating_ind_parameter_t,
--- current_units  varchar2(1), -- 'D' = database, 'N' = native, other = don't know
--- current_time   varchar2(2), -- 'D' = database, 'L' = native, other = don't know
--- offsets        rating_t,
--- shifts         rating_tab_t,
-   native_datum   varchar2(16),
-   current_datum  varchar2(16),
-   elev_position  number,  
+-- office_id       varchar2(16),
+-- rating_spec_id  varchar2(372),
+-- effective_date  date,
+-- transition_date date,
+-- create_date     date,
+-- active_flag     varchar2(1),
+-- formula         varchar2(1000),
+-- native_units    varchar2(256),
+-- description     varchar2(256),
+-- rating_info     rating_ind_parameter_t,
+-- current_units   varchar2(1), -- 'D' = database, 'N' = native, other = don't know
+-- current_time    varchar2(2), -- 'D' = database, 'L' = native, other = don't know
+-- offsets         rating_t,
+-- shifts          rating_tab_t,
+   native_datum    varchar2(16),
+   current_datum   varchar2(16),
+   elev_position   number,  
                            
    /**
     * Constructs a vdatum_stream_rating_t object from a stream_rating_t object and a current datum

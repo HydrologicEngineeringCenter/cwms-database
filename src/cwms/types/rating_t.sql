@@ -10,6 +10,7 @@ create type rating_t
  * @member office_id       The office that owns the rating
  * @member rating_spec_id  The rating specification identifier
  * @member effective_date  The earliest date/time that the rating is to be in effect
+ * @member transition_date The date to start transition (interpolation) from previous rating
  * @member create_date     The date/time that the rating was loaded into the datbase
  * @member active_flag     A flag ('T' or 'F') specifying whether the rating is active
  * @member formula         The formula (algebraic or RPN) for the rating if the rating is formula-based
@@ -29,8 +30,9 @@ create type rating_t
 as object (
    office_id       varchar2(16),
    rating_spec_id  varchar2(372),
-   effective_date  date,                   -- for formula or expression ratings
-   create_date     date,                   -- for formula or expression ratings
+   effective_date  date,                   -- for all ratings
+   transition_date date,                   -- for all ratings
+   create_date     date,                   -- for all ratings
    active_flag     varchar2(1),
    formula         varchar2(1000),         -- for expression ratings
    connections     varchar2(80),           -- for virtual ratings
@@ -60,6 +62,30 @@ as object (
       p_rating_spec_id  varchar2,
       p_native_units    varchar2,
       p_effective_date  date,
+      p_active_flag     varchar2,
+      p_formula         varchar2,
+      p_rating_info     rating_ind_parameter_t,
+      p_description     varchar2,
+      p_office_id       varchar2 default null)
+      return self as result,
+   /**
+    * Construct a rating_t object for a simple concrete rating.
+    *
+    * @param p_rating_spec_id  The rating specification identifier
+    * @param p_native_units    The native units for the rating
+    * @param p_effective_date  The earliest date/time that the rating is to be in effect
+    * @param p_transition_date The date/time to begin transition (interpolation) from previous rating
+    * @param p_active_flag     A flag ('T' or 'F') specifying whether the rating is active
+    * @param p_formula         The formula (algebraic or RPN) for the rating if the rating is formula-based
+    * @param p_description     The description of the rating
+    * @param p_rating_info     The rating lookup values if the rating is lookup-based
+    * @param p_office_id       The office that owns the rating
+    */
+   constructor function rating_t(
+      p_rating_spec_id  varchar2,
+      p_native_units    varchar2,
+      p_effective_date  date,
+      p_transition_date date,
       p_active_flag     varchar2,
       p_formula         varchar2,
       p_rating_info     rating_ind_parameter_t,

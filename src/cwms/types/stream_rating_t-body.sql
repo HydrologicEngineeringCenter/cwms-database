@@ -107,6 +107,13 @@ as
          cwms_err.raise('ERROR', 'Required <effective-date> element not found');
       end if;
       self.effective_date := (self as rating_t).get_date(l_timestr);
+      -----------------------------
+      -- get the transition date --
+      -----------------------------
+      l_timestr := get_text(l_xml, '/usgs-stream-rating/transition-start-date');
+      if l_timestr is not null then
+         self.transition_date := (self as rating_t).get_date(l_timestr);
+      end if;
       -------------------------
       -- get the create date --
       -------------------------
@@ -153,18 +160,19 @@ as
             exit;
          end if;
          l_temp := rating_t(
-            l_location_id
-            ||cwms_rating.separator1||l_ind_param
-            ||cwms_rating.separator2||l_ind_param||'-Shift'
-            ||cwms_rating.separator1||l_template_version
-            ||cwms_rating.separator1||l_rating_version,     -- rating_spec_id
-            null,                                           -- native_units
-            null,                                           -- effective_date
-            null,                                           -- active_flag
-            null,                                           -- formula
-            null,                                           -- rating_info
-            null,                                           -- description
-            self.office_id);                                -- office_id
+            p_rating_spec_id  => l_location_id
+                                 ||cwms_rating.separator1||l_ind_param
+                                 ||cwms_rating.separator2||l_ind_param||'-Shift'
+                                 ||cwms_rating.separator1||l_template_version
+                                 ||cwms_rating.separator1||l_rating_version,     
+            p_native_units    => null,                                           
+            p_effective_date  => null,                                           
+            p_transition_date => null,                                           
+            p_active_flag     => null,                                           
+            p_formula         => null,                                           
+            p_rating_info     => null,                                           
+            p_description     => null,                                           
+            p_office_id       => self.office_id);                                
          l_temp.create_date := null;
          ----------------------------------
          -- get the shift effective date --
@@ -174,6 +182,13 @@ as
             cwms_err.raise('ERROR', 'Required <effective-date> element not found on shift');
          end if;
          l_temp.effective_date := (self as rating_t).get_date(l_timestr);
+         -----------------------------------
+         -- get the shift transition date --
+         -----------------------------------
+         l_timestr := get_text(l_shift, '/height-shifts/transition-start-date');
+         if l_timestr is not null then
+            l_temp.transition_date := (self as rating_t).get_date(l_timestr);
+         end if;
          ----------------------------------
          -- get the shift create date --
          ----------------------------------
@@ -259,18 +274,19 @@ as
             -- create a new rating_t object to hold the offsets --
             ------------------------------------------------------
             self.offsets := rating_t(
-               l_location_id
-               ||cwms_rating.separator1||l_ind_param
-               ||cwms_rating.separator2||l_ind_param||'-Offset'
-               ||cwms_rating.separator1||l_template_version
-               ||cwms_rating.separator1||l_rating_version,             -- rating_spec_id
-               null,                                -- native_units
-               self.effective_date,                 -- effective_date
-               self.active_flag,                    -- active_flag
-               null,                                -- formula
-               null,                                -- rating_info
-               'Logarithmic interpolation offsets', -- description
-               self.office_id);                     -- office_id
+               p_rating_spec_id  => l_location_id
+                                    ||cwms_rating.separator1||l_ind_param
+                                    ||cwms_rating.separator2||l_ind_param||'-Offset'
+                                    ||cwms_rating.separator1||l_template_version                         
+                                    ||cwms_rating.separator1||l_rating_version,
+               p_native_units    => null,                                
+               p_effective_date  => self.effective_date,
+               p_transition_date => null,
+               p_active_flag     => self.active_flag,                    
+               p_formula         => null,                                
+               p_rating_info     => null,                                
+               p_description     => 'Logarithmic interpolation offsets', 
+               p_office_id       => self.office_id);                     
             self.offsets.create_date := self.create_date;
             ----------------------------
             -- get the offset units id --
@@ -372,19 +388,20 @@ as
       p_other in stream_rating_t)
    is 
    begin
-      self.office_id      := p_other.office_id;
-      self.rating_spec_id := p_other.rating_spec_id;
-      self.effective_date := p_other.effective_date;
-      self.create_date    := p_other.create_date;
-      self.active_flag    := p_other.active_flag;
-      self.formula        := p_other.formula;
-      self.native_units   := p_other.native_units;
-      self.description    := p_other.description;
-      self.rating_info    := p_other.rating_info;
-      self.current_units  := p_other.current_units;
-      self.current_time   := p_other.current_time;
-      self.offsets        := p_other.offsets;
-      self.shifts         := p_other.shifts;
+      self.office_id       := p_other.office_id;
+      self.rating_spec_id  := p_other.rating_spec_id;
+      self.effective_date  := p_other.effective_date;
+      self.transition_date := p_other.transition_date;
+      self.create_date     := p_other.create_date;
+      self.active_flag     := p_other.active_flag;
+      self.formula         := p_other.formula;
+      self.native_units    := p_other.native_units;
+      self.description     := p_other.description;
+      self.rating_info     := p_other.rating_info;
+      self.current_units   := p_other.current_units;
+      self.current_time    := p_other.current_time;
+      self.offsets         := p_other.offsets;
+      self.shifts          := p_other.shifts;                                 
    end;
          
    overriding member procedure init(
@@ -445,6 +462,7 @@ as
       l_dep_param     varchar2(256);
       l_parameters_id varchar2(256); 
       l_temp          rating_t;
+      l_prev          rating_t;
    begin
       ------------------------
       -- validate as rating --
@@ -562,6 +580,30 @@ as
                      ||') is earlier than rating effective date ('
                      ||self.effective_date
                      ||')');
+               end if;
+               if l_temp.transition_date is not null then
+                  if i = 1 then
+                     if l_temp.transition_date < self.effective_date then
+                        cwms_err.raise(
+                           'ERROR',
+                           'Shift 1 transition date ('
+                           ||to_char(l_temp.transition_date, 'yyyy/mm/dd hh24:mi:ss')
+                           ||') is earlier than rating effective date ('
+                           ||to_char(self.effective_date, 'yyyy/mm/dd hh24:mi:ss')
+                           ||')');
+                     end if;
+                  else
+                     l_prev := treat(self.shifts(i-1) as rating_t);
+                     if l_temp.transition_date < l_prev.effective_date then
+                        cwms_err.raise(
+                           'ERROR',
+                           'Shift '|| i ||' transition date ('
+                           ||to_char(l_temp.transition_date, 'yyyy/mm/dd hh24:mi:ss')
+                           ||') is earlier than shift '|| (i-1) ||' effective date ('
+                           ||to_char(l_prev.effective_date, 'yyyy/mm/dd hh24:mi:ss')
+                           ||')');
+                     end if;
+                  end if;
                end if;
                if l_temp.create_date is not null then
                   if self.create_date is null or l_temp.create_date < self.create_date then
@@ -996,7 +1038,14 @@ as
          ||'<rating-spec-id>'||l_clone.rating_spec_id||'</rating-spec-id>'
          ||'<units-id>'||l_clone.native_units||'</units-id>'
          ||'<effective-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(l_clone.effective_date, 'UTC', l_tzone), l_tzone)||'</effective-date>');
-      if l_clone.create_date is not null then
+      if l_clone.transition_date is null then
+         cwms_util.append(l_text, '<transition-start-date/>');
+      else
+         cwms_util.append(l_text, '<transition-start-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(l_clone.transition_date, 'UTC', l_tzone), l_tzone)||'</transition-start-date>');
+      end if;
+      if l_clone.create_date is null then
+         cwms_util.append(l_text, '<create-date/>');
+      else
          cwms_util.append(l_text, '<create-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(l_clone.create_date, 'UTC', l_tzone), l_tzone)||'</create-date>');
       end if;
       cwms_util.append(l_text,
@@ -1015,7 +1064,14 @@ as
             cwms_util.append(l_text,
                '<height-shifts><effective-date>'
                ||cwms_util.get_xml_time(cwms_util.change_timezone(l_temp.effective_date, 'UTC', l_tzone), l_tzone)||'</effective-date>');
-            if l_temp.create_date is not null then
+            if l_temp.transition_date is null then
+               cwms_util.append(l_text, '<transition-start-date/>');
+            else
+               cwms_util.append(l_text, '<transition-start-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(l_temp.transition_date, 'UTC', l_tzone), l_tzone)||'</transition-start-date>');
+            end if;
+            if l_temp.create_date is null then
+               cwms_util.append(l_text, '<create-date/>');
+            else
                cwms_util.append(l_text, '<create-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(l_temp.create_date, 'UTC', l_tzone), l_tzone)||'</create-date>');
             end if;
             cwms_util.append(l_text,
@@ -1218,6 +1274,7 @@ as
       l_results                 ztsv_array;
       l_date_offsets            double_tab_t;
       l_date_offset             binary_double;
+      l_date_shifts             integer_tab_t;
       l_ratio                   binary_double;
       l_date_offsets_properties cwms_lookup.sequence_properties_t;
       l_shift                   binary_double;
@@ -1255,14 +1312,24 @@ as
          -----------------------------------------
          if shifts is not null and shifts.count > 0 then
             l_shift_count  := shifts.count;
-            l_date_offsets := double_tab_t();
-            l_date_offsets.extend(shifts.count+1);
-            l_date_offsets(1) := effective_date - c_base_date;
+            l_date_offsets := double_tab_t(effective_date - c_base_date);
+            l_date_shifts  := integer_tab_t(0);
             if shifts(1).effective_date = effective_date then
                l_date_offsets(1) := l_date_offsets(1) - 1 / 1440;
             end if;
             for i in 1..shifts.count loop
-               l_date_offsets(i+1) := shifts(i).effective_date - c_base_date;
+               if shifts(i).transition_date is not null
+                  and shifts(i).transition_date between case i when 1 then effective_date else shifts(i-1).effective_date end and shifts(i).effective_date
+               then
+                  l_date_offsets.extend;
+                  l_date_shifts.extend;
+                  l_date_offsets(l_date_offsets.count) := shifts(i).transition_date - c_base_date;
+                  l_date_shifts(l_date_shifts.count) := i-1;
+               end if;
+               l_date_offsets.extend;
+               l_date_shifts.extend;
+               l_date_offsets(l_date_offsets.count) := shifts(i).effective_date - c_base_date;
+               l_date_shifts(l_date_shifts.count) := i;
             end loop;
             l_date_offsets_properties := cwms_lookup.analyze_sequence(l_date_offsets);
          end if;
@@ -1366,13 +1433,21 @@ as
                   cwms_lookup.method_error,
                   cwms_lookup.method_nearest);
                if l_ratio != 0. then
-                  l_hi_value := treat(shifts(l_hi_index-1) as rating_t).rate(l_height);
+                  if l_date_shifts(l_hi_index) = 0 then
+                     l_hi_value := 0; -- no shift on base curve
+                  else
+                     l_hi_value := treat(shifts(l_date_shifts(l_hi_index)) as rating_t).rate(l_height);
+                  end if;
                end if;
                if l_ratio != 1. then
                   if l_hi_index = 1 then
                      l_lo_value := 0.;
                   else
-                     l_lo_value := treat(shifts(l_hi_index) as rating_t).rate(l_height);
+                     if l_date_shifts(l_hi_index-1) = 0 then
+                        l_lo_value := 0; -- no shift on base curve
+                     else
+                        l_lo_value := treat(shifts(l_date_shifts(l_hi_index-1)) as rating_t).rate(l_height);
+                     end if;
                   end if;
                end if;
                l_shift := case l_ratio
@@ -1635,6 +1710,7 @@ as
       l_results                 ztsv_array;
       l_date_offsets            double_tab_t;
       l_date_offset             binary_double;
+      l_date_shifts             integer_tab_t;
       l_ratio                   binary_double;
       l_date_offsets_properties cwms_lookup.sequence_properties_t;
       l_shift                   binary_double;
@@ -1670,11 +1746,26 @@ as
          -- populate the shift dates for lookup --
          -----------------------------------------
          if shifts is not null then
-            l_date_offsets := double_tab_t();
-            l_date_offsets.extend(shifts.count+1);
-            l_date_offsets(1) := effective_date - c_base_date;
+            l_date_offsets := double_tab_t(effective_date - c_base_date);
+            l_date_shifts  := integer_tab_t(0);
+            if shifts(1).effective_date = effective_date then
+               l_date_offsets(1) := l_date_offsets(1) - 1 / 1440;
+            end if;
             for i in 1..shifts.count loop
-               l_date_offsets(i+1) := shifts(i).effective_date - c_base_date;
+               if shifts(i).transition_date is not null
+                  and shifts(i).transition_date between case i when 1 then effective_date else shifts(i-1).effective_date end and shifts(i).effective_date
+               then
+                  l_date_offsets.extend;
+                  l_date_shifts.extend;
+                  l_date_offsets(l_date_offsets.count) := shifts(i).transition_date - c_base_date;
+                  l_date_shifts.extend;
+                  l_date_shifts(l_date_shifts.count) := i-1;
+               end if;
+               l_date_offsets.extend;
+               l_date_shifts.extend;
+               l_date_offsets(l_date_offsets.count) := shifts(i).effective_date - c_base_date;
+               l_date_shifts.extend;
+               l_date_shifts(l_date_shifts.count) := i;
             end loop;
             l_date_offsets_properties := cwms_lookup.analyze_sequence(l_date_offsets);
          end if;
@@ -1846,48 +1937,52 @@ as
                      cwms_lookup.method_error,
                      cwms_lookup.method_nearest);
                   if l_ratio != 0. then
-                     l_heights.delete;
-                     l_heights.extend(treat(shifts(l_hi_index-1) as rating_t).rating_info.rating_values.count);
-                     l_shifts := double_tab_t();
-                     l_shifts.extend(treat(shifts(l_hi_index-1) as rating_t).rating_info.rating_values.count);
-                     for j in 1..treat(shifts(l_hi_index-1) as rating_t).rating_info.rating_values.count loop
-                        l_heights(j) := treat(shifts(l_hi_index-1) as rating_t).rating_info.rating_values(j).ind_value;
-                        l_shifts(j) := treat(shifts(l_hi_index-1) as rating_t).rating_info.rating_values(j).dep_value;
-                     end loop;
-                     if l_results(i).value - l_shifts(1) <= l_heights(1) then
-                        l_hi_value := l_shifts(1);
-                     elsif l_results(i).value - l_shifts(l_shifts.count) >= l_heights(l_heights.count) then
-                        l_hi_value := l_shifts(l_shifts.count);
+                     if l_date_shifts(l_hi_index) = 0 then
+                        l_hi_value := 0.; -- zero shift on base curve
                      else
-                        for j in 2..l_shifts.count loop
-                           if l_results(i).value - l_shifts(j) <= l_heights(j) then
-                              declare
-                                 k    pls_integer   := case j = l_shifts.count when true then j-1 else j end;
-                                 s0   binary_double := l_shifts(k);
-                                 s1   binary_double := l_shifts(k+1);
-                                 h0   binary_double := l_heights(k);
-                                 h1   binary_double := l_heights(k+1);
-                                 hs   binary_double := l_results(i).value;
-                                 dsdh binary_double := (s1-s0)/(h1-h0);
-                              begin
-                                 l_hi_value := hs-(hs-s0+h0*dsdh)/(1+dsdh);
-                              end;
-                              exit;
-                           end if;
+                        l_heights.delete;
+                        l_heights.extend(treat(shifts(l_date_shifts(l_hi_index)) as rating_t).rating_info.rating_values.count);
+                        l_shifts := double_tab_t();
+                        l_shifts.extend(treat(shifts(l_date_shifts(l_hi_index)) as rating_t).rating_info.rating_values.count);
+                        for j in 1..treat(shifts(l_date_shifts(l_hi_index)) as rating_t).rating_info.rating_values.count loop
+                           l_heights(j) := treat(shifts(l_date_shifts(l_hi_index)) as rating_t).rating_info.rating_values(j).ind_value;
+                           l_shifts(j) := treat(shifts(l_date_shifts(l_hi_index)) as rating_t).rating_info.rating_values(j).dep_value;
                         end loop;
+                        if l_results(i).value - l_shifts(1) <= l_heights(1) then
+                           l_hi_value := l_shifts(1);
+                        elsif l_results(i).value - l_shifts(l_shifts.count) >= l_heights(l_heights.count) then
+                           l_hi_value := l_shifts(l_shifts.count);
+                        else
+                           for j in 2..l_shifts.count loop
+                              if l_results(i).value - l_shifts(j) <= l_heights(j) then
+                                 declare
+                                    k    pls_integer   := case j = l_shifts.count when true then j-1 else j end;
+                                    s0   binary_double := l_shifts(k);
+                                    s1   binary_double := l_shifts(k+1);
+                                    h0   binary_double := l_heights(k);
+                                    h1   binary_double := l_heights(k+1);
+                                    hs   binary_double := l_results(i).value;
+                                    dsdh binary_double := (s1-s0)/(h1-h0);
+                                 begin
+                                    l_hi_value := hs-(hs-s0+h0*dsdh)/(1+dsdh);
+                                 end;
+                                 exit;
+                              end if;
+                           end loop;
+                        end if;
                      end if;
                   end if;
                   if l_ratio != 1. then
-                     if l_hi_index = 1 then
+                     if l_date_shifts(l_hi_index) = 0 then
                         l_lo_value := 0.; -- zero shift on base curve
                      else
                         l_heights.delete;
-                        l_heights.extend(treat(shifts(l_hi_index) as rating_t).rating_info.rating_values.count);
+                        l_heights.extend(treat(shifts(l_date_shifts(l_hi_index-1)) as rating_t).rating_info.rating_values.count);
                         l_shifts := double_tab_t();
-                        l_shifts.extend(treat(shifts(l_hi_index) as rating_t).rating_info.rating_values.count);
-                        for j in 1..treat(shifts(l_hi_index) as rating_t).rating_info.rating_values.count loop
-                           l_heights(j) := treat(shifts(l_hi_index) as rating_t).rating_info.rating_values(j).ind_value;
-                           l_shifts(j) := treat(shifts(l_hi_index) as rating_t).rating_info.rating_values(j).dep_value;
+                        l_shifts.extend(treat(shifts(l_date_shifts(l_hi_index-1)) as rating_t).rating_info.rating_values.count);
+                        for j in 1..treat(shifts(l_date_shifts(l_hi_index-1)) as rating_t).rating_info.rating_values.count loop
+                           l_heights(j) := treat(shifts(l_date_shifts(l_hi_index-1)) as rating_t).rating_info.rating_values(j).ind_value;
+                           l_shifts(j) := treat(shifts(l_date_shifts(l_hi_index-1)) as rating_t).rating_info.rating_values(j).dep_value;
                         end loop;
                         if l_results(i).value - l_shifts(1) <= l_heights(1) then
                            l_lo_value := l_shifts(1);

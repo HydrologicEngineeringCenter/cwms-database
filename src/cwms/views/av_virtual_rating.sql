@@ -10,8 +10,8 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_VIRTUAL_RATING',
  *
  * @field office_id               The office that owns the virtual rating
  * @field rating_spec             The rating specification of the virtual rating
- * @field effective_date          The date/time that the rating went into effect
- * @field create_date             The date/time that the rating was stored to the database
+ * @field effective_date          The date/time that the rating went into effect in UTC
+ * @field create_date             The date/time that the rating was stored to the database in UTC
  * @field connections             A text string specifying how the source ratings are connected to form the virtual rating
  * @field position                The position of this source rating within the virtual rating
  * @field source_rating           The rating specification or mathematical expression for this source rating 
@@ -19,6 +19,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_VIRTUAL_RATING',
  * @field virtual_rating_code     The unique numeric code identifying the virutual rating in the database
  * @field rating_spec_code        The unique numeric code identifying the rating specification in the database
  * @field source_rating_spec_code The unique numeric code identifying the source rating specification in the database
+ * @field transition_date         The date/time to start transition (interpolation) from previous rating in UTC
  */
 ');
 create or replace force view av_virtual_rating(
@@ -32,7 +33,8 @@ create or replace force view av_virtual_rating(
    units,
    virtual_rating_code,
    rating_spec_code,
-   source_rating_spec_code)
+   source_rating_spec_code,
+   transition_date)
 as
      select rs1.office_id as office_id,
             rs1.location_id || '.' || rs1.template_id || '.' || rs1.version as rating_spec,
@@ -63,7 +65,8 @@ as
                as units,
             vr.virtual_rating_code,
             vr.rating_spec_code,
-            vre.rating_spec_code as source_rating_spec_code
+            vre.rating_spec_code as source_rating_spec_code,
+            vr.transition_date
        from at_virtual_rating vr,
             at_virtual_rating_element vre,
             table(rating_spec_tab_t(rating_spec_t(vr.rating_spec_code))) rs1,

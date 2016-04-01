@@ -1,6 +1,7 @@
 ---------------------
 -- AV_RATING_LOCAL --
 ---------------------
+
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_RATING_LOCAL', null,
 '
 /**
@@ -16,8 +17,8 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_RATING_LOCAL', n
  * @field template_id        The rating template identifier for this rating
  * @field version            The version identifier for this rating
  * @field native_units       The native units for each parameter for this rating
- * @field effective_date     The date/time that this rating goes/went into effect in UTC
- * @field create_date        The date/time that this rating was loaded into the database in UTC
+ * @field effective_date     The date/time that this rating goes/went into effect in location''s time zone
+ * @field create_date        The date/time that this rating was loaded into the database in location''s time zone
  * @field active_flag        Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code>) specifying whether this rating is active
  * @field formula            The formula for this rating if it is formula-based
  * @field description        The description for this rating
@@ -27,6 +28,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_RATING_LOCAL', n
  * @field database_units     The databse storage units for each parameter for this rating
  * @field rating_spec_code   The unique numeric code that identifies the rating''s specification in the database
  * @field template_code      The unique numeric code that identifies the rating''s template in the database              
+ * @field transition_date    The date/time to start transition (interpolation) from previous rating in location''s time zone
  */
 ');
 create or replace force view av_rating_local
@@ -49,7 +51,8 @@ create or replace force view av_rating_local
    loc_alias_group,
    database_units,
    rating_spec_code,
-   template_code
+   template_code,
+   transition_date
 )
 as
    select r.rating_code, 
@@ -80,7 +83,8 @@ as
           else cwms_rating.get_database_units(rt.parameters_id)
           end as database_units,
           rs.rating_spec_code,
-          rt.template_code
+          rt.template_code,
+          cwms_util.change_timezone(r.transition_date, 'UTC', v.time_zone_name) as transition_date
      from at_rating r,
           at_rating_spec rs,
           at_rating_template rt,

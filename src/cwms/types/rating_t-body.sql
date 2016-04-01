@@ -24,7 +24,36 @@ as
       self.current_units  := 'N';
       self.current_time   := 'D';
       return;
-   end;      
+   end;
+   
+   constructor function rating_t(
+      p_rating_spec_id  varchar2,
+      p_native_units    varchar2,
+      p_effective_date  date,
+      p_transition_date date,
+      p_active_flag     varchar2,
+      p_formula         varchar2,
+      p_rating_info     rating_ind_parameter_t,
+      p_description     varchar2,
+      p_office_id       varchar2 default null)
+      return self as result
+   is
+   begin
+      self.rating_spec_id  := p_rating_spec_id;
+      self.native_units    := p_native_units;
+      self.effective_date  := p_effective_date;
+      self.transition_date := p_transition_date;
+      self.active_flag     := p_active_flag;
+      self.formula         := p_formula;
+      self.rating_info     := p_rating_info;
+      self.description     := p_description;
+      self.office_id       := cwms_util.get_db_office_id(p_office_id);
+      self.create_date     := sysdate;
+      self.current_units   := 'N';
+      self.current_time    := 'D';
+      return;
+   end;
+   
    constructor function rating_t(
       p_rating_code in number)
    return self as result
@@ -148,8 +177,12 @@ as
                ||self.office_id
                ||'/'
                ||self.rating_spec_id);
-         end if;
-         self.effective_date := get_date(l_text);
+      end if;
+      self.effective_date := get_date(l_text);
+      l_text := get_text(l_xml, '/*/transition-start-date');
+      if l_text is not null then
+         self.transition_date := get_date(l_text);
+      end if;
       l_text := get_text(l_xml, '/*/create-date');
       if l_text is not null then
          self.create_date := get_date(l_text);
@@ -581,6 +614,7 @@ as
       self.office_id       := p_other.office_id;
       self.rating_spec_id  := p_other.rating_spec_id;
       self.effective_date  := p_other.effective_date;
+      self.transition_date := p_other.transition_date;
       self.create_date     := p_other.create_date;
       self.active_flag     := p_other.active_flag;
       self.formula         := p_other.formula;
@@ -662,14 +696,15 @@ as
                end if;
             end loop;
          end loop;
-         self.effective_date := rec.effective_date;
-         self.create_date    := rec.create_date;
-         self.active_flag    := rec.active_flag;
-         self.formula        := rec.formula;
-         self.native_units   := rec.native_units;
-         self.description    := rec.description;
-         self.current_units  := 'D';
-         self.current_time   := 'D';
+         self.effective_date  := rec.effective_date;
+         self.transition_date := rec.transition_date;
+         self.create_date     := rec.create_date;
+         self.active_flag     := rec.active_flag;
+         self.formula         := rec.formula;
+         self.native_units    := rec.native_units;
+         self.description     := rec.description;
+         self.current_units   := 'D';
+         self.current_time    := 'D';
          if self.formula is null then
          self.rating_info    := rating_ind_parameter_t(p_rating_code);
          end if;
@@ -712,6 +747,7 @@ as
                    ||'.'||rt.version
                    ||'.'||rs.version,
                    rec.effective_date,
+                   rec.transition_date,
                    rec.create_date,
                    rec.active_flag,
                    rec.connections,
@@ -719,6 +755,7 @@ as
               into self.office_id,
                    self.rating_spec_id,
                    self.effective_date,
+                   self.transition_date,
                    self.create_date,
                    self.active_flag,
                    self.connections,
@@ -827,6 +864,7 @@ as
                    ||'.'||rt.version
                    ||'.'||rs.version,
                    rec.effective_date,
+                   rec.transition_date,
                    rec.create_date,
                    rec.active_flag,
                    rec.native_units,
@@ -834,6 +872,7 @@ as
               into self.office_id,
                    self.rating_spec_id,
                    self.effective_date,
+                   self.transition_date,
                    self.create_date,
                    self.active_flag,
                    self.native_units,
@@ -1015,6 +1054,17 @@ as
       end;
       l_params.extend;
       l_params(l_params.count) := l_parts(2);
+      ------------------------
+      -- ...transition date --
+      ------------------------
+      if self.transition_date is not null then
+         if self.effective_date is null then
+            cwms_err.raise('ERROR', 'Cannot have a transition date without an effective date');
+         end if;
+         if not self.transition_date < self.effective_date then
+            cwms_err.raise('ERROR', 'Transition date is not earlier than effective date');
+         end if;
+      end if;
       ------------------
       -- native units --
       ------------------
@@ -1893,9 +1943,12 @@ as
                if l_local_timezone is null then
                   cwms_err.raise('ERROR', 'Location '||l_location_id||' does not have a time zone set');
                end if;
-         if self.effective_date is not null then
-               self.effective_date := cwms_util.change_timezone(self.effective_date, l_local_timezone, 'UTC');
-         end if;
+               if self.effective_date is not null then
+                     self.effective_date := cwms_util.change_timezone(self.effective_date, l_local_timezone, 'UTC');
+               end if;
+               if self.transition_date is not null then
+                     self.transition_date := cwms_util.change_timezone(self.transition_date, l_local_timezone, 'UTC');
+               end if;
                if self.create_date is not null then
                   self.create_date := cwms_util.change_timezone(self.create_date, l_local_timezone, 'UTC');
                end if;
@@ -1917,9 +1970,12 @@ as
                if l_local_timezone is null then
                   cwms_err.raise('ERROR', 'Location '||l_location_id||' does not have a time zone set');
                end if;
-         if self.effective_date is not null then
-               self.effective_date := cwms_util.change_timezone(self.effective_date, 'UTC', l_local_timezone);
-         end if;
+               if self.effective_date is not null then
+                     self.effective_date := cwms_util.change_timezone(self.effective_date, 'UTC', l_local_timezone);
+               end if;
+               if self.transition_date is not null then
+                     self.transition_date := cwms_util.change_timezone(self.transition_date, 'UTC', l_local_timezone);
+               end if;
                if self.create_date is not null then
                   self.create_date := cwms_util.change_timezone(self.create_date, 'UTC', l_local_timezone);
                end if;
@@ -1995,6 +2051,7 @@ as
          end;
 
          l_rating_rec.ref_rating_code := null;
+         l_rating_rec.transition_date := self.transition_date;
          l_rating_rec.create_date     := nvl(self.create_date, cast(systimestamp at time zone 'UTC' as date));
          l_rating_rec.active_flag     := self.active_flag;
          l_rating_rec.formula         := self.formula;
@@ -2041,9 +2098,10 @@ as
          exception
             when no_data_found then l_exists := false;
          end;
-         l_vrating_rec.effective_date := self.effective_date;
-         l_vrating_rec.create_date    := nvl(self.create_date, sysdate);
-         l_vrating_rec.active_flag    := self.active_flag;
+         l_vrating_rec.effective_date  := self.effective_date;
+         l_vrating_rec.transition_date := self.transition_date;
+         l_vrating_rec.create_date     := nvl(self.create_date, sysdate);
+         l_vrating_rec.active_flag     := self.active_flag;
          l_vrating_rec.connections := self.connections;
          l_vrating_rec.description := self.description;
          if l_exists then
@@ -2148,11 +2206,12 @@ as
             when no_data_found then l_exists := false;
          end;
          
-         l_trating_rec.effective_date := self.effective_date;
-         l_trating_rec.create_date    := nvl(self.create_date, sysdate);
-         l_trating_rec.active_flag    := self.active_flag;
-         l_trating_rec.native_units   := self.native_units;
-         l_trating_rec.description    := self.description;
+         l_trating_rec.effective_date  := self.effective_date;
+         l_trating_rec.transition_date := self.transition_date;
+         l_trating_rec.create_date     := nvl(self.create_date, sysdate);
+         l_trating_rec.active_flag     := self.active_flag;
+         l_trating_rec.native_units    := self.native_units;
+         l_trating_rec.description     := self.description;
         
          if l_exists then
             update at_transitional_rating
@@ -2225,6 +2284,7 @@ as
       l_msg.set_string(l_msgid, 'is_transitional', case self.evaluations is null when true then 'false' else 'true' end);
       l_msg.set_long(l_msgid, 'create_date',    cwms_util.to_millis(self.create_date));
       l_msg.set_long(l_msgid, 'effective_date', cwms_util.to_millis(self.effective_date));
+      l_msg.set_long(l_msgid, 'transition_date', cwms_util.to_millis(self.transition_date));
       i := cwms_msg.publish_message(l_msg, l_msgid, self.office_id||'_ts_stored');
       cwms_msg.new_message(l_msg, l_msgid, 'RatingStored');
       l_msg.set_string(l_msgid, 'office_id', self.office_id);
@@ -2234,6 +2294,7 @@ as
       l_msg.set_string(l_msgid, 'is_transitional', case self.evaluations is null when true then 'false' else 'true' end);
       l_msg.set_long(l_msgid, 'create_date',    cwms_util.to_millis(self.create_date));
       l_msg.set_long(l_msgid, 'effective_date', cwms_util.to_millis(self.effective_date));
+      l_msg.set_long(l_msgid, 'transition_date', cwms_util.to_millis(self.transition_date));
       i := cwms_msg.publish_message(l_msg, l_msgid, self.office_id||'_realtime_ops');
    end;
 
@@ -2319,9 +2380,16 @@ as
          cwms_util.append(l_text, '<units-id>'||l_clone.native_units||'</units-id>');
       end if;
       cwms_util.append(l_text, '<effective-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(l_clone.effective_date, 'UTC', l_tzone), l_tzone)||'</effective-date>');
-         if l_clone.create_date is not null then
-            cwms_util.append(l_text, '<create-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(l_clone.create_date, 'UTC', l_tzone), l_tzone)||'</create-date>');
-         end if;
+      if l_clone.transition_date is null then
+         cwms_util.append(l_text, '<transition-start-date/>');
+      else
+         cwms_util.append(l_text, '<transition-start-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(l_clone.transition_date, 'UTC', l_tzone), l_tzone)||'</transition-start-date>');
+      end if;
+      if l_clone.create_date is null then
+         cwms_util.append(l_text, '<create-date/>');
+      else
+         cwms_util.append(l_text, '<create-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(l_clone.create_date, 'UTC', l_tzone), l_tzone)||'</create-date>');
+      end if;
       cwms_util.append(l_text, '<active>'||bool_text(cwms_util.is_true(l_clone.active_flag))||'</active>');
       if l_clone.description is null then
          cwms_util.append(l_text, '<description/>');

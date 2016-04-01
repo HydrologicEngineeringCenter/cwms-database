@@ -28,6 +28,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_RATING', null,
  * @field database_units     The databse storage units for each parameter for this rating
  * @field rating_spec_code   The unique numeric code that identifies the rating''s specification in the database
  * @field template_code      The unique numeric code that identifies the rating''s template in the database              
+ * @field transition_date    The date/time to start transition (interpolation) from previous rating in UTC
 */
 ');
 create or replace force view av_rating
@@ -50,7 +51,8 @@ create or replace force view av_rating
    loc_alias_group,
    database_units,
    rating_spec_code,
-   template_code
+   template_code,
+   transition_date
 )
 as
    select r.rating_code, 
@@ -81,7 +83,8 @@ as
           else cwms_rating.get_database_units(rt.parameters_id)
           end as database_units,
           rs.rating_spec_code,
-          rt.template_code
+          rt.template_code,
+          r.transition_date
      from at_rating r,
           at_rating_spec rs,
           at_rating_template rt,

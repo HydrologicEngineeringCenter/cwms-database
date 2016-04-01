@@ -2568,6 +2568,7 @@ procedure rate(
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null)
 is
+   type integer_tab_t is table of pls_integer;
    c_base_date               constant date := date '1800-01-01';
    l_office_id               varchar2(16) := cwms_util.get_db_office_id(p_office_id);
    l_time_zone               varchar2(28);
@@ -2579,6 +2580,7 @@ is
    l_date_offsets            double_tab_t;
    l_date_offset             binary_double;
    l_date_offset_2           binary_double;
+   l_date_ratings            integer_tab_t;
    l_results                 double_tab_t;
    l_hi_index                pls_integer;
    l_hi_value                binary_double;
@@ -2755,12 +2757,15 @@ begin
    --------------------------------
    for rec in
       (  select rating_code,
-                effective_date
+                effective_date,
+                transition_date,
+                lag (effective_date, 1, null) over (order by effective_date) as prev_effective_date
            from (--------------------------------------------------
                  -- simple ratings and usgs-style stream ratings --
                  -------------------------------------------------- 
                  select r.rating_code,
-                        r.effective_date
+                        r.effective_date,
+                        r.transition_date
                    from at_rating r,
                         at_rating_spec rs,
                         at_rating_template rt,
@@ -2787,7 +2792,8 @@ begin
                  --------------------------   
                   union all
                  select tr.transitional_rating_code as rating_code,
-                        tr.effective_date
+                        tr.effective_date,
+                        tr.transition_date
                    from at_transitional_rating tr,
                         at_rating_spec rs,
                         at_rating_template rt,
@@ -2814,7 +2820,8 @@ begin
                  ---------------------   
                   union all
                  select vr.virtual_rating_code as rating_code,
-                        vr.effective_date
+                        vr.effective_date,
+                        vr.transition_date
                    from at_virtual_rating vr,
                         at_rating_spec rs,
                         at_rating_template rt,
@@ -2844,14 +2851,23 @@ begin
          l_ratings      := rating_tab_t();
          l_rating_codes := number_tab_t();
          l_date_offsets := double_tab_t();
+         l_date_ratings := integer_tab_t();
          l_rating_units := str_tab_tab_t();
+      end if;
+      if rec.transition_date between rec.prev_effective_date and rec.effective_date then -- if any is null then test is false
+         l_date_offsets.extend;
+         l_date_ratings.extend;
+         l_date_offsets(l_date_offsets.count) := rec.transition_date - c_base_date;
+         l_date_ratings(l_date_ratings.count) := l_ratings.count;
       end if;
       l_ratings.extend;
       l_rating_codes.extend;
       l_date_offsets.extend;
+      l_date_ratings.extend;
       l_rating_units.extend;
       l_rating_codes(l_rating_codes.count) := rec.rating_code;
       l_date_offsets(l_date_offsets.count) := rec.effective_date - c_base_date;
+      l_date_ratings(l_date_ratings.count) := l_ratings.count;
    end loop;
    if l_ratings is null then
       cwms_err.raise(
@@ -2867,9 +2883,11 @@ begin
       l_ratings.extend;
       l_rating_codes.extend;
       l_date_offsets.extend;
+      l_date_ratings.extend;
       l_rating_units.extend;
       l_rating_codes(2) := l_rating_codes(1); -- same rating
       l_date_offsets(2) := l_date_offsets(1) + 1. / 86400.; -- 1 second later
+      l_date_ratings(l_date_ratings.count) := l_date_ratings(l_date_ratings.count-1); -- index to same rating
    end if;
    -----------------------------------------------------
    -- generate lookup behaviors from rating behaviors --
@@ -2985,11 +3003,11 @@ begin
          -- get the values from individual rating objects --
          ---------------------------------------------------
          if l_ratio != 0. then
-            if l_ratings(l_hi_index) is null then
-               l_ratings(l_hi_index) := get_rating(l_rating_codes(l_hi_index)); 
-               l_rating := treat(l_ratings(l_hi_index) as rating_t);
-               l_rating_units(l_hi_index) := cwms_util.split_text(replace(l_rating.native_units, separator2, separator3), separator3);
-               if l_rating_units(l_hi_index).count != p_units.count then
+            if l_ratings(l_date_ratings(l_hi_index)) is null then
+               l_ratings(l_date_ratings(l_hi_index)) := get_rating(l_rating_codes(l_date_ratings(l_hi_index))); 
+               l_rating := treat(l_ratings(l_date_ratings(l_hi_index)) as rating_t);
+               l_rating_units(l_date_ratings(l_hi_index)) := cwms_util.split_text(replace(l_rating.native_units, separator2, separator3), separator3);
+               if l_rating_units(l_date_ratings(l_hi_index)).count != p_units.count then
                   cwms_err.raise(
                      'ERROR',
                      'Wrong number of units supplied for rating '
@@ -2999,7 +3017,6 @@ begin
                end if;
                if l_rating is of (stream_rating_t) then
                   l_stream_rating := treat(l_rating as stream_rating_t);
-                  l_stream_rating.convert_to_native_units;
                   if l_hi_index < l_date_offsets.count then
                      ---------------------------------------------------------
                      -- chop any shifts that are after the next rating date --
@@ -3009,15 +3026,17 @@ begin
                   end if;
                      l_rating := l_stream_rating;
                else 
-                  l_rating := treat(l_rating as rating_t);
-                  l_rating.convert_to_native_units;
-                  l_ratings(l_hi_index) := l_rating;
+                  l_stream_rating := null;
                end if;
+                  l_rating.convert_to_native_units;
+                  l_ratings(l_date_ratings(l_hi_index)) := l_rating;
+            else
+               l_rating := l_ratings(l_date_ratings(l_hi_index));
             end if;
             l_ind_set_2 := double_tab_t();
             l_ind_set_2.extend(l_ind_set.count);
             for i in 1..l_ind_set.count loop
-               l_ind_set_2(i) := cwms_util.convert_units(l_ind_set(i), p_units(i), l_rating_units(l_hi_index)(i));
+               l_ind_set_2(i) := cwms_util.convert_units(l_ind_set(i), p_units(i), l_rating_units(l_date_ratings(l_hi_index))(i));
             end loop;   
             case     
             when l_rating.connections is not null then
@@ -3043,16 +3062,20 @@ begin
                ------------------------------------------
                -- non-virtual, non-transitional rating --
                ------------------------------------------
-               l_hi_value := l_rating.rate_one(l_ind_set_2);
+               if l_stream_rating is null or l_value_times is null then
+                  l_hi_value := l_rating.rate_one(l_ind_set_2);
+               else
+                  l_hi_value := l_rating.rate(ztsv_type(l_value_times(j), l_ind_set_2(1), 0)).value; 
+               end if;
             end case;
-            l_hi_value := cwms_util.convert_units(l_hi_value, l_rating_units(l_hi_index)(p_units.count), p_units(p_units.count));
+            l_hi_value := cwms_util.convert_units(l_hi_value, l_rating_units(l_date_ratings(l_hi_index))(p_units.count), p_units(p_units.count));
          end if;
          if l_ratio != 1. then
-            if l_ratings(l_hi_index-1) is null then
-               l_ratings(l_hi_index-1) := get_rating(l_rating_codes(l_hi_index-1)); 
-               l_rating := treat(l_ratings(l_hi_index-1) as rating_t);
-               l_rating_units(l_hi_index-1) := cwms_util.split_text(replace(l_rating.native_units, separator2, separator3), separator3);
-               if l_rating_units(l_hi_index-1).count != p_units.count then
+            if l_ratings(l_date_ratings(l_hi_index-1)) is null then
+               l_ratings(l_date_ratings(l_hi_index-1)) := get_rating(l_rating_codes(l_date_ratings(l_hi_index-1))); 
+               l_rating := treat(l_ratings(l_date_ratings(l_hi_index-1)) as rating_t);
+               l_rating_units(l_date_ratings(l_hi_index-1)) := cwms_util.split_text(replace(l_rating.native_units, separator2, separator3), separator3);
+               if l_rating_units(l_date_ratings(l_hi_index-1)).count != p_units.count then
                   cwms_err.raise(
                      'ERROR',
                      'Wrong number of units supplied for rating '
@@ -3062,25 +3085,26 @@ begin
                end if;
                if l_rating is of (stream_rating_t) then
                   l_stream_rating := treat(l_rating as stream_rating_t);
-                  l_stream_rating.convert_to_native_units;
-                  if l_hi_index-1 < l_date_offsets.count then
+                  if l_ratio != 0 and l_date_ratings(l_hi_index-1) != l_date_ratings(l_hi_index) and l_hi_index-1 < l_date_offsets.count then
                      ---------------------------------------------------------
                      -- chop any shifts that are after the next rating date --
                      ---------------------------------------------------------
-                     l_stream_rating.trim_to_effective_date(c_base_date + l_date_offsets(l_hi_index-1+1));
+                     l_stream_rating.trim_to_effective_date(c_base_date + l_date_offsets(l_hi_index));
                      l_stream_rating.trim_to_create_date(l_rating_time);
                   end if;
                      l_rating := l_stream_rating;
                else 
-                  l_rating := treat(l_rating as rating_t);
-                  l_rating.convert_to_native_units;
-                  l_ratings(l_hi_index-1) := l_rating;
+                  l_stream_rating := null;
                end if;
+                  l_rating.convert_to_native_units;
+                  l_ratings(l_date_ratings(l_hi_index-1)) := l_rating;
+            else
+               l_rating := l_ratings(l_date_ratings(l_hi_index-1));
             end if;
             l_ind_set_2 := double_tab_t();
             l_ind_set_2.extend(l_ind_set.count);
             for i in 1..l_ind_set.count loop
-               l_ind_set_2(i) := cwms_util.convert_units(l_ind_set(i), p_units(i), l_rating_units(l_hi_index-1)(i));
+               l_ind_set_2(i) := cwms_util.convert_units(l_ind_set(i), p_units(i), l_rating_units(l_date_ratings(l_hi_index-1))(i));
             end loop;  
             case     
             when l_rating.connections is not null then
@@ -3106,19 +3130,24 @@ begin
                ------------------------------------------
                -- non-virtual, non-transitional rating --
                ------------------------------------------
-               l_lo_value := l_rating.rate_one(l_ind_set_2);
+               if l_stream_rating is null or l_value_times is null then
+                  l_lo_value := l_rating.rate_one(l_ind_set_2);
+               else
+                  l_lo_value := l_rating.rate(ztsv_type(l_value_times(j), l_ind_set_2(1), 0)).value; 
+               end if;
             end case;
-            l_lo_value := cwms_util.convert_units(l_lo_value, l_rating_units(l_hi_index-1)(p_units.count), p_units(p_units.count));
+            l_lo_value := cwms_util.convert_units(l_lo_value, l_rating_units(l_date_ratings(l_hi_index-1))(p_units.count), p_units(p_units.count));
          end if;
          -----------------------------------------
          -- re-compute ratio for stream ratings --
          -----------------------------------------
-         if l_ratings(l_hi_index-1) is of (stream_rating_t)
+         if l_ratings(l_date_ratings(l_hi_index-1)) is of (stream_rating_t)
             and l_ratio > 0.
             and l_ratio < 1.
-            and treat(l_ratings(l_hi_index-1) as stream_rating_t).latest_shift_date is not null
+            and treat(l_ratings(l_date_ratings(l_hi_index-1)) as stream_rating_t).latest_shift_date is not null
+            and l_ratings(l_date_ratings(l_hi_index)).transition_date is null -- ratio is already correct if next rating has transition date
          then
-            l_date_offset_2 := treat(l_ratings(l_hi_index-1) as stream_rating_t).latest_shift_date - c_base_date;
+            l_date_offset_2 := treat(l_ratings(l_date_ratings(l_hi_index-1)) as stream_rating_t).latest_shift_date - c_base_date;
             if l_date_offset_2 >= l_date_offset then
                l_ratio := 0.;
             else
@@ -3159,7 +3188,7 @@ begin
                               -- fall back from LOG-LoG to LIN-LIN --
                               ---------------------------------------
                               l_independent_log := false;
-                              if l_ratings(l_hi_index-1) is of (stream_rating_t) and l_ratio > 0. and l_ratio < 1.
+                              if l_ratings(l_date_ratings(l_hi_index-1)) is of (stream_rating_t) and l_ratio > 0. and l_ratio < 1.
                               then
                                  l_ratio := (l_date_offset - l_date_offset_2)
                                           / (l_date_offsets(l_hi_index) - l_date_offset_2);
@@ -3716,6 +3745,7 @@ procedure reverse_rate(
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null)
 is
+   type integer_tab_t is table of pls_integer;
    c_base_date               constant date := date '1800-01-01';
    l_office_id               varchar2(16) := cwms_util.get_db_office_id(p_office_id);
    l_time_zone               varchar2(28);
@@ -3727,6 +3757,7 @@ is
    l_date_offsets            double_tab_t;
    l_date_offset             binary_double;
    l_date_offset_2           binary_double;
+   l_date_ratings            integer_tab_t;
    l_results                 double_tab_t;
    l_hi_index                pls_integer;
    l_hi_value                binary_double;
@@ -3873,12 +3904,15 @@ begin
    --------------------------------
    for rec in
       (  select rating_code,
-                effective_date
+                effective_date,
+                transition_date,
+                lag (effective_date, 1, null) over (order by effective_date) as prev_effective_date
            from (--------------------------------------------------
                  -- simple ratings and usgs-style stream ratings --
                  -------------------------------------------------- 
                  select r.rating_code,
-                        r.effective_date
+                        r.effective_date,
+                        r.transition_date
                    from at_rating r,
                         at_rating_spec rs,
                         at_rating_template rt,
@@ -3905,7 +3939,8 @@ begin
                  --------------------------   
                   union all
                  select tr.transitional_rating_code as rating_code,
-                        tr.effective_date
+                        tr.effective_date,
+                        tr.transition_date
                    from at_transitional_rating tr,
                         at_rating_spec rs,
                         at_rating_template rt,
@@ -3932,7 +3967,8 @@ begin
                  ---------------------   
                   union all
                  select vr.virtual_rating_code as rating_code,
-                        vr.effective_date
+                        vr.effective_date,
+                        vr.transition_date
                    from at_virtual_rating vr,
                         at_rating_spec rs,
                         at_rating_template rt,
@@ -3962,14 +3998,23 @@ begin
          l_ratings      := rating_tab_t();
          l_rating_codes := number_tab_t();
          l_date_offsets := double_tab_t();
+         l_date_ratings := integer_tab_t();
          l_rating_units := str_tab_tab_t();
+      end if;
+      if rec.transition_date between rec.prev_effective_date and rec.effective_date then -- if any is null then test is false
+         l_date_offsets.extend;
+         l_date_ratings.extend;
+         l_date_offsets(l_date_offsets.count) := rec.transition_date - c_base_date;
+         l_date_ratings(l_date_ratings.count) := l_ratings.count;
       end if;
       l_ratings.extend;
       l_rating_codes.extend;
       l_date_offsets.extend;
+      l_date_ratings.extend;
       l_rating_units.extend;
       l_rating_codes(l_rating_codes.count) := rec.rating_code;
       l_date_offsets(l_date_offsets.count) := rec.effective_date - c_base_date;
+      l_date_ratings(l_date_ratings.count) := l_ratings.count;
    end loop;
    if l_ratings is null then
       cwms_err.raise(
@@ -4095,16 +4140,16 @@ begin
          -- get the values from individual rating objects --
          ---------------------------------------------------
          if l_ratio != 0. then
-            if l_ratings(l_hi_index) is null then
-               l_ratings(l_hi_index) := get_rating(l_rating_codes(l_hi_index));
-               l_rating := treat(l_ratings(l_hi_index) as rating_t);
+            if l_ratings(l_date_ratings(l_hi_index)) is null then
+               l_ratings(l_date_ratings(l_hi_index)) := get_rating(l_rating_codes(l_date_ratings(l_hi_index)));
+               l_rating := treat(l_ratings(l_date_ratings(l_hi_index)) as rating_t);
                if l_rating.evaluations is not null then
                   cwms_err.raise('ERROR', 'Cannot reverse rate through a transitional rating.');
                end if;
                l_rating.convert_to_native_units;
-               l_ratings(l_hi_index) := l_rating;
-               l_rating_units(l_hi_index) := cwms_util.split_text(replace(l_rating.native_units, separator2, separator3), separator3);
-               if l_rating_units(l_hi_index).count != p_units.count then
+               l_ratings(l_date_ratings(l_hi_index)) := l_rating;
+               l_rating_units(l_date_ratings(l_hi_index)) := cwms_util.split_text(replace(l_rating.native_units, separator2, separator3), separator3);
+               if l_rating_units(l_date_ratings(l_hi_index)).count != p_units.count then
                   cwms_err.raise(
                      'ERROR',
                      'Wrong number of units supplied for rating '
@@ -4132,8 +4177,8 @@ begin
                      cwms_util.convert_units(
                         p_values(i),
                         p_units(1),
-                        l_rating_units(l_hi_index)(1))),
-                  l_rating_units(l_hi_index)(2),
+                        l_rating_units(l_date_ratings(l_hi_index))(1))),
+                  l_rating_units(l_date_ratings(l_hi_index))(2),
                   p_units(2));
             else
                --------------------
@@ -4141,27 +4186,27 @@ begin
                --------------------
                l_hi_value := cwms_util.convert_units(
                   l_rating.reverse_rate(
-                     double_tab_t(cwms_util.convert_units(p_values(i), p_units(1), l_rating_units(l_hi_index)(1))),
+                     double_tab_t(cwms_util.convert_units(p_values(i), p_units(1), l_rating_units(l_date_ratings(l_hi_index))(1))),
                      cwms_util.split_text(l_rating.native_units, separator2),
                      'F',
                      null,
                      sysdate,
                      'UTC')(1),
-                  l_rating_units(l_hi_index)(2),
+                  l_rating_units(l_date_ratings(l_hi_index))(2),
                   p_units(2));
             end if;
          end if;
          if l_ratio != 1. then
-            if l_ratings(l_hi_index-1) is null then
-               l_ratings(l_hi_index-1) := get_rating(l_rating_codes(l_hi_index-1));
-               l_rating := treat(l_ratings(l_hi_index-1) as rating_t);
+            if l_ratings(l_date_ratings(l_hi_index-1)) is null then
+               l_ratings(l_date_ratings(l_hi_index-1)) := get_rating(l_rating_codes(l_date_ratings(l_hi_index-1)));
+               l_rating := treat(l_ratings(l_date_ratings(l_hi_index-1)) as rating_t);
                if l_rating.evaluations is not null then
                   cwms_err.raise('ERROR', 'Cannot reverse rate through a transitional rating.');
                end if;
                l_rating.convert_to_native_units;
-               l_ratings(l_hi_index-1) := l_rating;
-               l_rating_units(l_hi_index-1) := cwms_util.split_text(replace(l_rating.native_units, separator2, separator3), separator3);
-               if l_rating_units(l_hi_index-1).count != p_units.count then
+               l_ratings(l_date_ratings(l_hi_index-1)) := l_rating;
+               l_rating_units(l_date_ratings(l_hi_index-1)) := cwms_util.split_text(replace(l_rating.native_units, separator2, separator3), separator3);
+               if l_rating_units(l_date_ratings(l_hi_index-1)).count != p_units.count then
                   cwms_err.raise(
                      'ERROR',
                      'Wrong number of units supplied for rating '
@@ -4189,8 +4234,8 @@ begin
                      cwms_util.convert_units(
                         p_values(i),
                         p_units(1),
-                        l_rating_units(l_hi_index-1)(1))),
-                  l_rating_units(l_hi_index-1)(2),
+                        l_rating_units(l_date_ratings(l_hi_index-1))(1))),
+                  l_rating_units(l_date_ratings(l_hi_index-1))(2),
                   p_units(2));
             else
                --------------------
@@ -4198,25 +4243,25 @@ begin
                --------------------
                l_lo_value := cwms_util.convert_units(
                   l_rating.reverse_rate(
-                     double_tab_t(cwms_util.convert_units(p_values(i), p_units(1), l_rating_units(l_hi_index-1)(1))),
+                     double_tab_t(cwms_util.convert_units(p_values(i), p_units(1), l_rating_units(l_date_ratings(l_hi_index-1))(1))),
                      cwms_util.split_text(l_rating.native_units, separator2),
                      'F',
                      null,
                      sysdate,
                      'UTC')(1),
-                  l_rating_units(l_hi_index-1)(2),
+                  l_rating_units(l_date_ratings(l_hi_index-1))(2),
                   p_units(2));
             end if;
          end if;
          -----------------------------------------
          -- re-compute ratio for stream ratings --
          -----------------------------------------
-         if l_ratings(l_hi_index-1) is of (stream_rating_t)
+         if l_ratings(l_date_ratings(l_hi_index-1)) is of (stream_rating_t)
             and l_ratio > 0.
             and l_ratio < 1.
-            and treat(l_ratings(l_hi_index-1) as stream_rating_t).latest_shift_date is not null
+            and treat(l_ratings(l_date_ratings(l_hi_index-1)) as stream_rating_t).latest_shift_date is not null
          then
-            l_date_offset_2 := treat(l_ratings(l_hi_index-1) as stream_rating_t).latest_shift_date - c_base_date;
+            l_date_offset_2 := treat(l_ratings(l_date_ratings(l_hi_index-1)) as stream_rating_t).latest_shift_date - c_base_date;
             if l_date_offset_2 >= l_date_offset then
                l_ratio := 0.;
             else
@@ -4257,7 +4302,7 @@ begin
                               -- fall back from LOG-LoG to LIN-LIN --
                               ---------------------------------------
                               l_independent_log := false;
-                              if l_ratings(l_hi_index-1) is of (stream_rating_t) and l_ratio > 0. and l_ratio < 1.
+                              if l_ratings(l_date_ratings(l_hi_index-1)) is of (stream_rating_t) and l_ratio > 0. and l_ratio < 1.
                               then
                                  l_ratio := (l_date_offset - l_date_offset_2)
                                           / (l_date_offsets(l_hi_index) - l_date_offset_2);

@@ -11,8 +11,8 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TRANSITIONAL_RAT
  * @field office_id                The office that owns the transitional rating
  * @field rating_spec              The rating specification for the transistional rating
  * @field native_units             The units used for the conditions and evaluations of the rating
- * @field effective_date           The date/time that the rating went into effect
- * @field create_date              The date/time that the rating was stored to the database
+ * @field effective_date           The date/time that the rating went into effect in UTC
+ * @field create_date              The date/time that the rating was stored to the database in UTC
  * @field position                 The evaluation position for this condition/evaluation. Position 0 is the default evaluation if no conditions are specified, or no specified conditions are met.
  * @field condition                The condition for this evaluation position
  * @field expression               The evaluation expression for this position
@@ -20,6 +20,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TRANSITIONAL_RAT
  * @field transitional_rating_code The unique numeric code of this transitional rating
  * @field rating_spec_code         The unique numeric code of the the rating specification for this transitional rating
  * @field source_rating_spec_code  The unique numeric code of the source rating specification if the evaluation expression is the output of one of the source ratings
+ * @field transition_date          The date/time to start transition (interpolation) from previous rating in UTC
  */
 ');
 create or replace force view av_transitional_rating(
@@ -34,7 +35,8 @@ create or replace force view av_transitional_rating(
    source_rating_spec,
    transitional_rating_code,
    rating_spec_code,
-   source_rating_spec_code)
+   source_rating_spec_code,
+   transition_date)
 as
    select a.office_id,
           a.rating_spec,
@@ -72,7 +74,8 @@ as
           b.source_rating_spec,
           a.transitional_rating_code,
           a.rating_spec_code,
-          b.rating_spec_code as source_rating_spec_code
+          b.rating_spec_code as source_rating_spec_code,
+          a.transition_date
      from (select tr.transitional_rating_code,
                   tr.rating_spec_code, 
                   tr.native_units,
@@ -91,7 +94,8 @@ as
                   || rt.version
                   || '.'
                   || rs.version
-                     as rating_spec
+                     as rating_spec,
+                  tr.transition_date
              from at_transitional_rating tr,
                   at_transitional_rating_sel trs,
                   at_rating_spec rs,
