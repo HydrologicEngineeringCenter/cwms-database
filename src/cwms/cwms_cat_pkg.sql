@@ -1921,6 +1921,12 @@ IS
     *     <td class="descr">number</td>
     *     <td class="descr">A numeric attribute for the location with respect to the group. Can be used for sorting, etc...</td>
     *   </tr>
+    *   <tr>
+    *     <td class="descr-center">13</td>
+    *     <td class="descr">goup_attribute</td>
+    *     <td class="descr">number</td>
+    *     <td class="descr">A numeric attribute for the location group with respect to the category. Can be used for sorting, etc...</td>
+    *   </tr>
     * </table>
     * @param p_location_id     The location identifier pattern to match. Use glob-style wildcards as shown above instead of SQL-style wildcards. If not specified or NULL, all location identifiers will be matched.
     * @param p_loc_category_id The location category identifier pattern to match. Use glob-style wildcards as shown above instead of SQL-style wildcards. If not specified or NULL, all location category identifiers will be matched.

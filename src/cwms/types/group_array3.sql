@@ -1,4 +1,4 @@
-create type group_array2
+create type group_array3
 /**
  * Holds basic information about a collection of location groups
  *
@@ -10,5 +10,5 @@ IS TABLE OF group_type3;
 /
 
 
-create or replace public synonym cwms_t_group2_array for group_array2;
+create or replace public synonym cwms_t_group3_array for group_array3;
 

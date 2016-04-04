@@ -13,6 +13,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_CAT_GRP', nu
  * @field loc_group_desc         Description of the loction group
  * @field shared_loc_alias_id    The alias, if any, shared by all members of the location group
  * @field shared_ref_location_id The referenced location, if any, shared by all members of the location group
+ * @field loc_group_attribute    A number that can be used for sorting location groups within a category, etc...
  */
 ');
 CREATE OR REPLACE VIEW av_loc_cat_grp
@@ -24,13 +25,15 @@ CREATE OR REPLACE VIEW av_loc_cat_grp
     loc_group_id,
     loc_group_desc,
     shared_loc_alias_id,
-    shared_ref_location_id
+    shared_ref_location_id,
+    loc_group_attribute
 )
 AS
     SELECT    co.office_id cat_db_office_id, loc_category_id, loc_category_desc,
                 coo.office_id grp_db_office_id, loc_group_id, loc_group_desc,
                 shared_loc_alias_id,
-                abl.base_location_id || SUBSTR ('-', 1, LENGTH (atpl.sub_location_id)) || atpl.sub_location_id shared_ref_location_id
+                abl.base_location_id || substr ('-', 1, length (atpl.sub_location_id)) || atpl.sub_location_id shared_ref_location_id,
+                atlg.loc_group_attribute
       FROM    cwms_office co,
                 cwms_office coo,
                 at_loc_category atlc,

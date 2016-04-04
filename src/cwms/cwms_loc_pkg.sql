@@ -813,6 +813,29 @@ AS
 										p_db_office_id 		 IN VARCHAR2 DEFAULT NULL
 									  );
    /**
+    * Stores (inserts or updates) a location group to the database
+    *
+    * @param p_loc_category_id     The location category identifier (parent of location group)
+    * @param p_loc_group_id        The location group identifier
+    * @param p_loc_group_desc      A description of the location group
+    * @param p_loc_group_attribute An optional numeric attribute that can be used for sorting, etc...
+    * @param p_fail_if_exists      A flag ('T' or 'F') that specifies whether the routine should fail if the location group already exists
+    * @param p_ignore_nulls        A flag ('T' or 'F') that specifies whether to ignore NULL parameters when updating and existing location group
+    * @param p_shared_alias_id     An alias shared by all locations in the location group
+    * @param p_shared_loc_ref_id   A location identifier
+    * @param p_db_office_id        The office that owns the location group. If not specified or NULL, the session user's default office will be used
+    */
+	procedure store_loc_group2 (p_loc_category_id 	  in varchar2,
+										 p_loc_group_id 		  IN VARCHAR2,
+										 p_loc_group_desc		  IN VARCHAR2 DEFAULT NULL,
+                               p_loc_group_attribute in number default null,
+										 p_fail_if_exists		  IN VARCHAR2 DEFAULT 'F',
+										 p_ignore_nulls 		  IN VARCHAR2 DEFAULT 'T',
+										 p_shared_alias_id 	  IN VARCHAR2 DEFAULT NULL,
+										 p_shared_loc_ref_id	  in varchar2 default null,
+										 p_db_office_id 		  in varchar2 default null
+									   );
+   /**
     * Renames a location group in the database
     *
     * @param p_loc_category_id   The location category identifier (parent of location group)
@@ -1046,6 +1069,28 @@ AS
 	PROCEDURE assign_loc_grps_cat2 (
 		p_loc_category_id   IN VARCHAR2,
 		p_loc_group_array   IN group_array2,
+		p_db_office_id 	  IN VARCHAR2 DEFAULT NULL
+	);
+   -- not documented. use store_loc_group
+	PROCEDURE assign_loc_grp_cat3 (
+		p_loc_category_id 	 IN VARCHAR2,
+		p_loc_group_id 		 IN VARCHAR2,
+		p_loc_group_desc		 in varchar2 default null,
+      p_loc_group_attribute in number default null,
+		p_shared_alias_id 	 IN VARCHAR2 DEFAULT NULL,
+		p_shared_loc_ref_id	 IN VARCHAR2 DEFAULT NULL,
+		p_db_office_id 		 IN VARCHAR2 DEFAULT NULL
+	);
+   /**
+    * Stores (inserts or updates) one or more location groups in a common location category
+    *
+    * @param p_loc_category_id  The location category identifer
+    * @param p_loc_group_array  The location groups to store
+    * @param p_db_office_id     The office that owns the location category. If not specified or NULL, the session user's default office is used
+    */
+	PROCEDURE assign_loc_grps_cat3 (
+		p_loc_category_id   IN VARCHAR2,
+		p_loc_group_array   IN group_array3,
 		p_db_office_id 	  IN VARCHAR2 DEFAULT NULL
 	);
    /**

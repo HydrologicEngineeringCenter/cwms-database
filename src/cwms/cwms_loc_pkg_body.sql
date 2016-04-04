@@ -3895,13 +3895,37 @@ AS
 
    PROCEDURE store_loc_group (p_loc_category_id     IN VARCHAR2,
                               p_loc_group_id        IN VARCHAR2,
-                              p_loc_group_desc       IN VARCHAR2 DEFAULT NULL,
-                              p_fail_if_exists       IN VARCHAR2 DEFAULT 'F',
+                              p_loc_group_desc      IN VARCHAR2 DEFAULT NULL,
+                              p_fail_if_exists      IN VARCHAR2 DEFAULT 'F',
                               p_ignore_nulls        IN VARCHAR2 DEFAULT 'T',
                               p_shared_alias_id     IN VARCHAR2 DEFAULT NULL,
-                              p_shared_loc_ref_id    IN VARCHAR2 DEFAULT NULL,
-                              p_db_office_id        IN VARCHAR2 DEFAULT NULL
+                              p_shared_loc_ref_id   IN VARCHAR2 DEFAULT NULL,
+                              p_db_office_id        in varchar2 default null
                              )
+   IS                             
+   begin
+      store_loc_group2 (
+         p_loc_category_id,
+         p_loc_group_id,
+         p_loc_group_desc,
+         null,
+         p_fail_if_exists,
+         p_ignore_nulls,
+         p_shared_alias_id,
+         p_shared_loc_ref_id,
+         p_db_office_id);   
+   END store_loc_group;
+
+   PROCEDURE store_loc_group2 (p_loc_category_id     IN VARCHAR2,
+                               p_loc_group_id        IN VARCHAR2,
+                               p_loc_group_desc      IN VARCHAR2 DEFAULT NULL,
+                               p_loc_group_attribute in number default null,
+                               p_fail_if_exists      IN VARCHAR2 DEFAULT 'F',
+                               p_ignore_nulls        IN VARCHAR2 DEFAULT 'T',
+                               p_shared_alias_id     IN VARCHAR2 DEFAULT NULL,
+                               p_shared_loc_ref_id   IN VARCHAR2 DEFAULT NULL,
+                               p_db_office_id        in varchar2 default null
+                              )
    IS
       l_rec              at_loc_group%ROWTYPE;
       l_office_code       NUMBER (10)
@@ -3916,7 +3940,7 @@ AS
       BEGIN
          SELECT   g.loc_group_code, g.loc_category_code, g.loc_group_id,
                   g.loc_group_desc, g.db_office_code, g.shared_loc_alias_id,
-                  g.shared_loc_ref_code
+                  g.shared_loc_ref_code, g.loc_group_attribute
            INTO   l_rec
            FROM   at_loc_group g, at_loc_category c
           WHERE       UPPER (c.loc_category_id) = UPPER (p_loc_category_id)
@@ -3969,6 +3993,11 @@ AS
             l_rec.loc_group_desc := p_loc_group_desc;
          END IF;
 
+         IF NOT (l_ignore_nulls AND p_loc_group_attribute IS NULL)
+         THEN
+            l_rec.loc_group_attribute := p_loc_group_attribute;
+         end if;
+
          IF NOT (l_ignore_nulls AND p_shared_alias_id IS NULL)
          THEN
             l_rec.shared_loc_alias_id := p_shared_alias_id;
@@ -3996,6 +4025,7 @@ AS
                                  );
          l_rec.loc_group_id := p_loc_group_id;
          l_rec.loc_group_desc := p_loc_group_desc;
+         l_rec.loc_group_attribute := p_loc_group_attribute;
          l_rec.db_office_code := l_office_code;
          l_rec.shared_loc_alias_id := p_shared_alias_id;
 
@@ -4009,8 +4039,8 @@ AS
 
          INSERT INTO   at_loc_group
               VALUES   l_rec;
-      END IF;
-   END store_loc_group;
+      end if;
+   END store_loc_group2;
 
    PROCEDURE create_loc_group (p_loc_category_id   IN VARCHAR2,
                                p_loc_group_id      IN VARCHAR2,
@@ -5076,9 +5106,9 @@ end unassign_loc_groups;
    --
    -- used to assign one or more groups to an existing category.
    --
-   PROCEDURE assign_loc_grps_cat2 (
+   PROCEDURE assign_loc_grps_cat3 (
       p_loc_category_id   IN VARCHAR2,
-      p_loc_group_array   IN group_array2,
+      p_loc_group_array   IN group_array3,
       p_db_office_id      IN VARCHAR2 DEFAULT NULL
    )
    IS
@@ -5140,6 +5170,7 @@ end unassign_loc_groups;
                UPDATE   at_loc_group
                   SET   loc_group_id = l_loc_group_id,
                         loc_group_desc = l_loc_group_desc,
+                        loc_group_attribute = p_loc_group_array(i).group_attribute,
                         shared_loc_alias_id =
                            p_loc_group_array (i).shared_alias_id,
                         shared_loc_ref_code =
@@ -5174,6 +5205,7 @@ end unassign_loc_groups;
                                                loc_category_code,
                                                loc_group_id,
                                                loc_group_desc,
+                                               loc_group_attribute,
                                                shared_loc_alias_id,
                                                shared_loc_ref_code,
                                                db_office_code
@@ -5183,8 +5215,9 @@ end unassign_loc_groups;
                                     l_loc_category_code,
                                     l_loc_group_id,
                                     l_loc_group_desc,
+                                    p_loc_group_array(i).group_attribute,
                                     l_db_office_code,
-                                    p_loc_group_array (i).shared_alias_id,
+                                    p_loc_group_array(i).shared_alias_id,
                                     get_location_code (
                                        l_db_office_code,
                                        p_loc_group_array (i).shared_loc_ref_id
@@ -5193,9 +5226,66 @@ end unassign_loc_groups;
                   END;
             END;
          END LOOP;
-      END IF;
-   END assign_loc_grps_cat2;
+      end if;
+   END assign_loc_grps_cat3;
 
+   --
+   -- used to assign a group to an existing category.
+   --
+   PROCEDURE assign_loc_grp_cat3 (
+		p_loc_category_id 	 IN VARCHAR2,
+		p_loc_group_id 		 IN VARCHAR2,
+		p_loc_group_desc		 IN VARCHAR2 DEFAULT NULL,
+      p_loc_group_attribute IN NUMBER DEFAULT NULL,
+		p_shared_alias_id 	 IN VARCHAR2 DEFAULT NULL,
+		p_shared_loc_ref_id	 IN VARCHAR2 DEFAULT NULL,
+		p_db_office_id 		 IN VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_loc_group_array   group_array3
+         := group_array3 (
+               group_type3 (TRIM (p_loc_group_id),
+                            TRIM (P_LOC_GROUP_DESC),
+                            p_loc_group_attribute,
+                            p_shared_alias_id,
+                            p_shared_loc_ref_id
+                           )
+            );
+   BEGIN
+      assign_loc_grps_cat3 (p_loc_category_id,
+                            l_loc_group_array,
+                            p_db_office_id
+                           );
+   END assign_loc_grp_cat3;
+   --
+   -- used to assign one or more groups to an existing category.
+   --
+   PROCEDURE assign_loc_grps_cat2 (
+      p_loc_category_id   IN VARCHAR2,
+      p_loc_group_array   IN group_array2,
+      p_db_office_id      IN VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_loc_group_array   group_array3 := group_array3 ();
+   BEGIN
+      l_loc_group_array.EXTEND (p_loc_group_array.COUNT);
+
+      FOR i IN 1 .. p_loc_group_array.COUNT
+      LOOP
+         l_loc_group_array (i) :=
+            group_type3 (p_loc_group_array (i).GROUP_ID,
+                         p_loc_group_array (i).group_desc,
+                         NULL,
+                         p_loc_group_array (i).shared_alias_id,
+                         p_loc_group_array (i).shared_loc_ref_id
+                        );
+      END LOOP;
+
+      assign_loc_grps_cat3 (p_loc_category_id,
+                            l_loc_group_array,
+                            p_db_office_id
+                           );
+   END assign_loc_grps_cat2;
 
    --
    -- used to assign a group to an existing category.
@@ -5209,20 +5299,21 @@ end unassign_loc_groups;
       p_db_office_id        IN VARCHAR2 DEFAULT NULL
    )
    IS
-      l_loc_group_array   group_array2
-         := group_array2 (
-               group_type2 (TRIM (p_loc_group_id),
-                            TRIM (p_loc_group_desc),
+      l_loc_group_array   group_array3
+         := group_array3 (
+               group_type3 (TRIM (p_loc_group_id),
+                            trim (p_loc_group_desc),
+                            null,
                             p_shared_alias_id,
                             p_shared_loc_ref_id
                            )
             );
    BEGIN
-      assign_loc_grps_cat2 (p_loc_category_id,
+      assign_loc_grps_cat3 (p_loc_category_id,
                             l_loc_group_array,
                             p_db_office_id
                            );
-   END assign_loc_grp_cat2;
+   end assign_loc_grp_cat2;
 
    --
    -- used to assign one or more groups to an existing category.
@@ -5233,21 +5324,22 @@ end unassign_loc_groups;
       p_db_office_id      IN VARCHAR2 DEFAULT NULL
    )
    IS
-      l_loc_group_array   group_array2 := group_array2 ();
+      l_loc_group_array   group_array3 := group_array3 ();
    BEGIN
       l_loc_group_array.EXTEND (p_loc_group_array.COUNT);
 
       FOR i IN 1 .. p_loc_group_array.COUNT
       LOOP
          l_loc_group_array (i) :=
-            group_type2 (p_loc_group_array (i).GROUP_ID,
+            group_type3 (p_loc_group_array (i).GROUP_ID,
                          p_loc_group_array (i).group_desc,
+                         NULL,
                          NULL,
                          NULL
                         );
       END LOOP;
 
-      assign_loc_grps_cat2 (p_loc_category_id,
+      assign_loc_grps_cat3 (p_loc_category_id,
                             l_loc_group_array,
                             p_db_office_id
                            );
@@ -5264,11 +5356,12 @@ end unassign_loc_groups;
    )
    IS
    BEGIN
-      assign_loc_grp_cat2 (p_loc_category_id     => p_loc_category_id,
+      assign_loc_grp_cat3 (p_loc_category_id     => p_loc_category_id,
                            p_loc_group_id        => p_loc_group_id,
-                           p_loc_group_desc       => p_loc_group_desc,
+                           p_loc_group_desc      => p_loc_group_desc,
+                           p_loc_group_attribute => null,
                            p_shared_alias_id     => NULL,
-                           p_shared_loc_ref_id    => NULL,
+                           p_shared_loc_ref_id   => NULL,
                            p_db_office_id        => p_db_office_id
                           );
    END assign_loc_grp_cat;

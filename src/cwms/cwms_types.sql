@@ -103,6 +103,8 @@ end;
 @@cwms/types/group_array
 @@cwms/types/group_type2
 @@cwms/types/group_array2
+@@cwms/types/group_type3
+@@cwms/types/group_array3
 @@cwms/types/group_cat_t
 @@cwms/types/group_cat_tab_t
 @@cwms/types/ts_alias_t

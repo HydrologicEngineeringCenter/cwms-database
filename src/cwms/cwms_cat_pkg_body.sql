@@ -3424,7 +3424,8 @@ END cat_ts_id;
                           cwms_util.get_location_id(loc_ref_code) ref_location_id,
                           shared_loc_alias_id, 
                           cwms_util.get_location_id(shared_loc_ref_code) shared_loc_ref_id, 
-                          loc_attribute as attribute
+                          loc_attribute as attribute,
+                          loc_group_attribute as group_attribute
                    FROM      (SELECT   e1.office_id db_office_id,
                                        c.location_code, b.loc_group_code,
                                        d.base_location_id
@@ -3438,6 +3439,7 @@ END cat_ts_id;
                                        b.loc_group_id,
                                        e3.office_id grp_db_office_id,
                                        b.loc_group_desc,
+                                       b.loc_group_attribute,
                                        b.shared_loc_alias_id,
                                        b.shared_loc_ref_code
                                 FROM   at_loc_category a,
@@ -3473,7 +3475,8 @@ END cat_ts_id;
                           cwms_util.get_location_id(loc_ref_code) ref_location_id,
                           shared_loc_alias_id, 
                           cwms_util.get_location_id(shared_loc_ref_code) shared_loc_ref_id,
-                          loc_attribute as attribute
+                          loc_attribute as attribute,
+                          loc_group_attribute as group_attribute
                    FROM      (SELECT   e1.office_id db_office_id,
                                        c.location_code, b.loc_group_code,
                                        d.base_location_id
@@ -3487,6 +3490,7 @@ END cat_ts_id;
                                        b.loc_group_id,
                                        e3.office_id grp_db_office_id,
                                        b.loc_group_desc,
+                                       b.loc_group_attribute,
                                        b.shared_loc_alias_id,
                                        b.shared_loc_ref_code
                                 FROM   at_loc_category a,
@@ -3528,7 +3532,8 @@ END cat_ts_id;
                           cwms_util.get_location_id(loc_ref_code) ref_location_id,
                           shared_loc_alias_id, 
                           cwms_util.get_location_id(shared_loc_ref_code) shared_loc_ref_id,
-                          loc_attribute as attribute
+                          loc_attribute as attribute,
+                          loc_group_attribute as group_attribute
                    FROM      (SELECT   e1.office_id db_office_id,
                                        c.location_code, b.loc_group_code,
                                        d.base_location_id
@@ -3542,6 +3547,7 @@ END cat_ts_id;
                                        b.loc_group_id,
                                        e3.office_id grp_db_office_id,
                                        b.loc_group_desc,
+                                       b.loc_group_attribute,
                                        b.shared_loc_alias_id,
                                        b.shared_loc_ref_code
                                 FROM   at_loc_category a,
@@ -3577,7 +3583,8 @@ END cat_ts_id;
                           cwms_util.get_location_id(loc_ref_code) ref_location_id,
                           shared_loc_alias_id, 
                           cwms_util.get_location_id(shared_loc_ref_code) shared_loc_ref_id,
-                          loc_attribute as attribute
+                          loc_attribute as attribute,
+                          loc_group_attribute as group_attribute
                    FROM      (SELECT   e1.office_id db_office_id,
                                        c.location_code, b.loc_group_code,
                                        d.base_location_id
@@ -3591,6 +3598,7 @@ END cat_ts_id;
                                        b.loc_group_id,
                                        e3.office_id grp_db_office_id,
                                        b.loc_group_desc,
+                                       b.loc_group_attribute,
                                        b.shared_loc_alias_id,
                                        b.shared_loc_ref_code
                                 FROM   at_loc_category a,

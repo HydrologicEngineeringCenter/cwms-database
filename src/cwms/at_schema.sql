@@ -1012,11 +1012,12 @@ CREATE TABLE at_loc_group
   loc_group_desc      VARCHAR2(256 BYTE),
   db_office_code      NUMBER                     NOT NULL,
   shared_loc_alias_id VARCHAR2(256 BYTE),
-  shared_loc_ref_code NUMBER
+  shared_loc_ref_code NUMBER,
+  loc_group_attribute NUMBER
 )
 TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
-PCTFREE    10
+pctfree    10
 INITRANS   1
 MAXTRANS   255
 STORAGE    (
@@ -1040,6 +1041,7 @@ comment on column at_loc_group.loc_group_desc      is 'Description of the purpos
 comment on column at_loc_group.db_office_code      is 'Reference to office that owns this location group';
 comment on column at_loc_group.shared_loc_alias_id is 'Shared location alias assigned to all members of this group by virtue of membership';
 comment on column at_loc_group.shared_loc_ref_code is 'Shared reference to existing location assigned to all members of this group by virtue of memebership';
+comment on column at_loc_group.loc_group_attribute is 'General purpose value (can be used for sorting, etc...)';
 
 CREATE UNIQUE INDEX at_loc_groups_pk ON at_loc_group
 (loc_group_code)
@@ -1096,18 +1098,18 @@ ALTER TABLE at_loc_group ADD (
  FOREIGN KEY (loc_category_code)
  REFERENCES at_loc_category (loc_category_code))
 /
-INSERT INTO at_loc_group VALUES (0, 0, 'Default', 'All Locations',                                            53, NULL, NULL);
-INSERT INTO at_loc_group VALUES (1, 1, 'USGS Station Name', 'US Geological Survey Station Name',                        53, NULL, NULL);
-INSERT INTO at_loc_group VALUES (2, 1, 'USGS Station Number', 'US Geological Survey Station Number',                      53, NULL, NULL);
-INSERT INTO at_loc_group VALUES (3, 1, 'NWS Handbook 5 ID', 'National Weather Service Handbook 5 ID',                   53, NULL, NULL);
-INSERT INTO at_loc_group VALUES (4, 1, 'DCP Platform ID', 'Data Collection Platform ID',                              53, NULL, NULL);
-INSERT INTO at_loc_group VALUES (5, 1, 'SHEF Location ID', 'Standard Hydrometeorological Exchange Format Location ID', 53, NULL, NULL);
-INSERT INTO at_loc_group VALUES (6, 1, 'CBT Station ID', 'Columbia Basin Teletype Station ID',                       53, NULL, NULL);
-INSERT INTO at_loc_group VALUES (7, 1, 'USBR Station ID', 'US Bureau of Reclamation Station ID',                      53, NULL, NULL);
-INSERT INTO at_loc_group VALUES (8, 1, 'TVA Station ID', 'Tennessee Valley Authority Station ID',                    53, NULL, NULL);
-INSERT INTO at_loc_group VALUES (9, 1, 'NRCS Station ID','Natural Resources Conservation Service Station ID',        53, NULL, NULL);
-INSERT INTO at_loc_group VALUES (10, 1, 'USGS GNIS ID', 'The ID used by the USGS GNIS APEX App to define a record in the Geographic Names database', 53, NULL, NULL);
-INSERT INTO at_loc_group VALUES (11, 1, 'NIDID', 'The National Inventory of Dams ID used by the NID and Corps Inventory of Dams Subset', 53, NULL, NULL);
+INSERT INTO at_loc_group VALUES ( 0, 0, 'Default'            , 'All Locations'                                                                            , 53, NULL, NULL, NULL);
+INSERT INTO at_loc_group VALUES ( 1, 1, 'USGS Station Name'  , 'US Geological Survey Station Name'                                                        , 53, NULL, NULL, NULL);
+INSERT INTO at_loc_group VALUES ( 2, 1, 'USGS Station Number', 'US Geological Survey Station Number'                                                      , 53, NULL, NULL, NULL);
+INSERT INTO at_loc_group VALUES ( 3, 1, 'NWS Handbook 5 ID'  , 'National Weather Service Handbook 5 ID'                                                   , 53, NULL, NULL, NULL);
+INSERT INTO at_loc_group VALUES ( 4, 1, 'DCP Platform ID'    , 'Data Collection Platform ID'                                                              , 53, NULL, NULL, NULL);
+INSERT INTO at_loc_group VALUES ( 5, 1, 'SHEF Location ID'   , 'Standard Hydrometeorological Exchange Format Location ID'                                 , 53, NULL, NULL, NULL);
+INSERT INTO at_loc_group VALUES ( 6, 1, 'CBT Station ID'     , 'Columbia Basin Teletype Station ID'                                                       , 53, NULL, NULL, NULL);
+INSERT INTO at_loc_group VALUES ( 7, 1, 'USBR Station ID'    , 'US Bureau of Reclamation Station ID'                                                      , 53, NULL, NULL, NULL);
+INSERT INTO at_loc_group VALUES ( 8, 1, 'TVA Station ID'     , 'Tennessee Valley Authority Station ID'                                                    , 53, NULL, NULL, NULL);
+INSERT INTO at_loc_group VALUES ( 9, 1, 'NRCS Station ID'    ,'Natural Resources Conservation Service Station ID'                                         , 53, NULL, NULL, NULL);
+INSERT INTO at_loc_group VALUES (10, 1, 'USGS GNIS ID'       , 'The ID used by the USGS GNIS APEX App to define a record in the Geographic Names database', 53, NULL, NULL, NULL);
+INSERT INTO at_loc_group VALUES (11, 1, 'NIDID'              , 'The National Inventory of Dams ID used by the NID and Corps Inventory of Dams Subset'     , 53, NULL, NULL, NULL);
 COMMIT ;
 -----
 
