@@ -24,5 +24,8 @@ create unique index at_loc_lvl_indicator_u1 on at_loc_lvl_indicator (
 @@cwms/views/av_embankment.sql
 @@cwms/views/av_embank_protection_type.sql
 @@cwms/views/av_embank_structure_type.sql
+@@cwms/views/av_water_user_contract.sql
+@@cwms/views/av_water_user_contract2.sql
+
 ---------------------------------------------------------
 COMMIT;                                                                                                                                                     

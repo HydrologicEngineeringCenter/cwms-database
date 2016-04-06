@@ -87,7 +87,9 @@ DECLARE
 			       'av_usgs_rating',
 			       'av_loc_ts_id_count',
 			       'av_property',
-			       'av_vert_datum_offset'
+			       'av_vert_datum_offset',
+                'av_water_user_contract',       -- located in at_schema_2
+                'av_water_user_contract2'       -- located in at_schema_2
 			      );
 BEGIN
 	FOR i IN view_names.FIRST .. view_names.LAST
