@@ -67,7 +67,7 @@ as
           cwms_util.change_timezone(sm.date_time, 'UTC', cwms_loc.get_local_timezone(sm.location_code)) as date_time_local,
           sm.used as measurement_used,
           sm.party as measuring_party,
-          cua.agcy_name as measuring_agency,
+          e.entity_name as measuring_agency,
           vdu1.unit_system,
           vdu1.unit_id as height_unit,
           vdu2.unit_id as flow_unit,
@@ -91,7 +91,7 @@ as
           av_display_units vdu1,
           av_display_units vdu2,
           av_display_units vdu3,
-          cwms_usgs_agency cua,
+          at_entity e,
           cwms_usgs_flow_adj cufa,
           cwms_usgs_rating_ctrl_cond curcc,
           cwms_usgs_meas_qual cumq
@@ -105,7 +105,7 @@ as
       and vdu3.office_id = vl.db_office_id
       and vdu3.unit_system = vdu1.unit_system
       and vdu3.parameter_id = 'Temp'
-      and cua.agcy_id (+) = sm.agency_id
+      and e.entity_code (+) = sm.agency_code
       and cumq.qual_id (+) = sm.quality
       and curcc.ctrl_cond_id (+) = sm.ctrl_cond_id
       and cufa.adj_id (+) = sm.flow_adj_id;

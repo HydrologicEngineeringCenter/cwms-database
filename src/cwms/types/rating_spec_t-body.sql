@@ -278,12 +278,7 @@ as
             
          self.template_id := l_template_parameters_id || cwms_rating.separator1 || l_template_version;             
          
-         if rec.source_agency_code is not null then
-            select cwms_util.split_text(loc_group_id, 1)
-              into self.source_agency_id
-              from at_loc_group
-             where loc_group_code = rec.source_agency_code;
-         end if; 
+         self.source_agency_id := cwms_entity.get_entity_id(rec.source_agency_code); 
           
          select rating_method_id
            into self.in_range_rating_method
@@ -525,23 +520,9 @@ as
       l_source_agency_code number;
    begin
       if self.source_agency_id is not null then
-         select lg.loc_group_code
-           into l_source_agency_code
-           from at_loc_group lg,
-                at_loc_category lc
-          where lc.loc_category_id = 'Agency Aliases'
-            and lg.loc_category_code = lc.loc_category_code
-            and lg.db_office_code in (cwms_util.get_db_office_code(self.office_id), cwms_util.db_office_code_all)
-            and cwms_util.split_text(upper(lg.loc_group_id), 1) = upper(self.source_agency_id)
-            and rownum = 1;
+         l_source_agency_code := cwms_entity.get_entity_code(self.source_agency_id, self.office_id);
       end if;
       return l_source_agency_code;
-   exception
-      when no_data_found then
-         cwms_err.raise(
-            'ITEM_DOES_NOT_EXIST',
-            'Agency Aliases location group',
-            self.source_agency_id);               
    end;
    
    member function get_rating_code(

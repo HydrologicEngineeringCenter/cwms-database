@@ -183,7 +183,7 @@ as
       self.meas_number     := l_rec.meas_number;
       self.date_time       := l_rec.date_time;
       self.used            := l_rec.used;
-      self.agency_id       := l_rec.agency_id;
+      self.agency_id       := cwms_entity.get_entity_id(l_rec.agency_code);
       self.party           := l_rec.party;
       self.gage_height     := cwms_util.convert_units(l_rec.gage_height, 'm', self.height_unit);
       self.flow            := cwms_util.convert_units(l_rec.flow, 'cms', self.flow_unit);
@@ -263,6 +263,22 @@ as
          l_text := l_yr||trim(to_char(l_doy, '009'))||trim(to_char(l_2min, '009'));
          return trim(to_char(to_number(l_text), 'xxxxxxxx'));
       end make_meas_number;
+      
+      function get_entity_code(
+         p_agency_id in varchar2)
+         return integer
+      is
+         l_agency_code integer;
+      begin
+         begin
+            l_agency_code := cwms_entity.get_entity_code(p_agency_id, self.location.office_id);
+         exception
+            when others then 
+               cwms_entity.store_entity(p_agency_id, p_agency_id, null, 'GOV', 'F', 'T', self.location.office_id);
+               l_agency_code := cwms_entity.get_entity_code(p_agency_id, self.location.office_id);
+         end;
+         return l_agency_code;
+      end get_entity_code;
    begin
       l_rec.location_code := self.location.get_location_code;
       l_rec.date_time     := cwms_util.change_timezone(self.date_time, nvl(self.time_zone, cwms_loc.get_local_timezone(self.location.get_location_code)), 'UTC');
@@ -289,7 +305,7 @@ as
       end if;
       l_rec.used           := self.used;
       l_rec.party          := self.party;
-      l_rec.agency_id      := self.agency_id;
+      l_rec.agency_code    := get_entity_code(self.agency_id);
       l_rec.gage_height    := cwms_util.convert_units(self.gage_height, self.height_unit, 'm');
       l_rec.flow           := cwms_util.convert_units(self.flow, self.flow_unit, 'cms');
       l_rec.cur_rating_num := self.cur_rating_num;

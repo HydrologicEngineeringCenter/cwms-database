@@ -83,7 +83,7 @@ create table at_rating_spec
    constraint at_rating_spec_pk  primary key (rating_spec_code),
    constraint at_rating_spec_fk1 foreign key (template_code) references at_rating_template (template_code),
    constraint at_rating_spec_fk2 foreign key (location_code) references at_physical_location (location_code),
-   constraint at_rating_spec_fk3 foreign key (source_agency_code) references at_loc_group (loc_group_code), 
+   constraint at_rating_spec_fk3 foreign key (source_agency_code) references at_entity (entity_code), 
    constraint at_rating_spec_fk4 foreign key (in_range_rating_method) references cwms_rating_method (rating_method_code),
    constraint at_rating_spec_fk5 foreign key (out_range_low_rating_method) references cwms_rating_method (rating_method_code),
    constraint at_rating_spec_fk6 foreign key (out_range_high_rating_method) references cwms_rating_method (rating_method_code),
@@ -102,7 +102,7 @@ comment on column at_rating_spec.rating_spec_code             is 'Synthetic key'
 comment on column at_rating_spec.template_code                is 'References rating template';
 comment on column at_rating_spec.location_code                is 'References location';
 comment on column at_rating_spec.version                      is 'Version name of the rating time series';
-comment on column at_rating_spec.source_agency_code           is 'Reference to a location group for the source agency';
+comment on column at_rating_spec.source_agency_code           is 'Reference to an entity for the source agency';
 comment on column at_rating_spec.in_range_rating_method       is 'In-range date rating method using effective dates';
 comment on column at_rating_spec.out_range_low_rating_method  is 'Low out-of-range date rating method using effective dates';
 comment on column at_rating_spec.out_range_high_rating_method is 'High out-of-range date rating method using effective dates';

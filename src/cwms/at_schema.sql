@@ -34,6 +34,7 @@ begin
                if substr(rec.object_name, 1, 3) = 'AT_'
                   and rec.object_name != 'AT_PARAMETER'
                   and rec.object_name != 'AT_DISPLAY_UNITS'
+                  and rec.object_name != 'AT_ENTITY'
                then
                   execute immediate 'drop table '
                                      || rec.object_name
@@ -6047,7 +6048,7 @@ create table at_streamflow_meas (
    date_time      date,
    used           varchar2(1),
    party          varchar2(12),
-   agency_id      varchar2(6),
+   agency_code    number(10),
    gage_height    binary_double,
    flow           binary_double,
    cur_rating_num varchar2(4),
@@ -6064,7 +6065,7 @@ create table at_streamflow_meas (
    wm_comments    varchar2(256),       
    constraint     at_streamflow_meas_pk  primary key(location_code, meas_number) using index,
    constraint     at_streamflow_meas_fk1 foreign key(location_code) references at_physical_location(location_code),
-   constraint     at_streamflow_meas_fk2 foreign key(agency_id) references cwms_usgs_agency(agcy_id),
+   constraint     at_streamflow_meas_fk2 foreign key(agency_code) references at_entity (entity_code),
    constraint     at_streamflow_meas_fk3 foreign key(quality) references cwms_usgs_meas_qual(qual_id),
    constraint     at_streamflow_meas_fk4 foreign key(ctrl_cond_id) references cwms_usgs_rating_ctrl_cond(ctrl_cond_id),
    constraint     at_streamflow_meas_fk5 foreign key(flow_adj_id) references cwms_usgs_flow_adj(adj_id)
@@ -6078,7 +6079,7 @@ comment on column at_streamflow_meas.meas_number    is 'The serial number of the
 comment on column at_streamflow_meas.date_time      is 'The date and time the measurement was performed';
 comment on column at_streamflow_meas.used           is 'Flag (''T''/''F'') indicating if the discharge measurement is marked as used';
 comment on column at_streamflow_meas.party          is 'The person(s) that performed the measurement';
-comment on column at_streamflow_meas.agency_id      is 'The agency that performed the measurement';
+comment on column at_streamflow_meas.agency_code    is 'The agency that performed the measurement';
 comment on column at_streamflow_meas.gage_height    is 'Gage height as shown on the inside staff gage or read off the recorder inside the gage house';
 comment on column at_streamflow_meas.flow           is 'The computed discharge';
 comment on column at_streamflow_meas.cur_rating_num is 'The number of the rating used to calculate the streamflow from the gage height';

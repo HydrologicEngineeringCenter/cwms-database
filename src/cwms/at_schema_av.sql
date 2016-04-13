@@ -22,6 +22,7 @@ DECLARE
 			       'av_embank_protection_type', -- created in at_schema_2...
 			       'av_embank_structure_type',  -- created in at_schema_2...
 			       'av_embankment',             -- created in at_schema_2...
+			       'av_entity',
                 'av_gage', 
                 'av_gage_method',
                 'av_gage_sensor',
@@ -81,7 +82,6 @@ DECLARE
 			       'av_store_rule_ui',
 			       'av_text_filter',
 			       'av_text_filter_element',
-			       'av_usgs_agency',
 			       'av_usgs_parameter',
 			       'av_usgs_parameter_all',
 			       'av_usgs_rating',
@@ -134,7 +134,6 @@ END;
 @@cwms/views/av_screening_id.sql
 @@cwms/views/av_text_filter.sql
 @@cwms/views/av_text_filter_element.sql
-@@cwms/views/av_usgs_agency.sql
 @@cwms/views/av_usgs_parameter.sql
 @@cwms/views/av_usgs_parameter_all.sql
 @@cwms/views/av_usgs_rating.sql
@@ -181,6 +180,7 @@ END;
 @@cwms/views/av_property.sql
 @@cwms/views/av_vert_datum_offset.sql
 @@cwms/views/av_office.sql
+@@cwms/views/av_entity.sql
 
 @@cwms/views/av_outlet.sql
 @@cwms/views/av_compound_outlet.sql

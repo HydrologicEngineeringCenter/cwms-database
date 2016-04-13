@@ -90,7 +90,7 @@ select distinct
                || '.' 
                || rt.version as template_id,
                rs.version,
-               replace(lg.loc_group_id, 'Default', '') as source_agency,
+               replace(e.entity_id, 'OTHER', null) as source_agency,
                rs.active_flag, 
                rs.auto_update_flag,
                rs.auto_activate_flag, 
@@ -108,13 +108,13 @@ select distinct
           from at_rating_spec rs,
                at_rating_template rt,
                av_loc2 v,
-               at_loc_group lg,
+               at_entity e,
                cwms_rating_method rm1,
                cwms_rating_method rm2,
                cwms_rating_method rm3
          where rt.template_code = rs.template_code
            and v.location_code = rs.location_code
-           and lg.loc_group_code = nvl(rs.source_agency_code, 0)
+           and e.entity_code = nvl(rs.source_agency_code, 1)
            and rm1.rating_method_code = rs.in_range_rating_method
            and rm2.rating_method_code = rs.out_range_low_rating_method
            and rm3.rating_method_code = rs.out_range_high_rating_method

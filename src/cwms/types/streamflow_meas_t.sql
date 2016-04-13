@@ -35,7 +35,7 @@ as object (
    date_time      date,
    used           varchar2(1),
    party          varchar2(12),
-   agency_id      varchar2(6),
+   agency_id      varchar2(32),
    gage_height    binary_double,
    flow           binary_double,
    cur_rating_num varchar2(4),
