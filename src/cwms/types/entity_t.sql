@@ -5,7 +5,7 @@ create type entity_t
  * @member office_id   The office that owns the entity
  * @member category_id Category describing the type of entity
  * @member entity_id   The text identifier of the entity
- * @member entiti_name The name of the entity
+ * @member entity_name The name of the entity
  */
 as object (
    office_id   varchar2(16),

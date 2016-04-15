@@ -4,7 +4,7 @@
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_ENTITY', null,
 '
 /**
- * Displays information on water user contracts
+ * Displays information on water entities
  *
  * @since CWMS 3.0
  *
@@ -27,12 +27,12 @@ create or replace force view av_entity (
    parent_code)
 as 
 select q1.office_id,
-     q1.entity_id,
-     q2.entity_id as parent_entity_id,
-     q1.category_id,
-     q1.entity_name,
-     q1.entity_code,
-     q1.parent_code
+       q1.entity_id,
+       q2.entity_id as parent_entity_id,
+       q1.category_id,
+       q1.entity_name,
+       q1.entity_code,
+       q1.parent_code
 from (select o.office_id,
              e.entity_id,
              e.entity_code,
