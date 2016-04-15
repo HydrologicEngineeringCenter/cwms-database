@@ -20,13 +20,13 @@ procedure store_entity (
    p_ignore_nulls     in varchar2 default 'T',
    p_office_id        in varchar2 default null);
 /**
- * Retrieves information about an entity in the database
+ * Retrieves information about an entity in the database given the entity's text identifier
  *
- * @param p_entity_code      The numeric code for the specified entity in the database. Specify NULL if this parameter is not desired.
- * @param p_office_id_out    The office that owns the entity in the database. Specify NULL if this parameter is not desired.
- * @param p_parent_entity_id The identifier of the parent entity, if any. Specify NULL if this parameter is not desired.
- * @param p_category_id      The category of the entity. Specify NULL if this parameter is not desired.
- * @param p_entity_name      The name of the entity. Specify NULL if this parameter is not desired.
+ * @param p_entity_code      The numeric code of the specified entity in the database.
+ * @param p_office_id_out    The office that owns the entity in the database.
+ * @param p_parent_entity_id The identifier of the parent entity, if any.
+ * @param p_category_id      The category of the entity.
+ * @param p_entity_name      The name of the entity.
  * @param p_entity_id        The text identifier of the entity to retrieve information about.
  * @param p_office_id        The selected office. Only entities that are owned by the CWMS office or this one will be retrieved. If not specified or NULL, the sessions user's default office will be used
  */
@@ -39,6 +39,23 @@ procedure retrieve_entity (
    p_entity_id        in varchar2,
    p_office_id        in varchar2 default null);
 /**
+ * Retrieves information about an entity in the database given the entity's numeric code
+ *
+ * @param p_entity_code      The numeric code of the entity to retrieve information about.
+ * @param p_entity_id        The text identifier of the entity in the database.
+ * @param p_office_id_out    The office that owns the entity in the database.
+ * @param p_parent_entity_id The identifier of the parent entity, if any.
+ * @param p_category_id      The category of the entity.
+ * @param p_entity_name      The name of the entity.
+ */
+procedure retrieve_entity (
+   p_entity_id        in out nocopy varchar2,
+   p_office_id        in out nocopy varchar2,
+   p_parent_entity_id in out nocopy varchar2,
+   p_category_id      in out nocopy varchar2,
+   p_entity_name      in out nocopy varchar2,  
+   p_entity_code      in integer);
+/**
  * Retreives the numeric code for the specified entity
  *
  * @param p_entity_id The indentifier of the entity to retrieve the code for
@@ -50,14 +67,134 @@ function get_entity_code (
    p_entity_id in varchar2,
    p_office_id in varchar2 default null)
    return integer;
---   
--- Not documented   
---
+/**
+ * Retrieves the entity id for a specified numeric code
+ *
+ * @param p_entity_code The numeric code that specifies the entity in the database
+ *
+ * @return The text identifier of the entity
+ */
 function get_entity_id (
    p_entity_code in integer)
    return varchar2;
 /**
- * Deletes an entry from the database
+ * Retrieves the descendent entities for a specified entity
+ *
+ * @param p_descendents  A table of entities that are direct and possibly indirect descendants of the specified ancestor entity  
+ * @param p_entity_id    The text identifier of the specified ancestor entity to retrieve descendants for 
+ * @param p_direct_only  A flag ('T'/'F') specifying whether to retrieve direct descendants (children) only ('T') or to retrieve descendants of all levels ('F')
+ * @param p_include_self A flag ('T'/'F') specifying whether to include the specified ancestor entity in the results
+ * @param p_office_id    The selected office of specified ancestor entity. If not specified or NULL, the session user's current office will be used. The specified ancestor entity is owned either by this office or the CWMS office.
+ */
+procedure retrieve_descendants(
+   p_descendants  out entity_tab_t,
+   p_entity_id    in  varchar2,
+   p_direct_only  in  varchar2,
+   p_include_self in  varchar2,
+   p_office_id    in  varchar2 default null);
+/**
+ * Retrieves the descendent entities for a specified entity
+ *
+ * @param p_entity_id    The text identifier of the specified ancestor entity to retrieve descendants for 
+ * @param p_direct_only  A flag ('T'/'F') specifying whether to retrieve direct descendants (children) only ('T') or to retrieve descendants of all levels ('F')
+ * @param p_include_self A flag ('T'/'F') specifying whether to include the specified ancestor entity in the results
+ * @param p_office_id    The selected office of specified ancestor entity. If not specified or NULL, the session user's current office will be used. The specified ancestor entity is owned either by this office or the CWMS office.
+ *
+ * @return A table of entities that are direct and possibly indirect descendants of the specified ancestor entity
+ */
+function retrieve_descendants_f(
+   p_entity_id    in  varchar2,
+   p_direct_only  in  varchar2,
+   p_include_self in  varchar2,
+   p_office_id    in  varchar2 default null)
+   return entity_tab_t;
+/**
+ * Retrieves the descendent entities for a specified entity
+ *
+ * @param p_descendents  A table of entities that are direct and possibly indirect descendants of the specified ancestor entity  
+ * @param p_entity_code  The numeric code of the specified ancestor entity to retrieve descendants for 
+ * @param p_direct_only  A flag ('T'/'F') specifying whether to retrieve direct descendants (children) only ('T') or to retrieve descendants of all levels ('F')
+ * @param p_include_self A flag ('T'/'F') specifying whether to include the specified ancestor entity in the results
+ */
+procedure retrieve_descendants(
+   p_descendants  out entity_tab_t,
+   p_entity_code  in  integer,
+   p_direct_only  in  varchar2,
+   p_include_self in  varchar2);
+/**
+ * Retrieves the descendent entities for a specified entity
+ *
+ * @param p_entity_code  The numeric code of the specified ancestor entity to retrieve descendants for 
+ * @param p_direct_only  A flag ('T'/'F') specifying whether to retrieve direct descendants (children) only ('T') or to retrieve descendants of all levels ('F')
+ * @param p_include_self A flag ('T'/'F') specifying whether to include the specified ancestor entity in the results
+ *
+ * @return  A table of entities that are direct and possibly indirect descendants of the specified ancestor entity  
+ */
+function retrieve_descendants_f(
+   p_entity_code  in  integer,
+   p_direct_only  in  varchar2,
+   p_include_self in  varchar2)
+   return entity_tab_t;
+/**
+ * Retrieves the ancestor entities for a specified entity
+ *
+ * @param p_ancestors    A table of entities that are direct and possibly indirect ancestors of the specified descendant entity. If p_direct_only is 'T' and p_include_self is 'F', this table will have only one element.  
+ * @param p_entity_id    The text identifier of the specified descendant entity to retrieve ancestors for 
+ * @param p_direct_only  A flag ('T'/'F') specifying whether to retrieve direct ancestors (children) only ('T') or to retrieve ancestors of all levels ('F')
+ * @param p_include_self A flag ('T'/'F') specifying whether to include the specified descendant entity in the results
+ * @param p_office_id    The selected office of specified descendant entity. If not specified or NULL, the session user's current office will be used. The specified descendant entity is owned either by this office or the CWMS office.
+ */
+procedure retrieve_ancestors(
+   p_ancestors    out entity_tab_t,
+   p_entity_id    in  varchar2,
+   p_direct_only  in  varchar2,
+   p_include_self in  varchar2,
+   p_office_id    in  varchar2 default null);
+/**
+ * Retrieves the ancestor entities for a specified entity
+ *
+ * @param p_entity_id    The text identifier of the specified descendant entity to retrieve ancestors for 
+ * @param p_direct_only  A flag ('T'/'F') specifying whether to retrieve direct ancestors (children) only ('T') or to retrieve ancestors of all levels ('F')
+ * @param p_include_self A flag ('T'/'F') specifying whether to include the specified descendant entity in the results
+ * @param p_office_id    The selected office of specified descendant entity. If not specified or NULL, the session user's current office will be used. The specified descendant entity is owned either by this office or the CWMS office.
+ *
+ * @return A table of entities that are direct and possibly indirect ancestors of the specified descendant entity. If p_direct_only is 'T' and p_include_self is 'F', this table will have only one element.
+ */
+function retrieve_ancestors_f(
+   p_entity_id    in  varchar2,
+   p_direct_only  in  varchar2,
+   p_include_self in  varchar2,
+   p_office_id    in  varchar2 default null)
+   return entity_tab_t;
+/**
+ * Retrieves the ancestor entities for a specified entity
+ *
+ * @param p_ancestors    A table of entities that are direct and possibly indirect ancestors of the specified descendant entity. If p_direct_only is 'T' and p_include_self is 'F', this table will have only one element.  
+ * @param p_entity_code  The numeric code of the specified descendant entity to retrieve ancestors for 
+ * @param p_direct_only  A flag ('T'/'F') specifying whether to retrieve direct ancestors (children) only ('T') or to retrieve ancestors of all levels ('F')
+ * @param p_include_self A flag ('T'/'F') specifying whether to include the specified descendant entity in the results
+ */
+procedure retrieve_ancestors(
+   p_ancestors    out entity_tab_t,
+   p_entity_code  in  integer,
+   p_direct_only  in  varchar2,
+   p_include_self in  varchar2);
+/**
+ * Retrieves the ancestor entities for a specified entity
+ *
+ * @param p_entity_code  The numeric code of the specified descendant entity to retrieve ancestors for 
+ * @param p_direct_only  A flag ('T'/'F') specifying whether to retrieve direct ancestors (children) only ('T') or to retrieve ancestors of all levels ('F')
+ * @param p_include_self A flag ('T'/'F') specifying whether to include the specified descendant entity in the results
+ *
+ * @return  A table of entities that are direct and possibly indirect ancestors of the specified descendant entity. If p_direct_only is 'T' and p_include_self is 'F', this table will have only one element.  
+ */
+function retrieve_ancestors_f(
+   p_entity_code  in  integer,
+   p_direct_only  in  varchar2,
+   p_include_self in  varchar2)
+   return entity_tab_t;
+/**
+ * Deletes an entity from the database
  *
  * @param p_entity_id The indentifier of the entity to delete
  * @param p_office_id The office that owns the entity in the database. If not specified or NULL, the sessions user's default office will be used

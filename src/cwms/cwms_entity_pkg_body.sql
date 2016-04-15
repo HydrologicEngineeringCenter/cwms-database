@@ -100,28 +100,49 @@ begin
     where upper(entity_id) = upper(trim(p_entity_id))
       and office_code in (cwms_util.db_office_code_all, l_office_code);
       
-   if p_entity_code is not null then
-      p_entity_code := l_rec.entity_code;
+   p_entity_code := l_rec.entity_code;
+   select office_id into p_office_id_out from cwms_office where office_code = l_rec.office_code; 
+   if l_rec.parent_code is null then
+      p_parent_entity_id := null;
+   else
+      select entity_id into p_parent_entity_id from at_entity where entity_code = l_rec.parent_code;
    end if;
-   if p_office_id_out is not null then
-      select office_id into p_office_id_out from cwms_office where office_code = l_rec.office_code; 
-   end if;
-   if p_parent_entity_id is not null then
-      if l_rec.parent_code is null then
-         p_parent_entity_id := null;
-      else
-         select entity_id into p_parent_entity_id from at_entity where entity_code = l_rec.parent_code;
-      end if;
-   end if;
-   if p_category_id is not null then
-      p_category_id := l_rec.category_id;
-   end if;
-   if p_entity_name is not null then
-      p_entity_name := l_rec.entity_name;
-   end if;
+   p_category_id := l_rec.category_id;
+   p_entity_name := l_rec.entity_name;
 exception
    when no_data_found then
       cwms_err.raise('ITEM_DOES_NOT_EXIST', 'Entity', p_entity_id);
+end retrieve_entity;   
+
+--------------------------------------------------------------------------------
+-- PROCEDURE RETRIEVE_ENTITY
+procedure retrieve_entity (
+   p_entity_id        in out nocopy varchar2,
+   p_office_id        in out nocopy varchar2,
+   p_parent_entity_id in out nocopy varchar2,
+   p_category_id      in out nocopy varchar2,
+   p_entity_name      in out nocopy varchar2,  
+   p_entity_code      in integer)
+is
+   l_rec at_entity%rowtype;
+begin
+   select *
+     into l_rec
+     from at_entity
+    where entity_code = p_entity_code;
+      
+   p_entity_id := l_rec.entity_id;
+   select office_id into p_office_id from cwms_office where office_code = l_rec.office_code; 
+   if l_rec.parent_code is null then
+      p_parent_entity_id := null;
+   else
+      select entity_id into p_parent_entity_id from at_entity where entity_code = l_rec.parent_code;
+   end if;
+   p_category_id := l_rec.category_id;
+   p_entity_name := l_rec.entity_name;
+exception
+   when no_data_found then
+      cwms_err.raise('ITEM_DOES_NOT_EXIST', 'Entity', p_entity_code);
 end retrieve_entity;   
 
 --------------------------------------------------------------------------------
@@ -151,13 +172,250 @@ function get_entity_id (
    p_entity_code in integer)
    return varchar2
 is
-   l_entity_id at_entity.entity_id%type;
+   item_does_not_exist exception;
+   pragma exception_init(item_does_not_exist, -20034);
+   l_entity_id        at_entity.entity_id%type;
+   l_office_id        cwms_office.office_id%type;
+   l_parent_entity_id at_entity.entity_id%type;
+   l_category_id      at_entity.category_id%type;
+   l_entity_name      at_entity.entity_name%type;
 begin
-   if p_entity_code is not null then
-      select entity_id into l_entity_id from at_entity where entity_code = p_entity_code;
-   end if;
+   begin
+      retrieve_entity (
+         p_entity_id        => l_entity_id,
+         p_office_id        => l_office_id,
+         p_parent_entity_id => l_parent_entity_id,
+         p_category_id      => l_category_id,
+         p_entity_name      => l_entity_name,  
+         p_entity_code      => p_entity_code);
+   exception
+      when item_does_not_exist then null;
+   end;
+   
    return l_entity_id;
 end get_entity_id;   
+
+   
+--------------------------------------------------------------------------------
+-- PRIVATE FUNCTION MAKE_ENTITY
+function make_entity(
+   p_entity_code in integer) 
+   return entity_t
+is
+   l_entity entity_t := entity_t(null, null, null, null);
+begin
+   select o.office_id,
+          e.category_id,
+          e.entity_id,
+          e.entity_name
+     into l_entity.office_id,
+          l_entity.category_id,
+          l_entity.entity_id,
+          l_entity.entity_name
+     from at_entity e,
+          cwms_office o
+    where e.entity_code = p_entity_code
+      and o.office_code = e.office_code;
+      
+   return l_entity;         
+end make_entity;
+
+--------------------------------------------------------------------------------
+-- PROCEDURE RETRIEVE_DESCENDANTS
+procedure retrieve_descendants(
+   p_descendants  out entity_tab_t,
+   p_entity_id    in  varchar2,
+   p_direct_only  in  varchar2,
+   p_include_self in  varchar2,
+   p_office_id    in  varchar2 default null)
+is
+begin
+   p_descendants := retrieve_descendants_f(
+      p_entity_id    => p_entity_id, 
+      p_direct_only  => p_direct_only, 
+      p_include_self => p_include_self,
+      p_office_id    => p_office_id);
+end retrieve_descendants;
+
+--------------------------------------------------------------------------------
+-- FUNCTION RETRIEVE_DESCENDANTS_F
+function retrieve_descendants_f(
+   p_entity_id    in  varchar2,
+   p_direct_only  in  varchar2,
+   p_include_self in  varchar2,
+   p_office_id    in  varchar2 default null)
+   return entity_tab_t
+is
+begin
+   return retrieve_descendants_f(
+      p_entity_code  => get_entity_code(p_entity_id, p_office_id), 
+      p_direct_only  => p_direct_only, 
+      p_include_self => p_include_self);
+end retrieve_descendants_f;
+
+--------------------------------------------------------------------------------
+-- PROCEDURE RETRIEVE_DESCENDANTS
+procedure retrieve_descendants(
+   p_descendants  out entity_tab_t,
+   p_entity_code  in  integer,
+   p_direct_only  in  varchar2,
+   p_include_self in  varchar2)
+is
+begin
+   p_descendants := retrieve_descendants_f(
+      p_entity_code  => p_entity_code, 
+      p_direct_only  => p_direct_only, 
+      p_include_self => p_include_self);
+end retrieve_descendants;
+
+--------------------------------------------------------------------------------
+-- FUNCTION RETRIEVE_DESCENDANTS_F
+function retrieve_descendants_f(
+   p_entity_code  in  integer,
+   p_direct_only  in  varchar2,
+   p_include_self in  varchar2)
+   return entity_tab_t
+is
+   l_direct_only  boolean;
+   l_include_self boolean;
+   l_entity_codes number_tab_t;
+   l_parent_codes number_tab_t;
+   l_descendants  entity_tab_t;
+begin
+   l_direct_only  := cwms_util.return_true_or_false(p_direct_only);
+   l_include_self := cwms_util.return_true_or_false(p_include_self);
+
+   if l_direct_only then
+      select entity_code
+        bulk collect
+        into l_entity_codes
+        from at_entity
+       where parent_code = p_entity_code; 
+   else
+      select parent_code,
+             entity_code
+        bulk collect
+        into l_parent_codes,
+             l_entity_codes
+        from at_entity
+        start with entity_code = p_entity_code
+      connect by prior entity_code = parent_code;
+   end if;
+   l_descendants := entity_tab_t();
+   if l_include_self then
+      l_descendants.extend;
+      l_descendants(1) := make_entity(p_entity_code);
+   end if;
+   l_descendants.extend(l_entity_codes.count);
+   for i in 1..l_entity_codes.count loop
+      l_descendants(case l_include_self when true then i+1 else i end) := make_entity(l_entity_codes(i));
+   end loop;
+   
+   return l_descendants;
+end retrieve_descendants_f;
+
+--------------------------------------------------------------------------------
+-- PROCEDURE RETRIEVE_ANCESTORS
+procedure retrieve_ancestors(
+   p_ancestors    out entity_tab_t,
+   p_entity_id    in  varchar2,
+   p_direct_only  in  varchar2,
+   p_include_self in  varchar2,
+   p_office_id    in  varchar2 default null)
+is
+begin
+   p_ancestors := retrieve_ancestors_f(
+      p_entity_id    => p_entity_id, 
+      p_direct_only  => p_direct_only, 
+      p_include_self => p_include_self,
+      p_office_id    => p_office_id);   
+end retrieve_ancestors;
+
+--------------------------------------------------------------------------------
+-- FUNCTION RETRIEVE_ANCESTORS_F
+function retrieve_ancestors_f(
+   p_entity_id    in  varchar2,
+   p_direct_only  in  varchar2,
+   p_include_self in  varchar2,
+   p_office_id    in  varchar2 default null)
+   return entity_tab_t
+is
+begin
+   return retrieve_ancestors_f(
+      p_entity_code  => cwms_entity.get_entity_code(p_entity_id, p_office_id),
+      p_direct_only  => p_direct_only,
+      p_include_self => p_include_self);
+end retrieve_ancestors_f;
+
+--------------------------------------------------------------------------------
+-- PROCEDURE RETRIEVE_ANCESTORS
+procedure retrieve_ancestors(
+   p_ancestors    out entity_tab_t,
+   p_entity_code  in  integer,
+   p_direct_only  in  varchar2,
+   p_include_self in  varchar2)
+is
+begin
+   p_ancestors := retrieve_ancestors_f(
+      p_entity_code  => p_entity_code, 
+      p_direct_only  => p_direct_only, 
+      p_include_self => p_include_self);
+end retrieve_ancestors;
+
+--------------------------------------------------------------------------------
+-- FUNCTION RETRIEVE_ANCESTORS_F
+function retrieve_ancestors_f(
+   p_entity_code  in  integer,
+   p_direct_only  in  varchar2,
+   p_include_self in  varchar2)
+   return entity_tab_t
+is
+   l_direct_only  boolean;
+   l_include_self boolean;
+   l_rec          at_entity%rowtype;
+   l_entity_codes number_tab_t;
+   l_parent_codes number_tab_t;
+   l_ancestors    entity_tab_t;
+begin
+   l_direct_only  := cwms_util.return_true_or_false(p_direct_only);
+   l_include_self := cwms_util.return_true_or_false(p_include_self);
+   l_ancestors    := entity_tab_t();
+   
+   if l_include_self then
+      l_ancestors.extend;
+      l_ancestors(1) := make_entity(p_entity_code);
+   end if;
+   if l_direct_only then
+      select *
+        into l_rec
+        from at_entity
+       where entity_code = p_entity_code;
+      if l_rec.parent_code is not null then
+         l_ancestors.extend;
+         l_ancestors(l_ancestors.count) := make_entity(l_rec.parent_code);
+      end if;
+   else
+      select parent_code,
+             entity_code
+        bulk collect
+        into l_parent_codes,
+             l_entity_codes 
+        from at_entity
+        start with entity_code = p_entity_code
+      connect by prior parent_code = entity_code;
+      
+      l_ancestors.extend(l_parent_codes.count);
+      for i in 1..l_parent_codes.count loop
+         if l_parent_codes(i) is null then
+            l_ancestors.trim(l_parent_codes.count - i + 1);
+            exit;
+         end if;
+         l_ancestors(case l_include_self when true then i+1 else i end) := make_entity(l_parent_codes(i));
+      end loop;
+   end if;
+   
+   return l_ancestors;
+end retrieve_ancestors_f;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE DELETE_ENTITY
