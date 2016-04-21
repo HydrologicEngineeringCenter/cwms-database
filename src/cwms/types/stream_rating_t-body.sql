@@ -65,11 +65,6 @@ as
          return cwms_util.get_xml_number(p_xml, p_path);
       end;
    begin
-      declare
-         l_code integer;
-      begin     
-         l_code := cwms_text.store_text(p_xml.getclobval, '/_rating_xml', null, 'F', 'SWT');
-      end;
       ----------------------------
       -- get the rating element --
       ----------------------------
