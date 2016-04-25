@@ -83,6 +83,37 @@ as
           FROM at_a2w_ts_codes_by_loc a2w 
          WHERE a2w.ts_code_rule_curve_elev IS NOT NULL
           AND display_flag = 'T'
+      UNION ALL
+        SELECT a2w.TS_CODE_POWER_GEN ts_code, a2w.location_code, 'POWER GENERATION' ts_type
+          FROM at_a2w_ts_codes_by_loc a2w 
+         WHERE a2w.TS_CODE_POWER_GEN      IS NOT NULL
+          AND display_flag = 'T'
+     UNION ALL
+        SELECT a2w.TS_CODE_TEMP_AIR ts_code, a2w.location_code, 'AIR TEMPERATURE' ts_type
+          FROM at_a2w_ts_codes_by_loc a2w 
+         WHERE a2w.TS_CODE_TEMP_AIR              IS NOT NULL
+          AND display_flag = 'T'
+     UNION ALL
+        SELECT a2w.TS_CODE_TEMP_WATER ts_code, a2w.location_code, 'WATER TEMPERATURE' ts_type
+          FROM at_a2w_ts_codes_by_loc a2w 
+         WHERE a2w.TS_CODE_TEMP_WATER                    IS NOT NULL
+          AND display_flag = 'T'
+     UNION ALL
+        SELECT a2w.TS_CODE_DO ts_code, a2w.location_code, 'DISOLVED OXYGEN' ts_type
+          FROM at_a2w_ts_codes_by_loc a2w 
+         WHERE a2w.TS_CODE_DO                                  IS NOT NULL
+          AND display_flag = 'T'
+     UNION ALL
+        SELECT a2w.TS_CODE_COND ts_code, a2w.location_code, 'CONDUCTIVITY' ts_type
+          FROM at_a2w_ts_codes_by_loc a2w 
+         WHERE a2w.TS_CODE_COND                                  IS NOT NULL
+          AND display_flag = 'T'
+     UNION ALL
+        SELECT a2w.TS_CODE_PH ts_code, a2w.location_code, 'PH' ts_type
+          FROM at_a2w_ts_codes_by_loc a2w 
+         WHERE a2w.TS_CODE_PH                                 IS NOT NULL
+          AND display_flag = 'T'
+
       ) a2w
       , cwms_v_ts_id tsi
  WHERE a2w.ts_code = tsi.ts_code;

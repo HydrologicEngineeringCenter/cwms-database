@@ -1,4 +1,4 @@
-create or replace package BODY         CWMS_CMA
+create or replace package BODY                                                                                                                                                                                                 CWMS_CMA
 IS
    /******************************************************************************
       NAME:       CWMS_CMA_ERDC
@@ -7,9 +7,11 @@ IS
       REVISIONS:
       Ver        Date        Author           Description
       ---------  ----------  ---------------  ------------------------------------
-      1.0        6/19/2013      u4rt9jdk       1. Created this package.
-      1.2       OCT2013        JDK             1. Updated for CWMS 3.0
-      1.3        Sep2015      JDK              1. Updated for CMA 2.03
+      1.0        6/19/2013    u4rt9jdk        1. Created this package.
+      1.2        OCT2013      JDK             1. Updated for CWMS 3.0
+      1.3        Sep2015      JDK             1. Updated for CMA 2.03
+      1.3.1      OCT 2015     JDK             1. Updated for CMA 2.03 with bug fixes
+      1.3.2      JAN2015      JDK             1. Updated for CMA 2.03 with more bug fixes
    ******************************************************************************/
 
    FUNCTION MyFunction (Param1 IN NUMBER)
@@ -251,12 +253,14 @@ IS
              || delim
              || temp_5;
    END f_get_loc_attribs_by_xy;
-   
+
    FUNCTION f_get_loc_home_tools_by_loc (f_location_code IN cwms_v_loc.location_code%TYPE
                                         ,f_app_id        IN NUMBER
                                         ,f_session_id    IN NUMBER
-                                        ) RETURN VARCHAR2 IS
-  
+                                        ) RETURN VARCHAR2  IS
+   
+   
+   
   num_LL      NUMBER DEFAULT 0;
   temp_out    VARCHAR2(1999);
   BEGIN
@@ -313,10 +317,8 @@ IS
   
   
   RETURN Temp_out;                   
-  
-  END f_get_loc_home_tools_By_loc;
-
-   FUNCTION f_get_loc_num_ll(f_location_code IN cwms_v_loc.location_code%TYPE
+   END;
+FUNCTION f_get_loc_num_ll(f_location_code IN cwms_v_loc.location_code%TYPE
                             ,f_location_level_kind IN VARCHAR2 DEFAULT 'ALL'
                             ) RETURN NUMBER IS
   temp_out NUMBER DEFAULT 0;
@@ -357,13 +359,9 @@ IS
     
     END IF;
 
-
-
    RETURN temp_out;
 
-  END;
-
-                                        
+  END f_get_loc_num_ll;
    FUNCTION f_get_tz_by_xy (p_latitude    IN cwms_v_loc.latitude%TYPE,
                             p_longitude   IN cwms_v_loc.longitude%TYPE)
       RETURN cwms_v_loc.time_zone_name%TYPE
@@ -385,64 +383,7 @@ IS
       RETURN temp_time_zone_name;
    END;
 
-
-   FUNCTION f_get_ll_home_container (f_location_code IN CWMS_V_LOC.location_code%TYPE) RETURN VARCHAR2 IS
-   temp_out VARCHAR2(1999);
-   BEGIN
-   FOR x IN (SELECT parameter_id, num_ll, rownum row_num
-                FROM (
-              SELECT parameter_id, COUNT(parameter_id) num_ll
-                          FROM (SELECT DISTINCT location_level_id, parameter_id 
-                                  FROM cwms_v_location_level
-                                 WHERE location_code = f_location_code
-                                )
-                         GROUP BY parameter_id
-                          ORDER BY 2 DESC
-                          )
-            
-
-              ) LOOP
-             IF x.row_Num = 1 THEN temp_out := '<li><a href="#tabs-1">' || x.parameter_id || '</a></li>'; END IF;
-             IF x.row_num = 2 THEN temp_out := temp_out || '
-             <li><a href="#tabs-2">' || x.parameter_id || '</a></li>';  END IF;
-             IF x.row_num = 3 THEN temp_out := temp_out || '
-             <li><a href="#tabs-3">' || x.parameter_id || '</a></li>';  END IF;
-             IF x.row_num = 4 THEN temp_out := temp_out || '
-             <li><a href="#tabs-4">' || x.parameter_id || '</a></li>';  END IF;
-             IF x.row_num = 5 THEN temp_out := temp_out || '
-             <li><a href="#tabs-5">' || x.parameter_id || '</a></li>';  END IF;
-             IF x.row_num = 6 THEN temp_out := temp_out || '
-             <li><a href="#tabs-6">' || x.parameter_id || '</a></li>';  END IF;
-             IF x.row_num = 7 THEN temp_out := temp_out || '
-             <li><a href="#tabs-7">' || x.parameter_id || '</a></li>';  END IF;
-             IF x.row_num = 8 THEN temp_out := temp_out || '
-             <li><a href="#tabs-8">' || x.parameter_id || '</a></li>';  END IF;
-          
-            END LOOP;
-   
-   
-   IF temp_out IS NOT NULL THEN
-    Temp_out :=    '<div id="tabs">
-<ul> ' || temp_out ||' 
-    </ul>
-</div>';
-   ELSE 
-         Temp_out :=    '<div id="tabs">
-<ul> '  ||' 
-    </ul>
-</div>';
-
-   END IF;
-
-  RETURN temp_out;
-
-   END;
-   
-   
-   
-   
-
-   FUNCTION f_validate_loc_for_UR (
+   FUNCTION f_validate_loc_for_nh (
       f_location_id IN cwms_v_loc.locatioN_id%TYPE)
       RETURN VARCHAR2
    IS
@@ -494,7 +435,57 @@ IS
          RETURN '-'; --'<img src="#WORKSPACE_IMAGES#bullet_ball_red16.png" title="Search" alt="Search"></a>';
       END IF;
    END;
+FUNCTION f_get_ll_home_container (f_location_code IN CWMS_V_LOC.location_code%TYPE) RETURN VARCHAR2 IS
+   temp_out VARCHAR2(1999);
+   BEGIN
+   FOR x IN (SELECT parameter_id, num_ll, rownum row_num
+                FROM (
+              SELECT parameter_id, COUNT(parameter_id) num_ll
+                          FROM (SELECT DISTINCT location_level_id, parameter_id 
+                                  FROM cwms_v_location_level
+                                 WHERE location_code = f_location_code
+                                )
+                         GROUP BY parameter_id
+                          ORDER BY 2 DESC
+                          )
+            
 
+              ) LOOP
+             IF x.row_Num = 1 THEN temp_out := '<li><a href="#tabs-1">' || x.parameter_id || '</a></li>'; END IF;
+             IF x.row_num = 2 THEN temp_out := temp_out || '
+             <li><a href="#tabs-2">' || x.parameter_id || '</a></li>';  END IF;
+             IF x.row_num = 3 THEN temp_out := temp_out || '
+             <li><a href="#tabs-3">' || x.parameter_id || '</a></li>';  END IF;
+             IF x.row_num = 4 THEN temp_out := temp_out || '
+             <li><a href="#tabs-4">' || x.parameter_id || '</a></li>';  END IF;
+             IF x.row_num = 5 THEN temp_out := temp_out || '
+             <li><a href="#tabs-5">' || x.parameter_id || '</a></li>';  END IF;
+             IF x.row_num = 6 THEN temp_out := temp_out || '
+             <li><a href="#tabs-6">' || x.parameter_id || '</a></li>';  END IF;
+             IF x.row_num = 7 THEN temp_out := temp_out || '
+             <li><a href="#tabs-7">' || x.parameter_id || '</a></li>';  END IF;
+             IF x.row_num = 8 THEN temp_out := temp_out || '
+             <li><a href="#tabs-8">' || x.parameter_id || '</a></li>';  END IF;
+          
+            END LOOP;
+   
+   
+   IF temp_out IS NOT NULL THEN
+    Temp_out :=    '<div id="tabs">
+<ul> ' || temp_out ||' 
+    </ul>
+</div>';
+   ELSE 
+         Temp_out :=    '<div id="tabs">
+<ul> '  ||' 
+    </ul>
+</div>';
+
+   END IF;
+
+  RETURN temp_out;
+
+   END;
    FUNCTION f_validate_loc_by_loc_types (
       f_location_code IN cwms_v_loc.location_code%TYPE)
       RETURN VARCHAR2
@@ -575,8 +566,6 @@ IS
          END CASE;
       END LOOP;
 
-
-
       RETURN temp_out;
    END;
 
@@ -588,7 +577,7 @@ IS
    IS
       temp_issues   VARCHAR2 (1999);
    BEGIN
-      temp_issues := f_validate_loc_for_UR (f_locatioN_id);
+      temp_issues := f_validate_loc_for_nh (f_locatioN_id);
 
       IF temp_issues IS NULL
       THEN
@@ -1255,8 +1244,6 @@ IS
       NULL;
    END;
 
-
-
    PROCEDURE load_tsc_parallel (
       p_ts_code_left          IN cwms_v_ts_id.ts_code%TYPE,
       p_ts_code_right         IN cwms_v_ts_id.ts_code%TYPE,
@@ -1515,7 +1502,10 @@ IS
    PROCEDURE parse_tsv_csv (p_clob                   CLOB,
                             p_collection_name        VARCHAR2,
                             p_delim                  VARCHAR2 DEFAULT ',',
-                            p_optionally_enclosed    VARCHAR2 DEFAULT '"')
+                            p_optionally_enclosed    VARCHAR2 DEFAULT '"',
+                            p_all_one_ts_id_tf       VARCHAR2 DEFAULT 'T'
+                            
+                            )
    IS
       --
       CARRIAGE_RETURN   CONSTANT CHAR (1) := CHR (13);
@@ -1692,25 +1682,32 @@ IS
             IF l_lineno = 1
             THEN
                --Do nothing as this is the first line
-
+            
                NULL;
             ELSE
                IF ts_code_or_ts_id = temp_str_ts_code
                THEN
+                  IF temp_cwms_ts_id IS NULL  OR p_all_one_ts_id_tf  ='F' THEN
+
                   SELECT cwms_ts_id
                     INTO temp_cwms_ts_id
                     FROM cwms_v_ts_id
-                   WHERE     ts_code = temp_ts_code
-                         AND db_office_id = temp_db_office_id;
+                   WHERE ts_code      = temp_ts_code
+                     AND db_office_id = temp_db_office_id;
+                         
+                  END IF;
+                         
                END IF;
 
                IF ts_code_or_ts_id = temp_str_ts_id
                THEN
+                 IF temp_ts_code IS NULL OR p_all_one_ts_id_tf  ='F' THEN
                   SELECT ts_code
                     INTO temp_ts_code
                     FROM cwms_v_ts_id
-                   WHERE     cwms_ts_id = temp_cwms_ts_id
-                         AND db_office_id = temp_db_office_id;
+                   WHERE cwms_ts_id   = temp_cwms_ts_id
+                     AND db_office_id = temp_db_office_id;
+                 END IF;
                END IF;
 
 
@@ -1770,290 +1767,6 @@ IS
          NULL;
    END;
 
-   PROCEDURE preload_ll_to_tsv(p_location_code  IN cwms_v_loc.location_code%TYPE
-                              ,p_ll_code        IN cwms_v_location_level.location_level_code%TYPE
-                              ,p_cwms_ts_id     OUT cwms_v_ts_id.cwms_ts_id%TYPE
-                              ) IS
-  BEGIN
-  
-   NULL;
-   
-    IF p_location_code IS NOT NULL AND p_ll_code IS NOT NULL THEN
-    
-    
-     SELECT location_id
-       INTO p_cwms_ts_id
-       FROM cwms_v_loc
-      WHERE locatioN_code = p_location_code
-        AND unit_system   = 'EN';
-    
-    FOR x IN (
-     SELECT DISTINCT location_level_id, specified_level_id
-       FROM cwms_v_location_level
-      WHERE location_level_code = p_ll_code
-            )
-            LOOP
-             p_cwms_ts_id := REPLACE(x.location_level_id, x.specified_level_Id, 'Rule Curve Demo');
-             p_cwms_ts_id := REPLACE(p_cwms_ts_id, 'Rule Curve Demo', '0.Rule Curve Demo');
-            END LOOP;
-    
-    
-   -- Baldhill_Dam.Precip-inc.Total.1Hour.1Hour.rev
-    END IF;
-   
-   
-   
-  END;
-
-   PROCEDURE load_ll_to_tsv(p_collection_name     IN  VARCHAR2
-                          , p_location_level_code IN cwms_V_location_level.location_level_code%TYPE
-                          , p_unit_system         IN cwms_V_location_level.unit_system%TYPE
-                          , p_add_point_method    IN VARCHAR2 DEFAULT 'LI'--LI, S, M
-                          , p_preview_tf          IN VARCHAR2 DEFAULT 'T'
-                          , p_cwms_ts_id_new      IN cwms_v_ts_id.cwms_ts_id%TYPE
-                          , p_store_rule_code     IN cwms_store_rule.store_rule_code%TYPE
-                           ) IS
-
-  temp_date     cwms_v_tsv.date_time%TYPE;
-  loop_i        NUMBER       DEFAULT 1;
-  temp_level    NUMBER;
-  num_ll        NUMBER DEFAULT 0;
-  
-  num_ts_id     NUMBER DEFAULT 0;
-
---Variables needed by API
-  temp_db_Office_id             cwms_v_location_level.office_id%TYPE;
-  temp_location_level_id        cwms_v_location_level.location_level_id%TYPE;
-  temp_time_zone_name           cwms_v_loc.time_zone_name%TYPE;
-  temp_location_id              cwms_v_loc.location_id%TYPE;
-  temp_level_unit               cwms_v_location_level.level_unit%TYPE;
-
-  LL_kind       VARCHAR2(19) DEFAULT 'CONSTANT'; --constant or  seasonal
-  temp_constant_level NUMBER DEFAULT 0;
-
---tsv variables
-
-      temp_tsv_value             cwms_t_tsv;
-      temp_tsv_value_array       cwms_t_tsv_array;
-      temp_store_rule            cwms_store_rule.store_rule_id%TYPE;
-
-
-
-   BEGIN
-    
-    temp_date := TO_DATE('01-JAN-' || TO_CHAR(SYSDATE, 'YYYY'), 'DD-MON-YYYY');
-
-    --API requirements
-    SELECT COUNT(location_level_code), office_id, location_id
-         , location_level_id
-         , level_unit
-      INTO num_ll
-         , temp_db_Office_id
-         , temp_location_id
-         , temp_location_level_id
-         , temp_level_unit
-      FROM cwms_v_Location_level
-    WHERE location_level_code = p_location_level_code 
-      AND unit_System = p_unit_system
-   GROUP BY office_id, location_id, location_level_id,level_unit;
-  
-    SELECT DISTINCT time_Zone_name 
-      INTO temp_time_zone_name
-      FROM cwms_v_Loc
-     WHERE locatioN_id = temp_locatioN_id 
-       AND db_office_id = temp_db_Office_id;
-  
-    
-    --Determine if it's a constant or seasonal LLI
-    IF num_ll = 1 THEN
-     --It's a constant value
-      LL_kind := 'CONSTANT';
-      
-      --Get the value for use later
-      SELECT ROUND(constant_level, 8) constant_level
-        INTO temp_level
-        FROM cwms_v_location_level
-      WHERE location_level_code = p_location_level_code
-        AND unit_system         = p_unit_system;
-
-    ELSE
-      ll_kind := 'SEASONAL';
-    END IF;
-    
-
-    
-    APEX_COLLECTION.CREATE_OR_TRUNCATE_COLLECTION(
-                                                  p_collection_name => p_collection_name
-                                                 );
-
-
-
- 
-    CASE
-      WHEN p_add_point_method IN ('LI','M') THEN
-    FOR x IN 1..365 LOOP
-      
-      IF ll_kind = 'SEASONAL' THEN
-      
-          FOR y IN (
-                     SELECT date_Time, value
-                        FROM TABLE(
-                            SELECT o2.tsvs 
-                                FROM (
-                                    SELECT 
-                                    cwms_level.retrieve_location_level_values(
-                                       temp_location_level_id,
-                                       temp_level_unit,
-                                       temp_date ,
-                                       NULL,
-                                       NULL,
-                                       NULL,
-                                       NULL ,
-                                       temp_time_zone_name,
-                                       temp_db_Office_id 
-                                       ) tsvs
-                                    FROM dual
-                                  ) o2
-                                )
-                   ) LOOP
-                      temp_level := y.value;
-                     END LOOP;
-         
-         END IF;  
-    
-          APEX_COLLECTION.ADD_MEMBER (
-                                    p_collection_name => p_collection_name
-                                  , p_c001 => 'LI or M A ' || LL_kind || ' record for loop ' || loop_i || ' w value of ' || TO_CHAR(temp_level) || ' w date of ' || ' and llc of ' || p_location_level_code
-                                          || ' API:' || temp_db_Office_id || '-' || temp_location_level_id || '-' || temp_time_zone_name
-                                  , p_c002 => 1
-                                  , p_n001 => temp_level
-                                  , p_n002 => 1
-                                  , p_d001 => temp_date 
-                                    );
-    
-       temp_date  := temp_date + 1;
-       loop_i     := loop_i + 1;
-       
-    END LOOP;
-    
-    WHEN p_add_point_method = 'S' THEN
-    
-     NULL;
-     FOR y IN (SELECT ll2.*
-                  FROM(
-                    SELECT ll.*
-                         , TO_DATE(seasonal_month || '/' || seasonal_day || '/2015' || time_offset2, 'MM/DD/YYYY HH24:MI:SS') seasonal_date
-                         , TO_NUMBER(TO_CHAR(TO_DATE(seasonal_month || '/' || seasonal_day || '/2015' || time_offset2, 'MM/DD/YYYY HH24:MI:SS'),'DDD')) day_of_year2
-                      FROM (
-                            SELECT office_id
-                                 , location_level_id
-                                 , unit_System
-                                 , level_unit
-                                 , interval_origin
-                                 , calendar_interval
-                                 , calendar_offset
-                                 , time_offset
-                                 , ROUND(TO_NUMBER(seasonal_level), 6) seasonal_level
-                                 , TO_NUMBER(SUBSTR(calendar_offset, 4,2)) Month_Offset
-                                 , TO_NUMBER(SUBSTR(time_offset,1,3)) Day_offset
-                                 , 1 + TO_NUMBER(SUBSTR(calendar_offset, 4,2)) Seasonal_Month
-                                 , 1 + TO_NUMBER(SUBSTR(time_offset,1,3)) Seasonal_Day
-                                 , SUBSTR(time_offset, 5) time_offset2
-                              FROM cwms_v_location_level
-                             WHERE location_level_code = p_Location_level_code
-                               AND unit_System = p_unit_system
-                          ) ll
-                    ) ll2
-                  WHERE 
-                  ll2.seasonal_month IS NOT NULL
-                    AND ll2.seasonal_day IS NOT NULL
-                    AND ll2.time_offset2 IS NOT NULL
-                   ORDER BY seasonal_date
-          ) LOOP
-             APEX_COLLECTION.ADD_MEMBER (
-                                            p_collection_name => p_collection_name
-                                          , p_c001 => 'Step A ' || LL_kind || ' record for loop ' || loop_i || ' w value of ' || TO_CHAR(y.seasonal_level) || ' w date of ' || ' and llc of ' || p_location_level_code
-                                                  || ' API:' || temp_db_Office_id || '-' || temp_location_level_id || '-' || temp_time_zone_name
-                                          , p_c002 => 1
-                                          , p_n001 => y.seasonal_level
-                                          , p_n002 => 1
-                                          , p_d001 => y.seasonal_date 
-                                            );
-            
-               loop_i     := loop_i + 1;
-          END LOOP;
-     
-     
-    ELSE NULL;
-   END CASE;
-    
-     IF p_preview_tf = 'F' AND p_cwms_ts_id_new IS NOT NULL THEN
-      -- Create the TS ID and TSV
-        --Create the TS ID
-        
-           SELECT COUNT(cwms_ts_id) 
-             INTO num_ts_id
-             FROM cwms_v_ts_id
-            WHERE db_Office_id = temp_db_office_id
-              AND cwms_ts_id  = p_cwms_ts_id_new
-                ;
-          
-           IF num_ts_id = 0 THEN
-           --Create new TS ID
-        
-            cwms_ts.create_ts (p_cwms_ts_id         => p_cwms_ts_id_new
-                              , p_utc_offset        => NULL
-                              , p_interval_forward  =>   NULL
-                              , p_interval_backward =>   NULL
-                              , p_versioned         =>  'F'
-                              , p_active_flag       =>  'T'
-                              , p_office_id         => temp_db_office_id
-                              
-                               );
-           END IF; 
-      
-      
-   
-         --Initialize the arrays
-      temp_tsv_value_array := cwms_t_tsv_array ();
-      
-          --Process the tsvs
-          FOR y IN (SELECT *
-                      FROM apex_collections
-                     WHERE collection_name = p_collection_name
-                   ) LOOP
-                        --Set the cwms_t_tsv type to the date/time
-        
-                           --Add the record to the array
-                           temp_tsv_Value := cwms_t_tsv (y.d001
-                                                       , y.n001
-                                                       , y.n002);
-                           temp_tsv_value_array.EXTEND ();
-                           temp_tsv_value_array (temp_tsv_value_array.LAST) := temp_tsv_Value;
-  
-                    END LOOP;
-  
-
-      --Store TS Code
-      
-        SELECT store_rule_id
-        INTO temp_store_rule
-        FROM cwms_store_rule
-       WHERE store_Rule_code = p_store_rule_code;
-
-
-      cwms_ts.store_ts (p_cwms_ts_id        => p_cwms_ts_id_new,
-                        p_units             => temp_level_unit,
-                        p_timeseries_data   => temp_tsv_value_array,
-                        p_store_rule        => temp_store_rule,
-                        p_override_prot     => 'F',
-                        p_version_date      => cwms_util.non_versioned,
-                        p_office_id         => temp_db_office_id);
-      
-     END IF;
-    
-   END;
-
    PROCEDURE preload_Upload_tsv (
       p_store_rule_code IN OUT cwms_store_rule.store_Rule_code%TYPE)
    IS
@@ -2076,155 +1789,7 @@ IS
               FROM cwms_store_rule;
       END;
    END;
-   PROCEDURE p_copy_rating_to_loc(p_rating_code IN cwms_v_rating.rating_code%TYPE
-                                 ,p_location_code_copy_to IN cwms_v_Loc.location_code%TYPE
-                                 ,p_db_Office_id  IN cwms_v_loc.db_office_id%TYPE
-                                 ) IS
-    new_rating_code           NUMBER;
-    new_spec_code             NUMBER;
-    new_template_code         NUMBER;
-    new_ind_param_spec_code   NUMBER;
-    old_location_code         NUMBER;
-   
-   BEGIN
-   
- 
-   
 
-     SELECT cwms_seq.nextval
-       INTO new_spec_code
-       FROM dual;
-   
-   
-   SELECT location_code
-     INTO old_location_code
-     FROM cwms_v_loc
-    WHERE db_office_id = p_db_office_id
-      AND locatioN_id  = (SELECT DISTINCT location_id FROM cwms_v_rating WHERE rating_code = p_rating_code);
-   
-   
-   FOR x IN (SELECT DISTINCT template_code
-                           , rating_spec_code
-                           , old_location_code location_code
-              FROM cwms_v_rating
-             WHERE rating_code = p_rating_code
-             ) LOOP
-          
-                 FOR y IN (SELECT *
-                             FROM at_rating_template
-                            WHERE template_code = x.template_code
-                          ) LOOP
-                          
-                           --do not need to copy as the template will remain
-                          
-                            /*
-                          
-                              SELECT cwms_seq.nextval
-                                INTO new_template_code
-                                FROM DUAL;
-                                                  
-                             INSERT
-                                  INTO at_rating_template
-                                    (
-                                      template_code,
-                                      office_code,
-                                      parameters_id,
-                                      version,
-                                      dep_parameter_code,
-                                      description
-                                    )
-                                    VALUES
-                                    (
-                                      new_template_code,
-                                      y.office_code,
-                                      y.parameters_id,
-                                      y.version,
-                                      y.dep_parameter_code,
-                                      y.description
-                                    ); 
-                            */
-                           
-                             FOR z IN (SELECT *
-                                         FROM at_rating_ind_param_spec
-                                        WHERE template_code = x.template_code
-                                        ORDER BY ind_param_spec_code
-                                      ) LOOP
-                                      
-                                          SELECT cwms_seq.nextval
-                                           INTO new_ind_param_spec_code
-                                           FROM dual;
-                                      
-                                          INSERT INTO at_rating_ind_param_spec(ind_param_spec_code
-                                                                            , template_code
-                                                                            , parameter_position
-                                                                            , parameter_code
-                                                                            , in_range_rating_method
-                                                                            , out_range_low_rating_method
-                                                                            , out_range_high_rating_Method
-                                                                              ) VALUES
-                                                                              (new_ind_param_spec_code
-                                                                              ,x.template_code
-                                                                              ,z.parameter_position
-                                                                              ,z.parameter_code
-                                                                              ,z.in_range_rating_method
-                                                                              ,z.out_range_low_rating_method
-                                                                              ,z.out_range_high_rating_Method
-                                                                              );
-                                      
-                                        END LOOP;
-                           
-                           END LOOP; --y rating_template
-                           
-                           
-                  FOR y IN (SELECT *
-                              FROM at_rating_spec
-                             WHERE rating_spec_code = x.rating_spec_code
-                               AND template_code    = x.template_code
-                               AND locatioN_code    = x.location_code
-                            ) LOOP
-                               INSERT INTO at_rating_spec(rating_spec_code, template_code, location_code
-                                                        , version, source_Agency_code, in_range_rating_method
-                                                        , out_range_low_rating_Method, out_range_high_rating_method
-                                                        , active_Flag, auto_update_Flag, auto_activate_flag
-                                                        , auto_migrate_ext_flag
-                                                        , dep_rounding_spec, description)
-                                                        VALUES
-                                                        (new_spec_code, y.template_code, y.location_code
-                                                        , y.version, y.source_Agency_code, y.in_range_rating_method
-                                                        , y.out_range_low_rating_Method, y.out_range_high_rating_method
-                                                        , y.active_Flag, y.auto_update_Flag, y.auto_activate_flag
-                                                        , y.auto_migrate_ext_flag
-                                                        , y.dep_rounding_spec, y.description);
-                            
-                               END LOOP;
-
-                FOR Y IN (SELECT *
-                            FROM at_rating
-                          WHERE rating_code = p_rating_code
-                          ) LOOP
-                               SELECT cwms_seq.nextval
-                                 INTO new_rating_code
-                                 FROM dual;
-        
-                            INSERT INTO at_rating (rating_code, rating_spec_code, effective_date, ref_rating_code, create_date, 
-                                                   active_Flag, formula, native_units, description)
-                                                   VALUES
-                                                   ( new_rating_code, y.rating_spec_code, y.effective_date, y.ref_rating_code, y.create_date, 
-                                                   y.active_Flag, y.formula, y.native_units, y.description);
-                          
-                          
-                             END LOOP;
-
-
-                   
-               END LOOP; --x template code from cwmsvrating
-   
-
-    
---    INSERT AT_RATING_VALUE
-   
-   END;
-          
    PROCEDURE p_clean_location_type (
       p_db_office_id        IN cwms_v_loc.db_Office_id%TYPE,
       p_location_type_old   IN cwms_v_loc.location_type%TYPE,
@@ -2242,39 +1807,23 @@ IS
              ORDER BY locatioN_id ASC)
       LOOP
          cwms_Loc.store_location (p_location_id        => x.locatioN_id -- IN VARCHAR2,
-                                                                       ,
-                                  p_location_type      => p_locatioN_type_new -- IN VARCHAR2 DEFAULT NULL,
-                                                                             ,
-                                  p_elevation          => x.elevation --    IN NUMBER DEFAULT NULL,
-                                                                     ,
-                                  p_elev_unit_id       => x.unit_id --   IN VARCHAR2 DEFAULT NULL,
-                                                                   ,
-                                  p_vertical_datum     => x.vertical_datum -- IN VARCHAR2 DEFAULT NULL,
-                                                                          ,
-                                  p_latitude           => x.latitude --  IN NUMBER DEFAULT NULL,
-                                                                    ,
-                                  p_longitude          => x.longitude --    IN NUMBER DEFAULT NULL,
-                                                                     ,
-                                  p_horizontal_datum   => x.horizontal_datum --IN VARCHAR2 DEFAULT NULL,
-                                                                            ,
-                                  p_public_name        => x.public_Name -- IN VARCHAR2 DEFAULT NULL,
-                                                                       ,
-                                  p_long_name          => x.long_name --   IN VARCHAR2 DEFAULT NULL,
-                                                                     ,
-                                  p_description        => x.description -- IN VARCHAR2 DEFAULT NULL,
-                                                                       ,
-                                  p_time_zone_id       => x.time_zone_name --  IN VARCHAR2 DEFAULT NULL,
-                                                                          ,
-                                  p_county_name        => x.county_name -- IN VARCHAR2 DEFAULT NULL,
-                                                                       ,
-                                  p_state_initial      => x.state_initial --x.IN VARCHAR2 DEFAULT NULL,
-                                                                         ,
-                                  p_active             => x.loc_active_flag --   IN VARCHAR2 DEFAULT NULL,
-                                                                           ,
-                                  p_ignorenulls        => 'T' --x.IN VARCHAR2 DEFAULT 'T',
-                                                             ,
-                                  p_db_office_id       => x.db_office_id -- IN VARCHAR2 DEFAULT NULL
-                                                                        );
+                                , p_location_type      => p_locatioN_type_new -- IN VARCHAR2 DEFAULT NULL,
+                                , p_elevation          => x.elevation --    IN NUMBER DEFAULT NULL,
+                                , p_elev_unit_id       => x.unit_id --   IN VARCHAR2 DEFAULT NULL,
+                                , p_vertical_datum     => x.vertical_datum -- IN VARCHAR2 DEFAULT NULL,
+                                , p_latitude           => x.latitude --  IN NUMBER DEFAULT NULL,
+                                , p_longitude          => x.longitude --    IN NUMBER DEFAULT NULL,
+                                , p_horizontal_datum   => x.horizontal_datum --IN VARCHAR2 DEFAULT NULL,
+                                , p_public_name        => x.public_Name -- IN VARCHAR2 DEFAULT NULL,
+                                , p_long_name          => x.long_name --   IN VARCHAR2 DEFAULT NULL,
+                                , p_description        => x.description -- IN VARCHAR2 DEFAULT NULL,
+                                , p_time_zone_id       => x.time_zone_name --  IN VARCHAR2 DEFAULT NULL,
+                                , p_county_name        => x.county_name -- IN VARCHAR2 DEFAULT NULL,
+                                , p_state_initial      => x.state_initial --x.IN VARCHAR2 DEFAULT NULL,
+                                , p_active             => x.loc_active_flag --   IN VARCHAR2 DEFAULT NULL,
+                                , p_ignorenulls        => 'T' --x.IN VARCHAR2 DEFAULT 'T',
+                                , p_db_office_id       => x.db_office_id -- IN VARCHAR2 DEFAULT NULL
+                                  );
       END LOOP;
    END;
 
@@ -2289,80 +1838,84 @@ IS
 --   END;
 
 
-  --this procedure will clear a ts CODE From the a2w selections table
-
-   PROCEDURE p_clear_a2w_ts_code (p_ts_code IN cwms_v_ts_id.ts_code%TYPE) IS 
+   PROCEDURE p_clear_a2w_ts_code (p_ts_code IN cwms_v_ts_id.ts_code%TYPE) IS
    BEGIN
     NULL;
-    
+
     UPDATE at_a2w_ts_codes_by_loc
        SET ts_code_elev = NULL
      WHERE ts_code_elev = p_ts_code;
-    
+
     UPDATE at_a2w_ts_codes_by_loc
        SET ts_code_stage = NULL
      WHERE ts_code_stage = p_ts_code;
-    
+
     UPDATE at_a2w_ts_codes_by_loc
        SET ts_code_precip = NULL
      WHERE ts_code_precip = p_ts_code;
-    
+
     UPDATE at_a2w_ts_codes_by_loc
        SET ts_code_inflow = NULL
      WHERE ts_code_inflow = p_ts_code;
-     
+
    UPDATE at_a2w_ts_codes_by_loc
        SET ts_code_outflow = NULL
      WHERE ts_code_outflow = p_ts_code;
-    
+
     UPDATE at_a2w_ts_codes_by_loc
        SET ts_code_sur_release = NULL
      WHERE ts_code_sur_release = p_ts_code;
-   
+
     UPDATE at_a2w_ts_codes_by_loc
        SET ts_code_stor_drought = NULL
      WHERE ts_code_stor_drought = p_ts_code;
-    
+
     UPDATE at_a2w_ts_codes_by_loc
        SET ts_code_stor_flood = NULL
      WHERE ts_code_stor_flood = p_ts_code;
-   
-       UPDATE at_a2w_ts_codes_by_loc
+
+    UPDATE at_a2w_ts_codes_by_loc
        SET ts_code_elev_Tw = NULL
      WHERE ts_code_elev_Tw = p_ts_code;
-   
+
     UPDATE at_a2w_ts_codes_by_loc
        SET ts_code_stage_tw = NULL
      WHERE ts_code_stage_tw = p_ts_code;
-    
+
     UPDATE at_a2w_ts_codes_by_loc
        SET ts_code_rule_curve_elev = NULL
      WHERE ts_code_rule_curve_elev = p_ts_code;
-   
+
+    UPDATE at_a2w_ts_codes_By_loc
+       SET ts_code_power_Gen    = NULL
+     WHERE ts_code_power_Gen    = p_ts_code;
+    
+    UPDATE at_a2w_ts_codes_By_loc
+       SET ts_code_temp_air    = NULL
+     WHERE ts_code_temp_air    = p_ts_code;
+
+    UPDATE at_a2w_ts_codes_By_loc
+       SET ts_code_temp_water    = NULL
+     WHERE ts_code_temp_water    = p_ts_code;
+
+    UPDATE at_a2w_ts_codes_By_loc
+       SET ts_code_do    = NULL
+     WHERE ts_code_do    = p_ts_code;
+        
       FOR x IN (SELECT DISTINCT location_code, db_Office_id
                   FROM cwms_v_ts_id
                 WHERE ts_code = p_ts_code
                 ) LOOP
-      
+
       p_set_a2w_num_tsids (
                             p_db_Office_id    => x.db_office_id,
                             p_locatioN_code   => x.locatioN_code ,
                             p_user_id         => 'SYSTEM'
                           );
-                  END LOOP;   
-   
-   
-    
-   END ;
-   
-   PROCEDURE p_delete_location_level(p_location_level_code IN cwms_v_Location_level.locatioN_level_code%TYPE
-                                    ) IS
-   BEGIN
-     DELETE at_location_level
-       WHERE locatioN_level_code = p_Location_level_code;
-   
-   END;
-   
+                  END LOOP;
+
+  END ; --p_clear_a2w_ts_code
+
 
    PROCEDURE p_refresh_a2w_ts_codes (
       p_db_office_id    IN at_a2w_ts_codes_by_loc.db_office_id%TYPE,
@@ -2420,7 +1973,7 @@ IS
       */
 
       -- SELECT * FROM a2w_ts_codes_by_loc WHERE db_Office_id = 'LRB'
-
+/*
       DELETE at_a2w_ts_codes_by_loc
        WHERE     CASE
                     WHEN p_db_office_id IS NULL THEN c_temp_null_case
@@ -3079,6 +2632,10 @@ IS
          tsc_stor_drought := NULL;
          temp_notes := NULL;
       END LOOP;
+*/
+NULL;
+
+
    END p_refresh_a2w_ts_codes;
 
    PROCEDURE p_sync_cwms_office_from_CM2 (
@@ -5474,17 +5031,17 @@ WHERE location_level_id = 'AGNI4.Elev-Pool.Inst.0.Flood' and office_id = 'MVR'
             WHEN NO_DATA_FOUND
             THEN
                -- A Timezone has been found but it's not a US one, so lookup any of them
-               FOR z IN (
-               
+                  FOR z IN (
+
                SELECT DISTINCT time_zone_name
                  FROM mv_time_zone
                 WHERE EXTRACT (HOUR FROM UTC_OFFSET) = temp_time_zone_offset
                 ORDER BY 1 ASC
                  ) LOOP
-                 
+
                     p_time_zone_name := z.time_zone_name;
                    END LOOP;
-                
+
          END;
       END LOOP;
 
@@ -5659,8 +5216,13 @@ WHERE location_level_id = 'AGNI4.Elev-Pool.Inst.0.Flood' and office_id = 'MVR'
       p_ts_code_stor_Flood     IN     at_a2w_ts_codes_by_loc.ts_code_stor_Flood%TYPE,
       p_ts_code_elev_tw        IN     at_a2w_ts_codes_by_loc.ts_code_elev_tw%TYPE,
       p_ts_code_stage_tw       IN     at_a2w_ts_codes_by_loc.ts_code_stage_tw%TYPE,
-      p_ts_code_rule_Curve_elev IN     at_a2w_ts_codes_by_loc.ts_code_rule_curve_elev%TYPE,
-      p_lake_summary_tf        IN     at_a2w_ts_codes_by_loc.lake_summary_Tf%TYPE,
+      p_ts_code_rule_Curve_elev IN    at_a2w_ts_codes_by_loc.ts_code_rule_curve_elev%TYPE,
+      p_ts_code_power_Gen       IN    at_a2w_ts_codes_By_loc.ts_code_power_Gen%TYPE,
+      p_ts_code_temp_air        IN    at_a2w_ts_codes_by_loc.ts_code_temp_air%TYPE,
+      p_ts_code_temp_water      IN    at_a2w_ts_codes_by_loc.ts_code_temp_water%TYPE,
+      p_ts_code_do              IN    at_a2w_Ts_codes_by_loc.ts_code_do%TYPE,
+      p_rating_code_elev_stor   IN    at_rating.rating_code%TYPE,
+      p_lake_summary_tf         IN     at_a2w_ts_codes_by_loc.lake_summary_Tf%TYPE,
       p_error_msg                 OUT VARCHAR2)
    IS
       temp_location_code   cwms_v_loc.location_code%TYPE;
@@ -5676,22 +5238,27 @@ WHERE location_level_id = 'AGNI4.Elev-Pool.Inst.0.Flood' and office_id = 'MVR'
 
 
       UPDATE at_a2w_ts_codes_by_loc
-         SET date_refreshed = SYSDATE,
-             display_flag = p_display_flag,
-             notes = p_notes,
-             num_ts_codes = p_num_ts_codes,
-             ts_code_elev = p_ts_code_elev,
-             ts_code_inflow = p_ts_code_inflow,
-             ts_code_outflow = p_ts_code_outflow,
-             ts_code_sur_release = p_ts_code_sur_release,
-             ts_code_precip = p_ts_code_precip,
-             ts_code_stage = p_ts_code_stage,
-             ts_code_stor_drought = p_ts_code_stor_drought,
-             ts_code_stor_flood   = p_ts_code_stor_flood,
-             ts_code_elev_tw      = p_ts_code_elev_tw,
-             ts_code_stage_tw     = p_ts_code_stage_tw,
+         SET date_refreshed          = SYSDATE,
+             display_flag            = p_display_flag,
+             notes                   = p_notes,
+             num_ts_codes            = p_num_ts_codes,
+             ts_code_elev            = p_ts_code_elev,
+             ts_code_inflow          = p_ts_code_inflow,
+             ts_code_outflow         = p_ts_code_outflow,
+             ts_code_sur_release     = p_ts_code_sur_release,
+             ts_code_precip          = p_ts_code_precip,
+             ts_code_stage           = p_ts_code_stage,
+             ts_code_stor_drought    = p_ts_code_stor_drought,
+             ts_code_stor_flood      = p_ts_code_stor_flood,
+             ts_code_elev_tw         = p_ts_code_elev_tw,
+             ts_code_stage_tw        = p_ts_code_stage_tw,
              ts_code_rule_curve_Elev = p_ts_code_rule_curve_elev,
-             lake_summary_tf = p_lake_summary_tf
+             ts_code_power_gen       = p_ts_code_power_Gen,
+             ts_code_temp_air        = p_ts_code_temp_air,
+             ts_code_temp_water      = p_ts_code_temp_water,
+             ts_code_do              = p_ts_code_do,
+             rating_code_elev_stor   = p_rating_code_elev_stor ,
+             lake_summary_tf         = p_lake_summary_tf
        WHERE  db_office_id = p_db_office_id
          AND locatioN_code = temp_location_code;
 
@@ -5706,10 +5273,10 @@ WHERE location_level_id = 'AGNI4.Elev-Pool.Inst.0.Flood' and office_id = 'MVR'
 
 
          UPDATE at_a2w_ts_codes_by_loc
-            SET date_refreshed = SYSDATE,
-                display_flag = p_display_flag,
-                notes = p_notes,
-                num_ts_codes = p_num_ts_codes,
+            SET date_refreshed       = SYSDATE,
+                display_flag         = p_display_flag,
+                notes                = p_notes,
+                num_ts_codes         = p_num_ts_codes,
                 ts_code_elev         = p_ts_code_elev,
                 ts_code_inflow       = p_ts_code_inflow,
                 ts_code_outflow      = p_ts_code_outflow,
@@ -5721,10 +5288,14 @@ WHERE location_level_id = 'AGNI4.Elev-Pool.Inst.0.Flood' and office_id = 'MVR'
                 ts_code_elev_tw      = p_ts_code_elev_tw,
                 ts_code_stage_tw     = p_ts_code_stage_tw,
                 ts_code_rule_curve_Elev = p_ts_code_rule_curve_elev,
+                ts_code_power_Gen       = p_ts_code_power_Gen       ,
+                ts_code_temp_air        = p_ts_code_temp_air        ,
+                ts_code_temp_water      = p_ts_code_temp_water      ,
+                ts_code_do              = p_ts_code_do              ,
+                rating_code_elev_stor   = p_rating_code_elev_stor   ,
                 lake_summary_tf         = p_lake_summary_tf
-    
-          WHERE     db_office_id = p_db_office_id
-                AND locatioN_code = temp_location_code;
+          WHERE db_office_id  = p_db_office_id
+            AND locatioN_code = temp_location_code;
       WHEN OTHERS
       THEN
          p_error_msg := SQLERRM;
@@ -6110,14 +5681,11 @@ WHERE location_level_id = 'AGNI4.Elev-Pool.Inst.0.Flood' and office_id = 'MVR'
                                     p_delim              => ':');
          WHEN c_str_stream
          THEN
- NULL;
-/*
-
             cwms_stream.store_stream (
                p_stream_id              => temp_locatioN_id,
                p_fail_if_exists         => p_strm_fail_if_exists,
                p_ignore_nulls           => p_strm_ignore_nulls,
-               p_station_units          => p_strm_station_units,
+               p_station_unit           => p_strm_station_units,
                p_stationing_starts_ds   => p_strm_stationing_starts_ds,
                p_flows_into_stream      => p_strm_flows_into_stream,
                p_flows_into_station     => p_strm_flows_into_station,
@@ -6129,7 +5697,6 @@ WHERE location_level_id = 'AGNI4.Elev-Pool.Inst.0.Flood' and office_id = 'MVR'
                p_average_slope          => p_strm_average_slope,
                p_comments               => p_strm_comments,
                p_office_id              => p_db_office_id);
-         */
          ELSE
             NULL;
       END CASE;                                          --p_location_Type_new
@@ -7406,25 +6973,26 @@ on: {%Date}]]></format>
             temp_i := temp_i + 1;
          END IF;
 
-        IF x.ts_code_sur_release IS NOT NULL
-         THEN
+         IF x.ts_code_power_Gen IS NOT NULL
+         THEN 
             temp_i := temp_i + 1;
-         END IF;
-         
-        IF x.ts_code_elev_tw IS NOT NULL
-         THEN
+        END IF;
+        
+         IF x.ts_code_temp_air IS NOT NULL
+         THEN 
             temp_i := temp_i + 1;
-         END IF;
+        END IF;
+       
+       IF x.ts_code_temp_water IS NOT NULL
+         THEN 
+            temp_i := temp_i + 1;
+        END IF;
+        
+       IF x.ts_code_do IS NOT NULL
+         THEN 
+            temp_i := temp_i + 1;
+        END IF;
 
-        IF x.ts_code_stage_tw IS NOT NULL
-         THEN
-            temp_i := temp_i + 1;
-         END IF;
-           IF x.ts_code_rule_curve_elev IS NOT NULL
-         THEN
-            temp_i := temp_i + 1;
-         END IF;   
-         
          UPDATE at_a2w_ts_codes_by_loc
             SET date_refreshed = SYSDATE,
                 notes =
@@ -7433,7 +7001,7 @@ on: {%Date}]]></format>
                    || ' updated via CMA on '
                    || SYSDATE
                    || ' by '
-                   || 'SYSTEM',
+                   || p_user_id,
                 num_ts_codes = temp_i
           WHERE     db_office_id = x.db_office_id
                 AND location_code = x.location_code;
@@ -7448,7 +7016,7 @@ on: {%Date}]]></format>
                       || ' updated via CMA on '
                       || SYSDATE
                       || ' by '
-                      || 'SYSTEM'
+                      || p_user_Id
                       || '. Set display flag to False because there are no TS IDs selected.',
                    display_flag = 'F'
              WHERE     db_office_id = x.db_office_id
@@ -7464,9 +7032,7 @@ on: {%Date}]]></format>
       p_locatioN_code    IN Cwms_v_loc.location_code%TYPE DEFAULT NULL,
       p_user_id        IN VARCHAR2)
    IS
-   
-   
-   BEGIN
+    BEGIN
       IF p_locatioN_code IS NOT NULL
       THEN
          FOR x
@@ -7511,7 +7077,7 @@ on: {%Date}]]></format>
             VALUES (x.db_office_id, x.location_code, SYSDATE);
          END LOOP;
       END IF;
-   END;
+   END p_add_Missing_a2w_rows;
 
 --   PROCEDURE p_delete_pool (p_Location_code     IN cwms_v_pool.location_code%TYPE
 --                           ,p_pool_code         IN cwms_v_pool.pool_code%TYPE
