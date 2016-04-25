@@ -1,4 +1,4 @@
-create or replace package BODY                                                                                                                                                                                                 CWMS_CMA
+create or replace package BODY                                                                                                                                                                                                                         CWMS_CMA
 IS
    /******************************************************************************
       NAME:       CWMS_CMA_ERDC
@@ -5221,6 +5221,8 @@ WHERE location_level_id = 'AGNI4.Elev-Pool.Inst.0.Flood' and office_id = 'MVR'
       p_ts_code_temp_air        IN    at_a2w_ts_codes_by_loc.ts_code_temp_air%TYPE,
       p_ts_code_temp_water      IN    at_a2w_ts_codes_by_loc.ts_code_temp_water%TYPE,
       p_ts_code_do              IN    at_a2w_Ts_codes_by_loc.ts_code_do%TYPE,
+      p_ts_code_ph              IN    at_a2w_ts_codes_by_loc.ts_code_ph%TYPE,
+      p_ts_code_cond            IN    at_a2w_Ts_codes_By_loc.ts_code_cond%TYPE,
       p_rating_code_elev_stor   IN    at_rating.rating_code%TYPE,
       p_lake_summary_tf         IN     at_a2w_ts_codes_by_loc.lake_summary_Tf%TYPE,
       p_error_msg                 OUT VARCHAR2)
@@ -7112,4 +7114,3 @@ on: {%Date}]]></format>
    END;
 
 END CWMS_CMA;
-/

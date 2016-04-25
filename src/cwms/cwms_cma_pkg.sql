@@ -1,4 +1,4 @@
-create or replace package         CWMS_CMA
+create or replace package                                 CWMS_CMA
 AS
    /******************************************************************************
    NAME:       CWMS_CMA_ERDC
@@ -8,27 +8,27 @@ AS
    ---------  ----------  ---------------  ------------------------------------
    1.0        6/19/2013      u4rt9jdk       1. Created this package.
    ******************************************************************************/
-   c_cwms_logic_t     CONSTANT VARCHAR2 (1) DEFAULT 'T';
-   c_cwms_logic_f     CONSTANT VARCHAR2 (1) DEFAULT 'F';
-   c_app_logic_y      CONSTANT VARCHAR2 (1) DEFAULT 'T';
-   c_app_logic_n      CONSTANT VARCHAR2 (1) DEFAULT 'F';
-   c_temp_null_case   CONSTANT VARCHAR2 (9) DEFAULT 'Hi Art';
-   c_str_inflow       CONSTANT VARCHAR2 (6) DEFAULT 'Inflow';
-   c_str_outflow      CONSTANT VARCHAR2 (7) DEFAULT 'Outflow';
-   c_str_elev         CONSTANT VARCHAR2 (4) DEFAULT 'Elev';
-   c_str_precip       CONSTANT VARCHAR2 (6) DEFAULT 'Precip';
-   c_str_stage        CONSTANT VARCHAR2 (5) DEFAULT 'Stage';
-   c_str_stor         CONSTANT VARCHAR2 (4) DEFAULT 'Stor';
-   c_str_site         CONSTANT VARCHAR2 (4) DEFAULT 'SITE';
+   c_cwms_logic_t     CONSTANT VARCHAR2 (1)  DEFAULT 'T';
+   c_cwms_logic_f     CONSTANT VARCHAR2 (1)  DEFAULT 'F';
+   c_app_logic_y      CONSTANT VARCHAR2 (1)  DEFAULT 'T';
+   c_app_logic_n      CONSTANT VARCHAR2 (1)  DEFAULT 'F';
+   c_temp_null_case   CONSTANT VARCHAR2 (9)  DEFAULT 'Hi Art';
+   c_str_inflow       CONSTANT VARCHAR2 (6)  DEFAULT 'Inflow';
+   c_str_outflow      CONSTANT VARCHAR2 (7)  DEFAULT 'Outflow';
+   c_str_elev         CONSTANT VARCHAR2 (4)  DEFAULT 'Elev';
+   c_str_precip       CONSTANT VARCHAR2 (6)  DEFAULT 'Precip';
+   c_str_stage        CONSTANT VARCHAR2 (5)  DEFAULT 'Stage';
+   c_str_stor         CONSTANT VARCHAR2 (4)  DEFAULT 'Stor';
+   c_str_site         CONSTANT VARCHAR2 (4)  DEFAULT 'SITE';
    c_str_streamgage   CONSTANT VARCHAR2 (10) DEFAULT 'STREAMGAGE';
    c_str_embankment   CONSTANT VARCHAR2 (10) DEFAULT 'EMBANKMENT';
-   c_str_basin        CONSTANT VARCHAR2 (5) DEFAULT 'BASIN';
-   c_str_stream       CONSTANT VARCHAR2 (6) DEFAULT 'STREAM';
-   c_str_lock         CONSTANT VARCHAR2 (4) DEFAULT 'LOCK';
-   c_str_project      CONSTANT VARCHAR2 (7) DEFAULT 'PROJECT';
-   c_str_outlet       CONSTANT VARCHAR2 (6) DEFAULT 'OUTLET';
-   c_str_turbine      CONSTANT VARCHAR2 (7) DEFAULT 'TURBINE';
-   c_chart_min_days   CONSTANT NUMBER DEFAULT 5;
+   c_str_basin        CONSTANT VARCHAR2 (5)  DEFAULT 'BASIN';
+   c_str_stream       CONSTANT VARCHAR2 (6)  DEFAULT 'STREAM';
+   c_str_lock         CONSTANT VARCHAR2 (4)  DEFAULT 'LOCK';
+   c_str_project      CONSTANT VARCHAR2 (7)  DEFAULT 'PROJECT';
+   c_str_outlet       CONSTANT VARCHAR2 (6)  DEFAULT 'OUTLET';
+   c_str_turbine      CONSTANT VARCHAR2 (7)  DEFAULT 'TURBINE';
+   c_chart_min_days   CONSTANT NUMBER        DEFAULT 5;
 
 --   PROCEDURE p_delete_lockage (
 --      p_lockage_code IN Cwms_v_lockage.lockage_code%TYPE);
@@ -81,21 +81,22 @@ AS
       p_longitude   IN cwms_v_loc.longitude%TYPE)
       RETURN VARCHAR2;
 
-   FUNCTION f_get_tz_by_xy (p_latitude    IN cwms_v_loc.latitude%TYPE,
-                            p_longitude   IN cwms_v_loc.longitude%TYPE)
-                             RETURN cwms_v_loc.time_zone_name%TYPE;
-
-   FUNCTION f_get_loc_num_ll(f_location_code IN cwms_v_loc.location_code%TYPE
-                            ,f_location_level_kind IN VARCHAR2 DEFAULT 'ALL'
-                            ) RETURN NUMBER;
-
+FUNCTION f_get_ll_home_container (f_location_code IN CWMS_V_LOC.location_code%TYPE) RETURN VARCHAR2;
+      
    FUNCTION f_get_loc_home_tools_by_loc (f_location_code IN cwms_v_loc.location_code%TYPE
                                         ,f_app_id        IN NUMBER
                                         ,f_session_id    IN NUMBER
-                                        ) RETURN VARCHAR2;
-                                          
-   FUNCTION f_get_ll_home_container (f_location_code IN CWMS_V_LOC.location_code%TYPE) RETURN VARCHAR2;
-   FUNCTION f_validate_loc_for_UR (
+                                        ) RETURN VARCHAR2 ;
+  
+   FUNCTION f_get_loc_num_ll(f_location_code IN cwms_v_loc.location_code%TYPE
+                            ,f_location_level_kind IN VARCHAR2 DEFAULT 'ALL'
+                            ) RETURN NUMBER ;
+                            
+   FUNCTION f_get_tz_by_xy (p_latitude    IN cwms_v_loc.latitude%TYPE,
+                            p_longitude   IN cwms_v_loc.longitude%TYPE)
+      RETURN cwms_v_loc.time_zone_name%TYPE;
+
+   FUNCTION f_validate_loc_for_nh (
       f_location_id IN cwms_v_loc.locatioN_id%TYPE)
       RETURN VARCHAR2;
 
@@ -180,7 +181,8 @@ AS
    PROCEDURE parse_tsv_csv (p_clob                   CLOB,
                             p_collection_name        VARCHAR2,
                             p_delim                  VARCHAR2 DEFAULT ',',
-                            p_optionally_enclosed    VARCHAR2 DEFAULT '"');
+                            p_optionally_enclosed    VARCHAR2 DEFAULT '"',
+                            p_all_one_ts_id_tf       VARCHAR2 DEFAULT 'T');
 
    PROCEDURE preload_store_rule_editor (
       p_store_Rule_code   IN     cwms_store_rule.store_rule_code%TYPE,
@@ -189,20 +191,6 @@ AS
       p_store_rule_id        OUT cwms_store_rule.store_rule_id%TYPE,
       p_sort_order           OUT AT_STORE_RULE_ORDER.sort_order%TYPE);
 
-   PROCEDURE preload_ll_to_tsv(p_location_code  IN cwms_v_loc.location_code%TYPE
-                              ,p_ll_code        IN cwms_v_location_level.location_level_code%TYPE
-                              ,p_cwms_ts_id     OUT cwms_v_ts_id.cwms_ts_id%TYPE
-                              );
-
-   PROCEDURE load_ll_to_tsv(p_collection_name       IN  VARCHAR2
-                          , p_location_level_code   IN cwms_V_location_level.location_level_code%TYPE
-                          , p_unit_system           IN cwms_V_location_level.unit_system%TYPE
-                          , p_add_point_method      IN VARCHAR2 DEFAULT 'LI'
-                          , p_preview_tf            IN VARCHAR2 DEFAULT 'T'
-                          , p_cwms_ts_id_new        IN cwms_v_ts_id.cwms_ts_id%TYPE
-                          , p_store_rule_code       IN cwms_store_rule.store_rule_code%TYPE
-                           );
-
    PROCEDURE load_tsc_parallel (
       p_ts_code_left          IN cwms_v_ts_id.ts_code%TYPE,
       p_ts_code_right         IN cwms_v_ts_id.ts_code%TYPE,
@@ -210,12 +198,6 @@ AS
 
    PROCEDURE preload_Upload_tsv (
       p_store_rule_code IN OUT cwms_store_rule.store_Rule_code%TYPE);
-
-   PROCEDURE p_delete_location_level(p_location_level_code IN cwms_v_Location_level.locatioN_level_code%TYPE
-                                    );
-
-   PROCEDURE p_clear_a2w_ts_code (p_ts_code IN cwms_v_ts_id.ts_code%TYPE);
-   
 
    PROCEDURE p_refresh_a2w_ts_codes (
       p_db_office_id    IN at_a2w_ts_codes_by_loc.db_office_id%TYPE,
@@ -255,15 +237,12 @@ AS
       p_collection_name   IN     apex_collections.collection_name%TYPE,
       p_display_out          OUT VARCHAR2);
 
-   PROCEDURE p_copy_rating_to_loc(p_rating_code IN cwms_v_rating.rating_code%TYPE
-                                 ,p_location_code_copy_to IN cwms_v_Loc.location_code%TYPE
-                                 ,p_db_Office_id  IN cwms_v_loc.db_office_id%TYPE
-                                 );
-
    PROCEDURE p_clean_location_type (
       p_db_office_id        IN cwms_v_loc.db_Office_id%TYPE,
       p_location_type_old   IN cwms_v_loc.location_type%TYPE,
       p_location_type_new   IN cwms_v_loc.location_type%TYPE);
+
+   PROCEDURE p_clear_a2w_ts_code (p_ts_code IN cwms_v_ts_id.ts_code%TYPE);
 
    PROCEDURE p_load_Project_Purpose (
       p_db_Office_id       IN cwms_v_loc.db_office_id%TYPE,
@@ -434,7 +413,14 @@ AS
       p_ts_code_stor_Flood     IN     at_a2w_ts_codes_by_loc.ts_code_stor_Flood%TYPE,
       p_ts_code_elev_tw        IN     at_a2w_ts_codes_by_loc.ts_code_elev_tw%TYPE,
       p_ts_code_stage_tw       IN     at_a2w_ts_codes_by_loc.ts_code_stage_tw%TYPE,
-      p_ts_code_rule_Curve_elev IN     at_a2w_ts_codes_by_loc.ts_code_rule_curve_elev%TYPE,
+      p_ts_code_rule_Curve_elev IN    at_a2w_ts_codes_by_loc.ts_code_rule_curve_elev%TYPE,
+      p_ts_code_power_Gen       IN    at_a2w_ts_codes_By_loc.ts_code_power_Gen%TYPE,
+      p_ts_code_temp_air        IN    at_a2w_ts_codes_by_loc.ts_code_temp_air%TYPE,
+      p_ts_code_temp_water      IN    at_a2w_ts_codes_by_loc.ts_code_temp_water%TYPE,
+      p_ts_code_do              IN    at_a2w_Ts_codes_by_loc.ts_code_do%TYPE,
+      p_ts_code_ph              IN    at_a2w_ts_codes_by_loc.ts_code_ph%TYPE,
+      p_ts_code_cond            IN    at_a2w_Ts_codes_By_loc.ts_code_cond%TYPE,
+      p_rating_code_elev_stor   IN    at_rating.rating_code%TYPE,
       p_lake_summary_tf        IN     at_a2w_ts_codes_by_loc.lake_summary_Tf%TYPE,
       p_error_msg                 OUT VARCHAR2);
 
@@ -576,8 +562,6 @@ AS
       p_locatioN_code  IN Cwms_v_loc.location_code%TYPE DEFAULT NULL,
       p_user_id        IN VARCHAR2);
 
-
-
    FUNCTION f_validate_location_kind_id (
       f_location_code IN cwms_v_loc.location_code%TYPE)
       RETURN VARCHAR2;
@@ -586,4 +570,3 @@ AS
 
 
 END CWMS_CMA;
-/
