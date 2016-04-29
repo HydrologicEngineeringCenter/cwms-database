@@ -2351,7 +2351,6 @@ as
       else 
          l_clone := rating_t(self);
       end case;
-      l_clone.convert_to_database_units;
       --------------------------
       -- handle the time zone --
       --------------------------
@@ -2362,15 +2361,16 @@ as
       ----------------------     
       -- handle the units --
       ----------------------     
-      if p_units is not null then   
-         if upper(trim(p_units)) != 'NATIVE' then
-            l_parts := cwms_util.split_text(replace(cwms_util.split_text(l_clone.rating_spec_id, 2, '.'), ';', ','), ',');
-            for i in 1..l_parts.count loop
-               l_units := l_units || case i when 1 then null when l_parts.count then ';' else ',' end;
-               l_units := l_units || cwms_util.get_default_units(l_parts(i), upper(trim(p_units)));
-            end loop;
-            l_clone.native_units := l_units;
-         end if;
+      if upper(trim(nvl(p_units, 'NATIVE'))) = 'NATIVE' then
+         l_clone.convert_to_native_units;
+      else
+         l_clone.convert_to_database_units;
+         l_parts := cwms_util.split_text(replace(cwms_util.split_text(l_clone.rating_spec_id, 2, '.'), ';', ','), ',');
+         for i in 1..l_parts.count loop
+            l_units := l_units || case i when 1 then null when l_parts.count then ';' else ',' end;
+            l_units := l_units || cwms_util.get_default_units(l_parts(i), upper(trim(p_units)));
+         end loop;
+         l_clone.native_units := l_units;
          l_clone.convert_to_native_units;
       end if;
       dbms_lob.createtemporary(l_text, true);
