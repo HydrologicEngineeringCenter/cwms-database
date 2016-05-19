@@ -26,4 +26,3 @@ SELECT l.db_Office_id
    AND l.unit_System = 'EN';
 
  CREATE OR REPLACE PUBLIC SYNONYM cwms_v_location_url FOR av_location_URL;
- GRANT SELECT ON av_location_url TO CWMS_USER;
