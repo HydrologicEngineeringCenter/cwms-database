@@ -2503,17 +2503,17 @@ ALTER TABLE at_water_user_contract ADD (
 ALTER TABLE at_water_user_contract ADD (
   CONSTRAINT at_water_user_contract_fk3
  FOREIGN KEY (pump_out_location_code)
- REFERENCES at_physical_location (location_code))
+ REFERENCES at_pump (pump_location_code))
 /
 ALTER TABLE at_water_user_contract ADD (
   CONSTRAINT at_water_user_contract_fk1
  FOREIGN KEY (pump_out_below_location_code)
- REFERENCES at_physical_location (location_code))
+ REFERENCES at_pump (pump_location_code))
 /
 ALTER TABLE at_water_user_contract ADD (
   CONSTRAINT at_water_user_contract_fk6
  FOREIGN KEY (pump_in_location_code)
- REFERENCES at_physical_location (location_code))
+ REFERENCES at_pump (pump_location_code))
 /
 
 ALTER TABLE at_water_user_contract ADD (

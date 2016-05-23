@@ -10,15 +10,21 @@ CREATE OR REPLACE PACKAGE cwms_loc
  */
 AS
 
-   c_str_site         CONSTANT VARCHAR2 (4) DEFAULT 'SITE';
-   c_str_streamgage   CONSTANT VARCHAR2 (10) DEFAULT 'STREAMGAGE';
-   c_str_embankment   CONSTANT VARCHAR2 (10) DEFAULT 'EMBANKMENT';
-   c_str_basin        CONSTANT VARCHAR2 (5) DEFAULT 'BASIN';
-   c_str_stream       CONSTANT VARCHAR2 (6) DEFAULT 'STREAM';
-   c_str_lock         CONSTANT VARCHAR2 (4) DEFAULT 'LOCK';
-   c_str_project      CONSTANT VARCHAR2 (7) DEFAULT 'PROJECT';
-   c_str_outlet       CONSTANT VARCHAR2 (6) DEFAULT 'OUTLET';
-   c_str_turbine      CONSTANT VARCHAR2 (7) DEFAULT 'TURBINE';
+   c_str_site            constant varchar2 ( 4) := 'SITE';
+   c_str_stream_location constant varchar2 (15) := 'STREAM_LOCATION';
+   c_str_embankment      constant varchar2 (10) := 'EMBANKMENT';
+   c_str_basin           constant varchar2 ( 5) := 'BASIN';
+   c_str_stream          constant varchar2 ( 6) := 'STREAM';
+   c_str_lock            constant varchar2 ( 4) := 'LOCK';
+   c_str_project         constant varchar2 ( 7) := 'PROJECT';
+   c_str_outlet          constant varchar2 ( 6) := 'OUTLET';
+   c_str_turbine         constant varchar2 ( 7) := 'TURBINE';
+   c_str_weather_gage    constant varchar2 (12) := 'WEATHER_GAGE';
+   c_str_stream_gage     constant varchar2 (11) := 'STREAM_GAGE';
+   c_str_gate            constant varchar2 ( 4) := 'GATE';
+   c_str_overflow        constant varchar2 ( 8) := 'OVERFLOW';
+   c_str_pump            constant varchar2 (11) := 'STREAM_GAGE';
+   c_str_entity          constant varchar2 ( 6) := 'ENTITY';
    -- leave these undocumented for now
 	l_elev_db_unit 			VARCHAR2 (16) := 'm';
 	l_abstract_elev_param	VARCHAR2 (32) := 'Length';
@@ -1506,7 +1512,9 @@ AS
     * @return A string identifying the kind (object type) of the location. Will be one of:
     * <ul>
     *   <li>SITE</li>
-    *   <li>STREAMGAGE</li>
+    *   <li>STREAM_LOCATION</li>
+    *   <li>STREAM_GAGE</li>
+    *   <li>WEATHER_GAGE</li>
     *   <li>BASIN</li>
     *   <li>STREAM</li>
     *   <li>OUTLET</li>
@@ -1531,7 +1539,9 @@ AS
     * @return A string identifying the kind (object type) of the location. Will be one of:
     * <ul>
     *   <li>SITE</li>
-    *   <li>STREAMGAGE</li>
+    *   <li>STREAM_LOCATION</li>
+    *   <li>STREAM_GAGE</li>
+    *   <li>WEATHER_GAGE</li>
     *   <li>BASIN</li>
     *   <li>STREAM</li>
     *   <li>OUTLET</li>
@@ -1553,14 +1563,14 @@ AS
       p_location_code in number)
       return integer;
    /**
-    * Clears the location kind (object type) of the location, resetting it to SITE or STREAMGAGE. This call will only succeed if there is no dependent data for the object type (e.g., sub-basins, gate settings, water users, etc...)
+    * Clears the location kind (object type) of the location, resetting it to SITE. This call will only succeed if there is no dependent data for the object type (e.g., sub-basins, gate settings, water users, etc...)
     *
     * @param p_location_code The unique numeric code that identifies the location
     */
    procedure clear_location_kind(
       p_location_code in number);
    /**
-    * Clears the location kind (object type) of the location, resetting it to SITE or STREAMGAGE. This call will only succeed if there is no dependent data for the object type (e.g., sub-basins, gate settings, water users, etc...)
+    * Clears the location kind (object type) of the location, resetting it to SITE. This call will only succeed if there is no dependent data for the object type (e.g., sub-basins, gate settings, water users, etc...)
     *
     * @param p_location_id The location identifier
     * @param p_office_id   The office that owns the location. If not specified or NULL, the session user's default office will be used
@@ -2426,13 +2436,66 @@ AS
       p_include_this_kind  in varchar2 default 'F',
       p_include_all_levels in varchar2 default 'T')
       return number_tab_t;
-            
+
    function get_location_ids(
       p_location_code in integer,
       p_exclude       in varchar2 default null)
       return varchar2;
-
+            
    /**
+    * Retrieves type of information that may be stored for a specified location kind
+    *
+    * @param p_loc_kind_id The location kind to check
+    * @return A comma-separated string of location kinds whose information may be stored for the specified kind
+    */
+   function get_valid_loc_kind_ids_txt(
+      p_loc_kind_id in varchar2)
+      return varchar2;
+   /**
+    * Retrieves type of information that may be stored for a specified location
+    *
+    * @param p_location_code The location to check
+    * @return A table of strings of location kinds whose information may be stored for the specified location
+    */
+   function get_valid_loc_kind_ids(
+      p_location_code in integer)
+      return str_tab_t;
+   /**
+    * Returns whether data for a specified location kind can currently be stored for a specified location.
+    *
+    * @param p_location_code The location to store location kind information for
+    * @param p_location_kind_id The type of information to store for the location
+    * @return Whether the location currently supports storage of the location kind information
+    */
+   function can_store(
+      p_location_code    in integer,
+      p_location_kind_id in varchar2)
+      return boolean;
+   /**
+    * Returns whether data for a specified location kind can currently be stored for a specified location.
+    *
+    * @param p_location_code The location to store location kind information for
+    * @param p_location_kind_id The type of information to store for the location
+    * @return A flag ('T'/'F') specifying whether the location currently supports storage of the location kind information
+    */
+   function can_store_txt(
+      p_location_code    in integer,
+      p_location_kind_id in varchar2)
+      return varchar2;
+   /**
+    * Updates a location's kind, if applicable, based on the addition or deletion of location kind information. The kind is only updated if
+    * the adding or deleting the specified kind information should change the location kind, unless p_force = 'T'
+    *
+    * @param p_location_code The location to update
+    * @param p_location_kind_id The location kind of the information being added or deleted. 'GAGE' can be used instead of 'STREAM_GAGE' or 'WEATHER_GAGE'.
+    * @param p_add_delete A flag ('A'=add, 'D'=delete) specifying whether the location kind information is being added or deleted
+    */
+   procedure update_location_kind(
+      p_location_code    in integer,
+      p_location_kind_id in varchar2,
+      p_add_delete       in varchar2);
+
+   /**                                
  * Generates a single column SYS_REFCURSOR that contains the LOCATION_KIND_IDs
  * that this p_location_id can be changed to.
  *
@@ -2464,14 +2527,13 @@ AS
  * a more primitive LOCATION_KIND. If it can, the function returns the
  * KIND that it can be reverted back to.
  *
- * Return values are:
- *   SITE -       meaning that this p_location_id's LOCATION_KIND_ID can be
- *                set back to a SITE.
- *   STREAMGAGE - meaning that this p_location_id's LOCATION_KIND_ID can
- *                be changed to a STREAMGAGE.
- *   ERROR -      meaning that this p_location_id's LOCATION_KIND_ID cannot
- *                be changed. This is usually because this p_location_id
- *                is referenced by other objects in the database.
+ * Return values are: <ul>
+ *   <li>SITE            - meaning that this p_location_id's LOCATION_KIND_ID can be set back to a SITE.</li>
+ *   <li>STREAM_LOCATION - meaning that this p_location_id's LOCATION_KIND_ID can be changed to a STREAM_LOCATION.</li>
+ *   <li>STREAM_GAGE     - meaning that this p_location_id's LOCATION_KIND_ID can be changed to a STREAM_GAGE.</li>
+ *   <li>WEATHER_GAGE    - meaning that this p_location_id's LOCATION_KIND_ID can be changed to a WEATHER_GAGE.</li>
+ *   <li>ERROR           - meaning that this p_location_id's LOCATION_KIND_ID cannot be changed. This is usually because this p_location_id is referenced by other objects in the database.</li>
+ * </ul>
  *
  * @param p_location_id - The location_id to check
  * @param p_office_id - The owning office of p_location_id.

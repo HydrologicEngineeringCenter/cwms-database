@@ -1,4 +1,4 @@
-create or replace package                                 CWMS_CMA
+create or replace package         CWMS_CMA
 AS
    /******************************************************************************
    NAME:       CWMS_CMA_ERDC
@@ -8,27 +8,29 @@ AS
    ---------  ----------  ---------------  ------------------------------------
    1.0        6/19/2013      u4rt9jdk       1. Created this package.
    ******************************************************************************/
-   c_cwms_logic_t     CONSTANT VARCHAR2 (1)  DEFAULT 'T';
-   c_cwms_logic_f     CONSTANT VARCHAR2 (1)  DEFAULT 'F';
-   c_app_logic_y      CONSTANT VARCHAR2 (1)  DEFAULT 'T';
-   c_app_logic_n      CONSTANT VARCHAR2 (1)  DEFAULT 'F';
-   c_temp_null_case   CONSTANT VARCHAR2 (9)  DEFAULT 'Hi Art';
-   c_str_inflow       CONSTANT VARCHAR2 (6)  DEFAULT 'Inflow';
-   c_str_outflow      CONSTANT VARCHAR2 (7)  DEFAULT 'Outflow';
-   c_str_elev         CONSTANT VARCHAR2 (4)  DEFAULT 'Elev';
-   c_str_precip       CONSTANT VARCHAR2 (6)  DEFAULT 'Precip';
-   c_str_stage        CONSTANT VARCHAR2 (5)  DEFAULT 'Stage';
-   c_str_stor         CONSTANT VARCHAR2 (4)  DEFAULT 'Stor';
-   c_str_site         CONSTANT VARCHAR2 (4)  DEFAULT 'SITE';
-   c_str_streamgage   CONSTANT VARCHAR2 (10) DEFAULT 'STREAMGAGE';
+   c_cwms_logic_t     CONSTANT VARCHAR2 (1) DEFAULT 'T';
+   c_cwms_logic_f     CONSTANT VARCHAR2 (1) DEFAULT 'F';
+   c_app_logic_y      CONSTANT VARCHAR2 (1) DEFAULT 'T';
+   c_app_logic_n      CONSTANT VARCHAR2 (1) DEFAULT 'F';
+   c_temp_null_case   CONSTANT VARCHAR2 (9) DEFAULT 'Hi Art';
+   c_str_inflow       CONSTANT VARCHAR2 (6) DEFAULT 'Inflow';
+   c_str_outflow      CONSTANT VARCHAR2 (7) DEFAULT 'Outflow';
+   c_str_elev         CONSTANT VARCHAR2 (4) DEFAULT 'Elev';
+   c_str_precip       CONSTANT VARCHAR2 (6) DEFAULT 'Precip';
+   c_str_stage        CONSTANT VARCHAR2 (5) DEFAULT 'Stage';
+   c_str_stor         CONSTANT VARCHAR2 (4) DEFAULT 'Stor';
+   c_str_site         CONSTANT VARCHAR2 (4) DEFAULT 'SITE';
+   c_str_stream_location CONSTANT VARCHAR2(15) DEFAULT 'STREAM_LOCATION';
    c_str_embankment   CONSTANT VARCHAR2 (10) DEFAULT 'EMBANKMENT';
-   c_str_basin        CONSTANT VARCHAR2 (5)  DEFAULT 'BASIN';
-   c_str_stream       CONSTANT VARCHAR2 (6)  DEFAULT 'STREAM';
-   c_str_lock         CONSTANT VARCHAR2 (4)  DEFAULT 'LOCK';
-   c_str_project      CONSTANT VARCHAR2 (7)  DEFAULT 'PROJECT';
-   c_str_outlet       CONSTANT VARCHAR2 (6)  DEFAULT 'OUTLET';
-   c_str_turbine      CONSTANT VARCHAR2 (7)  DEFAULT 'TURBINE';
-   c_chart_min_days   CONSTANT NUMBER        DEFAULT 5;
+   c_str_basin        CONSTANT VARCHAR2 (5) DEFAULT 'BASIN';
+   c_str_stream       CONSTANT VARCHAR2 (6) DEFAULT 'STREAM';
+   c_str_lock         CONSTANT VARCHAR2 (4) DEFAULT 'LOCK';
+   c_str_project      CONSTANT VARCHAR2 (7) DEFAULT 'PROJECT';
+   c_str_outlet       CONSTANT VARCHAR2 (6) DEFAULT 'OUTLET';
+   c_str_turbine      CONSTANT VARCHAR2 (7) DEFAULT 'TURBINE';
+   c_str_stream_gage     CONSTANT VARCHAR2 (10) DEFAULT 'STREAM_GAGE';
+   c_str_weather_gage    CONSTANT VARCHAR2 (11) DEFAULT 'WEATHER_GAGE';
+   c_chart_min_days   CONSTANT NUMBER DEFAULT 5;
 
 --   PROCEDURE p_delete_lockage (
 --      p_lockage_code IN Cwms_v_lockage.lockage_code%TYPE);
@@ -87,15 +89,15 @@ FUNCTION f_get_ll_home_container (f_location_code IN CWMS_V_LOC.location_code%TY
                                         ,f_app_id        IN NUMBER
                                         ,f_session_id    IN NUMBER
                                         ) RETURN VARCHAR2 ;
-  
+
    FUNCTION f_get_loc_num_ll(f_location_code IN cwms_v_loc.location_code%TYPE
                             ,f_location_level_kind IN VARCHAR2 DEFAULT 'ALL'
-                            ) RETURN NUMBER ;
-                            
+                            ) RETURN NUMBER;
+
    FUNCTION f_get_tz_by_xy (p_latitude    IN cwms_v_loc.latitude%TYPE,
                             p_longitude   IN cwms_v_loc.longitude%TYPE)
       RETURN cwms_v_loc.time_zone_name%TYPE;
-
+                                          
    FUNCTION f_validate_loc_for_nh (
       f_location_id IN cwms_v_loc.locatioN_id%TYPE)
       RETURN VARCHAR2;
@@ -413,7 +415,7 @@ FUNCTION f_get_ll_home_container (f_location_code IN CWMS_V_LOC.location_code%TY
       p_ts_code_stor_Flood     IN     at_a2w_ts_codes_by_loc.ts_code_stor_Flood%TYPE,
       p_ts_code_elev_tw        IN     at_a2w_ts_codes_by_loc.ts_code_elev_tw%TYPE,
       p_ts_code_stage_tw       IN     at_a2w_ts_codes_by_loc.ts_code_stage_tw%TYPE,
-      p_ts_code_rule_Curve_elev IN    at_a2w_ts_codes_by_loc.ts_code_rule_curve_elev%TYPE,
+      p_ts_code_rule_Curve_elev IN     at_a2w_ts_codes_by_loc.ts_code_rule_curve_elev%TYPE,
       p_ts_code_power_Gen       IN    at_a2w_ts_codes_By_loc.ts_code_power_Gen%TYPE,
       p_ts_code_temp_air        IN    at_a2w_ts_codes_by_loc.ts_code_temp_air%TYPE,
       p_ts_code_temp_water      IN    at_a2w_ts_codes_by_loc.ts_code_temp_water%TYPE,

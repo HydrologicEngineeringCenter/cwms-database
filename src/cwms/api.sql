@@ -90,6 +90,18 @@
 @@cwms_entity_pkg
 @@cwms_entity_pkg_body
 
+@@cwms_configuration_pkg
+@@cwms_configuration_pkg_body
+
+@@cwms_gate_pkg
+@@cwms_gate_pkg_body
+
+@@cwms_overflow_pkg
+@@cwms_overflow_pkg_body
+
+@@cwms_pump_pkg
+@@cwms_pump_pkg_body
+
 -- HOST pwd
 
 @@cwms_project_pkg

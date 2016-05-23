@@ -35,6 +35,7 @@ begin
                   and rec.object_name != 'AT_PARAMETER'
                   and rec.object_name != 'AT_DISPLAY_UNITS'
                   and rec.object_name != 'AT_ENTITY'
+                  and rec.object_name != 'AT_CONFIGURATION'
                then
                   execute immediate 'drop table '
                                      || rec.object_name
@@ -528,63 +529,6 @@ ALTER TABLE AT_STREAM ADD CONSTRAINT AT_STREAM_CK1 CHECK (ZERO_STATION = 'US' OR
 ALTER TABLE AT_STREAM ADD CONSTRAINT AT_STREAM_CK2 CHECK (DIVERSION_BANK IS NULL OR DIVERSION_BANK = 'R' OR DIVERSION_BANK = 'L');
 ALTER TABLE AT_STREAM ADD CONSTRAINT AT_STREAM_CK3 CHECK (CONFLUENCE_BANK IS NULL OR CONFLUENCE_BANK = 'R' OR CONFLUENCE_BANK = 'L');
 
-CREATE TABLE AT_STREAM_REACH
-(
-  STREAM_LOCATION_CODE NUMBER(10)    NOT NULL,
-  STREAM_REACH_ID      VARCHAR2(64)  NOT NULL,
-  UPSTREAM_STATION     BINARY_DOUBLE NOT NULL,
-  DOWNSTREAM_STATION   BINARY_DOUBLE NOT NULL,
-  STREAM_TYPE_ID       VARCHAR2(4),
-  COMMENTS             VARCHAR2(256),
-  CONSTRAINT AT_STREAM_REACH_PK  PRIMARY KEY (STREAM_LOCATION_CODE, UPSTREAM_STATION, DOWNSTREAM_STATION) USING INDEX
-)
-TABLESPACE CWMS_20AT_DATA
-PCTUSED    0
-PCTFREE    10
-INITRANS   1
-MAXTRANS   255
-STORAGE    (
-            INITIAL          10K
-            NEXT             10K
-            MINEXTENTS       1
-            MAXEXTENTS       UNLIMITED
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-LOGGING 
-NOCOMPRESS 
-NOCACHE
-NOPARALLEL
-MONITORING
-/
-
-COMMENT ON TABLE  AT_STREAM_REACH                      IS 'Contains stationing and type information for portions of streams.';
-COMMENT ON COLUMN AT_STREAM_REACH.STREAM_LOCATION_CODE IS 'References stream.';
-COMMENT ON COLUMN AT_STREAM_REACH.STREAM_REACH_ID      IS 'Name of stream reach.';
-COMMENT ON COLUMN AT_STREAM_REACH.UPSTREAM_STATION     IS 'Upstream extent of reach.';
-COMMENT ON COLUMN AT_STREAM_REACH.DOWNSTREAM_STATION   IS 'Downstream extent of reach.';
-COMMENT ON COLUMN AT_STREAM_REACH.STREAM_TYPE_ID       IS 'References stream type (Rosgen Classification identifier).';
-COMMENT ON COLUMN AT_STREAM_REACH.COMMENTS             IS 'Additional comments on reach.';
-
-ALTER TABLE AT_STREAM_REACH ADD CONSTRAINT AT_STREAM_REACH_FK1 FOREIGN KEY (STREAM_LOCATION_CODE) REFERENCES AT_STREAM (STREAM_LOCATION_CODE);
-ALTER TABLE AT_STREAM_REACH ADD CONSTRAINT AT_STREAM_REACH_FK2 FOREIGN KEY (STREAM_TYPE_ID) REFERENCES CWMS_STREAM_TYPE (STREAM_TYPE_ID);
-
-CREATE UNIQUE INDEX IDX1 ON AT_STREAM_REACH (STREAM_LOCATION_CODE, UPPER(STREAM_REACH_ID))
-LOGGING
-TABLESPACE CWMS_20AT_DATA
-PCTFREE    10
-INITRANS   2
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64 k
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-NOPARALLEL
-/
-
 CREATE TABLE AT_STREAM_LOCATION
 (
   LOCATION_CODE           NUMBER(10)   NOT NULL,
@@ -631,7 +575,141 @@ COMMENT ON COLUMN AT_STREAM_LOCATION.UNGAGED_AREA            IS 'Drainage area i
 
 ALTER TABLE AT_STREAM_LOCATION ADD CONSTRAINT AT_STREAM_LOCATION_FK1 FOREIGN KEY (LOCATION_CODE) REFERENCES AT_PHYSICAL_LOCATION (LOCATION_CODE);
 ALTER TABLE AT_STREAM_LOCATION ADD CONSTRAINT AT_STREAM_LOCATION_FK2 FOREIGN KEY (STREAM_LOCATION_CODE) REFERENCES AT_STREAM (STREAM_LOCATION_CODE);
-alter table at_stream_location add constraint at_stream_location_ck1 check (bank is null or bank = 'R' or bank = 'L');
+ALTER TABLE AT_STREAM_LOCATION ADD CONSTRAINT AT_STREAM_LOCATION_CK1 CHECK (BANK IS NULL OR BANK = 'R' OR BANK = 'L');
+
+CREATE TABLE AT_STREAM_REACH (
+   STREAM_REACH_LOCATION_CODE NUMBER(10)   NOT NULL,
+   STREAM_LOCATION_CODE       NUMBER(10)   NOT NULL,
+   UPSTREAM_LOCATION_CODE     NUMBER(10)   NOT NULL,
+   DOWNSTREAM_LOCATION_CODE   NUMBER(10)   NOT NULL,
+   CONFIGURATION_CODE         NUMBER(10)   NOT NULL,
+   COMMENTS                   VARCHAR2(256),
+   CONSTRAINT AT_STREAM_REACH_PK  PRIMARY KEY (STREAM_REACH_LOCATION_CODE),
+   CONSTRAINT AT_STREAM_REACH_FK1 FOREIGN KEY (STREAM_REACH_LOCATION_CODE) REFERENCES AT_PHYSICAL_LOCATION (LOCATION_CODE),
+   CONSTRAINT AT_STREAM_REACH_FK2 FOREIGN KEY (STREAM_LOCATION_CODE) REFERENCES AT_STREAM (STREAM_LOCATION_CODE),
+   CONSTRAINT AT_STREAM_REACH_FK3 FOREIGN KEY (UPSTREAM_LOCATION_CODE) REFERENCES AT_STREAM_LOCATION (LOCATION_CODE),
+   CONSTRAINT AT_STREAM_REACH_FK4 FOREIGN KEY (DOWNSTREAM_LOCATION_CODE) REFERENCES AT_STREAM_LOCATION (LOCATION_CODE),
+   CONSTRAINT AT_STREAM_REACH_FK5 FOREIGN KEY (CONFIGURATION_CODE) REFERENCES AT_CONFIGURATION (CONFIGURATION_CODE)
+) TABLESPACE CWMS_20AT_DATA
+/
+
+COMMENT ON TABLE  AT_STREAM_REACH IS 'Contains placement information for stream reaches';
+COMMENT ON COLUMN AT_STREAM_REACH.STREAM_LOCATION_CODE     IS 'References stream';
+COMMENT ON COLUMN AT_STREAM_REACH.UPSTREAM_LOCATION_CODE   IS 'References stream location at upstream end of reach';
+COMMENT ON COLUMN AT_STREAM_REACH.DOWNSTREAM_LOCATION_CODE IS 'References stream location at downstream end of reach';
+COMMENT ON COLUMN AT_STREAM_REACH.CONFIGURATION_CODE       IS 'References the configuration this stream reach belongs to';
+COMMENT ON COLUMN AT_STREAM_REACH.COMMENTS                 IS 'Additional comments on reach';
+
+CREATE UNIQUE INDEX AT_STREAM_REACH_U1 ON AT_STREAM_REACH (
+   STREAM_LOCATION_CODE, 
+   DOWNSTREAM_LOCATION_CODE, 
+   CONFIGURATION_CODE
+) TABLESPACE CWMS_20AT_DATA
+/
+
+CREATE UNIQUE INDEX AT_STREAM_REACH_U2 ON AT_STREAM_REACH (
+   STREAM_LOCATION_CODE, 
+   UPSTREAM_LOCATION_CODE, 
+   CONFIGURATION_CODE
+) TABLESPACE CWMS_20AT_DATA
+/
+
+CREATE OR REPLACE TRIGGER AT_STREAM_REACH_T01
+BEFORE INSERT OR UPDATE ON AT_STREAM_REACH
+FOR EACH ROW
+DECLARE
+   STATIONING_START VARCHAR2(2);
+   NEW_US_STATION   BINARY_DOUBLE;
+   NEW_DS_STATION   BINARY_DOUBLE;
+   US_STATION       BINARY_DOUBLE;
+   DS_STATION       BINARY_DOUBLE;
+BEGIN
+   IF :NEW.CONFIGURATION_CODE IS NULL THEN
+      :NEW.CONFIGURATION_CODE := 1;
+   END IF;
+   BEGIN
+      SELECT STATION
+        INTO NEW_US_STATION
+        FROM AT_STREAM_LOCATION
+       WHERE LOCATION_CODE = :NEW.UPSTREAM_LOCATION_CODE;
+       
+      SELECT STATION
+        INTO NEW_DS_STATION
+        FROM AT_STREAM_LOCATION
+       WHERE LOCATION_CODE = :NEW.DOWNSTREAM_LOCATION_CODE;
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN RETURN;
+   END;
+   
+   SELECT ZERO_STATION
+     INTO STATIONING_START
+     FROM AT_STREAM
+    WHERE STREAM_LOCATION_CODE = :NEW.STREAM_LOCATION_CODE;
+    
+   IF (STATIONING_START = 'DS' AND NEW_US_STATION < NEW_DS_STATION) OR
+      (STATIONING_START = 'US' AND NEW_US_STATION > NEW_DS_STATION)
+   THEN
+      CWMS_ERR.RAISE(
+         'ERROR',
+         'Specified upstream station is downstream of specified downstream station'); 
+   END IF;
+   
+   FOR REC IN 
+      (SELECT STREAM_REACH_LOCATION_CODE,
+              UPSTREAM_LOCATION_CODE,
+              DOWNSTREAM_LOCATION_CODE
+         FROM AT_STREAM_REACH
+        WHERE STREAM_LOCATION_CODE = :NEW.STREAM_LOCATION_CODE
+          AND CONFIGURATION_CODE = :NEW.CONFIGURATION_CODE
+          AND STREAM_REACH_LOCATION_CODE != :NEW.STREAM_REACH_LOCATION_CODE
+      )
+   LOOP
+      BEGIN
+         SELECT STATION
+           INTO US_STATION
+           FROM AT_STREAM_LOCATION
+          WHERE LOCATION_CODE = REC.UPSTREAM_LOCATION_CODE;
+          
+         SELECT STATION
+           INTO DS_STATION
+           FROM AT_STREAM_LOCATION
+          WHERE LOCATION_CODE = REC.DOWNSTREAM_LOCATION_CODE;
+      EXCEPTION
+         WHEN NO_DATA_FOUND THEN CONTINUE;
+      END;
+
+      IF STATIONING_START = 'DS' THEN
+         IF (NEW_US_STATION < US_STATION AND NEW_US_STATION > DS_STATION) OR
+            (NEW_DS_STATION < US_STATION AND NEW_DS_STATION > DS_STATION)
+         THEN
+            CWMS_ERR.RAISE(
+               'ERROR',
+               'New stream reach overlaps "'
+               ||CWMS_LOC.GET_LOCATION_ID(REC.STREAM_REACH_LOCATION_CODE)
+               ||'" on stream "'
+               ||CWMS_LOC.GET_LOCATION_ID(:NEW.STREAM_LOCATION_CODE)
+               ||'" for configuration "'
+               ||CWMS_CONFIGURATION.GET_CONFIGURATION_ID(:NEW.CONFIGURATION_CODE)
+               ||'"');
+         END IF;
+      ELSE
+         IF (NEW_US_STATION > US_STATION AND NEW_US_STATION < DS_STATION) OR
+            (NEW_DS_STATION > US_STATION AND NEW_DS_STATION < DS_STATION)
+         THEN
+            CWMS_ERR.RAISE(
+               'ERROR',
+               'New stream reach overlaps "'
+               ||CWMS_LOC.GET_LOCATION_ID(REC.STREAM_REACH_LOCATION_CODE)
+               ||'" on stream "'
+               ||CWMS_LOC.GET_LOCATION_ID(:NEW.STREAM_LOCATION_CODE)
+               ||'" for configuration "'
+               ||CWMS_CONFIGURATION.GET_CONFIGURATION_ID(:NEW.CONFIGURATION_CODE)
+               ||'"');
+         END IF;
+      END IF;
+   END LOOP;
+END AT_STREAM_REACH_T01;
+/
 
 CREATE TABLE AT_BASIN
 (
@@ -1111,6 +1189,34 @@ INSERT INTO at_loc_group VALUES ( 8, 1, 'TVA Station ID'     , 'Tennessee Valley
 INSERT INTO at_loc_group VALUES ( 9, 1, 'NRCS Station ID'    ,'Natural Resources Conservation Service Station ID'                                         , 53, NULL, NULL, NULL);
 INSERT INTO at_loc_group VALUES (10, 1, 'USGS GNIS ID'       , 'The ID used by the USGS GNIS APEX App to define a record in the Geographic Names database', 53, NULL, NULL, NULL);
 INSERT INTO at_loc_group VALUES (11, 1, 'NIDID'              , 'The National Inventory of Dams ID used by the NID and Corps Inventory of Dams Subset'     , 53, NULL, NULL, NULL);
+COMMIT ;
+-----
+
+create or replace trigger at_loc_group_t01
+before insert or update of shared_loc_alias_id on at_loc_group
+for each row
+declare
+   l_rec         at_gate_group%rowtype;
+   l_rating_spec rating_spec_t;
+   l_office_id   cwms_office.office_id%type;
+begin
+   select *
+     into l_rec
+     from at_gate_group
+    where loc_group_code = :new.loc_group_code;
+    
+   select office_id into l_office_id from cwms_office where office_code = :new.db_office_code;
+   begin
+      l_rating_spec := rating_spec_t(
+         :new.shared_loc_alias_id,
+         l_office_id);
+   exception
+      when others then cwms_err.raise('ERROR', 'Gate location group specifies invalid rating specification: '||:new.shared_loc_alias_id);
+   end;
+exception
+   when no_data_found then null;
+end at_loc_group_t01;
+/
 COMMIT ;
 -----
 
@@ -6094,7 +6200,106 @@ comment on column at_streamflow_meas.remarks        is 'Any remarks about the ra
 comment on column at_streamflow_meas.air_temp       is '(Not on USGS site) The air temperature at the location when the measurement was performed';
 comment on column at_streamflow_meas.water_temp     is '(Not on USGS site) The water temperature at the location when the measurement was performed';
 comment on column at_streamflow_meas.wm_comments    is '(Not on USGS site) Comments about the rating by water management personnel';
+commit;
+---
 
+create table at_gate_group (
+   loc_group_code   number(10),
+   gate_type_code   number(10) not null,
+   can_be_submerged varchar2(1) not null,
+   always_submerged varchar2(1) not null,
+   description      varchar(128),
+   constraint at_gate_group_pk  primary key (loc_group_code) using index,
+   constraint at_gate_group_fk1 foreign key (loc_group_code) references at_loc_group (loc_group_code),
+   constraint at_gate_group_fk2 foreign key (gate_type_code) references cwms_gate_type (gate_type_code),
+   constraint at_gate_group_ck1 check (can_be_submerged in ('T', 'F')),
+   constraint at_gate_group_ck2 check (always_submerged in ('T', 'F')),
+   constraint at_gate_group_ck3 check (can_be_submerged = 'T' or always_submerged = 'F')
+) tablespace cwms_20at_data;
 
--- HOST pwd
+comment on table  at_gate_group is 'Holds gate definitions';
+comment on column at_gate_group.loc_group_code   is 'The location group whose SHARED_LOC_ALIAS_ID is the rating spec for this gate group';
+comment on column at_gate_group.gate_type_code   is 'The type of gate for this group';
+comment on column at_gate_group.can_be_submerged is 'A flag (''T''/''F'') specifying whether this gate group can be submerged';
+comment on column at_gate_group.always_submerged is 'A flag (''T''/''F'') specifying whether this gate group is always submerged';
+comment on column at_gate_group.description      is 'A description of this gate group';
+
+create or replace trigger at_gate_group_t01
+before insert or update on at_gate_group
+for each row
+declare
+   l_category_id         at_loc_category.loc_category_id%type;
+   l_shared_loc_alias_id at_loc_group.shared_loc_alias_id%type;
+   l_count               pls_integer;
+   l_rating_spec         rating_spec_t;
+   l_office_code         cwms_office.office_code%type;
+   l_office_id           cwms_office.office_id%type;
+begin
+   select lc.loc_category_id,
+          lg.shared_loc_alias_id,
+          lg.db_office_code
+     into l_category_id,
+          l_shared_loc_alias_id,
+          l_office_code
+     from at_loc_group lg,
+          at_loc_category lc
+    where lg.loc_group_code = :new.loc_group_code
+      and lc.loc_category_code = lg.loc_category_code;
+      
+   if upper(l_category_id) != 'RATING' then
+      cwms_err.raise('ERROR', 'Location group is not a rating location group');
+   elsif l_shared_loc_alias_id is not null then
+      select office_id into l_office_id from cwms_office where office_code = l_office_code;
+      begin
+         l_rating_spec := rating_spec_t(
+            l_shared_loc_alias_id,
+            l_office_id);
+      exception
+         when others then cwms_err.raise('ERROR', 'Location group specifies invalid rating specification: '||l_shared_loc_alias_id);
+      end;
+   end if;
+      
+   select count(*)
+     into l_count
+     from at_loc_group_assignment
+    where loc_group_code = :new.loc_group_code
+      and location_code not in (select outlet_location_code from at_outlet);
+      
+   if l_count > 0 then
+      cwms_err.raise('ERROR', 'Location group contains non-outlet locations');
+   end if;
+end at_gate_group_t01;
+/
+commit;
+---
+
+create table at_entity_location (
+   location_code number(10),
+   entity_code   number(10) not null,
+   comments      varchar2(128),
+   constraint at_entity_location_pk  primary key (location_code) using index,
+   constraint at_entity_location_fk1 foreign key (location_code) references at_physical_location (location_code),
+   constraint at_entity_location_fk2 foreign key (entity_code) references at_entity (entity_code)
+) tablespace cwms_20at_data;
+
+comment on table  at_entity_location is 'Connects locations to entities for ENTITY location kinds';
+comment on column at_entity_location.location_code is 'The location that is bound to the entity';
+comment on column at_entity_location.entity_code   is 'The entity the location is bound to';
+commit;
+---
+
+create table at_pump (
+   pump_location_code number(10),
+   description        varchar2(128),
+   constraint at_pump_pk  primary key (pump_location_code) using index,
+   constraint at_pump_pk1 foreign key (pump_location_code) references at_stream_location (location_code)
+) tablespace cwms_20at_data;
+
+comment on table  at_pump is 'Holds information on pump locations';
+comment on column at_pump.pump_location_code is 'The location code of the pump (must also be a stream location)';
+comment on column at_pump.description        is 'Description of the pump';
+commit;
+
 @@rowcps_schema.sql
+---
+

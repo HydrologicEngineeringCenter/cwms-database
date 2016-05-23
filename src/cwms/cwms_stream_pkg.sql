@@ -552,66 +552,66 @@ function cat_streams_f(
 /**
  * Stores a stream reach to the database
  *
- * @param p_stream_id          The stream location identifier
- * @param p_reach_id           The stream reach identifier (unique per stream)
- * @param p_fail_if_exists     A flag ('T' or 'F') that specifies whether the routine should fail if the specified stream reach already exists in the database
- * @param p_ignore_nulls       A flag ('T' or 'F') that specifies whether to ignore NULL values when updating. If 'T' no data will be overwritten with a NULL
- * @param p_upstream_station   The upstream station of the stream reach
- * @param p_downstream_station The downstream station of the stream reach
- * @param p_stream_type_id     The <a href="http://www.epa.gov/owow/watershed/wacademy/acad2000/stream_class/index.htm">Rosgen Level II Stream Type</a> for this reach
- * @param p_comments           Any comments for the stream reach
- * @param p_office_id          The office that owns the stream location. If not specified or NULL, the session user's default office is used.
+ * @param p_reach_id            The stream reach location identifier
+ * @param p_stream_id           The stream location identifier
+ * @param p_fail_if_exists      A flag ('T' or 'F') that specifies whether the routine should fail if the specified stream reach already exists in the database
+ * @param p_ignore_nulls        A flag ('T' or 'F') that specifies whether to ignore NULL values when updating. If 'T' no data will be overwritten with a NULL
+ * @param p_upstream_location   The stream location that marks the upstream end of the reach
+ * @param p_downstream_location The stream location that marks the downstream end of the reach
+ * @param p_configuration_id    The configuration to which this stream reach belongs
+ * @param p_comments            Any comments for the stream reach
+ * @param p_office_id           The office that owns the stream location. If not specified or NULL, the session user's default office is used.
  */
 procedure store_stream_reach(
-   p_stream_id          in varchar2,
-   p_reach_id           in varchar2,
-   p_fail_if_exists     in varchar2,
-   p_ignore_nulls       in varchar2,
-   p_upstream_station   in binary_double,
-   p_downstream_station in binary_double,
-   p_stream_type_id     in varchar2 default null,
-   p_comments           in varchar2 default null,
-   p_office_id          in varchar2 default null);
+   p_reach_id            in varchar2,
+   p_stream_id           in varchar2,
+   p_fail_if_exists      in varchar2,
+   p_ignore_nulls        in varchar2,
+   p_upstream_location   in varchar2,
+   p_downstream_location in varchar2,
+   p_configuration_id    in varchar2 default null,
+   p_comments            in varchar2 default null,
+   p_office_id           in varchar2 default null);
 /**
  * Retrieves a stream reach from the database
  *
- * @param p_upstream_station   The upstream station of the stream reach
- * @param p_downstream_station The downstream station of the stream reach
- * @param p_stream_type_id     The <a href="http://www.epa.gov/owow/watershed/wacademy/acad2000/stream_class/index.htm">Rosgen Level II Stream Type</a> for this reach
- * @param p_comments           Any comments for the stream reach
- * @param p_stream_id          The stream location identifier
- * @param p_reach_id           The stream reach identifier
- * @param p_office_id          The office that owns the stream location. If not specified or NULL, the session user's default office is used.
+ * @param p_upstream_location   The stream location that marks the upstream end of the reach
+ * @param p_downstream_location The stream location that marks the downstream end of the reach
+ * @param p_configuration_id    The configuration to which this stream reach belongs
+ * @param p_upstream_station    The upstream station of the stream reach
+ * @param p_downstream_station  The downstream station of the stream reach
+ * @param p_comments            Any comments for the stream reach
+ * @param p_reach_id            The stream reach location identifier
+ * @param p_station_unit        The unit to retrieve the stream stations in. If not specified or null, the database storage unit if 'km' will be used. 
+ * @param p_office_id           The office that owns the stream location. If not specified or NULL, the session user's default office is used.
  */
 procedure retrieve_stream_reach(
-   p_upstream_station   out binary_double,
-   p_downstream_station out binary_double,
-   p_stream_type_id     out varchar2,
-   p_comments           out varchar2,
-   p_stream_id          in  varchar2,
-   p_reach_id           in  varchar2,
-   p_office_id          in  varchar2 default null);
+   p_upstream_location   out varchar2,
+   p_downstream_location out varchar2,
+   p_configuration_id    out varchar2,
+   p_upstream_station    out binary_double,
+   p_downstream_station  out binary_double,
+   p_comments            out varchar2,
+   p_reach_id            in  varchar2,
+   p_station_unit        in  varchar2 default null,
+   p_office_id           in  varchar2 default null);
 /**
  * Deletes a stream reach from the database
  *
- * @param p_stream_id          The stream location identifier
- * @param p_reach_id           The stream reach identifier
- * @param p_office_id          The office that owns the stream location. If not specified or NULL, the session user's default office is used.
+ * @param p_reach_id  The stream reach location identifier
+ * @param p_office_id The office that owns the stream location. If not specified or NULL, the session user's default office is used.
  */
 procedure delete_stream_reach(
-   p_stream_id in varchar2,
    p_reach_id  in varchar2,
    p_office_id in varchar2 default null);
 /**
  * Renames a stream reach in database
  *
- * @param p_stream_id          The stream location identifier
- * @param p_old_reach_id       The existing stream reach identifier
- * @param p_new_reach_id       The new stream reach identifier
+ * @param p_old_reach_id       The existing stream reach location identifier
+ * @param p_new_reach_id       The new stream reach location identifier
  * @param p_office_id          The office that owns the stream location. If not specified or NULL, the session user's default office is used.
  */
 procedure rename_stream_reach(
-   p_stream_id    in varchar2,
    p_old_reach_id in varchar2,
    p_new_reach_id in varchar2,
    p_office_id    in varchar2 default null);
@@ -653,36 +653,60 @@ procedure rename_stream_reach(
  *   </tr>
  *   <tr>
  *     <td class="descr-center">2</td>
- *     <td class="descr">stream_id</td>
+ *     <td class="descr">configuration</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The configuration the reach belongs_to</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">stream_location</td>
  *     <td class="descr">varchar2(49)</td>
  *     <td class="descr">The location identifier of the stream</td>
  *   </tr>
  *   <tr>
- *     <td class="descr-center">3</td>
- *     <td class="descr">stream_reach_id</td>
- *     <td class="descr">varchar2(64)</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">reach_location</td>
+ *     <td class="descr">varchar2(49)</td>
  *     <td class="descr">The stream reach identifier</td>
  *   </tr>
  *   <tr>
- *     <td class="descr-center">4</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">upstream_location</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location at the upstream extent of the reach</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">6</td>
  *     <td class="descr">upstream_station</td>
  *     <td class="descr">binary_double</td>
  *     <td class="descr">The upstream station of the reach</td>
  *   </tr>
  *   <tr>
- *     <td class="descr-center">5</td>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">upstream_reach</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The the stream reach immediately upstream of this one</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">downstream_location</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location at the downstream extent of the reach</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">9</td>
  *     <td class="descr">downstream_station</td>
  *     <td class="descr">binary_double</td>
  *     <td class="descr">The downstream station of the reach</td>
  *   </tr>
  *   <tr>
- *     <td class="descr-center">6</td>
- *     <td class="descr">stream_type_id</td>
- *     <td class="descr">varchar2(4)</td>
- *     <td class="descr">The <a href="http://www.epa.gov/owow/watershed/wacademy/acad2000/stream_class/index.htm">Rosgen Level II Stream Type</a> of the reach</td>
+ *     <td class="descr-center">10</td>
+ *     <td class="descr">downstream_reach</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The the stream reach immediately downstream of this one</td>
  *   </tr>
  *   <tr>
- *     <td class="descr-center">7</td>
+ *     <td class="descr-center">11</td>
  *     <td class="descr">comments</td>
  *     <td class="descr">varchar2(256)</td>
  *     <td class="descr">Any comments for this stream</td>
@@ -697,13 +721,16 @@ procedure rename_stream_reach(
  * wildcard characters as shown above instead of sql-style wildcard characters for pattern
  * matching.
  *
- * @param p_reach_id_mask  The stream type pattern to match. Use glob-style
+ * @param p_configuration_id_mask The configuration pattern to match. Use glob-style
  * wildcard characters as shown above instead of sql-style wildcard characters for pattern
  * matching.
  *
-  * @param p_comments_mask  The comments pattern to match. Use glob-style
+ * @param p_comments_mask  The comments pattern to match. Use glob-style
  * wildcard characters as shown above instead of sql-style wildcard characters for pattern
  * matching.
+ *
+ * @param p_station_unit The unit to retrieve stream stations in. If not specified, 'mi' (miles) 
+ * will be used
  *
  * @param p_office_id_mask  The office pattern to match.  If the routine is called
  * without this parameter, or if this parameter is set to NULL, the session user's
@@ -712,12 +739,13 @@ procedure rename_stream_reach(
  * matching.
  */
 procedure cat_stream_reaches(
-   p_reach_catalog       out sys_refcursor,
-   p_stream_id_mask      in  varchar2 default '*',
-   p_reach_id_mask       in  varchar2 default '*',
-   p_stream_type_id_mask in  varchar2 default '*',
-   p_comments_mask       in  varchar2 default '*',
-   p_office_id_mask      in  varchar2 default null);
+   p_reach_catalog         out sys_refcursor,
+   p_stream_id_mask        in  varchar2 default '*',
+   p_reach_id_mask         in  varchar2 default '*',
+   p_configuration_id_mask in  varchar2 default '*',
+   p_comments_mask         in  varchar2 default '*',
+   p_station_unit          in varchar2 default 'mi',
+   p_office_id_mask        in  varchar2 default null);
 /**
  * Catalogs stream reaches in the database that match input parameters. Matching is
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
@@ -746,7 +774,7 @@ procedure cat_stream_reaches(
  * wildcard characters as shown above instead of sql-style wildcard characters for pattern
  * matching.
  *
- * @param p_reach_id_mask  The stream type pattern to match. Use glob-style
+ * @param p_configuration_id_mask The configuration pattern to match. Use glob-style
  * wildcard characters as shown above instead of sql-style wildcard characters for pattern
  * matching.
  *
@@ -754,13 +782,16 @@ procedure cat_stream_reaches(
  * wildcard characters as shown above instead of sql-style wildcard characters for pattern
  * matching.
  *
- * @return  The office pattern to match.  If the routine is called
+ * @param p_station_unit The unit to retrieve stream stations in. If not specified, 'mi' (miles) 
+ * will be used
+ *
+ * @param p_office_id  The office pattern to match.  If the routine is called
  * without this parameter, or if this parameter is set to NULL, the session user's
  * default office will be used. For matching multiple office, use glob-style
  * wildcard characters as shown above instead of sql-style wildcard characters for pattern
  * matching.
  *
- * @param p_reach_catalog A cursor containing all matching basins.  The cursor contains
+ * @return A cursor containing all matching basins.  The cursor contains
  * the following columns:
  * <p>
  * <table class="descr">
@@ -778,36 +809,60 @@ procedure cat_stream_reaches(
  *   </tr>
  *   <tr>
  *     <td class="descr-center">2</td>
- *     <td class="descr">stream_id</td>
+ *     <td class="descr">configuration</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The configuration the reach belongs_to</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">stream_location</td>
  *     <td class="descr">varchar2(49)</td>
  *     <td class="descr">The location identifier of the stream</td>
  *   </tr>
  *   <tr>
- *     <td class="descr-center">3</td>
- *     <td class="descr">stream_reach_id</td>
- *     <td class="descr">varchar2(64)</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">reach_location</td>
+ *     <td class="descr">varchar2(49)</td>
  *     <td class="descr">The stream reach identifier</td>
  *   </tr>
  *   <tr>
- *     <td class="descr-center">4</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">upstream_location</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location at the upstream extent of the reach</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">6</td>
  *     <td class="descr">upstream_station</td>
  *     <td class="descr">binary_double</td>
  *     <td class="descr">The upstream station of the reach</td>
  *   </tr>
  *   <tr>
- *     <td class="descr-center">5</td>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">upstream_reach</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The the stream reach immediately upstream of this one</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">downstream_location</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location at the downstream extent of the reach</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">9</td>
  *     <td class="descr">downstream_station</td>
  *     <td class="descr">binary_double</td>
  *     <td class="descr">The downstream station of the reach</td>
  *   </tr>
  *   <tr>
- *     <td class="descr-center">6</td>
- *     <td class="descr">stream_type_id</td>
- *     <td class="descr">varchar2(4)</td>
- *     <td class="descr">The <a href="http://www.epa.gov/owow/watershed/wacademy/acad2000/stream_class/index.htm">Rosgen Level II Stream Type</a> of the reach</td>
+ *     <td class="descr-center">10</td>
+ *     <td class="descr">downstream_reach</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The the stream reach immediately downstream of this one</td>
  *   </tr>
  *   <tr>
- *     <td class="descr-center">7</td>
+ *     <td class="descr-center">11</td>
  *     <td class="descr">comments</td>
  *     <td class="descr">varchar2(256)</td>
  *     <td class="descr">Any comments for this stream</td>
@@ -815,11 +870,12 @@ procedure cat_stream_reaches(
  * </table>
  */
 function cat_stream_reaches_f(
-   p_stream_id_mask      in varchar2 default '*',
-   p_reach_id_mask       in varchar2 default '*',
-   p_stream_type_id_mask in varchar2 default '*',
-   p_comments_mask       in varchar2 default '*',
-   p_office_id_mask      in varchar2 default null)
+   p_stream_id_mask        in varchar2 default '*',
+   p_reach_id_mask         in varchar2 default '*',
+   p_configuration_id_mask in varchar2 default '*',
+   p_comments_mask         in varchar2 default '*',
+   p_station_unit          in varchar2 default 'mi',
+   p_office_id_mask        in varchar2 default null)
    return sys_refcursor;
 /**
  * Stores information about a location on a stream

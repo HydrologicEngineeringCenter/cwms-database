@@ -1,4 +1,12 @@
-create or replace package cwms_entity as
+create or replace package cwms_entity
+/**
+ * Routines to work with CWMS entities
+ *
+ * @author Mike Perryman
+ *
+ * @since CWMS 3.0
+ */
+as
 
 /**
  * Stores an entity to the database
@@ -196,8 +204,19 @@ function retrieve_ancestors_f(
 /**
  * Deletes an entity from the database
  *
- * @param p_entity_id The indentifier of the entity to delete
- * @param p_office_id The office that owns the entity in the database. If not specified or NULL, the sessions user's default office will be used
+ * @param p_entity_code           The entity to delete
+ * @param p_delete_child_entities A flag ('T'/'F') specifying whether to delete all child entities. If 'T' any descendant entities will also be deleted. If 'F', the procedure will fail if the entity has any descendants.
+ * @param p_office_id             The office that owns the entity in the database. If not specified or NULL, the sessions user's default office will be used
+ */
+procedure delete_entity (
+   p_entity_code           in integer,
+   p_delete_child_entities in varchar default 'F');
+/**
+ * Deletes an entity from the database
+ *
+ * @param p_entity_id             The indentifier of the entity to delete
+ * @param p_delete_child_entities A flag ('T'/'F') specifying whether to delete all child entities. If 'T' any descendant entities will also be deleted. If 'F', the procedure will fail if the entity has any descendants.
+ * @param p_office_id             The office that owns the entity in the database. If not specified or NULL, the sessions user's default office will be used
  */
 procedure delete_entity (
    p_entity_id             in varchar2,
@@ -283,7 +302,7 @@ procedure delete_entity (
  * @param p_entity_name_mask      The entity name pattern to match. If not specified, all entity names are matched
  * @param p_office_id_mask        The owning office to match. If not specified or NULL, only enities owned by the CWMS office and the session user's default office are matched
  */
-procedure cat_entities (
+procedure cat_entities(
    p_entity_cursor         out sys_refcursor,
    p_entity_id_mask        in varchar2 default '*',
    p_parent_entity_id_mask in varchar2 default '*',
@@ -372,7 +391,7 @@ procedure cat_entities (
  *   </tr>
  * </table>
  */
-function cat_entities_f (
+function cat_entities_f(
    p_entity_id_mask        in varchar2 default '*',
    p_parent_entity_id_mask in varchar2 default '*',
    p_match_null_parents    in varchar2 default 'T',
@@ -380,7 +399,67 @@ function cat_entities_f (
    p_entity_name_mask      in varchar2 default '*',
    p_office_id_mask        in varchar2 default null)
    return sys_refcursor;
-
+/**
+ * Associates an existing location with an existing entity
+ *
+ * @param p_location_code The location to associate with an entity
+ * @param p_entity_code The entity to associate with the location
+ * @param p_comments Comments about the location-entity association
+ * @param p_fail_if_exists A flag ('T'/'F') that specifies whether to fail if the location is already associated with an entity
+ */
+procedure store_entity_location(
+   p_location_code  in integer,
+   p_entity_code    in integer,
+   p_comments       in varchar2,
+   p_fail_if_exists in varchar2);
+/**
+ * Associates an existing location with an existing entity
+ *
+ * @param p_location_id The location to associate with an entity
+ * @param p_entity_id The entity to associate with the location
+ * @param p_comments Comments about the location-entity association
+ * @param p_fail_if_exists A flag ('T'/'F') that specifies whether to fail if the location is already associated with an entity
+ * @param p_office_id The office that owns the location and reference office for the enity. The entity must be owned by this office or by the CWMS office. If not specified or NULL, the session user's current office is used.
+ */
+procedure store_entity_location(
+   p_location_id    in varchar2,
+   p_entity_id      in varchar2,
+   p_comments       in varchar2,
+   p_fail_if_exists in varchar2,
+   p_office_id      in varchar2 default null);
+/**
+ * Disassociates a location from an entity, optionally deleting the location and/or entity
+ *
+ * @param p_location_code The location to disassociate from the entity
+ * @param p_delete_location A flag ('T'/'F') specifying whether to delete the location. Defaults to 'F'.
+ * @param p_delete_entity A flag ('T'/'F') specifying whether to delete the entity. Defaults to 'F'.
+ * @param p_del_location_action Specifies the location deletion action if p_delete_location is 'T'. Defaults to 'DELETE KEY'.
+ * @param p_del_child_entities Specifies whether to delete child entities if p_delete_entity is 'T'. Defaults to 'F'.
+ */
+procedure delete_entity_location(
+   p_location_code       in integer,
+   p_delete_location     in varchar2 default 'F',
+   p_delete_entity       in varchar2 default 'F',
+   p_del_location_action in varchar2 default 'DELETE KEY',
+   p_del_child_entities  in varchar2 default 'F');
+/**
+ * Disassociates a location from an entity, optionally deleting the location and/or entity
+ *
+ * @param p_location_id The location to disassociate from the entity
+ * @param p_delete_location A flag ('T'/'F') specifying whether to delete the location. Defaults to 'F'.
+ * @param p_delete_entity A flag ('T'/'F') specifying whether to delete the entity. Defaults to 'F'.
+ * @param p_del_location_action Specifies the location deletion action if p_delete_location is 'T'. Defaults to 'DELETE KEY'.
+ * @param p_del_child_entities Specifies whether to delete child entities if p_delete_entity is 'T'. Defaults to 'F'.
+ * @param p_office_id The office that owns the location. If not specified or NULL, the session user's current office is used.
+ */
+procedure delete_entity_location(
+   p_location_id         in varchar2,
+   p_delete_location     in varchar2 default 'F',
+   p_delete_entity       in varchar2 default 'F',
+   p_del_location_action in varchar2 default 'DELETE KEY',
+   p_del_child_entities  in varchar2 default 'F',
+   p_office_id           in varchar2 default null);
+   
 end cwms_entity;
 /
 

@@ -334,32 +334,26 @@ procedure store_lock(
    p_fail_if_exists IN VARCHAR2 DEFAULT 'T') -- a flag that will cause the procedure to fail if the lock already exists
 is
    l_lock_rec         at_lock%rowtype; 
-   l_code             integer;
-   l_location_kind_id varchar2(32);   
    l_exists           boolean;
    l_length_factor    binary_double;
    l_length_offset    binary_double;
    l_volume_factor    binary_double;
    l_volume_offset    binary_double;
 begin
-   begin
-      l_code := p_lock.lock_location.location_ref.get_location_code;
-   exception
-      when no_data_found then null;
-   end;
-   if l_code is not null then
-      l_location_kind_id := cwms_loc.check_location_kind(l_code);
-      if l_location_kind_id not in ('LOCK', 'SITE', 'STREAMGAGE') then
-         cwms_err.raise(
-            'ERROR',
-            'Cannot switch location '
-            ||p_lock.lock_location.location_ref.office_id
-            ||'/'
-            ||p_lock.lock_location.location_ref.get_location_id
-            ||' from type '
-            ||l_location_kind_id
-            ||' to type LOCK');
-      end if;
+   if p_lock is null then
+      cwms_err.raise('NULL_ARGUMENT', 'P_LOCK');
+   end if;
+   l_lock_rec.lock_location_code := cwms_loc.store_location_f(p_lock.lock_location, 'F');
+   if not cwms_loc.can_store(l_lock_rec.lock_location_code, 'LOCK') then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot store LOCK information for location '
+         ||p_lock.lock_location.location_ref.get_office_id
+         ||'/'
+         ||p_lock.lock_location.location_ref.get_location_id
+         ||' (location kind = '
+         ||cwms_loc.check_location_kind(l_lock_rec.lock_location_code)
+         ||')');
    end if;
    -------------------------------------
    -- retrieve the lock, if it exists --
@@ -368,7 +362,7 @@ begin
       select *
         into l_lock_rec
         from at_lock
-       where lock_location_code = p_lock.lock_location.location_ref.get_location_code;
+       where lock_location_code = l_lock_rec.lock_location_code;
       l_exists := true;       
    exception 
       when no_data_found then
@@ -390,11 +384,13 @@ begin
    begin
       l_lock_rec.project_location_code := p_lock.project_location_ref.get_location_code;
    exception
-      when no_data_found then
+      when others then 
          cwms_err.raise(
             'ITEM_DOES_NOT_EXIST',
-            'Project for lock location',
-            p_lock.project_location_ref.office_id||'/'||p_lock.project_location_ref.get_location_id);
+            'CWMS Project',
+            p_lock.project_location_ref.get_office_id
+            ||'/'
+            ||p_lock.project_location_ref.get_location_id);
    end;
    --------------------------------
    -- get the conversion factors --
@@ -454,7 +450,6 @@ begin
       -------------
       -- update ---
       -------------
-      cwms_loc.store_location(p_lock.lock_location,'F');
       update at_lock
          set row = l_lock_rec
        where lock_location_code = l_lock_rec.lock_location_code; 
@@ -462,10 +457,6 @@ begin
       ------------
       -- insert --
       ------------
-      if l_code is null then
-         cwms_loc.store_location(p_lock.lock_location,'F');
-      end if;
-      l_lock_rec.lock_location_code := p_lock.lock_location.location_ref.get_location_code;
       insert
         into at_lock
       values l_lock_rec;
@@ -473,12 +464,7 @@ begin
    ---------------------------      
    -- set the location kind --
    ---------------------------
-   update at_physical_location
-      set location_kind = (select location_kind_code 
-                             from cwms_location_kind 
-                            where location_kind_id = 'LOCK'
-                          )
-    where location_code = l_lock_rec.lock_location_code;                                 
+   cwms_loc.update_location_kind(l_lock_rec.lock_location_code, 'LOCK', 'A');                                 
 end store_lock;
 
 
@@ -517,7 +503,7 @@ is
    l_delete_action1     varchar2(16);
    l_delete_action2     varchar2(16);
    l_count              pls_integer;
-   l_location_kind_code integer;
+   l_location_kind_id   cwms_location_kind.location_kind_id%type;
 begin
    -------------------
    -- sanity checks --
@@ -541,24 +527,39 @@ begin
          ||cwms_util.delete_all
          ||'');
    end if;
-   l_delete_location := cwms_util.return_true_or_false(p_delete_location); 
-   l_delete_action2 := upper(substr(p_delete_location_action, 1, 16));
-   if l_delete_action2 not in (
-      cwms_util.delete_key,
-      cwms_util.delete_data,
-      cwms_util.delete_all)
-   then
-      cwms_err.raise(
-         'ERROR',
-         'Delete action must be one of '''
-         ||cwms_util.delete_key
-         ||''',  '''
-         ||cwms_util.delete_data
-         ||''', or '''
-         ||cwms_util.delete_all
-         ||'');
+   l_delete_location := cwms_util.return_true_or_false(p_delete_location);
+   if l_delete_location then
+      l_delete_action2 := upper(substr(p_delete_location_action, 1, 16));
+      if l_delete_action2 not in (
+         cwms_util.delete_key,
+         cwms_util.delete_data,
+         cwms_util.delete_all)
+      then
+         cwms_err.raise(
+            'ERROR',
+            'Delete action must be one of '''
+            ||cwms_util.delete_key
+            ||''',  '''
+            ||cwms_util.delete_data
+            ||''', or '''
+            ||cwms_util.delete_all
+            ||'');
+      end if;
    end if;
    l_lock_code := get_lock_code(p_office_id, p_lock_id);
+   l_location_kind_id := cwms_loc.check_location_kind(l_lock_code);
+   if l_location_kind_id != 'LOCK' then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot delete lock information from location '
+         ||cwms_util.get_db_office_id(p_office_id)
+         ||'/'
+         ||p_lock_id
+         ||' (location kind = '
+         ||l_location_kind_id
+         ||')');
+   end if;
+   l_location_kind_id := cwms_loc.can_revert_loc_kind_to(p_lock_id, p_office_id);
    -------------------------------------------
    -- delete the child records if specified --
    -------------------------------------------
@@ -571,34 +572,14 @@ begin
    -- delete the record if specified --
    ------------------------------------
    if l_delete_action1 in (cwms_util.delete_key, cwms_util.delete_all) then
-      delete
-        from at_lock
-       where lock_location_code = l_lock_code;
+      delete from at_lock where lock_location_code = l_lock_code;
+      cwms_loc.update_location_kind(l_lock_code, 'LOCK', 'D');
    end if; 
    -------------------------------------
    -- delete the location if required --
    -------------------------------------
    if l_delete_location then
       cwms_loc.delete_location(p_lock_id, l_delete_action2, p_office_id);
-   else
-      select count(*)
-        into l_count
-        from at_stream_location
-       where location_code = l_lock_code;
-      if l_count = 0 then
-         select location_kind_code
-           into l_location_kind_code
-           from cwms_location_kind
-          where location_kind_id = 'SITE'; 
-      else
-         select location_kind_code
-           into l_location_kind_code
-           from cwms_location_kind
-          where location_kind_id = 'STREAMGAGE'; 
-      end if;       
-      update at_physical_location 
-         set location_kind = l_location_kind_code 
-       where location_code = l_lock_code;   
    end if;
 end delete_lock2;   
 

@@ -4388,7 +4388,9 @@ WHERE location_level_id = 'AGNI4.Elev-Pool.Inst.0.Flood' and office_id = 'MVR'
              'EMBANKMENT',
              'OUTLET',
              'SITE',
-             'STREAMGAGE')
+             'STREAM_LOCATION',
+             'STREAM_GAGE',
+             'WEATHER_GAGE')
       THEN
          p_api_read_only := 'F';
       ELSE

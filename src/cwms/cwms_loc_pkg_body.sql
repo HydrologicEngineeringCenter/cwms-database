@@ -2650,6 +2650,12 @@ AS
 
          delete from at_basin
                where basin_location_code in (select * from table (l_location_codes));
+         -----------
+         -- pumps --
+         -----------
+         delete
+           from at_pump 
+          where pump_location_code in (select * from table(l_location_codes));
          -----------------------------------------------------------------------------
          -- streams, stream reaches, stream locations, and stream flow measurements --
          -----------------------------------------------------------------------------
@@ -2663,7 +2669,10 @@ AS
 
          delete 
            from at_stream_reach
-          where stream_location_code in (select * from table (l_location_codes));
+          where stream_reach_location_code in (select * from table (l_location_codes))
+             or upstream_location_code     in (select * from table (l_location_codes))
+             or downstream_location_code   in (select * from table (l_location_codes))
+             or stream_location_code       in (select * from table (l_location_codes));
 
          update at_stream_location
             set stream_location_code = null
@@ -2702,7 +2711,13 @@ AS
          delete
            from at_comp_outlet_conn
           where outlet_location_code in (select * from table (l_location_codes))
-             or next_outlet_code     in (select * from table (l_location_codes));   
+             or next_outlet_code     in (select * from table (l_location_codes));
+         ---------------
+         -- overflows --
+         ---------------
+         delete
+           from at_overflow
+          where overflow_location_code in (select * from table(l_location_codes)); 
          -------------               
          -- outlets --
          -------------   
@@ -2753,6 +2768,12 @@ AS
                   p_db_office_id);
             end loop;
          end loop;
+         --------------
+         -- entities --
+         --------------
+         delete
+           from at_entity_location
+          where location_code in (select * from table(l_location_codes));
          -----------
          -- gages --
          -----------
@@ -2872,21 +2893,6 @@ AS
               from at_base_location abl
              where abl.base_location_code = l_base_location_code;
          else -- Deleting a single Sub Location --------------------------------
-            -----------------------
-            -- group assignments --
-            -----------------------
-            delete 
-              from at_loc_group_assignment atlga
-             where atlga.location_code = l_location_code;
-            ------------                        
-            -- groups --
-            ------------
-            update at_loc_group
-               set shared_loc_ref_code = null
-             where shared_loc_ref_code = l_location_code;
-            ---------------------
-            -- actual location --
-            ---------------------
             delete 
               from at_physical_location apl
              where apl.location_code = l_location_code;
@@ -6099,25 +6105,74 @@ end unassign_loc_groups;
       return str_tab_t
    is
       l_table_types str_tab_tab_t := str_tab_tab_t(
-         str_tab_t('AT_BASIN',           'BASIN_LOCATION_CODE',      'BASIN'),
-         str_tab_t('AT_STREAM',          'STREAM_LOCATION_CODE',     'STREAM'),
-         str_tab_t('AT_OUTLET',          'OUTLET_LOCATION_CODE',     'OUTLET'),
-         str_tab_t('AT_TURBINE',         'TURBINE_LOCATION_CODE',    'TURBINE'),
-         str_tab_t('AT_EMBANKMENT',      'EMBANKMENT_LOCATION_CODE', 'EMBANKMENT'),
-         str_tab_t('AT_LOCK',            'LOCK_LOCATION_CODE',       'LOCK'),
-         str_tab_t('AT_PROJECT',         'PROJECT_LOCATION_CODE',    'PROJECT'),
-         str_tab_t('AT_STREAM_LOCATION', 'LOCATION_CODE',            'STREAMGAGE'));
-      l_type_names         str_tab_t := str_tab_t();
-      l_count              pls_integer;
+         str_tab_t('AT_STREAM_LOCATION', 'LOCATION_CODE',              'STREAM_LOCATION'),
+         str_tab_t('AT_GAGE',            'GAGE_LOCATION_CODE',         'WEATHER_GAGE'),
+         str_tab_t('AT_EMBANKMENT',      'EMBANKMENT_LOCATION_CODE',   'EMBANKMENT'), -- can also be stream location
+         str_tab_t('AT_LOCK',            'LOCK_LOCATION_CODE',         'LOCK'),       -- can also be stream location
+         str_tab_t('AT_PROJECT',         'PROJECT_LOCATION_CODE',      'PROJECT'),    -- can also be stream location
+         str_tab_t('AT_OUTLET',          'OUTLET_LOCATION_CODE',       'OUTLET'),     -- can also be stream location
+         str_tab_t('AT_TURBINE',         'TURBINE_LOCATION_CODE',      'TURBINE'),    -- can also be stream location
+         str_tab_t('AT_BASIN',           'BASIN_LOCATION_CODE',        'BASIN'),     
+         str_tab_t('AT_STREAM',          'STREAM_LOCATION_CODE',       'STREAM'),
+         str_tab_t('AT_ENTITY_LOCATION', 'LOCATION_CODE',              'ENTITY'),
+         str_tab_t('AT_STREAM_REACH',    'STREAM_REACH_LOCATION_CODE', 'STREAM_REACH'),
+         str_tab_t('AT_OVERFLOW',        'OVERFLOW_LOCATION_CODE',     'OVERFLOW'),
+         str_tab_t('AT_PUMP',            'PUMP_LOCATION_CODE',         'PUMP'));
+      l_type_names str_tab_t := str_tab_t();
+      l_count      pls_integer;
    begin
+      ----------------
+      -- first pass --
+      ----------------
       for i in 1..l_table_types.count loop
          execute immediate 'select count(*) from '||l_table_types(i)(1)||' where '||l_table_types(i)(2)||' = :1'
             into l_count
            using p_location_code;
-         if l_count = 1 then
+         if case
+            when l_table_types(i)(1)  = 'AT_GAGE' and l_count > 0 then 1
+            when l_table_types(i)(1) != 'AT_GAGE' and l_count = 1 then 1
+            else 0
+            end  = 1
+         then
             l_type_names.extend;
             l_type_names(l_type_names.count) := l_table_types(i)(3);
          end if;                                
+      end loop;
+      -----------------------------------------------------
+      -- change WEATHER_GAGE to STREAM_GAGE if necessary --
+      -----------------------------------------------------
+      for i in 1..l_type_names.count loop
+         if l_type_names(i) = 'WEATHER_GAGE' then
+            for j in 1..l_type_names.count loop
+               if l_type_names(j) = 'STREAM_LOCATION' then
+                  l_type_names(i) := 'STREAM_GAGE';
+                  exit;
+               end if;
+            end loop;
+            exit;
+         end if;
+      end loop;
+      --------------------
+      -- check for GATE --
+      --------------------
+      <<outer_loop>>
+      for i in 1..l_type_names.count loop
+         if l_type_names(i) = 'OUTLET' then
+            for j in 1..l_type_names.count loop
+               exit outer_loop when l_type_names(j) = 'OVERFLOW';
+            end loop;
+            select count(*)
+              into l_count
+              from at_loc_group_assignment lga,
+                   at_gate_group gg
+             where lga.location_code = p_location_code
+               and gg.loc_group_code = lga.loc_group_code;
+            if l_count > 0 then
+               l_type_names.extend;
+               l_type_names(l_type_names.count) := 'GATE';
+            end if;
+            exit;
+         end if;
       end loop;
       
       return l_type_names;
@@ -6127,54 +6182,96 @@ end unassign_loc_groups;
       p_location_code in number)
       return varchar2
    is
+      type valid_combination_tab_t is table of str_tab_tab_t index by varchar2(32);
       l_type_names         str_tab_t := str_tab_t();
       l_count              pls_integer;
       l_location_kind_id   varchar2(32);
-      l_location_kind_code integer; 
-      l_multiple           boolean := false;
+      l_valid_combinations valid_combination_tab_t;
+      l_temp               str_tab_t;
+      l_kind_ids           varchar2(32767);
    begin
+      l_valid_combinations('BASIN'          ) := str_tab_tab_t(str_tab_t('BASIN'                                                              ));
+      l_valid_combinations('EMBANKMENT'     ) := str_tab_tab_t(str_tab_t('EMBANKMENT'                                                         ),
+                                                               str_tab_t('EMBANKMENT',     'WEATHER_GAGE'                                     ),
+                                                               str_tab_t('EMBANKMENT',     'STREAM_LOCATION'                                  ),
+                                                               str_tab_t('EMBANKMENT',     'STREAM_LOCATION', 'STREAM_GAGE'                   ));
+      l_valid_combinations('ENTITY'         ) := str_tab_tab_t(str_tab_t('ENTITY'                                                             ),
+                                                               str_tab_t('ENTITY',         'WEATHER_GAGE'                                     ),
+                                                               str_tab_t('ENTITY',         'STREAM_LOCATION'                                  ),
+                                                               str_tab_t('ENTITY',         'STREAM_LOCATION', 'STREAM_GAGE'                   ));
+      l_valid_combinations('GATE'           ) := str_tab_tab_t(str_tab_t('GATE',           'OUTLET'                                           ),
+                                                               str_tab_t('GATE',           'OUTLET',          'WEATHER_GAGE'                  ),
+                                                               str_tab_t('GATE',           'OUTLET',          'STREAM_LOCATION'               ),
+                                                               str_tab_t('GATE',           'OUTLET',          'STREAM_LOCATION', 'STREAM_GAGE'));
+      l_valid_combinations('LOCK'           ) := str_tab_tab_t(str_tab_t('LOCK'                                                               ),
+                                                               str_tab_t('LOCK',           'WEATHER_GAGE'                                     ),
+                                                               str_tab_t('LOCK',           'STREAM_LOCATION'                                  ),
+                                                               str_tab_t('LOCK',           'STREAM_LOCATION', 'STREAM_GAGE'                   ));
+      l_valid_combinations('OUTLET'         ) := str_tab_tab_t(str_tab_t('OUTLET'                                                             ),
+                                                               str_tab_t('OUTLET',         'WEATHER_GAGE'                                     ),
+                                                               str_tab_t('OUTLET',         'STREAM_LOCATION'                                  ),
+                                                               str_tab_t('OUTLET',         'STREAM_LOCATION', 'STREAM_GAGE'                   ));
+      l_valid_combinations('OVERFLOW'       ) := str_tab_tab_t(str_tab_t('OVERFLOW',       'OUTLET'                                           ),
+                                                               str_tab_t('OVERFLOW',       'OUTLET',          'WEATHER_GAGE'                  ),
+                                                               str_tab_t('OVERFLOW',       'OUTLET',          'STREAM_LOCATION'               ),
+                                                               str_tab_t('OVERFLOW',       'OUTLET',          'STREAM_LOCATION', 'STREAM_GAGE'));
+      l_valid_combinations('PROJECT'        ) := str_tab_tab_t(str_tab_t('PROJECT'                                                            ),
+                                                               str_tab_t('PROJECT',        'WEATHER_GAGE'                                     ),
+                                                               str_tab_t('PROJECT',        'STREAM_LOCATION'                                  ),
+                                                               str_tab_t('PROJECT',        'STREAM_LOCATION', 'STREAM_GAGE'                   ));
+      l_valid_combinations('PUMP'           ) := str_tab_tab_t(str_tab_t('PUMP',           'STREAM_LOCATION'                                  ),
+                                                               str_tab_t('PUMP',           'STREAM_LOCATION', 'STREAM_GAGE'                   ));
+      l_valid_combinations('STREAM'         ) := str_tab_tab_t(str_tab_t('STREAM'                                                             ));
+      l_valid_combinations('STREAM_GAGE'    ) := str_tab_tab_t(str_tab_t('STREAM_GAGE',    'STREAM_LOCATION'                                  ));
+      l_valid_combinations('STREAM_LOCATION') := str_tab_tab_t(str_tab_t('STREAM_LOCATION'                                                    ));
+      l_valid_combinations('STREAM_REACH'   ) := str_tab_tab_t(str_tab_t('STREAM_REACH'                                                       ));
+      l_valid_combinations('TURBINE'        ) := str_tab_tab_t(str_tab_t('TURBINE'                                                            ),
+                                                               str_tab_t('TURBINE',        'WEATHER_GAGE'                                     ),
+                                                               str_tab_t('TURBINE',        'STREAM_LOCATION'                                  ),
+                                                               str_tab_t('TURBINE',        'STREAM_LOCATION', 'STREAM_GAGE'                   ));
+      l_valid_combinations('WEATHER_GAGE'   ) := str_tab_tab_t(str_tab_t('WEATHER_GAGE'                                                       ));
+   
       l_type_names := get_loc_kind_names(p_location_code);
-      
-      case l_type_names.count
-      when 0 then
-         select location_kind
-           into l_location_kind_code 
-           from at_physical_location
-          where location_code = p_location_code;
-          
+      if l_type_names.count = 0 then
          select location_kind_id
            into l_location_kind_id
-           from cwms_location_kind
-          where location_kind_code = l_location_kind_code;
+           from at_physical_location pl,
+                cwms_location_kind lk 
+          where pl.location_code = p_location_code
+            and lk.location_kind_code = pl.location_kind;
+            
          if l_location_kind_id != 'SITE' then
-            cwms_err.raise(
-               'ERROR',
-               'Location '
-               ||cwms_loc.get_location_id(p_location_code)
-               ||' has a location kind of '
-               ||l_location_kind_id
-               ||' but has no entry in the AT_'
-               ||replace(l_location_kind_id, 'STREAMGAGE', 'STREAM_LOCATION')
-               ||' table');
-         end if;     
-      when 1 then 
-         l_location_kind_id := l_type_names(1);
-      when 2 then
-         if l_type_names(2) = 'STREAMGAGE' then 
-            if l_type_names(1) in ('EMBANKMENT', 'LOCK', 'OUTLET', 'PROJECT', 'TURBINE') then
-               l_location_kind_id := l_type_names(1);
-            else
-               l_multiple := true;
-            end if;
-         else
-            l_multiple := true;
+            l_location_kind_id := null;
          end if;
       else
-         l_multiple := true; 
-      end case;
-      if l_multiple then
-         cwms_err.raise('ERROR', 'Location' || ' ' || p_location_code || '/' || cwms_loc.get_location_id(p_location_code) || ' has multiple types: '||cwms_util.join_text(l_type_names, ', '));
+         select column_value bulk collect into l_temp from table(l_type_names) order by 1;
+         l_kind_ids := cwms_util.join_text(l_temp, ',');
+         l_location_kind_id := l_valid_combinations.first;
+         <<outer_loop>>
+         loop
+            exit when l_location_kind_id is null;
+            for i in 1..l_valid_combinations(l_location_kind_id).count loop
+               if l_valid_combinations(l_location_kind_id)(i).count = l_type_names.count then
+                  select column_value bulk collect into l_temp from table(l_valid_combinations(l_location_kind_id)(i)) order by 1;
+                  exit outer_loop when cwms_util.join_text(l_temp, ',') = l_kind_ids;
+               end if;
+            end loop;
+            l_location_kind_id := l_valid_combinations.next(l_location_kind_id);
+         end loop;
       end if;
+      
+      if l_location_kind_id is null then
+         cwms_err.raise(
+            'ERROR', 
+            'Location '
+            ||p_location_code
+            ||'/'
+            ||cwms_loc.get_location_id(p_location_code)
+            || ' location kind ('
+            ||cwms_util.join_text(l_type_names, ', ')
+            ||') is invalid and/or does not agree with tables');
+      end if;
+      
       return l_location_kind_id;
    end check_location_kind;
 
@@ -8197,41 +8294,322 @@ end unassign_loc_groups;
       return l_descendants;
    end get_location_kind_descendants;
 
+   function get_valid_loc_kind_ids_txt(
+      p_loc_kind_id in varchar2)
+      return varchar2
+   is
+      type valid_kinds_t is table of varchar2(32767) index by varchar2(32);
+      l_valid_kinds valid_kinds_t;
+   begin
+      l_valid_kinds('BASIN'          ) := 'BASIN';
+      l_valid_kinds('EMBANKMENT'     ) := 'EMBANKMENT,STREAM_LOCATION,WEATHER_GAGE';
+      l_valid_kinds('ENTITY'         ) := 'ENTITY,STREAM_LOCATION,WEATHER_GAGE';
+      l_valid_kinds('GATE'           ) := 'GATE,STREAM_LOCATION,WEATHER_GAGE';
+      l_valid_kinds('LOCK'           ) := 'LOCK,STREAM_LOCATION,WEATHER_GAGE';
+      l_valid_kinds('OUTLET'         ) := 'OUTLET,STREAM_LOCATION,WEATHER_GAGE,OVERFLOW,GATE';
+      l_valid_kinds('OVERFLOW'       ) := 'OVERFLOW,STREAM_LOCATION,WEATHER_GAGE';
+      l_valid_kinds('PROJECT'        ) := 'PROJECT,STREAM_LOCATION,WEATHER_GAGE';
+      l_valid_kinds('PUMP'           ) := 'PUMP,STREAM_GAGE';
+      l_valid_kinds('SITE'           ) := 'SITE,BASIN,EMBANKMENT,ENTITY,LOCK,OUTLET,PROJECT,STREAM,STREAM_LOCATION,STREAM_REACH,TURBINE,WEATHER_GAGE';
+      l_valid_kinds('STREAM'         ) := 'STREAM';
+      l_valid_kinds('STREAM_GAGE'    ) := 'STREAM_GAGE,EMBANKMENT,ENTITY,LOCK,OUTLET,PROJECT,PUMP,TURBINE';
+      l_valid_kinds('STREAM_LOCATION') := 'STREAM_LOCATION,EMBANKMENT,ENTITY,LOCK,OUTLET,PROJECT,PUMP,TURBINE,STREAM_GAGE';
+      l_valid_kinds('STREAM_REACH'   ) := 'STREAM_REACH';
+      l_valid_kinds('TURBINE'        ) := 'TURBINE,STREAM_LOCATION,WEATHER_GAGE';
+      l_valid_kinds('WEATHER_GAGE'   ) := 'EMBANKMENT,ENTITY,LOCK,OUTLET,PROJECT,PUMP,TURBINE,STREAM_LOCATION,WEATHER_GAGE';
+      
+      return l_valid_kinds(upper(trim(p_loc_kind_id)));
+   end get_valid_loc_kind_ids_txt;
+   
+   function get_valid_loc_kind_ids(
+      p_loc_kind_id in varchar)
+      return str_tab_t
+   is
+   begin
+      return cwms_util.split_text(get_valid_loc_kind_ids_txt(p_loc_kind_id), ',');
+   end get_valid_loc_kind_ids;
+   
+   function get_valid_loc_kind_ids_txt(
+      p_location_code in integer)
+      return varchar2
+   is
+      l_loc_kind_id      cwms_location_kind.location_kind_id%type;
+      l_valid_kind_ids   str_tab_t;
+   begin
+      select lk.location_kind_id
+        into l_loc_kind_id
+        from at_physical_location pl,
+             cwms_location_kind lk
+       where pl.location_code = p_location_code
+         and lk.location_kind_code = pl.location_kind;
+      
+      l_valid_kind_ids := cwms_util.split_text(get_valid_loc_kind_ids_txt(l_loc_kind_id), ',');
+      return cwms_util.join_text(l_valid_kind_ids, ',');         
+   end get_valid_loc_kind_ids_txt;
+   
+   function get_valid_loc_kind_ids(
+      p_location_code in integer)
+      return str_tab_t
+   is
+   begin
+      return cwms_util.split_text(get_valid_loc_kind_ids_txt(p_location_code), ',');
+   end get_valid_loc_kind_ids;
+      
+   function can_store(
+      p_location_code    in integer,
+      p_location_kind_id in varchar2)
+      return boolean
+   is
+      l_can_store_kind_ids str_tab_t;
+      l_location_kind      at_physical_location.location_kind%type;
+      l_location_kind_id   cwms_location_kind.location_kind_id%type;
+      l_count              pls_integer;
+   begin
+      l_location_kind_id := upper(trim(p_location_kind_id));
+      select location_kind
+        into l_location_kind
+        from at_physical_location
+       where location_code = p_location_code;
+       
+      select location_kind_id
+        bulk collect
+        into l_can_store_kind_ids
+        from (select column_value as location_kind_id
+                from table(get_valid_loc_kind_ids(p_location_code))
+              union
+              select location_kind_id
+                from cwms_location_kind
+               where location_kind_code in 
+                     (select column_value 
+                       from table(get_location_kind_ancestors(l_location_kind))
+                     )
+             );
+      select count(*)
+        into l_count
+        from table(l_can_store_kind_ids)
+       where column_value = l_location_kind_id
+          or (l_location_kind_id = 'GAGE' 
+              and column_value in ('STREAM_GAGE', 'WEATHER_GAGE')
+             );
+      return l_count > 0;             
+   end can_store;
+      
+   function can_store_txt(
+      p_location_code    in integer,
+      p_location_kind_id in varchar2)
+      return varchar2
+   is
+   begin
+      return case can_store(p_location_code, p_location_kind_id)
+             when true  then 'T'
+             when false then 'F'   
+             end; 
+   end can_store_txt;
+   
+   procedure update_location_kind(
+      p_location_code    in integer,
+      p_location_kind_id in varchar2,
+      p_add_delete       in varchar2)
+   is
+      l_location_kind_id     cwms_location_kind.location_kind_id%type;
+      l_current_kind_id      cwms_location_kind.location_kind_id%type;
+      l_update               boolean;
+      l_add                  boolean;
+      l_count                pls_integer;
+      l_loc_kind_names       str_tab_t;
+      l_loc_kind_descendants str_tab_t;
+   begin
+      if p_add_delete not in ('a', 'A', 'd', 'D') then
+         cwms_err.raise('ERROR', 'Parameter P_Add_Delete must be one of ''A'' or ''D''');
+      end if;
+      l_add := p_add_delete in ('a', 'A');
+   
+      select lk.location_kind_id
+        into l_current_kind_id
+        from at_physical_location pl,
+             cwms_location_kind lk
+       where pl.location_code = p_location_code
+         and lk.location_kind_code = pl.location_kind;
+         
+      l_location_kind_id := upper(trim(p_location_kind_id));
+
+      if l_add then
+         ----------------------------
+         -- adding a location kind --
+         ----------------------------
+         if l_location_kind_id in ('GAGE', 'STREAM_GAGE', 'WEATHER_GAGE') then
+            case l_current_kind_id
+            when 'SITE' then
+               l_update := true;
+               l_location_kind_id := 'WEATHER_GAGE';
+            when 'STREAM_LOCATION' then
+               l_update := true;
+               l_location_kind_id := 'STREAM_GAGE';
+            else
+               l_update := false;
+            end case;
+         else
+            l_update := case l_location_kind_id
+                        when 'BASIN'           then l_current_kind_id = 'SITE'          
+                        when 'EMBANKMENT'      then l_current_kind_id in ('SITE', 'STREAM_LOCATION', 'STREAM_GAGE', 'WEATHER_GAGE')     
+                        when 'ENTITY'          then l_current_kind_id in ('SITE', 'STREAM_LOCATION', 'STREAM_GAGE', 'WEATHER_GAGE')         
+                        when 'GATE'            then l_current_kind_id = 'OUTLET'           
+                        when 'LOCK'            then l_current_kind_id in ('SITE', 'STREAM_LOCATION', 'STREAM_GAGE', 'WEATHER_GAGE')           
+                        when 'OUTLET'          then l_current_kind_id in ('SITE', 'STREAM_LOCATION', 'STREAM_GAGE', 'WEATHER_GAGE')         
+                        when 'OVERFLOW'        then l_current_kind_id = 'OUTLET'       
+                        when 'PROJECT'         then l_current_kind_id in ('SITE', 'STREAM_LOCATION', 'STREAM_GAGE', 'WEATHER_GAGE')        
+                        when 'PUMP'            then l_current_kind_id in ('STREAM_LOCATION', 'STREAM_GAGE')           
+                        when 'SITE'            then false           
+                        when 'STREAM'          then l_current_kind_id = 'SITE'         
+                        when 'STREAM_LOCATION' then l_current_kind_id = 'SITE'
+                        when 'STREAM_REACH'    then l_current_kind_id = 'SITE'   
+                        when 'TURBINE'         then l_current_kind_id in ('SITE', 'STREAM_LOCATION', 'STREAM_GAGE', 'WEATHER_GAGE')        
+                        end;
+         end if;
+      else
+         ------------------------------
+         -- deleting a location kind --
+         ------------------------------
+         case
+         when l_location_kind_id in ('GAGE', 'STREAM_GAGE', 'WEATHER_GAGE') then
+            case
+            when l_current_kind_id = 'WEATHER_GAGE' then
+               l_location_kind_id := 'SITE';
+               l_update := true;
+            when l_current_kind_id = 'STREAM_GAGE' then 
+               l_location_kind_id := 'STREAM_LOCATION';
+               l_update := true;
+            else
+               l_update := false;
+            end case;
+         when l_location_kind_id = 'STREAM_LOCATION' then
+            case
+            when l_current_kind_id = 'STREAM_GAGE' then
+               l_location_kind_id := 'WEATHER_GAGE';
+               l_update := true;
+            when l_current_kind_id = 'STREAM_LOCATION' then
+               l_location_kind_id := 'SITE';
+               l_update := true;
+            else
+               l_update := false;
+            end case;
+         else
+            l_loc_kind_names := get_loc_kind_names(p_location_code);
+            select column_value
+              bulk collect
+              into l_loc_kind_descendants
+              from (select column_value from table(get_location_kind_descendants(l_current_kind_id, 'F'))
+                    union
+                    select column_value from table(get_location_kind_descendants(l_location_kind_id, 'F'))
+                   );
+            select count(*)
+              into l_count
+              from table(l_loc_kind_names) a, 
+                   table(l_loc_kind_descendants) b
+             where a.column_value = b.column_value;
+            l_update := l_count = 0;
+            if l_update then
+               case l_location_kind_id
+               when 'BASIN' then
+                  l_location_kind_id := 'SITE';
+               when 'EMBANKMENT' then
+                  if regexp_instr(get_valid_loc_kind_ids_txt(p_location_code), '\WSTREAM_LOCATION\W') > 0 then
+                     l_location_kind_id := 'STREAM_LOCATION';
+                  else
+                     l_location_kind_id := 'SITE';
+                  end if;
+               when 'ENTITY' then    
+                  select count(*) into l_count from at_stream_location where location_code = p_location_code;
+                  if l_count = 0 then
+                     l_location_kind_id := 'SITE';
+                  else
+                     l_location_kind_id := 'STREAM_LOCATION';
+                  end if;
+               when 'GATE' then 
+                  l_location_kind_id := 'OUTLET';
+               when 'LOCK' then            
+                  select count(*) into l_count from at_stream_location where location_code = p_location_code;
+                  if l_count = 0 then
+                     l_location_kind_id := 'SITE';
+                  else
+                     l_location_kind_id := 'STREAM_LOCATION';
+                  end if;
+               when 'OUTLET' then          
+                  select count(*) into l_count from at_stream_location where location_code = p_location_code;
+                  if l_count = 0 then
+                     l_location_kind_id := 'SITE';
+                  else
+                     l_location_kind_id := 'STREAM_LOCATION';
+                  end if;
+               when 'OVERFLOW' then 
+                  l_location_kind_id := 'OUTLET';
+               when 'PROJECT' then                                  
+                  select count(*) into l_count from at_stream_location where location_code = p_location_code;
+                  if l_count = 0 then
+                     l_location_kind_id := 'SITE';
+                  else
+                     l_location_kind_id := 'STREAM_LOCATION';
+                  end if;
+               when 'PUMP' then 
+                  l_location_kind_id := 'STREAM_LOCATION';
+               when 'SITE' then
+                  l_update := false;
+               when 'STREAM' then
+                  l_location_kind_id := 'SITE';
+               when 'STREAM_LOCATION' then
+                  select count(*) into l_count from at_gage where gage_location_code = p_location_code;
+                  if l_count =  0 then
+                     l_location_kind_id := 'SITE';
+                  else
+                     l_location_kind_id := 'WEATHER_GAGE';
+                  end if;
+               when 'STREAM_REACH' then
+                  l_location_kind_id := 'SITE';
+               when 'TURBINE' then         
+                  select count(*) into l_count from at_stream_location where location_code = p_location_code;
+                  if l_count = 0 then
+                     l_location_kind_id := 'SITE';
+                  else
+                     l_location_kind_id := 'STREAM_LOCATION';
+                  end if;
+               end case;
+            end if;
+         end case;
+      end if;
+      if l_update is null then
+         cwms_err.raise('INVALID_ITEM', l_location_kind_id, 'CWMS location kind');
+      end if;
+      if l_update then
+         update at_physical_location
+            set location_kind = 
+                (select location_kind_code
+                   from cwms_location_kind
+                  where location_kind_id = l_location_kind_id
+                )
+          where location_code = p_location_code;      
+      end if;
+   end update_location_kind;
+   
    PROCEDURE get_valid_loc_kind_ids (p_loc_kind_ids      OUT SYS_REFCURSOR,
                                  p_location_id    IN     VARCHAR2,
                                  p_office_id      IN     VARCHAR2)
    IS
-      l_loc_kind_id   cwms_location_kind.location_kind_id%TYPE;
+      l_loc_kind_id cwms_location_kind.location_kind_id%TYPE;
    BEGIN
       BEGIN
          l_loc_kind_id :=
             cwms_loc.check_location_kind (p_location_id   => p_location_id,
                                           p_office_id     => p_office_id);
+                                          
+         l_loc_kind_id := get_valid_loc_kind_ids_txt(l_loc_kind_id);                                          
       EXCEPTION
          WHEN OTHERS
          THEN
             l_loc_kind_id := 'ERROR';
       END;
    
-      CASE l_loc_kind_id
-         WHEN c_str_site
-         THEN
-            OPEN p_loc_kind_ids FOR
-               SELECT *
-                 FROM TABLE (
-                         str2tbl (
-                            p_str => 'SITE, BASIN, STREAM, STREAMGAGE, PROJECT, LOCK, OUTLET, EMBANKMENT, TURBINE'));
-         WHEN c_str_streamgage
-         THEN
-            OPEN p_loc_kind_ids FOR
-               SELECT *
-                 FROM TABLE (
-                         str2tbl (
-                            p_str => 'STREAMGAGE, PROJECT, LOCK, OUTLET, EMBANKMENT, TURBINE'));
-         ELSE
-            OPEN p_loc_kind_ids FOR
-               SELECT * FROM TABLE (str2tbl (p_str => l_loc_kind_id));
-      END CASE;
+      open p_loc_kind_ids for
+         select * from table(cwms_util.split_text(l_loc_kind_id, ','));
    END;
    
    FUNCTION get_valid_loc_kind_ids_tab (p_location_id   IN VARCHAR2,
@@ -8260,6 +8638,8 @@ end unassign_loc_groups;
    IS
       l_loc_code        at_physical_location.location_code%TYPE;
       l_loc_kind_id     cwms_location_kind.location_kind_id%TYPE;
+      l_gage            pls_integer;
+      l_stream          pls_integer;
    BEGIN
       l_loc_code :=
          CWMS_LOC.get_location_code (p_db_office_id   => p_office_id,
@@ -8268,66 +8648,42 @@ end unassign_loc_groups;
       l_loc_kind_id :=
          cwms_loc.check_location_kind (p_location_id   => p_location_id,
                                        p_office_id     => p_office_id);
+              
+      case                                       
+      when l_loc_kind_id in ('BASIN', 'STREAM', 'STREAM_LOCATION', 'STREAM_REACH', 'WEATHER_GAGE') then
+         l_loc_kind_id := 'SITE';
+      when l_loc_kind_id in ('EMBANKMENT', 'ENTITY', 'LOCK', 'OUTLET', 'PROJECT', 'TURBINE') then
+         select count(*) into l_gage from at_gage where gage_location_code = l_loc_code;
+         select count(*) into l_stream from at_stream_location where location_code = l_loc_code;
+         if l_gage = 0 then
+            if l_stream = 0 then 
+               l_loc_kind_id := 'SITE';
+            else 
+               l_loc_kind_id := 'STREAM_LOCATION';
+            end if;
+         else
+            if l_stream = 0 then 
+               l_loc_kind_id := 'WEATHER_GAGE';
+            else 
+               l_loc_kind_id := 'STREAM_GAGE';
+            end if;
+         end if;
+      when l_loc_kind_id in ('GATE', 'OVERFLOW') then
+         l_loc_kind_id := 'OUTLET';
+      when l_loc_kind_id = 'PUMP' then
+         select count(*) into l_gage from at_gage where gage_location_code = l_loc_code;
+         if l_gage = 0 then
+            l_loc_kind_id := 'STREAM_LOCATION';
+         else
+            l_loc_kind_id := 'STREAM_GAGE';
+         end if;
+      when l_loc_kind_id = 'STREAM_GAGE' then
+         l_loc_kind_id := 'STREAM_LOCATION';
+      else
+         l_loc_kind_id := 'ERROR';
+      end case;
       
-      BEGIN
-         CASE l_loc_kind_id
-            WHEN c_str_outlet
-            THEN
-               DELETE FROM at_outlet
-                     WHERE outlet_location_code = l_loc_code;
-               ROLLBACK;
-               RETURN 'STREAMGAGE';
-            WHEN c_str_embankment
-            THEN
-               DELETE FROM at_embankment
-                     WHERE embankment_location_code = l_loc_code;
-               ROLLBACK;
-               RETURN 'STREAMGAGE';
-            WHEN c_str_lock
-            THEN
-               DELETE FROM at_lock
-                     WHERE lock_location_code = l_loc_code;
-               ROLLBACK;
-               RETURN 'STREAMGAGE';
-            WHEN c_str_turbine
-            THEN
-               DELETE FROM at_turbine
-                     WHERE turbine_location_code = l_loc_code;
-               ROLLBACK;
-               RETURN 'STREAMGAGE';
-            WHEN c_str_project
-            THEN
-               DELETE FROM at_project
-                     WHERE project_location_code = l_loc_code;
-               ROLLBACK;
-               RETURN 'STREAMGAGE';
-            WHEN c_str_basin
-            THEN
-               DELETE FROM at_basin
-                     WHERE basin_location_code = l_loc_code;
-               ROLLBACK;
-               RETURN 'SITE';
-            WHEN c_str_stream
-            THEN
-               DELETE FROM at_stream
-                     WHERE stream_location_code = l_loc_code;
-               ROLLBACK;
-               RETURN 'SITE';
-            WHEN c_str_streamgage
-            THEN
-               DELETE FROM at_stream_location
-                     WHERE location_code = l_loc_code;
-               ROLLBACK;
-               RETURN 'SITE';
-         END CASE;
-      EXCEPTION
-         WHEN OTHERS
-         THEN
-            ROLLBACK;
-      END;
-
-      ROLLBACK;
-      RETURN 'ERROR';
+      return l_loc_kind_id;
    END;
 
    function get_location_ids(

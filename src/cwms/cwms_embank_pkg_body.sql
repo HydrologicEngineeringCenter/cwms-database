@@ -315,50 +315,52 @@ is
    l_embankment       at_embankment%rowtype; 
    l_factor           binary_double;
    l_offset           binary_double;
-   l_code             integer;
-   l_location_kind_id varchar2(32);
+   l_exists           boolean;
 begin
    if p_embankment is null then
       cwms_err.raise('NULL_ARGUMENT', 'P_EMBANKMENT');
    end if;
+   l_embankment.embankment_location_code := cwms_loc.store_location_f(p_embankment.embankment_location, 'F');
+   if not cwms_loc.can_store(l_embankment.embankment_location_code, 'EMBANKMENT') then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot store EMBANKMENT information for location '
+         ||cwms_util.get_db_office_id(p_embankment.embankment_location.location_ref.office_id)
+         ||'/'
+         ||p_embankment.embankment_location.location_ref.get_location_id
+         ||' (location kind = '
+         ||cwms_loc.check_location_kind(l_embankment.embankment_location_code)
+         ||')');
+   end if;
    begin
-      l_code := p_embankment.embankment_location.location_ref.get_location_code;
+      select *
+        into l_embankment  
+        from at_embankment
+       where embankment_location_code = l_embankment.embankment_location_code;
+      l_exists := true;       
    exception
-      when no_data_found then null;
+      when no_data_found then l_exists := false;
    end;
-   if l_code is not null then
-      l_location_kind_id := cwms_loc.check_location_kind(l_code);
-      if l_location_kind_id not in ('EMBANKMENT', 'SITE', 'STREAMGAGE') then
+   if l_exists and cwms_util.is_true(p_fail_if_exists) then
+      cwms_err.raise(
+         'ITEM_ALREADY_EXISTS',
+         'Embankment',
+         p_embankment.embankment_location.location_ref.get_office_id
+         || '/'
+         || p_embankment.embankment_location.location_ref.get_location_id);
+         
+   end if;
+   begin
+      l_embankment.embankment_project_loc_code := p_embankment.project_location_ref.get_location_code;
+   exception
+      when others then 
          cwms_err.raise(
-            'ERROR',
-            'Cannot switch location '
-            ||p_embankment.embankment_location.location_ref.office_id
+            'ITEM_DOES_NOT_EXIST',
+            'CWMS Project',
+            p_embankment.project_location_ref.get_office_id
             ||'/'
-            ||p_embankment.embankment_location.location_ref.get_location_id
-            ||' from type '
-            ||l_location_kind_id
-            ||' to type EMBANKMENT');
-      end if;
-      begin
-         select *
-           into l_embankment  
-           from at_embankment
-          where embankment_location_code = l_code;
-      exception
-         when no_data_found then null;
-      end;
-   end if;
-   if l_embankment.embankment_location_code is not null then
-      if cwms_util.is_true(p_fail_if_exists) then
-         cwms_err.raise(
-            'ITEM_ALREADY_EXISTS',
-            'Embankment',
-            p_embankment.embankment_location.location_ref.get_office_id
-            || '/'
-            || p_embankment.embankment_location.location_ref.get_location_id);
-            
-      end if;
-   end if;
+            ||p_embankment.project_location_ref.get_location_id);
+   end;
    ------------------------------------
    -- get the unit conversion factor --
    ------------------------------------
@@ -380,19 +382,6 @@ begin
    ------------------------------------
    -- populate the embankment record --
    ------------------------------------
-   begin
-      l_embankment.embankment_project_loc_code := p_embankment.project_location_ref.get_location_code;
-   exception
-      when no_data_found then
-         cwms_err.raise(
-            'ERROR',
-            'Specified project location ('
-            || p_embankment.project_location_ref.get_location_id
-            || ') does not exist for embankment location'
-            || p_embankment.embankment_location.location_ref.get_office_id
-            || '/'
-            || p_embankment.embankment_location.location_ref.get_location_id);
-   end;
    begin
       select structure_type_code
         into l_embankment.structure_type_code
@@ -463,27 +452,19 @@ begin
    -------------------------------------
    -- insert or update the embankment --
    -------------------------------------
-   if l_embankment.embankment_location_code is null then
-      l_embankment.embankment_location_code := cwms_loc.get_location_code(
-         p_embankment.embankment_location.location_ref.get_office_id,
-         p_embankment.embankment_location.location_ref.get_location_id);
+   if l_exists then
+      update at_embankment 
+         set row = l_embankment 
+       where embankment_location_code = l_embankment.embankment_location_code;
+   else
       insert 
         into at_embankment 
       values l_embankment;
-   else
-      update at_embankment 
-        set row = l_embankment 
-      where embankment_location_code = l_embankment.embankment_location_code;
    end if;
    ---------------------------      
    -- set the location kind --
    ---------------------------
-   update at_physical_location
-      set location_kind = (select location_kind_code 
-                             from cwms_location_kind 
-                            where location_kind_id = 'EMBANKMENT'
-                          )
-    where location_code = l_embankment.embankment_location_code;                                 
+   cwms_loc.update_location_kind(l_embankment.embankment_location_code, 'EMBANKMENT', 'A');
 end store_embankment;
 
 -- Stores the data contained within the embankment object into the database schema.
@@ -576,7 +557,7 @@ is
    l_delete_action1     varchar2(16);
    l_delete_action2     varchar2(16);
    l_count              pls_integer;
-   l_location_kind_code integer;
+   l_location_kind_id   cwms_location_kind.location_kind_id%type;
 begin
    -------------------
    -- sanity checks --
@@ -600,24 +581,39 @@ begin
          ||cwms_util.delete_all
          ||'');
    end if;
-   l_delete_location := cwms_util.return_true_or_false(p_delete_location); 
-   l_delete_action2 := upper(substr(p_delete_location_action, 1, 16));
-   if l_delete_action2 not in (
-      cwms_util.delete_key,
-      cwms_util.delete_data,
-      cwms_util.delete_all)
-   then
-      cwms_err.raise(
-         'ERROR',
-         'Delete action must be one of '''
-         ||cwms_util.delete_key
-         ||''',  '''
-         ||cwms_util.delete_data
-         ||''', or '''
-         ||cwms_util.delete_all
-         ||'');
+   l_delete_location := cwms_util.return_true_or_false(p_delete_location);
+   if l_delete_location then
+      l_delete_action2 := upper(substr(p_delete_location_action, 1, 16));
+      if l_delete_action2 not in (
+         cwms_util.delete_key,
+         cwms_util.delete_data,
+         cwms_util.delete_all)
+      then
+         cwms_err.raise(
+            'ERROR',
+            'Delete action must be one of '''
+            ||cwms_util.delete_key
+            ||''',  '''
+            ||cwms_util.delete_data
+            ||''', or '''
+            ||cwms_util.delete_all
+            ||'');
+      end if;
    end if;
    l_embankment_code := get_embankment_code(p_office_id, p_embankment_id);
+   l_location_kind_id := cwms_loc.check_location_kind(l_embankment_code);
+   if l_location_kind_id != 'EMBANKMENT' then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot delete embankment information from location '
+         ||cwms_util.get_db_office_id(p_office_id)
+         ||'/'
+         ||p_embankment_id
+         ||' (location kind = '
+         ||l_location_kind_id
+         ||')');
+   end if;
+   l_location_kind_id := cwms_loc.can_revert_loc_kind_to(p_embankment_id, p_office_id); -- revert-to kind
    -------------------------------------------
    -- delete the child records if specified --
    -------------------------------------------
@@ -628,34 +624,14 @@ begin
    -- delete the record if specified --
    ------------------------------------
    if l_delete_action1 in (cwms_util.delete_key, cwms_util.delete_all) then
-      delete
-        from at_embankment
-       where embankment_location_code = l_embankment_code;
+      delete from at_embankment where embankment_location_code = l_embankment_code;
+      cwms_loc.update_location_kind(l_embankment_code, 'EMBANKMENT', 'D');
    end if; 
    -------------------------------------
    -- delete the location if required --
    -------------------------------------
    if l_delete_location then
       cwms_loc.delete_location(p_embankment_id, l_delete_action2, p_office_id);
-   else
-      select count(*)
-        into l_count
-        from at_stream_location
-       where location_code = l_embankment_code;
-      if l_count = 0 then
-         select location_kind_code
-           into l_location_kind_code
-           from cwms_location_kind
-          where location_kind_id = 'SITE'; 
-      else
-         select location_kind_code
-           into l_location_kind_code
-           from cwms_location_kind
-          where location_kind_id = 'STREAMGAGE'; 
-      end if;       
-      update at_physical_location 
-         set location_kind = l_location_kind_code 
-       where location_code = l_embankment_code;   
    end if;
 end delete_embankment2;   
 

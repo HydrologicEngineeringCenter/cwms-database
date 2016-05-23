@@ -477,7 +477,7 @@ comment on column at_transitional_rating_sel.condition is 'The condition to be e
 commit;
 
 -------------------------
--- AT_USGS_RATING_SPEC --
+-- AT_USGS_RATING_HASH --
 -------------------------
 create table at_usgs_rating_hash (
    rating_spec_code integer,
@@ -491,4 +491,32 @@ comment on column at_usgs_rating_hash.rating_spec_code is 'The rating specificat
 comment on column at_usgs_rating_hash.hash_value       is 'The hash value for this rating specification';   
 
 commit;
+
+-----------------
+-- AT_OVERFLOW --
+-----------------
+create table at_overflow (
+   overflow_location_code number(10),
+   crest_elevation        binary_double,
+   length_or_diameter     binary_double,
+   is_circular            varchar2(1),
+   rating_spec_code       number(10),
+   description            varchar2(128),
+   constraint at_overflow_pk  primary key (overflow_location_code),
+   constraint at_overflow_fk1 foreign key (overflow_location_code) references at_outlet (outlet_location_code),
+   constraint at_overflow_fk2 foreign key (rating_spec_code) references at_rating_spec (rating_spec_code),
+   constraint at_overflow_ck1 check (length_or_diameter is NULL or is_circular in ('T', 'F'))
+) tablespace cwms_20at_data;
+
+comment on table  at_overflow is 'Holds information on uncontrolled overflow spillway or weir';
+comment on column at_overflow.overflow_location_code is 'The location code for this overflow';
+comment on column at_overflow.crest_elevation        is 'The crest elevation in meters for this overflow';
+comment on column at_overflow.length_or_diameter     is 'The crest length (or diameter for circular spillways) in meters';
+comment on column at_overflow.is_circular            is 'A flag (''T''/''F'') specifying wheter the overflow is circular';
+comment on column at_overflow.rating_spec_code       is 'A reference to the elevation-discharge rating specification';
+comment on column at_overflow.description            is 'A description of the overflow';
+
+commit;
+
+
  

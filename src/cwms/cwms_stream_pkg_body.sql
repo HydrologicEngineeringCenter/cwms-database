@@ -52,53 +52,45 @@ as
       l_office_id             varchar2(16) := nvl(upper(p_office_id), cwms_util.user_office_id) ;
       l_station_unit          varchar2(16) := cwms_util.get_unit_id(p_station_unit, l_office_id) ;
       l_rec at_stream%rowtype;
-      l_location_kind_id varchar2(32) ;
    begin
-      if p_stream_id is null then
-         cwms_err.raise('NULL_ARGUMENT', 'P_STREAM_ID') ;
-      end if;
-      begin
-         l_location_code := cwms_loc.get_location_code(l_office_id, p_stream_id) ;
-      exception
-      when others then
-         null;
-      end;
+      l_location_code := cwms_loc.get_location_code(l_office_id, p_stream_id) ;
       -------------------
       -- sanity checks --
       -------------------
-      if l_location_code is null then
-         l_exists        := false;
-      else
-         l_location_kind_id := cwms_loc.check_location_kind(l_location_code) ;
-         if l_location_kind_id not in('STREAM', 'SITE') then
-            cwms_err.raise( 'ERROR', 'Cannot switch location ' ||l_office_id ||'/' ||p_stream_id ||' from type ' ||l_location_kind_id ||' to type STREAM') ;
-         end if;
-         begin
-             select *
-               into l_rec
-               from at_stream
-              where stream_location_code = l_location_code;
-            l_exists                    := true;
-         exception
-         when no_data_found then
-            l_exists := false;
-         end;
+      if not cwms_loc.can_store(l_location_code, 'STREAM') then
+         cwms_err.raise(
+            'ERROR', 
+            'Cannot store STREAM information to location '
+            ||l_office_id||'/'||p_stream_id
+            ||' (location kind = '
+            ||cwms_loc.check_location_kind(l_location_code)
+            ||')');
       end if;
+      begin
+          select *
+            into l_rec
+            from at_stream
+           where stream_location_code = l_location_code;
+         l_exists := true;
+      exception
+      when no_data_found then
+         l_exists := false;
+      end;
       if l_exists and l_fail_if_exists then
-         cwms_err.raise( 'ITEM_ALREADY_EXISTS', 'CWMS stream identifier', l_office_id ||'/' ||p_stream_id) ;
+         cwms_err.raise('ITEM_ALREADY_EXISTS', 'CWMS stream identifier', l_office_id ||'/' ||p_stream_id) ;
       end if;
-      if p_station_unit          is null then
+      if p_station_unit is null then
          if p_flows_into_station is not null or p_diverts_from_station is not null or p_length is not null then
             cwms_err.raise( 'ERROR', 'Station and/or length values supplied without unit.') ;
          end if;
       end if;
       if not l_exists or not l_ignore_nulls then
-         if p_flows_into_stream     is null then
+         if p_flows_into_stream is null then
             if p_flows_into_station is not null or p_flows_into_bank is not null then
                cwms_err.raise( 'ERROR', 'Confluence station and/or bank supplied without stream name.') ;
             end if;
          end if;
-         if p_diverts_from_stream     is null then
+         if p_diverts_from_stream is null then
             if p_diverts_from_station is not null or p_diverts_from_bank is not null then
                cwms_err.raise( 'ERROR', 'Diversion station and/or bank supplied without stream name.') ;
             end if;
@@ -110,12 +102,6 @@ as
       if p_flows_into_bank is not null and upper(p_flows_into_bank) not in('L', 'R') then
          cwms_err.raise( 'INVALID_ITEM', p_flows_into_bank, 'stream bank, must be ''L'' or ''R''') ;
       end if;
-      --------------------------------------
-      -- create the location if necessary --
-      --------------------------------------
-      if l_location_code is null then
-         cwms_loc.create_location_raw2( p_base_location_code => l_base_location_code, p_location_code => l_location_code, p_base_location_id => cwms_util.get_base_id(p_stream_id), p_sub_location_id => cwms_util.get_sub_id(p_stream_id), p_db_office_code => cwms_util.get_db_office_code(l_office_id), p_location_kind_id => 'STREAM') ;
-      end if;
       ---------------------------------
       -- set the record to be stored --
       ---------------------------------
@@ -123,7 +109,7 @@ as
          l_receiving_stream_code := get_stream_code(l_office_id, p_flows_into_stream) ;
       end if;
       if not p_diverts_from_stream is null then
-         l_diverting_stream_code   := get_stream_code(l_office_id, p_diverts_from_stream) ;
+         l_diverting_stream_code := get_stream_code(l_office_id, p_diverts_from_stream) ;
       end if;
       if not l_exists then
          l_rec.stream_location_code := l_location_code;
@@ -135,42 +121,40 @@ as
       else
          l_rec.zero_station :=
          case cwms_util.is_true(p_stationing_starts_ds)
-         when true then
-            'DS'
-         when false then
-            'US'
+         when true  then 'DS'
+         when false then 'US'
          end;
       end if;
-      if l_diverting_stream_code     is not null or not l_ignore_nulls then
+      if l_diverting_stream_code is not null or not l_ignore_nulls then
          l_rec.diverting_stream_code := l_diverting_stream_code;
       end if;
-      if p_diverts_from_station  is not null or not l_ignore_nulls then
+      if p_diverts_from_station is not null or not l_ignore_nulls then
          l_rec.diversion_station := cwms_util.convert_units(p_diverts_from_station, l_station_unit, 'km') ;
       end if;
-      if p_diverts_from_bank  is not null or not l_ignore_nulls then
+      if p_diverts_from_bank is not null or not l_ignore_nulls then
          l_rec.diversion_bank := upper(p_diverts_from_bank) ;
       end if;
-      if l_receiving_stream_code     is not null or not l_ignore_nulls then
+      if l_receiving_stream_code is not null or not l_ignore_nulls then
          l_rec.receiving_stream_code := l_receiving_stream_code;
       end if;
-      if p_flows_into_station     is not null or not l_ignore_nulls then
+      if p_flows_into_station is not null or not l_ignore_nulls then
          l_rec.confluence_station := cwms_util.convert_units(p_flows_into_station, l_station_unit, 'km') ;
       end if;
-      if p_flows_into_bank     is not null or not l_ignore_nulls then
+      if p_flows_into_bank is not null or not l_ignore_nulls then
          l_rec.confluence_bank := upper(p_flows_into_bank) ;
       end if;
-      if p_length            is not null or not l_ignore_nulls then
+      if p_length is not null or not l_ignore_nulls then
          l_rec.stream_length := cwms_util.convert_units(p_length, l_station_unit, 'km') ;
       end if;
-      if p_average_slope     is not null or not l_ignore_nulls then
+      if p_average_slope is not null or not l_ignore_nulls then
          l_rec.average_slope := p_average_slope;
       end if;
-      if p_comments     is not null or not l_ignore_nulls then
+      if p_comments is not null or not l_ignore_nulls then
          l_rec.comments := p_comments;
       end if;
       if l_exists then
           update at_stream
-         set row                      = l_rec
+             set row = l_rec
            where stream_location_code = l_rec.stream_location_code;
       else
           insert into at_stream values l_rec;
@@ -178,14 +162,7 @@ as
       ---------------------------
       -- set the location kind --
       ---------------------------
-       update at_physical_location
-      set location_kind =
-         (
-             select location_kind_code
-               from cwms_location_kind
-              where location_kind_id = 'STREAM'
-         )
-        where location_code = l_location_code;
+      cwms_loc.update_location_kind(l_location_code, 'STREAM', 'A');
    end store_stream;
 --------------------------------------------------------------------------------
 -- procedure store_streams
@@ -306,10 +283,11 @@ as
          p_delete_location_action in varchar2 default cwms_util.delete_key,
          p_office_id              in varchar2 default null)
    is
-      l_stream_code     number(10) ;
-      l_delete_location boolean;
-      l_delete_action1  varchar2(16) ;
-      l_delete_action2  varchar2(16) ;
+      l_stream_code      number(10) ;
+      l_delete_location  boolean;
+      l_delete_action1   varchar2(16) ;
+      l_delete_action2   varchar2(16) ;
+      l_location_kind_id cwms_location_kind.location_kind_id%type;
    begin
       -------------------
       -- sanity checks --
@@ -322,11 +300,26 @@ as
          cwms_err.raise( 'ERROR', 'Delete action must be one of ''' ||cwms_util.delete_key ||''',  ''' ||cwms_util.delete_data ||''', or ''' ||cwms_util.delete_all ||'') ;
       end if;
       l_delete_location := cwms_util.return_true_or_false(p_delete_location) ;
-      l_delete_action2  := upper(substr(p_delete_location_action, 1, 16)) ;
-      if l_delete_action2 not in( cwms_util.delete_key, cwms_util.delete_data, cwms_util.delete_all) then
-         cwms_err.raise( 'ERROR', 'Delete action must be one of ''' ||cwms_util.delete_key ||''',  ''' ||cwms_util.delete_data ||''', or ''' ||cwms_util.delete_all ||'') ;
+      if l_delete_location then
+         l_delete_action2  := upper(substr(p_delete_location_action, 1, 16)) ;
+         if l_delete_action2 not in( cwms_util.delete_key, cwms_util.delete_data, cwms_util.delete_all) then
+            cwms_err.raise( 'ERROR', 'Delete action must be one of ''' ||cwms_util.delete_key ||''',  ''' ||cwms_util.delete_data ||''', or ''' ||cwms_util.delete_all ||'') ;
+         end if;
       end if;
       l_stream_code := get_stream_code(p_office_id, p_stream_id) ;
+      l_location_kind_id := cwms_loc.check_location_kind(l_stream_code);
+      if l_location_kind_id != 'STREAM' then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot delete stream information for location '
+            ||cwms_util.get_db_office_id(p_office_id)
+            ||'/'
+            ||p_stream_id
+            ||' (location kind = '
+            ||l_location_kind_id
+            ||' )');
+      l_location_kind_id := cwms_loc.can_revert_loc_kind_to(p_stream_id, p_office_id); -- revert-to kind            
+      end if;
       -------------------------------------------
       -- delete the child records if specified --
       -------------------------------------------
@@ -349,16 +342,13 @@ as
       ------------------------------------
       if l_delete_action1 in(cwms_util.delete_key, cwms_util.delete_all) then
           delete from at_stream where stream_location_code = l_stream_code;
+          cwms_loc.update_location_kind(l_stream_code, 'STREAM', 'D');
       end if;
       -------------------------------------
       -- delete the location if required --
       -------------------------------------
       if l_delete_location then
          cwms_loc.delete_location(p_stream_id, l_delete_action2, p_office_id) ;
-      else
-          update at_physical_location
-         set location_kind     = 1
-           where location_code = l_stream_code;
       end if;
    end delete_stream2;
 --------------------------------------------------------------------------------
@@ -540,44 +530,121 @@ as
 -- procedure store_stream_reach
 --------------------------------------------------------------------------------
    procedure store_stream_reach(
-         p_stream_id          in varchar2,
          p_reach_id           in varchar2,
+         p_stream_id          in varchar2,
          p_fail_if_exists     in varchar2,
          p_ignore_nulls       in varchar2,
-         p_upstream_station   in binary_double,
-         p_downstream_station in binary_double,
-         p_stream_type_id     in varchar2 default null,
+         p_upstream_location   in varchar2,
+         p_downstream_location in varchar2,
+         p_configuration_id   in varchar2 default null,
          p_comments           in varchar2 default null,
          p_office_id          in varchar2 default null)
    is
-      l_fail_if_exists boolean := cwms_util.is_true(p_fail_if_exists) ;
-      l_ignore_nulls   boolean := cwms_util.is_true(p_ignore_nulls) ;
-      l_exists         boolean;
-      l_office_id      varchar2(16) := nvl(upper(p_office_id), cwms_util.user_office_id) ;
-      l_stream_type_id varchar2(4) ;
-      l_rec at_stream_reach%rowtype;
+      l_fail_if_exists          boolean := cwms_util.is_true(p_fail_if_exists) ;
+      l_ignore_nulls            boolean := cwms_util.is_true(p_ignore_nulls) ;
+      l_exists                  boolean;
+      l_office_id               varchar2(16) := nvl(upper(p_office_id), cwms_util.user_office_id) ;
+      l_configuration_code      number(10);
+      l_rec                     at_stream_reach%rowtype;
+      l_stream_location_code    integer;
+      l_us_stream_location_code integer;
+      l_ds_stream_location_code integer;
+      l_stream_rec              at_stream%rowtype;
+      l_stream_loc_rec          at_stream_location%rowtype;
    begin
       -------------------
       -- sanity checks --
       -------------------
-      if p_stream_id is null then
-         cwms_err.raise( 'INVALID_ITEM', '<NULL>', 'CWMS stream identifier.') ;
-      end if;
       if p_reach_id is null then
-         cwms_err.raise( 'INVALID_ITEM', '<NULL>', 'CWMS stream reach identifier.') ;
+         cwms_err.raise( 'INVALID_ITEM', '<NULL>', 'CWMS stream reach location identifier.') ;
       end if;
-      if p_stream_type_id is not null then
-         begin
-             select stream_type_id
-               into l_stream_type_id
-               from cwms_stream_type
-              where upper(stream_type_id) = upper(p_stream_type_id) ;
-         exception
+      if p_configuration_id is not null then
+         l_configuration_code := cwms_configuration.get_configuration_code(p_configuration_id, p_office_id);
+      end if;
+      l_rec.stream_reach_location_code := cwms_loc.get_location_code(l_office_id, p_reach_id);
+      if not cwms_loc.can_store(l_rec.stream_reach_location_code, 'STREAM_REACH') then
+         cwms_err.raise(
+            'ERROR', 
+            'Cannot store STREAM_REACH information to location '
+            ||l_office_id||'/'||p_reach_id
+            ||' (location kind = '
+            ||cwms_loc.check_location_kind(l_rec.stream_reach_location_code)
+            ||')');
+      end if;
+      l_stream_location_code := get_stream_code(p_office_id, p_stream_id);
+      begin
+         select stream_location_code
+           into l_us_stream_location_code
+           from at_stream_location
+          where location_code = cwms_loc.get_location_code(p_office_id, p_upstream_location);
+      exception
          when no_data_found then
-            cwms_err.raise( 'INVALID_ITEM', p_stream_type_id, 'CWMS stream type identifier') ;
-         end;
+            cwms_err.raise(
+               'ITEM_DOES_NOT_EXIST',
+               'Stream location',
+               cwms_util.get_db_office_id(p_office_id)
+               ||'/'
+               ||p_upstream_location);
+      end;
+      begin
+         select stream_location_code
+           into l_ds_stream_location_code
+           from at_stream_location
+          where location_code = cwms_loc.get_location_code(p_office_id, p_downstream_location);
+      exception
+         when no_data_found then
+            cwms_err.raise(
+               'ITEM_DOES_NOT_EXIST',
+               'Stream location',
+               cwms_util.get_db_office_id(p_office_id)
+               ||'/'
+               ||p_downstream_location);
+      end;
+      if l_stream_location_code not in (l_us_stream_location_code, l_ds_stream_location_code) then
+         cwms_err.raise(
+            'ERROR',
+            'Upstream location and/or downstream location must be on specified stream');
       end if;
-      l_rec.stream_location_code := get_stream_code(l_office_id, p_stream_id) ;
+      if l_us_stream_location_code != l_stream_location_code or l_ds_stream_location_code != l_stream_location_code then
+         select *
+           into l_stream_rec
+           from at_stream
+          where stream_location_code = l_stream_location_code; 
+         if l_us_stream_location_code != l_stream_location_code then
+            select *
+              into l_stream_loc_rec
+              from at_stream_location
+             where location_code = cwms_loc.get_location_code(p_office_id, p_upstream_location);
+
+            if l_stream_loc_rec.stream_location_code != l_stream_rec.diverting_stream_code or
+               l_stream_loc_rec.station              != l_stream_rec.diversion_station
+            then
+               cwms_err.raise(
+                  'ERROR',
+                  'Stream reach upstream location ('
+                  ||p_upstream_location
+                  ||') is invalid for stream '
+                  ||p_stream_id);
+            end if;
+         end if;
+         if l_ds_stream_location_code != l_stream_location_code then
+            select *
+              into l_stream_loc_rec
+              from at_stream_location
+             where location_code = cwms_loc.get_location_code(p_office_id, p_downstream_location);
+
+            if l_stream_loc_rec.stream_location_code != l_stream_rec.receiving_stream_code or
+               l_stream_loc_rec.station              != l_stream_rec.confluence_station
+            then
+               cwms_err.raise(
+                  'ERROR',
+                  'Stream reach downstream location ('
+                  ||p_downstream_location
+                  ||') is invalid for stream '
+                  ||p_stream_id);
+            end if;
+         end if;
+      end if;
       ------------------------------------------------------------
       -- determine if the reach exists (retrieve it if it does) --
       ------------------------------------------------------------
@@ -585,12 +652,13 @@ as
           select *
             into l_rec
             from at_stream_reach
-           where stream_location_code = l_rec.stream_location_code
-         and upper(stream_reach_id)   = upper(p_reach_id) ;
-         l_exists                    := true;
+           where stream_reach_location_code = l_rec.stream_reach_location_code;
+         l_exists := true;
       exception
-      when no_data_found then
-         l_exists := false;
+         when no_data_found then l_exists := false;
+         if p_stream_id is null then
+            cwms_err.raise( 'INVALID_ITEM', '<NULL>', 'CWMS stream location identifier, must be specified for new stream reaches') ;
+         end if;
       end;
       if l_exists and l_fail_if_exists then
          cwms_err.raise( 'ITEM_ALREADY_EXISTS', 'CWMS stream reach identifier', l_office_id ||'/' ||p_stream_id ||'/' ||p_reach_id) ;
@@ -598,19 +666,19 @@ as
       --------------------------
       -- set the reach values --
       --------------------------
-      if not l_exists then
-         l_rec.stream_reach_id := p_reach_id;
+      if p_stream_id is not null then
+         l_rec.stream_location_code := get_stream_code(l_office_id, p_stream_id);
       end if;
-      if p_upstream_station     is not null or not l_ignore_nulls then
-         l_rec.upstream_station := p_upstream_station;
+      if p_upstream_location is not null or not l_ignore_nulls then
+         l_rec.upstream_location_code := cwms_loc.get_location_code(l_office_id, p_upstream_location);
       end if;
-      if p_downstream_station     is not null or not l_ignore_nulls then
-         l_rec.downstream_station := p_downstream_station;
+      if p_downstream_location is not null or not l_ignore_nulls then
+         l_rec.downstream_location_code := cwms_loc.get_location_code(l_office_id, p_downstream_location);
       end if;
-      if l_stream_type_id     is not null or not l_ignore_nulls then
-         l_rec.stream_type_id := l_stream_type_id;
+      if l_configuration_code is not null or not l_ignore_nulls then
+         l_rec.configuration_code := l_configuration_code;
       end if;
-      if p_comments     is not null or not l_ignore_nulls then
+      if p_comments is not null or not l_ignore_nulls then
          l_rec.comments := p_comments;
       end if;
       --------------------------------
@@ -623,163 +691,223 @@ as
       else
           insert into at_stream_reach values l_rec;
       end if;
+      ---------------------------
+      -- set the location kind --
+      ---------------------------
+      cwms_loc.update_location_kind(l_rec.stream_reach_location_code, 'STREAM_REACH', 'A');
    end store_stream_reach;
 --------------------------------------------------------------------------------
 -- procedure retrieve_stream_reach
 --------------------------------------------------------------------------------
-   procedure retrieve_stream_reach
-      (
-         p_upstream_station out binary_double,
-         p_downstream_station out binary_double,
-         p_stream_type_id out varchar2,
-         p_comments out varchar2,
-         p_stream_id in varchar2,
-         p_reach_id  in varchar2,
-         p_office_id in varchar2 default null
-      )
+   procedure retrieve_stream_reach(
+      p_upstream_location   out varchar2,
+      p_downstream_location out varchar2,
+      p_configuration_id    out varchar2,
+      p_upstream_station    out binary_double,
+      p_downstream_station  out binary_double,
+      p_comments            out varchar2,
+      p_reach_id            in  varchar2,
+      p_station_unit        in  varchar2 default null,
+      p_office_id           in  varchar2 default null)
    is
-      l_stream_location_code number(10) ;
-      l_office_id            varchar2(16) := nvl(upper(p_office_id), cwms_util.user_office_id) ;
-      l_rec at_stream_reach%rowtype;
+      l_office_id varchar2(16) := nvl(upper(p_office_id), cwms_util.user_office_id) ;
+      l_rec       at_stream_reach%rowtype;
    begin
       -------------------
       -- sanity checks --
       -------------------
-      if p_stream_id is null then
-         cwms_err.raise( 'INVALID_ITEM', '<NULL>', 'CWMS stream identifier.') ;
-      end if;
       if p_reach_id is null then
          cwms_err.raise( 'INVALID_ITEM', '<NULL>', 'CWMS stream reach identifier.') ;
       end if;
-      l_stream_location_code := get_stream_code(l_office_id, p_stream_id) ;
       begin
           select *
             into l_rec
             from at_stream_reach
-           where stream_location_code = l_stream_location_code
-         and upper(stream_reach_id)   = upper(p_reach_id) ;
-         p_upstream_station          := l_rec.upstream_station;
-         p_downstream_station        := l_rec.downstream_station;
-         p_stream_type_id            := l_rec.stream_type_id;
+           where stream_reach_location_code = cwms_loc.get_location_code(l_office_id, p_reach_id);
+         p_upstream_location         := cwms_util.get_location_id(l_office_id, l_rec.upstream_location_code);
+         p_downstream_location       := cwms_util.get_location_id(l_office_id, l_rec.downstream_location_code);
+         p_configuration_id          := cwms_configuration.get_configuration_id(l_rec.configuration_code);
          p_comments                  := l_rec.comments;
+         select cwms_util.convert_units(station, 'km', nvl(cwms_util.get_unit_id(p_station_unit), 'km'))
+           into p_upstream_station
+           from at_stream_location
+          where stream_location_code = l_rec.upstream_location_code; 
+         select cwms_util.convert_units(station, 'km', nvl(cwms_util.get_unit_id(p_station_unit), 'km'))
+           into p_downstream_station
+           from at_stream_location
+          where stream_location_code = l_rec.downstream_location_code; 
       exception
       when no_data_found then
-         cwms_err.raise( 'ITEM_DOES_NOT_EXIST', 'CWMS stream reach identifier', l_office_id ||'/' ||p_stream_id ||'/' ||p_reach_id) ;
+         cwms_err.raise( 'ITEM_DOES_NOT_EXIST', 'CWMS stream reach ', l_office_id ||'/' ||p_reach_id) ;
       end;
    end retrieve_stream_reach;
 --------------------------------------------------------------------------------
 -- procedure delete_stream_reach
 --------------------------------------------------------------------------------
    procedure delete_stream_reach(
-         p_stream_id in varchar2,
          p_reach_id  in varchar2,
          p_office_id in varchar2 default null)
    is
-      l_stream_location_code number(10) ;
-      l_office_id            varchar2(16) := nvl(upper(p_office_id), cwms_util.user_office_id) ;
+      location_id_not_found exception;
+      l_location_kind_id    cwms_location_kind.location_kind_id%type;
+      pragma exception_init(location_id_not_found, -20025);
    begin
       -------------------
       -- sanity checks --
       -------------------
-      if p_stream_id is null then
-         cwms_err.raise( 'INVALID_ITEM', '<NULL>', 'CWMS stream identifier.') ;
-      end if;
       if p_reach_id is null then
          cwms_err.raise( 'INVALID_ITEM', '<NULL>', 'CWMS stream reach identifier.') ;
       end if;
-      l_stream_location_code := get_stream_code(l_office_id, p_stream_id) ;
-      begin
-          delete
-            from at_stream_reach
-           where stream_location_code = l_stream_location_code
-         and upper(stream_reach_id)   = upper(p_reach_id) ;
-      exception
-      when no_data_found then
-         cwms_err.raise( 'ITEM_DOES_NOT_EXIST', 'CWMS stream reach identifier', l_office_id ||'/' ||p_stream_id ||'/' ||p_reach_id) ;
-      end;
+      l_location_kind_id := cwms_loc.check_location_kind(p_reach_id, p_office_id);
+      if l_location_kind_id != 'STREAM_REACH' then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot delete stream reach information from location '
+            ||cwms_util.get_db_office_id(p_office_id)
+            ||'/'
+            ||p_reach_id
+            ||' (location kind = '
+            ||l_location_kind_id
+            ||')');
+      end if;
+      l_location_kind_id := cwms_loc.can_revert_loc_kind_to(p_reach_id, p_office_id); -- revert-to kind
+      delete
+        from at_stream_reach
+       where stream_reach_location_code = cwms_loc.get_location_code(p_office_id, p_reach_id);
+      cwms_loc.update_location_kind(cwms_loc.get_location_code(p_office_id, p_reach_id), 'STREAM_REACH', 'D');
    end delete_stream_reach;
 --------------------------------------------------------------------------------
 -- procedure rename_stream_reach
 --------------------------------------------------------------------------------
    procedure rename_stream_reach(
-         p_stream_id    in varchar2,
          p_old_reach_id in varchar2,
          p_new_reach_id in varchar2,
          p_office_id    in varchar2 default null)
    is
-      l_stream_location_code number(10) ;
-      l_office_id            varchar2(16) := nvl(upper(p_office_id), cwms_util.user_office_id) ;
    begin
       -------------------
       -- sanity checks --
       -------------------
-      if p_stream_id is null then
-         cwms_err.raise( 'INVALID_ITEM', '<NULL>', 'CWMS stream identifier.') ;
-      end if;
       if p_old_reach_id is null then
          cwms_err.raise( 'INVALID_ITEM', '<NULL>', 'CWMS stream reach identifier.') ;
       end if;
       if p_new_reach_id is null then
          cwms_err.raise( 'INVALID_ITEM', '<NULL>', 'CWMS stream reach identifier.') ;
       end if;
-      l_stream_location_code := get_stream_code(l_office_id, p_stream_id) ;
-      begin
-          update at_stream_reach
-         set stream_reach_id          = p_new_reach_id
-           where stream_location_code = l_stream_location_code
-         and upper(stream_reach_id)   = upper(p_old_reach_id) ;
-      exception
-      when no_data_found then
-         cwms_err.raise( 'ITEM_DOES_NOT_EXIST', 'CWMS stream reach identifier', l_office_id ||'/' ||p_stream_id ||'/' ||p_old_reach_id) ;
-      end;
+      cwms_loc.rename_location(p_old_reach_id, p_new_reach_id, p_office_id);
    end rename_stream_reach;
 --------------------------------------------------------------------------------
 -- procedure cat_stream_reaches
 --------------------------------------------------------------------------------
    procedure cat_stream_reaches(
          p_reach_catalog out sys_refcursor,
-         p_stream_id_mask      in varchar2 default '*',
-         p_reach_id_mask       in varchar2 default '*',
-         p_stream_type_id_mask in varchar2 default '*',
-         p_comments_mask       in varchar2 default '*',
-         p_office_id_mask      in varchar2 default null)
+         p_stream_id_mask        in varchar2 default '*',
+         p_reach_id_mask         in varchar2 default '*',
+         p_configuration_id_mask in varchar2 default '*',
+         p_comments_mask         in varchar2 default '*',
+         p_station_unit          in varchar2 default 'mi',
+         p_office_id_mask        in varchar2 default null)
    is
-      l_stream_id_mask      varchar2(49)  := cwms_util.normalize_wildcards(p_stream_id_mask) ;
-      l_reach_id_mask       varchar2(64)  := cwms_util.normalize_wildcards(p_reach_id_mask) ;
-      l_stream_type_id_mask varchar2(4)   := cwms_util.normalize_wildcards(p_stream_type_id_mask) ;
-      l_comments_mask       varchar2(256) := cwms_util.normalize_wildcards(p_comments_mask) ;
-      l_office_id_mask      varchar2(16)  := cwms_util.normalize_wildcards( nvl(upper(p_office_id_mask), cwms_util.user_office_id)) ;
+      l_stream_id_mask        varchar2(49)  := cwms_util.normalize_wildcards(upper(trim(p_stream_id_mask)));
+      l_reach_id_mask         varchar2(49)  := cwms_util.normalize_wildcards(upper(trim(p_reach_id_mask)));
+      l_configuration_id_mask varchar2(32)  := cwms_util.normalize_wildcards(upper(trim(p_configuration_id_mask)));
+      l_comments_mask         varchar2(256) := cwms_util.normalize_wildcards(upper(trim(p_comments_mask)));
+      l_office_id_mask        varchar2(16)  := cwms_util.normalize_wildcards(nvl(upper(trim(p_office_id_mask)), cwms_util.user_office_id));
    begin
-      open p_reach_catalog for select o.office_id,
-      bl.base_location_id ||substr('-', 1, length(pl.sub_location_id)) ||pl.sub_location_id
-   as
-      stream_id,
-      sr.stream_reach_id,
-      sr.upstream_station,
-      sr.downstream_station,
-      sr.stream_type_id,
-      sr.comments from at_physical_location pl,
-      at_base_location bl,
-      at_stream_reach sr,
-      cwms_office o where o.office_id like l_office_id_mask escape '\' and bl.db_office_code = o.office_code and upper(bl.base_location_id ||substr('-', 1, length(pl.sub_location_id)) ||pl.sub_location_id) like upper(l_stream_id_mask) escape '\' and sr.stream_location_code = pl.location_code and upper(sr.stream_reach_id) like upper(l_reach_id_mask) escape '\' and upper(sr.stream_type_id) like upper(l_stream_type_id_mask) escape '\' and upper(sr.comments) like upper(l_comments_mask) escape '\' order by o.office_id,
-      upper(bl.base_location_id),
-      upper(pl.sub_location_id),
-      upper(sr.stream_reach_id) ;
+      open p_reach_catalog for
+         select q1.office_id,
+                q1.configuration,
+                q1.stream_location,
+                q1.reach_location,
+                q2.location_id as upstream_location,
+                q2.station     as upstream_station,
+                q3.location_id as upstream_reach,
+                q4.location_id as downstream_location,
+                q4.station     as downstream_station,
+                q5.location_id as downstream_reach,
+                q1.comments
+           from (select o.office_id,
+                        c.configuration_code,
+                        c.configuration_id as configuration,
+                        cwms_loc.get_location_id(sr.stream_location_code) as stream_location,
+                        cwms_loc.get_location_id(sr.stream_reach_location_code) as reach_location,
+                        sr.stream_location_code,
+                        sr.upstream_location_code,
+                        sr.downstream_location_code,
+                        sr.comments
+                   from at_stream_reach sr,
+                        at_configuration c,
+                        at_physical_location pl,
+                        at_base_location bl,
+                        cwms_office o
+                  where upper(o.office_id) like l_office_id_mask escape '\'
+                    and upper(c.configuration_id) like l_configuration_id_mask escape '\'
+                    and upper(cwms_loc.get_location_id(sr.stream_location_code)) like l_stream_id_mask escape '\'
+                    and upper(cwms_loc.get_location_id(sr.stream_reach_location_code)) like l_reach_id_mask escape '\'
+                    and upper(nvl(sr.comments, '.')) like l_comments_mask escape '\'
+                    and pl.location_code = sr.stream_reach_location_code
+                    and bl.base_location_code = pl.base_location_code
+                    and o.office_code = bl.db_office_code
+                    and c.configuration_code = sr.configuration_code
+                ) q1 
+                left outer join
+                (select location_code,
+                        stream_location_code,
+                        cwms_loc.get_location_id(location_code) as location_id,
+                        cwms_util.convert_units(station, 'km', p_station_unit) as station
+                   from at_stream_location
+                ) q2 on q2.location_code = q1.upstream_location_code 
+                    and q2.stream_location_code = q1.stream_location_code
+                left outer join
+                (select stream_location_code,
+                        downstream_location_code,
+                        configuration_code,
+                        cwms_loc.get_location_id(stream_reach_location_code) as location_id
+                   from at_stream_reach     
+                ) q3 on q3.stream_location_code = q1.stream_location_code 
+                    and q3.configuration_code = q1.configuration_code 
+                    and q3.downstream_location_code = q1.upstream_location_code
+                left outer join
+                (select location_code,
+                        stream_location_code,
+                        cwms_loc.get_location_id(location_code) as location_id,
+                        cwms_util.convert_units(station, 'km', p_station_unit) as station
+                   from at_stream_location
+                ) q4 on q4.location_code = q1.downstream_location_code 
+                    and q4.stream_location_code = q1.stream_location_code
+                left outer join
+                (select stream_location_code,
+                        upstream_location_code,
+                        configuration_code,
+                        cwms_loc.get_location_id(stream_reach_location_code) as location_id
+                   from at_stream_reach     
+                ) q5 on q5.stream_location_code = q1.stream_location_code 
+                    and q5.configuration_code = q1.configuration_code 
+                    and q5.upstream_location_code = q1.downstream_location_code
+          order by 1, 2, 3, 9;
    end cat_stream_reaches;
 --------------------------------------------------------------------------------
 -- function cat_stream_reaches_f
 --------------------------------------------------------------------------------
    function cat_stream_reaches_f(
-         p_stream_id_mask      in varchar2 default '*',
-         p_reach_id_mask       in varchar2 default '*',
-         p_stream_type_id_mask in varchar2 default '*',
-         p_comments_mask       in varchar2 default '*',
-         p_office_id_mask      in varchar2 default null)
+         p_stream_id_mask        in varchar2 default '*',
+         p_reach_id_mask         in varchar2 default '*',
+         p_configuration_id_mask in varchar2 default '*',
+         p_comments_mask         in varchar2 default '*',
+         p_station_unit          in varchar2 default 'mi',
+         p_office_id_mask        in varchar2 default null)
       return sys_refcursor
    is
       l_cursor sys_refcursor;
    begin
-      cat_stream_reaches( l_cursor, p_stream_id_mask, p_reach_id_mask, p_stream_type_id_mask, p_comments_mask, p_office_id_mask) ;
+      cat_stream_reaches(
+         l_cursor, 
+         p_stream_id_mask, 
+         p_reach_id_mask, 
+         p_configuration_id_mask, 
+         p_comments_mask, 
+         p_station_unit, 
+         p_office_id_mask);
       return l_cursor;
    end cat_stream_reaches_f;
 --------------------------------------------------------------------------------
@@ -810,7 +938,6 @@ as
       l_ignore_nulls   boolean      := cwms_util.is_true(p_ignore_nulls) ;
       l_exists         boolean;
       l_rec at_stream_location%rowtype;
-      l_location_kind cwms_location_kind.location_kind_id%type;
    begin
       -------------------
       -- sanity checks --
@@ -830,20 +957,25 @@ as
       if p_bank is not null and upper(p_bank) not in('L', 'R') then
          cwms_err.raise( 'INVALID_ITEM', p_bank, 'stream bank, must be ''L'' or ''R''.') ;
       end if;
-      l_location_kind := cwms_loc.check_location_kind(p_location_id, p_office_id) ;
-      if l_location_kind not in('OUTLET', 'EMBANKMENT', 'LOCK', 'TURBINE', 'PROJECT', 'STREAMGAGE', 'SITE') then
-         cwms_err.raise('ERROR', 'A Stream Location record can not be created for a Location of KIND: ' || l_location_kind) ;
-      end if;
       ------------------------------------------
       -- get the existing record if it exists --
       ------------------------------------------
       l_rec.location_code := cwms_loc.get_location_code(l_office_id, p_location_id) ;
+      if not cwms_loc.can_store(l_rec.location_code, 'STREAM_LOCATION') then
+         cwms_err.raise(
+            'ERROR', 
+            'Cannot store STREAM_LOCATION information to location '
+            ||l_office_id||'/'||p_location_id
+            ||' (location kind = '
+            ||cwms_loc.check_location_kind(l_rec.location_code)
+            ||')');
+      end if;
       begin
           select *
             into l_rec
             from at_stream_location
            where location_code = l_rec.location_code;
-         l_exists             := true;
+         l_exists := true;
       exception
       when no_data_found then
          l_exists := false;
@@ -854,27 +986,27 @@ as
       ---------------------------
       -- set the record values --
       ---------------------------
-      if p_stream_id                is not null then
+      if p_stream_id is not null then
          l_rec.stream_location_code := get_stream_code(l_office_id, p_stream_id) ;
       elsif not l_ignore_nulls then
          l_rec.stream_location_code := null;
       end if;
-      if p_station     is not null or not l_ignore_nulls then
+      if p_station is not null or not l_ignore_nulls then
          l_rec.station := cwms_util.convert_units(p_station, l_station_unit, 'km') ;
       end if;
-      if p_published_station     is not null or not l_ignore_nulls then
+      if p_published_station is not null or not l_ignore_nulls then
          l_rec.published_station := cwms_util.convert_units(p_published_station, l_station_unit, 'km') ;
       end if;
-      if p_navigation_station     is not null or not l_ignore_nulls then
+      if p_navigation_station is not null or not l_ignore_nulls then
          l_rec.navigation_station := cwms_util.convert_units(p_navigation_station, l_station_unit, 'km') ;
       end if;
-      if p_bank     is not null or not l_ignore_nulls then
+      if p_bank is not null or not l_ignore_nulls then
          l_rec.bank := upper(p_bank) ;
       end if;
-      if p_lowest_measurable_stage     is not null or not l_ignore_nulls then
+      if p_lowest_measurable_stage is not null or not l_ignore_nulls then
          l_rec.lowest_measurable_stage := cwms_util.convert_units(p_lowest_measurable_stage, l_stage_unit, 'm') ;
       end if;
-      if p_drainage_area     is not null or not l_ignore_nulls then
+      if p_drainage_area is not null or not l_ignore_nulls then
          l_rec.drainage_area := cwms_util.convert_units(p_drainage_area, l_area_unit, 'm2') ;
       end if;
       if p_ungaged_drainage_area is not null or not l_ignore_nulls then
@@ -884,25 +1016,16 @@ as
       -- update or insert the record --
       ---------------------------------
       if l_exists then
-          update at_stream_location
-         set row                  = l_rec
-           where location_code = l_rec.location_code;
+         update at_stream_location
+            set row = l_rec
+          where location_code = l_rec.location_code;
       else
           insert into at_stream_location values l_rec;
       end if;
       ---------------------------
       -- set the location kind --
       ---------------------------
-      if l_location_kind in('SITE', 'STREAMGAGE') then
-          update at_physical_location
-         set location_kind =
-            (
-                select location_kind_code
-                  from cwms_location_kind
-                 where location_kind_id = 'STREAMGAGE'
-            )
-           where location_code = l_rec.location_code;
-      end if;
+      cwms_loc.update_location_kind(l_rec.location_code, 'STREAM_LOCATION', 'A');
    end store_stream_location;
 --------------------------------------------------------------------------------
 -- procedure retrieve_stream_location
@@ -997,10 +1120,11 @@ as
          p_delete_location_action in varchar2 default cwms_util.delete_key,
          p_office_id              in varchar2 default null)
    is
-      l_location_code   number(10) ;
-      l_delete_location boolean;
-      l_delete_action1  varchar2(16) ;
-      l_delete_action2  varchar2(16) ;
+      l_location_code    number(10);
+      l_delete_location  boolean;
+      l_delete_action1   varchar2(16);
+      l_delete_action2   varchar2(16);
+      l_count            pls_integer;
    begin
       -------------------
       -- sanity checks --
@@ -1029,16 +1153,13 @@ as
       ------------------------------------
       if l_delete_action1 in(cwms_util.delete_key, cwms_util.delete_all) then
           delete from at_stream_location where location_code = l_location_code;
+          cwms_loc.update_location_kind(l_location_code, 'STREAM_LOCATION', 'D');
       end if;
       -------------------------------------
       -- delete the location if required --
       -------------------------------------
       if l_delete_location then
          cwms_loc.delete_location(p_location_id, l_delete_action2, p_office_id) ;
-      else
-          update at_physical_location
-         set location_kind     = 1
-           where location_code = l_location_code;
       end if;
    end delete_stream_location2;
 --------------------------------------------------------------------------------

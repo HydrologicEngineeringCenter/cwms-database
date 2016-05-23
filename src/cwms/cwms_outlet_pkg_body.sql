@@ -485,11 +485,8 @@ procedure store_outlets(
 is
    l_fail_if_exists boolean;
    l_exists         boolean;
-   l_project project_obj_t;
-   l_rec at_outlet%rowtype;
-   l_rating_group     varchar2(65) ;
-   l_code             integer;
-   l_location_kind_id cwms_location_kind.location_kind_id%type;
+   l_rec            at_outlet%rowtype;
+   l_rating_group   varchar2(65) ;
 begin
    -------------------
    -- sanity checks --
@@ -503,53 +500,70 @@ begin
       ------------------------
       -- more sanity checks --
       ------------------------
-      begin
-         l_code := p_outlets(i) .structure_location.location_ref.get_location_code;
-      exception
-      when no_data_found then
-         null;
-      end;
-      if l_code             is not null then
-         l_location_kind_id := cwms_loc.check_location_kind(l_code) ;
-         if l_location_kind_id not in('OUTLET', 'STREAMGAGE', 'SITE') then
-            cwms_err.raise( 'ERROR', 'Cannot switch location ' ||p_outlets(i) .structure_location.location_ref.office_id ||'/' ||p_outlets(i) .structure_location.location_ref.get_location_id ||' from type ' ||l_location_kind_id ||' to type OUTLET') ;
-         end if;
-      end if;
-      check_project_structure(p_outlets(i)) ;
-      -- will raise an exception if project doesn't exist
-      cwms_project.retrieve_project( l_project, p_outlets(i) .project_location_ref.get_location_id, p_outlets(i) .project_location_ref.get_office_id) ;
-      -- project exists, so get its location code
-      l_rec.project_location_code := l_project.project_location.location_ref.get_location_code('F') ;
-      -----------------------------------------------
-      -- create a rating group id if not specified --
-      -----------------------------------------------
-      if i               = 1 then
-         l_rating_group := nvl(p_rating_group, p_outlets(i) .project_location_ref.get_location_id) ;
+      l_rec.outlet_location_code := cwms_loc.store_location_f(p_outlets(i).structure_location, 'F');
+      if not cwms_loc.can_store(l_rec.outlet_location_code, 'OUTLET') then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot store outlet information to location '
+            ||cwms_util.get_db_office_id(p_outlets(i).structure_location.location_ref.office_id)
+            ||'/'
+            ||p_outlets(i).structure_location.location_ref.get_location_id
+            ||' (location kind = '
+            ||cwms_loc.check_location_kind(l_rec.outlet_location_code)
+            ||')');
       end if;
       -----------------------------------------------
       -- see if the outlet location already exists --
       -----------------------------------------------
       begin
-         l_rec.outlet_location_code := p_outlets(i) .structure_location.location_ref.get_location_code('F') ;
-         l_exists                   := true; -- Location Exists
-         l_location_kind_id         := cwms_loc.check_location_kind(l_rec.outlet_location_code) ;
-         if l_location_kind_id       = 'OUTLET' then
-         if l_fail_if_exists then
-            cwms_err.raise( 'ITEM_ALREADY_EXISTS', 'CWMS outlet', p_outlets(i) .structure_location.location_ref.get_office_id ||'/' ||p_outlets(i) .structure_location.location_ref.get_location_id) ;
-         end if;
-         end if;
+         select * into l_rec from at_outlet where outlet_location_code = l_rec.outlet_location_code;
+         l_exists := true;
       exception
-      when no_data_found then
-         l_exists := false; -- Location Does not exist
-      cwms_loc.store_location(p_outlets(i) .structure_location, 'F') ;
+         when no_data_found then l_exists := false;
       end;
-      -----------------------
-      -- create the record --
-      -----------------------
-         l_rec.outlet_location_code := p_outlets(i) .structure_location.location_ref.get_location_code('T') ;
-      if l_location_kind_id       = 'OUTLET' then
+      if l_exists and l_fail_if_exists then
+         cwms_err.raise(
+            'ITEM_ALREADY_EXISTS', 
+            'CWMS outlet', 
+            p_outlets(i).structure_location.location_ref.get_office_id
+            ||'/' 
+            ||p_outlets(i).structure_location.location_ref.get_location_id) ;
+      end if;
+      begin
+         l_rec.project_location_code := p_outlets(i).project_location_ref.get_location_code;
+      exception
+         when others then 
+            cwms_err.raise(
+               'ITEM_DOES_NOT_EXIST',
+               'CWMS Project',
+               p_outlets(i).project_location_ref.get_office_id
+               ||'/'
+               ||p_outlets(i).project_location_ref.get_location_id);
+      end;
+      if cwms_loc.check_location_kind(l_rec.project_location_code) != 'PROJECT' then
+         cwms_err.raise(
+            'ERROR',
+            'Outlet location '
+            ||p_outlets(i).structure_location.location_ref.get_office_id
+            ||'/'
+            ||p_outlets(i).structure_location.location_ref.get_location_id
+            ||' refers to project location that is not a PROJECT kind: '
+            ||p_outlets(i).project_location_ref.get_office_id
+            ||'/'
+            ||p_outlets(i).project_location_ref.get_location_id);
+      end if;
+      -----------------------------------------------
+      -- create a rating group id if not specified --
+      -----------------------------------------------
+      if i = 1 then
+         l_rating_group := nvl(p_rating_group, p_outlets(i).project_location_ref.get_location_id) ;
+      end if;
+      ---------------------------------
+      -- insert or update the record --
+      ---------------------------------
+      if l_exists then
           update at_outlet
-         set project_location_code    = l_rec.project_location_code
+             set row = l_rec
            where outlet_location_code = l_rec.outlet_location_code;
       else
           insert into at_outlet values l_rec;
@@ -557,18 +571,11 @@ begin
       -----------------------------------------------------
       -- assign the record to the specified rating group --
       -----------------------------------------------------
-      assign_to_rating_group( l_rec.outlet_location_code, l_rec.project_location_code, l_rating_group) ;
+      assign_to_rating_group(l_rec.outlet_location_code, l_rec.project_location_code, l_rating_group) ;
       ---------------------------
       -- set the location kind --
       ---------------------------
-       update at_physical_location
-      set location_kind =
-         (
-             select location_kind_code
-               from cwms_location_kind
-              where location_kind_id = 'OUTLET'
-         )
-        where location_code = l_rec.outlet_location_code;
+      cwms_loc.update_location_kind(l_rec.outlet_location_code, 'OUTLET', 'A');
    end loop;
 end store_outlets;
 --------------------------------------------------------------------------------
@@ -617,13 +624,13 @@ procedure delete_outlet2(
       p_delete_location_action in varchar2 default cwms_util.delete_key,
       p_office_id              in varchar2 default null)
 is
-   l_outlet_code     number(10) ;
-   l_delete_location boolean;
-   l_delete_action1  varchar2(16) ;
-   l_delete_action2  varchar2(16) ;
+   l_outlet_code       number(10) ;
+   l_delete_location   boolean;
+   l_delete_action1    varchar2(16) ;
+   l_delete_action2    varchar2(16) ;
    l_gate_change_codes number_tab_t;
-   l_count pls_integer;
-   l_location_kind_code integer;
+   l_count             pls_integer;
+   l_location_kind_id  cwms_location_kind.location_kind_id%type;
 begin
    -------------------
    -- sanity checks --
@@ -636,11 +643,26 @@ begin
       cwms_err.raise( 'ERROR', 'Delete action must be one of ''' ||cwms_util.delete_key ||''',  ''' ||cwms_util.delete_data ||''', or ''' ||cwms_util.delete_all ||'') ;
    end if;
    l_delete_location := cwms_util.return_true_or_false(p_delete_location) ;
-   l_delete_action2  := upper(substr(p_delete_location_action, 1, 16)) ;
-   if l_delete_action2 not in( cwms_util.delete_key, cwms_util.delete_data, cwms_util.delete_all) then
-      cwms_err.raise( 'ERROR', 'Delete action must be one of ''' ||cwms_util.delete_key ||''',  ''' ||cwms_util.delete_data ||''', or ''' ||cwms_util.delete_all ||'') ;
+   if l_delete_location then
+      l_delete_action2  := upper(substr(p_delete_location_action, 1, 16)) ;
+      if l_delete_action2 not in( cwms_util.delete_key, cwms_util.delete_data, cwms_util.delete_all) then
+         cwms_err.raise( 'ERROR', 'Delete action must be one of ''' ||cwms_util.delete_key ||''',  ''' ||cwms_util.delete_data ||''', or ''' ||cwms_util.delete_all ||'') ;
+      end if;
    end if;
    l_outlet_code := get_outlet_code(p_office_id, p_outlet_id) ;
+   l_location_kind_id := cwms_loc.check_location_kind(l_outlet_code);
+   if l_location_kind_id != 'OUTLET' then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot delete outlet information from location '
+         ||cwms_util.get_db_office_id(p_office_id)
+         ||'/'
+         ||p_outlet_id
+         ||' (location kind = '
+         ||l_location_kind_id
+         ||')');
+   end if;
+   l_location_kind_id := cwms_loc.can_revert_loc_kind_to(p_outlet_id, p_office_id); -- revert-to kind
    -------------------------------------------
    -- delete the child records if specified --
    -------------------------------------------
@@ -672,31 +694,13 @@ begin
    ------------------------------------
    if l_delete_action1 in(cwms_util.delete_key, cwms_util.delete_all) then
        delete from at_outlet where outlet_location_code = l_outlet_code;
+       cwms_loc.update_location_kind(l_outlet_code, 'OUTLET', 'D');
    end if;
    -------------------------------------
    -- delete the location if required --
    -------------------------------------
    if l_delete_location then
       cwms_loc.delete_location(p_outlet_id, l_delete_action2, p_office_id) ;
-   else
-       select count( *)
-         into l_count
-         from at_stream_location
-        where location_code = l_outlet_code;
-      if l_count            = 0 then
-          select location_kind_code
-            into l_location_kind_code
-            from cwms_location_kind
-           where location_kind_id = 'SITE';
-      else
-          select location_kind_code
-            into l_location_kind_code
-            from cwms_location_kind
-           where location_kind_id = 'STREAMGAGE';
-      end if;
-       update at_physical_location
-      set location_kind     = l_location_kind_code
-        where location_code = l_outlet_code;
    end if;
 end delete_outlet2;
 --------------------------------------------------------------------------------

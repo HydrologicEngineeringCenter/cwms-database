@@ -289,7 +289,6 @@ AS
    l_near_gage_location_code number := null;
    l_rec                     at_project%rowtype;
    l_exists                  boolean;
-   l_location_kind_id        varchar2(32);
 BEGIN
    -------------------
    -- sanity checks --
@@ -297,35 +296,28 @@ BEGIN
    if p_project is null then
       cwms_err.raise('NULL_ARGUMENT', 'P_PROJECT');
    end if;
-   cwms_loc.store_location( p_project.project_location,'F');
-   if p_project.pump_back_location is not null then
-      cwms_loc.store_location( p_project.pump_back_location,'F');
-   end if;
-   if p_project.near_gage_location is not null then
-      cwms_loc.store_location( p_project.near_gage_location,'F');
-   end if;
    --
    -- get the location codes
    --
-   l_project_location_code := p_project.project_location.location_ref.get_location_code;
-   l_location_kind_id := cwms_loc.check_location_kind(l_project_location_code);
-   if l_location_kind_id not in ('PROJECT', 'SITE', 'STREAMGAGE') then
+   l_project_location_code := cwms_loc.store_location_f(p_project.project_location,'F');
+   if not cwms_loc.can_store(l_project_location_code, 'PROJECT') then
       cwms_err.raise(
          'ERROR',
-         'Cannot switch location '
-         ||p_project.project_location.location_ref.office_id
+         'Cannot store PROJECT information for location '
+         ||cwms_util.get_db_office_id(p_project.project_location.location_ref.office_id)
          ||'/'
          ||p_project.project_location.location_ref.get_location_id
-         ||' from type '
-         ||l_location_kind_id
-         ||' to type PROJECT');
+         ||' (location kind = '
+         ||cwms_loc.check_location_kind(l_project_location_code)
+         ||')');
    end if;
    if p_project.pump_back_location is not null then
-      l_pump_back_location_code := p_project.pump_back_location.location_ref.get_location_code;
+      l_pump_back_location_code := cwms_loc.store_location_f(p_project.pump_back_location,'F');
    end if;
    if p_project.near_gage_location is not null then
-      l_near_gage_location_code := p_project.near_gage_location.location_ref.get_location_code;
+      l_near_gage_location_code := cwms_loc.store_location_f(p_project.near_gage_location,'F');
    end if;
+   
    --
    -- determine whether the project exists
    --
@@ -374,13 +366,7 @@ BEGIN
    ---------------------------      
    -- set the location kind --
    ---------------------------
-   update at_physical_location
-      set location_kind = (select location_kind_code 
-                             from cwms_location_kind 
-                            where location_kind_id = 'PROJECT'
-                          )
-    where location_code = l_rec.project_location_code;                                 
-
+   cwms_loc.update_location_kind(l_project_location_code, 'PROJECT', 'A');
 END store_project;
 
 -- renames a project from one id to a new one.
@@ -421,12 +407,13 @@ procedure delete_project2(
 is
    l_project_code       number(10);
    l_delete_location    boolean;
+   l_delete_assoc_locs  boolean;
    l_delete_action1     varchar2(16);
    l_delete_action2     varchar2(16);
    l_delete_action3     varchar2(16);
    l_project_loc_ref    location_ref_t;
    l_count              pls_integer;
-   l_location_kind_code integer;
+   l_location_kind_id   cwms_location_kind.location_kind_id%type;
 begin
    -------------------
    -- sanity checks --
@@ -451,39 +438,57 @@ begin
          ||'');
    end if;
    l_delete_location := cwms_util.return_true_or_false(p_delete_location);
-   l_delete_action2 := upper(substr(p_delete_location_action, 1, 16));
-   if l_delete_action2 not in (
-      cwms_util.delete_key,
-      cwms_util.delete_data,
-      cwms_util.delete_all)
-   then
-      cwms_err.raise(
-         'ERROR',
-         'Delete action must be one of '''
-         ||cwms_util.delete_key
-         ||''',  '''
-         ||cwms_util.delete_data
-         ||''', or '''
-         ||cwms_util.delete_all
-         ||'');
+   if l_delete_location then
+      l_delete_action2 := upper(substr(p_delete_location_action, 1, 16));
+      if l_delete_action2 not in (
+         cwms_util.delete_key,
+         cwms_util.delete_data,
+         cwms_util.delete_all)
+      then
+         cwms_err.raise(
+            'ERROR',
+            'Delete action must be one of '''
+            ||cwms_util.delete_key
+            ||''',  '''
+            ||cwms_util.delete_data
+            ||''', or '''
+            ||cwms_util.delete_all
+            ||'');
+      end if;
    end if;
-   l_delete_action3 := upper(substr(p_delete_assoc_locs_action, 1, 16));
-   if l_delete_action1 not in (
-      cwms_util.delete_key,
-      cwms_util.delete_data,
-      cwms_util.delete_all)
-   then
-      cwms_err.raise(
-         'ERROR',
-         'Delete action must be one of '''
-         ||cwms_util.delete_key
-         ||''',  '''
-         ||cwms_util.delete_data
-         ||''', or '''
-         ||cwms_util.delete_all
-         ||'');
+   l_delete_assoc_locs := cwms_util.return_true_or_false(p_delete_assoc_locs);
+   if l_delete_assoc_locs then
+      l_delete_action3 := upper(substr(p_delete_assoc_locs_action, 1, 16));
+      if l_delete_action1 not in (
+         cwms_util.delete_key,
+         cwms_util.delete_data,
+         cwms_util.delete_all)
+      then
+         cwms_err.raise(
+            'ERROR',
+            'Delete action must be one of '''
+            ||cwms_util.delete_key
+            ||''',  '''
+            ||cwms_util.delete_data
+            ||''', or '''
+            ||cwms_util.delete_all
+            ||'');
+      end if;
    end if;
    l_project_code := get_project_code(p_office_id, p_project_id);
+   l_location_kind_id := cwms_loc.check_location_kind(l_project_code);
+   if l_location_kind_id != 'PROJECT' then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot delete project information from location '
+         ||cwms_util.get_db_office_id(p_office_id)
+         ||'/'
+         ||p_project_id
+         ||' (location kind = '
+         ||l_location_kind_id
+         ||')');
+   end if;
+   l_location_kind_id := cwms_loc.can_revert_loc_kind_to(p_project_id, p_office_id); -- revert-to kind
    -------------------------------------------
    -- delete the child records if specified --
    -------------------------------------------
@@ -526,6 +531,26 @@ begin
             p_delete_location        => p_delete_assoc_locs,
             p_delete_location_action => l_delete_action3,
             p_office_id              => rec.db_office_id);
+      end loop;
+      ---------------
+      -- overflows --
+      ---------------
+      for rec in
+         (select v.db_office_id,
+                 v.location_id
+            from at_outlet t1,
+                 at_overflow t2,
+                 av_loc v
+           where t1.project_location_code = l_project_code
+             and t2.overflow_location_code = t1.outlet_location_code
+             and v.location_code = t1.outlet_location_code
+             and unit_system = 'EN'
+         )
+      loop
+         cwms_overflow.delete_overflow(
+            p_location_id   => rec.location_id,
+            p_delete_action => cwms_util.delete_all,
+            p_office_id     => rec.db_office_id);
       end loop;
       -------------
       -- outlets --
@@ -623,34 +648,14 @@ begin
    -- delete the record if specified --
    ------------------------------------
    if l_delete_action1 in (cwms_util.delete_key, cwms_util.delete_all) then
-      delete
-        from at_project
-       where project_location_code = l_project_code;
+      delete from at_project where project_location_code = l_project_code;
+      cwms_loc.update_location_kind(l_project_code, 'PROJECT', 'D');
    end if;
    -------------------------------------
    -- delete the location if required --
    -------------------------------------
    if l_delete_location then
       cwms_loc.delete_location(p_project_id, l_delete_action2, p_office_id);
-   else
-      select count(*)
-        into l_count
-        from at_stream_location
-       where location_code = l_project_code;
-      if l_count = 0 then
-         select location_kind_code
-           into l_location_kind_code
-           from cwms_location_kind
-          where location_kind_id = 'SITE'; 
-      else
-         select location_kind_code
-           into l_location_kind_code
-           from cwms_location_kind
-          where location_kind_id = 'STREAMGAGE'; 
-      end if;       
-      update at_physical_location
-         set location_kind = l_location_kind_code
-       where location_code = l_project_code;
    end if;
 end delete_project2;
 

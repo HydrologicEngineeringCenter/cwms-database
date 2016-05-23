@@ -288,111 +288,90 @@ end store_turbine;
 procedure store_turbines(
    p_turbines       in project_structure_tab_t,
    p_fail_if_exists in varchar2 default 'T')
-is
-   l_fail_if_exists   boolean;
-   l_exists           boolean;
-   l_project          project_obj_t;
-   l_rec              at_turbine%rowtype;
-   l_location_type    varchar2(32);
-   l_code             integer;
-   l_location_kind_id varchar2(32);
+is   
+   l_fail_if_exists boolean;
+   l_exists         boolean;
+   l_rec            at_turbine%rowtype;
+   l_rating_group   varchar2(65) ;
 begin
    -------------------
    -- sanity checks --
    -------------------
    if p_turbines is null then
-      cwms_err.raise('NULL_ARGUMENT', 'P_TURBINES');
+      cwms_err.raise('NULL_ARGUMENT', 'P_TURBINES') ;
    end if;
-   l_fail_if_exists := cwms_util.is_true(p_fail_if_exists);
-   for i in 1..p_turbines.count loop
+   l_fail_if_exists := cwms_util.is_true(p_fail_if_exists) ;
+   for i in 1..p_turbines.count
+   loop
       ------------------------
       -- more sanity checks --
       ------------------------
-      begin
-         l_code := p_turbines(i).structure_location.location_ref.get_location_code; 
-      exception
-         when no_data_found then null;
-      end;
-      if l_code is not null then
-         l_location_kind_id := cwms_loc.check_location_kind(l_code);
-         if l_location_kind_id not in ('TURBINE', 'SITE', 'STREAMGAGE') then
-            cwms_err.raise(
-               'ERROR',
-               'Cannot switch location '
-               ||p_turbines(i).structure_location.location_ref.office_id
-               ||'/'
-               ||p_turbines(i).structure_location.location_ref.get_location_id
-               ||' from type '
-               ||l_location_kind_id
-               ||' to type TURBINE');
-         end if;
+      l_rec.turbine_location_code := cwms_loc.store_location_f(p_turbines(i).structure_location, 'F');
+      if not cwms_loc.can_store(l_rec.turbine_location_code, 'TURBINE') then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot store turbine information to location '
+            ||cwms_util.get_db_office_id(p_turbines(i).structure_location.location_ref.office_id)
+            ||'/'
+            ||p_turbines(i).structure_location.location_ref.get_location_id
+            ||' (location kind = '
+            ||cwms_loc.check_location_kind(l_rec.turbine_location_code)
+            ||')');
       end if;
-      check_project_structure(p_turbines(i));
-      -- will raise an exception if project doesn't exist
-      cwms_project.retrieve_project(
-         l_project,
-         p_turbines(i).project_location_ref.get_location_id,
-         p_turbines(i).project_location_ref.get_office_id);
       ------------------------------------------------
       -- see if the turbine location already exists --
       ------------------------------------------------
-      begin          
-      begin          
-         l_rec.turbine_location_code := p_turbines(i).structure_location.location_ref.get_location_code('F');
+      begin
+         select * into l_rec from at_turbine where turbine_location_code = l_rec.turbine_location_code;
          l_exists := true;
-         l_location_type := cwms_loc.get_location_type(l_rec.turbine_location_code);
-         if l_location_type in ('TURBINE', 'SITE', 'STREAMGAGE') then
-            if l_location_type = 'TURBINE' then
-               l_exists := true; -- location has an at_turbine entry
-         if l_fail_if_exists then
-            cwms_err.raise(
-               'ITEM_ALREADY_EXISTS',
-                     'CWMS turbine',
-               p_turbines(i).structure_location.location_ref.get_office_id
-               ||'/'
-               ||p_turbines(i).structure_location.location_ref.get_location_id);
-         end if;
-            else
-               l_exists := false; -- location exists, but there's no at_turbine entry
-            end if;
-         else
-            cwms_err.raise(
-               'ERROR',
-               'CWMS location '             
-               ||p_turbines(i).structure_location.location_ref.get_office_id
-               ||'/'
-               ||p_turbines(i).structure_location.location_ref.get_location_id
-               ||' exists but is identified as type '||l_location_type);
-         end if;
       exception
-         when no_data_found then
-            l_exists := false; -- location does not exists
+         when no_data_found then l_exists := false;
       end;
-      end;
-      -----------------------
-      -- create the record --
-      -----------------------
-      cwms_loc.store_location(p_turbines(i).structure_location, 'F');
-      --
-         l_rec.turbine_location_code := p_turbines(i).structure_location.location_ref.get_location_code('T');
-         l_rec.project_location_code := l_project.project_location.location_ref.get_location_code('F');
-      --
-      if  l_exists then
-         update at_turbine 
-            set project_location_code = l_rec.project_location_code 
-          where turbine_location_code = l_rec.turbine_location_code;
-      else
-         insert into at_turbine values l_rec; 
+      if l_exists and l_fail_if_exists then
+         cwms_err.raise(
+            'ITEM_ALREADY_EXISTS', 
+            'CWMS turbine', 
+            p_turbines(i).structure_location.location_ref.get_office_id
+            ||'/' 
+            ||p_turbines(i).structure_location.location_ref.get_location_id) ;
       end if;
-      ---------------------------      
+      begin
+         l_rec.project_location_code := p_turbines(i).project_location_ref.get_location_code;
+      exception
+         when others then 
+            cwms_err.raise(
+               'ITEM_DOES_NOT_EXIST',
+               'CWMS Project',
+               p_turbines(i).project_location_ref.get_office_id
+               ||'/'
+               ||p_turbines(i).project_location_ref.get_location_id);
+      end;
+      if cwms_loc.check_location_kind(l_rec.project_location_code) != 'PROJECT' then
+         cwms_err.raise(
+            'ERROR',
+            'Turbine location '
+            ||p_turbines(i).structure_location.location_ref.get_office_id
+            ||'/'
+            ||p_turbines(i).structure_location.location_ref.get_location_id
+            ||' refers to project location that is not a PROJECT kind: '
+            ||p_turbines(i).project_location_ref.get_office_id
+            ||'/'
+            ||p_turbines(i).project_location_ref.get_location_id);
+      end if;
+      ---------------------------------
+      -- insert or update the record --
+      ---------------------------------
+      if l_exists then
+          update at_turbine
+             set row = l_rec
+           where turbine_location_code = l_rec.turbine_location_code;
+      else
+          insert into at_turbine values l_rec;
+      end if;
+      ---------------------------
       -- set the location kind --
       ---------------------------
-      update at_physical_location
-         set location_kind = (select location_kind_code 
-                                from cwms_location_kind 
-                               where location_kind_id = 'TURBINE'
-                             )
-       where location_code = l_rec.turbine_location_code;                                 
+      cwms_loc.update_location_kind(l_rec.turbine_location_code, 'TURBINE', 'A');
    end loop;
 end store_turbines;
 --------------------------------------------------------------------------------
@@ -451,7 +430,7 @@ is
    l_delete_action2       varchar2(16);
    l_turbine_change_codes number_tab_t;
    l_count                pls_integer;
-   l_location_kind_code   integer;
+   l_location_kind_id     cwms_location_kind.location_kind_id%type;
 begin
    -------------------
    -- sanity checks --
@@ -475,24 +454,39 @@ begin
          ||cwms_util.delete_all
          ||'');
    end if;
-   l_delete_location := cwms_util.return_true_or_false(p_delete_location); 
-   l_delete_action2 := upper(substr(p_delete_location_action, 1, 16));
-   if l_delete_action2 not in (
-      cwms_util.delete_key,
-      cwms_util.delete_data,
-      cwms_util.delete_all)
-   then
-      cwms_err.raise(
-         'ERROR',
-         'Delete action must be one of '''
-         ||cwms_util.delete_key
-         ||''',  '''
-         ||cwms_util.delete_data
-         ||''', or '''
-         ||cwms_util.delete_all
-         ||'');
+   l_delete_location := cwms_util.return_true_or_false(p_delete_location);
+   if l_delete_location then
+      l_delete_action2 := upper(substr(p_delete_location_action, 1, 16));
+      if l_delete_action2 not in (
+         cwms_util.delete_key,
+         cwms_util.delete_data,
+         cwms_util.delete_all)
+      then
+         cwms_err.raise(
+            'ERROR',
+            'Delete action must be one of '''
+            ||cwms_util.delete_key
+            ||''',  '''
+            ||cwms_util.delete_data
+            ||''', or '''
+            ||cwms_util.delete_all
+            ||'');
+      end if;
    end if;
    l_turbine_code := get_turbine_code(p_office_id, p_turbine_id);
+   l_location_kind_id := cwms_loc.check_location_kind(l_turbine_code);
+   if l_location_kind_id != 'TURBINE' then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot delete turbine information from location '
+         ||cwms_util.get_db_office_id(p_office_id)
+         ||'/'
+         ||p_turbine_id
+         ||' (location kind = '
+         ||l_location_kind_id
+         ||')');
+   end if;
+   l_location_kind_id := cwms_loc.can_revert_loc_kind_to(p_office_id, p_turbine_id);
    -------------------------------------------
    -- delete the child records if specified --
    -------------------------------------------
@@ -516,34 +510,14 @@ begin
    -- delete the record if specified --
    ------------------------------------
    if l_delete_action1 in (cwms_util.delete_key, cwms_util.delete_all) then
-      delete
-        from at_turbine
-       where turbine_location_code = l_turbine_code;
+      delete from at_turbine where turbine_location_code = l_turbine_code;
+      cwms_loc.update_location_kind(l_turbine_code, 'TURBINE', 'D');
    end if; 
    -------------------------------------
    -- delete the location if required --
    -------------------------------------
    if l_delete_location then
       cwms_loc.delete_location(p_turbine_id, l_delete_action2, p_office_id);
-   else
-      select count(*)
-        into l_count
-        from at_stream_location
-       where location_code = l_turbine_code;
-      if l_count = 0 then
-         select location_kind_code
-           into l_location_kind_code
-           from cwms_location_kind
-          where location_kind_id = 'SITE'; 
-      else
-         select location_kind_code
-           into l_location_kind_code
-           from cwms_location_kind
-          where location_kind_id = 'STREAMGAGE'; 
-      end if;       
-      update at_physical_location 
-         set location_kind = l_location_kind_code 
-       where location_code = l_turbine_code;   
    end if;
 end delete_turbine2;   
 --------------------------------------------------------------------------------

@@ -421,50 +421,44 @@ end retrieve_ancestors_f;
 --------------------------------------------------------------------------------
 -- PROCEDURE DELETE_ENTITY
 procedure delete_entity (
-   p_entity_id             in varchar2,
-   p_delete_child_entities in varchar default 'F',
-   p_office_id             in varchar2 default null)
+   p_entity_code           in integer,
+   p_delete_child_entities in varchar default 'F')
 is
-   l_entity_code        integer;
    l_office_code        integer;
    l_entity_office_code integer;
    l_entity_codes       number_tab_t;
 begin
-   l_entity_code := get_entity_code(p_entity_id, p_office_id);
-   l_office_code := cwms_util.get_office_code(p_office_id);
-   select office_code into l_entity_office_code from at_entity where entity_code = l_entity_code;
+   select office_code into l_entity_office_code from at_entity where entity_code = p_entity_code;
    if l_entity_office_code = cwms_util.db_office_code_all and l_office_code != cwms_util.db_office_code_all then
       cwms_err.raise('ERROR', 'Cannot delete a CWMS-owned entity');
    end if;
-   if cwms_util.return_true_or_false(p_delete_child_entities) then
-      select entity_code
+   if cwms_util.is_true(p_delete_child_entities) then
+      select get_entity_code(entity_id, office_id) 
         bulk collect
         into l_entity_codes
-        from (select entity_code
-                from (select parent_code, 
-                             entity_code
-                        from at_entity 
-                             start with entity_code = l_entity_code 
-                             connect by prior entity_code = parent_code
-                     )
-               where parent_code = l_entity_code
-              union all
-              select entity_code
-                from (select parent_code, 
-                             entity_code
-                        from at_entity 
-                             start with entity_code = l_entity_code 
-                             connect by prior entity_code = parent_code
-                     )
-               where parent_code != l_entity_code
-             );
+        from table(retrieve_descendants_f(
+                      p_entity_code  => p_entity_code, 
+                      p_direct_only  => 'F', 
+                      p_include_self => 'F'));
              
       for i in reverse 1..l_entity_codes.count loop
          delete from at_entity where entity_code = l_entity_codes(i);
       end loop;
-   else
-      delete from at_entity where entity_code = l_entity_code;
    end if;
+   delete from at_entity where entity_code = p_entity_code;
+end delete_entity;
+
+--------------------------------------------------------------------------------
+-- PROCEDURE DELETE_ENTITY
+procedure delete_entity (
+   p_entity_id             in varchar2,
+   p_delete_child_entities in varchar default 'F',
+   p_office_id             in varchar2 default null)
+is
+begin
+   delete_entity(
+      get_entity_code(p_entity_id, p_office_id),
+      p_delete_child_entities);
 end delete_entity;
 
 --------------------------------------------------------------------------------
@@ -540,6 +534,133 @@ begin
          
    return l_cursor;
 end cat_entities_f;   
+
+--------------------------------------------------------------------------------
+-- PROCEDURE STORE_ENTITY_LOCATION
+procedure store_entity_location(
+   p_location_code  in integer,
+   p_entity_code    in integer,
+   p_comments       in varchar2,
+   p_fail_if_exists in varchar2)
+is
+   l_rec       at_entity_location%rowtype;
+   l_exists    boolean;
+   l_office_id cwms_office.office_id%type;
+begin
+   l_rec.location_code := p_location_code;
+   begin
+      select *
+        into l_rec
+        from at_entity_location
+       where location_code = l_rec.location_code;
+      l_exists := true;
+   exception
+      when no_data_found then l_exists := false;
+   end;
+   if l_exists and cwms_util.return_true_or_false(p_fail_if_exists) then
+      select o.office_id
+        into l_office_id
+        from at_physical_location pl,
+             at_base_location bl,
+             cwms_office o
+       where pl.location_code = p_location_code
+         and bl.base_location_code = pl.base_location_code
+         and o.office_code = bl.db_office_code;
+      cwms_err.raise(
+         'ITEM_ALREADY_EXISTS',
+         'Entity location',
+         l_office_id||'/'||cwms_loc.get_location_id(p_location_code));
+   end if;
+   l_rec.entity_code := p_entity_code;
+   l_rec.comments := nvl(p_comments, l_rec.comments);
+   
+   if l_exists then
+      update at_entity_location
+         set row = l_rec
+       where location_code = l_rec.location_code;  
+   else
+      insert into at_entity_location values l_rec;
+      cwms_loc.update_location_kind(l_rec.location_code, 'ENTITY', 'A');   
+   end if;
+end store_entity_location;
+
+--------------------------------------------------------------------------------
+-- PROCEDURE STORE_ENTITY_LOCATION
+procedure store_entity_location(
+   p_location_id    in varchar2,
+   p_entity_id      in varchar2,
+   p_comments       in varchar2,
+   p_fail_if_exists in varchar2,
+   p_office_id      in varchar2 default null)
+is
+begin
+   store_entity_location(
+      cwms_loc.get_location_code(p_office_id, p_location_id),
+      get_entity_code(p_entity_id, p_office_id),
+      p_comments,
+      p_fail_if_exists);
+end store_entity_location;
+
+--------------------------------------------------------------------------------
+-- PROCEDURE DELETE_ENTITY_LOCATION
+procedure delete_entity_location(
+   p_location_code       in integer,
+   p_delete_location     in varchar2 default 'F',
+   p_delete_entity       in varchar2 default 'F',
+   p_del_location_action in varchar2 default 'DELETE KEY',
+   p_del_child_entities  in varchar2 default 'F')
+is
+   l_entity_code integer;
+   l_office_id   cwms_office.office_id%type;
+begin
+   begin
+      select entity_code 
+        into l_entity_code 
+        from at_entity_location 
+       where location_code = p_location_code;
+   exception
+      when no_data_found then
+         select o.office_id
+           into l_office_id
+           from at_physical_location pl,
+                at_base_location bl,
+                cwms_office o
+          where pl.location_code = p_location_code
+            and bl.base_location_code = pl.base_location_code
+            and o.office_code = bl.db_office_code;
+         cwms_err.raise(
+            'ERROR',
+            'No entity is associated with location ',
+            l_office_id||'/'||cwms_loc.get_location_id(p_location_code));
+   end;
+   delete from at_entity_location where location_code = p_location_code;
+   cwms_loc.update_location_kind(p_location_code, 'ENTITY', 'D');
+   if cwms_util.return_true_or_false(p_delete_location) then
+      cwms_loc.delete_location(p_location_code, p_del_location_action);
+   end if;
+   if cwms_util.return_true_or_false(p_delete_entity) then
+      delete_entity(l_entity_code, p_del_child_entities);
+   end if;
+end delete_entity_location;
+
+--------------------------------------------------------------------------------
+-- PROCEDURE DELETE_ENTITY_LOCATION
+procedure delete_entity_location(
+   p_location_id         in varchar2,
+   p_delete_location     in varchar2 default 'F',
+   p_delete_entity       in varchar2 default 'F',
+   p_del_location_action in varchar2 default 'DELETE KEY',
+   p_del_child_entities  in varchar2 default 'F',
+   p_office_id           in varchar2 default null)
+is
+begin
+   delete_entity_location(
+      cwms_loc.get_location_code(p_office_id, p_location_id),
+      p_delete_location,
+      p_delete_entity,
+      p_del_location_action,
+      p_del_child_entities);
+end delete_entity_location;
 
 end cwms_entity;
 /

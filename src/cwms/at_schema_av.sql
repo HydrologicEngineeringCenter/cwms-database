@@ -23,10 +23,12 @@ DECLARE
 			       'av_embank_structure_type',  -- created in at_schema_2...
 			       'av_embankment',             -- created in at_schema_2...
 			       'av_entity',
+			       'av_entity_location',
                 'av_gage', 
                 'av_gage_method',
                 'av_gage_sensor',
                 'av_gage_type', 
+                'av_gate',
 			       'av_gate_change',
 			       'av_gate_setting',
 			       'av_loc',                    -- created in at_schema_2...
@@ -77,7 +79,7 @@ DECLARE
 			       'av_transitional_rating',
 			       'av_virtual_rating',
 			       'av_ts_association',
-			       'av_stream_types',
+--			       'av_stream_types',
 			       'av_store_rule',
 			       'av_store_rule_ui',
 			       'av_text_filter',
@@ -160,7 +162,7 @@ END;
 @@cwms/views/av_transitional_rating.sql
 @@cwms/views/av_virtual_rating.sql
 @@cwms/views/av_ts_association.sql
-@@cwms/views/av_stream_types.sql
+--@@cwms/views/av_stream_types.sql
 @@cwms/views/av_data_q_changed.sql
 @@cwms/views/av_data_q_protection.sql
 @@cwms/views/av_data_q_range.sql
@@ -181,6 +183,12 @@ END;
 @@cwms/views/av_vert_datum_offset.sql
 @@cwms/views/av_office.sql
 @@cwms/views/av_entity.sql
+@@cwms/views/av_entity_location.sql
+@@cwms/views/av_configuration.sql
+@@cwms/views/av_configuration_category.sql
+@@cwms/views/av_gate.sql
+@@cwms/views/av_overflow.sql
+@@cwms/views/av_pump.sql
 
 @@cwms/views/av_outlet.sql
 @@cwms/views/av_compound_outlet.sql

@@ -600,17 +600,7 @@ as
             || self.ind_rounding_specs.count
             || ' rounding specifications'); 
       end if;
-      begin
-         l_location_code := self.get_location_code;
-      exception
-         when others then
-            cwms_loc.create_location_raw(
-               p_base_location_code => l_base_location_code, -- out, not used
-               p_location_code      => l_location_code,      -- out
-               p_base_location_id   => cwms_util.get_base_id(self.location_id),
-               p_sub_location_id    => cwms_util.get_sub_id(self.location_id),
-               p_db_office_code     => cwms_util.get_office_code(self.office_id));
-      end;
+      l_location_code := self.get_location_code;
       begin
          select *
            into l_rec
@@ -624,9 +614,7 @@ as
                'Rating specification',
                self.office_id||'/'||self.location_id||cwms_rating.separator1||self.template_id||cwms_rating.separator1||self.version);
          end if;
-         if source_agency_id is not null then
-            l_rec.source_agency_code := self.get_source_agency_code;            
-         end if;
+         l_rec.source_agency_code           := self.get_source_agency_code;            
          l_rec.in_range_rating_method       := self.get_in_range_rating_code;
          l_rec.out_range_low_rating_method  := self.get_out_range_low_rating_code;
          l_rec.out_range_high_rating_method := self.get_out_range_high_rating_code;
@@ -651,6 +639,7 @@ as
             l_rec.template_code                := l_template_code;
             l_rec.location_code                := l_location_code;
             l_rec.version                      := self.version;
+            l_rec.source_agency_code           := self.get_source_agency_code;            
             l_rec.in_range_rating_method       := self.get_in_range_rating_code;
             l_rec.out_range_low_rating_method  := self.get_out_range_low_rating_code;
             l_rec.out_range_high_rating_method := self.get_out_range_high_rating_code;

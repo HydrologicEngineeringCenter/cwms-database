@@ -9,8 +9,8 @@ create or replace package cwms_gage
 as
 
 goes_category_id       constant varchar2(12) := 'GOES ALIASES';
-goes_category_desc     constant varchar2(28) := 'GOES location aliases by gage';
-goes_group_desc_prefix constant varchar2(43) := 'GOES location aliases for gage id ';
+goes_category_desc     constant varchar2(29) := 'GOES location aliases by gage';
+goes_group_desc_prefix constant varchar2(33) := 'GOES location aliases for gage id';
 -- not documented
 function get_gage_code(
    p_office_id   in varchar2,
@@ -44,8 +44,8 @@ procedure store_gage(
    p_ignore_nulls    in varchar2,
    p_gage_type       in varchar2 default null,
    p_assoc_loc_id    in varchar2 default null,
-   p_discontinued    in varchar2 default 'F',
-   p_out_of_service  in varchar2 default 'F',
+   p_discontinued    in varchar2 default null,
+   p_out_of_service  in varchar2 default null,
    p_manufacturer    in varchar2 default null,
    p_model_number    in varchar2 default null,
    p_serial_number   in varchar2 default null,

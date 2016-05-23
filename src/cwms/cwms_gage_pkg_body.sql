@@ -60,8 +60,8 @@ procedure store_gage(
    p_ignore_nulls    in varchar2,
    p_gage_type       in varchar2 default null,
    p_assoc_loc_id    in varchar2 default null,
-   p_discontinued    in varchar2 default 'F',
-   p_out_of_service  in varchar2 default 'F',
+   p_discontinued    in varchar2 default null,
+   p_out_of_service  in varchar2 default null,
    p_manufacturer    in varchar2 default null,
    p_model_number    in varchar2 default null,
    p_serial_number   in varchar2 default null,
@@ -91,6 +91,18 @@ begin
          'ERROR',
          'Gage identifier must not be null.');      
    end if;
+   l_rec.gage_location_code := cwms_loc.get_location_code(p_office_id, p_location_id); -- will barf if location doesn't exist
+   if not cwms_loc.can_store(l_rec.gage_location_code, 'GAGE') then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot store GAGE information for location '
+         ||cwms_util.get_db_office_id(p_office_id)
+         ||'/'
+         ||p_location_id
+         ||' (location kind = '
+         ||cwms_loc.check_location_kind(l_rec.gage_location_code)
+         ||')');
+   end if;
    l_fail_if_exists := cwms_util.is_true(p_fail_if_exists);
    l_ignore_nulls   := cwms_util.is_true(p_ignore_nulls);
    ------------------------------------------                                                                          
@@ -98,20 +110,14 @@ begin
    ------------------------------------------                                                                          
    begin
       l_rec.gage_code := get_gage_code(p_office_id, p_location_id, p_gage_id);
+      select *
+        into l_rec
+        from at_gage
+       where gage_code = l_rec.gage_code; 
       l_exists := true;
-      if p_gage_type is null and not l_ignore_nulls then
-         cwms_err.raise(
-            'ERROR',
-            'Cannot set gage type to null');
-      end if;
    exception
       when item_does_not_exist then
          l_exists := false;
-         if p_gage_type is null then
-            cwms_err.raise(
-               'ERROR',
-               'Gage type must not be null for new gage record');
-         end if;
    end;
    if l_exists and l_fail_if_exists then
       cwms_err.raise(
@@ -129,17 +135,13 @@ begin
    if not l_exists then
       l_rec.gage_code := cwms_seq.nextval;
    end if;
-   if p_gage_type is not null then
-      select gage_type_code
-        into l_rec.gage_type_code
-        from cwms_gage_type
-       where upper(gage_type_id) = upper(trim(p_gage_type)); 
-   end if;
-   if not l_exists then
-      l_rec.gage_location_code := cwms_loc.get_location_code(p_office_id, p_location_id);
-   end if;
-   if not l_exists then
-      l_rec.gage_id := trim(p_gage_id);
+   if p_gage_type is not null or not l_ignore_nulls then
+      if p_gage_type is not null then
+         select gage_type_code
+           into l_rec.gage_type_code
+           from cwms_gage_type
+          where upper(gage_type_id) = upper(trim(p_gage_type)); 
+      end if;
    end if;
    if p_discontinued is not null or not l_ignore_nulls then
       l_rec.discontinued := upper(trim(p_discontinued));
@@ -167,24 +169,23 @@ begin
    end if;
    if p_assoc_loc_id is not null or not l_ignore_nulls then
       l_rec.associated_location_code := 
-         case p_assoc_loc_id is null
-            when true  then 
-               null
-            when false then 
-               cwms_loc.get_location_code(
-                  nvl(upper(p_office_id), cwms_util.user_office_id), 
-                  p_assoc_loc_id)
+         case 
+         when p_assoc_loc_id is null then null
+         else cwms_loc.get_location_code(p_office_id, p_assoc_loc_id)
          end;
+   end if;
+   l_rec.gage_id := nvl(l_rec.gage_id, trim(p_gage_id));
+   l_rec.discontinued := nvl(l_rec.discontinued, 'F');
+   l_rec.out_of_service := nvl(l_rec.out_of_service, 'F');
+   if l_rec.gage_type_code is null then
+      cwms_err.raise('ERROR', 'Cannot set gage type to null');
+   end if;
+   if l_rec.gage_id is null then
+      cwms_err.raise('ERROR', 'Cannot set gage id to null');
    end if;
    ---------------------------------
    -- insert or update the record --
    ---------------------------------
-   if l_rec.discontinued is null then
-      l_rec.discontinued := 'F';
-   end if;
-   if l_rec.out_of_service is null then
-      l_rec.out_of_service := 'F';
-   end if;
    if l_exists then
       update at_gage
          set row = l_rec
@@ -194,7 +195,7 @@ begin
         into at_gage
       values l_rec;
    end if;   
-   
+   cwms_loc.update_location_kind(l_rec.gage_location_code, 'GAGE', 'A');
 end store_gage;   
 
 --------------------------------------------------------------------------------
@@ -321,6 +322,7 @@ begin
    end if;
    if upper(p_delete_action) in (cwms_util.delete_key, cwms_util.delete_all) then
       delete from at_gage where gage_code = l_gage_code;
+      cwms_loc.update_location_kind(cwms_loc.get_location_code(p_office_id, p_location_id), 'GAGE', 'D');
    end if;
       
 end delete_gage;   

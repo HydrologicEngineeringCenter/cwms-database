@@ -127,7 +127,7 @@ tableInfo = [
     {"ID" : "gageMethod",         "TABLE" : "CWMS_GAGE_METHOD",           "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "gageType",           "TABLE" : "CWMS_GAGE_TYPE",             "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "nation",             "TABLE" : "CWMS_NATION",                "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "streamType",         "TABLE" : "CWMS_STREAM_TYPE",           "SCHEMA" : "CWMS", "USERACCESS" : True},
+#   {"ID" : "streamType",         "TABLE" : "CWMS_STREAM_TYPE",           "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "vertconHeader",      "TABLE" : "CWMS_VERTCON_HEADER",        "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "vertconData",        "TABLE" : "CWMS_VERTCON_DATA",          "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "verticalDatum",      "TABLE" : "CWMS_VERTICAL_DATUM",        "SCHEMA" : "CWMS", "USERACCESS" : True},
@@ -140,6 +140,9 @@ tableInfo = [
     {"ID" : "usgsParameter",      "TABLE" : "CWMS_USGS_PARAMETER",        "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "entityCategory",     "TABLE" : "CWMS_ENTITY_CATEGORY",       "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "entity",             "TABLE" : "AT_ENTITY",                  "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "configCategory",     "TABLE" : "CWMS_CONFIG_CATEGORY",       "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "configuration",      "TABLE" : "AT_CONFIGURATION",           "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "gateType",           "TABLE" : "CWMS_GATE_TYPE",             "SCHEMA" : "CWMS", "USERACCESS" : True},
 ]
 
 tables = []
@@ -4913,12 +4916,13 @@ if __name__ in ("__main__", "main") : sys.stderr.write("Processing gage methods 
 gageMethods = [
 #   CODE  ID             DESCRIPTION
 #   ----  -----------    ---------------------------------------
-    [1,   'MANUAL',      'No communication method'             ],
-    [2,   'GOES',        'Gage communicates via GOES satellite'],
-    [3,   'LOS',         'Line-of-site radio'                  ],
-    [4,   'METEORBURST', 'Gage communicates via meteorburst'   ],
-    [5,   'PHONE',       'Gage communicates via telephone'     ],
-    [6,   'INTERNET',    'Gage communicates via internet'      ],
+    [1,   'MANUAL',      'No communication method'                  ],
+    [2,   'GOES',        'Gage communicates via GOES satellite'     ],
+    [3,   'LOS',         'Line-of-site radio'                       ],
+    [4,   'METEORBURST', 'Gage communicates via meteorburst'        ],
+    [5,   'PHONE',       'Gage communicates via telephone'          ],
+    [6,   'INTERNET',    'Gage communicates via internet'           ],
+    [7,   'IRRIDIUM',    'Gage communicates via IRRIDIUM statellite'],
 ]
 
 #------------#
@@ -4926,19 +4930,25 @@ gageMethods = [
 #------------#
 if __name__ in ("__main__", "main") : sys.stderr.write("Processing gage types \n")
 gageTypes = [
-#   CODE  ID         MANNUALLY_READ   INQUIRY_METHOD TX_METHOD    DESCRIPTION
-#   ----  ---------- ---------------  -------------- ------------ ------------------------
-    [1,   'GOES_T',  'F',             'NULL',        'GOES',      'GOES TX-only'],
-    [2,   'GOES_TI', 'F',             'GOES',        'GOES',      'GOES TX+INQ'],
-    [3,   'LOS_T',   'F',             'NULL',        'LOS',       'LOS TX-only'],
-    [4,   'LOS_TI',  'F',             'LOS',         'LOS',       'LOS TX+INQ'],
-    [5,   'INET_T',  'F',             'NULL',        'INTERNET',  'INTERNET TX-only'],
-    [6,   'INET_TI', 'F',             'INTERNET',    'INTERNET',  'INTERNET TX+INQ'],
+#   CODE  ID          MANNUALLY_READ   INQUIRY_METHOD TX_METHOD      DESCRIPTION
+#   ----  ----------  ---------------  -------------- ------------   ------------------------
+    [ 1,  'GOES_T',   'F',             'NULL',        'GOES',        'GOES TX-only'],
+    [ 2,  'GOES_TI',  'F',             'GOES',        'GOES',        'GOES TX+INQ'],
+    [ 3,  'LOS_T',    'F',             'NULL',        'LOS',         'LOS TX-only'],
+    [ 4,  'LOS_TI',   'F',             'LOS',         'LOS',         'LOS TX+INQ'],
+    [ 5,  'INET_T',   'F',             'NULL',        'INTERNET',    'Internet TX-only'],
+    [ 6,  'INET_TI',  'F',             'INTERNET',    'INTERNET',    'Internet TX+INQ'],
+    [ 7,  'IRRID_T',  'F',             'NULL',        'IRRIDIUM',    'Irridium TX-only'],
+    [ 8,  'IRRID_TI', 'F',             'INTERNET',    'IRRIDIUM',    'Irridium TX+INQ'],
+    [ 9,  'MET_T',    'F',             'NULL',        'METEORBURST', 'Meteorburst TX-only'],
+    [10,  'PHONE',    'F',             'PHONE',       'PHONE',       'Telephone INQ-only'],
+    [11,  'MANUAL',   'T',             'MANUAL',      'NULL',        'Manually read'],
 ]
 
 #---------#
 # NATIONS #
 #---------#
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing nations \n")
 nations = [
 #    CODE   ID
 #        ----   -------------   
@@ -5177,7 +5187,7 @@ nations = [
     ["US",  "UNITED STATES"],
     ["UM",  "UNITED STATES MINOR OUTLYING ISLANDS"],
     ["UY",  "URUGUAY"],
-    ["UZ",  "UZBEKISTAN"],
+    ["UZ",  "UZBEKISTAN"],                                                                                                                                                    
     ["VU",  "VANUATU"],
     ["VE",  "VENEZUELA, BOLIVARIAN REPUBLIC OF"],
     ["VN",  "VIET NAM"],
@@ -5190,126 +5200,133 @@ nations = [
     ["ZW",  "ZIMBABWE"],
 ]
 
-#--------------#
-# STREAM TYPES #
-#--------------#
-streamTypes = [
-#    ID      CHANNELS    ENTRENCHMENT WIDTH/DEPTH        SINUOSITY          SLOPE           MATERIAL
-#    --------------------------------------------------------------------------------------------------
-    ['A1a+', 'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '> 0.10',       'BEDROCK'  ],   
-    ['A2a+', 'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '> 0.10',       'BOULDERS' ],   
-    ['A3a+', 'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '> 0.10',       'COBBLE'   ],   
-    ['A4a+', 'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '> 0.10',       'GRAVEL'   ],   
-    ['A5a+', 'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '> 0.10',       'SAND'     ],   
-    ['A6a+', 'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '> 0.10',       'SILT/CLAY'],
-    ['A1',   'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '0.04 - 0.10',  'BEDROCK'  ],   
-    ['A2',   'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '0.04 - 0.10',  'BOULDERS' ],   
-    ['A3',   'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '0.04 - 0.10',  'COBBLE'   ],   
-    ['A4',   'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '0.04 - 0.10',  'GRAVEL'   ],   
-    ['A5',   'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '0.04 - 0.10',  'SAND'     ],   
-    ['A6',   'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '0.04 - 0.10',  'SILT/CLAY'],
-    ['G1',   'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '0.02 - 0.039', 'BEDROCK'  ],   
-    ['G2',   'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '0.02 - 0.039', 'BOULDERS' ],   
-    ['G3',   'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '0.02 - 0.039', 'COBBLE'   ],   
-    ['G4',   'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '0.02 - 0.039', 'GRAVEL'   ],   
-    ['G5',   'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '0.02 - 0.039', 'SAND'     ],   
-    ['G6',   'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '0.02 - 0.039', 'SILT/CLAY'],
-    ['G1c',  'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '< 0.02',       'BEDROCK'  ],   
-    ['G2c',  'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '< 0.02',       'BOULDERS' ],   
-    ['G3c',  'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '< 0.02',       'COBBLE'   ],   
-    ['G4c',  'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '< 0.02',       'GRAVEL'   ],   
-    ['G5c',  'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '< 0.02',       'SAND'     ],   
-    ['G6c',  'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '< 0.02',       'SILT/CLAY'],
-    ['F1b',  'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '0.02 - 0.039', 'BEDROCK'  ],   
-    ['F2b',  'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '0.02 - 0.039', 'BOULDERS' ],   
-    ['F3b',  'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '0.02 - 0.039', 'COBBLE'   ],   
-    ['F4b',  'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '0.02 - 0.039', 'GRAVEL'   ],   
-    ['F5b',  'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '0.02 - 0.039', 'SAND'     ],   
-    ['F6b',  'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '0.02 - 0.039', 'SILT/CLAY'],
-    ['F1',   'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '< 0.02',       'BEDROCK'  ],   
-    ['F2',   'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '< 0.02',       'BOULDERS' ],   
-    ['F3',   'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '< 0.02',       'COBBLE'   ],   
-    ['F4',   'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '< 0.02',       'GRAVEL'   ],   
-    ['F5',   'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '< 0.02',       'SAND'     ],   
-    ['F6',   'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '< 0.02',       'SILT/CLAY'],
-    ['B1a',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.04 - 0.099', 'BEDROCK'  ],   
-    ['B2a',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.04 - 0.099', 'BOULDERS' ],   
-    ['B3a',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.04 - 0.099', 'COBBLE'   ],   
-    ['B4a',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.04 - 0.099', 'GRAVEL'   ],   
-    ['B5a',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.04 - 0.099', 'SAND'     ],   
-    ['B6a',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.04 - 0.099', 'SILT/CLAY'],
-    ['B1b',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.02 - 0.039', 'BEDROCK'  ],   
-    ['B2b',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.02 - 0.039', 'BOULDERS' ],   
-    ['B3b',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.02 - 0.039', 'COBBLE'   ],   
-    ['B4b',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.02 - 0.039', 'GRAVEL'   ],   
-    ['B5b',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.02 - 0.039', 'SAND'     ],   
-    ['B6b',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.02 - 0.039', 'SILT/CLAY'],
-    ['B1',   'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '< 0.02',       'BEDROCK'  ],   
-    ['B2',   'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '< 0.02',       'BOULDERS' ],   
-    ['B3',   'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '< 0.02',       'COBBLE'   ],   
-    ['B4',   'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '< 0.02',       'GRAVEL'   ],   
-    ['B5',   'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '< 0.02',       'SAND'     ],   
-    ['B6',   'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '< 0.02',       'SILT/CLAY'],
-    ['E3b',  'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '0.02 - 0.039', 'COBBLE'   ],   
-    ['E4b',  'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '0.02 - 0.039', 'GRAVEL'   ],   
-    ['E5b',  'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '0.02 - 0.039', 'SAND'     ],   
-    ['E6b',  'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '0.02 - 0.039', 'SILT/CLAY'],
-    ['E3',   'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '< 0.02',       'COBBLE'   ],   
-    ['E4',   'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '< 0.02',       'GRAVEL'   ],   
-    ['E5',   'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '< 0.02',       'SAND'     ],   
-    ['E6',   'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '< 0.02',       'SILT/CLAY'],
-    ['C1b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'BEDROCK'  ],   
-    ['C2b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'BOULDERS' ],   
-    ['C3b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'COBBLE'   ],   
-    ['C4b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'GRAVEL'   ],   
-    ['C5b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'SAND'     ],   
-    ['C6b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'SILT/CLAY'],   
-    ['C1',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'BEDROCK'  ],   
-    ['C2',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'BOULDERS' ],   
-    ['C3',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'COBBLE'   ],   
-    ['C4',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'GRAVEL'   ],   
-    ['C5',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'SAND'     ],   
-    ['C6',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'SILT/CLAY'],   
-    ['C1c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'BEDROCK'  ],   
-    ['C2c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'BOULDERS' ],   
-    ['C3c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'COBBLE'   ],   
-    ['C4c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'GRAVEL'   ],   
-    ['C5c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'SAND'     ],   
-    ['C6c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'SILT/CLAY'],   
-    ['D3b',  'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.02 - 0.039', 'COBBLE'   ],   
-    ['D4b',  'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.02 - 0.039', 'GRAVEL'   ],   
-    ['D5b',  'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.02 - 0.039', 'SAND'     ],   
-    ['D6b',  'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.02 - 0.039', 'SILT/CLAY'],   
-    ['D3',   'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.001 - 0.02', 'COBBLE'   ],   
-    ['D4',   'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.001 - 0.02', 'GRAVEL'   ],   
-    ['D5',   'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.001 - 0.02', 'SAND'     ],   
-    ['D6',   'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.001 - 0.02', 'SILT/CLAY'],   
-    ['D4c-', 'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '< 0.001',      'GRAVEL'   ],   
-    ['D5c-', 'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '< 0.001',      'SAND'     ],   
-    ['D6c-', 'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '< 0.001',      'SILT/CLAY'],   
-    ['DA4',  'MULTIPLE', None,        'HIGHLY VARIABLE', 'HIGHLY VARIABLE', '< 0.005',      'GRAVEL'   ],   
-    ['DA5',  'MULTIPLE', None,        'HIGHLY VARIABLE', 'HIGHLY VARIABLE', '< 0.005',      'SAND'     ],   
-    ['DA6',  'MULTIPLE', None,        'HIGHLY VARIABLE', 'HIGHLY VARIABLE', '< 0.005',      'SILT/CLAY'],   
-]
+# #--------------#
+# # STREAM TYPES #
+# #--------------#
+# if __name__ in ("__main__", "main") : sys.stderr.write("Processing stream types \n")
+# streamTypes = [
+# #    ID      CHANNELS    ENTRENCHMENT WIDTH/DEPTH        SINUOSITY          SLOPE           MATERIAL
+# #    --------------------------------------------------------------------------------------------------
+#     ['A1a+', 'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '> 0.10',       'BEDROCK'  ],   
+#     ['A2a+', 'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '> 0.10',       'BOULDERS' ],   
+#     ['A3a+', 'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '> 0.10',       'COBBLE'   ],   
+#     ['A4a+', 'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '> 0.10',       'GRAVEL'   ],   
+#     ['A5a+', 'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '> 0.10',       'SAND'     ],   
+#     ['A6a+', 'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '> 0.10',       'SILT/CLAY'],
+#     ['A1',   'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '0.04 - 0.10',  'BEDROCK'  ],   
+#     ['A2',   'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '0.04 - 0.10',  'BOULDERS' ],   
+#     ['A3',   'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '0.04 - 0.10',  'COBBLE'   ],   
+#     ['A4',   'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '0.04 - 0.10',  'GRAVEL'   ],   
+#     ['A5',   'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '0.04 - 0.10',  'SAND'     ],   
+#     ['A6',   'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '0.04 - 0.10',  'SILT/CLAY'],
+#     ['G1',   'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '0.02 - 0.039', 'BEDROCK'  ],   
+#     ['G2',   'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '0.02 - 0.039', 'BOULDERS' ],   
+#     ['G3',   'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '0.02 - 0.039', 'COBBLE'   ],   
+#     ['G4',   'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '0.02 - 0.039', 'GRAVEL'   ],   
+#     ['G5',   'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '0.02 - 0.039', 'SAND'     ],   
+#     ['G6',   'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '0.02 - 0.039', 'SILT/CLAY'],
+#     ['G1c',  'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '< 0.02',       'BEDROCK'  ],   
+#     ['G2c',  'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '< 0.02',       'BOULDERS' ],   
+#     ['G3c',  'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '< 0.02',       'COBBLE'   ],   
+#     ['G4c',  'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '< 0.02',       'GRAVEL'   ],   
+#     ['G5c',  'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '< 0.02',       'SAND'     ],   
+#     ['G6c',  'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '< 0.02',       'SILT/CLAY'],
+#     ['F1b',  'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '0.02 - 0.039', 'BEDROCK'  ],   
+#     ['F2b',  'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '0.02 - 0.039', 'BOULDERS' ],   
+#     ['F3b',  'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '0.02 - 0.039', 'COBBLE'   ],   
+#     ['F4b',  'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '0.02 - 0.039', 'GRAVEL'   ],   
+#     ['F5b',  'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '0.02 - 0.039', 'SAND'     ],   
+#     ['F6b',  'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '0.02 - 0.039', 'SILT/CLAY'],
+#     ['F1',   'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '< 0.02',       'BEDROCK'  ],   
+#     ['F2',   'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '< 0.02',       'BOULDERS' ],   
+#     ['F3',   'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '< 0.02',       'COBBLE'   ],   
+#     ['F4',   'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '< 0.02',       'GRAVEL'   ],   
+#     ['F5',   'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '< 0.02',       'SAND'     ],   
+#     ['F6',   'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '< 0.02',       'SILT/CLAY'],
+#     ['B1a',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.04 - 0.099', 'BEDROCK'  ],   
+#     ['B2a',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.04 - 0.099', 'BOULDERS' ],   
+#     ['B3a',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.04 - 0.099', 'COBBLE'   ],   
+#     ['B4a',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.04 - 0.099', 'GRAVEL'   ],   
+#     ['B5a',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.04 - 0.099', 'SAND'     ],   
+#     ['B6a',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.04 - 0.099', 'SILT/CLAY'],
+#     ['B1b',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.02 - 0.039', 'BEDROCK'  ],   
+#     ['B2b',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.02 - 0.039', 'BOULDERS' ],   
+#     ['B3b',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.02 - 0.039', 'COBBLE'   ],   
+#     ['B4b',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.02 - 0.039', 'GRAVEL'   ],   
+#     ['B5b',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.02 - 0.039', 'SAND'     ],   
+#     ['B6b',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.02 - 0.039', 'SILT/CLAY'],
+#     ['B1',   'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '< 0.02',       'BEDROCK'  ],   
+#     ['B2',   'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '< 0.02',       'BOULDERS' ],   
+#     ['B3',   'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '< 0.02',       'COBBLE'   ],   
+#     ['B4',   'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '< 0.02',       'GRAVEL'   ],   
+#     ['B5',   'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '< 0.02',       'SAND'     ],   
+#     ['B6',   'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '< 0.02',       'SILT/CLAY'],
+#     ['E3b',  'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '0.02 - 0.039', 'COBBLE'   ],   
+#     ['E4b',  'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '0.02 - 0.039', 'GRAVEL'   ],   
+#     ['E5b',  'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '0.02 - 0.039', 'SAND'     ],   
+#     ['E6b',  'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '0.02 - 0.039', 'SILT/CLAY'],
+#     ['E3',   'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '< 0.02',       'COBBLE'   ],   
+#     ['E4',   'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '< 0.02',       'GRAVEL'   ],   
+#     ['E5',   'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '< 0.02',       'SAND'     ],   
+#     ['E6',   'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '< 0.02',       'SILT/CLAY'],
+#     ['C1b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'BEDROCK'  ],   
+#     ['C2b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'BOULDERS' ],   
+#     ['C3b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'COBBLE'   ],   
+#     ['C4b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'GRAVEL'   ],   
+#     ['C5b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'SAND'     ],   
+#     ['C6b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'SILT/CLAY'],   
+#     ['C1',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'BEDROCK'  ],   
+#     ['C2',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'BOULDERS' ],   
+#     ['C3',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'COBBLE'   ],   
+#     ['C4',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'GRAVEL'   ],   
+#     ['C5',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'SAND'     ],   
+#     ['C6',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'SILT/CLAY'],   
+#     ['C1c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'BEDROCK'  ],   
+#     ['C2c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'BOULDERS' ],   
+#     ['C3c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'COBBLE'   ],   
+#     ['C4c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'GRAVEL'   ],   
+#     ['C5c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'SAND'     ],   
+#     ['C6c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'SILT/CLAY'],   
+#     ['D3b',  'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.02 - 0.039', 'COBBLE'   ],   
+#     ['D4b',  'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.02 - 0.039', 'GRAVEL'   ],   
+#     ['D5b',  'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.02 - 0.039', 'SAND'     ],   
+#     ['D6b',  'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.02 - 0.039', 'SILT/CLAY'],   
+#     ['D3',   'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.001 - 0.02', 'COBBLE'   ],   
+#     ['D4',   'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.001 - 0.02', 'GRAVEL'   ],   
+#     ['D5',   'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.001 - 0.02', 'SAND'     ],   
+#     ['D6',   'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.001 - 0.02', 'SILT/CLAY'],   
+#     ['D4c-', 'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '< 0.001',      'GRAVEL'   ],   
+#     ['D5c-', 'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '< 0.001',      'SAND'     ],   
+#     ['D6c-', 'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '< 0.001',      'SILT/CLAY'],   
+#     ['DA4',  'MULTIPLE', None,        'HIGHLY VARIABLE', 'HIGHLY VARIABLE', '< 0.005',      'GRAVEL'   ],   
+#     ['DA5',  'MULTIPLE', None,        'HIGHLY VARIABLE', 'HIGHLY VARIABLE', '< 0.005',      'SAND'     ],   
+#     ['DA6',  'MULTIPLE', None,        'HIGHLY VARIABLE', 'HIGHLY VARIABLE', '< 0.005',      'SILT/CLAY'],   
+# ]
 
 #----------------#
 # location kinds #                            
 #----------------#
 if __name__ in ("__main__", "main") : sys.stderr.write("Processing location kinds \n")
 locationKinds = [
-    [ 1, None, 'SITE',        'The point identified with site',  'A location with no entry in one of the location kind tables'                                                   ],
-    [ 2,    1, 'STREAM',      'The downstream-most point',       'A stream or river'                                                                                             ],
-    [ 3,    1, 'BASIN',       'The outlet of the basin',         'A basin or water catchment'                                                                                    ],
-    [ 4,    1, 'PROJECT',     'The project office or other loc', 'One or more associated structures constructed to manage the flow of water in a river or stream'                ],
-    [ 5,    1, 'EMBANKMENT',  'The midpoint of the centerline',  'A structure protruding above the ground constructed to impede or direct the flow of water in a river or stream'],
-    [ 6,    1, 'OUTLET',      'The discharge point or midpoint', 'A structure constructed to allow the flow of water through, under, or over an embankment'                      ],
-    [ 7,    1, 'TURBINE',     'The discharge point',             'A structure constructed to generate electricity from the flow of water'                                        ],
-    [ 8,    1, 'LOCK',        'The center of the chamber',       'A structure that raises and lowers waterborne vessels between upper and lower pools'                           ],
-    [ 9,    1, 'STREAMGAGE',  'The gage location',               'A gage on or along a stream, used to measure stage and possibly other parameters'                              ],
-    [10,    6, 'GATE',        'The discharge point',             'An outlet that can restrict or prevent the flow of water.'                                                     ],
-    [11,    6, 'OVERFLOW',    'The midpoint of the discharge',   'An outlet that passes the flow of water without restriction above a certain elevation'                         ], 
+    [ 1, None, 'SITE',           'The point identified with site',  'A location with no entry in one of the location kind tables'                                                   ],
+    [ 2,    1, 'STREAM',         'The downstream-most point',       'A stream or river'                                                                                             ],
+    [ 3,    1, 'BASIN',          'The outlet of the basin',         'A basin or water catchment'                                                                                    ],
+    [ 4,    1, 'PROJECT',        'The project office or other loc', 'One or more associated structures constructed to manage the flow of water in a river or stream'                ],
+    [ 5,    1, 'EMBANKMENT',     'The midpoint of the centerline',  'A structure protruding above the ground constructed to impede or direct the flow of water in a river or stream'],
+    [ 6,    1, 'OUTLET',         'The discharge point or midpoint', 'A structure constructed to allow the flow of water through, under, or over an embankment'                      ],
+    [ 7,    1, 'TURBINE',        'The discharge point',             'A structure constructed to generate electricity from the flow of water'                                        ],
+    [ 8,    1, 'LOCK',           'The center of the chamber',       'A structure that raises and lowers waterborne vessels between upper and lower pools'                           ],
+    [ 9,    1, 'STREAM_LOCATION','The stream location',             'A location on or along a stream'                                                                               ],
+    [10,    6, 'GATE',           'The discharge point',             'An outlet that can restrict or prevent the flow of water.'                                                     ],
+    [11,    6, 'OVERFLOW',       'The midpoint of the discharge',   'An outlet that passes the flow of water without restriction above a certain elevation'                         ], 
+    [12,    9, 'STREAM_GAGE',    'The gage location',               'A stream location that has a gage used to measure stage and/or other hydrologic parameters'                    ],
+    [13,    1, 'STREAM_REACH',   'The downstream-most point',       'A length of a stream bounded by upstream and downstream extents'                                               ],
+    [14,   12, 'PUMP',           'The intake or discharge point',   'A stream location where water is pumped from or into a stream or reservoir'                                    ],
+    [15,    1, 'WEATHER_GAGE',   'The gage location',               'A location that has a gage used to measure precipitation and/or other meteorologic parameters'                 ],
+    [16,    1, 'ENTITY',         'A representitave point',          'A location associated with an entity in the AT_ENTITY table'                                                   ],
 ]
 
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing usgs time zones \n")
 usgsTimeZones = [
 	("ACSST" , "Central Australia Summer Time"  , "+00 10:30:00"),
 	("ACST"  , "Central Australia Standard Time", "+00 09:30:00"),
@@ -5392,6 +5409,7 @@ usgsTimeZones = [
 	("ZP11"  , "UTC +11 hours"                  , "+00 11:00:00")
 ]
 
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing usgs flow adjustments \n")
 usgsFlowAdjustments = [
 	("UNSP", "Unspecified",                "Transfer from null code only"),
 	("MEAS", "Measured",                   "The discharge value was measured."),
@@ -5402,6 +5420,7 @@ usgsFlowAdjustments = [
 	("OTHR", "Adjusted for other factors", "The discharge was adjusted by a method not listed.(see measurement remarks).")
 ]
 
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing usgs rating control conditions \n")
 usgsRatingCtrlConditions = [
 	("UNSP", "The stream control conditions were not specified."),
 	("AICE", "The stream control is covered with anchor ice."),
@@ -5421,6 +5440,7 @@ usgsRatingCtrlConditions = [
 	("SUBM", "The stream control was submerged.")
 ]
 
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing usgs measurement qualities \n")
 usgsMeasQualities = [
 	("E", "Excellent", "The data is within 2% (percent) of the actual flow"),
 	("G", "Good", "The data is within 5% (percent) of the actual flow"),
@@ -5429,6 +5449,7 @@ usgsMeasQualities = [
 	("U", "Unspecified", "The measurement quality is unknown")
 ]
 
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing usgs parameters \n")
 usgsParameters = [
 	(   60, 14, None                         , 6, 72,        1, 0, "QR", "T" ,             0.001,    0, "Discharge, cubic feet per second"                                                                                                                                   ),
 	(   65, 23, None                         , 6, 35,        1, 0, "HG", "T" ,                 1,    0, "Gage height, feet"                                                                                                                                                  ),
@@ -8992,65 +9013,65 @@ def main() :
         nationLoadTemplate += "INSERT INTO @TABLE VALUES ('%s', '%s');\n" % (code, id.replace("'", "''"))
     nationLoadTemplate += "COMMIT;\n"
     
-    sys.stderr.write("Building streamTypeCreationTemplate\n")
-    streamTypeCreationTemplate = \
-    '''
-    -- ## TABLE ###############################################
-    -- ## @TABLE
-    -- ##
-    CREATE TABLE @TABLE
-    (
-      STREAM_TYPE_ID       VARCHAR2(4)  NOT NULL,
-      NUMBER_OF_CHANNELS   VARCHAR2(8)  NOT NULL,
-      ENTRENCHMENT_RATIO   VARCHAR2(32) NOT NULL,
-      WIDTH_TO_DEPTH_RATIO VARCHAR2(32) NOT NULL,
-      SINUOSITY            VARCHAR2(32) NOT NULL,
-      SLOPE                VARCHAR2(32) NOT NULL,
-      CHANNEL_MATERIAL     VARCHAR2(32) NOT NULL
-    )
-    tablespace @DATASPACE
-    PCTUSED    0
-    PCTFREE    10
-    INITRANS   1
-    MAXTRANS   255
-    STORAGE    (
-                INITIAL          10K
-                NEXT             10K
-                MINEXTENTS       1
-                MAXEXTENTS       UNLIMITED
-                PCTINCREASE      0
-                BUFFER_POOL      DEFAULT
-               )
-    LOGGING 
-    NOCOMPRESS 
-    NOCACHE
-    NOPARALLEL
-    MONITORING;
-    
-    -------------------------------
-    -- @TABLE constraints  --
-    --
-    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (STREAM_TYPE_ID) USING INDEX;
-    
-    ---------------------------
-    -- @TABLE comments --
-    --
-    COMMENT ON TABLE  @TABLE                      IS 'Contains pre-defined stream types based on Rosgen Classification (see http://www.wildlandhydrology.com/assets/ARM_5-3.pdf)';
-    COMMENT ON COLUMN @TABLE.STREAM_TYPE_ID       IS 'Rosgen Classification identifier';
-    COMMENT ON COLUMN @TABLE.NUMBER_OF_CHANNELS   IS 'Single or multiple channels';
-    COMMENT ON COLUMN @TABLE.ENTRENCHMENT_RATIO   IS 'Channel entrenchment ratio range';
-    COMMENT ON COLUMN @TABLE.WIDTH_TO_DEPTH_RATIO IS 'Channel width/Depth ratio range';
-    COMMENT ON COLUMN @TABLE.SINUOSITY            IS 'Channel sinuosity range';
-    COMMENT ON COLUMN @TABLE.SLOPE                IS 'Channel slope';
-    COMMENT ON COLUMN @TABLE.CHANNEL_MATERIAL     IS 'Channel material';
-    
-    COMMIT;
-    '''
-    sys.stderr.write("Building streamTypeLoadTemplate\n")
-    streamTypeLoadTemplate = ''
-    for v1, v2, v3, v4, v5, v6, v7 in streamTypes :
-        streamTypeLoadTemplate += "INSERT INTO @TABLE VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s');\n" % (v1, v2, v3, v4, v5, v6, v7)
-    streamTypeLoadTemplate += "COMMIT;\n"
+#     sys.stderr.write("Building streamTypeCreationTemplate\n")
+#     streamTypeCreationTemplate = \
+#     '''
+#     -- ## TABLE ###############################################
+#     -- ## @TABLE
+#     -- ##
+#     CREATE TABLE @TABLE
+#     (
+#       STREAM_TYPE_ID       VARCHAR2(4)  NOT NULL,
+#       NUMBER_OF_CHANNELS   VARCHAR2(8)  NOT NULL,
+#       ENTRENCHMENT_RATIO   VARCHAR2(32) NOT NULL,
+#       WIDTH_TO_DEPTH_RATIO VARCHAR2(32) NOT NULL,
+#       SINUOSITY            VARCHAR2(32) NOT NULL,
+#       SLOPE                VARCHAR2(32) NOT NULL,
+#       CHANNEL_MATERIAL     VARCHAR2(32) NOT NULL
+#     )
+#     tablespace @DATASPACE
+#     PCTUSED    0
+#     PCTFREE    10
+#     INITRANS   1
+#     MAXTRANS   255
+#     STORAGE    (
+#                 INITIAL          10K
+#                 NEXT             10K
+#                 MINEXTENTS       1
+#                 MAXEXTENTS       UNLIMITED
+#                 PCTINCREASE      0
+#                 BUFFER_POOL      DEFAULT
+#                )
+#     LOGGING 
+#     NOCOMPRESS 
+#     NOCACHE
+#     NOPARALLEL                                                                                                                     
+#     MONITORING;
+#     
+#     -------------------------------
+#     -- @TABLE constraints  --
+#     --
+#     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (STREAM_TYPE_ID) USING INDEX;
+#     
+#     ---------------------------
+#     -- @TABLE comments --
+#     --
+#     COMMENT ON TABLE  @TABLE                      IS 'Contains pre-defined stream types based on Rosgen Classification (see http://www.wildlandhydrology.com/assets/ARM_5-3.pdf)';
+#     COMMENT ON COLUMN @TABLE.STREAM_TYPE_ID       IS 'Rosgen Classification identifier';
+#     COMMENT ON COLUMN @TABLE.NUMBER_OF_CHANNELS   IS 'Single or multiple channels';
+#     COMMENT ON COLUMN @TABLE.ENTRENCHMENT_RATIO   IS 'Channel entrenchment ratio range';
+#     COMMENT ON COLUMN @TABLE.WIDTH_TO_DEPTH_RATIO IS 'Channel width/Depth ratio range';
+#     COMMENT ON COLUMN @TABLE.SINUOSITY            IS 'Channel sinuosity range';
+#     COMMENT ON COLUMN @TABLE.SLOPE                IS 'Channel slope';
+#     COMMENT ON COLUMN @TABLE.CHANNEL_MATERIAL     IS 'Channel material';
+#     
+#     COMMIT;
+#     '''
+#     sys.stderr.write("Building streamTypeLoadTemplate\n")
+#     streamTypeLoadTemplate = ''
+#     for v1, v2, v3, v4, v5, v6, v7 in streamTypes :
+#         streamTypeLoadTemplate += "INSERT INTO @TABLE VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s');\n" % (v1, v2, v3, v4, v5, v6, v7)
+#     streamTypeLoadTemplate += "COMMIT;\n"
     
     sys.stderr.write("Building vertconHeaderCreationTemplate\n")
     vertconHeaderCreationTemplate = \
@@ -9484,185 +9505,308 @@ def main() :
     -- ## TABLE ###############################################
     -- ## @TABLE
     -- ##
-    create table at_entity (
+    create table @TABLE (
        entity_code number(10),
        parent_code number(10),
        office_code number(10)    not null,
        category_id varchar2(3),
        entity_id   varchar2(32)  not null,
        entity_name varchar2(128) not null,
-       constraint at_entity_pk  primary key (entity_code),
-       constraint at_entity_fk1 foreign key (parent_code) references at_entity (entity_code),
-       constraint at_entity_fk2 foreign key (category_id) references cwms_entity_category (category_id),
-       constraint at_entity_ck1 check (trim(entity_id) = entity_id),
-       constraint at_entity_ck2 check (trim(entity_name) = entity_name)
+       constraint @TABLE_pk  primary key (entity_code),
+       constraint @TABLE_fk1 foreign key (parent_code) references @TABLE (entity_code),
+       constraint @TABLE_fk2 foreign key (category_id) references cwms_entity_category (category_id),
+       constraint @TABLE_ck1 check (trim(entity_id) = entity_id),
+       constraint @TABLE_ck2 check (trim(entity_name) = entity_name)
     ) organization index
     /
     
     ---------------------------
     -- @TABLE indexes --
     --
-    create unique index at_entity_idx_id on at_entity (office_code, upper(entity_id));
+    create unique index @TABLE_idx_id on @TABLE (office_code, upper(entity_id));
     
     ---------------------------
     -- @TABLE comments --
     --
-    comment on table  at_entity is 'Holds entities referenced by other objects';
-    comment on column at_entity.entity_code is 'Unique numeric code that identifies the entity in the database';
-    comment on column at_entity.parent_code is 'Entity code of parent entity, if applicable';
-    comment on column at_entity.office_code is 'Numeric code that identifies the office that owns this entity in the database';              
-    comment on column at_entity.category_id is 'Category describing the type of entity';
-    comment on column at_entity.entity_id   is 'The character identifier of the entity';
-    comment on column at_entity.entity_name is 'The name of the entity';
+    comment on table  @TABLE is 'Holds entities referenced by other objects';
+    comment on column @TABLE.entity_code is 'Unique numeric code that identifies the entity in the database';
+    comment on column @TABLE.parent_code is 'Entity code of parent entity, if applicable';
+    comment on column @TABLE.office_code is 'Numeric code that identifies the office that owns this entity in the database';              
+    comment on column @TABLE.category_id is 'Category describing the type of entity';
+    comment on column @TABLE.entity_id   is 'The character identifier of the entity';
+    comment on column @TABLE.entity_name is 'The name of the entity';
     COMMIT;
     '''
 
     sys.stderr.write("Building entityLoadTemplate\n")
     entityLoadTemplate = \
     '''
-    insert into at_entity values(1,NULL,53,NULL,'OTHER','Unknown or unspecified entity');
-    insert into at_entity values(2,NULL,53,'GOV','USACE','U.S. Army Corps of Engineers');
-    insert into at_entity values(3,NULL,53,'GOV','NOAA','National Oceanic and Atmospheric Administration');
-    insert into at_entity values(4,3,53,'GOV','NWS','National Weather Service');
-    insert into at_entity values(5,NULL,53,'GOV','USGS','United States Geological Survey');
-    insert into at_entity values(6,NULL,53,'GOV','USBR','United States Bureau of Reclamation');
-    insert into at_entity values(7,NULL,53,'GOV','NRCS','Natural Resources Conservation Service');
-    insert into at_entity values(8,NULL,53,'GOV','FEMA','Federal Emergency Management Agency');
-    insert into at_entity values(9,NULL,53,'GOV','EPA','United States Environmental Protection Agency');
-    insert into at_entity values(10,2,53,'GOV','CELRD','USACE Great Lakes and Ohio River Division');
-    insert into at_entity values(11,2,53,'GOV','CEMVD','USACE Mississippi Valley Division');
-    insert into at_entity values(12,2,53,'GOV','CENAD','USACE North Atlantic Division');
-    insert into at_entity values(13,2,53,'GOV','CENWD','USACE Northwestern Division');
-    insert into at_entity values(14,2,53,'GOV','CEPOD','USACE Pacific Ocean Division');
-    insert into at_entity values(15,2,53,'GOV','CESAD','USACE South Atlantic Division');
-    insert into at_entity values(16,2,53,'GOV','CESPD','USACE South Pacific Division');
-    insert into at_entity values(17,2,53,'GOV','CESWD','USACE Southwestern Division');
-    insert into at_entity values(18,2,53,'GOV','CEERD','USACE Engineer Research and Development Center');
-    insert into at_entity values(19,2,53,'GOV','CEIWR','USACE Institute for Water Resources');
-    insert into at_entity values(20,10,53,'GOV','CELRDG','USACE Great Lakes Region');
-    insert into at_entity values(21,10,53,'GOV','CELRDO','USACE Ohio River Region');
-    insert into at_entity values(22,20,53,'GOV','CELRC','USACE Chicago District');
-    insert into at_entity values(23,20,53,'GOV','CELRE','USACE Detroit District');
-    insert into at_entity values(24,20,53,'GOV','CELRB','USACE Buffalo District');
-    insert into at_entity values(25,21,53,'GOV','CELRH','USACE Huntington District');
-    insert into at_entity values(26,21,53,'GOV','CELRL','USACE Louisville District');
-    insert into at_entity values(27,21,53,'GOV','CELRN','USACE Nashville District');
-    insert into at_entity values(28,21,53,'GOV','CELRP','USACE Pittsburgh District');
-    insert into at_entity values(29,11,53,'GOV','CEMVK','USACE Vicksburg District');
-    insert into at_entity values(30,11,53,'GOV','CEMVM','USACE Memphis District');
-    insert into at_entity values(31,11,53,'GOV','CEMVN','USACE New Orleans District');
-    insert into at_entity values(32,11,53,'GOV','CEMVP','USACE St. Paul District');
-    insert into at_entity values(33,11,53,'GOV','CEMVR','USACE Rock Island District');
-    insert into at_entity values(34,11,53,'GOV','CEMVS','USACE St. Louis District');
-    insert into at_entity values(35,12,53,'GOV','CENAB','USACE Baltimore District');
-    insert into at_entity values(36,12,53,'GOV','CENAE','USACE New England District');
-    insert into at_entity values(37,12,53,'GOV','CENAN','USACE New York District');
-    insert into at_entity values(38,12,53,'GOV','CENAO','USACE Norfolk District');
-    insert into at_entity values(39,12,53,'GOV','CENAP','USACE Philadelphia District');
-    insert into at_entity values(40,13,53,'GOV','CENWDP','USACE Pacific Northwest Region');
-    insert into at_entity values(41,13,53,'GOV','CENWDM','USACE Missouri River Region');
-    insert into at_entity values(42,40,53,'GOV','CENWP','USACE Portland District');
-    insert into at_entity values(43,40,53,'GOV','CENWS','USACE Seattle District');
-    insert into at_entity values(44,40,53,'GOV','CENWW','USACE Walla Walla District');
-    insert into at_entity values(45,41,53,'GOV','CENWK','USACE Kansas City District');
-    insert into at_entity values(46,41,53,'GOV','CENWO','USACE Omaha District');
-    insert into at_entity values(47,14,53,'GOV','CEPOA','USACE Alaska District');
-    insert into at_entity values(48,14,53,'GOV','CEPOH','USACE Hawaii District');
-    insert into at_entity values(49,15,53,'GOV','CESAC','USACE Charleston District');
-    insert into at_entity values(50,15,53,'GOV','CESAJ','USACE Jacksonville District');
-    insert into at_entity values(51,15,53,'GOV','CESAM','USACE Mobile District');
-    insert into at_entity values(52,15,53,'GOV','CESAS','USACE Savannah District');
-    insert into at_entity values(53,15,53,'GOV','CESAW','USACE Wilmington District');
-    insert into at_entity values(54,16,53,'GOV','CESPA','USACE Albuquerque District');
-    insert into at_entity values(55,16,53,'GOV','CESPK','USACE Sacramento District');
-    insert into at_entity values(56,16,53,'GOV','CESPL','USACE Los Angeles District');
-    insert into at_entity values(57,16,53,'GOV','CESPN','USACE San Francisco District');
-    insert into at_entity values(58,17,53,'GOV','CESWF','USACE Fort Worth District');
-    insert into at_entity values(59,17,53,'GOV','CESWG','USACE Galveston District');
-    insert into at_entity values(60,17,53,'GOV','CESWL','USACE Little Rock District');
-    insert into at_entity values(61,17,53,'GOV','CESWT','USACE Tulsa District');
-    insert into at_entity values(62,18,53,'GOV','CEERD-CRREL','USACE Cold Regions Research and Engineering Lab');
-    insert into at_entity values(63,18,53,'GOV','CEERD-CHL','USACE Coastal and Hydraulics Laboratory');
-    insert into at_entity values(64,18,53,'GOV','CEERD-CERL','USACE Construction Engineering Research Laboratory');
-    insert into at_entity values(65,18,53,'GOV','CEERD-EL','USACE Environmental Laboratory');
-    insert into at_entity values(66,18,53,'GOV','CEERD-GSL','USACE Geotechnical and Structures Laboratory');
-    insert into at_entity values(67,18,53,'GOV','CEERD-ITL','USACE Information Technology Laboratory');
-    insert into at_entity values(68,18,53,'GOV','CEERD-TEC','USACE Topographic Engineering Center');
-    insert into at_entity values(69,19,53,'GOV','CEIWR-NDC','USACE Navigation Data Center');
-    insert into at_entity values(70,19,53,'GOV','CEIWR-HEC','USACE Hydrologic Engineering Center');
-    insert into at_entity values(71,19,53,'GOV','CEIWR-WCSC','USACE Waterborne Commerce Statistics Center');
-    insert into at_entity values(72,4,53,'GOV','ABRFC','NWS Arkansas-Red Basin River Forecast Center');
-    insert into at_entity values(73,4,53,'GOV','APRFC','NWS Alaska-Pacific River Forecast Center');
-    insert into at_entity values(74,4,53,'GOV','CBRFC','NWS Colorado Basin River Forecast Center');
-    insert into at_entity values(75,4,53,'GOV','CNRFC','NWS California-Nevada River Forecast Center');
-    insert into at_entity values(76,4,53,'GOV','LMRFC','NWS Lower Mississippi River Forecast Center');
-    insert into at_entity values(77,4,53,'GOV','MARFC','NWS Middle Atlantic River Forecast Center');
-    insert into at_entity values(78,4,53,'GOV','MBRFC','NWS Missouri Basin River Forecast Center');
-    insert into at_entity values(79,4,53,'GOV','NCRFC','NWS North Central River Forecast Center');
-    insert into at_entity values(80,4,53,'GOV','NERFC','NWS Northeast River Forecast Center');
-    insert into at_entity values(81,4,53,'GOV','NWRFC','NWS Northwest River Forecast Center');
-    insert into at_entity values(82,4,53,'GOV','OHRFC','NWS Ohio River Forecast Center');
-    insert into at_entity values(83,4,53,'GOV','SERFC','NWS Southeast River Forecast Center');
-    insert into at_entity values(84,4,53,'GOV','WGRFC','NWS West Gulf River Forecast Center');
-    insert into at_entity values(85,NULL,53,'GOV','AK','State of Alaska');
-    insert into at_entity values(86,NULL,53,'GOV','AL','State of Alabama');
-    insert into at_entity values(87,NULL,53,'GOV','AR','State of Arkansas');
-    insert into at_entity values(88,NULL,53,'GOV','AZ','State of Arizona');
-    insert into at_entity values(89,NULL,53,'GOV','CA','State of California');
-    insert into at_entity values(90,NULL,53,'GOV','CO','State of Colorado');
-    insert into at_entity values(91,NULL,53,'GOV','CT','State of Connecticut');
-    insert into at_entity values(92,NULL,53,'GOV','DE','State of Delaware');
-    insert into at_entity values(93,NULL,53,'GOV','FL','State of Florida');
-    insert into at_entity values(94,NULL,53,'GOV','GA','State of Georgia');
-    insert into at_entity values(95,NULL,53,'GOV','HI','State of Hawaii');
-    insert into at_entity values(96,NULL,53,'GOV','IA','State of Iowa');
-    insert into at_entity values(97,NULL,53,'GOV','ID','State of Idaho');
-    insert into at_entity values(98,NULL,53,'GOV','IL','State of Illinois');
-    insert into at_entity values(99,NULL,53,'GOV','IN','State of Indiana');
-    insert into at_entity values(100,NULL,53,'GOV','KS','State of Kansas');
-    insert into at_entity values(101,NULL,53,'GOV','KY','Commonwealth of Kentucky');
-    insert into at_entity values(102,NULL,53,'GOV','LA','State of Louisiana');
-    insert into at_entity values(103,NULL,53,'GOV','MA','Commonwealth of Massachusetts');
-    insert into at_entity values(104,NULL,53,'GOV','MD','State of Maryland');
-    insert into at_entity values(105,NULL,53,'GOV','ME','State of Maine');
-    insert into at_entity values(106,NULL,53,'GOV','MI','State of Michigan');
-    insert into at_entity values(107,NULL,53,'GOV','MN','State of Minnesota');
-    insert into at_entity values(108,NULL,53,'GOV','MO','State of Missouri');
-    insert into at_entity values(109,NULL,53,'GOV','MS','State of Mississippi');
-    insert into at_entity values(110,NULL,53,'GOV','MT','State of Montana');
-    insert into at_entity values(111,NULL,53,'GOV','NC','State of North Carolina');
-    insert into at_entity values(112,NULL,53,'GOV','ND','State of North Dakota');
-    insert into at_entity values(113,NULL,53,'GOV','NE','State of Nebraska');
-    insert into at_entity values(114,NULL,53,'GOV','NH','State of New Hampshire');
-    insert into at_entity values(115,NULL,53,'GOV','NJ','State of New Jersey');
-    insert into at_entity values(116,NULL,53,'GOV','NM','State of New Mexico');
-    insert into at_entity values(117,NULL,53,'GOV','NV','State of Nevada');
-    insert into at_entity values(118,NULL,53,'GOV','NY','State of New York');
-    insert into at_entity values(119,NULL,53,'GOV','OH','State of Ohio');
-    insert into at_entity values(120,NULL,53,'GOV','OK','State of Oklahoma');
-    insert into at_entity values(121,NULL,53,'GOV','OR','State of Oregon');
-    insert into at_entity values(122,NULL,53,'GOV','PA','Commonwealth of Pennsylvania');
-    insert into at_entity values(123,NULL,53,'GOV','PR','Commonwealth of Puerto Rico');
-    insert into at_entity values(124,NULL,53,'GOV','RI','State of Rhode Island');
-    insert into at_entity values(125,NULL,53,'GOV','SC','State of South Carolina');
-    insert into at_entity values(126,NULL,53,'GOV','SD','State of South Dakota');
-    insert into at_entity values(127,NULL,53,'GOV','TN','State of Tennessee');
-    insert into at_entity values(128,NULL,53,'GOV','TX','State of Texas');
-    insert into at_entity values(129,NULL,53,'GOV','UT','State of Utah');
-    insert into at_entity values(130,NULL,53,'GOV','VA','Commonwealth of Virginia');
-    insert into at_entity values(131,NULL,53,'GOV','VT','State of Vermont');
-    insert into at_entity values(132,NULL,53,'GOV','WA','State of Washington');
-    insert into at_entity values(133,NULL,53,'GOV','WI','State of Wisconsin');
-    insert into at_entity values(134,NULL,53,'GOV','WV','State of West Virginia');
-    insert into at_entity values(135,NULL,53,'GOV','WY','State of Wyoming');
-    insert into at_entity values(136,NULL,53,'GOV','APA','Alaska Power Administration');
-    insert into at_entity values(137,NULL,53,'GOV','BPA','Bonneville Power Administration');
-    insert into at_entity values(138,NULL,53,'GOV','SEPA','Southeastern Power Administration');
-    insert into at_entity values(139,NULL,53,'GOV','SWPA','Southwestern Power Administration');
-    insert into at_entity values(140,NULL,53,'GOV','WAPA','Western Area Power Administration');
-    insert into at_entity values(141,NULL,53,'GOV','TVA','Tennessee Valley Authority');
+    insert into @TABLE values(1,NULL,53,NULL,'OTHER','Unknown or unspecified entity');
+    insert into @TABLE values(2,NULL,53,'GOV','USACE','U.S. Army Corps of Engineers');
+    insert into @TABLE values(3,NULL,53,'GOV','NOAA','National Oceanic and Atmospheric Administration');
+    insert into @TABLE values(4,3,53,'GOV','NWS','National Weather Service');
+    insert into @TABLE values(5,NULL,53,'GOV','USGS','United States Geological Survey');
+    insert into @TABLE values(6,NULL,53,'GOV','USBR','United States Bureau of Reclamation');
+    insert into @TABLE values(7,NULL,53,'GOV','NRCS','Natural Resources Conservation Service');
+    insert into @TABLE values(8,NULL,53,'GOV','FEMA','Federal Emergency Management Agency');
+    insert into @TABLE values(9,NULL,53,'GOV','EPA','United States Environmental Protection Agency');
+    insert into @TABLE values(10,2,53,'GOV','CELRD','USACE Great Lakes and Ohio River Division');
+    insert into @TABLE values(11,2,53,'GOV','CEMVD','USACE Mississippi Valley Division');
+    insert into @TABLE values(12,2,53,'GOV','CENAD','USACE North Atlantic Division');
+    insert into @TABLE values(13,2,53,'GOV','CENWD','USACE Northwestern Division');
+    insert into @TABLE values(14,2,53,'GOV','CEPOD','USACE Pacific Ocean Division');
+    insert into @TABLE values(15,2,53,'GOV','CESAD','USACE South Atlantic Division');
+    insert into @TABLE values(16,2,53,'GOV','CESPD','USACE South Pacific Division');
+    insert into @TABLE values(17,2,53,'GOV','CESWD','USACE Southwestern Division');
+    insert into @TABLE values(18,2,53,'GOV','CEERD','USACE Engineer Research and Development Center');
+    insert into @TABLE values(19,2,53,'GOV','CEIWR','USACE Institute for Water Resources');
+    insert into @TABLE values(20,10,53,'GOV','CELRDG','USACE Great Lakes Region');
+    insert into @TABLE values(21,10,53,'GOV','CELRDO','USACE Ohio River Region');
+    insert into @TABLE values(22,20,53,'GOV','CELRC','USACE Chicago District');
+    insert into @TABLE values(23,20,53,'GOV','CELRE','USACE Detroit District');
+    insert into @TABLE values(24,20,53,'GOV','CELRB','USACE Buffalo District');
+    insert into @TABLE values(25,21,53,'GOV','CELRH','USACE Huntington District');
+    insert into @TABLE values(26,21,53,'GOV','CELRL','USACE Louisville District');
+    insert into @TABLE values(27,21,53,'GOV','CELRN','USACE Nashville District');
+    insert into @TABLE values(28,21,53,'GOV','CELRP','USACE Pittsburgh District');
+    insert into @TABLE values(29,11,53,'GOV','CEMVK','USACE Vicksburg District');
+    insert into @TABLE values(30,11,53,'GOV','CEMVM','USACE Memphis District');
+    insert into @TABLE values(31,11,53,'GOV','CEMVN','USACE New Orleans District');
+    insert into @TABLE values(32,11,53,'GOV','CEMVP','USACE St. Paul District');
+    insert into @TABLE values(33,11,53,'GOV','CEMVR','USACE Rock Island District');
+    insert into @TABLE values(34,11,53,'GOV','CEMVS','USACE St. Louis District');
+    insert into @TABLE values(35,12,53,'GOV','CENAB','USACE Baltimore District');
+    insert into @TABLE values(36,12,53,'GOV','CENAE','USACE New England District');
+    insert into @TABLE values(37,12,53,'GOV','CENAN','USACE New York District');
+    insert into @TABLE values(38,12,53,'GOV','CENAO','USACE Norfolk District');
+    insert into @TABLE values(39,12,53,'GOV','CENAP','USACE Philadelphia District');
+    insert into @TABLE values(40,13,53,'GOV','CENWDP','USACE Pacific Northwest Region');
+    insert into @TABLE values(41,13,53,'GOV','CENWDM','USACE Missouri River Region');
+    insert into @TABLE values(42,40,53,'GOV','CENWP','USACE Portland District');
+    insert into @TABLE values(43,40,53,'GOV','CENWS','USACE Seattle District');
+    insert into @TABLE values(44,40,53,'GOV','CENWW','USACE Walla Walla District');
+    insert into @TABLE values(45,41,53,'GOV','CENWK','USACE Kansas City District');
+    insert into @TABLE values(46,41,53,'GOV','CENWO','USACE Omaha District');
+    insert into @TABLE values(47,14,53,'GOV','CEPOA','USACE Alaska District');
+    insert into @TABLE values(48,14,53,'GOV','CEPOH','USACE Hawaii District');
+    insert into @TABLE values(49,15,53,'GOV','CESAC','USACE Charleston District');
+    insert into @TABLE values(50,15,53,'GOV','CESAJ','USACE Jacksonville District');
+    insert into @TABLE values(51,15,53,'GOV','CESAM','USACE Mobile District');
+    insert into @TABLE values(52,15,53,'GOV','CESAS','USACE Savannah District');
+    insert into @TABLE values(53,15,53,'GOV','CESAW','USACE Wilmington District');
+    insert into @TABLE values(54,16,53,'GOV','CESPA','USACE Albuquerque District');
+    insert into @TABLE values(55,16,53,'GOV','CESPK','USACE Sacramento District');
+    insert into @TABLE values(56,16,53,'GOV','CESPL','USACE Los Angeles District');
+    insert into @TABLE values(57,16,53,'GOV','CESPN','USACE San Francisco District');
+    insert into @TABLE values(58,17,53,'GOV','CESWF','USACE Fort Worth District');
+    insert into @TABLE values(59,17,53,'GOV','CESWG','USACE Galveston District');
+    insert into @TABLE values(60,17,53,'GOV','CESWL','USACE Little Rock District');
+    insert into @TABLE values(61,17,53,'GOV','CESWT','USACE Tulsa District');
+    insert into @TABLE values(62,18,53,'GOV','CEERD-CRREL','USACE Cold Regions Research and Engineering Lab');
+    insert into @TABLE values(63,18,53,'GOV','CEERD-CHL','USACE Coastal and Hydraulics Laboratory');
+    insert into @TABLE values(64,18,53,'GOV','CEERD-CERL','USACE Construction Engineering Research Laboratory');
+    insert into @TABLE values(65,18,53,'GOV','CEERD-EL','USACE Environmental Laboratory');
+    insert into @TABLE values(66,18,53,'GOV','CEERD-GSL','USACE Geotechnical and Structures Laboratory');
+    insert into @TABLE values(67,18,53,'GOV','CEERD-ITL','USACE Information Technology Laboratory');
+    insert into @TABLE values(68,18,53,'GOV','CEERD-TEC','USACE Topographic Engineering Center');
+    insert into @TABLE values(69,19,53,'GOV','CEIWR-NDC','USACE Navigation Data Center');
+    insert into @TABLE values(70,19,53,'GOV','CEIWR-HEC','USACE Hydrologic Engineering Center');
+    insert into @TABLE values(71,19,53,'GOV','CEIWR-WCSC','USACE Waterborne Commerce Statistics Center');
+    insert into @TABLE values(72,4,53,'GOV','ABRFC','NWS Arkansas-Red Basin River Forecast Center');
+    insert into @TABLE values(73,4,53,'GOV','APRFC','NWS Alaska-Pacific River Forecast Center');
+    insert into @TABLE values(74,4,53,'GOV','CBRFC','NWS Colorado Basin River Forecast Center');
+    insert into @TABLE values(75,4,53,'GOV','CNRFC','NWS California-Nevada River Forecast Center');
+    insert into @TABLE values(76,4,53,'GOV','LMRFC','NWS Lower Mississippi River Forecast Center');
+    insert into @TABLE values(77,4,53,'GOV','MARFC','NWS Middle Atlantic River Forecast Center');
+    insert into @TABLE values(78,4,53,'GOV','MBRFC','NWS Missouri Basin River Forecast Center');
+    insert into @TABLE values(79,4,53,'GOV','NCRFC','NWS North Central River Forecast Center');
+    insert into @TABLE values(80,4,53,'GOV','NERFC','NWS Northeast River Forecast Center');
+    insert into @TABLE values(81,4,53,'GOV','NWRFC','NWS Northwest River Forecast Center');
+    insert into @TABLE values(82,4,53,'GOV','OHRFC','NWS Ohio River Forecast Center');
+    insert into @TABLE values(83,4,53,'GOV','SERFC','NWS Southeast River Forecast Center');
+    insert into @TABLE values(84,4,53,'GOV','WGRFC','NWS West Gulf River Forecast Center');
+    insert into @TABLE values(85,NULL,53,'GOV','AK','State of Alaska');
+    insert into @TABLE values(86,NULL,53,'GOV','AL','State of Alabama');
+    insert into @TABLE values(87,NULL,53,'GOV','AR','State of Arkansas');
+    insert into @TABLE values(88,NULL,53,'GOV','AZ','State of Arizona');
+    insert into @TABLE values(89,NULL,53,'GOV','CA','State of California');
+    insert into @TABLE values(90,NULL,53,'GOV','CO','State of Colorado');
+    insert into @TABLE values(91,NULL,53,'GOV','CT','State of Connecticut');
+    insert into @TABLE values(92,NULL,53,'GOV','DE','State of Delaware');
+    insert into @TABLE values(93,NULL,53,'GOV','FL','State of Florida');
+    insert into @TABLE values(94,NULL,53,'GOV','GA','State of Georgia');
+    insert into @TABLE values(95,NULL,53,'GOV','HI','State of Hawaii');
+    insert into @TABLE values(96,NULL,53,'GOV','IA','State of Iowa');
+    insert into @TABLE values(97,NULL,53,'GOV','ID','State of Idaho');
+    insert into @TABLE values(98,NULL,53,'GOV','IL','State of Illinois');
+    insert into @TABLE values(99,NULL,53,'GOV','IN','State of Indiana');
+    insert into @TABLE values(100,NULL,53,'GOV','KS','State of Kansas');
+    insert into @TABLE values(101,NULL,53,'GOV','KY','Commonwealth of Kentucky');
+    insert into @TABLE values(102,NULL,53,'GOV','LA','State of Louisiana');
+    insert into @TABLE values(103,NULL,53,'GOV','MA','Commonwealth of Massachusetts');
+    insert into @TABLE values(104,NULL,53,'GOV','MD','State of Maryland');
+    insert into @TABLE values(105,NULL,53,'GOV','ME','State of Maine');
+    insert into @TABLE values(106,NULL,53,'GOV','MI','State of Michigan');
+    insert into @TABLE values(107,NULL,53,'GOV','MN','State of Minnesota');
+    insert into @TABLE values(108,NULL,53,'GOV','MO','State of Missouri');
+    insert into @TABLE values(109,NULL,53,'GOV','MS','State of Mississippi');
+    insert into @TABLE values(110,NULL,53,'GOV','MT','State of Montana');
+    insert into @TABLE values(111,NULL,53,'GOV','NC','State of North Carolina');
+    insert into @TABLE values(112,NULL,53,'GOV','ND','State of North Dakota');
+    insert into @TABLE values(113,NULL,53,'GOV','NE','State of Nebraska');
+    insert into @TABLE values(114,NULL,53,'GOV','NH','State of New Hampshire');
+    insert into @TABLE values(115,NULL,53,'GOV','NJ','State of New Jersey');
+    insert into @TABLE values(116,NULL,53,'GOV','NM','State of New Mexico');
+    insert into @TABLE values(117,NULL,53,'GOV','NV','State of Nevada');
+    insert into @TABLE values(118,NULL,53,'GOV','NY','State of New York');
+    insert into @TABLE values(119,NULL,53,'GOV','OH','State of Ohio');
+    insert into @TABLE values(120,NULL,53,'GOV','OK','State of Oklahoma');
+    insert into @TABLE values(121,NULL,53,'GOV','OR','State of Oregon');
+    insert into @TABLE values(122,NULL,53,'GOV','PA','Commonwealth of Pennsylvania');
+    insert into @TABLE values(123,NULL,53,'GOV','PR','Commonwealth of Puerto Rico');
+    insert into @TABLE values(124,NULL,53,'GOV','RI','State of Rhode Island');
+    insert into @TABLE values(125,NULL,53,'GOV','SC','State of South Carolina');
+    insert into @TABLE values(126,NULL,53,'GOV','SD','State of South Dakota');
+    insert into @TABLE values(127,NULL,53,'GOV','TN','State of Tennessee');
+    insert into @TABLE values(128,NULL,53,'GOV','TX','State of Texas');
+    insert into @TABLE values(129,NULL,53,'GOV','UT','State of Utah');
+    insert into @TABLE values(130,NULL,53,'GOV','VA','Commonwealth of Virginia');
+    insert into @TABLE values(131,NULL,53,'GOV','VT','State of Vermont');
+    insert into @TABLE values(132,NULL,53,'GOV','WA','State of Washington');
+    insert into @TABLE values(133,NULL,53,'GOV','WI','State of Wisconsin');
+    insert into @TABLE values(134,NULL,53,'GOV','WV','State of West Virginia');
+    insert into @TABLE values(135,NULL,53,'GOV','WY','State of Wyoming');
+    insert into @TABLE values(136,NULL,53,'GOV','APA','Alaska Power Administration');
+    insert into @TABLE values(137,NULL,53,'GOV','BPA','Bonneville Power Administration');
+    insert into @TABLE values(138,NULL,53,'GOV','SEPA','Southeastern Power Administration');
+    insert into @TABLE values(139,NULL,53,'GOV','SWPA','Southwestern Power Administration');
+    insert into @TABLE values(140,NULL,53,'GOV','WAPA','Western Area Power Administration');
+    insert into @TABLE values(141,NULL,53,'GOV','TVA','Tennessee Valley Authority');
     COMMIT;
     '''
+
+    sys.stderr.write("Building configCategoryCreationTemplate\n")
+    configCategoryCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    create table @TABLE (
+       category_id varchar2(16),
+       description varchar2(48),
+       constraint @TABLE_pk primary key (category_id),
+       constraint @TABLE_ck check (category_id = upper(trim(category_id)))
+    ) organization index
+    /
+    
+    ---------------------------
+    -- @TABLE comments --
+    --
+    comment on table  @TABLE is 'Holds categories of configurations';
+    comment on column @TABLE.category_id is 'The category identifier';
+    comment on column @TABLE.description is 'The category description';
+    COMMIT;
+    '''
+
+    sys.stderr.write("Building configCategoryLoadTemplate\n")
+    configCategoryLoadTemplate = \
+    '''
+    insert into @TABLE values('MODELING', 'Modeling configurations');
+    COMMIT;
+    '''
+
+    sys.stderr.write("Building configurationCreationTemplate\n")
+    configurationCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    create table @TABLE (
+       configuration_code number(10),
+       parent_code        number(10),
+       office_code        number(10)    not null,
+       category_id        varchar2(16),
+       configuration_id   varchar2(32)  not null,
+       configuration_name varchar2(128) not null,
+       constraint @TABLE_pk  primary key (configuration_code),
+       constraint @TABLE_fk1 foreign key (parent_code) references @TABLE (configuration_code),
+       constraint @TABLE_fk2 foreign key (category_id) references cwms_config_category (category_id),
+       constraint @TABLE_ck1 check (trim(configuration_id) = configuration_id),
+       constraint @TABLE_ck2 check (trim(configuration_name) = configuration_name)
+    ) organization index
+    /
+    
+    ---------------------------
+    -- @TABLE indexes --
+    --
+    create unique index @TABLE_idx_id on @TABLE (office_code, upper(configuration_id));
+    
+    ---------------------------
+    -- @TABLE comments --
+    --
+    comment on table  @TABLE is 'Holds configurations referenced by other objects';
+    comment on column @TABLE.configuration_code is 'Unique numeric code that identifies the configuration in the database';
+    comment on column @TABLE.parent_code        is 'Configuration code of parent configuration, if applicable';
+    comment on column @TABLE.office_code        is 'Numeric code that identifies the office that owns this configuration in the database';              
+    comment on column @TABLE.category_id        is 'Category describing the type of configuration';
+    comment on column @TABLE.configuration_id   is 'The character identifier of the configuration';
+    comment on column @TABLE.configuration_name is 'The name of the configuration';
+    COMMIT;
+    '''
+
+    sys.stderr.write("Building configurationLoadTemplate\n")
+    configurationLoadTemplate = \
+    '''
+    insert into @TABLE values(1,NULL,53,NULL,'OTHER','Unknown or unspecified configuration');
+    insert into @TABLE values(2,NULL,53,'MODELING','CWMS','Generalized CWMS modeling');
+    insert into @TABLE values(3,2,53,'MODELING','CWMS-METVue','CWMS METVue modeling');
+    insert into @TABLE values(4,2,53,'MODELING','CWMS-HMS','CWMS HMS modeling');
+    insert into @TABLE values(5,2,53,'MODELING','CWMS-ResSim','CWMS ResSim modeling');
+    insert into @TABLE values(6,2,53,'MODELING','CWMS-RAS','CWMS RAS modeling');
+    insert into @TABLE values(7,2,53,'MODELING','CWMS-FIA','CWMS FIA modeling');
+    insert into @TABLE values(8,2,53,'MODELING','CWMS-RiverWare','CWMS RiverWare modeling');
+    COMMIT;
+    '''
+
+
+    sys.stderr.write("Building gateTypeCreationTemplate\n")
+    gateTypeCreationTemplate = \
+    '''
+    create table @TABLE (
+       gate_type_code number(10), 
+       gate_type_id   varchar2(32) not null, 
+       description    varchar2(128), 
+       constraint @TABLE_pk  primary key (gate_type_code) using index, 
+       constraint @TABLE_ck1 check (upper(trim(gate_type_id)) = gate_type_id), 
+       constraint @TABLE_u01 unique (gate_type_id) using index
+    ) tablespace cwms_20data;
+    
+    comment on table  @TABLE  is 'Holds reference types for gates';
+    comment on column @TABLE.gate_type_code is 'Unique numeric code identfying the gate type';
+    comment on column @TABLE.gate_type_id   is 'The name of the gate type';
+    comment on column @TABLE.description    is 'A description of the gate type';
+    COMMIT;
+    '''    
+
+    sys.stderr.write("Building gateTypeLoadTemplate\n")
+    gateTypeLoadTemplate = \
+    '''
+    insert into @TABLE values( 1, 'OTHER',          'Unknown or unspecified gate type');
+    insert into @TABLE values( 2, 'CLAMSHELL',      'Gate whose upper and lower halves separate to open');
+    insert into @TABLE values( 3, 'CREST',          'Gate that increases the crest elevation when raised');
+    insert into @TABLE values( 4, 'DRUM',           'Hollow cylindrical section shaped crest gate hinged at the axis that floats on an adjustable amount of water in a chamber');
+    insert into @TABLE values( 5, 'FUSE',           'Non-adjustable gate that is designed to fail (open) at a specific head');
+    insert into @TABLE values( 6, 'INFLATABLE',     'Crest gate that is inflated to form a weir');
+    insert into @TABLE values( 7, 'MITER',          'Doors hinged on opposite sides of a walled channel that meet in the center at an angle and are held closed by water pressure');
+    insert into @TABLE values( 8, 'NEEDLE',         'Flow-through gate that is controlled by placing various numbers of boards (needles) vertically in a support structure');
+    insert into @TABLE values( 9, 'RADIAL',         'Cylindrical section shaped gate hinged at the axis that passes water underneath when open');
+    insert into @TABLE values(10, 'ROLLER',         'Cylindrical crest gate that rolls in cogged slots in piers at each end to control its height');
+    insert into @TABLE values(11, 'STOPLOG',        'Crest gate whose height is controlled by varying the number of horizontal boards (logs) stacked between piers');
+    insert into @TABLE values(12, 'VALVE',          'Small gate for passing small and precisely controlled amounts of water');
+    insert into @TABLE values(13, 'VERTICAL SLIDE', 'Flat gate that slides vertically in tracks (with or without rollers) for control');
+    insert into @TABLE values(14, 'WICKET',         'A group of small connected hinged gates (wickets) that overlap when closed and rotate together to open');
+    COMMIT;
+    '''    
     
     #==
     #====

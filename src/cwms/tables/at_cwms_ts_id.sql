@@ -175,6 +175,15 @@ STORAGE    (
 NOPARALLEL
 /
 
+--
+-- AT_CWMS_TS_ID_ACTIVE  (Index)
+--
+--  Dependencies:
+--   AT_CWMS_TS_ID (Table)
+--
+create index at_cwms_ts_id_active on at_cwms_ts_id(location_code, ts_active_flag)
+tablespace cwms_20at_data;    
+
 -- 
 -- Non Foreign Key Constraints for Table AT_CWMS_TS_ID 
 -- 

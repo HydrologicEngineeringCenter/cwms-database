@@ -270,13 +270,13 @@ as
       is
          l_agency_code integer;
       begin
-         begin
+--         begin
             l_agency_code := cwms_entity.get_entity_code(p_agency_id, self.location.office_id);
-         exception
-            when others then 
-               cwms_entity.store_entity(p_agency_id, p_agency_id, null, 'GOV', 'F', 'T', self.location.office_id);
-               l_agency_code := cwms_entity.get_entity_code(p_agency_id, self.location.office_id);
-         end;
+--         exception
+--            when others then 
+--               cwms_entity.store_entity(p_agency_id, p_agency_id, null, 'GOV', 'F', 'T', self.location.office_id);
+--               l_agency_code := cwms_entity.get_entity_code(p_agency_id, self.location.office_id);
+--         end;
          return l_agency_code;
       end get_entity_code;
    begin

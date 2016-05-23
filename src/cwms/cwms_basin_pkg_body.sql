@@ -70,72 +70,61 @@ begin
    l_office_id := nvl(upper(p_office_id), cwms_util.user_office_id);
    l_fail_if_exists := cwms_util.is_true(p_fail_if_exists);
    l_ignore_nulls   := cwms_util.is_true(p_ignore_nulls);
+   l_rec.basin_location_code := cwms_loc.get_location_code(l_office_id, p_basin_id);
+   if not cwms_loc.can_store(l_rec.basin_location_code, 'BASIN') then
+      cwms_err.raise(
+         'ERROR', 
+         'Cannot store BASIN information to location '
+         ||l_office_id||'/'||p_basin_id
+         ||' (location kind = '
+         ||cwms_loc.check_location_kind(l_rec.basin_location_code)
+         ||')');
+   end if;
    begin
-      l_rec.basin_location_code := get_basin_code(l_office_id, p_basin_id);
-      l_exists := true;
+      select *
+        into l_rec
+        from at_basin
+       where basin_location_code = l_rec.basin_location_code;
+      l_exists := true;       
    exception
-      when others then
+      when no_data_found then
          l_exists := false;
    end;
-   if l_exists then 
-      if l_fail_if_exists then
+   if l_exists and l_fail_if_exists then
          cwms_err.raise(
             'ITEM_ALREADY_EXISTS',
             'CWMS basin',
             l_office_id
             ||'/'
             ||p_basin_id);
-      end if;
-   else
-      begin
-         l_rec.basin_location_code := cwms_loc.get_location_code(l_office_id, p_basin_id);
-      exception
-         when others then null;
-      end;
-      if l_rec.basin_location_code is null then
-         l_rec.basin_location_code := cwms_seq.nextval;
-      else                    
-         l_location_kind_id := cwms_loc.check_location_kind(l_rec.basin_location_code);
-         if l_location_kind_id not in ('BASIN', 'SITE') then
-            cwms_err.raise(
-               'ERROR',
-               'Cannot switch location '
-               ||l_office_id
-               ||'/'
-               ||p_basin_id
-               ||' from type '
-               ||l_location_kind_id
-               ||' to type BASIN');
-         end if;
-      end if;
    end if;
    -------------------------
    -- populate the record --
    -------------------------
-   if p_parent_basin_id is not null or l_ignore_nulls then
+   if p_parent_basin_id is not null or not l_ignore_nulls then
       if p_parent_basin_id is null then
          l_rec.parent_basin_code := null;
       else
          l_rec.parent_basin_code := get_basin_code(l_office_id, p_parent_basin_id);
       end if;
    end if;      
-   if p_primary_stream_id is not null or l_ignore_nulls then
+   if p_primary_stream_id is not null or not l_ignore_nulls then
       if p_primary_stream_id is null then
          l_rec.primary_stream_code := null;
       else
          l_rec.primary_stream_code := cwms_stream.get_stream_code(l_office_id, p_primary_stream_id);
       end if;
    end if;      
-   if p_sort_order is not null or l_ignore_nulls then
+   if p_sort_order is not null or not l_ignore_nulls then
       l_rec.sort_order := p_sort_order;
    end if;
-   if p_total_drainage_area is not null or l_ignore_nulls then
+   if p_total_drainage_area is not null or not l_ignore_nulls then
       l_rec.total_drainage_area := cwms_util.convert_units(
          p_total_drainage_area, 
          cwms_util.get_unit_id(p_area_unit), 
          'm2');
    end if;
-   if p_contributing_drainage_area is not null or l_ignore_nulls then
+   if p_contributing_drainage_area is not null or not l_ignore_nulls then
       l_rec.contributing_drainage_area := cwms_util.convert_units(
          p_contributing_drainage_area, 
          cwms_util.get_unit_id(p_area_unit), 
@@ -156,12 +145,7 @@ begin
    ---------------------------      
    -- set the location kind --
    ---------------------------
-   update at_physical_location
-      set location_kind = (select location_kind_code 
-                             from cwms_location_kind 
-                            where location_kind_id = 'BASIN'
-                          )
-    where location_code = l_rec.basin_location_code;                                 
+   cwms_loc.update_location_kind(l_rec.basin_location_code, 'BASIN', 'A');
 end store_basin;   
       
 --------------------------------------------------------------------------------
@@ -258,10 +242,11 @@ procedure delete_basin2(
    p_delete_location_action in varchar2 default cwms_util.delete_key,
    p_office_id              in varchar2 default null)
 is
-   l_basin_code      number(10);
-   l_delete_location boolean;
-   l_delete_action1  varchar2(16);
-   l_delete_action2  varchar2(16);
+   l_basin_code       number(10);
+   l_delete_location  boolean;
+   l_delete_action1   varchar2(16);
+   l_delete_action2   varchar2(16);
+   l_location_kind_id cwms_location_kind.location_kind_id%type;
 begin
    -------------------
    -- sanity checks --
@@ -285,24 +270,39 @@ begin
          ||cwms_util.delete_all
          ||'');
    end if;
-   l_delete_location := cwms_util.return_true_or_false(p_delete_location); 
-   l_delete_action2 := upper(substr(p_delete_location_action, 1, 16));
-   if l_delete_action2 not in (
-      cwms_util.delete_key,
-      cwms_util.delete_data,
-      cwms_util.delete_all)
-   then
-      cwms_err.raise(
-         'ERROR',
-         'Delete action must be one of '''
-         ||cwms_util.delete_key
-         ||''',  '''
-         ||cwms_util.delete_data
-         ||''', or '''
-         ||cwms_util.delete_all
-         ||'');
+   l_delete_location := cwms_util.return_true_or_false(p_delete_location);
+   if l_delete_location then
+      l_delete_action2 := upper(substr(p_delete_location_action, 1, 16));
+      if l_delete_action2 not in (
+         cwms_util.delete_key,
+         cwms_util.delete_data,
+         cwms_util.delete_all)
+      then
+         cwms_err.raise(
+            'ERROR',
+            'Delete action must be one of '''
+            ||cwms_util.delete_key
+            ||''',  '''
+            ||cwms_util.delete_data
+            ||''', or '''
+            ||cwms_util.delete_all
+            ||'');
+      end if;
    end if;
    l_basin_code := get_basin_code(p_office_id, p_basin_id);
+   l_location_kind_id := cwms_loc.check_location_kind(l_basin_code);
+   if l_location_kind_id != 'BASIN' then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot delete basin information from location'
+         ||cwms_util.get_db_office_id(p_office_id)
+         ||'/'
+         ||p_basin_id
+         ||' (location kind = '
+         ||l_location_kind_id
+         ||')');
+   end if;
+   l_location_kind_id := cwms_loc.can_revert_loc_kind_to(p_basin_id, p_office_id); -- revert-to kind
    -------------------------------------------
    -- delete the child records if specified --
    -------------------------------------------
@@ -328,17 +328,14 @@ begin
    -- delete the record if specified --
    ------------------------------------
    if l_delete_action1 in (cwms_util.delete_key, cwms_util.delete_all) then
-      delete
-        from at_basin
-       where basin_location_code = l_basin_code;
+      delete from at_basin where basin_location_code = l_basin_code;
+      cwms_loc.update_location_kind(l_basin_code, 'BASIN', 'D');
    end if; 
    -------------------------------------
    -- delete the location if required --
    -------------------------------------
    if l_delete_location then
       cwms_loc.delete_location(p_basin_id, l_delete_action2, p_office_id);
-   else
-      update at_physical_location set location_kind=1 where location_code = l_basin_code;   
    end if;
 end delete_basin2;   
       
