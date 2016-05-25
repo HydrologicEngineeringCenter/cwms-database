@@ -2,11 +2,11 @@ create type group_array2
 /**
  * Holds basic information about a collection of location groups
  *
- * @see type group_type3
+ * @see type group_type2
  * @see type group_array
- * @see cwms_loc.assign_loc_grps_cat3
+ * @see cwms_loc.assign_loc_grps_cat2
  */
-IS TABLE OF group_type3;
+IS TABLE OF group_type2;
 /
 
 
