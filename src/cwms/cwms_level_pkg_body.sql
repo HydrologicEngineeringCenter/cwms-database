@@ -1961,9 +1961,9 @@ end store_location_level;
 -- Only one of p_interval_months and p_interval_minutes can be specified for
 -- seasonal levels
 --          
--- p_effective_date should be specified as ‘yyyy/mm/dd hh:mm:ss’
+-- p_effective_date should be specified as 'yyyy/mm/dd hh:mm:ss'
 --          
--- p_interval_origin should be specified as ‘yyyy/mm/dd hh:mm:ss’
+-- p_interval_origin should be specified as 'yyyy/mm/dd hh:mm:ss'
 --          
 -- p_seasonal_values should be specified as text records separated by the RS
 -- character (chr(30)) with each record containing offset_months, offset_minutes
@@ -2520,7 +2520,7 @@ end retrieve_location_level4;
 -- Retrieves the Location Level in effect at a specified time using only text
 -- and numeric parameters
 --          
--- p_date should be specified as ‘yyyy/mm/dd hh:mm:ss’
+-- p_date should be specified as 'yyyy/mm/dd hh:mm:ss'
 --          
 -- If p_match_date is false ('F'), then the location level that has the latest
 -- effective date on or before p_date is returned.
@@ -2528,9 +2528,9 @@ end retrieve_location_level4;
 -- If p_match_date is true ('T'), then a location level is returned only if
 -- it has an effective date matching p_date.
 --          
--- p_effective_date is returned as ‘yyyy/mm/dd hh:mm:ss’
+-- p_effective_date is returned as 'yyyy/mm/dd hh:mm:ss'
 --          
--- p_interval_origin is returned as ‘yyyy/mm/dd hh:mm:ss’
+-- p_interval_origin is returned as 'yyyy/mm/dd hh:mm:ss'
 --          
 -- p_seasonal_values is returned as as text records separated by the RS
 -- character (chr(30)) with each record containing offset_months, offset_minutes
@@ -3463,9 +3463,9 @@ end retrieve_location_level_values;
 -- Retreives a time series of Location Level values for a specified time window
 -- using only text and numeric parameters
 --          
--- p_start_time should be specified as ‘yyyy/mm/dd hh:mm:ss’
+-- p_start_time should be specified as 'yyyy/mm/dd hh:mm:ss'
 --          
--- p_end_time should be specified as ‘yyyy/mm/dd hh:mm:ss’
+-- p_end_time should be specified as 'yyyy/mm/dd hh:mm:ss'
 --          
 -- p_level_values is returned as as text records separated by the RS
 -- character (chr(30)) with each record containing date-time and value
@@ -3515,9 +3515,9 @@ end retrieve_loc_lvl_values2;
 -- Returns a time series of Location Level values for a specified time window
 -- using only text and numeric parameters
 --          
--- p_start_time should be specified as ‘yyyy/mm/dd hh:mm:ss’
+-- p_start_time should be specified as 'yyyy/mm/dd hh:mm:ss'
 --          
--- p_end_time should be specified as ‘yyyy/mm/dd hh:mm:ss’
+-- p_end_time should be specified as 'yyyy/mm/dd hh:mm:ss'
 --          
 -- p_level_values is returned as as text records separated by the RS
 -- character (chr(30)) with each record containing date-time and value
