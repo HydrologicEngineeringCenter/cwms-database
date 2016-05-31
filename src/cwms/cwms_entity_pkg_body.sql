@@ -52,8 +52,12 @@ begin
          l_modified := true;
       end if;
       if not (l_ignore_nulls and p_parent_entity_id is null) then
-         l_rec.parent_code := get_entity_code(p_parent_entity_id, l_office_id);
-         l_modified := true;
+         l_modified := (p_parent_entity_id is null) != (l_rec.parent_code is null);
+         if p_parent_entity_id is null then
+            l_rec.parent_code := null;
+         else
+            l_rec.parent_code := get_entity_code(p_parent_entity_id, l_office_id);
+         end if;
       end if;
       if not (l_ignore_nulls and p_category_id is null) then
          l_rec.category_id := upper(trim(p_category_id));
