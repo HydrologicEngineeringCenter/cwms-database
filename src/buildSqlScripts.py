@@ -5321,7 +5321,7 @@ locationKinds = [
     [11,    6, 'OVERFLOW',       'The midpoint of the discharge',   'An outlet that passes the flow of water without restriction above a certain elevation'                         ], 
     [12,    9, 'STREAM_GAGE',    'The gage location',               'A stream location that has a gage used to measure stage and/or other hydrologic parameters'                    ],
     [13,    1, 'STREAM_REACH',   'The downstream-most point',       'A length of a stream bounded by upstream and downstream extents'                                               ],
-    [14,   12, 'PUMP',           'The intake or discharge point',   'A stream location where water is pumped from or into a stream or reservoir'                                    ],
+    [14,    9, 'PUMP',           'The intake or discharge point',   'A stream location where water is pumped from or into a stream or reservoir'                                    ],
     [15,    1, 'WEATHER_GAGE',   'The gage location',               'A location that has a gage used to measure precipitation and/or other meteorologic parameters'                 ],
     [16,    1, 'ENTITY',         'A representitave point',          'A location associated with an entity in the AT_ENTITY table'                                                   ],
 ]
