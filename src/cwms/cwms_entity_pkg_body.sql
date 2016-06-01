@@ -20,7 +20,7 @@ is
 begin
    l_modified       := false;
    l_fail_if_exists := cwms_util.return_true_or_false(p_fail_if_exists);
-   l_ignore_nulls   := cwms_util.return_true_or_false(p_fail_if_exists);
+   l_ignore_nulls   := cwms_util.return_true_or_false(p_ignore_nulls);
    l_office_id      := nvl(upper(trim(p_office_id)), cwms_util.user_office_id);
    l_office_code    := cwms_util.get_office_code(l_office_id);
    --------------------------------------
