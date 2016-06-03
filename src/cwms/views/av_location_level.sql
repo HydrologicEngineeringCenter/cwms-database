@@ -34,7 +34,13 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_LEVEL',
  * @field specified_level_id  The specified level portion of the location level  
  * @field location_code       The unique numeric code that identifies the location in the database
  * @field location_level_code The unique numeric code that identifies the location level in the database
- * @field expiration_date     The date/time at which the level expires
+ * @field expiration_date             The date/time at which the level expires
+ * @field parameter_type_id           The parameter type of the location level
+ * @field attribute_parameter_id      The attribute of the parameter, if any
+ * @field attribute_base_parameter_id The base parameter of the attribute, if any
+ * @field attribute_sub_parameter_id  The sub-parameter of the attribute, if any
+ * @field attribute_parameter_type_id The parameter type of the attribute, if any
+ * @field attribute_duration_id       The duration of the attribute, if any
  */
 ');
 
@@ -63,7 +69,13 @@ AS
                   specified_level_id,
                   location_code,
                   location_level_code,
-                  expiration_date
+                  expiration_date,
+                  parameter_type_id,
+                  attribute_parameter_id,
+                  cwms_util.get_base_id(attribute_parameter_id) as attribute_base_parameter_id,
+                  cwms_util.get_sub_id(attribute_parameter_id) as attribute_sub_parameter_id,
+                  attribute_parameter_type_id,
+                  attribute_duration_id
          FROM   ( 
                   --
                   -- CONSTANT LEVEL
@@ -517,4 +529,4 @@ AS
                   attribute_value,
                   interval_origin + calendar_offset_ + time_offset_;
 
-/
+create or replace public synonym cwms_v_location_level for av_location_level;                  
