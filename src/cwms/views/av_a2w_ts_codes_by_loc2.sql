@@ -15,19 +15,8 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_A2W_TS_CODES_BY_
  * @field db_office_id            The DB Office of the location and TS Code
  
 ');
-create or replace force view av_a2w_ts_codes_by_loc2
-(
-   ts_code,
-   location_code,
-   locatioN_id,
-   ts_type,
-   cwms_ts_id,
-   unit_id,
-   base_parameter_id,
-   db_office_id
-)
-as
-    SELECT a2w.ts_code, a2w.location_code, tsi.location_id, a2w.ts_type, tsi.cwms_ts_id, tsi.unit_id,  tsi.base_parameter_id, tsi.db_Office_id
+CREATE OR REPLACE FORCE VIEW "CWMS_20"."AV_A2W_TS_CODES_BY_LOC2" ("TS_CODE", "LOCATION_CODE", "LOCATION_ID", "TS_TYPE", "CWMS_TS_ID", "UNIT_ID", "BASE_PARAMETER_ID", "DB_OFFICE_ID") AS 
+  SELECT a2w.ts_code, a2w.location_code, l.location_id, a2w.ts_type, tsi.cwms_ts_id, tsi.unit_id,  tsi.base_parameter_id, tsi.db_Office_id
   FROM (
         SELECT a2w.ts_code_elev ts_code, a2w.location_code, 'ELEV' ts_type
           FROM at_a2w_Ts_codes_By_loc a2w
@@ -69,9 +58,10 @@ as
          WHERE a2w.ts_code_stor_Drought IS NOT NULL
           AND display_flag = 'T'
       UNION ALL
-        SELECT a2w.ts_code_stage_elev ts_code, a2w.location_code, 'ELEV TAILWATER' ts_type
+      
+        SELECT a2w.ts_code_elev_tw ts_code, a2w.location_code, 'ELEV TAILWATER' ts_type
           FROM at_a2w_ts_codes_by_loc a2w 
-         WHERE a2w.ts_code_stage_elev IS NOT NULL
+         WHERE a2w.ts_code_elev_tw IS NOT NULL
           AND display_flag = 'T'
       UNION ALL
         SELECT a2w.ts_code_stage_tw ts_code, a2w.location_code, 'STAGE TAILWATER' ts_type
@@ -116,5 +106,8 @@ as
 
       ) a2w
       , cwms_v_ts_id tsi
- WHERE a2w.ts_code = tsi.ts_code;
+      , cwms_v_loc l
+ WHERE a2w.ts_code = tsi.ts_code
+   AND a2w.location_code = l.location_code
+   AND l.unit_System = 'EN';
 /
