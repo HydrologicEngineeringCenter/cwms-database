@@ -38,7 +38,7 @@ AS
           db_office_id office_id,
           base_parameter_code,
           b.unit_code,
-          abstract_param_code db_office_code
+          db_office_code
      FROM cwms_base_parameter a JOIN av_unit b USING (abstract_param_code)
     WHERE unit_id IN (SELECT from_unit_id FROM cwms_unit_conversion)
 /
