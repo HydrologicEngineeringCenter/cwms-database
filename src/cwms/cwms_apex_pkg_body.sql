@@ -3061,11 +3061,11 @@ AS
 		SWT,Elev.Inst.0.Base Flood Control,,ft,00-11,030 00:00:00,723
 
 		procedure store_location_level2(
-		 p_location_level_id => ‘Elev.Inst.0.Base Flood Control’,
+		 p_location_level_id => 'Elev.Inst.0.Base Flood Control',
 		 p_level_value  => null,
-		 p_level_units  => ‘ft’,
-		 p_seasonal_values => ‘0,0,723/6,0,723/6,14,723/7,0,723/8,0,723/11,30,723’,
-		 p_office_id	=> ‘SWT’)
+		 p_level_units  => 'ft',
+		 p_seasonal_values => '0,0,723/6,0,723/6,14,723/7,0,723/8,0,723/11,30,723',
+		 p_office_id	=> 'SWT')
 
 		*/
 
