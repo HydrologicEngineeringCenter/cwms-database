@@ -5662,13 +5662,18 @@ begin
    -------------------------
    select distinct
           rating_code,
-          last_value(effective_date) over (order by effective_date)
+          effective_date
      into l_rating_code,
           l_effective_date
      from cwms_v_rating
     where office_id = upper(l_office_id)
       and upper(rating_id) = upper(p_rating_id)
-      and effective_date <= l_rating_time_utc;
+      and effective_date = (select max(effective_date)
+                              from cwms_v_rating
+                             where office_id = upper(l_office_id)
+                               and upper(rating_id) = upper(p_rating_id)
+                               and effective_date <= l_rating_time_utc
+                           );
    ---------------------------------------
    -- get the parameter names and units --
    ---------------------------------------
