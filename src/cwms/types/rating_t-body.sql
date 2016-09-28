@@ -3674,7 +3674,7 @@ as
       l_parts str_tab_t;
       l_tzstr varchar2(32);
    begin
-      l_date  := cwms_util.to_timestamp(substr(p_timestr, 1, 19));
+      l_date  := trunc(cwms_util.to_timestamp(substr(p_timestr, 1, 19)), 'MI');
       l_tzstr := substr(p_timestr, 20);
       ------------------
       -- shift to UTC --
