@@ -140,7 +140,27 @@ AS
 		END IF;
 	END;
 
+       PROCEDURE create_cwms_service_account (p_username 		IN VARCHAR2,
+                                          p_password 		IN VARCHAR2                                          
+												)
+	AS
+		l_sql_string						VARCHAR2 (400);
+	BEGIN
+		create_db_account (p_username, p_password);
 
+		l_sql_string := 'GRANT CONNECT TO ' || dbms_assert.simple_sql_name(p_username);
+		DBMS_OUTPUT.put_line (l_sql_string);
+        check_dynamic_sql(l_sql_string);
+
+		EXECUTE IMMEDIATE l_sql_string;
+
+		l_sql_string := 'GRANT CWMS_USER TO ' || dbms_assert.simple_sql_name(p_username);
+		DBMS_OUTPUT.put_line (l_sql_string);
+        check_dynamic_sql(l_sql_string);
+
+		EXECUTE IMMEDIATE l_sql_string;
+
+	END create_cwms_service_account;
 
 	PROCEDURE create_cwmsdbi_db_account (p_username   IN VARCHAR2,
 													 p_password   IN VARCHAR2 DEFAULT NULL
@@ -231,5 +251,12 @@ AS
            NULL;
        END;
    END revoke_rdl_role;
+   PROCEDURE update_service_password(p_username VARCHAR2,p_password VARCHAR2)
+   IS
+    l_cmd VARCHAR2(128);
+   BEGIN
+    l_cmd := 'ALTER USER ' ||  p_username || ' IDENTIFIED BY "' || p_password || '"';
+    execute immediate l_cmd;
+   END update_service_password;
 END cwms_user_admin;
 /

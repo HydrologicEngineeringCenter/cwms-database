@@ -9,6 +9,7 @@ AS
    user_group_code_all_users     CONSTANT NUMBER := 10;
    user_group_code_dba_users     CONSTANT NUMBER := 0;
    user_group_code_user_admins   CONSTANT NUMBER := 7;
+   user_group_code_pd_users      CONSTANT NUMBER:= 1;
    --
    acc_state_locked              CONSTANT VARCHAR2 (16) := 'LOCKED';
    acc_state_unlocked            CONSTANT VARCHAR2 (16) := 'UNLOCKED';
@@ -140,10 +141,15 @@ AS
                           p_db_office_id         IN VARCHAR2 DEFAULT NULL);
 
 
+   PROCEDURE create_cwms_service_user(p_username IN VARCHAR2,
+                                        p_password VARCHAR2);                       
+
    PROCEDURE delete_user (p_username IN VARCHAR2);
 
    PROCEDURE lock_user (p_username       IN VARCHAR2,
                         p_db_office_id   IN VARCHAR2 DEFAULT NULL);
+   PROCEDURE update_edipi (p_username       IN VARCHAR2,
+                        p_edipi   IN NUMBER,p_db_office_id   IN VARCHAR2 DEFAULT NULL);
 
    PROCEDURE remove_user_from_group (
       p_username        IN VARCHAR2,
@@ -233,6 +239,9 @@ AS
                                p_office     IN VARCHAR2,
                                p_phone      IN VARCHAR2,
                                p_email      IN VARCHAR2);
-
+  PROCEDURE get_user_credentials (p_edipi      IN     NUMBER,
+                                   p_user          OUT VARCHAR2,
+                                   p_session_key      OUT VARCHAR2);
+ PROCEDURE UPDATE_SERVICE_PASSWORD(p_username OUT VARCHAR2,p_password OUT VARCHAR2);
 END cwms_sec;
 /

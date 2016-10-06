@@ -708,6 +708,20 @@ AS
       END IF;
    END does_db_account_exist;
 
+   PROCEDURE update_edipi (p_username IN VARCHAR2, p_edipi IN NUMBER,p_db_office_id   IN VARCHAR2 DEFAULT NULL)
+   IS
+   	l_db_office_id     VARCHAR2 (16)
+                         := cwms_util.get_db_office_id (p_db_office_id);
+   	l_db_office_code   NUMBER := cwms_util.get_db_office_code (l_db_office_id);
+   BEGIN
+   	confirm_user_admin_priv (l_db_office_code);
+
+   	UPDATE AT_SEC_CWMS_USERS
+      	SET EDIPI = p_edipi
+    	WHERE USERID = UPPER (p_username);
+
+   	COMMIT;
+   END update_edipi;
    ----------------------------------------------------------------------------
    -- unlock_user
    ----------------------------------------------------------------------------
@@ -993,6 +1007,16 @@ AS
       create_logon_trigger(p_username);
       COMMIT;
    END CREATE_USER;
+
+   PROCEDURE create_cwms_service_user(p_username IN VARCHAR2,
+                                        p_password VARCHAR2)
+   IS
+   BEGIN
+    if(sys_context('userenv', 'current_user')='&cwms_schema')
+    then
+        CWMS_DBA.CWMS_USER_ADMIN.CREATE_CWMS_SERVICE_ACCOUNT(p_username, p_password);
+    end if;
+   END create_cwms_service_user;
 
    ----------------------------------------------------------------------------
    -- delete_user
@@ -2432,6 +2456,8 @@ AS
                    || CWMS_SEC.GET_ADMIN_CWMS_PERMISSIONS (p.username, l_db_office_id)
                    || '|'
                    ||  case when fullname is null or length(fullname)=0 then ' ' else fullname end
+                   || '|'
+                   || case when u.edipi is null then 0 else u.edipi end 
               FROM at_sec_user_office p,
                    at_sec_cwms_users u
              WHERE p.username=u.userid
@@ -2445,6 +2471,8 @@ AS
                    || CWMS_SEC.GET_ADMIN_CWMS_PERMISSIONS (p.username, l_db_office_id)
                    || '|'
                    ||  case when fullname is null or length(fullname)=0 then ' ' else fullname end
+                   || '|'
+                   || case when u.edipi is null then 0 else u.edipi end 
               FROM at_sec_user_office p,
                    at_sec_cwms_users u
              WHERE p.username=u.userid
@@ -2529,6 +2557,70 @@ AS
    BEGIN
       cwms_upass.update_user_data(p_userid,p_fullname,p_org,p_office,p_phone,p_email);
    END update_user_data;
+
+   FUNCTION is_pd_user(p_user VARCHAR2) 
+   RETURN BOOLEAN 
+   IS
+    l_db_office_code   NUMBER
+                            := cwms_util.get_db_office_code (get_user_office_id);
+   BEGIN
+    RETURN is_member_user_group(user_group_code_pd_users,p_user,l_db_office_code);
+   END is_pd_user;
+   
+   PROCEDURE UPDATE_SERVICE_PASSWORD(p_username OUT VARCHAR2,p_password OUT VARCHAR2)
+   IS
+    l_username VARCHAR2(16) := 'CWMS9999';
+    l_password VARCHAR2(64) := null;
+   BEGIN
+    p_username := null;
+    p_password := null;
+    IF is_pd_user(CWMS_UTIL.GET_USER_ID) = FALSE
+      THEN
+        RETURN;
+      END IF;
+    l_password := RAWTOHEX (DBMS_CRYPTO.RANDOMBYTES (8));
+    CWMS_DBA.CWMS_USER_ADMIN.update_service_password(l_username,l_password);
+    p_username := l_username;
+    p_password := l_password;
+   END update_service_password;
+   
+   PROCEDURE get_user_credentials (p_edipi      IN     NUMBER,
+                                   p_user          OUT VARCHAR2,
+                                   p_session_key      OUT VARCHAR2)
+   IS
+      l_count           NUMBER;
+   BEGIN
+      p_user := NULL;
+      p_session_key := NULL;
+      IF is_pd_user(CWMS_UTIL.GET_USER_ID) = FALSE
+      THEN
+        RETURN;
+      END IF;
+      BEGIN
+         SELECT COUNT (*)
+           INTO L_COUNT
+           FROM AT_SEC_CWMS_USERS
+          WHERE EDIPI = P_EDIPI;
+
+         IF (L_COUNT <> 0)
+         THEN
+            SELECT userid
+              INTO p_user
+              FROM AT_SEC_CWMS_USERS
+             WHERE edipi = p_edipi;
+
+            p_session_key := RAWTOHEX (DBMS_CRYPTO.RANDOMBYTES (8));
+
+            INSERT INTO at_sec_session
+                 VALUES (p_user,
+                         p_session_key,
+                         SYSTIMESTAMP + (1 / (24 * 4)));
+
+
+            COMMIT;
+         END IF;
+      END;
+   END get_user_credentials;
 END cwms_sec;
 /
 show errors

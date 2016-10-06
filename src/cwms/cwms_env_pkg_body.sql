@@ -67,6 +67,18 @@ AS
     set_cwms_env ('CWMS_PRIVILEGE', 'READ_ONLY');
    END;
 
+   PROCEDURE set_session_user(p_session_key VARCHAR2)
+   IS
+    l_userid VARCHAR2(32);
+   BEGIN
+    SELECT USERID
+    INTO l_userid
+    FROM AT_SEC_SESSION
+    WHERE session_key = p_session_key;
+    set_cwms_env('CWMS_USER',l_userid);
+    set_session_privileges;
+   END set_session_user;
+
    PROCEDURE set_session_privileges
    IS
       l_office_id   VARCHAR2 (16);

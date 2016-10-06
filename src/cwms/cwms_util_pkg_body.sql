@@ -2317,8 +2317,11 @@ AS
       IF v ('APP_USER') != 'APEX_PUBLIC_USER' AND v ('APP_USER') IS NOT NULL
       THEN
          l_user_id := v ('APP_USER');
+      ELSIF SYS_CONTEXT ('CWMS_ENV', 'CWMS_USER') IS NOT NULL
+      THEN
+         l_user_id := SYS_CONTEXT ('CWMS_ENV', 'CWMS_USER'); 
       ELSE
-         l_user_id := SYS_CONTEXT ('userenv', 'session_user');
+	 l_user_id := USER;
       END IF;
 
       RETURN UPPER (l_user_id);

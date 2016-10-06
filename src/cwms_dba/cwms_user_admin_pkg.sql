@@ -19,16 +19,21 @@ AS
 													 p_password   IN VARCHAR2 DEFAULT NULL
 													);
 
+    PROCEDURE create_cwms_service_account (p_username 		IN VARCHAR2,
+                                          p_password 		IN VARCHAR2                                          
+												);
+												
+	PROCEDURE delete_db_account (p_username IN VARCHAR2 DEFAULT NULL );
+
     PROCEDURE create_cwms_db_account (p_username         IN VARCHAR2, p_password in varchar2,
                                                  p_dbi_username    IN VARCHAR2
                                                 );
-
-	PROCEDURE delete_db_account (p_username IN VARCHAR2 DEFAULT NULL );
 
 	PROCEDURE set_user_password (p_username	IN VARCHAR2,
 										  p_password	IN VARCHAR2
 										 );
         PROCEDURE grant_rdl_role (p_role VARCHAR2, p_username VARCHAR2);
 	PROCEDURE revoke_rdl_role (p_role VARCHAR2, p_username VARCHAR2);
+        PROCEDURE update_service_password(p_username VARCHAR2,p_password VARCHAR2);
 END cwms_user_admin;
 /
