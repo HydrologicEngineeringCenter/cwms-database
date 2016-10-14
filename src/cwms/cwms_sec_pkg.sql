@@ -170,6 +170,7 @@ AS
    PROCEDURE refresh_mv_sec_ts_privileges;
 
    PROCEDURE start_refresh_mv_sec_privs_job;
+   PROCEDURE start_clean_session_job;
 
    PROCEDURE store_priv_groups (p_username             IN VARCHAR2,
                                 p_user_group_id_list   IN char_32_array_type,
@@ -239,9 +240,11 @@ AS
                                p_office     IN VARCHAR2,
                                p_phone      IN VARCHAR2,
                                p_email      IN VARCHAR2);
+  PROCEDURE remove_session_key(p_session_key VARCHAR2);
+  PROCEDURE clean_session_keys;
   PROCEDURE get_user_credentials (p_edipi      IN     NUMBER,
                                    p_user          OUT VARCHAR2,
                                    p_session_key      OUT VARCHAR2);
- PROCEDURE UPDATE_SERVICE_PASSWORD(p_username OUT VARCHAR2,p_password OUT VARCHAR2);
+ PROCEDURE update_service_password(p_username OUT VARCHAR2,p_password OUT VARCHAR2);
 END cwms_sec;
 /

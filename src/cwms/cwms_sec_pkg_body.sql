@@ -910,7 +910,7 @@ AS
          || p_username
          || '_logon_trigger AFTER LOGON ON '
          || p_username
-         || '.SCHEMA BEGIN cwms_20.cwms_env.set_session_privileges; END;';
+         || '.SCHEMA BEGIN &cwms_schema..cwms_env.set_session_privileges; END;';
 
       EXECUTE IMMEDIATE l_cmd;
 
@@ -1538,13 +1538,13 @@ AS
       END IF;
    END refresh_mv_sec_ts_privileges;
 
-   PROCEDURE start_refresh_mv_sec_privs_job
+      PROCEDURE start_sec_job(p_job_id VARCHAR2,p_run_interval NUMBER,p_action VARCHAR2,p_comment VARCHAR2)
    IS
       l_count          BINARY_INTEGER;
       l_user_id        VARCHAR2 (30);
-      l_job_id         VARCHAR2 (30) := 'REFRESH_MV_SEC_TS_PRIVS_JOB';
-      l_run_interval   VARCHAR2 (8) := '5';
-      l_comment        VARCHAR2 (256);
+      --l_job_id         VARCHAR2 (30) := 'REFRESH_MV_SEC_TS_PRIVS_JOB';
+      --l_run_interval   VARCHAR2 (8) := '5';
+      --l_comment        VARCHAR2 (256);
 
       FUNCTION job_count
          RETURN BINARY_INTEGER
@@ -1553,7 +1553,7 @@ AS
          SELECT COUNT (*)
            INTO l_count
            FROM sys.dba_scheduler_jobs
-          WHERE job_name = l_job_id AND owner = l_user_id;
+          WHERE job_name = p_job_id AND owner = l_user_id;
 
          RETURN l_count;
       END;
@@ -1567,7 +1567,7 @@ AS
       THEN
          raise_application_error (
             -20999,
-            'Must be &cwms_schema user to start job ' || l_job_id,
+            'Must be &cwms_schema user to start job ' || p_job_id,
             TRUE);
       END IF;
 
@@ -1576,8 +1576,8 @@ AS
       -------------------------------------------
       IF job_count > 0
       THEN
-         DBMS_OUTPUT.put ('Dropping existing job ' || l_job_id || '...');
-         DBMS_SCHEDULER.drop_job (l_job_id);
+         DBMS_OUTPUT.put ('Dropping existing job ' || p_job_id || '...');
+         DBMS_SCHEDULER.drop_job (p_job_id);
 
          --------------------------------
          -- verify that it was dropped --
@@ -1598,39 +1598,51 @@ AS
             ---------------------
 
             DBMS_SCHEDULER.create_job (
-               job_name          => l_job_id,
+               job_name          => p_job_id,
                job_type          => 'stored_procedure',
-               job_action        => 'cwms_sec.refresh_mv_sec_ts_privileges',
+               --job_action        => 'cwms_sec.refresh_mv_sec_ts_privileges',
+               job_action        => p_action,
                start_date        => NULL,
                repeat_interval   => 'freq=minutely; interval='
-                                   || l_run_interval,
+                                   || p_run_interval,
                end_date          => NULL,
                job_class         => 'default_job_class',
                enabled           => TRUE,
                auto_drop         => FALSE,
-               comments          => 'Refreshes mv_sec_ts_privileges when needed.');
+               comments          => p_comment);
 
             IF job_count = 1
             THEN
                DBMS_OUTPUT.put_line (
                      'Job '
-                  || l_job_id
+                  || p_job_id
                   || ' successfully scheduled to execute every '
-                  || l_run_interval
+                  || p_run_interval
                   || ' minutes.');
             ELSE
-               cwms_err.raise ('ITEM_NOT_CREATED', 'job', l_job_id);
+               cwms_err.raise ('ITEM_NOT_CREATED', 'job', p_job_id);
             END IF;
          EXCEPTION
             WHEN OTHERS
             THEN
                cwms_err.raise ('ITEM_NOT_CREATED',
                                'job',
-                               l_job_id || ':' || SQLERRM);
+                               p_job_id || ':' || SQLERRM);
          END;
       END IF;
-   END start_refresh_mv_sec_privs_job;
+   END start_sec_job;
 
+   PROCEDURE start_refresh_mv_sec_privs_job
+   IS
+   BEGIN
+    start_sec_job('REFRESH_MV_SEC_TS_PRIVS_JOB',5,'cwms_sec.refresh_mv_sec_ts_privileges','Refreshes mv_sec_ts_privileges when needed.');
+   END start_refresh_mv_sec_privs_job;
+   
+   PROCEDURE start_clean_session_job
+   IS
+   BEGIN
+    start_sec_job('CLEAN_SESSION_KEYS_JOB',1,'cwms_sec.clean_session_keys','Clean expired session keys');
+   END start_clean_session_job;
    /*
    storePrivilegeGroups(String username, String officeId,
        List<String> groupNameList, List<String> groupOfficeIdList,
@@ -2567,7 +2579,7 @@ AS
     RETURN is_member_user_group(user_group_code_pd_users,p_user,l_db_office_code);
    END is_pd_user;
    
-   PROCEDURE UPDATE_SERVICE_PASSWORD(p_username OUT VARCHAR2,p_password OUT VARCHAR2)
+   PROCEDURE update_service_password(p_username OUT VARCHAR2,p_password OUT VARCHAR2)
    IS
     l_username VARCHAR2(16) := 'CWMS9999';
     l_password VARCHAR2(64) := null;
@@ -2584,6 +2596,25 @@ AS
     p_password := l_password;
    END update_service_password;
    
+   PROCEDURE clean_session_keys
+   IS
+   BEGIN
+      DELETE FROM AT_SEC_SESSION WHERE SYSTIMESTAMP > TIMEOUT; 
+      COMMIT;
+   END clean_session_keys;
+
+   PROCEDURE remove_session_key(p_session_key VARCHAR2)
+   IS
+   BEGIN
+      IF is_pd_user(CWMS_UTIL.GET_USER_ID) = FALSE
+      THEN
+        RETURN;
+      END IF;
+      
+      DELETE FROM AT_SEC_SESSION WHERE SESSION_KEY = p_session_key;
+      COMMIT;
+   END remove_session_key;
+
    PROCEDURE get_user_credentials (p_edipi      IN     NUMBER,
                                    p_user          OUT VARCHAR2,
                                    p_session_key      OUT VARCHAR2)
@@ -2614,7 +2645,7 @@ AS
             INSERT INTO at_sec_session
                  VALUES (p_user,
                          p_session_key,
-                         SYSTIMESTAMP + (1 / (24 * 4)));
+                         SYSTIMESTAMP + (1 / 24 ));
 
 
             COMMIT;
