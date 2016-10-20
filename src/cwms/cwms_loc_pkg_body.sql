@@ -2635,6 +2635,9 @@ AS
          -- vertical datums --
          ---------------------
          delete
+           from at_vert_datum_local
+          where location_code in (select * from table(l_location_codes));           
+         delete
            from at_vert_datum_offset
           where location_code in (select * from table(l_location_codes));           
          ------------
