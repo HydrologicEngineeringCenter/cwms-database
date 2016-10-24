@@ -4,9 +4,11 @@ as
       p_location_level_code in number)
       return self as result
    as
-      l_rec             at_location_level%rowtype;
-      l_seasonal_values seasonal_loc_lvl_tab_t := new seasonal_loc_lvl_tab_t();
-      l_indicators      loc_lvl_indicator_tab_t := new loc_lvl_indicator_tab_t();
+      l_rec               at_location_level%rowtype;
+      l_seasonal_values   seasonal_loc_lvl_tab_t := new seasonal_loc_lvl_tab_t();
+      l_indicators        loc_lvl_indicator_tab_t := new loc_lvl_indicator_tab_t();
+      l_parameter_code    number(10);
+      l_vert_datum_offset binary_double;
    begin
       -------------------------
       -- get the main record --
@@ -30,6 +32,48 @@ as
             rec.time_offset,
             rec.value);
       end loop;
+      -------------------------------------------------
+      -- check for elevation and adjust as necessary --
+      -------------------------------------------------
+      ------------------------------
+      -- first the level value... --
+      ------------------------------
+      begin
+         select ap.parameter_code
+           into l_parameter_code
+           from at_parameter ap,
+                cwms_base_parameter bp
+          where ap.parameter_code = self.parameter_code
+            and bp.base_parameter_code = ap.base_parameter_code
+            and bp.base_parameter_id = 'Elev';
+      exception
+         when no_data_found then null;
+      end;
+      if l_parameter_code is not null then
+         self.location_level_value := self.location_level_value + cwms_loc.get_vertical_datum_offset(self.location_code, 'm');
+      end if;
+      -----------------------------
+      -- ...then seasonal values --
+      -----------------------------
+      if l_seasonal_values.count > 0 then
+         begin
+            select ap.parameter_code
+              into l_parameter_code
+              from at_parameter ap,
+                   cwms_base_parameter bp
+             where ap.parameter_code = self.attribute_parameter_code
+               and bp.base_parameter_code = ap.base_parameter_code
+               and bp.base_parameter_id = 'Elev';
+         exception
+            when no_data_found then null;
+         end;
+         if l_parameter_code is not null then
+            l_vert_datum_offset := cwms_loc.get_vertical_datum_offset(self.location_code, 'm');
+            for i in 1..l_seasonal_values.count loop
+               l_seasonal_values(i).level_value := l_seasonal_values(i).level_value + l_vert_datum_offset;
+            end loop;
+         end if;
+      end if;
       ---------------------------------------
       -- get the location level indicators --
       ---------------------------------------
@@ -164,9 +208,11 @@ as
 
    member procedure store
    as
-      l_rec       at_location_level%rowtype;
-      l_exists    boolean;
-      l_ind_codes number_tab_t;
+      l_rec               at_location_level%rowtype;
+      l_exists            boolean;
+      l_ind_codes         number_tab_t;
+      l_parameter_code    number(10);
+      l_vert_datum_offset binary_double;
    begin
       ------------------------------
       -- find any existing record --
@@ -204,6 +250,23 @@ as
       l_rec.interpolate                   := self.interpolate;
       l_rec.ts_code                       := self.ts_code;
       l_rec.expiration_date               := self.expiration_date;
+      --------------------------------------------
+      -- adjust for vertical datum if necessary --
+      --------------------------------------------
+      begin
+         select ap.parameter_code
+           into l_parameter_code
+           from at_parameter ap,
+                cwms_base_parameter bp
+          where ap.parameter_code = self.parameter_code
+            and bp.base_parameter_code = ap.base_parameter_code
+            and bp.base_parameter_id = 'Elev';
+      exception
+         when no_data_found then null;
+      end;
+      if l_parameter_code is not null then
+         l_rec.location_level_value := l_rec.location_level_value + cwms_loc.get_vertical_datum_offset(self.location_code, 'm');
+      end if;
       --------------------------------------
       -- insert or update the main record --
       --------------------------------------
@@ -221,21 +284,36 @@ as
       -------------------------------
       -- store the seasonal values --
       -------------------------------
-       if l_exists then
-         delete
-           from at_seasonal_location_level
-          where location_level_code = l_rec.location_level_code;
-       end if;
-       if self.seasonal_level_values is not null then
-          for i in 1..self.seasonal_level_values.count loop
-            insert
-              into at_seasonal_location_level
-            values (l_rec.location_level_code,
-                    self.seasonal_level_values(i).calendar_offset,
-                    self.seasonal_level_values(i).time_offset,
-                    self.seasonal_level_values(i).level_value);
-          end loop;
-       end if;
+      if l_exists then
+        delete
+          from at_seasonal_location_level
+         where location_level_code = l_rec.location_level_code;
+      end if;
+      if self.seasonal_level_values is not null then
+         l_vert_datum_offset := 0;
+         begin
+            select ap.parameter_code
+              into l_parameter_code
+              from at_parameter ap,
+                   cwms_base_parameter bp
+             where ap.parameter_code = self.attribute_parameter_code
+               and bp.base_parameter_code = ap.base_parameter_code
+               and bp.base_parameter_id = 'Elev';
+         exception
+            when no_data_found then null;
+         end;
+         if l_parameter_code is not null then
+            l_vert_datum_offset := cwms_loc.get_vertical_datum_offset(self.location_code, 'm');
+         end if;
+         for i in 1..self.seasonal_level_values.count loop
+           insert
+             into at_seasonal_location_level
+           values (l_rec.location_level_code,
+                   self.seasonal_level_values(i).calendar_offset,
+                   self.seasonal_level_values(i).time_offset,
+                   self.seasonal_level_values(i).level_value + l_vert_datum_offset);
+         end loop;
+      end if;
       --------------------------
       -- store the indicators --
       --------------------------

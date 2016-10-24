@@ -34,31 +34,24 @@ end validate_specified_level_input;
 procedure get_units_conversion(
    p_factor         out binary_double,
    p_offset         out binary_double,
-   p_direction      in  varchar2,
+   p_to_cwms        in  boolean,
    p_units          in  varchar2,
    p_parameter_code in  number)
 is          
-   l_to_cwms           boolean;
    l_parameter_id      varchar2(49);
    l_sub_parameter_id  varchar2(32);
 begin       
-   l_to_cwms :=
-      case upper(p_direction)
-         when 'TO_CWMS'   then true
-         when 'FROM_CWMS' then false
-         else                  null
-      end;  
-   if l_to_cwms is null then
+   if p_to_cwms is null then
       cwms_err.raise(
          'ERROR',
-         'Parameter p_direction must be ''TO_CWMS'' or ''FROM_CWMS''.');
+         'Parameter p_to_cwms must be true (To CWMS) or false (From CWMS)');
    end if;      
    if p_units is null then
       p_factor := 1;
       p_offset := 0;
    else     
       begin 
-         if l_to_cwms then
+         if p_to_cwms then
             -------------
             -- TO CWMS --
             -------------
@@ -107,7 +100,7 @@ begin
                'ERROR',
                'Cannot convert parameter '
                || l_parameter_id
-               || case l_to_cwms
+               || case p_to_cwms
                      when true then ' to'
                      else           ' from'
                   end
@@ -284,7 +277,7 @@ begin
       get_units_conversion(
          l_factor,
          l_offset,
-         'TO_CWMS',
+         true, -- To CWMS
          p_attribute_units,
          p_attribute_parameter_code);
       l_attribute_value := cwms_rounding.round_f(p_attribute_value * l_factor + l_offset, 12);
@@ -1389,6 +1382,10 @@ is
    l_ts_code                   number(10);
    l_count                     pls_integer;
    l_interpolate               varchar2(1);
+   l_level_param_is_elev       boolean;
+   l_attr_param_is_elev        boolean;
+   l_level_vert_datum_offset   binary_double;
+   l_attr_vert_datum_offset    binary_double;
 begin       
    l_fail_if_exists := cwms_util.return_true_or_false(p_fail_if_exists);
    if p_interval_months is not null then
@@ -1510,7 +1507,7 @@ begin
    get_units_conversion(
       l_level_factor,
       l_level_offset,
-      'TO_CWMS',
+      true, -- To CWMS
       p_level_units,
       l_parameter_code);
    if p_attribute_value is null then
@@ -1519,11 +1516,24 @@ begin
       get_units_conversion(
          l_attr_factor,
          l_attr_offset,
-         'TO_CWMS',
+         true, -- To CWMS
          p_attribute_units,
          l_attribute_parameter_code);
       l_attribute_value := cwms_rounding.round_f(p_attribute_value * l_attr_factor + l_attr_offset, 12);
    end if;  
+   ----------------------------------------------
+   -- get vertical datum offset for elevations --
+   ----------------------------------------------
+   l_level_param_is_elev := instr(upper(p_parameter_id), 'ELEV') = 1; 
+   l_attr_param_is_elev  := instr(upper(p_attribute_parameter_id), 'ELEV') = 1;
+   if l_level_param_is_elev then
+      l_level_vert_datum_offset := cwms_loc.get_vertical_datum_offset(l_location_code, p_level_units);
+      l_level_offset := l_level_offset - l_level_vert_datum_offset;
+   end if;
+   if l_attr_param_is_elev then
+      l_attr_vert_datum_offset := cwms_loc.get_vertical_datum_offset(l_location_code, p_attribute_units);
+      l_attribute_value := l_attribute_value - l_attr_vert_datum_offset;
+   end if;
    --------------------------------------
    -- determine whether already exists --
    --------------------------------------
@@ -1681,7 +1691,7 @@ begin
                at time zone 'UTC' as date);
          end if;
          update at_location_level
-            set location_level_value = p_level_value * l_level_factor + l_level_offset,
+            set location_level_value = null,
                 location_level_comment = p_level_comment,
                 location_level_date = l_effective_date,
                 attribute_value = l_attribute_value,
@@ -2184,7 +2194,7 @@ begin
    get_units_conversion(
       l_factor,
       l_offset,
-      'FROM_CWMS',
+      false, -- From CWMS
       p_level_units,
       l_parameter_code);
    --------------------------------------
@@ -2690,7 +2700,8 @@ procedure retrieve_loc_lvl_values_utc(
    p_attribute_parameter_id  in  varchar2 default null,
    p_attribute_param_type_id in  varchar2 default null,
    p_attribute_duration_id   in  varchar2 default null,
-   p_office_id               in  varchar2 default null)
+   p_office_id               in  varchar2 default null,
+   p_in_recursion            in boolean default false)
 is
    type encoded_date_t is table of boolean index by binary_integer;
    l_encoded_dates             encoded_date_t;
@@ -2725,7 +2736,6 @@ is
    l_attribute_factor          binary_double := null;
    l_attribute_offset          binary_double := null;
    l_unit                      varchar2(16);
-   l_datum                     varchar2(16);
    --------------------
    -- local routines --
    --------------------
@@ -2923,7 +2933,8 @@ begin
                p_attribute_parameter_id,
                p_attribute_param_type_id,
                p_attribute_duration_id,
-               p_office_id);
+               p_office_id,
+               p_in_recursion => true);
             for i in 1..l_values.count loop
                l_level_values.extend;
                l_level_values(l_level_values.count) := l_values(i);
@@ -2944,17 +2955,21 @@ begin
       get_units_conversion(
          l_factor,
          l_offset,
-         'FROM_CWMS',
+         false, -- From CWMS
          l_unit,
          l_parameter_code);
       if p_attribute_value is not null then
          get_units_conversion(
             l_attribute_factor,
             l_attribute_offset,
-            'TO_CWMS',
+            true, -- To CWMS
             p_attribute_units,
             l_attribute_parameter_code);
          l_attribute_value := cwms_rounding.round_f(p_attribute_value * l_attribute_factor + l_attribute_offset, 12);
+         if instr(upper(p_parameter_id), 'ELEV') = 1 and not p_in_recursion then
+            l_vert_datum_offset := cwms_loc.get_vertical_datum_offset(l_location_code, p_level_units);
+            l_attribute_value := l_attribute_value - l_vert_datum_offset;
+         end if;
       end if;
       --------------------------------------
       -- get the at_location_level record --
@@ -3258,15 +3273,9 @@ begin
             end if;
          end;
       end if;
-      if instr(upper(p_parameter_id), 'ELEV') = 1 and l_rec.ts_code is null then
-         l_datum := cwms_util.parse_vertical_datum(p_level_units);
-         if l_datum is not null then
-            l_vert_datum_offset := cwms_loc.get_vertical_datum_offset(
-               l_location_code,
-               cwms_loc.get_location_vertical_datum(l_location_code),
-               l_datum,
-               sysdate,
-               l_unit);
+      if instr(upper(p_parameter_id), 'ELEV') = 1 and l_rec.ts_code is null and not p_in_recursion then
+         l_vert_datum_offset := cwms_loc.get_vertical_datum_offset(l_location_code, p_level_units);
+         if l_vert_datum_offset != 0 then
             for i in 1..l_level_values.count loop
                if l_level_values(i).value is not null then
                   l_level_values(i).value := l_level_values(i).value + l_vert_datum_offset;
@@ -3358,7 +3367,7 @@ begin
      from table(p_level_values);
      
    p_level_values := l_level_values;        
-end;   
+end retrieve_location_level_values;   
             
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level_values
@@ -5380,11 +5389,18 @@ begin
              || attribute_parameter_type_id
              || substr(''.'', 1, length(attribute_duration_id))
              ||attribute_duration_id as attribute_parameter_type_id,
-             cwms_rounding.round_f(attribute_value * factor + offset, 9) as attribute_value,
+             cwms_rounding.round_f(
+                case
+                when attr_base_parameter_id =  ''Elev'' then
+                   attribute_value * factor + offset + cwms_loc.get_vertical_datum_offset(location_code, attribute_unit_id)
+                else
+                   attribute_value * factor + offset
+                end, 9) as attribute_value,
              attribute_unit_id,
              cwms_util.change_timezone(location_level_date, ''UTC'', :p_timezone_id)
         from (  (  select o.office_code as office_code1,
                           o.office_id as office_id,
+                          pl.location_code,
                           bl.base_location_id
                           || substr(''-'', 1, length(pl.sub_location_id))
                           || pl.sub_location_id
@@ -5401,7 +5417,7 @@ begin
                           ll.attribute_parameter_code as attr_parameter_code1,
                           ll.attribute_parameter_type_code as attr_parameter_type_code1,
                           ll.attribute_duration_code as attr_duration_code1,
-                          ll.attribute_value as attribute_value,
+                          ll.attribute_value,
                           ll.location_level_date
                      from at_location_level ll,
                           at_physical_location pl,
@@ -5439,6 +5455,7 @@ begin
                 )
                 left outer join
                 (  select p2.parameter_code as attr_parameter_code2,
+                          bp2.base_parameter_id as attr_base_parameter_id,
                           bp2.base_parameter_id
                           || substr(''-'', 1, length(p2.sub_parameter_id))
                           || p2.sub_parameter_id as attribute_parameter_id,
@@ -5482,7 +5499,6 @@ begin
    then
       l_query_str := replace(l_query_str, 'left outer join', 'inner join');
    end if;
-   cwms_util.check_dynamic_sql(l_query_str); 
    --------------------------
    -- retrieve the catalog --
    --------------------------
@@ -5711,7 +5727,11 @@ begin
    -- get the loc_lvl_indicator code --
    ------------------------------------
    if p_attr_value is not null then
-      l_attr_value := cwms_rounding.round_f(p_attr_value * l_factor + l_offset, 12);
+      if instr(upper(p_attr_parameter_id), 'ELEV') = 1 then
+         l_attr_value := cwms_rounding.round_f(p_attr_value * l_factor + l_offset - cwms_loc.get_vertical_datum_offset(l_location_code, p_attr_units_id), 12);
+      else
+         l_attr_value := cwms_rounding.round_f(p_attr_value * l_factor + l_offset, 12);
+      end if;
    end if;  
    if p_ref_attr_value is not null then
       l_ref_attr_value := cwms_rounding.round_f(p_ref_attr_value * l_factor + l_offset, 12);
@@ -6141,6 +6161,8 @@ is
    l_ignore_nulls_on_update boolean := cwms_util.return_true_or_false(p_ignore_nulls_on_update);
    l_exists                 boolean := true;
    l_rec                    at_loc_lvl_indicator%rowtype;
+   l_parameter_code         number(10);
+   l_vert_datum_offset      binary_double;
 begin       
    begin    
       select *
@@ -6187,7 +6209,26 @@ begin
       l_rec.ref_attr_value           := cwms_rounding.round_f(p_ref_attr_value, 12);
       l_rec.minimum_duration         := p_minimum_duration;
       l_rec.maximum_age              := p_maximum_age;
-   end if;  
+   end if;
+   ----------------------------------------------------------
+   -- adjust elevation attribute values for vertical datum --
+   ----------------------------------------------------------
+   begin
+      select ap.parameter_code
+        into l_parameter_code
+        from at_parameter ap,
+             cwms_base_parameter bp
+       where ap.parameter_code = l_rec.attr_parameter_code
+         and bp.base_parameter_code = ap.base_parameter_code
+         and bp.base_parameter_id = 'Elev';
+   exception
+      when no_data_found then null;
+   end;
+   if l_parameter_code != null then
+      l_vert_datum_offset := cwms_loc.get_vertical_datum_offset(p_location_code, 'm');
+      l_rec.attr_value := l_rec.attr_value - l_vert_datum_offset;
+      l_rec.ref_attr_value := l_rec.ref_attr_value - l_vert_datum_offset;
+   end if;
    if l_exists then
       update at_loc_lvl_indicator
          set row = l_rec

@@ -11,7 +11,8 @@ as
       p_rowid in urowid)
       return self as result
    is
-      l_level_indicator_code number(10);
+      l_parameter_code    number(10);
+      l_vert_datum_offset binary_double;
    begin
       conditions := new loc_lvl_ind_cond_tab_t();
       select level_indicator_code,
@@ -46,11 +47,25 @@ as
              maximum_age
         from at_loc_lvl_indicator
        where rowid = p_rowid;
-
-      l_level_indicator_code := level_indicator_code;
+      begin
+        select ap.parameter_code
+          into l_parameter_code
+          from at_parameter ap,
+               cwms_base_parameter bp
+         where ap.parameter_code = self.attr_parameter_code
+           and bp.base_parameter_code = ap.base_parameter_code
+           and bp.base_parameter_id = 'Elev';
+      exception
+        when no_data_found then null;
+      end;
+      if l_parameter_code is not null then
+         l_vert_datum_offset := cwms_loc.get_vertical_datum_offset(self.location_code, 'm');
+         self.attr_value := self.attr_value + l_vert_datum_offset;
+         self.ref_attr_value := self.ref_attr_value + l_vert_datum_offset;
+      end if;
       for rec in (select rowid
                     from at_loc_lvl_indicator_cond
-                   where level_indicator_code = l_level_indicator_code
+                   where level_indicator_code = self.level_indicator_code
                 order by level_indicator_value)
       loop
          conditions.extend;

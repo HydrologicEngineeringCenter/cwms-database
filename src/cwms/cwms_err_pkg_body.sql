@@ -13,7 +13,7 @@ is
       p_9   in varchar2 default null   -- optional substitution value for %9 
       ) is
       l_code  number;
-      l_errm  varchar2(1000);
+      l_errm  varchar2(32767);
    begin
       -- raise user-defined exception p_err
       -- substitute optional values p_1 - p_9 in the error message for %n
