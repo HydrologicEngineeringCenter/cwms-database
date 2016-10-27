@@ -974,7 +974,7 @@ BEGIN
             accounting_remarks
             
           FROM ordered_wuca
-          WHERE ROWNUM <= p_row_limit
+          WHERE ROWNUM <= nvl(p_row_limit, rownum)
           )
         SELECT limited_wuca.pump_location_code,
           limited_wuca.transfer_start_datetime,
