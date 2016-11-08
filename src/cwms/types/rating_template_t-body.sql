@@ -342,7 +342,8 @@ as
                    sub_parameter_id
               into l_sub_id 
               from at_parameter
-             where upper(sub_parameter_id) = upper(l_sub_id)
+             where base_parameter_code = l_code
+               and upper(sub_parameter_id) = upper(l_sub_id)
                and db_office_code in (cwms_util.user_office_code, cwms_util.db_office_code_all); 
          exception                                                                                
             when no_data_found then null;
