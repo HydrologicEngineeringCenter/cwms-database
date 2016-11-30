@@ -20,7 +20,7 @@ def uniqueCombinations(items):
     '''
     Function returning all possible combinations of a list of items
     '''    
-    count = len(items)
+    count = len(items)                                        
     results = []
     for i in xrange(count) :
         for comb in uniqueCombinationsGenerator(items, i+1) :
@@ -4241,6 +4241,7 @@ unitDefs = [
     ["Frequency",                        "kHz",         "NULL", "kiloHertz",                     "Frequency of 1E+03 occurrences or cycles per second"               ],
     ["Frequency",                        "MHz",         "NULL", "MegaHertz",                     "Frequency of 1E+06 occurrences or cycles per second"               ],
     ["Frequency",                        "B",           "NULL", "B-unit",                        "Frequency in Hz^2/1000, used by vibrating wire piezometers"        ],
+    ["Linear Speed",                     "knot",        "EN",   "Knots",                         "Velocity of 1 nautical mile per hour"                              ],
 ]
 
 unitDefsById = {}
@@ -4252,159 +4253,6 @@ for abstractParam, id, system, name, description in unitDefs :
     unitsByAbsParam.setdefault(abstractParam, []).append(id)
 unitDefIds = unitDefsById.keys()
 unitDefIds.sort()
-#---------#
-# Aliases #
-#---------#
-if __name__ in ("__main__", "main") : sys.stderr.write("Processing units unitAliases.\n")
-unitAliases = [
-#    ABSTRACT PARAMETER         UNIT ID    ALIAS ID
-#    -------------------------- ---------- ------------------------
-    ["Angular Speed",           "rpm",     "rev/min"               ],
-    ["Angular Speed",           "rpm",     "revolutions per minute"],
-    ["Area",                    "1000 m2", "1000 sq m"             ],
-    ["Area",                    "1000 m2", "1000 sq meters"        ],
-    ["Area",                    "acre",    "acres"                 ],
-    ["Area",                    "ft2",     "sq ft"                 ],
-    ["Area",                    "ft2",     "square feet"           ],
-    ["Area",                    "ha",      "hectare"               ],
-    ["Area",                    "ha",      "hectares"              ],
-    ["Area",                    "km2",     "sq km"                 ],
-    ["Area",                    "km2",     "sq.km"                 ],
-    ["Area",                    "km2",     "sqkm"                  ],
-    ["Area",                    "m2",      "sq m"                  ],
-    ["Area",                    "m2",      "sq meter"              ],
-    ["Area",                    "m2",      "sq meters"             ],
-    ["Area",                    "m2",      "square meters"         ],
-    ["Area",                    "mile2",   "mi2"                   ],
-    ["Area",                    "mile2",   "sq mi"                 ],
-    ["Area",                    "mile2",   "sq mile"               ],
-    ["Area",                    "mile2",   "sq miles"              ],
-    ["Area",                    "mile2",   "square miles"          ],
-    ["Conductivity",            "umho/cm", "umhos/cm"              ],
-    ["Elapsed Time",            "hr",      "hour"                  ],
-    ["Elapsed Time",            "hr",      "hours"                 ],
-    ["Elapsed Time",            "min",     "minute"                ],
-    ["Elapsed Time",            "min",     "minutes"               ],
-    ["Elapsed Time",            "sec",     "second"                ],
-    ["Elapsed Time",            "sec",     "seconds"               ],
-    ["Electric Charge Rate",    "ampere",  "amp"                   ],
-    ["Electromotive Potential", "volt",    "VOLT"                  ],
-    ["Electromotive Potential", "volt",    "VOLTS"                 ],
-    ["Electromotive Potential", "volt",    "Volt"                  ],
-    ["Electromotive Potential", "volt",    "Volts"                 ],
-    ["Electromotive Potential", "volt",    "volts"                 ],
-    ["Force",                   "lb",      "lbs"                   ],
-    ["Force",                   "lb",      "pounds"                ],
-    ["Force",                   "lb",      "POUNDS"                ],
-    ["Force",                   "N",       "newton"                ],
-    ["Force",                   "N",       "newtons"               ],
-    ["Force",                   "N",       "NEWTON"                ],
-    ["Force",                   "N",       "NEWTONS"               ],
-    ["Length",                  "cm",      "centimeter"            ],
-    ["Length",                  "cm",      "centimeters"           ],
-    ["Length",                  "ft",      "FEET"                  ],
-    ["Length",                  "ft",      "feet"                  ],
-    ["Length",                  "ft",      "foot"                  ],
-    ["Length",                  "ftUS",    "survey foot"           ],
-    ["Length",                  "ftUS",    "survey feet"           ],
-    ["Length",                  "ftUS",    "SURVEY FEET"           ],
-    ["Length",                  "ftUS",    "SURVEY FOOT"           ],
-    ["Length",                  "in",      "INCHES"                ],
-    ["Length",                  "in",      "inch"                  ],
-    ["Length",                  "in",      "inches"                ],
-    ["Length",                  "km",      "kilometer"             ],
-    ["Length",                  "km",      "kilometers"            ],
-    ["Length",                  "m",       "meter"                 ],
-    ["Length",                  "m",       "meters"                ],
-    ["Length",                  "m",       "metre"                 ],
-    ["Length",                  "m",       "metres"                ],
-    ["Length",                  "mi",      "mile"                  ],
-    ["Length",                  "mi",      "miles"                 ],
-    ["Length",                  "mm",      "millimeter"            ],
-    ["Length",                  "mm",      "millimeters"           ],
-    ["Linear Speed",            "ft/s",    "fps"                   ],
-    ["Linear Speed",            "ft/s",    "ft/sec"                ],
-    ["Mass Concentration",      "g/l",     "gm/l"                  ],
-    ["Mass Concentration",      "g/l",     "grams per liter"       ],
-    ["Mass Concentration",      "g/l",     "grams/liter"           ],
-    ["Mass Concentration",      "mg/l",    "millgrams/liter"       ],
-    ["Mass Concentration",      "mg/l",    "milligrams per liter"  ],
-    ["None",                    "%",       "PERCENT"               ],
-    ["None",                    "%",       "percent"               ],
-    ["Pressure",                "kPa",     "kN/m2"                 ],
-    ["Pressure",                "mb",      "mbar"                  ],
-    ["Pressure",                "mb",      "mbars"                 ],
-    ["Pressure",                "mb",      "millibar"              ],
-    ["Pressure",                "mb",      "millibars"             ],
-    ["Pressure",                "psi",     "lbs/sqin"              ],
-    ["Temperature",             "C",       "Celcius"               ],
-    ["Temperature",             "C",       "Centigrade"            ],
-    ["Temperature",             "C",       "DEG C"                 ],
-    ["Temperature",             "C",       "DEG-C"                 ],
-    ["Temperature",             "C",       "Deg-C"                 ],
-    ["Temperature",             "C",       "DegC"                  ],
-    ["Temperature",             "C",       "deg C"                 ],
-    ["Temperature",             "C",       "degC"                  ],
-    ["Temperature",             "F",       "DEG F"                 ],
-    ["Temperature",             "F",       "DEG-F"                 ],
-    ["Temperature",             "F",       "Deg-F"                 ],
-    ["Temperature",             "F",       "DegF"                  ],
-    ["Temperature",             "F",       "Fahrenheit"            ],
-    ["Temperature",             "F",       "deg F"                 ],
-    ["Temperature",             "F",       "degF"                  ],
-    ["Turbidity",               "JTU",     "jtu"                   ],
-    ["Turbidity",               "NTU",     "ntu"                   ],
-    ["Volume Rate",             "cfs",     "CFS"                   ],
-    ["Volume Rate",             "cfs",     "cu-ft/sec"             ],
-    ["Volume Rate",             "cfs",     "cuft/sec"              ],
-    ["Volume Rate",             "cfs",     "cusecs"                ],
-    ["Volume Rate",             "cfs",     "ft3/sec"               ],
-    ["Volume Rate",             "cms",     "CMS"                   ],
-    ["Volume Rate",             "cms",     "M3/S"                  ],
-    ["Volume Rate",             "cms",     "cu-meters/sec"         ],
-    ["Volume Rate",             "cms",     "m3/s"                  ],
-    ["Volume Rate",             "cms",     "m3/sec"                ],
-    ["Volume Rate",             "gpm",     "GPM"                   ],
-    ["Volume Rate",             "gpm",     "Gal/min"               ],
-    ["Volume Rate",             "gpm",     "gallons per minute"    ],
-    ["Volume Rate",             "kcfs",    "1000 cfs"              ],
-    ["Volume Rate",             "kcfs",    "1000 cu-ft/sec"        ],
-    ["Volume Rate",             "kcfs",    "1000 m3/sec"           ],
-    ["Volume Rate",             "mgd",     "MGD"                   ],
-    ["Volume Rate",             "mgd",     "million gallons/day"   ],
-    ["Volume",                  "1000 m3", "1000 cu m"             ],
-    ["Volume",                  "ac-ft",   "acft"                  ],
-    ["Volume",                  "ac-ft",   "acre-feet"             ],
-    ["Volume",                  "ac-ft",   "acre-ft"               ],
-    ["Volume",                  "dsf",     "day-second-foot"       ],
-    ["Volume",                  "dsf",     "sdf"                   ],    
-    ["Volume",                  "dsf",     "second-day-foot"       ],
-    ["Volume",                  "gal",     "GAL"                   ],
-    ["Volume",                  "gal",     "gallon"                ],
-    ["Volume",                  "gal",     "gallons"               ],
-    ["Volume",                  "kaf",     "1000 ac-ft"            ],
-    ["Volume",                  "kgal",    "1000 gallon"           ],
-    ["Volume",                  "kgal",    "1000 gallons"          ],
-    ["Volume",                  "kgal",    "KGAL"                  ],
-    ["Volume",                  "kgal",    "TGAL"                  ],
-    ["Volume",                  "kgal",    "tgal"                  ],
-    ["Volume",                  "km3",     "cu km"                 ],
-    ["Volume",                  "m3",      "cu m"                  ],
-    ["Volume",                  "m3",      "cu meter"              ],
-    ["Volume",                  "m3",      "cu meters"             ],
-    ["Volume",                  "m3",      "cubic meters"          ],
-    ["Volume",                  "mgal",    "MGAL"                  ],
-    ["Volume",                  "mgal",    "million gallon"        ],
-    ["Volume",                  "mgal",    "millon gallons"        ],
-    ["Volume",                  "mile3",   "cu mile"               ],
-    ["Volume",                  "mile3",   "cu miles"              ],
-]
-
-unitAliasesByUnitId = {}
-for abstract_param, unit_id, unitAlias_id in unitAliases :
-    unitAlias = {"ABSTRACT" : abstract_param, "UNIT_ID" : unit_id, "ALIAS_ID" : unitAlias_id}
-    if not unitAliasesByUnitId.has_key(unit_id) :  unitAliasesByUnitId[unit_id] = []
-    unitAliasesByUnitId[unit_id].append(unitAlias)
 
 #------------------#
 # Unit conversions #
@@ -7753,7 +7601,7 @@ def main() :
              || FROM_ABSTRACT_ID
              || '" but To-unit "'
              || TO_ID
-             || '" has abstract parameter "'
+             || '" has abstract parameter "'                                                 
              || TO_ABSTRACT_ID
              || '".');
           RAISE;                                    

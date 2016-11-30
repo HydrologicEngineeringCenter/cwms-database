@@ -34,20 +34,21 @@ conversion_factors = {
 #
 #	English-->SI from NIST (http://physics.nist.gov/cuu/pdf/sp811.pdf)
 #
-	'J/m2_per_langley' : Decimal('4.184e4'),          # pg 51
-	'kg_per_lbm'       : Decimal('4.5359237e-1'),     # pg 53 (footnote)
-	'm3_per_gal'       : Decimal('3.785412e-3'),      # pg 50
-	'm_per_ft'         : Decimal('3.048e-1'),         # pg 49
-	'Pa_per_bar'       : Decimal('1e5'),              # pg 45
-	'Pa_per_in-hg'     : Decimal('3.386389e3'),       # pg 50
-	'Pa_per_mm-hg'     : Decimal('1.333224e2'),       # pg 52
-	'Pa_per_psi'       : Decimal('6.894757e3'),       # pg 53
-	'C_per_F'          : Decimal('1')/Decimal('1.8'), # pg 48
-	'rad_per_deg'      : Decimal('1.745329e-2'),      # pg 48
+	'J/m2_per_langley' : Decimal('4.184e4'),              # pg 51
+	'kg_per_lbm'       : Decimal('4.5359237e-1'),         # pg 53 (footnote)
+	'm/s_per_knot'     : Decimal('1852')/Decimal('3600'), # pg 10
+	'm3_per_gal'       : Decimal('3.785412e-3'),          # pg 50
+	'm_per_ft'         : Decimal('3.048e-1'),             # pg 49
+	'Pa_per_bar'       : Decimal('1e5'),                  # pg 45
+	'Pa_per_in-hg'     : Decimal('3.386389e3'),           # pg 50
+	'Pa_per_mm-hg'     : Decimal('1.333224e2'),           # pg 52
+	'Pa_per_psi'       : Decimal('6.894757e3'),           # pg 53
+	'C_per_F'          : Decimal('1')/Decimal('1.8'),     # pg 48
+	'rad_per_deg'      : Decimal('1.745329e-2'),          # pg 48
 #
 #	gravitational acceleration	
 #
-	'm/s2_per_g'       : Decimal('9.80665'),          # pg 53 (footnote)    
+	'm/s2_per_g'       : Decimal('9.80665'),              # pg 53 (footnote)    
 #
 #	time	
 #
@@ -56,7 +57,7 @@ conversion_factors = {
 	's_per_min'        : Decimal('60'),
 #
 #	angle	
-#
+#                                                                               
 	'deg_per_rev'      : Decimal('360'),
 #
 #	scale
@@ -182,18 +183,12 @@ conversion_definitions = [
 	('ft',          'mm',          'm_per_ft[m]/[ft] | m*_per_*[mm]/[m]'),
 	('ft/s',        'in/day',      'in_per_ft[in]/[ft] | s_per_day[s]/[day]'),
 	('ft/s',        'in/hr',       'in_per_ft[in]/[ft] | s_per_hr[s]/[hr]'),
+	('ft/s',        'knot',     'm_per_ft[m/s]/[ft/s] | [knot]/m/s_per_knot[m/s]'),
 	('ft/s',        'kph',         'm_per_ft[m]/[ft] | [km]/*_per_k*[m] | s_per_hr[s]/[hr] | [kph]/[km/hr]'),
 	('ft/s',        'm/s',         'm_per_ft[m]/[ft]'),
 	('ft/s',        'mm/day',      'm_per_ft[m]/[ft] | m*_per_*[mm]/[m] | s_per_day[s]/[day]'),
 	('ft/s',        'mm/hr',       'm_per_ft[m]/[ft] | m*_per_*[mm]/[m] | s_per_hr[s]/[hr]'),
 	('ft/s',        'mph',         '[mi]/ft_per_mile[ft] | s_per_hr[s]/[hr] | [mph]/[mi/hr]'),
-	('ftUS',        'cm',          '[ft]/ftUS_per_ft[ftUS] | m_per_ft[m]/[ft] | c*_per_*[cm]/[m]'),
-	('ftUS',        'ft',          '[ft]/ftUS_per_ft[ftUS]'),
-	('ftUS',        'in',          '[ft]/ftUS_per_ft[ftUS] | in_per_ft[in]/[ft]'),
-	('ftUS',        'km',          '[ft]/ftUS_per_ft[ftUS] | m_per_ft[m]/[ft] | [km]/*_per_k*[m]'),
-	('ftUS',        'm',           '[ft]/ftUS_per_ft[ftUS] | m_per_ft[m]/[ft]'),
-	('ftUS',        'mi',          '[ft]/ftUS_per_ft[ftUS] | [mi]/ft_per_mile[ft]'),
-	('ftUS',        'mm',          '[ft]/ftUS_per_ft[ftUS] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m]'),
 	('ft2',         '1000 m2',     'm_per_ft^2[m2]/[ft2] | [1000 m2]/*_per_k*[m2]'),
 	('ft2',         'acre',        '[acre]/ft2_per_acre[ft2]'),
 	('ft2',         'ha',          'm_per_ft^2[m2]/[ft2] | [ha]/m2_per_ha[m2]'),
@@ -210,6 +205,13 @@ conversion_definitions = [
 	('ft3',         'm3',          'm_per_ft^3[m3]/[ft3]'),
 	('ft3',         'mgal',        'm_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3] | [mgal]/*_per_M*[gal]'),
 	('ft3',         'mile3',       '[mile3]/ft_per_mile^3[ft3]'),
+	('ftUS',        'cm',          '[ft]/ftUS_per_ft[ftUS] | m_per_ft[m]/[ft] | c*_per_*[cm]/[m]'),
+	('ftUS',        'ft',          '[ft]/ftUS_per_ft[ftUS]'),
+	('ftUS',        'in',          '[ft]/ftUS_per_ft[ftUS] | in_per_ft[in]/[ft]'),
+	('ftUS',        'km',          '[ft]/ftUS_per_ft[ftUS] | m_per_ft[m]/[ft] | [km]/*_per_k*[m]'),
+	('ftUS',        'm',           '[ft]/ftUS_per_ft[ftUS] | m_per_ft[m]/[ft]'),
+	('ftUS',        'mi',          '[ft]/ftUS_per_ft[ftUS] | [mi]/ft_per_mile[ft]'),
+	('ftUS',        'mm',          '[ft]/ftUS_per_ft[ftUS] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m]'),
 	('g/l',         'gm/cm3',      'l_per_m3[l]/[m3] | [m3]/c*_per_*^3[cm3] | [gm]/[g]'),
 	('g/l',         'mg/l',        'm*_per_*[mg/l]/[g/l]'),
 	('g/l',         'ppm',         'm*_per_*[mg/l]/[g/l] | [ppm]/[mg/l]'),
@@ -244,11 +246,11 @@ conversion_definitions = [
 	('ha',          'km2',         'm2_per_ha[m2]/[ha] | [km2]/*_per_k*^2[m2]'),
 	('ha',          'm2',          'm2_per_ha[m2]/[ha]'),
 	('ha',          'mile2',       'm2_per_ha[m2]/[ha] | [ft2]/m_per_ft^2[m2] | [mile2]/ft_per_mile^2[ft2]'),
+	('hr',          'min',         'min_per_hr[min]/[hr]'),
+	('hr',          'sec',         's_per_hr[sec]/[hr]'),
 	('Hz',          'B',           'function[B]/[Hz]'),
 	('Hz',          'kHz',         '[kHz]/*_per_k*[Hz]'),
 	('Hz',          'MHz',         '[MHz]/*_per_M*[Hz]'),
-	('hr',          'min',         'min_per_hr[min]/[hr]'),
-	('hr',          'sec',         's_per_hr[sec]/[hr]'),
 	('in',          'cm',          '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | c*_per_*[cm]/[m]'),	
 	('in',          'ft',          '[ft]/in_per_ft[in]'),	
 	('in',          'ftUS',        '[ft]/in_per_ft[in] | ftUS_per_ft[ftUS]/[ft]'),	
@@ -262,6 +264,7 @@ conversion_definitions = [
 	('in-hg',       'psi',         'Pa_per_in-hg[Pa]/[in-hg] | [psi]/Pa_per_psi[Pa]'),
 	('in/day',      'ft/s',        '[ft]/in_per_ft[in] | [day]/s_per_day[s]'),
 	('in/day',      'in/hr',       '[day]/hr_per_day[hr]'),
+	('in/day',      'knot',     '[ft/day]/in_per_ft[in/day] | [ft/s]/s_per_day[ft/day] | m_per_ft[m/s]/[ft/s] | [knot]/m/s_per_knot[m/s]'),
 	('in/day',      'kph',         '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | [km]/*_per_k*[m] | [day]/hr_per_day[hr] | [kph]/[km/hr]'),
 	('in/day',      'm/s',         '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | [day]/s_per_day[s]'),
 	('in/day',      'mm/day',      '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m]'),	
@@ -270,6 +273,7 @@ conversion_definitions = [
 	('in/deg-day',  'mm/deg-day',  '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m] | [deg-day]/C_per_F[deg-day]'),
 	('in/hr',       'ft/s',        '[ft]/in_per_ft[in] | [hr]/s_per_hr[s]'),
 	('in/hr',       'in/day',      'hr_per_day[hr]/[day]'),
+	('in/hr',       'knot',     '[ft/hr]/in_per_ft[in/hr] | [ft/s]/s_per_hr[ft/hr] | m_per_ft[m/s]/[ft/s] | [knot]/m/s_per_knot[m/s]'),
 	('in/hr',       'kph',         '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | [km]/*_per_k*[m] | [kph]/[km/hr]'),
 	('in/hr',       'm/s',         '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | [hr]/s_per_hr[s]'),
 	('in/hr',       'mm/day',      '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m] | hr_per_day[hr]/[day]'),
@@ -326,6 +330,14 @@ conversion_definitions = [
 	('km3',         'm3',          '*_per_k*^3[m3]/[km3]'),
 	('km3',         'mgal',        '*_per_k*^3[m3]/[km3] | [gal]/m3_per_gal[m3] | [mgal]/*_per_M*[gal]'),
 	('km3',         'mile3',       '*_per_k*^3[m3]/[km3] | [ft3]/m_per_ft^3[m3] | [mile3]/ft_per_mile^3[ft3]'),
+	('knot',        'ft/s',    'm/s_per_knot[m/s]/[knot] | [ft/s]/m_per_ft[m/s]'),
+	('knot',        'in/day',  'm/s_per_knot[m/s]/[knot] | [ft/s]/m_per_ft[m/s] | s_per_day[ft/day]/[ft/s] | in_per_ft[in/day]/[ft/day]'),
+	('knot',        'in/hr',   'm/s_per_knot[m/s]/[knot] | [ft/s]/m_per_ft[m/s] | s_per_hr[ft/hr]/[ft/s] | in_per_ft[in/hr]/[ft/hr]'),
+	('knot',        'kph',     'm/s_per_knot[m/s]/[knot] | s_per_hr[m/hr]/[m/s] | [kph]/*_per_k*[m/hr]'),
+	('knot',        'm/s',     'm/s_per_knot[m/s]/[knot]'),
+	('knot',        'mm/day',  'm/s_per_knot[m/s]/[knot] | s_per_day[m/day]/[m/s] | m*_per_*[mm/day]/[m/day]'),
+	('knot',        'mm/hr',   'm/s_per_knot[m/s]/[knot] | s_per_hr[m/hr]/[m/s] | m*_per_*[mm/hr]/[m/hr]'),
+	('knot',        'mph',     'm/s_per_knot[m/s]/[knot] | s_per_hr[s]/[hr] | [ft]/m_per_ft[m] | [mile]/ft_per_mile[ft] | [mph]/[mile/hr]'),
 	('kPa',         'in-hg',       '*_per_k*[Pa]/[kPa] | [in-hg]/Pa_per_in-hg[Pa]'),
 	('kPa',         'mb',          '*_per_k*[Pa]/[kPa] | [bar]/Pa_per_bar[Pa] | m*_per_*[mb]/[bar]'),
 	('kPa',         'mm-hg',       '*_per_k*[Pa]/[kPa] | [mm-hg]/Pa_per_mm-hg[Pa]'),
@@ -333,6 +345,7 @@ conversion_definitions = [
 	('kph',         'ft/s',        '[km/hr]/[kph] | *_per_k*[m]/[km] | [ft]/m_per_ft[m] | [hr]/s_per_hr[s]'),
 	('kph',         'in/day',      '[km/hr]/[kph] | *_per_k*[m]/[km] | [ft]/m_per_ft[m] | in_per_ft[in]/[ft] | hr_per_day[hr]/[day]'),
 	('kph',         'in/hr',        '[km/hr]/[kph] | *_per_k*[m]/[km] | [ft]/m_per_ft[m] | in_per_ft[in]/[ft]'),
+	('kph',         'knot',     '*_per_k*[m/hr]/[kph] | [m/s]/s_per_hr[m/hr] | [knot]/m/s_per_knot[m/s]'),
 	('kph',         'm/s',         '[km/hr]/[kph] | *_per_k*[m]/[km] | [hr]/s_per_hr[s]'),
 	('kph',         'mm/day',      '[km/hr]/[kph] | *_per_k*[m]/[km] | m*_per_*[mm]/[m] | hr_per_day[hr]/[day]'),
 	('kph',         'mm/hr',       '[km/hr]/[kph] | *_per_k*[m]/[km] | m*_per_*[mm]/[m]'),
@@ -358,6 +371,7 @@ conversion_definitions = [
 	('m/s',         'ft/s',        '[ft]/m_per_ft[m]'),
 	('m/s',         'in/day',      '[ft]/m_per_ft[m] | in_per_ft[in]/[ft] | s_per_day[s]/[day]'),
 	('m/s',         'in/hr',       '[ft]/m_per_ft[m] | in_per_ft[in]/[ft] | s_per_hr[s]/[hr]'),
+	('m/s',         'knot',     '[knot]/m/s_per_knot[m/s]'),
 	('m/s',         'kph',         '[km]/*_per_k*[m] | s_per_hr[s]/[hr] | [kph]/[km/hr]'),
 	('m/s',         'mm/day',      'm*_per_*[mm]/[m] | s_per_day[s]/[day]'),
 	('m/s',         'mm/hr',       'm*_per_*[mm]/[m] | s_per_hr[s]/[hr]'),
@@ -444,6 +458,7 @@ conversion_definitions = [
 	('mm/day',      'ft/s',        '[m]/m*_per_*[mm] | [ft]/m_per_ft[m] | [day]/s_per_day[s]'),
 	('mm/day',      'in/day',      '[m/day]/m*_per_*[mm/day] | [ft/day]/m_per_ft[m/day] | in_per_ft[in/day]/[ft/day]'),
 	('mm/day',      'in/hr',       '[m/day]/m*_per_*[mm/day] | [ft/day]/m_per_ft[m/day] | in_per_ft[in/day]/[ft/day] | [in/hr]/hr_per_day[in/day]'),
+	('mm/day',      'knot',     '[m/day]/m*_per_*[mm/day] | [m/s]/s_per_day[m/day] | [knot]/m/s_per_knot[m/s]'),
 	('mm/day',      'kph',         '[m/day]/m*_per_*[mm/day] | [km/day]/*_per_k*[m/day] | [km/h]/hr_per_day[km/day] | [kph]/[km/h]'),
 	('mm/day',      'm/s',         '[m/day]/m*_per_*[mm/day] | [m/s]/s_per_day[m/day]'),
 	('mm/day',      'mm/hr',       '[mm/hr]/hr_per_day[mm/day]'),
@@ -452,6 +467,7 @@ conversion_definitions = [
 	('mm/hr',       'ft/s',        '[m]/m*_per_*[mm] | [ft]/m_per_ft[m] | [hr]/s_per_hr[s]'),
 	('mm/hr',       'in/day',      '[m]/m*_per_*[mm] | [ft]/m_per_ft[m] | in_per_ft[in]/[ft] | hr_per_day[hr]/[day]'),
 	('mm/hr',       'in/hr',       '[m]/m*_per_*[mm] | [ft]/m_per_ft[m] | in_per_ft[in]/[ft]'),
+	('mm/hr',       'knot',     '[m/hr]/m*_per_*[mm/hr] | [m/s]/s_per_hr[m/hr] | [knot]/m/s_per_knot[m/s]'),
 	('mm/hr',       'kph',         '[m]/m*_per_*[mm] | [km]/*_per_k*[m] | [kph]/[km/hr]'),
 	('mm/hr',       'm/s',         '[m]/m*_per_*[mm] | [hr]/s_per_hr[s]'),
 	('mm/hr',       'mm/day',      'hr_per_day[hr]/[day]'),
@@ -459,6 +475,7 @@ conversion_definitions = [
 	('mph',         'ft/s',        '[mile/hr]/[mph] | ft_per_mile[ft]/[mile] | [hr]/s_per_hr[s]'),
 	('mph',         'in/day',      '[mile/hr]/[mph] | ft_per_mile[ft]/[mile] | in_per_ft[in]/[ft] | hr_per_day[hr]/[day]'),
 	('mph',         'in/hr',       '[mile/hr]/[mph] | ft_per_mile[ft]/[mile] | in_per_ft[in]/[ft]'),
+	('mph',         'knot',     '[mile/hr]/[mph] | ft_per_mile[ft]/[mile] | m_per_ft[m]/[ft] | [hr]/s_per_hr[s] | [knot]/m/s_per_knot[m/s]'),
 	('mph',         'kph',         '[mile/hr]/[mph] | ft_per_mile[ft]/[mile] | m_per_ft[m]/[ft] | [km]/*_per_k*[m] | [kph]/[km/hr]'),
 	('mph',         'm/s',         '[mile/hr]/[mph] | ft_per_mile[ft]/[mile] | m_per_ft[m]/[ft] | [hr]/s_per_hr[s]'),
 	('mph',         'mm/day',      '[mile/hr]/[mph] | ft_per_mile[ft]/[mile] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m] | hr_per_day[hr]/[day]'),
@@ -549,6 +566,7 @@ english_units = {"English" : [
 	"kcfs",
 	"kgal",
 	"kHz",
+	"knot",
 	"kW",
 	"kWh",
 	"langley",
@@ -770,6 +788,7 @@ linear_speed_units = {"Linear Speed" : [
 	"in/day",
 	"in/hr",
 	"kph",
+	"knot",
 	"m/s",
 	"mm/day",
 	"mm/hr",
@@ -933,6 +952,7 @@ unit_aliases = {
 	"km"       : ["kilometer","kilometers"],
 	"km2"      : ["sq km","sq.km","sqkm"],
 	"km3"      : ["cu km"],
+	"knot"     : ["knots","kt"],
 	"kPa"      : ["kN/m2"],
 	"lb"       : ["lbs", "pounds", "POUNDS"],
 	"m"        : ["meter","meters","metre","metres"],
