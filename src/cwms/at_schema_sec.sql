@@ -764,7 +764,7 @@ INSERT INTO cwms_sec_user_groups (
                                                  user_group_id,
                                                  user_group_desc
               )
-  VALUES   (-4, 'RDL Reviewer', 'Users who will be allowed to review (i.e., read only) an office’s RDL configurations.'
+  VALUES   (-4, 'RDL Reviewer', 'Users who will be allowed to review (i.e., read only) an office''s RDL configurations.'
               );
 INSERT INTO cwms_sec_user_groups (
                                                  user_group_code,

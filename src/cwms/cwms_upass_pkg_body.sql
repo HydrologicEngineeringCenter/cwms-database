@@ -62,9 +62,14 @@ AS
                 office = p_office,
                 phone = p_phone,
                 email = p_email,
-                principle_name = p_principle_name,
                 createdby = CWMS_UTIL.GET_USER_ID
           WHERE userid = UPPER(p_userid);
+          IF p_principle_name IS NOT NULL
+          THEN
+            UPDATE AT_SEC_CWMS_USERS
+            SET principle_name = p_principle_name
+            WHERE userid = UPPER(p_userid);
+          END IF;
       END IF;
       COMMIT;
    END UPDATE_USER_DATA;
