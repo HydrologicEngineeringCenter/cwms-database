@@ -5,7 +5,8 @@ AS
                                p_org        IN VARCHAR2,
                                p_office     IN VARCHAR2,
                                p_phone      IN VARCHAR2,
-                               p_email      IN VARCHAR2);
+                               p_email      IN VARCHAR2,
+                               p_principle_name IN VARCHAR2 DEFAULT NULL);
 
    PROCEDURE update_cwms_user (p_userid        IN VARCHAR2,
                                p_lastname      IN VARCHAR2,
@@ -15,7 +16,8 @@ AS
                                p_office        IN VARCHAR2,
                                p_phone        IN VARCHAR2,
                                p_email        IN VARCHAR2,
-                               p_control_code IN VARCHAR2
+                               p_control_code IN VARCHAR2,
+                               p_principle_name IN VARCHAR2 DEFAULT NULL
                                );
 END cwms_upass;
 /

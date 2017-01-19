@@ -22,12 +22,13 @@ AS
             'User ' || UPPER (p_userid) || ' is deleted by UPASS');
    END delete_upass_user;
 
-   PROCEDURE update_user_data (p_userid     IN VARCHAR2,
+      PROCEDURE update_user_data (p_userid     IN VARCHAR2,
                                p_fullname   IN VARCHAR2,
                                p_org        IN VARCHAR2,
                                p_office     IN VARCHAR2,
                                p_phone      IN VARCHAR2,
-                               p_email      IN VARCHAR2)
+                               p_email      IN VARCHAR2,
+                               p_principle_name IN VARCHAR2 DEFAULT NULL)
    IS
       l_count   NUMBER;
    BEGIN
@@ -44,6 +45,7 @@ AS
                                         office,
                                         phone,
                                         email,
+                                        principle_name,
                                         createdby)
               VALUES (p_userid,
                       p_fullname,
@@ -51,6 +53,7 @@ AS
                       p_office,
                       p_phone,
                       p_email,
+                      p_principle_name,
                       CWMS_UTIL.GET_USER_ID);
       ELSE
          UPDATE AT_SEC_CWMS_USERS
@@ -59,6 +62,7 @@ AS
                 office = p_office,
                 phone = p_phone,
                 email = p_email,
+                principle_name = p_principle_name,
                 createdby = CWMS_UTIL.GET_USER_ID
           WHERE userid = UPPER(p_userid);
       END IF;
@@ -73,19 +77,21 @@ AS
                                p_office         IN VARCHAR2,
                                p_phone          IN VARCHAR2,
                                p_email          IN VARCHAR2,
-                               p_control_code   IN VARCHAR2)
+			       p_control_code   IN VARCHAR2, 
+                               p_principle_name IN VARCHAR2 DEFAULT NULL)
    IS
    BEGIN
       IF ( ( (UPPER (p_control_code)) = 'C') OR ( (UPPER (p_control_code)) = 'A'))
       THEN
          update_user_data (p_userid,
-                           p_firstname || ' ' || 
+                           p_firstname || ' ' ||
                            p_middlename || ' ' ||
                            p_lastname,
                            p_org,
                            p_office,
                            p_phone,
-                           p_email);
+                           p_email,
+                           p_principle_name);
          commit;
       ELSIF ( (UPPER (p_control_code)) = 'D')
       THEN
