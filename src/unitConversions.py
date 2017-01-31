@@ -31,6 +31,7 @@ conversion_factors = {
 #
 	'l_per_m3'         : Decimal('1e3'),
 	'm2_per_ha'        : Decimal('1e4'),
+	'C_per_K'          : Decimal(1),
 #
 #	English-->SI from NIST (http://physics.nist.gov/cuu/pdf/sp811.pdf)
 #
@@ -83,14 +84,18 @@ conversion_factors['ft3_per_dsf'] = conversion_factors['s_per_day']
 #
 offsets = {
 	'C_to_F' : Decimal('32'),
+	'C_to_K' : Decimal('273.15'),
 	'F_to_C' : Decimal('-32') * conversion_factors['C_per_F'],
+	'K_to_C' : Decimal('-273.15'),
 }
 #
 # Functions for conversions that require them (used instead of factors and offsets)
 #
 functions = {
 	'Hz_to_B' : 'ARG 0|2|^|1000|/',
-	'B_to_Hz' : 'ARG 0|1000|*|.5|^'
+	'B_to_Hz' : 'ARG 0|1000|*|.5|^',
+	'F_to_K'  : 'ARG 0|32|-|1.8|/|273.15|+',
+	'K_to_F'  : 'ARG 0|273.15|-|1.8|*|32|+',
 }
 #
 # Conversion definitions in dimensional analysis format
@@ -144,6 +149,7 @@ conversion_definitions = [
 	('B',           'kHz',         'function[Hz]/[B] | [kHz]/*_per_k*[Hz]'),
 	('B',           'MHz',         'function[Hz]/[B] | [MHz]/*_per_M*[Hz]'),
 	('C',           'F',           '[F]/C_per_F[C]'),
+	('C',           'K',           '[K]/C_per_K[C]'),
 	('cfs',         'cms',         '[ft3/s]/[cfs] | m_per_ft^3[m3]/[ft3] | [cms]/[m3/s]'),
 	('cfs',         'gpm',         '[ft3/s]/[cfs] | m_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3] | s_per_min[s]/[min] | [gpm]/[gal/min]'),
 	('cfs',         'kcfs',        '[kcfs]/*_per_k*[cfs]'),
@@ -174,6 +180,7 @@ conversion_definitions = [
 	('dsf',         'mgal',        'ft3_per_dsf[ft3]/[dsf] | m_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3] | [mgal]/*_per_M*[gal]'),
 	('dsf',         'mile3',       'ft3_per_dsf[ft3]/[dsf] | [mile3]/ft_per_mile^3[ft3]'),
 	('F',           'C',           'C_per_F[C]/[F]'),           
+	('F',           'K',           'function[K]/[F]'),           
 	('ft',          'cm',          'm_per_ft[m]/[ft] | c*_per_*[cm]/[m]'),
 	('ft',          'ftUS',        'ftUS_per_ft[ftUS]/[ft]'),
 	('ft',          'in',          'in_per_ft[in]/[ft]'),
@@ -183,7 +190,7 @@ conversion_definitions = [
 	('ft',          'mm',          'm_per_ft[m]/[ft] | m*_per_*[mm]/[m]'),
 	('ft/s',        'in/day',      'in_per_ft[in]/[ft] | s_per_day[s]/[day]'),
 	('ft/s',        'in/hr',       'in_per_ft[in]/[ft] | s_per_hr[s]/[hr]'),
-	('ft/s',        'knot',     'm_per_ft[m/s]/[ft/s] | [knot]/m/s_per_knot[m/s]'),
+	('ft/s',        'knot',        'm_per_ft[m/s]/[ft/s] | [knot]/m/s_per_knot[m/s]'),
 	('ft/s',        'kph',         'm_per_ft[m]/[ft] | [km]/*_per_k*[m] | s_per_hr[s]/[hr] | [kph]/[km/hr]'),
 	('ft/s',        'm/s',         'm_per_ft[m]/[ft]'),
 	('ft/s',        'mm/day',      'm_per_ft[m]/[ft] | m*_per_*[mm]/[m] | s_per_day[s]/[day]'),
@@ -264,7 +271,7 @@ conversion_definitions = [
 	('in-hg',       'psi',         'Pa_per_in-hg[Pa]/[in-hg] | [psi]/Pa_per_psi[Pa]'),
 	('in/day',      'ft/s',        '[ft]/in_per_ft[in] | [day]/s_per_day[s]'),
 	('in/day',      'in/hr',       '[day]/hr_per_day[hr]'),
-	('in/day',      'knot',     '[ft/day]/in_per_ft[in/day] | [ft/s]/s_per_day[ft/day] | m_per_ft[m/s]/[ft/s] | [knot]/m/s_per_knot[m/s]'),
+	('in/day',      'knot',        '[ft/day]/in_per_ft[in/day] | [ft/s]/s_per_day[ft/day] | m_per_ft[m/s]/[ft/s] | [knot]/m/s_per_knot[m/s]'),
 	('in/day',      'kph',         '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | [km]/*_per_k*[m] | [day]/hr_per_day[hr] | [kph]/[km/hr]'),
 	('in/day',      'm/s',         '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | [day]/s_per_day[s]'),
 	('in/day',      'mm/day',      '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m]'),	
@@ -273,13 +280,15 @@ conversion_definitions = [
 	('in/deg-day',  'mm/deg-day',  '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m] | [deg-day]/C_per_F[deg-day]'),
 	('in/hr',       'ft/s',        '[ft]/in_per_ft[in] | [hr]/s_per_hr[s]'),
 	('in/hr',       'in/day',      'hr_per_day[hr]/[day]'),
-	('in/hr',       'knot',     '[ft/hr]/in_per_ft[in/hr] | [ft/s]/s_per_hr[ft/hr] | m_per_ft[m/s]/[ft/s] | [knot]/m/s_per_knot[m/s]'),
+	('in/hr',       'knot',        '[ft/hr]/in_per_ft[in/hr] | [ft/s]/s_per_hr[ft/hr] | m_per_ft[m/s]/[ft/s] | [knot]/m/s_per_knot[m/s]'),
 	('in/hr',       'kph',         '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | [km]/*_per_k*[m] | [kph]/[km/hr]'),
 	('in/hr',       'm/s',         '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | [hr]/s_per_hr[s]'),
 	('in/hr',       'mm/day',      '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m] | hr_per_day[hr]/[day]'),
 	('in/hr',       'mm/hr',       '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m]'),
 	('in/hr',       'mph',         '[ft]/in_per_ft[in] | [mi]/ft_per_mile[ft] | [mph]/[mi/hr]'),
 	('J/m2',        'langley',     '[langley]/J/m2_per_langley[J/m2]'),
+	('K',           'C',           'C_per_K[C]/[K]'),
+	('K',           'F',           'function[F]/[K]'),
 	('kaf',         '1000 m3',     '*_per_k*[ac-ft]/[kaf] | ft2_per_acre[ft3]/[ac-ft] | m_per_ft^3[m3]/[ft3] | [1000 m3]/*_per_k*[m3]'),
 	('kaf',         'ac-ft',       '*_per_k*[ac-ft]/[kaf]'),
 	('kaf',         'dsf',         '*_per_k*[ac-ft]/[kaf] | ft2_per_acre[ft3]/[ac-ft] | [dsf]/ft3_per_dsf[ft3]'),
@@ -627,6 +636,7 @@ si_units = {"SI" : [
 	"Hz",
 	"J/m2",
 	"JTU",
+	"K",
 	"kHz",
 	"km",
 	"km2",
@@ -831,6 +841,7 @@ pressure_units = {"Pressure" : [
 temperature_units = {"Temperature" : [
 	"C",
 	"F",
+	"K",
 ]}
 
 turbidity_units = {"Turbidity" : [
@@ -945,6 +956,7 @@ unit_aliases = {
 	"Hz"       : ["cycles/s", "cycles/sec", "hz", "HZ"],
 	"in"       : ["IN","inch","inches","INCHES"],
 	"JTU"      : ["jtu"],
+	"K"        : ["k", "KELVIN", "kelvin", "KELVINS", "kelvins"],
 	"kaf"      : ["1000 ac-ft"],
 	"kcfs"     : ["1000 cfs","1000 cu-ft/sec","1000 ft3/sec","KCFS"],
 	"kgal"     : ["1000 gallon","1000 gallons","KGAL","TGAL","tgal"],
@@ -1222,17 +1234,17 @@ def get_java_resource_format() :
 	return text
 
 if __name__ == "__main__" :
-	# for from_unit in sorted(conversions.keys()) :
-	# 	for to_unit in sorted(conversions[from_unit].keys()) :
-	# 		factor   = conversions[from_unit][to_unit]["factor"]
-	# 		offset   = conversions[from_unit][to_unit]["offset"]
-	# 		function = conversions[from_unit][to_unit]["function"]
-	# 		if function :
-	# 			print("1 %s = %s (%s) %s " % (from_unit, function, convert(1, from_unit, to_unit), to_unit))
-	# 		else :
-	# 			if int(offset) :
-	# 				print("1 %s = %s + %s (%s) %s" % (from_unit, factor, offset, convert(1, from_unit, to_unit), to_unit))
-	# 			else :
-	# 				print("1 %s = %s (%s) %s " % (from_unit, factor, convert(1, from_unit, to_unit), to_unit))
+	for from_unit in sorted(conversions.keys()) :
+		for to_unit in sorted(conversions[from_unit].keys()) :
+			factor   = conversions[from_unit][to_unit]["factor"]
+			offset   = conversions[from_unit][to_unit]["offset"]
+			function = conversions[from_unit][to_unit]["function"]
+			if function :
+				print("1 %s = %s (%s) %s " % (from_unit, function, convert(1, from_unit, to_unit), to_unit))
+			else :
+				if int(offset) :
+					print("1 %s = %s + %s (%s) %s" % (from_unit, factor, offset, convert(1, from_unit, to_unit), to_unit))
+				else :
+					print("1 %s = %s (%s) %s " % (from_unit, factor, convert(1, from_unit, to_unit), to_unit))
 
 	print get_java_resource_format()

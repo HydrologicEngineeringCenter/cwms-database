@@ -4242,6 +4242,7 @@ unitDefs = [
     ["Frequency",                        "MHz",         "NULL", "MegaHertz",                     "Frequency of 1E+06 occurrences or cycles per second"               ],
     ["Frequency",                        "B",           "NULL", "B-unit",                        "Frequency in Hz^2/1000, used by vibrating wire piezometers"        ],
     ["Linear Speed",                     "knot",        "EN",   "Knots",                         "Velocity of 1 nautical mile per hour"                              ],
+    ["Temperature",                      "K",           "SI",   "Kelvins",                       "Temperature in Kelvins"                                            ],
 ]
 
 unitDefsById = {}
