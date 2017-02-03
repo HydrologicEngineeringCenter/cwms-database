@@ -1736,19 +1736,21 @@ end cat_eff_ratings_f;
 -- RETRIEVE_RATINGS_OBJ_EX
 --
 procedure retrieve_ratings_obj_ex(
-   p_ratings              out rating_tab_t,
+   p_ratings        out rating_tab_t,
    p_effective_tw   in  varchar2,
-   p_spec_id_mask         in  varchar2 default '*',
+   p_spec_id_mask   in  varchar2 default '*',
    p_start_date     in  date     default null,
    p_end_date       in  date     default null,
-   p_time_zone            in  varchar2 default null,
-   p_office_id_mask       in  varchar2 default null)
+   p_time_zone      in  varchar2 default null,
+   p_office_id_mask in  varchar2 default null)
 is
+   type used_codes_t is table of boolean index by varchar2(20);
    type cat_rec_t is record(office varchar2(16), rating_spec varchar2(512), effective_date date, create_date date);
    type cat_tab_t is table of cat_rec_t;
    l_cat_cursor     sys_refcursor;
    l_cat_records    cat_tab_t;
    l_code           integer;
+   l_used_codes     used_codes_t;
 begin
    l_cat_cursor := cat_ratings_ex(
       p_effective_tw   => p_effective_tw,
@@ -1771,8 +1773,10 @@ begin
          p_match_date     => 'T',
          p_time_zone      => p_time_zone,
          p_office_id      => l_cat_records(i).office);
-         
-      p_ratings(i) := get_rating(l_code);
+      if not l_used_codes.exists(to_char(l_code)) then         
+         p_ratings(i) := get_rating(l_code);
+         l_used_codes(to_char(l_code)) := true;
+      end if;
    end loop;
    
 end retrieve_ratings_obj_ex;
