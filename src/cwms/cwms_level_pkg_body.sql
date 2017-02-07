@@ -2782,8 +2782,8 @@ begin
    -----------------------------------------------------------
    -- get the codes and effective dates for the time window --
    -----------------------------------------------------------
-   if p_end_time_utc is not null then
-      if p_end_time_utc <= p_start_time_utc then
+   if p_end_time_utc is not null and p_end_time_utc != p_start_time_utc then
+      if p_end_time_utc < p_start_time_utc then
          cwms_err.raise('ERROR', 'Parameter p_end_time_utc must be later than p_start_time_utc');
       end if;
       get_location_level_codes(
