@@ -1034,7 +1034,7 @@ as
          ||'<units-id>'||l_clone.native_units||'</units-id>'
          ||'<effective-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(l_clone.effective_date, 'UTC', l_tzone), l_tzone)||'</effective-date>');
       if l_clone.transition_date is null then
-         cwms_util.append(l_text, '<transition-start-date/>');
+         null; -- cwms_util.append(l_text, '<transition-start-date/>');
       else
          cwms_util.append(l_text, '<transition-start-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(l_clone.transition_date, 'UTC', l_tzone), l_tzone)||'</transition-start-date>');
       end if;
@@ -1060,7 +1060,7 @@ as
                '<height-shifts><effective-date>'
                ||cwms_util.get_xml_time(cwms_util.change_timezone(l_temp.effective_date, 'UTC', l_tzone), l_tzone)||'</effective-date>');
             if l_temp.transition_date is null then
-               cwms_util.append(l_text, '<transition-start-date/>');
+               null; -- cwms_util.append(l_text, '<transition-start-date/>');
             else
                cwms_util.append(l_text, '<transition-start-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(l_temp.transition_date, 'UTC', l_tzone), l_tzone)||'</transition-start-date>');
             end if;
