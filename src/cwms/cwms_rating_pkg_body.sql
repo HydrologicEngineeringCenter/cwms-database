@@ -1566,7 +1566,7 @@ begin
                                              end
                     and r.effective_date  <= case
                                              when p_end_date is null then c_default_end_date
-                                             else cwms_util.change_timezone(p_start_date, tz2.time_zone_name, 'UTC')
+                                             else cwms_util.change_timezone(p_end_date, tz2.time_zone_name, 'UTC')
                                              end
                  union all                     
                  select o.office_id,
@@ -1602,7 +1602,7 @@ begin
                                              end
                     and tr.effective_date <= case
                                              when p_end_date is null then c_default_end_date
-                                             else cwms_util.change_timezone(p_start_date, tz2.time_zone_name, 'UTC')
+                                             else cwms_util.change_timezone(p_end_date, tz2.time_zone_name, 'UTC')
                                              end
                  union all                     
                  select o.office_id,
@@ -1638,7 +1638,7 @@ begin
                                              end
                     and vr.effective_date <= case
                                              when p_end_date is null then c_default_end_date
-                                             else cwms_util.change_timezone(p_start_date, tz2.time_zone_name, 'UTC')
+                                             else cwms_util.change_timezone(p_end_date, tz2.time_zone_name, 'UTC')
                                              end
                 ) q2
           where q1.location_code = q2.location_code
