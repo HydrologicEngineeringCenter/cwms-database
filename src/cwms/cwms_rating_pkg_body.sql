@@ -796,27 +796,31 @@ begin
       (  select distinct
                 location_id,
                 rating_spec_code
-           from (select v.location_id,
+           from ((select rs.location_code,
                         rs.rating_spec_code
                    from at_rating_spec rs,
                         at_rating_template rt,
-                        av_loc2 v,
                         cwms_office o
-                  where v.db_office_id like upper(l_office_id_mask) escape '\'
-                    and o.office_id = v.db_office_id
+                   where o.office_id like upper(l_office_id_mask) escape '\'
                     and rt.office_code = o.office_code
                     and upper(rt.parameters_id) like upper(l_parameters_id_mask) escape '\'
                     and upper(rt.version) like upper(l_template_version_mask) escape '\'
                     and rs.template_code = rt.template_code
                     and upper(rs.version) like upper(l_spec_version_mask) escape '\'
-                    and v.location_code = rs.location_code
-                    and upper(v.location_id) like upper(l_location_id_mask) escape '\'
-                    and v.unit_system = 'SI'
-                  order by v.db_office_id,
-                        v.location_id,
-                        rt.parameters_id,
-                        rt.version,
-                        rs.version
+                  ) a
+                  join
+                  (select pl.location_code,
+                          bl.base_location_id||substr('-',1,length(pl.sub_location_id))||pl.sub_location_id as location_id
+                     from at_base_location bl,
+                          at_physical_location pl
+                    where bl.base_location_code = pl.base_location_code
+                      and upper(bl.base_location_id||substr('-',1,length(pl.sub_location_id))||pl.sub_location_id) like upper(l_location_id_mask) escape '\'
+                   union all
+                   select location_code,
+                          loc_alias_id as location_id
+                     from at_loc_group_assignment
+                    where upper(loc_alias_id) like upper(l_location_id_mask)
+                  ) b on b.location_code = a.location_code
                 )
       )
    loop
@@ -2000,14 +2004,17 @@ function retrieve_ratings_xml_data(
    return clob
 is
    type id_tab_t is table of boolean index by varchar2(32767);
-   l_id            varchar2(32767);
-   l_ids           id_tab_t;
-   l_template_clob clob;
-   l_spec_clob     clob;
-   l_rating_clob   clob;  
-   l_ratings       clob;
-   l_xml           xmltype;
-   l_xml_tab       xml_tab_t;
+   l_id                varchar2(32767);
+   l_ids               id_tab_t;
+   l_template_clob     clob;
+   l_spec_clob         clob;
+   l_rating_clob       clob;
+   l_ratings           clob;
+   l_template_xml      xmltype;
+   l_spec_xml          xmltype;
+   l_rating_xml        xmltype;
+   l_has_source_rating boolean;
+   l_xml_tab           xml_tab_t;
 begin
    if p_retrieve_templates then
       dbms_lob.createtemporary(l_template_clob, true);
@@ -2042,29 +2049,42 @@ begin
    end if;
    if p_retrieve_ratings then
       dbms_lob.close(l_rating_clob);
+      l_has_source_rating := instr(l_rating_clob, '<source-ratings>') > 0;
    end if;
    
-   dbms_lob.createtemporary(l_ratings, true);
-   dbms_lob.open(l_ratings, dbms_lob.lob_readwrite);
-   cwms_util.append(l_ratings, '<ratings>');
    if p_retrieve_templates then
+      dbms_lob.createtemporary(l_ratings, true);
+      dbms_lob.open(l_ratings, dbms_lob.lob_readwrite);
+      cwms_util.append(l_ratings, '<ratings>');
       cwms_util.append(l_ratings, l_template_clob);
+      cwms_util.append(l_ratings, '</ratings>');
+      dbms_lob.close(l_ratings);
+      l_template_xml := xmltype(l_ratings);
    end if;
    if p_retrieve_specs then
+      dbms_lob.createtemporary(l_ratings, true);
+      dbms_lob.open(l_ratings, dbms_lob.lob_readwrite);
+      cwms_util.append(l_ratings, '<ratings>');
       cwms_util.append(l_ratings, l_spec_clob);
+      cwms_util.append(l_ratings, '</ratings>');
+      dbms_lob.close(l_ratings);
+      l_spec_xml := xmltype(l_ratings);
    end if;
-   if p_retrieve_ratings then
+   if p_retrieve_ratings and l_has_source_rating then
+      dbms_lob.createtemporary(l_ratings, true);
+      dbms_lob.open(l_ratings, dbms_lob.lob_readwrite);
+      cwms_util.append(l_ratings, '<ratings>');
       cwms_util.append(l_ratings, l_rating_clob);
+      cwms_util.append(l_ratings, '</ratings>');
+      dbms_lob.close(l_ratings);
+      l_rating_xml := xmltype(l_ratings);
    end if;
-   cwms_util.append(l_ratings, '</ratings>');
-   dbms_lob.close(l_ratings);
-   l_xml := xmltype(l_ratings);
    dbms_lob.createtemporary(l_ratings, true);
    dbms_lob.open(l_ratings, dbms_lob.lob_readwrite);
    cwms_util.append(l_ratings, '<?xml version="1.0" encoding="utf-8"?>');
    cwms_util.append(l_ratings, '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
    if p_retrieve_templates then
-      l_xml_tab := cwms_util.get_xml_nodes(l_xml,  '/ratings/rating-template');
+      l_xml_tab := cwms_util.get_xml_nodes(l_template_xml,  '/ratings/rating-template');
       for i in 1..l_xml_tab.count loop
          l_id := cwms_util.get_xml_text(l_xml_tab(i), '/rating-template/@office-id')
                  ||'/'
@@ -2078,7 +2098,7 @@ begin
       end loop;
    end if;
    if p_retrieve_specs then
-      l_xml_tab := cwms_util.get_xml_nodes(l_xml,  '/ratings/rating-spec');
+      l_xml_tab := cwms_util.get_xml_nodes(l_spec_xml,  '/ratings/rating-spec');
       for i in 1..l_xml_tab.count loop
          l_id := cwms_util.get_xml_text(l_xml_tab(i), '/rating-spec/@office-id')
                  ||'/'
@@ -2090,19 +2110,23 @@ begin
       end loop;
    end if;
    if p_retrieve_ratings then
-      l_xml_tab := cwms_util.get_xml_nodes(l_xml,  '/ratings/rating|/ratings/simple-rating|/ratings/usgs-stream-rating|/ratings/virtual-rating|/ratings/transitional-rating');
-      for i in 1..l_xml_tab.count loop
-         l_id := cwms_util.get_xml_text(l_xml_tab(i), '/*/@office-id')
-                 ||'/'
-                 ||cwms_util.get_xml_text(l_xml_tab(i), '/*/rating-spec-id')
-                 ||'('
-                 ||cwms_util.get_xml_text(l_xml_tab(i), '/*/effective-date')
-                 ||')';
-         if not l_ids.exists(l_id) then
-            l_ids(l_id) := true;
-            cwms_util.append(l_ratings, l_xml_tab(i).getclobval);
-         end if;              
-      end loop;
+      if l_rating_xml is null then
+         cwms_util.append(l_ratings, l_rating_clob);
+      else
+         l_xml_tab := cwms_util.get_xml_nodes(l_rating_xml,  '/ratings/rating|/ratings/simple-rating|/ratings/usgs-stream-rating|/ratings/virtual-rating|/ratings/transitional-rating');
+         for i in 1..l_xml_tab.count loop
+            l_id := cwms_util.get_xml_text(l_xml_tab(i), '/*/@office-id')
+                    ||'/'
+                    ||cwms_util.get_xml_text(l_xml_tab(i), '/*/rating-spec-id')
+                    ||'('
+                    ||cwms_util.get_xml_text(l_xml_tab(i), '/*/effective-date')
+                    ||')';
+            if not l_ids.exists(l_id) then
+               l_ids(l_id) := true;
+               cwms_util.append(l_ratings, l_xml_tab(i).getclobval);
+            end if;
+         end loop;
+      end if;
    end if;
    cwms_util.append(l_ratings, '</ratings>');
    dbms_lob.close(l_ratings);
