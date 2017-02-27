@@ -30,9 +30,6 @@
 @@cwms_cat_pkg
 @@cwms_cat_pkg_body
 
-@@cwms_cac_pkg
-@@cwms_cac_pkg_body
-
 @@cwms_loc_pkg
 @@cwms_loc_pkg_body
 

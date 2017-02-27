@@ -2633,7 +2633,7 @@ AS
            FROM AT_SEC_CWMS_USERS
           WHERE EDIPI = P_EDIPI;
 
-         IF (L_COUNT <> 0)
+         IF (L_COUNT = 1)
          THEN
             SELECT userid
               INTO p_user
@@ -2645,7 +2645,7 @@ AS
             INSERT INTO at_sec_session
                  VALUES (p_user,
                          p_session_key,
-                         SYSTIMESTAMP + (1 / 24 ));
+                         SYSTIMESTAMP + 1 );
 
 
             COMMIT;
