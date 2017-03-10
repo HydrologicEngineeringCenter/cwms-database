@@ -1008,13 +1008,12 @@ AS
       COMMIT;
    END CREATE_USER;
 
-   PROCEDURE create_cwms_service_user(p_username IN VARCHAR2,
-                                        p_password VARCHAR2)
+   PROCEDURE create_cwms_service_user
    IS
    BEGIN
     if(sys_context('userenv', 'current_user')='&cwms_schema')
     then
-        CWMS_DBA.CWMS_USER_ADMIN.CREATE_CWMS_SERVICE_ACCOUNT(p_username, p_password);
+        CWMS_DBA.CWMS_USER_ADMIN.CREATE_CWMS_SERVICE_ACCOUNT(cac_service_user, RAWTOHEX (DBMS_CRYPTO.RANDOMBYTES (8)));
     end if;
    END create_cwms_service_user;
 
@@ -2581,7 +2580,7 @@ AS
    
    PROCEDURE update_service_password(p_username OUT VARCHAR2,p_password OUT VARCHAR2)
    IS
-    l_username VARCHAR2(16) := 'CWMS9999';
+    l_username VARCHAR2(16) := cac_service_user;
     l_password VARCHAR2(64) := null;
    BEGIN
     p_username := null;

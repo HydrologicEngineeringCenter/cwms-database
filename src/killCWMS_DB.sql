@@ -40,7 +40,7 @@ set echo off
 --  Kill current CWMS sessions
 declare
     cursor c is select sid,serial# from v$session where username = '&cwms_schema' or
-	username like '__CWMSDBI' or username like '__CWMSPD' or username like '__HECTEST%' ;
+	username like '__CWMSDBI' or username like '__CWMSPD' or username like '__HECTEST%' or username = 'CWMS9999';
     kill_command varchar2(128);
 begin
 
@@ -95,6 +95,7 @@ begin
        where username like '__CWMSDBI' 
           or username like '__CWMSPD' 
           or username like '__HECTEST%' 
+          or username like 'CWMS9999' 
     order by username) 
    loop
       begin

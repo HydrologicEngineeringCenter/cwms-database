@@ -27,3 +27,5 @@ BEGIN
     end loop;
 END;
 /
+
+exec cwms_sec.create_cwms_service_user

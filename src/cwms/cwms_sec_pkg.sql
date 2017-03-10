@@ -14,6 +14,7 @@ AS
    acc_state_locked              CONSTANT VARCHAR2 (16) := 'LOCKED';
    acc_state_unlocked            CONSTANT VARCHAR2 (16) := 'UNLOCKED';
    acc_state_no_account          CONSTANT VARCHAR2 (16) := 'NO ACCOUNT';
+   cac_service_user             CONSTANT VARCHAR2(8) := 'CWMS9999';
 
    TYPE cat_at_sec_allow_rec_t IS RECORD
    (
@@ -141,8 +142,7 @@ AS
                           p_db_office_id         IN VARCHAR2 DEFAULT NULL);
 
 
-   PROCEDURE create_cwms_service_user(p_username IN VARCHAR2,
-                                        p_password VARCHAR2);                       
+   PROCEDURE create_cwms_service_user;
 
    PROCEDURE delete_user (p_username IN VARCHAR2);
 
