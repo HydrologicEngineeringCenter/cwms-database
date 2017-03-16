@@ -7083,9 +7083,15 @@ end unassign_loc_groups;
                   and unit_system = 'SI';
                 
                if l_lat is not null and l_lon is not null then
-                  l_offset := get_vertcon_offset(l_lat, l_lon);
+                  begin
+                     l_offset := get_vertcon_offset(l_lat, l_lon);
+                     l_description := 'VERTCON ESTIMATE';
+                  exception
+                     when others then
+                        l_offset := binary_double_nan;
+                        l_description := substr(sqlerrm, 1, 64);
+                  end;
                   l_effective_date := date '1000-01-01';
-                  l_description := 'VERTCON ESTIMATE';
                   insert
                     into at_vert_datum_offset
                   values (p_location_code,
@@ -8794,7 +8800,7 @@ end unassign_loc_groups;
             l_iso := l_iso || l_minutes || 'M';
          end if;
          if l_seconds > 0 then
-            l_iso := l_iso || trim(to_char(l_seconds, '0.999')) || 'S';
+            l_iso := l_iso || trim(to_char(l_seconds, '90.999')) || 'S';
          end if;
          if l_iso = 'PT' then
             l_iso := l_iso || '0S';
@@ -8928,36 +8934,67 @@ end unassign_loc_groups;
              -- elevation
              case
              when pl1.elevation is null then
-                -- sub-location elevation is null, use base-location elevation
+                -- sub-location elevation is null
                 case
-                when pl2.elevation is null then null
+                when pl2.elevation is null then
+                   -- base location elevation is also null, no elevation to report
+                   null
                 else
+                   -- use base location elevation
                    case
                    when l_units(i) = 'SI' then
+                      -- SI Units
                       case
-                      when pl2.vertical_datum is null then
-                         pl2.elevation
-                      else
-                         pl2.elevation + cwms_loc.get_vertical_datum_offset(
-                            pl2.location_code,
-                            pl2.vertical_datum,
-                            replace(l_datums(i), 'NATIVE', pl2.vertical_datum),
-                            sysdate,
-                            case when l_units(i) = 'SI' then 'm' else 'ft' end)
-                      end
-                   else
-                      case
-                      when pl2.vertical_datum is null then
-                         cwms_util.convert_units(pl2.elevation, 'm', 'ft')
-                      else
-                         cwms_util.convert_units(
-                            pl2.elevation + cwms_loc.get_vertical_datum_offset(
+                      when pl1.vertical_datum is null then
+                         -- sub-location vertical datum is null
+                         case
+                         when pl2.vertical_datum is null then
+                            -- base location vertical datum is also null, can't compute an offset
+                            pl2.elevation
+                         else
+                            -- use base location vertical datum to compute the offset
+                            pl2.elevation + nanvl(cwms_loc.get_vertical_datum_offset(
                                pl2.location_code,
                                pl2.vertical_datum,
                                replace(l_datums(i), 'NATIVE', pl2.vertical_datum),
                                sysdate,
-                               case when l_units(i) = 'SI' then 'm' else 'ft' end),
-                            'm', 'ft')
+                               'm'), null)
+                         end   
+                      else
+                         -- use sub-location vertical datum to compute the offset
+                         pl2.elevation + nanvl(cwms_loc.get_vertical_datum_offset(
+                            pl2.location_code,
+                            pl1.vertical_datum,
+                            replace(l_datums(i), 'NATIVE', pl1.vertical_datum),
+                            sysdate,
+                            'm'), null)
+                      end   
+                   else
+                      -- English Units
+                      case
+                      when pl1.vertical_datum is null then
+                         -- sub-location vertical datum is null
+                         case
+                         when pl2.vertical_datum is null then
+                            -- base location vertical datum is also null, can't compute an offset
+                            cwms_util.convert_units(pl2.elevation, 'm', 'ft')
+                         else
+                            -- use base location vertical datum to compute the offset
+                            cwms_util.convert_units(pl2.elevation + nanvl(cwms_loc.get_vertical_datum_offset(
+                               pl2.location_code,
+                               pl2.vertical_datum,
+                               replace(l_datums(i), 'NATIVE', pl2.vertical_datum),
+                               sysdate,
+                               'm'), null), 'm', 'ft')
+                         end   
+                      else
+                         -- use sub-location vertical datum to compute the offset
+                         cwms_util.convert_units(pl2.elevation + nanvl(cwms_loc.get_vertical_datum_offset(
+                            pl2.location_code,
+                            pl1.vertical_datum,
+                            replace(l_datums(i), 'NATIVE', pl1.vertical_datum),
+                            sysdate,
+                            'm'), null), 'm', 'ft')
                       end
                    end
                 end
@@ -8965,58 +9002,58 @@ end unassign_loc_groups;
                 -- sub-location elevation is not null, so use it
                 case
                 when l_units(i) = 'SI' then
-                   -- SI units
+                   -- SI Units
                    case
                    when pl1.vertical_datum is null then
-                      -- sub-location vertical datum is null, so use base-location vertical datum with sub-location elevation
+                      -- sub-location vertical datum is null
                       case
                       when pl2.vertical_datum is null then
-                         pl1.elevation
+                         -- base location vertical datum is also null, can't compute an offset
+                         pl2.elevation
                       else
-                         pl1.elevation + cwms_loc.get_vertical_datum_offset(
-                            pl2.location_code,
+                         -- use base location vertical datum to compute the offset
+                         pl1.elevation + nanvl(cwms_loc.get_vertical_datum_offset(
+                            pl1.location_code,
                             pl2.vertical_datum,
                             replace(l_datums(i), 'NATIVE', pl2.vertical_datum),
                             sysdate,
-                            case when l_units(i) = 'SI' then 'm' else 'ft' end)
-                      end
+                            'm'), null)
+                      end   
                    else
-                      -- sub-location vertical datum is not null so use it with sub-location elevation
-                      pl1.elevation + cwms_loc.get_vertical_datum_offset(
+                      -- use sub-location vertical datum to compute the offset
+                      pl1.elevation + nanvl(cwms_loc.get_vertical_datum_offset(
                          pl1.location_code,
                          pl1.vertical_datum,
                          replace(l_datums(i), 'NATIVE', pl1.vertical_datum),
                          sysdate,
-                         case when l_units(i) = 'SI' then 'm' else 'ft' end)
-                   end
+                         'm'), null)
+                   end   
                 else
-                   -- English units
+                   -- English Units
                    case
                    when pl1.vertical_datum is null then
-                      -- sub-location vertical datum is null, so use base-location vertical datum with sub-location elevation
+                      -- sub-location vertical datum is null
                       case
                       when pl2.vertical_datum is null then
+                         -- base location vertical datum is also null, can't compute an offset
                          cwms_util.convert_units(pl1.elevation, 'm', 'ft')
                       else
-                         cwms_util.convert_units(
-                            pl1.elevation + cwms_loc.get_vertical_datum_offset(
-                               pl2.location_code,
-                               pl2.vertical_datum,
-                               replace(l_datums(i), 'NATIVE', pl2.vertical_datum),
-                               sysdate,
-                               case when l_units(i) = 'SI' then 'm' else 'ft' end),
-                            'm', 'ft')
-                      end
-                   else
-                      -- sub-location vertical datum is not null so use it with sub-location elevation
-                      cwms_util.convert_units(
-                         pl1.elevation + cwms_loc.get_vertical_datum_offset(
+                         -- use base location vertical datum to compute the offset
+                         cwms_util.convert_units(pl1.elevation + nanvl(cwms_loc.get_vertical_datum_offset(
                             pl1.location_code,
-                            pl1.vertical_datum,
-                            replace(l_datums(i), 'NATIVE', pl1.vertical_datum),
+                            pl2.vertical_datum,
+                            replace(l_datums(i), 'NATIVE', pl2.vertical_datum),
                             sysdate,
-                            case when l_units(i) = 'SI' then 'm' else 'ft' end),
-                         'm', 'ft')
+                            'm'), null), 'm', 'ft')
+                      end   
+                   else
+                      -- use sub-location vertical datum to compute the offset
+                      cwms_util.convert_units(pl1.elevation + nanvl(cwms_loc.get_vertical_datum_offset(
+                         pl1.location_code,
+                         pl1.vertical_datum,
+                         replace(l_datums(i), 'NATIVE', pl1.vertical_datum),
+                         sysdate,
+                         'm'), null), 'm', 'ft')
                    end
                 end
              end,
@@ -9038,7 +9075,7 @@ end unassign_loc_groups;
                       cwms_loc.is_vert_datum_offset_estimated(
                         pl2.location_code,
                         pl2.vertical_datum,
-                        replace(l_datums(i), 'NATIVE', pl1.vertical_datum))
+                        replace(l_datums(i), 'NATIVE', pl2.vertical_datum))
                    end
                 else
                    cwms_loc.is_vert_datum_offset_estimated(
@@ -9048,7 +9085,17 @@ end unassign_loc_groups;
                 end
              end,
              -- vertical datum
-             l_datums(i),
+             case
+             when l_datums(i) = 'NATIVE' then
+                case
+                when nvl(pl1.vertical_datum, nvl(pl2.vertical_datum, 'UNKNOWN')) = 'LOCAL' then
+                   cwms_loc.get_local_vert_datum_name_f(pl1.location_code)
+                else 
+                   nvl(pl1.vertical_datum, nvl(pl2.vertical_datum, 'UNKNOWN'))
+                end
+             else 
+                l_datums(i)
+             end,
              -- time zone
              case
              when pl1.time_zone_code is null then
@@ -9292,7 +9339,7 @@ end unassign_loc_groups;
             ||case
               when l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).elevation is null then 'null'
               else '{"value":'
-                   ||cwms_rounding.round_dt_f(l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).elevation, '7777777777')
+                   ||regexp_replace(cwms_rounding.round_dt_f(l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).elevation, '7777777777'), '(^|[^0-9])\.', '\10.')
                    ||',"unit":"'
                    ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).elevation_unit
                    ||'","datum":"'
