@@ -8147,7 +8147,7 @@ is
       attr_value binary_double, 
       attr_unit  varchar2(16));
    type rec_tab_t is table of rec_t;
-   type idx_t is table of str_tab_t index by pls_integer;
+   type idx_t is table of str_tab_t index by varchar2(16);
    type bool_t is table of boolean index by varchar2(32767);
    type segment_t is record(first_index integer, last_index integer, interp varchar2(5));
    type seg_tab_t is table of segment_t;
@@ -9796,7 +9796,8 @@ begin
             when 'CSV' then
                cwms_util.append(l_data, 'ERROR,Query exceeded maximum size of '||l_max_size||' characters'||chr(10));
             end case;
-         else raise;
+         else 
+            cwms_err.raise('ERROR', dbms_utility.format_error_backtrace);
          end case;
    end;
    
