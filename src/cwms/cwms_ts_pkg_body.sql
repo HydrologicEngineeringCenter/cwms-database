@@ -10735,7 +10735,7 @@ end retrieve_existing_item_counts;
       type tsid_rec_t is record(ts_code integer, office varchar2(16), name varchar2(512));
       type tsid_tab_t is table of tsid_rec_t;
       type tsid_tab_tab_t is table of tsid_tab_t;
-      type idx_t is table of str_tab_t index by varchar2(32767);
+      type idx_t is table of str_tab_t index by varchar2(16);
       type bool_t is table of boolean index by varchar2(32767);
       type indexes_rec_t is record(i integer, j integer);
       type indexes_tab_t is table of indexes_rec_t index by varchar2(32767);
@@ -10814,7 +10814,7 @@ end retrieve_existing_item_counts;
          l_iso := l_iso || l_minutes || 'M';
       end if;
       if l_seconds > 0 then
-         l_iso := l_iso || trim(to_char(l_seconds, '0.999')) || 'S';
+         l_iso := l_iso || trim(to_char(l_seconds, '90.999')) || 'S';
       end if;
       if l_iso = 'PT' then
          l_iso := l_iso || '0S';
@@ -10992,7 +10992,8 @@ end retrieve_existing_item_counts;
             
             l_unique_tsid_count := l_codes2.count;
             
-            select ts_code,
+            select distinct
+                   ts_code,
                    db_office_id,
                    cwms_ts_id 
               bulk collect
