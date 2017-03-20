@@ -14,13 +14,13 @@ as
    begin
       self.rating_spec_id := p_rating_spec_id;
       self.native_units   := p_native_units;
-      self.effective_date := p_effective_date;
+      self.effective_date := trunc(p_effective_date, 'MI');
       self.active_flag    := p_active_flag;
       self.formula        := p_formula;
       self.rating_info    := p_rating_info;
       self.description    := p_description;
       self.office_id      := cwms_util.get_db_office_id(p_office_id);
-      self.create_date    := sysdate;
+      self.create_date    := trunc(sysdate, 'MI');
       self.current_units  := 'N';
       self.current_time   := 'D';
       return;
@@ -41,14 +41,14 @@ as
    begin
       self.rating_spec_id  := p_rating_spec_id;
       self.native_units    := p_native_units;
-      self.effective_date  := p_effective_date;
-      self.transition_date := p_transition_date;
+      self.effective_date  := trunc(p_effective_date, 'MI');
+      self.transition_date := trunc(p_transition_date, 'MI');
       self.active_flag     := p_active_flag;
       self.formula         := p_formula;
       self.rating_info     := p_rating_info;
       self.description     := p_description;
       self.office_id       := cwms_util.get_db_office_id(p_office_id);
-      self.create_date     := sysdate;
+      self.create_date     := trunc(sysdate, 'MI');
       self.current_units   := 'N';
       self.current_time    := 'D';
       return;
