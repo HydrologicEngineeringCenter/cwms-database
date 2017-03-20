@@ -23,7 +23,7 @@ BEGIN
         policy_name      => 'SERVICE_USER_POLICY', 
         function_schema  => '&cwms_schema',
         policy_function  => 'CHECK_SESSION_USER', 
-        statement_types  => 'select,insert,update,delete');
+        statement_types  => 'select');
     end loop;
 END;
 /
