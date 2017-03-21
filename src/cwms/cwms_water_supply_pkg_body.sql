@@ -428,11 +428,12 @@ IS
       p_rec IN out nocopy at_water_user_contract%rowtype,
       p_obj IN            water_user_contract_obj_t)
    IS
-      l_factor             BINARY_DOUBLE;
-      l_offset             BINARY_DOUBLE;
-      l_contract_type_code NUMBER(10);
-      l_storage_unit_code  NUMBER(10);
-      l_water_user_code    NUMBER(10);
+      l_factor              binary_double;
+      l_offset              BINARY_DOUBLE;
+      l_contract_type_code  NUMBER(10);
+      l_storage_unit_code   number(10);
+      l_water_user_code     number(10);
+      l_stream_location_rec at_stream_location%rowtype;
    BEGIN
       ----------------------------------
       -- get the unit conversion info --
@@ -470,43 +471,70 @@ IS
       p_rec.future_use_percent_activated := p_obj.future_use_percent_activated;
       p_rec.total_alloc_percent_activated := p_obj.total_alloc_percent_activated;
       IF p_obj.pump_out_location IS NOT NULL
-      THEN
-        --store location data
+      then
+        -- make sure we have a valid location
         cwms_loc.store_location(p_obj.pump_out_location,'F');
+        p_rec.pump_out_location_code := p_obj.pump_out_location.location_ref.get_location_code('F');
+        -- make sure we have a valid stream location 
+        cwms_stream.store_stream_location(
+          p_location_id    => p_obj.pump_out_location.location_ref.get_location_id,
+          p_stream_id      => null,
+          p_fail_if_exists => 'F',
+          p_ignore_nulls   => 'T',
+          p_station        => null,
+          p_station_unit   => null,
+          p_office_id      => p_obj.pump_out_location.location_ref.office_id);
+        -- make sure we have a valid pump location
         cwms_pump.store_pump (
           p_location_id	   => p_obj.pump_out_location.location_ref.get_location_id,
           p_fail_if_exists	=> 'F',
           p_ignore_nulls   => 'T',
           p_description    => p_obj.pump_out_location.description,
           p_office_id      => p_obj.pump_out_location.location_ref.office_id);
-        --get location code
-        p_rec.pump_out_location_code := p_obj.pump_out_location.location_ref.get_location_code('F');
       END IF;
       IF p_obj.pump_out_below_location IS NOT NULL
       THEN
-        --store location data
+        -- make sure we have a valid location
         cwms_loc.store_location(p_obj.pump_out_below_location,'F');
+        p_rec.pump_out_below_location_code := p_obj.pump_out_below_location.location_ref.get_location_code('F');
+        -- make sure we have a valid stream location 
+        cwms_stream.store_stream_location(
+          p_location_id    => p_obj.pump_out_below_location.location_ref.get_location_id,
+          p_stream_id      => null,
+          p_fail_if_exists => 'F',
+          p_ignore_nulls   => 'T',
+          p_station        => null,
+          p_station_unit   => null,
+          p_office_id      => p_obj.pump_out_below_location.location_ref.office_id);
+        -- make sure we have a valid pump location
         cwms_pump.store_pump (
           p_location_id	   => p_obj.pump_out_below_location.location_ref.get_location_id,
           p_fail_if_exists	=> 'F',
           p_ignore_nulls   => 'T',
           p_description    => p_obj.pump_out_below_location.description,
           p_office_id      => p_obj.pump_out_below_location.location_ref.office_id);
-        --get location code
-        p_rec.pump_out_below_location_code := p_obj.pump_out_below_location.location_ref.get_location_code('F');
       END IF;
       IF p_obj.pump_in_location IS NOT NULL
       THEN
-        --store location data
+        -- make sure we have a valid location
         cwms_loc.store_location(p_obj.pump_in_location,'F');
+        p_rec.pump_in_location_code := p_obj.pump_in_location.location_ref.get_location_code('F');
+        -- make sure we have a valid stream location 
+        cwms_stream.store_stream_location(
+          p_location_id    => p_obj.pump_in_location.location_ref.get_location_id,
+          p_stream_id      => null,
+          p_fail_if_exists => 'F',
+          p_ignore_nulls   => 'T',
+          p_station        => null,
+          p_station_unit   => null,
+          p_office_id      => p_obj.pump_in_location.location_ref.office_id);
+        -- make sure we have a valid pump location
         cwms_pump.store_pump (
           p_location_id	   => p_obj.pump_in_location.location_ref.get_location_id,
           p_fail_if_exists	=> 'F',
           p_ignore_nulls   => 'T',
           p_description    => p_obj.pump_in_location.description,
           p_office_id      => p_obj.pump_in_location.location_ref.office_id);
-        --get location code.
-        p_rec.pump_in_location_code := p_obj.pump_in_location.location_ref.get_location_code('F');
       END IF;      
       p_rec.storage_unit_code := l_storage_unit_code;
    END;
