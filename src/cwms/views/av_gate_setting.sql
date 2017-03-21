@@ -46,6 +46,9 @@ select gs.gate_change_code,
                    'EN')),
              '9999999999')
        end as gate_opening_en,
+       cwms_rating.get_opening_unit(
+          cwms_rating.get_template(lg.shared_loc_alias_id), 
+          'EN') as opening_unit_en,
        cwms_rounding.round_dd_f(
           gs.gate_opening, 
           '9999999999') as gate_opening_si,
