@@ -473,6 +473,12 @@ IS
       THEN
         --store location data
         cwms_loc.store_location(p_obj.pump_out_location,'F');
+        cwms_pump.store_pump (
+          p_location_id	   => p_obj.pump_out_location.location_ref.get_location_id,
+          p_fail_if_exists	=> 'F',
+          p_ignore_nulls   => 'T',
+          p_description    => p_obj.pump_out_location.description,
+          p_office_id      => p_obj.pump_out_location.location_ref.office_id);
         --get location code
         p_rec.pump_out_location_code := p_obj.pump_out_location.location_ref.get_location_code('F');
       END IF;
@@ -480,6 +486,12 @@ IS
       THEN
         --store location data
         cwms_loc.store_location(p_obj.pump_out_below_location,'F');
+        cwms_pump.store_pump (
+          p_location_id	   => p_obj.pump_out_below_location.location_ref.get_location_id,
+          p_fail_if_exists	=> 'F',
+          p_ignore_nulls   => 'T',
+          p_description    => p_obj.pump_out_below_location.description,
+          p_office_id      => p_obj.pump_out_below_location.location_ref.office_id);
         --get location code
         p_rec.pump_out_below_location_code := p_obj.pump_out_below_location.location_ref.get_location_code('F');
       END IF;
@@ -487,6 +499,12 @@ IS
       THEN
         --store location data
         cwms_loc.store_location(p_obj.pump_in_location,'F');
+        cwms_pump.store_pump (
+          p_location_id	   => p_obj.pump_in_location.location_ref.get_location_id,
+          p_fail_if_exists	=> 'F',
+          p_ignore_nulls   => 'T',
+          p_description    => p_obj.pump_in_location.description,
+          p_office_id      => p_obj.pump_in_location.location_ref.office_id);
         --get location code.
         p_rec.pump_in_location_code := p_obj.pump_in_location.location_ref.get_location_code('F');
       END IF;      
