@@ -30,19 +30,22 @@ select gs.gate_change_code,
        bl.base_location_id
        ||substr('-', 1, length(pl.sub_location_id))
        ||pl.sub_location_id as outlet_id,
-       cwms_rounding.round_dd_f(
-          cwms_util.convert_units(
-             gs.gate_opening,
-             cwms_rating.get_opening_unit(
-                cwms_rating.get_template(lg.shared_loc_alias_id), 
-                'SI'),
-             cwms_rating.get_opening_unit(
-                cwms_rating.get_template(lg.shared_loc_alias_id), 
-                'EN')),
-          '9999999999') as gate_opening_en,
-       cwms_rating.get_opening_unit(
-          cwms_rating.get_template(lg.shared_loc_alias_id), 
-          'EN') as opening_unit_en,
+       case
+       when cwms_rating.get_opening_unit(cwms_rating.get_template(lg.shared_loc_alias_id), 'SI') is null
+         or cwms_rating.get_opening_unit(cwms_rating.get_template(lg.shared_loc_alias_id), 'EN') is null
+       then null
+       else
+          cwms_rounding.round_dd_f(
+             cwms_util.convert_units(
+                gs.gate_opening,
+                cwms_rating.get_opening_unit(
+                   cwms_rating.get_template(lg.shared_loc_alias_id),
+                   'SI'),
+                cwms_rating.get_opening_unit(
+                   cwms_rating.get_template(lg.shared_loc_alias_id),
+                   'EN')),
+             '9999999999')
+       end as gate_opening_en,
        cwms_rounding.round_dd_f(
           gs.gate_opening, 
           '9999999999') as gate_opening_si,
