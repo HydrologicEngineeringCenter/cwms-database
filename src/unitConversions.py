@@ -939,7 +939,7 @@ unit_aliases = {
 	"ampere"   : ["amp","AMP","Amp","AMPERE","Ampere","Amperes","AMPERES","amperes","AMPS","amps","Amps"],
 	"B"        : ["b", "b_unit", "b-unit", "B_UNIT", "B-UNIT"],
 	"C"        : ["Celcius","Centigrade","DEG C","deg C","DEG-C","Deg-C","DegC","degC"],
-	"cfs"      : ["CFS","cu-ft/sec","cuft/sec","cusecs","ft3/sec"],
+	"cfs"      : ["CFS","cu-ft/sec","cuft/sec","cusecs","ft3/sec","ft^3/s"],
 	"cm"       : ["centimeter","centimeters"],
 	"cms"      : ["CMS","cu-meters/sec","M3/S","m3/s","m3/sec"],
 	"F"        : ["DEG F","deg F","DEG-F","Deg-F","DegF","degF","Fahrenheit"],
