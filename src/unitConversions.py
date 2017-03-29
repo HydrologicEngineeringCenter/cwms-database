@@ -1,7 +1,6 @@
 from decimal import *
 from mathComputations import Computation
 import re, string, StringIO
-import argparse 
 
 getcontext().prec = 16 # floating point precision to use
 
@@ -1348,21 +1347,17 @@ def get_java_resource_format() :
 	return text
 
 if __name__ == "__main__" :
-	parser = argparse.ArgumentParser()
-	parser.add_argument("--java",action="store_true")
-	args = parser.parse_args()
-	if args.java is None:
-		for from_unit in sorted(conversions.keys()) :
-			for to_unit in sorted(conversions[from_unit].keys()) :
-				factor   = conversions[from_unit][to_unit]["factor"]
-				offset   = conversions[from_unit][to_unit]["offset"]
-				function = conversions[from_unit][to_unit]["function"]
-				if function :
-					print("1 %s = %s (%s) %s " % (from_unit, function, convert(1, from_unit, to_unit), to_unit))
-				else :
-					if int(offset) :
-						print("1 %s = %s + %s (%s) %s" % (from_unit, factor, offset, convert(1, from_unit, to_unit), to_unit))
-					else :
-						print("1 %s = %s (%s) %s " % (from_unit, factor, convert(1, from_unit, to_unit), to_unit))
+# 	for from_unit in sorted(conversions.keys()) :
+# 		for to_unit in sorted(conversions[from_unit].keys()) :
+# 			factor   = conversions[from_unit][to_unit]["factor"]
+# 			offset   = conversions[from_unit][to_unit]["offset"]
+# 			function = conversions[from_unit][to_unit]["function"]
+# 			if function :
+# 				print("1 %s = %s (%s) %s " % (from_unit, function, convert(1, from_unit, to_unit), to_unit))
+# 			else :
+# 				if int(offset) :
+# 					print("1 %s = %s + %s (%s) %s" % (from_unit, factor, offset, convert(1, from_unit, to_unit), to_unit))
+# 				else :
+# 					print("1 %s = %s (%s) %s " % (from_unit, factor, convert(1, from_unit, to_unit), to_unit))
 
 	print get_java_resource_format()
