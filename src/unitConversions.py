@@ -91,8 +91,6 @@ offsets = {
 	'F_to_C' : Decimal('-32') * conversion_factors['C_per_F'],
 	'K_to_C' : Decimal('-273.15'),
 }
-offsets['C-day_to_F-day'] = offsets['C_to_F']
-offsets['F-day_to_C-day'] = offsets['F_to_C']
 #
 # Functions for conversions that require them (used instead of factors and offsets)
 #
@@ -1066,6 +1064,12 @@ unit_aliases = {
 	"umho/cm"  : ["umhos/cm"],
 	"volt"     : ["Volt","VOLT","Volts","volts","VOLTS"],
 }
+
+java_primary_units = set([
+	"degC-day",
+	"degF-day",
+])
+
 #
 # Verify that every unit alias references a unit that is specified both by unit system and by parameter
 #
@@ -1282,9 +1286,18 @@ def get_java_resource_format() :
 		for unit_system_units in units_by_unit_system :
 			unit_system = unit_system_units.keys()[0];
 			for unit in [u for u in units if u in unit_system_units.values()[0]] :
-				buf.write("%s;%s" % (unit_system, unit))
+				java_unit, java_aliases = unit, None
 				if unit_aliases.has_key(unit) :
-					buf.write(";%s" % ";".join(unit_aliases[unit]))
+					aliases = unit_aliases[unit]
+					intersection = java_primary_units & set(aliases)
+					if intersection :
+						assert(len(intersection) == 1)
+						java_unit = intersection.pop()
+						aliases[aliases.index(java_unit)] = unit
+					java_aliases = aliases
+				buf.write("%s;%s" % (unit_system, java_unit))
+				if unit_aliases.has_key(unit) :
+					buf.write(";%s" % ";".join(java_aliases))
 				buf.write("\n")
 				if conversions.has_key(unit) :
 					for to_unit_system_units in units_by_unit_system :
@@ -1293,7 +1306,13 @@ def get_java_resource_format() :
 							to_unit_system = to_unit_system_units.keys()[0]
 							conversion = conversions[unit][to_unit] 
 							factor, offset, function = conversion["factor"], conversion["offset"], conversion["function"]
-							buf2.write("%s;%s>%s;%s;" % (unit_system, unit, to_unit_system, to_unit))
+							if unit_aliases.has_key(to_unit) :
+								aliases = unit_aliases[to_unit]
+								intersection = java_primary_units & set(aliases)
+								if intersection :
+									assert(len(intersection) == 1)
+									to_unit = intersection.pop()
+							buf2.write("%s;%s>%s;%s;" % (unit_system, java_unit, to_unit_system, to_unit))
 							if function :
 								buf2.write("%s\n" % function)
 							elif offset :
