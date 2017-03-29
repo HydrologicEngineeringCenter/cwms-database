@@ -1,6 +1,7 @@
 from decimal import *
 from mathComputations import Computation
 import re, string, StringIO
+import argparse 
 
 getcontext().prec = 16 # floating point precision to use
 
@@ -1005,35 +1006,39 @@ no_conversion_units = [
 unit_aliases = { 				
 	"$/kaf"    : ["$/KAF"],
 	"%"        : ["percent","PERCENT"],
-	"1000 m2"  : ["1000 sq m","1000 sq meters"],                                                           
-	"1000 m3"  : ["1000 cu m"],
+	"1000 m2"  : ["1000 sq m","1000 sq meters","1000 M2"],                                                           
+	"1000 m3"  : ["1000 cu m","1000 M3"],
 	"ac-ft"    : ["AC-FT","ACFT","acft","acre-feet","acre-ft"],
-	"acre"     : ["acres"],
+	"acre"     : ["acres","ACRES"],
 	"ampere"   : ["amp","AMP","Amp","AMPERE","Ampere","Amperes","AMPERES","amperes","AMPS","amps","Amps"],
 	"B"        : ["b", "b_unit", "b-unit", "B_UNIT", "B-UNIT"],
-	"C"        : ["Celcius","Centigrade","DEG C","deg C","DEG-C","Deg-C","DegC","degC"],
+	"C"        : ["Celcius","Centigrade","DEG C","deg C","DEG-C","Deg-C","DegC","degC","deg c"],
 	"C-day"    : ["degC-day"],
-	"cfs"      : ["CFS","cu-ft/sec","cuft/sec","cusecs","ft3/sec","ft^3/s"],
+	"cfs"      : ["CFS","cu-ft/sec","cuft/sec","cusecs","ft3/sec","ft^3/s","FT3/S","FT3/SEC","ft3/s"],
 	"cm"       : ["centimeter","centimeters"],
-	"cms"      : ["CMS","cu-meters/sec","M3/S","m3/s","m3/sec"],
-	"F"        : ["DEG F","deg F","DEG-F","Deg-F","DegF","degF","Fahrenheit"],
+	"cms"      : ["CMS","cu-meters/sec","M3/S","m3/s","m3/sec","M3/SEC"],
+	"F"        : ["DEG F","deg F","deg f","DEG-F","Deg-F","DegF","degF","Fahrenheit"],
 	"F-day"    : ["degF-day"],
 	"FNU"      : ["fnu"],
-	"ft"       : ["FEET","feet","foot","FT"],
+	"ft"       : ["FEET","feet","foot","FT","Feet"],
 	"ftUS"     : ["survey foot", "survey feet", "SURVEY FOOT", "SURVEY FEET"], 
 	"ft/s"     : ["fps","ft/sec"],
 	"ft2"      : ["sq ft","square feet"],
+	"ft3"      : ["cu ft","cubic feet"],
 	"g/l"      : ["gm/l","grams per liter","grams/liter"],
 	"gal"      : ["GAL","gallon","gallons"],
+	"gm/cm3"    : ["g/cm3"],
 	"gpm"      : ["Gal/min","gallons per minute","GPM"],
+	"GWh"       : ["GWH"],
 	"ha"       : ["hectare","hectares"],
-	"hr"       : ["hour","hours"],
+	"hr"       : ["hour","hours","HR","HOUR","HOURS"],
 	"Hz"       : ["cycles/s", "cycles/sec", "hz", "HZ"],
-	"in"       : ["IN","inch","inches","INCHES"],
+	"in"       : ["IN","inch","inches","INCHES","Inch"],
+	"in/deg-day" : ["in/deg-d"],
 	"JTU"      : ["jtu"],
 	"K"        : ["k", "KELVIN", "kelvin", "KELVINS", "kelvins"],
 	"k$"       : ["K$"],
-	"kaf"      : ["1000 ac-ft"],
+	"kaf"      : ["1000 ac-ft","KAF"],
 	"kcfs"     : ["1000 cfs","1000 cu-ft/sec","1000 ft3/sec","KCFS"],
 	"kgal"     : ["1000 gallon","1000 gallons","KGAL","TGAL","tgal"],
 	"kHz"      : ["khz", "KHZ", "KHz"],
@@ -1042,26 +1047,32 @@ unit_aliases = {
 	"km3"      : ["cu km"],
 	"knot"     : ["knots","kt"],
 	"kPa"      : ["kN/m2"],
+	"kW"       : ["KW"],
+	"kWh"      : ["KWH"],
 	"lb"       : ["lbs", "pounds", "POUNDS"],
-	"m"        : ["meter","meters","metre","metres"],
-	"m2"       : ["sq m","sq meter","sq meters","square meters"],
-	"m3"       : ["cu m","cu meter","cu meters","cubic meters"],
+	"m"        : ["meter","meters","metre","metres","METERS"],
+	"m2"       : ["sq m","sq meter","sq meters","square meters","M2"],
+	"m3"       : ["cu m","cu meter","cu meters","cubic meters","M3"],
 	"mb"       : ["mbar","mbars","millibar","millibars"],
-	"mg/l"     : ["millgrams/liter","milligrams per liter"],
+	"mg/l"     : ["millgrams/liter","milligrams per liter","mg/L"],
 	"mgal"     : ["MGAL","million gallon","millon gallons"],
 	"mgd"      : ["MGD","million gallons/day"],
 	"MHz"      : ["mhz", "mHz", "MHZ"],
-	"mi"       : ["mile","miles"],
+	"mi"       : ["mile","miles","Mile"],
 	"mile2"    : ["mi2","sq mi","sq mile","sq miles","square miles"],
 	"mile3"    : ["cu mile","cu miles"],
-	"min"      : ["minute","minutes"],
-	"mm"       : ["millimeter","millimeters"],
+	"min"      : ["minute","minutes","MIN","MINUTE","MINUTES"],
+	"mm"       : ["millimeter","millimeters","MM"],
+	"mm/deg-day" : ["mm/deg-d"],
+	"MWh"       : ["MWH"],
 	"N"        : ["newton", "newtons"],
 	"NTU"      : ["ntu"],
 	"psi"      : ["lbs/sqin"],
 	"rpm"      : ["rev/min","revolutions per minute"],
-	"sec"      : ["second","seconds"],
-	"umho/cm"  : ["umhos/cm"],
+	"sec"      : ["second","seconds","SEC","SECOND","SECONDS"],
+	"TWh"      : ["TWH"],
+	"Wh"       : ["WH"],
+	"umho/cm"  : ["umhos/cm","UMHO/CM","UMHOS/CM"],
 	"volt"     : ["Volt","VOLT","Volts","volts","VOLTS"],
 }
 
@@ -1285,7 +1296,7 @@ def get_java_resource_format() :
 		units = d.values()[0]
 		for unit_system_units in units_by_unit_system :
 			unit_system = unit_system_units.keys()[0];
-			for unit in [u for u in units if u in unit_system_units.values()[0]] :
+			for unit in [u for u in sorted(units) if u in unit_system_units.values()[0]] :
 				java_unit, java_aliases = unit, None
 				if unit_aliases.has_key(unit) :
 					aliases = unit_aliases[unit]
@@ -1297,7 +1308,7 @@ def get_java_resource_format() :
 					java_aliases = aliases
 				buf.write("%s;%s" % (unit_system, java_unit))
 				if unit_aliases.has_key(unit) :
-					buf.write(";%s" % ";".join(java_aliases))
+					buf.write(";%s" % ";".join(sorted(java_aliases)))
 				buf.write("\n")
 				if conversions.has_key(unit) :
 					for to_unit_system_units in units_by_unit_system :
@@ -1317,9 +1328,15 @@ def get_java_resource_format() :
 								buf2.write("%s\n" % function)
 							elif offset :
 								if offset < 0 :
-									buf2.write("ARG 0|%s|*|%s|-\n" % (factor, -offset))
+										if factor  == 1.0 :
+											buf2.write("ARG 0|%s|-\n" % (-offset))
+										else :
+											buf2.write("ARG 0|%s|*|%s|-\n" % (factor, -offset))
 								else :
-									buf2.write("ARG 0|%s|*|%s|+\n" % (factor, offset))
+										if factor == 1.0 : 
+											buf2.write("ARG 0|%s|+\n" % (offset))
+										else :
+											buf2.write("ARG 0|%s|*|%s|+\n" % (factor, offset))
 							else :
 								buf2.write("%s\n" % factor)
 		conversion_text = buf2.getvalue()
@@ -1331,17 +1348,21 @@ def get_java_resource_format() :
 	return text
 
 if __name__ == "__main__" :
-	for from_unit in sorted(conversions.keys()) :
-		for to_unit in sorted(conversions[from_unit].keys()) :
-			factor   = conversions[from_unit][to_unit]["factor"]
-			offset   = conversions[from_unit][to_unit]["offset"]
-			function = conversions[from_unit][to_unit]["function"]
-			if function :
-				print("1 %s = %s (%s) %s " % (from_unit, function, convert(1, from_unit, to_unit), to_unit))
-			else :
-				if int(offset) :
-					print("1 %s = %s + %s (%s) %s" % (from_unit, factor, offset, convert(1, from_unit, to_unit), to_unit))
+	parser = argparse.ArgumentParser()
+	parser.add_argument("--java",action="store_true")
+	args = parser.parse_args()
+	if args.java is None:
+		for from_unit in sorted(conversions.keys()) :
+			for to_unit in sorted(conversions[from_unit].keys()) :
+				factor   = conversions[from_unit][to_unit]["factor"]
+				offset   = conversions[from_unit][to_unit]["offset"]
+				function = conversions[from_unit][to_unit]["function"]
+				if function :
+					print("1 %s = %s (%s) %s " % (from_unit, function, convert(1, from_unit, to_unit), to_unit))
 				else :
-					print("1 %s = %s (%s) %s " % (from_unit, factor, convert(1, from_unit, to_unit), to_unit))
+					if int(offset) :
+						print("1 %s = %s + %s (%s) %s" % (from_unit, factor, offset, convert(1, from_unit, to_unit), to_unit))
+					else :
+						print("1 %s = %s (%s) %s " % (from_unit, factor, convert(1, from_unit, to_unit), to_unit))
 
 	print get_java_resource_format()
