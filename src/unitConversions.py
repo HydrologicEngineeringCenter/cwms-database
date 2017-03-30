@@ -1053,6 +1053,7 @@ unit_aliases = {
 	"m2"       : ["sq m","sq meter","sq meters","square meters","M2"],
 	"m3"       : ["cu m","cu meter","cu meters","cubic meters","M3"],
 	"mb"       : ["mbar","mbars","millibar","millibars"],
+	"mcm"      : ["1000000 m3"],
 	"mg/l"     : ["millgrams/liter","milligrams per liter","mg/L"],
 	"mgal"     : ["MGAL","million gallon","millon gallons"],
 	"mgd"      : ["MGD","million gallons/day"],
@@ -1309,6 +1310,18 @@ def get_java_resource_format() :
 				if unit_aliases.has_key(unit) :
 					buf.write(";%s" % ";".join(sorted(java_aliases)))
 				buf.write("\n")
+				#write out conversion for same unit to different unit system
+				for check_units in units_by_unit_system :
+					check_unit_system = check_units.keys()[0];
+					#is this the unit system that we are looking at right now
+					if (check_unit_system == unit_system) : 
+						#dont do conversions to our selves in the same unit system
+						continue
+					#check if our unit is in this other unit system
+					if (unit in check_units.values()[0]) :
+						#it is - so write out the same unit btwn systems conversion
+						buf2.write("%s;%s>%s;%s;1.0\n" % (unit_system, java_unit, check_unit_system, java_unit))
+				#write out all conversions to other units
 				if conversions.has_key(unit) :
 					for to_unit_system_units in units_by_unit_system :
 						for to_unit in sorted(conversions[unit].keys()) :
