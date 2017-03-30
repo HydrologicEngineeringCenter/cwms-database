@@ -1298,7 +1298,7 @@ def get_java_resource_format() :
 			for unit in [u for u in sorted(units) if u in unit_system_units.values()[0]] :
 				java_unit, java_aliases = unit, None
 				if unit_aliases.has_key(unit) :
-					aliases = unit_aliases[unit]
+					aliases = unit_aliases[unit][:]
 					intersection = java_primary_units & set(aliases)
 					if intersection :
 						assert(len(intersection) == 1)
@@ -1317,7 +1317,7 @@ def get_java_resource_format() :
 							conversion = conversions[unit][to_unit] 
 							factor, offset, function = conversion["factor"], conversion["offset"], conversion["function"]
 							if unit_aliases.has_key(to_unit) :
-								aliases = unit_aliases[to_unit]
+								aliases = unit_aliases[to_unit][:]
 								intersection = java_primary_units & set(aliases)
 								if intersection :
 									assert(len(intersection) == 1)
