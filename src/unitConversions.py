@@ -741,6 +741,7 @@ english_units = {"English" : [
 	"ft2",
 	"ft3",
 	"ftUS",
+	"g/l",
 	"gal",
 	"gpm",
 	"GW",
