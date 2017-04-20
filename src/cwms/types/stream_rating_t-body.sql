@@ -1757,7 +1757,6 @@ as
                   l_date_shifts(l_date_shifts.count) := i-1;
                end if;
                l_date_offsets.extend;
-               l_date_shifts.extend;
                l_date_offsets(l_date_offsets.count) := shifts(i).effective_date - c_base_date;
                l_date_shifts.extend;
                l_date_shifts(l_date_shifts.count) := i;
