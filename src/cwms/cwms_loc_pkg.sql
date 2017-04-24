@@ -2544,7 +2544,187 @@ AS
                                 p_office_id     IN VARCHAR2)
       RETURN VARCHAR2;
 
-
+   /**
+    * Tests whether a point is contained within a polygon
+    *
+    * @param p_shape the polygon as an sdo_geometry object
+    * @param p_x the x coordinate of the point to test
+    * @param p_y the y coordinate of the point to test
+    * @return 'T' if the point is contained within the polygon, otherwise 'F'
+    */
+   function point_in_polygon(
+      p_shape in sdo_geometry,
+      p_x     in number,
+      p_y     in number)
+      return varchar;
+   /**
+    * Tests whether a point is contained within a polygon
+    *
+    * @param p_vertices the polygon as a double_tab_tab_t object. Each element is a double_tab_t object that contains (x, y) of the vertex. The polygon will be closed by the routine if the last vertex is not identical to the first vertex.
+    * @param p_x the x coordinate of the point to test
+    * @param p_y the y coordinate of the point to test
+    * @return 'T' if the point is contained within the polygon, otherwise 'F'
+    */
+   function point_in_polygon(
+      p_vertices in double_tab_tab_t,
+      p_x        in number,
+      p_y        in number)
+      return varchar;
+   /**
+    * Returns the office code of the office whose area the specified lat/lon is located
+    *
+    * @param p_lat the latitude of the location to test
+    * @param p_lon the longitude of the location to test
+    * @return the office code that encompasses the lat/lon, or NULL if none
+    */
+   function get_bounding_ofc_code(
+      p_lat in number,
+      p_lon in number)
+      return integer;
+   /**
+    * Returns the office id of the office whose area the specified lat/lon is located
+    *
+    * @param p_lat the latitude of the location to test
+    * @param p_lon the longitude of the location to test
+    * @return the office id that encompasses the lat/lon, or NULL if none
+    */
+   function get_bounding_ofc_id(
+      p_lat in number,
+      p_lon in number)
+      return varchar2;
+   /**
+    * Returns the office code of the office whose area encompasses the specified location
+    *
+    * @param p_location_code the location code of the location to test
+    * @return the office code that encompasses the location, or NULL if none
+    */
+   function get_bounding_ofc_code_for_loc(
+      p_location_code in integer)
+      return integer;
+   /**
+    * Returns the office code of the office whose area encompasses the specified location
+    *
+    * @param p_location_id the location id of the location to test
+    * @param p_office_id the office id of the office that owns the location. if not specified or NULL, the session user's default office is used
+    * @return the office code that encompasses the location, or NULL if none
+    */
+   function get_bounding_ofc_code_for_loc(
+      p_location_id in varchar2,
+      p_office_id   in varchar2 default null)
+      return integer;
+   /**
+    * Returns the office id of the office whose area encompasses the specified location
+    *
+    * @param p_location_code the location code of the location to test
+    * @return the office code that encompasses the location, or NULL if none
+    */
+   function get_bounding_ofc_id_for_loc(
+      p_location_code in integer)
+      return varchar2;
+   /**
+    * Returns the office id of the office whose area encompasses the specified location
+    *
+    * @param p_location_id the location id of the location to test
+    * @param p_office_id the office id of the office that owns the location. if not specified or NULL, the session user's default office is used
+    * @return the office id that encompasses the location, or NULL if none or indeterminate
+    */
+   function get_bounding_ofc_id_for_loc(
+      p_location_id in varchar2,
+      p_office_id   in varchar2 default null)
+      return varchar2;
+   /**
+    * Returns the county code of the county whose area the specified lat/lon is located
+    *
+    * @param p_lat the latitude of the location to test
+    * @param p_lon the longitude of the location to test
+    * @return the county code that encompasses the lat/lon, or NULL if none
+    */
+   function get_county_code(
+      p_lat in number,
+      p_lon in number)
+      return integer;
+   /**
+    * Returns the county and state ids of the county whose area the specified lat/lon is located
+    *
+    * @param p_lat the latitude of the location to test
+    * @param p_lon the longitude of the location to test
+    * @return the county and state in a str_tab_t object that encompasses the lat/lon, or NULL if none
+    */
+   function get_county_id(
+      p_lat in number,
+      p_lon in number)
+      return str_tab_t;
+   /**
+    * Returns the county code of the county whose area encompasses the specified location
+    *
+    * @param p_location_code the location code of the location to test
+    * @return the county code that encompasses the location, or NULL if none
+    */
+   function get_county_code_for_loc(
+      p_location_code in integer)
+      return integer;
+   /**
+    * Returns the county code of the county whose area encompasses the specified location
+    *
+    * @param p_location_id the location id of the location to test
+    * @param p_county_id the county id (as county, ST) of the county that owns the location. if not specified or NULL, the session user's default county is used
+    * @return the county code that encompasses the location, or NULL if none
+    */
+   function get_county_code_for_loc(
+      p_location_id in varchar2,
+      p_office_id   in varchar2 default null)
+      return integer;
+   /**
+    * Returns the county and state ids of the county whose area encompasses the specified location
+    *
+    * @param p_location_code the location code of the location to test
+    * @return the county and state in a str_tab_t object that encompasses the location, or NULL if none
+    */
+   function get_county_id_for_loc(
+      p_location_code in integer)
+      return str_tab_t;
+   /**
+    * Returns the county id (as county, ST) of the county whose area encompasses the specified location
+    *
+    * @param p_location_id the location id of the location to test
+    * @param p_county_id the county id (as county, ST) of the county that owns the location. if not specified or NULL, the session user's default county is used
+    * @return the county and state in a str_tab_t object that encompasses the location, or NULL if none
+    */
+   function get_county_id_for_loc(
+      p_location_id in varchar2,
+      p_office_id   in varchar2 default null)
+      return str_tab_t;
+   /**
+    * Returns the city nearest to the specified lat/lon
+    *
+    * @param p_lat the latitude of the location to test
+    * @param p_lon the longitude of the location to test
+    * @return the city and state nearest to the location in a str_tab_t object
+    */
+   function get_nearest_city(
+      p_lat in number,
+      p_lon in number)
+      return str_tab_t;
+   /**
+    * Returns the city nearest to the specified location
+    *
+    * @param p_location_code the location code of the location to test
+    * @return the city and state nearest to the location in a str_tab_t object
+    */
+   function get_nearest_city_for_loc(
+      p_location_code in integer)
+      return str_tab_t;
+   /**
+    * Returns the city nearest to the specified location
+    *
+    * @param p_location_id the location id of the location to test
+    * @param p_nearest_city the county id (as county, ST) of the county that owns the location. if not specified or NULL, the session user's default county is used
+    * @return the city and state nearest to the location in a str_tab_t object
+    */
+   function get_nearest_city_for_loc(
+      p_location_id in varchar2,
+      p_office_id   in varchar2 default null)
+      return str_tab_t;
    /**
     * Retreives locations in a number of formats for a combination time window, timezone, formats, and vertical datums
     *

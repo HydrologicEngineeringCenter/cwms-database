@@ -902,7 +902,7 @@ AS
          := cwms_util.get_office_code (p_db_office_id);
       l_cwms_office_code       NUMBER (10)
                                   := cwms_util.get_office_code ('CWMS');
-      l_old_time_zone_code      number(10);                                  
+      l_old_time_zone_code      number(10); 
    BEGIN
       --.
       -- dbms_output.put_line('Bienvenue a update_loc');
@@ -8319,7 +8319,7 @@ end unassign_loc_groups;
       l_valid_kinds('OVERFLOW'       ) := 'OVERFLOW,STREAM_LOCATION,WEATHER_GAGE';
       l_valid_kinds('PROJECT'        ) := 'PROJECT,STREAM_LOCATION,WEATHER_GAGE';
       l_valid_kinds('PUMP'           ) := 'PUMP,STREAM_GAGE';
-      l_valid_kinds('SITE'           ) := 'SITE,BASIN,EMBANKMENT,ENTITY,LOCK,OUTLET,PROJECT,STREAM,STREAM_LOCATION,STREAM_REACH,TURBINE,WEATHER_GAGE';
+      l_valid_kinds('SITE'           ) := 'SITE,BASIN,EMBANKMENT,ENTITY,LOCK,OUTLET,PROJECT,PUMP,STREAM,STREAM_LOCATION,STREAM_REACH,TURBINE,WEATHER_GAGE';
       l_valid_kinds('STREAM'         ) := 'STREAM';
       l_valid_kinds('STREAM_GAGE'    ) := 'STREAM_GAGE,EMBANKMENT,ENTITY,LOCK,OUTLET,PROJECT,PUMP,TURBINE';
       l_valid_kinds('STREAM_LOCATION') := 'STREAM_LOCATION,EMBANKMENT,ENTITY,LOCK,OUTLET,PROJECT,PUMP,TURBINE,STREAM_GAGE';
@@ -8723,7 +8723,390 @@ end unassign_loc_groups;
        order by 1;
        return cwms_util.join_text(l_names, '.');
    end get_location_ids;
+
+   function point_in_bounding_box(
+      p_shape in sdo_geometry,
+      p_x     in number,
+      p_y     in number)
+      return boolean
+   is
+      l_xy double_tab_tab_t := double_tab_tab_t();
+   begin
+      for rec in (select rownum as i, x, y from table(sdo_util.getvertices(sdo_geom.sdo_mbr(p_shape)))) loop
+         l_xy.extend;
+         l_xy(rec.i) := double_tab_t(rec.x, rec.y);
+      end loop;
+      return p_x between l_xy(1)(1) and l_xy(2)(1) and p_y between l_xy(1)(2) and l_xy(2)(2);
+   end point_in_bounding_box;
+
+   function point_below_line(
+      p_x  in out nocopy number,
+      p_y  in out nocopy number,
+      p_x1 in number,
+      p_y1 in number,
+      p_x2 in number,
+      p_y2 in number)
+      return boolean
+   is
+      l_slope     number;
+      l_intercept number;
+   begin
+      if (p_x1 < p_x and p_x <= p_x2) or
+         (p_x2 < p_x and p_x <= p_x1)
+      then
+         if p_y1 >= p_y and p_y2 >= p_y then
+            return true;
+         elsif p_y1 < p_y and p_y2 < p_y then
+            return false;
+         else
+            l_slope := (p_y2 - p_y1) / (p_x2 - p_x1);
+            l_intercept := p_y1 - l_slope * p_x1;
+            return l_slope * p_x + l_intercept >= p_y;
+         end if;
+      else
+         return false;
+      end if;
+   end point_below_line;
+
+   function point_in_polygon(
+      p_shape in sdo_geometry,
+      p_x     in number,
+      p_y     in number)
+      return varchar
+   is
+      l_x        number := p_x;
+      l_y        number := p_y;
+      l_vertices double_tab_tab_t;
+      l_count    integer;
+      l_vertex_count integer;
+   begin
+      if point_in_bounding_box(p_shape, l_x, l_y) then
+         select double_tab_t(x, y)
+           bulk collect
+           into l_vertices
+           from table(select sdo_util.getvertices(p_shape) from dual);
+         select count(*)
+           into l_vertex_count
+           from table(l_vertices);
+         l_count := 0;
+         for i in 1..l_vertex_count-1 loop
+            if point_below_line(
+                  l_x, 
+                  l_y, 
+                  l_vertices(i)(1), 
+                  l_vertices(i)(2), 
+                  l_vertices(i+1)(1), 
+                  l_vertices(i+1)(2))
+            then
+               l_count := l_count + 1;
+            end if;
+         end loop;
+         return case
+                when mod(l_count, 2) = 1 then 'T'
+                else 'F'
+                end;
+      else
+         return 'F';
+      end if;
+   end point_in_polygon;
+
+   function point_in_polygon(
+      p_vertices in double_tab_tab_t,
+      p_x        in number,
+      p_y        in number)
+      return varchar
+   is
+      l_x            number := p_x;
+      l_y            number := p_y;
+      l_vertices     double_tab_tab_t;
+      l_min_x        number;
+      l_max_x        number;
+      l_min_y        number;
+      l_max_y        number;
+      l_count        integer;
+      l_vertex_count integer;
+   begin
+      ----------------------------------------
+      -- get the minimum bounding rectangle --
+      ----------------------------------------
+      select min(column_value),
+             max(column_value)
+        into l_min_x,
+             l_max_x
+        from table(cwms_util.get_column(p_vertices, 1));
+        
+      select min(column_value),
+             max(column_value)
+        into l_min_y,
+             l_max_y
+        from table(cwms_util.get_column(p_vertices, 2));
+              
+      if l_x between l_min_x and l_max_x and
+         l_y between l_min_y and l_max_y
+      then
+         -------------------------
+         -- point is in the MBR --
+         -------------------------
+         select count(*)
+           into l_vertex_count
+           from table(p_vertices);
+         l_vertices := p_vertices;
+         ------------------------------------
+         -- close the polygon if necessary -- 
+         ------------------------------------
+         if l_vertices(l_vertex_count) != l_vertices(1) then
+            l_vertex_count := l_vertex_count + 1;
+            l_vertices.extend;
+            l_vertices(l_vertex_count) := l_vertices(1);
+         end if;
+         -------------------------------------------------------
+         -- count the number of line segments above the point --
+         -------------------------------------------------------
+         l_count := 0;
+         for i in 1..l_vertex_count-1 loop
+            if point_below_line(
+                  l_x, 
+                  l_y, 
+                  p_vertices(i)(1), 
+                  p_vertices(i)(2), 
+                  p_vertices(i+1)(1), 
+                  p_vertices(i+1)(2))
+            then
+               l_count := l_count + 1;
+            end if;
+         end loop;
+         return case
+                when mod(l_count, 2) = 1 then 'T'
+                else 'F'
+                end;
+      else
+         return 'F';
+      end if;
+   end point_in_polygon;
    
+   function get_bounding_ofc_code(
+      p_lat in number,
+      p_lon in number)
+      return integer
+   is
+      l_codes number_tab_t;
+   begin
+      select office_code 
+        bulk collect
+        into l_codes
+        from cwms_agg_district ad
+       where sdo_contains(
+         ad.shape, 
+         sdo_geometry(
+            2003, 
+            8265 , 
+            null,
+            mdsys.sdo_elem_info_array(1,1003,1), 
+            mdsys.sdo_ordinate_array(p_lon, p_lat))) = 'TRUE';
+      return case
+             when l_codes.count = 1 then l_codes(1) 
+             else null
+             end;       
+   end get_bounding_ofc_code;
+
+   function get_bounding_ofc_id(
+      p_lat in number,
+      p_lon in number)
+      return varchar2
+   is
+      l_office_id cwms_office.office_id%type;
+   begin
+      select office_id
+        into l_office_id
+        from cwms_office
+       where office_code = get_bounding_ofc_code(p_lat, p_lon);
+       
+      return l_office_id;       
+   end get_bounding_ofc_id;
+
+   function get_bounding_ofc_code_for_loc(
+      p_location_code in integer)
+      return integer
+   is
+      l_sub_rec  at_physical_location%rowtype;
+      l_base_rec at_physical_location%rowtype;
+   begin
+      select * into l_sub_rec  from at_physical_location where location_code = p_location_code;
+      select * into l_base_rec from at_physical_location where location_code = l_sub_rec.base_location_code;
+      return get_bounding_ofc_code(
+                coalesce(l_sub_rec.latitude,  l_base_rec.latitude),
+                coalesce(l_sub_rec.longitude, l_base_rec.longitude));
+   end get_bounding_ofc_code_for_loc;
+
+   function get_bounding_ofc_code_for_loc(
+      p_location_id in varchar2,
+      p_office_id   in varchar2 default null)
+      return integer
+   is
+   begin
+      return get_bounding_ofc_code_for_loc(get_location_code(p_office_id, p_location_id));
+   end get_bounding_ofc_code_for_loc;
+
+   function get_bounding_ofc_id_for_loc(
+      p_location_code in integer)
+      return varchar2
+   is
+      l_office_id cwms_office.office_id%type;
+   begin
+      select office_id
+        into l_office_id
+        from cwms_office
+       where office_code = get_bounding_ofc_code_for_loc(p_location_code);
+       
+      return l_office_id;       
+   end get_bounding_ofc_id_for_loc;
+
+   function get_bounding_ofc_id_for_loc(
+      p_location_id in varchar2,
+      p_office_id   in varchar2 default null)
+      return varchar2
+   is
+   begin
+      return get_bounding_ofc_id_for_loc(get_location_code(p_office_id, p_location_id));
+   end get_bounding_ofc_id_for_loc;
+      
+   function get_county_code(
+      p_lat in number,
+      p_lon in number)
+      return integer
+   is
+      l_codes      number_tab_t;
+   begin
+   select c.county_code
+     bulk collect
+     into l_codes
+     from cwms_county_sp c
+    where sdo_contains(
+      c.shape, 
+      sdo_geometry(
+         2003, 
+         8265 , 
+         null,
+         mdsys.sdo_elem_info_array(1,1003,1), 
+         mdsys.sdo_ordinate_array(p_lon, p_lat))) = 'TRUE';
+      return case
+             when l_codes.count = 1 then l_codes(1) 
+             else null
+             end;       
+   end get_county_code;
+
+   function get_county_id(
+      p_lat in number,
+      p_lon in number)
+      return str_tab_t
+   is
+      l_county_code integer;
+      l_results     str_tab_t := str_tab_t(null, null);
+   begin
+      l_county_code := get_county_code(p_lat, p_lon);
+      if l_county_code is not null then
+         select county,
+                state
+           into l_results(1),
+                l_results(2)
+           from cwms_county_sp
+          where county_code = l_county_code;
+      end if;
+      return l_results;         
+   end get_county_id;
+
+   function get_county_code_for_loc(
+      p_location_code in integer)
+      return integer
+   is
+      l_sub_rec  at_physical_location%rowtype;
+      l_base_rec at_physical_location%rowtype;
+   begin
+      select * into l_sub_rec  from at_physical_location where location_code = p_location_code;
+      select * into l_base_rec from at_physical_location where location_code = l_sub_rec.base_location_code;
+      return get_county_code(
+                coalesce(l_sub_rec.latitude,  l_base_rec.latitude),
+                coalesce(l_sub_rec.longitude, l_base_rec.longitude));
+   end get_county_code_for_loc;
+
+   function get_county_code_for_loc(
+      p_location_id in varchar2,
+      p_office_id   in varchar2 default null)
+      return integer
+   is
+   begin
+      return get_county_code_for_loc(cwms_loc.get_location_code(p_office_id, p_location_id));
+   end get_county_code_for_loc;
+
+   function get_county_id_for_loc(
+      p_location_code in integer)
+      return str_tab_t
+   is
+      l_county_code integer;
+      l_results     str_tab_t := str_tab_t(null, null);
+   begin
+      l_county_code := get_county_code_for_loc(p_location_code);
+      if l_county_code is not null then
+         select county,
+                state
+           into l_results(1),
+                l_results(2)
+           from cwms_county_sp
+          where county_code = l_county_code;
+      end if;
+      return l_results;         
+   end get_county_id_for_loc;
+
+   function get_county_id_for_loc(
+      p_location_id in varchar2,
+      p_office_id   in varchar2 default null)
+      return str_tab_t
+   is
+   begin
+      return get_county_id_for_loc(cwms_loc.get_location_code(p_office_id, p_location_id));
+   end get_county_id_for_loc;
+
+
+   function get_nearest_city(
+      p_lat in number,
+      p_lon in number)
+      return str_tab_t
+   is
+      l_results str_tab_t;
+   begin
+      select str_tab_t(city_name, state_name)
+        into l_results
+        from cwms_cities_sp
+       where sdo_nn(shape,
+                    sdo_geometry(2001, 8265, null, mdsys.sdo_elem_info_array(1,1,1),mdsys.sdo_ordinate_array(p_lon, p_lat)),
+                    'sdo_num_res=1',
+                    1) = 'TRUE';
+       return l_results;
+   end get_nearest_city;
+
+   function get_nearest_city_for_loc(
+      p_location_code in integer)
+      return str_tab_t
+   is
+      l_sub_rec  at_physical_location%rowtype;
+      l_base_rec at_physical_location%rowtype;
+   begin
+      select * into l_sub_rec  from at_physical_location where location_code = p_location_code;
+      select * into l_base_rec from at_physical_location where location_code = l_sub_rec.base_location_code;
+      return get_nearest_city(
+                coalesce(l_sub_rec.latitude,  l_base_rec.latitude),
+                coalesce(l_sub_rec.longitude, l_base_rec.longitude));
+   end get_nearest_city_for_loc;
+
+   function get_nearest_city_for_loc(
+      p_location_id in varchar2,
+      p_office_id   in varchar2 default null)
+      return str_tab_t
+   is
+   begin
+      return get_nearest_city_for_loc(cwms_loc.get_location_code(p_office_id, p_location_id));
+   end get_nearest_city_for_loc;
+
    procedure retrieve_locations(
       p_results        out clob,
       p_date_time      out date,
