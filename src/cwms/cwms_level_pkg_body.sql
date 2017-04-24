@@ -8209,7 +8209,7 @@ is
          l_iso := l_iso || l_minutes || 'M';
       end if;
       if l_seconds > 0 then
-         l_iso := l_iso || trim(to_char(l_seconds, '0.999')) || 'S';
+         l_iso := l_iso || trim(to_char(l_seconds, '90.999')) || 'S';
       end if;
       if l_iso = 'PT' then
          l_iso := l_iso || '0S';
