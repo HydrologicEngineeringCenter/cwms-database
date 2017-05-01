@@ -2568,6 +2568,19 @@ AS
    BEGIN
       cwms_upass.update_user_data(p_userid,p_fullname,p_org,p_office,p_phone,p_email);
    END update_user_data;
+ 
+   FUNCTION is_cwms_schema_user(p_user VARCHAR2)
+   RETURN BOOLEAN
+   IS
+   BEGIN
+    IF(p_user = '&cwms_schema')
+    THEN
+        return true;
+    ELSE
+        return false;
+    END IF;
+   END is_cwms_schema_user;
+
 
    FUNCTION is_pd_user(p_user VARCHAR2) 
    RETURN BOOLEAN 
@@ -2578,29 +2591,108 @@ AS
     RETURN is_member_user_group(user_group_code_pd_users,p_user,l_db_office_code);
    END is_pd_user;
    
-   PROCEDURE update_service_password(p_username OUT VARCHAR2,p_password OUT VARCHAR2)
-   IS
-    l_username VARCHAR2(16) := cac_service_user;
-    l_password VARCHAR2(64) := null;
-   BEGIN
-    p_username := null;
-    p_password := null;
-    IF is_pd_user(CWMS_UTIL.GET_USER_ID) = FALSE
-      THEN
-        RETURN;
-      END IF;
-    l_password := RAWTOHEX (DBMS_CRYPTO.RANDOMBYTES (8));
-    CWMS_DBA.CWMS_USER_ADMIN.update_service_password(l_username,l_password);
-    p_username := l_username;
-    p_password := l_password;
-   END update_service_password;
-   
-   PROCEDURE clean_session_keys
-   IS
-   BEGIN
-      DELETE FROM AT_SEC_SESSION WHERE SYSTIMESTAMP > TIMEOUT; 
-      COMMIT;
-   END clean_session_keys;
+    PROCEDURE update_service_timeout (p_username VARCHAR2)
+    IS
+    BEGIN
+        UPDATE at_sec_service_user
+           SET timeout = (SYSDATE + 1 / 24)
+         WHERE userid = p_username;
+
+        COMMIT;
+    END update_service_timeout;
+
+    PROCEDURE update_service_password (p_username VARCHAR2)
+    IS
+        l_password   VARCHAR2 (64) := NULL;
+        l_handle     VARCHAR2 (128);
+        l_ret        INTEGER := -1;
+        l_timeout    DATE := SYSDATE-1;
+    BEGIN
+        IF is_cwms_schema_user (CWMS_UTIL.GET_USER_ID) = FALSE
+        THEN
+            RETURN;
+        END IF;
+
+        BEGIN
+          SELECT TIMEOUT
+            INTO l_timeout
+            FROM AT_SEC_SERVICE_USER
+            WHERE userid = p_username;
+        EXCEPTION WHEN NO_DATA_FOUND THEN
+          NULL;
+        END;
+        
+        IF (SYSDATE > l_timeout)
+        THEN
+            l_password := RAWTOHEX (DBMS_CRYPTO.RANDOMBYTES (8));
+            DBMS_LOCK.ALLOCATE_UNIQUE (lockname     => 'AT_SEC_SERVICE_USER',
+                                       lockhandle   => l_handle);
+
+            IF (DBMS_LOCK.REQUEST (lockhandle => l_handle, timeout => 10) = 0)
+            THEN
+                CWMS_DBA.CWMS_USER_ADMIN.update_service_password (p_username,
+                                                              l_password);
+                MERGE INTO AT_SEC_SERVICE_USER d
+		  USING (SELECT 1 FROM DUAL) s
+		  ON (d.userid = p_username)
+                WHEN MATCHED THEN
+                	UPDATE 
+                   		SET passwd = l_password, timeout = (SYSDATE + 1 / 24)
+		WHEN NOT MATCHED THEN
+			INSERT (userid,passwd,timeout) VALUES (p_username,l_password,SYSDATE+1/24);
+                COMMIT;
+                l_ret := DBMS_LOCK.RELEASE (l_handle);
+            ELSE
+                raise_application_error (
+                    -20999,
+                    'Error in updating service user credentials',
+                    TRUE);
+            END IF;
+        END IF;
+    END update_service_password;
+
+    PROCEDURE get_service_credentials (p_username   OUT VARCHAR2,
+                                       p_password   OUT VARCHAR2)
+    IS
+        l_handle     VARCHAR2 (128);
+        l_ret        INTEGER := -1;
+        l_username   VARCHAR2 (16) := cac_service_user;
+    BEGIN
+        IF is_pd_user (CWMS_UTIL.GET_USER_ID) = FALSE
+        THEN
+            RETURN;
+        END IF;
+
+        DBMS_LOCK.ALLOCATE_UNIQUE (lockname     => 'AT_SEC_SERVICE_USER',
+                                   lockhandle   => l_handle);
+
+        IF (DBMS_LOCK.REQUEST (lockhandle => l_handle, timeout => 10) = 0)
+        THEN
+            SELECT userid, passwd
+              INTO p_username, p_password
+              FROM at_sec_service_user
+             WHERE userid = l_username;
+
+            update_service_timeout(l_username);
+            l_ret := DBMS_LOCK.RELEASE (l_handle);
+        ELSE
+            raise_application_error (
+                -20999,
+                'Error in getting service user credentials',
+                TRUE);
+        END IF;
+    END get_service_credentials;
+
+
+    PROCEDURE clean_session_keys
+    IS
+    BEGIN
+        DELETE FROM AT_SEC_SESSION
+              WHERE SYSTIMESTAMP > TIMEOUT;
+
+        COMMIT;
+        update_service_password(cac_service_user);
+    END clean_session_keys;
 
    PROCEDURE remove_session_key(p_session_key VARCHAR2)
    IS

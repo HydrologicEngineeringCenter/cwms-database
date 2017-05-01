@@ -245,6 +245,6 @@ AS
   PROCEDURE get_user_credentials (p_edipi      IN     NUMBER,
                                    p_user          OUT VARCHAR2,
                                    p_session_key      OUT VARCHAR2);
- PROCEDURE update_service_password(p_username OUT VARCHAR2,p_password OUT VARCHAR2);
+  PROCEDURE get_service_credentials(p_username OUT VARCHAR2,p_password OUT VARCHAR2);
 END cwms_sec;
 /
