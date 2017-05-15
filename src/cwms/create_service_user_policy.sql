@@ -5,6 +5,9 @@ CREATE OR REPLACE FUNCTION CHECK_SESSION_USER(
  AS
   
  BEGIN
+   if dbms_mview.i_am_a_refresh then
+   return null;
+  end if;
   IF ((SYS_CONTEXT ('CWMS_ENV', 'CWMS_USER') IS NULL) AND (USER = 'CWMS9999'))
   THEN
     return '1=0';
