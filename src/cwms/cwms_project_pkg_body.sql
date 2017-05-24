@@ -1370,7 +1370,7 @@ begin
              at_physical_location pl,
              at_base_location bl,
              cwms_office o
-       where lower(cwms_loc.get_location_id(lck.project_code)) like cwms_util.normalize_wildcards(lower(p_project_id_mask))
+       where lower(cwms_loc.get_location_id(lck.project_code)) like cwms_util.normalize_wildcards(lower(p_project_id_mask)) escape '\'
          and lck.application_id like cwms_util.normalize_wildcards(lower(p_application_id_mask))
          and o.office_id like cwms_util.normalize_wildcards(upper(l_office_id_mask)) 
          and pl.location_code = lck.project_code
