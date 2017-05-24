@@ -1306,13 +1306,11 @@ contains_unit = {
 	"gpm"         : ["gal"],
 	"h"           : ["hr"],
 	"kaf"         : ["ac-ft"],
-	"KAF/mon"     : ["ac-ft"],
 	"mcm"         : ["m", "Mm3"],
-	"mcm/mon"     : ["m", "Mm3"],
 	"mgal"        : ["Mgal"],
 	"mgd"         : ["Mgal"],
 	"mi"          : ["mile"],
-	"mph"         : ["mile", "1/hour"],
+	"mph"         : ["mile"],
 	"sec"         : ["s"],
 }
 
