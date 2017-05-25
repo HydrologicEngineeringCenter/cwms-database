@@ -1036,7 +1036,7 @@ begin
          
       l_parts := cwms_util.split_text(l_project_list, ',');
       for i in 1..l_parts.count loop
-         if l_project_id like cwms_util.normalize_wildcards(trim(l_parts(i))) then
+         if l_project_id like cwms_util.normalize_wildcards(trim(l_parts(i))) escape '\' then
             l_has_revoker_rights := 'T';
             exit;
          end if;
@@ -1059,7 +1059,7 @@ begin
             
          l_parts := cwms_util.split_text(l_project_list, ',');
          for i in 1..l_parts.count loop
-            if l_project_id like cwms_util.normalize_wildcards(trim(l_parts(i))) then
+            if l_project_id like cwms_util.normalize_wildcards(trim(l_parts(i))) escape '\' then
                l_has_revoker_rights := 'F';
                exit;
             end if;
@@ -1371,8 +1371,8 @@ begin
              at_base_location bl,
              cwms_office o
        where lower(cwms_loc.get_location_id(lck.project_code)) like cwms_util.normalize_wildcards(lower(p_project_id_mask)) escape '\'
-         and lck.application_id like cwms_util.normalize_wildcards(lower(p_application_id_mask))
-         and o.office_id like cwms_util.normalize_wildcards(upper(l_office_id_mask)) 
+         and lck.application_id like cwms_util.normalize_wildcards(lower(p_application_id_mask))  escape '\' 
+         and o.office_id like cwms_util.normalize_wildcards(upper(l_office_id_mask))  escape '\'  
          and pl.location_code = lck.project_code
          and bl.base_location_code = pl.base_location_code
          and o.office_code = bl.db_office_code;  
@@ -1512,9 +1512,9 @@ begin
              cwms_office o
        where lower(bl.base_location_id
              ||substr('-', 1, length(pl.sub_location_id))
-             ||pl.sub_location_id) like l_project_id_mask
-         and r.application_id like l_application_id_mask
-         and o.office_id like l_office_id_mask
+             ||pl.sub_location_id) like l_project_id_mask escape '\' 
+         and r.application_id like l_application_id_mask escape '\'
+         and o.office_id like l_office_id_mask escape '\' 
          and r.allow_flag = 'T'
          and pl.location_code = p.project_location_code
          and bl.base_location_code = pl.base_location_code
