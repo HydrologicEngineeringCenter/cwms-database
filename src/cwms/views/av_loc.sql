@@ -178,7 +178,7 @@ as
                   left outer join cwms_nation n
                      on n.nation_code =
                            coalesce (p1.nation_code, p2.nation_code)
-            where p1.location_code != 0 and p2.sub_location_id is null) aa
+            where p1.location_code > 0 and p2.sub_location_id is null) aa
           natural join
           (select adu.db_office_code,
                   adu.unit_system,

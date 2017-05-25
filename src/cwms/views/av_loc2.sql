@@ -194,7 +194,7 @@ as
                   left outer join cwms_nation n
                      on n.nation_code =
                            coalesce (p1.nation_code, p2.nation_code)
-            where p1.location_code != 0 and p2.sub_location_id is null
+            where p1.location_code > 0 and p2.sub_location_id is null
            union all
            select distinct
                   o.office_code db_office_code,
@@ -258,7 +258,7 @@ as
                   left outer join cwms_nation n
                      on n.nation_code =
                            coalesce (p1.nation_code, p2.nation_code)
-            where     p1.location_code != 0
+            where     p1.location_code > 0
                   and p2.sub_location_id is null
                   and a.loc_alias_id is not null
            union all
@@ -327,7 +327,7 @@ as
                   left outer join cwms_nation n
                      on n.nation_code =
                            coalesce (p1.nation_code, p2.nation_code)
-            where     p1.location_code != 0
+            where     p1.location_code > 0
                   and p2.sub_location_id is null
                   and p1.sub_location_id is not null
                   and a.loc_alias_id is not null

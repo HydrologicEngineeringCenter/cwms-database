@@ -30,3 +30,5 @@ create materialized view mv_time_zone as
        ) order by time_zone_code, time_zone_name;              
 
 create index mv_time_zone_idx1 on mv_time_zone(time_zone_name);
+create index mv_time_zone_idx2 on mv_time_zone(time_zone_code);
+create index mv_time_zone_idx3 on mv_time_zone(UPPER("TIME_ZONE_NAME"));
