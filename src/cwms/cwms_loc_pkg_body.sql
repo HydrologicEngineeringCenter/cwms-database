@@ -7673,23 +7673,27 @@ end unassign_loc_groups;
    begin           
       l_location_records := cwms_util.parse_string_recordset(p_location_id);
       l_record_count := l_location_records.count;
-      for i in 1..l_record_count loop
-         l_total := l_total + l_location_records(i).count;
-      end loop;
       if p_office_id is not null then
          l_office_records := cwms_util.parse_string_recordset(p_office_id);
       end if;
+      for i in 1..l_record_count loop
+         l_total := l_total + l_location_records(i).count;
+         exit when l_total > 1;
+      end loop;
       if l_total > 1 then
          l_vert_datum_info := '<vertical-datum-info-set>'||chr(10);
          for i in 1..l_record_count loop
-            l_field_count := l_location_records(i).count;
+            l_field_count := case when l_location_records(i) is null then 0 else l_location_records(i).count end;
             for j in 1..l_field_count loop
                case
-                  when l_office_records is null then
+                  when l_office_records is null or l_office_records.count = 0 then
                      -- no office ids
                      l_office_id := null;
                   when l_office_records.count = l_record_count then
                      case 
+                        when l_office_records(i) is null or l_office_records(i).count = 0 then
+                           -- null office for this record
+                           l_office_id := null;
                         when l_office_records(i).count = 1 then
                            -- single office for this record
                            l_office_id := l_office_records(i)(1);
@@ -7698,11 +7702,30 @@ end unassign_loc_groups;
                            l_office_id := l_office_records(i)(j);
                         else
                            -- office count error for this record
-                           cwms_err.raise('ERROR', 'Invalid office count on record '||i);
+                           cwms_err.raise(
+                              'ERROR', 
+                              'Invalid office count on record '
+                              ||i
+                              ||', expected 0, 1, or '
+                              ||l_field_count
+                              ||', got '
+                              ||l_office_records(i).count);
                      end case;
+                  when l_office_records.count = 1 then -- l_record_count != 1 or would match above
+                     -- single office_id for all records
+                     if l_office_records(1) is null or l_office_records(1).count = 0 then
+                        l_office_id := null;
+                     else
+                        l_office_id := l_office_records(1)(1);
+                     end if;
                   else
                      -- total office count error
-                     cwms_err.raise('ERROR', 'Invalid total office count');
+                     cwms_err.raise(
+                        'ERROR', 
+                        'Invalid office record count, expected 0, 1, or '
+                        ||l_record_count
+                        ||', got '
+                        ||l_office_records.count);
                end case;
                l_vert_datum_info := l_vert_datum_info
                   ||indent(get_vertical_datum_info_f(l_location_records(i)(j), p_unit, l_office_id))
