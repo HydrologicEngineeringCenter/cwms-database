@@ -7642,7 +7642,7 @@ end unassign_loc_groups;
       l_vert_datum_info := l_vert_datum_info
          ||'</vertical-datum-info>';
       l_vert_datum_info := regexp_replace(l_vert_datum_info, '(N[AG]VD)(29|88)', '\1-\2');         
-      p_vert_datum_info := dbms_xmlgen.convert(l_vert_datum_info);
+      p_vert_datum_info := l_vert_datum_info;
    end get_vertical_datum_info;
 
    procedure get_vertical_datum_info(
