@@ -235,6 +235,9 @@ AS
       l_cmd := 'GRANT ' || p_role || ' TO ' || p_username;
 
       EXECUTE IMMEDIATE l_cmd;
+   EXCEPTION WHEN OTHERS
+   THEN 
+	NULL;
    END grant_rdl_role;
 
    PROCEDURE revoke_rdl_role (p_role VARCHAR2, p_username VARCHAR2)

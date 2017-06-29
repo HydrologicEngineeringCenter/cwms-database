@@ -85,9 +85,13 @@ AS
       l_username    VARCHAR2 (32);
       l_canwrite    BOOLEAN;
       l_cnt         NUMBER;
+      l_rdl_privilege VARCHAR2(16);
+      l_ccp_privilege INTEGER;
    BEGIN
       l_canwrite := FALSE;
       l_cnt := 0;
+      l_rdl_privilege := 'NONE';
+      l_ccp_privilege := 4;
       l_username := CWMS_UTIL.GET_USER_ID;
       set_cwms_env ('CWMS_PRIVILEGE', 'READ_ONLY'); 
 
@@ -111,29 +115,59 @@ AS
          END;
       END IF;
 
-      SELECT COUNT (*)
-        INTO l_cnt
-        FROM TABLE (cwms_sec.get_assigned_priv_groups_tab)
-       WHERE     db_office_id = l_office_id
-             AND user_group_id IN ('CCP Mgr',
-                                   'CCP Proc',
-                                   'CWMS DBA Users',
-                                   'CWMS PD Users',
-                                   'CWMS User Admins',
-                                   'Data Acquisition Mgr',
-                                   'Data Exchange Mgr',
-                                   'TS ID Creator',
-                                   'VT Mgr');
-
-      IF(l_cnt > 0)
-      THEN
-         l_canwrite := TRUE;
-      END IF;
+     FOR C IN (SELECT user_group_id FROM TABLE (cwms_sec.get_assigned_priv_groups_tab))
+      LOOP
+        IF((C.user_group_id='CCP Mgr') OR 
+            (C.user_group_id='CCP Proc') OR
+            (C.user_group_id='CWMS DBA Users') OR
+            (C.user_group_id='CWMS User Admins') OR
+            (C.user_group_id='Data Acquisition Mgr') OR
+            (C.user_group_id='Data Exchange Mgr') OR
+            (C.user_group_id='TS ID Creator') OR
+            (C.user_group_id='VT Mgr'))
+        THEN
+            l_canwrite := TRUE;
+        END IF;
+        IF(c.user_group_id='RDL Mgr')
+        THEN
+            l_rdl_privilege := 'RDLCRUD';
+        END IF;
+        IF(c.user_group_id='RDL Reviewer')
+        THEN
+            IF(l_rdl_privilege = 'NONE')
+            THEN
+                l_rdl_privilege := 'RDLREAD';
+            END IF;
+        END IF;
+        IF(c.user_group_id='CCP Mgr')
+        THEN
+            l_ccp_privilege := 1;
+        END IF;
+        IF(c.user_group_id='CCP Proc')
+        THEN
+            IF(l_ccp_privilege > 1)
+            THEN
+                l_ccp_privilege := 2;
+            END IF;
+        END IF;
+        IF(c.user_group_id='CCP Reviewer') 
+        THEN
+            IF(l_ccp_privilege > 2)
+            THEN
+                l_ccp_privilege := 3;
+            END IF;
+        END IF;
+        
+      END LOOP;
+      
 
       IF (l_canwrite)
       THEN
          set_cwms_env ('CWMS_PRIVILEGE', 'CAN_WRITE');
       END IF;
+      
+      set_cwms_env('RDL_PRIVILEGE',l_rdl_privilege);
+      set_cwms_env('CCP_PRIV_LEVEL',l_ccp_privilege);
    END set_session_privileges;
 END cwms_env;
 /

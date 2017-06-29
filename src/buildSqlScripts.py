@@ -5714,6 +5714,8 @@ def main() :
     drop user &eroc.hectest_ccp_p;
     drop user &eroc.hectest_ccp_m;
     drop user &eroc.hectest_ccp_r;
+    drop user &eroc.hectest_rdl_m;
+    drop user &eroc.hectest_rdl_r;
     
     --
     -- notice errors
@@ -5773,6 +5775,12 @@ def main() :
         group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS PD Users', 'CCP Reviewer', 'TS ID Creator', 'CWMS Users');
         "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_ccp_r', test_passwd, group_list, '&office_id');
     
+        -- hectest_rdl_r
+        group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS PD Users', 'RDL Reviewer', 'TS ID Creator', 'CWMS Users');
+        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_rdl_r', test_passwd, group_list, '&office_id');
+        -- hectest_rdl_m
+        group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS PD Users', 'RDL Mgr', 'TS ID Creator', 'CWMS Users');
+        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_rdl_m', test_passwd, group_list, '&office_id');
     END;
     /
     '''
