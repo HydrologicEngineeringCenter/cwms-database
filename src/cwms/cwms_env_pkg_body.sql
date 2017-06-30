@@ -115,7 +115,7 @@ AS
          END;
       END IF;
 
-     FOR C IN (SELECT user_group_id FROM TABLE (cwms_sec.get_assigned_priv_groups_tab))
+     FOR C IN (SELECT user_group_id FROM TABLE (cwms_sec.get_assigned_priv_groups_tab) WHERE db_office_id = l_office_id)
       LOOP
         IF((C.user_group_id='CCP Mgr') OR 
             (C.user_group_id='CCP Proc') OR
