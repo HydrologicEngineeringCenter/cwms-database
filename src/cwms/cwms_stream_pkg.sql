@@ -596,6 +596,31 @@ procedure retrieve_stream_reach(
    p_station_unit        in  varchar2 default null,
    p_office_id           in  varchar2 default null);
 /**
+ * Retrieves a stream reach from the database
+ *
+ * @param p_upstream_location   The stream location that marks the upstream end of the reach
+ * @param p_downstream_location The stream location that marks the downstream end of the reach
+ * @param p_configuration_id    The configuration to which this stream reach belongs
+ * @param p_upstream_station    The upstream station of the stream reach
+ * @param p_downstream_station  The downstream station of the stream reach
+ * @param p_comments            Any comments for the stream reach
+ * @param p_stream_id           The stream identifier of the containing stream
+ * @param p_reach_id            The stream reach location identifier
+ * @param p_station_unit        The unit to retrieve the stream stations in. If not specified or null, the database storage unit if 'km' will be used. 
+ * @param p_office_id           The office that owns the stream location. If not specified or NULL, the session user's default office is used.
+ */
+procedure retrieve_stream_reach2(
+   p_upstream_location   out varchar2,
+   p_downstream_location out varchar2,
+   p_configuration_id    out varchar2,
+   p_upstream_station    out binary_double,
+   p_downstream_station  out binary_double,
+   p_comments            out varchar2,
+   p_stream_id           out varchar2, 
+   p_reach_id            in  varchar2,
+   p_station_unit        in  varchar2 default null,
+   p_office_id           in  varchar2 default null);
+/**
  * Deletes a stream reach from the database
  *
  * @param p_reach_id  The stream reach location identifier

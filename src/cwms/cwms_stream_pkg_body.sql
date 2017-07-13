@@ -530,15 +530,15 @@ as
 -- procedure store_stream_reach
 --------------------------------------------------------------------------------
    procedure store_stream_reach(
-         p_reach_id           in varchar2,
-         p_stream_id          in varchar2,
-         p_fail_if_exists     in varchar2,
-         p_ignore_nulls       in varchar2,
+         p_reach_id            in varchar2,
+         p_stream_id           in varchar2,
+         p_fail_if_exists      in varchar2,
+         p_ignore_nulls        in varchar2,
          p_upstream_location   in varchar2,
          p_downstream_location in varchar2,
-         p_configuration_id   in varchar2 default null,
-         p_comments           in varchar2 default null,
-         p_office_id          in varchar2 default null)
+         p_configuration_id    in varchar2 default null,
+         p_comments            in varchar2 default null,
+         p_office_id           in varchar2 default null)
    is
       l_fail_if_exists          boolean := cwms_util.is_true(p_fail_if_exists) ;
       l_ignore_nulls            boolean := cwms_util.is_true(p_ignore_nulls) ;
@@ -546,11 +546,18 @@ as
       l_office_id               varchar2(16) := nvl(upper(p_office_id), cwms_util.user_office_id) ;
       l_configuration_code      number(10);
       l_rec                     at_stream_reach%rowtype;
-      l_stream_location_code    integer;
+      l_stream_code             integer;
+      l_us_stream_code          integer;
+      l_ds_stream_code          integer;
       l_us_stream_location_code integer;
       l_ds_stream_location_code integer;
+      l_us_stream_location_station  at_stream_location.station%type;
+      l_ds_stream_location_station  at_stream_location.station%type;
+      l_us_stream_location_station2 at_stream_location.station%type;
+      l_ds_stream_location_station2 at_stream_location.station%type;
       l_stream_rec              at_stream%rowtype;
       l_stream_loc_rec          at_stream_location%rowtype;
+      l_zero_station            at_stream.zero_station%type;
    begin
       -------------------
       -- sanity checks --
@@ -558,7 +565,9 @@ as
       if p_reach_id is null then
          cwms_err.raise( 'INVALID_ITEM', '<NULL>', 'CWMS stream reach location identifier.') ;
       end if;
-      if p_configuration_id is not null then
+      if p_configuration_id is null then
+         l_configuration_code := cwms_configuration.get_configuration_code('OTHER', 'CWMS');
+      else
          l_configuration_code := cwms_configuration.get_configuration_code(p_configuration_id, p_office_id);
       end if;
       l_rec.stream_reach_location_code := cwms_loc.get_location_code(l_office_id, p_reach_id);
@@ -571,10 +580,50 @@ as
             ||cwms_loc.check_location_kind(l_rec.stream_reach_location_code)
             ||')');
       end if;
-      l_stream_location_code := get_stream_code(p_office_id, p_stream_id);
+      ------------------------------------------------------------
+      -- determine if the reach exists (retrieve it if it does) --
+      ------------------------------------------------------------
       begin
-         select stream_location_code
-           into l_us_stream_location_code
+          select *
+            into l_rec
+            from at_stream_reach
+           where stream_reach_location_code = l_rec.stream_reach_location_code;
+         l_exists := true;
+      exception
+         when no_data_found then l_exists := false;
+         if p_stream_id is null then
+            cwms_err.raise('INVALID_ITEM', '<NULL>', 'CWMS stream location identifier, must be specified for new stream reaches') ;
+         end if;
+      end;
+      if l_exists and l_fail_if_exists then
+         cwms_err.raise('ITEM_ALREADY_EXISTS', 'CWMS stream reach identifier', l_office_id ||'/' ||p_stream_id ||'/' ||p_reach_id) ;
+      end if;
+      ----------------------------------------
+      -- get stationing direction on stream --
+      ----------------------------------------
+      if l_exists then
+         select *
+           into l_stream_rec
+           from at_stream
+          where stream_location_code = l_rec.stream_location_code; 
+      else
+         select *
+           into l_stream_rec
+           from at_stream
+          where stream_location_code = cwms_loc.get_location_code(l_office_id, p_stream_id); 
+      end if;
+      l_zero_station := l_stream_rec.zero_station;
+      ----------------------------------------------------
+      -- get specified us and ds locations and stations --
+      ----------------------------------------------------
+      l_stream_code := get_stream_code(p_office_id, p_stream_id);
+      begin
+         select location_code,
+                stream_location_code,
+                station 
+           into l_us_stream_location_code,
+                l_us_stream_code,
+                l_us_stream_location_station
            from at_stream_location
           where location_code = cwms_loc.get_location_code(p_office_id, p_upstream_location);
       exception
@@ -586,9 +635,20 @@ as
                ||'/'
                ||p_upstream_location);
       end;
+      if l_us_stream_location_station is null then
+         cwms_err.raise(
+            'ERROR',
+            'Upstream location '
+            ||p_upstream_location
+            ||' does not have a stream station');
+      end if;
       begin
-         select stream_location_code
-           into l_ds_stream_location_code
+         select location_code,
+                stream_location_code,
+                station
+           into l_ds_stream_location_code,
+                l_ds_stream_code,
+                l_ds_stream_location_station
            from at_stream_location
           where location_code = cwms_loc.get_location_code(p_office_id, p_downstream_location);
       exception
@@ -600,17 +660,20 @@ as
                ||'/'
                ||p_downstream_location);
       end;
-      if l_stream_location_code not in (l_us_stream_location_code, l_ds_stream_location_code) then
+      if l_ds_stream_location_station is null then
+         cwms_err.raise(
+            'ERROR',
+            'Downstream location '
+            ||p_downstream_location
+            ||' does not have a stream station');
+      end if;
+      if l_stream_code not in (l_us_stream_code, l_ds_stream_code) then
          cwms_err.raise(
             'ERROR',
             'Upstream location and/or downstream location must be on specified stream');
       end if;
-      if l_us_stream_location_code != l_stream_location_code or l_ds_stream_location_code != l_stream_location_code then
-         select *
-           into l_stream_rec
-           from at_stream
-          where stream_location_code = l_stream_location_code; 
-         if l_us_stream_location_code != l_stream_location_code then
+      if l_us_stream_code != l_stream_code or l_ds_stream_code != l_stream_code then
+         if l_us_stream_code != l_stream_code then
             select *
               into l_stream_loc_rec
               from at_stream_location
@@ -626,8 +689,16 @@ as
                   ||') is invalid for stream '
                   ||p_stream_id);
             end if;
+            ---------------------------------------------
+            -- us location code is on diverting stream --
+            ---------------------------------------------
+            if l_zero_station = 'DS' then
+               l_us_stream_location_station := 1e38; 
+            else 
+               l_us_stream_location_station := 0;
+            end if;
          end if;
-         if l_ds_stream_location_code != l_stream_location_code then
+         if l_ds_stream_code != l_stream_code then
             select *
               into l_stream_loc_rec
               from at_stream_location
@@ -643,26 +714,79 @@ as
                   ||') is invalid for stream '
                   ||p_stream_id);
             end if;
+            ---------------------------------------------
+            -- ds location code is on receiving stream --
+            ---------------------------------------------
+            if l_zero_station = 'DS' then
+               l_us_stream_location_station := 0; 
+            else 
+               l_us_stream_location_station := 1e38;
+            end if;
          end if;
       end if;
-      ------------------------------------------------------------
-      -- determine if the reach exists (retrieve it if it does) --
-      ------------------------------------------------------------
-      begin
-          select *
-            into l_rec
-            from at_stream_reach
-           where stream_reach_location_code = l_rec.stream_reach_location_code;
-         l_exists := true;
-      exception
-         when no_data_found then l_exists := false;
-         if p_stream_id is null then
-            cwms_err.raise( 'INVALID_ITEM', '<NULL>', 'CWMS stream location identifier, must be specified for new stream reaches') ;
-         end if;
-      end;
-      if l_exists and l_fail_if_exists then
-         cwms_err.raise( 'ITEM_ALREADY_EXISTS', 'CWMS stream reach identifier', l_office_id ||'/' ||p_stream_id ||'/' ||p_reach_id) ;
+      ------------------------
+      -- more sanity checks --
+      ------------------------
+      if (l_zero_station = 'DS' and l_us_stream_location_station <= l_ds_stream_location_station) or
+         (l_zero_station = 'US' and l_us_stream_location_station >= l_ds_stream_location_station)
+      then   
+         cwms_err.raise(
+            'ERROR',
+            'Specified upstream station is downstream of specified downstream station');
       end if;
+      for rec in (select *
+                    from at_stream_reach
+                   where configuration_code = l_configuration_code
+                     and stream_reach_location_code != nvl(l_rec.stream_reach_location_code, -1)
+                 )
+      loop
+         select stream_location_code,
+                station 
+           into l_us_stream_code,
+                l_us_stream_location_station2
+           from at_stream_location
+          where location_code = rec.upstream_location_code;
+         if l_us_stream_location_station2 is null then
+            cwms_err.raise(
+               'ERROR',
+               'Stream reach '
+               ||cwms_loc.get_location_id(rec.stream_reach_location_code)
+               ||' upstream location '
+               ||cwms_loc.get_location_id(rec.upstream_location_code)
+               ||' does not have a stream station');
+         end if;
+         if l_us_stream_location_station2 between l_ds_stream_location_station and l_us_stream_location_station and 
+            l_us_stream_location_station2 not in (l_ds_stream_location_station, l_us_stream_location_station)
+         then
+            cwms_err.raise(
+               'ERROR',
+               'Stream reach overlaps existing stream reach '
+               ||cwms_loc.get_location_id(rec.stream_reach_location_code));
+         end if;
+         select stream_location_code,
+                station 
+           into l_ds_stream_code,
+                l_ds_stream_location_station2
+           from at_stream_location
+          where location_code = rec.downstream_location_code;
+         if l_ds_stream_location_station2 is null then
+            cwms_err.raise(
+               'ERROR',
+               'Stream reach '
+               ||cwms_loc.get_location_id(rec.stream_reach_location_code)
+               ||' downstream location '
+               ||cwms_loc.get_location_id(rec.downstream_location_code)
+               ||' does not have a stream station');
+         end if;
+         if l_ds_stream_location_station2 between l_ds_stream_location_station and l_us_stream_location_station and 
+            l_ds_stream_location_station2 not in (l_ds_stream_location_station, l_us_stream_location_station)
+         then
+            cwms_err.raise(
+               'ERROR',
+               'Stream reach overlaps existing stream reach '
+               ||cwms_loc.get_location_id(rec.stream_reach_location_code));
+         end if;
+      end loop;
       --------------------------
       -- set the reach values --
       --------------------------
@@ -710,6 +834,35 @@ as
       p_station_unit        in  varchar2 default null,
       p_office_id           in  varchar2 default null)
    is
+      l_stream_id varchar2(256);
+   begin
+      retrieve_stream_reach2(
+         p_upstream_location,
+         p_downstream_location,
+         p_configuration_id,
+         p_upstream_station,
+         p_downstream_station,
+         p_comments,
+         l_stream_id, 
+         p_reach_id,
+         p_station_unit,
+         p_office_id);
+   end retrieve_stream_reach;
+--------------------------------------------------------------------------------
+-- procedure retrieve_stream_reach2
+--------------------------------------------------------------------------------
+   procedure retrieve_stream_reach2(
+      p_upstream_location   out varchar2,
+      p_downstream_location out varchar2,
+      p_configuration_id    out varchar2,
+      p_upstream_station    out binary_double,
+      p_downstream_station  out binary_double,
+      p_comments            out varchar2,
+      p_stream_id           out varchar2, 
+      p_reach_id            in  varchar2,
+      p_station_unit        in  varchar2 default null,
+      p_office_id           in  varchar2 default null)
+   is
       l_office_id varchar2(16) := nvl(upper(p_office_id), cwms_util.user_office_id) ;
       l_rec       at_stream_reach%rowtype;
    begin
@@ -728,6 +881,7 @@ as
          p_downstream_location       := cwms_util.get_location_id(l_office_id, l_rec.downstream_location_code);
          p_configuration_id          := cwms_configuration.get_configuration_id(l_rec.configuration_code);
          p_comments                  := l_rec.comments;
+         p_stream_id                 := cwms_loc.get_location_id(l_rec.stream_location_code); 
          select cwms_util.convert_units(station, 'km', nvl(cwms_util.get_unit_id(p_station_unit), 'km'))
            into p_upstream_station
            from at_stream_location
@@ -740,7 +894,7 @@ as
       when no_data_found then
          cwms_err.raise( 'ITEM_DOES_NOT_EXIST', 'CWMS stream reach ', l_office_id ||'/' ||p_reach_id) ;
       end;
-   end retrieve_stream_reach;
+   end retrieve_stream_reach2;
 --------------------------------------------------------------------------------
 -- procedure delete_stream_reach
 --------------------------------------------------------------------------------
