@@ -486,7 +486,7 @@ begin
          ||l_location_kind_id
          ||')');
    end if;
-   l_location_kind_id := cwms_loc.can_revert_loc_kind_to(p_office_id, p_turbine_id);
+   l_location_kind_id := cwms_loc.can_revert_loc_kind_to( p_turbine_id, p_office_id);
    -------------------------------------------
    -- delete the child records if specified --
    -------------------------------------------
