@@ -1469,6 +1469,450 @@ function cat_eff_ratings_f(
    p_office_id_mask       in varchar2 default null)
    return sys_refcursor;
 /**
+ * Catalogs stored ratings that match specified parameters.  Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards. Unlike cat_ratings, this routine catalogs ratings that are related
+ * to parent ratings.
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_cat_cursor A cursor containing all matching rating templates.  The cursor contains
+ * the following columns:
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the template</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">specification_id</td>
+ *     <td class="descr">varchar2(372)</td>
+ *     <td class="descr">The rating specification</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">effective_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The date/time that the rating went into effect, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">create_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The date/time that the rating was loaded into the database, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">parent_rating_code</td>
+ *     <td class="descr">integer</td>
+ *     <td class="descr">The rating code of the parent rating, if any</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">parent_specification_id</td>
+ *     <td class="descr">varchar2(372)</td>
+ *     <td class="descr">The rating specification of the parent rating, if any</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">effective_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The date/time that the parent rating, if any, went into effect, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">create_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The date/time that the parent rating, if any, was loaded into the database, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_effective_date_start The start time of the effective date time window. If specified
+ * and not NULL, no ratings will be matched that have effective dates earlier than this date/time.
+ * If not specified or NULL, no lower bound for effecive date matching will be used.
+ *
+ * @param p_effective_date_end The end time of the effective date time window. If specified
+ * and not NULL, no ratings will be matched that have effective dates later than this date/time.
+ * If not specified or NULL, no upper bound for effecive date matching will be used.
+ *
+ * @param p_time_zone The time zone in which to intepret the effective date time window.  If not
+ * specified or NULL, the effective data time window for each rating specification will be the
+ * local time zone of that specification's location.  The output effective and create dates will
+ * also be in this time zone, or in each specification's local time zone if not specified or NULL.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ */
+procedure cat_ratings2(
+   p_cat_cursor           out sys_refcursor,
+   p_spec_id_mask         in  varchar2 default '*',
+   p_effective_date_start in  date     default null,
+   p_effective_date_end   in  date     default null,
+   p_time_zone            in  varchar2 default null,
+   p_office_id_mask       in  varchar2 default null);
+/**
+ * Catalogs stored ratings that match specified parameters.  Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.  Unlike cat_eff_ratings, this routine catalogs ratings that are related
+ * to parent ratings.
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_cat_cursor A cursor containing all matching rating templates.  The cursor contains
+ * the following columns:
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the template</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">specification_id</td>
+ *     <td class="descr">varchar2(372)</td>
+ *     <td class="descr">The rating specification</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">effective_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The date/time that the rating went into effect, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">create_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The date/time that the rating was loaded into the database, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">parent_rating_code</td>
+ *     <td class="descr">integer</td>
+ *     <td class="descr">The rating code of the parent rating, if any</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">parent_specification_id</td>
+ *     <td class="descr">varchar2(372)</td>
+ *     <td class="descr">The rating specification of the parent rating, if any</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">effective_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The date/time that the parent rating, if any, went into effect, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">create_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The date/time that the parent rating, if any, was loaded into the database, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_start_date The start time of the time window that the returned ratings will be effective in. If specified
+ * and not NULL, no ratings will be matched that are not effective on or after than this date/time.
+ * If not specified or NULL, no lower bound for effecive time window will be used.
+ *
+ * @param p_effective_date_end The end time of the time window that the returned ratings will be effective in. If specified
+ * and not NULL, no ratings will be matched that are not effective on or before than this date/time.
+ * If not specified or NULL, no upper bound for effecive time window will be used.
+ *
+ * @param p_time_zone The time zone in which to intepret the effective time window.  If not
+ * specified or NULL, the effective time window for each rating specification will be the
+ * local time zone of that specification's location.  The output effective and create dates will
+ * also be in this time zone, or in each specification's local time zone if not specified or NULL.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ */
+procedure cat_eff_ratings2(
+   p_cat_cursor           out sys_refcursor,
+   p_spec_id_mask         in  varchar2 default '*',
+   p_start_date           in  date     default null,
+   p_end_date             in  date     default null,
+   p_time_zone            in  varchar2 default null,
+   p_office_id_mask       in  varchar2 default null);
+/**
+ * Catalogs stored ratings that match specified parameters.  Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards. Unlike cat_ratings_f, this routine catalogs ratings that are related
+ * to parent ratings.
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_effective_date_start The start time of the effective date time window. If specified
+ * and not NULL, no ratings will be matched that have effective dates earlier than this date/time.
+ * If not specified or NULL, no lower bound for effecive date matching will be used.
+ *
+ * @param p_effective_date_end The end time of the effective date time window. If specified
+ * and not NULL, no ratings will be matched that have effective dates later than this date/time.
+ * If not specified or NULL, no upper bound for effecive date matching will be used.
+ *
+ * @param p_time_zone The time zone in which to intepret the effective date time window.  If not
+ * specified or NULL, the effective data time window for each rating specification will be the
+ * local time zone of that specification's location.  The output effective and create dates will
+ * also be in this time zone, or in each specification's local time zone if not specified or NULL.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @return A cursor containing all matching rating templates.  The cursor contains
+ * the following columns:
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the template</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">specification_id</td>
+ *     <td class="descr">varchar2(372)</td>
+ *     <td class="descr">The rating specification</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">effective_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The date/time that the rating went into effect, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">create_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The date/time that the rating was loaded into the database, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">parent_rating_code</td>
+ *     <td class="descr">integer</td>
+ *     <td class="descr">The rating code of the parent rating, if any</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">parent_specification_id</td>
+ *     <td class="descr">varchar2(372)</td>
+ *     <td class="descr">The rating specification of the parent rating, if any</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">effective_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The date/time that the parent rating, if any, went into effect, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">create_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The date/time that the parent rating, if any, was loaded into the database, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
+ *   </tr>
+ * </table>
+ */
+function cat_ratings2_f(
+   p_spec_id_mask         in varchar2 default '*',
+   p_effective_date_start in date     default null,
+   p_effective_date_end   in date     default null,
+   p_time_zone            in varchar2 default null,
+   p_office_id_mask       in varchar2 default null)
+   return sys_refcursor;
+/**
+ * Catalogs stored ratings that match specified parameters.  Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards. Unlike cat_eff_ratings_f, this routine catalogs ratings that are related
+ * to parent ratings.
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_start_date The start time of the time window that the returned ratings will be effective in. If specified
+ * and not NULL, no ratings will be matched that are not effective on or after than this date/time.
+ * If not specified or NULL, no lower bound for effecive time window will be used.
+ *
+ * @param p_end_date The end time of the time window that the returned ratings will be effective in. If specified
+ * and not NULL, no ratings will be matched that are not effective on or before than this date/time.
+ * If not specified or NULL, no upper bound for effecive time window will be used.
+ *
+ * @param p_time_zone The time zone in which to intepret the effective time window.  If not
+ * specified or NULL, the effective time window for each rating specification will be the
+ * local time zone of that specification's location.  The output effective and create dates will
+ * also be in this time zone, or in each specification's local time zone if not specified or NULL.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @return A cursor containing all matching rating templates.  The cursor contains
+ * the following columns:
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the template</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">specification_id</td>
+ *     <td class="descr">varchar2(372)</td>
+ *     <td class="descr">The rating specification</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">effective_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The date/time that the rating went into effect, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">create_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The date/time that the rating was loaded into the database, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">parent_rating_code</td>
+ *     <td class="descr">integer</td>
+ *     <td class="descr">The rating code of the parent rating, if any</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">parent_specification_id</td>
+ *     <td class="descr">varchar2(372)</td>
+ *     <td class="descr">The rating specification of the parent rating, if any</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">effective_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The date/time that the parent rating, if any, went into effect, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">create_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The date/time that the parent rating, if any, was loaded into the database, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
+ *   </tr>
+ * </table>
+ */
+function cat_eff_ratings2_f(
+   p_spec_id_mask         in varchar2 default '*',
+   p_start_date           in date     default null,
+   p_end_date             in date     default null,
+   p_time_zone            in varchar2 default null,
+   p_office_id_mask       in varchar2 default null)
+   return sys_refcursor;
+/**
  * Retrieves ratings that match specified parameters.  Matching is
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
