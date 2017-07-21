@@ -1537,13 +1537,13 @@ function cat_eff_ratings_f(
  *   </tr>
  *   <tr>
  *     <td class="descr-center">7</td>
- *     <td class="descr">effective_date</td>
+ *     <td class="descr">parent_effective_date</td>
  *     <td class="descr">date</td>
  *     <td class="descr">The date/time that the parent rating, if any, went into effect, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">8</td>
- *     <td class="descr">create_date</td>
+ *     <td class="descr">parent_create_date</td>
  *     <td class="descr">date</td>
  *     <td class="descr">The date/time that the parent rating, if any, was loaded into the database, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
  *   </tr>
@@ -1648,13 +1648,13 @@ procedure cat_ratings2(
  *   </tr>
  *   <tr>
  *     <td class="descr-center">7</td>
- *     <td class="descr">effective_date</td>
+ *     <td class="descr">parent_effective_date</td>
  *     <td class="descr">date</td>
  *     <td class="descr">The date/time that the parent rating, if any, went into effect, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">8</td>
- *     <td class="descr">create_date</td>
+ *     <td class="descr">parent_create_date</td>
  *     <td class="descr">date</td>
  *     <td class="descr">The date/time that the parent rating, if any, was loaded into the database, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
  *   </tr>
@@ -1782,13 +1782,13 @@ procedure cat_eff_ratings2(
  *   </tr>
  *   <tr>
  *     <td class="descr-center">7</td>
- *     <td class="descr">effective_date</td>
+ *     <td class="descr">parent_effective_date</td>
  *     <td class="descr">date</td>
  *     <td class="descr">The date/time that the parent rating, if any, went into effect, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">8</td>
- *     <td class="descr">create_date</td>
+ *     <td class="descr">parent_create_date</td>
  *     <td class="descr">date</td>
  *     <td class="descr">The date/time that the parent rating, if any, was loaded into the database, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
  *   </tr>
@@ -1893,13 +1893,13 @@ function cat_ratings2_f(
  *   </tr>
  *   <tr>
  *     <td class="descr-center">7</td>
- *     <td class="descr">effective_date</td>
+ *     <td class="descr">parent_effective_date</td>
  *     <td class="descr">date</td>
  *     <td class="descr">The date/time that the parent rating, if any, went into effect, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">8</td>
- *     <td class="descr">create_date</td>
+ *     <td class="descr">parent_create_date</td>
  *     <td class="descr">date</td>
  *     <td class="descr">The date/time that the parent rating, if any, was loaded into the database, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
  *   </tr>
