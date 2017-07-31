@@ -28,7 +28,7 @@
 	<property name="debug"  value="true"/>
 
 	<!-- the amount of memory to allocate to javac during compile -->
-	<property name="memMax" value="256m"/>
+	<property name="memMax" value="1024m"/>
 
 	<!-- flag to create the test account -->
 	<property name="test.account.create" value="-testaccount"/>
