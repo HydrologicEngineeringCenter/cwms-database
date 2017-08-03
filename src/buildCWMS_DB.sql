@@ -95,6 +95,10 @@ set define on
 --
 -- Create public synonyms and cwms_user roles
 @@cwms/at_schema_public_interface.sql
+-- Filter for streaming data
+@@cwms/mv_ts_code_filter
+
+ALTER SESSION SET current_schema = sys;
 
 --
 -- compile all invalid objects
@@ -265,6 +269,7 @@ set define on
 @@cwms/create_sec_triggers
 @@cwms/create_service_user_policy
 @@cwms/at_tsv_count_trig
+@@cwms/at_dd_flag_trig
 --
 -- all done
 --

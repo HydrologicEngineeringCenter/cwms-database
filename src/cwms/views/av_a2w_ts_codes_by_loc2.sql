@@ -58,7 +58,6 @@ CREATE OR REPLACE FORCE VIEW "CWMS_20"."AV_A2W_TS_CODES_BY_LOC2" ("TS_CODE", "LO
          WHERE a2w.ts_code_stor_Drought IS NOT NULL
           AND display_flag = 'T'
       UNION ALL
-      
         SELECT a2w.ts_code_elev_tw ts_code, a2w.location_code, 'ELEV TAILWATER' ts_type
           FROM at_a2w_ts_codes_by_loc a2w 
          WHERE a2w.ts_code_elev_tw IS NOT NULL
@@ -103,7 +102,6 @@ CREATE OR REPLACE FORCE VIEW "CWMS_20"."AV_A2W_TS_CODES_BY_LOC2" ("TS_CODE", "LO
           FROM at_a2w_ts_codes_by_loc a2w 
          WHERE a2w.TS_CODE_PH                                 IS NOT NULL
           AND display_flag = 'T'
-
       ) a2w
       , cwms_v_ts_id tsi
       , cwms_v_loc l

@@ -38,6 +38,8 @@ AS
 
    -- not documented
    TYPE cat_ts_transfer_tab_t IS TABLE OF cat_ts_transfer_rec_t;
+   FUNCTION get_dest (p_ts_code IN NUMBER)
+      RETURN INT;
 
    /**
   * This function is used to determine if the data for the specified time series

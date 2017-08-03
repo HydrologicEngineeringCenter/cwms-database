@@ -130,6 +130,8 @@ prompt create table cwms_usace_dam
 --
 prompt create view av_a2w_ts_codes_by_loc
 @@cwms/views/av_a2w_ts_codes_by_loc.sql
+prompt create view av_a2w_ts_codes_by_loc2
+@@cwms/views/av_a2w_ts_codes_by_loc2.sql
 --
 prompt create view av_base_parameter_units
 @@cwms/views/av_base_parameter_units.sql

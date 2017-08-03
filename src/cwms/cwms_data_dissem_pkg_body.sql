@@ -1,6 +1,20 @@
 /* Formatted on 4/29/2014 1:45:31 PM (QP5 v5.215.12089.38647) */
 CREATE OR REPLACE PACKAGE BODY cwms_data_dissem
 AS
+   FUNCTION get_dest (p_ts_code IN NUMBER)
+      RETURN INT
+   IS
+      l_dest NUMBER;
+   BEGIN
+      SELECT DEST INTO l_dest FROM MV_TS_CODE_FILTER
+      WHERE TS_CODE=p_ts_code;
+      RETURN l_dest;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         RETURN do_not_stream;
+   END;
+
    FUNCTION allowed_dest (p_ts_code IN NUMBER)
       RETURN INT
    IS

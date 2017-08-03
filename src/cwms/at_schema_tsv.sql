@@ -31,6 +31,7 @@ DECLARE
         DATA_ENTRY_DATE  TIMESTAMP(6)                 NOT NULL,
         VALUE            BINARY_DOUBLE,
         QUALITY_CODE     NUMBER(10), 
+        DEST_FLAG          NUMBER(1),
         CONSTRAINT AT_TSV$name_PK
        PRIMARY KEY
        (TS_CODE, DATE_TIME, VERSION_DATE)
