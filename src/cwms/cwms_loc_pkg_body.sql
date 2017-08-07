@@ -6649,8 +6649,8 @@ end unassign_loc_groups;
          insert
            into at_vert_datum_offset
          values (cwms_loc.get_location_code(p_office_id, p_location_id),
-                 upper(p_vertical_datum_id_1),
-                 upper(p_vertical_datum_id_2),
+                 regexp_replace(upper(p_vertical_datum_id_1), '(N[AG]VD)[ -]', '\1', 1, 0),
+                 regexp_replace(upper(p_vertical_datum_id_2), '(N[AG]VD)[ -]', '\1', 1, 0),
                  cwms_util.change_timezone(
                     l_effective_date, 
                     l_time_zone, 
