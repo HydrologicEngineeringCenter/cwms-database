@@ -4439,10 +4439,13 @@ begin
       -- create a duplicate so the lookup procedures don't blow up --
       ---------------------------------------------------------------
       l_ratings.extend;
+      l_date_ratings.extend;
       l_rating_codes.extend;
       l_date_offsets.extend;
       l_rating_units.extend;
-      l_rating_codes(2) := l_rating_codes(1); -- same rating
+      l_ratings(2)      := l_ratings(1);                    -- same rating
+      l_date_ratings(2) := l_date_ratings(1) + 1;           -- next index
+      l_rating_codes(2) := l_rating_codes(1);               -- same rating
       l_date_offsets(2) := l_date_offsets(1) + 1. / 86400.; -- 1 second later
    end if;
    -----------------------------------------------------
@@ -4587,24 +4590,24 @@ begin
                   l_rating.reverse_rate(
                      cwms_util.convert_units(
                         p_values(i),
-                        p_units(1),
-                        l_rating_units(l_date_ratings(l_hi_index))(1))),
-                  l_rating_units(l_date_ratings(l_hi_index))(2),
-                  p_units(2));
+                        p_units(2),
+                        l_rating_units(l_date_ratings(l_hi_index))(2))),
+                  l_rating_units(l_date_ratings(l_hi_index))(1),
+                  p_units(1));
             else
                --------------------
                -- virtual rating --
                --------------------
                l_hi_value := cwms_util.convert_units(
                   l_rating.reverse_rate(
-                     double_tab_t(cwms_util.convert_units(p_values(i), p_units(1), l_rating_units(l_date_ratings(l_hi_index))(1))),
+                     double_tab_t(cwms_util.convert_units(p_values(i), p_units(2), l_rating_units(l_date_ratings(l_hi_index))(2))),
                      cwms_util.split_text(l_rating.native_units, separator2),
                      'F',
                      null,
                      sysdate,
                      'UTC')(1),
-                  l_rating_units(l_date_ratings(l_hi_index))(2),
-                  p_units(2));
+                  l_rating_units(l_date_ratings(l_hi_index))(1),
+                  p_units(1));
             end if;
          end if;
          if l_ratio != 1. then
