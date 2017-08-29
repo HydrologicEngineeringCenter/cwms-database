@@ -2008,6 +2008,7 @@ as
                   else
                      l_shift := l_lo_value + l_ratio * (l_hi_value - l_lo_value);
                   end if;
+                  l_shift := cwms_rounding.round_dd_f(l_shift, '2223456782');
                   l_results(i).value := l_results(i).value - l_shift;
                end if;
             elsif l_rating_method = cwms_lookup.method_null then
