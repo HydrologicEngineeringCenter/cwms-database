@@ -5652,7 +5652,8 @@ begin
       select specified_level_code
         into l_specified_level_code
         from at_specified_level
-       where upper(specified_level_id) = upper(p_specified_level_id);
+       where upper(specified_level_id) = upper(p_specified_level_id)
+         and office_code in (l_office_code, l_cwms_office_code);
    exception
       when no_data_found then
          cwms_err.raise(

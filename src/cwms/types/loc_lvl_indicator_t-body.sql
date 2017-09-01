@@ -152,11 +152,17 @@ as
        where upper(duration_id) = upper(l_id);
 
       l_id := specified_level_id;
-      select specified_level_code
-        into l_obj.specified_level_code
-        from at_specified_level
-       where upper(specified_level_id) = upper(l_id);
-
+      begin
+         select specified_level_code
+           into l_obj.specified_level_code
+           from at_specified_level
+          where upper(specified_level_id) = upper(l_id)
+            and office_code in (cwms_util.get_db_office_code(self.office_id), cwms_util.db_office_code_all);
+      exception
+         when no_data_found then
+            cwms_err.raise('ITEM_DOES_NOT_EXIST', 'Specified level', upper(l_id));
+      end;
+                 
       if attr_value is not null then
          l_parts := cwms_util.split_text(attr_parameter_id, '-', 1);
          l_sub_id := case l_parts.count
