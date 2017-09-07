@@ -29,7 +29,8 @@ under rating_t (
     * @param p_rating_code The primary key of the AT_RATING table
     */
    constructor function stream_rating_t(
-      p_rating_code in number)
+      p_rating_code    in number,
+      p_include_points in varchar2 default 'T')
    return self as result,
    /**
     * Construct a stream_rating_t object from data in the database.
@@ -67,12 +68,14 @@ under rating_t (
    return self as result,
    -- not documented
    overriding member procedure init(
-      p_rating_code in number),
+      p_rating_code    in number,
+      p_include_points in varchar2 default 'T'),
    -- not documented
    member procedure init(
       p_other in stream_rating_t),
    -- not documented
-   overriding member procedure validate_obj,
+   overriding member procedure validate_obj(
+      p_include_points in varchar2 default 'T'),
    /**
     * Sets all rating values of this rating to database storage units, converting if necessary
     */

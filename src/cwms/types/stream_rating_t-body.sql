@@ -1,12 +1,15 @@
 create or replace type body stream_rating_t
 as
    constructor function stream_rating_t(
-      p_rating_code in number)
+      p_rating_code    in number,
+      p_include_points in varchar2 default 'T')
    return self as result
    is
    begin
-      (self as rating_t).init(p_rating_code);
-      self.init(p_rating_code);
+      (self as rating_t).init(p_rating_code, p_include_points);
+      if cwms_util.is_true(p_include_points) then
+         self.init(p_rating_code);
+      end if;
       return;
    end;
 
@@ -400,7 +403,8 @@ as
    end;
 
    overriding member procedure init(
-      p_rating_code in number)
+      p_rating_code    in number,
+      p_include_points in varchar2 default 'T')
    is
       l_offsets_code number(10);
    begin
@@ -450,7 +454,8 @@ as
       self.validate_obj;
    end;
 
-   overriding member procedure validate_obj
+   overriding member procedure validate_obj(
+      p_include_points in varchar2 default 'T')
    is
       l_parts         str_tab_t;
       l_ind_param     varchar2(256);
@@ -462,7 +467,7 @@ as
       ------------------------
       -- validate as rating --
       ------------------------
-      (self as rating_t).validate_obj;
+      (self as rating_t).validate_obj(p_include_points);
       ------------------------------------------------------
       -- validate Stage;Flow or Elev;Flow base parameters --
       ------------------------------------------------------
@@ -1119,23 +1124,26 @@ as
       -------------------
       -- rating points --
       -------------------
-      cwms_util.append(l_text, '<rating-points>');
-      for i in 1..l_clone.rating_info.rating_values.count loop
-         cwms_util.append(l_text,
-            '<point><ind>'
-            ||cwms_rounding.round_dt_f(l_clone.rating_info.rating_values(i).ind_value, '9999999999')
-            ||'</ind><dep>'
-            ||cwms_rounding.round_dt_f(l_clone.rating_info.rating_values(i).dep_value, '9999999999')
-            ||'</dep>');
-         if l_clone.rating_info.rating_values(i).note_id is not null then
+      if l_clone.rating_info is not null then
+         cwms_util.append(l_text, '<rating-points>');
+         for i in 1..l_clone.rating_info.rating_values.count loop
             cwms_util.append(l_text,
-               '<note>'
-               ||l_clone.rating_info.rating_values(i).note_id
-               ||'</note>');
-         end if;
-         cwms_util.append(l_text, '</point>');
-      end loop;
-      cwms_util.append(l_text, '</rating-points></usgs-stream-rating>');
+               '<point><ind>'
+               ||cwms_rounding.round_dt_f(l_clone.rating_info.rating_values(i).ind_value, '9999999999')
+               ||'</ind><dep>'
+               ||cwms_rounding.round_dt_f(l_clone.rating_info.rating_values(i).dep_value, '9999999999')
+               ||'</dep>');
+            if l_clone.rating_info.rating_values(i).note_id is not null then
+               cwms_util.append(l_text,
+                  '<note>'
+                  ||l_clone.rating_info.rating_values(i).note_id
+                  ||'</note>');
+            end if;
+            cwms_util.append(l_text, '</point>');
+         end loop;
+         cwms_util.append(l_text, '</usgs-stream-rating>');
+      end if;
+      cwms_util.append(l_text, '</usgs-stream-rating>');
       dbms_lob.close(l_text);
       return l_text;
    end;

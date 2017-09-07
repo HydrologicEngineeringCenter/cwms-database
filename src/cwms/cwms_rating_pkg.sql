@@ -2766,6 +2766,22 @@ function retrieve_eff_ratings_xml3_f(
    p_time_zone            in  varchar2 default null,
    p_office_id_mask       in  varchar2 default null)
    return clob;
+   
+-- not documented   
+function retrieve_ratings_xml_data(
+   p_effective_tw         in varchar2,
+   p_spec_id_mask         in varchar2 default '*',
+   p_start_date           in date     default null,
+   p_end_date             in date     default null,
+   p_time_zone            in varchar2 default null,
+   p_retrieve_templates   in boolean  default true,
+   p_retrieve_specs       in boolean  default true,
+   p_retrieve_ratings     in boolean  default true, 
+   p_recurse              in boolean  default true,
+   p_include_points       in varchar2 default 'T', 
+   p_office_id_mask       in varchar2 default null)
+   return clob;
+   
 /**
  * Deletes ratings that match specified parameters from the database.  Matching is
  * accomplished with glob-style wildcards, as shown below, instead of sql-style

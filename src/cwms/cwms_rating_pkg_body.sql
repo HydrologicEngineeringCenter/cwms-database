@@ -1047,7 +1047,8 @@ end store_ratings;
 -- GET_RATING
 --
 function get_rating(
-   p_rating_code in number)
+   p_rating_code    in number,
+   p_include_points in varchar2 default 'T')
    return rating_t
 is
    l_dependent_count pls_integer;
@@ -1066,12 +1067,12 @@ begin
       ------------------------------------
       -- not a USGS-style stream rating --
       ------------------------------------
-      l_rating := rating_t(p_rating_code);
+      l_rating := rating_t(p_rating_code, p_include_points);
    else
       ------------------------------
       -- USGS-style stream rating --
       ------------------------------
-      l_rating := stream_rating_t(p_rating_code);
+      l_rating := stream_rating_t(p_rating_code, p_include_points);
    end if;
    ----------------------------------------------------------
    -- add vertical datum info if appropriate and available --
@@ -2129,6 +2130,7 @@ procedure retrieve_ratings_obj_ex(
    p_start_date     in  date     default null,
    p_end_date       in  date     default null,
    p_time_zone      in  varchar2 default null,
+   p_include_points in  varchar2 default 'T',
    p_office_id_mask in  varchar2 default null)
 is
    type used_codes_t is table of boolean index by varchar2(20);
@@ -2161,7 +2163,7 @@ begin
          p_time_zone      => p_time_zone,
          p_office_id      => l_cat_records(i).office);
       if not l_used_codes.exists(to_char(l_code)) then         
-         p_ratings(i) := get_rating(l_code);
+         p_ratings(i) := get_rating(l_code, p_include_points);
          l_used_codes(to_char(l_code)) := true;
       end if;
    end loop;
@@ -2273,10 +2275,10 @@ procedure retreive_ratings_xml_data(
    p_end_date             in  date     default null,
    p_time_zone            in  varchar2 default null,
    p_recurse              in  boolean  default true,
+   p_include_points       in  varchar2 default 'T', 
    p_office_id_mask       in  varchar2 default null)
 is
    l_ratings       rating_tab_t;
-   l_effective_tw  boolean;
    l_spec_id_mask  varchar2(1024);
    l_template_clob clob;
    l_spec_clob     clob;
@@ -2285,24 +2287,15 @@ is
    l_spec          rating_spec_t;
    l_template      rating_template_t;
 begin
-   l_effective_tw := cwms_util.return_true_or_false(p_effective_tw);
-   if l_effective_tw then
-      retrieve_eff_ratings_obj(
-         l_ratings,
-         p_spec_id_mask,
-         p_start_date,
-         p_end_date,
-         p_time_zone,
-         p_office_id_mask);
-   else
-      retrieve_ratings_obj(
-         l_ratings,
-         p_spec_id_mask,
-         p_start_date,
-         p_end_date,
-         p_time_zone,
-         p_office_id_mask);
-   end if;
+   retrieve_ratings_obj_ex(
+      p_ratings        => l_ratings,
+      p_effective_tw   => p_effective_tw,
+      p_spec_id_mask   => p_spec_id_mask,
+      p_start_date     => p_start_date,
+      p_end_date       => p_end_date,
+      p_time_zone      => p_time_zone,
+      p_include_points => p_include_points,
+      p_office_id_mask => p_office_id_mask);
    l_spec_id_mask := cwms_util.normalize_wildcards(p_spec_id_mask);
       
    for i in 1..l_ratings.count loop 
@@ -2352,6 +2345,7 @@ begin
                p_end_date,
                p_time_zone, 
                p_recurse,
+               p_include_points,
                l_ratings(i).office_id);
             if p_templates is not null then 
                cwms_util.append(p_templates, l_template_clob);
@@ -2383,6 +2377,7 @@ function retrieve_ratings_xml_data(
    p_retrieve_specs       in boolean  default true,
    p_retrieve_ratings     in boolean  default true, 
    p_recurse              in boolean  default true,
+   p_include_points       in varchar2 default 'T', 
    p_office_id_mask       in varchar2 default null)
    return clob
 is
@@ -2422,6 +2417,7 @@ begin
       p_end_date,
       p_time_zone,
       p_recurse,
+      p_include_points,
       p_office_id_mask);
       
    if p_retrieve_templates then
@@ -2539,6 +2535,7 @@ begin
       p_retrieve_specs       => false,
       p_retrieve_ratings     => true, 
       p_recurse              => false, 
+      p_include_points       => 'T',
       p_office_id_mask       => p_office_id_mask);
 end retrieve_ratings_xml;
 
@@ -2564,6 +2561,7 @@ begin
       p_retrieve_specs       => false,
       p_retrieve_ratings     => true, 
       p_recurse              => false, 
+      p_include_points       => 'T',
       p_office_id_mask       => p_office_id_mask);
 end retrieve_eff_ratings_xml;
    
@@ -2589,6 +2587,7 @@ begin
       p_retrieve_specs       => true,
       p_retrieve_ratings     => true, 
       p_recurse              => false, 
+      p_include_points       => 'T',
       p_office_id_mask       => p_office_id_mask);
 end retrieve_ratings_xml2;
    
@@ -2614,6 +2613,7 @@ begin
       p_retrieve_specs       => true,
       p_retrieve_ratings     => true, 
       p_recurse              => false, 
+      p_include_points       => 'T',
       p_office_id_mask       => p_office_id_mask);
 end retrieve_eff_ratings_xml2;
 
@@ -2639,6 +2639,7 @@ begin
       p_retrieve_specs       => true,
       p_retrieve_ratings     => true, 
       p_recurse              => true, 
+      p_include_points       => 'T',
       p_office_id_mask       => p_office_id_mask);
 end retrieve_ratings_xml3;
 
@@ -2664,6 +2665,7 @@ begin
       p_retrieve_specs       => true,
       p_retrieve_ratings     => true, 
       p_recurse              => true, 
+      p_include_points       => 'T',
       p_office_id_mask       => p_office_id_mask);
 end retrieve_eff_ratings_xml3;
 

@@ -55,11 +55,12 @@ as
    end;
    
    constructor function rating_t(
-      p_rating_code in number)
+      p_rating_code    in number,
+      p_include_points in varchar2 default 'T')
    return self as result
    is
    begin
-      init(p_rating_code);
+      init(p_rating_code, p_include_points);
       return;
    end;
 
@@ -632,7 +633,8 @@ as
    end;
          
    member procedure init(
-      p_rating_code in number)
+      p_rating_code    in number,
+      p_include_points in varchar2 default 'T')
    is
       l_ind_param_count      number(1);
       l_ind_param_spec_codes number_tab_t := number_tab_t();
@@ -705,8 +707,8 @@ as
          self.description     := rec.description;
          self.current_units   := 'D';
          self.current_time    := 'D';
-         if self.formula is null then
-         self.rating_info    := rating_ind_parameter_t(p_rating_code);
+         if self.formula is null and cwms_util.is_true(p_include_points) then
+            self.rating_info  := rating_ind_parameter_t(p_rating_code);
          end if;
       end loop;
       if self.rating_spec_id is null then
@@ -941,7 +943,7 @@ as
       if self.rating_spec_id is null then
          cwms_err.raise('ERROR', 'Rating not found for code '||p_rating_code);
       end if;
-      validate_obj;
+      validate_obj(p_include_points);
    end;
 
    member procedure init(
@@ -963,7 +965,8 @@ as
       init(l_rating_code);
    end;
 
-   member procedure validate_obj
+   member procedure validate_obj(
+      p_include_points in varchar2 default 'T')
    is
       l_code        number(10);
       l_count       pls_integer;
@@ -1137,9 +1140,13 @@ as
       if self.connections is not null then l_count := l_count + 1; end if;
       if self.evaluations is not null then l_count := l_count + 1; end if;
       if l_count != 1 then
-         cwms_err.raise(
-            'ERROR',
-            'Rating requires exactly 1 of formula, points, connections, or evalutaions, '||l_count||' specified');
+         if l_count = 0 and not cwms_util.is_true(p_include_points) then
+            null;
+         else
+            cwms_err.raise(
+               'ERROR',
+               'Rating requires exactly 1 of formula, points, connections, or evalutaions, '||l_count||' specified');
+         end if;
       end if;
       if self.connections is not null and self.source_ratings is null then
          cwms_err.raise(
@@ -1147,7 +1154,7 @@ as
             'Source ratings not specified with connections');
       end if;
       case
-      when self.rating_info is not null then
+      when self.rating_info is not null or not cwms_util.is_true(p_include_points) then
          ------------------------------------------
          -- ind_params validated on construction --
          ------------------------------------------
@@ -2471,7 +2478,9 @@ as
          -- concrete only --
          -------------------
          if l_clone.formula is null then
-            cwms_util.append(l_text, l_clone.rating_info.to_clob);
+            if l_clone.rating_info is not null then
+               cwms_util.append(l_text, l_clone.rating_info.to_clob);
+            end if;
          else
             cwms_util.append(l_text, '<formula>'||regexp_replace(upper(l_clone.formula), 'ARG(\d+)', 'I\1')||'</formula>');
          end if;

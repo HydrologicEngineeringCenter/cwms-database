@@ -95,10 +95,12 @@ as object (
    /**
     * Construct a rating_t object from data in the database.
     *
-    * @param p_rating_code The primary key of the AT_RATING table
+    * @param p_rating_code    The primary key of the AT_RATING table
+    * @param p_include_points Specifies whether to include rating points ('T') or just everything else ('F')
     */
    constructor function rating_t(
-      p_rating_code in number)
+      p_rating_code    in number,
+      p_include_points in varchar2 default 'T')
    return self as result,
    /**
     * Construct a rating_t object from data in the database.
@@ -136,7 +138,8 @@ as object (
    return self as result,
    -- not documented
    member procedure init(
-      p_rating_code in number),
+      p_rating_code    in number,
+      p_include_points in varchar2 default 'T'),
    -- not documented
    member procedure init(
       p_other in rating_t),
@@ -165,7 +168,8 @@ as object (
       p_ind_param out pls_integer,
       p_conn_part in  varchar2),
    -- not documented
-   member procedure validate_obj,
+   member procedure validate_obj(
+      p_include_points varchar2 default 'T'),
    /**
     * Sets all rating values of this rating to database storage units, converting if necessary
     */
