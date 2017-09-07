@@ -62,7 +62,8 @@ insert into at_clob
  * @field active_flag          Deprecated - loc_active_flag replaces active_flag as of v2.1
  * @field aliased_item         Null if the location_id is not an alias, ''LOCATION'' if the entire location_id is aliased, or ''BASE LOCATION'' if only the base_location_id is alaised.  
  * @field loc_alias_category   The location category that owns the location group to which the alias for the location_id or base_location_id belongs. Null if location_id is not an alias.  
- * @field loc_alias_group      The location group to which the alias for the location_id or base_location_id belongs. Null if location_id is not an alias.              
+ * @field loc_alias_group      The location group to which the alias for the location_id or base_location_id belongs. Null if location_id is not an alias.  
+ * @field db_office_code       Unique number identifying the office that owns the location
  */
 ');
 
@@ -100,249 +101,339 @@ create or replace force view av_loc2
    active_flag,
    aliased_item,
    loc_alias_category,
-   loc_alias_group
+   loc_alias_group,
+   db_office_code
 )
 as
-   select distinct location_code,
-                   base_location_code,
-                   db_office_id,
-                   base_location_id,
-                   sub_location_id,
-                   location_id,
-                   location_type,
-                   unit_system,
-                   (elevation * factor + offset) elevation,
-                   to_unit_id unit_id,
-                   vertical_datum,
-                   round (longitude, 12) as longitude,
-                   round (latitude, 12) as latitude,
-                   horizontal_datum,
-                   time_zone_name,
-                   county_name,
-                   state_initial,
-                   public_name,
-                   long_name,
-                   description,
-                   base_loc_active_flag,
-                   loc_active_flag,
-                   location_kind_id,
-                   map_label,
-                   round (published_latitude, 12) as published_latitude,
-                   round (published_longitude, 12) as published_longitude,
-                   bounding_office_id,
-                   nation_id,
-                   nearest_city,
-                   loc_active_flag,
-                   aliased_item,
-                   loc_alias_category,
-                   loc_alias_group
-     from (select o.office_code db_office_code,
-                  p1.location_code,
-                  base_location_code,
-                  o.office_id db_office_id,
-                  base_location_id,
-                  p1.sub_location_id,
-                     base_location_id
-                  || substr ('-', 1, length (p1.sub_location_id))
-                  || p1.sub_location_id
-                     as location_id,
-                  p1.location_type,
-                  nvl (p1.elevation, p2.elevation) as elevation,
-                  nvl (p1.vertical_datum, p2.vertical_datum)
-                     as vertical_datum,
-                  nvl (p1.longitude, p2.longitude) as longitude,
-                  nvl (p1.latitude, p2.latitude) as latitude,
-                  nvl (p1.horizontal_datum, p2.horizontal_datum)
-                     as horizontal_datum,
-                  time_zone_name,
-                  county_name,
-                  state_initial,
-                  p1.public_name,
-                  p1.long_name,
-                  p1.description,
-                  b.active_flag base_loc_active_flag,
-                  p1.active_flag loc_active_flag,
-                  location_kind_id,
-                  nvl (p1.map_label, p2.map_label) as map_label,
-                  nvl (p1.published_latitude, p2.published_latitude)
-                     as published_latitude,
-                  nvl (p1.published_longitude, p2.published_longitude)
-                     as published_longitude,
-                  nvl (o1.office_id, o2.office_id) as bounding_office_id,
-                  nation_id,
-                  nvl (p1.nearest_city, p2.nearest_city) as nearest_city,
-                  null as aliased_item,
-                  null as loc_alias_category,
-                  null as loc_alias_group
-             from (((((((at_physical_location p1
-                         left outer join cwms_office o1 using (office_code))
-                        join
-                        (at_physical_location p2
-                         left outer join cwms_office o2 using (office_code))
-                           using (base_location_code)
-                        join at_base_location b using (base_location_code))
-                       join cwms_office o on b.db_office_code = o.office_code)
-                      left outer join cwms_location_kind
-                         on location_kind_code = p1.location_kind)
-                     left outer join cwms_time_zone t
-                        on t.time_zone_code =
-                              coalesce (p1.time_zone_code, p2.time_zone_code))
-                    left outer join cwms_county c
-                       on c.county_code =
-                             coalesce (p1.county_code, p2.county_code))
-                   left outer join cwms_state using (state_code))
-                  left outer join cwms_nation n
-                     on n.nation_code =
-                           coalesce (p1.nation_code, p2.nation_code)
-            where p1.location_code > 0 and p2.sub_location_id is null
+   select q1.location_code,
+          q1.base_location_code,
+          q1.db_office_id,
+          q1.base_location_id,
+          q1.sub_location_id,
+          q1.location_id,
+          q3.location_type,
+          q2.unit_system,
+          nvl(q4.elevation, q5.elevation) * factor + offset as elevation,
+          q6.to_unit_id as unit_id,
+          nvl(q4.vertical_datum, q5.vertical_datum) as vertical_datum,
+          round (nvl(q4.longitude, q5.longitude), 12) as longitude,
+          round (nvl(q4.latitude, q5.latitude), 12) as latitude,
+          nvl(q4.horizontal_datum, q5.horizontal_datum) as horizontal_datum,
+          nvl(q4.time_zone_name, q5.time_zone_name) as time_zone_name,
+          nvl(q4.county_name, q5.county_name) as county_name,
+          nvl(q4.state_initial, q5.state_initial) as state_initial,
+          q3.public_name,
+          q3.long_name,
+          q3.description,
+          q3.base_loc_active_flag,
+          q3.loc_active_flag,
+          q3.location_kind_id,
+          nvl(q4.map_label, q5.map_label) as map_label,
+          round (nvl(q4.published_latitude, q5.published_latitude), 12) as published_latitude,
+          round (nvl(q4.published_longitude, q5.published_longitude), 12) as published_longitude,
+          nvl(q4.bounding_office_id, q5.bounding_office_id) as bounding_office_id,
+          nvl(q4.nation_id, q5.nation_id) as nation_id,
+          nvl(q4.nearest_city, q5.nearest_city) as nearest_city,
+          q3.active_flag,
+          q1.aliased_item,
+          q1.loc_alias_category,
+          q1.loc_alias_group,
+          q1.db_office_code
+     from (------------------------------------
+           -- location and alias ids, office --
+           ------------------------------------
+           (----------------
+            -- un-aliased --
+            ----------------
+            select pl.location_code,
+                   bl.base_location_code,
+                   bl.base_location_id,
+                   pl.sub_location_id,
+                   bl.base_location_id
+                   ||substr('-', 1, length(pl.sub_location_id))
+                   ||pl.sub_location_id as location_id,
+                   o.office_code as db_office_code,
+                   o.office_id as db_office_id,
+                   null as aliased_item,
+                   null as loc_alias_category,
+                   null as loc_alias_group
+              from at_physical_location pl,
+                   at_base_location bl,
+                   cwms_office o
+             where bl.base_location_code = pl.base_location_code
+               and o.office_code = bl.db_office_code
+           )  
            union all
-           select distinct
-                  o.office_code db_office_code,
-                  p1.location_code,
-                  base_location_code,
-                  o.office_id db_office_id,
-                  base_location_id,
-                  p1.sub_location_id,
-                  a.loc_alias_id as location_id,
-                  p1.location_type,
-                  nvl (p1.elevation, p2.elevation) as elevation,
-                  nvl (p1.vertical_datum, p2.vertical_datum)
-                     as vertical_datum,
-                  nvl (p1.longitude, p2.longitude) as longitude,
-                  nvl (p1.latitude, p2.latitude) as latitude,
-                  nvl (p1.horizontal_datum, p2.horizontal_datum)
-                     as horizontal_datum,
-                  time_zone_name,
-                  county_name,
-                  state_initial,
-                  p1.public_name,
-                  p1.long_name,
-                  p1.description,
-                  b.active_flag base_loc_active_flag,
-                  p1.active_flag loc_active_flag,
-                  location_kind_id,
-                  nvl (p1.map_label, p2.map_label) as map_label,
-                  nvl (p1.published_latitude, p2.published_latitude)
-                     as published_latitude,
-                  nvl (p1.published_longitude, p2.published_longitude)
-                     as published_longitude,
-                  nvl (o1.office_id, o2.office_id) as bounding_office_id,
-                  nation_id,
-                  nvl (p1.nearest_city, p2.nearest_city) as nearest_city,
-                  'LOCATION' as aliased_item,
-                  lc.loc_category_id as loc_alias_category,
-                  lg.loc_group_id as loc_alias_group
-             from (((((((at_physical_location p1
-                         left outer join cwms_office o1 using (office_code))
-                        join
-                        (at_physical_location p2
-                         left outer join cwms_office o2 using (office_code))
-                           using (base_location_code)
-                        join at_base_location b using (base_location_code))
-                       join at_loc_group_assignment a
-                          on a.location_code = p1.location_code
-                       join at_loc_group lg
-                          on lg.loc_group_code = a.loc_group_code
-                       join at_loc_category lc
-                          on lc.loc_category_code = lg.loc_category_code
-                       join cwms_office o on b.db_office_code = o.office_code)
-                      left outer join cwms_location_kind
-                         on location_kind_code = p1.location_kind)
-                     left outer join cwms_time_zone t
-                        on t.time_zone_code =
-                              coalesce (p1.time_zone_code, p2.time_zone_code))
-                    left outer join cwms_county c
-                       on c.county_code =
-                             coalesce (p1.county_code, p2.county_code))
-                   left outer join cwms_state using (state_code))
-                  left outer join cwms_nation n
-                     on n.nation_code =
-                           coalesce (p1.nation_code, p2.nation_code)
-            where     p1.location_code > 0
-                  and p2.sub_location_id is null
-                  and a.loc_alias_id is not null
+           (------------------------
+            -- alias for location --
+            ------------------------
+            select pl.location_code,
+                   bl.base_location_code,
+                   bl.base_location_id,
+                   pl.sub_location_id,
+                   lga.loc_alias_id as location_id,
+                   o.office_code as db_office_code,
+                   o.office_id as db_office_id,
+                   'LOCATION' as aliased_item,
+                   lc.loc_category_id as alias_category,
+                   lg.loc_group_id as alias_group
+              from at_physical_location pl,
+                   at_base_location bl,
+                   at_loc_category lc,
+                   at_loc_group lg,
+                   at_loc_group_assignment lga,
+                   cwms_office o
+             where pl.base_location_code <> pl.location_code
+               and bl.base_location_code = pl.base_location_code
+               and o.office_code = bl.db_office_code
+               and lga.location_code = pl.location_code
+               and lga.loc_alias_id is not null
+               and lg.loc_group_code = lga.loc_group_code
+               and lc.loc_category_code = lg.loc_category_code
+           )
            union all
-           select distinct
-                  o.office_code db_office_code,
-                  p1.location_code,
-                  base_location_code,
-                  o.office_id db_office_id,
-                  base_location_id,
-                  p1.sub_location_id,
-                     a.loc_alias_id
-                  || substr ('-', 1, length (p1.sub_location_id))
-                  || p1.sub_location_id
-                     as location_id,
-                  p1.location_type,
-                  nvl (p1.elevation, p2.elevation) as elevation,
-                  nvl (p1.vertical_datum, p2.vertical_datum)
-                     as vertical_datum,
-                  nvl (p1.longitude, p2.longitude) as longitude,
-                  nvl (p1.latitude, p2.latitude) as latitude,
-                  nvl (p1.horizontal_datum, p2.horizontal_datum)
-                     as horizontal_datum,
+           (-----------------------------
+            -- alias for base location --
+            -----------------------------
+            select pl.location_code,
+                   bl.base_location_code,
+                   bl.base_location_id,
+                   pl.sub_location_id,
+                   lga.loc_alias_id
+                   ||substr('-', 1, length(pl.sub_location_id))
+                   ||pl.sub_location_id as location_id,
+                   o.office_code as db_office_code,
+                   o.office_id as db_office_id,
+                   case
+                   when pl.base_location_code = pl.location_code then 'LOCATION'
+                   else 'BASE LOCATION'
+                   end as aliased_item,
+                   lc.loc_category_id as loc_alias_category,
+                   lg.loc_group_id as loc_alias_group
+              from at_physical_location pl,
+                   at_base_location bl,
+                   at_loc_category lc,
+                   at_loc_group lg,
+                   at_loc_group_assignment lga,
+                   cwms_office o
+             where bl.base_location_code = pl.base_location_code
+               and o.office_code = bl.db_office_code
+               and lga.location_code = bl.base_location_code
+               and lga.loc_alias_id is not null
+               and lg.loc_group_code = lga.loc_group_code
+               and lc.loc_category_code = lg.loc_category_code
+           )
+          ) q1
+          join
+          (--------------------------------------
+           -- unit system, unit, and elevation --
+           --------------------------------------
+           select 'EN' as unit_system from dual
+           union all
+           select 'SI' as unit_system from dual
+          ) q2 on 1=1
+          left outer join
+          (------------------------------
+           -- other non-inherited info --
+           ------------------------------
+           select location_code,
+                  bl.active_flag as base_loc_active_flag,
+                  pl.active_flag as loc_active_flag,
+                  case
+                  when bl.active_flag = 'T' and pl.active_flag = 'T'
+                  then 'T'
+                  else 'F'
+                  end as active_flag,
+                  pl.public_name,
+                  pl.long_name,
+                  pl.description,
+                  pl.location_type,
+                  lk.location_kind_id
+             from at_physical_location pl,
+                  at_base_location bl,
+                  cwms_location_kind lk
+            where bl.base_location_code = pl.base_location_code
+              and lk.location_kind_code = pl.location_kind
+          ) q3 on q3.location_code = q1.location_code
+          left outer join
+          (---------------------------------------------------
+           -- info that can be inherited from base location --
+           ---------------------------------------------------
+           select q41.location_code,
+                  elevation,
+                  vertical_datum,
+                  latitude,
+                  longitude,
+                  horizontal_datum,
                   time_zone_name,
                   county_name,
                   state_initial,
-                  p1.public_name,
-                  p1.long_name,
-                  p1.description,
-                  b.active_flag base_loc_active_flag,
-                  p1.active_flag loc_active_flag,
-                  location_kind_id,
-                  nvl (p1.map_label, p2.map_label) as map_label,
-                  nvl (p1.published_latitude, p2.published_latitude)
-                     as published_latitude,
-                  nvl (p1.published_longitude, p2.published_longitude)
-                     as published_longitude,
-                  nvl (o1.office_id, o2.office_id) as bounding_office_id,
-                  nation_id,
-                  nvl (p1.nearest_city, p2.nearest_city) as nearest_city,
-                  'BASE LOCATION' as aliased_item,
-                  lc.loc_category_id as loc_alias_category,
-                  lg.loc_group_id as loc_alias_group
-             from (((((((at_physical_location p1
-                         left outer join cwms_office o1 using (office_code))
-                        join
-                        (at_physical_location p2
-                         left outer join cwms_office o2 using (office_code))
-                           using (base_location_code)
-                        join at_base_location b using (base_location_code))
-                       join at_loc_group_assignment a
-                          on a.location_code = p2.location_code
-                       join at_loc_group lg
-                          on lg.loc_group_code = a.loc_group_code
-                       join at_loc_category lc
-                          on lc.loc_category_code = lg.loc_category_code
-                       join cwms_office o on b.db_office_code = o.office_code)
-                      left outer join cwms_location_kind
-                         on location_kind_code = p1.location_kind)
-                     left outer join cwms_time_zone t
-                        on t.time_zone_code =
-                              coalesce (p1.time_zone_code, p2.time_zone_code))
-                    left outer join cwms_county c
-                       on c.county_code =
-                             coalesce (p1.county_code, p2.county_code))
-                   left outer join cwms_state using (state_code))
-                  left outer join cwms_nation n
-                     on n.nation_code =
-                           coalesce (p1.nation_code, p2.nation_code)
-            where     p1.location_code > 0
-                  and p2.sub_location_id is null
-                  and p1.sub_location_id is not null
-                  and a.loc_alias_id is not null
-                  and lg.loc_group_code = a.loc_group_code
-                  and lc.loc_category_code = lg.loc_category_code) aa
-          natural join
-          (select adu.db_office_code,
+                  map_label,
+                  published_latitude,
+                  published_longitude,
+                  nearest_city,
+                  bounding_office_id,
+                  nation_id
+             from (-----------------------------
+                   -- info on location record --
+                   -----------------------------
+                   select pl.location_code,
+                          pl.elevation,
+                          pl.vertical_datum,
+                          pl.latitude,
+                          pl.longitude,
+                          pl.horizontal_datum,
+                          pl.time_zone_code,
+                          pl.county_code,
+                          pl.nation_code,
+                          pl.map_label,
+                          pl.published_latitude,
+                          pl.published_longitude,
+                          pl.office_code,
+                          pl.nearest_city
+                     from at_physical_location pl
+                  ) q41
+                  left outer join
+                  (---------------
+                   -- time zone --
+                   ---------------
+                   select pl.location_code,
+                          tz.time_zone_name
+                     from at_physical_location pl,
+                          cwms_time_zone tz
+                    where tz.time_zone_code = pl.time_zone_code
+                  ) q42 on q42.location_code = q41.location_code
+                  left outer join
+                  (----------------------
+                   -- county and state --
+                   ----------------------
+                   select pl.location_code,
+                          cty.county_name,
+                          st.state_initial
+                     from at_physical_location pl,
+                          cwms_county cty,
+                          cwms_state st
+                    where cty.county_code = pl.county_code
+                      and st.state_code = cty.state_code
+                  ) q43 on q43.location_code = q41.location_code
+                  left outer join
+                  (---------------------
+                   -- bounding office --
+                   ---------------------
+                   select pl.location_code,
+                          o.office_id as bounding_office_id
+                     from at_physical_location pl,
+                          cwms_office o
+                    where o.office_code = pl.office_code
+                  ) q44 on q44.location_code = q41.location_code
+                  left outer join
+                  (------------
+                   -- nation --
+                   ------------
+                   select pl.location_code,
+                          nt.nation_id
+                     from at_physical_location pl,
+                          cwms_nation nt
+                    where nt.nation_code = pl.nation_code
+                  ) q45 on q45.location_code = q41.location_code
+          ) q4 on q4.location_code = q1.location_code
+          left outer join
+          (-------------------------------------------------
+           -- base location info to inherit if necessary --
+           -------------------------------------------------
+           select q51.location_code,
+                  elevation,
+                  vertical_datum,
+                  latitude,
+                  longitude,
+                  horizontal_datum,
+                  time_zone_name,
+                  county_name,
+                  state_initial,
+                  map_label,
+                  published_latitude,
+                  published_longitude,
+                  nearest_city,
+                  bounding_office_id,
+                  nation_id
+             from (-----------------------------
+                   -- info on location record --
+                   -----------------------------
+                   select pl.location_code,
+                          pl.elevation,
+                          pl.vertical_datum,
+                          pl.latitude,
+                          pl.longitude,
+                          pl.horizontal_datum,
+                          pl.time_zone_code,
+                          pl.county_code,
+                          pl.nation_code,
+                          pl.map_label,
+                          pl.published_latitude,
+                          pl.published_longitude,
+                          pl.office_code,
+                          pl.nearest_city
+                     from at_physical_location pl
+                  ) q51
+                  left outer join
+                  (---------------
+                   -- time zone --
+                   ---------------
+                   select pl.location_code,
+                          tz.time_zone_name
+                     from at_physical_location pl,
+                          cwms_time_zone tz
+                    where tz.time_zone_code = pl.time_zone_code
+                  ) q52 on q52.location_code = q51.location_code
+                  left outer join
+                  (----------------------
+                   -- county and state --
+                   ----------------------
+                   select pl.location_code,
+                          cty.county_name,
+                          st.state_initial
+                     from at_physical_location pl,
+                          cwms_county cty,
+                          cwms_state st
+                    where cty.county_code = pl.county_code
+                      and st.state_code = cty.state_code
+                  ) q53 on q53.location_code = q51.location_code
+                  left outer join
+                  (---------------------
+                   -- bounding office --
+                   ---------------------
+                   select pl.location_code,
+                          o.office_id as bounding_office_id
+                     from at_physical_location pl,
+                          cwms_office o
+                    where o.office_code = pl.office_code
+                  ) q54 on q54.location_code = q51.location_code
+                  left outer join
+                  (------------
+                   -- nation --
+                   ------------
+                   select pl.location_code,
+                          nt.nation_id
+                     from at_physical_location pl,
+                          cwms_nation nt
+                    where nt.nation_code = pl.nation_code
+                  ) q55 on q55.location_code = q51.location_code
+          ) q5 on q5.location_code = q1.base_location_code
+          join
+          (--------------------------
+           -- elevation conversion --
+           --------------------------
+           select adu.db_office_code,
                   adu.unit_system,
                   cuc.to_unit_id,
-                  factor,
-                  offset
-             from at_display_units adu, cwms_unit_conversion cuc
-            where     adu.parameter_code = 10
-                  and adu.display_unit_code = cuc.to_unit_code
-                  and cuc.from_unit_code = 38) bb;
+                  cuc.factor,
+                  cuc.offset
+             from at_display_units adu,
+                  cwms_unit_conversion cuc
+            where adu.parameter_code = 10
+              and adu.display_unit_code = cuc.to_unit_code
+              and cuc.from_unit_code = 38
+          ) q6 on q6.db_office_code = q1.db_office_code and q6.unit_system = q2.unit_system;
 /
 
 show errors;
