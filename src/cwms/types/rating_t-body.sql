@@ -2478,7 +2478,9 @@ as
          -- concrete only --
          -------------------
          if l_clone.formula is null then
-            if l_clone.rating_info is not null then
+            if l_clone.rating_info is null then
+               cwms_util.append(l_text, '<rating-points/>');
+            else
                cwms_util.append(l_text, l_clone.rating_info.to_clob);
             end if;
          else

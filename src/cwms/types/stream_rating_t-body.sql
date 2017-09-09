@@ -1124,7 +1124,9 @@ as
       -------------------
       -- rating points --
       -------------------
-      if l_clone.rating_info is not null then
+      if l_clone.rating_info is null then
+         cwms_util.append(l_text, '<rating-points/>');
+      else
          cwms_util.append(l_text, '<rating-points>');
          for i in 1..l_clone.rating_info.rating_values.count loop
             cwms_util.append(l_text,
@@ -1141,7 +1143,7 @@ as
             end if;
             cwms_util.append(l_text, '</point>');
          end loop;
-         cwms_util.append(l_text, '</usgs-stream-rating>');
+         cwms_util.append(l_text, '</rating-points>');
       end if;
       cwms_util.append(l_text, '</usgs-stream-rating>');
       dbms_lob.close(l_text);
