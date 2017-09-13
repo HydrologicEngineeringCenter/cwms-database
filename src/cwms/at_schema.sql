@@ -6203,6 +6203,32 @@ comment on column at_pump.pump_location_code is 'The location code of the pump (
 comment on column at_pump.description        is 'Description of the pump';
 commit;
 
+create table at_queue_subscriber_name (
+   subscriber_name  varchar2(30) primary key,
+   queue_name       varchar2(30) not null,
+   create_time      timestamp    not null,
+   update_time      timestamp,
+   db_user          varchar2(30) not null,
+   os_user          varchar2(30) not null,
+   host_name        varchar2(64) not null,
+   application_name varchar2(48) not null,
+   os_process_id    integer      not null
+)
+tablespace cwms_20at_data;
+
+comment on table  at_queue_subscriber_name is 'Holds registered subscribers for queue messages';
+comment on column at_queue_subscriber_name.subscriber_name   is 'The subscriber name';
+comment on column at_queue_subscriber_name.queue_name        is 'The queue the subscription is for';
+comment on column at_queue_subscriber_name.create_time       is 'The time the subscriber was created';
+comment on column at_queue_subscriber_name.update_time       is 'The last time the subscriber was updated with another pid';
+comment on column at_queue_subscriber_name.db_user           is 'The session user that created the subscriber';
+comment on column at_queue_subscriber_name.os_user           is 'The client OS user that created the subscriber';
+comment on column at_queue_subscriber_name.host_name         is 'The name of the client system that created the subscriber';
+comment on column at_queue_subscriber_name.application_name  is 'The application name assosicated with the subscriber';
+comment on column at_queue_subscriber_name.os_process_id     is 'The process identifier (pid) associated with the subscriber';
+
+create index at_queue_subscriber_name_idx1 on at_queue_subscriber_name (queue_name, nvl(update_time, create_time));
+
 @@rowcps_schema.sql
 ---
 

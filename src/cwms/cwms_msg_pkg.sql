@@ -552,7 +552,90 @@ function get_message_queueing_pause_min(
 function is_message_queueing_paused(
    p_office_id in varchar2 default null)
    return boolean;      
-
+/**
+ * Retrieves information about the message client.
+ *
+ * @param p_db_user   The name of the database session user
+ * @param p_os_user   The name of the client OS user as identified by the server
+ * @param p_app_name  The name of the application as identified by the server
+ * @param p_host_name The name of the client system as identified by the server
+ */
+procedure retrieve_client_info(
+   p_db_user   out varchar2,
+   p_os_user   out varchar2,
+   p_app_name  out varchar2,
+   p_host_name out varchar2);
+/**
+ * Retrieves the name of the client system as identified by the server
+ */
+function retrieve_host_name
+   return varchar2;
+/*
+ * Creates and registers a queue subscription with a unique name based on the office, queue name, client system name and process id
+ *
+ * @param p_subscriber_name An output parameter for the unique subscription name
+ * @param p_host_name       An output parameter for the client system name as identified by the server
+ * @param p_queue_name      The name of the queue to subscribe to. Must be TS_STORED, STATUS, or REALTIME_OPS
+ * @param p_process_id      The process identifier (pid) of the application requesting the subscription
+ * @param p_app_name        The name of the application requesting the subscription. If not specified or NULL, the application name will be determined by the database, which works well for binary executables, but less so for Java applications connected via JDBC.
+ * @param p_fail_if_exists  A flag ('T'/'F') spcecifying whether to fail if a subsciber already exists for the office/queue/pid/app 
+ * @param p_office_id       The office owning the queue to subscribe to. If not specified or NULL, the session user's office is used
+ */
+procedure register_queue_subscriber(
+   p_subscriber_name  out varchar2,
+   p_host_name        out varchar2,
+   p_queue_name       in varchar2,
+   p_process_id       in integer,
+   p_app_name         in varchar2 default null,
+   p_fail_if_exists   in varchar2 default 'F',
+   p_office_id        in varchar2 default null); 
+/*
+ * Creates and registers a queue subscription with a unique name based on the office, queue name, client system name and process id
+ *
+ * @param p_queue_name     The name of the queue to subscribe to. Must be TS_STORED, STATUS, or REALTIME_OPS
+ * @param p_process_id     The process identifier (pid) of the application requesting the subscription
+ * @param p_app_name       The name of the application requesting the subscription. If not specified or NULL, the application name will be determined by the database, which works well for binary executables, but less so for Java applications connected via JDBC.
+ * @param p_fail_if_exists A flag ('T'/'F') spcecifying whether to fail if a subsciber already exists for the office/queue/pid/app. If not specified, 'T' will be used 
+ * @param p_office_id      The office owning the queue to subscribe to. If not specified or NULL, the session user's office is used
+ *
+ * @return A string containing the client system name and unique subscriber name separated by a line feed character ('\n'; character decimal 10, hex a)
+ */
+function register_queue_subscriber_f(
+   p_queue_name       in varchar2,
+   p_process_id       in integer,
+   p_app_name         in varchar2 default null,
+   p_fail_if_exists   in varchar2 default 'F',
+   p_office_id        in varchar2 default null)
+   return varchar2;
+/*
+ * Unregisters and deletes a queue subscription created with register_queue_subscriber or register_queue_subscriber_f
+ *
+ * @param p_subscriber_name       The unique name of the subscription to delete
+ * @param p_process_id            The process identifier (pid) of the application requesting the subscription to be deleted
+ * @param p_fail_on_wrong_host    A flag ('T'/'F') specifying whether to fail if the procedure is called from a client that is different from the one used to register the subscription. If not specified, 'T' is used
+ * @param p_fail_on_wrong_process A flag ('T'/'F') specifying whether to fail if the specified pid is different from the one used to register the subscription. If not specified, 'T' is used
+ * @param p_office_id             The office owning the queue to unsubscribe from. If not specified or NULL, the session user's office is used
+ */
+procedure unregister_queue_subscriber(
+   p_subscriber_name       in varchar2,
+   p_process_id            in integer,
+   p_fail_on_wrong_host    in varchar2 default 'T',
+   p_fail_on_wrong_process in varchar2 default 'T',
+   p_office_id             in varchar2 default null);
+/*
+ * Updates the process identifier for a currently registered queue subscription
+ *
+ * @param p_subscriber_name       The unique name of the subscription to update
+ * @param p_process_id            The new process identifier to associate with the subscription
+ * @param p_fail_on_wrong_host    A flag ('T'/'F') specifying whether to fail if the procedure is called from a client that is different from the one used to register the subscription. If not specified, 'T' is used
+ * @param p_office_id             The office owning the queue to update the subscription for. If not specified or NULL, the session user's office is used
+ */
+procedure update_queue_subscriber(
+   p_subscriber_name       in varchar2,
+   p_process_id            in integer,
+   p_fail_on_wrong_host    in varchar2 default 'T',
+   p_office_id             in varchar2 default null);   
+   
 end cwms_msg;
 /
 show errors;

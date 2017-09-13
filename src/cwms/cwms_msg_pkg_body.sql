@@ -1576,6 +1576,9 @@ begin
    end;         
 end unregister_msg_callback;
 
+--------------------------------------------------------------------------------
+-- function get_queueing_pause_prop_key
+--
 function get_queueing_pause_prop_key(
    p_all_sessions in boolean,
    p_get_mask     in boolean default false)
@@ -1594,6 +1597,9 @@ begin
    return l_prop_id;
 end get_queueing_pause_prop_key;   
 
+--------------------------------------------------------------------------------
+-- procedure set_pause_until
+--
 procedure set_pause_until(
    p_until        date,
    p_all_sessions boolean,
@@ -1608,6 +1614,9 @@ begin
       p_office_id);
 end set_pause_until;
 
+--------------------------------------------------------------------------------
+-- function get_pause_until
+--
 function get_pause_until(   
    p_all_sessions boolean,
    p_office_id    varchar2)
@@ -1628,6 +1637,9 @@ begin
    return l_until;      
 end get_pause_until;      
    
+--------------------------------------------------------------------------------
+-- procedure pause_message_queueing
+--
 procedure pause_message_queueing (
    p_number       in integer  default 10,
    p_unit         in varchar2 default 'MINUTES',
@@ -1694,6 +1706,9 @@ begin
    end if;
 end pause_message_queueing;   
    
+--------------------------------------------------------------------------------
+-- procedure unpause_message_queueing
+--
 procedure unpause_message_queueing(
    p_all_sessions in varchar2 default 'F',
    p_force        in varchar2 default 'F',
@@ -1750,6 +1765,9 @@ begin
    end if;        
 end unpause_message_queueing;   
 
+--------------------------------------------------------------------------------
+-- function get_message_queueing_pause_min
+--
 function get_message_queueing_pause_min(
    p_office_id in varchar2 default null)
    return integer
@@ -1769,6 +1787,9 @@ begin
    return l_minutes;      
 end get_message_queueing_pause_min;   
 
+--------------------------------------------------------------------------------
+-- function is_message_queueing_paused
+--
 function is_message_queueing_paused(
    p_office_id in varchar2 default null)
    return boolean
@@ -1776,7 +1797,279 @@ is
 begin
    return get_message_queueing_pause_min(p_office_id) > 0;
 end is_message_queueing_paused;         
+-----------------------------------------------------------
+-- function generate_subscriber_name
+--
+function generate_subscriber_name (
+   p_queue_name     in varchar2,
+   p_host_name      in varchar2,
+   p_process_id     in integer)
+   return varchar2
+is
+begin
+   return substr(rawtohex(dbms_crypto.hash(to_clob(upper(p_queue_name||p_host_name||to_char(p_process_id))), dbms_crypto.hash_sh1)), 1, 30);
+end generate_subscriber_name;
+--------------------------------------------------------------------------------
+-- procedure retrieve_client_info
+--
+procedure retrieve_client_info(
+   p_db_user   out varchar2,
+   p_os_user   out varchar2,
+   p_app_name  out varchar2,
+   p_host_name out varchar2)
+is
+   l_host_name varchar2(64);
+begin
+   select username,
+          osuser,
+          program,
+          machine
+     into p_db_user,
+          p_os_user,
+          p_app_name,
+          p_host_name
+     from v$session
+    where audsid = userenv('sessionid');
+end retrieve_client_info;
+--------------------------------------------------------------------------------
+-- function retrieve_host_name
+--
+function retrieve_host_name
+   return varchar2
+is
+   l_db_user   varchar2(30);
+   l_os_user   varchar2(30);
+   l_app_name  varchar2(48);
+   l_host_name varchar2(64);
+begin
+   retrieve_client_info(
+      l_db_user,
+      l_os_user,
+      l_app_name,
+      l_host_name);
+   return l_host_name;
+end retrieve_host_name;
+--------------------------------------------------------------------------------
+-- procedure register_queue_subscriber
+--
+procedure register_queue_subscriber(
+   p_subscriber_name  out varchar2,
+   p_host_name        out varchar2,
+   p_queue_name       in varchar2,
+   p_process_id       in integer,
+   p_app_name         in varchar2 default null,
+   p_fail_if_exists   in varchar2 default 'F',
+   p_office_id        in varchar2 default null) 
+is
+   pragma autonomous_transaction;
+   l_rec              at_queue_subscriber_name%rowtype;
+   l_queue_name       varchar2(30);
+   l_db_user          varchar2(30);
+   l_os_user          varchar2(30);
+   l_app_name         varchar2(48) default null;
+   l_host_name        varchar2(64);
+   l_office_id        varchar2(16);
+   l_subscriber_name  varchar2(30);
+begin
+   if p_queue_name is null or upper(p_queue_name) not in ('TS_STORED', 'REALTIME_OPS', 'STATUS') then
+      cwms_err.raise(
+         'ERROR', 
+         'P_QUEUE_NAME ('||nvl(p_queue_name, '<NULL>')||' must be one of ''TS_STORED'', ''REALTIME_OPS'', ''STATUS''');
+   end if;
+   select username,
+          osuser,
+          program,
+          machine
+     into l_db_user,
+          l_os_user,
+          l_app_name,
+          l_host_name
+     from v$session
+    where audsid = userenv('sessionid');
+   l_app_name := nvl(p_app_name, l_app_name);
 
+   select office_id
+     into l_office_id
+     from cwms_office
+    where office_code = cwms_util.get_office_code(p_office_id); 
+    
+   l_queue_name := upper(l_office_id||'_'||p_queue_name);    
+   l_subscriber_name := generate_subscriber_name(l_queue_name, l_host_name, p_process_id);  
+   begin
+      select * into l_rec from at_queue_subscriber_name where subscriber_name = l_subscriber_name;
+      if cwms_util.is_true(p_fail_if_exists) then
+         cwms_err.raise(
+            'ITEM ALREADY EXISTS',
+            'QUEUE_SUBSCRIBER_NAME',
+            l_subscriber_name);
+      end if;
+   exception
+      when no_data_found then null;
+   end;
+   if l_rec.subscriber_name is null then
+      l_rec.subscriber_name  := l_subscriber_name;
+      l_rec.queue_name       := l_queue_name;
+      l_rec.create_time      := systimestamp;
+      l_rec.db_user          := l_db_user;
+      l_rec.os_user          := l_os_user;
+      l_rec.host_name        := l_host_name;
+      l_rec.application_name := l_app_name;
+      l_rec.os_process_id    := p_process_id;
+      insert
+        into at_queue_subscriber_name
+      values l_rec;  
+   end if;
+   commit;
+   p_subscriber_name := l_subscriber_name;
+   p_host_name := l_host_name;
+end register_queue_subscriber;
+--------------------------------------------------------------------------------
+-- function register_queue_subscriber_f
+--
+function register_queue_subscriber_f(
+   p_queue_name       in varchar2,
+   p_process_id       in integer,
+   p_app_name         in varchar2 default null,
+   p_fail_if_exists   in varchar2 default 'F',
+   p_office_id        in varchar2 default null)
+   return varchar2
+is
+   l_host_name        varchar2(64);
+   l_subscriber_name  varchar2(30);
+begin
+   register_queue_subscriber(
+      p_subscriber_name  => l_subscriber_name,
+      p_host_name        => l_host_name,
+      p_queue_name       => p_queue_name,
+      p_process_id       => p_process_id,
+      p_app_name         => p_app_name,
+      p_fail_if_exists   => p_fail_if_exists,
+      p_office_id        => p_office_id);
+   return l_host_name||chr(10)||l_subscriber_name;
+end register_queue_subscriber_f;
+--------------------------------------------------------------------------------
+-- procedure unregister_queue_subscriber
+--
+procedure unregister_queue_subscriber(
+   p_subscriber_name       in varchar2,
+   p_process_id            in integer,
+   p_fail_on_wrong_host    in varchar2 default 'T',
+   p_fail_on_wrong_process in varchar2 default 'T',
+   p_office_id             in varchar2 default null)
+is
+   pragma autonomous_transaction;
+   l_rec              at_queue_subscriber_name%rowtype;
+   l_db_user          varchar2(30);
+   l_os_user          varchar2(30);
+   l_app_name         varchar2(48) default null;
+   l_host_name        varchar2(64);
+   l_office_id        varchar2(16);
+begin
+   select username,
+          osuser,
+          program,
+          machine
+     into l_db_user,
+          l_os_user,
+          l_app_name,
+          l_host_name
+     from v$session
+    where audsid = userenv('sessionid');
+
+   select office_id
+     into l_office_id
+     from cwms_office
+    where office_code = cwms_util.get_office_code(p_office_id); 
+    
+   begin
+      select * into l_rec from at_queue_subscriber_name where subscriber_name = p_subscriber_name;
+   exception
+      when no_data_found then
+         cwms_err.raise(
+            'ITEM_DOES_NOT_EXIST',
+            'QUEUE_SUBSCRIBER_NAME',
+            p_subscriber_name);
+   end;
+   if l_rec.host_name != l_host_name and cwms_util.is_true(p_fail_on_wrong_host) then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot unregister subscriber name '
+         ||p_subscriber_name
+         ||' from host '
+         ||l_host_name
+         ||' since it was registered from host '
+         ||l_rec.host_name);
+   end if;
+   if l_rec.os_process_id != p_process_id and cwms_util.is_true(p_fail_on_wrong_process) then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot unregister subscriber name '
+         ||p_subscriber_name
+         ||' from process id '
+         ||p_process_id
+         ||' since it was registered from process '
+         ||l_rec.os_process_id);
+   end if;
+   delete from at_queue_subscriber_name where subscriber_name = p_subscriber_name;
+   commit;
+end unregister_queue_subscriber;
+--------------------------------------------------------------------------------
+-- procedure update_queue_subscriber
+--
+procedure update_queue_subscriber(
+   p_subscriber_name       in varchar2,
+   p_process_id            in integer,
+   p_fail_on_wrong_host    in varchar2 default 'T',
+   p_office_id             in varchar2 default null)
+is    
+   pragma autonomous_transaction;
+   l_rec              at_queue_subscriber_name%rowtype;
+   l_db_user          varchar2(30);
+   l_os_user          varchar2(30);
+   l_app_name         varchar2(48) default null;
+   l_host_name        varchar2(64);
+   l_office_id        varchar2(16);
+begin
+   select username,
+          osuser,
+          program,
+          machine
+     into l_db_user,
+          l_os_user,
+          l_app_name,
+          l_host_name
+     from v$session
+    where audsid = userenv('sessionid');
+
+   select office_id
+     into l_office_id
+     from cwms_office
+    where office_code = cwms_util.get_office_code(p_office_id); 
+    
+   begin
+      select * into l_rec from at_queue_subscriber_name where subscriber_name = p_subscriber_name;
+   exception
+      when no_data_found then
+         cwms_err.raise(
+            'ITEM_DOES_NOT_EXIST',
+            'QUEUE_SUBSCRIBER_NAME',
+            p_subscriber_name);
+   end;
+   if l_rec.host_name != l_host_name and cwms_util.is_true(p_fail_on_wrong_host) then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot unregister subscriber name '
+         ||p_subscriber_name
+         ||' from host '
+         ||l_host_name
+         ||' since it was registered from host '
+         ||l_rec.host_name);
+   end if;
+   l_rec.os_process_id := p_process_id;
+   l_rec.update_time := systimestamp;
+   update at_queue_subscriber_name set row = l_rec where subscriber_name = p_subscriber_name;
+   commit;
+end update_queue_subscriber;
 
 end cwms_msg;
 /

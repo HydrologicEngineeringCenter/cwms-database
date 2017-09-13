@@ -47,6 +47,7 @@ DECLARE
 			       'av_project_purpose',
 			       'av_project_purposes',
 			       'av_project_purposes_ui',
+                'av_queue_subscriber_name',
 			       'av_screened_ts_ids',
 			       'av_screening_assignments',
 			       'av_screening_control',
@@ -206,6 +207,7 @@ END;
 
 @@cwms/views/av_streamflow_meas.sql
 @@cwms/views/av_std_text.sql
+@@cwms/views/av_queue_subscriber_name
 
 
 --------------------------------------------------------------------------------
