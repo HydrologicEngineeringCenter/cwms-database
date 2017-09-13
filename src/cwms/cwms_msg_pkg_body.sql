@@ -1807,7 +1807,7 @@ function generate_subscriber_name (
    return varchar2
 is
 begin
-   return substr(rawtohex(dbms_crypto.hash(to_clob(upper(p_queue_name||p_host_name||to_char(p_process_id))), dbms_crypto.hash_sh1)), 1, 30);
+   return substr(rawtohex(dbms_crypto.hash(to_clob(upper(p_queue_name||p_host_name||to_char(p_process_id))), dbms_crypto.hash_sh1)), 1, 28);
 end generate_subscriber_name;
 --------------------------------------------------------------------------------
 -- procedure retrieve_client_info
