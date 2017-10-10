@@ -253,15 +253,6 @@ comment on column at_rating_value.dep_value                 is 'Dependent value 
 comment on column at_rating_value.dep_rating_ind_param_code is 'Dependent table for rating (for multi-parameter ratings)';
 comment on column at_rating_value.note_code                 is 'Reference to rating value note';
 
-create or replace trigger at_rating_value_trig
-after insert or delete or update
-on at_rating_value
-declare
-begin
-   cwms_util.set_boolean_state('at_rating_value modified', true);
-end;
-/
-
 commit;
 
 -------------------------------

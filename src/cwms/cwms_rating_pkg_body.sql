@@ -16,85 +16,72 @@ begin
    return l_code;
 end get_rating_method_code;
 
-procedure delete_rating_ind_parameter(
-   p_rating_ind_param_code in number)
-is
-begin
-   -----------------------------
-   -- first the rating values --                                               
-   -----------------------------
-   for rec in
-      (  select dep_rating_ind_param_code,
-                note_code
-           from at_rating_value
-          where rating_ind_param_code = p_rating_ind_param_code
-            and (note_code is not null or dep_rating_ind_param_code is not null)
-      )
-   loop
-      if rec.note_code is not null then
-         delete
-           from at_rating_value_note
-          where note_code = rec.note_code;
-      end if;
-      if rec.dep_rating_ind_param_code is not null then
-         delete_rating_ind_parameter(rec.dep_rating_ind_param_code);
-      end if;
-   end loop;
-   delete
-     from at_rating_value
-    where rating_ind_param_code = p_rating_ind_param_code
-       or dep_rating_ind_param_code = p_rating_ind_param_code;
-   --------------------------------------
-   -- then the rating extension values --
-   --------------------------------------
-   for rec in
-      (  select dep_rating_ind_param_code,
-                note_code
-           from at_rating_extension_value
-          where rating_ind_param_code = p_rating_ind_param_code
-            and (note_code is not null or dep_rating_ind_param_code is not null)
-      )
-   loop
-      if rec.note_code is not null then
-         delete
-           from at_rating_value_note
-          where note_code = rec.note_code;
-      end if;
-      if rec.dep_rating_ind_param_code is not null then
-         delete_rating_ind_parameter(rec.dep_rating_ind_param_code);
-      end if;
-      delete_rating_ind_parameter(rec.dep_rating_ind_param_code);
-   end loop;
-   delete
-     from at_rating_extension_value
-    where rating_ind_param_code = p_rating_ind_param_code
-       or dep_rating_ind_param_code = p_rating_ind_param_code;
-   -------------------------------
-   -- finally the record itself --
-   -------------------------------
-   delete
-     from at_rating_ind_parameter
-    where rating_ind_param_code = p_rating_ind_param_code;
-end delete_rating_ind_parameter;
-
 procedure delete_rating(
    p_rating_code in number)
 is
+   l_crsr sys_refcursor;
+   l_ind  number_tab_t;
+   l_dep  number_tab_t;
 begin
    --------------------
    -- simple ratings --
    --------------------
-   for i in 1..1 loop
+   for j in 1..1 loop
       ----------------------------
       -- first the rating table --
       ----------------------------
-      for rec in
-         (  select rating_ind_param_code
-              from at_rating_ind_parameter
-             where rating_code = p_rating_code
-         )
-      loop
-         delete_rating_ind_parameter(rec.rating_ind_param_code);
+      -------------------
+      -- rating values --
+      -------------------
+      open l_crsr for 
+         select distinct 
+                   rating_ind_param_code,
+                   dep_rating_ind_param_code
+              from (select distinct
+                           rating_ind_param_code,
+                           dep_rating_ind_param_code
+                      from at_rating_value
+                     where rating_ind_param_code in
+                           (select rating_ind_param_code
+                              from at_rating_ind_parameter
+                             where rating_code  = p_rating_code
+                           )
+                   )
+           connect by prior dep_rating_ind_param_code = rating_ind_param_code;
+      fetch l_crsr bulk collect into l_ind, l_dep;
+      close l_crsr;
+      for i in 1..l_ind.count loop
+         delete from at_rating_value where rating_ind_param_code = l_ind(i);
+         delete from at_rating_ind_param_spec where ind_param_spec_code = l_ind(i);
+      end loop;
+      for i in 1..l_ind.count loop
+         delete from at_rating_ind_parameter where rating_ind_param_code = l_ind(i);
+      end loop;
+      ----------------------
+      -- extension values --
+      ----------------------
+      open l_crsr for 
+         select distinct 
+                   rating_ind_param_code,
+                   dep_rating_ind_param_code
+              from (select distinct
+                           rating_ind_param_code,
+                           dep_rating_ind_param_code
+                      from at_rating_extension_value
+                     where rating_ind_param_code in
+                           (select rating_ind_param_code
+                              from at_rating_ind_parameter
+                             where rating_code  = p_rating_code
+                           )
+                   )
+           connect by prior dep_rating_ind_param_code = rating_ind_param_code;
+      fetch l_crsr bulk collect into l_ind, l_dep;
+      close l_crsr;
+      for i in 1..l_ind.count loop
+         delete from at_rating_value where rating_ind_param_code = l_ind(i);
+      end loop;
+      for i in 1..l_ind.count loop
+         delete from at_rating_ind_parameter where rating_ind_param_code = l_ind(i);
       end loop;
       ----------------------------------------------
       -- then any child ratings (shifts, offsets) --
