@@ -227,7 +227,7 @@ as
                ||'/'
                ||self.rating_spec_id);
          end if;
-         self.formula := regexp_replace(self.formula, 'i(\d+)', 'arg\1', 1, 0, 'i'); 
+         self.formula := regexp_replace(self.formula, '(?i|\$)(\d+)', 'arg\2', 1, 0, 'i');
       end if;
       if get_node(l_xml, '/*/rating-points') is not null then
          if l_is_virtual or l_is_transitional then
