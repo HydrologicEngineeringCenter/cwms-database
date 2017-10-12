@@ -23,7 +23,7 @@ as
       c_gage_va_time              constant pls_integer := 16;
       c_control_type_cd           constant pls_integer := 17;
       c_discharge_cd              constant pls_integer := 18;
-      l_office_id varchar2(16);
+      l_office_id  varchar2(16);
       l_parts      str_tab_t;
       l_timestamp  timestamp;
       l_utc_offset interval day (0) to second (3);
@@ -85,6 +85,7 @@ as
       p_xml in xmltype)
       return self as result
    is
+      l_datetime_str varchar2(32);
       function get_text(p_path in varchar2, p_required in boolean default false) return varchar2
       is
          l_text varchar2(32767);
@@ -101,13 +102,13 @@ as
             'ERROR',
             'Expected <stream-flow-measurement>, got <'||p_xml.getrootelement||'>');
       end if;
+      l_datetime_str := get_text('/*/date', true);
       self.location       := location_ref_t(get_text('/*/location', true), get_text('/*/@office-id', true));
       self.used           := case get_text('/*/@used', true) when 'true' then 'T' else 'F' end;
       self.height_unit    := get_text('/*/@height-unit', self.used='T');
       self.flow_unit      := get_text('/*/@flow-unit', self.used='T');
       self.meas_number    := get_text('/*/number', true);
-      self.date_time      := cast(cwms_util.to_timestamp(get_text('/*/date', true)) as date);
-      self.time_zone      := 'UTC';
+      self.date_time      := cast(cwms_util.to_timestamp(l_datetime_str) as date);
       self.agency_id      := get_text('/*/agency');
       self.party          := get_text('/*/party');
       self.gage_height    := to_binary_double(get_text('/*/gage-height', self.used='T'));
@@ -125,6 +126,23 @@ as
       self.water_temp     := to_binary_double(get_text('/*/water-temp', false));
       self.temp_unit      := get_text('/*/@temp-unit', self.used='T' and (self.air_temp is not null or self.water_temp is not null));
       self.wm_comments    := get_text('/*/wm-comments');
+      if regexp_instr(l_datetime_str, '[-+]\d{2}:\d{2}|Z', 1, 1, 1) = 0 then
+         -- no time zone on date string
+          begin
+            select tz.time_zone_name
+              into self.time_zone
+              from at_physical_location pl,
+                   cwms_time_zone tz
+             where pl.location_code = self.location.get_location_code
+               and tz.time_zone_code = pl.time_zone_code;
+         exception
+            when no_data_found then self.time_zone := 'UTC';
+            when others        then raise;
+         end;
+      else
+         -- time zone included in date string, taken into account by cwms_util.to_timestamp
+         self.time_zone := 'UTC';
+      end if;
       return;
    end streamflow_meas_t;
 
