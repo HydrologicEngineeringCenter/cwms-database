@@ -1,5 +1,5 @@
-create or replace type body streamflow_meas_t 
-as    
+create or replace type body streamflow_meas_t
+as
    constructor function streamflow_meas_t (
       p_rdb_line  in varchar2,
       p_office_id in varchar2 default null)
@@ -39,27 +39,31 @@ as
                'Expected 18 or 35 fields in input, got '||l_parts.count||chr(10)||p_rdb_line);
          end if;
          if upper(l_parts(c_agency_cd)) != l_parts(c_agency_cd) then
-             exit;
+            -- return null object
+            self := null;
+            exit;
          end if;
          l_office_id         := cwms_util.get_db_office_id(p_office_id);
-         self.location       := location_ref_t(cwms_loc.get_location_id(l_parts(c_site_no), l_office_id), l_office_id); 
+         self.location       := location_ref_t(cwms_loc.get_location_id(l_parts(c_site_no), l_office_id), l_office_id);
          self.meas_number    := l_parts(c_measurement_nu);
          if length(l_parts(c_measurement_dt)) = 10 then
-            -- date only 
-            self.date_time   := to_date(l_parts(c_measurement_dt), 'yyyy-mm-dd');
-            self.time_zone   := null;
-         else            
-            -- date, time, and tz
-            l_timestamp      := to_timestamp(l_parts(c_measurement_dt), 'yyyy-mm-dd hh24:mi:ss');
+            l_timestamp := cast(to_date(l_parts(c_measurement_dt), 'yyyy-mm-dd') as timestamp);
+         else
+            l_timestamp := to_timestamp(l_parts(c_measurement_dt), 'yyyy-mm-dd hh24:mi:ss');
+         end if;
+         begin
             select tz_utc_offset
               into l_utc_offset
               from cwms_usgs_time_zone
              where tz_id = l_parts(c_tz_cd);
-            self.date_time   := cast((l_timestamp - l_utc_offset) as date); 
+         exception
+            when no_data_found then l_utc_offset := to_dsinterval('0 00:00:00');
+            when others        then raise;
+         end;
+         self.date_time      := cast((l_timestamp - l_utc_offset) as date);
          self.time_zone      := 'UTC';
-         end if;
          self.used           := case when substr(l_parts(c_q_meas_used_fg), 1, 1) = 'Y' then 'T' else 'F' end;
-         self.party          := l_parts(c_party_nm);                   
+         self.party          := l_parts(c_party_nm);
          self.agency_id      := l_parts(c_site_visit_coll_agency_cd);
          self.gage_height    := to_binary_double(l_parts(c_gage_height_va));
          self.flow           := to_binary_double(l_parts(c_discharge_va));
@@ -68,31 +72,30 @@ as
          self.pct_diff       := to_binary_double(l_parts(c_diff_from_rating_pc));
          self.quality        := upper(substr(l_parts(c_measured_rating_diff), 1, 1));
          self.delta_height   := to_binary_double(l_parts(c_gage_va_change));
-         self.delta_time     := to_binary_double(l_parts(c_gage_va_time)); 
+         self.delta_time     := to_binary_double(l_parts(c_gage_va_time));
          self.ctrl_cond_id   := l_parts(c_control_type_cd);
          self.flow_adj_id    := l_parts(c_discharge_cd);
          self.height_unit    := 'ft';
          self.flow_unit      := 'cfs';
-         self.time_zone      := 'UTC';
-      end loop; 
+      end loop;
       return;
    end streamflow_meas_t;
-      
+
    constructor function streamflow_meas_t (
       p_xml in xmltype)
       return self as result
-   is  
+   is
       function get_text(p_path in varchar2, p_required in boolean default false) return varchar2
       is
          l_text varchar2(32767);
       begin
          l_text := cwms_util.get_xml_text(p_xml, p_path);
          if l_text is null and p_required then
-            cwms_err.raise('ERROR', 'Required element or attribute is null or not found: '||p_path); 
+            cwms_err.raise('ERROR', 'Required element or attribute is null or not found: '||p_path);
          end if;
-         return l_text; 
+         return l_text;
       end get_text;
-   begin 
+   begin
       if p_xml.getrootelement != 'stream-flow-measurement' then
          cwms_err.raise(
             'ERROR',
@@ -100,17 +103,18 @@ as
       end if;
       self.location       := location_ref_t(get_text('/*/location', true), get_text('/*/@office-id', true));
       self.used           := case get_text('/*/@used', true) when 'true' then 'T' else 'F' end;
-      self.height_unit    := get_text('/*/@height-unit', self.used='T');       
+      self.height_unit    := get_text('/*/@height-unit', self.used='T');
       self.flow_unit      := get_text('/*/@flow-unit', self.used='T');
-      self.meas_number    := get_text('/*/number', true);  
+      self.meas_number    := get_text('/*/number', true);
       self.date_time      := cast(cwms_util.to_timestamp(get_text('/*/date', true)) as date);
-      self.agency_id      := get_text('/*/agency');     
+      self.time_zone      := 'UTC';
+      self.agency_id      := get_text('/*/agency');
       self.party          := get_text('/*/party');
       self.gage_height    := to_binary_double(get_text('/*/gage-height', self.used='T'));
       self.flow           := to_binary_double(get_text('/*/flow', self.used='T'));
       self.cur_rating_num := get_text('/*/current-rating');
       self.shift_used     := to_binary_double(get_text('/*/shift-used'));
-      self.pct_diff       := to_binary_double(get_text('/*/percent-difference')); 
+      self.pct_diff       := to_binary_double(get_text('/*/percent-difference'));
       self.quality        := substr(upper(trim(get_text('/*/quality'))),1,1);
       self.delta_height   := to_binary_double(get_text('/*/delta-height'));
       self.delta_time     := to_binary_double(get_text('/*/delta-time'));
@@ -122,8 +126,8 @@ as
       self.temp_unit      := get_text('/*/@temp-unit', self.used='T' and (self.air_temp is not null or self.water_temp is not null));
       self.wm_comments    := get_text('/*/wm-comments');
       return;
-   end streamflow_meas_t;       
-      
+   end streamflow_meas_t;
+
    constructor function streamflow_meas_t (
       p_location    in location_ref_t,
       p_date_time   in date,
@@ -139,12 +143,12 @@ as
         into l_rowid
         from at_streamflow_meas
        where location_code = p_location.get_location_code
-         and date_time = cwms_util.change_timezone(p_date_time, l_time_zone, 'UTC'); 
-         
-      self := new streamflow_meas_t(l_rowid);           
+         and date_time = cwms_util.change_timezone(p_date_time, l_time_zone, 'UTC');
+
+      self := new streamflow_meas_t(l_rowid);
       return;
-   end streamflow_meas_t;      
-      
+   end streamflow_meas_t;
+
    constructor function streamflow_meas_t (
       p_location    in location_ref_t,
       p_meas_number in varchar2,
@@ -158,11 +162,11 @@ as
         from at_streamflow_meas
        where location_code = p_location.get_location_code
          and meas_number = p_meas_number;
-         
-      self := new streamflow_meas_t(l_rowid);           
+
+      self := new streamflow_meas_t(l_rowid);
       return;
    end streamflow_meas_t;
-      
+
    constructor function streamflow_meas_t (
       p_rowid       in urowid,
       p_unit_system in varchar2 default 'EN')
@@ -178,7 +182,7 @@ as
       self.location        := location_ref_t(l_rec.location_code);
       self.time_zone       := 'UTC';
       self.height_unit     := cwms_util.get_default_units('Stage', p_unit_system);
-      self.flow_unit       := cwms_util.get_default_units('Flow', p_unit_system);          
+      self.flow_unit       := cwms_util.get_default_units('Flow', p_unit_system);
       self.temp_unit       := cwms_util.get_default_units('Temp', p_unit_system);
       self.meas_number     := l_rec.meas_number;
       self.date_time       := l_rec.date_time;
@@ -199,12 +203,12 @@ as
       self.air_temp        := cwms_util.convert_units(l_rec.air_temp, 'C', self.temp_unit);
       self.water_temp      := cwms_util.convert_units(l_rec.water_temp, 'C', self.temp_unit);
       self.wm_comments     := l_rec.wm_comments;
-      return;       
-   end streamflow_meas_t;      
+      return;
+   end streamflow_meas_t;
 
    member procedure set_height_unit(
       p_height_unit in varchar2)
-   is 
+   is
    begin
       if upper(p_height_unit) in ('EN', 'SI') then
          self.set_height_unit(cwms_util.get_default_units('Stage', upper(p_height_unit)));
@@ -218,7 +222,7 @@ as
 
    member procedure set_flow_unit(
       p_flow_unit in varchar2)
-   is 
+   is
    begin
       if upper(p_flow_unit) in ('EN', 'SI') then
          self.set_flow_unit(cwms_util.get_default_units('Flow', upper(p_flow_unit)));
@@ -230,12 +234,12 @@ as
 
    member procedure set_time_zone(
       p_time_zone in varchar2 default null)
-   is 
+   is
    begin
       self.date_time := cwms_util.change_timezone(self.date_time, self.time_zone, p_time_zone);
       self.time_zone := p_time_zone;
    end set_time_zone;
-      
+
    member procedure store(
       p_fail_if_exists varchar2)
    is
@@ -245,7 +249,7 @@ as
       function make_meas_number(
          p_date in date)
          return varchar2
-      is   
+      is
          l_date timestamp;
          l_yr   integer;
          l_hr   integer;
@@ -263,7 +267,7 @@ as
          l_text := l_yr||trim(to_char(l_doy, '009'))||trim(to_char(l_2min, '009'));
          return trim(to_char(to_number(l_text), 'xxxxxxxx'));
       end make_meas_number;
-      
+
       function get_entity_code(
          p_agency_id in varchar2)
          return integer
@@ -273,7 +277,7 @@ as
 --         begin
             l_agency_code := cwms_entity.get_entity_code(p_agency_id, self.location.office_id);
 --         exception
---            when others then 
+--            when others then
 --               cwms_entity.store_entity(p_agency_id, p_agency_id, null, 'GOV', 'F', 'T', self.location.office_id);
 --               l_agency_code := cwms_entity.get_entity_code(p_agency_id, self.location.office_id);
 --         end;
@@ -292,7 +296,7 @@ as
            from at_streamflow_meas
           where location_code = l_rec.location_code
             and meas_number = l_rec.meas_number;
-         l_exists := true;              
+         l_exists := true;
       exception
          when no_data_found then
             l_exists := false;
@@ -316,7 +320,7 @@ as
       l_rec.delta_time     := self.delta_time;
       l_rec.ctrl_cond_id   := self.ctrl_cond_id;
       l_rec.flow_adj_id    := self.flow_adj_id;
-      l_rec.remarks        := self.remarks; 
+      l_rec.remarks        := self.remarks;
       l_rec.air_temp       := nvl(cwms_util.convert_units(self.air_temp, self.temp_unit, 'C'), l_rec.air_temp);
       l_rec.water_temp     := nvl(cwms_util.convert_units(self.water_temp, self.temp_unit, 'C'), l_rec.water_temp);
       l_rec.wm_comments    := nvl(self.wm_comments, l_rec.wm_comments);
@@ -324,72 +328,72 @@ as
          update at_streamflow_meas
             set row = l_rec
           where location_code = l_rec.location_code
-            and meas_number = l_rec.meas_number;  
+            and meas_number = l_rec.meas_number;
       else
          insert
            into at_streamflow_meas
-         values l_rec;  
-      end if;   
+         values l_rec;
+      end if;
    end store;
-      
+
    member function to_xml
       return xmltype
    is
-   Begin 
+   Begin
       return xmltype(self.to_string1);
    end to_xml;
-      
+
    member function to_string1
       return varchar2
    is
       l_text    varchar2(32767);
       l_quality varchar2(16);
-            
+
       function make_elem(p_tag in varchar2, p_data in varchar2) return varchar2
       is
          l_elem varchar2(32767);
       begin
-         if p_data is null then 
+         if p_data is null then
             l_elem := '<'||p_tag||'/>';
          else
             l_elem := '<'||p_tag||'>'||p_data||'</'||p_tag||'>';
-         end if; 
+         end if;
          return l_elem;
-      end;  
+      end;
    begin
-      if self.quality is not null then        
+      if self.quality is not null then
          select qual_name
            into l_quality
            from cwms_usgs_meas_qual
           where qual_id = self.quality;
-      end if;                     
+      end if;
       l_text := '<stream-flow-measurement'
                 ||' office-id="'||self.location.office_id||'"'
                 ||' height-unit="'||self.height_unit||'"'
                 ||' flow-unit="'||self.flow_unit||'"'
                 ||case self.temp_unit is not null when true then ' temp-unit="'||self.temp_unit||'"' else null end
                 ||' used="'||case self.used when 'T' then 'true' else 'false' end||'">';
-      l_text := l_text ||make_elem('location',           self.location.get_location_id);                
-      l_text := l_text ||make_elem('number',             self.meas_number);                
-      l_text := l_text ||make_elem('date',               cwms_util.get_xml_time(self.date_time, self.time_zone));                
-      l_text := l_text ||make_elem('agency',             self.agency_id);                
-      l_text := l_text ||make_elem('party',              self.party);                
-      l_text := l_text ||make_elem('gage-height',        cwms_rounding.round_dt_f(self.gage_height, '9999999999'));                
-      l_text := l_text ||make_elem('flow',               cwms_rounding.round_dt_f(self.flow, '9999999999'));                
-      l_text := l_text ||make_elem('current-rating',     self.cur_rating_num);                
-      l_text := l_text ||make_elem('shift-used',         cwms_rounding.round_dt_f(self.shift_used, '9999999999'));                
-      l_text := l_text ||make_elem('percent-difference', cwms_rounding.round_dt_f(self.pct_diff, '9999999999'));                
-      l_text := l_text ||make_elem('quality',            l_quality);                
-      l_text := l_text ||make_elem('delta-height',       cwms_rounding.round_dt_f(self.delta_height, '9999999999'));                
-      l_text := l_text ||make_elem('delta-time',         cwms_rounding.round_dt_f(self.delta_time, '9999999999'));                
-      l_text := l_text ||make_elem('control-condition',  self.ctrl_cond_id);                
-      l_text := l_text ||make_elem('flow-adjustment',    self.flow_adj_id);                
+      l_text := l_text ||make_elem('location',           self.location.get_location_id);
+      l_text := l_text ||make_elem('number',             self.meas_number);
+      l_text := l_text ||make_elem('date',               cwms_util.get_xml_time(self.date_time, self.time_zone));
+      l_text := l_text ||make_elem('agency',             self.agency_id);
+      l_text := l_text ||make_elem('party',              self.party);
+      l_text := l_text ||make_elem('gage-height',        cwms_rounding.round_dt_f(self.gage_height, '9999999999'));
+      l_text := l_text ||make_elem('flow',               cwms_rounding.round_dt_f(self.flow, '9999999999'));
+      l_text := l_text ||make_elem('current-rating',     self.cur_rating_num);
+      l_text := l_text ||make_elem('shift-used',         cwms_rounding.round_dt_f(self.shift_used, '9999999999'));
+      l_text := l_text ||make_elem('percent-difference', cwms_rounding.round_dt_f(self.pct_diff, '9999999999'));
+      l_text := l_text ||make_elem('quality',            l_quality);
+      l_text := l_text ||make_elem('delta-height',       cwms_rounding.round_dt_f(self.delta_height, '9999999999'));
+      l_text := l_text ||make_elem('delta-time',         cwms_rounding.round_dt_f(self.delta_time, '9999999999'));
+      l_text := l_text ||make_elem('control-condition',  self.ctrl_cond_id);
+      l_text := l_text ||make_elem('flow-adjustment',    self.flow_adj_id);
       l_text := l_text ||make_elem('remarks',            self.remarks);
       l_text := l_text ||make_elem('air-temp',           cwms_rounding.round_dt_f(self.air_temp, '9999999999'));
       l_text := l_text ||make_elem('water-temp',         cwms_rounding.round_dt_f(self.water_temp, '9999999999'));
       l_text := l_text ||make_elem('wm-comments',        self.wm_comments);
       l_text := l_text || '</stream-flow-measurement>';
-      return l_text;            
+      return l_text;
    end to_string1;
 end;
 /
