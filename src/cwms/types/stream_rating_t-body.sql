@@ -44,6 +44,7 @@ as
       l_shift            xmltype;
       l_offsets          xmltype;
       l_rating_points    xmltype;
+      l_extension_points xmltype;
       l_point            xmltype;
       l_timestr          varchar2(32);
       l_location_id      varchar2(49);
@@ -352,6 +353,27 @@ as
             self.rating_info.rating_values(i).dep_value := get_number(l_point, '/point/dep');
             self.rating_info.rating_values(i).note_id   := get_text(l_point, '/point/note');
          end loop;
+         l_extension_points := get_node(l_xml, '/usgs-stream-rating/extension-points');
+         if l_extension_points is not null then
+            ------------------------------
+            -- for each extension point --
+            ------------------------------
+            for i in 1..9999999 loop
+               l_point := get_node(l_extension_points, '/extension-points/point['||i||']');
+               exit when l_point is null;
+               if self.rating_info is null then
+                  cwms_err.raise('ERROR', 'Cannot create rating with extension points and no rating points');
+               end if;
+               if self.rating_info.extension_values is null then
+                  self.rating_info.extension_values := rating_value_tab_t();
+               end if;
+               self.rating_info.extension_values.extend();
+               self.rating_info.extension_values(i) := rating_value_t();
+               self.rating_info.extension_values(i).ind_value := get_number(l_point, '/point/ind');
+               self.rating_info.extension_values(i).dep_value := get_number(l_point, '/point/dep');
+               self.rating_info.extension_values(i).note_id   := get_text(l_point, '/point/note');
+            end loop;
+         end if;
          if self.rating_info is not null then
             self.rating_info.constructed := 'T';
             self.rating_info.validate_obj(1);
@@ -1121,12 +1143,15 @@ as
             end loop;
          cwms_util.append(l_text, '</height-offsets>');
       end if;
-      -------------------
-      -- rating points --
-      -------------------
+      ---------------------------------
+      -- rating points and extension --
+      ---------------------------------
       if l_clone.rating_info is null then
          cwms_util.append(l_text, '<rating-points/>');
       else
+         -------------------
+         -- rating points --
+         -------------------
          cwms_util.append(l_text, '<rating-points>');
          for i in 1..l_clone.rating_info.rating_values.count loop
             cwms_util.append(l_text,
@@ -1144,6 +1169,25 @@ as
             cwms_util.append(l_text, '</point>');
          end loop;
          cwms_util.append(l_text, '</rating-points>');
+         if l_clone.rating_info.extension_values is not null then
+            cwms_util.append(l_text, '<extension-points>');
+            for i in 1..l_clone.rating_info.extension_values.count loop
+               cwms_util.append(l_text,
+                  '<point><ind>'
+                  ||cwms_rounding.round_dt_f(l_clone.rating_info.extension_values(i).ind_value, '9999999999')
+                  ||'</ind><dep>'
+                  ||cwms_rounding.round_dt_f(l_clone.rating_info.extension_values(i).dep_value, '9999999999')
+                  ||'</dep>');
+               if l_clone.rating_info.extension_values(i).note_id is not null then
+                  cwms_util.append(l_text,
+                     '<note>'
+                     ||l_clone.rating_info.extension_values(i).note_id
+                     ||'</note>');
+               end if;
+               cwms_util.append(l_text, '</point>');
+            end loop;
+            cwms_util.append(l_text, '</extension-points>');
+         end if;
       end if;
       cwms_util.append(l_text, '</usgs-stream-rating>');
       dbms_lob.close(l_text);
@@ -1358,6 +1402,7 @@ as
                k := k + 1;
                l_heights(k) := rating_info.extension_values(i).ind_value;
                l_flows(k) := rating_info.extension_values(i).dep_value;
+               i := 1 + i;
             end loop;
          end if;
          ----------------------------
@@ -1385,6 +1430,7 @@ as
                   l_heights(k) := rating_info.extension_values(i).ind_value;
                   l_flows(k) := rating_info.extension_values(i).dep_value;
                end if;
+               i := i + 1;
             end loop;
          end if;
          l_heights_properties := cwms_lookup.analyze_sequence(l_heights);

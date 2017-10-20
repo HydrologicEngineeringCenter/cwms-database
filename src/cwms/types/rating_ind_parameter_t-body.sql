@@ -187,9 +187,9 @@ as
             exit rating_points when l_rating_points is null;
             if j > 1 and l_ind_params.count = 1 then
                cwms_err.raise(
-                  'ERROR', 
+                  'ERROR',
                   'Multiple <'||l_value_type(i)||'> elements are not allowed in a single independent parameter rating.');
-            end if; 
+            end if;
             l_processed_points := true;
             l_position := 0;
             l_rating_value_tab_id := l_value_type(i)||'=';
@@ -216,7 +216,7 @@ as
                else
                   if l_ind_params.count = 1 then
                cwms_err.raise(
-                  'ERROR', 
+                  'ERROR',
                   '<other-ind> elements are not allowed in a single independent parameter rating.');
                   end if;
                end if;
@@ -584,7 +584,7 @@ as
              where upper(bp.base_parameter_id) = upper(cwms_util.get_base_id(l_ind_param_id))
             and uc.to_unit_code = bp.unit_code
             and uc.from_unit_id = l_ind_unit_id;
-         exception 
+         exception
             when no_data_found then
                cwms_err.raise(
                   'ERROR',
@@ -677,12 +677,12 @@ as
             and uc.from_unit_code = bp.unit_code
             and uc.to_unit_id = l_ind_unit_id;
          for i in 1..self.rating_values.count loop
-            self.rating_values(i).ind_value := 
+            self.rating_values(i).ind_value :=
                cwms_rounding.round_dd_f(self.rating_values(i).ind_value * l_ind_factor + l_ind_offset, '9999999999');
             if l_deepest then
                self.rating_values(i).dep_value :=
                   cwms_rounding.round_dd_f(self.rating_values(i).dep_value * l_dep_factor + l_dep_offset, '9999999999');
-            else                                                                 
+            else
                self.rating_values(i).dep_rating_ind_param.convert_to_native_units(
                   l_remaining_parameters_id,
                   l_remaining_units_id);
@@ -882,15 +882,27 @@ as
             --------------------------------
             -- output the <point> element --
             --------------------------------
-            cwms_util.append(l_text, '<point><ind>'
-               ||cwms_rounding.round_dt_f(self.rating_values(i).ind_value, '9999999999')
-               ||'</ind><dep>'
-               ||cwms_rounding.round_dt_f(self.rating_values(i).dep_value, '9999999999')
-               ||'</dep>'
-               ||case self.rating_values(i).note_id is not null
-                    when true then '<note>'||self.rating_values(i).note_id||'</note>'
-                 end
-               ||'</point>');
+            if p_is_extension then
+               cwms_util.append(l_text, '<point><ind>'
+                  ||cwms_rounding.round_dt_f(self.extension_values(i).ind_value, '9999999999')
+                  ||'</ind><dep>'
+                  ||cwms_rounding.round_dt_f(self.extension_values(i).dep_value, '9999999999')
+                  ||'</dep>'
+                  ||case self.extension_values(i).note_id is not null
+                       when true then '<note>'||self.extension_values(i).note_id||'</note>'
+                    end
+                  ||'</point>');
+            else
+               cwms_util.append(l_text, '<point><ind>'
+                  ||cwms_rounding.round_dt_f(self.rating_values(i).ind_value, '9999999999')
+                  ||'</ind><dep>'
+                  ||cwms_rounding.round_dt_f(self.rating_values(i).dep_value, '9999999999')
+                  ||'</dep>'
+                  ||case self.rating_values(i).note_id is not null
+                       when true then '<note>'||self.rating_values(i).note_id||'</note>'
+                    end
+                  ||'</point>');
+            end if;
          end if;
       end loop;
       if l_deepest then
@@ -937,10 +949,10 @@ as
                   if self.rating_values(i).dep_value is not null then
                      self.rating_values(i).dep_value := self.rating_values(i).dep_value + p_offset;
                   else
-                     self.rating_values(i).dep_rating_ind_param.add_offset(p_offset, -1); 
+                     self.rating_values(i).dep_rating_ind_param.add_offset(p_offset, -1);
                   end if;
-               else  
-                  self.rating_values(i).dep_rating_ind_param.add_offset(p_offset, p_depth - 1); 
+               else
+                  self.rating_values(i).dep_rating_ind_param.add_offset(p_offset, p_depth - 1);
             end case;
          end loop;
       end if;
@@ -954,7 +966,7 @@ as
             end case;
          end loop;
       end if;
-   end;    
+   end;
 
    overriding member function rate(
       p_ind_values  in out nocopy double_tab_t,
@@ -1091,47 +1103,47 @@ as
             case
             when p_ind_values(p_position) < l_ind(1) then
                case l_out_range_low_behavior
-               when cwms_lookup.method_null        then l_result := null;                                            
-               when cwms_lookup.method_error       then cwms_err.raise('ERROR', 'Value '||p_ind_values(p_position)||' is below curve');                                     
-               when cwms_lookup.method_linear      then cwms_err.raise('ERROR', 'Cannot extrapolate below curve: curve has only one independent value');                  
-               when cwms_lookup.method_logarithmic then cwms_err.raise('ERROR', 'Cannot extrapolate below curve: curve has only one independent value');             
-               when cwms_lookup.method_lin_log     then cwms_err.raise('ERROR', 'Cannot extrapolate below curve: curve has only one independent value'); 
-               when cwms_lookup.method_log_lin     then cwms_err.raise('ERROR', 'Cannot extrapolate below curve: curve has only one independent value'); 
-               when cwms_lookup.method_previous    then cwms_err.raise('ERROR', 'No previous value');                                                 
-               when cwms_lookup.method_next        then null;                                                
-               when cwms_lookup.method_nearest     then null;                                               
-               when cwms_lookup.method_lower       then cwms_err.raise('ERROR', 'No lower value');                                                
-               when cwms_lookup.method_higher      then null;                                               
+               when cwms_lookup.method_null        then l_result := null;
+               when cwms_lookup.method_error       then cwms_err.raise('ERROR', 'Value '||p_ind_values(p_position)||' is below curve');
+               when cwms_lookup.method_linear      then cwms_err.raise('ERROR', 'Cannot extrapolate below curve: curve has only one independent value');
+               when cwms_lookup.method_logarithmic then cwms_err.raise('ERROR', 'Cannot extrapolate below curve: curve has only one independent value');
+               when cwms_lookup.method_lin_log     then cwms_err.raise('ERROR', 'Cannot extrapolate below curve: curve has only one independent value');
+               when cwms_lookup.method_log_lin     then cwms_err.raise('ERROR', 'Cannot extrapolate below curve: curve has only one independent value');
+               when cwms_lookup.method_previous    then cwms_err.raise('ERROR', 'No previous value');
+               when cwms_lookup.method_next        then null;
+               when cwms_lookup.method_nearest     then null;
+               when cwms_lookup.method_lower       then cwms_err.raise('ERROR', 'No lower value');
+               when cwms_lookup.method_higher      then null;
                when cwms_lookup.method_closest     then null;
                end case;
             when p_ind_values(p_position) > l_ind(1) then
                case l_out_range_high_behavior
-               when cwms_lookup.method_null        then l_result := null;                                            
-               when cwms_lookup.method_error       then cwms_err.raise('ERROR', 'Value '||p_ind_values(p_position)||' is above curve');                                     
-               when cwms_lookup.method_linear      then cwms_err.raise('ERROR', 'Cannot extrapolate above curve: curve has only one independent value');                  
-               when cwms_lookup.method_logarithmic then cwms_err.raise('ERROR', 'Cannot extrapolate above curve: curve has only one independent value');             
-               when cwms_lookup.method_lin_log     then cwms_err.raise('ERROR', 'Cannot extrapolate above curve: curve has only one independent value'); 
-               when cwms_lookup.method_log_lin     then cwms_err.raise('ERROR', 'Cannot extrapolate above curve: curve has only one independent value'); 
-               when cwms_lookup.method_previous    then null;                                                  
-               when cwms_lookup.method_next        then cwms_err.raise('ERROR', 'No next value');                                                
-               when cwms_lookup.method_nearest     then null;                                               
-               when cwms_lookup.method_lower       then null;                                                
-               when cwms_lookup.method_higher      then cwms_err.raise('ERROR', 'No higher value');                                                
+               when cwms_lookup.method_null        then l_result := null;
+               when cwms_lookup.method_error       then cwms_err.raise('ERROR', 'Value '||p_ind_values(p_position)||' is above curve');
+               when cwms_lookup.method_linear      then cwms_err.raise('ERROR', 'Cannot extrapolate above curve: curve has only one independent value');
+               when cwms_lookup.method_logarithmic then cwms_err.raise('ERROR', 'Cannot extrapolate above curve: curve has only one independent value');
+               when cwms_lookup.method_lin_log     then cwms_err.raise('ERROR', 'Cannot extrapolate above curve: curve has only one independent value');
+               when cwms_lookup.method_log_lin     then cwms_err.raise('ERROR', 'Cannot extrapolate above curve: curve has only one independent value');
+               when cwms_lookup.method_previous    then null;
+               when cwms_lookup.method_next        then cwms_err.raise('ERROR', 'No next value');
+               when cwms_lookup.method_nearest     then null;
+               when cwms_lookup.method_lower       then null;
+               when cwms_lookup.method_higher      then cwms_err.raise('ERROR', 'No higher value');
                when cwms_lookup.method_closest     then null;
                end case;
-            else --  p_ind_values(p_position) = l_ind(1)  
+            else --  p_ind_values(p_position) = l_ind(1)
                case l_in_range_behavior
-               when cwms_lookup.method_null        then l_result := null;                                            
-               when cwms_lookup.method_error       then cwms_err.raise('ERROR', 'Value '||p_ind_values(p_position)||' matches only independent value in rating');                                     
-               when cwms_lookup.method_linear      then null;                  
-               when cwms_lookup.method_logarithmic then null;             
-               when cwms_lookup.method_lin_log     then null; 
-               when cwms_lookup.method_log_lin     then null; 
-               when cwms_lookup.method_previous    then cwms_err.raise('ERROR', 'No previous value');                                                 
-               when cwms_lookup.method_next        then cwms_err.raise('ERROR', 'No next value');                                                
-               when cwms_lookup.method_nearest     then null;                                               
-               when cwms_lookup.method_lower       then cwms_err.raise('ERROR', 'No lower value');                                                
-               when cwms_lookup.method_higher      then cwms_err.raise('ERROR', 'No higher value');                                               
+               when cwms_lookup.method_null        then l_result := null;
+               when cwms_lookup.method_error       then cwms_err.raise('ERROR', 'Value '||p_ind_values(p_position)||' matches only independent value in rating');
+               when cwms_lookup.method_linear      then null;
+               when cwms_lookup.method_logarithmic then null;
+               when cwms_lookup.method_lin_log     then null;
+               when cwms_lookup.method_log_lin     then null;
+               when cwms_lookup.method_previous    then cwms_err.raise('ERROR', 'No previous value');
+               when cwms_lookup.method_next        then cwms_err.raise('ERROR', 'No next value');
+               when cwms_lookup.method_nearest     then null;
+               when cwms_lookup.method_lower       then cwms_err.raise('ERROR', 'No lower value');
+               when cwms_lookup.method_higher      then cwms_err.raise('ERROR', 'No higher value');
                when cwms_lookup.method_closest     then null;
                end case;
             end case;
