@@ -609,6 +609,7 @@ procedure log_db_message(
    p_msg_level in integer,
    p_message   in varchar2)
 is
+   pragma autonomous_transaction;
    l_message   varchar2(4000) := p_message;
    i           integer;
    lf constant varchar2(1) := chr(10);
