@@ -6848,7 +6848,8 @@ begin
             l_rating_count := l_rating_count + l_ratings(i).count;
             for j in 1..l_ratings(i).count loop
                begin
-                  select r.rating_code,
+                  select distinct
+                         r.rating_code,
                          r.rating_spec_code,
                          r.template_code
                     into l_codes(1),
