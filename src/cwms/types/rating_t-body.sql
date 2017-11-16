@@ -401,7 +401,7 @@ as
                ||self.rating_spec_id);
          end if;
          l_source_ratings_xml := l_xml_tab(1);
-         l_xml_tab := get_nodes(l_source_ratings_xml, '/source-ratings/rating-spec-id', null, '/source-ratings/rating-spec/@position');
+         l_xml_tab := get_nodes(l_source_ratings_xml, '/source-ratings/rating-spec-id', null, '/source-ratings/rating-spec-id/@position');
          self.source_ratings := str_tab_t();
          self.source_ratings.extend(l_xml_tab.count);
          for i in 1..l_xml_tab.count loop
@@ -1831,7 +1831,14 @@ as
                   when cwms_util.is_expression_function(l_tokens(i))  then null;
                   when cwms_util.is_expression_operator(l_tokens(i))  then null;
                   when regexp_instr(l_tokens(i), '^-?(I|ARG)\d$') = 1 then null;
-                  else cwms_err.raise('INVALID_ITEM', l_tokens(i), 'math expression token');
+                  else
+                     declare
+                        x number;
+                     begin
+                        x := to_number(l_tokens(i));
+                     exception 
+                        when others then cwms_err.raise('INVALID_ITEM', l_tokens(i), 'math expression token');
+                     end;
                   end case;
                end loop;
                p_is_rating := false;
