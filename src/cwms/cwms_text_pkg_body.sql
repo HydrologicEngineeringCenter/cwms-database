@@ -789,6 +789,7 @@ as
             write_clob(l_rec1.office_id, l_rec1.id);
          end if;
       end loop;
+      close l_cursor;
 
       dbms_lob.close(l_ids);
       p_ids := l_ids;

@@ -2867,6 +2867,7 @@ AS
                                amount,
                                output_row || CHR (10));
       END LOOP;
+      CLOSE l_shef_crit_lines_rc;
 
       DBMS_LOB.close (l_crit_file_clob);
       RETURN l_crit_file_clob;
@@ -3740,6 +3741,7 @@ AS
             store_shef_crit_file (p_data_stream_id   => l_data_stream_id,
                                   p_db_office_id     => l_db_office_id);
          END LOOP;
+         CLOSE l_cur;
 
 
 

@@ -741,6 +741,7 @@ AS
 						l_rows_msg := l_rows_msg || l_row_num;
 						l_tmp := 1;
 					END LOOP;
+					CLOSE l_rc_rows;
 
 					l_seq_id :=
 						apex_collection.add_member (p_error_collection_name,
@@ -765,6 +766,7 @@ AS
 						p_attr_value		  => l_shef_id_dup
 					);
 				END LOOP;
+				CLOSE l_rc;
 			END IF;
 		END IF;
 

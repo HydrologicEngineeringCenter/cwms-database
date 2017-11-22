@@ -3379,8 +3379,8 @@ AS
             BULK COLLECT INTO date_tab, val_tab, qual_tab;
 
             t (i).data.EXTEND (rec%ROWCOUNT);
-
-            FOR j IN 1 .. rec%ROWCOUNT
+            close rec;
+            FOR j IN 1 .. t(i).data.count
             LOOP
                t (i).data (j) :=
                   tsv_type (
