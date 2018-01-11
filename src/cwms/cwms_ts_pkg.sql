@@ -1180,8 +1180,17 @@ AS
       RETURN NUMBER
       RESULT_CACHE;
 
+   -- not documented
    FUNCTION use_first_table (p_timestamp IN TIMESTAMP DEFAULT NULL)
       RETURN BOOLEAN;
+
+   -- not documented
+   function same_vq(
+      v1 in binary_double,
+      q1 in integer,
+      v2 in binary_double,
+      q2 in integer)
+      return varchar2;
 
    /**
     * Stores time series data to the database
@@ -3028,6 +3037,85 @@ AS
    function get_nulls_storage_policy(
       p_ts_code in integer)
       return integer;
+      
+   /**
+    * Sets the default policy for whether to filter out duplicate value/quality combinations when storing for the specified office
+    *
+    * @param p_filter_duplicates The storage policy. Must be NULL, 'T', or 'F'. If NULL, the policy is reset and the database default (no filtering) will be used.
+    * @param p_office_id The text identifier of the office to set the policy for.  If unspecified or NULL, the current session user's default office is used.
+    *
+    * @since CWMS 3.1
+    */
+   procedure set_filter_duplicates_ofc(
+      p_filter_duplicates in varchar2,
+      p_office_id         in varchar2 default null);
+      
+   /**
+    * Sets the policy for the specified time series to filter out time/value/quality combinations that duplicate existing data before storing
+    *
+    * @param p_filter_duplicates The storage policy. Must be NULL, 'T', or 'F'. If NULL, the policy is reset and the office default (if any) will be used.
+    * @param p_ts_id             The time series identifier to set the policy for.
+    * @param p_office_id         The text identifier of the office that owns the time series.  If unspecified or NULL, the current session user's default office is used.
+    *
+    * @since CWMS 3.1
+    */
+   procedure set_filter_duplicates_ts(
+      p_filter_duplicates in varchar2,
+      p_ts_id             in varchar2,
+      p_office_id         in varchar2 default null);
+      
+   /**
+    * Sets whether to filter out duplicate value/quality combinations when storing the specified time series
+    *
+    * @param p_filter_duplicates The storage policy. Must be NULL, 'T', or 'F'. If NULL, the policy is reset and the office default (if any) will be used.
+    * @param p_ts_code           The numeric code identifying the time series to set the effective policy for.
+    *
+    * @since CWMS 3.1
+    */
+   procedure set_filter_duplicates_ts(
+      p_filter_duplicates in varchar2,
+      p_ts_code           in integer);
+      
+   /**
+    * Retrieves whether to filter out duplicate value/quality combinations when storing time series for the specified office
+    *
+    * @param p_office_id  The text identifier of the office to retrieve the policy for.  If unspecified or NULL, the current session user's default office is used.
+    *
+    * @return Whether to filter out duplicate value/quality combinations when storing time series for the specified office ('T'/'F'/NULL). NULL indicicates database default.
+    *
+    * @since CWMS 3.1
+    */
+   function get_filter_duplicates_ofc(
+      p_office_id in varchar2 default null)
+      return varchar2;                  
+      
+   /**
+    * Retrieves whether to filter out duplicate value/quality combinations when storing the specified time series
+    *
+    * @param p_ts_id     The time series identifier to retrieve the policy for.
+    * @param p_office_id The text identifier of the office that owns the time series.  If unspecified or NULL, the current session user's default office is used.
+    *
+    * @return Whether to filter out duplicate value/quality combinations when storing the specified time series ('T'/'F')
+    *
+    * @since CWMS 3.1
+    */
+   function get_filter_duplicates(
+      p_ts_id     in varchar2,
+      p_office_id in varchar2 default null)
+      return varchar2;
+      
+   /**
+    * Retrieves whether to filter out duplicate value/quality combinations when storing the specified time series
+    *
+    * @param p_ts_code The numeric code identifying the time series to retrieve the effective policy for.
+    *
+    * @return Whether to filter out duplicate value/quality combinations when storing the specified time series ('T'/'F')
+    *
+    * @since CWMS 3.1
+    */
+   function get_filter_duplicates(
+      p_ts_code in integer)
+      return varchar2;
                            
    /**
     * Retreives time series in a number of formats for a combination time window, timezone, formats, and vertical datums

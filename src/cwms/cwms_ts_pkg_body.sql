@@ -3743,6 +3743,37 @@ AS
       END IF;
    END time_series_updated;
 
+   function same_vq(
+      v1 in binary_double,
+      q1 in integer,
+      v2 in binary_double,
+      q2 in integer)
+      return varchar2
+   is
+   begin
+      case
+      when (v1 is null) != (v2 is null) then 
+         return 'F'; -- mixed nullity on values
+      when (q1 is null) != (q2 is null) then 
+         return 'F'; -- mixed nullity on quality
+      when v1 is null then
+         if q1 is null or q1 = q2 then 
+            return 'T'; -- null values / same quality
+         else 
+            return 'F'; -- null values / different quality
+         end if;
+      else
+         case
+         when q1 is not null and q1 != q2 then
+            return 'F'; -- values present / different quality
+         when abs(v1 - v2) < 1e-8D then
+            return 'T'; -- same values / same quality
+         else
+            return 'F'; -- different values
+         end case;
+      end case;
+   end same_vq;
+
 
    --*******************************************************************   --
    --*******************************************************************   --
@@ -3847,14 +3878,16 @@ AS
       l_irr_interval        integer;
       l_irr_offset          integer;
       l_filtered_ts_data    tsv_array;
+      l_filter_duplicates   varchar2(1);
    --
       function bitor (num1 in integer, num2 in integer)
          return integer
       is
       begin
          return num1 + num2 - bitand (num1, num2);
-      end;
-   BEGIN
+      end bitor;
+      
+   begin
       DBMS_APPLICATION_INFO.set_module ('cwms_ts_store.store_ts',
                                         'get tscode from ts_id');
       cwms_apex.aa1 (
@@ -3974,29 +4007,42 @@ AS
 
       DBMS_APPLICATION_INFO.set_action ('Check for nulls in incoming data');
       
-      l_timeseries_data := tsv_array();
       case get_nulls_storage_policy(l_ts_code)
-         when set_null_values_to_missing then
-            l_timeseries_data := p_timeseries_data;
-            for i in 1..l_timeseries_data.count loop
-               if l_timeseries_data(i).value is null then
-                  l_timeseries_data(i).quality_code := bitor(l_timeseries_data(i).quality_code, 5);
-               end if;
-            end loop;
-         when reject_ts_with_null_values then
-            for i in 1..p_timeseries_data.count loop
-               if p_timeseries_data(i).value is null and not cwms_ts.quality_is_missing(p_timeseries_data(i).quality_code) then
-                  cwms_err.raise('ERROR', 'Incoming data contains null values with non-missing quality.');
-               end if;
-            end loop; 
-            l_timeseries_data := p_timeseries_data;
-         else -- filter_out_null_values or unset
-            for i in 1..p_timeseries_data.count loop
-               if p_timeseries_data(i).value is not null or cwms_ts.quality_is_missing(p_timeseries_data(i).quality_code) then
-                  l_timeseries_data.extend;
-                  l_timeseries_data(l_timeseries_data.count) := p_timeseries_data(i);
-               end if;
-            end loop;
+      when set_null_values_to_missing then
+         --------------------------------------------
+         -- add missing quality to all null values --
+         --------------------------------------------
+         select tsv_type(
+                   date_time,
+                   value,
+                   case when value is null then quality_code + 5 - bitand(quality_code, 5) else quality_code end)
+           bulk collect
+           into l_timeseries_data
+           from table(p_timeseries_data);
+      when reject_ts_with_null_values then
+         ------------------------------------------------
+         -- reject ts if nulls without missing quality --
+         ------------------------------------------------
+         select count(*)
+           into l_count
+           from table(p_timeseries_data)
+          where value is null and get_quality_validity(quality_code) != 'MISSING';
+         if l_count > 0 then 
+            cwms_err.raise('ERROR', 'Incoming data contains null values with non-missing quality.');
+         end if;
+         l_timeseries_data := p_timeseries_data;
+      else -- filter_out_null_values or unset
+         --------------------------------------------------
+         -- filter out any nulls without missing quality --
+         --------------------------------------------------
+         select tsv_type(
+                   date_time,
+                   value,
+                   quality_code)
+           bulk collect
+           into l_timeseries_data
+           from table(p_timeseries_data)
+          where value is not null or get_quality_validity(quality_code) = 'MISSING';
       end case;
 
       if l_timeseries_data.count = 0 then
@@ -4198,6 +4244,8 @@ AS
              MAX (trunc(CAST ( (t.date_time AT TIME ZONE 'UTC') AS DATE), 'mi'))
         INTO mindate, maxdate
         FROM TABLE (CAST (l_timeseries_data AS tsv_array)) t;
+        
+      l_filter_duplicates := get_filter_duplicates(l_ts_code);
 
 --      DBMS_OUTPUT.put_line (
 --            '*****************************'
@@ -4273,6 +4321,7 @@ AS
                               on (t1.ts_code = :l_ts_code and t1.date_time = t2.date_time and t1.version_date = :l_version_date)
                       when matched then
                          update set t1.value = t2.value, t1.data_entry_date = :l_store_date, t1.quality_code = t2.quality_code
+                         where :l_filter_duplicates = ''F'' or cwms_ts.same_vq(t1.value, t1.quality_code, t2.value, t2.quality_code) = ''F''
                       when not matched then
                          insert     (  ts_code,
                                        date_time,
@@ -4298,6 +4347,7 @@ AS
                         l_ts_code,
                         l_version_date,
                         l_store_date,
+                        l_filter_duplicates,
                         l_ts_code,
                         l_store_date,
                         l_version_date;
@@ -4342,12 +4392,14 @@ AS
                               on (t1.ts_code = :l_ts_code and t1.date_time = t2.date_time and t1.version_date = :l_version_date)
                       when matched then
                          update set t1.value = t2.value, t1.data_entry_date = :l_store_date, t1.quality_code = t2.quality_code
-                                 where (t1.quality_code in (select quality_code
-                                                              from cwms_data_quality q
-                                                             where q.protection_id = ''UNPROTECTED''))
-                                    or (t2.quality_code in (select quality_code
-                                                              from cwms_data_quality q
-                                                             where q.protection_id = ''PROTECTED''))
+                          where ((t1.quality_code in (select quality_code
+                                                        from cwms_data_quality q
+                                                       where q.protection_id = ''UNPROTECTED''))
+                                 or
+                                 (t2.quality_code in (select quality_code
+                                                        from cwms_data_quality q
+                                                       where q.protection_id = ''PROTECTED'')))
+                            and (:l_filter_duplicates = ''F'' or cwms_ts.same_vq(t1.value, t1.quality_code, t2.value, t2.quality_code) = ''F'')
                       when not matched then
                          insert     (  ts_code,
                                        date_time,
@@ -4372,6 +4424,7 @@ AS
                         l_ts_code,
                         l_version_date,
                         l_store_date,
+                        l_filter_duplicates,
                         l_ts_code,
                         l_store_date,
                         l_version_date;
@@ -4486,15 +4539,20 @@ AS
                                  on (t1.ts_code = :l_ts_code and t1.date_time = t2.date_time and t1.version_date = :l_version_date)
                          when matched then
                             update set t1.value = t2.value, t1.quality_code = t2.quality_code, t1.data_entry_date = :l_store_date
-                                    where t1.quality_code in (select quality_code
-                                                                from cwms_data_quality q
-                                                               where q.validity_id = ''MISSING'')
-                                      and ((t1.quality_code in (select quality_code
-                                                                  from cwms_data_quality q
-                                                                 where q.protection_id = ''UNPROTECTED''))
-                                        or (t2.quality_code in (select quality_code
-                                                                  from cwms_data_quality q
-                                                                 where q.protection_id = ''PROTECTED'')))
+                             where (t1.quality_code in (select quality_code
+                                                          from cwms_data_quality q
+                                                         where q.validity_id = ''MISSING'')
+                                    and
+                                    ((t1.quality_code in (select quality_code
+                                                            from cwms_data_quality q
+                                                           where q.protection_id = ''UNPROTECTED''))
+                                     or                      
+                                     (t2.quality_code in (select quality_code
+                                                            from cwms_data_quality q
+                                                           where q.protection_id = ''PROTECTED'')))
+                                   )
+                                   and
+                                   (:l_filter_duplicates = ''F'' or cwms_ts.same_vq(t1.value, t1.quality_code, t2.value, t2.quality_code) = ''F'')
                          when not matched then
                             insert     (  ts_code,
                                           date_time,
@@ -4538,9 +4596,12 @@ AS
                                  on (t1.ts_code = :l_ts_code and t1.date_time = t2.date_time and t1.version_date = :l_version_date)
                          when matched then
                             update set t1.value = t2.value, t1.quality_code = t2.quality_code, t1.data_entry_date = :l_store_date
-                                    where t1.quality_code in (select quality_code
-                                                                from cwms_data_quality q
-                                                               where q.validity_id = ''MISSING'')
+                             where (t1.quality_code in (select quality_code
+                                                         from cwms_data_quality q
+                                                        where q.validity_id = ''MISSING'')
+                                   )
+                                   and
+                                   (:l_filter_duplicates = ''F'' or cwms_ts.same_vq(t1.value, t1.quality_code, t2.value, t2.quality_code) = ''F'')
                          when not matched then
                             insert     (  ts_code,
                                           date_time,
@@ -4567,6 +4628,7 @@ AS
                         l_ts_code,
                         l_version_date,
                         l_store_date,
+                        l_filter_duplicates,
                         l_ts_code,
                         l_store_date,
                         l_version_date;
@@ -4616,9 +4678,12 @@ AS
                               on (t1.ts_code = :l_ts_code and t1.date_time = t2.date_time and t1.version_date = :l_version_date)
                       when matched then
                          update set t1.value = t2.value, t1.data_entry_date = :l_store_date, t1.quality_code = t2.quality_code
-                                 where t2.quality_code not in (select quality_code
-                                                                 from cwms_data_quality
-                                                                where validity_id = ''MISSING'')
+                          where (t2.quality_code not in (select quality_code
+                                                           from cwms_data_quality
+                                                          where validity_id = ''MISSING'')
+                                )
+                                and
+                                (:l_filter_duplicates = ''F'' or cwms_ts.same_vq(t1.value, t1.quality_code, t2.value, t2.quality_code) = ''F'')
                       when not matched then
                          insert     (  ts_code,
                                        date_time,
@@ -4644,6 +4709,7 @@ AS
                         l_ts_code,
                         l_version_date,
                         l_store_date,
+                        l_filter_duplicates,
                         l_ts_code,
                         l_store_date,
                         l_version_date;
@@ -4693,15 +4759,20 @@ AS
                               on (t1.ts_code = :l_ts_code and t1.date_time = t2.date_time and t1.version_date = :l_version_date)
                       when matched then
                          update set t1.value = t2.value, t1.data_entry_date = :l_store_date, t1.quality_code = t2.quality_code
-                                 where ((t1.quality_code in (select quality_code
-                                                               from cwms_data_quality q
-                                                              where q.protection_id = ''UNPROTECTED''))
-                                     or (t2.quality_code in (select quality_code
-                                                               from cwms_data_quality q
-                                                              where q.protection_id = ''PROTECTED'')))
-                                   and (t2.quality_code not in (select quality_code
-                                                                  from cwms_data_quality q
-                                                                 where q.validity_id = ''MISSING''))
+                          where (((t1.quality_code in (select quality_code
+                                                         from cwms_data_quality q
+                                                        where q.protection_id = ''UNPROTECTED''))
+                                  or                        
+                                  (t2.quality_code in (select quality_code
+                                                         from cwms_data_quality q
+                                                        where q.protection_id = ''PROTECTED'')))
+                                 and                       
+                                 (t2.quality_code not in (select quality_code
+                                                            from cwms_data_quality q
+                                                           where q.validity_id = ''MISSING''))
+                                )
+                                and
+                                (:l_filter_duplicates = ''F'' or cwms_ts.same_vq(t1.value, t1.quality_code, t2.value, t2.quality_code) = ''F'')
                       when not matched then
                          insert     (  ts_code,
                                        date_time,
@@ -4726,6 +4797,7 @@ AS
                         l_ts_code,
                         l_version_date,
                         l_store_date,
+                        l_filter_duplicates,
                         l_ts_code,
                         l_store_date,
                         l_version_date;
@@ -10716,6 +10788,172 @@ end retrieve_existing_item_counts;
       end if;
       return l_policy;
    end get_nulls_storage_policy;
+      
+   procedure set_filter_duplicates_ofc(
+      p_filter_duplicates in varchar2,
+      p_office_id         in varchar2 default null)
+   is
+   begin
+      ------------------
+      -- sanity check --
+      ------------------
+      if p_filter_duplicates is not null and p_filter_duplicates not in ('T', 'F') then
+         cwms_err.raise(
+            'ERROR',
+            'P_FILTER_DUPLICATES must be NULL, ''T'', or ''F'''); 
+      end if;
+      cwms_msg.log_db_message(
+         'CWMS_TS.SET_FILTER_DUPLICATES_OFC',
+         cwms_msg.msg_level_normal,
+         'Setting filter duplicates policy to '
+         || nvl(p_filter_duplicates, 'NULL (reset) for office')
+         ||cwms_util.get_db_office_id(p_office_id));
+      if p_filter_duplicates is null
+      then
+         cwms_properties.delete_property(
+            p_category  => 'TIMESERIES', 
+            p_id        => 'storage.filter_duplicates.office', 
+            p_office_id => cwms_util.get_db_office_id(p_office_id));
+      else
+         cwms_properties.set_property(
+            p_category  => 'TIMESERIES', 
+            p_id        => 'storage.filter_duplicates.office', 
+            p_value     => p_filter_duplicates, 
+            p_comment   => null, 
+            p_office_id => cwms_util.get_db_office_id(p_office_id));
+      end if;
+   end set_filter_duplicates_ofc;
+      
+   procedure set_filter_duplicates_ts(
+      p_filter_duplicates in varchar2,
+      p_ts_id             in varchar2,
+      p_office_id         in varchar2 default null)
+   is
+   begin
+      ------------------
+      -- sanity check --
+      ------------------
+      if p_ts_id is null then
+         cwms_err.raise(
+            'ERROR',
+            'P_TS_ID must not be NULL'); 
+      end if;
+      set_filter_duplicates_ts(
+         p_filter_duplicates,
+         get_ts_code(p_ts_id, p_office_id));
+   end set_filter_duplicates_ts;
+      
+   procedure set_filter_duplicates_ts(
+      p_filter_duplicates in varchar2,
+      p_ts_code           in integer)
+   is
+      l_office_id varchar2(16);
+      l_ts_id     varchar2(256);
+   begin
+      ------------------
+      -- sanity check --
+      ------------------
+      if p_ts_code is null then
+         cwms_err.raise(
+            'ERROR',
+            'P_TS_CODE must not be NULL'); 
+      end if;
+      if p_filter_duplicates is not null and p_filter_duplicates not in ('T', 'F') then
+         cwms_err.raise(
+            'ERROR',
+            'P_FILTER_DUPLICATES must be NULL, ''T'', or ''F'''); 
+      end if;
+      select db_office_id,
+             cwms_ts_id
+        into l_office_id,
+             l_ts_id
+        from at_cwms_ts_id
+       where ts_code = p_ts_code; 
+      cwms_msg.log_db_message(
+         'CWMS_TS.SET_FILTER_DUPLICATES_TS',
+         cwms_msg.msg_level_normal,
+         'Setting filter duplicates policy to '
+         || nvl(p_filter_duplicates, 'NULL (reset)')
+         ||' for time series '
+         ||p_ts_code
+         ||' : '
+         ||l_office_id
+         ||'/'
+         ||l_ts_id);
+      if p_filter_duplicates is null then
+         cwms_properties.delete_property(
+            p_category  => 'TIMESERIES', 
+            p_id        => 'storage.filter_duplicates.tscode.'||p_ts_code, 
+            p_office_id => cwms_util.get_db_office_id(l_office_id));
+      else
+         cwms_properties.set_property(
+            p_category  => 'TIMESERIES', 
+            p_id        => 'storage.filter_duplicates.tscode.'||p_ts_code, 
+            p_value     => p_filter_duplicates, 
+            p_comment   => null, 
+            p_office_id => l_office_id);
+      end if;
+   end set_filter_duplicates_ts;
+
+   function get_filter_duplicates_ofc(
+      p_office_id in varchar2 default null)
+      return varchar2
+   is
+   begin
+      return cwms_properties.get_property(
+         p_category  => 'TIMESERIES', 
+         p_id        => 'storage.filter_duplicates.office', 
+         p_default   => null, 
+         p_office_id => cwms_util.get_db_office_id(p_office_id));
+   end get_filter_duplicates_ofc;
+      
+   function get_filter_duplicates(
+      p_ts_id     in varchar2,
+      p_office_id in varchar2 default null)
+      return varchar2
+   is
+   begin
+      ------------------
+      -- sanity check --
+      ------------------
+      if p_ts_id is null then
+         cwms_err.raise(
+            'ERROR',
+            'P_TS_ID must not be NULL'); 
+      end if;
+      return nvl(get_filter_duplicates(get_ts_code(p_ts_id, p_office_id)), 'F');
+   end get_filter_duplicates;
+      
+   function get_filter_duplicates(
+      p_ts_code in integer)
+      return varchar2
+   is
+      l_office_id varchar2(16);
+      l_ts_id     varchar2(256);
+      l_prop_val  varchar2(256);
+   begin
+      ------------------
+      -- sanity check --
+      ------------------
+      if p_ts_code is null then
+         cwms_err.raise(
+            'ERROR',
+            'P_TS_CODE must not be NULL'); 
+      end if;
+      select db_office_id
+        into l_office_id
+        from at_cwms_ts_id
+       where ts_code = p_ts_code;
+      l_prop_val := cwms_properties.get_property(
+         p_category  => 'TIMESERIES', 
+         p_id        => 'storage.filter_duplicates.tscode.'||p_ts_code, 
+         p_default   => null, 
+         p_office_id => cwms_util.get_db_office_id(l_office_id));
+      if l_prop_val is null then
+         l_prop_val := get_filter_duplicates_ofc(l_office_id);
+      end if;
+      return l_prop_val;
+   end get_filter_duplicates;
 
    procedure retrieve_time_series(
       p_results        out clob,
