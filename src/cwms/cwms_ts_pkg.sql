@@ -1192,6 +1192,12 @@ AS
       q2 in integer)
       return varchar2;
 
+   -- not documented
+   function same_val(
+      v1 in binary_double,
+      v2 in binary_double)
+      return varchar2;
+
    /**
     * Stores time series data to the database
     *

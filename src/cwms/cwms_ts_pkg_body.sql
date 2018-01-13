@@ -3743,6 +3743,28 @@ AS
       END IF;
    END time_series_updated;
 
+   function same_val(
+      v1 in binary_double,
+      v2 in binary_double)
+      return varchar2
+   is
+      l_result varchar2(1);
+   begin
+      case
+      when (v1 is null) != (v2 is null) then 
+         l_result := 'F'; -- mixed nullity
+      when v1 is null then
+         l_result := 'T'; -- null values
+      else
+         if abs(v1 - v2) < 1e-8D then
+            l_result := 'T'; -- same values
+         else
+            l_result := 'F'; -- different values
+         end if;
+      end case;
+      return l_result;
+   end same_val;
+
    function same_vq(
       v1 in binary_double,
       q1 in integer,
@@ -3750,30 +3772,34 @@ AS
       q2 in integer)
       return varchar2
    is
+      l_result varchar2(1);
    begin
       case
       when (v1 is null) != (v2 is null) then 
-         return 'F'; -- mixed nullity on values
+         l_result := 'F'; -- mixed nullity on values
       when (q1 is null) != (q2 is null) then 
-         return 'F'; -- mixed nullity on quality
+         l_result := 'F'; -- mixed nullity on quality
       when v1 is null then
          if q1 is null or q1 = q2 then 
-            return 'T'; -- null values / same quality
+            l_result := 'T'; -- null values / same quality
          else 
-            return 'F'; -- null values / different quality
+            l_result := 'F'; -- null values / different quality
          end if;
       else
          case
          when q1 is not null and q1 != q2 then
-            return 'F'; -- values present / different quality
+            l_result := 'F'; -- values present / different quality
          when abs(v1 - v2) < 1e-8D then
-            return 'T'; -- same values / same quality
+            l_result := 'T'; -- same values / same quality
          else
-            return 'F'; -- different values
+            l_result := 'F'; -- different values
          end case;
       end case;
+--      if v1 is null or v2 is null then
+--         dbms_output.put_line(l_result||' <== ('||v1||','||q1||') ('||v2||','||q2||')');
+--      end if;
+      return l_result;
    end same_vq;
-
 
    --*******************************************************************   --
    --*******************************************************************   --
@@ -4300,7 +4326,7 @@ AS
             LOOP
                l_sql_txt :=
                      'merge into ' || x.table_name || ' t1
-                           using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''GMT'') as date), ''mi'') date_time,
+                           using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date), ''mi'') date_time,
                                          (t.value * c.factor + c.offset) - :l_value_offset value,
                                          cwms_ts.clean_quality_code(t.quality_code) quality_code
                                     from table(cast(:l_timeseries_data as tsv_array)) t,
@@ -4371,7 +4397,7 @@ AS
             LOOP
                l_sql_txt :=
                      'merge into ' || x.table_name || ' t1
-                           using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''GMT'') as date), ''mi'') date_time,
+                           using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date), ''mi'') date_time,
                                          (t.value * c.factor + c.offset)  - :l_value_offset value,
                                          cwms_ts.clean_quality_code(t.quality_code) quality_code
                                     from table(cast(:l_timeseries_data as tsv_array)) t,
@@ -4446,7 +4472,7 @@ AS
             LOOP
                l_sql_txt :=
                      'merge into ' || x.table_name || ' t1
-                           using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''GMT'') as date), ''mi'') date_time,
+                           using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date), ''mi'') date_time,
                                          (t.value * c.factor + c.offset) - :l_value_offset value,
                                          cwms_ts.clean_quality_code(t.quality_code) quality_code
                                     from table(cast(:l_timeseries_data as tsv_array)) t,
@@ -4518,7 +4544,7 @@ AS
                   --
                   l_sql_txt :=
                         'merge into ' || x.table_name || ' t1
-                              using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''GMT'') as date), ''mi'') date_time,
+                              using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date), ''mi'') date_time,
                                             (t.value * c.factor + c.offset) - :l_value_offset value,
                                             cwms_ts.clean_quality_code(t.quality_code) quality_code
                                        from table(cast(:l_timeseries_data as tsv_array)) t,
@@ -4575,7 +4601,7 @@ AS
                   --
                   l_sql_txt :=
                         'merge into ' || x.table_name || ' t1
-                              using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''GMT'') as date), ''mi'') date_time,
+                              using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date), ''mi'') date_time,
                                             (t.value * c.factor + c.offset) - :l_value_offset value,
                                             cwms_ts.clean_quality_code(t.quality_code) quality_code
                                        from table(cast(:l_timeseries_data as tsv_array)) t,
@@ -4653,7 +4679,7 @@ AS
             LOOP
                l_sql_txt :=
                      'merge into ' || x.table_name || ' t1
-                           using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''GMT'') as date), ''mi'') date_time,
+                           using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date), ''mi'') date_time,
                                          (t.value * c.factor + c.offset) - :l_value_offset value,
                                          cwms_ts.clean_quality_code(t.quality_code) quality_code
                                     from table(cast(:l_timeseries_data as tsv_array)) t,
@@ -4734,7 +4760,7 @@ AS
             LOOP
                l_sql_txt :=
                      'merge into ' || x.table_name || ' t1
-                           using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''GMT'') as date), ''mi'') date_time,
+                           using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date), ''mi'') date_time,
                                          (t.value * c.factor + c.offset) - :l_value_offset value,
                                          cwms_ts.clean_quality_code(t.quality_code) quality_code
                                     from table(cast(:l_timeseries_data as tsv_array)) t,
@@ -4802,121 +4828,184 @@ AS
                         l_store_date,
                         l_version_date;
             END LOOP;
-         WHEN     NOT l_override_prot
-              AND UPPER (p_store_rule) = cwms_util.delete_insert
-         THEN
+         when not l_override_prot and upper (p_store_rule) = cwms_util.delete_insert then
             --
             --*************************************
             -- CASE 7 - Store Rule: DELETE - INSERT -
             --         Override:   FALSE -
             --*************************************
             --
-            DBMS_APPLICATION_INFO.set_action (
-               'delete/merge from table, no override, delete_insert ');
+            dbms_application_info.set_action ('delete/merge from table, no override, delete_insert ');
 
-                  FOR x
-                     IN (SELECT start_date, end_date, table_name
-                        FROM at_ts_table_properties
-                       WHERE start_date <= maxdate AND end_date > mindate)
-            LOOP
-               EXECUTE IMMEDIATE REPLACE (
+            for x in (select start_date, end_date, table_name
+                        from at_ts_table_properties
+                       where start_date <= maxdate and end_date > mindate
+                     )
+            loop  
+               --------------------------------------------------
+               -- common portion of recording and deleting sql --
+               --------------------------------------------------
+               l_sql_txt := replace( 
+                  '  from table_name t1
+                    where t1.ts_code = :ts_code
+                      and t1.version_date = :version_date
+                      and t1.date_time between
+                          (select min(trunc(cast((cwms_util.fixup_timezone(date_time) at time zone ''UTC'') as date), ''mi''))
+                             from table(cast(:timeseries_data as tsv_array))
+                          )
+                          and
+                          (select max(trunc(cast((cwms_util.fixup_timezone(date_time) at time zone ''UTC'') as date), ''mi''))
+                             from table(cast(:timeseries_data as tsv_array))
+                          )
+                      and (((t1.quality_code not in (select quality_code from cwms_data_quality where protection_id = ''PROTECTED'')
+                             and
+                             t1.date_time in (select date_time
+                                                from (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date), ''mi'') as date_time,
+                                                             (t.value * c.factor + c.offset) - :value_offset as value,
+                                                             cwms_ts.clean_quality_code(t.quality_code) as quality_code
+                                                        from table(cast(:timeseries_data as tsv_array)) t,
+                                                             at_cwms_ts_spec s,
+                                                             at_parameter p,
+                                                             cwms_unit_conversion c,
+                                                             cwms_base_parameter bp,
+                                                             cwms_unit u
+                                                       where cwms_util.is_nan(t.value) = ''F''
+                                                         and s.ts_code = :ts_code
+                                                         and u.unit_id = :units
+                                                         and c.from_unit_code = u.unit_code
+                                                         and p.parameter_code = s.parameter_code
+                                                         and bp.base_parameter_code = p.base_parameter_code
+                                                         and c.to_unit_code = bp.unit_code 
+                                                     )
+                                               where (:filter_duplicates = ''F'' or cwms_ts.same_vq(t1.value, t1.quality_code, value, quality_code) = ''F'')
+                                             )
+                            )
+                            or
+                            (t1.quality_code in (select quality_code from cwms_data_quality where protection_id = ''PROTECTED'')
+                             and
+                             t1.date_time in (select date_time
+                                                from (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date), ''mi'') as date_time,
+                                                             (t.value * c.factor + c.offset) - :value_offset as value,
+                                                             cwms_ts.clean_quality_code(t.quality_code) as quality_code
+                                                        from table(cast(:timeseries_data as tsv_array)) t,
+                                                             at_cwms_ts_spec s,
+                                                             at_parameter p,
+                                                             cwms_unit_conversion c,
+                                                             cwms_base_parameter bp,
+                                                             cwms_unit u
+                                                       where cwms_util.is_nan(t.value) = ''F''
+                                                         and s.ts_code = :ts_code
+                                                         and u.unit_id = :units
+                                                         and c.from_unit_code = u.unit_code
+                                                         and p.parameter_code = s.parameter_code
+                                                         and bp.base_parameter_code = p.base_parameter_code
+                                                         and c.to_unit_code = bp.unit_code 
+                                                     )
+                                               where quality_code in (select quality_code from cwms_data_quality where protection_id = ''PROTECTED'')
+                                                 and (:filter_duplicates = ''F'' or cwms_ts.same_val(t1.value, value) = ''F'')
+                                             )
+                            )
+                          )
+                         )',
+                  'table_name',
+                  x.table_name);
+               ------------------------
+               -- record the deletes --
+               ------------------------
+               execute immediate 
                   'insert
                      into at_ts_deleted_times
                    select :millis,
                           :ts_code,
                           :version_date,
                           t1.date_time
-                     from table_name t1
-                    where t1.ts_code = :ts_code
-                      and t1.version_date = :version_date
-                      and t1.date_time between
-                          (SELECT MIN (trunc(CAST ((cwms_util.fixup_timezone(t.date_time) AT TIME ZONE ''GMT'') AS DATE), ''mi''))
-                             FROM TABLE (CAST (:timeseries_data AS tsv_array)) t)
-                          and
-                          (SELECT MAX (trunc(CAST ((cwms_util.fixup_timezone(t.date_time) AT TIME ZONE ''GMT'') AS DATE), ''mi''))
-                             FROM TABLE (CAST (:timeseries_data AS tsv_array)) t)
-                      and t1.quality_code NOT IN (SELECT quality_code
-                                                   FROM cwms_data_quality q
-                                                  WHERE q.protection_id = ''PROTECTED'')',
-                                   'table_name',
-                                   x.table_name)
-                  USING l_millis,
+                  '||l_sql_txt        
+               using 
+                  l_millis,
                         l_ts_code,
                         l_version_date,
                         l_ts_code,
                         l_version_date,
-                        p_timeseries_data, -- get the ENTIRE time window of incoming data, even if it was trimmed by filtering NULLs
-                        p_timeseries_data;
-
-               EXECUTE IMMEDIATE REPLACE (
+                  p_timeseries_data, -- get the ENTIRE time window of incoming data even if it was trimmed by filtering NULLs
+                  p_timeseries_data,
+                  l_value_offset,
+                  l_timeseries_data,
+                  l_ts_code,
+                  l_units,
+                  l_filter_duplicates,
+                  l_value_offset,
+                  l_timeseries_data,
+                  l_ts_code,
+                  l_units,
+                  l_filter_duplicates;
+               -------------------------
+               -- delete the old data --
+               -------------------------
+               execute immediate
                   'delete
-                     from table_name t1
-                    where t1.ts_code = :ts_code
-                      and t1.version_date = :version_date
-                      and t1.date_time between
-                          (SELECT MIN (trunc(CAST ((cwms_util.fixup_timezone(t.date_time) AT TIME ZONE ''GMT'') AS DATE), ''mi''))
-                             FROM TABLE (CAST (:timeseries_data AS tsv_array)) t)
-                          and
-                          (SELECT MAX (trunc(CAST ((cwms_util.fixup_timezone(t.date_time) AT TIME ZONE ''GMT'') AS DATE), ''mi''))
-                             FROM TABLE (CAST (:timeseries_data AS tsv_array)) t)
-                      and t1.quality_code NOT IN (SELECT quality_code
-                                                   FROM cwms_data_quality q
-                                                  WHERE q.protection_id = ''PROTECTED'')',
-                                   'table_name',
-                                   x.table_name)
-                  USING l_ts_code,
+                  '||l_sql_txt
+               using 
+                  l_ts_code,
                         l_version_date,
-                        p_timeseries_data, -- get the ENTIRE time window of incoming data, even if it was trimmed by filtering NULLs
-                        p_timeseries_data;
-
-               EXECUTE IMMEDIATE REPLACE (
-                  'MERGE INTO table_name t1
-                     USING (SELECT trunc(CAST ((cwms_util.fixup_timezone(t.date_time) AT TIME ZONE ''GMT'') AS DATE), ''mi'') as date_time,
-                                   (t.value * c.factor + c.offset) - :l_value_offset as value,
+                  p_timeseries_data, -- get the ENTIRE time window of incoming data even if it was trimmed by filtering NULLs
+                  p_timeseries_data,
+                  l_value_offset,
+                  l_timeseries_data,
+                  l_ts_code,
+                  l_units,
+                  l_filter_duplicates,
+                  l_value_offset,
+                  l_timeseries_data,
+                  l_ts_code,
+                  l_units,
+                  l_filter_duplicates;
+               -------------------------
+               -- insert the new data --
+               -------------------------
+               l_sql_txt := replace(
+                  'merge into table_name t1
+                     using (select trunc(cast ((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date), ''mi'') as date_time,
+                                   (t.value * c.factor + c.offset) - :value_offset as value,
                                    cwms_ts.clean_quality_code(t.quality_code) as quality_code
-                              FROM TABLE (CAST (:timeseries_data AS tsv_array)) t,
+                              from table (cast (:timeseries_data as tsv_array)) t,
                                    at_cwms_ts_spec s,
-                                   at_parameter ap,
+                                   at_parameter p,
                                    cwms_unit_conversion c,
-                                   cwms_base_parameter p,
+                                   cwms_base_parameter bp,
                                    cwms_unit u
-                             WHERE cwms_util.is_nan(t.value) = ''F''
-                               AND s.ts_code = :ts_code
-                               AND s.parameter_code = ap.parameter_code
-                               AND ap.base_parameter_code = p.base_parameter_code
-                               AND p.unit_code = c.to_unit_code
-                               AND c.from_unit_code = u.unit_code
-                               AND u.unit_id = :units
-                               AND date_time >= from_tz(cast(:start_date as timestamp), ''UTC'')
-                               AND date_time <  from_tz(cast(:end_date as timestamp), ''UTC'')) t2
-                     ON (    t1.ts_code = :ts_code
-                         AND t1.date_time = t2.date_time
-                         AND t1.version_date = :version_date)
-                     WHEN NOT MATCHED THEN
-                        INSERT (ts_code, date_time, version_date, data_entry_date, value, quality_code)
-                        VALUES (:ts_code, t2.date_time, :version_date, :store_date, t2.value, t2.quality_code)
-                     WHEN MATCHED THEN
-                        UPDATE
-                           SET t1.VALUE = t2.VALUE,
+                             where cwms_util.is_nan(t.value) = ''F''
+                               and s.ts_code = :ts_code
+                               and u.unit_id = :units
+                               and c.from_unit_code = u.unit_code
+                               and p.parameter_code = s.parameter_code
+                               and bp.base_parameter_code = p.base_parameter_code 
+                               and c.to_unit_code = bp.unit_code
+                               and date_time >= from_tz(cast(:start_date as timestamp), ''UTC'')
+                               and date_time <  from_tz(cast(:end_date as timestamp), ''UTC'')) t2
+                     on (t1.ts_code = :ts_code
+                         and t1.date_time = t2.date_time
+                         and t1.version_date = :version_date
+                        )
+                     when not matched then
+                        insert (ts_code, date_time, version_date, data_entry_date, value, quality_code)
+                        values (:ts_code, t2.date_time, :version_date, :store_date, t2.value, t2.quality_code)
+                     when matched then
+                        update
+                           set t1.value = t2.value,
                                t1.quality_code = t2.quality_code,
                                t1.data_entry_date = :store_date
-                         WHERE ( (  t1.value != t2.value
-                                    OR
-                                    t1.quality_code != t2.quality_code
-                                 )
-                                 AND
-                                 (  t1.quality_code NOT IN (SELECT quality_code
-                                                              FROM cwms_data_quality q
-                                                             WHERE q.protection_id = ''PROTECTED'')
-                                    OR
-                                    t2.quality_code IN (SELECT quality_code
-                                                          FROM cwms_data_quality q
-                                                         WHERE q.protection_id = ''PROTECTED'')
-                                 )
+                         where (t2.quality_code in (select quality_code from cwms_data_quality where protection_id = ''PROTECTED'')
+                                and
+                                (:filter_duplicates = ''F'' or cwms_ts.same_vq(t1.value, t1.quality_code, t2.value, t2.quality_code) = ''F'')
+
                                )',
                                    'table_name',
-                                   x.table_name)
-                  USING l_value_offset,
+                  x.table_name);
+                                   
+               execute immediate 
+                  l_sql_txt                    
+               using 
+                  l_value_offset,
                         l_timeseries_data,
                         l_ts_code,
                         l_units,
@@ -4927,107 +5016,143 @@ AS
                         l_ts_code,
                         l_version_date,
                         l_store_date,
-                        l_store_date;
-            END LOOP;
-         WHEN     l_override_prot
-              AND UPPER (p_store_rule) = cwms_util.delete_insert
-         THEN
+                  l_store_date,
+                  l_filter_duplicates;
+            end loop;
+         when l_override_prot and upper (p_store_rule) = cwms_util.delete_insert then
             --
             --*************************************
             --CASE 8 - Store Rule: DELETE - INSERT -
             --         Override:   TRUE -
             --*************************************
             --
-            DBMS_APPLICATION_INFO.set_action (
-               'delete/merge from  table, override, delete_insert ');
+            dbms_application_info.set_action ('delete/merge from table, override, delete_insert ');
 
-                  FOR x
-                     IN (SELECT start_date, end_date, table_name
-                        FROM at_ts_table_properties
-                       WHERE start_date <= maxdate AND end_date > mindate)
-            LOOP
-               EXECUTE IMMEDIATE REPLACE (
+            for x in (select start_date, end_date, table_name`
+                        from at_ts_table_properties
+                       where start_date <= maxdate and end_date > mindate
+                     )
+            loop  
+               --------------------------------------------------
+               -- common portion of recording and deleting sql --
+               --------------------------------------------------
+               l_sql_txt := replace( 
+                  '  from table_name t1
+                    where t1.ts_code = :ts_code
+                      and t1.version_date = :version_date
+                      and t1.date_time between
+                          (select min(trunc(cast((cwms_util.fixup_timezone(date_time) at time zone ''UTC'') as date), ''mi''))
+                             from table(cast(:timeseries_data as tsv_array))
+                          )
+                          and
+                          (select max(trunc(cast((cwms_util.fixup_timezone(date_time) at time zone ''UTC'') as date), ''mi''))
+                             from table(cast(:timeseries_data as tsv_array))
+                          )
+                      and t1.date_time in (select date_time
+                                             from (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date), ''mi'') as date_time,
+                                                          (t.value * c.factor + c.offset) - :value_offset as value,
+                                                          cwms_ts.clean_quality_code(t.quality_code) as quality_code
+                                                     from table(cast(:timeseries_data as tsv_array)) t,
+                                                          at_cwms_ts_spec s,
+                                                          at_parameter p,
+                                                          cwms_unit_conversion c,
+                                                          cwms_base_parameter bp,
+                                                          cwms_unit u
+                                                    where cwms_util.is_nan(t.value) = ''F''
+                                                      and s.ts_code = :ts_code
+                                                      and u.unit_id = :units
+                                                      and c.from_unit_code = u.unit_code
+                                                      and p.parameter_code = s.parameter_code
+                                                      and bp.base_parameter_code = p.base_parameter_code
+                                                      and c.to_unit_code = bp.unit_code 
+                                                  )
+                                            where (:filter_duplicates = ''F'' or cwms_ts.same_vq(t1.value, t1.quality_code, value, quality_code) = ''F'')
+                                          )',
+                  'table_name',
+                  x.table_name);
+               ------------------------
+               -- record the deletes --
+               ------------------------
+               execute immediate 
                   'insert
                      into at_ts_deleted_times
                    select :millis,
                           :ts_code,
                           :version_date,
                           t1.date_time
-                     from table_name t1
-                    where t1.ts_code = :ts_code
-                      and t1.version_date = :version_date
-                      and t1.date_time between
-                          (SELECT MIN (trunc(CAST ((cwms_util.fixup_timezone(t.date_time) AT TIME ZONE ''GMT'') AS DATE), ''mi''))
-                             FROM TABLE (CAST (:timeseries_data AS tsv_array)) t)
-                          and
-                          (SELECT MAX (trunc(CAST ((cwms_util.fixup_timezone(t.date_time) AT TIME ZONE ''GMT'') AS DATE), ''mi''))
-                             FROM TABLE (CAST (:timeseries_data AS tsv_array)) t)',
-                                   'table_name',
-                                   x.table_name)
-                  USING l_millis,
+                  '||l_sql_txt        
+               using 
+                  l_millis,
                         l_ts_code,
                         l_version_date,
                         l_ts_code,
                         l_version_date,
-                        p_timeseries_data, -- get the ENTIRE time window of incoming data, even if it was trimmed by filtering NULLs
-                        p_timeseries_data;
-
-               EXECUTE IMMEDIATE REPLACE (
+                  p_timeseries_data, -- get the ENTIRE time window of incoming data even if it was trimmed by filtering NULLs
+                  p_timeseries_data,
+                  l_value_offset,
+                  l_timeseries_data,
+                  l_ts_code,
+                  l_units,
+                  l_filter_duplicates;
+               -------------------------
+               -- delete the old data --
+               -------------------------
+               execute immediate
                   'delete
-                     from table_name t1
-                    where t1.ts_code = :ts_code
-                      and t1.version_date = :version_date
-                      and t1.date_time between
-                          (SELECT MIN (trunc(CAST ((cwms_util.fixup_timezone(t.date_time) AT TIME ZONE ''GMT'') AS DATE), ''mi''))
-                             FROM TABLE (CAST (:timeseries_data AS tsv_array)) t)
-                          and
-                          (SELECT MAX (trunc(CAST ((cwms_util.fixup_timezone(t.date_time) AT TIME ZONE ''GMT'') AS DATE), ''mi''))
-                             FROM TABLE (CAST (:timeseries_data AS tsv_array)) t)',
-                                   'table_name',
-                                   x.table_name)
-                  USING l_ts_code,
+                  '||l_sql_txt
+               using 
+                  l_ts_code,
                         l_version_date,
-                        p_timeseries_data, -- get the ENTIRE time window of incoming data, even if it was trimmed by filtering NULLs
-                        p_timeseries_data;
-
-               EXECUTE IMMEDIATE REPLACE (
-                  'MERGE INTO table_name t1
-                     USING (SELECT trunc(CAST ((cwms_util.fixup_timezone(t.date_time) AT TIME ZONE ''GMT'') AS DATE), ''mi'') as date_time,
-                                   (t.value * c.factor + c.offset) - :l_value_offset as value,
+                  p_timeseries_data, -- get the ENTIRE time window of incoming data even if it was trimmed by filtering NULLs
+                  p_timeseries_data,
+                  l_value_offset,
+                  l_timeseries_data,
+                  l_ts_code,
+                  l_units,
+                  l_filter_duplicates;
+               -------------------------
+               -- insert the new data --
+               -------------------------
+               l_sql_txt := replace(
+                  'merge into table_name t1
+                     using (select trunc(cast ((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date), ''mi'') as date_time,
+                                   (t.value * c.factor + c.offset) - :value_offset as value,
                                    cwms_ts.clean_quality_code(t.quality_code) as quality_code
-                              FROM TABLE (CAST (:timeseries_data AS tsv_array)) t,
+                              from table (cast (:timeseries_data as tsv_array)) t,
                                    at_cwms_ts_spec s,
-                                   at_parameter ap,
+                                   at_parameter p,
                                    cwms_unit_conversion c,
-                                   cwms_base_parameter p,
+                                   cwms_base_parameter bp,
                                    cwms_unit u
-                             WHERE cwms_util.is_nan(t.value) = ''F''
-                               AND s.ts_code = :ts_code
-                               AND s.parameter_code = ap.parameter_code
-                               AND ap.base_parameter_code = p.base_parameter_code
-                               AND p.unit_code = c.to_unit_code
-                               AND c.from_unit_code = u.unit_code
-                               AND u.unit_id = :units
-                               AND date_time >= from_tz(cast(:start_date as timestamp), ''UTC'')
-                               AND date_time <  from_tz(cast(:end_date as timestamp), ''UTC'')) t2
-                     ON (    t1.ts_code = :ts_code
-                         AND t1.date_time = t2.date_time
-                         AND t1.version_date = :version_date)
-                     WHEN NOT MATCHED THEN
-                        INSERT (ts_code, date_time, version_date, data_entry_date, value, quality_code)
-                        VALUES (:ts_code, t2.date_time, :version_date, :store_date, t2.value, t2.quality_code)
-                     WHEN MATCHED THEN
-                        UPDATE
-                           SET t1.VALUE = t2.VALUE,
+                             where cwms_util.is_nan(t.value) = ''F''
+                               and s.ts_code = :ts_code
+                               and u.unit_id = :units
+                               and c.from_unit_code = u.unit_code
+                               and p.parameter_code = s.parameter_code
+                               and bp.base_parameter_code = p.base_parameter_code 
+                               and c.to_unit_code = bp.unit_code
+                               and date_time >= from_tz(cast(:start_date as timestamp), ''UTC'')
+                               and date_time <  from_tz(cast(:end_date as timestamp), ''UTC'')) t2
+                     on (t1.ts_code = :ts_code
+                         and t1.date_time = t2.date_time
+                         and t1.version_date = :version_date
+                        )
+                     when not matched then
+                        insert (ts_code, date_time, version_date, data_entry_date, value, quality_code)
+                        values (:ts_code, t2.date_time, :version_date, :store_date, t2.value, t2.quality_code)
+                     when matched then
+                        update
+                           set t1.value = t2.value,
                                t1.quality_code = t2.quality_code,
                                t1.data_entry_date = :store_date
-                         WHERE ( t1.value != t2.value
-                                 OR
-                                 t1.quality_code != t2.quality_code
-                               )',
+                         where (:filter_duplicates = ''F'' or cwms_ts.same_vq(t1.value, t1.quality_code, t2.value, t2.quality_code) = ''F'')',
                                    'table_name',
-                                   x.table_name)
-                  USING l_value_offset,
+                  x.table_name);
+                                   
+               execute immediate 
+                  l_sql_txt                    
+               using 
+                  l_value_offset,
                         l_timeseries_data,
                         l_ts_code,
                         l_units,
@@ -5038,10 +5163,9 @@ AS
                         l_ts_code,
                         l_version_date,
                         l_store_date,
-                        l_store_date;
-            END LOOP;
---                  DBMS_OUTPUT.put_line (
---                     'CASE 7: delete-insert FALSE Completed.');
+                  l_store_date,
+                  l_filter_duplicates;
+            end loop;
          ELSE
             cwms_err.raise ('INVALID_STORE_RULE',
                             NVL (p_store_rule, '<NULL>'));
@@ -7126,7 +7250,7 @@ AS
       /*l_at_tsv_rc   sys_refcursor;*/
       l_inclusive   VARCHAR2 (1);
    BEGIN
-      p_transaction_time := CAST ( (SYSTIMESTAMP AT TIME ZONE 'GMT') AS DATE);
+      p_transaction_time := CAST ( (SYSTIMESTAMP AT TIME ZONE 'UTC') AS DATE);
 
       IF NVL (p_inclusive, 0) = 0
       THEN
@@ -7935,7 +8059,7 @@ end retrieve_existing_item_counts;
          l_timeseries_data (i) :=
             tsv_type (
                FROM_TZ (CAST (p_timeseries_data (i).date_time AS TIMESTAMP),
-                        'GMT'),
+                        'UTC'),
                p_timeseries_data (i).VALUE,
                p_timeseries_data (i).quality_code);
       --         DBMS_OUTPUT.put_line(   l_timeseries_data (i).date_time
@@ -10921,7 +11045,7 @@ end retrieve_existing_item_counts;
             'ERROR',
             'P_TS_ID must not be NULL'); 
       end if;
-      return nvl(get_filter_duplicates(get_ts_code(p_ts_id, p_office_id)), 'F');
+      return get_filter_duplicates(get_ts_code(p_ts_id, p_office_id));
    end get_filter_duplicates;
       
    function get_filter_duplicates(
@@ -10952,7 +11076,7 @@ end retrieve_existing_item_counts;
       if l_prop_val is null then
          l_prop_val := get_filter_duplicates_ofc(l_office_id);
       end if;
-      return l_prop_val;
+      return nvl(l_prop_val, 'F');
    end get_filter_duplicates;
 
    procedure retrieve_time_series(
