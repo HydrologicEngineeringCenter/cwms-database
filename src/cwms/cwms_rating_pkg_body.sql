@@ -20,7 +20,8 @@ procedure delete_rating(
    p_rating_code in number)
 is
    l_crsr sys_refcursor;
-   l_ind  number_tab_t;
+   l_ind1 number_tab_t;
+   l_ind2 number_tab_t;
    l_dep  number_tab_t;
 begin
    --------------------
@@ -33,8 +34,8 @@ begin
       -------------------
       -- rating values --
       -------------------
-      open l_crsr for 
-         select distinct 
+      open l_crsr for
+         select distinct
                    rating_ind_param_code,
                    dep_rating_ind_param_code
               from (select distinct
@@ -48,20 +49,15 @@ begin
                            )
                    )
            connect by prior dep_rating_ind_param_code = rating_ind_param_code;
-      fetch l_crsr bulk collect into l_ind, l_dep;
+      fetch l_crsr bulk collect into l_ind1, l_dep;
       close l_crsr;
-      for i in 1..l_ind.count loop
-         delete from at_rating_value where rating_ind_param_code = l_ind(i);
-         delete from at_rating_ind_param_spec where ind_param_spec_code = l_ind(i);
-      end loop;
-      for i in 1..l_ind.count loop
-         delete from at_rating_ind_parameter where rating_ind_param_code = l_ind(i);
-      end loop;
+      delete from at_rating_value where rating_ind_param_code in (select * from table(l_ind1));
+      delete from at_rating_ind_param_spec where ind_param_spec_code in (select * from table(l_ind1));
       ----------------------
       -- extension values --
       ----------------------
-      open l_crsr for 
-         select distinct 
+      open l_crsr for
+         select distinct
                    rating_ind_param_code,
                    dep_rating_ind_param_code
               from (select distinct
@@ -75,14 +71,14 @@ begin
                            )
                    )
            connect by prior dep_rating_ind_param_code = rating_ind_param_code;
-      fetch l_crsr bulk collect into l_ind, l_dep;
+      fetch l_crsr bulk collect into l_ind2, l_dep;
       close l_crsr;
-      for i in 1..l_ind.count loop
-         delete from at_rating_value where rating_ind_param_code = l_ind(i);
-      end loop;
-      for i in 1..l_ind.count loop
-         delete from at_rating_ind_parameter where rating_ind_param_code = l_ind(i);
-      end loop;
+      delete from at_rating_extension_value where rating_ind_param_code in (select * from table(l_ind2));
+      delete from at_rating_ind_param_spec where ind_param_spec_code in (select * from table(l_ind2));
+      ------------------------
+      -- rating + extension --
+      ------------------------
+      delete from at_rating_ind_parameter where rating_ind_param_code in(select * from table(l_ind1) union select * from table(l_ind2));
       ----------------------------------------------
       -- then any child ratings (shifts, offsets) --
       ----------------------------------------------
@@ -101,34 +97,34 @@ begin
         from at_rating
        where rating_code = p_rating_code;
    end loop;
-   --------------------------    
+   --------------------------
    -- transitional ratings --
    --------------------------
-   delete 
+   delete
      from at_transitional_rating_sel
-    where transitional_rating_code = p_rating_code;    
+    where transitional_rating_code = p_rating_code;
 
-   delete 
+   delete
      from at_transitional_rating_src
-    where transitional_rating_code = p_rating_code;    
+    where transitional_rating_code = p_rating_code;
 
-   delete 
+   delete
      from at_transitional_rating
     where transitional_rating_code = p_rating_code;
-   ---------------------        
+   ---------------------
    -- virtual ratings --
    ---------------------
    delete from at_virtual_rating_unit
-    where virtual_rating_element_code in (select virtual_rating_element_code 
-                                            from at_virtual_rating_element 
+    where virtual_rating_element_code in (select virtual_rating_element_code
+                                            from at_virtual_rating_element
                                            where virtual_rating_code = p_rating_code
-                                         );          
+                                         );
    delete from at_virtual_rating_element
-    where virtual_rating_code = p_rating_code;         
+    where virtual_rating_code = p_rating_code;
 
    delete from at_virtual_rating
-    where virtual_rating_code = p_rating_code;         
-       
+    where virtual_rating_code = p_rating_code;
+
 end delete_rating;
 
 procedure delete_rating_spec(
