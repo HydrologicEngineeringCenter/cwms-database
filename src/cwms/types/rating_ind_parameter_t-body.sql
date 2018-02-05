@@ -1284,6 +1284,15 @@ as
                            begin
                               l_log_hi_val := log(10, l_hi_val);
                               l_log_lo_val := log(10, l_lo_val);
+                              case
+                              when l_log_hi_val = +binary_double_infinity then cwms_err.raise('ERROR', 'Infinity');
+                              when l_log_hi_val = -binary_double_infinity then cwms_err.raise('ERROR', 'Infinity');
+                              when l_log_hi_val =  binary_double_nan      then cwms_err.raise('ERROR', 'NaN');
+                              when l_log_lo_val = +binary_double_infinity then cwms_err.raise('ERROR', 'Infinity');
+                              when l_log_lo_val = -binary_double_infinity then cwms_err.raise('ERROR', 'Infinity');
+                              when l_log_lo_val =  binary_double_nan      then cwms_err.raise('ERROR', 'NaN');
+                              else null;
+                              end case;
                            exception
                               when others then
                                  l_dependent_log := false;
