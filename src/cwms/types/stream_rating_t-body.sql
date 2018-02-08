@@ -178,9 +178,20 @@ as
          ----------------------------------
          l_timestr := get_text(l_shift, '/height-shifts/effective-date');
          if l_timestr is null then
-            cwms_err.raise('ERROR', 'Required <effective-date> element not found on shift');
+            cwms_err.raise('ERROR', 'Required <effective-date> element not found on shift #'||i);
          end if;
          l_temp.effective_date := (self as rating_t).get_date(l_timestr);
+         if l_temp.effective_date < self.effective_date then
+            cwms_err.raise(
+               'ERROR',
+               'Shift #'
+               ||i
+               ||' effective date ('
+               ||to_char(l_temp.effective_date, 'yyyy-mm-dd hh24:mi')
+               ||') pre-dates rating effective date ('
+               ||to_char(self.effective_date, 'yyyy-mm-dd hh24:mi')
+               ||')');
+         end if;
          -----------------------------------
          -- get the shift transition date --
          -----------------------------------
