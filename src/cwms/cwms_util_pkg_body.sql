@@ -84,7 +84,7 @@ AS
    --
    -- Filter out PST and CST
    function get_timezone (p_timezone in varchar2)
-   return varchar2
+   return varchar2 result_cache relies_on (cwms_time_zone_alias)
    is
       l_timezone varchar2(28);
    begin
@@ -1210,13 +1210,13 @@ AS
    -- function get_time_zone_code
    --
    FUNCTION get_time_zone_code (p_time_zone_name IN VARCHAR2)
-      RETURN NUMBER
+      RETURN NUMBER result_cache relies_on (cwms_time_zone)
    IS
       l_time_zone_code   NUMBER (10);
    BEGIN
       SELECT time_zone_code
         INTO l_time_zone_code
-        FROM mv_time_zone
+        FROM cwms_time_zone
        WHERE time_zone_name = get_timezone (NVL (p_time_zone_name, 'UTC'));
 
       RETURN l_time_zone_code;
@@ -1230,17 +1230,20 @@ AS
    -- function get_time_zone_name
    --
    FUNCTION get_time_zone_name (p_time_zone_name IN VARCHAR2)
-      RETURN VARCHAR2
+      RETURN VARCHAR2 result_cache relies_on (cwms_time_zone)
    IS
       l_time_zone_name   VARCHAR2 (28);
    BEGIN
-      SELECT z.time_zone_name
+      SELECT time_zone_name
         INTO l_time_zone_name
-        FROM mv_time_zone v, cwms_time_zone z
-       WHERE upper(v.time_zone_name) = upper(get_timezone (p_time_zone_name))
-             AND z.time_zone_code = v.time_zone_code;
+        FROM cwms_time_zone
+       WHERE upper(time_zone_name) = upper(get_timezone (p_time_zone_name));
 
       RETURN l_time_zone_name;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         cwms_err.raise ('INVALID_TIME_ZONE', nvl(p_time_zone_name, '<NULL>'));
    END get_time_zone_name;
 
    --------------------------------------------------------------------------------
