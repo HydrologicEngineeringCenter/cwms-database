@@ -980,13 +980,7 @@ BEGIN
        l_adjusted_end_time := l_adjusted_end_time - (1 / 86400);
     END IF;
     
-    IF l_time_zone IS NOT NULL THEN
-       SELECT tz.time_zone_code
-         INTO l_time_zone_code
-         FROM mv_time_zone tz
-        where upper(tz.time_zone_name) = upper(l_time_zone);
-    END IF;    
-    
+    l_time_zone_code := cwms_util.get_time_zone_code(l_time_zone);
     l_pump_loc_ref := new location_ref_t(p_pump_loc_code);
     
        -- instantiate a table array to hold the output records.
