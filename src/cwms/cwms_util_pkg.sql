@@ -1,4 +1,4 @@
-set escape `;
+set escape `
 CREATE OR REPLACE PACKAGE cwms_util
 /**
  * Miscellaneous constants and procedures.
