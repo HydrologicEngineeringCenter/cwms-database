@@ -1,3 +1,7 @@
+@@cwms/tables/cwms_db_change_log.sql
+@@cwms_db_chg_log_pkg
+@@cwms_db_chg_log_pkg_body
+
 @@cwms_err_pkg
 @@cwms_err_pkg_body
 

@@ -17,6 +17,7 @@ DECLARE
 			       'av_clob',
 			       'av_compound_outlet',
 			       'av_cwms_media',
+                   'av_db_change_log',
 			       'av_document',
 			       'av_document_type',
 			       'av_embank_protection_type', -- created in at_schema_2...
@@ -118,6 +119,7 @@ END;
 @@cwms/views/av_active_flag.sql
 @@cwms/views/av_clob.sql
 @@cwms/views/av_cwms_media_type.sql
+@@cwms/views/av_db_change_log.sql
 @@cwms/views/av_document.sql
 @@cwms/views/av_document_type.sql
 @@cwms/views/av_location_kind.sql
