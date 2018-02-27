@@ -44,6 +44,14 @@ select systimestamp from dual;
 @@./311_update_turbine_setting_reasons
 @@./311_update_ws_contract_types
 prompt ################################################################################
+prompt 'ADDING NEW SCHEDULER MONITORING OBJECTS'
+@@../cwms/tables/cwms_auth_sched_entrires
+@@../cwms/tables/cwms_unauth_sched_entrires
+@@../cwms/views/av_auth_sched_entrires
+@@../cwms/views/av_unauth_sched_entrires
+@@../cwms/cwms_scheduler_auth_pkg
+@@../cwms/cwms_scheduler_auth_pkg_body
+prompt ################################################################################
 prompt 'UPDATING PACKAGE SPECIFICATIONS'
 select systimestamp from dual;
 @@../cwms/cwms_util_pkg

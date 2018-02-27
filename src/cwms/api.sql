@@ -132,12 +132,6 @@
 @@cwms_doc_pkg
 @@cwms_doc_pkg_body
 
------------------------------------------------
--- removed until CMS spec and body are fixed --
--- MDP  16 Oct 2015                          --
--- JDK  16 Oct 2015 - testing build fail
---JDK   21 OCT 2015 - CDATA tests
------------------------------------------------
 @@cwms_cma_pkg
 @@cwms_cma_pkg_body
 
@@ -146,6 +140,9 @@
 
 @@cwms_mail_pkg
 @@cwms_mail_pkg_body
+
+@@cwms_scheduler_auth_pkg
+@@cwms_scheduler_auth_pkg_body
 
 @@cwms/functions/str2tbl.sql
 
