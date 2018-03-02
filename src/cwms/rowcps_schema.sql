@@ -169,10 +169,10 @@ CONSTRAINT at_gccc_active_ck
 CHECK ( discharge_comp_active = 'T' OR discharge_comp_active = 'F'))
 /
 
-insert into at_gate_ch_computation_code values(1, l_cwms_office_code, 'C', 'Calculated from gate opening-elev curves', 'T');
-insert into at_gate_ch_computation_code values(2, l_cwms_office_code, 'T', 'Calculated from tailwater curve',          'T');
-insert into at_gate_ch_computation_code values(3, l_cwms_office_code, 'E', 'Estimated by user',                        'T');
-insert into at_gate_ch_computation_code values(4, l_cwms_office_code, 'A', 'Adjusted by an automated method',          'T');
+insert into at_gate_ch_computation_code values(1, 53, 'C', 'Calculated from gate opening-elev curves', 'T');
+insert into at_gate_ch_computation_code values(2, 53, 'T', 'Calculated from tailwater curve',          'T');
+insert into at_gate_ch_computation_code values(3, 53, 'E', 'Estimated by user',                        'T');
+insert into at_gate_ch_computation_code values(4, 53, 'A', 'Adjusted by an automated method',          'T');
 
 --------
 --------
