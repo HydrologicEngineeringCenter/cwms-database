@@ -13,7 +13,7 @@ create table cwms_db_change_log(
    constraint cwms_db_change_log_fk foreign key (office_code) references cwms_office (office_code)
 )
 tablespace cwms_20data;
-/
+
 create trigger cwms_db_change_log_trig01
    before insert or
           update of ver_major,
@@ -29,3 +29,4 @@ begin
    :new.apply_date := sysdate;
 end;
 /
+
