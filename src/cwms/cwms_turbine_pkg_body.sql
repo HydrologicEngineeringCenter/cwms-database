@@ -829,22 +829,50 @@ procedure retrieve_turbine_changes(
    p_end_time_inclusive   in  varchar2 default 'T',
    p_max_item_count       in  integer default null)
 is
-   type turbine_change_db_tab_t is table of at_turbine_change%rowtype;
-   type turbine_setting_db_tab_t is table of at_turbine_setting%rowtype; 
-   c_one_second       constant number := 1/86400;
-   l_time_zone        varchar2(28);
-   l_unit_system      varchar2(2);
-   l_start_time       date;
-   l_end_time         date;
-   l_project          project_obj_t;
-   l_proj_loc_code    number(10);
-   l_turbine_changes  turbine_change_db_tab_t;
-   l_turbine_settings turbine_setting_db_tab_t;
-   l_flow_unit        varchar2(16);
-   l_elev_unit        varchar2(16);
-   l_db_flow_unit     varchar2(16);
-   l_db_elev_unit     varchar2(16);
-   l_db_power_unit    varchar2(16);
+   c_one_second            constant number := 1/86400;
+   l_change_notes          varchar2(255);
+   l_comp_active           varchar2(1);
+   l_comp_display          varchar2(25);
+   l_comp_tooltip          varchar2(255);
+   l_cursor                sys_refcursor;
+   l_datetime              date;
+   l_db_elev_unit          varchar2(16);
+   l_db_flow_unit          varchar2(16);
+   l_db_power_unit         varchar2(16);
+   l_elev_factor           binary_double;
+   l_elev_offset           binary_double;
+   l_elev_pool             binary_double;
+   l_elev_tailwater        binary_double;
+   l_elev_unit             varchar2(16);
+   l_end_time              date;
+   l_flow_factor           binary_double;
+   l_flow_offset           binary_double;
+   l_flow_unit             varchar2(16);
+   l_max_item_count        integer;
+   l_new_discharge         binary_double;
+   l_new_q_override        binary_double;
+   l_office_id             varchar2(16);
+   l_old_discharge         binary_double;
+   l_old_q_override        binary_double;
+   l_proj_base_location_id varchar2(16);
+   l_proj_loc_code         number(10);
+   l_proj_sub_location_id  varchar2(32);
+   l_project               project_obj_t;
+   l_protected             varchar2(1);
+   l_real_power            binary_double;
+   l_reason_active         varchar2(1);
+   l_reason_display        varchar2(25);
+   l_reason_tooltip        varchar2(255);
+   l_scheduled_load        binary_double;
+   l_setting_count         binary_integer := 0;
+   l_settings_crsr         sys_refcursor;
+   l_start_time            date;
+   l_time_zone             varchar2(28);
+   l_turb_base_location_id varchar2(16);
+   l_turb_sub_location_id  varchar2(32);
+   l_turbine_changes       turbine_change_tab_t;
+   l_turbine_settings      turbine_setting_tab_t;
+   l_unit_system           varchar2(2);
 begin
    -------------------
    -- sanity checks --
@@ -856,7 +884,7 @@ begin
       cwms_err.raise('NULL_ARGUMENT', 'p_start_time');
    end if;
    if p_end_time is null then
-      cwms_err.raise('NULL_ARGUMENT', 'p_end_time');    
+         cwms_err.raise('NULL_ARGUMENT', 'p_end_time');
    end if;
    if p_max_item_count = 0 then
       cwms_err.raise(
@@ -876,167 +904,242 @@ begin
       p_project_location.get_office_id);
    -------------------------
    -- get the unit system --
-   -------------------------      
-   l_unit_system := 
+   -------------------------
+   l_unit_system :=
       upper(
          substr(
             nvl(
-               p_unit_system, 
+               p_unit_system,
                cwms_properties.get_property(
-                  'Pref_User.'||cwms_util.get_user_id, 
-                  'Unit_System', 
+                  'Pref_User.'||cwms_util.get_user_id,
+                  'Unit_System',
                   cwms_properties.get_property(
                      'Pref_Office',
                      'Unit_System',
                      'SI',
-                     p_project_location.get_office_id), 
+                     p_project_location.get_office_id),
                   p_project_location.get_office_id)),
             1, 2));
    ---------------------------------
    -- get the start and end times --
    ---------------------------------
-   l_proj_loc_code := p_project_location.get_location_code;            
-   l_time_zone := nvl(p_time_zone, cwms_loc.get_local_timezone(l_proj_loc_code));
-   l_start_time := cwms_util.change_timezone(p_start_time, l_time_zone, 'UTC');
-   l_end_time   := cwms_util.change_timezone(p_end_time,   l_time_zone, 'UTC');
+   l_proj_loc_code := p_project_location.get_location_code;
+   l_time_zone     := nvl(p_time_zone, cwms_loc.get_local_timezone(l_proj_loc_code));
+   l_start_time    := cwms_util.change_timezone(p_start_time, l_time_zone, 'UTC');
+   l_end_time      := cwms_util.change_timezone(p_end_time,   l_time_zone, 'UTC');
    if not cwms_util.is_true(p_start_time_inclusive) then
       l_start_time := l_start_time + c_one_second;
-   end if;        
+   end if;
    if not cwms_util.is_true(p_end_time_inclusive) then
       l_end_time := l_end_time - c_one_second;
    end if;
-   ----------------------------------------
-   -- collect the turbine change records --
+   cwms_display.retrieve_unit(l_flow_unit, 'Flow', l_unit_system, p_project_location.get_office_id);
+   cwms_display.retrieve_unit(l_elev_unit, 'Elev', l_unit_system, p_project_location.get_office_id);
+   l_db_elev_unit  := cwms_util.get_default_units('Elev');
+   l_db_flow_unit  := cwms_util.get_default_units('Flow');
+   l_db_power_unit := cwms_util.get_default_units('Power');
+   select factor,
+          offset
+     into l_elev_factor,
+          l_elev_offset
+     from cwms_unit_conversion
+    where from_unit_id = l_db_elev_unit
+      and to_unit_id = l_elev_unit;
+      
+   select factor,
+          offset
+     into l_flow_factor,
+          l_flow_offset
+     from cwms_unit_conversion
+    where from_unit_id = l_db_flow_unit
+      and to_unit_id = l_flow_unit;
+   
+   l_max_item_count := abs(p_max_item_count);          
    ---------------------------------------
-   if p_max_item_count is null then
-      select * bulk collect
-        into l_turbine_changes
-        from at_turbine_change
-       where project_location_code = l_proj_loc_code
-         and turbine_change_datetime between l_start_time and l_end_time
-    order by turbine_change_datetime;
-       
+   -- select the turbine change records --
+   ---------------------------------------
+   if p_max_item_count < 0 then
+      ------------------
+      -- newest first --
+      ------------------
+      open l_cursor for
+         select co.office_id,
+                abl.base_location_id,
+                apl.sub_location_id,
+                cast(from_tz(cast(atc.turbine_change_datetime as timestamp), 'UTC') at time zone (l_time_zone) as date),
+                atc.elev_pool * l_elev_factor + l_elev_offset,
+                atc.elev_tailwater * l_elev_factor + l_elev_offset,
+                atsr.turb_set_reason_display_value,
+                atsr.turb_set_reason_tooltip,
+                atsr.turb_set_reason_active,
+                atcc.turbine_comp_display_value,
+                atcc.turbine_comp_tooltip,
+                atcc.turbine_comp_active,
+                atc.old_total_discharge_override  * l_flow_factor + l_flow_offset,
+                atc.new_total_discharge_override  * l_flow_factor + l_flow_offset,
+                atc.turbine_change_notes,
+                atc.protected,
+                cursor (select bl.base_location_id,
+                               pl.sub_location_id,
+                               old_discharge * l_flow_factor + l_flow_offset,
+                               new_discharge * l_flow_factor + l_flow_offset,
+                               scheduled_load,
+                               real_power
+                          from at_turbine_setting ats,
+                               at_turbine at,
+                               at_physical_location pl,
+                               at_base_location bl
+                         where turbine_change_code = atc.turbine_change_code
+                           and at.turbine_location_code = ats.turbine_location_code
+                           and pl.location_code = at.turbine_location_code
+                           and bl.base_location_code = pl.base_location_code
+                       ) as turbine_settings
+           from at_turbine_change atc,
+                at_project ap,
+                at_physical_location apl,
+                at_base_location abl,
+                at_turbine_setting_reason atsr,
+                at_turbine_computation_code atcc,
+                cwms_office co
+          where atc.project_location_code = l_proj_loc_code
+            and ap.project_location_code = atc.project_location_code
+            and apl.location_code = ap.project_location_code
+            and abl.base_location_code = apl.base_location_code
+            and co.office_code = abl.db_office_code
+            and atc.turbine_change_datetime between l_start_time and l_end_time
+            and atsr.turb_set_reason_code = atc.turbine_setting_reason_code
+            and atcc.turbine_comp_code = atc.turbine_discharge_comp_code
+       order by atc.turbine_change_datetime desc;
    else
-      if p_max_item_count < 0 then
-         select *
-           bulk collect
-           into l_turbine_changes
-           from ( select *
-                    from at_turbine_change
-                   where project_location_code = l_proj_loc_code
-                     and turbine_change_datetime between l_start_time and l_end_time
-                order by turbine_change_datetime desc
-                ) 
-          where rownum <= -p_max_item_count
-          order by turbine_change_datetime; 
-      else
-         select *
-           bulk collect
-           into l_turbine_changes
-           from ( select *
-                    from at_turbine_change
-                   where project_location_code = l_proj_loc_code
-                     and turbine_change_datetime between l_start_time and l_end_time
-                order by turbine_change_datetime
-                ) 
-          where rownum <= p_max_item_count
-          order by turbine_change_datetime; 
-      end if;
+      ------------------
+      -- oldest first --
+      ------------------
+      open l_cursor for
+         select co.office_id,
+                abl.base_location_id,
+                apl.sub_location_id,
+                cast(from_tz(cast(atc.turbine_change_datetime as timestamp), 'UTC') at time zone (l_time_zone) as date),
+                atc.elev_pool * l_elev_factor + l_elev_offset,
+                atc.elev_tailwater * l_elev_factor + l_elev_offset,
+                atsr.turb_set_reason_display_value,
+                atsr.turb_set_reason_tooltip,
+                atsr.turb_set_reason_active,
+                atcc.turbine_comp_display_value,
+                atcc.turbine_comp_tooltip,
+                atcc.turbine_comp_active,
+                atc.old_total_discharge_override  * l_flow_factor + l_flow_offset,
+                atc.new_total_discharge_override  * l_flow_factor + l_flow_offset,
+                atc.turbine_change_notes,
+                atc.protected,
+                cursor (select bl.base_location_id,
+                               pl.sub_location_id,
+                               old_discharge * l_flow_factor + l_flow_offset,
+                               new_discharge * l_flow_factor + l_flow_offset,
+                               scheduled_load,
+                               real_power
+                          from at_turbine_setting ats,
+                               at_turbine at,
+                               at_physical_location pl,
+                               at_base_location bl
+                         where turbine_change_code = atc.turbine_change_code
+                           and at.turbine_location_code = ats.turbine_location_code
+                           and pl.location_code = at.turbine_location_code
+                           and bl.base_location_code = pl.base_location_code
+                       ) as turbine_settings
+           from at_turbine_change atc,
+                at_project ap,
+                at_physical_location apl,
+                at_base_location abl,
+                at_turbine_setting_reason atsr,
+                at_turbine_computation_code atcc,
+                cwms_office co
+          where atc.project_location_code = l_proj_loc_code
+            and ap.project_location_code = atc.project_location_code
+            and apl.location_code = ap.project_location_code
+            and abl.base_location_code = apl.base_location_code
+            and co.office_code = abl.db_office_code
+            and atc.turbine_change_datetime between l_start_time and l_end_time
+            and atsr.turb_set_reason_code = atc.turbine_setting_reason_code
+            and atcc.turbine_comp_code = atc.turbine_discharge_comp_code
+       order by atc.turbine_change_datetime asc;
    end if;
-   ----------------------------
-   -- build the out variable --
-   ----------------------------
-   if l_turbine_changes is not null and l_turbine_changes.count > 0 then
-      cwms_display.retrieve_unit(l_flow_unit, 'Flow', l_unit_system, p_project_location.get_office_id);
-      cwms_display.retrieve_unit(l_elev_unit, 'Elev', l_unit_system, p_project_location.get_office_id);
-      l_db_elev_unit := cwms_util.get_default_units('Elev');
-      l_db_flow_unit := cwms_util.get_default_units('Flow');
-      l_db_power_unit := cwms_util.get_default_units('Power');
-      p_turbine_changes := turbine_change_tab_t();
-      p_turbine_changes.extend(l_turbine_changes.count);
-      for i in 1..l_turbine_changes.count loop
-         ------------------------
-         -- turbine change object --
-         ------------------------
-         p_turbine_changes(i) := turbine_change_obj_t(
-            location_ref_t(l_turbine_changes(i).project_location_code),
-            cwms_util.change_timezone(l_turbine_changes(i).turbine_change_datetime, 'UTC', l_time_zone),
-            null, -- discharge_computation, set below
-            null, -- setting_reason, set below
-            null, -- settings, set below 
-            cwms_util.convert_units(
-               l_turbine_changes(i).elev_pool, 
-               l_db_elev_unit, 
-               l_elev_unit),
-            cwms_util.convert_units(
-               l_turbine_changes(i).elev_tailwater, 
-               l_db_elev_unit, 
-               l_elev_unit),   
-            l_elev_unit,
-            cwms_util.convert_units(
-               l_turbine_changes(i).old_total_discharge_override, 
-               l_db_flow_unit, 
-               l_flow_unit),
-            cwms_util.convert_units(
-               l_turbine_changes(i).new_total_discharge_override, 
-               l_db_flow_unit, 
-               l_flow_unit),
+   --------------------------------------------------------
+   -- fetch records into variables and build table types --
+   --------------------------------------------------------
+   l_turbine_changes := turbine_change_tab_t();
+   loop
+      fetch l_cursor into l_office_id,
+                          l_proj_base_location_id,
+                          l_proj_sub_location_id,
+                          l_datetime,
+                          l_elev_pool,
+                          l_elev_tailwater,
+                          l_reason_display,
+                          l_reason_tooltip,
+                          l_reason_active,
+                          l_comp_display,
+                          l_comp_tooltip,
+                          l_comp_active,
+                          l_old_q_override,
+                          l_new_q_override,
+                          l_change_notes,
+                          l_protected,
+                          l_settings_crsr;
+      exit when l_cursor%notfound; -- exhausted results
+      l_turbine_settings := turbine_setting_tab_t();
+      loop                     
+         fetch l_settings_crsr into
+            l_turb_base_location_id,
+            l_turb_sub_location_id, 
+            l_old_discharge,        
+            l_new_discharge,        
+            l_scheduled_load,       
+            l_real_power;
+         exit when l_settings_crsr%notfound;
+         l_turbine_settings.extend;
+         l_turbine_settings(l_turbine_settings.count) := turbine_setting_obj_t(
+            location_ref_t(l_turb_base_location_id, l_turb_sub_location_id, l_office_id),
+            l_old_discharge,
+            l_new_discharge,
             l_flow_unit,
-            l_turbine_changes(i).turbine_change_notes,
-            l_turbine_changes(i).protected);
-         ---------------------------------
-         -- discharge_computation field --
-         ---------------------------------            
-         select lookup_type_obj_t(
-                   p_project_location.get_office_id, 
-                   turbine_comp_display_value, 
-                   turbine_comp_tooltip, 
-                   turbine_comp_active)
-           into p_turbine_changes(i).discharge_computation
-           from at_turbine_computation_code
-          where turbine_comp_code = l_turbine_changes(i).turbine_discharge_comp_code;
-         --------------------------
-         -- setting_reason field --
-         --------------------------             
-         select lookup_type_obj_t(
-                   p_project_location.get_office_id, 
-                   turb_set_reason_display_value, 
-                   turb_set_reason_tooltip, 
-                   turb_set_reason_active)
-           into p_turbine_changes(i).setting_reason
-           from at_turbine_setting_reason
-          where turb_set_reason_code = l_turbine_changes(i).turbine_setting_reason_code;
-          --------------------
-          -- settings field --
-          --------------------
-         select * bulk collect
-           into l_turbine_settings
-           from at_turbine_setting
-          where turbine_change_code = l_turbine_changes(i).turbine_change_code;
-          
-         if l_turbine_settings is not null and l_turbine_settings.count > 0 then
-            p_turbine_changes(i).settings := turbine_setting_tab_t();
-            p_turbine_changes(i).settings.extend(l_turbine_settings.count);
-            for j in 1..l_turbine_settings.count loop
-               p_turbine_changes(i).settings(j) := turbine_setting_obj_t(
-                  location_ref_t(l_turbine_settings(j).turbine_location_code),
-                  cwms_util.convert_units(
-                     l_turbine_settings(j).old_discharge, 
-                     l_db_flow_unit, 
-                     l_flow_unit),
-                  cwms_util.convert_units(
-                     l_turbine_settings(j).new_discharge, 
-                     l_db_flow_unit, 
-                     l_flow_unit),
-                  l_flow_unit,
-                  l_turbine_settings(j).real_power,
-                  l_turbine_settings(j).scheduled_load,
-                  l_db_power_unit);                  
-            end loop;
-         end if;          
-                                 
+            l_real_power,
+            l_scheduled_load,
+            l_db_power_unit);
       end loop;
+      l_turbine_changes.extend;
+      l_turbine_changes(l_turbine_changes.count) := turbine_change_obj_t(
+         location_ref_t(l_proj_base_location_id, l_proj_sub_location_id, l_office_id),
+         l_datetime,
+         lookup_type_obj_t(l_office_id, l_comp_display, l_comp_tooltip, l_comp_active),
+         lookup_type_obj_t(l_office_id, l_reason_display, l_reason_tooltip, l_reason_active),
+         l_turbine_settings,
+         l_elev_pool,
+         l_elev_tailwater,
+         l_elev_unit,
+         l_old_q_override,
+         l_new_q_override,
+         l_flow_unit,
+         l_change_notes,
+         l_protected);
+      l_setting_count := l_setting_count + l_settings_crsr%rowcount;
+      close l_settings_crsr;
+      exit when l_cursor%rowcount = l_max_item_count; -- retrived specified limit
+   end loop;
+   close l_cursor;
+   if p_max_item_count < 0 then
+      ---------------------
+      -- re-sort results --
+      ---------------------
+      select cast(multiset(select *
+                             from table(l_turbine_changes) 
+                            order by change_date
+                          ) 
+                  as turbine_change_tab_t
+                 ) 
+        into l_turbine_changes 
+        from dual;
    end if;
+   p_turbine_changes := l_turbine_changes;
 end retrieve_turbine_changes;
 --------------------------------------------------------------------------------
 -- function retrieve_turbine_changes_f
