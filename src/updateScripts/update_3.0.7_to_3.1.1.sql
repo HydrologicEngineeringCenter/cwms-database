@@ -52,6 +52,15 @@ prompt 'ADDING NEW SCHEDULER MONITORING OBJECTS'
 @@../cwms/cwms_scheduler_auth_pkg
 @@../cwms/cwms_scheduler_auth_pkg_body
 prompt ################################################################################
+prompt 'ADDING CWMS_POOLS'
+@@../cwms/types/number_tab_tab_t
+@@../cwms/tables/at_pool_name
+@@../cwms/tables/at_pool
+@@../cwms/views/av_pool_name
+@@../cwms/views/av_pool
+@@../cwms_pool_pkg
+@@../cwms_pool_pkg_body
+prompt ################################################################################
 prompt 'UPDATING PACKAGE SPECIFICATIONS'
 select systimestamp from dual;
 @@../cwms/cwms_util_pkg
@@ -59,6 +68,7 @@ prompt #########################################################################
 prompt 'UPDATING PACKAGE BODDIES'
 select systimestamp from dual;
 @@../cwms/cwms_embank_pkg_body
+@@../cwms/cwms_mail_pkg_body
 @@../cwms/cwms_outlet_pkg_body
 @@../cwms/cwms_turbine_pkg_body
 @@../cwms/cwms_util_pkg_body
