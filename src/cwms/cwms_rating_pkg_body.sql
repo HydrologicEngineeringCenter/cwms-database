@@ -2131,13 +2131,10 @@ begin
       p_end_date       => p_end_date,
       p_time_zone      => p_time_zone,
       p_office_id_mask => p_office_id_mask);
-      
+
    fetch l_cat_cursor bulk collect into l_cat_records;
    close l_cat_cursor;
-   
-   p_ratings := rating_tab_t();
-   p_ratings.extend(l_cat_records.count);
-   
+
    for i in 1..l_cat_records.count loop
       l_code := rating_t.get_rating_code(
          p_rating_spec_id => l_cat_records(i).rating_spec,
@@ -2145,12 +2142,19 @@ begin
          p_match_date     => 'T',
          p_time_zone      => p_time_zone,
          p_office_id      => l_cat_records(i).office);
-      if not l_used_codes.exists(to_char(l_code)) then         
-         p_ratings(i) := get_rating(l_code, p_include_points);
+      if not l_used_codes.exists(to_char(l_code)) then
          l_used_codes(to_char(l_code)) := true;
       end if;
    end loop;
-   
+
+   p_ratings := rating_tab_t();
+   l_code := l_used_codes.first;
+   while l_code is not null loop
+      p_ratings.extend;
+      p_ratings(p_ratings.count) := get_rating(l_code, p_include_points);
+      l_code := l_used_codes.next(l_code);
+   end loop;
+
 end retrieve_ratings_obj_ex;
 
 --------------------------------------------------------------------------------
