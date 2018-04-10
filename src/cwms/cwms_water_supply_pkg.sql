@@ -294,6 +294,19 @@ PROCEDURE store_contracts(
     -- a flag that will cause the procedure to fail if the objects already exist
     p_fail_if_exists IN VARCHAR2 DEFAULT 'T' );
 /**
+ * Stores a set of water supply contracts to the database
+ *
+ * @param p_contracts      The contracts to store
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies whether the routine should fail if one of the contracts already exists
+ * @param p_ignore_nulls   A flag ('T' or 'F') that specifies whether the routine should ignore NULL values in the input data. If 'F', NULL values will remove existing items.
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the contracts already exists
+ */
+PROCEDURE store_contracts2(
+    p_contracts IN water_user_contract_tab_t,
+    p_fail_if_exists IN varchar2 default 'T',
+    p_ignore_nulls IN varchar2 default 'T');
+/**
  * Deletes a water supply contract from the database
  *
  * @see constant cwms_util.delete_key

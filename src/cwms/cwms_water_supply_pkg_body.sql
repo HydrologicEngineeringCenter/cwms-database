@@ -416,10 +416,27 @@ END retrieve_contracts;
 -- p_fail_if_exists
 --    a flag that will cause the procedure to fail if the objects already exist
 PROCEDURE store_contracts(
+    p_contracts in water_user_contract_tab_t,
+    p_fail_if_exists IN varchar2 default 'T')
+is
+begin
+   store_contracts2(p_contracts, p_fail_if_exists, 'T');
+end store_contracts;
+--------------------------------------------------------------------------------
+-- stores a set of water user contracts.
+-- errors preventing the return of data will be issued as a thrown exception
+--------------------------------------------------------------------------------
+-- p_contracts
+-- p_fail_if_exists
+--    a flag that will cause the procedure to fail if the objects already exist
+--    a flag that specifies whether the routine should ignore null values in the input data
+PROCEDURE store_contracts2(
    p_contracts      IN water_user_contract_tab_t,
-   p_fail_if_exists IN VARCHAR2 DEFAULT 'T' )
+    p_fail_if_exists IN varchar2 default 'T',
+    p_ignore_nulls IN varchar2 default 'T')
 IS
    l_fail_if_exists boolean;
+   l_ignore_nulls   boolean;
    l_rec            at_water_user_contract%rowtype;
    l_ref            water_user_contract_ref_t;
    l_water_user_code NUMBER(10);
@@ -464,14 +481,32 @@ IS
       ---------------------------      
       p_rec.contracted_storage := p_obj.contracted_storage * l_factor + l_offset;
       p_rec.water_supply_contract_type := l_contract_type_code;
-      p_rec.ws_contract_effective_date := p_obj.ws_contract_effective_date;
-      p_rec.ws_contract_expiration_date := p_obj.ws_contract_expiration_date;
-      p_rec.initial_use_allocation := p_obj.initial_use_allocation * l_factor + l_offset;
-      p_rec.future_use_allocation := p_obj.future_use_allocation * l_factor + l_offset;
-      p_rec.future_use_percent_activated := p_obj.future_use_percent_activated;
-      p_rec.total_alloc_percent_activated := p_obj.total_alloc_percent_activated;
+      IF p_obj.ws_contract_effective_date IS NOT NULL OR NOT l_ignore_nulls
+      THEN
+         p_rec.ws_contract_effective_date := p_obj.ws_contract_effective_date;
+      END IF;   
+      IF p_obj.ws_contract_expiration_date IS NOT NULL OR NOT l_ignore_nulls
+      THEN
+         p_rec.ws_contract_expiration_date := p_obj.ws_contract_expiration_date;
+      END IF;   
+      IF p_obj.initial_use_allocation IS NOT NULL OR NOT l_ignore_nulls
+      THEN
+         p_rec.initial_use_allocation := p_obj.initial_use_allocation * l_factor + l_offset;
+      END IF;   
+      IF p_obj.future_use_allocation IS NOT NULL OR NOT l_ignore_nulls
+      THEN
+         p_rec.future_use_allocation := p_obj.future_use_allocation * l_factor + l_offset;
+      END IF;   
+      IF p_obj.future_use_percent_activated IS NOT NULL OR NOT l_ignore_nulls
+      THEN
+         p_rec.future_use_percent_activated := p_obj.future_use_percent_activated;
+      END IF;   
+      IF p_obj.total_alloc_percent_activated IS NOT NULL OR NOT l_ignore_nulls
+      THEN
+         p_rec.total_alloc_percent_activated := p_obj.total_alloc_percent_activated;
+      END IF;   
       IF p_obj.pump_out_location IS NOT NULL
-      then
+      THEN
         -- make sure we have a valid location
         cwms_loc.store_location(p_obj.pump_out_location,'F');
         p_rec.pump_out_location_code := p_obj.pump_out_location.location_ref.get_location_code('F');
@@ -491,6 +526,9 @@ IS
           p_ignore_nulls   => 'T',
           p_description    => p_obj.pump_out_location.description,
           p_office_id      => p_obj.pump_out_location.location_ref.office_id);
+      ELSIF NOT l_ignore_nulls
+      THEN
+         p_rec.pump_out_location_code := NULL;
       END IF;
       IF p_obj.pump_out_below_location IS NOT NULL
       THEN
@@ -513,6 +551,9 @@ IS
           p_ignore_nulls   => 'T',
           p_description    => p_obj.pump_out_below_location.description,
           p_office_id      => p_obj.pump_out_below_location.location_ref.office_id);
+      ELSIF NOT l_ignore_nulls
+      THEN
+         p_rec.pump_out_below_location_code := null;
       END IF;
       IF p_obj.pump_in_location IS NOT NULL
       THEN
@@ -535,11 +576,15 @@ IS
           p_ignore_nulls   => 'T',
           p_description    => p_obj.pump_in_location.description,
           p_office_id      => p_obj.pump_in_location.location_ref.office_id);
+      ELSIF NOT l_ignore_nulls
+      THEN
+         p_rec.pump_in_location_code := null;
       END IF;      
       p_rec.storage_unit_code := l_storage_unit_code;
    END;
 BEGIN
    l_fail_if_exists := cwms_util.is_true(p_fail_if_exists);
+   l_ignore_nulls := cwms_util.is_true(p_ignore_nulls);
    IF p_contracts IS NOT NULL THEN
       FOR i IN 1..p_contracts.count loop
          l_ref := p_contracts(i).water_user_contract_ref;
@@ -593,8 +638,8 @@ BEGIN
               VALUES l_rec;
          END;
       END loop;
-   END IF;
-END store_contracts;
+   end if;
+END store_contracts2;
 --------------------------------------------------------------------------------
 -- deletes the water user contract associated with the argument ref.
 -- errors preventing the return of data will be issued as a thrown exception
