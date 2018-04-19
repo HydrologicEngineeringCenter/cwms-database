@@ -37,6 +37,10 @@ prompt 'UPDATING TRANSITIONAL AND VIRTUAL RATING TABLE CONSTRAINTS'
 select systimestamp from dual;
 @@./311_modify_transitional_virtual_rating_tables
 prompt ################################################################################
+prompt 'ADDING INDEX ON DEP_RATING_PARAM_CODE FOR AT_RATING_VALUE'
+select systimestamp from dual;
+@@./311_add_at_rating_value_dep_index
+prompt ################################################################################
 prompt 'UPDATING REGI LOOKUP TABLES'
 select systimestamp from dual;
 @@./311_update_embankment_protection_types
