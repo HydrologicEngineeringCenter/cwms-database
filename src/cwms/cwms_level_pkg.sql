@@ -1970,6 +1970,8 @@ procedure delete_location_level(
 /**
  * Deletes a location level, optionally deleting any recurring pattern records and location level indicators
  *
+ * @deprecated Use Delete_Location_Level2 instead.
+ *
  * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
  * @param p_effective_date     The effective date of the level to delete
  * @param p_timezone_id        The time zone of p_effective_date
@@ -1993,11 +1995,34 @@ procedure delete_location_level_ex(
 /**
  * Deletes a location level, optionally deleting any recurring pattern records and location level indicators
  *
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_effective_date     The effective date of the level to delete
+ * @param p_timezone_id        The time zone of p_effective_date
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_value    The value of the attribute, if applicable
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_cascade            A flag ('T' or 'F') that specifies whether to delete any recurring pattern records. If 'F' and such records exist, the routine will fail
+ * @param p_delete_indicators  A flag ('T' or 'F') that specifies whether to delete any location level indicators associated with the location level
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ */
+procedure delete_location_level2(
+   p_location_level_id       in  varchar2,
+   p_effective_date          in  date     default null,
+   p_timezone_id             in  varchar2 default 'UTC',
+   p_attribute_id            in  varchar2 default null,
+   p_attribute_value         in  number   default null,
+   p_attribute_units         in  varchar2 default null,
+   p_cascade                 in  varchar2 default 'F',
+   p_delete_indicators       in  varchar2 default 'F',
+   p_office_id               in  varchar2 default null);
+/**
+ * Deletes a location level, optionally deleting any recurring pattern records and location level indicators
+ *
  * @param p_location_level_code  The unique numeric value that identifies the location level in the database 
  * @param p_cascade              A flag ('T' or 'F') that specifies whether to delete any recurring pattern records. If 'F' and such records exist, the routine will fail
  * @param p_delete_indicators    A flag ('T' or 'F') that specifies whether to delete any location level indicators associated with the location level
  */
-procedure delete_location_level_ex(
+procedure delete_location_level2(
    p_location_level_code in integer,
    p_cascade             in  varchar2 default 'F',
    p_delete_indicators   in  varchar2 default 'F');
@@ -2015,7 +2040,7 @@ procedure delete_location_level_ex(
  * @param p_delete_pools       A flag ('T' or 'F') that specifies whether to delete any explicit pool definitions associated with the location level
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
  */
-procedure delete_location_level_ex2(
+procedure delete_location_level3(
    p_location_level_id       in  varchar2,
    p_effective_date          in  date     default null,
    p_timezone_id             in  varchar2 default 'UTC',
@@ -2034,7 +2059,7 @@ procedure delete_location_level_ex2(
  * @param p_delete_pools         A flag ('T' or 'F') that specifies whether to delete any explicit pool definitions associated with the location level
  * @param p_delete_indicators    A flag ('T' or 'F') that specifies whether to delete any location level indicators associated with the location level
  */
-procedure delete_location_level_ex2(
+procedure delete_location_level3(
    p_location_level_code in integer,
    p_cascade             in  varchar2 default 'F',
    p_delete_pools        in  varchar2 default 'F',
