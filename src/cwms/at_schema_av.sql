@@ -31,6 +31,9 @@ DECLARE
       'av_embankment',             -- created in at_schema_2
       'av_entity',
       'av_entity_location',
+      'av_forecast',              -- created in at_schema_2
+      'av_forecast_ex',           -- created in at_schema_2
+      'av_forecast_spec',         -- created in at_schema_2
       'av_gage',
       'av_gage_method',
       'av_gage_sensor',

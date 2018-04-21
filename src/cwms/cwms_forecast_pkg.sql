@@ -345,37 +345,6 @@ function cat_specs_f(
    p_office_id_mask     in varchar2 default null) -- null = user's office id
    return sys_refcursor;
 /**
- * Stores (inserts or updates) a single time series for a forecast to the database
- *
- * @param p_location_id     The forecast location identifier
- * @param p_forecast_id     The forecast identifier
- * @param p_cwms_ts_id      The time series identifier
- * @param p_units           The unit of the time series values
- * @param p_forecast_time   The forecast time
- * @param p_issue_time      The time the forecast was issued
- * @param p_version_date    The version date for the time series
- * @param p_time_zone       The time zone for p_forecast_time, p_issue_time, p_verion_date, and p_timeseries_data
- * @param p_timeseries_data The time series data to store
- * @param p_fail_if_exists  A flag ('T' or 'F') that specifies whether the routine should fail if the forecast time series already exists in the database
- * @param p_store_rule      The store rule to use.  Same as for <a href="pkg_cwms_ts.html#procedure store_ts(p_cwms_ts_id in varchar2, p_units in varchar2, p_timeseries_data in tsv_array, p_store_rule in varchar2, p_override_prot in varchar2, p_version_date in date, p_office_id in varchar2)">cwms_ts.store_ts</a>
- * @param p_office_id       The office that owns the forecast specification and time series.  If not specified or NULL, the session user's default office is used.
- *
- * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and the forecast time series exists in the database
- */
-procedure store_ts(
-   p_location_id     in varchar2,
-   p_forecast_id     in varchar2,
-   p_cwms_ts_id      in varchar2,
-   p_units           in varchar2,
-   p_forecast_time   in date,
-   p_issue_time      in date,
-   p_version_date    in date,
-   p_time_zone       in varchar2,
-   p_timeseries_data in ztsv_array,
-   p_fail_if_exists  in varchar2,
-   p_store_rule      in varchar2,
-   p_office_id       in varchar2 default null); -- null = user's office id   
-/**
  * Retrieves a single time series for a forecast from the database
  *
  * @param p_ts_cursor       The cursor of time series data. The cursor contains
@@ -442,44 +411,6 @@ procedure retrieve_ts(
    p_previous        in  varchar2 default 'F',
    p_next            in  varchar2 default 'F',
    p_office_id       in  varchar2 default null); -- null = user's office id   
-/**
- * Deletes forecast time series from the database
- *
- * @param p_location_id     The forecast location identifier
- * @param p_forecast_id     The forecast identifier
- * @param p_cwms_ts_id      The time series identifier. If not specified or NULL, time series for all time series identifiers is deleted
- * @param p_forecast_time   The forecast time. If not specified or NULL, time series for all forecast times is deleted
- * @param p_issue_time      The time the forecast was issued. If not specified or NULL, time series for all issue times is deleted
- * @param p_time_zone       The time zone for p_forecast_time and p_issue_time. If not specified or NULL, the local time zone for the location is used
- * @param p_office_id       The office that owns the forecast specification and time series.  If not specified or NULL, the session user's default office is used.
- */
-procedure delete_ts(
-   p_location_id   in varchar2,
-   p_forecast_id   in varchar2,
-   p_cwms_ts_id    in varchar2,               -- null = all time series
-   p_forecast_time in date,                   -- null = all forecast times
-   p_issue_time    in date,                   -- null = all issue times
-   p_time_zone     in varchar2 default null,  -- null = location time zone
-   p_office_id     in varchar2 default null); -- null = user's office id   
-
---------------------------------------------------------------------------------
--- procedure cat_ts
---
--- cursor contains the following field, ordered by the first 4:
---
---    office_id      varchar2(16)
---    forecast_date  date          
---    issue_date     date          
---    cwms_ts_id      varchar2(183)
---    version_date   date          
---    min_time       date          
---    max_time       date
---    time_zone_name varchar2(28)  
---
--- all dates are in the indicated time zone (passed in or location default) and
--- the time series extents are indicated in min_time, max_time
---
---------------------------------------------------------------------------------
 /**
  * Catalogs forecast time series that match the specified parameters. Matching is
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
@@ -691,29 +622,6 @@ function cat_ts_f(
    p_office_id       in varchar2 default null) -- null = user's office id   
    return sys_refcursor;   
 /**
- * Stores (inserts or updates) text for a forecast to the database
- *
- * @param p_location_id     The forecast location identifier
- * @param p_forecast_id     The forecast identifier
- * @param p_forecast_time   The forecast time
- * @param p_issue_time      The time the forecast was issued
- * @param p_time_zone       The time zone for p_forecast_time and p_issue_time
- * @param p_text            The text to store
- * @param p_fail_if_exists  A flag ('T' or 'F') that specifies whether the routine should fail if the forecast text already exists in the database
- * @param p_office_id       The office that owns the forecast specification and time series.  If not specified or NULL, the session user's default office is used.
- *
- * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and the forecast text exists in the database
- */
-procedure store_text(
-   p_location_id     in varchar2,
-   p_forecast_id     in varchar2,
-   p_forecast_time   in date,
-   p_issue_time      in date,
-   p_time_zone       in varchar2,
-   p_text            in clob,
-   p_fail_if_exists  in varchar2,
-   p_office_id       in varchar2 default null); -- null = user's office id   
-/**
  * Retrieves text for a forecast from the database
  *
  * @param p_text            The forecast text
@@ -732,23 +640,6 @@ procedure retrieve_text(
    p_issue_time      in  date,
    p_time_zone       in  varchar2 default null,  -- null = location time zone
    p_office_id       in  varchar2 default null); -- null = user's office id   
-/**
- * Deletes text for a forecast from the database
- *
- * @param p_location_id     The forecast location identifier
- * @param p_forecast_id     The forecast identifier
- * @param p_forecast_time   The forecast time. If not specified or NULL, text for all forecast times is deleted
- * @param p_issue_time      The time the forecast was issued. If not specified or NULL, text for all issue times is deleted
- * @param p_time_zone       The time zone for p_forecast_time and p_issue_time
- * @param p_office_id       The office that owns the forecast specification and time series.  If not specified or NULL, the session user's default office is used.
- */
-procedure delete_text(
-   p_location_id     in varchar2,
-   p_forecast_id     in varchar2,
-   p_forecast_time   in date,                   -- null = all forecast times
-   p_issue_time      in date,                   -- null = all issue times
-   p_time_zone       in varchar2 default null,  -- null = location time zone
-   p_office_id       in varchar2 default null); -- null = user's office id   
 /**
  * Catalogs all forecast text for a forecast specification
  *
@@ -907,7 +798,353 @@ procedure retrieve_forecast(
    p_forecast_time   in  date     default null,  -- null = most recent
    p_issue_time      in  date     default null,  -- null = most_recent
    p_time_zone       in  varchar2 default null,  -- null = location time zone
-   p_office_id       in  varchar2 default null); -- null = user's office id   
+   p_office_id       in  varchar2 default null); -- null = user's office id
+/**
+ * Deletes a forecast (text and time series) from the database
+ *
+ * @param p_location_id   The forecast location identifier
+ * @param p_forecast_id   The forecast identifier
+ * @param p_forecast_time The forecast time
+ * @param p_issue_time    The time the forecast was issued
+ * @param p_time_zone     The time zone for p_forecast_time, p_issue_time, p_verion_date, and p_timeseries_data. If not specified or NULL, the location's local time zone is used.
+ * @param p_override_prot A flag (T/F) specifying whether to delete protected time series values.
+ * @param p_office_id     The office that owns the forecast specification and time series.  If not specified or NULL, the session user's default office is used.
+ */
+procedure delete_forecast(
+   p_location_id     in varchar2,
+   p_forecast_id     in varchar2,
+   p_forecast_time   in date,
+   p_issue_time      in date,
+   p_time_zone       in varchar2 default null, -- null = location time zone
+   p_override_prot   in varchar2 default 'F',
+   p_office_id       in varchar2 default null); -- null = user's office id   
+/**
+ * Catalogs all forecast text for a forecast specification
+ *
+ * @param p_fcst_catalog A cursor containging the abbreviated or non-abbreviated catalog
+ * <p>
+ * If an abbreviated catalog is specified, the following columns will be returned, sorted by the first five
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the forecast time series</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">location_id</td>
+ *     <td class="descr">varchar2(183)</td>
+ *     <td class="descr">The target location for the forecast</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">forecast_id</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The forecast date of the forecast</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">forecast_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The forecast date of the forecast</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">issue_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The issue date of the forecast</td>                  
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">has_text</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">A flag (T/F) specifying whether the forecast has text</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">has_time_series</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">A flag (T/F) specifying whether the forecast has time series</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">time_zone_name</td>
+ *     <td class="descr">varchar2(28)</td>
+ *     <td class="descr">The time zone for the date/time columns</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">9</td>
+ *     <td class="descr">valid</td>
+ *     <td class="descr">char(1)</td>
+ *     <td class="descr">A flag (T/F/NULL) specifying the whether the forecast is within its valid lifetime</td>
+ *   </tr>
+ * </table>
+ * <p>
+ * Otherwise, the following columns will be returned, sorted by the first five
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the forecast time series</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">location_id</td>
+ *     <td class="descr">varchar2(183)</td>
+ *     <td class="descr">The target locaiton for the forecast</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">forecast_id</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The forecast identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">forecast_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The forecast date of the forecast</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">issue_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The issue date of the forecast</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">text_id</td>
+ *     <td class="descr">varchar2(256)</td>
+ *     <td class="descr">The text identifier. Can be used with <a href="pkg_cwms_text.html#procedure retrieve_text(p_text out clob,p_id in varchar2,p_office_id_mask in varchar2)">cwms_text.retieve_text</a> to retrieve the actual text</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">cwms_ts_id</td>
+ *     <td class="descr">varchar2(183)</td>
+ *     <td class="descr">The time series identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">version_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The version date of the time series</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">9</td>
+ *     <td class="descr">min_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The earliest date/time for the time series</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">10</td>
+ *     <td class="descr">max_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The latest date/time for the time series</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">11</td>
+ *     <td class="descr">time_zone_name</td>
+ *     <td class="descr">varchar2(28)</td>
+ *     <td class="descr">The time zone for the date/time columns</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">12</td>
+ *     <td class="descr">valid</td>
+ *     <td class="descr">char(1)</td>
+ *     <td class="descr">A flag (T/F/NULL) specifying the whether the forecast is within its valid lifetime</td>
+ *   </tr>
+ * </table>
+ * @param p_location_id_mask The forecast location identifier
+ * @param p_forecast_id_mask The forecast identifier
+ * @param p_max_fcst_age     A duration string in ISO duration format specifying how far prior to current time to look for forecast dates.
+ * @param p_max_issue_age    A duration string in ISO duration format specifying how far prior to current time to look for issue dates.
+ * @param p_abbreviated      A flag (T/F) specifying whether to return an abbreviated catalog. If NULL or not specified, 'T' will be used.
+ * @param p_time_zone        The time zone for p_forecast_time and p_issue_time. If NULL or not specified, the specified location's local time zone will be used. 
+ * @param p_office_id_mask   The office that owns the forecast specification and time series.  If NULL or not specified, the session user's default office is used.
+ */
+procedure cat_forecast(
+   p_fcst_catalog     out sys_refcursor,
+   p_location_id_mask in  varchar2,
+   p_forecast_id_mask in  varchar2,
+   p_max_fcst_age     in  varchar2 default 'P1Y',
+   p_max_issue_age    in  varchar2 default 'P1Y',
+   p_abbreviated      in  varchar2 default 'T',
+   p_time_zone        in  varchar2 default null,  -- null = location time zone
+   p_office_id_mask   in  varchar2 default null); -- null = user's office id   
+/**
+ * Catalogs all forecast text for a forecast specification
+ *
+ * @param p_location_id_mask The forecast location identifier
+ * @param p_forecast_id_mask The forecast identifier
+ * @param p_max_fcst_age     A duration string in ISO duration format specifying how far prior to current time to look for forecast dates.
+ * @param p_max_issue_age    A duration string in ISO duration format specifying how far prior to current time to look for issue dates.
+ * @param p_abbreviated      A flag (T/F) specifying whether to return an abbreviated catalog. If NULL or not specified, 'T' will be used.
+ * @param p_time_zone        The time zone for p_forecast_time and p_issue_time. If NULL or not specified, the specified location's local time zone will be used. 
+ * @param p_office_id_mask   The office that owns the forecast specification and time series.  If NULL or not specified, the session user's default office is used.
+ *
+ * @return A cursor containging the abbreviated or non-abbreviated catalog
+ * <p>
+ * If an abbreviated catalog is specified, the following columns will be returned, sorted by the first three
+ * <p>
+ * <table class="descr">                  
+ *   <tr>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the forecast time series</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">forecast_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The forecast date of the forecast</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">location_id</td>
+ *     <td class="descr">varchar2(183)</td>
+ *     <td class="descr">The target locaiton for the forecast</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">forecast_id</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The forecast identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">issue_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The issue date of the forecast</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">has_text</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">A flag (T/F) specifying whether the forecast has text</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">has_time_series</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">A flag (T/F) specifying whether the forecast has time series</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">time_zone_name</td>
+ *     <td class="descr">varchar2(28)</td>
+ *     <td class="descr">The time zone for the date/time columns</td>
+ *   </tr>
+ * </table>
+ * <p>
+ * Otherwise, the following columns will be returned, sorted by the first five
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the forecast time series</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">forecast_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The forecast date of the forecast</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">location_id</td>
+ *     <td class="descr">varchar2(183)</td>
+ *     <td class="descr">The target locaiton for the forecast</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">forecast_id</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The forecast identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">issue_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The issue date of the forecast</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">text_id</td>
+ *     <td class="descr">varchar2(256)</td>
+ *     <td class="descr">The text identifier. Can be used with <a href="pkg_cwms_text.html#procedure retrieve_text(p_text out clob,p_id in varchar2,p_office_id_mask in varchar2)">cwms_text.retieve_text</a> to retrieve the actual text</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">cwms_ts_id</td>
+ *     <td class="descr">varchar2(183)</td>
+ *     <td class="descr">The time series identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">version_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The version date of the time series</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">9</td>
+ *     <td class="descr">min_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The earliest date/time for the time series</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">10</td>
+ *     <td class="descr">max_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The latest date/time for the time series</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">11</td>
+ *     <td class="descr">time_zone_name</td>
+ *     <td class="descr">varchar2(28)</td>
+ *     <td class="descr">The time zone for the date/time columns</td>
+ *   </tr>
+ * </table>
+ */
+function cat_forecast_f (
+   p_location_id_mask in varchar2,
+   p_forecast_id_mask in varchar2,
+   p_max_fcst_age     in varchar2 default 'P1Y',
+   p_max_issue_age    in varchar2 default 'P1Y',
+   p_abbreviated      in varchar2 default 'T',
+   p_time_zone        in varchar2 default null, -- null = location time zone
+   p_office_id_mask   in varchar2 default null) -- null = user's office id   
+   return sys_refcursor;   
    
 end cwms_forecast;
 /
