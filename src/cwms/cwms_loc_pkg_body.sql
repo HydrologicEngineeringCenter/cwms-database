@@ -7778,6 +7778,8 @@ end unassign_loc_groups;
       l_elevation_db        binary_double;
       l_fail_if_exists      boolean;
    begin
+      delete from at_vert_datum_local  where location_code = p_location_code;
+      delete from at_vert_datum_offset where location_code = p_location_code; 
       l_location_id := get_location_id(p_location_code);
       select o.office_id
         into l_office_id
