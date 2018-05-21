@@ -172,10 +172,21 @@ as
       -- find the actual parameter --
       -------------------------------
       l_ind_params := cwms_util.split_text( cwms_util.split_text( cwms_util.split_text( l_alias, 2, cwms_rating.separator1), 1, cwms_rating.separator2), cwms_rating.separator3) ;
-      for i in 1..l_ind_params.count
-      loop
+      -----------------------------------------------------
+      -- first look for anything other than Count & Elev --
+      -----------------------------------------------------
+      for i in 1..l_ind_params.count loop
          l_param := cwms_util.split_text(l_ind_params(i), '-')(1) ;
          if l_param not in('Count', 'Elev') then
+            return l_param;
+         end if;
+      end loop;
+      -------------------------------------------
+      -- next allow Count as proxy for opening --
+      -------------------------------------------
+      for i in 1..l_ind_params.count loop
+         l_param := cwms_util.split_text(l_ind_params(i), '-')(1) ;
+         if l_param != 'Elev' then
             return l_param;
          end if;
       end loop;
