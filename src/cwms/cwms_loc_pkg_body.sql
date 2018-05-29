@@ -75,59 +75,62 @@ AS
       RETURN l_location_id;
    END get_location_id;
 
-   FUNCTION get_location_id (p_location_id_or_alias    VARCHAR2,
-                             p_office_id                VARCHAR2 DEFAULT NULL
-                            )
-      RETURN VARCHAR2
-   IS
-      l_office_id   VARCHAR2 (16);
-   BEGIN
-      l_office_id :=
-         NVL (UPPER (TRIM (p_office_id)), cwms_util.user_office_id);
-
-      FOR rec
-         IN (SELECT       bl.base_location_id
-                      || SUBSTR ('-', 1, LENGTH (pl.sub_location_id))
-                      || pl.sub_location_id
-                         AS location_id
-               FROM    at_physical_location pl,
+   function get_location_id(
+      p_location_id_or_alias varchar2,
+      p_office_id            varchar2 default null)
+      return varchar2
+   is
+      l_office_id   varchar2(16);
+      l_location_id varchar2(183);
+   begin
+      l_office_id := nvl(upper(trim(p_office_id)), cwms_util.user_office_id);
+      -----------------------------
+      -- first try a location id --
+      -----------------------------
+      begin
+         select bl.base_location_id
+                ||substr('-', 1, length(pl.sub_location_id))
+                ||pl.sub_location_id
+           into l_location_id
+           from at_physical_location pl,
+                at_base_location bl,
+                cwms_office o
+          where o.office_id = l_office_id
+            and bl.db_office_code = o.office_code
+            and pl.base_location_code = bl.base_location_code
+            and upper(p_location_id_or_alias) = upper(bl.base_location_id||substr('-', 1, length(pl.sub_location_id))||pl.sub_location_id);
+      exception
+         when no_data_found then
+         -------------------------------
+         -- next try a location alias --
+         -------------------------------
+         l_location_id :=  get_location_id_from_alias(
+            p_alias_id  => p_location_id_or_alias,
+            p_office_id => l_office_id);
+         if l_location_id is null then
+            -------------------------------
+            -- finally try a public name --
+            -------------------------------
+            begin
+               select bl.base_location_id
+                      ||substr('-', 1, length(pl.sub_location_id))
+                      ||pl.sub_location_id
+                 into l_location_id
+                 from at_physical_location pl,
                       at_base_location bl,
                       cwms_office o
-              WHERE        o.office_id = l_office_id
-                      AND bl.db_office_code = o.office_code
-                      AND pl.base_location_code = bl.base_location_code
-                      AND UPPER (bl.base_location_id) =
-                             UPPER (
-                                cwms_util.get_base_id (p_location_id_or_alias
-                                                      )
-                             )
-                      AND NVL (UPPER (pl.sub_location_id), '.') =
-                             NVL (
-                                UPPER (
-                                   cwms_util.get_sub_id (
-                                      p_location_id_or_alias
-                                   )
-                                ),
-                                '.'
-                             ))
-      LOOP
-         RETURN TRIM (rec.location_id);
-      END LOOP;
-
-      ------------------------------------------------
-      -- if we get here we didn't find the location --
-      ------------------------------------------------
-      BEGIN
-         RETURN get_location_id_from_alias (
-                   p_alias_id    => p_location_id_or_alias,
-                   p_office_id   => l_office_id
-                );
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            cwms_err.raise ('LOCATION_ID_NOT_FOUND', p_location_id_or_alias);
-      END;
-   END get_location_id;
+                where o.office_id = l_office_id
+                  and bl.db_office_code = o.office_code
+                  and pl.base_location_code = bl.base_location_code
+                  and upper(p_location_id_or_alias) = upper(pl.public_name);
+            exception 
+               when no_data_found or too_many_rows then
+                  cwms_err.raise('LOCATION_ID_NOT_FOUND', p_location_id_or_alias);
+            end;
+         end if;
+      end;
+      return l_location_id;
+   end get_location_id;
 
    FUNCTION get_location_id (p_location_id_or_alias    VARCHAR2,
                              p_office_code             NUMBER
