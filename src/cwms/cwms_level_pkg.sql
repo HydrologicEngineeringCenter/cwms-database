@@ -2072,7 +2072,7 @@ procedure delete_location_level3(
  * @param p_attribute_value   The value of the attribute, if any
  * @param p_attribute_units   The unit for the attribute value, if any
  * @param p_attribute_id      The attribute identifier for the location level
- * @param p_configuration_id  The configuration associated with the label. If NULL or not specified, the configuration will default to 'OTHER'
+ * @param p_configuration_id  The configuration associated with the label. If NULL or not specified, the configuration will default to 'GENERAL/OTHER'
  * @param p_fail_if_exists    A flag (T/F) specifying whether to fail if a label already exists for the level and configuration
  * @param p_office_id         The office that owns the location level. If NULL or not specified, the current session's default office is used.
  */
@@ -2093,7 +2093,7 @@ procedure set_loc_lvl_label(
  * @param p_attribute_value   The value of the attribute, if any
  * @param p_attribute_units   The unit for the attribute value, if any
  * @param p_attribute_id      The attribute identifier for the location level
- * @param p_configuration_id  The configuration associated with the label. If NULL or not specified, the configuration will default to 'OTHER'
+ * @param p_configuration_id  The configuration associated with the label. If NULL or not specified, the configuration will default to 'GENERAL/OTHER'
  * @param p_office_id         The office that owns the location level. If NULL or not specified, the current session's default office is used.
  */
 procedure get_loc_lvl_label(
@@ -2111,7 +2111,7 @@ procedure get_loc_lvl_label(
  * @param p_attribute_value   The value of the attribute, if any
  * @param p_attribute_units   The unit for the attribute value, if any
  * @param p_attribute_id      The attribute identifier for the location level
- * @param p_configuration_id  The configuration associated with the label. If NULL or not specified, the configuration will default to 'OTHER'
+ * @param p_configuration_id  The configuration associated with the label. If NULL or not specified, the configuration will default to 'GENERAL/OTHER'
  * @param p_office_id         The office that owns the location level. If NULL or not specified, the current session's default office is used.
  *
  * @return The configuration-specific label for the locaiton level, 
@@ -2131,7 +2131,7 @@ function get_loc_lvl_label_f(
  * @param p_attribute_value   The value of the attribute, if any
  * @param p_attribute_units   The unit for the attribute value, if any
  * @param p_attribute_id      The attribute identifier for the location level
- * @param p_configuration_id  The configuration associated with the label. If NULL or not specified, the configuration will default to 'OTHER'
+ * @param p_configuration_id  The configuration associated with the label. If NULL or not specified, the configuration will default to 'GENERAL/OTHER'
  * @param p_office_id         The office that owns the location level. If NULL or not specified, the current session's default office is used.
  */
 procedure delete_loc_lvl_label(
@@ -2154,7 +2154,7 @@ procedure delete_loc_lvl_label(
  * @param p_attr_parameter_code      The parameter code of the attributes for the location lavel, if any
  * @param p_attr_parameter_type_code The parameter type code of the attributes for the location lavel, if any
  * @param p_attr_duration_code       The duration code of the attributes for the location lavel, if any
- * @param p_configuration_code       The configuration associated with the label. If NULL or not specified, the configuration will default to 'OTHER'
+ * @param p_configuration_code       The configuration associated with the label. If NULL or not specified, the configuration will default to 'GENERAL/OTHER'
  * @param p_fail_if_exists           A flag (T/F) specifying whether to fail if a label already exists for the level and configuration
  */
 procedure set_loc_lvl_label(
@@ -2183,7 +2183,7 @@ procedure set_loc_lvl_label(
  * @param p_attr_parameter_code      The parameter code of the attributes for the location lavel, if any
  * @param p_attr_parameter_type_code The parameter type code of the attributes for the location lavel, if any
  * @param p_attr_duration_code       The duration code of the attributes for the location lavel, if any
- * @param p_configuration_code       The configuration associated with the label. If NULL or not specified, the configuration will default to 'OTHER'
+ * @param p_configuration_code       The configuration associated with the label. If NULL or not specified, the configuration will default to 'GENERAL/OTHER'
  * @param p_fail_if_exists           A flag (T/F) specifying whether to fail if a label already exists for the level and configuration
  */
 procedure get_loc_lvl_label(
@@ -2210,7 +2210,7 @@ procedure get_loc_lvl_label(
  * @param p_attr_parameter_code      The parameter code of the attributes for the location lavel, if any
  * @param p_attr_parameter_type_code The parameter type code of the attributes for the location lavel, if any
  * @param p_attr_duration_code       The duration code of the attributes for the location lavel, if any
- * @param p_configuration_code       The configuration associated with the label. If NULL or not specified, the configuration will default to 'OTHER'
+ * @param p_configuration_code       The configuration associated with the label. If NULL or not specified, the configuration will default to 'GENERAL/OTHER'
  */
 procedure delete_loc_lvl_label(
    p_location_code            in integer,
