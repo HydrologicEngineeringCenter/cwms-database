@@ -25,6 +25,10 @@ prompt 'MODIFY CWMS_DB_CHANGE_LOG TABLE'
 select systimestamp from dual;
 @@./311_modify_db_change_log
 prompt ################################################################################
+prompt 'ADD CONFIGURATION CATEGORY'
+select systimestamp from dual;
+@@./311_add_configuration_category
+prompt ################################################################################
 prompt 'REMOVING TRIGGER AT_STREAM_REACH_T01'
 select systimestamp from dual;
 @@./311_remove_at_stream_reach_t01
@@ -53,6 +57,7 @@ select systimestamp from dual;
 @@./311_update_ws_contract_types
 prompt ################################################################################
 prompt 'ADDING NEW SCHEDULER MONITORING OBJECTS'
+select systimestamp from dual;
 @@../cwms/tables/cwms_auth_sched_entrires
 @@../cwms/tables/cwms_unauth_sched_entrires
 @@../cwms/views/av_auth_sched_entrires
@@ -61,6 +66,7 @@ prompt 'ADDING NEW SCHEDULER MONITORING OBJECTS'
 @@../cwms/cwms_scheduler_auth_pkg_body
 prompt ################################################################################
 prompt 'ADDING CWMS POOLS'
+select systimestamp from dual;
 @@../cwms/types/number_tab_tab_t
 @@../cwms/tables/at_pool_name
 @@../cwms/tables/at_pool
@@ -69,7 +75,15 @@ prompt 'ADDING CWMS POOLS'
 @@../cwms_pool_pkg
 @@../cwms_pool_pkg_body
 prompt ################################################################################
+prompt 'ADDING LOCATION LEVEL LABELS'
+select systimestamp from dual;
+@@../cwms/tables/at_loc_lvl_label
+@@../cwms/views/av_loc_lvl_label
+@@../cwms_level_pkg
+@@../cwms_level_pkg_body
+prompt ################################################################################
 prompt 'UPDATING CWMS FORECAST'
+select systimestamp from dual;
 @@../cwms/cwms_forecast_pkg
 @@../cwms/cwms_forecast_pkg_body
 @@../cwms/views/av_forecast
@@ -83,6 +97,7 @@ prompt #########################################################################
 prompt 'UPDATING PACKAGE BODDIES'
 select systimestamp from dual;
 @@../cwms/cwms_embank_pkg_body
+@@../cwms/cwms_loc_pkg_body
 @@../cwms/cwms_mail_pkg_body
 @@../cwms/cwms_outlet_pkg_body
 @@../cwms/cwms_ts_pkg_body
