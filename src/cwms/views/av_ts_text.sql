@@ -38,7 +38,6 @@ create or replace force editionable view av_ts_text (
    office_id, 
    location_id, 
    cwms_ts_id,
-   time_series_text,
    text_time_series,
    date_time_utc, 
    version_date_utc, 
