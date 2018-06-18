@@ -87,6 +87,7 @@ DECLARE
       'av_text_filter_element',
       'av_transitional_rating',
       'av_ts_association',
+      'av_ts_txt',
       'av_turbine',
       'av_turbine_change',
       'av_turbine_setting',
@@ -202,6 +203,7 @@ END;
 @@cwms/views/av_text_filter_element
 @@cwms/views/av_transitional_rating
 @@cwms/views/av_ts_association
+@@cwms/views/av_ts_txt
 @@cwms/views/av_turbine
 @@cwms/views/av_turbine_change
 @@cwms/views/av_turbine_setting

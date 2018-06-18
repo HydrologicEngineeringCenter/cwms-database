@@ -90,6 +90,11 @@ select systimestamp from dual;
 @@../cwms/views/av_forecast_ex
 @@../cwms/views/av_forecast_spec
 prompt ################################################################################
+prompt 'ADDING TIME SERIES TEXT VIEWS'
+select systimestamp from dual;
+@@../cwms/views/av_std_text
+@@../cwms/views/av_ts_text
+prompt ################################################################################
 prompt 'UPDATING PACKAGE SPECIFICATIONS'
 select systimestamp from dual;
 @@../cwms/cwms_util_pkg
