@@ -34,7 +34,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TS_TEXT', null,
 ');
 
 
-create or replace force editionable view av_ts_text (
+create or replace force view av_ts_text (
    office_id, 
    location_id, 
    cwms_ts_id,
