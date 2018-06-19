@@ -25,6 +25,7 @@ AS
 		p_cwms_ts_id.interval_utc_offset := p_cwms_ts_spec.interval_utc_offset;
 		p_cwms_ts_id.ts_active_flag := p_cwms_ts_spec.active_flag;
 		p_cwms_ts_id.version_flag := p_cwms_ts_spec.version_flag;
+		p_cwms_ts_id.historic_flag := p_cwms_ts_spec.historic_flag;
 
 		--
 		SELECT	cbp.base_parameter_id, ap.sub_parameter_id, u.unit_id,
@@ -140,6 +141,7 @@ AS
 					p_cwms_ts_spec.interval_utc_offset;
 				p_cwms_ts_id.ts_active_flag := p_cwms_ts_spec.active_flag;
 				p_cwms_ts_id.version_flag := p_cwms_ts_spec.version_flag;
+				p_cwms_ts_id.historic_flag := p_cwms_ts_spec.historic_flag;
 
 
 
@@ -272,7 +274,8 @@ AS
 						version_id = p_cwms_ts_id.version_id,
 						interval = p_cwms_ts_id.interval,
 						interval_utc_offset = p_cwms_ts_id.interval_utc_offset,
-						version_flag = p_cwms_ts_id.version_flag
+						version_flag = p_cwms_ts_id.version_flag,
+						historic_flag = p_cwms_ts_id.historic_flag
 			 WHERE	ts_code = p_cwms_ts_id.ts_code;
 		END IF;
 	END merge_into_at_cwms_ts_id;
@@ -345,6 +348,7 @@ AS
 					p_cwms_ts_spec.interval_utc_offset;
 				p_cwms_ts_id.ts_active_flag := p_cwms_ts_spec.active_flag;
 				p_cwms_ts_id.version_flag := p_cwms_ts_spec.version_flag;
+				p_cwms_ts_id.historic_flag := p_cwms_ts_spec.historic_flag;
 
 				--
 				SELECT	cbp.base_parameter_id, ap.sub_parameter_id, u.unit_id,
@@ -493,6 +497,7 @@ AS
 					p_cwms_ts_spec.interval_utc_offset;
 				p_cwms_ts_id.ts_active_flag := p_cwms_ts_spec.active_flag;
 				p_cwms_ts_id.version_flag := p_cwms_ts_spec.version_flag;
+				p_cwms_ts_id.historic_flag := p_cwms_ts_spec.historic_flag;
 
 				--
 				SELECT	cbp.base_parameter_id, u.unit_id, cap.abstract_param_id

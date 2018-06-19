@@ -28,7 +28,8 @@ CREATE TABLE AT_CWMS_TS_ID
   VERSION_ID            VARCHAR2(32 BYTE)       NOT NULL,
   INTERVAL              NUMBER(10)              NOT NULL,
   INTERVAL_UTC_OFFSET   NUMBER                  NOT NULL,
-  VERSION_FLAG          VARCHAR2(1 BYTE)
+  VERSION_FLAG          VARCHAR2(1 BYTE),
+  HISTORIC_FLAG         VARCHAR2(1 BYTE)        DEFAULT 'F'
 )
 TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
@@ -258,6 +259,7 @@ BEGIN
         l_cwms_ts_spec.active_flag := :new.active_flag;
         l_cwms_ts_spec.delete_date := :new.delete_date;
         l_cwms_ts_spec.data_source := :new.data_source;
+        l_cwms_ts_spec.historic_flag := :new.historic_flag;
         --
         cwms_ts_id.touched_acts (l_cwms_ts_spec);
     END IF;
