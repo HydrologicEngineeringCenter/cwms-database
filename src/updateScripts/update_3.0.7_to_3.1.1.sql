@@ -33,7 +33,7 @@ prompt 'REMOVING TRIGGER AT_STREAM_REACH_T01'
 select systimestamp from dual;
 @@./311_remove_at_stream_reach_t01
 prompt ################################################################################
-prompt DELETING CST, PST FROM CWMS_TIME_ZONE AND REBUILDING MV_TIME_ZONE
+prompt 'DELETING CST, PST FROM CWMS_TIME_ZONE AND REBUILDING MV_TIME_ZONE'
 select systimestamp from dual;
 @@./311_delete_time_zones
 prompt ################################################################################
@@ -75,10 +75,12 @@ select systimestamp from dual;
 @@../cwms_pool_pkg
 @@../cwms_pool_pkg_body
 prompt ################################################################################
-prompt 'ADDING LOCATION LEVEL LABELS'
+prompt 'ADDING LOCATION LEVEL LABELS AND SOURCES'
 select systimestamp from dual;
 @@../cwms/tables/at_loc_lvl_label
 @@../cwms/views/av_loc_lvl_label
+@@../cwms/tables/at_loc_lvl_source
+@@../cwms/views/av_loc_lvl_source
 @@../cwms_level_pkg
 @@../cwms_level_pkg_body
 prompt ################################################################################
@@ -95,17 +97,25 @@ select systimestamp from dual;
 @@../cwms/views/av_std_text
 @@../cwms/views/av_ts_text
 prompt ################################################################################
-prompt 'UPDATING PACKAGE SPECIFICATIONS'
+prompt 'ADDING HISTORIC TIME SERIES FLAG'
+@@./311_add_historic_time_series
+@@../cwms/views/av_cwms_ts_id
+@@../cwms/views/av_cwms_ts_id2
+@@../cwms/views/zav_cwms_ts_id
+@@../cwms/cwms_ts_id_pkg_body
+@@../cwms/cwms_ts_pkg_body
+@@../cwms/cwms_ts_pkg
+prompt ################################################################################
+prompt 'UPDATING OTHER PACKAGE SPECIFICATIONS'
 select systimestamp from dual;
 @@../cwms/cwms_util_pkg
 prompt ################################################################################
-prompt 'UPDATING PACKAGE BODDIES'
+prompt 'UPDATING OTHER PACKAGE BODDIES'
 select systimestamp from dual;
 @@../cwms/cwms_embank_pkg_body
 @@../cwms/cwms_loc_pkg_body
 @@../cwms/cwms_mail_pkg_body
 @@../cwms/cwms_outlet_pkg_body
-@@../cwms/cwms_ts_pkg_body
 @@../cwms/cwms_turbine_pkg_body
 @@../cwms/cwms_util_pkg_body
 @@../cwms/cwms_water_supply_pkg_body

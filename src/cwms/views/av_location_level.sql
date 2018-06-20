@@ -1,3 +1,4 @@
+--delete from at_clob where id = '/VIEWDOCS/AV_LOCATION_LEVEL';
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_LEVEL', null,
 '
 /**
@@ -41,41 +42,45 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_LEVEL',
  * @field attribute_sub_parameter_id  The sub-parameter of the attribute, if any
  * @field attribute_parameter_type_id The parameter type of the attribute, if any
  * @field attribute_duration_id       The duration of the attribute, if any
+ * @field default_label               The label assoicated with the location level and the ''GENERAL/OTHER'' configuration, if any
+ * @field source                      The source entity for the location level values
  */
 ');
 
 create or replace force view av_location_level
 as
-select office_id,
-       location_id || '.' || parameter_id || '.' || parameter_type_id || '.' || duration_id || '.' || specified_level_id as location_level_id,
-       attribute_parameter_id || substr ('.', 1, length (attribute_parameter_type_id)) || attribute_parameter_type_id || substr ('.', 1, length (attribute_duration_id)) || attribute_duration_id as attribute_id,
-       level_date, unit_system, attribute_unit, level_unit,
-       attribute_value, constant_level, interval_origin,
-       substr (calendar_interval_, 2) as calendar_interval,
-       time_interval, interpolate,
-       substr (calendar_offset_, 2) as calendar_offset,
-       substr (time_offset_, 2) as time_offset,
-       seasonal_level,
-       tsid,
-       level_comment,
-       attribute_comment,
-       cwms_util.get_base_id(location_id) as base_location_id,
-       cwms_util.get_sub_id(location_id) as sub_location_id,
-       location_id,
-       cwms_util.get_base_id(parameter_id) as base_parameter_id,
-       cwms_util.get_sub_id(parameter_id) as sub_parameter_id,
-       parameter_id,
-       duration_id,
-       specified_level_id,
-       location_code,
-       location_level_code,
-       expiration_date,
-       parameter_type_id,
-       attribute_parameter_id,
-       cwms_util.get_base_id(attribute_parameter_id) as attribute_base_parameter_id,
-       cwms_util.get_sub_id(attribute_parameter_id) as attribute_sub_parameter_id,
-       attribute_parameter_type_id,
-       attribute_duration_id
+select q1.office_id,
+       q1.location_id || '.' || q1.parameter_id || '.' || q1.parameter_type_id || '.' || q1.duration_id || '.' || q1.specified_level_id as location_level_id,
+       q1.attribute_parameter_id || substr ('.', 1, length (q1.attribute_parameter_type_id)) || q1.attribute_parameter_type_id || substr ('.', 1, length (q1.attribute_duration_id)) || q1.attribute_duration_id as attribute_id,
+       q1.level_date, q1.unit_system, q1.attribute_unit, q1.level_unit,
+       q1.attribute_value, q1.constant_level, q1.interval_origin,
+       substr (q1.calendar_interval_, 2) as calendar_interval,
+       q1.time_interval, q1.interpolate,
+       substr (q1.calendar_offset_, 2) as calendar_offset,
+       substr (q1.time_offset_, 2) as time_offset,
+       q1.seasonal_level,
+       q1.tsid,
+       q1.level_comment,
+       q1.attribute_comment,
+       cwms_util.get_base_id(q1.location_id) as base_location_id,
+       cwms_util.get_sub_id(q1.location_id) as sub_location_id,
+       q1.location_id,
+       cwms_util.get_base_id(q1.parameter_id) as base_parameter_id,
+       cwms_util.get_sub_id(q1.parameter_id) as sub_parameter_id,
+       q1.parameter_id,
+       q1.duration_id,
+       q1.specified_level_id,
+       q1.location_code,
+       q1.location_level_code,
+       q1.expiration_date,
+       q1.parameter_type_id,
+       q1.attribute_parameter_id,
+       cwms_util.get_base_id(q1.attribute_parameter_id) as attribute_base_parameter_id,
+       cwms_util.get_sub_id(q1.attribute_parameter_id) as attribute_sub_parameter_id,
+       q1.attribute_parameter_type_id,
+       q1.attribute_duration_id,
+       q2.label as default_label,
+       q3.source_entity as source
   from (--
         -- constant level
         -- withtout attribute
@@ -105,6 +110,16 @@ select office_id,
                 a_ll.location_level_comment as level_comment,
                 a_ll.attribute_comment as attribute_comment,
                 a_ll.location_code,
+                a_ll.specified_level_code,
+                a_ll.parameter_code,
+                a_ll.parameter_type_code,
+                a_ll.duration_code,
+                a_ll.location_level_date,
+                a_ll.location_level_value,
+                a_ll.location_level_comment,
+                a_ll.attribute_parameter_code,
+                a_ll.attribute_parameter_type_code,
+                a_ll.attribute_duration_code,                
                 a_ll.location_level_code,
                 a_ll.expiration_date
            from at_location_level a_ll,
@@ -168,6 +183,16 @@ select office_id,
                  a_ll.location_level_comment as level_comment,
                  a_ll.attribute_comment as attribute_comment,
                  a_ll.location_code,
+                 a_ll.specified_level_code,
+                 a_ll.parameter_code,
+                 a_ll.parameter_type_code,
+                 a_ll.duration_code,
+                 a_ll.location_level_date,
+                 a_ll.location_level_value,
+                 a_ll.location_level_comment,
+                 a_ll.attribute_parameter_code,
+                 a_ll.attribute_parameter_type_code,
+                 a_ll.attribute_duration_code,                
                  a_ll.location_level_code,
                  a_ll.expiration_date
             from at_location_level a_ll,
@@ -234,6 +259,16 @@ select office_id,
                    a_ll.location_level_comment as level_comment,
                    a_ll.attribute_comment as attribute_comment,
                    a_ll.location_code,
+                   a_ll.specified_level_code,
+                   a_ll.parameter_code,
+                   a_ll.parameter_type_code,
+                   a_ll.duration_code,
+                   a_ll.location_level_date,
+                   a_ll.location_level_value,
+                   a_ll.location_level_comment,
+                   a_ll.attribute_parameter_code,
+                   a_ll.attribute_parameter_type_code,
+                   a_ll.attribute_duration_code,                
                    a_ll.location_level_code,
                    a_ll.expiration_date
               from at_location_level a_ll,
@@ -314,6 +349,16 @@ select office_id,
                    a_ll.location_level_comment as level_comment,
                    a_ll.attribute_comment as attribute_comment,
                    a_ll.location_code,
+                   a_ll.specified_level_code,
+                   a_ll.parameter_code,
+                   a_ll.parameter_type_code,
+                   a_ll.duration_code,
+                   a_ll.location_level_date,
+                   a_ll.location_level_value,
+                   a_ll.location_level_comment,
+                   a_ll.attribute_parameter_code,
+                   a_ll.attribute_parameter_type_code,
+                   a_ll.attribute_duration_code,                
                    a_ll.location_level_code,
                    a_ll.expiration_date
               from at_location_level a_ll,
@@ -394,6 +439,16 @@ select office_id,
                    a_ll.location_level_comment as level_comment,
                    a_ll.attribute_comment as attribute_comment,
                    a_ll.location_code,
+                   a_ll.specified_level_code,
+                   a_ll.parameter_code,
+                   a_ll.parameter_type_code,
+                   a_ll.duration_code,
+                   a_ll.location_level_date,
+                   a_ll.location_level_value,
+                   a_ll.location_level_comment,
+                   a_ll.attribute_parameter_code,
+                   a_ll.attribute_parameter_type_code,
+                   a_ll.attribute_duration_code,                
                    a_ll.location_level_code,
                    a_ll.expiration_date
             from   at_location_level a_ll,
@@ -448,6 +503,16 @@ select office_id,
                    a_ll.location_level_comment as level_comment,
                    a_ll.attribute_comment as attribute_comment,
                    a_ll.location_code,
+                   a_ll.specified_level_code,
+                   a_ll.parameter_code,
+                   a_ll.parameter_type_code,
+                   a_ll.duration_code,
+                   a_ll.location_level_date,
+                   a_ll.location_level_value,
+                   a_ll.location_level_comment,
+                   a_ll.attribute_parameter_code,
+                   a_ll.attribute_parameter_type_code,
+                   a_ll.attribute_duration_code,                
                    a_ll.location_level_code,
                    a_ll.expiration_date
               from at_location_level a_ll,
@@ -489,13 +554,56 @@ select office_id,
                              )
                and a_ll.location_level_value is null
                and a_ll.ts_code is not null)
-           )
-     order by office_id,
-              location_level_id,
-              attribute_id,
-              level_date,
-              unit_system,
-              attribute_value,
-              interval_origin + calendar_offset_ + time_offset_;
+           ) q1
+           left outer join
+           (select location_code,
+                   specified_level_code,
+                   parameter_code,
+                   parameter_type_code,
+                   duration_code,
+                   attr_value,
+                   attr_parameter_code,
+                   attr_parameter_type_code,
+                   attr_duration_code,
+                   label
+              from at_loc_lvl_label
+             where configuration_code = 1 -- default configuration 
+           ) q2 on q2.location_code                                 = q1.location_code                                
+               and q2.specified_level_code                          = q1.specified_level_code                         
+               and q2.parameter_code                                = q1.parameter_code                               
+               and q2.parameter_type_code                           = q1.parameter_type_code                          
+               and q2.duration_code                                 = q1.duration_code                                
+               and nvl(cwms_rounding.round_f(q2.attr_value, 9), -1) = nvl(cwms_rounding.round_f(q1.attribute_value, 9), -1)
+               and nvl(q2.attr_parameter_code, -1)                  = nvl(q1.attribute_parameter_code, -1)                 
+               and nvl(q2.attr_parameter_type_code, -1)             = nvl(q1.attribute_parameter_type_code, -1)            
+               and nvl(q2.attr_duration_code, -1)                   = nvl(q1.attribute_duration_code, -1)                  
+           left outer join
+           (select location_code,
+                   specified_level_code,
+                   parameter_code,
+                   parameter_type_code,
+                   duration_code,
+                   attr_value,
+                   attr_parameter_code,
+                   attr_parameter_type_code,
+                   attr_duration_code,
+                   cwms_entity.get_entity_id(source_entity) as source_entity
+              from at_loc_lvl_source
+           ) q3 on q3.location_code                                 = q1.location_code                                
+               and q3.specified_level_code                          = q1.specified_level_code                         
+               and q3.parameter_code                                = q1.parameter_code                               
+               and q3.parameter_type_code                           = q1.parameter_type_code                          
+               and q3.duration_code                                 = q1.duration_code                                
+               and nvl(cwms_rounding.round_f(q3.attr_value, 9), -1) = nvl(cwms_rounding.round_f(q1.attribute_value, 9), -1)
+               and nvl(q3.attr_parameter_code, -1)                  = nvl(q1.attribute_parameter_code, -1)                 
+               and nvl(q3.attr_parameter_type_code, -1)             = nvl(q1.attribute_parameter_type_code, -1)            
+               and nvl(q3.attr_duration_code, -1)                   = nvl(q1.attribute_duration_code, -1)                  
+           order by q1.office_id,
+              q1.location_id || '.' || q1.parameter_id || '.' || q1.parameter_type_id || '.' || q1.duration_id || '.' || q1.specified_level_id,
+              q1.attribute_parameter_id || substr ('.', 1, length (q1.attribute_parameter_type_id)) || q1.attribute_parameter_type_id || substr ('.', 1, length (q1.attribute_duration_id)) || q1.attribute_duration_id,
+              q1.level_date,
+              q1.unit_system,
+              q1.attribute_value,
+              q1.interval_origin + q1.calendar_offset_ + q1.time_offset_;
 
 create or replace public synonym cwms_v_location_level for av_location_level;                  

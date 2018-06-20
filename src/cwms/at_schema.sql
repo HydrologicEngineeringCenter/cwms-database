@@ -1596,6 +1596,7 @@ NOPARALLEL
 /
 
 @@./cwms/tables/at_loc_lvl_label
+@@./cwms/tables/at_loc_lvl_source
 
 CREATE TABLE AT_SEASONAL_LOCATION_LEVEL
 (

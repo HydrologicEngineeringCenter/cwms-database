@@ -2067,8 +2067,8 @@ procedure delete_location_level3(
 /**     
  * Sets the configuration-specific label for a location level
  *
- * @param p_loc_lvl_label     The configuration-specific label for the locaiton level, 
- * @param p_location_level_id The location label identifier
+ * @param p_loc_lvl_label     The configuration-specific label for the location level, 
+ * @param p_location_level_id The location level identifier
  * @param p_attribute_value   The value of the attribute, if any
  * @param p_attribute_units   The unit for the attribute value, if any
  * @param p_attribute_id      The attribute identifier for the location level
@@ -2088,8 +2088,8 @@ procedure set_loc_lvl_label(
 /**
  * Gets the configuration-specific label for a location level
  *
- * @param p_loc_lvl_label     The configuration-specific label for the locaiton level, 
- * @param p_location_level_id The location label identifier
+ * @param p_loc_lvl_label     The configuration-specific label for the location level, 
+ * @param p_location_level_id The location level identifier
  * @param p_attribute_value   The value of the attribute, if any
  * @param p_attribute_units   The unit for the attribute value, if any
  * @param p_attribute_id      The attribute identifier for the location level
@@ -2107,14 +2107,14 @@ procedure get_loc_lvl_label(
 /**       
  * Gets the configuration-specific label for a location level
  *
- * @param p_location_level_id The location label identifier
+ * @param p_location_level_id The location level identifier
  * @param p_attribute_value   The value of the attribute, if any
  * @param p_attribute_units   The unit for the attribute value, if any
  * @param p_attribute_id      The attribute identifier for the location level
  * @param p_configuration_id  The configuration associated with the label. If NULL or not specified, the configuration will default to 'GENERAL/OTHER'
  * @param p_office_id         The office that owns the location level. If NULL or not specified, the current session's default office is used.
  *
- * @return The configuration-specific label for the locaiton level, 
+ * @return The configuration-specific label for the location level, 
  */
 function get_loc_lvl_label_f(
    p_location_level_id       in varchar2,
@@ -2127,7 +2127,7 @@ function get_loc_lvl_label_f(
 /**     
  * Deletes the configuration-specific label for a location level
  *
- * @param p_location_level_id The location label identifier
+ * @param p_location_level_id The location level identifier
  * @param p_attribute_value   The value of the attribute, if any
  * @param p_attribute_units   The unit for the attribute value, if any
  * @param p_attribute_id      The attribute identifier for the location level
@@ -2144,7 +2144,7 @@ procedure delete_loc_lvl_label(
 /**     
  * Sets the configuration-specific label for a location level
  *
- * @param p_loc_lvl_label            The configuration-specific label for the locaiton level, 
+ * @param p_loc_lvl_label            The configuration-specific label for the location level, 
  * @param p_location_code            The location code for the location level
  * @param p_specified_level_code     The specified level code for the location level
  * @param p_parameter_code           The parameter code for the location level
@@ -2173,7 +2173,7 @@ procedure set_loc_lvl_label(
 /**     
  * Gets the configuration-specific label for a location level
  *
- * @param p_loc_lvl_label            The configuration-specific label for the locaiton level, 
+ * @param p_loc_lvl_label            The configuration-specific label for the location level, 
  * @param p_location_code            The location code for the location level
  * @param p_specified_level_code     The specified level code for the location level
  * @param p_parameter_code           The parameter code for the location level
@@ -2184,7 +2184,6 @@ procedure set_loc_lvl_label(
  * @param p_attr_parameter_type_code The parameter type code of the attributes for the location lavel, if any
  * @param p_attr_duration_code       The duration code of the attributes for the location lavel, if any
  * @param p_configuration_code       The configuration associated with the label. If NULL or not specified, the configuration will default to 'GENERAL/OTHER'
- * @param p_fail_if_exists           A flag (T/F) specifying whether to fail if a label already exists for the level and configuration
  */
 procedure get_loc_lvl_label(
    p_loc_lvl_label            out varchar2, 
@@ -2223,6 +2222,150 @@ procedure delete_loc_lvl_label(
    p_attr_parameter_type_code in integer default null,
    p_attr_duration_code       in integer default null,
    p_configuration_code       in integer default null); 
+/**     
+ * Sets the source for a location level
+ *
+ * @param p_loc_lvl_source    The source for the location level, 
+ * @param p_location_level_id The location level identifier
+ * @param p_attribute_value   The value of the attribute, if any
+ * @param p_attribute_units   The unit for the attribute value, if any
+ * @param p_attribute_id      The attribute identifier for the location level
+ * @param p_fail_if_exists    A flag (T/F) specifying whether to fail if a source already exists for the level
+ * @param p_office_id         The office that owns the location level. If NULL or not specified, the current session's default office is used.
+ */
+procedure set_loc_lvl_source(
+   p_loc_lvl_source          in varchar2, 
+   p_location_level_id       in varchar2,
+   p_attribute_value         in number   default null,
+   p_attribute_units         in varchar2 default null,
+   p_attribute_id            in varchar2 default null,
+   p_fail_if_exists          in varchar2 default 'T',
+   p_office_id               in varchar2 default null);
+/**
+ * Gets the source for a location level
+ *
+ * @param p_loc_lvl_source    The source for the location level, 
+ * @param p_location_level_id The location level identifier
+ * @param p_attribute_value   The value of the attribute, if any
+ * @param p_attribute_units   The unit for the attribute value, if any
+ * @param p_attribute_id      The attribute identifier for the location level
+ * @param p_office_id         The office that owns the location level. If NULL or not specified, the current session's default office is used.
+ */
+procedure get_loc_lvl_source(
+   p_loc_lvl_source          out varchar2, 
+   p_location_level_id       in  varchar2,
+   p_attribute_value         in  number   default null,
+   p_attribute_units         in  varchar2 default null,
+   p_attribute_id            in  varchar2 default null,
+   p_office_id               in  varchar2 default null);
+/**       
+ * Gets the source for a location level
+ *
+ * @param p_location_level_id The location level identifier
+ * @param p_attribute_value   The value of the attribute, if any
+ * @param p_attribute_units   The unit for the attribute value, if any
+ * @param p_attribute_id      The attribute identifier for the location level
+ * @param p_office_id         The office that owns the location level. If NULL or not specified, the current session's default office is used.
+ *
+ * @return The source for the location level, 
+ */
+function get_loc_lvl_source_f(
+   p_location_level_id       in varchar2,
+   p_attribute_value         in number   default null,
+   p_attribute_units         in varchar2 default null,
+   p_attribute_id            in varchar2 default null,
+   p_office_id               in varchar2 default null)
+   return varchar2;
+/**     
+ * Deletes the source for a location level
+ *
+ * @param p_location_level_id The location level identifier
+ * @param p_attribute_value   The value of the attribute, if any
+ * @param p_attribute_units   The unit for the attribute value, if any
+ * @param p_attribute_id      The attribute identifier for the location level
+ * @param p_office_id         The office that owns the location level. If NULL or not specified, the current session's default office is used.
+ */
+procedure delete_loc_lvl_source(
+   p_location_level_id       in varchar2,
+   p_attribute_value         in number   default null,
+   p_attribute_units         in varchar2 default null,
+   p_attribute_id            in varchar2 default null,
+   p_office_id               in varchar2 default null);
+/**     
+ * Sets the source for a location level
+ *
+ * @param p_loc_lvl_source           The source for the location level, 
+ * @param p_location_code            The location code for the location level
+ * @param p_specified_level_code     The specified level code for the location level
+ * @param p_parameter_code           The parameter code for the location level
+ * @param p_parameter_type_code      The the parameter type code for the location level
+ * @param p_duration_code            The duration code for the location level
+ * @param p_attr_value               The value of the attribute for the location level, if any, in database units
+ * @param p_attr_parameter_code      The parameter code of the attributes for the location lavel, if any
+ * @param p_attr_parameter_type_code The parameter type code of the attributes for the location lavel, if any
+ * @param p_attr_duration_code       The duration code of the attributes for the location lavel, if any
+ * @param p_fail_if_exists           A flag (T/F) specifying whether to fail if a source already exists for the level
+ */
+procedure set_loc_lvl_source(
+   p_loc_lvl_source           in varchar2, 
+   p_location_code            in integer,
+   p_specified_level_code     in integer,
+   p_parameter_code           in integer,
+   p_parameter_type_code      in integer,
+   p_duration_code            in integer,
+   p_attr_value               in number  default null,
+   p_attr_parameter_code      in integer default null,
+   p_attr_parameter_type_code in integer default null,
+   p_attr_duration_code       in integer default null,
+   p_fail_if_exists           in varchar2 default 'T'); 
+/**     
+ * Gets the source for a location level
+ *
+ * @param p_loc_lvl_source           The source for the location level, 
+ * @param p_location_code            The location code for the location level
+ * @param p_specified_level_code     The specified level code for the location level
+ * @param p_parameter_code           The parameter code for the location level
+ * @param p_parameter_type_code      The the parameter type code for the location level
+ * @param p_duration_code            The duration code for the location level
+ * @param p_attr_value               The value of the attribute for the location level, if any, in database units
+ * @param p_attr_parameter_code      The parameter code of the attributes for the location lavel, if any
+ * @param p_attr_parameter_type_code The parameter type code of the attributes for the location lavel, if any
+ * @param p_attr_duration_code       The duration code of the attributes for the location lavel, if any
+ */
+procedure get_loc_lvl_source(
+   p_loc_lvl_source           out varchar2, 
+   p_location_code            in  integer,
+   p_specified_level_code     in  integer,
+   p_parameter_code           in  integer,
+   p_parameter_type_code      in  integer,
+   p_duration_code            in  integer,
+   p_attr_value               in  number  default null,
+   p_attr_parameter_code      in  integer default null,
+   p_attr_parameter_type_code in  integer default null,
+   p_attr_duration_code       in  integer default null); 
+/**     
+ * Deletes the source for a location level
+ *
+ * @param p_location_code            The location code for the location level
+ * @param p_specified_level_code     The specified level code for the location level
+ * @param p_parameter_code           The parameter code for the location level
+ * @param p_parameter_type_code      The the parameter type code for the location level
+ * @param p_duration_code            The duration code for the location level
+ * @param p_attr_value               The value of the attribute for the location level, if any, in database units
+ * @param p_attr_parameter_code      The parameter code of the attributes for the location lavel, if any
+ * @param p_attr_parameter_type_code The parameter type code of the attributes for the location lavel, if any
+ * @param p_attr_duration_code       The duration code of the attributes for the location lavel, if any
+ */
+procedure delete_loc_lvl_source(
+   p_location_code            in integer,
+   p_specified_level_code     in integer,
+   p_parameter_code           in integer,
+   p_parameter_type_code      in integer,
+   p_duration_code            in integer,
+   p_attr_value               in number  default null,
+   p_attr_parameter_code      in integer default null,
+   p_attr_parameter_type_code in integer default null,
+   p_attr_duration_code       in integer default null); 
 --------------------------------------------------------------------------------
 /**
  * Catalogs location levels in the database that match input parameters. Matching is
