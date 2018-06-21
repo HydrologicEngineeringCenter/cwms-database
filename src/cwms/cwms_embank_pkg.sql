@@ -101,7 +101,7 @@ function get_embankment_code(
  *   <tr>
  *     <td class="descr-center">13</td>
  *     <td class="descr">public_name</td>
- *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The public name of the embankment location</td>
  *   </tr>
  *   <tr>

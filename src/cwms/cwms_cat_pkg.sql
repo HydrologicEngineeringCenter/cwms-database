@@ -57,7 +57,7 @@ IS
       elevation        NUMBER,
       elev_unit_id     VARCHAR2 (16),
       vertical_datum   VARCHAR2 (16),
-      public_name      VARCHAR2 (32),
+      public_name      VARCHAR2 (57),
       long_name        VARCHAR2 (80),
       description      VARCHAR2 (512)
    );
@@ -79,7 +79,7 @@ IS
       elevation          NUMBER,
       elev_unit_id       VARCHAR2 (16),
       vertical_datum     VARCHAR2 (16),
-      public_name        VARCHAR2 (32),
+      public_name        VARCHAR2 (57),
       long_name          VARCHAR2 (80),
       description        VARCHAR2 (512),
       active_flag        VARCHAR2 (1)
@@ -102,7 +102,7 @@ IS
       elevation            NUMBER,
       elev_unit_id         VARCHAR2 (16),
       vertical_datum       VARCHAR2 (16),
-      public_name          VARCHAR2 (32),
+      public_name          VARCHAR2 (57),
       long_name            VARCHAR2 (80),
       description          VARCHAR2 (512),
       active_flag          VARCHAR2 (1),
@@ -1271,7 +1271,7 @@ IS
     *   <tr>
     *     <td class="descr-center">15</td>
     *     <td class="descr">public_name</td>
-    *     <td class="descr">varchar2(32)</td>
+    *     <td class="descr">varchar2(57)</td>
     *     <td class="descr">The public name of the location</td>
     *   </tr>
     *   <tr>
@@ -1418,7 +1418,7 @@ IS
     *   <tr>
     *     <td class="descr-center">15</td>
     *     <td class="descr">public_name</td>
-    *     <td class="descr">varchar2(32)</td>
+    *     <td class="descr">varchar2(57)</td>
     *     <td class="descr">The public name of the location</td>
     *   </tr>
     *   <tr>
@@ -1552,7 +1552,7 @@ IS
     *   <tr>
     *     <td class="descr-center">15</td>
     *     <td class="descr">public_name</td>
-    *     <td class="descr">varchar2(32)</td>
+    *     <td class="descr">varchar2(57)</td>
     *     <td class="descr">The public name of the location</td>
     *   </tr>
     *   <tr>
@@ -1741,7 +1741,7 @@ IS
     *   <tr>
     *     <td class="descr-center">15</td>
     *     <td class="descr">public_name</td>
-    *     <td class="descr">varchar2(32)</td>
+    *     <td class="descr">varchar2(57)</td>
     *     <td class="descr">The public name of the location</td>
     *   </tr>
     *   <tr>

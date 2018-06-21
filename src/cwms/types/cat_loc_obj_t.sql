@@ -12,7 +12,7 @@ AS OBJECT (
    elevation        NUMBER,
    elev_unit_id     VARCHAR2 (16),
    vertical_datum   VARCHAR2 (16),
-   public_name      VARCHAR2 (32),
+   public_name      VARCHAR2 (57),
    long_name        VARCHAR2 (80),
    description      VARCHAR2 (512)
 );

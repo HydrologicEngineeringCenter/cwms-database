@@ -29,7 +29,7 @@ AS
    TYPE cat_ts_transfer_rec_t IS RECORD
    (
       cwms_ts_id    VARCHAR2 (183),
-      public_name   VARCHAR2 (32),
+      public_name   VARCHAR2 (57),
       office_id     VARCHAR2 (16),
       ts_code       NUMBER,
       office_code   NUMBER,
@@ -167,7 +167,7 @@ AS
      *   <tr>
      *     <td class="descr-center">2</td>
      *     <td class="descr">public_name</td>
-     *     <td class="descr">varchar2(32)</td>
+     *     <td class="descr">varchar2(57)</td>
      *     <td class="descr">The Public Name of the time series ids Location.</td>
      *   </tr>
      *   <tr>
@@ -226,7 +226,7 @@ AS
      *   <tr>
      *     <td class="descr-center">2</td>
      *     <td class="descr">public_name</td>
-     *     <td class="descr">varchar2(32)</td>
+     *     <td class="descr">varchar2(57)</td>
      *     <td class="descr">The Public Name of the time series ids Location.</td>
      *   </tr>
      *   <tr>

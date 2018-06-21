@@ -67,7 +67,7 @@ BEGIN
              pl.elevation * l_factor elevation,          -- elevation         number        location elevation
              l_unit                  elev_unit_id,       -- elev_unit_id      varchar2(16)  location elevation units
              pl.vertical_datum       vertical_datum,     -- vertical_datum    varchar2(16)  veritcal datum of elevation
-             pl.public_name          public_name,        -- public_name       varchar2(32)  location public name
+             pl.public_name          public_name,        -- public_name       varchar2(57)  location public name
              pl.long_name            long_name,          -- long_name         varchar2(80)  location long name
              pl.description          description,        -- description       varchar2(512) location description
              pl.active_flag          active_flag         -- active_flag       varchar2(1)   'T' if active, else 'F'

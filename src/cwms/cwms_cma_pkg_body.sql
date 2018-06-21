@@ -3253,7 +3253,7 @@ NULL;
                                          temp_clob := temp_clob || temp_delim    || ' --- ' || ' New Public Name from RG Map Label = ' || temp_public_Name;
 
                                      ELSE
-                                         temp_public_Name := SUBSTR(y.statioN_desc, 1,32);
+                                         temp_public_Name := SUBSTR(y.statioN_desc, 1,57);
 
                                        IF LENGTH(y.statioN_desc) <= 32 THEN
                                          temp_clob := temp_clob || temp_delim    || ' --- ' || ' New Public Name from RG station desc = ' || temp_public_Name;
@@ -4533,7 +4533,7 @@ WHERE location_level_id = 'AGNI4.Elev-Pool.Inst.0.Flood' and office_id = 'MVR'
                                 ROUND (lat, 8) lat,
                                 ROUND (lon, 8) lon,
                                 nws_name,
-                                SUBSTR (nws_name, 1, 32) public_name
+                                SUBSTR (nws_name, 1, 57) public_name
                            FROM cwms_station_nws
                           WHERE nws_id = temp_nws_5_id)
                LOOP

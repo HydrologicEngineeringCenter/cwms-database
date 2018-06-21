@@ -2988,7 +2988,7 @@ AS
    --   l_distinct NUMBER;
    --   l_store_rule   VARCHAR2 (16);
    --   l_alias_id VARCHAR2 (16);
-   --   l_alias_public_name  VARCHAR2 (32);
+   --   l_alias_public_name  VARCHAR2 (57);
    --   l_alias_long_name VARCHAR2 (80);
    --   l_insert BOOLEAN;
    --   l_ignorenulls  BOOLEAN

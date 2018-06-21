@@ -1668,7 +1668,7 @@ END cat_ts_id;
    --    elevation                number         location elevation
    --    elev_unit_id             varchar2(16)   location elevation units
    --    vertical_datum           varchar2(16)   veritcal datum of elevation
-   --    public_name              varchar2(32)   location public name
+   --    public_name              varchar2(57)   location public name
    --    long_name                varchar2(80)   location long name
    --    description              varchar2(512)  location description
    --    active_flag              varchar2(1)    'T' if active, else 'F'
@@ -1950,7 +1950,7 @@ END cat_ts_id;
 --    elevation                number         location elevation
 --    elev_unit_id             varchar2(16)   location elevation units
 --    vertical_datum           varchar2(16)   veritcal datum of elevation
---    public_name              varchar2(32)   location public name
+--    public_name              varchar2(57)   location public name
 --    long_name                varchar2(80)   location long name
 --    description              varchar2(512)  location description
 --    active_flag              varchar2(1)    'T' if active, else 'F'
