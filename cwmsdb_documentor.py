@@ -408,6 +408,7 @@ external_files = [
    'CWMS Database Locations.pdf',
    'CWMS Location and Time Series Groups.pdf',
    'CWMS LOCATION LEVELS.pdf',
+   'CWMS POOLS.pdf',
    'CWMS RATINGS.pdf',
    'CWMS Properties Dictionary.pdf',
    'Text and Binary Data in the CWMS Database.pdf'
@@ -905,6 +906,7 @@ class JDoc :
    '''
    def __init__(self, jdoc_text) :
       self._deprecated  = False
+      self._depr_text   = ''
       self._since       = ''
       self._description = ''
       self._return      = ''
@@ -956,6 +958,7 @@ class JDoc :
             if   tag == '@deprecated' :
                if self._deprecated : raise ValueError('Multiple @deprecated tags encountered');
                self._deprecated = True
+               self._depr_text = section
             elif tag == '@author' :
                self._authors.append(section)
             elif tag == '@since' :
@@ -1000,6 +1003,7 @@ class JDoc :
    def returns(self)          : return self._return
    def has_return(self)       : return bool(self._return)
    def is_deprecated(self)    : return self._deprecated
+   def deprecation_text(self) : return self._depr_text
    def since(self)            : return self._since
    def has_since(self)        : return bool(self._since)
    def get_param(self, name)  : return self._params_by_name[name.lower()]
@@ -1033,14 +1037,16 @@ class HtmlElem :
       elif type(content) == type(self) :
          type_name = content.__class__.__name__
          if type_name == 'JDoc' :
-            self.add_deprecated(content)
-            self.add_description(content)
-            self.add_authors(content)
-            self.add_since(content)
-            self.add_params(content)
-            self.add_return(content)
-            self.add_exceptions(content)
-            self.add_see_also(content, local_names)
+            if content.is_deprecated() :
+               self.add_deprecated(content)
+            else :
+               self.add_description(content)
+               self.add_authors(content)
+               self.add_since(content)
+               self.add_params(content)
+               self.add_return(content)
+               self.add_exceptions(content)
+               self.add_see_also(content, local_names)
          else :
             raise TypeError('Unexpected content type: %s' % type_name)
       else : raise TypeError('Unexpected content type: %s' % type(content))
@@ -1050,7 +1056,9 @@ class HtmlElem :
       if jdoc.is_deprecated() :
          self.add_content([
             HtmlElem('p'),
-            HtmlElem('b', 'DEPRECATED')])
+            HtmlElem('b', 'DEPRECATED'),
+            HtmlElem('p'),
+            HtmlElem('', jdoc.deprecation_text())])
       return self
 
    def add_brief(self, jdoc) :
@@ -1235,7 +1243,7 @@ def build_main_page() :
       HtmlElem('br'),
       HtmlElem('a', attrs=[('href', '#Projects, Structures, and Project Usage')], content='Projects, Structures, and Project Usage'),
       HtmlElem('br'),
-      HtmlElem('a', attrs=[('href', '#Levels, Rule Curves, and Ratings')], content='Levels, Rule Curves, and Ratings'),
+      HtmlElem('a', attrs=[('href', '#Levels, Pools, Rule Curves, and Ratings')], content='Levels, Pools, Rule Curves, and Ratings'),
       HtmlElem('br'),
       HtmlElem('a', attrs=[('href', '#Forecasts and Model Runs')], content='Forecasts and Model Runs'),
       HtmlElem('br'),
@@ -1271,6 +1279,8 @@ def build_main_page() :
       HtmlElem('br'),
       HtmlElem('a', attrs=[('href', 'CWMS LOCATION LEVELS.pdf')], content='CWMS Location Levels'),
       HtmlElem('br'),
+      HtmlElem('a', attrs=[('href', 'CWMS POOLS.pdf')], content='CWMS Pools'),
+      HtmlElem('br'),
       HtmlElem('a', attrs=[('href', 'CWMS RATINGS.pdf')], content='CWMS Ratings'),
       HtmlElem('br'),
       HtmlElem('a', attrs=[('href', 'CWMS Properties Dictionary.pdf')], content='CWMS User Properties'),
@@ -1305,11 +1315,12 @@ def build_main_page() :
          packages = ['cwms_project', 'cwms_embank', 'cwms_outlet', 'cwms_turbine', 'cwms_lock', 'cwms_water_supply'],
          views    = ['av_gate_change', 'av_gate_setting', 'av_outlet', 'av_project', 'av_turbine', 'av_turbine_change', 'av_turbine_setting']))])
    items_list.add_content([
-      HtmlElem('a', attrs=[('name', 'Levels, Rule Curves, and Ratings')]),
-      HtmlElem('dt', content=[HtmlElem('h3', content='Levels, Rule Curves, and Ratings')]),
+      HtmlElem('a', attrs=[('name', 'Levels, Pools, Rule Curves, and Ratings')]),
+      HtmlElem('dt', content=[HtmlElem('h3', content='Levels, Pools, Rule Curves, and Ratings')]),
       HtmlElem('dd', content=build_item_lists(
-         packages = ['cwms_level', 'cwms_rating'],
+         packages = ['cwms_level', 'cwms_pool', 'cwms_rating'],
          views    = ['av_loc_lvl_cur_max_ind', 'av_loc_lvl_indicator', 'av_loc_lvl_indicator_2', 'av_loc_lvl_ts_map', 'av_location_level',
+         	     'av_pool_name', 'av_pool',
                      'av_rating', 'av_rating_local', 'av_rating_spec','av_rating_template', 'av_rating_values', 'av_rating_values_native']))])
    items_list.add_content([
       HtmlElem('a', attrs=[('name', 'Forecasts and Model Runs')]),
@@ -1369,7 +1380,7 @@ option_info = {
    'e' : [None, False, 'External file directory']
 }
 option_chars = option_info.keys()
-opts, args = getopt.gnu_getopt(sys.argv[1:], ':'.join(option_chars))
+opts, args = getopt.gnu_getopt(sys.argv[1:], ':'.join(option_chars+['']))
 for opt, val in opts :
    opt_char = opt[1]
    if opt_char == 'd' and val == '' and args:
@@ -1504,6 +1515,7 @@ try :
    jdoc_var_pattern     = get_pattern(re_pkg_jdoc_var, 'imd')
    jdoc_routine_pattern = get_pattern(re_pkg_jdoc_routine, 'imd')
    for package_name in sorted(package_names) :
+      # if package_name == 'CWMS_USGS' : continue
       output1('package', package_name)
       lines = []
       stmt.setString(1, package_name)
