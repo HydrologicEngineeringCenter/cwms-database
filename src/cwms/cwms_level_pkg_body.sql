@@ -844,9 +844,9 @@ function get_location_level_id(
    p_location_level_code in number)
    return varchar2 /*result_cache*/
 is          
-   l_location_level_id varchar2(422);
+   l_location_level_id varchar2(398);
    l_office_id         varchar2(16);
-   l_location_id       varchar2(49);
+   l_location_id       varchar2(57);
    l_parameter_id      varchar2(49);
    l_parameter_type_id varchar2(16);
    l_duration_id       varchar2(16);
@@ -907,7 +907,7 @@ function get_location_level_id(
    p_specified_level_id in varchar2)
    return varchar2  /*result_cache*/
 is          
-   l_location_level_id varchar2(390);
+   l_location_level_id varchar2(398);
 begin       
    l_location_level_id := p_location_id
                           || '.' || p_parameter_id
@@ -958,7 +958,7 @@ function get_loc_lvl_indicator_id(
    p_level_indicator_id in varchar2)
    return varchar2 /*result_cache*/
 is          
-   l_location_level_id varchar2(374);
+   l_location_level_id varchar2(3);
 begin       
    l_location_level_id := p_location_id
                           || '.' || p_parameter_id
@@ -1746,7 +1746,7 @@ procedure store_location_level(
    p_office_id               in  varchar2 default null)
 is          
    l_location_level_code     number(10);
-   l_location_id             varchar2(49);
+   l_location_id             varchar2(57);
    l_parameter_id            varchar2(49);
    l_parameter_type_id       varchar2(16);
    l_duration_id             varchar2(16);
@@ -1820,7 +1820,7 @@ procedure store_location_level3(
    p_office_id               in  varchar2 default null)
 is
    l_location_level_code     number(10);
-   l_location_id             varchar2(49);
+   l_location_id             varchar2(57);
    l_parameter_id            varchar2(49);
    l_parameter_type_id       varchar2(16);
    l_duration_id             varchar2(16);
@@ -1896,7 +1896,7 @@ procedure store_location_level4(
    p_office_id               in  varchar2 default null)
 is
    l_location_level_code     number(10);
-   l_location_id             varchar2(49);
+   l_location_id             varchar2(57);
    l_parameter_id            varchar2(49);
    l_parameter_type_id       varchar2(16);
    l_duration_id             varchar2(16);
@@ -2278,7 +2278,7 @@ procedure retrieve_location_level(
    p_match_date              in  varchar2 default 'F',
    p_office_id               in  varchar2 default null)
 is
-   l_tsid varchar2(183);
+   l_tsid varchar2(191);
    l_expiration_date date;
 begin
    retrieve_location_level4(
@@ -2337,7 +2337,7 @@ procedure retrieve_location_level(
    p_match_date              in  varchar2 default 'F',
    p_office_id               in  varchar2 default null)
 is
-   l_location_id             varchar2(49);
+   l_location_id             varchar2(57);
    l_parameter_id            varchar2(49);
    l_parameter_type_id       varchar2(16);
    l_duration_id             varchar2(16);
@@ -2404,7 +2404,7 @@ procedure retrieve_location_level3(
    p_match_date              in  varchar2 default 'F',
    p_office_id               in  varchar2 default null)
 is
-   l_location_id             varchar2(49);
+   l_location_id             varchar2(57);
    l_parameter_id            varchar2(49);
    l_parameter_type_id       varchar2(16);
    l_duration_id             varchar2(16);
@@ -2475,7 +2475,7 @@ procedure retrieve_location_level4(
    p_match_date              in  varchar2 default 'F',
    p_office_id               in  varchar2 default null)
 is
-   l_location_id             varchar2(49);
+   l_location_id             varchar2(57);
    l_parameter_id            varchar2(49);
    l_parameter_type_id       varchar2(16);
    l_duration_id             varchar2(16);
@@ -2630,7 +2630,7 @@ function retrieve_location_level(
    p_office_id               in  varchar2 default null)
    return location_level_t
 is          
-   l_location_id                 varchar2(49);
+   l_location_id                 varchar2(57);
    l_parameter_id                varchar2(49);
    l_parameter_type_id           varchar2(16);
    l_duration_id                 varchar2(16);
@@ -3389,7 +3389,7 @@ procedure retrieve_location_level_values(
    p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null)
 is          
-   l_location_id             varchar2(49);
+   l_location_id             varchar2(57);
    l_parameter_id            varchar2(49);
    l_parameter_type_id       varchar2(16);
    l_duration_id             varchar2(16);
@@ -3884,7 +3884,7 @@ procedure retrieve_location_level_values(
    p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null)
 is          
-   l_location_id       varchar2(49);
+   l_location_id       varchar2(57);
    l_parameter_id      varchar2(49);
    l_parameter_type_id varchar2(16);
    l_duration_id       varchar2(16);
@@ -4047,7 +4047,7 @@ procedure retrieve_location_level_value(
    p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null)
 is          
-   l_location_id       varchar2(49);
+   l_location_id       varchar2(57);
    l_parameter_id      varchar2(49);
    l_parameter_type_id varchar2(16);
    l_duration_id       varchar2(16);
@@ -4298,7 +4298,7 @@ procedure retrieve_location_level_attrs(
    p_date                    in  date     default null,
    p_office_id               in  varchar2 default null)
 is          
-   l_location_id             varchar2(49);
+   l_location_id             varchar2(57);
    l_parameter_id            varchar2(49);
    l_parameter_type_id       varchar2(16);
    l_duration_id             varchar2(16);
@@ -4459,7 +4459,7 @@ function lookup_level_or_attribute(
    p_office_id               in  varchar2 default null)
    return number
 is          
-   l_location_id             varchar2(49);
+   l_location_id             varchar2(57);
    l_parameter_id            varchar2(49);
    l_parameter_type_id       varchar2(16);
    l_duration_id             varchar2(16);
@@ -5078,7 +5078,7 @@ procedure delete_location_level3(
    p_office_id               in  varchar2 default null)
 is
    l_location_level_code       number(10);
-   l_location_id               varchar2(49);
+   l_location_id               varchar2(57);
    l_parameter_id              varchar2(49);
    l_parameter_type_id         varchar2(16);
    l_duration_id               varchar2(16);
@@ -6192,7 +6192,7 @@ end delete_loc_lvl_source;
 --
 -- The cursor opened by this routine contains six fields:
 --    1 : office_id           varchar2(16)
---    2 : location_level_id   varchar2(390)
+--    2 : location_level_id   varchar2(380)
 --    3 : attribute_id        varchar2(83)
 --    4 : attribute_value     binary_double
 --    5 : attribute_unit      varchar2(16)
@@ -6212,7 +6212,7 @@ is
    l_parts                    str_tab_t;
    l_count                    binary_integer;
    l_office_id_mask           varchar2(16);
-   l_location_mask            varchar2(49);
+   l_location_mask            varchar2(57);
    l_parameter_mask           varchar2(49);
    l_parameter_type_mask      varchar2(16);
    l_duration_mask            varchar2(16);
@@ -6670,7 +6670,7 @@ function get_loc_lvl_indicator_code(
    return number
 is          
    ITEM_DOES_NOT_EXIST      exception; pragma exception_init (ITEM_DOES_NOT_EXIST, -20034);
-   l_location_id            varchar2(49);
+   l_location_id            varchar2(57);
    l_parameter_id           varchar2(49);
    l_param_type_id          varchar2(16);
    l_duration_id            varchar2(16);
@@ -7222,7 +7222,7 @@ procedure store_loc_lvl_indicator(
    p_ignore_nulls_on_update in  varchar2 default 'T',
    p_office_id              in  varchar2 default null)
 is          
-   l_location_id        varchar2(49);
+   l_location_id        varchar2(57);
    l_parameter_id       varchar2(49);
    l_param_type_id      varchar2(16);
    l_duration_id        varchar2(16);
@@ -7328,10 +7328,10 @@ procedure cat_loc_lvl_indicator_codes(
    p_attribute_id_mask          in  varchar2 default null,
    p_office_id_mask             in  varchar2 default null) -- user's office if null
 is          
-   l_loc_lvl_indicator_id_mask varchar2(423) := p_loc_lvl_indicator_id_mask;
+   l_loc_lvl_indicator_id_mask varchar2(431) := p_loc_lvl_indicator_id_mask;
    l_attribute_id_mask         varchar2(83)  := p_attribute_id_mask;
    l_office_id_mask            varchar2(16)  := nvl(p_office_id_mask, cwms_util.user_office_id);
-   l_location_id_mask          varchar2(49);
+   l_location_id_mask          varchar2(57);
    l_parameter_id_mask         varchar2(49);
    l_param_type_id_mask        varchar2(16);
    l_duration_id_mask          varchar2(16);
@@ -7602,7 +7602,7 @@ end cat_loc_lvl_indicator_codes;
 --          
 -- p_cursor contains 18 fields:
 --   1 : office_id              varchar2(16)
---   2 : location_id            varchar2(49)
+--   2 : location_id            varchar2(57)
 --   3 : parameter_id           varchar2(49)
 --   4 : parameter_type_id      varchar2(16)
 --   5 : duration_id            varchar2(16)
@@ -7646,7 +7646,7 @@ procedure cat_loc_lvl_indicator(
    p_office_id_mask         in  varchar2 default null,
    p_unit_system            in  varchar2 default 'SI')
 is          
-   l_location_id_mask            varchar2(49);
+   l_location_id_mask            varchar2(57);
    l_parameter_id_mask           varchar2(49);
    l_parameter_type_id_mask      varchar2(16);
    l_duration_id_mask            varchar2(16);
@@ -7872,7 +7872,7 @@ end cat_loc_lvl_indicator;
 --          
 -- p_cursor contains 18 fields:
 --   1 : office_id              varchar2(16)
---   2 : location_id            varchar2(49)
+--   2 : location_id            varchar2(57)
 --   3 : parameter_id           varchar2(49)
 --   4 : parameter_type_id      varchar2(16)
 --   5 : duration_id            varchar2(16)
@@ -7926,7 +7926,7 @@ is
    l_parts                       str_tab_tab_t := str_tab_tab_t();
    l_seq                         integer;
    l_office_id                   varchar2(16);
-   l_location_id                 varchar2(49);
+   l_location_id                 varchar2(57);
    l_parameter_id                varchar2(49);
    l_parameter_type_id           varchar2(16);
    l_duration_id                 varchar2(16);
@@ -8119,7 +8119,7 @@ is
    l_loc_lvl_indicator_code number(10);
    l_level_factor           number := 1.;
    l_level_offset           number := 0.;
-   l_location_id            varchar2(49);
+   l_location_id            varchar2(57);
    l_parameter_id           varchar2(49);
    l_parameter_type_id      varchar2(16);
    l_duration_id            varchar2(16);
@@ -8615,7 +8615,7 @@ end eval_level_indicator_expr;
 -- p_office_id - office identifier for p_tsid, user's office identifier if NULL
 --          
 -- p_cursor contains the following fields:
--- 1 indicator_id     varchar2(423)
+-- 1 indicator_id     varchar2(431)
 -- 2 attribute_id     varchar2(83)
 -- 3 attribute_value  number           
 -- 4 attribute_units  varchar2(16)
@@ -8631,13 +8631,13 @@ procedure get_level_indicator_values(
    p_unit_system          in  varchar2 default null,   -- 'SI' if null
    p_office_id            in  varchar2 default null)   -- user's office if null 
 is          
-   l_tsid                   varchar2(183) := p_tsid;
+   l_tsid                   varchar2(191) := p_tsid;
    l_office_id              varchar2(16)  := nvl(upper(p_office_id), cwms_util.user_office_id);
    l_specified_level_mask   varchar2(256) := nvl(p_specified_level_mask, '*');
    l_indicator_id_mask      varchar2(256) := nvl(p_indicator_id_mask, '*');
    l_unit_system            varchar2(2)   := nvl(p_unit_system, 'SI');
-   l_location_level_id_mask varchar2(423);
-   l_base_location_id       varchar2(16);
+   l_location_level_id_mask varchar2(431);
+   l_base_location_id       varchar2(24);
    l_sub_location_id        varchar2(32);
    l_base_parameter_id      varchar2(16);
    l_sub_parameter_id       varchar2(32);
@@ -8811,7 +8811,7 @@ end get_level_indicator_values;
 -- p_office_id - office identifier for p_tsid, user's office identifier if NULL
 --          
 -- p_cursor has the following fields:
--- 1 indicator_id     varchar2(423)
+-- 1 indicator_id     varchar2(431)
 -- 2 attribute_id     varchar2(83)
 -- 3 attribute_value  number
 -- 4 attribute_units  varchar2(16)
@@ -8828,13 +8828,13 @@ procedure get_level_indicator_max_values(
    p_unit_system          in  varchar2 default null,   -- 'SI' if null
    p_office_id            in  varchar2 default null)   -- user's office if null
 is          
-   l_tsid                   varchar2(183) := p_tsid;
+   l_tsid                   varchar2(191) := p_tsid;
    l_office_id              varchar2(16)  := nvl(upper(p_office_id), cwms_util.user_office_id);
    l_specified_level_mask   varchar2(256) := nvl(p_specified_level_mask, '*');
    l_indicator_id_mask      varchar2(256) := nvl(p_indicator_id_mask, '*');
    l_unit_system            varchar2(2)   := nvl(p_unit_system, 'SI');
-   l_location_level_id_mask varchar2(423);
-   l_base_location_id       varchar2(16);
+   l_location_level_id_mask varchar2(431);
+   l_base_location_id       varchar2(24);
    l_sub_location_id        varchar2(32);
    l_base_parameter_id      varchar2(16);
    l_sub_parameter_id       varchar2(32);
@@ -8856,7 +8856,7 @@ is
    l_ts_quality             number;
    l_ts                     ztsv_array := new ztsv_array();
    l_units_out              varchar2(16);
-   l_cwms_ts_id_out         varchar2(183);
+   l_cwms_ts_id_out         varchar2(191);
 begin       
    ------------------------------------------------------------------
    -- open a cursor of all matching location level indicator codes --

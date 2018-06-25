@@ -28,7 +28,7 @@ AS
    -- not documented
    TYPE cat_ts_transfer_rec_t IS RECORD
    (
-      cwms_ts_id    VARCHAR2 (183),
+      cwms_ts_id    VARCHAR2(191),
       public_name   VARCHAR2 (57),
       office_id     VARCHAR2 (16),
       ts_code       NUMBER,
@@ -161,7 +161,7 @@ AS
      *   <tr>
      *     <td class="descr-center">1</td>
      *     <td class="descr">cwms_ts_id</td>
-     *     <td class="descr"varchar2(183)</td>
+     *     <td class="descr"varchar2(191)</td>
      *     <td class="descr">The time series identifier</td>
      *   </tr>
      *   <tr>
@@ -220,7 +220,7 @@ AS
      *   <tr>
      *     <td class="descr-center">1</td>
      *     <td class="descr">cwms_ts_id</td>
-     *     <td class="descr"varchar2(183)</td>
+     *     <td class="descr"varchar2(191)</td>
      *     <td class="descr">The time series identifier</td>
      *   </tr>
      *   <tr>
@@ -259,10 +259,6 @@ AS
    FUNCTION cat_ts_transfer_tab (p_office_id IN VARCHAR2 DEFAULT NULL)
       RETURN cat_ts_transfer_tab_t
       PIPELINED;
-END cwms_data_dissem;
-
+end cwms_data_dissem;
 /
-show errors;
-GRANT EXECUTE ON CWMS_DATA_DISSEM TO CWMS_USER
-/
-
+show errors

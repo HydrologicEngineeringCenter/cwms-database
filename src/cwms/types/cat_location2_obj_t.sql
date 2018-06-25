@@ -1,9 +1,9 @@
-CREATE TYPE cat_location2_obj_t
+create or replace TYPE cat_location2_obj_t
 -- not documented
 AS OBJECT (
    db_office_id         VARCHAR2 (16),
-   location_id          VARCHAR2 (49),
-   base_location_id     VARCHAR2 (16),
+   location_id          VARCHAR2 (57),
+   base_location_id     VARCHAR2 (24),
    sub_location_id      VARCHAR2 (32),
    state_initial        VARCHAR2 (2),
    county_name          VARCHAR2 (40),

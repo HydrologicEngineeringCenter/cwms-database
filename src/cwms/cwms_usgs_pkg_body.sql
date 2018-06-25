@@ -395,7 +395,7 @@ function get_ts_id(
    p_office_id      in varchar2 default null)
    return varchar2 
 is
-   l_ts_id       varchar2(183);
+   l_ts_id       varchar2(191);
    l_interval_id varchar2(16);
 begin
    if p_interval = 0 then
@@ -3022,7 +3022,7 @@ procedure update_existing_ratings(
 is
    l_office_id        varchar2(16) := cwms_util.get_db_office_id(p_office_id);
    l_office_code      integer := cwms_util.get_db_office_code(l_office_id);
-   l_location_id      varchar2(49);
+   l_location_id      varchar2(57);
    l_rating_text      clob;   
    l_rating_exsa      clob;  
    l_hash_value       varchar2(40); 
@@ -3228,7 +3228,7 @@ is
    l_ratings2       rating_tab_t;
    l_lines          str_tab_t := str_tab_t();  
    l_effective_date date;
-   l_location_id    varchar2(49);   
+   l_location_id    varchar2(57);
    
    procedure append(
       p_table in out nocopy str_tab_t,

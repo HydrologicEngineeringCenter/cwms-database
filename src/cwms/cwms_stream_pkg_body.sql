@@ -394,11 +394,11 @@ as
          p_comments_mask               in varchar2 default '*',
          p_office_id_mask              in varchar2 default null)
    is
-      l_stream_id_mask              varchar2(49)  := upper(cwms_util.normalize_wildcards(p_stream_id_mask)) ;
+      l_stream_id_mask              varchar2(57)  := upper(cwms_util.normalize_wildcards(p_stream_id_mask)) ;
       l_stationing_starts_ds_mask   varchar2(1)   := upper(cwms_util.normalize_wildcards(p_stationing_starts_ds_mask)) ;
-      l_flows_into_stream_id_mask   varchar2(49)  := upper(cwms_util.normalize_wildcards(p_flows_into_stream_id_mask)) ;
+      l_flows_into_stream_id_mask   varchar2(57)  := upper(cwms_util.normalize_wildcards(p_flows_into_stream_id_mask)) ;
       l_flows_into_bank_mask        varchar2(1)   := upper(cwms_util.normalize_wildcards(p_flows_into_bank_mask)) ;
-      l_diverts_from_stream_id_mask varchar2(49)  := upper(cwms_util.normalize_wildcards(p_diverts_from_stream_id_mask)) ;
+      l_diverts_from_stream_id_mask varchar2(57)  := upper(cwms_util.normalize_wildcards(p_diverts_from_stream_id_mask)) ;
       l_diverts_from_bank_mask      varchar2(1)   := upper(cwms_util.normalize_wildcards(p_diverts_from_bank_mask)) ;
       l_comments_mask               varchar2(256) := upper(cwms_util.normalize_wildcards(p_comments_mask)) ;
       l_office_id_mask              varchar2(16)  := upper(cwms_util.normalize_wildcards(nvl(p_office_id_mask, cwms_util.user_office_id))) ;
@@ -962,8 +962,8 @@ as
          p_station_unit          in varchar2 default 'mi',
          p_office_id_mask        in varchar2 default null)
    is
-      l_stream_id_mask        varchar2(49)  := cwms_util.normalize_wildcards(upper(trim(p_stream_id_mask)));
-      l_reach_id_mask         varchar2(49)  := cwms_util.normalize_wildcards(upper(trim(p_reach_id_mask)));
+      l_stream_id_mask        varchar2(57)  := cwms_util.normalize_wildcards(upper(trim(p_stream_id_mask)));
+      l_reach_id_mask         varchar2(57)  := cwms_util.normalize_wildcards(upper(trim(p_reach_id_mask)));
       l_configuration_id_mask varchar2(32)  := cwms_util.normalize_wildcards(upper(trim(p_configuration_id_mask)));
       l_comments_mask         varchar2(256) := cwms_util.normalize_wildcards(upper(trim(p_comments_mask)));
       l_office_id_mask        varchar2(16)  := cwms_util.normalize_wildcards(nvl(upper(trim(p_office_id_mask)), cwms_util.user_office_id));
@@ -1328,8 +1328,8 @@ as
          p_area_unit        in varchar2 default null,
          p_office_id_mask   in varchar2 default null)
    is
-      l_stream_id_mask   varchar2(49) := cwms_util.normalize_wildcards(upper(p_stream_id_mask)) ;
-      l_location_id_mask varchar2(49) := cwms_util.normalize_wildcards(upper(p_location_id_mask)) ;
+      l_stream_id_mask   varchar2(57) := cwms_util.normalize_wildcards(upper(p_stream_id_mask)) ;
+      l_location_id_mask varchar2(57) := cwms_util.normalize_wildcards(upper(p_location_id_mask)) ;
       l_office_id_mask   varchar2(16) := cwms_util.normalize_wildcards(upper(nvl(p_office_id_mask, cwms_util.user_office_id))) ;
       l_station_unit     varchar2(16) := cwms_util.get_unit_id(nvl(p_station_unit, 'km')) ;
       l_stage_unit       varchar2(16) := cwms_util.get_unit_id(nvl(p_stage_unit, 'm')) ;

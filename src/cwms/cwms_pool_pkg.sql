@@ -274,7 +274,7 @@ procedure delete_pool(
  *                              <tr>
  *                                <td class="descr-center">2</td>
  *                                <td class="descr">project_id</td>
- *                                <td class="descr">varchar2(183)</td>
+ *                                <td class="descr">varchar2(191)</td>
  *                                <td class="descr">The pool name</td>
  *                              </tr>
  *                              <tr>
@@ -396,7 +396,7 @@ procedure cat_pools(
  *           <tr>
  *             <td class="descr-center">2</td>
  *             <td class="descr">project_id</td>
- *             <td class="descr">varchar2(183)</td>
+ *             <td class="descr">varchar2(191)</td>
  *             <td class="descr">The pool name</td>
  *           </tr>
  *           <tr>

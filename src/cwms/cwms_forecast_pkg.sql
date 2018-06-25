@@ -145,7 +145,7 @@ procedure rename_spec(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">location_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the forecast specification</td>
  *   </tr>
  *   <tr>
@@ -181,7 +181,7 @@ procedure rename_spec(
  *   <tr>
  *     <td class="descr-center">8</td>
  *     <td class="descr">source_loc_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location that is the source for forecasts under this specification</td>
  *   </tr>
  * </table>
@@ -294,7 +294,7 @@ procedure cat_specs(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">location_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the forecast specification</td>
  *   </tr>
  *   <tr>
@@ -330,7 +330,7 @@ procedure cat_specs(
  *   <tr>
  *     <td class="descr-center">8</td>
  *     <td class="descr">source_loc_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location that is the source for forecasts under this specification</td>
  *   </tr>
  * </table>
@@ -462,7 +462,7 @@ procedure retrieve_ts(
  *   <tr>
  *     <td class="descr-center">4</td>
  *     <td class="descr">cwms_ts_id</td>
- *     <td class="descr">varchar2(183)</td>
+ *     <td class="descr">varchar2(191)</td>
  *     <td class="descr">The time series identifier</td>
  *   </tr>
  *   <tr>
@@ -585,7 +585,7 @@ procedure cat_ts(
  *   <tr>
  *     <td class="descr-center">4</td>
  *     <td class="descr">cwms_ts_id</td>
- *     <td class="descr">varchar2(183)</td>
+ *     <td class="descr">varchar2(191)</td>
  *     <td class="descr">The time series identifier</td>
  *   </tr>
  *   <tr>
@@ -841,7 +841,7 @@ procedure delete_forecast(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">location_id</td>
- *     <td class="descr">varchar2(183)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The target location for the forecast</td>
  *   </tr>
  *   <tr>
@@ -906,7 +906,7 @@ procedure delete_forecast(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">location_id</td>
- *     <td class="descr">varchar2(183)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The target locaiton for the forecast</td>
  *   </tr>
  *   <tr>
@@ -936,7 +936,7 @@ procedure delete_forecast(
  *   <tr>
  *     <td class="descr-center">7</td>
  *     <td class="descr">cwms_ts_id</td>
- *     <td class="descr">varchar2(183)</td>
+ *     <td class="descr">varchar2(191)</td>
  *     <td class="descr">The time series identifier</td>
  *   </tr>
  *   <tr>
@@ -1024,7 +1024,7 @@ procedure cat_forecast(
  *   <tr>
  *     <td class="descr-center">3</td>
  *     <td class="descr">location_id</td>
- *     <td class="descr">varchar2(183)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The target locaiton for the forecast</td>
  *   </tr>
  *   <tr>
@@ -1083,7 +1083,7 @@ procedure cat_forecast(
  *   <tr>
  *     <td class="descr-center">3</td>
  *     <td class="descr">location_id</td>
- *     <td class="descr">varchar2(183)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The target locaiton for the forecast</td>
  *   </tr>
  *   <tr>
@@ -1107,7 +1107,7 @@ procedure cat_forecast(
  *   <tr>
  *     <td class="descr-center">7</td>
  *     <td class="descr">cwms_ts_id</td>
- *     <td class="descr">varchar2(183)</td>
+ *     <td class="descr">varchar2(191)</td>
  *     <td class="descr">The time series identifier</td>
  *   </tr>
  *   <tr>

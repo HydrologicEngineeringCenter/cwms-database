@@ -1,4 +1,4 @@
-CREATE TYPE timeseries_req_type
+create or replace TYPE timeseries_req_type
 /**
  * Type suitable for requesting the retrieval of a time series.
  *
@@ -10,7 +10,7 @@ CREATE TYPE timeseries_req_type
  * @see type timeseries_req_array
  */
 AS OBJECT (
-   tsid         VARCHAR2 (183),
+   tsid         VARCHAR2(191),
    unit         VARCHAR2 (16),
    start_time   DATE,
    end_time     DATE

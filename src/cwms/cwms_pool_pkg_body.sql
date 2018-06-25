@@ -283,7 +283,7 @@ procedure store_pool(
    p_office_id        in varchar2 default null)
 is
    l_project          project_obj_t;
-   l_location_id      varchar2(49);
+   l_location_id      varchar2(57);
    l_office_id        varchar2(16);
    l_bottom_level_id  varchar2(256);
    l_top_level_id     varchar2(256);
@@ -710,7 +710,7 @@ procedure cat_pools(
    p_include_implicit  in  varchar2 default 'T',
    p_office_id_mask    in  varchar2 default null)
 is
-   l_project_id_mask   varchar2(49);
+   l_project_id_mask   varchar2(57);
    l_pool_name_mask    varchar2(32);
    l_bottom_level_mask varchar2(256);
    l_top_level_mask    varchar2(256);
@@ -1032,7 +1032,7 @@ procedure cat_containing_pool_names(
 is
    type rec_t is record(
       office_id       varchar2(16),
-      project_id      varchar2(183),
+      project_id      varchar2(191),
       pool_name       varchar2(32),
       bottom_level_id varchar2(256),
       top_level_id    varchar2(256));
@@ -1751,7 +1751,7 @@ is
    c_ts                sys_refcursor;
    l_ts1               cwms_ts.zts_tab_t;
    l_ts2               ztsv_array;
-   l_base_location_id  varchar2(16);
+   l_base_location_id  varchar2(24);
    l_sub_location_id   varchar2(32);
    l_base_parameter_id varchar2(16);
    l_sub_parameter_id  varchar2(32);                                    
@@ -1889,7 +1889,7 @@ is
    c_ts                sys_refcursor;
    l_ts1               cwms_ts.zts_tab_t;
    l_ts2               ztsv_array;
-   l_base_location_id  varchar2(16);
+   l_base_location_id  varchar2(24);
    l_sub_location_id   varchar2(32);
    l_base_parameter_id varchar2(16);
    l_sub_parameter_id  varchar2(32);                                    
@@ -2929,7 +2929,7 @@ is
    c_ts                sys_refcursor;
    l_ts1               cwms_ts.zts_tab_t;
    l_ts2               ztsv_array;
-   l_base_location_id  varchar2(16);
+   l_base_location_id  varchar2(24);
    l_sub_location_id   varchar2(32);
    l_base_parameter_id varchar2(16);
    l_sub_parameter_id  varchar2(32);                                    
@@ -3780,7 +3780,7 @@ is
    l_ts2               ztsv_array;
    l_limit_elevs       ztsv_array;
    l_offsets           ztsv_array;
-   l_base_location_id  varchar2(16);
+   l_base_location_id  varchar2(24);
    l_sub_location_id   varchar2(32);
    l_base_parameter_id varchar2(16);
    l_sub_parameter_id  varchar2(32);                                    
@@ -3934,7 +3934,7 @@ is
    l_top_elevs         ztsv_array;
    l_bottom_offsets    ztsv_array;
    l_top_offsets       ztsv_array;
-   l_base_location_id  varchar2(16);
+   l_base_location_id  varchar2(24);
    l_sub_location_id   varchar2(32);
    l_base_parameter_id varchar2(16);
    l_sub_parameter_id  varchar2(32);                                    
@@ -4743,7 +4743,7 @@ is
    l_ts2               ztsv_array;
    l_limit_stors       ztsv_array;
    l_offsets           ztsv_array;
-   l_base_location_id  varchar2(16);
+   l_base_location_id  varchar2(24);
    l_sub_location_id   varchar2(32);
    l_base_parameter_id varchar2(16);
    l_sub_parameter_id  varchar2(32);                                    
@@ -4905,7 +4905,7 @@ is
    l_top_stors         ztsv_array;
    l_bottom_offsets    ztsv_array;
    l_top_offsets       ztsv_array;
-   l_base_location_id  varchar2(16);
+   l_base_location_id  varchar2(24);
    l_sub_location_id   varchar2(32);
    l_base_parameter_id varchar2(16);
    l_sub_parameter_id  varchar2(32);                                    
@@ -5486,7 +5486,7 @@ is
    c_ts                sys_refcursor;
    l_ts1               cwms_ts.zts_tab_t;
    l_ts2               ztsv_array;
-   l_base_location_id  varchar2(16);
+   l_base_location_id  varchar2(24);
    l_sub_location_id   varchar2(32);
    l_base_parameter_id varchar2(16);
    l_sub_parameter_id  varchar2(32);                                    

@@ -1,4 +1,4 @@
-create type vdatum_stream_rating_t
+create or replace type vdatum_stream_rating_t
 /**
  * Holds a USGS-style stream rating with vertical datum information
  *
@@ -11,7 +11,7 @@ create type vdatum_stream_rating_t
 under stream_rating_t
 (
 -- office_id       varchar2(16),
--- rating_spec_id  varchar2(372),
+-- rating_spec_id  varchar2(380),
 -- effective_date  date,
 -- transition_date date,
 -- create_date     date,

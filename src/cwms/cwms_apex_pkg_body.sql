@@ -97,7 +97,7 @@ AS
 		l_idx 				  BINARY_INTEGER := 0;
 		l_quote_enclosed	  BOOLEAN := FALSE;
 		l_offset 			  PLS_INTEGER := 1;
-		l_cwms_id			  VARCHAR2 (183);
+		l_cwms_id			  VARCHAR2(191);
 	--   csv   p_array
 	--   shef_id ........... 1   2
 	--   shef_pe_code ...... 2   3
@@ -353,8 +353,8 @@ AS
 		l_len 					NUMBER;
 		--
 		l_rc						SYS_REFCURSOR;
-		l_cwms_id_dup			VARCHAR2 (183);
-		l_shef_id_dup			VARCHAR2 (183);
+		l_cwms_id_dup			VARCHAR2(191);
+		l_shef_id_dup			VARCHAR2(191);
 		--
 		l_rc_rows				SYS_REFCURSOR;
 		l_row_num				NUMBER;
@@ -472,7 +472,7 @@ AS
 			l_record (1) := 'Line No.';
 			l_datatypes (1) := 'number';
 			l_record (2) := 'cwms_ts_id';
-			l_datatypes (2) := 'varchar2(183)';
+			l_datatypes (2) := 'varchar2(191)';
 			l_record (3) := 'shef_id';
 			l_datatypes (3) := 'varchar2(32)';
 			l_record (4) := 'pe_code';
@@ -2234,15 +2234,15 @@ AS
 	  l_first_record	  NUMBER := 2;
 	  --
 	  l_rc		sys_refcursor;
-	  l_cwms_id_dup	 VARCHAR2 (183);
-	  l_shef_id_dup	 VARCHAR2 (183);
+	  l_cwms_id_dup	 VARCHAR2(191);
+	  l_shef_id_dup	 VARCHAR2(191);
 	  --
 	  l_rc_rows 	 sys_refcursor;
 	  l_row_num 	 NUMBER;
 	  l_rows_msg	 VARCHAR2 (1000);
 	  l_cmt	  VARCHAR2 (256);
 	  l_steps_per_commit   NUMBER;
-	  l_cwms_ts_id 	 VARCHAR2 (183);
+	  l_cwms_ts_id 	 VARCHAR2(191);
 	  l_cwms_ts_code	  NUMBER;
 
 	  l_unit_code	  NUMBER;
@@ -3208,12 +3208,12 @@ AS
 		l_indicator 						  loc_lvl_indicator_t;
 		l_office_id 						  VARCHAR2 (16) := 'CPC';
 		l_unit_code 						  NUMBER (10);
-		l_location_id						  VARCHAR2 (49);
+		l_location_id						  VARCHAR2 (57);
 		l_parameter_id 					  VARCHAR2 (49);
 		l_parameter_type_id				  VARCHAR2 (16);
 		l_duration_id						  VARCHAR2 (16);
 		l_specified_level_id 			  VARCHAR2 (256);
-		l_location_level_id				  VARCHAR2 (390);
+		l_location_level_id				  VARCHAR2 (398);
 
 		-- l_na	 VARCHAR2(3) DEFAULT 'n/a';
 		l_na									  VARCHAR2 (3) DEFAULT NULL;
@@ -4815,12 +4815,12 @@ AS
 		l_indicator 			  loc_lvl_indicator_t;
 		l_office_id 			  VARCHAR2 (16) := 'CPC';
 		l_unit_code 			  NUMBER (10);
-		l_location_id			  VARCHAR2 (49);
+		l_location_id			  VARCHAR2 (57);
 		l_parameter_id 		  VARCHAR2 (49);
 		l_parameter_type_id	  VARCHAR2 (16);
 		l_duration_id			  VARCHAR2 (16);
 		l_specified_level_id   VARCHAR2 (256);
-		l_location_level_id	  VARCHAR2 (390)
+		l_location_level_id	  VARCHAR2 (3)
 			:= 'BROKJDK.Stor.Inst.0.Top of Flood.PERCENT FULL';
 	BEGIN
 		SELECT	unit_code
@@ -4982,7 +4982,7 @@ AS
 	)
 	IS
 		l_indicator 			  loc_lvl_indicator_t;
-		l_location_id			  VARCHAR2 (49);
+		l_location_id			  VARCHAR2 (57);
 		l_parameter_id 		  VARCHAR2 (49);
 		l_parameter_type_id	  VARCHAR2 (16);
 		l_duration_id			  VARCHAR2 (16);

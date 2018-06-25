@@ -620,13 +620,13 @@ procedure store_specs(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">specification_id</td>
- *     <td class="descr">varchar2(372)</td>
+ *     <td class="descr">varchar2(380)</td>
  *     <td class="descr">The rating specification</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">3</td>
  *     <td class="descr">location_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location portion of the rating specification</td>
  *   </tr>
  *   <tr>
@@ -706,13 +706,13 @@ procedure cat_spec_ids(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">specification_id</td>
- *     <td class="descr">varchar2(372)</td>
+ *     <td class="descr">varchar2(380)</td>
  *     <td class="descr">The rating specification</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">3</td>
  *     <td class="descr">location_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location portion of the rating specification</td>
  *   </tr>
  *   <tr>
@@ -1163,7 +1163,7 @@ procedure store_ratings(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">specification_id</td>
- *     <td class="descr">varchar2(372)</td>
+ *     <td class="descr">varchar2(380)</td>
  *     <td class="descr">The rating specification</td>
  *   </tr>
  *   <tr>
@@ -1249,7 +1249,7 @@ procedure cat_ratings(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">specification_id</td>
- *     <td class="descr">varchar2(372)</td>
+ *     <td class="descr">varchar2(380)</td>
  *     <td class="descr">The rating specification</td>
  *   </tr>
  *   <tr>
@@ -1358,7 +1358,7 @@ procedure cat_eff_ratings(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">specification_id</td>
- *     <td class="descr">varchar2(372)</td>
+ *     <td class="descr">varchar2(380)</td>
  *     <td class="descr">The rating specification</td>
  *   </tr>
  *   <tr>
@@ -1444,7 +1444,7 @@ function cat_ratings_f(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">specification_id</td>
- *     <td class="descr">varchar2(372)</td>
+ *     <td class="descr">varchar2(380)</td>
  *     <td class="descr">The rating specification</td>
  *   </tr>
  *   <tr>
@@ -1508,7 +1508,7 @@ function cat_eff_ratings_f(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">specification_id</td>
- *     <td class="descr">varchar2(372)</td>
+ *     <td class="descr">varchar2(380)</td>
  *     <td class="descr">The rating specification</td>
  *   </tr>
  *   <tr>
@@ -1532,7 +1532,7 @@ function cat_eff_ratings_f(
  *   <tr>
  *     <td class="descr-center">6</td>
  *     <td class="descr">parent_specification_id</td>
- *     <td class="descr">varchar2(372)</td>
+ *     <td class="descr">varchar2(380)</td>
  *     <td class="descr">The rating specification of the parent rating, if any</td>
  *   </tr>
  *   <tr>
@@ -1619,7 +1619,7 @@ procedure cat_ratings2(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">specification_id</td>
- *     <td class="descr">varchar2(372)</td>
+ *     <td class="descr">varchar2(380)</td>
  *     <td class="descr">The rating specification</td>
  *   </tr>
  *   <tr>
@@ -1643,7 +1643,7 @@ procedure cat_ratings2(
  *   <tr>
  *     <td class="descr-center">6</td>
  *     <td class="descr">parent_specification_id</td>
- *     <td class="descr">varchar2(372)</td>
+ *     <td class="descr">varchar2(380)</td>
  *     <td class="descr">The rating specification of the parent rating, if any</td>
  *   </tr>
  *   <tr>
@@ -1753,7 +1753,7 @@ procedure cat_eff_ratings2(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">specification_id</td>
- *     <td class="descr">varchar2(372)</td>
+ *     <td class="descr">varchar2(380)</td>
  *     <td class="descr">The rating specification</td>
  *   </tr>
  *   <tr>
@@ -1777,7 +1777,7 @@ procedure cat_eff_ratings2(
  *   <tr>
  *     <td class="descr-center">6</td>
  *     <td class="descr">parent_specification_id</td>
- *     <td class="descr">varchar2(372)</td>
+ *     <td class="descr">varchar2(380)</td>
  *     <td class="descr">The rating specification of the parent rating, if any</td>
  *   </tr>
  *   <tr>
@@ -1864,7 +1864,7 @@ function cat_ratings2_f(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">specification_id</td>
- *     <td class="descr">varchar2(372)</td>
+ *     <td class="descr">varchar2(380)</td>
  *     <td class="descr">The rating specification</td>
  *   </tr>
  *   <tr>
@@ -1888,7 +1888,7 @@ function cat_ratings2_f(
  *   <tr>
  *     <td class="descr-center">6</td>
  *     <td class="descr">parent_specification_id</td>
- *     <td class="descr">varchar2(372)</td>
+ *     <td class="descr">varchar2(380)</td>
  *     <td class="descr">The rating specification of the parent rating, if any</td>
  *   </tr>
  *   <tr>

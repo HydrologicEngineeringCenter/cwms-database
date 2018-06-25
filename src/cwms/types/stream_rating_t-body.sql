@@ -47,7 +47,7 @@ as
       l_extension_points xmltype;
       l_point            xmltype;
       l_timestr          varchar2(32);
-      l_location_id      varchar2(49);
+      l_location_id      varchar2(57);
       l_ind_param        varchar2(16);
       l_template_version varchar2(32);
       l_rating_version   varchar2(32);
@@ -785,7 +785,7 @@ as
       l_ref_rating_code  number(10);
       l_template         rating_template_t;
       l_parts            str_tab_t;
-      l_location_id      varchar2(49);
+      l_location_id      varchar2(57);
       l_ind_param        varchar2(16);
       l_template_version varchar2(32);
       l_spec_version     varchar2(23);

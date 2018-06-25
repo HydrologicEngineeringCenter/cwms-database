@@ -1778,7 +1778,7 @@ function replay_data_messages(
    p_office_id   in varchar2 default null)
    return varchar2
 is
-   type assoc_bool_vc183 is table of boolean index by varchar2(183);
+   type assoc_bool_vc183 is table of boolean index by varchar2(191);
    l_reported      timestamp := systimestamp;
    l_start_time    timestamp;
    l_end_time      timestamp;

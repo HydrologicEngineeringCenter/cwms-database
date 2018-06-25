@@ -35,7 +35,7 @@ function get_embankment_code(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">project_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of project</td>
  *   </tr>
  *   <tr>
@@ -47,7 +47,7 @@ function get_embankment_code(
  *   <tr>
  *     <td class="descr-center">4</td>
  *     <td class="descr">base_location_id</td>
- *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">varchar2(24)</td>
  *     <td class="descr">The base location identifier of the embankment</td>
  *   </tr>
  *   <tr>

@@ -1,4 +1,4 @@
-create type loc_lvl_cur_max_ind_t
+create or replace type loc_lvl_cur_max_ind_t
 /**
  * Holds a record for AV_LOC_LVL_CUR_MAX_IND view.
  *
@@ -14,8 +14,8 @@ create type loc_lvl_cur_max_ind_t
  */
 as object(
    office_id          varchar2(16),
-   cwms_ts_id         varchar2(183),
-   level_indicator_id varchar2(423),
+   cwms_ts_id         varchar2(191),
+   level_indicator_id varchar2(431),
    attribute_id       varchar2(83),
    attribute_value    number,
    max_indicator      number,

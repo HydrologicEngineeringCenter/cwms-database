@@ -250,7 +250,7 @@ procedure rename_stream(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">stream_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the stream</td>
  *   </tr>
  *   <tr>
@@ -262,7 +262,7 @@ procedure rename_stream(
  *   <tr>
  *     <td class="descr-center">4</td>
  *     <td class="descr">flows_into_stream</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the receiving stream</td>
  *   </tr>
  *   <tr>
@@ -280,7 +280,7 @@ procedure rename_stream(
  *   <tr>
  *     <td class="descr-center">7</td>
  *     <td class="descr">diverts_from_stream</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the diverting stream</td>
  *   </tr>
  *   <tr>
@@ -465,7 +465,7 @@ procedure cat_streams(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">stream_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the stream</td>
  *   </tr>
  *   <tr>
@@ -477,7 +477,7 @@ procedure cat_streams(
  *   <tr>
  *     <td class="descr-center">4</td>
  *     <td class="descr">flows_into_stream</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the receiving stream</td>
  *   </tr>
  *   <tr>
@@ -495,7 +495,7 @@ procedure cat_streams(
  *   <tr>
  *     <td class="descr-center">7</td>
  *     <td class="descr">diverts_from_stream</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the diverting stream</td>
  *   </tr>
  *   <tr>
@@ -685,19 +685,19 @@ procedure rename_stream_reach(
  *   <tr>
  *     <td class="descr-center">3</td>
  *     <td class="descr">stream_location</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the stream</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">4</td>
  *     <td class="descr">reach_location</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The stream reach identifier</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">5</td>
  *     <td class="descr">upstream_location</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location at the upstream extent of the reach</td>
  *   </tr>
  *   <tr>
@@ -709,13 +709,13 @@ procedure rename_stream_reach(
  *   <tr>
  *     <td class="descr-center">7</td>
  *     <td class="descr">upstream_reach</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The the stream reach immediately upstream of this one</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">8</td>
  *     <td class="descr">downstream_location</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location at the downstream extent of the reach</td>
  *   </tr>
  *   <tr>
@@ -727,7 +727,7 @@ procedure rename_stream_reach(
  *   <tr>
  *     <td class="descr-center">10</td>
  *     <td class="descr">downstream_reach</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The the stream reach immediately downstream of this one</td>
  *   </tr>
  *   <tr>
@@ -841,19 +841,19 @@ procedure cat_stream_reaches(
  *   <tr>
  *     <td class="descr-center">3</td>
  *     <td class="descr">stream_location</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the stream</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">4</td>
  *     <td class="descr">reach_location</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The stream reach identifier</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">5</td>
  *     <td class="descr">upstream_location</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location at the upstream extent of the reach</td>
  *   </tr>
  *   <tr>
@@ -865,13 +865,13 @@ procedure cat_stream_reaches(
  *   <tr>
  *     <td class="descr-center">7</td>
  *     <td class="descr">upstream_reach</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The the stream reach immediately upstream of this one</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">8</td>
  *     <td class="descr">downstream_location</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location at the downstream extent of the reach</td>
  *   </tr>
  *   <tr>
@@ -883,7 +883,7 @@ procedure cat_stream_reaches(
  *   <tr>
  *     <td class="descr-center">10</td>
  *     <td class="descr">downstream_reach</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The the stream reach immediately downstream of this one</td>
  *   </tr>
  *   <tr>
@@ -1079,13 +1079,13 @@ procedure delete_stream_location2(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">stream_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the stream</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">3</td>
  *     <td class="descr">location_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the location on the stream</td>
  *   </tr>
  *   <tr>
@@ -1237,13 +1237,13 @@ procedure cat_stream_locations(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">stream_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the stream</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">3</td>
  *     <td class="descr">location_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the location on the stream</td>
  *   </tr>
  *   <tr>
@@ -1472,13 +1472,13 @@ function get_ds_locations_f(
  *   <tr>
  *     <td class="descr-center">1</td>
  *     <td class="descr">location_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the upstream location</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">stream_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the stream</td>
  *   </tr>
  *   <tr>
@@ -1532,13 +1532,13 @@ procedure get_us_locations2(
  *   <tr>
  *     <td class="descr-center">1</td>
  *     <td class="descr">location_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the upstream location</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">stream_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the stream</td>
  *   </tr>
  *   <tr>
@@ -1579,13 +1579,13 @@ function get_us_locations2_f(
  *   <tr>
  *     <td class="descr-center">1</td>
  *     <td class="descr">location_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the downstream location</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">stream_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the stream</td>
  *   </tr>
  *   <tr>
@@ -1639,13 +1639,13 @@ procedure get_ds_locations2(
  *   <tr>
  *     <td class="descr-center">1</td>
  *     <td class="descr">location_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the downstream location</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">stream_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the stream</td>
  *   </tr>
  *   <tr>
@@ -1686,13 +1686,13 @@ function get_ds_locations2_f(
  *   <tr>
  *     <td class="descr-center">1</td>
  *     <td class="descr">location_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the upstream location</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">stream_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the stream</td>
  *   </tr>
  *   <tr>
@@ -1743,13 +1743,13 @@ procedure get_us_locations2(
  *   <tr>
  *     <td class="descr-center">1</td>
  *     <td class="descr">location_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the upstream location</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">stream_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the stream</td>
  *   </tr>
  *   <tr>
@@ -1789,13 +1789,13 @@ function get_us_locations2_f(
  *   <tr>
  *     <td class="descr-center">1</td>
  *     <td class="descr">location_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the downstream location</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">stream_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the stream</td>
  *   </tr>
  *   <tr>
@@ -1846,13 +1846,13 @@ procedure get_ds_locations2(
  *   <tr>
  *     <td class="descr-center">1</td>
  *     <td class="descr">location_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the downstream location</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">stream_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the stream</td>
  *   </tr>
  *   <tr>

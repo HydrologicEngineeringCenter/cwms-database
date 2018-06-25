@@ -1,8 +1,8 @@
-CREATE TYPE cat_loc_obj_t
+create or replace TYPE cat_loc_obj_t
 -- not documented
 AS OBJECT (
    office_id        VARCHAR2 (16),
-   base_loc_id      VARCHAR2 (16),
+   base_loc_id      VARCHAR2 (24),
    state_initial    VARCHAR2 (2),
    county_name      VARCHAR2 (40),
    timezone_name    VARCHAR2 (28),

@@ -854,7 +854,7 @@ is
    l_office_id             varchar2(16);
    l_old_discharge         binary_double;
    l_old_q_override        binary_double;
-   l_proj_base_location_id varchar2(16);
+   l_proj_base_location_id varchar2(24);
    l_proj_loc_code         number(10);
    l_proj_sub_location_id  varchar2(32);
    l_project               project_obj_t;
@@ -868,7 +868,7 @@ is
    l_settings_crsr         sys_refcursor;
    l_start_time            date;
    l_time_zone             varchar2(28);
-   l_turb_base_location_id varchar2(16);
+   l_turb_base_location_id varchar2(24);
    l_turb_sub_location_id  varchar2(32);
    l_turbine_changes       turbine_change_tab_t;
    l_turbine_settings      turbine_setting_tab_t;
