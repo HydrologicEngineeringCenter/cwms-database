@@ -1,7 +1,9 @@
+set verify off
 declare
    obj_count integer;
+   loop_count pls_integer := to_number('&2');
 begin
-   for i in 1..&2 loop
+   for i in 1..loop_count loop
       select count(*)
         into obj_count
         from dba_objects

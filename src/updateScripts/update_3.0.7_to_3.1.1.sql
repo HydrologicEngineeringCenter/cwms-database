@@ -4,8 +4,9 @@
 whenever sqlerror exit;
 set define on
 set verify off
+set pages 100
 set serveroutput on
-define cwms_schema = CWMS_20
+define cwms_schema='CWMS_20'
 alter session set current_schema = &cwms_schema;
 ------------------------------------------------------------
 -- spool to file that identifies the database in the name --
@@ -22,7 +23,7 @@ select systimestamp from dual;
 @@./311_verify_db_version
 prompt ################################################################################
 prompt 'MODIFY CWMS_DB_CHANGE_LOG TABLE'
-select systimestamp from dual;
+select systimestamp from dual;                                                                                   
 @@./311_modify_db_change_log
 prompt ################################################################################
 prompt 'ADD CONFIGURATION CATEGORY'
@@ -31,7 +32,7 @@ select systimestamp from dual;
 prompt ################################################################################
 prompt 'REMOVING TRIGGER AT_STREAM_REACH_T01'
 select systimestamp from dual;
-@@./311_remove_at_stream_reach_t01
+@@./311_remove_at_stream_reach_t01                 
 prompt ################################################################################
 prompt 'DELETING CST, PST FROM CWMS_TIME_ZONE AND REBUILDING MV_TIME_ZONE'
 select systimestamp from dual;
@@ -73,7 +74,7 @@ select systimestamp from dual;
 @@../cwms/views/av_pool_name
 @@../cwms/views/av_pool
 @@../cwms_pool_pkg
-@@../cwms_pool_pkg_body
+@@../cwms_pool_pkg_body                         
 prompt ################################################################################
 prompt 'ADDING LOCATION LEVEL LABELS AND SOURCES'
 select systimestamp from dual;
@@ -98,13 +99,175 @@ select systimestamp from dual;
 @@../cwms/views/av_ts_text
 prompt ################################################################################
 prompt 'ADDING HISTORIC TIME SERIES FLAG'
+select systimestamp from dual;
 @@./311_add_historic_time_series
 @@../cwms/views/av_cwms_ts_id
 @@../cwms/views/av_cwms_ts_id2
 @@../cwms/views/zav_cwms_ts_id
 @@../cwms/cwms_ts_id_pkg_body
 @@../cwms/cwms_ts_pkg_body
-@@../cwms/cwms_ts_pkg
+@@../cwms/cwms_ts_pkg        
+prompt ################################################################################
+prompt 'LENGTHENING AT_BASE_LOCATION.BASE_LOCATION_ID'
+select systimestamp from dual;   
+-- alter tables
+drop index at_base_location_idx1;
+alter table at_base_location modify (
+   base_location_id varchar2(24)
+);
+create unique index at_base_location_idx1 on at_base_location(
+   db_office_code, upper(base_location_id)
+) tablespace cwms_20at_data;
+alter table at_loc_lvl_indicator_tab modify (
+   location_id varchar2(57)
+);
+alter table at_cwms_ts_id modify (
+   base_location_id varchar2(24),
+   location_id      varchar2(57)
+);
+alter table at_shef_decode_spec modify (
+   location_id varchar2(57)
+);
+-- drop types
+drop type cat_dss_xchg_ts_map_obj_t force;
+drop type cat_loc_obj_t force;
+drop type cat_location2_obj_t force;
+drop type cat_location_obj_t force;
+drop type cat_ts_cwms_20_obj_t force;
+drop type cat_ts_obj_t force;
+drop type char_49_array_type force;
+drop type cwms_ts_id_t force;
+drop type loc_alias_type force;
+drop type loc_alias_type2 force;
+drop type loc_alias_type3 force;
+drop type loc_lvl_cur_max_ind_t force;
+drop type loc_lvl_indicator_t force;
+drop type loc_type_ds force;                                                       
+drop type location_level_t force;
+drop type location_ref_t force;
+drop type nested_ts_type force;
+drop type rating_spec_t force;
+drop type rating_t force;
+drop type screen_assign_t force;
+drop type stream_rating_t force;
+drop type time_series_range_t force;
+drop type timeseries_req_type force;
+drop type timeseries_type force;
+drop type tr_template_set_type force;
+drop type ts_alias_t force;
+drop type vdatum_rating_t force;
+drop type vdatum_stream_rating_t force;
+drop type ztimeseries_type force;
+-- recreate types
+@@../cwms/types/cat_dss_xchg_ts_map_obj_t
+@@../cwms/types/cat_loc_obj_t
+@@../cwms/types/cat_location2_obj_t
+@@../cwms/types/cat_location_obj_t
+@@../cwms/types/cat_ts_cwms_20_obj_t
+@@../cwms/types/cat_ts_obj_t
+@@../cwms/types/char_49_array_type
+@@../cwms/types/cwms_ts_id_t
+@@../cwms/types/loc_alias_type
+@@../cwms/types/loc_alias_type2
+@@../cwms/types/loc_alias_type3
+@@../cwms/types/loc_lvl_cur_max_ind_t
+@@../cwms/types/loc_lvl_indicator_t
+@@../cwms/types/loc_lvl_indicator_t-body
+@@../cwms/types/loc_type_ds
+@@../cwms/types/location_level_t
+@@../cwms/types/location_level_t-body
+@@../cwms/types/location_ref_t
+@@../cwms/types/location_ref_t-body
+@@../cwms/types/nested_ts_type
+@@../cwms/types/rating_spec_t
+@@../cwms/types/rating_spec_t-body
+@@../cwms/types/rating_t
+@@../cwms/types/rating_t-body
+@@../cwms/types/screen_assign_t
+@@../cwms/types/stream_rating_t
+@@../cwms/types/stream_rating_t-body
+@@../cwms/types/time_series_range_t
+@@../cwms/types/timeseries_req_type
+@@../cwms/types/timeseries_type
+@@../cwms/types/tr_template_set_type
+@@../cwms/types/ts_alias_t
+@@../cwms/types/vdatum_rating_t
+@@../cwms/types/vdatum_rating_t-body
+@@../cwms/types/vdatum_stream_rating_t
+@@../cwms/types/vdatum_stream_rating_t-body
+@@../cwms/types/ztimeseries_type
+-- retbuild packages
+@@../cwms/cwms_alarm_pkg_body
+@@../cwms/cwms_apex_pkg_body
+@@../cwms/cwms_basin_pkg
+@@../cwms/cwms_basin_pkg_body
+@@../cwms/cwms_cat_pkg
+@@../cwms/cwms_cat_pkg_body
+@@../cwms/cwms_data_dissem_pkg
+@@../cwms/cwms_display_pkg
+@@../cwms/cwms_display_pkg_body
+@@../cwms/cwms_embank_pkg
+@@../cwms/cwms_embank_pkg_body
+--@@../cwms/cwms_forecast_pkg
+--@@../cwms/cwms_forecast_pkg_body
+@@../cwms/cwms_gage_pkg
+@@../cwms/cwms_gage_pkg_body
+@@../cwms/cwms_gate_pkg_body
+--@@../cwms/cwms_level_pkg
+--@@../cwms/cwms_level_pkg_body
+@@../cwms/cwms_loc_pkg
+@@../cwms/cwms_loc_pkg_body
+@@../cwms/cwms_lock_pkg
+@@../cwms/cwms_lock_pkg_body
+@@../cwms/cwms_outlet_pkg_body
+--@@../cwms/cwms_pool_pkg
+--@@../cwms/cwms_pool_pkg_body
+@@../cwms/cwms_project_pkg
+@@../cwms/cwms_project_pkg_body
+@@../cwms/cwms_rating_pkg
+@@../cwms/cwms_rating_pkg_body
+@@../cwms/cwms_sec_pkg 
+@@../cwms/cwms_sec_pkg_body 
+@@../cwms/cwms_shef_pkg
+@@../cwms/cwms_shef_pkg_body
+@@../cwms/cwms_stream_pkg
+@@../cwms/cwms_stream_pkg_body
+@@../cwms/cwms_text_pkg_body
+--@@../cwms/cwms_ts_pkg
+--@@../cwms/cwms_ts_pkg_body
+@@../cwms/cwms_turbine_pkg_body
+@@../cwms/cwms_usgs_pkg_body
+@@../cwms/cwms_util_pkg_body                                                          
+@@../cwms/cwms_vt_pkg_body
+@@../cwms/cwms_water_supply_pkg
+@@../cwms/cwms_water_supply_pkg_body
+@@../cwms/cwms_xchg_pkg_body
+prompt ################################################################################
+prompt 'LENGTHENING AT_PHYSICAL_LOCATION.PUBLIC_NAME'
+select systimestamp from dual;
+alter table at_physical_location modify public_name varchar2(57);
+--drop type cat_loc_obj_t force;
+--drop type cat_location_obj_t force;
+--drop type cat_location2_obj_t force;
+--drop type loc_type_ds force;
+drop type location_obj_t force;
+--@@../cwms/types/cat_loc_obj_t
+--@@../cwms/types/cat_location_obj_t
+--@@../cwms/types/cat_location2_obj_t
+--@@../cwms/types/loc_type_ds
+@@../cwms/types/location_obj_t
+@@../cwms/types/location_obj_t-body
+--@@../cwms/cwms_cat_pkg
+--@@../cwms/cwms_cat_pkg_body
+@@../cwms/cwms_cma_pkg_body
+--@@../cwms/cwms_data_dissem_pkg
+--@@../cwms/cwms_embank_pkg
+--@@../cwms/cwms_embank_pkg_body
+--@@../cwms/cwms_loc_pkg_body
+--@@../cwms/cwms_lock_pkg
+--@@../cwms/cwms_lock_pkg_body
+--@@../cwms/cwms_project_pkg
+--@@../cwms/cwms_project_pkg_body
 prompt ################################################################################
 prompt 'UPDATING OTHER PACKAGE SPECIFICATIONS'
 select systimestamp from dual;
@@ -112,20 +275,28 @@ select systimestamp from dual;
 prompt ################################################################################
 prompt 'UPDATING OTHER PACKAGE BODDIES'
 select systimestamp from dual;
-@@../cwms/cwms_embank_pkg_body
-@@../cwms/cwms_loc_pkg_body
 @@../cwms/cwms_mail_pkg_body
 @@../cwms/cwms_outlet_pkg_body
 @@../cwms/cwms_turbine_pkg_body
 @@../cwms/cwms_util_pkg_body
-@@../cwms/cwms_water_supply_pkg_body
+@@../cwms/cwms_water_supply_pkg_body                       
 @@../cwms/cwms_xchg_pkg_body
 prompt ################################################################################
-prompt 'RECOMPILING ALL INVALID OBJECTS...'
+prompt 'REBUILD MV_SEC_TS_PRIVILEGES'
 select systimestamp from dual;
-@@./list_invalid_objects &cwms_schema 'continue' -- just list invalid objects
-@@./recompile_schema     &cwms_schema 2          -- compiles at most 2 times
-@@./list_invalid_objects &cwms_schema 'abort'    -- list invalid objects and abort if any
+@@./311_rebuild_mv_sec_ts_privileges -- I don't know why this is necessary - but it is
+prompt ################################################################################
+prompt 'INVALID OBJECTS...'
+select systimestamp from dual;
+select substr(object_name, 1, 30) as invalid_object, object_type from user_objects where status = 'INVALID' order by 1, 2;
+prompt ################################################################################
+prompt 'RECOMPILING SCHEMA'
+select systimestamp from dual;
+exec sys.utl_recomp.recomp_serial('CWMS_20');
+prompt ################################################################################
+prompt 'REMAINING INVALID OBJECTS...'
+select systimestamp from dual;
+select substr(object_name, 1, 30) as invalid_object, object_type from user_objects where status = 'INVALID' order by 1, 2;
 prompt ################################################################################
 prompt 'UPDATING DB_CHANGE_LOG'
 select systimestamp from dual;
@@ -136,6 +307,7 @@ select substr(version, 1, 10) as version,
   from av_db_change_log
  where application = 'CWMS'
  order by version_date;
+*/ 
 prompt ################################################################################
 prompt 'UPDATE COMPLETE'
 select systimestamp from dual;
