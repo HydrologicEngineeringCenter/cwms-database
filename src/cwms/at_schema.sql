@@ -6244,3 +6244,4 @@ create index at_queue_subscriber_name_idx1 on at_queue_subscriber_name (queue_na
 @@./cwms/tables/at_pool_name.sql
 @@./cwms/tables/at_pool.sql
 
+@@./cwms/tables/at_ts_extents.sql

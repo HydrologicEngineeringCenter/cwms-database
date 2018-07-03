@@ -88,6 +88,8 @@ DECLARE
       'av_text_filter_element',
       'av_transitional_rating',
       'av_ts_association',
+      'av_ts_extents_local',
+      'av_ts_extents_utc',
       'av_ts_txt',
       'av_turbine',
       'av_turbine_change',
@@ -205,6 +207,8 @@ END;
 @@cwms/views/av_text_filter_element
 @@cwms/views/av_transitional_rating
 @@cwms/views/av_ts_association
+@@cwms/views/av_ts_extents_local
+@@cwms/views/av_ts_extents_utc
 @@cwms/views/av_ts_text
 @@cwms/views/av_turbine
 @@cwms/views/av_turbine_change

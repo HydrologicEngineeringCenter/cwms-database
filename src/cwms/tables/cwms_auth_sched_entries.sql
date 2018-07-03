@@ -198,3 +198,17 @@ values ('CWMS',
         'freq=daily; interval=1',
         'Monitors scheduler for unauthorized entries',
         'cwms_scheduler_auth.check_scheduler_entries');
+insert
+  into cwms_auth_sched_entries
+values ('CWMS',
+        'CWMS_20',
+        'UPDATE_TS_EXTENTS_JOB',
+        'CWMS_20',
+        'REGULAR',
+        'STORED_PROCEDURE',
+        3,
+        'CALENDAR',
+        'freq=weekly; interval=1',
+        'Updates all time series extents.',
+        'cwms_ts.update_ts_extents');
+        
