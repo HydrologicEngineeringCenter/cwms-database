@@ -280,6 +280,11 @@ select systimestamp from dual;
 --@@../cwms/cwms_ts_pkg
 --@@../cwms/cwms_ts_pkg_body
 prompt ################################################################################
+prompt 'ADDING KEYED LOG MESSAGES'
+select systimestamp from dual;
+@@../cwms/cwms_msg_pkg
+@@../cwms/cwms_msg_pkg_body
+prompt ################################################################################
 prompt 'UPDATING OTHER PACKAGE SPECIFICATIONS'
 select systimestamp from dual;
 @@../cwms/cwms_util_pkg
