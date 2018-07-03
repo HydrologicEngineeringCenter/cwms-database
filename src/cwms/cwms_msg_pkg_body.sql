@@ -600,7 +600,16 @@ is
 begin
    return cwms_text.retrieve_text('/message_id/'||p_message_id);
 end get_message_clob;
-
+-------------------------------------------------------------------------------
+-- FUNCTION CREATE_MESSAGE_KEY
+--
+function create_message_key
+   return varchar2
+is
+begin
+   return get_msg_id; 
+end create_message_key;
+   
 -------------------------------------------------------------------------------
 -- PROCEDURE LOG_DB_MESSAGE(...)
 --
@@ -638,6 +647,77 @@ begin
       l_msg_level,
       false);
 end log_db_message;
+
+-------------------------------------------------------------------------------
+-- PROCEDURE LOG_DB_MESSAGE(...)
+--
+procedure log_db_message(
+   p_procedure in varchar2,
+   p_key       in varchar2,
+   p_message   in varchar2,
+   p_msg_level in integer default msg_level_normal)
+is
+   pragma autonomous_transaction;
+   l_message   varchar2(4000) := p_message;
+   i           integer;
+   lf constant varchar2(1) := chr(10);
+   l_msg_level integer := nvl(p_msg_level, msg_level_normal);
+begin
+   l_message := replace(l_message, '&', '&'||'amp;');
+   for c in 0..31 loop
+      if c not in (9,10,13) then
+         l_message := replace(l_message, chr(c), '&'||'#'||trim(to_char(c, '0X'))||';');
+      end if;
+   end loop;
+   l_message := utl_i18n.escape_reference(l_message, 'us7ascii');
+   commit;
+   i := log_message(
+      'CWMSDB',
+      null,
+      null,
+      null,
+      systimestamp at time zone 'UTC',
+      '<cwms_message type="Status">' || lf
+      || '  <property name="procedure" type="String">' || p_procedure || '</property>' || lf
+      || '  <property name="key" type="String">' || p_key || '</property>' || lf
+      || '  <text>' || lf
+      || '  ' || l_message || lf
+      || '  </text>' || lf
+      || '</cwms_message>',
+      l_msg_level,
+      false);
+end log_db_message;
+
+-------------------------------------------------------------------------------
+-- FUNCTION GET_MSG_IDS_FOR_KEY
+--
+function get_msg_ids_for_key(
+   p_key        in varchar2,
+   p_start_time in date     default null,
+   p_end_time   in date     default null,
+   p_time_zone  in varchar2 default null)
+   return str_tab_t
+is
+   l_msg_ids str_tab_t;
+   l_start_time timestamp;
+   l_end_time   timestamp;
+   l_time_zone  varchar2(28); 
+begin
+   l_time_zone := nvl(p_time_zone, 'UTC');
+   l_start_time := cwms_util.change_timezone(p_start_time, l_time_zone, 'UTC');
+   l_end_time := cwms_util.change_timezone(p_end_time, l_time_zone, 'UTC');
+   select lm.msg_id
+     bulk collect
+     into l_msg_ids
+     from at_log_message lm,
+          at_log_message_properties lmp
+    where lm.log_timestamp_utc between nvl(l_start_time, lm.log_timestamp_utc) and nvl(l_end_time, lm.log_timestamp_utc)
+      and lmp.msg_id = lm.msg_id
+      and lmp.prop_name = 'key'
+      and lmp.prop_text = p_key;
+      
+   return l_msg_ids;      
+end get_msg_ids_for_key;
 -------------------------------------------------------------------------------
 -- FUNCTION LOG_MESSAGE_SERVER_MESSAGE(...)
 --

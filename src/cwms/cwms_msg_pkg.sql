@@ -17,6 +17,9 @@ create or replace package cwms_msg
  * &lt;/cwms_message&gt;
  * </pre></big>
  * <p>
+ * If a String property named "key" is specified, the message can be retrieved by retrieving its
+ * ID via the get_msgids_for_key() function.
+ * <p>
  * For messages to be logged, the message type property must be set to one of the following:
  * <ul>
  *   <li>AcknowledgeAlarm</li>
@@ -323,6 +326,31 @@ procedure log_db_message(
    p_procedure in varchar2,
    p_msg_level in integer default msg_level_normal,
    p_message   in varchar2);
+-- not documented
+function create_message_key
+   return varchar2;
+-- not documented
+procedure log_db_message(
+   p_procedure in varchar2,
+   p_key       in varchar2,
+   p_message   in varchar2,
+   p_msg_level in integer default msg_level_normal);
+/**
+ * Retrieves message IDs whose properties include the specified key, optionally within a time window.
+ *
+ * @param p_key        The key to retieve the message IDs for 
+ * @param p_start_time The start of the time window in the specified or default time zone. If unspecified or NULL, no beginning time limit is used.
+ * @param p_end_time   The end of the time window in the specified or default time zone. If unspecified or NULL, no ending time limit is used.
+ * @param p_time_zone  The time zone if the time window. If unspecified or NULL, 'UTC' is used.
+ *
+ * @return The associated message IDs, which can be used to retrieve the messages.
+ */
+function get_msg_ids_for_key(
+   p_key        in varchar2,
+   p_start_time in date     default null,
+   p_end_time   in date     default null,
+   p_time_zone  in varchar2 default null)
+   return str_tab_t;
 /**
  * Logs a message of the CWMS Message Server message format and publishes it
  * to the STATUS queue
