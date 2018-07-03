@@ -269,6 +269,17 @@ drop type location_obj_t force;
 --@@../cwms/cwms_project_pkg
 --@@../cwms/cwms_project_pkg_body
 prompt ################################################################################
+prompt 'UPDATING TIME SERIES EXTENTS'
+select systimestamp from dual;
+@@../cwms/tables/at_ts_extents
+@@../cwms/types/ts_extents_t
+@@../cwms/types/ts_extents_t-body
+@@../cwms/types/ts_extents_tab_t
+@@../cwms/views/av_ts_extents_utc
+@@../cwms/views/av_ts_extents_local
+--@@../cwms/cwms_ts_pkg
+--@@../cwms/cwms_ts_pkg_body
+prompt ################################################################################
 prompt 'UPDATING OTHER PACKAGE SPECIFICATIONS'
 select systimestamp from dual;
 @@../cwms/cwms_util_pkg
@@ -308,6 +319,11 @@ select substr(version, 1, 10) as version,
  where application = 'CWMS'
  order by version_date;
 */ 
+prompt ################################################################################
+prompt 'STARTING JOBS'
+select systimestamp from dual;
+exec cwms_ts.start_immediate_upd_tsx_job; -- one time job starting now
+exec cwms_ts.start_update_ts_extents_job; -- weekly job at Saturdays, 10:00 pm local time
 prompt ################################################################################
 prompt 'UPDATE COMPLETE'
 select systimestamp from dual;
