@@ -4176,7 +4176,7 @@ AS
       when 'MON' then l_start := cwms_util.change_timezone(trunc(l_now + 5, 'DD') + 20 / 24, l_timezone, 'UTC');
       when 'TUE' then l_start := cwms_util.change_timezone(trunc(l_now + 4, 'DD') + 20 / 24, l_timezone, 'UTC');
       when 'WED' then l_start := cwms_util.change_timezone(trunc(l_now + 3, 'DD') + 20 / 24, l_timezone, 'UTC');
-      when 'THR' then l_start := cwms_util.change_timezone(trunc(l_now + 2, 'DD') + 20 / 24, l_timezone, 'UTC');
+      when 'THU' then l_start := cwms_util.change_timezone(trunc(l_now + 2, 'DD') + 20 / 24, l_timezone, 'UTC');
       when 'FRI' then l_start := cwms_util.change_timezone(trunc(l_now + 1, 'DD') + 20 / 24, l_timezone, 'UTC');
       when 'SAT' then l_start := cwms_util.change_timezone(trunc(l_now + 0, 'DD') + 20 / 24, l_timezone, 'UTC');
       end case;
