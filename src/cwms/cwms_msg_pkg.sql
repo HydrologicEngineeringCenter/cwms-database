@@ -324,7 +324,7 @@ function get_message_clob(
 -- not documented
 procedure log_db_message(
    p_procedure in varchar2,
-   p_msg_level in integer default msg_level_normal,
+   p_msg_level in integer,
    p_message   in varchar2);
 -- not documented
 function create_message_key
@@ -334,7 +334,7 @@ procedure log_db_message(
    p_procedure in varchar2,
    p_key       in varchar2,
    p_message   in varchar2,
-   p_msg_level in integer default msg_level_normal);
+   p_msg_level in integer);
 /**
  * Retrieves message IDs whose properties include the specified key, optionally within a time window.
  *

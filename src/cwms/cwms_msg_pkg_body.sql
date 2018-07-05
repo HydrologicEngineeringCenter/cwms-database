@@ -655,7 +655,7 @@ procedure log_db_message(
    p_procedure in varchar2,
    p_key       in varchar2,
    p_message   in varchar2,
-   p_msg_level in integer default msg_level_normal)
+   p_msg_level in integer)
 is
    pragma autonomous_transaction;
    l_message   varchar2(4000) := p_message;
