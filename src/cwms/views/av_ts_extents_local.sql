@@ -34,7 +34,7 @@ begin
 ||'
  * @field least_value_entry             The time that the least non-null value (in database units) that has been stored for the time series was entered (stored)                                       
  * @field least_accepted_value_si       The least accepted (not missing or rejected) non-null value (in database units) that has been stored for the time series in default SI units                                       
- * @field least_acceptedvalue_en        The least accepted (not missing or rejected) non-null value (in database units) that has been stored for the time series in default English units
+ * @field least_accepted_value_en       The least accepted (not missing or rejected) non-null value (in database units) that has been stored for the time series in default English units
  * @field least_accepted_value_time     The time that the least accepted (not missing or rejected) non-null value (in database units) that has been stored for the time series is for                                                                             
  * @field least_accepted_value_entry    The time that the least accepted (not missing or rejected) non-null value (in database units) that has been stored for the time series was entered (stored)                                                               
  * @field greatest_value_si             The greatest non-null value (in database units) that has been stored for the time series in default SI units                                                                                                                                  
@@ -42,12 +42,13 @@ begin
  * @field greatest_value_time           The time that the greatest non-null value (in database units) that has been stored for the time series is for                                                                                                             
  * @field greatest_value_entry          The time that the greatest non-null value (in database units) that has been stored for the time series was entered (stored)                                                                                               
  * @field greatest_accepted_value_si    The greatest_accepted non-null value (in database units) that has been stored for the time series in default SI units                                                                                                                         
- * @field greatest_acceptedvalue_en     The greatest_accepted non-null value (in database units) that has been stored for the time series in default English units                                                              
+ * @field greatest_accepted_value_en    The greatest_accepted non-null value (in database units) that has been stored for the time series in default English units                                                              
  * @field greatest_accepted_value_time  The time that the greatest accepted (not missing or rejected) non-null value (in database units) that has been stored for the time series is for                                                                          
  * @field greatest_accepted_value_entry The time that the greatest accepted (not missing or rejected) non-null value (in database units) that has been stored for the time series was entered (stored)                                                            
  * @field last_update                   The time that this record was updated
  */
 ';
+   delete from at_clob where office_code = 53 and id = '/VIEWDOCS/AV_TS_EXTENTS_LOCAL';
    insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TS_EXTENTS_LOCAL', null, l_clob);
 end;
 /
@@ -78,7 +79,7 @@ create or replace force view av_ts_extents_local (
    least_value_time,
    least_value_entry, 
    least_accepted_value_si, 
-   least_acceptedvalue_en, 
+   least_accepted_value_en, 
    least_accepted_value_time, 
    least_accepted_value_entry, 
    greatest_value_si, 
@@ -86,7 +87,7 @@ create or replace force view av_ts_extents_local (
    greatest_value_time, 
    greatest_value_entry, 
    greatest_accepted_value_si, 
-   greatest_acceptedvalue_en, 
+   greatest_accepted_value_en, 
    greatest_accepted_value_time, 
    greatest_accepted_value_entry, 
    last_update)
