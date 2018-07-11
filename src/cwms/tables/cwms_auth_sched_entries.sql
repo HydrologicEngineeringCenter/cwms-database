@@ -211,4 +211,17 @@ values ('CWMS',
         'freq=weekly; interval=1',
         'Updates all time series extents.',
         'cwms_ts.update_ts_extents');
+insert
+  into cwms_auth_sched_entries
+values ('CWMS',
+        'CWMS_20',
+        'IMMEDIATE_UPD_TS_EXTENTS_JOB',
+        'CWMS_20',
+        'REGULAR',
+        'STORED_PROCEDURE',
+        3,
+        'IMMEDIATE',
+        null,
+        'Updates all time series extents.',
+        'cwms_ts.update_ts_extents');
         
