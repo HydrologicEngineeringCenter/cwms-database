@@ -1,13 +1,13 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_A2W_TS_CODES_BY_LOC', null,
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_A2W_TS_CODES_BY_LOC2', null,
 '
 /**
- * Displays A2W_TS_CODES_BY_LOC information
+ * Displays A2W_TS_CODES_BY_LOC2 information
  *
  * @since CWMS 3.0 
  *
- * @field ts_code                The selected ts code
+ * @field ts_code                 The selected ts code
  * @field location_code           The location code of the UR/A2W location
- * @field locatioN_id             The location ID of A2W Location this TS Code is associated   to (it could be different then the location ID of the TS Code)
+ * @field location_id             The location ID of A2W Location this TS Code is associated   to (it could be different then the location ID of the TS Code)
  * @field ts_type                 The A2W TS Type  (elevation, stage, etc)
  * @field cwms_ts_id              The CWMS TS ID
  * @field unit_id                 The DB units of the TS Code
