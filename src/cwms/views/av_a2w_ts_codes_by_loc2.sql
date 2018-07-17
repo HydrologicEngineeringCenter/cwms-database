@@ -13,7 +13,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_A2W_TS_CODES_BY_
  * @field unit_id                 The DB units of the TS Code
  * @field base_parameter_id       The base parameter ID of the TS Code
  * @field db_office_id            The DB Office of the location and TS Code
- 
+/* 
 ');
 CREATE OR REPLACE FORCE VIEW "CWMS_20"."AV_A2W_TS_CODES_BY_LOC2" ("TS_CODE", "LOCATION_CODE", "LOCATION_ID", "TS_TYPE", "CWMS_TS_ID", "UNIT_ID", "BASE_PARAMETER_ID", "DB_OFFICE_ID") AS 
   SELECT a2w.ts_code, a2w.location_code, l.location_id, a2w.ts_type, tsi.cwms_ts_id, tsi.unit_id,  tsi.base_parameter_id, tsi.db_Office_id
