@@ -1340,9 +1340,9 @@ ALTER TABLE at_cwms_ts_spec ADD (
   CONSTRAINT at_cwms_ts_spec_ck_5
  CHECK (active_flag ='T' OR active_flag = 'F'))
 /
-ALTER TABLE at_cwms_ts_spec ADD (
-  CONSTRAINT at_cwms_ts_spec_ck_6
- CHECK (historic_flag ='T' OR historic_flag = 'F'))
+alter table at_cwms_ts_spec add (
+  constraint at_cwms_ts_spec_ck_6
+ check (historic_flag = 'T' or historic_flag = 'F'))
 /
 ALTER TABLE at_cwms_ts_spec ADD (
   CONSTRAINT at_cwms_ts_spec_pk
