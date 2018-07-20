@@ -7,6 +7,8 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCK', null,
  *
  * @field lock_id                    The..
  * @field project_id                 The..
+ * @field lock_location_code         The location_code of the lock
+ * @field project_location_code      The location_code of the project
  * @field unit_system                The..
  * @field length_unit_id             The..
  * @field volume_unit_id             The..
@@ -15,11 +17,14 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCK', null,
  * @field volume_per_lockage         The..
  * @field minimum_draft              The..
  * @field normal_lock_lift           The..
+ * @field db_office_id               The database office ID of the lock
  */
 ');
 create or replace force view av_lock(
    lock_id,
    project_id,
+   lock_location_code,
+   project_location_code,
    unit_system,
    length_unit_id,
    volume_unit_id,
@@ -27,10 +32,14 @@ create or replace force view av_lock(
    lock_width,
    volume_per_lockage,
    minimum_draft,
-   normal_lock_lift)
+   normal_lock_lift,
+   db_office_id
+   )
 as
    select loc1.location_id as lock_id,
           loc2.location_id as project_id,
+          loc1.location_code as lock_location_code,
+          loc2.location_code as project_location_code,
           loc1.unit_system,
           cwms_util.get_default_units('Length', loc1.unit_system) as length_unit_id,
           cwms_util.get_default_units('Volume', loc1.unit_system) as volume_unit_id,
@@ -58,7 +67,8 @@ as
              lck.normal_lock_lift,
              cwms_util.get_default_units('Length', 'SI'),
              cwms_util.get_default_units('Length', loc1.unit_system))
-             as normal_lock_lift
+             as normal_lock_lift,
+         loc1.db_office_id
      from cwms_v_loc2 loc1, cwms_v_loc2 loc2, at_lock lck
     where loc1.location_code = lck.lock_location_code
       and loc2.location_code = lck.project_location_code
