@@ -25,7 +25,19 @@ CREATE TABLE AT_A2W_TS_CODES_BY_LOC
    TS_CODE_DO              NUMBER,
    RATING_CODE_ELEV_STOR   NUMBER,
    TS_CODE_COND            NUMBER,
-   TS_CODE_PH              NUMBER
+   TS_CODE_PH              NUMBER,
+   rating_code_elev_area   NUMBER,
+   rating_code_outlet_Flow NUMBER,
+   ts_code_opening         NUMBER,
+   opening_Source_Obj      VARCHAR2(5),
+   ts_code_wind_dir       NUMBER,
+   ts_code_wind_speed     NUMBER,
+   ts_code_volt	          NUMBER,
+   ts_code_pct_flood      NUMBER,
+   ts_code_pct_con        NUMBER,
+   ts_code_irrad          NUMBER,
+   ts_code_evap		  NUMBER
+
 )
 LOB (NOTES) STORE AS
    (TABLESPACE CWMS_20AT_DATA
@@ -95,6 +107,10 @@ COMMENT ON COLUMN AT_A2W_TS_CODES_BY_LOC.LAKE_SUMMARY_TF IS
 COMMENT ON COLUMN AT_A2W_TS_CODES_BY_LOC.TS_CODE_SUR_RELEASE IS
    'The TS Code showing Surchage Releases (flow)'
 /
+COMMENT ON COLUMN AT_A2W_TS_CODES_BY_LOC.TS_CODE_ELEV_TW
+   'The TS Code showing tailwater elevation'
+/
+
 CREATE INDEX A2W_COUNTS_IDX
    ON AT_A2W_TS_CODES_BY_LOC (LOCATION_ID, DB_OFFICE_ID, DISPLAY_FLAG)
    LOGGING

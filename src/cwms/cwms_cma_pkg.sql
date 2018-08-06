@@ -7,6 +7,8 @@ AS
    Ver        Date        Author           Description
    ---------  ----------  ---------------  ------------------------------------
    1.0        6/19/2013      u4rt9jdk       1. Created this package.
+   1.3.2.1    MAR2017      JDK             1. CWMS 3.06 bug fixes and cwms xxx a2w locatioN_id  to location_code fixes
+   later      JUL2018		JDK	    1. str and misc fixing
    ******************************************************************************/
    c_cwms_logic_t     CONSTANT VARCHAR2 (1) DEFAULT 'T';
    c_cwms_logic_f     CONSTANT VARCHAR2 (1) DEFAULT 'F';
@@ -28,8 +30,8 @@ AS
    c_str_project      CONSTANT VARCHAR2 (7) DEFAULT 'PROJECT';
    c_str_outlet       CONSTANT VARCHAR2 (6) DEFAULT 'OUTLET';
    c_str_turbine      CONSTANT VARCHAR2 (7) DEFAULT 'TURBINE';
-   c_str_stream_gage     CONSTANT VARCHAR2 (10) DEFAULT 'STREAM_GAGE';
-   c_str_weather_gage    CONSTANT VARCHAR2 (11) DEFAULT 'WEATHER_GAGE';
+   c_str_stream_gage     CONSTANT VARCHAR2 (11) DEFAULT 'STREAM_GAGE';
+   c_str_weather_gage    CONSTANT VARCHAR2 (12) DEFAULT 'WEATHER_GAGE';
    c_chart_min_days   CONSTANT NUMBER DEFAULT 5;
 
 --   PROCEDURE p_delete_lockage (
@@ -422,7 +424,18 @@ FUNCTION f_get_ll_home_container (f_location_code IN CWMS_V_LOC.location_code%TY
       p_ts_code_do              IN    at_a2w_Ts_codes_by_loc.ts_code_do%TYPE,
       p_ts_code_ph              IN    at_a2w_ts_codes_by_loc.ts_code_ph%TYPE,
       p_ts_code_cond            IN    at_a2w_Ts_codes_By_loc.ts_code_cond%TYPE,
-      p_rating_code_elev_stor   IN    at_rating.rating_code%TYPE,
+      p_ts_code_wind_dir        IN    at_a2w_ts_codes_By_loc.ts_code_wind_dir%TYPE,
+      p_ts_code_wind_speed      IN    at_a2w_ts_codes_By_loc.ts_code_wind_speed%TYPE,
+      p_ts_code_volt            in   at_a2w_ts_codes_By_loc.ts_code_volt%TYPE,
+      p_ts_code_pct_flood       in   at_a2w_ts_codes_By_loc.ts_code_pct_flood%TYPE,
+      p_ts_code_pct_con         in   at_a2w_ts_codes_By_loc.ts_code_pct_con%TYPE,
+      p_ts_code_irrad           in   at_a2w_ts_codes_By_loc.ts_code_irrad%TYPE,
+      p_ts_code_evap            in   at_a2w_ts_codes_By_loc.ts_code_evap%TYPE,
+      p_rating_code_elev_stor   IN    NUMBER,
+      p_rating_code_elev_area   IN    NUMBER,
+      p_rating_code_outlet_Flow IN    NUMBER,
+      p_ts_code_opening         IN    at_a2w_ts_codes_By_loc.ts_code_opening%TYPE,
+      p_opening_source_obj      IN    VARCHAR2,
       p_lake_summary_tf        IN     at_a2w_ts_codes_by_loc.lake_summary_Tf%TYPE,
       p_error_msg                 OUT VARCHAR2);
 

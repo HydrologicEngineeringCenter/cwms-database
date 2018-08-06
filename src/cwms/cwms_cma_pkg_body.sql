@@ -12,6 +12,8 @@ IS
       1.3        Sep2015      JDK             1. Updated for CMA 2.03
       1.3.1      OCT 2015     JDK             1. Updated for CMA 2.03 with bug fixes
       1.3.2      JAN2015      JDK             1. Updated for CMA 2.03 with more bug fixes
+      1.3.2.1    MAR2017      JDK             1. CWMS 3.06 bug fixes and cwms xxx a2w locatioN_id  to location_code fixes
+      1.4        JUL2018      JDK	      1. Bug fixes and additional A2W options
    ******************************************************************************/
 
    FUNCTION MyFunction (Param1 IN NUMBER)
@@ -5218,14 +5220,25 @@ WHERE location_level_id = 'AGNI4.Elev-Pool.Inst.0.Flood' and office_id = 'MVR'
       p_ts_code_stor_Flood     IN     at_a2w_ts_codes_by_loc.ts_code_stor_Flood%TYPE,
       p_ts_code_elev_tw        IN     at_a2w_ts_codes_by_loc.ts_code_elev_tw%TYPE,
       p_ts_code_stage_tw       IN     at_a2w_ts_codes_by_loc.ts_code_stage_tw%TYPE,
-      p_ts_code_rule_Curve_elev IN    at_a2w_ts_codes_by_loc.ts_code_rule_curve_elev%TYPE,
+      p_ts_code_rule_Curve_elev IN     at_a2w_ts_codes_by_loc.ts_code_rule_curve_elev%TYPE,
       p_ts_code_power_Gen       IN    at_a2w_ts_codes_By_loc.ts_code_power_Gen%TYPE,
       p_ts_code_temp_air        IN    at_a2w_ts_codes_by_loc.ts_code_temp_air%TYPE,
       p_ts_code_temp_water      IN    at_a2w_ts_codes_by_loc.ts_code_temp_water%TYPE,
       p_ts_code_do              IN    at_a2w_Ts_codes_by_loc.ts_code_do%TYPE,
       p_ts_code_ph              IN    at_a2w_ts_codes_by_loc.ts_code_ph%TYPE,
       p_ts_code_cond            IN    at_a2w_Ts_codes_By_loc.ts_code_cond%TYPE,
-      p_rating_code_elev_stor   IN    at_rating.rating_code%TYPE,
+      p_ts_code_wind_dir        IN    at_a2w_ts_codes_By_loc.ts_code_wind_dir%TYPE,
+      p_ts_code_wind_speed      IN    at_a2w_ts_codes_By_loc.ts_code_wind_speed%TYPE,
+      p_ts_code_volt            in   at_a2w_ts_codes_By_loc.ts_code_volt%TYPE,
+      p_ts_code_pct_flood       in   at_a2w_ts_codes_By_loc.ts_code_pct_flood%TYPE,
+      p_ts_code_pct_con         in   at_a2w_ts_codes_By_loc.ts_code_pct_con%TYPE,
+      p_ts_code_irrad           in   at_a2w_ts_codes_By_loc.ts_code_irrad%TYPE,
+      p_ts_code_evap            in   at_a2w_ts_codes_By_loc.ts_code_evap%TYPE,
+      p_rating_code_elev_stor   IN    NUMBER,
+      p_rating_code_elev_area   IN    NUMBER,
+      p_rating_code_outlet_Flow IN    NUMBER,
+      p_ts_code_opening         IN    at_a2w_ts_codes_By_loc.ts_code_opening%TYPE,
+      p_opening_source_obj      IN    VARCHAR2,
       p_lake_summary_tf         IN     at_a2w_ts_codes_by_loc.lake_summary_Tf%TYPE,
       p_error_msg                 OUT VARCHAR2)
    IS
@@ -5260,8 +5273,18 @@ WHERE location_level_id = 'AGNI4.Elev-Pool.Inst.0.Flood' and office_id = 'MVR'
              ts_code_power_gen       = p_ts_code_power_Gen,
              ts_code_temp_air        = p_ts_code_temp_air,
              ts_code_temp_water      = p_ts_code_temp_water,
-             ts_code_do              = p_ts_code_do,
+             ts_code_do              = p_ts_code_do, 
+             ts_code_wind_dir        = p_ts_code_wind_dir,
+             ts_code_wind_speed      = p_ts_code_wind_Speed,
+             ts_code_volt            = p_ts_code_volt,
+             ts_code_pct_flood       = p_ts_code_pct_flood,
+             ts_code_pct_con         = p_ts_code_pct_con,
+             ts_code_irrad           = p_ts_code_irrad,
+             ts_code_evap            = p_ts_code_evap,
              rating_code_elev_stor   = p_rating_code_elev_stor ,
+	     rating_code_elev_area   = p_rating_code_elev_area,
+             rating_code_outlet_flow = p_rating_code_outlet_Flow,
+             opening_source_obj      = p_opening_source_obj,
              lake_summary_tf         = p_lake_summary_tf
        WHERE  db_office_id = p_db_office_id
          AND locatioN_code = temp_location_code;
@@ -5296,7 +5319,17 @@ WHERE location_level_id = 'AGNI4.Elev-Pool.Inst.0.Flood' and office_id = 'MVR'
                 ts_code_temp_air        = p_ts_code_temp_air        ,
                 ts_code_temp_water      = p_ts_code_temp_water      ,
                 ts_code_do              = p_ts_code_do              ,
-                rating_code_elev_stor   = p_rating_code_elev_stor   ,
+                ts_code_wind_dir        = p_ts_code_wind_dir,
+                ts_code_wind_speed      = p_ts_code_wind_Speed,
+             ts_code_volt            = p_ts_code_volt,
+             ts_code_pct_flood       = p_ts_code_pct_flood,
+             ts_code_pct_con         = p_ts_code_pct_con,
+             ts_code_irrad           = p_ts_code_irrad,
+             ts_code_evap            = p_ts_code_evap,
+                rating_code_elev_stor   = p_rating_code_elev_stor  ,
+	        rating_code_elev_area   = p_rating_code_elev_area  ,
+                rating_code_outlet_flow = p_rating_code_outlet_Flow,
+                opening_source_obj      = p_opening_source_obj     ,
                 lake_summary_tf         = p_lake_summary_tf
           WHERE db_office_id  = p_db_office_id
             AND locatioN_code = temp_location_code;
@@ -5328,12 +5361,9 @@ WHERE location_level_id = 'AGNI4.Elev-Pool.Inst.0.Flood' and office_id = 'MVR'
       p_embank_height                 IN     cwms_v_embankment.height_max%TYPE,
       p_embank_width                  IN     cwms_v_embankment.top_width%TYPE,
       p_embank_unit_id                IN     cwms_v_embankment.unit_id%TYPE,
-      p_lock_project_id               IN     cwms_v_lock.project_id%TYPE --:P36_PROJECT_LOCATION_ID --project_location_ref
-                                                                        ,
-      p_lock_vol_per_lockage          IN     cwms_v_lock.volume_per_lockage%TYPE --volume_per_lockage
-                                                                                ,
-      p_lock_vol_units_id             IN     cwms_v_lock.volume_unit_id%TYPE --volume_units_id
-                                                                            ,
+      p_lock_project_id               IN     cwms_v_lock.project_id%TYPE, --:P36_PROJECT_LOCATION_ID --project_location_ref,
+      p_lock_vol_per_lockage          IN     cwms_v_lock.volume_per_lockage%TYPE, --volume_per_lockage,
+      p_lock_vol_units_id             IN     cwms_v_lock.volume_unit_id%TYPE, --volume_units_id
       p_lock_lock_width               IN     cwms_v_lock.lock_width%TYPE --lock_width
                                                                         ,
       p_lock_lock_length              IN     cwms_v_lock.lock_length%TYPE --lock_length
@@ -6936,12 +6966,15 @@ on: {%Date}]]></format>
    BEGIN
       FOR x
          IN (SELECT *
-               FROM at_a2w_ts_codes_by_loc
-              WHERE     db_Office_id = p_db_Office_id
-                    AND location_code = p_locatioN_code)
+               FROM cwms_v_a2w_ts_codes_By_loc2
+              WHERE db_Office_id = p_db_Office_id
+                AND location_code = p_locatioN_code
+             )
       LOOP
-         NULL;
 
+        temp_i := temp_i  + 1;
+         NULL;
+/*
          IF x.ts_code_elev IS NOT NULL
          THEN
             temp_i := temp_i + 1;
@@ -6996,6 +7029,13 @@ on: {%Date}]]></format>
          THEN 
             temp_i := temp_i + 1;
         END IF;
+*/
+  END LOOP;
+
+FOR x IN (SELECT * FROM at_a2w_ts_codes_By_loc WHERE db_Office_id = p_db_office_id 
+             AND location_code = p_location_code)
+             
+      LOOP
 
          UPDATE at_a2w_ts_codes_by_loc
             SET date_refreshed = SYSDATE,
@@ -7007,8 +7047,8 @@ on: {%Date}]]></format>
                    || ' by '
                    || p_user_id,
                 num_ts_codes = temp_i
-          WHERE     db_office_id = x.db_office_id
-                AND location_code = x.location_code;
+          WHERE     db_office_id = p_db_office_id
+                AND location_code = p_location_code;
 
          IF temp_i = 0
          THEN
@@ -7023,12 +7063,14 @@ on: {%Date}]]></format>
                       || p_user_Id
                       || '. Set display flag to False because there are no TS IDs selected.',
                    display_flag = 'F'
-             WHERE     db_office_id = x.db_office_id
-                   AND location_code = x.location_code;
+             WHERE     db_office_id = p_db_office_id
+                   AND location_code = p_location_code;
          END IF;
 
-         temp_i := 0;
       END LOOP;
+
+         temp_i := 0;
+ 
    END;
 
    PROCEDURE p_add_Missing_a2w_rows (
@@ -7037,6 +7079,10 @@ on: {%Date}]]></format>
       p_user_id        IN VARCHAR2)
    IS
     BEGIN
+   UPDATE at_a2w_ts_codes_by_loc
+           SET location_id = cwms_loc.get_location_id(location_code)
+         WHERE locatioN_id IS NULL;
+
       IF p_locatioN_code IS NOT NULL
       THEN
          FOR x
@@ -7057,8 +7103,9 @@ on: {%Date}]]></format>
             INSERT
               INTO at_a2w_ts_codes_by_loc (db_Office_id,
                                            location_code,
-                                           date_refreshed)
-            VALUES (x.db_office_id, x.location_code, SYSDATE);
+                                           date_refreshed,
+                                           location_id)
+            VALUES (x.db_office_id, x.location_code, SYSDATE,cwms_loc.get_location_id(x.location_code) );
          END LOOP;
       ELSE
          FOR x
@@ -7074,11 +7121,14 @@ on: {%Date}]]></format>
                  WHERE db_office_id = p_db_office_id
                 )
          LOOP
-            INSERT
-              INTO at_a2w_ts_codes_by_loc (db_Office_id,
-                                           location_code,
-                                           date_refreshed)
-            VALUES (x.db_office_id, x.location_code, SYSDATE);
+
+                        INSERT
+                         INTO at_a2w_ts_codes_by_loc (db_Office_id,
+                                                      location_code,
+                                                      date_refreshed,
+                                                      location_id)
+                       VALUES (x.db_office_id, x.location_code, SYSDATE, cwms_loc.get_location_id(x.location_code)) ;
+			
          END LOOP;
       END IF;
    END p_add_Missing_a2w_rows;
@@ -7116,4 +7166,3 @@ on: {%Date}]]></format>
    END;
 
 END CWMS_CMA;
-/

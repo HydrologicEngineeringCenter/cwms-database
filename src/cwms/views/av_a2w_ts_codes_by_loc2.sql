@@ -102,6 +102,46 @@ CREATE OR REPLACE FORCE VIEW "CWMS_20"."AV_A2W_TS_CODES_BY_LOC2" ("TS_CODE", "LO
           FROM at_a2w_ts_codes_by_loc a2w 
          WHERE a2w.TS_CODE_PH                                 IS NOT NULL
           AND display_flag = 'T'
+     UNION ALL
+        SELECT a2w.TS_CODE_WIND_DIR ts_code, a2w.location_code, 'WIND DIRECTION' ts_type
+          FROM at_a2w_ts_codes_by_loc a2w 
+         WHERE a2w.TS_CODE_WIND_DIR  IS NOT NULL
+          AND display_flag = 'T'
+     UNION ALL
+        SELECT a2w.TS_CODE_WIND_SPEED ts_code, a2w.location_code, 'WIND SPEED' ts_type
+          FROM at_a2w_ts_codes_by_loc a2w 
+         WHERE a2w.TS_CODE_WIND_SPEED                                 IS NOT NULL
+          AND display_flag = 'T'
+     UNION ALL
+        SELECT a2w.TS_CODE_OPENING ts_code, a2w.location_code, 'OPENING' ts_type
+          FROM at_a2w_ts_codes_by_loc a2w 
+         WHERE a2w.TS_CODE_OPENING  IS NOT NULL
+          AND display_flag = 'T'
+     UNION ALL
+        SELECT a2w.TS_CODE_VOLT ts_code, a2w.location_code, 'VOLTAGE' ts_type
+          FROM at_a2w_ts_codes_by_loc a2w 
+         WHERE a2w.TS_CODE_VOLT                                IS NOT NULL
+          AND display_flag = 'T'
+     UNION ALL
+        SELECT a2w.ts_code_pct_flood       ts_code, a2w.location_code, 'PCT FLOOD POOL' ts_type
+          FROM at_a2w_ts_codes_by_loc a2w 
+         WHERE a2w.ts_code_pct_flood      IS NOT NULL
+          AND display_flag = 'T'
+     UNION ALL
+        SELECT a2w.ts_code_pct_con       ts_code, a2w.location_code, 'PCT CON POOL' ts_type
+          FROM at_a2w_ts_codes_by_loc a2w 
+         WHERE a2w.ts_code_pct_con     IS NOT NULL
+          AND display_flag = 'T'
+    UNION ALL
+        SELECT a2w.ts_code_irrad      ts_code, a2w.location_code, 'IRRADIANCE' ts_type
+          FROM at_a2w_ts_codes_by_loc a2w 
+         WHERE a2w.ts_code_irrad     IS NOT NULL
+          AND display_flag = 'T'
+     UNION ALL
+        SELECT a2w.ts_code_evap       ts_code, a2w.location_code, 'EVAPORATION' ts_type
+          FROM at_a2w_ts_codes_by_loc a2w 
+         WHERE a2w.ts_code_evap     IS NOT NULL
+          AND display_flag = 'T'
       ) a2w
       , cwms_v_ts_id tsi
       , cwms_v_loc l
