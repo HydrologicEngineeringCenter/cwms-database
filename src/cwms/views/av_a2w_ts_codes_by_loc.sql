@@ -76,7 +76,6 @@ create or replace force view av_a2w_ts_codes_by_loc
    opening_Source_Obj     ,
    ts_code_irrad          ,
    ts_code_evap		  
-
 )
 as
    select l.location_id            ,
