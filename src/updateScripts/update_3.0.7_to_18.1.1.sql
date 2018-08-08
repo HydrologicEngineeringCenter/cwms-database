@@ -20,11 +20,11 @@ spool update_&dbname._3.0.7_to_3.1.1.log;
 prompt ################################################################################
 prompt 'VERIFYING EXPECTED VERSION'
 select systimestamp from dual;
-@@./311_verify_db_version
+@@./18_1_1/verify_db_version
 prompt ################################################################################
 prompt 'MODIFYING CWMS_DB_CHANGE_LOG TABLE'
 select systimestamp from dual;                                                                                   
-@@./311_modify_db_change_log
+@@./18_1_1/modify_db_change_log
 prompt ################################################################################
 prompt 'ADDING AT_A2W_TS_CODES_BY_LOC2 VIEW'
 select systimestamp from dual;   
@@ -39,34 +39,34 @@ tablespace cwms_20at_data ;
 prompt ################################################################################
 prompt 'ADDING CONFIGURATION CATEGORY'
 select systimestamp from dual;
-@@./311_add_configuration_category
+@@./18_1_1/add_configuration_category
 prompt ################################################################################
 prompt 'REMOVING TRIGGER AT_STREAM_REACH_T01'
 select systimestamp from dual;
-@@./311_remove_at_stream_reach_t01                 
+@@./18_1_1/remove_at_stream_reach_t01                 
 prompt ################################################################################
 prompt 'DELETING CST, PST FROM CWMS_TIME_ZONE AND REBUILDING MV_TIME_ZONE'
 select systimestamp from dual;
-@@./311_delete_time_zones
+@@./18_1_1/delete_time_zones
 prompt ################################################################################
 prompt 'UPDATING TRANSITIONAL AND VIRTUAL RATING TABLE CONSTRAINTS'
 select systimestamp from dual;
-@@./311_modify_transitional_virtual_rating_tables
+@@./18_1_1/modify_transitional_virtual_rating_tables
 prompt ################################################################################
 prompt 'ADDING INDEX ON DEP_RATING_PARAM_CODE FOR AT_RATING_VALUE'
 select systimestamp from dual;
-@@./311_add_at_rating_value_dep_index
+@@./18_1_1/add_at_rating_value_dep_index
 prompt ################################################################################
 prompt 'UPDATING REGI LOOKUP TABLES'
 select systimestamp from dual;
-@@./311_update_embankment_protection_types
-@@./311_update_embankment_structure_types
-@@./311_update_gate_change_computations
-@@./311_update_gate_release_reasons
-@@./311_update_physical_transfer_types
-@@./311_update_turbine_computation_codes
-@@./311_update_turbine_setting_reasons
-@@./311_update_ws_contract_types
+@@./18_1_1/update_embankment_protection_types
+@@./18_1_1/update_embankment_structure_types
+@@./18_1_1/update_gate_change_computations
+@@./18_1_1/update_gate_release_reasons
+@@./18_1_1/update_physical_transfer_types
+@@./18_1_1/update_turbine_computation_codes
+@@./18_1_1/update_turbine_setting_reasons
+@@./18_1_1/update_ws_contract_types
 prompt ################################################################################
 prompt 'ADDING NEW SCHEDULER MONITORING OBJECTS'
 select systimestamp from dual;
@@ -111,7 +111,7 @@ select systimestamp from dual;
 prompt ################################################################################
 prompt 'ADDING HISTORIC TIME SERIES FLAG'
 select systimestamp from dual;
-@@./311_add_historic_time_series
+@@./18_1_1/add_historic_time_series
 delete from at_clob where id in ('/VIEWDOCS/AV_CWMS_TS_ID', '/VIEWDOCS/AV_CWMS_TS_ID2', '/VIEWDOCS/ZAV_CWMS_TS_ID');
 @@../cwms/views/av_cwms_ts_id
 @@../cwms/views/av_cwms_ts_id2
@@ -299,7 +299,7 @@ select systimestamp from dual;
 prompt ################################################################################
 prompt 'MODIFYING OTHER TABLES'
 select systimestamp from dual;
-@@./311_update_tables
+@@./18_1_1/update_tables
 whenever sqlerror continue;
 @@../cwms/mv_ts_code_filter
 drop trigger at_rating_value_trig;
@@ -378,7 +378,7 @@ end;
 prompt ################################################################################
 prompt 'REBUILD MV_SEC_TS_PRIVILEGES'
 select systimestamp from dual;
-@@./311_rebuild_mv_sec_ts_privileges -- I don't know why this is necessary - but it is
+@@./18_1_1/rebuild_mv_sec_ts_privileges -- I don't know why this is necessary - but it is
 prompt ################################################################################
 prompt 'INVALID OBJECTS...'
 select systimestamp from dual;
@@ -394,7 +394,7 @@ select substr(object_name, 1, 30) as invalid_object, object_type from user_objec
 prompt ################################################################################
 prompt 'UPDATING DB_CHANGE_LOG'
 select systimestamp from dual;
-@@./311_update_db_change_log
+@@./18_1_1/update_db_change_log
 select substr(version, 1, 10) as version, 
        to_char(version_date, 'yyyy-mm-dd hh24:mi') as version_date, 
        to_char(apply_date, 'yyyy-mm-dd hh24:mi') as apply_date
