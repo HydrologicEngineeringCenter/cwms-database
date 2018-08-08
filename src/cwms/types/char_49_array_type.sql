@@ -1,6 +1,6 @@
-create or replace TYPE char_49_array_type
+CREATE TYPE char_49_array_type
 /**
- * Type suitable for holding parameters or other text
+ * Type suitable for holding multiple locations, parameters, or other text
  * not longer than 49 bytes.
  */
 IS TABLE OF VARCHAR2 (49);

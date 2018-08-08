@@ -46,7 +46,7 @@ IS
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">project_id</td>
- *     <td class="descr">varchar2(57)</td>
+ *     <td class="descr">varchar2(49)</td>
  *     <td class="descr">The location identifier of the project</td>
  *   </tr>
  *   <tr>
@@ -121,7 +121,7 @@ PROCEDURE cat_water_user(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">project_id</td>
- *     <td class="descr">varchar2(57)</td>
+ *     <td class="descr">varchar2(49)</td>
  *     <td class="descr">The location identifier of the project</td>
  *   </tr>
  *   <tr>

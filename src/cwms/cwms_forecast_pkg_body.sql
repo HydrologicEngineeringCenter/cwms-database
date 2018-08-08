@@ -249,6 +249,83 @@ begin
          and bl.base_location_code = pl.base_location_code;
    end if;
 end retrieve_spec;
+
+--------------------------------------------------------------------------------
+-- procedure delete_spec
+--------------------------------------------------------------------------------
+procedure delete_spec(
+   p_location_id    in varchar2,
+   p_forecast_id    in varchar2,
+   p_delete_action  in varchar2 default cwms_util.delete_key,
+   p_office_id      in varchar2 default null) -- null = user's office id
+is
+   l_forecast_spec_code number(10);
+begin
+   -------------------
+   -- sanity checks --
+   -------------------
+   if p_location_id is null then
+      cwms_err.raise(
+         'ERROR',
+         'Location identifier cannot be null');
+   end if;
+   if p_forecast_id is null then
+      cwms_err.raise(
+         'ERROR',
+         'Forecast identifier cannot be null');
+   end if;
+   if upper(p_delete_action) not in
+      (  cwms_util.delete_all,
+         cwms_util.delete_data,
+         cwms_util.delete_key
+      )
+   then
+      cwms_err.raise('INVALID_DELETE_ACTION', p_delete_action);
+   end if;
+   ------------------------------
+   -- see if the record exists --
+   ------------------------------
+   l_forecast_spec_code := get_forecast_spec_code(
+      p_location_id,
+      p_forecast_id,
+      p_office_id);
+   ----------------------------------
+   -- delete children if specified --
+   ----------------------------------
+   if upper(p_delete_action) in
+      (  cwms_util.delete_all,
+         cwms_util.delete_data
+      )
+   then
+      cwms_forecast.delete_ts(
+         p_location_id   => p_location_id,
+         p_forecast_id   => p_forecast_id,
+         p_cwms_ts_id    => null,
+         p_forecast_time => null,
+         p_issue_time    => null,
+         p_office_id     => p_office_id);
+
+      cwms_forecast.delete_text(
+         p_location_id   => p_location_id,
+         p_forecast_id   => p_forecast_id,
+         p_forecast_time => null,
+         p_issue_time    => null,
+         p_office_id     => p_office_id);
+   end if;
+   --------------------------------
+   -- delete record if specified --
+   --------------------------------
+   if upper(p_delete_action) in
+      (  cwms_util.delete_all,
+         cwms_util.delete_key
+      )
+   then
+      delete
+        from at_forecast_spec
+       where forecast_spec_code = l_forecast_spec_code;
+   end if;
+end delete_spec;
+
 --------------------------------------------------------------------------------
 -- procedure rename_spec
 --------------------------------------------------------------------------------
@@ -306,12 +383,12 @@ procedure cat_specs(
    p_source_loc_id_mask in  varchar2 default '*',
    p_office_id_mask     in  varchar2 default null) -- null = user's office id
 is
-   l_location_id_mask   varchar2(57);
+   l_location_id_mask   varchar2(49);
    l_forecast_id_mask   varchar2(32);
    l_source_agency_mask varchar2(16);
    l_source_office_mask varchar2(16);
    l_forecast_type_mask varchar2(5);
-   l_source_loc_id_mask varchar2(57);
+   l_source_loc_id_mask varchar2(49);
    l_office_id_mask     varchar2(16);
 begin
    ----------------------
@@ -353,7 +430,6 @@ begin
                 where o.office_id like l_office_id_mask escape '\'
                   and bl.db_office_code = o.office_code
                   and pl.base_location_code = bl.base_location_code
-                  and fs.target_location_code = pl.location_code
                   and upper(bl.base_location_id
                             ||substr('-', 1, length(pl.sub_location_id))
                             ||pl.sub_location_id) like l_location_id_mask escape '\'
@@ -686,8 +762,7 @@ begin
    -- populate the out parameters --
    ---------------------------------
    l_version_date := cwms_util.change_timezone(l_rec.version_date, 'UTC', l_time_zone);
-   p_version_date := l_version_date;
-   
+   p_version_date := l_version_date; 
    cwms_ts.retrieve_ts(
       p_at_tsv_rc       => p_ts_cursor,
       p_cwms_ts_id      => p_cwms_ts_id,
@@ -790,7 +865,7 @@ procedure cat_ts(
    p_time_zone       in  varchar2 default null, -- null = location time zone
    p_office_id       in  varchar2 default null) -- null = user's office id   
 is
-   l_cwms_ts_id_mask varchar2(191);
+   l_cwms_ts_id_mask varchar2(183);
    l_time_zone       varchar2(28);
 begin
    -------------------------
@@ -821,7 +896,8 @@ begin
                       at_physical_location pl,
                       at_base_location bl,
                       at_cwms_ts_spec cts,
-                      cwms_office o
+                      cwms_office o,
+                      av_tsv v
                 where o.office_id = nvl(upper(p_office_id), cwms_util.user_office_id)
                   and bl.db_office_code = o.office_code
                   and pl.base_location_code = bl.base_location_code
@@ -953,19 +1029,20 @@ begin
       l_rec.forecast_date      := l_forecast_time;
       l_rec.issue_date         := l_issue_time;
       l_rec.clob_code          := cwms_seq.nextval;
-
-      l_text_id := substr(
-         '/fcst/'
+   
+      l_text_id := '/forecast/'
+         ||p_location_id
+         ||'/'
          ||p_forecast_id
-         ||'/'
-         ||cwms_util.to_millis(cwms_util.change_timezone(p_forecast_time, p_time_zone, 'UTC'))/60000 -- minutes
-         ||'/'
-         ||cwms_util.to_millis(cwms_util.change_timezone(p_issue_time, p_time_zone, 'UTC'))/60000 -- minutes
-         ||'/'
-         ||p_location_id, 
-         1, 
-         256);
-      
+         ||'/forecast_time='
+         ||to_char(p_forecast_time, 'yyyy/mm/dd hh24mi')
+         ||' '
+         ||p_time_zone
+         ||'/issue_time='
+         ||to_char(p_issue_time, 'yyyy/mm/dd hh24mi')
+         ||' '
+         ||p_time_zone;
+
       cwms_text.store_text(
          p_text_code      => l_rec.clob_code, -- out parameter
          p_text           => p_text,
@@ -1021,7 +1098,7 @@ begin
    -----------------------------------------
    -- determine whether the record exists --
    -----------------------------------------
-   l_time_zone := nvl(p_time_zone, cwms_loc.get_local_timezone(p_location_id, p_office_id));
+   l_time_zone := cwms_loc.get_local_timezone(p_location_id, p_office_id);
    l_forecast_time  := cwms_util.change_timezone(p_forecast_time, l_time_zone, 'UTC');
    l_issue_time     := cwms_util.change_timezone(p_issue_time, l_time_zone, 'UTC');
    begin
@@ -1195,81 +1272,6 @@ begin
 
    return l_cursor;
 end cat_text_f;
---------------------------------------------------------------------------------
--- procedure delete_spec
---------------------------------------------------------------------------------
-procedure delete_spec(
-   p_location_id    in varchar2,
-   p_forecast_id    in varchar2,
-   p_delete_action  in varchar2 default cwms_util.delete_key,
-   p_office_id      in varchar2 default null) -- null = user's office id
-is
-   l_forecast_spec_code number(10);
-begin
-   -------------------
-   -- sanity checks --
-   -------------------
-   if p_location_id is null then
-      cwms_err.raise(
-         'ERROR',
-         'Location identifier cannot be null');
-   end if;
-   if p_forecast_id is null then
-      cwms_err.raise(
-         'ERROR',
-         'Forecast identifier cannot be null');
-   end if;
-   if upper(p_delete_action) not in
-      (  cwms_util.delete_all,
-         cwms_util.delete_data,
-         cwms_util.delete_key
-      )
-   then
-      cwms_err.raise('INVALID_DELETE_ACTION', p_delete_action);
-   end if;
-   ------------------------------
-   -- see if the record exists --
-   ------------------------------
-   l_forecast_spec_code := get_forecast_spec_code(
-      p_location_id,
-      p_forecast_id,
-      p_office_id);
-   ----------------------------------
-   -- delete children if specified --
-   ----------------------------------
-   if upper(p_delete_action) in
-      (  cwms_util.delete_all,
-         cwms_util.delete_data
-      )
-   then
-      delete_ts(
-         p_location_id   => p_location_id,
-         p_forecast_id   => p_forecast_id,
-         p_cwms_ts_id    => null,
-         p_forecast_time => null,
-         p_issue_time    => null,
-         p_office_id     => p_office_id);
-
-      delete_text(
-         p_location_id   => p_location_id,
-         p_forecast_id   => p_forecast_id,
-         p_forecast_time => null,
-         p_issue_time    => null,
-         p_office_id     => p_office_id);
-   end if;
-   --------------------------------
-   -- delete record if specified --
-   --------------------------------
-   if upper(p_delete_action) in
-      (  cwms_util.delete_all,
-         cwms_util.delete_key
-      )
-   then
-      delete
-        from at_forecast_spec
-       where forecast_spec_code = l_forecast_spec_code;
-   end if;
-end delete_spec;
 
 --------------------------------------------------------------------------------
 -- procedure store_forecast
@@ -1350,10 +1352,7 @@ is
       office_id      varchar2(16),
       forecast_date  date,          
       issue_date     date,         
-      cwms_ts_id     varchar2(191),
-      version_date   date,
-      min_time       date,
-      max_time       date,
+      cwms_ts_id     varchar2(183),
       time_zone_name varchar2(28));
    type ts_rec_t is record (
       date_time    date,
@@ -1393,8 +1392,6 @@ begin
             'SI',
             p_office_id), 
          p_office_id);
-   else
-      l_unit_system := p_unit_system;
    end if; 
    if p_forecast_time is null then
       select max(forecast_date)
@@ -1450,8 +1447,6 @@ begin
             p_units         => l_units,
             p_forecast_time => l_forecast_time,
             p_issue_time    => l_issue_time,
-            p_start_time    => l_cat_ts_rec.min_time,
-            p_end_time      => l_cat_ts_rec.max_time,
             p_time_zone     => l_time_zone,
             p_office_id     => p_office_id);
          if p_time_series is null then
@@ -1461,8 +1456,7 @@ begin
          p_time_series(p_time_series.count) := ztimeseries_type(
             l_cat_ts_rec.cwms_ts_id,
             l_units,
-            ztsv_array());
-         p_time_series(p_time_series.count).data := ztsv_array();
+            ztsv_array());            
          loop
             fetch l_ts_cur into l_ts_rec;
             exit when l_ts_cur%notfound;
@@ -1478,339 +1472,6 @@ begin
    close l_cat_ts_cur;
             
 end retrieve_forecast;
---------------------------------------------------------------------------------
--- procedure delete_forecast
---------------------------------------------------------------------------------
-procedure delete_forecast(
-   p_location_id     in varchar2,
-   p_forecast_id     in varchar2,
-   p_forecast_time   in date,
-   p_issue_time      in date,
-   p_time_zone       in varchar2, -- null = location time zone
-   p_override_prot   in varchar2 default 'F',
-   p_office_id       in varchar2 default null) -- null = user's office id
-is
-   type cat_ts_rec_t is record(
-      office_id      varchar2(16),
-      forecast_date  date,
-      issue_date     date,
-      cwms_ts_id     varchar2(191),
-      version_date   date,
-      min_date       date,
-      max_date       date,
-      time_zone_name varchar2(28));
-   type cat_text_rec_t is record(
-      office_id      varchar2(16),
-      forecast_date  date,
-      issue_date     date,
-      text_id        varchar2(256),
-      time_zone_name varchar2(28));
-      
-   l_cursor        sys_refcursor;
-   l_cat_ts_rec    cat_ts_rec_t;
-   l_cat_text_rec  cat_text_rec_t;
-   l_ts_code       integer;
-   l_forecast_time date;
-   l_issue_time    date;
-begin
-   l_forecast_time := cwms_util.change_timezone(p_forecast_time, p_time_zone, 'UTC');
-   l_issue_time := cwms_util.change_timezone(p_issue_time, p_time_zone, 'UTC');
-   ----------------------------------
-   -- first delete the time series --
-   ----------------------------------
-   l_cursor := cat_ts_f(
-      p_location_id     => p_location_id,
-      p_forecast_id     => p_forecast_id,
-      p_cwms_ts_id_mask => '*',
-      p_time_zone       => 'UTC',
-      p_office_id       => p_office_id);
-      
-   loop   
-      fetch l_cursor into l_cat_ts_rec;
-      exit when l_cursor%notfound;
-      continue when l_cat_ts_rec.forecast_date != l_forecast_time;
-      continue when l_cat_ts_rec.issue_date != l_issue_time;
-
-      l_ts_code := cwms_ts.get_ts_code(l_cat_ts_rec.cwms_ts_id, l_cat_ts_rec.office_id);
-      
-      delete
-        from at_forecast_ts
-       where ts_code = l_ts_code
-         and forecast_date = l_forecast_time
-         and issue_date = l_issue_time
-         and version_date = l_cat_ts_rec.version_date;
-         
-      cwms_ts.purge_ts_data(
-         p_ts_code             => l_ts_code,
-         p_override_protection => p_override_prot,
-         p_version_date_utc    => l_cat_ts_rec.version_date,
-         p_start_time_utc      => l_cat_ts_rec.min_date,
-         p_end_time_utc        => l_cat_ts_rec.max_date,
-         p_max_version         => 'F',
-         p_ts_item_mask        => cwms_util.ts_values);
-   end loop;
-   close l_cursor;
-   --------------------------
-   -- next delete the text --
-   --------------------------
-   l_cursor := cat_text_f(
-      p_location_id     => p_location_id,
-      p_forecast_id     => p_forecast_id,
-      p_time_zone       => 'UTC',
-      p_office_id       => p_office_id);
-   loop
-      fetch l_cursor into l_cat_text_rec;
-      exit when l_cursor%notfound;
-      continue when l_cat_text_rec.forecast_date != l_forecast_time;
-      continue when l_cat_text_rec.issue_date != l_issue_time;
-      
-      delete
-        from at_forecast_text
-       where clob_code = (select clob_code
-                            from at_clob c,
-                                 cwms_office o
-                           where c.office_code = o.office_code
-                             and c.id = l_cat_text_rec.text_id
-                             and o.office_id = l_cat_text_rec.office_id
-                         );
-      
-      cwms_text.delete_text(l_cat_text_rec.text_id, p_office_id);
-   end loop;
-   close l_cursor;
-   
-end delete_forecast;
---------------------------------------------------------------------------------
--- procedure cat_forecast
---------------------------------------------------------------------------------
-procedure cat_forecast(
-   p_fcst_catalog     out sys_refcursor,
-   p_location_id_mask in  varchar2,
-   p_forecast_id_mask in  varchar2,
-   p_max_fcst_age     in  varchar2 default 'P1Y',
-   p_max_issue_age    in  varchar2 default 'P1Y',
-   p_abbreviated      in  varchar2 default 'T',
-   p_time_zone        in  varchar2 default null, -- null = location time zone
-   p_office_id_mask   in  varchar2 default null) -- null = user's office id
-is
-   l_time_zone      varchar2(28);
-   l_loc_id_mask    varchar2(256);
-   l_fcst_id_mask   varchar2(32);
-   l_office_id_mask varchar2(16);
-   l_fcst_ym_intvl  yminterval_unconstrained;
-   l_fcst_ds_intvl  dsinterval_unconstrained;
-   l_issue_ym_intvl yminterval_unconstrained;
-   l_issue_ds_intvl dsinterval_unconstrained;
-   l_min_fcst_date  date;
-   l_min_issue_date date;
-begin
-   -------------------------
-   -- set local variables --
-   -------------------------
-   l_loc_id_mask  := cwms_util.normalize_wildcards(upper(p_location_id_mask));
-   l_fcst_id_mask := cwms_util.normalize_wildcards(upper(p_forecast_id_mask));
-   if p_office_id_mask is null then
-      l_office_id_mask := cwms_util.user_office_id;
-   else
-      l_office_id_mask := cwms_util.normalize_wildcards(upper(p_office_id_mask));
-   end if;
-   
-   cwms_util.duration_to_interval(
-      l_fcst_ym_intvl,
-      l_fcst_ds_intvl,
-      p_max_fcst_age);
-      
-   l_min_fcst_date := cast(systimestamp - l_fcst_ym_intvl - l_fcst_ds_intvl as date);      
-      
-   cwms_util.duration_to_interval(
-      l_issue_ym_intvl,
-      l_issue_ds_intvl,
-      p_max_issue_age);
-      
-   l_min_issue_date := cast(systimestamp - l_issue_ym_intvl - l_issue_ds_intvl as date);      
-   -----------------------
-   -- perform the query --
-   -----------------------
-   if cwms_util.is_true(nvl(p_abbreviated, 'T')) then
-      open p_fcst_catalog for
-         select distinct 
-                nvl(q1.office_id, q2.office_id) as office_id,
-                cwms_loc.get_location_id(nvl(q1.target_location_code, q2.target_location_code)) as location_id,
-                nvl(q1.forecast_id, q2.forecast_id) as forecast_id,
-                nvl(q1.forecast_date, q2.forecast_date) as forecast_date,
-                nvl(q1.issue_date, q2.issue_date) as issue_date,
-                case when q2.text_id is null then 'F' else 'T' end as has_text,
-                case when q1.cwms_ts_id is null then 'F' else 'T' end as has_time_series,
-                nvl(q1.time_zone_name, q2.time_zone_name) as time_zone_name,
-                nvl(q1.valid, q2.valid) as valid
-           from ( select o.office_id,
-                         fs.target_location_code,
-                         fs.forecast_id,
-                         fts.forecast_spec_code,
-                         cwms_util.change_timezone(fts.forecast_date, 'UTC', nvl(p_time_zone, cwms_loc.get_local_timezone(pl.location_code))) as forecast_date,
-                         cwms_util.change_timezone(fts.issue_date, 'UTC', nvl(p_time_zone, cwms_loc.get_local_timezone(pl.location_code))) as issue_date,
-                         cwms_ts.get_ts_id(fts.ts_code) as cwms_ts_id,
-                         nvl(p_time_zone, cwms_loc.get_local_timezone(pl.location_code)) as time_zone_name,
-                         case
-                         when fs.max_age is null or (sysdate - fts.issue_date) * 24 < fs.max_age then 'T'
-                         else 'F'
-                         end as valid
-                    from at_forecast_ts fts,
-                         at_forecast_spec fs,
-                         at_physical_location pl,
-                         at_base_location bl,
-                         at_cwms_ts_spec cts,
-                         cwms_office o
-                   where o.office_id like l_office_id_mask escape '\'
-                     and bl.db_office_code = o.office_code
-                     and pl.base_location_code = bl.base_location_code
-                     and upper(bl.base_location_id||substr('-', 1, length(pl.sub_location_id))||pl.sub_location_id) like l_loc_id_mask escape '\'
-                     and fs.target_location_code = pl.location_code
-                     and upper(fs.forecast_id) like l_fcst_id_mask escape '\'
-                     and cts.location_code = pl.location_code
-                     and fts.ts_code = cts.ts_code
-                     and fts.forecast_date >= l_min_fcst_date
-                     and fts.issue_date >= l_min_issue_date
-                     and fts.forecast_spec_code = fs.forecast_spec_code
-                ) q1
-                full outer join
-                ( select o.office_id,
-                         fs.target_location_code,
-                         fs.forecast_id,
-                         ft.forecast_spec_code,
-                         cwms_util.change_timezone(ft.forecast_date, 'UTC', nvl(p_time_zone, cwms_loc.get_local_timezone(pl.location_code))) as forecast_date,
-                         cwms_util.change_timezone(ft.issue_date, 'UTC', nvl(p_time_zone, cwms_loc.get_local_timezone(pl.location_code))) as issue_date,
-                         c.id as text_id,
-                         nvl(p_time_zone, cwms_loc.get_local_timezone(pl.location_code)) as time_zone_name,
-                         case
-                         when fs.max_age is null or (sysdate - ft.issue_date) * 24 < fs.max_age then 'T'
-                         else 'F'
-                         end as valid
-                    from at_forecast_text ft,
-                         at_forecast_spec fs,
-                         at_physical_location pl,
-                         at_base_location bl,
-                         at_clob c,
-                         cwms_office o
-                   where o.office_id like l_office_id_mask escape '\'
-                     and bl.db_office_code = o.office_code
-                     and pl.base_location_code = bl.base_location_code
-                     and upper(bl.base_location_id||substr('-', 1, length(pl.sub_location_id))||pl.sub_location_id) like l_loc_id_mask escape '\'
-                     and fs.target_location_code = pl.location_code
-                     and upper(fs.forecast_id) like l_fcst_id_mask escape '\'
-                     and ft.forecast_spec_code = fs.forecast_spec_code
-                     and c.clob_code = ft.clob_code
-                ) q2 on q2.forecast_spec_code = q1.forecast_spec_code
-                    and q2.forecast_date      = q1.forecast_date
-                    and q2.issue_date         = q1.issue_date
-       order by 1,2,3,4,5;
-   else
-      open p_fcst_catalog for
-         select nvl(q1.office_id, q2.office_id) as office_id,
-                cwms_loc.get_location_id(nvl(q1.target_location_code, q2.target_location_code)) as location_id,
-                nvl(q1.forecast_id, q2.forecast_id) as forecast_id,
-                nvl(q1.forecast_date, q2.forecast_date) as forecast_date,
-                nvl(q1.issue_date, q2.issue_date) as issue_date,
-                q2.text_id,
-                q1.cwms_ts_id,
-                q1.version_date,
-                q1.min_time,
-                q1.max_time,
-                nvl(q1.time_zone_name, q2.time_zone_name) as time_zone_name,
-                nvl(q1.valid, q2.valid) as valid
-           from ( select o.office_id,
-                         fs.target_location_code,
-                         fs.forecast_id,
-                         fts.forecast_spec_code,
-                         cwms_util.change_timezone(fts.forecast_date, 'UTC', nvl(p_time_zone, cwms_loc.get_local_timezone(pl.location_code))) as forecast_date,
-                         cwms_util.change_timezone(fts.issue_date, 'UTC', nvl(p_time_zone, cwms_loc.get_local_timezone(pl.location_code))) as issue_date,
-                         cwms_ts.get_ts_id(fts.ts_code) as cwms_ts_id,
-                         cwms_util.change_timezone(fts.version_date, 'UTC', nvl(p_time_zone, cwms_loc.get_local_timezone(pl.location_code))) as version_date,
-                         cwms_util.change_timezone(cwms_ts.get_ts_min_date_utc(fts.ts_code, fts.version_date), 'UTC', nvl(p_time_zone, cwms_loc.get_local_timezone(pl.location_code))) as min_time,
-                         cwms_util.change_timezone(cwms_ts.get_ts_max_date_utc(fts.ts_code, fts.version_date), 'UTC', nvl(p_time_zone, cwms_loc.get_local_timezone(pl.location_code))) as max_time,
-                         nvl(p_time_zone, cwms_loc.get_local_timezone(pl.location_code)) as time_zone_name,
-                         case
-                         when fs.max_age is null then null
-                         when (sysdate - fts.issue_date) * 24 < fs.max_age then 'T'
-                         else 'F'
-                         end as valid
-                    from at_forecast_ts fts,
-                         at_forecast_spec fs,
-                         at_physical_location pl,
-                         at_base_location bl,
-                         at_cwms_ts_spec cts,
-                         cwms_office o
-                   where o.office_id like l_office_id_mask escape '\'
-                     and bl.db_office_code = o.office_code
-                     and pl.base_location_code = bl.base_location_code
-                     and upper(bl.base_location_id||substr('-', 1, length(pl.sub_location_id))||pl.sub_location_id) like l_loc_id_mask escape '\'
-                     and fs.target_location_code = pl.location_code
-                     and upper(fs.forecast_id) like l_fcst_id_mask escape '\'
-                     and cts.location_code = pl.location_code
-                     and fts.ts_code = cts.ts_code
-                     and fts.forecast_date >= l_min_fcst_date
-                     and fts.issue_date >= l_min_issue_date
-                     and fts.forecast_spec_code = fs.forecast_spec_code
-                ) q1
-                full outer join
-                ( select o.office_id,
-                         fs.target_location_code,
-                         fs.forecast_id,
-                         ft.forecast_spec_code,
-                         cwms_util.change_timezone(ft.forecast_date, 'UTC', nvl(p_time_zone, cwms_loc.get_local_timezone(pl.location_code))) as forecast_date,
-                         cwms_util.change_timezone(ft.issue_date, 'UTC', nvl(p_time_zone, cwms_loc.get_local_timezone(pl.location_code))) as issue_date,
-                         c.id as text_id,
-                         nvl(p_time_zone, cwms_loc.get_local_timezone(pl.location_code)) as time_zone_name,
-                         case
-                         when fs.max_age is null or (sysdate - ft.issue_date) * 24 < fs.max_age then 'T'
-                         else 'F'
-                         end as valid
-                    from at_forecast_text ft,
-                         at_forecast_spec fs,
-                         at_physical_location pl,
-                         at_base_location bl,
-                         at_clob c,
-                         cwms_office o
-                   where o.office_id like l_office_id_mask escape '\'
-                     and bl.db_office_code = o.office_code
-                     and pl.base_location_code = bl.base_location_code
-                     and upper(bl.base_location_id||substr('-', 1, length(pl.sub_location_id))||pl.sub_location_id) like l_loc_id_mask escape '\'
-                     and fs.target_location_code = pl.location_code
-                     and upper(fs.forecast_id) like l_fcst_id_mask escape '\'
-                     and ft.forecast_spec_code = fs.forecast_spec_code
-                     and c.clob_code = ft.clob_code
-                ) q2 on q2.forecast_spec_code = q1.forecast_spec_code
-                    and q2.forecast_date      = q1.forecast_date
-                    and q2.issue_date         = q1.issue_date
-       order by 1,2,3,4,5;
-   end if;
-end cat_forecast;
---------------------------------------------------------------------------------
--- function cat_forecast_f
---------------------------------------------------------------------------------
-function cat_forecast_f(
-   p_location_id_mask in varchar2,
-   p_forecast_id_mask in varchar2,
-   p_max_fcst_age     in varchar2 default 'P1Y',
-   p_max_issue_age    in varchar2 default 'P1Y',
-   p_abbreviated      in  varchar2 default 'T',
-   p_time_zone        in varchar2 default null, -- null = location time zone
-   p_office_id_mask   in varchar2 default null) -- null = user's office id   
-   return sys_refcursor
-is
- l_fcst_catalog sys_refcursor;
-begin
-   cat_forecast(
-      l_fcst_catalog,
-      p_location_id_mask,
-      p_forecast_id_mask,
-      p_max_fcst_age,
-      p_max_issue_age,
-      p_abbreviated,
-      p_time_zone,
-      p_office_id_mask);
-      
-   return l_fcst_catalog;      
-end cat_forecast_f;
 
 end cwms_forecast;
 /

@@ -106,13 +106,6 @@ grant select on  sys.v_$statname to &cwms_schema;
 grant select on  sys.v_$timer to &cwms_schema;
 grant update any table to &cwms_schema;
 
--- These privileges are added as they are dervied from 'PUBLIC' user before. 
--- These grants will be revoked from 'PUBLIC' to confirm to STIG requirements
-grant execute on dbms_lob to &cwms_schema;
-grant execute on dbms_random to &cwms_schema;
-grant execute on utl_smtp to &cwms_schema;
-grant execute on utl_http to &cwms_schema;
-
 begin
    --
    -- grant queue privileges

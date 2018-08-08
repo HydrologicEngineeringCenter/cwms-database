@@ -394,11 +394,11 @@ as
          p_comments_mask               in varchar2 default '*',
          p_office_id_mask              in varchar2 default null)
    is
-      l_stream_id_mask              varchar2(57)  := upper(cwms_util.normalize_wildcards(p_stream_id_mask)) ;
+      l_stream_id_mask              varchar2(49)  := upper(cwms_util.normalize_wildcards(p_stream_id_mask)) ;
       l_stationing_starts_ds_mask   varchar2(1)   := upper(cwms_util.normalize_wildcards(p_stationing_starts_ds_mask)) ;
-      l_flows_into_stream_id_mask   varchar2(57)  := upper(cwms_util.normalize_wildcards(p_flows_into_stream_id_mask)) ;
+      l_flows_into_stream_id_mask   varchar2(49)  := upper(cwms_util.normalize_wildcards(p_flows_into_stream_id_mask)) ;
       l_flows_into_bank_mask        varchar2(1)   := upper(cwms_util.normalize_wildcards(p_flows_into_bank_mask)) ;
-      l_diverts_from_stream_id_mask varchar2(57)  := upper(cwms_util.normalize_wildcards(p_diverts_from_stream_id_mask)) ;
+      l_diverts_from_stream_id_mask varchar2(49)  := upper(cwms_util.normalize_wildcards(p_diverts_from_stream_id_mask)) ;
       l_diverts_from_bank_mask      varchar2(1)   := upper(cwms_util.normalize_wildcards(p_diverts_from_bank_mask)) ;
       l_comments_mask               varchar2(256) := upper(cwms_util.normalize_wildcards(p_comments_mask)) ;
       l_office_id_mask              varchar2(16)  := upper(cwms_util.normalize_wildcards(nvl(p_office_id_mask, cwms_util.user_office_id))) ;
@@ -530,15 +530,15 @@ as
 -- procedure store_stream_reach
 --------------------------------------------------------------------------------
    procedure store_stream_reach(
-         p_reach_id            in varchar2,
-         p_stream_id           in varchar2,
-         p_fail_if_exists      in varchar2,
-         p_ignore_nulls        in varchar2,
+         p_reach_id           in varchar2,
+         p_stream_id          in varchar2,
+         p_fail_if_exists     in varchar2,
+         p_ignore_nulls       in varchar2,
          p_upstream_location   in varchar2,
          p_downstream_location in varchar2,
-         p_configuration_id    in varchar2 default null,
-         p_comments            in varchar2 default null,
-         p_office_id           in varchar2 default null)
+         p_configuration_id   in varchar2 default null,
+         p_comments           in varchar2 default null,
+         p_office_id          in varchar2 default null)
    is
       l_fail_if_exists          boolean := cwms_util.is_true(p_fail_if_exists) ;
       l_ignore_nulls            boolean := cwms_util.is_true(p_ignore_nulls) ;
@@ -696,7 +696,7 @@ as
                l_us_stream_location_station := 1e38; 
             else 
                l_us_stream_location_station := 0;
-            end if;
+         end if;
          end if;
          if l_ds_stream_code != l_stream_code then
             select *
@@ -735,7 +735,7 @@ as
             'Specified upstream station is downstream of specified downstream station');
       end if;
       for rec in (select *
-                    from at_stream_reach
+            from at_stream_reach
                    where configuration_code = l_configuration_code
                      and stream_reach_location_code != nvl(l_rec.stream_reach_location_code, -1)
                  )
@@ -777,7 +777,7 @@ as
                ||' downstream location '
                ||cwms_loc.get_location_id(rec.downstream_location_code)
                ||' does not have a stream station');
-         end if;
+      end if;
          if l_ds_stream_location_station2 between l_ds_stream_location_station and l_us_stream_location_station and 
             l_ds_stream_location_station2 not in (l_ds_stream_location_station, l_us_stream_location_station)
          then
@@ -962,8 +962,8 @@ as
          p_station_unit          in varchar2 default 'mi',
          p_office_id_mask        in varchar2 default null)
    is
-      l_stream_id_mask        varchar2(57)  := cwms_util.normalize_wildcards(upper(trim(p_stream_id_mask)));
-      l_reach_id_mask         varchar2(57)  := cwms_util.normalize_wildcards(upper(trim(p_reach_id_mask)));
+      l_stream_id_mask        varchar2(49)  := cwms_util.normalize_wildcards(upper(trim(p_stream_id_mask)));
+      l_reach_id_mask         varchar2(49)  := cwms_util.normalize_wildcards(upper(trim(p_reach_id_mask)));
       l_configuration_id_mask varchar2(32)  := cwms_util.normalize_wildcards(upper(trim(p_configuration_id_mask)));
       l_comments_mask         varchar2(256) := cwms_util.normalize_wildcards(upper(trim(p_comments_mask)));
       l_office_id_mask        varchar2(16)  := cwms_util.normalize_wildcards(nvl(upper(trim(p_office_id_mask)), cwms_util.user_office_id));
@@ -1328,8 +1328,8 @@ as
          p_area_unit        in varchar2 default null,
          p_office_id_mask   in varchar2 default null)
    is
-      l_stream_id_mask   varchar2(57) := cwms_util.normalize_wildcards(upper(p_stream_id_mask)) ;
-      l_location_id_mask varchar2(57) := cwms_util.normalize_wildcards(upper(p_location_id_mask)) ;
+      l_stream_id_mask   varchar2(49) := cwms_util.normalize_wildcards(upper(p_stream_id_mask)) ;
+      l_location_id_mask varchar2(49) := cwms_util.normalize_wildcards(upper(p_location_id_mask)) ;
       l_office_id_mask   varchar2(16) := cwms_util.normalize_wildcards(upper(nvl(p_office_id_mask, cwms_util.user_office_id))) ;
       l_station_unit     varchar2(16) := cwms_util.get_unit_id(nvl(p_station_unit, 'km')) ;
       l_stage_unit       varchar2(16) := cwms_util.get_unit_id(nvl(p_stage_unit, 'm')) ;

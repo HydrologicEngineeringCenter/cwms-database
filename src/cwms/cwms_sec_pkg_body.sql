@@ -2188,7 +2188,7 @@ AS
 
    PROCEDURE assign_ts_masks_to_ts_group (
       p_ts_group_id       IN VARCHAR2,
-      p_ts_mask_list      IN str_tab_t,
+      p_ts_mask_list      IN char_183_array_type,
       p_add_remove_list   IN char_16_array_type,
       p_db_office_id      IN VARCHAR2 DEFAULT NULL)
    AS
@@ -2196,7 +2196,7 @@ AS
                             := cwms_util.get_db_office_code (p_db_office_id);
       l_ts_group_code    NUMBER;
       l_count            NUMBER;
-      l_ts_mask          VARCHAR2(191);
+      l_ts_mask          VARCHAR2 (183);
    BEGIN
       confirm_user_admin_priv (l_db_office_code);
       --

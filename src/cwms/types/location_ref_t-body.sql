@@ -87,7 +87,7 @@ as
    member function get_location_id
    return varchar2
    is
-      l_location_id varchar2(57);
+      l_location_id varchar2(49);
    begin
       l_location_id := self.base_location_id
         || SUBSTR ('-', 1, LENGTH (self.sub_location_id))
@@ -159,4 +159,4 @@ as
 
 end;
 /
-show errors
+show errors;

@@ -1495,7 +1495,9 @@ CREATE OR REPLACE package body cwms_xchg as
                                                          from cwms_dss_parameter_type
                                                         where upper(dss_parameter_type_id) = upper(l_map_1.param_type)),
                             unit_id = l_map_1.units,
-                            time_zone_code = cwms_util.get_time_zone_code(l_map_1.time_zone),
+                            time_zone_code = (select time_zone_code
+                                                from mv_time_zone
+                                               where upper(time_zone_name) = upper(l_map_1.time_zone)),
                             tz_usage_code = (select tz_usage_code
                                                from cwms_tz_usage
                                               where upper(tz_usage_id) = upper(l_map_1.tz_usage))
@@ -1778,7 +1780,7 @@ function replay_data_messages(
    p_office_id   in varchar2 default null)
    return varchar2
 is
-   type assoc_bool_vc183 is table of boolean index by varchar2(191);
+   type assoc_bool_vc183 is table of boolean index by varchar2(183);
    l_reported      timestamp := systimestamp;
    l_start_time    timestamp;
    l_end_time      timestamp;

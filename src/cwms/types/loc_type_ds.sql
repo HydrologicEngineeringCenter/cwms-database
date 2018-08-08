@@ -1,8 +1,8 @@
-create or replace TYPE loc_type_ds
+CREATE TYPE loc_type_ds
 -- not documented, used only in routine body
 AS OBJECT (
    office_id        VARCHAR2 (16),
-   base_loc_id      VARCHAR2 (24),
+   base_loc_id      VARCHAR2 (16),
    state_initial    VARCHAR2 (2),
    county_name      VARCHAR2 (40),
    timezone_name    VARCHAR2 (28),
@@ -12,7 +12,7 @@ AS OBJECT (
    elevation        NUMBER,
    elev_unit_id     VARCHAR2 (16),
    vertical_datum   VARCHAR2 (16),
-   public_name      VARCHAR2 (57),
+   public_name      VARCHAR2 (32),
    long_name        VARCHAR2 (80),
    description      VARCHAR2 (512),
    data_sources     source_array

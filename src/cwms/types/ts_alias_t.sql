@@ -1,4 +1,4 @@
-create or replace type ts_alias_t
+create type ts_alias_t
 /**
  * Holds information about a time series alias.  This information doesn't contain
  * any context for the alias.
@@ -13,10 +13,10 @@ create or replace type ts_alias_t
  * @member ts_ref_id    the time series identifier of a referenced time series
  */
 AS OBJECT (
-   ts_id         VARCHAR2(191),
+   ts_id         VARCHAR2 (183),
    ts_attribute  NUMBER,
    ts_alias_id   VARCHAR2 (256),
-   ts_ref_id     VARCHAR2(191)
+   ts_ref_id     VARCHAR2 (183)
 );
 /
 

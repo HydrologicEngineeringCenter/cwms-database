@@ -48,7 +48,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/ZAV_CWMS_TS_ID', nu
  * @field interval             Data recurrence interval in minutes (0 indicates irregluar time series)
  * @field interval_utc_offset  Data time as an offset into each interval. Intervals are based on UTC
  * @field version_flag         Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code>) specifying whether the time series is versioned
- * @field historic_flag        Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code>) specifying whether the time series is part of historic record
 */
 ');
 CREATE OR REPLACE FORCE VIEW zav_cwms_ts_id
@@ -78,8 +77,7 @@ CREATE OR REPLACE FORCE VIEW zav_cwms_ts_id
     version_id,
     interval,
     interval_utc_offset,
-    version_flag,
-    historic_flag
+    version_flag
 )
 AS
     SELECT    abl.db_office_code, base_location_code,
@@ -95,7 +93,7 @@ AS
                 base_parameter_id, ap.sub_parameter_id,
                 base_parameter_id || SUBSTR ('-', 1, LENGTH (ap.sub_parameter_id)) || ap.sub_parameter_id parameter_id,
                 parameter_type_id, interval_id, duration_id, version version_id,
-                i.interval, s.interval_utc_offset, s.version_flag, s.historic_flag
+                i.interval, s.interval_utc_offset, s.version_flag
       FROM    at_cwms_ts_spec s
                 JOIN at_physical_location l
                     USING (location_code)

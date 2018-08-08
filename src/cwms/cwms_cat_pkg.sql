@@ -16,7 +16,7 @@ IS
    -- not documented
    TYPE cat_ts_rec_t IS RECORD (
       office_id             VARCHAR2 (16),
-      cwms_ts_id            VARCHAR2(191),
+      cwms_ts_id            VARCHAR2 (183),
       interval_utc_offset   NUMBER
    );
    -- not documented
@@ -24,7 +24,7 @@ IS
    -- not documented
    TYPE cat_ts_cwms_20_rec_t IS RECORD (
       office_id             VARCHAR2 (16),
-      cwms_ts_id            VARCHAR2(191),
+      cwms_ts_id            VARCHAR2 (183),
       interval_utc_offset   NUMBER (10),
       user_privileges       NUMBER,
       inactive              NUMBER,
@@ -35,8 +35,8 @@ IS
    -- not documented
    TYPE cat_ts_id_rec_t IS RECORD (
       db_office_id          VARCHAR2 (16),
-      base_location_id      VARCHAR2 (24),
-      cwms_ts_id            VARCHAR2(191),
+      base_location_id      VARCHAR2 (16),
+      cwms_ts_id            VARCHAR2 (183),
       interval_utc_offset   NUMBER (10),
       lrts_timezone         VARCHAR2 (28),
       active_flag           VARCHAR2 (1),
@@ -47,7 +47,7 @@ IS
    -- not documented
    TYPE cat_loc_rec_t IS RECORD (
       office_id        VARCHAR2 (16),
-      base_loc_id      VARCHAR2 (24),
+      base_loc_id      VARCHAR2 (16),
       state_initial    VARCHAR2 (2),
       county_name      VARCHAR2 (40),
       timezone_name    VARCHAR2 (28),
@@ -57,7 +57,7 @@ IS
       elevation        NUMBER,
       elev_unit_id     VARCHAR2 (16),
       vertical_datum   VARCHAR2 (16),
-      public_name      VARCHAR2 (57),
+      public_name      VARCHAR2 (32),
       long_name        VARCHAR2 (80),
       description      VARCHAR2 (512)
    );
@@ -66,8 +66,8 @@ IS
    -- not documented
    TYPE cat_location_rec_t IS RECORD (
       db_office_id       VARCHAR2 (16),
-      location_id        VARCHAR2 (57),
-      base_location_id   VARCHAR2 (24),
+      location_id        VARCHAR2 (49),
+      base_location_id   VARCHAR2 (16),
       sub_location_id    VARCHAR2 (32),
       state_initial      VARCHAR2 (2),
       county_name        VARCHAR2 (40),
@@ -79,7 +79,7 @@ IS
       elevation          NUMBER,
       elev_unit_id       VARCHAR2 (16),
       vertical_datum     VARCHAR2 (16),
-      public_name        VARCHAR2 (57),
+      public_name        VARCHAR2 (32),
       long_name          VARCHAR2 (80),
       description        VARCHAR2 (512),
       active_flag        VARCHAR2 (1)
@@ -89,8 +89,8 @@ IS
    -- not documented
    TYPE cat_location2_rec_t IS RECORD (
       db_office_id         VARCHAR2 (16),
-      location_id          VARCHAR2 (57),
-      base_location_id     VARCHAR2 (24),
+      location_id          VARCHAR2 (49),
+      base_location_id     VARCHAR2 (16),
       sub_location_id      VARCHAR2 (32),
       state_initial        VARCHAR2 (2),
       county_name          VARCHAR2 (40),
@@ -102,7 +102,7 @@ IS
       elevation            NUMBER,
       elev_unit_id         VARCHAR2 (16),
       vertical_datum       VARCHAR2 (16),
-      public_name          VARCHAR2 (57),
+      public_name          VARCHAR2 (32),
       long_name            VARCHAR2 (80),
       description          VARCHAR2 (512),
       active_flag          VARCHAR2 (1),
@@ -126,23 +126,23 @@ IS
       loc_group_id        VARCHAR2 (32),
       loc_group_desc      VARCHAR2 (128),
 	   shared_loc_alias_id VARCHAR2 (128),
-		shared_loc_ref_id   VARCHAR2 (57)
+		shared_loc_ref_id   VARCHAR2 (49)
    );
    -- not documented
    TYPE cat_loc_grp_tab_t IS TABLE OF cat_loc_grp_rec_t;
    -- not documented
    TYPE cat_loc_alias_rec_t IS RECORD (
       db_office_id        VARCHAR2 (16),
-      location_id         VARCHAR2 (57),
+      location_id         VARCHAR2 (49),
       cat_db_office_id    VARCHAR2 (16),
       loc_category_id     VARCHAR2 (32),
       grp_db_office_id    VARCHAR2 (16),
       loc_group_id        VARCHAR2 (32),
       loc_group_desc      VARCHAR2 (128),
       loc_alias_id        VARCHAR2 (128),
-		loc_ref_id          VARCHAR2 (57),
+		loc_ref_id          VARCHAR2 (49),
       shared_loc_alias_id VARCHAR2 (128),
-      shared_loc_ref_id   VARCHAR2 (57),
+      shared_loc_ref_id   VARCHAR2 (49),
       attribute           NUMBER
    );
    -- not documented
@@ -150,10 +150,10 @@ IS
    -- not documented
    TYPE cat_loc_alias_abbrev_rec_t IS RECORD (
       office_id     VARCHAR2 (16),
-      location_id   VARCHAR2 (57),
+      location_id   VARCHAR2 (49),
       agency_id     VARCHAR2 (16),
       alias_id      VARCHAR2 (128),
-		loc_ref_id    VARCHAR2 (57)
+		loc_ref_id    VARCHAR2 (49)
    );
    -- not documented
    TYPE cat_loc_alias_abbrev_tab_t IS TABLE OF cat_loc_alias_abbrev_rec_t;
@@ -173,16 +173,16 @@ IS
    -- not documented
    TYPE cat_ts_alias_rec_t IS RECORD (
       db_office_id       VARCHAR2 (16),
-      ts_id              VARCHAR2(191),
+      ts_id              VARCHAR2 (183),
       cat_db_office_id   VARCHAR2 (16),
       ts_category_id     VARCHAR2 (32),
       grp_db_office_id   VARCHAR2 (16),
       ts_group_id        VARCHAR2 (32),
       ts_group_desc      VARCHAR2 (128),
       ts_alias_id        VARCHAR2 (256),
-      ts_ref_id          VARCHAR2(191),
+      ts_ref_id          VARCHAR2 (183),
       shared_ts_alias_id VARCHAR2 (256),
-      shared_ts_ref_id   VARCHAR2(191),
+      shared_ts_ref_id   VARCHAR2 (183),
       attribute          NUMBER
    );
    -- not documented
@@ -306,7 +306,7 @@ IS
    -- not documented
    TYPE cat_dss_xchg_ts_map_rec_t IS RECORD (
       office_id               VARCHAR2 (16),
-      cwms_ts_id              VARCHAR2(191),
+      cwms_ts_id              VARCHAR2 (183),
       dss_pathname            VARCHAR2 (391),
       dss_parameter_type_id   VARCHAR2 (8),
       dss_unit_id             VARCHAR2 (16),
@@ -518,7 +518,7 @@ IS
 --    Name                Datatype      Description
 --    ------------------- ------------- ----------------------------
 --    office_id           varchar2(16)  Name of owning office
---    cwms_ts_id          varchar2(191) Time series identifier
+--    cwms_ts_id          varchar2(183) Time series identifier
 --    interval_utc_offset number(10)    Offset into the UTC interval
 --    lrts_timezone*      varchar2(28)  Name of LRTS time zone or null
 --
@@ -613,13 +613,13 @@ IS
     *   <tr>
     *     <td class="descr-center">2</td>
     *     <td class="descr">base_location_id</td>
-    *     <td class="descr">varchar2(24)</td>
+    *     <td class="descr">varchar2(16)</td>
     *     <td class="descr">The base location identifier of the time serires</td>
     *   </tr>
     *   <tr>
     *     <td class="descr-center">3</td>
     *     <td class="descr">cwms_ts_id</td>
-    *     <td class="descr">varchar2(191)</td>
+    *     <td class="descr">varchar2(183)</td>
     *     <td class="descr">The time series identifier</td>
     *   </tr>
     *   <tr>
@@ -719,13 +719,13 @@ IS
     *   <tr>
     *     <td class="descr-center">2</td>
     *     <td class="descr">base_location_id</td>
-    *     <td class="descr">varchar2(24)</td>
+    *     <td class="descr">varchar2(16)</td>
     *     <td class="descr">The base location identifier of the time serires</td>
     *   </tr>
     *   <tr>
     *     <td class="descr-center">3</td>
     *     <td class="descr">cwms_ts_id</td>
-    *     <td class="descr">varchar2(191)</td>
+    *     <td class="descr">varchar2(183)</td>
     *     <td class="descr">The time series identifier</td>
     *   </tr>
     *   <tr>
@@ -816,7 +816,7 @@ IS
     *   <tr>
     *     <td class="descr-center">2</td>
     *     <td class="descr">ts_id</td>
-    *     <td class="descr">varchar2(191)</td>
+    *     <td class="descr">varchar2(183)</td>
     *     <td class="descr">The time series identifier</td>
     *   </tr>
     *   <tr>
@@ -858,7 +858,7 @@ IS
     *   <tr>
     *     <td class="descr-center">9</td>
     *     <td class="descr">ref_ts_id</td>
-    *     <td class="descr">varchar2(191)</td>
+    *     <td class="descr">varchar2(183)</td>
     *     <td class="descr">A referenced time series identifier for the time series with respect to the group</td>
     *   </tr>
     *   <tr>
@@ -870,7 +870,7 @@ IS
     *   <tr>
     *     <td class="descr-center">11</td>
     *     <td class="descr">shared_ref_ts_id</td>
-    *     <td class="descr">varchar2(191)</td>
+    *     <td class="descr">varchar2(183)</td>
     *     <td class="descr">A referenced time series identifier shared by all members of the group</td>
     *   </tr>
     *   <tr>
@@ -942,7 +942,7 @@ IS
     *   <tr>
     *     <td class="descr-center">2</td>
     *     <td class="descr">ts_id</td>
-    *     <td class="descr">varchar2(191)</td>
+    *     <td class="descr">varchar2(183)</td>
     *     <td class="descr">The time series identifier</td>
     *   </tr>
     *   <tr>
@@ -984,7 +984,7 @@ IS
     *   <tr>
     *     <td class="descr-center">9</td>
     *     <td class="descr">ref_ts_id</td>
-    *     <td class="descr">varchar2(191)</td>
+    *     <td class="descr">varchar2(183)</td>
     *     <td class="descr">A referenced time series identifier for the time series with respect to the group</td>
     *   </tr>
     *   <tr>
@@ -996,7 +996,7 @@ IS
     *   <tr>
     *     <td class="descr-center">11</td>
     *     <td class="descr">shared_ref_ts_id</td>
-    *     <td class="descr">varchar2(191)</td>
+    *     <td class="descr">varchar2(183)</td>
     *     <td class="descr">A referenced time series identifier shared by all members of the group</td>
     *   </tr>
     *   <tr>
@@ -1073,7 +1073,7 @@ IS
     *   <tr>
     *     <td class="descr-center">8</td>
     *     <td class="descr">shared_ref_ts_id</td>
-    *     <td class="descr">varchar2(191)</td>
+    *     <td class="descr">varchar2(183)</td>
     *     <td class="descr">A referenced time series identifier shared by all members of the group</td>
     *   </tr>
     * </table>
@@ -1145,7 +1145,7 @@ IS
     *   <tr>
     *     <td class="descr-center">8</td>
     *     <td class="descr">shared_ref_ts_id</td>
-    *     <td class="descr">varchar2(191)</td>
+    *     <td class="descr">varchar2(183)</td>
     *     <td class="descr">A referenced time series identifier shared by all members of the group</td>
     *   </tr>
     * </table>
@@ -1193,13 +1193,13 @@ IS
     *   <tr>
     *     <td class="descr-center">2</td>
     *     <td class="descr">location_id</td>
-    *     <td class="descr">varchar2(57)</td>
+    *     <td class="descr">varchar2(49)</td>
     *     <td class="descr">The location identifier</td>
     *   </tr>
     *   <tr>
     *     <td class="descr-center">3</td>
     *     <td class="descr">base_location_id</td>
-    *     <td class="descr">varchar2(24)</td>
+    *     <td class="descr">varchar2(16)</td>
     *     <td class="descr">The base location identifier of the location</td>
     *   </tr>
     *   <tr>
@@ -1271,7 +1271,7 @@ IS
     *   <tr>
     *     <td class="descr-center">15</td>
     *     <td class="descr">public_name</td>
-    *     <td class="descr">varchar2(57)</td>
+    *     <td class="descr">varchar2(32)</td>
     *     <td class="descr">The public name of the location</td>
     *   </tr>
     *   <tr>
@@ -1340,13 +1340,13 @@ IS
     *   <tr>
     *     <td class="descr-center">2</td>
     *     <td class="descr">location_id</td>
-    *     <td class="descr">varchar2(57)</td>
+    *     <td class="descr">varchar2(49)</td>
     *     <td class="descr">The location identifier</td>
     *   </tr>
     *   <tr>
     *     <td class="descr-center">3</td>
     *     <td class="descr">base_location_id</td>
-    *     <td class="descr">varchar2(24)</td>
+    *     <td class="descr">varchar2(16)</td>
     *     <td class="descr">The base location identifier of the location</td>
     *   </tr>
     *   <tr>
@@ -1418,7 +1418,7 @@ IS
     *   <tr>
     *     <td class="descr-center">15</td>
     *     <td class="descr">public_name</td>
-    *     <td class="descr">varchar2(57)</td>
+    *     <td class="descr">varchar2(32)</td>
     *     <td class="descr">The public name of the location</td>
     *   </tr>
     *   <tr>
@@ -1474,13 +1474,13 @@ IS
     *   <tr>
     *     <td class="descr-center">2</td>
     *     <td class="descr">location_id</td>
-    *     <td class="descr">varchar2(57)</td>
+    *     <td class="descr">varchar2(49)</td>
     *     <td class="descr">The location identifier</td>
     *   </tr>
     *   <tr>
     *     <td class="descr-center">3</td>
     *     <td class="descr">base_location_id</td>
-    *     <td class="descr">varchar2(24)</td>
+    *     <td class="descr">varchar2(16)</td>
     *     <td class="descr">The base location identifier of the location</td>
     *   </tr>
     *   <tr>
@@ -1552,7 +1552,7 @@ IS
     *   <tr>
     *     <td class="descr-center">15</td>
     *     <td class="descr">public_name</td>
-    *     <td class="descr">varchar2(57)</td>
+    *     <td class="descr">varchar2(32)</td>
     *     <td class="descr">The public name of the location</td>
     *   </tr>
     *   <tr>
@@ -1663,13 +1663,13 @@ IS
     *   <tr>
     *     <td class="descr-center">2</td>
     *     <td class="descr">location_id</td>
-    *     <td class="descr">varchar2(57)</td>
+    *     <td class="descr">varchar2(49)</td>
     *     <td class="descr">The location identifier</td>
     *   </tr>
     *   <tr>
     *     <td class="descr-center">3</td>
     *     <td class="descr">base_location_id</td>
-    *     <td class="descr">varchar2(24)</td>
+    *     <td class="descr">varchar2(16)</td>
     *     <td class="descr">The base location identifier of the location</td>
     *   </tr>
     *   <tr>
@@ -1741,7 +1741,7 @@ IS
     *   <tr>
     *     <td class="descr-center">15</td>
     *     <td class="descr">public_name</td>
-    *     <td class="descr">varchar2(57)</td>
+    *     <td class="descr">varchar2(32)</td>
     *     <td class="descr">The public name of the location</td>
     *   </tr>
     *   <tr>
@@ -1858,7 +1858,7 @@ IS
     *   <tr>
     *     <td class="descr-center">2</td>
     *     <td class="descr">location_id</td>
-    *     <td class="descr">varchar2(57)</td>
+    *     <td class="descr">varchar2(49)</td>
     *     <td class="descr">The location identifier</td>
     *   </tr>
     *   <tr>
@@ -1900,7 +1900,7 @@ IS
     *   <tr>
     *     <td class="descr-center">9</td>
     *     <td class="descr">ref_location_id</td>
-    *     <td class="descr">varchar2(57)</td>
+    *     <td class="descr">varchar2(49)</td>
     *     <td class="descr">A referenced location identifier for the location with respect to the group</td>
     *   </tr>
     *   <tr>
@@ -1912,7 +1912,7 @@ IS
     *   <tr>
     *     <td class="descr-center">11</td>
     *     <td class="descr">shared_loc_ref_id</td>
-    *     <td class="descr">varchar2(57)</td>
+    *     <td class="descr">varchar2(49)</td>
     *     <td class="descr">A referenced location identifier shared by all members of the group</td>
     *   </tr>
     *   <tr>
@@ -1988,7 +1988,7 @@ IS
     *   <tr>
     *     <td class="descr-center">2</td>
     *     <td class="descr">location_id</td>
-    *     <td class="descr">varchar2(57)</td>
+    *     <td class="descr">varchar2(49)</td>
     *     <td class="descr">The location identifier</td>
     *   </tr>
     *   <tr>
@@ -2030,7 +2030,7 @@ IS
     *   <tr>
     *     <td class="descr-center">9</td>
     *     <td class="descr">ref_location_id</td>
-    *     <td class="descr">varchar2(57)</td>
+    *     <td class="descr">varchar2(49)</td>
     *     <td class="descr">A referenced location identifier for the location with respect to the group</td>
     *   </tr>
     *   <tr>
@@ -2042,7 +2042,7 @@ IS
     *   <tr>
     *     <td class="descr-center">11</td>
     *     <td class="descr">shared_loc_ref_id</td>
-    *     <td class="descr">varchar2(57)</td>
+    *     <td class="descr">varchar2(49)</td>
     *     <td class="descr">A referenced location identifier shared by all members of the group</td>
     *   </tr>
     *   <tr>
@@ -3075,7 +3075,7 @@ IS
     *   <tr>
     *     <td class="descr-center">1</td>
     *     <td class="descr">cwms_ts_id</td>
-    *     <td class="descr">varchar2(191)</td>
+    *     <td class="descr">varchar2(183)</td>
     *     <td class="descr">The CWMS time series identifier</td>
     *   </tr>
     *   <tr>
@@ -3156,7 +3156,7 @@ IS
     *   <tr>
     *     <td class="descr-center">1</td>
     *     <td class="descr">cwms_ts_id</td>
-    *     <td class="descr">varchar2(191)</td>
+    *     <td class="descr">varchar2(183)</td>
     *     <td class="descr">The CWMS time series identifier</td>
     *   </tr>
     *   <tr>
@@ -3415,7 +3415,7 @@ IS
     *   <tr>
     *     <td class="descr-center">8</td>
     *     <td class="descr">shared_loc_ref_id</td>
-    *     <td class="descr">varchar2(57)</td>
+    *     <td class="descr">varchar2(49)</td>
     *     <td class="descr">A location identifer referenced by all locations that are members of the group</td>
     *   </tr>
     * </table>
@@ -3488,7 +3488,7 @@ IS
     *   <tr>
     *     <td class="descr-center">8</td>
     *     <td class="descr">shared_loc_ref_id</td>
-    *     <td class="descr">varchar2(57)</td>
+    *     <td class="descr">varchar2(49)</td>
     *     <td class="descr">A location identifer referenced by all locations that are members of the group</td>
     *   </tr>
     * </table>
@@ -3851,7 +3851,7 @@ IS
     *   <tr>
     *     <td class="descr-center">2</td>
     *     <td class="descr">stream_id</td>
-    *     <td class="descr">varchar2(57)</td>
+    *     <td class="descr">varchar2(49)</td>
     *     <td class="descr">The location identifier of the stream</td>
     *   </tr>
     *   <tr>
@@ -3863,7 +3863,7 @@ IS
     *   <tr>
     *     <td class="descr-center">4</td>
     *     <td class="descr">flows_into_stream</td>
-    *     <td class="descr">varchar2(57)</td>
+    *     <td class="descr">varchar2(49)</td>
     *     <td class="descr">The location identifier of the receiving stream</td>
     *   </tr>
     *   <tr>
@@ -3881,7 +3881,7 @@ IS
     *   <tr>
     *     <td class="descr-center">7</td>
     *     <td class="descr">diverts_from_stream</td>
-    *     <td class="descr">varchar2(57)</td>
+    *     <td class="descr">varchar2(49)</td>
     *     <td class="descr">The location identifier of the diverting stream</td>
     *   </tr>
     *   <tr>
@@ -4066,7 +4066,7 @@ IS
     *   <tr>
     *     <td class="descr-center">2</td>
     *     <td class="descr">stream_id</td>
-    *     <td class="descr">varchar2(57)</td>
+    *     <td class="descr">varchar2(49)</td>
     *     <td class="descr">The location identifier of the stream</td>
     *   </tr>
     *   <tr>
@@ -4078,7 +4078,7 @@ IS
     *   <tr>
     *     <td class="descr-center">4</td>
     *     <td class="descr">flows_into_stream</td>
-    *     <td class="descr">varchar2(57)</td>
+    *     <td class="descr">varchar2(49)</td>
     *     <td class="descr">The location identifier of the receiving stream</td>
     *   </tr>
     *   <tr>
@@ -4096,7 +4096,7 @@ IS
     *   <tr>
     *     <td class="descr-center">7</td>
     *     <td class="descr">diverts_from_stream</td>
-    *     <td class="descr">varchar2(57)</td>
+    *     <td class="descr">varchar2(49)</td>
     *     <td class="descr">The location identifier of the diverting stream</td>
     *   </tr>
     *   <tr>
@@ -4189,7 +4189,7 @@ IS
     *   <tr>
     *     <td class="descr-center">2</td>
     *     <td class="descr">stream_id</td>
-    *     <td class="descr">varchar2(57)</td>
+    *     <td class="descr">varchar2(49)</td>
     *     <td class="descr">The location identifier of the stream</td>
     *   </tr>
     *   <tr>
@@ -4314,7 +4314,7 @@ IS
     *   <tr>
     *     <td class="descr-center">2</td>
     *     <td class="descr">stream_id</td>
-    *     <td class="descr">varchar2(57)</td>
+    *     <td class="descr">varchar2(49)</td>
     *     <td class="descr">The location identifier of the stream</td>
     *   </tr>
     *   <tr>
@@ -4395,13 +4395,13 @@ IS
     *   <tr>
     *     <td class="descr-center">2</td>
     *     <td class="descr">stream_id</td>
-    *     <td class="descr">varchar2(57)</td>
+    *     <td class="descr">varchar2(49)</td>
     *     <td class="descr">The location identifier of the stream</td>
     *   </tr>
     *   <tr>
     *     <td class="descr-center">3</td>
     *     <td class="descr">location_id</td>
-    *     <td class="descr">varchar2(57)</td>
+    *     <td class="descr">varchar2(49)</td>
     *     <td class="descr">The location identifier of the location on the stream</td>
     *   </tr>
     *   <tr>
@@ -4553,13 +4553,13 @@ IS
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">stream_id</td>
- *     <td class="descr">varchar2(57)</td>
+ *     <td class="descr">varchar2(49)</td>
  *     <td class="descr">The location identifier of the stream</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">3</td>
  *     <td class="descr">location_id</td>
- *     <td class="descr">varchar2(57)</td>
+ *     <td class="descr">varchar2(49)</td>
  *     <td class="descr">The location identifier of the location on the stream</td>
  *   </tr>
  *   <tr>
@@ -4671,13 +4671,13 @@ IS
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">basin_id</td>
- *     <td class="descr">varchar2(57)</td>
+ *     <td class="descr">varchar2(49)</td>
  *     <td class="descr">The location identifier of the basin</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">3</td>
  *     <td class="descr">parent_basin_id</td>
- *     <td class="descr">varchar2(57)</td>
+ *     <td class="descr">varchar2(49)</td>
  *     <td class="descr">The location identifier of the parent basin, if any</td>
  *   </tr>
  *   <tr>
@@ -4689,7 +4689,7 @@ IS
  *   <tr>
  *     <td class="descr-center">5</td>
  *     <td class="descr">primary_stream_id</td>
- *     <td class="descr">varchar2(57)</td>
+ *     <td class="descr">varchar2(49)</td>
  *     <td class="descr">The location identifier of the primary stream</td>
  *   </tr>
  *   <tr>
@@ -4798,13 +4798,13 @@ IS
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">basin_id</td>
- *     <td class="descr">varchar2(57)</td>
+ *     <td class="descr">varchar2(49)</td>
  *     <td class="descr">The location identifier of the basin</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">3</td>
  *     <td class="descr">parent_basin_id</td>
- *     <td class="descr">varchar2(57)</td>
+ *     <td class="descr">varchar2(49)</td>
  *     <td class="descr">The location identifier of the parent basin, if any</td>
  *   </tr>
  *   <tr>
@@ -4816,7 +4816,7 @@ IS
  *   <tr>
  *     <td class="descr-center">5</td>
  *     <td class="descr">primary_stream_id</td>
- *     <td class="descr">varchar2(57)</td>
+ *     <td class="descr">varchar2(49)</td>
  *     <td class="descr">The location identifier of the primary stream</td>
  *   </tr>
  *   <tr>

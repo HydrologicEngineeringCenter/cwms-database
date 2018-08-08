@@ -1845,7 +1845,7 @@ AS
 		l_tr_template_exists 	BOOLEAN := FALSE;
 		l_replace_existing		BOOLEAN
 			:= cwms_util.return_true_or_false (p_replace_existing);
-		l_base_location_id		VARCHAR2 (24);
+		l_base_location_id		VARCHAR2 (16);
 		l_sub_location_id 		VARCHAR2 (32);
 		l_base_parameter_id		VARCHAR2 (16);
 		l_sub_parameter_id		VARCHAR2 (32);

@@ -391,7 +391,7 @@ is
    l_count               pls_integer;
    l_base_location_code  integer;
    l_location_code       integer;
-   l_project_id          varchar2(57);
+   l_project_id          varchar2(49);
    l_parts               str_tab_t;
 begin
    -------------------

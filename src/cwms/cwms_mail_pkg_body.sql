@@ -33,7 +33,7 @@ as
       > 
       */
       crlf          constant varchar2(2):= chr(13)||chr(10);
-      l_mxch        constant varchar2(30) := cwms_properties.get_property('CWMSDB', 'email.mail-exchanger', 'gw2.usace.army.mil', 'CWMS');
+      l_mxch        constant varchar2(30) := 'gw1.usace.army.mil';  
       l_boundary    constant varchar2(24) := '~~this~is~the~boundary~~';
       l_conn        utl_smtp.connection;
       l_to          str_tab_t;

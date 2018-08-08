@@ -52,8 +52,8 @@ end get_lock_code;
 --    Name                      Datatype      Description
 --    ------------------------ ------------- ----------------------------
 --    db_office_id             varchar2(16)   owning office of location
---    project_location_id      varchar2(57)   the parent project's location id
---    base_location_id         varchar2(24)   base location id
+--    project_location_id      varchar2(49)   the parent project's location id
+--    base_location_id         varchar2(16)   base location id
 --    sub_location_id          varchar2(32)   sub-location id, if any
 --    time_zone_name           varchar2(28)   local time zone name for location
 --    latitude                 number         location latitude
@@ -62,7 +62,7 @@ end get_lock_code;
 --    elevation                number         location elevation
 --    elev_unit_id             varchar2(16)   location elevation units
 --    vertical_datum           varchar2(16)   veritcal datum of elevation
---    public_name              varchar2(57)   location public name
+--    public_name              varchar2(32)   location public name
 --    long_name                varchar2(80)   location long name
 --    description              varchar2(512)  location description
 --    active_flag              varchar2(1)    'T' if active, else 'F'
@@ -88,9 +88,9 @@ begin
       select po.office_id as project_office_id,
              cwms_util.concat_base_sub_id(
                pbl.base_location_id, 
-               ppl.sub_location_id) as project_location_id,  --    project_location_id      varchar2(57)   the parent project's location id
+               ppl.sub_location_id) as project_location_id,  --    project_location_id      varchar2(49)   the parent project's location id  
              o.office_id as db_office_id,                    --    db_office_id             varchar2(16)   owning office of location         
-             bl.base_location_id,                           --    base_location_id         varchar2(24)   base location id
+             bl.base_location_id,                           --    base_location_id         varchar2(16)   base location id                  
              pl.sub_location_id,                            --    sub_location_id          varchar2(32)   sub-location id, if any           
              tz.time_zone_name,                              --    time_zone_name           varchar2(28)   local time zone name for location 
              pl.latitude,                                   --    latitude                 number         location latitude                 
@@ -99,7 +99,7 @@ begin
              pl.elevation,                                  --    elevation                number         location elevation                
              u.unit_id as elevation_unit_id,                 --    elev_unit_id             varchar2(16)   location elevation units          
              pl.vertical_datum,                             --    vertical_datum           varchar2(16)   veritcal datum of elevation       
-             pl.public_name,                                --    public_name              varchar2(57)   location public name              
+             pl.public_name,                                --    public_name              varchar2(32)   location public name              
              pl.long_name,                                  --    long_name                varchar2(80)   location long name                
              pl.description,                                --    description              varchar2(512)  location description              
              pl.active_flag                                 --    active_flag              varchar2(1)    'T' if active, else 'F'           

@@ -12,6 +12,20 @@ IS
  *
  * @param p_project_cat A cursor containing the project locations, ordered by
  * project location identifier.  The columns are:
+--    db_office_id             varchar2(16)   owning office of location
+--    base_location_id         varchar2(16)   base location id
+--    sub_location_id          varchar2(32)   sub-location id, if any
+--    time_zone_name           varchar2(28)   local time zone name for location
+--    latitude                 number         location latitude
+--    longitude                number         location longitude
+--    horizontal_datum         varchar2(16)   horizontal datrum of lat/lon
+--    elevation                number         location elevation
+--    elev_unit_id             varchar2(16)   location elevation units
+--    vertical_datum           varchar2(16)   veritcal datum of elevation
+--    public_name              varchar2(32)   location public name
+--    long_name                varchar2(80)   location long name
+--    description              varchar2(512)  location description
+--    active_flag              varchar2(1)    'T' if active, else 'F'
  * <p>
  * <table class="descr">
  *   <tr>
@@ -29,7 +43,7 @@ IS
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">base_location_id</td>
- *     <td class="descr">varchar2(24)</td>
+ *     <td class="descr">varchar2(16)</td>
  *     <td class="descr">The base location identifier of the project</td>
  *   </tr>
  *   <tr>
@@ -62,6 +76,20 @@ IS
  *     <td class="descr">varchar2(16)</td>
  *     <td class="descr">The datum of the actual latitude and longitude</td>
  *   </tr>
+--   1 db_office_id             varchar2(16)   owning office of location
+--   2 base_location_id         varchar2(16)   base location id
+--   3 sub_location_id          varchar2(32)   sub-location id, if any
+--   4 time_zone_name           varchar2(28)   local time zone name for location
+--   5 latitude                 number         location latitude
+--   6 longitude                number         location longitude
+--   7 horizontal_datum         varchar2(16)   horizontal datrum of lat/lon
+--   8 elevation                number         location elevation
+--   9 elev_unit_id             varchar2(16)   location elevation units
+--   0 vertical_datum           varchar2(16)   veritcal datum of elevation
+--   1 public_name              varchar2(32)   location public name
+--   2 long_name                varchar2(80)   location long name
+--   3 description              varchar2(512)  location description
+--   4 active_flag              varchar2(1)    'T' if active, else 'F'
  *   <tr>
  *     <td class="descr-center">8</td>
  *     <td class="descr">elevation</td>
@@ -83,7 +111,7 @@ IS
  *   <tr>
  *     <td class="descr-center">11</td>
  *     <td class="descr">public_name</td>
- *     <td class="descr">varchar2(57)</td>
+ *     <td class="descr">varchar2(32)</td>
  *     <td class="descr">The public name of the project location</td>
  *   </tr>
  *   <tr>
@@ -357,7 +385,7 @@ PROCEDURE rename_basin_group (
       -- the basin location group id.
       p_loc_group_id      IN   VARCHAR2,
       -- the array of location ids to remove.
-      p_location_array    IN   str_tab_t,
+      p_location_array    IN   char_49_array_type,
       -- if T, then all assigned locs are removed from the group.
       -- p_location_array needs to be null when the arg is T.
       p_unassign_all      IN   VARCHAR2 DEFAULT 'F',
@@ -503,7 +531,7 @@ function is_locked(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">project_id</td>
- *     <td class="descr">varchar2(57)</td>
+ *     <td class="descr">varchar2(49)</td>
  *     <td class="descr">The location identifier of the locked projects</td>
  *   </tr>
  *   <tr>
@@ -602,7 +630,7 @@ procedure cat_locks(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">project_id</td>
- *     <td class="descr">varchar2(57)</td>
+ *     <td class="descr">varchar2(49)</td>
  *     <td class="descr">The location identifier of the locked projects</td>
  *   </tr>
  *   <tr>
@@ -707,7 +735,7 @@ procedure update_lock_revoker_rights(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">project_id</td>
- *     <td class="descr">varchar2(57)</td>
+ *     <td class="descr">varchar2(49)</td>
  *     <td class="descr">The location identifier of the locked projects</td>
  *   </tr>
  *   <tr>
@@ -779,7 +807,7 @@ procedure cat_lock_revoker_rights(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">project_id</td>
- *     <td class="descr">varchar2(57)</td>
+ *     <td class="descr">varchar2(49)</td>
  *     <td class="descr">The location identifier of the locked projects</td>
  *   </tr>
  *   <tr>

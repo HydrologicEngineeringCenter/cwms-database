@@ -1956,7 +1956,7 @@ procedure delete_location_level(
    p_attribute_id            in  varchar2 default null,
    p_attribute_value         in  number   default null,
    p_attribute_units         in  varchar2 default null,
-   p_cascade                 in  varchar2 default 'F',
+   p_cascade                 in  varchar2 default ('F'),
    p_office_id               in  varchar2 default null);
 /**
  * Deletes a location level, optionally deleting any recurring pattern records
@@ -1966,11 +1966,9 @@ procedure delete_location_level(
  */
 procedure delete_location_level(
    p_location_level_code in integer,
-   p_cascade             in  varchar2 default 'F');
+   p_cascade             in  varchar2 default ('F'));
 /**
- * Deletes a location level, optionally deleting any recurring pattern records and location level indicators
- *
- * @deprecated Use Delete_Location_Level2 instead.
+ * Deletes a location level, optionally deleting any recurring pattern records
  *
  * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
  * @param p_effective_date     The effective date of the level to delete
@@ -1989,383 +1987,69 @@ procedure delete_location_level_ex(
    p_attribute_id            in  varchar2 default null,
    p_attribute_value         in  number   default null,
    p_attribute_units         in  varchar2 default null,
-   p_cascade                 in  varchar2 default 'F',
-   p_delete_indicators       in  varchar2 default 'F',
+   p_cascade                 in  varchar2 default ('F'),
+   p_delete_indicators       in  varchar2 default ('F'),
    p_office_id               in  varchar2 default null);
 /**
- * Deletes a location level, optionally deleting any recurring pattern records and location level indicators
- *
- * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
- * @param p_effective_date     The effective date of the level to delete
- * @param p_timezone_id        The time zone of p_effective_date
- * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
- * @param p_attribute_value    The value of the attribute, if applicable
- * @param p_attribute_units    The unit of the attribute, if applicable
- * @param p_cascade            A flag ('T' or 'F') that specifies whether to delete any recurring pattern records. If 'F' and such records exist, the routine will fail
- * @param p_delete_indicators  A flag ('T' or 'F') that specifies whether to delete any location level indicators associated with the location level
- * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
- */
-procedure delete_location_level2(
-   p_location_level_id       in  varchar2,
-   p_effective_date          in  date     default null,
-   p_timezone_id             in  varchar2 default 'UTC',
-   p_attribute_id            in  varchar2 default null,
-   p_attribute_value         in  number   default null,
-   p_attribute_units         in  varchar2 default null,
-   p_cascade                 in  varchar2 default 'F',
-   p_delete_indicators       in  varchar2 default 'F',
-   p_office_id               in  varchar2 default null);
-/**
- * Deletes a location level, optionally deleting any recurring pattern records and location level indicators
+ * Deletes a location level, optionally deleting any recurring pattern records
  *
  * @param p_location_level_code  The unique numeric value that identifies the location level in the database 
  * @param p_cascade              A flag ('T' or 'F') that specifies whether to delete any recurring pattern records. If 'F' and such records exist, the routine will fail
  * @param p_delete_indicators    A flag ('T' or 'F') that specifies whether to delete any location level indicators associated with the location level
  */
-procedure delete_location_level2(
+procedure delete_location_level_ex(
    p_location_level_code in integer,
-   p_cascade             in  varchar2 default 'F',
-   p_delete_indicators   in  varchar2 default 'F');
-/**
- * Deletes a location level, optionally deleting any recurring pattern records, location level indicators, and associated pool definitions
- *
- * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
- * @param p_effective_date     The effective date of the level to delete
- * @param p_timezone_id        The time zone of p_effective_date
- * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
- * @param p_attribute_value    The value of the attribute, if applicable
- * @param p_attribute_units    The unit of the attribute, if applicable
- * @param p_cascade            A flag ('T' or 'F') that specifies whether to delete any recurring pattern records. If 'F' and such records exist, the routine will fail
- * @param p_delete_indicators  A flag ('T' or 'F') that specifies whether to delete any location level indicators associated with the location level
- * @param p_delete_pools       A flag ('T' or 'F') that specifies whether to delete any explicit pool definitions associated with the location level
- * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
- */
-procedure delete_location_level3(
-   p_location_level_id       in  varchar2,
-   p_effective_date          in  date     default null,
-   p_timezone_id             in  varchar2 default 'UTC',
-   p_attribute_id            in  varchar2 default null,
-   p_attribute_value         in  number   default null,
-   p_attribute_units         in  varchar2 default null,
-   p_cascade                 in  varchar2 default 'F',
-   p_delete_indicators       in  varchar2 default 'F',
-   p_delete_pools            in  varchar2 default 'F',
-   p_office_id               in  varchar2 default null);
-/**
- * Deletes a location level, optionally deleting any recurring pattern records, location level indicators, and associated pool definitions
- *
- * @param p_location_level_code  The unique numeric value that identifies the location level in the database 
- * @param p_cascade              A flag ('T' or 'F') that specifies whether to delete any recurring pattern records. If 'F' and such records exist, the routine will fail
- * @param p_delete_pools         A flag ('T' or 'F') that specifies whether to delete any explicit pool definitions associated with the location level
- * @param p_delete_indicators    A flag ('T' or 'F') that specifies whether to delete any location level indicators associated with the location level
- */
-procedure delete_location_level3(
-   p_location_level_code in integer,
-   p_cascade             in  varchar2 default 'F',
-   p_delete_pools        in  varchar2 default 'F',
-   p_delete_indicators   in  varchar2 default 'F');
-/**     
- * Sets the configuration-specific label for a location level
- *
- * @param p_loc_lvl_label     The configuration-specific label for the location level, 
- * @param p_location_level_id The location level identifier
- * @param p_attribute_value   The value of the attribute, if any
- * @param p_attribute_units   The unit for the attribute value, if any
- * @param p_attribute_id      The attribute identifier for the location level
- * @param p_configuration_id  The configuration associated with the label. If NULL or not specified, the configuration will default to 'GENERAL/OTHER'
- * @param p_fail_if_exists    A flag (T/F) specifying whether to fail if a label already exists for the level and configuration
- * @param p_office_id         The office that owns the location level. If NULL or not specified, the current session's default office is used.
- */
-procedure set_loc_lvl_label(
-   p_loc_lvl_label           in varchar2, 
-   p_location_level_id       in varchar2,
-   p_attribute_value         in number   default null,
-   p_attribute_units         in varchar2 default null,
-   p_attribute_id            in varchar2 default null,
-   p_configuration_id        in varchar2 default null,
-   p_fail_if_exists          in varchar2 default 'T',
-   p_office_id               in varchar2 default null);
-/**
- * Gets the configuration-specific label for a location level
- *
- * @param p_loc_lvl_label     The configuration-specific label for the location level, 
- * @param p_location_level_id The location level identifier
- * @param p_attribute_value   The value of the attribute, if any
- * @param p_attribute_units   The unit for the attribute value, if any
- * @param p_attribute_id      The attribute identifier for the location level
- * @param p_configuration_id  The configuration associated with the label. If NULL or not specified, the configuration will default to 'GENERAL/OTHER'
- * @param p_office_id         The office that owns the location level. If NULL or not specified, the current session's default office is used.
- */
-procedure get_loc_lvl_label(
-   p_loc_lvl_label           out varchar2, 
-   p_location_level_id       in  varchar2,
-   p_attribute_value         in  number   default null,
-   p_attribute_units         in  varchar2 default null,
-   p_attribute_id            in  varchar2 default null,
-   p_configuration_id        in  varchar2 default null,
-   p_office_id               in  varchar2 default null);
-/**       
- * Gets the configuration-specific label for a location level
- *
- * @param p_location_level_id The location level identifier
- * @param p_attribute_value   The value of the attribute, if any
- * @param p_attribute_units   The unit for the attribute value, if any
- * @param p_attribute_id      The attribute identifier for the location level
- * @param p_configuration_id  The configuration associated with the label. If NULL or not specified, the configuration will default to 'GENERAL/OTHER'
- * @param p_office_id         The office that owns the location level. If NULL or not specified, the current session's default office is used.
- *
- * @return The configuration-specific label for the location level, 
- */
-function get_loc_lvl_label_f(
-   p_location_level_id       in varchar2,
-   p_attribute_value         in number   default null,
-   p_attribute_units         in varchar2 default null,
-   p_attribute_id            in varchar2 default null,
-   p_configuration_id        in varchar2 default null,
-   p_office_id               in varchar2 default null)
-   return varchar2;
-/**     
- * Deletes the configuration-specific label for a location level
- *
- * @param p_location_level_id The location level identifier
- * @param p_attribute_value   The value of the attribute, if any
- * @param p_attribute_units   The unit for the attribute value, if any
- * @param p_attribute_id      The attribute identifier for the location level
- * @param p_configuration_id  The configuration associated with the label. If NULL or not specified, the configuration will default to 'GENERAL/OTHER'
- * @param p_office_id         The office that owns the location level. If NULL or not specified, the current session's default office is used.
- */
-procedure delete_loc_lvl_label(
-   p_location_level_id       in varchar2,
-   p_attribute_value         in number   default null,
-   p_attribute_units         in varchar2 default null,
-   p_attribute_id            in varchar2 default null,
-   p_configuration_id        in varchar2 default null,
-   p_office_id               in varchar2 default null);
-/**     
- * Sets the configuration-specific label for a location level
- *
- * @param p_loc_lvl_label            The configuration-specific label for the location level, 
- * @param p_location_code            The location code for the location level
- * @param p_specified_level_code     The specified level code for the location level
- * @param p_parameter_code           The parameter code for the location level
- * @param p_parameter_type_code      The the parameter type code for the location level
- * @param p_duration_code            The duration code for the location level
- * @param p_attr_value               The value of the attribute for the location level, if any, in database units
- * @param p_attr_parameter_code      The parameter code of the attributes for the location lavel, if any
- * @param p_attr_parameter_type_code The parameter type code of the attributes for the location lavel, if any
- * @param p_attr_duration_code       The duration code of the attributes for the location lavel, if any
- * @param p_configuration_code       The configuration associated with the label. If NULL or not specified, the configuration will default to 'GENERAL/OTHER'
- * @param p_fail_if_exists           A flag (T/F) specifying whether to fail if a label already exists for the level and configuration
- */
-procedure set_loc_lvl_label(
-   p_loc_lvl_label            in varchar2, 
-   p_location_code            in integer,
-   p_specified_level_code     in integer,
-   p_parameter_code           in integer,
-   p_parameter_type_code      in integer,
-   p_duration_code            in integer,
-   p_attr_value               in number  default null,
-   p_attr_parameter_code      in integer default null,
-   p_attr_parameter_type_code in integer default null,
-   p_attr_duration_code       in integer default null,
-   p_configuration_code       in integer default null,
-   p_fail_if_exists           in varchar2 default 'T'); 
-/**     
- * Gets the configuration-specific label for a location level
- *
- * @param p_loc_lvl_label            The configuration-specific label for the location level, 
- * @param p_location_code            The location code for the location level
- * @param p_specified_level_code     The specified level code for the location level
- * @param p_parameter_code           The parameter code for the location level
- * @param p_parameter_type_code      The the parameter type code for the location level
- * @param p_duration_code            The duration code for the location level
- * @param p_attr_value               The value of the attribute for the location level, if any, in database units
- * @param p_attr_parameter_code      The parameter code of the attributes for the location lavel, if any
- * @param p_attr_parameter_type_code The parameter type code of the attributes for the location lavel, if any
- * @param p_attr_duration_code       The duration code of the attributes for the location lavel, if any
- * @param p_configuration_code       The configuration associated with the label. If NULL or not specified, the configuration will default to 'GENERAL/OTHER'
- */
-procedure get_loc_lvl_label(
-   p_loc_lvl_label            out varchar2, 
-   p_location_code            in  integer,
-   p_specified_level_code     in  integer,
-   p_parameter_code           in  integer,
-   p_parameter_type_code      in  integer,
-   p_duration_code            in  integer,
-   p_attr_value               in  number  default null,
-   p_attr_parameter_code      in  integer default null,
-   p_attr_parameter_type_code in  integer default null,
-   p_attr_duration_code       in  integer default null,
-   p_configuration_code       in  integer default null); 
-/**     
- * Deletes the configuration-specific label for a location level
- *
- * @param p_location_code            The location code for the location level
- * @param p_specified_level_code     The specified level code for the location level
- * @param p_parameter_code           The parameter code for the location level
- * @param p_parameter_type_code      The the parameter type code for the location level
- * @param p_duration_code            The duration code for the location level
- * @param p_attr_value               The value of the attribute for the location level, if any, in database units
- * @param p_attr_parameter_code      The parameter code of the attributes for the location lavel, if any
- * @param p_attr_parameter_type_code The parameter type code of the attributes for the location lavel, if any
- * @param p_attr_duration_code       The duration code of the attributes for the location lavel, if any
- * @param p_configuration_code       The configuration associated with the label. If NULL or not specified, the configuration will default to 'GENERAL/OTHER'
- */
-procedure delete_loc_lvl_label(
-   p_location_code            in integer,
-   p_specified_level_code     in integer,
-   p_parameter_code           in integer,
-   p_parameter_type_code      in integer,
-   p_duration_code            in integer,
-   p_attr_value               in number  default null,
-   p_attr_parameter_code      in integer default null,
-   p_attr_parameter_type_code in integer default null,
-   p_attr_duration_code       in integer default null,
-   p_configuration_code       in integer default null); 
-/**     
- * Sets the source for a location level
- *
- * @param p_loc_lvl_source    The source for the location level, 
- * @param p_location_level_id The location level identifier
- * @param p_attribute_value   The value of the attribute, if any
- * @param p_attribute_units   The unit for the attribute value, if any
- * @param p_attribute_id      The attribute identifier for the location level
- * @param p_fail_if_exists    A flag (T/F) specifying whether to fail if a source already exists for the level
- * @param p_office_id         The office that owns the location level. If NULL or not specified, the current session's default office is used.
- */
-procedure set_loc_lvl_source(
-   p_loc_lvl_source          in varchar2, 
-   p_location_level_id       in varchar2,
-   p_attribute_value         in number   default null,
-   p_attribute_units         in varchar2 default null,
-   p_attribute_id            in varchar2 default null,
-   p_fail_if_exists          in varchar2 default 'T',
-   p_office_id               in varchar2 default null);
-/**
- * Gets the source for a location level
- *
- * @param p_loc_lvl_source    The source for the location level, 
- * @param p_location_level_id The location level identifier
- * @param p_attribute_value   The value of the attribute, if any
- * @param p_attribute_units   The unit for the attribute value, if any
- * @param p_attribute_id      The attribute identifier for the location level
- * @param p_office_id         The office that owns the location level. If NULL or not specified, the current session's default office is used.
- */
-procedure get_loc_lvl_source(
-   p_loc_lvl_source          out varchar2, 
-   p_location_level_id       in  varchar2,
-   p_attribute_value         in  number   default null,
-   p_attribute_units         in  varchar2 default null,
-   p_attribute_id            in  varchar2 default null,
-   p_office_id               in  varchar2 default null);
-/**       
- * Gets the source for a location level
- *
- * @param p_location_level_id The location level identifier
- * @param p_attribute_value   The value of the attribute, if any
- * @param p_attribute_units   The unit for the attribute value, if any
- * @param p_attribute_id      The attribute identifier for the location level
- * @param p_office_id         The office that owns the location level. If NULL or not specified, the current session's default office is used.
- *
- * @return The source for the location level, 
- */
-function get_loc_lvl_source_f(
-   p_location_level_id       in varchar2,
-   p_attribute_value         in number   default null,
-   p_attribute_units         in varchar2 default null,
-   p_attribute_id            in varchar2 default null,
-   p_office_id               in varchar2 default null)
-   return varchar2;
-/**     
- * Deletes the source for a location level
- *
- * @param p_location_level_id The location level identifier
- * @param p_attribute_value   The value of the attribute, if any
- * @param p_attribute_units   The unit for the attribute value, if any
- * @param p_attribute_id      The attribute identifier for the location level
- * @param p_office_id         The office that owns the location level. If NULL or not specified, the current session's default office is used.
- */
-procedure delete_loc_lvl_source(
-   p_location_level_id       in varchar2,
-   p_attribute_value         in number   default null,
-   p_attribute_units         in varchar2 default null,
-   p_attribute_id            in varchar2 default null,
-   p_office_id               in varchar2 default null);
-/**     
- * Sets the source for a location level
- *
- * @param p_loc_lvl_source           The source for the location level, 
- * @param p_location_code            The location code for the location level
- * @param p_specified_level_code     The specified level code for the location level
- * @param p_parameter_code           The parameter code for the location level
- * @param p_parameter_type_code      The the parameter type code for the location level
- * @param p_duration_code            The duration code for the location level
- * @param p_attr_value               The value of the attribute for the location level, if any, in database units
- * @param p_attr_parameter_code      The parameter code of the attributes for the location lavel, if any
- * @param p_attr_parameter_type_code The parameter type code of the attributes for the location lavel, if any
- * @param p_attr_duration_code       The duration code of the attributes for the location lavel, if any
- * @param p_fail_if_exists           A flag (T/F) specifying whether to fail if a source already exists for the level
- */
-procedure set_loc_lvl_source(
-   p_loc_lvl_source           in varchar2, 
-   p_location_code            in integer,
-   p_specified_level_code     in integer,
-   p_parameter_code           in integer,
-   p_parameter_type_code      in integer,
-   p_duration_code            in integer,
-   p_attr_value               in number  default null,
-   p_attr_parameter_code      in integer default null,
-   p_attr_parameter_type_code in integer default null,
-   p_attr_duration_code       in integer default null,
-   p_fail_if_exists           in varchar2 default 'T'); 
-/**     
- * Gets the source for a location level
- *
- * @param p_loc_lvl_source           The source for the location level, 
- * @param p_location_code            The location code for the location level
- * @param p_specified_level_code     The specified level code for the location level
- * @param p_parameter_code           The parameter code for the location level
- * @param p_parameter_type_code      The the parameter type code for the location level
- * @param p_duration_code            The duration code for the location level
- * @param p_attr_value               The value of the attribute for the location level, if any, in database units
- * @param p_attr_parameter_code      The parameter code of the attributes for the location lavel, if any
- * @param p_attr_parameter_type_code The parameter type code of the attributes for the location lavel, if any
- * @param p_attr_duration_code       The duration code of the attributes for the location lavel, if any
- */
-procedure get_loc_lvl_source(
-   p_loc_lvl_source           out varchar2, 
-   p_location_code            in  integer,
-   p_specified_level_code     in  integer,
-   p_parameter_code           in  integer,
-   p_parameter_type_code      in  integer,
-   p_duration_code            in  integer,
-   p_attr_value               in  number  default null,
-   p_attr_parameter_code      in  integer default null,
-   p_attr_parameter_type_code in  integer default null,
-   p_attr_duration_code       in  integer default null); 
-/**     
- * Deletes the source for a location level
- *
- * @param p_location_code            The location code for the location level
- * @param p_specified_level_code     The specified level code for the location level
- * @param p_parameter_code           The parameter code for the location level
- * @param p_parameter_type_code      The the parameter type code for the location level
- * @param p_duration_code            The duration code for the location level
- * @param p_attr_value               The value of the attribute for the location level, if any, in database units
- * @param p_attr_parameter_code      The parameter code of the attributes for the location lavel, if any
- * @param p_attr_parameter_type_code The parameter type code of the attributes for the location lavel, if any
- * @param p_attr_duration_code       The duration code of the attributes for the location lavel, if any
- */
-procedure delete_loc_lvl_source(
-   p_location_code            in integer,
-   p_specified_level_code     in integer,
-   p_parameter_code           in integer,
-   p_parameter_type_code      in integer,
-   p_duration_code            in integer,
-   p_attr_value               in number  default null,
-   p_attr_parameter_code      in integer default null,
-   p_attr_parameter_type_code in integer default null,
-   p_attr_duration_code       in integer default null); 
+   p_cascade             in  varchar2 default ('F'),
+   p_delete_indicators   in  varchar2 default ('F'));
+
+--------------------------------------------------------------------------------
+-- PROCEDURE cat_location_levels
+--
+-- in this procedure SQL- (%, _) or glob-style (*, ?) wildcards can be used
+-- in masks, and all masks are case insensitive
+--
+-- muilt-part masks need not specify all the parts if a partial mask will match
+-- all desired results 
+--
+-- p_cursor
+--   the cursor that is opened by this procedure. it must be manually closed
+--   after use.
+--
+-- p_location_level_id_mask
+--   a wildcard mask of the five-part location level identifier.  defaults
+--   to matching every location level identifier
+--
+-- p_attribute_id_mask
+--   a wildcard mask of the three-part attribute identifier.  null attribute
+--   identifiers are matched by '*' (or '%'), to match ONLY null attributes, 
+--   specify null for this parameter.  defaults to matching all attribute
+--   identifiers
+--
+-- p_office_id_mask
+--   a wildcard mask of the office identifier that owns the location levels.
+--   specify '*' (or '%') for this parameter to match every office identifier.
+--   defaults to matching only the calling user's office identifier
+--
+-- p_timezone_id
+--   the time zone in which location level dates are to be represented in the
+--   cursor opened by this procedure.  defaults to 'UTC'
+--
+-- p_unit_system
+--   the unit system in which the attribute values are to be represented in the
+--   cursor opened by this procedure.  The actual units will be determined by
+--   the entry in the AT_DISPLAY_UNITS table for the office that owns the 
+--   location level and the attribute parameter. defaults to 'SI'
+--
+-- The cursor opened by this routine contains six fields:
+--    1 : office_id           varchar2(16)
+--    2 : location_level_id   varchar2(390)
+--    3 : attribute_id        varchar2(83)
+--    4 : attribute_value     binary_double
+--    5 : attribute_unit      varchar2(16)
+--    6 : location_level_date date
+--
+-- Calling this routine with no parameters returns all specified
+-- levels for the calling user's office.
 --------------------------------------------------------------------------------
 /**
  * Catalogs location levels in the database that match input parameters. Matching is
@@ -2705,7 +2389,7 @@ function cat_loc_lvl_indicator_codes(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">location_id</td>
- *     <td class="descr">varchar2(57)</td>
+ *     <td class="descr">varchar2(49)</td>
  *     <td class="descr">The location identifier</td>
  *   </tr>
  *   <tr>
@@ -2973,7 +2657,7 @@ procedure cat_loc_lvl_indicator(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">location_id</td>
- *     <td class="descr">varchar2(57)</td>
+ *     <td class="descr">varchar2(49)</td>
  *     <td class="descr">The location identifier</td>
  *   </tr>
  *   <tr>
@@ -3643,7 +3327,7 @@ function eval_level_indicator_expr(
  *   <tr>
  *     <td class="descr-center">1</td>
  *     <td class="descr">indicator_id</td>
- *     <td class="descr">varchar2(431)</td>
+ *     <td class="descr">varchar2(423)</td>
  *     <td class="descr">The location level indicator identifier</td>
  *   </tr>
  *   <tr>
@@ -3722,7 +3406,7 @@ procedure get_level_indicator_values(
  *   <tr>
  *     <td class="descr-center">1</td>
  *     <td class="descr">indicator_id</td>
- *     <td class="descr">varchar2(431)</td>
+ *     <td class="descr">varchar2(423)</td>
  *     <td class="descr">The location level indicator identifier</td>
  *   </tr>
  *   <tr>

@@ -629,7 +629,7 @@ procedure cat_spec_ids(
    p_office_id_mask in  varchar2 default null)
 is
    l_parts str_tab_t;
-   l_location_id_mask      varchar2(57);
+   l_location_id_mask      varchar2(49);
    l_parameters_id_mask    varchar2(256);
    l_template_version_mask varchar2(32);
    l_spec_version_mask     varchar2(32);
@@ -735,7 +735,7 @@ is
    type codes_t is table of boolean index by varchar2(10);
    l_codes                 codes_t;
    l_parts                 str_tab_t;
-   l_location_id_mask      varchar2(57);
+   l_location_id_mask      varchar2(49);
    l_parameters_id_mask    varchar2(256);
    l_template_version_mask varchar2(32);
    l_spec_version_mask     varchar2(32);
@@ -1139,7 +1139,7 @@ is
    l_crsr                  sys_refcursor;
    l_effective_tw          boolean;
    l_parts                 str_tab_t;
-   l_location_id_mask      varchar2(57);
+   l_location_id_mask      varchar2(49);
    l_parameters_id_mask    varchar2(256);
    l_template_version_mask varchar2(32);
    l_spec_version_mask     varchar2(32);
@@ -1674,7 +1674,7 @@ is
    l_crsr                  sys_refcursor;
    l_effective_tw          varchar2(1);
    l_parts                 str_tab_t;
-   l_location_id_mask      varchar2(57);
+   l_location_id_mask      varchar2(49);
    l_parameters_id_mask    varchar2(256);
    l_template_version_mask varchar2(32);
    l_spec_version_mask     varchar2(32);
@@ -5175,7 +5175,7 @@ is
    l_times        date_table_type;
    l_results      ztsv_array;
    l_parts        str_tab_t;
-   l_location     varchar2(57); -- from first independent id
+   l_location     varchar2(49); -- from first independent id
    l_time_zone    varchar2(28);
    l_interval     varchar2(16);
    l_units        str_tab_t;
@@ -5565,7 +5565,7 @@ is
    l_results      ztsv_array;
    l_parts        str_tab_t;
    l_interval     varchar2(16);
-   l_location     varchar2(57); -- from dependent id
+   l_location     varchar2(49); -- from dependent id
    l_time_zone    varchar2(28);
    l_units        str_tab_t;
    l_cursor       sys_refcursor;

@@ -22,7 +22,7 @@ AS
 --    Name                      Datatype      Description
 --    ------------------------ ------------- ----------------------------
 --    project_office_id         varchar2(16)  the office id of the parent project.
---    project_id                varchar2(57)  the identification (id) of the parent project.
+--    project_id                varchar2(49)  the identification (id) of the parent project.
 --    entity_name               varchar2
 --    water_right               varchar2
 --
@@ -43,7 +43,7 @@ PROCEDURE cat_water_user(
 IS
    l_office_id_mask  VARCHAR2(16) := 
       cwms_util.normalize_wildcards(nvl(upper(p_db_office_id_mask), '%'), TRUE);
-   l_project_id_mask VARCHAR2(57) :=
+   l_project_id_mask VARCHAR2(49) := 
       cwms_util.normalize_wildcards(nvl(upper(p_project_id_mask), '%'), TRUE);
 BEGIN
    OPEN p_cursor FOR
@@ -79,7 +79,7 @@ END cat_water_user;
 --    Name                      Datatype      Description
 --    ------------------------ ------------- ----------------------------
 --    project_office_id         varchar2(16)  the office id of the parent project.
---    project_id                varchar2(57)  the identification (id) of the parent project.
+--    project_id                varchar2(49)  the identification (id) of the parent project.
 --    entity_name               varchar2
 --    contract_name             varchar2
 --    contracted_storage        binary_double
@@ -105,7 +105,7 @@ PROCEDURE cat_water_user_contract(
 IS
    l_office_id_mask  VARCHAR2(16) := 
       cwms_util.normalize_wildcards(nvl(upper(p_db_office_id_mask), '%'), TRUE);
-   l_project_id_mask VARCHAR2(57) :=
+   l_project_id_mask VARCHAR2(49) := 
       cwms_util.normalize_wildcards(nvl(upper(p_project_id_mask), '%'), TRUE);
    l_entity_name_mask VARCHAR2(49) := 
       cwms_util.normalize_wildcards(nvl(upper(p_entity_name_mask), '%'), TRUE);
@@ -1025,7 +1025,13 @@ BEGIN
        l_adjusted_end_time := l_adjusted_end_time - (1 / 86400);
     END IF;
     
-    l_time_zone_code := cwms_util.get_time_zone_code(l_time_zone);
+    IF l_time_zone IS NOT NULL THEN
+       SELECT tz.time_zone_code
+         INTO l_time_zone_code
+         FROM mv_time_zone tz
+        where upper(tz.time_zone_name) = upper(l_time_zone);
+    END IF;    
+    
     l_pump_loc_ref := new location_ref_t(p_pump_loc_code);
     
        -- instantiate a table array to hold the output records.

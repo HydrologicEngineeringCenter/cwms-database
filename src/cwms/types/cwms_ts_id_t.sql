@@ -1,4 +1,4 @@
-create or replace type cwms_ts_id_t
+create type cwms_ts_id_t
 /**
  * Type for holding a CWMS time series identifier
  *
@@ -7,7 +7,7 @@ create or replace type cwms_ts_id_t
  * @member cwms_ts_id the time series identifier
  */
 AS OBJECT (
-   cwms_ts_id   VARCHAR2(191)
+   cwms_ts_id   VARCHAR2 (183)
 );
 /
 

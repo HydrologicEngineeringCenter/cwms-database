@@ -1,9 +1,9 @@
-create or replace TYPE cat_location_obj_t
+CREATE TYPE cat_location_obj_t
 -- not documented
 AS OBJECT (
    db_office_id       VARCHAR2 (16),
-   location_id        VARCHAR2 (57),
-   base_location_id   VARCHAR2 (24),
+   location_id        VARCHAR2 (49),
+   base_location_id   VARCHAR2 (16),
    sub_location_id    VARCHAR2 (32),
    state_initial      VARCHAR2 (2),
    county_name        VARCHAR2 (40),
@@ -15,7 +15,7 @@ AS OBJECT (
    elevation          NUMBER,
    elev_unit_id       VARCHAR2 (16),
    vertical_datum     VARCHAR2 (16),
-   public_name        VARCHAR2 (57),
+   public_name        VARCHAR2 (32),
    long_name          VARCHAR2 (80),
    description        VARCHAR2 (512),
    active_flag        VARCHAR2 (1)

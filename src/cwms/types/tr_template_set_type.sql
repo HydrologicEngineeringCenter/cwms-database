@@ -26,7 +26,7 @@ AS OBJECT (
    scaling_arg_a           NUMBER,
    scaling_arg_b           NUMBER,
    scaling_arg_c           NUMBER,
-   array_of_masks          str_tab_t
+   array_of_masks          char_183_array_type
 );
 /
 

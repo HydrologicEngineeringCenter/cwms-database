@@ -1,4 +1,4 @@
-create or replace type screen_assign_t
+create type screen_assign_t
 /* (non-javadoc)
  * [description needed]
  *
@@ -9,9 +9,9 @@ create or replace type screen_assign_t
  * @member resultant_ts_id [description needed]
  */
 AS OBJECT (
-   cwms_ts_id        VARCHAR2(191),
+   cwms_ts_id        VARCHAR2 (183),
    active_flag       VARCHAR2 (1),
-   resultant_ts_id   VARCHAR2(191)
+   resultant_ts_id   VARCHAR2 (183)
 );
 /
 

@@ -12,6 +12,9 @@ defines_pattern = re.compile('@@defines.sql', re.I)
 synonyms = {}
 updates  = [
 	['script',       'updateScripts/pre_compile'],
+	['script',       'updateScripts/at_a2w_updates'],
+        ['script',       'updateScripts/updateUSGSTable'],
+        ['script',       'updateScripts/db_change_log_update'],
         ['package spec', 'cwms_alarm'],
         ['package body', 'cwms_alarm'],
         ['package body', 'cwms_apex'],
@@ -19,6 +22,10 @@ updates  = [
         ['package body', 'cwms_basin'],
         ['package spec', 'cwms_cat'],
         ['package body', 'cwms_cat'],
+        ['package spec', 'cwms_cma'],
+        ['package body', 'cwms_cma'],
+        ['package spec', 'cwms_db_chg_log'],
+        ['package body', 'cwms_db_chg_log'],
         ['package body', 'cwms_display'],
         ['package spec', 'cwms_embank'],
         ['package body', 'cwms_embank'],
@@ -26,11 +33,15 @@ updates  = [
         ['package body', 'cwms_env'],
         ['package body', 'cwms_forecast'],
         ['package body', 'cwms_gage'],
+        ['package spec', 'cwms_level'],
         ['package body', 'cwms_level'],
         ['package spec', 'cwms_loc'],
         ['package body', 'cwms_loc'],
         ['package spec', 'cwms_lock'],
         ['package body', 'cwms_lock'],
+        ['package body', 'cwms_lookup'],
+        ['package spec', 'cwms_mail'],
+        ['package body', 'cwms_mail'],
         ['package body', 'cwms_msg'],
         ['package spec', 'cwms_outlet'],
         ['package body', 'cwms_outlet'],
@@ -40,8 +51,8 @@ updates  = [
         ['package body', 'cwms_prop'],
         ['package spec', 'cwms_rating'],
         ['package body', 'cwms_rating'],
-        ['package spec', 'cwms_schema'],
-        ['package body', 'cwms_schema'],
+        ['package spec', 'cwms_rounding'],
+        ['package body', 'cwms_rounding'],
         ['package spec', 'cwms_sec'],
         ['package body', 'cwms_sec'],
         ['package body', 'cwms_shef'],
@@ -54,6 +65,7 @@ updates  = [
         ['package body', 'cwms_ts_id'],
         ['package spec', 'cwms_turbine'],
         ['package body', 'cwms_turbine'],
+        ['package body', 'cwms_upass'],
         ['package spec', 'cwms_usgs'],
         ['package body', 'cwms_usgs'],
         ['package spec', 'cwms_util'],
@@ -62,13 +74,23 @@ updates  = [
         ['package body', 'cwms_water_supply'],
         ['package spec', 'cwms_xchg'],
         ['package body', 'cwms_xchg'],
+        ['type',         'anydata_tab_t'],
+        ['type',         'abs_logic_expr_t'],
+        ['type body',    'abs_logic_expr_t'],
         ['type',         'abs_rating_ind_param_t'],
         ['type body',    'abs_rating_ind_param_t'],
+        ['type',         'gate_change_obj_t'],
+        ['type',         'gate_setting_obj_t'],
         ['type',         'loc_lvl_cur_max_ind_tab_t'],
+        ['type',         'loc_lvl_indicator_t'],
         ['type body',    'loc_lvl_indicator_t'],
+        ['type',         'loc_lvl_indicator_cond_t'],
         ['type body',    'loc_lvl_indicator_cond_t'],
+        ['type',         'location_obj_t'],
         ['type body',    'location_obj_t'],
         ['type body',    'location_ref_t'],
+        ['type',         'logic_expr_t'],
+        ['type body',    'logic_expr_t'],
         ['type',         'rating_conn_map_t'],
         ['type',         'rating_conn_map_tab_t'],
         ['type',         'rating_ind_parameter_t'],
@@ -79,6 +101,8 @@ updates  = [
         ['type body',    'seasonal_value_t'],
         ['type',         'stream_rating_t'],
         ['type body',    'stream_rating_t'],
+        ['type',         'streamflow_meas_t'],
+        ['type body',    'streamflow_meas_t'],
         ['type',         'tsv_array'],
         ['type',         'tsv_array_tab'],
         ['type',         'vdatum_rating_t'],
@@ -88,10 +112,81 @@ updates  = [
         ['type',         'vert_datum_offset_t'],
         ['type',         'vert_datum_offset_tab_t'],
         ['type',         'ztsv_array_tab'],
+        ['type',         'cat_county_obj_t'],
+        ['type',         'cat_county_otab_t'],
+        ['type',         'cat_dss_file_obj_t'],
+        ['type',         'cat_dss_file_otab_t'],
+        ['type',         'cat_dss_xchg_set_obj_t'],
+        ['type',         'cat_dss_xchg_set_otab_t'],
+        ['type',         'cat_dss_xchg_ts_map_obj_t'],
+        ['type',         'cat_location2_obj_t'],
+        ['type',         'cat_location2_otab_t'],
+        ['type',         'cat_location_kind_obj_t'],
+        ['type',         'cat_location_kind_otab_t'],
+        ['type',         'cat_location_obj_t'],
+        ['type',         'cat_location_otab_t'],
+        ['type',         'cat_loc_alias_obj_t'],
+        ['type',         'cat_loc_alias_otab_t'],
+        ['type',         'cat_loc_obj_t'],
+        ['type',         'cat_loc_otab_t'],
+        ['type',         'cat_param_obj_t'],
+        ['type',         'cat_param_otab_t'],
+        ['type',         'cat_state_obj_t'],
+        ['type',         'cat_state_otab_t'],
+        ['type',         'cat_sub_loc_obj_t'],
+        ['type',         'cat_sub_loc_otab_t'],
+        ['type',         'cat_sub_param_obj_t'],
+        ['type',         'cat_sub_param_otab_t'],
+        ['type',         'cat_timezone_obj_t'],
+        ['type',         'cat_timezone_otab_t'],
+        ['type',         'cat_ts_cwms_20_obj_t'],
+        ['type',         'cat_ts_cwms_20_otab_t'],
+        ['type',         'cat_ts_obj_t'],
+        ['type',         'cat_ts_otab_t'],
+        ['type',         'jms_map_msg_tab_t'],
+        ['type',         'logic_expr_tab_t'],
+        ['type',         'seasonal_location_level_t'],
+        ['type',         'seasonal_loc_lvl_tab_t'],
+        ['type',         'seasonal_value_tab_t'],
+        ['type',         'source_type'],
+        ['type',         'turbine_setting_obj_t'],
+        ['type',         'cat_dss_xchg_tsmap_otab_t'],
+        ['type',         'source_array'],
+        ['type',         'zloc_lvl_indicator_t'],
+        ['type body',    'zloc_lvl_indicator_t'],
+        ['type',         'zloc_lvl_indicator_tab_t'],
+        ['type',         'loc_type_ds'],
+        ['type',         'nested_ts_type'],
+        ['type',         'zlocation_level_t'],
+        ['type body',    'zlocation_level_t'],
+        ['type',         'nested_ts_table'],
+	['type',         'xml_tab_t'],
+	['type',         'streamflow_meas_t'],
+	['type body',    'streamflow_meas_t'],
+	['type',         'streamflow_meas_tab_t'],
+	['type',         'stream_t'],
+	['type body',    'stream_t'],
+	['type',         'stream_tab_t'],
+        ['view',         'av_a2w_ts_codes_by_loc'],
+        ['view',         'av_db_change_log'],
+        ['view',         'av_compound_outlet'],
+        ['view',         'av_gage'],
+        ['view',         'av_gage_method'],
+        ['view',         'av_gage_sensor'],
+        ['view',         'av_gage_type'],
+        ['view',         'av_location_level'],
         ['view',         'av_location_kind'],
         ['view',         'av_loc'],
         ['view',         'av_loc2'],
+        ['view',         'av_lock'],
         ['view',         'av_outlet'],
+        ['view',         'av_rating'],
+        ['view',         'av_rating_local'],
+        ['view',         'av_rating_spec'],
+        ['view',         'av_rating_template'],
+        ['view',         'av_streamflow_meas'],
+        ['view',         'av_text_filter'],
+        ['view',         'av_transitional_rating'],
         ['view',         'av_vert_datum_offset'],
         ['view',         'av_virtual_rating'],
         ['view',         'av_usgs_parameter'],
@@ -102,6 +197,7 @@ updates  = [
 	['script',       'compileAll'],
 	['script',       'updateScripts/post_compile'],
 	['script',       'compileAll'],
+	['script',       'cwms_version']
 ]
 
 srcdir = os.path.join(os.path.split(sys.argv[0])[0], 'cwms')
@@ -121,41 +217,20 @@ def get(item_type, item_name) :
 		f.close()
 		return pkg_pattern.sub('create or replace package', text)
 	elif main_type == 'type' :
-		if item_name.lower().find('rating') == -1 :
-			filename = (os.path.join(srcdir, 'cwms_types.sql'))
+		if sub_type == '' :
+			filename = os.path.join(srcdir, 'types/%s.sql' % item_name)
+		elif sub_type == 'body' :
+			filename = os.path.join(srcdir, 'types/%s-body.sql' % item_name)
 		else :
-			filename = (os.path.join(srcdir, 'cwms_types_rating.sql'))
+			raise Exception('Invalid item type: "%s"' % item_type)
 		f = open(filename)
 		text = f.read()
 		f.close()
-		matches = type_pattern1.finditer(text)
-		match = matches.next()
-		type_list = []
-		while True :
-			type_name = match.group(2)
-			if type_name in ('spec', 'body') :
-				type_type = type_name
-				type_name = match.group(3)
-			else :
-				type_type = ''
-			start = match.start(0)
-			type_list.append(['%s %s' % (type_name, type_type), start, -1])
-			try    : match = matches.next()
-			except : break
-		for i in range(len(type_list)-1) :
-			type_list[i][2] = type_list[i+1][1]
-		types = {}
-		for i in range(len(type_list)) :
-			type_info, start, end = type_list[i]
-			matcher = exec_pattern.search(text[start:end])
-			if matcher : end = start + matcher.end()
-			types[type_info] = [start, end]
-		start, end = types['%s %s' % (item_name, sub_type)]
 		if not sub_type :
 			str = ('whenever sqlerror continue\ndrop type %s force;\nwhenever sqlerror exit sql.sqlcode\n%s' % (
-				item_name, type_pattern2.sub('create type', text[start:end])))
+				item_name, type_pattern2.sub('create type', text)))
 		else :
-			str = type_pattern2.sub('create or replace type', text[start:end])
+			str = type_pattern2.sub('create or replace type', text)
 		return str
 	elif main_type == 'view' :
 		filename = os.path.join(srcdir, 'views', '%s.sql' % item_name.lower())
@@ -183,8 +258,8 @@ def get(item_type, item_name) :
 	else :
 		raise Exception('Invalid item type: "%s"' % item_type)
 
-outfile = os.path.join('.', 'updateCwmsSchema.sql')
-logfile = 'updateCwmsSchema.log'
+outfile = os.path.join('.', 'updateCwmsSchema30.sql')
+logfile = 'updateCwmsSchema30.log'
 f = open(outfile, 'w')
 f.write(
 '''

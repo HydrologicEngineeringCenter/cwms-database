@@ -1,4 +1,4 @@
-create or replace type rating_t
+create type rating_t
 /**
  * Holds a rating
  *
@@ -29,7 +29,7 @@ create or replace type rating_t
  */
 as object (
    office_id       varchar2(16),
-   rating_spec_id  varchar2(380),
+   rating_spec_id  varchar2(372),
    effective_date  date,                   -- for all ratings
    transition_date date,                   -- for all ratings
    create_date     date,                   -- for all ratings

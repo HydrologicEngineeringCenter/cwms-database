@@ -169,10 +169,7 @@ CONSTRAINT at_gccc_active_ck
 CHECK ( discharge_comp_active = 'T' OR discharge_comp_active = 'F'))
 /
 
-insert into at_gate_ch_computation_code values(1, 53, 'C', 'Calculated from gate opening-elev curves', 'T');
-insert into at_gate_ch_computation_code values(2, 53, 'T', 'Calculated from tailwater curve',          'T');
-insert into at_gate_ch_computation_code values(3, 53, 'E', 'Estimated by user',                        'T');
-insert into at_gate_ch_computation_code values(4, 53, 'A', 'Adjusted by an automated method',          'T');
+-- INSERT INTO at_gate_ch_computation_code VALUES (0, 53, 'Default', 'Default', 'T');
 
 --------
 --------
@@ -256,11 +253,7 @@ CONSTRAINT at_grrc_active_ck
 CHECK ( release_reason_active = 'T' OR release_reason_active = 'F'))
 /
 
-insert into at_gate_release_reason_code values(1, 53, 'F', 'Flood control release', 'T');
-insert into at_gate_release_reason_code values(2, 53, 'W', 'Water supply release',  'T');
-insert into at_gate_release_reason_code values(3, 53, 'Q', 'Water quality release', 'T');
-insert into at_gate_release_reason_code values(4, 53, 'H', 'Hydropower release',    'T');
-insert into at_gate_release_reason_code values(5, 53, 'O', 'Other release',         'T');
+-- INSERT INTO at_gate_release_reason_code VALUES (0, 53, 'Default', 'Default', 'T');
 
 
 --------
@@ -530,15 +523,7 @@ ALTER TABLE at_embank_structure_type ADD (
 CONSTRAINT at_est_active_ck
 CHECK ( structure_type_active = 'T' OR structure_type_active = 'F'))
 /
-insert into at_embank_structure_type values(1, 53, 'Rolled Earth-Filled',      'An embankment formed by compacted earth',                                'T');
-insert into at_embank_structure_type values(2, 53, 'Natural',                  'A natural embankment',                                                   'T');
-insert into at_embank_structure_type values(3, 53, 'Concrete Arch',            'An embankment formed by concrete arches',                                'T');
-insert into at_embank_structure_type values(4, 53, 'Dble-Curv Concrete Arch',  'An embankment formed by thin, double-curvature concrete arches',         'T');
-insert into at_embank_structure_type values(5, 53, 'Concrete Apron',           'An embankment formed by a concrete apron',                               'T');
-insert into at_embank_structure_type values(6, 53, 'Concrete Dam',             'An embankment formed by concrete',                                       'T');
-insert into at_embank_structure_type values(7, 53, 'Concrete Gravity',         'An embankment formed by concrete gravity materials',                     'T');
-insert into at_embank_structure_type values(8, 53, 'Rolld Imperv Earth-Fill',  'An embankment formed by rolled impervious and random earth-fill',        'T');
-insert into at_embank_structure_type values(9, 53, 'Imprv/Semiperv EarthFill', 'An embankment formed by rolled impervious and semi-pervious earth-fill', 'T');
+-- INSERT INTO at_embank_structure_type VALUES (0, 53, 'Default', 'Default', 'T');
 
 --------
 --------
@@ -622,14 +607,7 @@ CONSTRAINT at_ept_active_ck
 CHECK ( protection_type_active = 'T' OR protection_type_active = 'F'))
 /
 
-insert into at_embank_protection_type values(1, 53, 'Concrete Blanket',    'Protected by blanket of concrete',              'T');
-insert into at_embank_protection_type values(2, 53, 'Concrete Arch Facing','Protected by the faces of the concrete arches', 'T');
-insert into at_embank_protection_type values(3, 53, 'Masonry Facing',      'Protected by masonry facing',                   'T');
-insert into at_embank_protection_type values(4, 53, 'Grass-Covered Soil',  'Protected by grass-covered soil',               'T');
-insert into at_embank_protection_type values(5, 53, 'Soil Cement',         'Protected by soil cement',                      'T');
-insert into at_embank_protection_type values(6, 53, 'Rock Riprap',         'Protected by rock riprap',                      'T');
-insert into at_embank_protection_type values(7, 53, 'Natural Rock',        'Protected by natural rock',                     'T');
-insert into at_embank_protection_type values(8, 53, 'Stone Toe',           'Protected by a stone toe',                      'T');
+-- INSERT INTO at_embank_protection_type VALUES (0, 53, 'Default', 'Default', 'T');
 
 --------
 --------
@@ -713,12 +691,7 @@ CONSTRAINT at_tst_active_ck
 CHECK ( turb_set_reason_active = 'T' OR turb_set_reason_active = 'F'))
 /
 
-insert into at_turbine_setting_reason values(1, 53, 'S', 'Scheduled release to meet loads', 'T'); 
-insert into at_turbine_setting_reason values(2, 53, 'F', 'Flood control release',           'T'); 
-insert into at_turbine_setting_reason values(3, 53, 'W', 'Water supply release',            'T'); 
-insert into at_turbine_setting_reason values(4, 53, 'Q', 'Water quality release',           'T'); 
-insert into at_turbine_setting_reason values(5, 53, 'H', 'Hydropower release',              'T');
-insert into at_turbine_setting_reason values(6, 53, 'O', 'Other release',                   'T');
+-- INSERT INTO at_turbine_setting_reason VALUES (0, 53, 'Default', 'Default', 'T');
 
 
 --------
@@ -765,7 +738,7 @@ tablespace CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
-STORAGE    (                                                                     
+STORAGE    (
             INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
@@ -796,7 +769,7 @@ ALTER TABLE at_turbine_computation_code ADD (
 ALTER TABLE at_turbine_computation_code ADD (
   CONSTRAINT at_turbine_computation_fk1
  FOREIGN KEY (db_office_code)
- REFERENCES cwms_office (office_code))                                                               
+ REFERENCES cwms_office (office_code))
 /
 
 ALTER TABLE at_turbine_computation_code ADD (
@@ -804,10 +777,7 @@ CONSTRAINT at_tcc_active_ck
 CHECK ( turbine_comp_active = 'T' OR turbine_comp_active = 'F'))
 /
 
-insert into at_turbine_computation_code values(1, 53, 'C', 'Calculated from turbine load-nethead curves', 'T');
-insert into at_turbine_computation_code values(2, 53, 'T', 'Calculated from tailwater curve',             'T');
-insert into at_turbine_computation_code values(3, 53, 'R', 'Reported by powerhouse',                      'T');
-insert into at_turbine_computation_code values(4, 53, 'A', 'Adjusted by an automated method',             'T');
+-- INSERT INTO at_turbine_computation_code VALUES (0, 53, 'Default', 'Default', 'T');
 
 --------
 --------
@@ -891,13 +861,7 @@ CONSTRAINT at_ptt_active_ck
 CHECK ( phys_trans_type_active = 'T' OR phys_trans_type_active = 'F'))
 /
 
-insert into at_physical_transfer_type values(1, 53, 'Pipeline', 'Transfer through a pipeline',  'T');
-insert into at_physical_transfer_type values(2, 53, 'Canal',    'Transfer by canal',            'T');
-insert into at_physical_transfer_type values(3, 53, 'Stream',   'Transfer by flow in a stream', 'T');
-insert into at_physical_transfer_type values(4, 53, 'River',    'Transfer by flow in a river',  'T');
-insert into at_physical_transfer_type values(5, 53, 'Siphon',   'Transfer by siphon',           'T');
-insert into at_physical_transfer_type values(6, 53, 'Aqueduct', 'Transfer by aqueduct',         'T');
-insert into at_physical_transfer_type values(7, 53, 'Conduit',  'Transfer by conduit',          'T');
+-- INSERT INTO at_phys_trans_type VALUES (0, 53, 'Default', 'Default', 'T');
 
 --------
 --------

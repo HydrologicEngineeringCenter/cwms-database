@@ -38,7 +38,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_CWMS_TS_ID', nul
  * @field base_location_code  Unique numeric code that identifies the base location of the time series
  * @field location_code       Unique numeric code that identifies the full location of the time series
  * @field parameter_code      Unique numeric code that identifies the parameter for the time series
- * @field historic_flag       Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code>) specifying whether the time series is part of the hitoric record
 */
 ');
 
@@ -69,8 +68,7 @@ CREATE OR REPLACE FORCE VIEW av_cwms_ts_id
     db_office_code,
     base_location_code,
     location_code,
-    parameter_code,
-    historic_flag
+    parameter_code
 )
 AS
     SELECT    db_office_id, cwms_ts_id, unit_id, abstract_param_id,
@@ -79,6 +77,6 @@ AS
                 duration_id, version_id, interval, interval_utc_offset,base_loc_active_flag,
                 loc_active_flag, ts_active_flag, net_ts_active_flag, version_flag,
                 ts_code, db_office_code, base_location_code, location_code,
-                parameter_code, historic_flag
+                parameter_code
       FROM    at_cwms_ts_id
 /

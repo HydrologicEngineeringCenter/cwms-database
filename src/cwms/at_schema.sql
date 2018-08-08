@@ -55,9 +55,9 @@ end;
 -- CREATE TABLES --
 -------------------
 --------------------------------------------------------------------------------
--------------------------------------------------------------------------------- 
-@@./cwms/tables/cwms_auth_sched_entries.sql
-@@./cwms/tables/cwms_unauth_sched_entries.sql
+--------------------------------------------------------------------------------
+
+
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
@@ -109,7 +109,7 @@ CREATE TABLE at_base_location
 (
   base_location_code  NUMBER,
   db_office_code      NUMBER                    NOT NULL,
-  base_location_id    VARCHAR2(24 BYTE)         NOT NULL,
+  base_location_id    VARCHAR2(16 BYTE)         NOT NULL,
   active_flag         VARCHAR2(1 BYTE)
 )
 TABLESPACE CWMS_20AT_DATA
@@ -228,7 +228,7 @@ CREATE TABLE AT_PHYSICAL_LOCATION
   LONGITUDE           NUMBER,
   LATITUDE            NUMBER,
   HORIZONTAL_DATUM    VARCHAR2(16),
-  PUBLIC_NAME         VARCHAR2(57),
+  PUBLIC_NAME         VARCHAR2(32),
   LONG_NAME           VARCHAR2(80),
   DESCRIPTION         VARCHAR2(1024),
   ACTIVE_FLAG         VARCHAR2(1)               NOT NULL,
@@ -1257,8 +1257,7 @@ CREATE TABLE at_cwms_ts_spec
   migrate_ver_flag     VARCHAR2(1 BYTE),
   active_flag          VARCHAR2(1 BYTE),
   delete_date          TIMESTAMP(9),
-  data_source          VARCHAR2(16 BYTE),
-  historic_flag        VARCHAR2(1 BYTE)         DEFAULT 'F'
+  data_source          VARCHAR2(16 BYTE)
 )
 TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
@@ -1290,7 +1289,6 @@ COMMENT ON COLUMN at_cwms_ts_spec.ts_code IS 'Unique record identifier, primaril
 COMMENT ON COLUMN at_cwms_ts_spec.location_code IS 'Primary key of AT_PHYSICAL_LOCATION table.';
 COMMENT ON COLUMN at_cwms_ts_spec.parameter_code IS 'Primary key of AT_PARAMETER table.  Must already exist in the AT_PARAMETER table.';
 COMMENT ON COLUMN at_cwms_ts_spec.parameter_type_code IS 'Primary key of CWMS_PARAMETER_TYPE table.  Must already exist in the CWMS_PARAMETER_TYPE table.';
-COMMENT ON COLUMN at_cwms_ts_spec.historic_flag IS 'T or F specifying whether this time series is part of the historic record';
 
 CREATE UNIQUE INDEX at_cwms_ts_spec_ui ON at_cwms_ts_spec
 (location_code, parameter_type_code, parameter_code, interval_code,
@@ -1339,10 +1337,6 @@ ALTER TABLE at_cwms_ts_spec ADD (
 ALTER TABLE at_cwms_ts_spec ADD (
   CONSTRAINT at_cwms_ts_spec_ck_5
  CHECK (active_flag ='T' OR active_flag = 'F'))
-/
-alter table at_cwms_ts_spec add (
-  constraint at_cwms_ts_spec_ck_6
- check (historic_flag = 'T' or historic_flag = 'F'))
 /
 ALTER TABLE at_cwms_ts_spec ADD (
   CONSTRAINT at_cwms_ts_spec_pk
@@ -1595,9 +1589,6 @@ STORAGE    (
 NOPARALLEL
 /
 
-@@./cwms/tables/at_loc_lvl_label
-@@./cwms/tables/at_loc_lvl_source
-
 CREATE TABLE AT_SEASONAL_LOCATION_LEVEL
 (
    LOCATION_LEVEL_CODE NUMBER(10) NOT NULL,
@@ -1798,7 +1789,7 @@ CREATE GLOBAL TEMPORARY TABLE AT_LOC_LVL_INDICATOR_TAB
 (
    SEQ                    INTEGER,
    OFFICE_ID              VARCHAR2(16),
-   LOCATION_ID            VARCHAR2(57),
+   LOCATION_ID            VARCHAR2(49),
    PARAMETER_ID           VARCHAR2(49),
    PARAMETER_TYPE_ID      VARCHAR2(16),
    DURATION_ID            VARCHAR2(16),
@@ -6241,7 +6232,4 @@ create index at_queue_subscriber_name_idx1 on at_queue_subscriber_name (queue_na
 
 @@rowcps_schema.sql
 ---
-@@./cwms/tables/at_pool_name.sql
-@@./cwms/tables/at_pool.sql
 
-@@./cwms/tables/at_ts_extents.sql

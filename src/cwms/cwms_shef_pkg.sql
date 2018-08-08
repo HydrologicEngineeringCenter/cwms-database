@@ -306,7 +306,7 @@ AS
       net_ts_active_flag    CHAR     (1    BYTE),
       ignore_shef_spec      VARCHAR2 (1    BYTE),
       shef_spec             VARCHAR2 (271  BYTE),
-      location_id           VARCHAR2 (57   BYTE),
+      location_id           VARCHAR2 (49   BYTE),
       parameter_id          VARCHAR2 (49   BYTE),
       parameter_type_id     VARCHAR2 (16   BYTE),
       interval_id           VARCHAR2 (16   BYTE),

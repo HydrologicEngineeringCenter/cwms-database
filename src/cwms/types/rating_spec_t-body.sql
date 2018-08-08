@@ -45,7 +45,7 @@ as
    is
       l_xml            xmltype;
       l_node           xmltype;
-      l_rating_spec_id varchar2(380);
+      l_rating_spec_id varchar2(372);
       l_parts          str_tab_t;
       l_text           varchar2(64);
       ------------------------------
@@ -775,4 +775,4 @@ as
    end;
 end;
 /
-show errors
+show errors;

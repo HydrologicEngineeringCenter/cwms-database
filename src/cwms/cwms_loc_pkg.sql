@@ -553,7 +553,7 @@ AS
     *    <tr>
     *       <td class="descr-center">2</td>
     *       <td class="descr">location_id</td>
-    *       <td class="descr">varchar2(57)</td>
+    *       <td class="descr">varchar2(49)</td>
     *       <td class="descr">The location identifier</td>
     *    </tr>
     *    <tr>
@@ -595,7 +595,7 @@ AS
     *    <tr>
     *       <td class="descr-center">9</td>
     *       <td class="descr">ref_location_id</td>
-    *       <td class="descr">varchar2(57)</td>
+    *       <td class="descr">varchar2(49)</td>
     *       <td class="descr">A referenced location for the location within the location group</td>
     *    </tr>
     *    <tr>
@@ -607,7 +607,7 @@ AS
     *    <tr>
     *       <td class="descr-center">11</td>
     *       <td class="descr">shared_loc_ref_id</td>
-    *       <td class="descr">varchar2(57)</td>
+    *       <td class="descr">varchar2(49)</td>
     *       <td class="descr">A referenced location that applies to all locations within the location group</td>
     *    </tr>
     * </table>
@@ -669,7 +669,7 @@ AS
     *    <tr>
     *       <td class="descr-center">2</td>
     *       <td class="descr">location_id</td>
-    *       <td class="descr">varchar2(57)</td>
+    *       <td class="descr">varchar2(49)</td>
     *       <td class="descr">The location identifier</td>
     *    </tr>
     *    <tr>
@@ -711,7 +711,7 @@ AS
     *    <tr>
     *       <td class="descr-center">9</td>
     *       <td class="descr">ref_location_id</td>
-    *       <td class="descr">varchar2(57)</td>
+    *       <td class="descr">varchar2(49)</td>
     *       <td class="descr">A referenced location for the location within the location group</td>
     *    </tr>
     *    <tr>
@@ -723,7 +723,7 @@ AS
     *    <tr>
     *       <td class="descr-center">11</td>
     *       <td class="descr">shared_loc_ref_id</td>
-    *       <td class="descr">varchar2(57)</td>
+    *       <td class="descr">varchar2(49)</td>
     *       <td class="descr">A referenced location that applies to all locations within the location group</td>
     *    </tr>
     *   <tr>
@@ -1126,7 +1126,7 @@ AS
 	PROCEDURE unassign_loc_groups (
 		p_loc_category_id   IN VARCHAR2,
 		p_loc_group_id 	  IN VARCHAR2,
-		p_location_array	  IN str_tab_t,
+		p_location_array	  IN char_49_array_type,
 		p_unassign_all 	  IN VARCHAR2 DEFAULT 'F',
 		p_db_office_id 	  IN VARCHAR2 DEFAULT NULL
 	);
@@ -1342,7 +1342,7 @@ AS
     *   <tr>
     *     <td class="descr-center">2</td>
     *     <td class="descr">location_id</td>
-    *     <td class="descr">varchar2(57)</td>
+    *     <td class="descr">varchar2(49)</td>
     *     <td class="descr">The location identifier</td>
     *   </tr>
     *   <tr>
@@ -1455,7 +1455,7 @@ AS
     *   <tr>
     *     <td class="descr-center">2</td>
     *     <td class="descr">location_id</td>
-    *     <td class="descr">varchar2(57)</td>
+    *     <td class="descr">varchar2(49)</td>
     *     <td class="descr">The location identifier</td>
     *   </tr>
     *   <tr>
@@ -2436,12 +2436,12 @@ AS
       p_include_this_kind  in varchar2 default 'F',
       p_include_all_levels in varchar2 default 'T')
       return number_tab_t;
-
+            
    function get_location_ids(
       p_location_code in integer,
       p_exclude       in varchar2 default null)
       return varchar2;
-            
+
    /**
     * Retrieves type of information that may be stored for a specified location kind
     *

@@ -82,9 +82,9 @@ end get_embankment_code;
 --    Name                      Datatype      Description
 --    ------------------------ ------------- ----------------------------
 --    project_office_id        varchar2(16)  the office id of the parent project.
---    project_id	             varchar2(57)	the identification (id) of the parent project.
+--    project_id	             varchar2(49)	the identification (id) of the parent project.
 --    db_office_id             varchar2(16)  owning office of location
---    base_location_id         varchar2(24)  base location id
+--    base_location_id         varchar2(16)  base location id
 --    sub_location_id          varchar2(32)  sub-location id, if any
 --    time_zone_name           varchar2(28)  local time zone name for location
 --    latitude                 number        location latitude
@@ -93,7 +93,7 @@ end get_embankment_code;
 --    elevation                number        location elevation
 --    elev_unit_id             varchar2(16)  location elevation units
 --    vertical_datum           varchar2(16)  veritcal datum of elevation
---    public_name              varchar2(57)  location public name
+--    public_name              varchar2(32)  location public name
 --    long_name                varchar2(80)  location long name
 --    description              varchar2(512) location description
 --    active_flag              varchar2(1)   'T' if active, else 'F'
@@ -115,7 +115,7 @@ procedure cat_embankment (
 )
 is
    l_office_id_mask  varchar2(16);
-   l_project_id_mask varchar2(57);
+   l_project_id_mask varchar2(49);
 begin
    l_office_id_mask := cwms_util.normalize_wildcards(
       upper(nvl(p_db_office_id, cwms_util.user_office_id)), true);
@@ -386,7 +386,7 @@ begin
       select structure_type_code
         into l_embankment.structure_type_code
         from at_embank_structure_type
-       where db_office_code in (cwms_util.db_office_code_all, cwms_util.get_office_code(p_embankment.structure_type.office_id)) 
+       where db_office_code = cwms_util.get_office_code(p_embankment.structure_type.office_id) 
          and upper(structure_type_display_value) = upper(p_embankment.structure_type.display_value); 
    exception
       when no_data_found then
@@ -406,7 +406,7 @@ begin
       select protection_type_code
         into l_embankment.upstream_prot_type_code
         from at_embank_protection_type
-       where db_office_code in (cwms_util.db_office_code_all, cwms_util.get_office_code(p_embankment.upstream_prot_type.office_id))
+       where db_office_code = cwms_util.get_office_code(p_embankment.upstream_prot_type.office_id)
          and upper(protection_type_display_value) = upper(p_embankment.upstream_prot_type.display_value); 
    exception
       when no_data_found then
@@ -427,7 +427,7 @@ begin
       select protection_type_code
         into l_embankment.downstream_prot_type_code
         from at_embank_protection_type
-       where db_office_code in (cwms_util.db_office_code_all, cwms_util.get_office_code(p_embankment.downstream_prot_type.office_id))
+       where db_office_code = cwms_util.get_office_code(p_embankment.downstream_prot_type.office_id)
          and upper(protection_type_display_value) = upper(p_embankment.downstream_prot_type.display_value); 
    exception
       when no_data_found then
@@ -654,7 +654,7 @@ begin
    for rec in (
       select * 
         from at_embank_structure_type
-       where db_office_code in (cwms_util.db_office_code_all, cwms_util.get_office_code(l_db_office_id)))
+       where db_office_code = cwms_util.get_office_code(l_db_office_id))
    loop
       p_lookup_type_tab.extend;
       p_lookup_type_tab(p_lookup_type_tab.count) := lookup_type_obj_t(
@@ -707,7 +707,7 @@ begin
       select *
         into l_rec
         from at_embank_structure_type
-       where db_office_code in (cwms_util.db_office_code_all, l_office_code)
+       where db_office_code = l_office_code
          and structure_type_display_value = p_lookup_type.display_value;
       if cwms_util.is_true(p_fail_if_exists) then
          cwms_err.raise(
@@ -768,7 +768,7 @@ begin
    for rec in (
       select * 
         from at_embank_protection_type
-       where db_office_code in(cwms_util.db_office_code_all, cwms_util.get_office_code(l_db_office_id)))
+       where db_office_code = cwms_util.get_office_code(l_db_office_id))
    loop
       p_lookup_type_tab.extend;
       p_lookup_type_tab(p_lookup_type_tab.count) := lookup_type_obj_t(

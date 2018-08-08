@@ -28,8 +28,8 @@ AS
    -- not documented
    TYPE cat_ts_transfer_rec_t IS RECORD
    (
-      cwms_ts_id    VARCHAR2(191),
-      public_name   VARCHAR2 (57),
+      cwms_ts_id    VARCHAR2 (183),
+      public_name   VARCHAR2 (32),
       office_id     VARCHAR2 (16),
       ts_code       NUMBER,
       office_code   NUMBER,
@@ -161,13 +161,13 @@ AS
      *   <tr>
      *     <td class="descr-center">1</td>
      *     <td class="descr">cwms_ts_id</td>
-     *     <td class="descr"varchar2(191)</td>
+     *     <td class="descr"varchar2(183)</td>
      *     <td class="descr">The time series identifier</td>
      *   </tr>
      *   <tr>
      *     <td class="descr-center">2</td>
      *     <td class="descr">public_name</td>
-     *     <td class="descr">varchar2(57)</td>
+     *     <td class="descr">varchar2(32)</td>
      *     <td class="descr">The Public Name of the time series ids Location.</td>
      *   </tr>
      *   <tr>
@@ -220,13 +220,13 @@ AS
      *   <tr>
      *     <td class="descr-center">1</td>
      *     <td class="descr">cwms_ts_id</td>
-     *     <td class="descr"varchar2(191)</td>
+     *     <td class="descr"varchar2(183)</td>
      *     <td class="descr">The time series identifier</td>
      *   </tr>
      *   <tr>
      *     <td class="descr-center">2</td>
      *     <td class="descr">public_name</td>
-     *     <td class="descr">varchar2(57)</td>
+     *     <td class="descr">varchar2(32)</td>
      *     <td class="descr">The Public Name of the time series ids Location.</td>
      *   </tr>
      *   <tr>
@@ -259,6 +259,10 @@ AS
    FUNCTION cat_ts_transfer_tab (p_office_id IN VARCHAR2 DEFAULT NULL)
       RETURN cat_ts_transfer_tab_t
       PIPELINED;
-end cwms_data_dissem;
+END cwms_data_dissem;
+
 /
-show errors
+show errors;
+GRANT EXECUTE ON CWMS_DATA_DISSEM TO CWMS_USER
+/
+

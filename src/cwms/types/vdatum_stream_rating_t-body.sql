@@ -92,7 +92,7 @@ as
    is
       l_clob        clob;
       l_clone       vdatum_stream_rating_t;
-      l_location_id varchar2(57);
+      l_location_id varchar2(49);
       l_local_datum varchar2(16);
    begin           
       l_clone := self;

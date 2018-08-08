@@ -9568,7 +9568,6 @@ def main() :
     sys.stderr.write("Building configCategoryLoadTemplate\n")
     configCategoryLoadTemplate = \
     '''
-    insert into @TABLE values('GENERAL', 'General purpose configurations');
     insert into @TABLE values('MODELING', 'Modeling configurations');
     COMMIT;
     '''
@@ -9615,7 +9614,7 @@ def main() :
     sys.stderr.write("Building configurationLoadTemplate\n")
     configurationLoadTemplate = \
     '''
-    insert into @TABLE values(1,NULL,53,'GENERAL','OTHER','Generic general purpose');
+    insert into @TABLE values(1,NULL,53,NULL,'OTHER','Unknown or unspecified configuration');
     insert into @TABLE values(2,NULL,53,'MODELING','CWMS','Generalized CWMS modeling');
     insert into @TABLE values(3,2,53,'MODELING','CWMS-METVue','CWMS METVue modeling');
     insert into @TABLE values(4,2,53,'MODELING','CWMS-HMS','CWMS HMS modeling');

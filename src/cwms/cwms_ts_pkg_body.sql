@@ -1,5 +1,5 @@
 /* Formatted on 1/18/2012 2:59:32 PM (QP5 v5.185.11230.41888) */
-set define on
+SET DEFINE ON
 @@defines
 CREATE OR REPLACE PACKAGE BODY cwms_ts
 AS
@@ -61,7 +61,7 @@ AS
    FUNCTION get_ts_id (p_ts_code IN NUMBER)
       RETURN VARCHAR2
    IS
-      l_cwms_ts_id   VARCHAR2(191);
+      l_cwms_ts_id   VARCHAR2 (183);
    BEGIN
       BEGIN
          SELECT cwms_ts_id
@@ -85,7 +85,7 @@ AS
       return varchar2
    is
       l_parts str_tab_t;
-      l_ts_id varchar2(191);
+      l_ts_id varchar2(183);
    begin
       l_parts := cwms_util.split_text(p_ts_id, '.');
       for i in 1..l_parts.count loop
@@ -113,7 +113,7 @@ AS
       p_office_id    in varchar2)
       return varchar2
    is
-      l_cwms_ts_id varchar2(191);
+      l_cwms_ts_id varchar2(183);
       l_parts      str_tab_t;
    begin
       -----------
@@ -408,7 +408,7 @@ AS
    FUNCTION get_location_id (p_cwms_ts_code IN NUMBER)
       RETURN VARCHAR2
    IS
-      l_location_id   VARCHAR2 (57);
+      l_location_id   VARCHAR2 (49);
    BEGIN
       BEGIN
          SELECT location_id
@@ -1472,7 +1472,7 @@ AS
       l_all_office_code       NUMBER := cwms_util.db_office_code_all;
       l_ts_id_exists          BOOLEAN := FALSE;
       l_can_create            BOOLEAN := TRUE;
-      l_cwms_ts_id            varchar2(191);
+      l_cwms_ts_id            varchar2(183);
       l_parts                 str_tab_t;
    BEGIN
       IF p_office_id IS NULL
@@ -2128,7 +2128,7 @@ AS
       l_interval2         NUMBER := 60 / 1440;
       l_utc_offset        NUMBER;
       l_office_id         VARCHAR2 (16);
-      l_cwms_ts_id        VARCHAR2(191);
+      l_cwms_ts_id        VARCHAR2 (183);
       l_units             VARCHAR2 (16);
       l_time_zone         VARCHAR2 (28); 
       l_base_parameter_id VARCHAR2(16);
@@ -3079,7 +3079,7 @@ AS
    IS
       query_cursor       SYS_REFCURSOR;
       output_row         zts_rec_t;
-      l_cwms_ts_id_out   VARCHAR2(191);
+      l_cwms_ts_id_out   VARCHAR2 (183);
       l_units_out        VARCHAR2 (16);
    BEGIN
       retrieve_ts_out (p_at_tsv_rc         => query_cursor,
@@ -3133,7 +3133,7 @@ AS
       l_trim          VARCHAR2 (1);
       l_max_version   VARCHAR2 (1);
       l_query_str     VARCHAR2 (4000);
-      l_tsid          VARCHAR2(191);
+      l_tsid          VARCHAR2 (183);
       l_unit          VARCHAR2 (16);
 
       PROCEDURE set_action (text IN VARCHAR2)
@@ -3258,7 +3258,7 @@ AS
                           p_max_version       IN     VARCHAR2 DEFAULT 'T',
                           p_office_id         IN     VARCHAR2 DEFAULT NULL)
    IS
-      l_cwms_ts_id_out   VARCHAR2(191);
+      l_cwms_ts_id_out   VARCHAR2 (183);
       l_units_out        VARCHAR2 (16);
       l_at_tsv_rc        SYS_REFCURSOR;
    BEGIN
@@ -3317,7 +3317,7 @@ AS
       rec               SYS_REFCURSOR;
       l_time_zone       VARCHAR2 (28) := NVL (p_time_zone, 'UTC');
       must_exist        BOOLEAN;
-      tsid              VARCHAR2(191);
+      tsid              VARCHAR2 (183);
    BEGIN
       DBMS_APPLICATION_INFO.set_module ('cwms_ts.retrieve_ts_multi',
                                         'Preparation loop');
@@ -3663,8 +3663,7 @@ AS
       -------------------------------------------------------
       l_first_time   := trunc(sys_extract_utc(cwms_util.fixup_timezone(p_first_time)),   'mi');
       l_last_time    := trunc(sys_extract_utc(cwms_util.fixup_timezone(p_last_time)),    'mi');
---    l_version_date := trunc(sys_extract_utc(cwms_util.fixup_timezone(p_version_date)), 'mi');
-      l_version_date := cast(cast(sys_extract_utc(cwms_util.fixup_timezone(p_version_date)) as date) as timestamp); -- trunc to second
+      l_version_date := trunc(sys_extract_utc(cwms_util.fixup_timezone(p_version_date)), 'mi');
       l_store_time   := sys_extract_utc(cwms_util.fixup_timezone(p_store_time));
 
       for i in 1..3 loop
@@ -3802,588 +3801,6 @@ AS
       return l_result;
    end same_vq;
 
-   function update_ts_extents(
-      p_ts_extents_rec in at_ts_extents%rowtype)
-      return boolean
-   is
-      l_rec     at_ts_extents%rowtype;
-      l_updated boolean := false;
-   begin
-      begin
-         select *
-           into l_rec
-           from at_ts_extents
-          where ts_code = p_ts_extents_rec.ts_code
-            and version_time = p_ts_extents_rec.version_time;
-         ---------------------
-         -- existing record --
-         ---------------------
-         if p_ts_extents_rec.earliest_time is not null
-            and (l_rec.earliest_time is null or p_ts_extents_rec.earliest_time < l_rec.earliest_time)
-         then
-            l_rec.earliest_time       := p_ts_extents_rec.earliest_time;
-            l_rec.earliest_time_entry := p_ts_extents_rec.earliest_time_entry;
-            l_updated                 := true;
-         end if;            
-         if p_ts_extents_rec.earliest_non_null_time is not null 
-            and (l_rec.earliest_non_null_time is null or p_ts_extents_rec.earliest_non_null_time < l_rec.earliest_non_null_time)
-         then
-            l_rec.earliest_non_null_time       := p_ts_extents_rec.earliest_non_null_time;
-            l_rec.earliest_non_null_time_entry := p_ts_extents_rec.earliest_non_null_time_entry;
-            l_updated                          := true;
-         end if;            
-         if p_ts_extents_rec.earliest_non_null_entry_time is not null 
-            and (l_rec.earliest_non_null_entry_time is null or p_ts_extents_rec.earliest_non_null_entry_time < l_rec.earliest_non_null_entry_time)
-         then
-            l_rec.earliest_non_null_entry_time := p_ts_extents_rec.earliest_non_null_entry_time;
-            l_updated                          := true;
-         end if;            
-         if p_ts_extents_rec.latest_time is not null
-            and (l_rec.latest_time is null or p_ts_extents_rec.latest_time > l_rec.latest_time)
-         then
-            l_rec.latest_time       := p_ts_extents_rec.latest_time;      
-            l_rec.latest_time_entry := p_ts_extents_rec.latest_time_entry;
-            l_updated               := true;
-         end if;            
-         if p_ts_extents_rec.latest_non_null_time is not null 
-            and (l_rec.latest_non_null_time is null or p_ts_extents_rec.latest_non_null_time > l_rec.latest_non_null_time)
-         then
-            l_rec.latest_non_null_time       := p_ts_extents_rec.latest_non_null_time;      
-            l_rec.latest_non_null_time_entry := p_ts_extents_rec.latest_non_null_time_entry;
-            l_updated                        := true;
-         end if;            
-         if p_ts_extents_rec.latest_entry_time is not null 
-            and (l_rec.latest_entry_time is null or p_ts_extents_rec.latest_entry_time > l_rec.latest_entry_time)
-         then
-            l_rec.latest_entry_time := p_ts_extents_rec.latest_entry_time;
-            l_updated               := true;
-         end if;            
-         if p_ts_extents_rec.latest_non_null_entry_time is not null
-            and (l_rec.latest_non_null_entry_time is null or p_ts_extents_rec.latest_non_null_entry_time > l_rec.latest_non_null_entry_time)
-         then
-            l_rec.latest_non_null_entry_time := p_ts_extents_rec.latest_non_null_entry_time;
-            l_updated                        := true;
-         end if;            
-         if p_ts_extents_rec.least_value is not null 
-            and (l_rec.least_value is null or p_ts_extents_rec.least_value < l_rec.least_value) 
-         then
-            l_rec.least_value       := p_ts_extents_rec.least_value;      
-            l_rec.least_value_time  := p_ts_extents_rec.least_value_time; 
-            l_rec.least_value_entry := p_ts_extents_rec.least_value_entry;
-            l_updated               := true;
-         end if;            
-         if p_ts_extents_rec.least_accepted_value is not null 
-            and (l_rec.least_accepted_value is null or p_ts_extents_rec.least_accepted_value < l_rec.least_accepted_value) 
-         then
-            l_rec.least_accepted_value       := p_ts_extents_rec.least_accepted_value;      
-            l_rec.least_accepted_value_time  := p_ts_extents_rec.least_accepted_value_time; 
-            l_rec.least_accepted_value_entry := p_ts_extents_rec.least_accepted_value_entry;
-            l_updated                        := true;
-         end if;            
-         if p_ts_extents_rec.greatest_value is not null 
-            and (l_rec.greatest_value is null or p_ts_extents_rec.greatest_value > l_rec.greatest_value) 
-         then
-            l_rec.greatest_value       := p_ts_extents_rec.greatest_value;      
-            l_rec.greatest_value_time  := p_ts_extents_rec.greatest_value_time; 
-            l_rec.greatest_value_entry := p_ts_extents_rec.greatest_value_entry;
-            l_updated                  := true;
-         end if; 
-         if p_ts_extents_rec.greatest_accepted_value is not null 
-            and (l_rec.greatest_accepted_value is null or p_ts_extents_rec.greatest_accepted_value > l_rec.greatest_accepted_value) 
-         then
-            l_rec.greatest_accepted_value       := p_ts_extents_rec.greatest_accepted_value;      
-            l_rec.greatest_accepted_value_time  := p_ts_extents_rec.greatest_accepted_value_time; 
-            l_rec.greatest_accepted_value_entry := p_ts_extents_rec.greatest_accepted_value_entry;
-            l_updated                           := true;
-         end if; 
-         if l_updated then
-            update at_ts_extents
-               set row = l_rec
-             where ts_code = l_rec.ts_code
-               and version_time = l_rec.version_time;
-         end if;
-      exception
-         when no_data_found then
-            ------------------------
-            -- no existing record --
-            ------------------------
-            l_updated := true;
-            insert
-              into at_ts_extents
-            values p_ts_extents_rec;
-      end;
-      return l_updated;
-   end update_ts_extents;
-   
-   procedure update_ts_extents(
-      p_ts_code      in integer default null,
-      p_version_date in date default null)
-   is
-      type at_ts_extents_tabtype is table of at_ts_extents%rowtype;   
-      l_crsr           sys_refcursor;
-      l_ts1            timestamp;
-      l_ts2            timestamp;
-      l_ts_start       timestamp;
-      l_ts_end         timestamp;
-      l_ts_table_start timestamp;
-      l_ts_table_end   timestamp;
-      l_elapsed        interval day (0) to second (6);
-      l_ts_extents     at_ts_extents_tabtype;
-      l_rec            at_ts_extents%rowtype;
-      l_updated        integer;
-      l_ts_codes       number_tab_t;
-      l_query          varchar2(32767) := '
-         select
-                q1.ts_code,
-                q1.version_date as version_time,
-                --------------
-                -- earliest --
-                --------------
-                q1.earliest_time,
-                q6.earliest_time_entry,
-                q1.earliest_entry_time,
-                q2.earliest_non_null_time,
-                q3.earliest_non_null_time_entry,
-                q2.earliest_non_null_entry_time,
-                ------------
-                -- latest --
-                ------------
-                q1.latest_time,
-                q7.latest_time_entry,
-                q1.latest_entry_time,
-                q2.latest_non_null_time,
-                q4.latest_non_null_time_entry,
-                q2.latest_non_null_entry_time,
-                -----------
-                -- least --
-                -----------
-                q1.least_value,
-                q8.least_value_time,
-                q9.least_value_entry,
-                q5.least_accepted_value,
-                q12.least_accepted_value_time,
-                q13.least_accepted_value_entry,
-                --------------
-                -- greatest --
-                --------------
-                q1.greatest_value,
-                q10.greatest_value_time,
-                q11.greatest_value_entry,
-                q5.greatest_accepted_value,
-                q14.greatest_accepted_value_time,
-                q15.greatest_accepted_value_entry,
-                systimestamp
-           from (select ts_code,
-                        version_date,
-                        min(date_time) as earliest_time,
-                        max(date_time) as latest_time,
-                        min(data_entry_date) as earliest_entry_time,
-                        max(data_entry_date) as latest_entry_time,
-                        min(value) as least_value,
-                        max(value) as greatest_value
-                   from :table_name
-                  where ts_code = :ts_code
-                    and version_date = nvl(:version_date, version_date)
-                  group by ts_code, version_date 
-                ) q1
-                join
-                (select ts_code,
-                        version_date,
-                        min(date_time) as earliest_non_null_time,
-                        max(date_time) as latest_non_null_time,
-                        min(data_entry_date) as earliest_non_null_entry_time,
-                        max(data_entry_date) as latest_non_null_entry_time
-                   from :table_name
-                  where value is not null
-                  group by ts_code, version_date 
-                ) q2 on q2.ts_code = q1.ts_code
-                    and q2.version_date = q1.version_date
-                join
-                (select ts_code,
-                        version_date,
-                        date_time, 
-                        max(data_entry_date) as earliest_non_null_time_entry
-                   from :table_name
-                  group by ts_code, version_date, date_time 
-                ) q3 on q3.ts_code = q1.ts_code
-                    and q3.version_date = q1.version_date
-                    and q3.date_time = q2.earliest_non_null_time
-                join
-                (select ts_code,
-                        version_date,
-                        date_time, 
-                        max(data_entry_date) as latest_non_null_time_entry
-                   from :table_name
-                  group by ts_code, version_date, date_time 
-                ) q4 on q4.ts_code = q1.ts_code
-                    and q4.version_date = q1.version_date
-                    and q4.date_time = q2.latest_non_null_time
-                join
-                (select ts_code,
-                        version_date,
-                        min(value) as least_accepted_value,
-                        max(value) as greatest_accepted_value
-                   from :table_name
-                  where bitand(quality_code, 30) in (0,2,8)
-                  group by ts_code, version_date 
-                ) q5 on q5.ts_code = q1.ts_code
-                    and q5.version_date = q1.version_date
-                join
-                (select ts_code,
-                        version_date,
-                        date_time,
-                        data_entry_date as earliest_time_entry
-                   from :table_name
-                ) q6 on q6.ts_code = q1.ts_code
-                    and q6.version_date = q1.version_date
-                    and q6.date_time = q1.earliest_time
-                join
-                (select ts_code,
-                        version_date,
-                        date_time,
-                        data_entry_date as latest_time_entry
-                   from :table_name
-                ) q7 on q7.ts_code = q1.ts_code
-                    and q7.version_date = q1.version_date
-                    and q7.date_time = q1.latest_time
-                join
-                (select ts_code,
-                        version_date,
-                        value,
-                        max(date_time) as least_value_time
-                   from :table_name
-                  group by ts_code, version_date, value
-                ) q8 on q8.ts_code = q1.ts_code
-                    and q8.version_date = q1.version_date
-                    and q8.value = q1.least_value
-                join    
-                (select ts_code,
-                        version_date,
-                        date_time,
-                        data_entry_date as least_value_entry
-                   from :table_name
-                ) q9 on q9.ts_code = q1.ts_code
-                    and q9.version_date = q1.version_date
-                    and q9.date_time = q8.least_value_time
-                join
-                (select ts_code,
-                        version_date,
-                        value,
-                        max(date_time) as greatest_value_time
-                   from :table_name
-                  group by ts_code, version_date, value
-                ) q10 on q10.ts_code = q1.ts_code
-                    and q10.version_date = q1.version_date
-                    and q10.value = q1.greatest_value   
-                join    
-                (select ts_code,
-                        version_date,
-                        date_time,
-                        data_entry_date as greatest_value_entry
-                   from :table_name
-                ) q11 on q11.ts_code = q1.ts_code
-                    and q11.version_date = q1.version_date
-                    and q11.date_time = q10.greatest_value_time
-                join
-                (select ts_code,
-                        version_date,
-                        max(date_time) as least_accepted_value_time,
-                        value
-                   from :table_name
-                  group by ts_code, version_date, value
-                ) q12 on q12.ts_code = q1.ts_code
-                    and q12.version_date = q1.version_date
-                    and q12.value = q5.least_accepted_value
-                join
-                (select ts_code,
-                        version_date,
-                        date_time,
-                        data_entry_date as least_accepted_value_entry
-                   from :table_name
-                ) q13 on q13.ts_code = q1.ts_code
-                    and q13.version_date = q1.version_date
-                    and q13.date_time = q12.least_accepted_value_time
-                join
-                (select ts_code,
-                        version_date,
-                        max(date_time) as greatest_accepted_value_time,
-                        value
-                   from :table_name
-                  group by ts_code, version_date, value
-                ) q14 on q14.ts_code = q1.ts_code
-                    and q14.version_date = q1.version_date
-                    and q14.value = q5.greatest_accepted_value
-                join
-                (select ts_code,
-                        version_date,
-                        date_time,
-                        data_entry_date as greatest_accepted_value_entry
-                   from :table_name
-                ) q15 on q15.ts_code = q1.ts_code
-                    and q15.version_date = q1.version_date
-                    and q15.date_time = q14.greatest_accepted_value_time';
-   begin
-      l_ts_start := systimestamp;
-      cwms_msg.log_db_message('update_ts_extents', cwms_msg.msg_level_normal, 'UPDATE_TS_EXTENTS starting with '||nvl(to_char(p_ts_code), 'NULL')||', '||nvl(to_char(p_version_date), 'NULL'));
-      if p_ts_code is null then
-         select ts_code bulk collect into l_ts_codes from at_cwms_ts_id;
-      end if;
-      ------------------------------------
-      -- loop across time series tables --
-      ------------------------------------
-      for rec in (select table_name from at_ts_table_properties order by start_date) loop
-         l_ts1 := systimestamp;
-         l_ts_table_start := l_ts1;
-         cwms_msg.log_db_message('update_ts_extents', cwms_msg.msg_level_normal, 'Starting table '||rec.table_name);
-         if p_ts_code is null then
-            -------------------------
-            -- update all ts_codes --
-            -------------------------
-            --
-            -- NOTE: I tried various methods of selecting values from each table, including a single query to get the extents for 
-            --       every ts_cod as well as a single query to get extents for no more than 100 ts_codes at a time. Each of these
-            --       seemed to work okay interactively but took *way* too long when running as a job. I wasn't able to account for
-            --       this, but I found that querying each table for a single ts_code at a time performed much faster than the bulk
-            --       queries - at least when running as a job. 
-            --
-            -- MDP
-            for i in 1..l_ts_codes.count loop
-               if mod(i, 100) = 1 then
-                  cwms_msg.log_db_message('update_ts_extents', cwms_msg.msg_level_verbose, 'Starting ts_codes '||i||'..'||least(i+99, l_ts_codes.count)||' in '||rec.table_name);
-               end if; 
-               ------------
-               -- select --
-               ------------
-               open l_crsr for replace(l_query, ':table_name', rec.table_name) using l_ts_codes(i), p_version_date;
-               fetch l_crsr bulk collect into l_ts_extents;
-               close l_crsr;
-               if mod(i, 100) = 1 then
-                  l_ts2 := systimestamp;
-                  l_elapsed := l_ts2 - l_ts1;
-                  cwms_msg.log_db_message(
-                     'update_ts_extents', 
-                     cwms_msg.msg_level_verbose, 
-                     'Selected '
-                     ||l_ts_extents.count
-                     ||' time series extents from ts_codes '
-                     ||i
-                     ||'..'
-                     ||least(i+99, l_ts_codes.count)
-                     ||' from '
-                     ||rec.table_name
-                     ||' in '
-                     ||l_elapsed);
-                  l_ts1 := systimestamp;
-                  l_updated := 0;
-               end if;
-               ------------
-               -- update --
-               ------------
-               for j in 1..l_ts_extents.count loop
-                  if update_ts_extents(l_ts_extents(j)) then 
-                     l_updated := l_updated + 1; 
-                  end if;   
-               end loop;
-               if mod(i, 100) = 1 then
-                  l_ts2 := systimestamp;
-                  l_elapsed := l_ts2 - l_ts1;
-                  cwms_msg.log_db_message(
-                     'update_ts_extents', 
-                     cwms_msg.msg_level_verbose, 
-                     'Updated '
-                     ||l_updated
-                     ||' time series extents from ts_codes '
-                     ||i
-                     ||'..'
-                     ||least(i+99, l_ts_codes.count)
-                     ||' from '
-                     ||rec.table_name
-                     ||' in '
-                     ||l_elapsed);
-                  l_ts1 := systimestamp;
-                  commit;
-               end if;   
-            end loop;
-            commit;
-         else
-            -----------------------------
-            -- update specific ts_code --
-            -----------------------------
-            ------------
-            -- select --
-            ------------
-            open l_crsr for replace(l_query, ':table_name', rec.table_name) using p_ts_code, p_version_date;
-            fetch l_crsr bulk collect into l_ts_extents;
-            close l_crsr;
-            ------------
-            -- update --
-            ------------
-            l_updated := 0;
-            for i in 1..l_ts_extents.count loop
-               if update_ts_extents(l_ts_extents(i)) then
-                  l_updated := l_updated + 1;
-               end if;   
-               if mod(l_updated, 100) = 0 then
-                  commit;
-               end if;
-            end loop;
-            commit;
-         end if;
-         l_ts_table_end := systimestamp;
-         l_elapsed := l_ts_table_end - l_ts_table_start;
-         cwms_msg.log_db_message('update_ts_extents', cwms_msg.msg_level_normal, 'Finished table '||rec.table_name||' in '||l_elapsed);
-      end loop;
-      -------------------------
-      -- update null extents --
-      -------------------------
-      if p_ts_code is null and p_version_date is null then
-         l_ts_extents.delete;
-         l_ts_extents.extend;
-         l_ts_extents(1).version_time := cwms_util.non_versioned;
-         l_ts_extents(1).last_update  := systimestamp;
-         l_updated := 0;
-         l_ts1 := systimestamp;
-         l_elapsed := l_ts2 - l_ts1;
-         for rec in (select ts_code from at_cwms_ts_spec minus select distinct ts_code from at_ts_extents) loop
-            l_ts_extents(1).ts_code := rec.ts_code;
-            if update_ts_extents(l_ts_extents(1)) then
-               l_updated := l_updated + 1;
-            end if;   
-            if mod(l_updated, 100) = 0 then
-               commit;
-            end if;
-         end loop;
-         commit;
-         if p_ts_code is null then
-            l_ts2 := systimestamp;
-            l_elapsed := l_ts2 - l_ts1;
-            cwms_msg.log_db_message( 'update_ts_extents', cwms_msg.msg_level_verbose, 'Updated '||l_updated||' null time series extents in '||l_elapsed);
-         end if;
-      end if;
-      cwms_msg.log_db_message('update_ts_extents', cwms_msg.msg_level_normal, 'UPDATE_TS_EXTENTS done');
-   end update_ts_extents;
-
-   -- not documented
-   procedure start_update_ts_extents_job
-   is
-      l_job_name varchar2(30) := 'UPDATE_TS_EXTENTS_JOB';
-      l_now    date;
-      l_dow    varchar2(3);
-      l_start  date;
-      l_timezone varchar2(28);
-      
-      function job_count return pls_integer
-      is
-         l_count pls_integer;
-      begin
-         select count(*) into l_count from user_scheduler_jobs where job_name = l_job_name;
-         return l_count;
-      end job_count;
-   begin
-      ----------------------------------------
-      -- only allow schema owner to execute --
-      ----------------------------------------
-      if cwms_util.get_user_id != '&cwms_schema' then
-         cwms_err.raise('ERROR', 'Must be &cwms_schema user to start job '||l_job_name);
-      end if;
-      ----------------------------------------------
-      -- allow only a single copy to be scheduled --
-      ----------------------------------------------
-      if job_count > 0 then
-         cwms_err.raise('ERROR', 'Cannot start job '||l_job_name||',  another instance is already running');
-      end if;
-      -----------------------------------------------
-      -- get the "local" time zone of the database --
-      -----------------------------------------------
-      begin
-         select time_zone_name
-           into l_timezone
-           from (select tz.time_zone_name,
-                        count(pl.location_code)as count
-                   from at_physical_location pl,
-                        cwms_time_zone tz
-                  where tz.time_zone_code = pl.time_zone_code
-                  group by tz.time_zone_name
-                  order by 2 desc
-                )
-          where rownum = 1;
-      exception
-         when no_data_found then l_timezone := 'UTC';
-      end;
-      ----------------------------------------------------------------------------------
-      -- create the job to start next Friday at 10:00 pm local time and repeat weekly --
-      ----------------------------------------------------------------------------------
-      l_start := cwms_util.change_timezone(date '2018-07-06' + 22/24, l_timezone, 'UTC');
-      dbms_scheduler.create_job (
-         job_name            => l_job_name,
-         job_type            => 'stored_procedure',
-         job_action          => 'cwms_ts.update_ts_extents',
-         start_date          => from_tz(cast(l_start as timestamp), 'UTC'),
-         repeat_interval     => 'freq=weekly; interval=1',
-         number_of_arguments => 2,
-         comments            => 'Updates all time series extents.');
-      dbms_scheduler.set_job_argument_value(
-         job_name          => l_job_name,
-         argument_position => 1,
-         argument_value    => null);
-      dbms_scheduler.set_job_argument_value(
-         job_name          => l_job_name,
-         argument_position => 2,
-         argument_value    => null);
-      dbms_scheduler.enable(l_job_name);
-      if job_count != 1 then 
-         cwms_err.raise('ERROR', 'Job '||l_job_name||' not started');
-      end if;
-   end start_update_ts_extents_job;
-
-   -- not documented
-   procedure start_immediate_upd_tsx_job
-   is
-      l_job_name varchar2(30) := 'IMMEDIATE_UPD_TS_EXTENTS_JOB';
-      
-      function job_count return pls_integer
-      is
-         l_count pls_integer;
-      begin
-         select count(*) into l_count from user_scheduler_jobs where job_name = l_job_name;
-         return l_count;
-      end job_count;
-   begin
-      ----------------------------------------
-      -- only allow schema owner to execute --
-      ----------------------------------------
-      if cwms_util.get_user_id != '&cwms_schema' then
-         cwms_err.raise('ERROR', 'Must be &cwms_schema user to start job '||l_job_name);
-      end if;
-      ----------------------------------------------
-      -- allow only a single copy to be scheduled --
-      ----------------------------------------------
-      if job_count > 0 then
-         cwms_err.raise('ERROR', 'Cannot start job '||l_job_name||',  another instance is already running');
-      end if;
-      ----------------------------------------------------------
-      -- create the job to start immediately and never repeat --
-      ----------------------------------------------------------
-      dbms_scheduler.create_job (
-         job_name            => l_job_name,
-         job_type            => 'stored_procedure',
-         job_action          => 'cwms_ts.update_ts_extents',
-         number_of_arguments => 2,
-         comments            => 'Updates all time series extents.');
-      dbms_scheduler.set_job_argument_value(
-         job_name          => l_job_name,
-         argument_position => 1,
-         argument_value    => null);
-      dbms_scheduler.set_job_argument_value(
-         job_name          => l_job_name,
-         argument_position => 2,
-         argument_value    => null);
-      dbms_scheduler.enable(l_job_name);
-      if job_count != 1 then 
-         cwms_err.raise('ERROR', 'Job '||l_job_name||' not started');
-      end if;
-   end start_immediate_upd_tsx_job;
-
    --*******************************************************************   --
    --*******************************************************************   --
    --
@@ -4446,7 +3863,7 @@ AS
       TS_ID_NOT_FOUND       EXCEPTION;
       PRAGMA EXCEPTION_INIT (ts_id_not_found, -20001);
       l_timeseries_data     tsv_array;
-      l_cwms_ts_id          VARCHAR2(191);
+      l_cwms_ts_id          VARCHAR2(183);
       l_office_id           VARCHAR2 (16);
       l_office_code         NUMBER;
       l_location_code       NUMBER;
@@ -4488,7 +3905,6 @@ AS
       l_irr_offset          integer;
       l_filtered_ts_data    tsv_array;
       l_filter_duplicates   varchar2(1);
-      l_ts_extents_rec      at_ts_extents%rowtype;
    --
       function bitor (num1 in integer, num2 in integer)
          return integer
@@ -4533,8 +3949,7 @@ AS
 
       l_location_code := cwms_loc.get_location_code(l_office_code, cwms_Util.split_text(l_cwms_ts_id, 1, '.', 1));
 
---    l_version_date := trunc(NVL(p_version_date, cwms_util.non_versioned), 'mi');
-      l_version_date := NVL(p_version_date, cwms_util.non_versioned); -- allow seconds on version date
+      l_version_date := trunc(NVL(p_version_date, cwms_util.non_versioned), 'mi');
       if l_version_date = cwms_util.all_version_dates then
          cwms_err.raise('ERROR', 'Cannot use CWMS_UTIL.ALL_VERSION_DATES for storing data.');
       end if;
@@ -5613,7 +5028,7 @@ AS
             --
             dbms_application_info.set_action ('delete/merge from table, override, delete_insert ');
 
-            for x in (select start_date, end_date, table_name
+            for x in (select start_date, end_date, table_name`
                         from at_ts_table_properties
                        where start_date <= maxdate and end_date > mindate
                      )
@@ -5771,107 +5186,6 @@ AS
          END;
       END LOOP;
 
-      ------------------------------------
-      -- update the time series extents --
-      ------------------------------------
-      select l_ts_code,
-             l_version_date,
-             mindate,
-             l_store_date,
-             l_store_date,
-             q2.earliest_non_null_time,
-             l_store_date,
-             l_store_date,
-             maxdate,
-             l_store_date,
-             l_store_date,
-             q2.latest_non_null_time,
-             l_store_date,
-             l_store_date,
-             case
-             when c.function is null then q1.least_value * c.factor + c.offset
-             else cwms_util.eval_expression(c.function, double_tab_t(q1.least_value))
-             end,
-             q4.least_value_time,
-             l_store_date,
-             case
-             when c.function is null then q3.least_accepted_value * c.factor + c.offset
-             else cwms_util.eval_expression(c.function, double_tab_t(q3.least_accepted_value))
-             end,
-             q6.least_accepted_value_time,
-             l_store_date,
-             case
-             when c.function is null then q1.greatest_value * c.factor + c.offset
-             else cwms_util.eval_expression(c.function, double_tab_t(q1.greatest_value))
-             end,
-             q5.greatest_value_time,
-             l_store_date,
-             case
-             when c.function is null then q3.greatest_accepted_value * c.factor + c.offset
-             else cwms_util.eval_expression(c.function, double_tab_t(q3.greatest_accepted_value))
-             end,
-             q7.greatest_accepted_value_time,
-             l_store_date,
-             l_store_date
-        into l_ts_extents_rec     
-        from at_cwms_ts_spec s,
-             at_parameter p,
-             cwms_unit_conversion c,
-             cwms_base_parameter bp,
-             cwms_unit u,
-             (select min(value) as least_value,
-                     max(value) as greatest_value
-                from table(l_timeseries_data)
-             ) q1
-             join
-             (select min(date_time) as earliest_non_null_time,
-                     max(date_time) as latest_non_null_time
-                from table(l_timeseries_data)
-               where value is not null
-             ) q2 on 1=1
-             join
-             (select min(value) as least_accepted_value,
-                     max(value) as greatest_accepted_value
-                from table(l_timeseries_data)
-               where bitand(quality_code, 30) in (0,2,8)
-             ) q3 on 1=1
-             join
-             (select value,
-                     max(date_time) as least_value_time
-                from table(l_timeseries_data)
-               group by value
-             ) q4 on q4.value = q1.least_value
-             join
-             (select value,
-                     max(date_time) as greatest_value_time
-                from table(l_timeseries_data)
-               group by value
-             ) q5 on q5.value = q1.greatest_value   
-             join
-             (select max(date_time) as least_accepted_value_time,
-                     value
-                from table(l_timeseries_data)
-               group by value
-             ) q6 on q6.value = q3.least_accepted_value
-             join
-             (select max(date_time) as greatest_accepted_value_time,
-                     value
-                from table(l_timeseries_data)
-               group by value
-             ) q7 on q7.value = q3.greatest_accepted_value
-       where s.ts_code = l_ts_code
-         and u.unit_id = l_units
-         and c.from_unit_code = u.unit_code
-         and p.parameter_code = s.parameter_code
-         and bp.base_parameter_code = p.base_parameter_code 
-         and c.to_unit_code = bp.unit_code;
-         
-      declare
-         l_updated boolean;
-      begin
-         l_updated := update_ts_extents(l_ts_extents_rec);
-      end;
-                   
       ---------------------------------
       -- archive and publish message --
       ---------------------------------
@@ -6192,7 +5506,7 @@ AS
    is
       l_db_office_code   number := p_db_office_code;
       l_db_office_id     varchar2(16);
-      l_cwms_ts_id       varchar2(191);
+      l_cwms_ts_id       varchar2(183);
       l_ts_code          number;
       l_count            number;
       l_value_count      number;
@@ -6335,11 +5649,6 @@ AS
             cwms_err.raise('INVALID_DELETE_ACTION', p_delete_action);
       end case;
 
-      ---------------------------
-      -- update the ts extents --
-      ---------------------------
-      delete from at_ts_extents where ts_code = l_ts_code;
-      
       if l_delete_action in (cwms_util.delete_ts_id, cwms_util.delete_ts_cascade) then
          -------------------------------
          -- publish TSDeleted message --
@@ -6468,7 +5777,7 @@ AS
       p_max_version         in varchar2 default 'T',
       p_ts_item_mask        in integer default cwms_util.ts_all)
    is
-      l_tsid                     varchar2(191);
+      l_tsid                     varchar2(183);
       l_office_id                varchar2(16);
       l_override_protection      boolean;
       l_error_on_protection      boolean;
@@ -6491,7 +5800,6 @@ AS
       l_times_text               date2_tab_t := date2_tab_t();
       l_times_binary             date2_tab_t := date2_tab_t();
       l_cursor                   sys_refcursor;
-      l_ts_extents_rec           at_ts_extents%rowtype;
    begin
       l_max_version := cwms_util.return_true_or_false(p_max_version);
       if instr('ERROR', upper(trim(p_override_protection))) = 1 then
@@ -6711,30 +6019,6 @@ AS
             where rowid in (select t.rowid
                               from at_tsv_binary t, table(l_times_binary) d
                              where ts_code = p_ts_code and t.date_time = d.date_1 and t.version_date = d.date_2);
-   ---------------------------
-   -- update the ts extents --
-   ---------------------------
---   update_ts_extents(p_ts_code, p_version_date_utc);
-   declare
-      l_job_name varchar2(64) := 'UTX_'||p_ts_code||'_'||to_char(p_version_date_utc, 'yyyymmdd_hh24miss');
-   begin
-      dbms_scheduler.create_job (
-         job_name            => l_job_name,
-         job_type            => 'stored_procedure',
-         job_action          => 'cwms_ts.update_ts_extents',
-         number_of_arguments => 2,
-         comments            => 'Updates the time series extents.');
-      dbms_scheduler.set_job_argument_value(
-         job_name          => l_job_name,
-         argument_position => 1,
-         argument_value    => p_ts_code);
-      dbms_scheduler.set_job_argument_value(
-         job_name          => l_job_name,
-         argument_position => 2,
-         argument_value    => p_version_date_utc);
-      dbms_scheduler.enable(l_job_name);         
-   end;
-   
    end purge_ts_data;
 
    procedure change_version_date(
@@ -6958,7 +6242,7 @@ AS
       --
       l_base_location_id_new      at_base_location.base_location_id%TYPE;
       l_sub_location_id_new       at_physical_location.sub_location_id%TYPE;
-      l_location_new              VARCHAR2 (57);
+      l_location_new              VARCHAR2 (49);
       l_base_parameter_id_new     cwms_base_parameter.base_parameter_id%TYPE;
       l_sub_parameter_id_new      at_parameter.sub_parameter_id%TYPE;
       l_parameter_type_id_new     cwms_parameter_type.parameter_type_id%TYPE;
@@ -9677,9 +8961,9 @@ end retrieve_existing_item_counts;
    is
       l_office_code number(10);
       l_ts_code     number(10);
-      l_ts_id       varchar2(191);
+      l_ts_id       varchar2(183); 
       l_parts       str_tab_t;
-      l_location_id varchar2(57);
+      l_location_id varchar2(49);
    begin
       -------------------
       -- sanity checks --
@@ -9755,7 +9039,7 @@ end retrieve_existing_item_counts;
       ts_id_not_found   EXCEPTION;
       PRAGMA EXCEPTION_INIT (ts_id_not_found, -20001);
       l_ts_code         NUMBER (10);
-      l_ts_id           VARCHAR2(191);
+      l_ts_id           VARCHAR2 (183);
    BEGIN
       BEGIN
          l_ts_code := get_ts_code (p_ts_id_or_alias, p_office_id);
@@ -10249,904 +9533,622 @@ end retrieve_existing_item_counts;
          p_time_zone);
    END get_times_for_time_window;
 
-   function get_ts_min_date_utc (
-      p_ts_code          in number,
-      p_version_date_utc in date default cwms_util.non_versioned)
-      return date
-   is
-      l_ts_extents ts_extents_t;
-   begin
-      get_ts_extents(
-         p_ts_extents   => l_ts_extents,
-         p_ts_code      => p_ts_code,
-         p_version_date => p_version_date_utc);
-      return l_ts_extents.earliest_non_null_time;
-   end get_ts_min_date_utc;
+   FUNCTION get_ts_min_date_utc (
+      p_ts_code            IN NUMBER,
+      p_version_date_utc   IN DATE DEFAULT cwms_util.non_versioned)
+      RETURN DATE
+   IS
+      l_min_date_utc   DATE;
+   BEGIN
+      FOR rec IN (  SELECT table_name
+                      FROM at_ts_table_properties
+                  ORDER BY start_date)
+      LOOP
+         EXECUTE IMMEDIATE
+            'select min(date_time)
+               from '|| rec.table_name||'
+              where ts_code = :1
+                and version_date = :2
+                and value is not null'
+            INTO l_min_date_utc
+            USING p_ts_code, p_version_date_utc;
 
-   function get_ts_min_date2_utc (
-      p_ts_code          in number,
-      p_version_date_utc in date default cwms_util.non_versioned)
-      return date
-   is
-      l_ts_extents ts_extents_t;
-   begin
-      get_ts_extents(
-         p_ts_extents   => l_ts_extents,
-         p_ts_code      => p_ts_code,
-         p_version_date => p_version_date_utc);
-      return l_ts_extents.earliest_time;
-   end get_ts_min_date2_utc;
+         EXIT WHEN l_min_date_utc IS NOT NULL;
+      END LOOP;
 
-   function get_ts_min_date (
-      p_cwms_ts_id   in varchar2,
-      p_time_zone    in varchar2 default 'UTC',
-      p_version_date in date default cwms_util.non_versioned,
-      p_office_id    in varchar2 default null)
-      return date
-   is
-      l_ts_extents ts_extents_t;
-   begin
-      get_ts_extents(
-         p_ts_extents   => l_ts_extents,
-         p_ts_code      => cwms_ts.get_ts_code(p_cwms_ts_id => p_cwms_ts_id, p_db_office_id => p_office_id),
-         p_version_date => p_version_date,
-         p_time_zone    => p_time_zone);
-      return l_ts_extents.earliest_non_null_time;
-   end get_ts_min_date;
+      RETURN l_min_date_utc;
+   END get_ts_min_date_utc;
 
-   function get_ts_min_date2 (
-      p_cwms_ts_id   in varchar2,
-      p_time_zone    in varchar2 default 'UTC',
-      p_version_date in date default cwms_util.non_versioned,
-      p_office_id    in varchar2 default null)
-      return date
-   is
-      l_ts_extents ts_extents_t;
-   begin
-      get_ts_extents(
-         p_ts_extents   => l_ts_extents,
-         p_ts_code      => cwms_ts.get_ts_code(p_cwms_ts_id => p_cwms_ts_id, p_db_office_id => p_office_id),
-         p_version_date => p_version_date,
-         p_time_zone    => p_time_zone);
-      return l_ts_extents.earliest_time;
-   end get_ts_min_date2;   
+   FUNCTION get_ts_min_date2_utc (
+      p_ts_code            IN NUMBER,
+      p_version_date_utc   IN DATE DEFAULT cwms_util.non_versioned)
+      RETURN DATE
+   IS
+      l_min_date_utc   DATE;
+   BEGIN
+      FOR rec IN (  SELECT table_name
+                      FROM at_ts_table_properties
+                  ORDER BY start_date)
+      LOOP
+         EXECUTE IMMEDIATE
+            'select min(date_time)
+               from '|| rec.table_name||'
+              where ts_code = :1
+                and version_date = :2'
+            INTO l_min_date_utc
+            USING p_ts_code, p_version_date_utc;
 
-   function get_ts_max_date_utc (
-      p_ts_code          in number,
-      p_version_date_utc in date default cwms_util.non_versioned)
-      return date
-   is
-      l_ts_extents ts_extents_t;
-   begin
-      get_ts_extents(
-         p_ts_extents   => l_ts_extents,
-         p_ts_code      => p_ts_code,
-         p_version_date => p_version_date_utc);
-      return l_ts_extents.latest_non_null_time;
-   end get_ts_max_date_utc;
+         EXIT WHEN l_min_date_utc IS NOT NULL;
+      END LOOP;
 
-   function get_ts_max_date2_utc (
-      p_ts_code          in number,
-      p_version_date_utc in date default cwms_util.non_versioned)
-      return date
-   is
-      l_ts_extents ts_extents_t;
-   begin
-      get_ts_extents(
-         p_ts_extents   => l_ts_extents,
-         p_ts_code      => p_ts_code,
-         p_version_date => p_version_date_utc);
-      return l_ts_extents.latest_time;
-   end get_ts_max_date2_utc;
+      RETURN l_min_date_utc;
+   END get_ts_min_date2_utc;
 
-   function get_ts_max_date (
-      p_cwms_ts_id   in varchar2,
-      p_time_zone    in varchar2 default 'UTC',
-      p_version_date in date default cwms_util.non_versioned,
-      p_office_id    in varchar2 default null)
-      return date
-   is
-      l_ts_extents ts_extents_t;
+   FUNCTION get_ts_min_date (
+      p_cwms_ts_id     IN VARCHAR2,
+      p_time_zone      IN VARCHAR2 DEFAULT 'UTC',
+      p_version_date   IN DATE DEFAULT cwms_util.non_versioned,
+      p_office_id      IN VARCHAR2 DEFAULT NULL)
+      RETURN DATE
+   IS
+      l_min_date_utc       DATE;
+      l_version_date_utc   DATE;
    begin
-      get_ts_extents(
-         p_ts_extents   => l_ts_extents,
-         p_ts_code      => cwms_ts.get_ts_code(p_cwms_ts_id => p_cwms_ts_id, p_db_office_id => p_office_id),
-         p_version_date => p_version_date,
-         p_time_zone    => p_time_zone);
-      return l_ts_extents.latest_non_null_time;
-   end get_ts_max_date;
+      IF p_version_date is null or p_version_date = cwms_util.non_versioned
+      THEN
+         l_version_date_utc := cwms_util.non_versioned;
+      ELSE
+         l_version_date_utc :=
+            cwms_util.change_timezone (p_version_date, p_time_zone, 'UTC');
+      END IF;
 
-   function get_ts_max_date2 (
-      p_cwms_ts_id   in varchar2,
-      p_time_zone    in varchar2 default 'UTC',
-      p_version_date in date default cwms_util.non_versioned,
-      p_office_id    in varchar2 default null)
-      return date
-   is
-      l_ts_extents ts_extents_t;
-   begin
-      get_ts_extents(
-         p_ts_extents   => l_ts_extents,
-         p_ts_code      => cwms_ts.get_ts_code(p_cwms_ts_id => p_cwms_ts_id, p_db_office_id => p_office_id),
-         p_version_date => p_version_date,
-         p_time_zone    => p_time_zone);
-      return l_ts_extents.latest_time;
-   end get_ts_max_date2;   
+      l_min_date_utc :=
+         get_ts_min_date_utc (
+            cwms_ts.get_ts_code (p_cwms_ts_id, p_office_id),
+            l_version_date_utc);
+      RETURN cwms_util.change_timezone (l_min_date_utc, 'UTC', p_time_zone);
+   END get_ts_min_date;
 
-   function get_ts_max_date_utc_2 (
-      p_ts_code            in number,
-      p_version_date_utc   in date default cwms_util.non_versioned,
-      p_year               in number default null)
-      return date
-   is
-      l_max_date_utc   date;
-   begin
-      for rec in (  select table_name
-                         , to_number(to_char(start_date, 'YYYY')) table_year
-                      from at_ts_table_properties
-                  order by start_date desc)
-      loop
+   FUNCTION get_ts_min_date2 (
+      p_cwms_ts_id     IN VARCHAR2,
+      p_time_zone      IN VARCHAR2 DEFAULT 'UTC',
+      p_version_date   IN DATE DEFAULT cwms_util.non_versioned,
+      p_office_id      IN VARCHAR2 DEFAULT NULL)
+      RETURN DATE
+   IS
+      l_min_date_utc       DATE;
+      l_version_date_utc   DATE;
+   BEGIN
+      IF p_version_date is null or p_version_date = cwms_util.non_versioned
+      THEN
+         l_version_date_utc := cwms_util.non_versioned;
+      ELSE
+         l_version_date_utc :=
+            cwms_util.change_timezone (p_version_date, p_time_zone, 'UTC');
+      END IF;
+
+      l_min_date_utc :=
+         get_ts_min_date2_utc (
+            cwms_ts.get_ts_code (p_cwms_ts_id, p_office_id),
+            l_version_date_utc);
+      RETURN cwms_util.change_timezone (l_min_date_utc, 'UTC', p_time_zone);
+   END get_ts_min_date2;
+
+   FUNCTION get_ts_max_date_utc (
+      p_ts_code            IN NUMBER,
+      p_version_date_utc   IN DATE DEFAULT cwms_util.non_versioned)
+      RETURN DATE
+   IS
+      l_max_date_utc   DATE;
+   BEGIN
+      FOR rec IN (  SELECT table_name
+                      FROM at_ts_table_properties
+                  ORDER BY start_date DESC)
+      LOOP
+         EXECUTE IMMEDIATE
+            'select max(date_time)
+               from '||rec.table_name||'
+              where ts_code = :1
+                and version_date = :2
+                and value is not null'
+            INTO l_max_date_utc
+            USING p_ts_code, p_version_date_utc;
+
+         EXIT WHEN l_max_date_utc IS NOT NULL;
+      END LOOP;
+
+      RETURN l_max_date_utc;
+   END get_ts_max_date_utc;
+
+      FUNCTION get_ts_max_date_utc_2 (
+      p_ts_code            IN NUMBER,
+      p_version_date_utc   IN DATE DEFAULT cwms_util.non_versioned,
+      p_year               IN NUMBER DEFAULT NULL)
+      RETURN DATE
+   IS
+      l_max_date_utc   DATE;
+   BEGIN
+      FOR rec IN (  SELECT table_name
+                         , TO_NUMBER(TO_CHAR(start_date, 'YYYY')) table_year
+                      FROM at_ts_table_properties
+                  ORDER BY start_date DESC)
+      LOOP
   
-         case
-          when p_year is null then
-          --process for the max date time for this at_tsv_xxxx table
-             begin
-               execute immediate
+         CASE
+          WHEN p_year IS NULL THEN
+          --Process for the max date time for this at_tsv_xxxx table
+             BEGIN
+               EXECUTE IMMEDIATE
                   'select max(date_time)
                      from '||rec.table_name||'
                     where ts_code = :1
                       and version_date = :2'
-                  into l_max_date_utc
-                  using p_ts_code, p_version_date_utc;
+                  INTO l_max_date_utc
+                  USING p_ts_code, p_version_date_utc;
             
-            exception
-             when no_data_found then 
-              l_max_date_utc := null;
-            end;
+            EXCEPTION
+             WHEN no_data_found THEN 
+              l_max_date_utc := NULL;
+            END;
 
-        when p_year = rec.table_year then
+        WHEN p_year = rec.table_year THEN
 
-          --process only for one year
-          begin
-            execute immediate
+          --Process ONLY for one year
+          BEGIN
+            EXECUTE IMMEDIATE
             'select max(date_time)
                from '||rec.table_name||'
               where ts_code = :1
                 and version_date = :2'
-            into l_max_date_utc
-            using p_ts_code, p_version_date_utc;
+            INTO l_max_date_utc
+            USING p_ts_code, p_version_date_utc;
         
-        exception
-         when no_data_found then 
-          l_max_date_utc := null;
-        end;
-        else
+        EXCEPTION
+         WHEN no_data_found THEN 
+          l_max_date_utc := NULL;
+        END;
+        ELSE
           --do nothing
-          null;
+          NULL;
 
-        end case;
+        END CASE;
 
-         exit when l_max_date_utc is not null;
+         EXIT WHEN l_max_date_utc IS NOT NULL;
 
-      end loop;
+      END LOOP;
 
-      return l_max_date_utc;
-   end get_ts_max_date_utc_2;
+      RETURN l_max_date_utc;
+   END get_ts_max_date_utc_2;
 
-   procedure get_ts_extents_utc (
-      p_min_date_utc     out date,
-      p_max_date_utc     out date,
-      p_ts_code          in  number,
-      p_version_date_utc in  date default cwms_util.non_versioned)
-	is
-      l_ts_extents ts_extents_t;
-	begin
-      get_ts_extents(
-         p_ts_extents   => l_ts_extents,
-         p_ts_code      => p_ts_code,
-         p_version_date => p_version_date_utc);
-      p_min_date_utc := l_ts_extents.earliest_non_null_time;
-      p_max_date_utc := l_ts_extents.latest_non_null_time;
-   end get_ts_extents_utc;
+   FUNCTION get_ts_max_date2_utc (
+      p_ts_code            IN NUMBER,
+      p_version_date_utc   IN DATE DEFAULT cwms_util.non_versioned)
+      RETURN DATE
+   IS
+      l_max_date_utc   DATE;
+   BEGIN
+      FOR rec IN (  SELECT table_name
+                      FROM at_ts_table_properties
+                  ORDER BY start_date DESC)
+      LOOP
+         EXECUTE IMMEDIATE
+            'select max(date_time)
+               from '||rec.table_name||'
+              where ts_code = :1
+                and version_date = :2'
+            INTO l_max_date_utc
+            USING p_ts_code, p_version_date_utc;
 
-   procedure get_ts_extents2_utc (
-      p_min_date_utc     out date,
-      p_max_date_utc     out date,
-      p_ts_code          in  number,
-      p_version_date_utc in  date default cwms_util.non_versioned)
-   is
-      l_ts_extents ts_extents_t;
-	begin
-      get_ts_extents(
-         p_ts_extents   => l_ts_extents,
-         p_ts_code      => p_ts_code,
-         p_version_date => p_version_date_utc);
-      p_min_date_utc := l_ts_extents.earliest_time;
-      p_max_date_utc := l_ts_extents.latest_time;
-   end get_ts_extents2_utc;
+         EXIT WHEN l_max_date_utc IS NOT NULL;
+      END LOOP;
 
-   procedure get_ts_extents (
-      p_min_date     out date,
-      p_max_date     out date,
-      p_cwms_ts_id   in  varchar2,
-      p_time_zone    in  varchar2 default 'UTC',
-      p_version_date in  date default cwms_util.non_versioned,
-      p_office_id    in  varchar2 default null)
-   is
-      l_version_date_utc date;
-      l_ts_extents       ts_extents_t;
-   begin
-      if p_version_date is null or p_version_date = cwms_util.non_versioned then
+      RETURN l_max_date_utc;
+   END get_ts_max_date2_utc;
+
+   FUNCTION get_ts_max_date (
+      p_cwms_ts_id     IN VARCHAR2,
+      p_time_zone      IN VARCHAR2 DEFAULT 'UTC',
+      p_version_date   IN DATE DEFAULT cwms_util.non_versioned,
+      p_office_id      IN VARCHAR2 DEFAULT NULL)
+      RETURN DATE
+   IS
+      l_max_date_utc       DATE;
+      l_version_date_utc   DATE;
+   BEGIN
+      IF p_version_date is null or p_version_date = cwms_util.non_versioned
+      THEN
          l_version_date_utc := cwms_util.non_versioned;
-      else
-         l_version_date_utc := cwms_util.change_timezone(p_version_date, p_time_zone, 'UTC');
-      end if;
-      get_ts_extents(
-         p_ts_extents   => l_ts_extents,
-         p_ts_code      => cwms_ts.get_ts_code(p_cwms_ts_id => p_cwms_ts_id, p_db_office_id => p_office_id),
-         p_version_date => p_version_date,
-         p_time_zone    => p_time_zone);
-      p_min_date := l_ts_extents.earliest_non_null_time;
-      p_max_date := l_ts_extents.latest_non_null_time;
-   end get_ts_extents;
+      ELSE
+         l_version_date_utc :=
+            cwms_util.change_timezone (p_version_date, p_time_zone, 'UTC');
+      END IF;
 
-   procedure get_ts_extents2 (
-      p_min_date     out date,
-      p_max_date     out date,
-      p_cwms_ts_id   in  varchar2,
-      p_time_zone    in  varchar2 default 'UTC',
-      p_version_date in  date default cwms_util.non_versioned,
-      p_office_id    in  varchar2 default null)
-   is
-      l_version_date_utc date;
-      l_ts_extents       ts_extents_t;
-   begin
-      if p_version_date is null or p_version_date = cwms_util.non_versioned then
+      l_max_date_utc :=
+         get_ts_max_date_utc (
+            cwms_ts.get_ts_code (p_cwms_ts_id, p_office_id),
+            l_version_date_utc);
+      RETURN cwms_util.change_timezone (l_max_date_utc, 'UTC', p_time_zone);
+   END get_ts_max_date;
+
+   FUNCTION get_ts_max_date2 (
+      p_cwms_ts_id     IN VARCHAR2,
+      p_time_zone      IN VARCHAR2 DEFAULT 'UTC',
+      p_version_date   IN DATE DEFAULT cwms_util.non_versioned,
+      p_office_id      IN VARCHAR2 DEFAULT NULL)
+      RETURN DATE
+   IS
+      l_max_date_utc       DATE;
+      l_version_date_utc   DATE;
+   BEGIN
+      IF p_version_date is null or p_version_date = cwms_util.non_versioned
+      THEN
          l_version_date_utc := cwms_util.non_versioned;
-      else
-         l_version_date_utc := cwms_util.change_timezone(p_version_date, p_time_zone, 'UTC');
-      end if;
-      get_ts_extents(
-         p_ts_extents   => l_ts_extents,
-         p_ts_code      => cwms_ts.get_ts_code(p_cwms_ts_id => p_cwms_ts_id, p_db_office_id => p_office_id),
-         p_version_date => p_version_date,
-         p_time_zone    => p_time_zone);
-      p_min_date := l_ts_extents.earliest_time;
-      p_max_date := l_ts_extents.latest_time;
-   end get_ts_extents2;
+      ELSE
+         l_version_date_utc :=
+            cwms_util.change_timezone (p_version_date, p_time_zone, 'UTC');
+      END IF;
 
-   procedure get_ts_extents(
-      p_ts_extents   out ts_extents_t,
-      p_cwms_ts_id   in  varchar2,
-      p_version_date in  date,
-      p_unit         in  varchar2 default null, 
-      p_office_id    in  varchar2 default null)
-	is
-	begin
-      get_ts_extents(
-         p_ts_extents   => p_ts_extents,
-         p_ts_code      => cwms_ts.get_ts_code(p_cwms_ts_id => p_cwms_ts_id, p_db_office_id => p_office_id),
-         p_version_date => p_version_date,
-         p_unit         => p_unit);
-	end get_ts_extents;
-   
-   function get_ts_extents_f(
-      p_cwms_ts_id   in varchar2,
-      p_version_date in date,
-      p_unit         in varchar2 default null,
-      p_office_id    in varchar2 default null)
-      return ts_extents_t
-	is
-      l_ts_extents ts_extents_t;
-	begin
-      get_ts_extents(
-         p_ts_extents   => l_ts_extents,
-         p_ts_code      => cwms_ts.get_ts_code(p_cwms_ts_id => p_cwms_ts_id, p_db_office_id => p_office_id),
-         p_version_date => p_version_date,
-         p_unit         => p_unit);
-         
-      return l_ts_extents;         
-	end get_ts_extents_f;
-   
-   procedure get_ts_extents(
-      p_ts_extents   out ts_extents_t,
-      p_ts_code      in  integer,
-      p_version_date in  date,
-      p_unit         in  varchar2 default null)
-	is
-	begin
-      get_ts_extents(
-         p_ts_extents   => p_ts_extents,
-         p_ts_code      => p_ts_code,
-         p_version_date => p_version_date,
-         p_time_zone    => 'UTC',
-         p_unit         => p_unit);
-	end get_ts_extents;
-   
-   function get_ts_extents_f(
-      p_ts_code      in integer,
-      p_version_date in date,
-      p_unit         in varchar2 default null)
-      return ts_extents_t
-	is
-      l_ts_extents ts_extents_t;
-	begin
-      get_ts_extents(
-         p_ts_extents   => l_ts_extents,
-         p_ts_code      => p_ts_code,
-         p_version_date => p_version_date,
-         p_unit         => p_unit);
-         
-      return l_ts_extents;         
-	end get_ts_extents_f;
-   
-   procedure get_ts_extents(
-      p_ts_extents out ts_extents_tab_t,
-      p_cwms_ts_id in  varchar2,
-      p_unit       in  varchar2 default null,
-      p_office_id  in  varchar2 default null)
-	is
-	begin
-		null;
-	end get_ts_extents;
-   
-   function get_ts_extents_f(
-      p_cwms_ts_id in varchar2,
-      p_unit       in varchar2 default null,
-      p_office_id  in varchar2 default null)
-      return ts_extents_tab_t
-	is
-	begin
-		return null;
-	end get_ts_extents_f;
-   
-   procedure get_ts_extents(
-      p_ts_extents out ts_extents_tab_t,
-      p_ts_code    in  integer,
-      p_unit       in  varchar2 default null)
-	is
-	begin
-		null;
-	end get_ts_extents;
-   
-   function get_ts_extents_f(
-      p_ts_code in integer,
-      p_unit    in varchar2 default null)
-      return ts_extents_tab_t
-	is
-	begin
-		return null;
-	end get_ts_extents_f;
-   
-   procedure get_ts_extents(
-      p_ts_extents   out ts_extents_t,
-      p_cwms_ts_id   in  varchar2,
-      p_version_date in  date,
-      p_time_zone    in  varchar2,
-      p_unit         in  varchar2 default null,
-      p_office_id    in  varchar2 default null)
-	is
-	begin
-      get_ts_extents(
-         p_ts_extents   => p_ts_extents,
-         p_ts_code      => cwms_ts.get_ts_code(p_cwms_ts_id => p_cwms_ts_id, p_db_office_id => p_office_id),
-         p_version_date => p_version_date,
-         p_time_zone    => p_time_zone,
-         p_unit         => p_unit);
-	end get_ts_extents;
-   
-   function get_ts_extents_f(
-      p_cwms_ts_id   in varchar2,
-      p_version_date in date,
-      p_time_zone    in varchar2,
-      p_unit         in varchar2 default null,
-      p_office_id    in varchar2 default null)
-      return ts_extents_t
-	is
-      l_ts_extents ts_extents_t;
-	begin
-      get_ts_extents(
-         p_ts_extents   => l_ts_extents,
-         p_ts_code      => cwms_ts.get_ts_code(p_cwms_ts_id => p_cwms_ts_id, p_db_office_id => p_office_id),
-         p_version_date => p_version_date,
-         p_time_zone    => p_time_zone,
-         p_unit         => p_unit);
-      return l_ts_extents;   
-	end get_ts_extents_f;
-   
-   procedure get_ts_extents(
-      p_ts_extents   out ts_extents_t,
-      p_ts_code      in  integer,
-      p_version_date in  date,
-      p_time_zone    in  varchar2,
-      p_unit         in  varchar2 default null)
-	is
-      l_rowid        urowid;
-      l_ts_extents   ts_extents_t;
-      l_time_zone    varchar(28);
-      l_parameter_id varchar2(49);
-      l_default_unit varchar2(16);
-	begin
-      if p_time_zone is null then
-         begin
-            select tz.time_zone_name
-              into l_time_zone
-              from at_cwms_ts_spec ts,
-                   at_physical_location pl,
-                   cwms_time_zone tz
-             where ts.ts_code = p_ts_code
-               and pl.location_code = ts.location_code
-               and tz.time_zone_code = pl.time_zone_code;
-         exception
-            when no_data_found then
-               l_time_zone := 'UTC';
-         end;      
-      else
-         l_time_zone := p_time_zone;
-      end if;   
-      for i in 1..2 loop
-         begin
-            select rowid
-              into l_rowid
-              from at_ts_extents
-             where ts_code = p_ts_code
-               and version_time = p_version_date;
-         exception
-            when no_data_found then null;
-         end;
-         exit when l_rowid is not null;
-         update_ts_extents(p_ts_code, p_version_date);
-      end loop;
-      if l_rowid is not null then
-         l_ts_extents := ts_extents_t(l_rowid);
-         if l_time_zone != 'UTC' then
-            l_ts_extents.change_timezone(p_to_timezone => l_time_zone);
-         end if;
-         if p_unit is not null then
-            l_ts_extents.convert_units(p_to_unit => p_unit);
-         end if;
-      end if;
-      p_ts_extents := l_ts_extents;
-	end get_ts_extents;
-   
-   function get_ts_extents_f(
-      p_ts_code      in integer,
-      p_version_date in date,
-      p_time_zone    in varchar2,
-      p_unit         in varchar2 default null)
-      return ts_extents_t
-	is
-      l_ts_extents ts_extents_t;
-	begin
-      get_ts_extents(
-         p_ts_extents   => l_ts_extents,
-         p_ts_code      => p_ts_code,
-         p_version_date => p_version_date,
-         p_time_zone    => p_time_zone,
-         p_unit         => p_unit);
-		return l_ts_extents;
-	end get_ts_extents_f;
-   
-   procedure get_ts_extents(
-      p_ts_extents out ts_extents_tab_t,
-      p_cwms_ts_id in  varchar2,
-      p_time_zone  in  varchar2,
-      p_unit       in  varchar2 default null,
-      p_office_id  in  varchar2 default null)
-	is
-	begin
-		get_ts_extents(
-         p_ts_extents => p_ts_extents,
-         p_ts_code    => cwms_ts.get_ts_code(p_cwms_ts_id => p_cwms_ts_id, p_db_office_id => p_office_id),
-         p_time_zone  => p_time_zone,
-         p_unit       => p_unit);
-	end get_ts_extents;
-   
-   function get_ts_extents_f(
-      p_cwms_ts_id in varchar2,
-      p_time_zone  in varchar2,
-      p_unit       in varchar2 default null,
-      p_office_id  in varchar2 default null)
-      return ts_extents_tab_t
-	is
-      l_ts_extents ts_extents_tab_t;
-	begin
-		get_ts_extents(
-         p_ts_extents => l_ts_extents,
-         p_ts_code    => cwms_ts.get_ts_code(p_cwms_ts_id => p_cwms_ts_id, p_db_office_id => p_office_id),
-         p_time_zone  => p_time_zone,
-         p_unit       => p_unit);
-         
-      return l_ts_extents;         
-	end get_ts_extents_f;
-   
-   procedure get_ts_extents(
-      p_ts_extents out ts_extents_tab_t,
-      p_ts_code    in  integer,
-      p_time_zone  in  varchar2,
-      p_unit       in  varchar2 default null)
-	is
-	   type urowid_tab_t is table of urowid;
-      l_rowids       urowid_tab_t;
-      l_ts_extents   ts_extents_tab_t;
-      l_time_zone    varchar(28);
-      l_parameter_id varchar2(49);
-      l_default_unit varchar2(16);
-	begin
-      if p_time_zone is null then
-         begin
-            select tz.time_zone_name
-              into l_time_zone
-              from at_cwms_ts_spec ts,
-                   at_physical_location pl,
-                   cwms_time_zone tz
-             where ts.ts_code = p_ts_code
-               and pl.location_code = ts.location_code
-               and tz.time_zone_code = pl.time_zone_code;
-         exception
-            when no_data_found then
-               l_time_zone := 'UTC';
-         end;      
-      else
-         l_time_zone := p_time_zone;
-      end if;   
-      for i in 1..2 loop
-         begin
-            select rowid
-              bulk collect 
-              into l_rowids
-              from at_ts_extents
-             where ts_code = p_ts_code
-             order by version_time;
-         exception
-            when no_data_found then null;
-         end;
-         exit when l_rowids.count > 0;
-         update_ts_extents(p_ts_code);
-      end loop;
-      l_ts_extents := ts_extents_tab_t();
-      l_ts_extents.extend(l_rowids.count);
-      for i in 1..l_rowids.count loop
-         l_ts_extents(i) := ts_extents_t(l_rowids(i));
-         if l_time_zone != 'UTC' then
-            l_ts_extents(i).change_timezone(p_to_timezone => l_time_zone);
-         end if;
-         if p_unit is not null then
-            l_ts_extents(i).convert_units(p_to_unit => p_unit);
-         end if;
-      end loop;
-      p_ts_extents := l_ts_extents;
-	end get_ts_extents;
-   
-   function get_ts_extents_f(
-      p_ts_code   in integer,
-      p_time_zone in varchar2,
-      p_unit      in  varchar2 default null)
-      return ts_extents_tab_t
-	is
-      l_ts_extents ts_extents_tab_t;
-	begin
-      get_ts_extents(
-         p_ts_extents => l_ts_extents,
-         p_ts_code    => p_ts_code,
-         p_time_zone  => p_time_zone,
-         p_unit       => p_unit);
-         
-		return l_ts_extents;
-	end get_ts_extents_f;
+      l_max_date_utc :=
+         get_ts_max_date2_utc (
+            cwms_ts.get_ts_code (p_cwms_ts_id, p_office_id),
+            l_version_date_utc);
+      RETURN cwms_util.change_timezone (l_max_date_utc, 'UTC', p_time_zone);
+   END get_ts_max_date2;
 
-   procedure get_value_extents (
-      p_min_value out binary_double,
-      p_max_value out binary_double,
-      p_ts_id     in  varchar2,
-      p_unit      in  varchar2,
-      p_min_date  in  date default null,
-      p_max_date  in  date default null,
-      p_time_zone in  varchar2 default null,
-      p_office_id in  varchar2 default null)
-   is
-      l_min_value      binary_double;
-      l_max_value      binary_double;
-      l_temp_min       binary_double;
-      l_temp_max       binary_double;
-      l_office_id      varchar2 (16);
-      l_unit           varchar2 (16);
-      l_time_zone      varchar2 (28);
-      l_min_date       date;
-      l_max_date       date;
-      l_ts_code        number (10);
+   PROCEDURE get_ts_extents_utc (
+      p_min_date_utc          OUT DATE,
+      p_max_date_utc          OUT DATE,
+      p_ts_code            IN     NUMBER,
+      p_version_date_utc   IN     DATE DEFAULT cwms_util.non_versioned)
+   IS
+   BEGIN
+      p_min_date_utc := get_ts_min_date_utc (p_ts_code, p_version_date_utc);
+      p_max_date_utc := get_ts_max_date_utc (p_ts_code, p_version_date_utc);
+   END get_ts_extents_utc;
+
+   PROCEDURE get_ts_extents2_utc (
+      p_min_date_utc          OUT DATE,
+      p_max_date_utc          OUT DATE,
+      p_ts_code            IN     NUMBER,
+      p_version_date_utc   IN     DATE DEFAULT cwms_util.non_versioned)
+   IS
+   BEGIN
+      p_min_date_utc := get_ts_min_date2_utc (p_ts_code, p_version_date_utc);
+      p_max_date_utc := get_ts_max_date2_utc (p_ts_code, p_version_date_utc);
+   END get_ts_extents2_utc;
+
+   PROCEDURE get_ts_extents (
+      p_min_date          OUT DATE,
+      p_max_date          OUT DATE,
+      p_cwms_ts_id     IN     VARCHAR2,
+      p_time_zone      IN     VARCHAR2 DEFAULT 'UTC',
+      p_version_date   IN     DATE DEFAULT cwms_util.non_versioned,
+      p_office_id      IN     VARCHAR2 DEFAULT NULL)
+   IS
+      l_min_date_utc       DATE;
+      l_max_date_utc       DATE;
+      l_version_date_utc   DATE;
+   BEGIN
+      IF p_version_date IS NULL
+      THEN
+         l_version_date_utc := cwms_util.non_versioned;
+      ELSIF p_version_date = cwms_util.non_versioned
+      THEN
+         l_version_date_utc := p_version_date;
+      ELSE
+         l_version_date_utc :=
+            cwms_util.change_timezone (p_version_date, p_time_zone, 'UTC');
+      END IF;
+
+      get_ts_extents_utc (l_min_date_utc,
+                          l_max_date_utc,
+                          cwms_ts.get_ts_code (p_cwms_ts_id, p_office_id),
+                          l_version_date_utc);
+      p_min_date :=
+         cwms_util.change_timezone (l_min_date_utc, 'UTC', p_time_zone);
+      p_max_date :=
+         cwms_util.change_timezone (l_max_date_utc, 'UTC', p_time_zone);
+   END get_ts_extents;
+
+   PROCEDURE get_ts_extents2 (
+      p_min_date          OUT DATE,
+      p_max_date          OUT DATE,
+      p_cwms_ts_id     IN     VARCHAR2,
+      p_time_zone      IN     VARCHAR2 DEFAULT 'UTC',
+      p_version_date   IN     DATE DEFAULT cwms_util.non_versioned,
+      p_office_id      IN     VARCHAR2 DEFAULT NULL)
+   IS
+      l_min_date_utc       DATE;
+      l_max_date_utc       DATE;
+      l_version_date_utc   DATE;
+   BEGIN
+      IF p_version_date IS NULL
+      THEN
+         l_version_date_utc := cwms_util.non_versioned;
+      ELSIF p_version_date = cwms_util.non_versioned
+      THEN
+         l_version_date_utc := p_version_date;
+      ELSE
+         l_version_date_utc :=
+            cwms_util.change_timezone (p_version_date, p_time_zone, 'UTC');
+      END IF;
+
+      get_ts_extents2_utc (l_min_date_utc,
+                           l_max_date_utc,
+                           cwms_ts.get_ts_code (p_cwms_ts_id, p_office_id),
+                           l_version_date_utc);
+      p_min_date :=       
+         cwms_util.change_timezone (l_min_date_utc, 'UTC', p_time_zone);
+      p_max_date :=
+         cwms_util.change_timezone (l_max_date_utc, 'UTC', p_time_zone);
+   END get_ts_extents2;
+
+   PROCEDURE get_value_extents (p_min_value      OUT BINARY_DOUBLE,
+                                p_max_value      OUT BINARY_DOUBLE,
+                                p_ts_id       IN     VARCHAR2,
+                                p_unit        IN     VARCHAR2,
+                                p_min_date    IN     DATE DEFAULT NULL,
+                                p_max_date    IN     DATE DEFAULT NULL,
+                                p_time_zone   IN     VARCHAR2 DEFAULT NULL,
+                                p_office_id   IN     VARCHAR2 DEFAULT NULL)
+   IS
+      l_min_value      BINARY_DOUBLE;
+      l_max_value      BINARY_DOUBLE;
+      l_temp_min       BINARY_DOUBLE;
+      l_temp_max       BINARY_DOUBLE;
+      l_office_id      VARCHAR2 (16);
+      l_unit           VARCHAR2 (16);
+      l_time_zone      VARCHAR2 (28);
+      l_min_date       DATE;
+      l_max_date       DATE;
+      l_ts_code        NUMBER (10);
       l_parts          str_tab_t;
-      l_location_id    varchar2 (57);
-      l_parameter_id   varchar2 (49);
-      l_ts_extents     ts_extents_tab_t;
-   begin
-      if l_min_date is null and l_max_date is null then
-         ----------------------------------------
-         -- short ciruit through AT_TS_EXTENTS --
-         ----------------------------------------
-         get_ts_extents(
-            p_ts_extents   => l_ts_extents,
-            p_ts_code      => cwms_ts.get_ts_code(p_cwms_ts_id => p_ts_id, p_db_office_id => p_office_id),
-            p_time_zone    => p_time_zone,
-            p_unit         => p_unit);
-         for i in 1..l_ts_extents.count loop
-            if l_min_value is null or l_min_value > l_ts_extents(i).least_value then
-               l_min_value := l_ts_extents(i).least_value;
-            end if;
-            if l_max_value is null or l_min_value < l_ts_extents(i).greatest_value then
-               l_max_value := l_ts_extents(i).greatest_value;
-            end if;
-         end loop;
-         p_min_value := l_min_value;
-         p_max_value := l_max_value;
-      else
-         ----------------------------
-         -- set values from inputs --
-         ----------------------------
-         l_office_id := cwms_util.get_db_office_id (p_office_id);
-         l_ts_code := cwms_ts.get_ts_code (p_ts_id, l_office_id);
-         l_parts := cwms_util.split_text (p_ts_id, '.');
-         l_location_id := l_parts (1);
-         l_parameter_id := l_parts (2);
-         l_unit := cwms_util.get_default_units (l_parameter_id);
-         l_time_zone :=
-            case p_time_zone is null
-               when true
-               then
-                  cwms_loc.get_local_timezone (l_location_id, l_office_id)
-               when false
-               then
-                  p_time_zone
-            end;
-         l_min_date :=
-            case p_min_date is null
-               when true
-               then
-                  date '1700-01-01'
-               when false
-               then
-                  cwms_util.change_timezone (p_min_date, l_time_zone, 'UTC')
-            end;
-         l_max_date :=
-            case p_max_date is null
-               when true
-               then
-                  date '2100-01-01'
-               when false
-               then
-                  cwms_util.change_timezone (p_max_date, l_time_zone, 'UTC')
-            end;
-   
-         -----------------------
-         -- perform the query --
-         -----------------------
-         for rec in (  select table_name, start_date, end_date
-                         from at_ts_table_properties
-                     order by start_date)
-         loop
-            continue when    rec.start_date > l_max_date
-                          or rec.end_date < l_min_date;
-   
-            begin
-               execute immediate
-                  'select min(value),
-                          max(value)
-                     from '||rec.table_name||'
-                    where ts_code = :1
-                      and date_time between :2 and :3'
-                  into l_temp_min, l_temp_max
-                  using l_ts_code, l_min_date, l_max_date;
-   
-               if l_min_value is null or l_temp_min < l_min_value
-               then
-                  l_min_value := l_temp_min;
-               end if;
-   
-               if l_max_value is null or l_temp_max > l_max_value
-               then
-                  l_max_value := l_temp_max;
-               end if;
-            exception
-               when no_data_found
-               then
-                  null;
-            end;
-         end loop;
-   
-         if l_min_value is not null
-         then
-            p_min_value := cwms_util.convert_units (l_min_value, l_unit, p_unit);
-         end if;
-   
-         if l_max_value is not null
-         then
-            p_max_value := cwms_util.convert_units (l_max_value, l_unit, p_unit);
-         end if;
-      end if;
-   end get_value_extents;
+      l_location_id    VARCHAR2 (49);
+      l_parameter_id   VARCHAR2 (49);
+   BEGIN
+      -------------------
+      -- sanity checks --
+      -------------------
+      ----------------------------
+      -- set values from inputs --
+      ----------------------------
+      l_office_id := cwms_util.get_db_office_id (p_office_id);
+      l_ts_code := cwms_ts.get_ts_code (p_ts_id, l_office_id);
+      l_parts := cwms_util.split_text (p_ts_id, '.');
+      l_location_id := l_parts (1);
+      l_parameter_id := l_parts (2);
+      l_unit := cwms_util.get_default_units (l_parameter_id);
+      l_time_zone :=
+         CASE p_time_zone IS NULL
+            WHEN TRUE
+            THEN
+               cwms_loc.get_local_timezone (l_location_id, l_office_id)
+            WHEN FALSE
+            THEN
+               p_time_zone
+         END;
+      l_min_date :=
+         CASE p_min_date IS NULL
+            WHEN TRUE
+            THEN
+               DATE '1700-01-01'
+            WHEN FALSE
+            THEN
+               cwms_util.change_timezone (p_min_date, l_time_zone, 'UTC')
+         END;
+      l_max_date :=
+         CASE p_max_date IS NULL
+            WHEN TRUE
+            THEN
+               DATE '2100-01-01'
+            WHEN FALSE
+            THEN
+               cwms_util.change_timezone (p_max_date, l_time_zone, 'UTC')
+         END;
 
-   procedure get_value_extents (
-      p_min_value      out binary_double,
-      p_max_value      out binary_double,
-      p_min_value_date out date,
-      p_max_value_date out date,
-      p_ts_id          in  varchar2,
-      p_unit           in  varchar2,
-      p_min_date       in  date default null,
-      p_max_date       in  date default null,
-      p_time_zone      in  varchar2 default null,
-      p_office_id      in  varchar2 default null)
-   is
-      l_min_value        binary_double;
-      l_max_value        binary_double;
-      l_temp_min         binary_double;
-      l_temp_max         binary_double;
-      l_min_value_date   date;
-      l_max_value_date   date;
-      l_temp_min_date    date;
-      l_temp_max_date    date;
-      l_office_id        varchar2 (16);
-      l_unit             varchar2 (16);
-      l_time_zone        varchar2 (28);
-      l_min_date         date;
-      l_max_date         date;
-      l_ts_code          number (10);
+      -----------------------
+      -- perform the query --
+      -----------------------
+      FOR rec IN (  SELECT table_name, start_date, end_date
+                      FROM at_ts_table_properties
+                  ORDER BY start_date)
+      LOOP
+         CONTINUE WHEN    rec.start_date > l_max_date
+                       OR rec.end_date < l_min_date;
+
+         BEGIN
+            EXECUTE IMMEDIATE
+               'select min(value),
+                       max(value)
+                  from '||rec.table_name||'
+                 where ts_code = :1
+                   and date_time between :2 and :3'
+               INTO l_temp_min, l_temp_max
+               USING l_ts_code, l_min_date, l_max_date;
+
+            IF l_min_value IS NULL OR l_temp_min < l_min_value
+            THEN
+               l_min_value := l_temp_min;
+            END IF;
+
+            IF l_max_value IS NULL OR l_temp_max > l_max_value
+            THEN
+               l_max_value := l_temp_max;
+            END IF;
+         EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+               NULL;
+         END;
+      END LOOP;
+
+      IF l_min_value IS NOT NULL
+      THEN
+         p_min_value := cwms_util.convert_units (l_min_value, l_unit, p_unit);
+      END IF;
+
+      IF l_max_value IS NOT NULL
+      THEN
+         p_max_value := cwms_util.convert_units (l_max_value, l_unit, p_unit);
+      END IF;
+   END get_value_extents;
+
+   PROCEDURE get_value_extents (
+      p_min_value           OUT BINARY_DOUBLE,
+      p_max_value           OUT BINARY_DOUBLE,
+      p_min_value_date      OUT DATE,
+      p_max_value_date      OUT DATE,
+      p_ts_id            IN     VARCHAR2,
+      p_unit             IN     VARCHAR2,
+      p_min_date         IN     DATE DEFAULT NULL,
+      p_max_date         IN     DATE DEFAULT NULL,
+      p_time_zone        IN     VARCHAR2 DEFAULT NULL,
+      p_office_id        IN     VARCHAR2 DEFAULT NULL)
+   IS
+      l_min_value        BINARY_DOUBLE;
+      l_max_value        BINARY_DOUBLE;
+      l_temp_min         BINARY_DOUBLE;
+      l_temp_max         BINARY_DOUBLE;
+      l_min_value_date   DATE;
+      l_max_value_date   DATE;
+      l_temp_min_date    DATE;
+      l_temp_max_date    DATE;
+      l_office_id        VARCHAR2 (16);
+      l_unit             VARCHAR2 (16);
+      l_time_zone        VARCHAR2 (28);
+      l_min_date         DATE;
+      l_max_date         DATE;
+      l_ts_code          NUMBER (10);
       l_parts            str_tab_t;
-      l_location_id      varchar2 (57);
-      l_parameter_id     varchar2 (49);
-      l_ts_extents     ts_extents_tab_t;
-   begin
-      if l_min_date is null and l_max_date is null then
-         ----------------------------------------
-         -- short ciruit through AT_TS_EXTENTS --
-         ----------------------------------------
-         get_ts_extents(
-            p_ts_extents   => l_ts_extents,
-            p_ts_code      => cwms_ts.get_ts_code(p_cwms_ts_id => p_ts_id, p_db_office_id => p_office_id),
-            p_time_zone    => p_time_zone,
-            p_unit         => p_unit);
-         for i in 1..l_ts_extents.count loop
-            if l_min_value is null or l_min_value > l_ts_extents(i).least_value then
-               l_min_value      := l_ts_extents(i).least_value;
-               l_min_value_date := l_ts_extents(i).least_value_time;
-            end if;
-            if l_max_value is null or l_min_value < l_ts_extents(i).greatest_value then
-               l_max_value      := l_ts_extents(i).greatest_value;
-               l_max_value_date := l_ts_extents(i).greatest_value_time;
-            end if;
-         end loop;
-         p_min_value      := l_min_value;
-         p_min_value_date := l_min_value_date;
-         p_max_value      := l_max_value;
-         p_max_value_date := l_max_value_date;
-      else
-         ----------------------------
-         -- set values from inputs --
-         ----------------------------
-         l_office_id := cwms_util.get_db_office_id (p_office_id);
-         l_ts_code := cwms_ts.get_ts_code (p_ts_id, l_office_id);
-         l_parts := cwms_util.split_text (p_ts_id, '.');
-         l_location_id := l_parts (1);
-         l_parameter_id := l_parts (2);
-         l_unit := cwms_util.get_default_units (l_parameter_id);
-         l_time_zone :=
-            case p_time_zone is null
-               when true
-               then
-                  cwms_loc.get_local_timezone (l_location_id, l_office_id)
-               when false
-               then
-                  p_time_zone
-            end;
-         l_min_date :=
-            case p_min_date is null
-               when true
-               then
-                  date '1700-01-01'
-               when false
-               then
-                  cwms_util.change_timezone (p_min_date, l_time_zone, 'utc')
-            end;
-         l_max_date :=
-            case p_max_date is null
-               when true
-               then
-                  date '2100-01-01'
-               when false
-               then
-                  cwms_util.change_timezone (p_max_date, l_time_zone, 'utc')
-            end;
-   
-         -----------------------
-         -- perform the query --
-         -----------------------
-         for rec in (  select table_name, start_date, end_date
-                         from at_ts_table_properties
-                     order by start_date)
-         loop
-            continue when    rec.start_date > l_max_date
-                          or rec.end_date < l_min_date;
-   
-            begin
-               execute immediate
-                  'select date_time,
-                          value
-                     from '||rec.table_name||'
-                    where ts_code = :1
-                      and date_time between :2 and :3
-                      and value = (select min(value)
-                                     from '||rec.table_name||'
-                                    where ts_code = :4
-                                      and date_time between :5 and :6
-                                  )
-                      and rownum = 1'
-                  into l_temp_min_date, l_temp_min
-                  using l_ts_code,
-                        l_min_date,
-                        l_max_date,
-                        l_ts_code,
-                        l_min_date,
-                        l_max_date;
-   
-               if l_min_value is null or l_temp_min < l_min_value
-               then
-                  l_min_value_date := l_temp_min_date;
-                  l_min_value := l_temp_min;
-               end if;
-            exception
-               when no_data_found
-               then
-                  null;
-            end;
-   
-            begin
-               execute immediate
-                  'select date_time,
-                          value
-                     from '||rec.table_name||'
-                    where ts_code = :1
-                      and date_time between :2 and :3
-                      and value = (select max(value)
-                                     from '||rec.table_name||'
-                                    where ts_code = :4
-                                      and date_time between :5 and :6
-                                  )
-                      and rownum = 1'
-                  into l_temp_max_date, l_temp_max
-                  using l_ts_code,
-                        l_min_date,
-                        l_max_date,
-                        l_ts_code,
-                        l_min_date,
-                        l_max_date;
-   
-               if l_max_value is null or l_temp_max > l_max_value
-               then
-                  l_max_value_date := l_temp_max_date;
-                  l_max_value := l_temp_max;
-               end if;
-            exception
-               when no_data_found
-               then
-                  null;
-            end;
-         end loop;
-   
-         if l_min_value is not null
-         then
-            p_min_value := cwms_util.convert_units (l_min_value, l_unit, p_unit);
-            p_min_value_date :=
-               cwms_util.change_timezone (l_min_value_date, 'utc', l_time_zone);
-         end if;
-   
-         if l_max_value is not null
-         then
-            p_max_value := cwms_util.convert_units (l_max_value, l_unit, p_unit);
-            p_max_value_date :=
-               cwms_util.change_timezone (l_max_value_date, 'utc', l_time_zone);
-         end if;
-      end if;
-   end get_value_extents;
+      l_location_id      VARCHAR2 (49);
+      l_parameter_id     VARCHAR2 (49);
+   BEGIN
+      ----------------------------
+      -- set values from inputs --
+      ----------------------------
+      l_office_id := cwms_util.get_db_office_id (p_office_id);
+      l_ts_code := cwms_ts.get_ts_code (p_ts_id, l_office_id);
+      l_parts := cwms_util.split_text (p_ts_id, '.');
+      l_location_id := l_parts (1);
+      l_parameter_id := l_parts (2);
+      l_unit := cwms_util.get_default_units (l_parameter_id);
+      l_time_zone :=
+         CASE p_time_zone IS NULL
+            WHEN TRUE
+            THEN
+               cwms_loc.get_local_timezone (l_location_id, l_office_id)
+            WHEN FALSE
+            THEN
+               p_time_zone
+         END;
+      l_min_date :=
+         CASE p_min_date IS NULL
+            WHEN TRUE
+            THEN
+               DATE '1700-01-01'
+            WHEN FALSE
+            THEN
+               cwms_util.change_timezone (p_min_date, l_time_zone, 'UTC')
+         END;
+      l_max_date :=
+         CASE p_max_date IS NULL
+            WHEN TRUE
+            THEN
+               DATE '2100-01-01'
+            WHEN FALSE
+            THEN
+               cwms_util.change_timezone (p_max_date, l_time_zone, 'UTC')
+         END;
+
+      -----------------------
+      -- perform the query --
+      -----------------------
+      FOR rec IN (  SELECT table_name, start_date, end_date
+                      FROM at_ts_table_properties
+                  ORDER BY start_date)
+      LOOP
+         CONTINUE WHEN    rec.start_date > l_max_date
+                       OR rec.end_date < l_min_date;
+
+         BEGIN
+            EXECUTE IMMEDIATE
+               'select date_time,
+                       value
+                  from '||rec.table_name||'
+                 where ts_code = :1
+                   and date_time between :2 and :3
+                   and value = (select min(value)
+                                  from '||rec.table_name||'
+                                 where ts_code = :4
+                                   and date_time between :5 and :6
+                               )
+                   and rownum = 1'
+               INTO l_temp_min_date, l_temp_min
+               USING l_ts_code,
+                     l_min_date,
+                     l_max_date,
+                     l_ts_code,
+                     l_min_date,
+                     l_max_date;
+
+            IF l_min_value IS NULL OR l_temp_min < l_min_value
+            THEN
+               l_min_value_date := l_temp_min_date;
+               l_min_value := l_temp_min;
+            END IF;
+         EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+               NULL;
+         END;
+
+         BEGIN
+            EXECUTE IMMEDIATE
+               'select date_time,
+                       value
+                  from '||rec.table_name||'
+                 where ts_code = :1
+                   and date_time between :2 and :3
+                   and value = (select max(value)
+                                  from '||rec.table_name||'
+                                 where ts_code = :4
+                                   and date_time between :5 and :6
+                               )
+                   and rownum = 1'
+               INTO l_temp_max_date, l_temp_max
+               USING l_ts_code,
+                     l_min_date,
+                     l_max_date,
+                     l_ts_code,
+                     l_min_date,
+                     l_max_date;
+
+            IF l_max_value IS NULL OR l_temp_max > l_max_value
+            THEN
+               l_max_value_date := l_temp_max_date;
+               l_max_value := l_temp_max;
+            END IF;
+         EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+               NULL;
+         END;
+      END LOOP;
+
+      IF l_min_value IS NOT NULL
+      THEN
+         p_min_value := cwms_util.convert_units (l_min_value, l_unit, p_unit);
+         p_min_value_date :=
+            cwms_util.change_timezone (l_min_value_date, 'UTC', l_time_zone);
+      END IF;
+
+      IF l_max_value IS NOT NULL
+      THEN
+         p_max_value := cwms_util.convert_units (l_max_value, l_unit, p_unit);
+         p_max_value_date :=
+            cwms_util.change_timezone (l_max_value_date, 'UTC', l_time_zone);
+      END IF;
+   END get_value_extents;
 
    FUNCTION get_values_in_range (p_ts_id       IN VARCHAR2,
                                  p_min_value   IN BINARY_DOUBLE,
@@ -11183,7 +10185,7 @@ end retrieve_existing_item_counts;
       l_max_date        DATE;
       l_ts_code         NUMBER (10);
       l_parts           str_tab_t;
-      l_location_id     VARCHAR2 (57);
+      l_location_id     VARCHAR2 (49);
       l_parameter_id    VARCHAR2 (49);
    BEGIN
       -------------------
@@ -11665,7 +10667,7 @@ end retrieve_existing_item_counts;
       RETURN VARCHAR2
    AS
       l_office_id   VARCHAR2 (16);
-      l_tsid        VARCHAR2(191);
+      l_tsid        VARCHAR2 (183);
    BEGIN
       l_office_id := cwms_util.get_db_office_id (p_office_id);
 
@@ -12076,45 +11078,6 @@ end retrieve_existing_item_counts;
       end if;
       return nvl(l_prop_val, 'F');
    end get_filter_duplicates;
-      
-   procedure set_historic(
-      p_ts_id       in varchar2,
-      p_is_historic in varchar2 default 'T',
-      p_office_id   in varchar2 default null)
-   is
-   begin
-      set_historic(get_ts_code(p_ts_id, p_office_id), p_is_historic);
-   end set_historic;
-      
-   procedure set_historic(
-      p_ts_code     in integer,
-      p_is_historic in varchar2 default 'T')
-   is
-   begin
-      update at_cwms_ts_spec
-         set historic_flag = nvl(upper(p_is_historic), 'T')
-       where ts_code = p_ts_code;
-   end set_historic;
-      
-   function is_historic(
-      p_ts_id       in varchar2,
-      p_office_id   in varchar2 default null)
-      return varchar2
-   is
-   begin
-      return is_historic(get_ts_code(p_ts_id, p_office_id));
-   end is_historic;
-      
-   function is_historic(
-      p_ts_code     in integer,
-      p_office_id   in varchar2 default null)
-      return varchar2
-   is
-      l_is_historic varchar2(1);
-   begin
-      select historic_flag into l_is_historic from at_cwms_ts_spec where ts_code = p_ts_code;
-      return l_is_historic;
-   end is_historic;
 
    procedure retrieve_time_series(
       p_results        out clob,
@@ -13544,10 +12507,9 @@ end retrieve_existing_item_counts;
    
       return l_results;
    end retrieve_time_series_f;
-
+         
 END cwms_ts;                                                --end package body
 /
 
 SHOW ERRORS;
-commit;
-
+COMMIT;

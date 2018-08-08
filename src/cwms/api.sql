@@ -25,11 +25,11 @@
 @@cwms_ts_pkg
 @@cwms_ts_pkg_body
 
-@@cwms_tsv_pkg
-@@cwms_tsv_pkg_body
-
 @@cwms_ts_id_pkg
 @@cwms_ts_id_pkg_body
+
+@@cwms_tsv_pkg
+@@cwms_tsv_pkg_body
 
 @@cwms_cat_pkg
 @@cwms_cat_pkg_body
@@ -140,12 +140,6 @@
 
 @@cwms_mail_pkg
 @@cwms_mail_pkg_body
-
-@@cwms_scheduler_auth_pkg
-@@cwms_scheduler_auth_pkg_body
-
-@@cwms_pool_pkg
-@@cwms_pool_pkg_body
 
 @@cwms/functions/str2tbl.sql
 

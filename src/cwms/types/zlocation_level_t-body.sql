@@ -200,7 +200,7 @@ as
       self.calendar_interval             := p_calendar_interval;
       self.time_interval                 := p_time_interval;
       self.interpolate                   := p_interpolate;
-      self.ts_code                       := p_ts_code;
+      self.ts_code                       :=  p_ts_code;
       self.expiration_date               := p_expiration_date;
       self.seasonal_level_values         := p_seasonal_values;
       self.indicators                    := p_indicators;

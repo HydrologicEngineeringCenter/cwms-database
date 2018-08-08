@@ -212,13 +212,13 @@ procedure rename_basin(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">basin_id</td>
- *     <td class="descr">varchar2(57)</td>
+ *     <td class="descr">varchar2(49)</td>
  *     <td class="descr">The location identifier of the basin</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">3</td>
  *     <td class="descr">parent_basin_id</td>
- *     <td class="descr">varchar2(57)</td>
+ *     <td class="descr">varchar2(49)</td>
  *     <td class="descr">The location identifier of the parent basin, if any</td>
  *   </tr>
  *   <tr>
@@ -230,7 +230,7 @@ procedure rename_basin(
  *   <tr>
  *     <td class="descr-center">5</td>
  *     <td class="descr">primary_stream_id</td>
- *     <td class="descr">varchar2(57)</td>
+ *     <td class="descr">varchar2(49)</td>
  *     <td class="descr">The location identifier of the primary stream</td>
  *   </tr>
  *   <tr>
@@ -339,13 +339,13 @@ procedure cat_basins(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">basin_id</td>
- *     <td class="descr">varchar2(57)</td>
+ *     <td class="descr">varchar2(49)</td>
  *     <td class="descr">The location identifier of the basin</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">3</td>
  *     <td class="descr">parent_basin_id</td>
- *     <td class="descr">varchar2(57)</td>
+ *     <td class="descr">varchar2(49)</td>
  *     <td class="descr">The location identifier of the parent basin, if any</td>
  *   </tr>
  *   <tr>
@@ -357,7 +357,7 @@ procedure cat_basins(
  *   <tr>
  *     <td class="descr-center">5</td>
  *     <td class="descr">primary_stream_id</td>
- *     <td class="descr">varchar2(57)</td>
+ *     <td class="descr">varchar2(49)</td>
  *     <td class="descr">The location identifier of the primary stream</td>
  *   </tr>
  *   <tr>

@@ -59,7 +59,7 @@ AS
    FUNCTION get_location_id (p_location_code IN NUMBER)
       RETURN VARCHAR2
    IS
-      l_location_id    VARCHAR2 (57);
+      l_location_id    VARCHAR2 (49);
    BEGIN
       IF p_location_code IS NOT NULL
       THEN
@@ -75,62 +75,59 @@ AS
       RETURN l_location_id;
    END get_location_id;
 
-   function get_location_id(
-      p_location_id_or_alias varchar2,
-      p_office_id            varchar2 default null)
-      return varchar2
-   is
-      l_office_id   varchar2(16);
-      l_location_id varchar2(57);
-   begin
-      l_office_id := nvl(upper(trim(p_office_id)), cwms_util.user_office_id);
-      -----------------------------
-      -- first try a location id --
-      -----------------------------
-      begin
-         select bl.base_location_id
-                ||substr('-', 1, length(pl.sub_location_id))
-                ||pl.sub_location_id
-           into l_location_id
-           from at_physical_location pl,
-                at_base_location bl,
-                cwms_office o
-          where o.office_id = l_office_id
-            and bl.db_office_code = o.office_code
-            and pl.base_location_code = bl.base_location_code
-            and upper(p_location_id_or_alias) = upper(bl.base_location_id||substr('-', 1, length(pl.sub_location_id))||pl.sub_location_id);
-      exception
-         when no_data_found then
-         -------------------------------
-         -- next try a location alias --
-         -------------------------------
-         l_location_id :=  get_location_id_from_alias(
-            p_alias_id  => p_location_id_or_alias,
-            p_office_id => l_office_id);
-         if l_location_id is null then
-            -------------------------------
-            -- finally try a public name --
-            -------------------------------
-            begin
-               select bl.base_location_id
-                      ||substr('-', 1, length(pl.sub_location_id))
-                      ||pl.sub_location_id
-                 into l_location_id
-                 from at_physical_location pl,
+   FUNCTION get_location_id (p_location_id_or_alias    VARCHAR2,
+                             p_office_id                VARCHAR2 DEFAULT NULL
+                            )
+      RETURN VARCHAR2
+   IS
+      l_office_id   VARCHAR2 (16);
+   BEGIN
+      l_office_id :=
+         NVL (UPPER (TRIM (p_office_id)), cwms_util.user_office_id);
+
+      FOR rec
+         IN (SELECT       bl.base_location_id
+                      || SUBSTR ('-', 1, LENGTH (pl.sub_location_id))
+                      || pl.sub_location_id
+                         AS location_id
+               FROM    at_physical_location pl,
                       at_base_location bl,
                       cwms_office o
-                where o.office_id = l_office_id
-                  and bl.db_office_code = o.office_code
-                  and pl.base_location_code = bl.base_location_code
-                  and upper(p_location_id_or_alias) = upper(pl.public_name);
-            exception 
-               when no_data_found then
-                  cwms_err.raise('LOCATION_ID_NOT_FOUND', p_location_id_or_alias);
-            end;
-         end if;
-      end;
-      return l_location_id;
-   end get_location_id;
+              WHERE        o.office_id = l_office_id
+                      AND bl.db_office_code = o.office_code
+                      AND pl.base_location_code = bl.base_location_code
+                      AND UPPER (bl.base_location_id) =
+                             UPPER (
+                                cwms_util.get_base_id (p_location_id_or_alias
+                                                      )
+                             )
+                      AND NVL (UPPER (pl.sub_location_id), '.') =
+                             NVL (
+                                UPPER (
+                                   cwms_util.get_sub_id (
+                                      p_location_id_or_alias
+                                   )
+                                ),
+                                '.'
+                             ))
+      LOOP
+         RETURN TRIM (rec.location_id);
+      END LOOP;
+
+      ------------------------------------------------
+      -- if we get here we didn't find the location --
+      ------------------------------------------------
+      BEGIN
+         RETURN get_location_id_from_alias (
+                   p_alias_id    => p_location_id_or_alias,
+                   p_office_id   => l_office_id
+                );
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.raise ('LOCATION_ID_NOT_FOUND', p_location_id_or_alias);
+      END;
+   END get_location_id;
 
    FUNCTION get_location_id (p_location_id_or_alias    VARCHAR2,
                              p_office_code             NUMBER
@@ -2064,8 +2061,8 @@ AS
                               p_db_office_id      IN VARCHAR2 DEFAULT NULL
                              )
    IS
-      l_location_id_old          VARCHAR2 (57) := TRIM (p_location_id_old);
-      l_location_id_new          VARCHAR2 (57) := TRIM (p_location_id_new);
+      l_location_id_old          VARCHAR2 (49) := TRIM (p_location_id_old);
+      l_location_id_new          VARCHAR2 (49) := TRIM (p_location_id_new);
       l_base_location_id_old      at_base_location.base_location_id%TYPE
          := cwms_util.get_base_id (l_location_id_old);
       --
@@ -2454,7 +2451,7 @@ AS
       l_this_is_a_base_loc   BOOLEAN := FALSE;
       --
       l_count_ts              NUMBER := 0;
-      l_cwms_ts_id           VARCHAR2(191);
+      l_cwms_ts_id           VARCHAR2 (183);
       l_ts_code              NUMBER;
       --
       l_location_codes        number_tab_t;
@@ -2988,7 +2985,7 @@ AS
    --   l_distinct NUMBER;
    --   l_store_rule   VARCHAR2 (16);
    --   l_alias_id VARCHAR2 (16);
-   --   l_alias_public_name  VARCHAR2 (57);
+   --   l_alias_public_name  VARCHAR2 (32);
    --   l_alias_long_name VARCHAR2 (80);
    --   l_insert BOOLEAN;
    --   l_ignorenulls  BOOLEAN
@@ -4324,7 +4321,7 @@ AS
    -- to a location group.
    --
    --   loc_alias_type AS OBJECT (
-   --   location_id VARCHAR2 (57),
+   --   location_id VARCHAR2 (49),
    --   loc_alias_id  VARCHAR2 (16),
    --
    PROCEDURE assign_loc_groups (p_loc_category_id    IN VARCHAR2,
@@ -4484,7 +4481,7 @@ AS
    -- to a location group.
    --
    --   loc_alias_type2 AS OBJECT (
-   --   location_id VARCHAR2 (57),
+   --   location_id VARCHAR2 (49),
    --   loc_attribute NUMBER,
    --   loc_alias_id  VARCHAR2 (128)
    --
@@ -4583,10 +4580,10 @@ AS
    -- to a location group.
    --
    --   loc_alias_type3 AS OBJECT (
-   --   location_id VARCHAR2 (57),
+   --   location_id VARCHAR2 (49),
    --   loc_attribute NUMBER,
    --   loc_alias_id  VARCHAR2 (128),
-   --   loc_ref_id  VARCHAR2 (57)
+   --   loc_ref_id  VARCHAR2 (49)
    --
    PROCEDURE assign_loc_groups3 (p_loc_category_id   IN VARCHAR2,
                                  p_loc_group_id      IN VARCHAR2,
@@ -4780,6 +4777,7 @@ AS
    --this parameter is "F" for FALSE.
    --
    --For the unassign_loc_groups call, the p_location_array uses the CWMS -
+   --"char_49_array_type" table type, which is an array of table type varchar2(49).
 
    --Note that you cannot unassign group/location pairs if a group/location pair -
    --is being referenced by a SHEF decode entry.
@@ -4788,7 +4786,7 @@ AS
 procedure unassign_loc_groups(
    p_loc_category_id in varchar2,
    p_loc_group_id    in varchar2,
-   p_location_array  in str_tab_t,
+   p_location_array  in char_49_array_type,
    p_unassign_all    in varchar2 default 'F',
    p_db_office_id    in varchar2 default null)
 is
@@ -4846,8 +4844,8 @@ end unassign_loc_groups;
                                  p_db_office_id      IN VARCHAR2 DEFAULT NULL
                                 )
    IS
-      l_location_array    str_tab_t
-                            := str_tab_t (TRIM (p_location_id));
+      l_location_array    char_49_array_type
+                            := char_49_array_type (TRIM (p_location_id));
    BEGIN
       unassign_loc_groups (p_loc_category_id   => p_loc_category_id,
                            p_loc_group_id      => p_loc_group_id,
@@ -5590,7 +5588,7 @@ end unassign_loc_groups;
       l_office_code   number(10);  
       l_location_code number(10);
       l_office_id     varchar2(16);
-      l_location_id   varchar2(57);
+      l_location_id   varchar2(49); 
       l_parts         str_tab_t;
    begin
       -------------------
@@ -5685,14 +5683,12 @@ end unassign_loc_groups;
                              p_office_id      in varchar2 default null
                             )
    is
-      location_id_not_found exception;
-      pragma exception_init(location_id_not_found, -20025);
-      l_location_id    varchar2(57);
+      l_location_id     varchar2(49);
       l_location_code  number(10);
       l_office_id      varchar2(16);
-      l_count          pls_integer;
-      l_multiple_ids   boolean := false;
-      l_property_id    varchar2(256);
+      l_count           pls_integer;
+      l_multiple_ids   boolean;
+      l_property_id     varchar2(256);
    begin
       l_office_id := cwms_util.get_db_office_id(p_office_id);
 
@@ -5740,8 +5736,6 @@ end unassign_loc_groups;
       begin
          l_location_id  := get_location_id(p_alias_id, p_office_id);
       exception
-         when location_id_not_found then
-            null;
          when too_many_rows then
             l_multiple_ids := true;
       end;
@@ -6036,7 +6030,7 @@ end unassign_loc_groups;
                        p_office_id_mask     IN      VARCHAR2 DEFAULT NULL
                       )
    IS
-      l_location_id_mask   VARCHAR2 (57);
+      l_location_id_mask   VARCHAR2 (49);
       l_url_id_mask         VARCHAR2 (32);
       l_url_address_mask   VARCHAR2 (1024);
       l_url_title_mask      VARCHAR2 (256);
@@ -7541,7 +7535,7 @@ end unassign_loc_groups;
       p_location_code   in  number,
       p_unit            in  varchar2)
    is   
-      l_location_id      varchar2(57);
+      l_location_id      varchar2(49);
       l_office_id        varchar2(16);
       l_elevation        number;
       l_unit             varchar2(16);
@@ -7624,21 +7618,21 @@ end unassign_loc_groups;
                l_native_datum,
                rec.vertical_datum_id);
             if l_datum_offset is not null then
-               l_vert_datum_info := l_vert_datum_info
-                  ||'  <offset estimate="'
-                  || case l_estimate when 'T' then 'true' else 'false' end
-                  ||'">'
-                  ||chr(10)
-                  ||'    <to-datum>'
-                  ||rec.vertical_datum_id
-                  ||'</to-datum>'
-                  ||chr(10)
-                  ||'    <value>'
+            l_vert_datum_info := l_vert_datum_info
+               ||'  <offset estimate="'
+               || case l_estimate when 'T' then 'true' else 'false' end
+               ||'">'
+               ||chr(10)
+               ||'    <to-datum>'
+               ||rec.vertical_datum_id
+               ||'</to-datum>'
+               ||chr(10)
+               ||'    <value>'
                   ||regexp_replace(cwms_rounding.round_dt_f(cwms_util.convert_units(l_datum_offset, 'm', l_unit), l_rounding_spec), '^\.', '0.', 1, 1)
-                  ||'</value>'
-                  ||chr(10)
-                  ||'  </offset>'
-                  ||chr(10);
+               ||'</value>'
+               ||chr(10)
+               ||'  </offset>'
+               ||chr(10);
             end if;
          exception
             when others then
@@ -7768,8 +7762,8 @@ end unassign_loc_groups;
       p_fail_if_exists  in varchar2 default 'F')
    is
       l_node                xmltype;
-      l_location_id         varchar2(57);
-      l_location_id_2       varchar2(57);
+      l_location_id         varchar2(49);
+      l_location_id_2       varchar2(49);
       l_office_id           varchar2(16);
       l_office_id_2         varchar2(16);
       l_native_datum        varchar2(16);
@@ -7784,8 +7778,6 @@ end unassign_loc_groups;
       l_elevation_db        binary_double;
       l_fail_if_exists      boolean;
    begin
-      delete from at_vert_datum_local  where location_code = p_location_code;
-      delete from at_vert_datum_offset where location_code = p_location_code; 
       l_location_id := get_location_id(p_location_code);
       select o.office_id
         into l_office_id
@@ -7933,7 +7925,7 @@ end unassign_loc_groups;
       l_node xmltype;
       function get_location_code(l_node in xmltype) return varchar2
       is
-         l_location_id varchar2(57);
+         l_location_id varchar2(49);
          l_office_id   varchar2(16);
       begin
          l_office_id := cwms_util.get_xml_text(l_node, '/vertical-datum-info/@office');
@@ -8055,7 +8047,7 @@ end unassign_loc_groups;
          when cwms_util.is_true(p_fail_if_exists) then
             declare
                l_office_id   varchar2(16);
-               l_location_id varchar2(57);
+               l_location_id varchar2(49);
             begin
                select o.office_id,
                       bl.base_location_id

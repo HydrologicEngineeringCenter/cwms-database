@@ -1,4 +1,4 @@
-create or replace type rating_spec_t
+create type rating_spec_t
 /**
  * Holds a rating specification. A rating specification is identified by a location,
  * a rating template, and a version. It also contains information about
@@ -37,7 +37,7 @@ create or replace type rating_spec_t
  */
 as object(
    office_id                    varchar2(16),
-   location_id                  varchar2(57),
+   location_id                  varchar2(49),
    template_id                  varchar2(289), -- template.parameters_id + template.version
    version                      varchar2(32),
    source_agency_id             varchar2(32),

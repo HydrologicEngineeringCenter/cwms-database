@@ -253,7 +253,6 @@ comment on column at_rating_value.dep_value                 is 'Dependent value 
 comment on column at_rating_value.dep_rating_ind_param_code is 'Dependent table for rating (for multi-parameter ratings)';
 comment on column at_rating_value.note_code                 is 'Reference to rating value note';
 
-create index at_rating_value_dep_idx on at_rating_value(dep_rating_ind_param_code) tablespace cwms_20at_data;
 commit;
 
 -------------------------------
@@ -321,6 +320,7 @@ create table at_virtual_rating (
    connections         varchar2(80) not null,
    description         varchar2(256),
    constraint at_virtual_rating_pk  primary key (virtual_rating_code),
+   constraint at_virtual_rating_u1  unique (rating_spec_code, effective_date) using index,
    constraint at_virtual_rating_fk1 foreign key (rating_spec_code) references at_rating_spec (rating_spec_code),
    constraint at_virtual_rating_ck1 check (active_flag in ('T', 'F')),
    constraint at_virtual_rating_ck2 check (regexp_instr(connections, 'R\d(D|I\d)=(I\d|R\d(D|I\d))(,R\d(D|I\d)=(I\d|R\d(D|I\d)))*', 1, 1, 0, 'i') = 1),
@@ -352,7 +352,6 @@ create table at_virtual_rating_element (
    rating_expression           varchar2(32),
    constraint at_virtual_rating_element_pk  primary key (virtual_rating_element_code),
    constraint at_virtual_rating_element_fk1 foreign key (virtual_rating_code) references at_virtual_rating (virtual_rating_code),
-   constraint at_virtual_rating_element_fk2 foreign key (rating_spec_code) references at_rating_spec (rating_spec_code),
    constraint at_virtual_rating_element_ck1 check ((rating_spec_code is null or  rating_expression is null) and not 
                                                    (rating_spec_code is null and rating_expression is null))
 )
@@ -402,6 +401,7 @@ create table at_transitional_rating(
    native_units             varchar2(256) not null,
    description              varchar2(256),
    constraint at_transitional_rating_pk  primary key (transitional_rating_code),
+   constraint at_transitional_rating_u1  unique(rating_spec_code, effective_date) using index,
    constraint at_transitional_rating_fk1 foreign key(rating_spec_code) references at_rating_spec(rating_spec_code), 
    constraint at_transitional_rating_ck1 check (active_flag in ('T', 'F')),
    constraint at_transitional_rating_ck2 check (transition_date is null or transition_date < effective_date)

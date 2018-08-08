@@ -1,4 +1,4 @@
-create or replace type loc_lvl_indicator_t
+create type loc_lvl_indicator_t
 /**
  * Holds a location level indiator.  A location level indicator indicates the status
  * of a time series of values with respect to a location level.  A location level
@@ -30,7 +30,7 @@ create or replace type loc_lvl_indicator_t
 is object
 (
    office_id              varchar2(16),
-   location_id            varchar2(57),
+   location_id            varchar2(49),
    parameter_id           varchar2(49),
    parameter_type_id      varchar2(16),
    duration_id            varchar2(16),

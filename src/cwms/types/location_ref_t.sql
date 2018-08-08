@@ -1,4 +1,4 @@
-create or replace type location_ref_t
+create type location_ref_t
 /**
  * Object type representing a location reference.
  *
@@ -12,7 +12,7 @@ create or replace type location_ref_t
  * @see type location_ref_tab_t
  */
 is object(
-   base_location_id varchar2(24),
+   base_location_id varchar2(16),
    sub_location_id  varchar2(32),
    office_id        varchar2(16),
    /**

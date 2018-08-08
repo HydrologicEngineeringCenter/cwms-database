@@ -302,7 +302,6 @@ begin
         into l_parent_codes,
              l_entity_codes
         from at_entity
-       where entity_code != p_entity_code
         start with entity_code = p_entity_code
       connect by prior entity_code = parent_code;
    end if;

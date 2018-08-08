@@ -1,0 +1,75 @@
+SET DEFINE OFF;
+MERGE INTO CWMS_20.CWMS_DURATION A USING
+ (SELECT
+  29 as DURATION_CODE,
+  '0' as DURATION_ID,
+  0 as DURATION,
+  'Measurement applies intantaneously at time stamp or from previous time stamp' as DESCRIPTION
+  FROM DUAL) B
+ON (A.DURATION_CODE = B.DURATION_CODE)
+WHEN NOT MATCHED THEN 
+INSERT (
+  DURATION_CODE, DURATION_ID, DURATION, DESCRIPTION)
+VALUES (
+  B.DURATION_CODE, B.DURATION_ID, B.DURATION, B.DESCRIPTION)
+WHEN MATCHED THEN
+UPDATE SET 
+  A.DURATION_ID = B.DURATION_ID,
+  A.DURATION = B.DURATION,
+  A.DESCRIPTION = B.DESCRIPTION;
+
+MERGE INTO CWMS_20.CWMS_DURATION A USING
+ (SELECT
+  60 as DURATION_CODE,
+  '0BOP' as DURATION_ID,
+  0 as DURATION,
+  'Measurement applies intantaneously at time stamp or until next time stamp' as DESCRIPTION
+  FROM DUAL) B
+ON (A.DURATION_CODE = B.DURATION_CODE)
+WHEN NOT MATCHED THEN 
+INSERT (
+  DURATION_CODE, DURATION_ID, DURATION, DESCRIPTION)
+VALUES (
+  B.DURATION_CODE, B.DURATION_ID, B.DURATION, B.DESCRIPTION)
+WHEN MATCHED THEN
+UPDATE SET 
+  A.DURATION_ID = B.DURATION_ID,
+  A.DURATION = B.DURATION,
+  A.DESCRIPTION = B.DESCRIPTION;
+
+MERGE INTO CWMS_20.CWMS_ERROR A USING
+ (SELECT
+  -20048 as ERR_CODE,
+  'NO_WRITE_PRIVILEGE' as ERR_NAME,
+  'User doesnt have write privileges' as ERR_MSG
+  FROM DUAL) B
+ON (A.ERR_CODE = B.ERR_CODE)
+WHEN NOT MATCHED THEN 
+INSERT (
+  ERR_CODE, ERR_NAME, ERR_MSG)
+VALUES (
+  B.ERR_CODE, B.ERR_NAME, B.ERR_MSG)
+WHEN MATCHED THEN
+UPDATE SET 
+  A.ERR_NAME = B.ERR_NAME,
+  A.ERR_MSG = B.ERR_MSG;
+
+GRANT SELECT ON CWMS_20.AV_BASE_PARM_DISPLAY_UNITS TO CWMS_USER;
+GRANT SELECT ON CWMS_20.AV_SCREENING_CONTROL TO CWMS_USER;
+GRANT SELECT ON CWMS_20.AV_USGS_AGENCY TO CWMS_USER;
+whenever sqlerror continue;
+drop index at_loc_lvl_indicator_u1;
+whenever sqlerror exit;
+create unique index at_loc_lvl_indicator_u1 on at_loc_lvl_indicator (
+   location_code,
+   specified_level_code,
+   parameter_code,
+   duration_code,
+   level_indicator_id,
+   cwms_rounding.round_f(attr_value, 12),
+   attr_parameter_code,
+   ref_specified_level_code,
+   ref_attr_value);
+
+COMMIT;
+

@@ -84,7 +84,7 @@ AS
    --
    -- Filter out PST and CST
    function get_timezone (p_timezone in varchar2)
-   return varchar2 result_cache relies_on (cwms_time_zone_alias)
+   return varchar2
    is
       l_timezone varchar2(28);
    begin
@@ -416,10 +416,10 @@ AS
       l_username := get_user_id;
 
       BEGIN
-        SELECT prop_value INTO l_upass_id FROM at_properties where prop_id='sec.upass.id' and prop_category='CWMS' and office_code=53;
+      	SELECT prop_value INTO l_upass_id FROM at_properties where prop_id='sec.upass.id' and prop_category='CWMS' and office_code=53;
       EXCEPTION WHEN OTHERS
       THEN
-        NULL;
+	NULL;
       END;
 
       SELECT SYS_CONTEXT ('CWMS_ENV', 'SESSION_OFFICE_ID')
@@ -565,7 +565,7 @@ AS
                              p_prepend_office   IN VARCHAR2 DEFAULT 'F')
       RETURN VARCHAR2
    IS
-      l_location_id   VARCHAR2(191);
+      l_location_id   VARCHAR2 (183);
       l_office_id     VARCHAR2 (16);
    BEGIN
       SELECT o.office_id,
@@ -1139,7 +1139,7 @@ AS
                           p_version_id          IN VARCHAR2)
       RETURN VARCHAR2
    IS
-      l_base_location_id    VARCHAR2 (24) := TRIM (p_base_location_id);
+      l_base_location_id    VARCHAR2 (16) := TRIM (p_base_location_id);
       l_sub_location_id     VARCHAR2 (32) := TRIM (p_sub_location_id);
       l_base_parameter_id   VARCHAR2 (16) := TRIM (p_base_parameter_id);
       l_sub_parameter_id    VARCHAR2 (32) := TRIM (p_sub_parameter_id);
@@ -1210,13 +1210,13 @@ AS
    -- function get_time_zone_code
    --
    FUNCTION get_time_zone_code (p_time_zone_name IN VARCHAR2)
-      RETURN NUMBER result_cache relies_on (cwms_time_zone)
+      RETURN NUMBER
    IS
       l_time_zone_code   NUMBER (10);
    BEGIN
       SELECT time_zone_code
         INTO l_time_zone_code
-        FROM cwms_time_zone
+        FROM mv_time_zone
        WHERE time_zone_name = get_timezone (NVL (p_time_zone_name, 'UTC'));
 
       RETURN l_time_zone_code;
@@ -1230,20 +1230,17 @@ AS
    -- function get_time_zone_name
    --
    FUNCTION get_time_zone_name (p_time_zone_name IN VARCHAR2)
-      RETURN VARCHAR2 result_cache relies_on (cwms_time_zone)
+      RETURN VARCHAR2
    IS
       l_time_zone_name   VARCHAR2 (28);
    BEGIN
-      SELECT time_zone_name
+      SELECT z.time_zone_name
         INTO l_time_zone_name
-        FROM cwms_time_zone
-       WHERE upper(time_zone_name) = upper(get_timezone (p_time_zone_name));
+        FROM mv_time_zone v, cwms_time_zone z
+       WHERE upper(v.time_zone_name) = upper(get_timezone (p_time_zone_name))
+             AND z.time_zone_code = v.time_zone_code;
 
       RETURN l_time_zone_name;
-   EXCEPTION
-      WHEN NO_DATA_FOUND
-      THEN
-         cwms_err.raise ('INVALID_TIME_ZONE', nvl(p_time_zone_name, '<NULL>'));
    END get_time_zone_name;
 
    --------------------------------------------------------------------------------
@@ -1746,7 +1743,7 @@ AS
                           1,
                           1,
                           1) != LENGTH (l_str) + 1
-      then
+      THEN
          if length(l_str) = 10 then
             return to_timestamp(l_str||'T00:00');
          end if;
@@ -2147,7 +2144,7 @@ AS
       RETURN NUMBER
    IS
       l_unit_code        NUMBER;
-      l_db_office_code   NUMBER := get_db_office_code (p_db_office_id);
+      l_db_office_code   VARCHAR2 (16) := get_db_office_code (p_db_office_id);
    BEGIN
       IF p_abstract_param_id IS NULL
       THEN
@@ -4426,9 +4423,9 @@ AS
    is
       l_dst   clob := p_dst.getclobval;
    begin
-      append(l_dst, p_src);
-      p_dst := xmltype(l_dst);
-   end append;
+      append (l_dst, p_src);
+      p_dst := xmltype (l_dst);
+   END append;
 
    procedure append(
       p_dst in out nocopy xmltype, 
@@ -4436,9 +4433,9 @@ AS
    is
       l_dst   clob := p_dst.getclobval;
    begin
-      append(l_dst, p_src);
-      p_dst := xmltype(l_dst);
-   end append;
+      append (l_dst, p_src);
+      p_dst := xmltype (l_dst);
+   END append;
 
    procedure append(
       p_dst in out nocopy xmltype, 
@@ -4446,9 +4443,9 @@ AS
    is
       l_dst   clob := p_dst.getclobval;
    begin
-      append(l_dst, p_src);
-      p_dst := xmltype(l_dst);
-   end append;
+      append (l_dst, p_src);
+      p_dst := xmltype (l_dst);
+   END append;
 
    --------------------------
    -- XML Utility routines --
@@ -5156,8 +5153,8 @@ AS
              )
              where mod(r, l_count) = mod(p_column, l_count);
       return l_results;
-   end get_column;
-   
+   end get_column;            
+
    procedure to_json(
       p_json     in out nocopy clob,
       p_xml      in     xmltype,

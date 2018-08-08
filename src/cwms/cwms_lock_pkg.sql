@@ -28,7 +28,7 @@ AS
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">project_id</td>
- *     <td class="descr">varchar2(57)</td>
+ *     <td class="descr">varchar2(49)</td>
  *     <td class="descr">The location identifier of project</td>
  *   </tr>
  *   <tr>
@@ -40,7 +40,7 @@ AS
  *   <tr>
  *     <td class="descr-center">4</td>
  *     <td class="descr">base_location_id</td>
- *     <td class="descr">varchar2(24)</td>
+ *     <td class="descr">varchar2(16)</td>
  *     <td class="descr">The base location identifier of the lock</td>
  *   </tr>
  *   <tr>
@@ -94,7 +94,7 @@ AS
  *   <tr>
  *     <td class="descr-center">13</td>
  *     <td class="descr">public_name</td>
- *     <td class="descr">varchar2(57)</td>
+ *     <td class="descr">varchar2(32)</td>
  *     <td class="descr">The public name of the lock location</td>
  *   </tr>
  *   <tr>

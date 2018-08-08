@@ -12,6 +12,9 @@ DECLARE
 		:= id_array_t ('at_a2w_ts_codes_by_loc',
                                'at_cma_error_log',
                                'at_data_dissem',
+                               'at_pool',
+                               'at_pool_purposes',
+                               'at_pool_type',
                                'cwms_cities_sp',
                                'cwms_county_sp',
                                'cwms_nation_sp',
@@ -23,6 +26,7 @@ DECLARE
                                'cwms_usace_dam_state',
                                'cwms_usace_dam_county',
                                'cwms_usace_dam'
+
 						  );
 
 	view_names   id_array_t
@@ -40,6 +44,9 @@ DECLARE
                                'av_nation_sp',
                                'av_nid',
                                'av_office_sp',
+                               'av_pool',
+                               'av_pool_purposes',
+                               'av_pool_type',
                                'av_usace_dam',
                                'av_usace_dam_state',
                                'av_usace_dam_county'
@@ -125,6 +132,16 @@ prompt create table cwms_usace_dam_county
 --
 prompt create table cwms_usace_dam
 @@cwms/tables/cwms_usace_dam.sql
+
+prompt create table at_pool
+@@cwms/tables/at_pool.sql
+
+prompt create table at_pool_type
+@@cwms/tables/at_pool_type.sql
+
+prompt create table at_pool_purposes
+@@cwms/tables/at_pool_purposes.sql
+
 --
 -- Create Views
 --

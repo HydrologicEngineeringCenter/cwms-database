@@ -393,7 +393,7 @@ procedure cat_scale_limits(
    p_unit_id_mask      in  varchar2 default '*',
    p_office_id_mask    in  varchar2 default null)
 is
-   l_location_id_mask  varchar2(57);
+   l_location_id_mask  varchar2(49);
    l_parameter_id_mask varchar2(49); 
    l_unit_id_mask      varchar2(16);
    l_office_id_mask    varchar2(16);
@@ -999,7 +999,7 @@ procedure retrieve_status_indicators(
    p_office_id       in  varchar2 default null)
 is
    type l_cursor_rec_t is record (
-      indicator_id     varchar2(431),
+      indicator_id     varchar2(423),
       attribute_id     varchar2(83),
       attribute_value  number,
       attribute_units  varchar2(16),
@@ -1171,7 +1171,7 @@ function retrieve_status_indicator_f(
    return integer
 is
    type l_rec_t is record(
-      indicator_id     varchar2(431),
+      indicator_id     varchar2(423),
       attribute_id     varchar2(83),
       attribute_value  number,           
       attribute_units  varchar2(16),
