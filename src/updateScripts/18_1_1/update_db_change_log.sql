@@ -20,11 +20,11 @@ begin
    values (cwms_util.user_office_code,
            l_database_id,
            'CWMS',
-           3,
+           18,
            1,
-           0,
-           to_date ('05MAR2018', 'DDMONYYYY'),
-           'CWMS Database Release 3.1.0',
+           1,
+           to_date ('04SEP2018', 'DDMONYYYY'),
+           'CWMS Database Release 18.1.1',
            'Multiple performance and functionality updates'
           );
    commit;
