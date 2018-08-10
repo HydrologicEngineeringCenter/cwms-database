@@ -1,4 +1,4 @@
-create type ztimeseries_type
+create or replace type ztimeseries_type
 /**
  * Object type representing time series values with attributes. This type does not carry
  * time zone information, so any usage of it should explicitly declare the time zone.
@@ -22,7 +22,7 @@ create type ztimeseries_type
  * @see type ztsv_array
  */
 AS OBJECT (
-   tsid VARCHAR2 (183),
+   tsid VARCHAR2(191),
    unit VARCHAR2 (16),
    data ztsv_array);
 /

@@ -1,4 +1,4 @@
-create type stream_rating_t
+create or replace type stream_rating_t
 /**
  * Holds a USGS-style stream rating with shifts and offsets
  *
@@ -9,7 +9,7 @@ create type stream_rating_t
  */
 under rating_t (
 -- office_id       varchar2(16),
--- rating_spec_id  varchar2(372),
+-- rating_spec_id  varchar2(380),
 -- effective_date  date,
 -- transition_date date,
 -- create_date     date,

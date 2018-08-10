@@ -1655,8 +1655,8 @@ END cat_ts_id;
    --    Name                      Datatype      Description
    --    ------------------------ ------------- ----------------------------
    --    db_office_id             varchar2(16)   owning office of location
-   --    location_id              varchar2(49)   full location id
-   --    base_location_id         varchar2(16)   base location id
+   --    location_id              varchar2(57)   full location id
+   --    base_location_id         varchar2(24)   base location id
    --    sub_location_id          varchar2(32)   sub-location id, if any
    --    state_initial            varchar2(2)    two-character state abbreviation
    --    county_name              varchar2(40)   county name
@@ -1937,8 +1937,8 @@ END cat_ts_id;
 --    Name                      Datatype      Description
 --    ------------------------ ------------- ----------------------------
 --    db_office_id             varchar2(16)   owning office of location
---    location_id              varchar2(49)   full location id
---    base_location_id         varchar2(16)   base location id
+--    location_id              varchar2(57)   full location id
+--    base_location_id         varchar2(24)   base location id
 --    sub_location_id          varchar2(32)   sub-location id, if any
 --    state_initial            varchar2(2)    two-character state abbreviation
 --    county_name              varchar2(40)   county name
@@ -3378,7 +3378,7 @@ END cat_ts_id;
             := cwms_util.get_db_office_code (p_db_office_id) ;
       l_abbreviated BOOLEAN
             := cwms_util.return_true_or_false (NVL (p_abbreviated, 'T')) ;
-      l_loc_id       VARCHAR2 (49);
+      l_loc_id       VARCHAR2 (57);
       l_loc_grp_id   VARCHAR2 (32);
       l_loc_cat_id   VARCHAR2 (32);
       l_is_null      BOOLEAN := TRUE;
@@ -3966,12 +3966,12 @@ END cat_ts_id;
    -- catalog has the following fields, sorted ascending by office_id and stream_id
    --
    --    office_id            varchar2(16)
-   --    stream_id            varchar2(49)
+   --    stream_id            varchar2(57)
    --    stationing_starts_ds varchar2(1)
-   --    flows_into_stream    varchar2(49)
+   --    flows_into_stream    varchar2(57)
    --    flows_into_station   binary_double
    --    flows_into_bank      varchar2(1) 
-   --    diverts_from_stream  varchar2(49)
+   --    diverts_from_stream  varchar2(57)
    --    diverts_from_station binary_double
    --    diverts_from_bank    varchar2(1)
    --    stream_length        binary_double
@@ -4027,12 +4027,12 @@ END cat_ts_id;
    -- catalog has the following fields, sorted ascending by office_id and stream_id
    --
    --    office_id            varchar2(16)
-   --    stream_id            varchar2(49)
+   --    stream_id            varchar2(57)
    --    stationing_starts_ds varchar2(1)
-   --    flows_into_stream    varchar2(49)
+   --    flows_into_stream    varchar2(57)
    --    flows_into_station   binary_double
    --    flows_into_bank      varchar2(1) 
-   --    diverts_from_stream  varchar2(49)
+   --    diverts_from_stream  varchar2(57)
    --    diverts_from_station binary_double
    --    diverts_from_bank    varchar2(1)
    --    stream_length        binary_double
@@ -4087,7 +4087,7 @@ END cat_ts_id;
    -- catalog has the following fields, sorted by first 3 fields
    --
    --    office_id            varchar2(16)
-   --    stream_id            varchar2(49)
+   --    stream_id            varchar2(57)
    --    stream_reach_id      varchar2(64)
    --    upstream_station     binary_double
    --    downstream_station   binary_double
@@ -4118,7 +4118,7 @@ END cat_ts_id;
    -- catalog has the following fields, sorted by first 3 fields
    --
    --    office_id            varchar2(16)
-   --    stream_id            varchar2(49)
+   --    stream_id            varchar2(57)
    --    stream_reach_id      varchar2(64)
    --    upstream_station     binary_double
    --    downstream_station   binary_double
@@ -4148,8 +4148,8 @@ END cat_ts_id;
    -- catalog includes, sorted by office_id, stream_id, station, location_id
    --
    --    office_id               varchar2(16)
-   --    stream_id               varchar2(49)
-   --    location_id             varchar2(49)
+   --    stream_id               varchar2(57)
+   --    location_id             varchar2(57)
    --    station                 binary_double
    --    bank                    varchar2(1)
    --    lowest_measurable_stage binary_double
@@ -4186,8 +4186,8 @@ END cat_ts_id;
    -- catalog includes, sorted by office_id, stream_id, station, location_id
    --
    --    office_id               varchar2(16)
-   --    stream_id               varchar2(49)
-   --    location_id             varchar2(49)
+   --    stream_id               varchar2(57)
+   --    location_id             varchar2(57)
    --    station                 binary_double
    --    bank                    varchar2(1)
    --    lowest_measurable_stage binary_double
@@ -4223,10 +4223,10 @@ END cat_ts_id;
    -- the catalog contains the following fields, sorted by the first 4
    --
    --    office_id                  varchar2(16)
-   --    basin_id                   varchar2(49)
-   --    parent_basin_id            varchar2(49)
+   --    basin_id                   varchar2(57)
+   --    parent_basin_id            varchar2(57)
    --    sort_order                 binary_double
-   --    primary_stream_id          varchar2(49)
+   --    primary_stream_id          varchar2(57)
    --    total_drainage_area        binary_double
    --    contributing_drainage_area binary_double
    --    area_unit                  varchar2(16)
@@ -4256,10 +4256,10 @@ END cat_ts_id;
    -- the catalog contains the following fields, sorted by the first 4
    --
    --    office_id                  varchar2(16)
-   --    basin_id                   varchar2(49)
-   --    parent_basin_id            varchar2(49)
+   --    basin_id                   varchar2(57)
+   --    parent_basin_id            varchar2(57)
    --    sort_order                 binary_double
-   --    primary_stream_id          varchar2(49)
+   --    primary_stream_id          varchar2(57)
    --    total_drainage_area        binary_double
    --    contributing_drainage_area binary_double
    --    area_unit                  varchar2(16)
@@ -4287,7 +4287,7 @@ END cat_ts_id;
       pipelined
    as   
       l_cursor sys_refcursor;
-      l_indicator_id     varchar2(423);
+      l_indicator_id     varchar2(431);
       l_attribute_id     varchar2(83);
       l_attribute_value  number;           
       l_attribute_units  varchar2(16);

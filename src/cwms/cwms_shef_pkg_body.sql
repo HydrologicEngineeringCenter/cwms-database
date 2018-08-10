@@ -543,7 +543,7 @@ AS
                                       := TRIM (p_shef_loc_id);
       l_shef_id                    VARCHAR2 (8) := NULL;
       l_location_code              NUMBER;
-      l_location_id                VARCHAR2 (49);
+      l_location_id                VARCHAR2 (57);
       l_loc_group_code             NUMBER;
       l_tmp                        NUMBER;
       l_max_len_shef_loc_id        NUMBER;
@@ -1682,7 +1682,7 @@ AS
    -- cwms_shef.delete_shef_spec is used to delete an existing SHEF spec. SHEF
    -- specs are assigned to pairs of cwms_ts_id and data stream.
    --
-   -- p_cwms_ts_id(varchar2(183) - required parameter) and
+   -- p_cwms_ts_id(varchar2(191) - required parameter) and
    -- p_data_stream_id (varchar2(16 - required parameter) -- is the cwms_ts_id
    --   data stream pair whose SHEF spec you wish to delete.
    --
@@ -2571,7 +2571,7 @@ AS
       l_shef_pe_code         VARCHAR2 (2);
       l_shef_tse_code        VARCHAR2 (3);
       l_shef_duration_code   VARCHAR2 (4);
-      l_cwms_ts_id           VARCHAR2 (183);
+      l_cwms_ts_id           VARCHAR2(191);
       --
       l_param_id             VARCHAR2 (32);
       l_param                VARCHAR2 (32);

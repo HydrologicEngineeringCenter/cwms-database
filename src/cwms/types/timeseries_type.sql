@@ -1,4 +1,4 @@
-CREATE TYPE timeseries_type
+create or replace TYPE timeseries_type
 /**
  * Type suitable for holding a single time series.
  *
@@ -11,7 +11,7 @@ CREATE TYPE timeseries_type
  * @see type tsv_array
  */
 AS OBJECT (
-   tsid   VARCHAR2 (183),
+   tsid   VARCHAR2(191),
    unit   VARCHAR2 (16),
    DATA   tsv_array
 );

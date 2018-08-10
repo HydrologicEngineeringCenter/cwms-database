@@ -58,7 +58,7 @@ BEGIN
    --
    open p_project_cat for
       select l_db_office_id          db_office_id,       -- db_office_id      varchar2(16)  owning office of location
-             bl.base_location_id     base_location_id,   -- base_location_id  varchar2(16)  base location id
+             bl.base_location_id     base_location_id,   -- base_location_id  varchar2(24)  base location id
              pl.sub_location_id      sub_location_id,    -- sub_location_id   varchar2(32)  sub-location id, if any
              tz.time_zone_name       time_zone_name,     -- time_zone_name    varchar2(28)  local time zone name for location
              pl.latitude             latitude,           -- latitude          number        location latitude
@@ -754,7 +754,7 @@ END unassign_basin_group;
       -- the basin location group id.
       p_loc_group_id      IN   VARCHAR2,
       -- the array of location ids to remove.
-      p_location_array    IN   char_49_array_type,
+      p_location_array    IN   str_tab_t,
       -- if T, then all assigned locs are removed from the group.
       -- p_location_array needs to be null when the arg is T.
       p_unassign_all      IN   VARCHAR2 DEFAULT 'F',
@@ -1017,7 +1017,7 @@ is
    l_application_id     varchar2(64) := lower(p_application_id);
    l_user_id            varchar2(30) := lower(nvl(p_user_id, cwms_util.get_user_id));
    l_office_code        number(10)   := nvl(p_office_code, cwms_util.get_db_office_code(p_office_id)); 
-   l_project_id         varchar2(49) := lower(cwms_loc.get_location_id(p_project_id, l_office_code));
+   l_project_id         varchar2(57) := lower(cwms_loc.get_location_id(p_project_id, l_office_code));
    l_project_list       varchar2(256);
    l_parts              str_tab_t;
    l_has_revoker_rights varchar2(1) := 'F';
@@ -1194,7 +1194,7 @@ begin
          if upper(get_string(l_msg, l_id, 'type',        32)) = 'ACKNOWLEDGEREQUEST'   and
             upper(get_string(l_msg, l_id, 'response',    32)) = 'REQUEST DENIED'       and
             upper(get_string(l_msg, l_id, 'office',      16)) = upper(l_office_id)     and
-            upper(get_string(l_msg, l_id, 'project',     49)) = upper(p_project_id)    and
+            upper(get_string(l_msg, l_id, 'project',     57)) = upper(p_project_id)    and
             upper(get_string(l_msg, l_id, 'application', 64)) = upper(p_application_id)
          then
             l_denied := true;
@@ -1544,7 +1544,7 @@ is
    l_rec at_project_purpose%rowtype;
    l_purpose        varchar2(25);
    l_office_id      varchar2(16);
-   l_project_id     varchar2(49);
+   l_project_id     varchar2(57);
 begin
    begin
       select *

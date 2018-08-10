@@ -175,7 +175,7 @@ procedure rename_gage(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">location_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the gage</td>
  *   </tr>
  *   <tr>
@@ -223,7 +223,7 @@ procedure rename_gage(
  *   <tr>
  *     <td class="descr-center">10</td>
  *     <td class="descr">associated_location_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The associated location identifier of the gage</td>
  *   </tr>
  *   <tr>
@@ -371,7 +371,7 @@ procedure cat_gages(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">location_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the gage</td>
  *   </tr>
  *   <tr>
@@ -419,7 +419,7 @@ procedure cat_gages(
  *   <tr>
  *     <td class="descr-center">10</td>
  *     <td class="descr">associated_location_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The associated location identifier of the gage</td>
  *   </tr>
  *   <tr>
@@ -587,7 +587,7 @@ procedure rename_gage_sensor(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">location_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the gage</td>
  *   </tr>
  *   <tr>
@@ -795,7 +795,7 @@ procedure cat_gage_sensors(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">location_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the gage</td>
  *   </tr>
  *   <tr>
@@ -1025,7 +1025,7 @@ procedure rename_goes(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">location_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the gage</td>
  *   </tr>
  *   <tr>
@@ -1198,7 +1198,7 @@ procedure cat_goes(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">location_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier of the gage</td>
  *   </tr>
  *   <tr>

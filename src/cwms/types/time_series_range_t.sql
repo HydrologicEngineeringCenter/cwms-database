@@ -1,4 +1,4 @@
-create type time_series_range_t
+create or replace type time_series_range_t
 /**
  * Holds information about the range of values for a time series and time window
  *
@@ -15,7 +15,7 @@ create type time_series_range_t
  */
 as object (
    office_id      varchar2(16),
-   time_series_id varchar2(183),
+   time_series_id varchar2(191),
    start_time     date,
    end_time       date,
    time_zone      varchar2(28),

@@ -61,7 +61,7 @@ AS
    FUNCTION get_ts_id (p_ts_code IN NUMBER)
       RETURN VARCHAR2
    IS
-      l_cwms_ts_id   VARCHAR2 (183);
+      l_cwms_ts_id   VARCHAR2(191);
    BEGIN
       BEGIN
          SELECT cwms_ts_id
@@ -85,7 +85,7 @@ AS
       return varchar2
    is
       l_parts str_tab_t;
-      l_ts_id varchar2(183);
+      l_ts_id varchar2(191);
    begin
       l_parts := cwms_util.split_text(p_ts_id, '.');
       for i in 1..l_parts.count loop
@@ -113,7 +113,7 @@ AS
       p_office_id    in varchar2)
       return varchar2
    is
-      l_cwms_ts_id varchar2(183);
+      l_cwms_ts_id varchar2(191);
       l_parts      str_tab_t;
    begin
       -----------
@@ -408,7 +408,7 @@ AS
    FUNCTION get_location_id (p_cwms_ts_code IN NUMBER)
       RETURN VARCHAR2
    IS
-      l_location_id   VARCHAR2 (49);
+      l_location_id   VARCHAR2 (57);
    BEGIN
       BEGIN
          SELECT location_id
@@ -1472,7 +1472,7 @@ AS
       l_all_office_code       NUMBER := cwms_util.db_office_code_all;
       l_ts_id_exists          BOOLEAN := FALSE;
       l_can_create            BOOLEAN := TRUE;
-      l_cwms_ts_id            varchar2(183);
+      l_cwms_ts_id            varchar2(191);
       l_parts                 str_tab_t;
    BEGIN
       IF p_office_id IS NULL
@@ -2128,7 +2128,7 @@ AS
       l_interval2         NUMBER := 60 / 1440;
       l_utc_offset        NUMBER;
       l_office_id         VARCHAR2 (16);
-      l_cwms_ts_id        VARCHAR2 (183);
+      l_cwms_ts_id        VARCHAR2(191);
       l_units             VARCHAR2 (16);
       l_time_zone         VARCHAR2 (28); 
       l_base_parameter_id VARCHAR2(16);
@@ -3079,7 +3079,7 @@ AS
    IS
       query_cursor       SYS_REFCURSOR;
       output_row         zts_rec_t;
-      l_cwms_ts_id_out   VARCHAR2 (183);
+      l_cwms_ts_id_out   VARCHAR2(191);
       l_units_out        VARCHAR2 (16);
    BEGIN
       retrieve_ts_out (p_at_tsv_rc         => query_cursor,
@@ -3133,7 +3133,7 @@ AS
       l_trim          VARCHAR2 (1);
       l_max_version   VARCHAR2 (1);
       l_query_str     VARCHAR2 (4000);
-      l_tsid          VARCHAR2 (183);
+      l_tsid          VARCHAR2(191);
       l_unit          VARCHAR2 (16);
 
       PROCEDURE set_action (text IN VARCHAR2)
@@ -3258,7 +3258,7 @@ AS
                           p_max_version       IN     VARCHAR2 DEFAULT 'T',
                           p_office_id         IN     VARCHAR2 DEFAULT NULL)
    IS
-      l_cwms_ts_id_out   VARCHAR2 (183);
+      l_cwms_ts_id_out   VARCHAR2(191);
       l_units_out        VARCHAR2 (16);
       l_at_tsv_rc        SYS_REFCURSOR;
    BEGIN
@@ -3317,7 +3317,7 @@ AS
       rec               SYS_REFCURSOR;
       l_time_zone       VARCHAR2 (28) := NVL (p_time_zone, 'UTC');
       must_exist        BOOLEAN;
-      tsid              VARCHAR2 (183);
+      tsid              VARCHAR2(191);
    BEGIN
       DBMS_APPLICATION_INFO.set_module ('cwms_ts.retrieve_ts_multi',
                                         'Preparation loop');
@@ -3863,7 +3863,7 @@ AS
       TS_ID_NOT_FOUND       EXCEPTION;
       PRAGMA EXCEPTION_INIT (ts_id_not_found, -20001);
       l_timeseries_data     tsv_array;
-      l_cwms_ts_id          VARCHAR2(183);
+      l_cwms_ts_id          VARCHAR2(191);
       l_office_id           VARCHAR2 (16);
       l_office_code         NUMBER;
       l_location_code       NUMBER;
@@ -5506,7 +5506,7 @@ AS
    is
       l_db_office_code   number := p_db_office_code;
       l_db_office_id     varchar2(16);
-      l_cwms_ts_id       varchar2(183);
+      l_cwms_ts_id       varchar2(191);
       l_ts_code          number;
       l_count            number;
       l_value_count      number;
@@ -5777,7 +5777,7 @@ AS
       p_max_version         in varchar2 default 'T',
       p_ts_item_mask        in integer default cwms_util.ts_all)
    is
-      l_tsid                     varchar2(183);
+      l_tsid                     varchar2(191);
       l_office_id                varchar2(16);
       l_override_protection      boolean;
       l_error_on_protection      boolean;
@@ -6242,7 +6242,7 @@ AS
       --
       l_base_location_id_new      at_base_location.base_location_id%TYPE;
       l_sub_location_id_new       at_physical_location.sub_location_id%TYPE;
-      l_location_new              VARCHAR2 (49);
+      l_location_new              VARCHAR2 (57);
       l_base_parameter_id_new     cwms_base_parameter.base_parameter_id%TYPE;
       l_sub_parameter_id_new      at_parameter.sub_parameter_id%TYPE;
       l_parameter_type_id_new     cwms_parameter_type.parameter_type_id%TYPE;
@@ -8961,9 +8961,9 @@ end retrieve_existing_item_counts;
    is
       l_office_code number(10);
       l_ts_code     number(10);
-      l_ts_id       varchar2(183); 
+      l_ts_id       varchar2(191);
       l_parts       str_tab_t;
-      l_location_id varchar2(49);
+      l_location_id varchar2(57);
    begin
       -------------------
       -- sanity checks --
@@ -9039,7 +9039,7 @@ end retrieve_existing_item_counts;
       ts_id_not_found   EXCEPTION;
       PRAGMA EXCEPTION_INIT (ts_id_not_found, -20001);
       l_ts_code         NUMBER (10);
-      l_ts_id           VARCHAR2 (183);
+      l_ts_id           VARCHAR2(191);
    BEGIN
       BEGIN
          l_ts_code := get_ts_code (p_ts_id_or_alias, p_office_id);
@@ -9903,7 +9903,7 @@ end retrieve_existing_item_counts;
       l_max_date       DATE;
       l_ts_code        NUMBER (10);
       l_parts          str_tab_t;
-      l_location_id    VARCHAR2 (49);
+      l_location_id    VARCHAR2 (57);
       l_parameter_id   VARCHAR2 (49);
    BEGIN
       -------------------
@@ -10020,7 +10020,7 @@ end retrieve_existing_item_counts;
       l_max_date         DATE;
       l_ts_code          NUMBER (10);
       l_parts            str_tab_t;
-      l_location_id      VARCHAR2 (49);
+      l_location_id      VARCHAR2 (57);
       l_parameter_id     VARCHAR2 (49);
    BEGIN
       ----------------------------
@@ -10185,7 +10185,7 @@ end retrieve_existing_item_counts;
       l_max_date        DATE;
       l_ts_code         NUMBER (10);
       l_parts           str_tab_t;
-      l_location_id     VARCHAR2 (49);
+      l_location_id     VARCHAR2 (57);
       l_parameter_id    VARCHAR2 (49);
    BEGIN
       -------------------
@@ -10667,7 +10667,7 @@ end retrieve_existing_item_counts;
       RETURN VARCHAR2
    AS
       l_office_id   VARCHAR2 (16);
-      l_tsid        VARCHAR2 (183);
+      l_tsid        VARCHAR2(191);
    BEGIN
       l_office_id := cwms_util.get_db_office_id (p_office_id);
 

@@ -1076,7 +1076,7 @@ AS
     *   <tr>
     *     <td class="descr-center">2</td>
     *     <td class="descr">tsid</td>
-    *     <td class="descr">varchar2(183)</td>
+    *     <td class="descr">varchar2(191)</td>
     *     <td class="descr">The time series identifier for this record</td>
     *   </tr>
     *   <tr>

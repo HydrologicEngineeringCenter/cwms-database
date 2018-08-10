@@ -82,9 +82,9 @@ end get_embankment_code;
 --    Name                      Datatype      Description
 --    ------------------------ ------------- ----------------------------
 --    project_office_id        varchar2(16)  the office id of the parent project.
---    project_id	             varchar2(49)	the identification (id) of the parent project.
+--    project_id	             varchar2(57)	the identification (id) of the parent project.
 --    db_office_id             varchar2(16)  owning office of location
---    base_location_id         varchar2(16)  base location id
+--    base_location_id         varchar2(24)  base location id
 --    sub_location_id          varchar2(32)  sub-location id, if any
 --    time_zone_name           varchar2(28)  local time zone name for location
 --    latitude                 number        location latitude
@@ -115,7 +115,7 @@ procedure cat_embankment (
 )
 is
    l_office_id_mask  varchar2(16);
-   l_project_id_mask varchar2(49);
+   l_project_id_mask varchar2(57);
 begin
    l_office_id_mask := cwms_util.normalize_wildcards(
       upper(nvl(p_db_office_id, cwms_util.user_office_id)), true);

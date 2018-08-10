@@ -109,7 +109,7 @@ CREATE TABLE at_base_location
 (
   base_location_code  NUMBER,
   db_office_code      NUMBER                    NOT NULL,
-  base_location_id    VARCHAR2(16 BYTE)         NOT NULL,
+  base_location_id    VARCHAR2(24 BYTE)         NOT NULL,
   active_flag         VARCHAR2(1 BYTE)
 )
 TABLESPACE CWMS_20AT_DATA
@@ -1795,7 +1795,7 @@ CREATE GLOBAL TEMPORARY TABLE AT_LOC_LVL_INDICATOR_TAB
 (
    SEQ                    INTEGER,
    OFFICE_ID              VARCHAR2(16),
-   LOCATION_ID            VARCHAR2(49),
+   LOCATION_ID            VARCHAR2(57),
    PARAMETER_ID           VARCHAR2(49),
    PARAMETER_TYPE_ID      VARCHAR2(16),
    DURATION_ID            VARCHAR2(16),

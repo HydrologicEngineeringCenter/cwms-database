@@ -1,4 +1,4 @@
-create type loc_alias_type2
+create or replace type loc_alias_type2
 /**
  * Holds intermediate information about a location alias.  This information doesn't
  * contain any context for the alias.
@@ -14,7 +14,7 @@ create type loc_alias_type2
  * @member loc_alias_id  the alias for the location
  */
 AS OBJECT (
-   location_id    VARCHAR2 (49),
+   location_id    VARCHAR2 (57),
    loc_attribute  NUMBER,
    loc_alias_id   VARCHAR2 (128)
 );

@@ -83,7 +83,7 @@ procedure notify_loc_lvl_ind_state(
    p_ts_code_used     in number   default null)
 is
    l_loc_lvl_ind    cwms_t_loc_lvl_indicator;  
-   l_ts_id_used     varchar2(183);
+   l_ts_id_used     varchar2(191);
    l_message        varchar2(32767);  
    l_message_id     integer;
    l_time_zone      varchar2(28);
@@ -214,7 +214,7 @@ procedure notify_loc_lvl_ind_state(
    p_office_id          in varchar2 default null)
 is
    type rec_t is record (
-      indicator_id     varchar2(423),
+      indicator_id     varchar2(431),
       attribute_id     varchar2(83),
       attribute_value  number,
       attribute_units  varchar2(16),
@@ -223,12 +223,12 @@ is
    l_cursor          sys_refcursor;
    l_rec             rec_t;  
    l_office_id       varchar2(16);  
-   l_ts_id           varchar2(183); 
+   l_ts_id           varchar2(191);
    l_ts_code         number(10);
    l_min_duration    integer; -- minutes
    l_duration        integer; -- minutes
    l_indicator       cwms_t_loc_lvl_indicator;
-   l_indicator_id    varchar2(423);
+   l_indicator_id    varchar2(431);
    l_indicator_code  number(10);
    l_ref_spec_lvl_id varchar2(256);      
    l_parts           cwms_t_str_tab; 

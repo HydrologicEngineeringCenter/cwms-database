@@ -88,7 +88,7 @@ as
       l_clone       vdatum_rating_t;       
       l_vert_datum  varchar2(32);
       l_clob        clob;
-      l_location_id varchar2(49);
+      l_location_id varchar2(57);
       l_parts       str_tab_t;  
       l_unit_id     varchar2(16);
       l_vdatum_info varchar2(32767);

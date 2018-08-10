@@ -565,7 +565,7 @@ AS
                              p_prepend_office   IN VARCHAR2 DEFAULT 'F')
       RETURN VARCHAR2
    IS
-      l_location_id   VARCHAR2 (183);
+      l_location_id   VARCHAR2(191);
       l_office_id     VARCHAR2 (16);
    BEGIN
       SELECT o.office_id,
@@ -1139,7 +1139,7 @@ AS
                           p_version_id          IN VARCHAR2)
       RETURN VARCHAR2
    IS
-      l_base_location_id    VARCHAR2 (16) := TRIM (p_base_location_id);
+      l_base_location_id    VARCHAR2 (24) := TRIM (p_base_location_id);
       l_sub_location_id     VARCHAR2 (32) := TRIM (p_sub_location_id);
       l_base_parameter_id   VARCHAR2 (16) := TRIM (p_base_parameter_id);
       l_sub_parameter_id    VARCHAR2 (32) := TRIM (p_sub_parameter_id);
@@ -2144,7 +2144,7 @@ AS
       RETURN NUMBER
    IS
       l_unit_code        NUMBER;
-      l_db_office_code   VARCHAR2 (16) := get_db_office_code (p_db_office_id);
+      l_db_office_code   NUMBER := get_db_office_code (p_db_office_id);
    BEGIN
       IF p_abstract_param_id IS NULL
       THEN

@@ -1367,7 +1367,7 @@ as
    is
       ts_id_not_found      exception;
       pragma exception_init(ts_id_not_found, -20001);
-      l_tsid               varchar2(183);
+      l_tsid               varchar2(191);
       l_ts_code            number(10);
       l_std_text_code      number(10);
       l_start_time_utc     date;
@@ -1597,7 +1597,7 @@ as
    is
       ts_id_not_found      exception;
       pragma exception_init(ts_id_not_found, -20001);
-      l_tsid               varchar2(183);
+      l_tsid               varchar2(191);
       l_ts_code            number(10);
       l_std_text_id        varchar2(16);
       l_std_text_code      number(10);
@@ -1745,7 +1745,7 @@ as
       return sys_refcursor
    is
       l_office_id            varchar2(16);
-      l_tsid                 varchar2(183);
+      l_tsid                 varchar2(191);
       l_std_text_id_mask     varchar2(256);
       l_start_time_utc       date;
       l_end_time_utc         date;
@@ -1881,7 +1881,7 @@ as
       return pls_integer
    is
       l_office_id          varchar2(16);
-      l_tsid               varchar2(183);
+      l_tsid               varchar2(191);
       l_std_text_id_mask   varchar2(16);
       l_start_time_utc     date;
       l_end_time_utc       date;
@@ -1991,7 +1991,7 @@ as
       p_office_id        in varchar2 default null)
    is
       l_office_id            varchar2(16);
-      l_tsid                 varchar2(183);
+      l_tsid                 varchar2(191);
       l_std_text_id_mask     varchar2(256);
       l_start_time_utc       date;
       l_end_time_utc         date;
@@ -2317,7 +2317,7 @@ as
    is
       ts_id_not_found      exception;
       pragma exception_init(ts_id_not_found, -20001);
-      l_tsid               varchar2(183);
+      l_tsid               varchar2(191);
       l_ts_code            number(10);
       l_clob_code          number(10);
       l_start_time_utc     date;
@@ -2547,7 +2547,7 @@ as
    is
       ts_id_not_found      exception;
       pragma exception_init(ts_id_not_found, -20001);
-      l_tsid               varchar2(183);
+      l_tsid               varchar2(191);
       l_ts_code            number(10);
       l_clob_code          number(10);
       l_times_utc          date_table_type := date_table_type();
@@ -2665,7 +2665,7 @@ as
    is
       ts_id_not_found      exception;
       pragma exception_init(ts_id_not_found, -20001);
-      l_tsid               varchar2(183);
+      l_tsid               varchar2(191);
       l_ts_code            number(10);
       l_clob_code          number(10);
       l_start_time_utc     date;
@@ -2890,7 +2890,7 @@ as
    is
       ts_id_not_found      exception;
       pragma exception_init(ts_id_not_found, -20001);
-      l_tsid               varchar2(183);
+      l_tsid               varchar2(191);
       l_ts_code            number(10);
       l_clob_code          number(10);
       l_times_utc          date_table_type := date_table_type();
@@ -3028,7 +3028,7 @@ as
       return sys_refcursor
    is
       l_office_id            varchar2(16);
-      l_tsid                 varchar2(183);
+      l_tsid                 varchar2(191);
       l_text_mask            varchar2(256);
       l_start_time_utc       date;
       l_end_time_utc         date;
@@ -3129,7 +3129,7 @@ as
       return pls_integer
    is
       l_office_id          varchar2(16);
-      l_tsid               varchar2(183);
+      l_tsid               varchar2(191);
       l_text_mask          varchar2(16);
       l_start_time_utc     date;
       l_end_time_utc       date;
@@ -3239,7 +3239,7 @@ as
       p_office_id     in varchar2 default null)
    is
       l_office_id            varchar2(16);
-      l_tsid                 varchar2(183);
+      l_tsid                 varchar2(191);
       l_text_mask            varchar2(256);
       l_start_time_utc       date;
       l_end_time_utc         date;
@@ -3607,7 +3607,7 @@ as
    is
       ts_id_not_found      exception;
       pragma exception_init(ts_id_not_found, -20001);
-      l_tsid               varchar2(183);
+      l_tsid               varchar2(191);
       l_ts_code            number(10);
       l_blob_code          number(10);
       l_media_type_code    number(10);
@@ -3846,7 +3846,7 @@ as
    is
       ts_id_not_found      exception;
       pragma exception_init(ts_id_not_found, -20001);
-      l_tsid               varchar2(183);
+      l_tsid               varchar2(191);
       l_ts_code            number(10);
       l_blob_code          number(10);
       l_media_type_code    number(10);
@@ -3971,7 +3971,7 @@ as
    is
       ts_id_not_found      exception;
       pragma exception_init(ts_id_not_found, -20001);
-      l_tsid               varchar2(183);
+      l_tsid               varchar2(191);
       l_ts_code            number(10);
       l_blob_code          number(10);
       l_start_time_utc     date;
@@ -4196,7 +4196,7 @@ as
    is
       ts_id_not_found      exception;
       pragma exception_init(ts_id_not_found, -20001);
-      l_tsid               varchar2(183);
+      l_tsid               varchar2(191);
       l_ts_code            number(10);
       l_blob_code          number(10);
       l_times_utc          date_table_type := date_table_type();
@@ -4337,7 +4337,7 @@ as
       return sys_refcursor
    is
       l_office_id            varchar2(16);
-      l_tsid                 varchar2(183);
+      l_tsid                 varchar2(191);
       l_binary_type_mask     varchar2(256);
       l_start_time_utc       date;
       l_end_time_utc         date;
@@ -4495,7 +4495,7 @@ as
       return pls_integer
    is
       l_office_id          varchar2(16);
-      l_tsid               varchar2(183);
+      l_tsid               varchar2(191);
       l_binary_type_mask   varchar2(16);
       l_start_time_utc     date;
       l_end_time_utc       date;
@@ -4618,7 +4618,7 @@ as
       p_office_id        in varchar2 default null)
    is
       l_office_id            varchar2(16);
-      l_tsid                 varchar2(183);
+      l_tsid                 varchar2(191);
       l_binary_type_mask     varchar2(256);
       l_start_time_utc       date;
       l_end_time_utc         date;

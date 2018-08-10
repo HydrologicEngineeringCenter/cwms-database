@@ -384,7 +384,7 @@ procedure cat_gages(
    p_comments_mask          in  varchar2 default '*',
    p_office_id_mask         in  varchar2 default null)
 is
-   l_location_id_mask       varchar2(49);
+   l_location_id_mask       varchar2(57);
    l_gage_id_mask           varchar2(32);
    l_gage_type_mask         varchar2(32);
    l_discontinued_mask      varchar2(1);
@@ -395,7 +395,7 @@ is
    l_phone_number_mask      varchar2(16);
    l_internet_addr_mask     varchar2(32);
    l_other_access_id_mask   varchar2(32);
-   l_assoc_location_id_mask varchar2(49);
+   l_assoc_location_id_mask varchar2(57);
    l_comments_mask          varchar2(256);
    l_office_id_mask         varchar2(16);
 begin
@@ -954,7 +954,7 @@ procedure cat_gage_sensors(
    p_unit_system            in  varchar2 default 'SI',
    p_office_id_mask      in  varchar2 default null)
 is
-   l_location_id_mask       varchar2(49);
+   l_location_id_mask       varchar2(57);
    l_gage_id_mask           varchar2(32);
    l_sensor_id_mask         varchar2(32);
    l_parameter_id_mask      varchar2(49);
@@ -1441,7 +1441,7 @@ procedure cat_goes(
    p_max_random_channel    in  number default 999999,
    p_office_id_mask        in  varchar2 default null)
 is
-   l_location_id_mask varchar2(49);
+   l_location_id_mask varchar2(57);
    l_gage_id_mask     varchar2(32);
    l_goes_id_mask     varchar2(32);
    l_satellite_mask   varchar2(1);

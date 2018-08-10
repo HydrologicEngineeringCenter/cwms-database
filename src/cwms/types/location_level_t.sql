@@ -1,4 +1,4 @@
-create type location_level_t
+create or replace type location_level_t
 /**
  * Holds a location level.  A location level combines a location, parameter, parameter type,
  * duration, and specified level to describe a named level that can be compared against values
@@ -37,7 +37,7 @@ create type location_level_t
  */
 is object (
    office_id                   varchar2(16),
-   location_id                 varchar2(49),
+   location_id                 varchar2(57),
    parameter_id                varchar2(49),
    parameter_type_id           varchar2(16),
    duration_id                 varchar2(16),
@@ -56,7 +56,7 @@ is object (
    interval_months             integer,
    interval_minutes            integer,
    interpolate                 varchar2(1),
-   tsid                        varchar2(183),
+   tsid                        varchar2(191),
    expiration_date             date,
    seasonal_values             seasonal_value_tab_t,
    indicators                  loc_lvl_indicator_tab_t,

@@ -1946,7 +1946,7 @@ as
    member procedure convert_to_database_time
    is
       l_local_timezone varchar2(28);
-      l_location_id    varchar2(49);
+      l_location_id    varchar2(57);
    begin
          case self.current_time
             when 'D' then
@@ -1975,7 +1975,7 @@ as
    member procedure convert_to_local_time
    is
       l_local_timezone varchar2(28);
-      l_location_id    varchar2(49);
+      l_location_id    varchar2(57);
    begin
          case self.current_time
             when 'D' then
@@ -3747,7 +3747,7 @@ as
    return number
    is
       l_parts                   str_tab_t;
-      l_location_id             varchar2(49);
+      l_location_id             varchar2(57);
       l_template_parameters_id  varchar2(256);
       l_template_version        varchar2(32);
       l_version                 varchar2(32);

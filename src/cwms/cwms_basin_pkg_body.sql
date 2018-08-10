@@ -377,10 +377,10 @@ end rename_basin;
 -- the catalog contains the following fields, sorted by the first 4
 --
 --    office_id                  varchar2(16)
---    basin_id                   varchar2(49)
---    parent_basin_id            varchar2(49)
+--    basin_id                   varchar2(57)
+--    parent_basin_id            varchar2(57)
 --    sort_order                 binary_double
---    primary_stream_id          varchar2(49)
+--    primary_stream_id          varchar2(57)
 --    total_drainage_area        binary_double
 --    contributing_drainage_area binary_double
 --    area_unit                  varchar2(16)
@@ -394,9 +394,9 @@ procedure cat_basins(
    p_area_unit              in  varchar2 default null,
    p_office_id_mask         in  varchar2 default null)
 is
-   l_basin_id_mask          varchar2(49);
-   l_parent_basin_id_mask   varchar2(49);
-   l_primary_stream_id_mask varchar2(49);
+   l_basin_id_mask          varchar2(57);
+   l_parent_basin_id_mask   varchar2(57);
+   l_primary_stream_id_mask varchar2(57);
    l_office_id_mask         varchar2(16);
    l_area_unit              varchar2(16);
 begin
@@ -501,10 +501,10 @@ end cat_basins;
 -- the catalog contains the following fields, sorted by the first 4
 --
 --    office_id                  varchar2(16)
---    basin_id                   varchar2(49)
---    parent_basin_id            varchar2(49)
+--    basin_id                   varchar2(57)
+--    parent_basin_id            varchar2(57)
 --    sort_order                 binary_double
---    primary_stream_id          varchar2(49)
+--    primary_stream_id          varchar2(57)
 --    total_drainage_area        binary_double
 --    contributing_drainage_area binary_double
 --    area_unit                  varchar2(16)

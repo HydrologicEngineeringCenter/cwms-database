@@ -205,7 +205,7 @@ as
    is
       l_gate_type                varchar2(32) ;
       l_rating_template_template varchar2(24) ;
-      l_rating_spec              varchar2(372) ;
+      l_rating_spec              varchar2(380) ;
    begin
        select sub_location_id
          into l_gate_type

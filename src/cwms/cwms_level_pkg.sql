@@ -2427,7 +2427,7 @@ function cat_loc_lvl_indicator_codes(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">location_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier</td>
  *   </tr>
  *   <tr>
@@ -2695,7 +2695,7 @@ procedure cat_loc_lvl_indicator(
  *   <tr>
  *     <td class="descr-center">2</td>
  *     <td class="descr">location_id</td>
- *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The location identifier</td>
  *   </tr>
  *   <tr>
@@ -3365,7 +3365,7 @@ function eval_level_indicator_expr(
  *   <tr>
  *     <td class="descr-center">1</td>
  *     <td class="descr">indicator_id</td>
- *     <td class="descr">varchar2(423)</td>
+ *     <td class="descr">varchar2(431)</td>
  *     <td class="descr">The location level indicator identifier</td>
  *   </tr>
  *   <tr>
@@ -3444,7 +3444,7 @@ procedure get_level_indicator_values(
  *   <tr>
  *     <td class="descr-center">1</td>
  *     <td class="descr">indicator_id</td>
- *     <td class="descr">varchar2(423)</td>
+ *     <td class="descr">varchar2(431)</td>
  *     <td class="descr">The location level indicator identifier</td>
  *   </tr>
  *   <tr>
