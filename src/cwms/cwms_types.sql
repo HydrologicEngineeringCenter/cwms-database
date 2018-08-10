@@ -112,6 +112,7 @@ end;
 @@cwms/types/str_tab_t
 @@cwms/types/str_tab_tab_t
 @@cwms/types/number_tab_t
+@@cwms/types/number_tab_tab_t
 @@cwms/types/double_tab_t
 @@cwms/types/double_tab_tab_t
 @@cwms/types/log_message_properties_t

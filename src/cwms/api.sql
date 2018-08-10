@@ -144,6 +144,9 @@
 @@cwms_scheduler_auth_pkg
 @@cwms_scheduler_auth_pkg_body
 
+@@cwms_pool_pkg
+@@cwms_pool_pkg_body
+
 @@cwms/functions/str2tbl.sql
 
 @@cwms/procedures/download_file

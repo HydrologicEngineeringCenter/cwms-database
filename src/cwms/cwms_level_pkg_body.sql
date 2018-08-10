@@ -4963,7 +4963,7 @@ procedure delete_location_level(
    p_attribute_id            in  varchar2 default null,
    p_attribute_value         in  number   default null,
    p_attribute_units         in  varchar2 default null,
-   p_cascade                 in  varchar2 default ('F'),
+   p_cascade                 in  varchar2 default 'F',
    p_office_id               in  varchar2 default null)
 is          
 begin
@@ -4981,7 +4981,7 @@ end delete_location_level;
 
 procedure delete_location_level(
    p_location_level_code in integer,
-   p_cascade             in  varchar2 default ('F'))
+   p_cascade             in  varchar2 default 'F')
 is
 begin
    delete_location_level_ex(
@@ -4997,8 +4997,47 @@ procedure delete_location_level_ex(
    p_attribute_id            in  varchar2 default null,
    p_attribute_value         in  number   default null,
    p_attribute_units         in  varchar2 default null,
-   p_cascade                 in  varchar2 default ('F'),
-   p_delete_indicators       in  varchar2 default ('F'),
+   p_cascade                 in  varchar2 default 'F',
+   p_delete_indicators       in  varchar2 default 'F',
+   p_office_id               in  varchar2 default null)
+is
+begin
+   delete_location_level_ex2(
+      p_location_level_id  => p_location_level_id,
+      p_effective_date     => p_effective_date,
+      p_timezone_id        => p_timezone_id,
+      p_attribute_id       => p_attribute_id,
+      p_attribute_value    => p_attribute_value,
+      p_attribute_units    => p_attribute_units,
+      p_cascade            => p_cascade,
+      p_delete_indicators  => p_delete_indicators,
+      p_delete_pools       => 'F',
+      p_office_id          => p_office_id);         
+end delete_location_level_ex;
+
+procedure delete_location_level_ex(
+   p_location_level_code in integer,
+   p_cascade             in  varchar2 default 'F',
+   p_delete_indicators   in  varchar2 default 'F')
+is
+begin
+   delete_location_level_ex2(
+      p_location_level_code => p_location_level_code,
+      p_cascade             => p_cascade,            
+      p_delete_pools        => 'F',
+      p_delete_indicators   => p_delete_indicators);  
+end delete_location_level_ex;
+
+procedure delete_location_level_ex2(
+   p_location_level_id       in  varchar2,
+   p_effective_date          in  date     default null,
+   p_timezone_id             in  varchar2 default 'UTC',
+   p_attribute_id            in  varchar2 default null,
+   p_attribute_value         in  number   default null,
+   p_attribute_units         in  varchar2 default null,
+   p_cascade                 in  varchar2 default 'F',
+   p_delete_indicators       in  varchar2 default 'F',
+   p_delete_pools            in  varchar2 default 'F',
    p_office_id               in  varchar2 default null)
 is
    l_location_level_code       number(10);
@@ -5065,12 +5104,13 @@ begin
       p_cascade,
       p_delete_indicators);
         
-end delete_location_level_ex;
+end delete_location_level_ex2;
 
-procedure delete_location_level_ex(
+procedure delete_location_level_ex2(
    p_location_level_code in integer,
-   p_cascade             in  varchar2 default ('F'),
-   p_delete_indicators   in  varchar2 default ('F'))
+   p_cascade             in  varchar2 default 'F',
+   p_delete_pools        in  varchar2 default 'F',
+   p_delete_indicators   in  varchar2 default 'F')
 is
    l_location_code             number(10);
    l_parameter_type_code       number(10);
@@ -5082,9 +5122,12 @@ is
    l_attribute_value           number;
    l_cascade                   boolean := cwms_util.return_true_or_false(p_cascade);
    l_delete_indicators         boolean := cwms_util.return_true_or_false(p_delete_indicators);
+   l_delete_pools              boolean := cwms_util.return_true_or_false(p_delete_pools);
    l_seasonal_count            pls_integer;
    l_level_count               pls_integer;
    l_indicator_count           pls_integer;
+   l_pool_codes                number_tab_t;
+   l_pool_level_id             varchar2(256);
    l_parameter_code            number(10);
 begin
    ----------------------------------------------------
@@ -5117,9 +5160,9 @@ begin
             || ' with p_cascade = ''F''');
       end;
    end if;
-   ------------------------------------------------------------------------------------    
-   -- check for indicators and p_delete_indicators = 'F' and no more matching levels --
-   ------------------------------------------------------------------------------------    
+   ---------------------------------------------
+   -- retrieve the location level information --
+   ---------------------------------------------
    select location_code,
           parameter_code,
           parameter_type_code,
@@ -5140,7 +5183,9 @@ begin
           l_attribute_value
      from at_location_level            
     where location_level_code = p_location_level_code;
-    
+   ---------------------------
+   -- check matching levels --
+   ---------------------------
    select count(*)
      into l_level_count
      from at_location_level
@@ -5152,44 +5197,103 @@ begin
       and nvl(attribute_parameter_type_code, -1) = nvl(l_attribute_param_type_code, -1)
       and nvl(attribute_duration_code, -1) = nvl(l_attribute_duration_code, -1)
       and nvl(cwms_rounding.round_dt_f(attribute_value, '9999999999'), '@') = nvl(cwms_rounding.round_nt_f(l_attribute_value, '9999999999'), '@');
-   if l_level_count > 1 then
-      l_indicator_count := 0;
-   else
-      select count(*)
-        into l_indicator_count
-        from at_loc_lvl_indicator
-       where location_code = l_location_code
-         and parameter_code = l_parameter_code
-         and parameter_type_code = l_parameter_type_code
-         and specified_level_code = l_specified_level_code
-         and nvl(attr_parameter_code, -1) = nvl(l_attribute_parameter_code, -1)
-         and nvl(attr_parameter_type_code, -1) = nvl(l_attribute_param_type_code, -1)
-         and nvl(attr_duration_code, -1) = nvl(l_attribute_duration_code, -1)
-         and nvl(cwms_rounding.round_nt_f(attr_value, '9999999999'), '@') = nvl(cwms_rounding.round_nt_f(l_attribute_value, '9999999999'), '@');          
+   if l_level_count = 0 then
+      -----------------------------------------------------------------------------------------
+      -- no more matching levels, must check indicators and pools if not also deleteing them --
+      -----------------------------------------------------------------------------------------
+      if not l_delete_indicators then
+         --------------------------
+         -- check for indicators --
+         --------------------------
+         select count(*)
+           into l_indicator_count
+           from at_loc_lvl_indicator
+          where location_code = l_location_code
+            and parameter_code = l_parameter_code
+            and parameter_type_code = l_parameter_type_code
+            and specified_level_code = l_specified_level_code
+            and nvl(attr_parameter_code, -1) = nvl(l_attribute_parameter_code, -1)
+            and nvl(attr_parameter_type_code, -1) = nvl(l_attribute_param_type_code, -1)
+            and nvl(attr_duration_code, -1) = nvl(l_attribute_duration_code, -1)
+            and nvl(cwms_rounding.round_nt_f(attr_value, '9999999999'), '@') = nvl(cwms_rounding.round_nt_f(l_attribute_value, '9999999999'), '@');
+         if l_indicator_count > 0 then
+            ------------------------
+            -- can't delete level --
+            ------------------------
+            declare
+               ll location_level_t := location_level_t(zlocation_level_t(p_location_level_code));
+            begin
+               cwms_err.raise(
+                  'ERROR',
+                  'Cannot delete location level '
+                  ||ll.office_id || '/'
+                  ||ll.location_id || '.'
+                  ||ll.parameter_id || '.'
+                  ||ll.parameter_type_id || '.'
+                  ||ll.duration_id || '.'
+                  ||ll.specified_level_id
+                  || case
+                        when ll.attribute_value is null then
+                           null
+                        else
+                           ' ('||ll.attribute_value || ' ' || ll.attribute_units_id || ')'
+                     end
+                  || '@' || ll.level_date
+                  || ' with p_delete_indicators = ''F''');
+            end;
+         end if;
+      end if;
+      if not l_delete_pools then
+         ---------------------
+         -- check for pools --
+         ---------------------
+         if l_attribute_value is null then
+            select bp.base_parameter_id
+                   ||'.'||pt.parameter_type_id
+                   ||'.'||d.duration_id
+                   ||'.'||sl.specified_level_id
+              into l_pool_level_id
+              from at_parameter p,
+                   cwms_base_parameter bp,
+                   cwms_parameter_type pt,
+                   cwms_duration d,
+                   at_specified_level sl
+             where p.parameter_code = l_parameter_code
+               and p.sub_parameter_id is null
+               and bp.base_parameter_code = p.base_parameter_code
+               and pt.parameter_type_code = l_parameter_type_code
+               and d.duration_code = l_duration_code
+               and sl.specified_level_code = l_specified_level_code;
+               
+            select pool_code
+              bulk collect
+              into l_pool_codes
+              from at_pool
+             where project_code = l_location_code
+               and upper(l_pool_level_id) in (bottom_level, top_level);
+            if l_pool_codes.count > 0 and not l_delete_pools then
+               ------------------
+               -- can't delete --
+               ------------------
+               declare
+                  ll location_level_t := location_level_t(zlocation_level_t(p_location_level_code));
+               begin
+                  cwms_err.raise(
+                     'ERROR',
+                     'Cannot delete location level '
+                     ||ll.office_id || '/'
+                     ||ll.location_id || '.'
+                     ||ll.parameter_id || '.'
+                     ||ll.parameter_type_id || '.'
+                     ||ll.duration_id || '.'
+                     ||ll.specified_level_id
+                     || '@' || ll.level_date
+                     || ' with p_delete_pools = ''F''');
+               end;
+            end if;
+         end if;
+      end if;
    end if;                
-   if l_indicator_count > 0 and not l_delete_indicators then
-      declare
-         ll location_level_t := location_level_t(zlocation_level_t(p_location_level_code));
-      begin
-         cwms_err.raise(
-            'ERROR',
-            'Cannot delete location level '
-            ||ll.office_id || '/'
-            ||ll.location_id || '.'
-            ||ll.parameter_id || '.'
-            ||ll.parameter_type_id || '.'
-            ||ll.duration_id || '.'
-            ||ll.specified_level_id
-            || case
-                  when ll.attribute_value is null then
-                     null
-                  else
-                     ' ('||ll.attribute_value || ' ' || ll.attribute_units_id || ')'
-               end
-            || '@' || ll.level_date
-            || ' with p_delete_indicators = ''F''');
-      end;
-   end if;    
    ---------------------------------
    -- delete any seasonal records --
    ---------------------------------
@@ -5251,13 +5355,21 @@ begin
          when no_data_found then null;
       end;
    end if;
+   ----------------------
+   -- delete any pools --
+   ----------------------
+   if l_pool_codes is not null then
+      delete
+        from at_pool
+       where pool_code in (select column_value from table(l_pool_codes)); 
+   end if;
    -------------------------------
    -- delete the location level --
    -------------------------------
    delete
      from at_location_level
     where location_level_code = p_location_level_code;
-end delete_location_level_ex;   
+end delete_location_level_ex2;   
 
             
 --------------------------------------------------------------------------------
