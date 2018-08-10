@@ -47,6 +47,7 @@ DECLARE
       'av_loc_cat_grp',
       'av_loc_level',
       'av_loc_lvl_label',
+      'av_loc_lvl_source',
       'av_loc_ts_id_count',
       'av_log_message',            -- created in at_schema_2
       'av_nation',
@@ -159,6 +160,7 @@ END;
 @@cwms/views/av_loc_lvl_indicator
 @@cwms/views/av_loc_lvl_indicator_2
 @@cwms/views/av_loc_lvl_label
+@@cwms/views/av_loc_lvl_source
 @@cwms/views/av_loc_ts_id_count
 @@cwms/views/av_location_kind
 @@cwms/views/av_location_level

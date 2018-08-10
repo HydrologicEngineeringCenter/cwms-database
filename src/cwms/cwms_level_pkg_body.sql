@@ -5799,6 +5799,359 @@ begin
          p_configuration_code,
          'F');
 end delete_loc_lvl_label;   
+
+procedure set_loc_lvl_source(
+   p_loc_lvl_source          in varchar2, 
+   p_location_level_id       in varchar2,
+   p_attribute_value         in number   default null,
+   p_attribute_units         in varchar2 default null,
+   p_attribute_id            in varchar2 default null,
+   p_fail_if_exists          in varchar2 default 'T',
+   p_office_id               in varchar2 default null)
+is
+   l_level_parts               str_tab_t;
+   l_attr_parts                str_tab_t;
+   l_config_parts              str_tab_t;
+   l_location_level_code       integer;
+   l_spec_level_code           integer;
+   l_location_code             integer;
+   l_parameter_code            integer;
+   l_parameter_type_code       integer;
+   l_duration_code             integer;
+   l_effective_date_out        date;
+   l_expiration_date_out       date;
+   l_attribute_parameter_code  integer;
+   l_attribute_param_type_code integer;
+   l_attribute_duration_code   integer;
+   l_entity_code               integer;
+begin
+   if p_location_level_id is null then
+      cwms_err.raise('NULL_ARGUMENT', 'P_LOCATION_LEVEL_ID');
+   end if;
+   l_level_parts := cwms_util.split_text(p_location_level_id, '.');
+   if l_level_parts.count != 5 then
+      cwms_err.raise('INVALID_ITEM', '"'||p_location_level_id||'"', 'location level identifier');
+   end if;
+   l_attr_parts := cwms_util.split_text(p_attribute_id, '.');
+   if l_attr_parts.count not in (0, 3) then
+      cwms_err.raise('INVALID_ITEM', '"'||p_attribute_id||'"', 'location level attribute identifier');
+   end if;
+   get_location_level_codes(
+      p_location_level_code       => l_location_level_code,                                                
+      p_spec_level_code           => l_spec_level_code,                                                    
+      p_location_code             => l_location_code,                                                      
+      p_parameter_code            => l_parameter_code,                                                     
+      p_parameter_type_code       => l_parameter_type_code,                                                
+      p_duration_code             => l_duration_code,                                                      
+      p_effective_date_out        => l_effective_date_out,                                                 
+      p_expiration_date_out       => l_expiration_date_out,                                                
+      p_attribute_parameter_code  => l_attribute_parameter_code,                                           
+      p_attribute_param_type_code => l_attribute_param_type_code,                                          
+      p_attribute_duration_code   => l_attribute_duration_code,                                            
+      p_location_id               => l_level_parts(1),                             
+      p_parameter_id              => l_level_parts(2),                             
+      p_parameter_type_id         => l_level_parts(3),                             
+      p_duration_id               => l_level_parts(4),                             
+      p_spec_level_id             => l_level_parts(5),                             
+      p_effective_date_in         => date '2100-01-01',                     
+      p_match_date                => false,
+      p_attribute_value           => p_attribute_value,                               
+      p_attribute_units           => p_attribute_units,                             
+      p_attribute_parameter_id    => case when l_attr_parts.count = 0 then null else l_attr_parts(1) end,                             
+      p_attribute_param_type_id   => case when l_attr_parts.count = 0 then null else l_attr_parts(2) end,                             
+      p_attribute_duration_id     => case when l_attr_parts.count = 0 then null else l_attr_parts(3) end,                             
+      p_office_id                 => p_office_id);
+      
+   set_loc_lvl_source(
+      p_loc_lvl_source           => p_loc_lvl_source, 
+      p_location_code            => l_location_code,
+      p_specified_level_code     => l_spec_level_code,
+      p_parameter_code           => l_parameter_code,
+      p_parameter_type_code      => l_parameter_type_code,
+      p_duration_code            => l_duration_code,
+      p_attr_value               => case 
+                                    when l_attr_parts.count = 0 then 
+                                       null 
+                                    else 
+                                       cwms_util.convert_units(
+                                          p_attribute_value, 
+                                          p_attribute_units, 
+                                          cwms_util.get_default_units(l_attr_parts(1))) 
+                                    end,
+      p_attr_parameter_code      => l_attribute_parameter_code,
+      p_attr_parameter_type_code => l_attribute_param_type_code,
+      p_attr_duration_code       => l_attribute_duration_code,
+      p_fail_if_exists           => p_fail_if_exists); 
+end set_loc_lvl_source;   
+
+procedure get_loc_lvl_source(
+   p_loc_lvl_source          out varchar2, 
+   p_location_level_id       in  varchar2,
+   p_attribute_value         in  number   default null,
+   p_attribute_units         in  varchar2 default null,
+   p_attribute_id            in  varchar2 default null,
+   p_office_id               in  varchar2 default null)
+is
+   l_level_parts               str_tab_t;
+   l_attr_parts                str_tab_t;
+   l_config_parts              str_tab_t;
+   l_location_level_code       integer;
+   l_spec_level_code           integer;
+   l_location_code             integer;
+   l_parameter_code            integer;
+   l_parameter_type_code       integer;
+   l_duration_code             integer;
+   l_effective_date_out        date;
+   l_expiration_date_out       date;
+   l_attribute_parameter_code  integer;
+   l_attribute_param_type_code integer;
+   l_attribute_duration_code   integer;
+   l_configuration_code        integer;
+begin
+   if p_location_level_id is null then
+      cwms_err.raise('NULL_ARGUMENT', 'P_LOCATION_LEVEL_ID');
+   end if;
+   l_level_parts := cwms_util.split_text(p_location_level_id, '.');
+   if l_level_parts.count != 5 then
+      cwms_err.raise('INVALID_ITEM', '"'||p_location_level_id||'"', 'location level identifier');
+   end if;
+   l_attr_parts := cwms_util.split_text(p_attribute_id, '.');
+   if l_attr_parts.count not in (0, 3) then
+      cwms_err.raise('INVALID_ITEM', '"'||p_attribute_id||'"', 'location level attribute identifier');
+   end if;
+   
+   get_location_level_codes(
+      p_location_level_code       => l_location_level_code,                                                
+      p_spec_level_code           => l_spec_level_code,                                                    
+      p_location_code             => l_location_code,                                                      
+      p_parameter_code            => l_parameter_code,                                                     
+      p_parameter_type_code       => l_parameter_type_code,                                                
+      p_duration_code             => l_duration_code,                                                      
+      p_effective_date_out        => l_effective_date_out,                                                 
+      p_expiration_date_out       => l_expiration_date_out,                                                
+      p_attribute_parameter_code  => l_attribute_parameter_code,                                           
+      p_attribute_param_type_code => l_attribute_param_type_code,                                          
+      p_attribute_duration_code   => l_attribute_duration_code,                                            
+      p_location_id               => l_level_parts(1),                             
+      p_parameter_id              => l_level_parts(2),                             
+      p_parameter_type_id         => l_level_parts(3),                             
+      p_duration_id               => l_level_parts(4),                             
+      p_spec_level_id             => l_level_parts(5),                             
+      p_effective_date_in         => date '2100-01-01',                     
+      p_match_date                => false,
+      p_attribute_value           => p_attribute_value,                               
+      p_attribute_units           => p_attribute_units,                             
+      p_attribute_parameter_id    => case when l_attr_parts.count = 0 then null else l_attr_parts(1) end,                             
+      p_attribute_param_type_id   => case when l_attr_parts.count = 0 then null else l_attr_parts(2) end,                             
+      p_attribute_duration_id     => case when l_attr_parts.count = 0 then null else l_attr_parts(3) end,                             
+      p_office_id                 => p_office_id);
+      
+   get_loc_lvl_source(
+      p_loc_lvl_source           => p_loc_lvl_source, 
+      p_location_code            => l_location_code,
+      p_specified_level_code     => l_spec_level_code,
+      p_parameter_code           => l_parameter_code,
+      p_parameter_type_code      => l_parameter_type_code,
+      p_duration_code            => l_duration_code,
+      p_attr_value               => case 
+                                    when l_attr_parts.count = 0 then 
+                                       null 
+                                    else 
+                                       cwms_util.convert_units(
+                                          p_attribute_value, 
+                                          p_attribute_units, 
+                                          cwms_util.get_default_units(l_attr_parts(1))) 
+                                    end,
+      p_attr_parameter_code      => l_attribute_parameter_code,
+      p_attr_parameter_type_code => l_attribute_param_type_code,
+      p_attr_duration_code       => l_attribute_duration_code); 
+end get_loc_lvl_source;   
+
+function get_loc_lvl_source_f(
+   p_location_level_id       in varchar2,
+   p_attribute_value         in number   default null,
+   p_attribute_units         in varchar2 default null,
+   p_attribute_id            in varchar2 default null,
+   p_office_id               in varchar2 default null)
+   return varchar2
+is
+   l_loc_lvl_source varchar2(32);
+begin
+   get_loc_lvl_source(
+      l_loc_lvl_source, 
+      p_location_level_id,
+      p_attribute_value,
+      p_attribute_units,
+      p_attribute_id,
+      p_office_id);
+      
+   return l_loc_lvl_source;      
+end get_loc_lvl_source_f;
+
+procedure delete_loc_lvl_source(
+   p_location_level_id       in varchar2,
+   p_attribute_value         in number   default null,
+   p_attribute_units         in varchar2 default null,
+   p_attribute_id            in varchar2 default null,
+   p_office_id               in varchar2 default null)
+is
+begin
+   set_loc_lvl_source(
+      null, 
+      p_location_level_id,
+      p_attribute_value,
+      p_attribute_units,
+      p_attribute_id,
+      'F',
+      p_office_id);
+end delete_loc_lvl_source;
+
+procedure set_loc_lvl_source(
+   p_loc_lvl_source           in varchar2, 
+   p_location_code            in integer,
+   p_specified_level_code     in integer,
+   p_parameter_code           in integer,
+   p_parameter_type_code      in integer,
+   p_duration_code            in integer,
+   p_attr_value               in number  default null,
+   p_attr_parameter_code      in integer default null,
+   p_attr_parameter_type_code in integer default null,
+   p_attr_duration_code       in integer default null,
+   p_fail_if_exists           in varchar2 default 'T')
+is
+   l_entity_code integer;
+   l_rec         at_loc_lvl_source%rowtype;
+begin
+   --------------------------------
+   -- get entity code for source --
+   --------------------------------
+   begin
+      select e.entity_code 
+        into l_entity_code 
+        from at_entity e,
+             at_physical_location pl,
+             at_base_location bl
+       where upper(entity_id) = upper(trim(p_loc_lvl_source)) 
+         and pl.location_code = p_location_code
+         and bl.base_location_code = pl.base_location_code
+         and e.office_code in (bl.db_office_code, cwms_util.db_office_code_all);
+   exception
+      when no_data_found then
+         cwms_err.raise('ITEM_DOES_NOT_EXIST', 'Entity', p_loc_lvl_source);
+   end;
+   -----------------------------------------------
+   -- get existing location level source record --
+   -----------------------------------------------
+   begin      
+      select *
+        into l_rec
+        from at_loc_lvl_source
+       where location_code                = p_location_code
+         and specified_level_code         = p_specified_level_code
+         and parameter_code               = p_parameter_code
+         and parameter_type_code          = p_parameter_type_code
+         and duration_code                = p_duration_code
+         and nvl(attr_value, -1)          = nvl(cwms_rounding.round_f(p_attr_value, 12), -1)
+         and nvl(attr_parameter_code, -1) = nvl(p_attr_parameter_code, -1)
+         and nvl(attr_duration_code, -1)  = nvl(p_attr_duration_code, -1);
+      ------------
+      -- exists --
+      ------------
+      if p_loc_lvl_source is null then
+         delete
+           from at_loc_lvl_source
+          where loc_lvl_source_code = l_rec.loc_lvl_source_code;
+      else
+         if cwms_util.is_true(p_fail_if_exists) then
+            cwms_err.raise('ERROR', 'Source already exists for specified location level');
+         end if;
+         l_rec.source_entity := l_entity_code;
+         update at_loc_lvl_source
+            set source_entity = l_entity_code
+          where loc_lvl_source_code = l_rec.loc_lvl_source_code;  
+      end if;
+   exception
+      when no_data_found then
+         -------------------
+         -- doesn't exist --
+         -------------------
+         insert
+           into at_loc_lvl_source
+         values (cwms_seq.nextval,
+                 p_location_code,
+                 p_specified_level_code,
+                 p_parameter_code,
+                 p_parameter_type_code,
+                 p_duration_code,
+                 cwms_rounding.round_f(p_attr_value, 12),
+                 p_attr_parameter_code,
+                 p_attr_parameter_type_code,
+                 p_attr_duration_code,
+                 l_entity_code);
+   end;
+end set_loc_lvl_source;   
+   
+procedure get_loc_lvl_source(
+   p_loc_lvl_source           out varchar2, 
+   p_location_code            in  integer,
+   p_specified_level_code     in  integer,
+   p_parameter_code           in  integer,
+   p_parameter_type_code      in  integer,
+   p_duration_code            in  integer,
+   p_attr_value               in  number  default null,
+   p_attr_parameter_code      in  integer default null,
+   p_attr_parameter_type_code in  integer default null,
+   p_attr_duration_code       in  integer default null)
+is
+   l_rec at_loc_lvl_source%rowtype;
+begin
+   begin      
+      select *
+        into l_rec
+        from at_loc_lvl_source
+       where location_code                = p_location_code
+         and specified_level_code         = p_specified_level_code
+         and parameter_code               = p_parameter_code
+         and parameter_type_code          = p_parameter_type_code
+         and duration_code                = p_duration_code
+         and nvl(attr_value, -1)          = nvl(cwms_rounding.round_f(p_attr_value, 12), -1)
+         and nvl(attr_parameter_code, -1) = nvl(p_attr_parameter_code, -1)
+         and nvl(attr_duration_code, -1)  = nvl(p_attr_duration_code, -1);
+         
+      select entity_id
+        into p_loc_lvl_source
+        from at_entity
+       where entity_code = l_rec.source_entity; 
+   exception
+      when no_data_found then null;  
+   end;
+end get_loc_lvl_source;
+
+procedure delete_loc_lvl_source(
+   p_location_code            in integer,
+   p_specified_level_code     in integer,
+   p_parameter_code           in integer,
+   p_parameter_type_code      in integer,
+   p_duration_code            in integer,
+   p_attr_value               in number  default null,
+   p_attr_parameter_code      in integer default null,
+   p_attr_parameter_type_code in integer default null,
+   p_attr_duration_code       in integer default null)
+is
+begin
+      set_loc_lvl_source(
+         null, 
+         p_location_code,
+         p_specified_level_code,
+         p_parameter_code,
+         p_parameter_type_code,
+         p_duration_code,
+         p_attr_value,
+         p_attr_parameter_code,
+         p_attr_parameter_type_code,
+         p_attr_duration_code,
+         'F');
+end delete_loc_lvl_source;   
             
 --------------------------------------------------------------------------------
 -- PROCEDURE cat_location_levels
