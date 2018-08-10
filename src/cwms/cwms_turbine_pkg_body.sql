@@ -288,19 +288,19 @@ end store_turbine;
 procedure store_turbines(
    p_turbines       in project_structure_tab_t,
    p_fail_if_exists in varchar2 default 'T')
-is
-   l_fail_if_exists   boolean;
-   l_exists           boolean;
-   l_rec              at_turbine%rowtype;
+is   
+   l_fail_if_exists boolean;
+   l_exists         boolean;
+   l_rec            at_turbine%rowtype;
    l_rating_group   varchar2(65) ;
 begin
    -------------------
    -- sanity checks --
    -------------------
    if p_turbines is null then
-      cwms_err.raise('NULL_ARGUMENT', 'P_TURBINES');
+      cwms_err.raise('NULL_ARGUMENT', 'P_TURBINES') ;
    end if;
-   l_fail_if_exists := cwms_util.is_true(p_fail_if_exists);
+   l_fail_if_exists := cwms_util.is_true(p_fail_if_exists) ;
    for i in 1..p_turbines.count
    loop
       ------------------------
@@ -308,33 +308,33 @@ begin
       ------------------------
       l_rec.turbine_location_code := cwms_loc.store_location_f(p_turbines(i).structure_location, 'F');
       if not cwms_loc.can_store(l_rec.turbine_location_code, 'TURBINE') then
-            cwms_err.raise(
-               'ERROR',
+         cwms_err.raise(
+            'ERROR',
             'Cannot store turbine information to location '
             ||cwms_util.get_db_office_id(p_turbines(i).structure_location.location_ref.office_id)
-               ||'/'
-               ||p_turbines(i).structure_location.location_ref.get_location_id
+            ||'/'
+            ||p_turbines(i).structure_location.location_ref.get_location_id
             ||' (location kind = '
             ||cwms_loc.check_location_kind(l_rec.turbine_location_code)
             ||')');
-         end if;
+      end if;
       ------------------------------------------------
       -- see if the turbine location already exists --
       ------------------------------------------------
-      begin          
+      begin
          select * into l_rec from at_turbine where turbine_location_code = l_rec.turbine_location_code;
          l_exists := true;
       exception
          when no_data_found then l_exists := false;
       end;
       if l_exists and l_fail_if_exists then
-            cwms_err.raise(
-               'ITEM_ALREADY_EXISTS',
-                     'CWMS turbine',
-               p_turbines(i).structure_location.location_ref.get_office_id
-               ||'/'
-               ||p_turbines(i).structure_location.location_ref.get_location_id);
-         end if;
+         cwms_err.raise(
+            'ITEM_ALREADY_EXISTS', 
+            'CWMS turbine', 
+            p_turbines(i).structure_location.location_ref.get_office_id
+            ||'/' 
+            ||p_turbines(i).structure_location.location_ref.get_location_id) ;
+      end if;
       begin
          l_rec.project_location_code := p_turbines(i).project_location_ref.get_location_code;
       exception
@@ -348,27 +348,27 @@ begin
       end;
       if cwms_loc.check_location_kind(l_rec.project_location_code) != 'PROJECT' then
          cwms_err.raise(
-               'ERROR',
+            'ERROR',
             'Turbine location '
-               ||p_turbines(i).structure_location.location_ref.get_office_id
-               ||'/'
-               ||p_turbines(i).structure_location.location_ref.get_location_id
+            ||p_turbines(i).structure_location.location_ref.get_office_id
+            ||'/'
+            ||p_turbines(i).structure_location.location_ref.get_location_id
             ||' refers to project location that is not a PROJECT kind: '
             ||p_turbines(i).project_location_ref.get_office_id
             ||'/'
             ||p_turbines(i).project_location_ref.get_location_id);
-         end if;
+      end if;
       ---------------------------------
       -- insert or update the record --
       ---------------------------------
-      if  l_exists then
-         update at_turbine 
+      if l_exists then
+          update at_turbine
              set row = l_rec
-          where turbine_location_code = l_rec.turbine_location_code;
+           where turbine_location_code = l_rec.turbine_location_code;
       else
-         insert into at_turbine values l_rec; 
+          insert into at_turbine values l_rec;
       end if;
-      ---------------------------      
+      ---------------------------
       -- set the location kind --
       ---------------------------
       cwms_loc.update_location_kind(l_rec.turbine_location_code, 'TURBINE', 'A');
@@ -454,24 +454,24 @@ begin
          ||cwms_util.delete_all
          ||'');
    end if;
-   l_delete_location := cwms_util.return_true_or_false(p_delete_location); 
+   l_delete_location := cwms_util.return_true_or_false(p_delete_location);
    if l_delete_location then
-   l_delete_action2 := upper(substr(p_delete_location_action, 1, 16));
-   if l_delete_action2 not in (
-      cwms_util.delete_key,
-      cwms_util.delete_data,
-      cwms_util.delete_all)
-   then
-      cwms_err.raise(
-         'ERROR',
-         'Delete action must be one of '''
-         ||cwms_util.delete_key
-         ||''',  '''
-         ||cwms_util.delete_data
-         ||''', or '''
-         ||cwms_util.delete_all
-         ||'');
-   end if;
+      l_delete_action2 := upper(substr(p_delete_location_action, 1, 16));
+      if l_delete_action2 not in (
+         cwms_util.delete_key,
+         cwms_util.delete_data,
+         cwms_util.delete_all)
+      then
+         cwms_err.raise(
+            'ERROR',
+            'Delete action must be one of '''
+            ||cwms_util.delete_key
+            ||''',  '''
+            ||cwms_util.delete_data
+            ||''', or '''
+            ||cwms_util.delete_all
+            ||'');
+      end if;
    end if;
    l_turbine_code := get_turbine_code(p_office_id, p_turbine_id);
    l_location_kind_id := cwms_loc.check_location_kind(l_turbine_code);
@@ -486,7 +486,7 @@ begin
          ||l_location_kind_id
          ||')');
    end if;
-   l_location_kind_id := cwms_loc.can_revert_loc_kind_to(p_turbine_id, p_office_id);
+   l_location_kind_id := cwms_loc.can_revert_loc_kind_to( p_turbine_id, p_office_id);
    -------------------------------------------
    -- delete the child records if specified --
    -------------------------------------------
@@ -831,7 +831,7 @@ procedure retrieve_turbine_changes(
 is
    type turbine_change_db_tab_t is table of at_turbine_change%rowtype;
    type turbine_setting_db_tab_t is table of at_turbine_setting%rowtype; 
-   c_one_second       constant number := 1/86400;
+   c_one_second            constant number := 1/86400;
    l_time_zone        varchar2(28);
    l_unit_system      varchar2(2);
    l_start_time       date;
@@ -843,8 +843,42 @@ is
    l_flow_unit        varchar2(16);
    l_elev_unit        varchar2(16);
    l_db_flow_unit     varchar2(16);
-   l_db_elev_unit     varchar2(16);
-   l_db_power_unit    varchar2(16);
+   l_db_elev_unit          varchar2(16);
+   l_db_power_unit         varchar2(16);
+   l_elev_factor           binary_double;
+   l_elev_offset           binary_double;
+   l_elev_pool             binary_double;
+   l_elev_tailwater        binary_double;
+   l_elev_unit             varchar2(16);
+   l_end_time              date;
+   l_flow_factor           binary_double;
+   l_flow_offset           binary_double;
+   l_flow_unit             varchar2(16);
+   l_max_item_count        integer;
+   l_new_discharge         binary_double;
+   l_new_q_override        binary_double;
+   l_office_id             varchar2(16);
+   l_old_discharge         binary_double;
+   l_old_q_override        binary_double;
+   l_proj_base_location_id varchar2(24);
+   l_proj_loc_code         number(10);
+   l_proj_sub_location_id  varchar2(32);
+   l_project               project_obj_t;
+   l_protected             varchar2(1);
+   l_real_power            binary_double;
+   l_reason_active         varchar2(1);
+   l_reason_display        varchar2(25);
+   l_reason_tooltip        varchar2(255);
+   l_scheduled_load        binary_double;
+   l_setting_count         binary_integer := 0;
+   l_settings_crsr         sys_refcursor;
+   l_start_time            date;
+   l_time_zone             varchar2(28);
+   l_turb_base_location_id varchar2(24);
+   l_turb_sub_location_id  varchar2(32);
+   l_turbine_changes       turbine_change_tab_t;
+   l_turbine_settings      turbine_setting_tab_t;
+   l_unit_system           varchar2(2);
 begin
    -------------------
    -- sanity checks --
@@ -856,7 +890,7 @@ begin
       cwms_err.raise('NULL_ARGUMENT', 'p_start_time');
    end if;
    if p_end_time is null then
-      cwms_err.raise('NULL_ARGUMENT', 'p_end_time');    
+         cwms_err.raise('NULL_ARGUMENT', 'p_end_time');
    end if;
    if p_max_item_count = 0 then
       cwms_err.raise(
@@ -876,32 +910,32 @@ begin
       p_project_location.get_office_id);
    -------------------------
    -- get the unit system --
-   -------------------------      
-   l_unit_system := 
+   -------------------------
+   l_unit_system :=
       upper(
          substr(
             nvl(
-               p_unit_system, 
+               p_unit_system,
                cwms_properties.get_property(
-                  'Pref_User.'||cwms_util.get_user_id, 
-                  'Unit_System', 
+                  'Pref_User.'||cwms_util.get_user_id,
+                  'Unit_System',
                   cwms_properties.get_property(
                      'Pref_Office',
                      'Unit_System',
                      'SI',
-                     p_project_location.get_office_id), 
+                     p_project_location.get_office_id),
                   p_project_location.get_office_id)),
             1, 2));
    ---------------------------------
    -- get the start and end times --
    ---------------------------------
-   l_proj_loc_code := p_project_location.get_location_code;            
-   l_time_zone := nvl(p_time_zone, cwms_loc.get_local_timezone(l_proj_loc_code));
-   l_start_time := cwms_util.change_timezone(p_start_time, l_time_zone, 'UTC');
-   l_end_time   := cwms_util.change_timezone(p_end_time,   l_time_zone, 'UTC');
+   l_proj_loc_code := p_project_location.get_location_code;
+   l_time_zone     := nvl(p_time_zone, cwms_loc.get_local_timezone(l_proj_loc_code));
+   l_start_time    := cwms_util.change_timezone(p_start_time, l_time_zone, 'UTC');
+   l_end_time      := cwms_util.change_timezone(p_end_time,   l_time_zone, 'UTC');
    if not cwms_util.is_true(p_start_time_inclusive) then
       l_start_time := l_start_time + c_one_second;
-   end if;        
+   end if;
    if not cwms_util.is_true(p_end_time_inclusive) then
       l_end_time := l_end_time - c_one_second;
    end if;
@@ -947,11 +981,11 @@ begin
    -- build the out variable --
    ----------------------------
    if l_turbine_changes is not null and l_turbine_changes.count > 0 then
-      cwms_display.retrieve_unit(l_flow_unit, 'Flow', l_unit_system, p_project_location.get_office_id);
-      cwms_display.retrieve_unit(l_elev_unit, 'Elev', l_unit_system, p_project_location.get_office_id);
-      l_db_elev_unit := cwms_util.get_default_units('Elev');
-      l_db_flow_unit := cwms_util.get_default_units('Flow');
-      l_db_power_unit := cwms_util.get_default_units('Power');
+   cwms_display.retrieve_unit(l_flow_unit, 'Flow', l_unit_system, p_project_location.get_office_id);
+   cwms_display.retrieve_unit(l_elev_unit, 'Elev', l_unit_system, p_project_location.get_office_id);
+   l_db_elev_unit  := cwms_util.get_default_units('Elev');
+   l_db_flow_unit  := cwms_util.get_default_units('Flow');
+   l_db_power_unit := cwms_util.get_default_units('Power');
       p_turbine_changes := turbine_change_tab_t();
       p_turbine_changes.extend(l_turbine_changes.count);
       for i in 1..l_turbine_changes.count loop
@@ -1013,7 +1047,7 @@ begin
            into l_turbine_settings
            from at_turbine_setting
           where turbine_change_code = l_turbine_changes(i).turbine_change_code;
-          
+      
          if l_turbine_settings is not null and l_turbine_settings.count > 0 then
             p_turbine_changes(i).settings := turbine_setting_tab_t();
             p_turbine_changes(i).settings.extend(l_turbine_settings.count);
@@ -1028,14 +1062,14 @@ begin
                      l_turbine_settings(j).new_discharge, 
                      l_db_flow_unit, 
                      l_flow_unit),
-                  l_flow_unit,
+            l_flow_unit,
                   l_turbine_settings(j).real_power,
                   l_turbine_settings(j).scheduled_load,
-                  l_db_power_unit);                  
-            end loop;
+            l_db_power_unit);
+      end loop;
          end if;          
                                  
-      end loop;
+   end loop;
    end if;
 end retrieve_turbine_changes;
 --------------------------------------------------------------------------------
