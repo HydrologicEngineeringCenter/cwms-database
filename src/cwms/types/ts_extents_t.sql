@@ -62,11 +62,6 @@ as object (
    greatest_accepted_value_entry timestamp,     
    last_update                   timestamp,
    /**
-    * Null constructor. Initializes all attributes to null
-    */
-   constructor function ts_extents_t
-      return self as result,
-   /**
     * Constructor from AT_TS_EXTENTS row
     *
     * @param p_rowid The rowid in AT_TS_EXTENTS to construct from

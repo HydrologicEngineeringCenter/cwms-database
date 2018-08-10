@@ -1198,6 +1198,16 @@ AS
       v2 in binary_double)
       return varchar2;
 
+   -- not documented
+   procedure update_ts_extents(
+      p_ts_code      in integer default null,
+      p_version_date in date default null);
+
+   -- not documented
+   procedure start_update_ts_extents_job;
+
+   -- not documented
+   procedure start_immediate_upd_tsx_job;
    /**
     * Stores time series data to the database
     *
@@ -2621,7 +2631,7 @@ AS
     *
     * @param p_ts_code          The unique numeric code identifying the time series
     * @param p_version_date_utc The version date of the time series in UTC
-    * @param p_year             The optional year to search in; entering this year will speed the query by searching additional tsv tables
+    * @param p_year             The optional year to search in; entering this year will speed the query by not searching additional tsv tables
     *
     * PL/SQL usage to obtain the max date in the current year
     * CWMS_TS.GET_TS_MAX_DATE_UTC_2(p_ts_code
@@ -2795,8 +2805,272 @@ AS
       p_cwms_ts_id     IN     VARCHAR2,
       p_time_zone      IN     VARCHAR2 DEFAULT 'UTC',
       p_version_date   IN     DATE DEFAULT cwms_util.non_versioned,
-      p_office_id      IN     VARCHAR2 DEFAULT NULL);
-
+      p_office_id      in     varchar2 default null);
+   /**
+    * Retrieves UTC time and value extents for a specified time series and version date in specified units
+    *
+    * @param p_ts_extents   The time series extents
+    * @param p_cwms_ts_id   The time series identifier
+    * @param p_version_date The version date. If null, the non-versioned date '1111-11-11 00:00:00' is used
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    * @param p_office_id    The office that owns the time series. If unspecified or null the current session user's default office is used
+    *
+    * @see type ts_extents_t
+    */
+   procedure get_ts_extents(
+      p_ts_extents   out ts_extents_t,
+      p_cwms_ts_id   in  varchar2,
+      p_version_date in  date,
+      p_unit         in  varchar2 default null, 
+      p_office_id    in  varchar2 default null);
+   /**
+    * Retrieves UTC time and value extents for a specified time series and version date in specified units
+    *
+    * @param p_cwms_ts_id   The time series identifier
+    * @param p_version_date The version date. If null, the non-versioned date '1111-11-11 00:00:00' is used
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    * @param p_office_id    The office that owns the time series. If unspecified or null the current session user's default office is used
+    *
+    * @return The time series extents
+    *
+    * @see type ts_extents_t
+    */
+   function get_ts_extents_f(
+      p_cwms_ts_id   in varchar2,
+      p_version_date in date,
+      p_unit         in varchar2 default null,
+      p_office_id    in varchar2 default null)
+      return ts_extents_t;
+   /**
+    * Retrieves UTC time and value extents for a specified time series and version date in specified units
+    *
+    * @param p_ts_extents   The time series extents
+    * @param p_ts_code      The unique numeric value identifying the time series
+    * @param p_version_date The version date. If null, the non-versioned date '1111-11-11 00:00:00' is used
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    *
+    * @see type ts_extents_t
+    */
+   procedure get_ts_extents(
+      p_ts_extents   out ts_extents_t,
+      p_ts_code      in  integer,
+      p_version_date in  date,
+      p_unit         in  varchar2 default null);
+   /**
+    * Retrieves UTC time and value extents for a specified time series and version date in specified units
+    *
+    * @param p_ts_code      The unique numeric value identifying the time series
+    * @param p_version_date The version date. If null, the non-versioned date '1111-11-11 00:00:00' is used
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    *
+    * @return The time series extents
+    *
+    * @see type ts_extents_t
+    */
+   function get_ts_extents_f(
+      p_ts_code      in integer,
+      p_version_date in date,
+      p_unit         in varchar2 default null)
+      return ts_extents_t;
+   /**
+    * Retrieves UTC time and value extents for all version dates of a specified time series in specified units
+    *
+    * @param p_ts_extents   The time series extents
+    * @param p_cwms_ts_id   The time series identifier
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    * @param p_office_id    The office that owns the time series. If unspecified or null the current session user's default office is used
+    *
+    * @see type ts_extents_tab_t
+    */
+   procedure get_ts_extents(
+      p_ts_extents out ts_extents_tab_t,
+      p_cwms_ts_id in  varchar2,
+      p_unit       in  varchar2 default null,
+      p_office_id  in  varchar2 default null);
+   /**
+    * Retrieves UTC time and value extents for all version dates of a specified time series in specified units
+    *
+    * @param p_cwms_ts_id   The time series identifier
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    * @param p_office_id    The office that owns the time series. If unspecified or null the current session user's default office is used
+    *
+    * @return The time series extents
+    *
+    * @see type ts_extents_tab_t
+    */
+   function get_ts_extents_f(
+      p_cwms_ts_id in varchar2,
+      p_unit       in varchar2 default null,
+      p_office_id  in varchar2 default null)
+      return ts_extents_tab_t;
+   /**
+    * Retrieves UTC time and value extents for all version dates of a specified time series in specified units
+    *
+    * @param p_ts_extents   The time series extents
+    * @param p_ts_code      The unique numeric value identifying the time series
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    *
+    * @see type ts_extents_tab_t
+    */
+   procedure get_ts_extents(
+      p_ts_extents out ts_extents_tab_t,
+      p_ts_code    in  integer,
+      p_unit       in  varchar2 default null);
+   /**
+    * Retrieves UTC time and value extents for all version dates of a specified time series in specified units
+    *
+    * @param p_ts_code      The unique numeric value identifying the time series
+    * @param p_version_date The version date. If null, the non-versioned date '1111-11-11 00:00:00' is used
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    *
+    * @return The time series extents
+    *
+    * @see type ts_extents_tab_t
+    */
+   function get_ts_extents_f(
+      p_ts_code in integer,
+      p_unit    in varchar2 default null)
+      return ts_extents_tab_t;
+   /**
+    * Retrieves time and value extents for a specified time series and version date in specified time zone and units
+    *
+    * @param p_ts_extents   The time series extents
+    * @param p_cwms_ts_id   The time series identifier
+    * @param p_version_date The version date. If null, the non-versioned date '1111-11-11 00:00:00' is used
+    * @param p_time_zone    The time zone for the time extents. If null, the location's local time zone is used
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    * @param p_office_id    The office that owns the time series. If unspecified or null the current session user's default office is used
+    *
+    * @see type ts_extents_t
+    */
+   procedure get_ts_extents(
+      p_ts_extents   out ts_extents_t,
+      p_cwms_ts_id   in  varchar2,
+      p_version_date in  date,
+      p_time_zone    in  varchar2,
+      p_unit         in  varchar2 default null,
+      p_office_id    in  varchar2 default null);
+   /**
+    * Retrieves time and value extents for a specified time series and version date in specified time zone and units
+    *
+    * @param p_cwms_ts_id   The time series identifier
+    * @param p_version_date The version date. If null, the non-versioned date '1111-11-11 00:00:00' is used
+    * @param p_time_zone    The time zone for the time extents. If null, the location's local time zone is used
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    * @param p_office_id    The office that owns the time series. If unspecified or null the current session user's default office is used
+    *
+    * @return The time series extents
+    *
+    * @see type ts_extents_t
+    */
+   function get_ts_extents_f(
+      p_cwms_ts_id   in varchar2,
+      p_version_date in date,
+      p_time_zone    in varchar2,
+      p_unit         in varchar2 default null,
+      p_office_id    in varchar2 default null)
+      return ts_extents_t;
+   /**
+    * Retrieves time and value extents for a specified time series and version date in specified time zone and units
+    *
+    * @param p_ts_extents   The time series extents
+    * @param p_ts_code      The unique nummeric value identifying the time series
+    * @param p_version_date The version date. If null, the non-versioned date '1111-11-11 00:00:00' is used
+    * @param p_time_zone    The time zone for the time extents. If null, the location's local time zone is used
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    *
+    * @see type ts_extents_t
+    */
+   procedure get_ts_extents(
+      p_ts_extents   out ts_extents_t,
+      p_ts_code      in  integer,
+      p_version_date in  date,
+      p_time_zone    in  varchar2,
+      p_unit         in  varchar2 default null);
+   /**
+    * Retrieves time and value extents for a specified time series and version date in specified time zone and units
+    *
+    * @param p_ts_code      The unique nummeric value identifying the time series
+    * @param p_version_date The version date. If null, the non-versioned date '1111-11-11 00:00:00' is used
+    * @param p_time_zone    The time zone for the time extents. If null, the location's local time zone is used
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    *
+    * @return The time series extents
+    *
+    * @see type ts_extents_t
+    */
+   function get_ts_extents_f(
+      p_ts_code      in integer,
+      p_version_date in date,
+      p_time_zone    in varchar2,
+      p_unit         in varchar2 default null)
+      return ts_extents_t;
+   /**
+    * Retrieves time and value extents for a all version dates of a specified time series in specified time zone and units
+    *
+    * @param p_ts_extents   The time series extents
+    * @param p_cwms_ts_id   The time series identifier
+    * @param p_time_zone    The time zone for the time extents. If null, the location's local time zone is used
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    * @param p_office_id    The office that owns the time series. If unspecified or null the current session user's default office is used
+    *
+    * @see type ts_extents_tab_t
+    */
+   procedure get_ts_extents(
+      p_ts_extents out ts_extents_tab_t,
+      p_cwms_ts_id in  varchar2,
+      p_time_zone  in  varchar2,
+      p_unit       in  varchar2 default null,
+      p_office_id  in  varchar2 default null);
+   /**
+    * Retrieves time and value extents for a all version dates of a specified time series in specified time zone and units
+    *
+    * @param p_cwms_ts_id   The time series identifier
+    * @param p_time_zone    The time zone for the time extents. If null, the location's local time zone is used
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    * @param p_office_id    The office that owns the time series. If unspecified or null the current session user's default office is used
+    *
+    * @return The time series extents
+    *
+    * @see type ts_extents_tab_t
+    */
+   function get_ts_extents_f(
+      p_cwms_ts_id in varchar2,
+      p_time_zone  in varchar2,
+      p_unit       in varchar2 default null,
+      p_office_id  in varchar2 default null)
+      return ts_extents_tab_t;
+   /**
+    * Retrieves time and value extents for a all version dates of a specified time series in specified time zone and units
+    *
+    * @param p_ts_extents   The time series extents
+    * @param p_ts_code      The unique nummeric value identifying the time series
+    * @param p_time_zone    The time zone for the time extents. If null, the location's local time zone is used
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    *
+    * @see type ts_extents_tab_t
+    */
+   procedure get_ts_extents(
+      p_ts_extents out ts_extents_tab_t,
+      p_ts_code    in  integer,
+      p_time_zone  in  varchar2,
+      p_unit       in  varchar2 default null);
+   /**
+    * Retrieves time and value extents for a all version dates of a specified time series in specified time zone and units
+    *
+    * @param p_ts_code      The unique nummeric value identifying the time series
+    * @param p_time_zone    The time zone for the time extents. If null, the location's local time zone is used
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    *
+    * @return The time series extents
+    *
+    * @see type ts_extents_tab_t
+    */
+   function get_ts_extents_f(
+      p_ts_code   in integer,
+      p_time_zone in varchar2,
+      p_unit      in  varchar2 default null)
+      return ts_extents_tab_t;
    /**
     * Retrieves the minimum and maximum values for a time series and a time window
     *

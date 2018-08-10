@@ -34,7 +34,7 @@ begin
 ||' 
  * @field least_value_entry             The time that the least non-null value (in database units) that has been stored for the time series was entered (stored)                                       
  * @field least_accepted_value_si       The least accepted (not missing or rejected) non-null value (in database units) that has been stored for the time series in default SI units                                       
- * @field least_accepted_value_en       The least accepted (not missing or rejected) non-null value (in database units) that has been stored for the time series in default English units
+ * @field least_acceptedvalue_en        The least accepted (not missing or rejected) non-null value (in database units) that has been stored for the time series in default English units
  * @field least_accepted_value_time     The time that the least accepted (not missing or rejected) non-null value (in database units) that has been stored for the time series is for                                                                             
  * @field least_accepted_value_entry    The time that the least accepted (not missing or rejected) non-null value (in database units) that has been stored for the time series was entered (stored)                                                               
  * @field greatest_value_si             The greatest non-null value (in database units) that has been stored for the time series in default SI units                                                                                                                                  
@@ -42,13 +42,12 @@ begin
  * @field greatest_value_time           The time that the greatest non-null value (in database units) that has been stored for the time series is for                                                                                                             
  * @field greatest_value_entry          The time that the greatest non-null value (in database units) that has been stored for the time series was entered (stored)                                                                                               
  * @field greatest_accepted_value_si    The greatest_accepted non-null value (in database units) that has been stored for the time series in default SI units                                                                                                                         
- * @field greatest_accepted_value_en    The greatest_accepted non-null value (in database units) that has been stored for the time series in default English units                                                              
+ * @field greatest_acceptedvalue_en     The greatest_accepted non-null value (in database units) that has been stored for the time series in default English units                                                              
  * @field greatest_accepted_value_time  The time that the greatest accepted (not missing or rejected) non-null value (in database units) that has been stored for the time series is for                                                                          
  * @field greatest_accepted_value_entry The time that the greatest accepted (not missing or rejected) non-null value (in database units) that has been stored for the time series was entered (stored)                                                            
  * @field last_update                   The time that this record was updated
  */
 '; 
-   delete from at_clob where office_code = 53 and id = '/VIEWDOCS/AV_TS_EXTENTS_UTC';
    insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TS_EXTENTS_UTC', null, l_clob);
 end;
 /
@@ -79,7 +78,7 @@ create or replace force view av_ts_extents_utc (
    least_value_time,
    least_value_entry, 
    least_accepted_value_si, 
-   least_accepted_value_en, 
+   least_acceptedvalue_en, 
    least_accepted_value_time, 
    least_accepted_value_entry, 
    greatest_value_si, 
@@ -87,7 +86,7 @@ create or replace force view av_ts_extents_utc (
    greatest_value_time, 
    greatest_value_entry, 
    greatest_accepted_value_si, 
-   greatest_accepted_value_en, 
+   greatest_acceptedvalue_en, 
    greatest_accepted_value_time, 
    greatest_accepted_value_entry, 
    last_update)
@@ -114,21 +113,21 @@ select tsx.ts_code,
        tsx.latest_non_null_time_entry,
        tsx.latest_non_null_entry_time,
        tid.unit_id as si_unit,
-       cwms_util.get_default_units(tid.parameter_id, 'EN') as en_unit,
+       cwms_util.get_default_units(tid.parameter_id, 'English') as en_unit,
        tsx.least_value as least_value_si,
-       cwms_util.convert_units(tsx.least_value, tid.unit_id, cwms_util.get_default_units(tid.parameter_id, 'EN')) as least_value_en, 
+       cwms_util.convert_units(tsx.least_value, tid.unit_id, cwms_util.get_default_units(tid.parameter_id, 'English')) as least_value_en, 
        tsx.least_value_time,
        tsx.least_value_entry,
        tsx.least_accepted_value as least_accepted_value_si,
-       cwms_util.convert_units(tsx.least_accepted_value, tid.unit_id, cwms_util.get_default_units(tid.parameter_id, 'EN')) as least_accepted_value_en, 
+       cwms_util.convert_units(tsx.least_accepted_value, tid.unit_id, cwms_util.get_default_units(tid.parameter_id, 'English')) as least_acceptedvalue_en, 
        tsx.least_accepted_value_time,
        tsx.least_accepted_value_entry,
        tsx.greatest_value as greatest_value_si,
-       cwms_util.convert_units(tsx.greatest_value, tid.unit_id, cwms_util.get_default_units(tid.parameter_id, 'EN')) as greatest_value_en, 
+       cwms_util.convert_units(tsx.greatest_value, tid.unit_id, cwms_util.get_default_units(tid.parameter_id, 'English')) as greatest_value_en, 
        tsx.greatest_value_time,
        tsx.greatest_value_entry,
        tsx.greatest_accepted_value as greatest_accepted_value_si,
-       cwms_util.convert_units(tsx.greatest_accepted_value, tid.unit_id, cwms_util.get_default_units(tid.parameter_id, 'EN')) as greatest_accepted_value_en, 
+       cwms_util.convert_units(tsx.greatest_accepted_value, tid.unit_id, cwms_util.get_default_units(tid.parameter_id, 'English')) as greatest_acceptedvalue_en, 
        tsx.greatest_accepted_value_time,
        tsx.greatest_accepted_value_entry,
        tsx.last_update                  

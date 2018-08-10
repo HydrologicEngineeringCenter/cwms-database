@@ -265,6 +265,8 @@ begin
    cwms_sec.start_refresh_mv_sec_privs_job;
    cwms_sec.start_clean_session_job;
    cwms_shef.start_update_shef_spec_map_job;
+   cwms_ts.start_update_ts_extents_job;
+   cwms_ts.start_immediate_upd_tsx_job;
 end;
 /
 set define on

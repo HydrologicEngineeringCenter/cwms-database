@@ -1,12 +1,5 @@
 create or replace type body ts_extents_t
 as
-   constructor function ts_extents_t
-      return self as result
-   is
-   begin
-      return;
-   end ts_extents_t;
-   
    constructor function ts_extents_t(
       p_rowid in urowid)
       return self as result

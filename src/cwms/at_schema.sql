@@ -6233,3 +6233,4 @@ create index at_queue_subscriber_name_idx1 on at_queue_subscriber_name (queue_na
 @@rowcps_schema.sql
 ---
 
+@@./cwms/tables/at_ts_extents.sql
