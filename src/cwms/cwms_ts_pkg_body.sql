@@ -3663,7 +3663,8 @@ AS
       -------------------------------------------------------
       l_first_time   := trunc(sys_extract_utc(cwms_util.fixup_timezone(p_first_time)),   'mi');
       l_last_time    := trunc(sys_extract_utc(cwms_util.fixup_timezone(p_last_time)),    'mi');
-      l_version_date := trunc(sys_extract_utc(cwms_util.fixup_timezone(p_version_date)), 'mi');
+--    l_version_date := trunc(sys_extract_utc(cwms_util.fixup_timezone(p_version_date)), 'mi');
+      l_version_date := cast(cast(sys_extract_utc(cwms_util.fixup_timezone(p_version_date)) as date) as timestamp); -- trunc to second
       l_store_time   := sys_extract_utc(cwms_util.fixup_timezone(p_store_time));
 
       for i in 1..3 loop
@@ -3949,7 +3950,8 @@ AS
 
       l_location_code := cwms_loc.get_location_code(l_office_code, cwms_Util.split_text(l_cwms_ts_id, 1, '.', 1));
 
-      l_version_date := trunc(NVL(p_version_date, cwms_util.non_versioned), 'mi');
+--    l_version_date := trunc(NVL(p_version_date, cwms_util.non_versioned), 'mi');
+      l_version_date := NVL(p_version_date, cwms_util.non_versioned); -- allow seconds on version date
       if l_version_date = cwms_util.all_version_dates then
          cwms_err.raise('ERROR', 'Cannot use CWMS_UTIL.ALL_VERSION_DATES for storing data.');
       end if;
@@ -5028,7 +5030,7 @@ AS
             --
             dbms_application_info.set_action ('delete/merge from table, override, delete_insert ');
 
-            for x in (select start_date, end_date, table_name`
+            for x in (select start_date, end_date, table_name
                         from at_ts_table_properties
                        where start_date <= maxdate and end_date > mindate
                      )
