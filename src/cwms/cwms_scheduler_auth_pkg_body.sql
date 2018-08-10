@@ -686,7 +686,7 @@ begin
       job_type             => 'stored_procedure',
       job_action           => 'cwms_scheduler_auth.check_scheduler_entries',   
       number_of_arguments  => 0,
-      start_date           => from_tz(trunc(sysdate)+10/24, 'UTC'), -- 10:00 UTC
+      start_date           => trunc(sysdate)+10/24, -- 10:00 UTC
       repeat_interval      => 'freq=daily; interval=1',
       end_date             => null,
       job_class            => 'default_job_class',
