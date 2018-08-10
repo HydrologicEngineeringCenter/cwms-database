@@ -386,7 +386,7 @@ begin
       select structure_type_code
         into l_embankment.structure_type_code
         from at_embank_structure_type
-       where db_office_code = cwms_util.get_office_code(p_embankment.structure_type.office_id) 
+       where db_office_code in (cwms_util.db_office_code_all, cwms_util.get_office_code(p_embankment.structure_type.office_id)) 
          and upper(structure_type_display_value) = upper(p_embankment.structure_type.display_value); 
    exception
       when no_data_found then
@@ -406,7 +406,7 @@ begin
       select protection_type_code
         into l_embankment.upstream_prot_type_code
         from at_embank_protection_type
-       where db_office_code = cwms_util.get_office_code(p_embankment.upstream_prot_type.office_id)
+       where db_office_code in (cwms_util.db_office_code_all, cwms_util.get_office_code(p_embankment.upstream_prot_type.office_id))
          and upper(protection_type_display_value) = upper(p_embankment.upstream_prot_type.display_value); 
    exception
       when no_data_found then
@@ -427,7 +427,7 @@ begin
       select protection_type_code
         into l_embankment.downstream_prot_type_code
         from at_embank_protection_type
-       where db_office_code = cwms_util.get_office_code(p_embankment.downstream_prot_type.office_id)
+       where db_office_code in (cwms_util.db_office_code_all, cwms_util.get_office_code(p_embankment.downstream_prot_type.office_id))
          and upper(protection_type_display_value) = upper(p_embankment.downstream_prot_type.display_value); 
    exception
       when no_data_found then
@@ -654,7 +654,7 @@ begin
    for rec in (
       select * 
         from at_embank_structure_type
-       where db_office_code = cwms_util.get_office_code(l_db_office_id))
+       where db_office_code in (cwms_util.db_office_code_all, cwms_util.get_office_code(l_db_office_id)))
    loop
       p_lookup_type_tab.extend;
       p_lookup_type_tab(p_lookup_type_tab.count) := lookup_type_obj_t(
@@ -707,7 +707,7 @@ begin
       select *
         into l_rec
         from at_embank_structure_type
-       where db_office_code = l_office_code
+       where db_office_code in (cwms_util.db_office_code_all, l_office_code)
          and structure_type_display_value = p_lookup_type.display_value;
       if cwms_util.is_true(p_fail_if_exists) then
          cwms_err.raise(
@@ -768,7 +768,7 @@ begin
    for rec in (
       select * 
         from at_embank_protection_type
-       where db_office_code = cwms_util.get_office_code(l_db_office_id))
+       where db_office_code in(cwms_util.db_office_code_all, cwms_util.get_office_code(l_db_office_id)))
    loop
       p_lookup_type_tab.extend;
       p_lookup_type_tab(p_lookup_type_tab.count) := lookup_type_obj_t(

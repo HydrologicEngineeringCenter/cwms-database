@@ -830,7 +830,7 @@ begin
           select discharge_comp_code
             into l_change_rec.discharge_computation_code
             from at_gate_ch_computation_code
-           where db_office_code                  = l_office_code
+           where db_office_code in (cwms_util.db_office_code_all, l_office_code)
          and upper(discharge_comp_display_value) = upper(p_gate_changes(i) .discharge_computation.display_value)
          and upper(discharge_comp_tooltip)       = upper(p_gate_changes(i) .discharge_computation.tooltip)
          and discharge_comp_active               = upper(p_gate_changes(i) .discharge_computation.active) ;
@@ -842,7 +842,7 @@ begin
           select release_reason_code
             into l_change_rec.release_reason_code
             from at_gate_release_reason_code
-           where db_office_code                  = l_office_code
+           where db_office_code  in (cwms_util.db_office_code_all, l_office_code)
          and upper(release_reason_display_value) = upper(p_gate_changes(i) .release_reason.display_value)
          and upper(release_reason_tooltip)       = upper(p_gate_changes(i) .release_reason.tooltip)
          and release_reason_active               = upper(p_gate_changes(i) .release_reason.active) ;
@@ -913,14 +913,14 @@ begin
        select discharge_comp_code
          into l_change_rec.discharge_computation_code
          from at_gate_ch_computation_code
-        where db_office_code                  = l_office_code
+        where db_office_code in (cwms_util.db_office_code_all, l_office_code)
       and upper(discharge_comp_display_value) = upper(p_gate_changes(i) .discharge_computation.display_value)
       and upper(discharge_comp_tooltip)       = upper(p_gate_changes(i) .discharge_computation.tooltip)
       and discharge_comp_active               = upper(p_gate_changes(i) .discharge_computation.active) ;
        select release_reason_code
          into l_change_rec.release_reason_code
          from at_gate_release_reason_code
-        where db_office_code                  = l_office_code
+        where db_office_code in (cwms_util.db_office_code_all, l_office_code)
       and upper(release_reason_display_value) = upper(p_gate_changes(i) .release_reason.display_value)
       and upper(release_reason_tooltip)       = upper(p_gate_changes(i) .release_reason.tooltip)
       and release_reason_active               = upper(p_gate_changes(i) .release_reason.active) ;

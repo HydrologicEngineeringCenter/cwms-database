@@ -610,7 +610,7 @@ begin
          select turbine_comp_code
            into l_change_rec.turbine_discharge_comp_code
            from at_turbine_computation_code
-          where db_office_code = l_office_code
+          where db_office_code in (cwms_util.db_office_code_all, l_office_code)
             and upper(turbine_comp_display_value) = upper(p_turbine_changes(i).discharge_computation.display_value)
             and upper(turbine_comp_tooltip) = upper(p_turbine_changes(i).discharge_computation.tooltip)
             and turbine_comp_active = upper(p_turbine_changes(i).discharge_computation.active); 
@@ -631,7 +631,7 @@ begin
          select turb_set_reason_code
            into l_change_rec.turbine_setting_reason_code
            from at_turbine_setting_reason
-          where db_office_code = l_office_code
+          where db_office_code in (cwms_util.db_office_code_all, l_office_code)
             and upper(turb_set_reason_display_value) = upper(p_turbine_changes(i).setting_reason.display_value)
             and upper(turb_set_reason_tooltip) = upper(p_turbine_changes(i).setting_reason.tooltip)
             and turb_set_reason_active = upper(p_turbine_changes(i).setting_reason.active); 
@@ -729,14 +729,14 @@ begin
       select turbine_comp_code
         into l_change_rec.turbine_discharge_comp_code
         from at_turbine_computation_code
-       where db_office_code = l_office_code
+       where db_office_code in (cwms_util.db_office_code_all, l_office_code)
          and upper(turbine_comp_display_value) = upper(p_turbine_changes(i).discharge_computation.display_value)
          and upper(turbine_comp_tooltip) = upper(p_turbine_changes(i).discharge_computation.tooltip)
          and turbine_comp_active = upper(p_turbine_changes(i).discharge_computation.active); 
       select turb_set_reason_code
         into l_change_rec.turbine_setting_reason_code
         from at_turbine_setting_reason
-       where db_office_code = l_office_code
+       where db_office_code in (cwms_util.db_office_code_all, l_office_code)
          and upper(turb_set_reason_display_value) = upper(p_turbine_changes(i).setting_reason.display_value)
          and upper(turb_set_reason_tooltip) = upper(p_turbine_changes(i).setting_reason.tooltip)
          and turb_set_reason_active = upper(p_turbine_changes(i).setting_reason.active); 
