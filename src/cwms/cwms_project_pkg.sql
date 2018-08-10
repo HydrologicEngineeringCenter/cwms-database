@@ -22,7 +22,7 @@ IS
 --    elevation                number         location elevation
 --    elev_unit_id             varchar2(16)   location elevation units
 --    vertical_datum           varchar2(16)   veritcal datum of elevation
---    public_name              varchar2(32)   location public name
+--    public_name              varchar2(57)   location public name
 --    long_name                varchar2(80)   location long name
 --    description              varchar2(512)  location description
 --    active_flag              varchar2(1)    'T' if active, else 'F'
@@ -86,7 +86,7 @@ IS
 --   8 elevation                number         location elevation
 --   9 elev_unit_id             varchar2(16)   location elevation units
 --   0 vertical_datum           varchar2(16)   veritcal datum of elevation
---   1 public_name              varchar2(32)   location public name
+--   1 public_name              varchar2(57)   location public name
 --   2 long_name                varchar2(80)   location long name
 --   3 description              varchar2(512)  location description
 --   4 active_flag              varchar2(1)    'T' if active, else 'F'
@@ -111,7 +111,7 @@ IS
  *   <tr>
  *     <td class="descr-center">11</td>
  *     <td class="descr">public_name</td>
- *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The public name of the project location</td>
  *   </tr>
  *   <tr>
