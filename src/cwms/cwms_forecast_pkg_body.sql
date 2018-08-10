@@ -306,12 +306,12 @@ procedure cat_specs(
    p_source_loc_id_mask in  varchar2 default '*',
    p_office_id_mask     in  varchar2 default null) -- null = user's office id
 is
-   l_location_id_mask   varchar2(49);
+   l_location_id_mask   varchar2(57);
    l_forecast_id_mask   varchar2(32);
    l_source_agency_mask varchar2(16);
    l_source_office_mask varchar2(16);
    l_forecast_type_mask varchar2(5);
-   l_source_loc_id_mask varchar2(49);
+   l_source_loc_id_mask varchar2(57);
    l_office_id_mask     varchar2(16);
 begin
    ----------------------
@@ -790,7 +790,7 @@ procedure cat_ts(
    p_time_zone       in  varchar2 default null, -- null = location time zone
    p_office_id       in  varchar2 default null) -- null = user's office id   
 is
-   l_cwms_ts_id_mask varchar2(183);
+   l_cwms_ts_id_mask varchar2(191);
    l_time_zone       varchar2(28);
 begin
    -------------------------
@@ -1350,7 +1350,7 @@ is
       office_id      varchar2(16),
       forecast_date  date,          
       issue_date     date,         
-      cwms_ts_id     varchar2(183),
+      cwms_ts_id     varchar2(191),
       version_date   date,
       min_time       date,
       max_time       date,
@@ -1494,7 +1494,7 @@ is
       office_id      varchar2(16),
       forecast_date  date,
       issue_date     date,
-      cwms_ts_id     varchar2(183),
+      cwms_ts_id     varchar2(191),
       version_date   date,
       min_date       date,
       max_date       date,
