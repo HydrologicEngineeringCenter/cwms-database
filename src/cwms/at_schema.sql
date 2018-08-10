@@ -1257,7 +1257,8 @@ CREATE TABLE at_cwms_ts_spec
   migrate_ver_flag     VARCHAR2(1 BYTE),
   active_flag          VARCHAR2(1 BYTE),
   delete_date          TIMESTAMP(9),
-  data_source          VARCHAR2(16 BYTE)
+  data_source          VARCHAR2(16 BYTE),
+  historic_flag        VARCHAR2(1 BYTE)         DEFAULT 'F'
 )
 TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
@@ -1289,6 +1290,7 @@ COMMENT ON COLUMN at_cwms_ts_spec.ts_code IS 'Unique record identifier, primaril
 COMMENT ON COLUMN at_cwms_ts_spec.location_code IS 'Primary key of AT_PHYSICAL_LOCATION table.';
 COMMENT ON COLUMN at_cwms_ts_spec.parameter_code IS 'Primary key of AT_PARAMETER table.  Must already exist in the AT_PARAMETER table.';
 COMMENT ON COLUMN at_cwms_ts_spec.parameter_type_code IS 'Primary key of CWMS_PARAMETER_TYPE table.  Must already exist in the CWMS_PARAMETER_TYPE table.';
+COMMENT ON COLUMN at_cwms_ts_spec.historic_flag IS 'T or F specifying whether this time series is part of the historic record';
 
 CREATE UNIQUE INDEX at_cwms_ts_spec_ui ON at_cwms_ts_spec
 (location_code, parameter_type_code, parameter_code, interval_code,
@@ -1337,6 +1339,10 @@ ALTER TABLE at_cwms_ts_spec ADD (
 ALTER TABLE at_cwms_ts_spec ADD (
   CONSTRAINT at_cwms_ts_spec_ck_5
  CHECK (active_flag ='T' OR active_flag = 'F'))
+/
+ALTER TABLE at_cwms_ts_spec ADD (
+  CONSTRAINT at_cwms_ts_spec_ck_6
+ CHECK (historic_flag ='T' OR historic_flag = 'F'))
 /
 ALTER TABLE at_cwms_ts_spec ADD (
   CONSTRAINT at_cwms_ts_spec_pk

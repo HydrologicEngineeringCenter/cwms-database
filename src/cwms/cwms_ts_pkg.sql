@@ -3396,6 +3396,49 @@ AS
    function get_filter_duplicates(
       p_ts_code in integer)
       return varchar2;
+   /**
+    * Marks a time serires as part of the historic record or not
+    *
+    * @param p_ts_id       The time series identifier to set the historic flag for
+    * @param p_is_historic A flag (T/F) specifying whether the time series is part of the hitoric record. If unspecified or NULL, the flag will be set to 'T'
+    * @param p_office_id   The office that owns the time series. If unspecified or NULL, the current session user's default office is used.
+    */
+   procedure set_historic(
+      p_ts_id       in varchar2,
+      p_is_historic in varchar2 default 'T',
+      p_office_id   in varchar2 default null);
+   /**
+    * Marks a time serires as part of the historic record or not
+    *
+    * @param p_ts_code     The unique numeric code of the time series to set the historic flag for
+    * @param p_is_historic A flag (T/F) specifying whether the time series is part of the hitoric record. If unspecified or NULL, the flag will be set to 'T'
+    */
+   procedure set_historic(
+      p_ts_code     in integer,
+      p_is_historic in varchar2 default 'T');
+   /**
+    * Returns whether a time serires as part of the historic record or not
+    *
+    * @param p_ts_id       The time series identifier to return the historic flag for
+    * @param p_office_id   The office that owns the time series. If unspecified or NULL, the current session user's default office is used.
+    *
+    * @return A flag (T/F) specifying whether the time series is part of the hitoric record ('T'/'F')
+    */
+   function is_historic(
+      p_ts_id       in varchar2,
+      p_office_id   in varchar2 default null)
+      return varchar2;
+   /**
+    * Returns whether a time serires as part of the historic record or not
+    *
+    * @param p_ts_code The unique numeric code of the time series to return the historic flag for
+    *
+    * @return A flag (T/F) specifying whether the time series is part of the hitoric record ('T'/'F')
+    */
+   function is_historic(
+      p_ts_code     in integer,
+      p_office_id   in varchar2 default null)
+      return varchar2;
                            
    /**
     * Retreives time series in a number of formats for a combination time window, timezone, formats, and vertical datums

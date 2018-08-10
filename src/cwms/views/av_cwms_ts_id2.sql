@@ -43,6 +43,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_CWMS_TS_ID2', nu
  * @field loc_alias_group     The location group for the location alias if aliased_item is ''LOCATION'' or ''BASE LOCATION''              
  * @field ts_alias_category   The time series category for the time series alias if aliased_item is ''TIME SERIES''  
  * @field ts_alias_group      The time series group for the time series alias if aliased_item is ''TIME SERIES''              
+ * @field historic_flag       Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code>) specifying whether the time series is part of the hitoric record
 */
 ');
 
@@ -78,7 +79,8 @@ CREATE OR REPLACE FORCE VIEW av_cwms_ts_id2
     loc_alias_category,
     loc_alias_group,
     ts_alias_category,
-    ts_alias_group
+    ts_alias_group,
+    historic_flag
 )
 AS
    select db_office_id,
@@ -111,7 +113,8 @@ AS
           null as loc_alias_category,
           null as loc_alias_group,
           null as ts_alias_category,
-          null as ts_alias_group
+          null as ts_alias_group,
+          historic_flag
      from at_cwms_ts_id
    union all  
    select ts.db_office_id,
@@ -144,7 +147,8 @@ AS
           lc.loc_category_id as loc_alias_category,
           lg.loc_group_id as loc_alias_group,
           null as ts_alias_category,
-          null as ts_alias_group
+          null as ts_alias_group,
+          ts.historic_flag
      from at_cwms_ts_id ts,
           at_loc_group_assignment lga,
           at_loc_group lg,
@@ -184,7 +188,8 @@ AS
           lc.loc_category_id as loc_alias_category,
           lg.loc_group_id as loc_alias_group,
           null as ts_alias_category,
-          null as ts_alias_group
+          null as ts_alias_group,
+          ts.historic_flag
      from at_cwms_ts_id ts,
           at_loc_group_assignment lga,
           at_loc_group lg,
@@ -225,7 +230,8 @@ AS
           null as loc_alias_category,
           null as loc_alias_group,
           tsc.ts_category_id as ts_alias_category,
-          tsg.ts_group_id as ts_alias_group
+          tsg.ts_group_id as ts_alias_group,
+          ts.historic_flag
      from at_cwms_ts_id ts,
           at_ts_group_assignment tsga,
           at_ts_group tsg,

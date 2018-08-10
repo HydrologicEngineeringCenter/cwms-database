@@ -11078,6 +11078,45 @@ end retrieve_existing_item_counts;
       end if;
       return nvl(l_prop_val, 'F');
    end get_filter_duplicates;
+      
+   procedure set_historic(
+      p_ts_id       in varchar2,
+      p_is_historic in varchar2 default 'T',
+      p_office_id   in varchar2 default null)
+   is
+   begin
+      set_historic(get_ts_code(p_ts_id, p_office_id), p_is_historic);
+   end set_historic;
+      
+   procedure set_historic(
+      p_ts_code     in integer,
+      p_is_historic in varchar2 default 'T')
+   is
+   begin
+      update at_cwms_ts_spec
+         set historic_flag = nvl(upper(p_is_historic), 'T')
+       where ts_code = p_ts_code;  
+   end set_historic;
+      
+   function is_historic(
+      p_ts_id       in varchar2,
+      p_office_id   in varchar2 default null)
+      return varchar2
+   is
+   begin
+      return is_historic(get_ts_code(p_ts_id, p_office_id));
+   end is_historic;
+      
+   function is_historic(
+      p_ts_code     in integer,
+      p_office_id   in varchar2 default null)
+      return varchar2
+   is
+      l_is_historic varchar2(1);
+   begin
+      select historic_flag into l_is_historic from at_cwms_ts_spec where ts_code = p_ts_code;
+      return l_is_historic;
+   end is_historic;
 
    procedure retrieve_time_series(
       p_results        out clob,
