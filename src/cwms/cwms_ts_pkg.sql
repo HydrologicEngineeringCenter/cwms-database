@@ -10,6 +10,19 @@ CREATE OR REPLACE PACKAGE cwms_ts
  * @since CWMS 2.0
  */
 AS
+   /*
+    * Not documented. Package-specific and session-specific logging properties
+    */
+   v_package_log_prop_text varchar2(30);
+   function package_log_property_text return varchar2;
+   
+   /**
+    * Sets text value of package logging property
+    *
+    * @param p_text The text of the package logging property. If unspecified or NULL, the current session identifier is used.
+    */
+   procedure set_package_log_property_text(
+      p_text in varchar2 default null);
    /**
     * Number of minutes in an hour.
     */
@@ -1170,7 +1183,40 @@ AS
       p_version_date      IN     DATE DEFAULT NULL,
       p_max_version       IN     VARCHAR2 DEFAULT 'T',
       p_office_id         IN     VARCHAR2 DEFAULT NULL);
-
+   /*
+    * Ranks a quality code on a scale of 0 - 3
+    * <p>
+    * <table class="descr">
+    *   <tr>
+    *     <th class="descr">Score</th>
+    *     <th class="descr">Meaning</th>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">0</td>
+    *     <td class="descr">Quality code indicates value is missing or rejected</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">1</td>
+    *     <td class="descr">Quality code indicates value is of unscreened</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">2</td>
+    *     <td class="descr">Quality code indicates value is questionable</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">3</td>
+    *     <td class="descr">Quality code indicates value is okay</td>
+    *   </tr>
+    * </table>
+    *
+    * @param p_quality_code The quality code to score
+    *
+    * @return The computed score of the quality code
+    */
+   function quality_score(
+      p_quality_code in integer)
+      return integer;
+      
    -- not documented, for LRTS
    FUNCTION shift_for_localtime (p_date_time IN DATE, p_tz_name IN VARCHAR2)
       RETURN DATE;

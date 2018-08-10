@@ -7,6 +7,20 @@ CREATE OR REPLACE PACKAGE cwms_util
  * @since CWMS 2.0
  */
 AS
+   /*
+    * Not documented. Package-specific and session-specific logging properties
+    */
+   v_package_log_prop_text varchar2(30);
+   function package_log_property_text return varchar2;
+   
+   /**
+    * Sets text value of package logging property
+    *
+    * @param p_text The text of the package logging property. If unspecified or NULL, the current session identifier is used.
+    */
+   procedure set_package_log_property_text(
+      p_text in varchar2 default null);
+
    /**
     * Beginning of Unix epoch (01Jan1970 00:00:00 UTC) as a <code><big>DATE</big></code>.
     */
@@ -2674,7 +2688,14 @@ AS
    function tab_to_csv(
       p_tab in varchar2)
       return varchar2;
-      
+   /**
+    * Returns the call stack for the current process
+    *
+    * @return A table, each row containing table of name, routine, line_number, all as varchar2;
+    * 
+    */
+   function get_call_stack
+      return str_tab_tab_t;
 END cwms_util;
 /
 

@@ -3415,6 +3415,28 @@ AS
       DBMS_APPLICATION_INFO.set_module (NULL, NULL);
    END retrieve_ts_multi;
 
+   -------------------------------------------------------------------------------
+   -- function QUALITY_SCORE
+   --
+   function quality_score(
+      p_quality_code in integer)
+      return integer
+   is
+      l_score pls_integer;
+   
+   begin
+      return case bitand(p_quality_code, 1)
+             when 0 then 1      -- unscreened
+             else case bitand(p_quality_code / 2, 15)
+                  when 0 then 1 -- unknown
+                  when 1 then 3 -- okay
+                  when 2 then 0 -- missing
+                  when 4 then 2 -- questionable
+                  when 8 then 0 -- rejected
+                  end
+             end;
+   end quality_score;
+   
    --
    --
    --*******************************************************************   --
@@ -13544,6 +13566,21 @@ end retrieve_existing_item_counts;
    
       return l_results;
    end retrieve_time_series_f;
+
+
+   function package_log_property_text 
+      return varchar2
+   is
+   begin
+      return v_package_log_prop_text;
+   end package_log_property_text;
+   
+   procedure set_package_log_property_text(
+      p_text in varchar2 default null)
+   is
+   begin
+      v_package_log_prop_text := nvl(p_text, userenv('sessionid'));
+   end set_package_log_property_text;
 
 END cwms_ts;                                                --end package body
 /

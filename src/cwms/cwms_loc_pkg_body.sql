@@ -10011,6 +10011,21 @@ end unassign_loc_groups;
       return l_results;            
    end retrieve_locations_f;      
    
+
+   function package_log_property_text 
+      return varchar2
+   is
+   begin
+      return v_package_log_prop_text;
+   end package_log_property_text;
+   
+   procedure set_package_log_property_text(
+      p_text in varchar2 default null)
+   is
+   begin
+      v_package_log_prop_text := nvl(p_text, userenv('sessionid'));
+   end set_package_log_property_text;
+   
 END cwms_loc;
 /
 show errors;
