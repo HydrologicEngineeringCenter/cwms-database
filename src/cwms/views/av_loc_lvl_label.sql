@@ -8,7 +8,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_LVL_LABEL', 
  * @field office_id                The identifier for the office that owns the location level
  * @field location_level_id        The full location level identifier
  * @field attribute_id             The full attribute identifier, if any
- * @field configuration_id         The configuration category/identifier
+ * @field configuration_id         The configuration identifier
  * @field attr_value_si            The attribute value, if any, in SI units
  * @field attr_unit_si             The SI unit of the attribute value, if any
  * @field attr_value_en            The attribute value, if any, in English units
@@ -118,7 +118,7 @@ select q1.office_id,
                   ||'.'||pt.parameter_type_id
                   ||'.'||d.duration_id
                   ||'.'||specified_level_id as location_level_id,
-               cf.category_id||'/'||cf.configuration_id as configuration_id,
+               cf.configuration_id,
                label
           from at_loc_lvl_label lll,
                at_physical_location pl,
