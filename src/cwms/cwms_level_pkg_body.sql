@@ -4967,7 +4967,7 @@ procedure delete_location_level(
    p_office_id               in  varchar2 default null)
 is          
 begin
-   delete_location_level_ex(
+   delete_location_level3(
       p_location_level_id,
       p_effective_date,
       p_timezone_id,
@@ -4975,6 +4975,7 @@ begin
       p_attribute_value,
       p_attribute_units,
       p_cascade,
+      'F',
       'F',
       p_office_id);
 end delete_location_level;
@@ -4984,9 +4985,10 @@ procedure delete_location_level(
    p_cascade             in  varchar2 default 'F')
 is
 begin
-   delete_location_level_ex(
+   delete_location_level3(
       p_location_level_code,
       p_cascade,
+      'F',
       'F');
 end delete_location_level;   
 
@@ -5002,7 +5004,43 @@ procedure delete_location_level_ex(
    p_office_id               in  varchar2 default null)
 is
 begin
-   delete_location_level_ex2(
+   delete_location_level2(
+      p_location_level_id  => p_location_level_id,
+      p_effective_date     => p_effective_date,
+      p_timezone_id        => p_timezone_id,
+      p_attribute_id       => p_attribute_id,
+      p_attribute_value    => p_attribute_value,
+      p_attribute_units    => p_attribute_units,
+      p_cascade            => p_cascade,
+      p_delete_indicators  => p_delete_indicators,
+      p_office_id          => p_office_id);         
+end delete_location_level_ex;
+
+procedure delete_location_level_ex(
+   p_location_level_code in integer,
+   p_cascade             in  varchar2 default 'F',
+   p_delete_indicators   in  varchar2 default 'F')
+is
+begin
+   delete_location_level2(
+      p_location_level_code => p_location_level_code,
+      p_cascade             => p_cascade,            
+      p_delete_indicators   => p_delete_indicators);
+end delete_location_level_ex;
+
+procedure delete_location_level2(
+   p_location_level_id       in  varchar2,
+   p_effective_date          in  date     default null,
+   p_timezone_id             in  varchar2 default 'UTC',
+   p_attribute_id            in  varchar2 default null,
+   p_attribute_value         in  number   default null,
+   p_attribute_units         in  varchar2 default null,
+   p_cascade                 in  varchar2 default 'F',
+   p_delete_indicators       in  varchar2 default 'F',
+   p_office_id               in  varchar2 default null)
+is
+begin
+   delete_location_level3(
       p_location_level_id  => p_location_level_id,
       p_effective_date     => p_effective_date,
       p_timezone_id        => p_timezone_id,
@@ -5013,22 +5051,22 @@ begin
       p_delete_indicators  => p_delete_indicators,
       p_delete_pools       => 'F',
       p_office_id          => p_office_id);         
-end delete_location_level_ex;
+end delete_location_level2;
 
-procedure delete_location_level_ex(
+procedure delete_location_level2(
    p_location_level_code in integer,
    p_cascade             in  varchar2 default 'F',
    p_delete_indicators   in  varchar2 default 'F')
 is
 begin
-   delete_location_level_ex2(
+   delete_location_level3(
       p_location_level_code => p_location_level_code,
       p_cascade             => p_cascade,            
-      p_delete_pools        => 'F',
-      p_delete_indicators   => p_delete_indicators);  
-end delete_location_level_ex;
+      p_delete_indicators   => p_delete_indicators,  
+      p_delete_pools        => 'F');
+end delete_location_level2;
 
-procedure delete_location_level_ex2(
+procedure delete_location_level3(
    p_location_level_id       in  varchar2,
    p_effective_date          in  date     default null,
    p_timezone_id             in  varchar2 default 'UTC',
@@ -5099,14 +5137,14 @@ begin
          || '@' || p_effective_date);
    end if;
           
-   delete_location_level_ex(
+   delete_location_level2(
       l_location_level_code,
       p_cascade,
       p_delete_indicators);
         
-end delete_location_level_ex2;
+end delete_location_level3;
 
-procedure delete_location_level_ex2(
+procedure delete_location_level3(
    p_location_level_code in integer,
    p_cascade             in  varchar2 default 'F',
    p_delete_pools        in  varchar2 default 'F',
@@ -5369,7 +5407,7 @@ begin
    delete
      from at_location_level
     where location_level_code = p_location_level_code;
-end delete_location_level_ex2;   
+end delete_location_level3;   
 
             
 --------------------------------------------------------------------------------
