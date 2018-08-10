@@ -5452,7 +5452,7 @@ begin
       select configuration_code
         into l_configuration_code
         from at_configuration
-       where category_id is null
+       where category_id = 'GENERAL'
          and configuration_id = 'OTHER';
    when l_config_parts.count = 1 then
       select configuration_code
@@ -5560,7 +5560,7 @@ begin
       select configuration_code
         into l_configuration_code
         from at_configuration
-       where category_id is null
+       where category_id = 'GENERAL'
          and configuration_id = 'OTHER';
    when l_config_parts.count = 1 then
       select configuration_code
