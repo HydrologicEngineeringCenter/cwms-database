@@ -250,6 +250,8 @@ begin
 end;
 /
 commit;
+prompt insert CWMS version entry
+@cwms_version
 --------------------------------------
 -- create and start queues and jobs --
 --------------------------------------
