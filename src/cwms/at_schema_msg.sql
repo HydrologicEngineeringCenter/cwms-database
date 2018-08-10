@@ -291,18 +291,12 @@ comment on column at_log_message_properties.prop_text  is 'Property value if pro
 --
 alter table at_log_message_properties add constraint at_log_message_properties_fk1 foreign key (msg_id) references at_log_message (msg_id);
 alter table at_log_message_properties add constraint at_log_message_properties_fk2 foreign key (prop_type) references cwms_log_message_prop_types (prop_type_code);
-alter table at_log_message_properties add constraint at_log_message_properties_pk  primary key (msg_id, prop_name)
-    using index 
-    TABLESPACE CWMS_20AT_DATA
-    pctfree    10
-    initrans   2
-    maxtrans   255
-    storage    (
-                initial          64k
-                minextents       1
-                maxextents       2147483645
-                pctincrease      0
-               );
+alter table at_log_message_properties add constraint at_log_message_properties_pk  primary key (msg_id, prop_name) using index tablespace cwms_20at_data;
+
+-----------------------------
+-- AT_LOG_MESSAGE_PROPERTIES indexes
+--
+create index at_log_message_properties_idx1 on at_log_message_properties (prop_name, nvl(prop_text, prop_value), msg_id) tablespace cwms_20at_data;
 
 show errors;
 commit;

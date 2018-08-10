@@ -9,6 +9,20 @@ create or replace package cwms_rating
  */
 as
 
+/*
+ * Not documented. Package-specific and session-specific logging properties
+ */
+v_package_log_prop_text varchar2(30);
+function package_log_property_text return varchar2;
+
+/**
+ * Sets text value of package logging property
+ *
+ * @param p_text The text of the package logging property. If unspecified or NULL, the current session identifier is used.
+ */
+procedure set_package_log_property_text(
+   p_text in varchar2 default null);
+
 /**
  * Top-level separator. Separates location, parameters, template version, and version
  *
@@ -2936,6 +2950,150 @@ procedure store_ratings_xml(
    p_xml            in clob,
    p_fail_if_exists in varchar2,
    p_replace_base   in varchar2 default 'F');  
+/**
+ * Stores rating templates, rating specifications, and ratings to the database from a single XML instance.
+ *
+ * @param p_errors The list of errors encountered in storing the templates, specifications, or ratings. Sets of are separated by a 
+ * blank line. Each error set includes:
+ * <ul>
+ * <li> A line describing the operation</li>
+ * <li> One or more lines for each error during the operation
+ *      <ul>
+ *      <li>Data errors are occupy a single line</li>
+ *      <li>Oracle exceptions normally occupy multiple lines for the stack trace</li>
+ *      </ul>
+ * </li>
+ * </ul>
+ *
+ * @param p_xml The ratings to store, in XML.  The XML instance must conform to
+ * the <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.xsd">CWMS Ratings XML Schema</a>.
+ *  The specific format is <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.htm#element_ratings">documented here</a>.
+ *
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies if the procedure should
+ * fail if one of the templates, specifications, or ratings already exists.
+ *
+ * @param p_replace_base A flag('T' or 'F') that specifies whether any existing USGS-style stream rating
+ * should be completely replaced even if the base ratings are the same. This flag has no effect on other types of ratings
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Flag</th>
+ *     <th class="descr">Behavior</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr">'T'</td>
+ *     <td class="descr">The existing USGS-style stream rating will be completely replaced with this one, even if the only difference is a new shift</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr">'F'</td>
+ *     <td class="descr">If this rating differs from the existing one only by the existence of a new shift, only the new shift is stored</td>
+ *   </tr>
+ * </table>
+ *  
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the templates,
+ * specifications, or ratings already exists
+ */
+procedure store_ratings_xml(
+   p_errors         out nocopy clob,
+   p_xml            in  xmltype,
+   p_fail_if_exists in  varchar2,
+   p_replace_base   in  varchar2 default 'F');  
+/**
+ * Stores rating templates, rating specifications, and ratings to the database from a single XML instance.
+ *
+ * @param p_errors The list of errors encountered in storing the templates, specifications, or ratings. Sets of are separated by a 
+ * blank line. Each error set includes:
+ * <ul>
+ * <li> A line describing the operation</li>
+ * <li> One or more lines for each error during the operation
+ *      <ul>
+ *      <li>Data errors are occupy a single line</li>
+ *      <li>Oracle exceptions normally occupy multiple lines for the stack trace</li>
+ *      </ul>
+ * </li>
+ * </ul>
+ *
+ * @param p_xml The ratings to store, in XML.  The XML instance must conform to
+ * the <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.xsd">CWMS Ratings XML Schema</a>.
+ *  The specific format is <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.htm#element_ratings">documented here</a>.
+ *
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies if the procedure should
+ * fail if one of the templates, specifications, or ratings already exists.
+ *
+ * @param p_replace_base A flag('T' or 'F') that specifies whether any existing USGS-style stream rating
+ * should be completely replaced even if the base ratings are the same. This flag has no effect on other types of ratings
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Flag</th>
+ *     <th class="descr">Behavior</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr">'T'</td>
+ *     <td class="descr">The existing USGS-style stream rating will be completely replaced with this one, even if the only difference is a new shift</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr">'F'</td>
+ *     <td class="descr">If this rating differs from the existing one only by the existence of a new shift, only the new shift is stored</td>
+ *   </tr>
+ * </table>
+ *  
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the templates,
+ * specifications, or ratings already exists
+ */
+procedure store_ratings_xml(
+   p_errors         out nocopy clob,
+   p_xml            in  varchar2,
+   p_fail_if_exists in  varchar2,
+   p_replace_base   in  varchar2 default 'F');  
+/**
+ * Stores rating templates, rating specifications, and ratings to the database from a single XML instance.
+ *
+ * @param p_errors The list of errors encountered in storing the templates, specifications, or ratings. Sets of are separated by a 
+ * blank line. Each error set includes:
+ * <ul>
+ * <li> A line describing the operation</li>
+ * <li> One or more lines for each error during the operation
+ *      <ul>
+ *      <li>Data errors are occupy a single line</li>
+ *      <li>Oracle exceptions normally occupy multiple lines for the stack trace</li>
+ *      </ul>
+ * </li>
+ * </ul>
+ *
+ * @param p_xml The ratings to store, in XML.  The XML instance must conform to
+ * the <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.xsd">CWMS Ratings XML Schema</a>.
+ *  The specific format is <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.htm#element_ratings">documented here</a>.
+ *
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies if the procedure should
+ * fail if one of the templates, specifications, or ratings already exists.
+ *
+ * @param p_replace_base A flag('T' or 'F') that specifies whether any existing USGS-style stream rating
+ * should be completely replaced even if the base ratings are the same. This flag has no effect on other types of ratings
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Flag</th>
+ *     <th class="descr">Behavior</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr">'T'</td>
+ *     <td class="descr">The existing USGS-style stream rating will be completely replaced with this one, even if the only difference is a new shift</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr">'F'</td>
+ *     <td class="descr">If this rating differs from the existing one only by the existence of a new shift, only the new shift is stored</td>
+ *   </tr>
+ * </table>
+ *  
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the templates,
+ * specifications, or ratings already exists
+ */
+procedure store_ratings_xml(
+   p_errors         out nocopy clob,
+   p_xml            in  clob,
+   p_fail_if_exists in  varchar2,
+   p_replace_base   in  varchar2 default 'F');  
 /**
  * Rates input values with ratings stored in the database.
  *

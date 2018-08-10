@@ -29,6 +29,20 @@ AS
 	l_elev_db_unit 			VARCHAR2 (16) := 'm';
 	l_abstract_elev_param	VARCHAR2 (32) := 'Length';
    --
+   /*
+    * Not documented. Package-specific and session-specific logging properties
+    */
+   v_package_log_prop_text varchar2(30);
+   function package_log_property_text return varchar2;
+   
+   /**
+    * Sets text value of package logging property
+    *
+    * @param p_text The text of the package logging property. If unspecified or NULL, the current session identifier is used.
+    */
+   procedure set_package_log_property_text(
+      p_text in varchar2 default null);
+   
     TYPE cat_loc_kind_rec_t
       IS RECORD (location_kind_id cwms_location_kind.location_kind_id%TYPE);
 

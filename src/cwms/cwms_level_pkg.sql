@@ -10,6 +10,19 @@ CREATE OR REPLACE PACKAGE cwms_level
  * @since CWMS 2.1
  */
 AS
+/*
+ * Not documented. Package-specific and session-specific logging properties
+ */
+v_package_log_prop_text varchar2(30);
+function package_log_property_text return varchar2;
+
+/**
+ * Sets text value of package logging property
+ *
+ * @param p_text The text of the package logging property. If unspecified or NULL, the current session identifier is used.
+ */
+procedure set_package_log_property_text(
+   p_text in varchar2 default null);
 /**
  * Parses an attribute identifier into its components
  *

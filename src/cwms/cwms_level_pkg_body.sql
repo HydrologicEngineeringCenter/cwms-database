@@ -10870,6 +10870,20 @@ begin
 end retrieve_location_levels;   
          
             
-END cwms_level;
+function package_log_property_text 
+   return varchar2
+is
+begin
+   return v_package_log_prop_text;
+end package_log_property_text;
+
+procedure set_package_log_property_text(
+   p_text in varchar2 default null)
+is
+begin
+   v_package_log_prop_text := nvl(p_text, userenv('sessionid'));
+end set_package_log_property_text;
+
+end cwms_level;
 /
 show errors;

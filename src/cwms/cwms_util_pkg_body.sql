@@ -3,7 +3,7 @@ SET DEFINE ON
 
 
 CREATE OR REPLACE PACKAGE BODY cwms_util
-AS
+as
    FUNCTION min_dms (p_decimal_degrees IN NUMBER)
       RETURN NUMBER
    IS
@@ -5456,12 +5456,34 @@ AS
       end loop;
       return l_csv;
    end tab_to_csv;
+   
+   function get_call_stack
+      return str_tab_tab_t
+   is
+      l_call_stack str_tab_tab_t := str_tab_tab_t();
+   begin
+      l_call_stack.extend(utl_call_stack.dynamic_depth);
+      for i in 1..l_call_stack.count loop
+         l_call_stack(i) := str_tab_t(
+            utl_call_stack.concatenate_subprogram(utl_call_stack.subprogram(i)),
+            utl_call_stack.unit_line(i));
+      end loop;
+      return l_call_stack;
+   end get_call_stack;
 
-/*
-BEGIN
- -- anything put here will be executed on every mod_plsql call
-  NULL;
-*/
+   function package_log_property_text 
+      return varchar2
+   is
+   begin
+      return v_package_log_prop_text;
+   end package_log_property_text;
+   
+   procedure set_package_log_property_text(
+      p_text in varchar2 default null)
+   is
+   begin
+      v_package_log_prop_text := nvl(p_text, userenv('sessionid'));
+   end set_package_log_property_text;
 
 END cwms_util;
 /

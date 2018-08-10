@@ -1,7 +1,6 @@
 create or replace package body cwms_rating
 as
 
-
 function get_rating_method_code(
    p_rating_method_id in varchar2)
    return number result_cache
@@ -220,7 +219,6 @@ begin
       l_node := cwms_util.get_xml_node(p_xml, '//rating-template['||i||']');
       exit when l_node is null;
       cwms_msg.log_db_message(
-         'cwms_rating.store_templates',
          cwms_msg.msg_level_detailed,
          'Storing rating template '
          ||cwms_util.get_xml_text(l_node, '/rating-template/@office-id')
@@ -572,7 +570,6 @@ begin
       l_node := cwms_util.get_xml_node(p_xml, '//rating-spec['||i||']');
       exit when l_node is null;
       cwms_msg.log_db_message(
-         'cwms_rating.store_specs',
          cwms_msg.msg_level_detailed,
          'Storing rating specification '
          ||cwms_util.get_xml_text(l_node, '/rating-spec/@office-id')
@@ -940,7 +937,6 @@ begin
       exit when l_node is null;
       if l_node.existsnode('/usgs-stream-rating') = 1 then
          cwms_msg.log_db_message(
-            'cwms_rating.store_ratings',
             cwms_msg.msg_level_detailed,
             'Storing '
             ||l_node.getrootelement
@@ -954,7 +950,6 @@ begin
          l_stream_rating.store(p_fail_if_exists, p_replace_base);
       elsif l_node.existsnode('/rating|/simple-rating|/virtual-rating|/transitional-rating') = 1 then
          cwms_msg.log_db_message(
-            'cwms_rating.store_ratings',
             cwms_msg.msg_level_detailed,
             'Storing '
             ||l_node.getrootelement
@@ -2858,76 +2853,144 @@ end delete_ratings;
 -- STORE_RATINGS_XML
 --
 procedure store_ratings_xml(
-   p_xml            in xmltype,
-   p_fail_if_exists in varchar2,
-   p_replace_base   in varchar2 default 'F')
+   p_errors         out clob, 
+   p_xml            in  xmltype,
+   p_fail_if_exists in  varchar2,
+   p_replace_base   in  varchar2 default 'F')
 is
-   l_xml     xmltype;
-   l_node    xmltype;
-   l_rating  rating_t;
+   l_xml      xmltype;
+   l_node     xmltype;
+   l_rating   rating_t;
+   l_id       varchar2(32);
+   l_crsr     sys_refcursor;
+   l_ts       timestamp(6);
+   l_msg_txt  varchar2(4000);
+   l_prev_txt varchar2(4000);
+   l_first    boolean := true;
 begin
+   ------------------
+   -- sanity check --
+   ------------------
    l_xml := cwms_util.get_xml_node(p_xml, '/ratings');
    if l_xml is null then
       cwms_err.raise('ERROR', 'XML does not have <ratings> root element');
    end if;
-   cwms_msg.log_db_message(
-      'cwms_rating.store_ratings_xml',
-      cwms_msg.msg_level_verbose,
-      'Processing ratings XML');
+   --------------------------------
+   -- log about process starting --
+   --------------------------------
+   l_id := cwms_msg.get_msg_id;
+   set_package_log_property_text(l_id);
+   cwms_msg.log_db_message(cwms_msg.msg_level_verbose, 'Processing ratings XML');
+   -------------------------
+   -- store any templates --
+   -------------------------
    for i in 1..999999 loop
       l_node := cwms_util.get_xml_node(l_xml, '/ratings/rating-template['||i||']');
       exit when l_node is null;                   
       begin
          store_templates(l_node, p_fail_if_exists);
       exception
-         when others then
-            cwms_msg.log_db_message(
-               'cwms_rating.store_ratings_xml',
-               cwms_msg.msg_level_normal,
-               sqlerrm);
-            cwms_msg.log_db_message(
-               'cwms_rating.store_ratings_xml',
-               cwms_msg.msg_level_detailed,
-               dbms_utility.format_error_backtrace);
+         when others then cwms_msg.log_db_message(cwms_msg.msg_level_normal, sqlerrm);
       end;
    end loop;
    commit;
+   ------------------------------
+   -- store any specifications --
+   ------------------------------
    for i in 1..999999 loop
       l_node := cwms_util.get_xml_node(l_xml, '/ratings/rating-spec['||i||']');
       exit when l_node is null;                   
       begin
          store_specs(l_node, p_fail_if_exists);
       exception
-         when others then
-            cwms_msg.log_db_message(
-               'cwms_rating.store_ratings_xml',
-               cwms_msg.msg_level_normal,
-               sqlerrm);
-            cwms_msg.log_db_message(
-               'cwms_rating.store_ratings_xml',
-               cwms_msg.msg_level_detailed,
-               dbms_utility.format_error_backtrace);
+         when others then cwms_msg.log_db_message(cwms_msg.msg_level_normal, sqlerrm);
       end;
    end loop;
    commit;
+   -----------------------
+   -- store any ratings --
+   -----------------------
    for i in 1..999999 loop
       l_node := cwms_util.get_xml_node(l_xml, '(/ratings/rating|/ratings/simple-rating|/ratings/virtual-rating|/ratings/transitional-rating|/ratings/usgs-stream-rating)['||i||']');
       exit when l_node is null;                   
       begin
          store_ratings(l_node, p_fail_if_exists, p_replace_base);
       exception
-         when others then
-            cwms_msg.log_db_message(
-               'cwms_rating.store_ratings_xml',
-               cwms_msg.msg_level_normal,
-               sqlerrm);
-            cwms_msg.log_db_message(
-               'cwms_rating.store_ratings_xml',
-               cwms_msg.msg_level_detailed,
-               dbms_utility.format_error_backtrace);
+         when others then cwms_msg.log_db_message(cwms_msg.msg_level_normal, sqlerrm);
       end;
    end loop;
    commit;
+   ------------------------------
+   -- log about process ending --
+   ------------------------------
+   cwms_msg.log_db_message( cwms_msg.msg_level_verbose, 'Done processing ratings XML');
+   set_package_log_property_text(null);
+   ----------------------------------------------
+   -- retrieve log messages and extract errors --
+   ----------------------------------------------
+   cwms_msg.retrieve_log_messages(
+      p_log_crsr   => l_crsr,
+      p_min_msg_id => l_id,
+      p_properties => str_tab_tab_t(str_tab_t('cwms_rating', l_id, 'globi')));
+   loop
+      fetch l_crsr into l_id, l_ts, l_msg_txt;
+      exit when l_crsr%notfound;
+      if instr(l_msg_txt, 'ERROR:') > 0 then
+         if p_errors is null then
+            dbms_lob.createtemporary(p_errors, true);
+         end if;
+         if instr(l_prev_txt, 'ERROR:') = 0 then
+            if l_first then
+               cwms_util.append(p_errors, l_prev_txt||chr(10));
+               l_first := false;
+            else
+               cwms_util.append(p_errors, chr(10)||l_prev_txt||chr(10));
+            end if;
+         end if;
+         cwms_util.append(p_errors, l_msg_txt||chr(10));
+      end if;
+      l_prev_txt := l_msg_txt;
+   end loop;
+   close l_crsr;
+end store_ratings_xml;
+
+--------------------------------------------------------------------------------
+-- STORE_RATINGS_XML
+--
+procedure store_ratings_xml(
+   p_errors         out clob,
+   p_xml            in  varchar2,
+   p_fail_if_exists in  varchar2,
+   p_replace_base   in  varchar2 default 'F')
+is
+begin
+   store_ratings_xml(p_errors, xmltype(p_xml), p_fail_if_exists, p_replace_base);
+end store_ratings_xml;
+
+--------------------------------------------------------------------------------
+-- STORE_RATINGS_XML
+--
+procedure store_ratings_xml(
+   p_errors         out clob,
+   p_xml            in  clob,
+   p_fail_if_exists in  varchar2,
+   p_replace_base   in  varchar2 default 'F')
+is
+begin
+   store_ratings_xml(p_errors, xmltype(p_xml), p_fail_if_exists, p_replace_base);
+end store_ratings_xml;
+
+--------------------------------------------------------------------------------
+-- STORE_RATINGS_XML
+--
+procedure store_ratings_xml(
+   p_xml            in xmltype,
+   p_fail_if_exists in varchar2,
+   p_replace_base   in varchar2 default 'F')
+is
+   l_errors clob;
+begin
+   store_ratings_xml(l_errors, p_xml, p_fail_if_exists, p_replace_base);
 end store_ratings_xml;
 
 --------------------------------------------------------------------------------
@@ -2938,8 +3001,9 @@ procedure store_ratings_xml(
    p_fail_if_exists in varchar2,
    p_replace_base   in varchar2 default 'F')
 is
+   l_errors clob;
 begin
-   store_ratings_xml(xmltype(p_xml), p_fail_if_exists, p_replace_base);
+   store_ratings_xml(l_errors, xmltype(p_xml), p_fail_if_exists, p_replace_base);
 end store_ratings_xml;
 
 --------------------------------------------------------------------------------
@@ -2950,8 +3014,9 @@ procedure store_ratings_xml(
    p_fail_if_exists in varchar2,
    p_replace_base   in varchar2 default 'F')
 is
+   l_errors clob;
 begin
-   store_ratings_xml(xmltype(p_xml), p_fail_if_exists, p_replace_base);
+   store_ratings_xml(l_errors, xmltype(p_xml), p_fail_if_exists, p_replace_base);
 end store_ratings_xml;
 
 --------------------------------------------------------------------------------
@@ -7308,7 +7373,21 @@ begin
    return l_results;
 end retrieve_ratings_f;
 
-end;
+function package_log_property_text 
+   return varchar2
+is
+begin
+   return v_package_log_prop_text;
+end package_log_property_text;
+
+procedure set_package_log_property_text(
+   p_text in varchar2 default null)
+is
+begin
+   v_package_log_prop_text := nvl(p_text, userenv('sessionid'));
+end set_package_log_property_text;
+
+end cwms_rating;
 /
 show errors;
 
