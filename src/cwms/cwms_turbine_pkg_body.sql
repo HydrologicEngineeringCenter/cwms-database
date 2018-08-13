@@ -539,6 +539,9 @@ is
    l_start_time       date;
    l_end_time         date;
    l_time_zone        varchar2(28);
+   l_vert_datum1      varchar2(8);                 
+   l_vert_datum2      varchar2(8);
+   l_elev_offset      binary_double;
    l_change_rec       at_turbine_change%rowtype;
    l_setting_rec      at_turbine_setting%rowtype;
    l_dates            date_table_type;
@@ -578,6 +581,7 @@ begin
          l_office_id     := upper(trim(p_turbine_changes(i).project_location_ref.get_office_id));
          l_office_code   := p_turbine_changes(i).project_location_ref.get_office_code;
          l_change_date   := p_turbine_changes(i).change_date; 
+         l_vert_datum2   := cwms_loc.get_location_vertical_datum(l_proj_loc_code);
       else
          if p_turbine_changes(i).project_location_ref.get_location_code != l_proj_loc_code then
             cwms_err.raise(
@@ -691,6 +695,18 @@ begin
    ---------------------------
    for i in 1..p_turbine_changes.count loop
       l_new_change_date := cwms_util.change_timezone(p_turbine_changes(i).change_date, nvl(l_time_zone, 'UTC'), 'UTC');
+      l_elev_offset := 0;
+      if l_vert_datum2 is not null then
+         l_vert_datum1 := cwms_util.get_effective_vertical_datum(p_turbine_changes(i).elev_units);
+         if l_vert_datum1 is not null then
+            l_elev_offset := cwms_loc.get_vertical_datum_offset(
+               l_proj_loc_code,
+               l_vert_datum1,
+               l_vert_datum2,
+               l_new_change_date,
+               'm');
+         end if;
+      end if;
       -----------------------------------------
       -- retrieve any existing change record --
       -----------------------------------------
@@ -713,19 +729,19 @@ begin
       l_change_rec.elev_pool := cwms_util.convert_units(
          p_turbine_changes(i).elev_pool,
          p_turbine_changes(i).elev_units,
-         cwms_util.get_default_units('Elev'));
+         'm') + l_elev_offset;
       l_change_rec.elev_tailwater := cwms_util.convert_units(
          p_turbine_changes(i).elev_tailwater,
          p_turbine_changes(i).elev_units,
-         cwms_util.get_default_units('Elev'));
+         'm') + l_elev_offset;
       l_change_rec.old_total_discharge_override := cwms_util.convert_units(
          p_turbine_changes(i).old_total_discharge_override,
          p_turbine_changes(i).discharge_units,
-         cwms_util.get_default_units('Flow'));
+         'cms');
       l_change_rec.new_total_discharge_override := cwms_util.convert_units(
          p_turbine_changes(i).new_total_discharge_override,
          p_turbine_changes(i).discharge_units,
-         cwms_util.get_default_units('Flow'));
+         'cms');
       select turbine_comp_code
         into l_change_rec.turbine_discharge_comp_code
         from at_turbine_computation_code
@@ -829,13 +845,15 @@ procedure retrieve_turbine_changes(
    p_end_time_inclusive   in  varchar2 default 'T',
    p_max_item_count       in  integer default null)
 is
-   c_one_second       constant number := 1/86400;
+   c_one_second            constant number := 1/86400;
    l_change_notes          varchar2(255);
    l_comp_active           varchar2(1);
    l_comp_display          varchar2(25);
    l_comp_tooltip          varchar2(255);
    l_cursor                sys_refcursor;
    l_datetime              date;
+   l_vert_datum1           varchar2(8);                 
+   l_vert_datum2           varchar2(8);
    l_db_elev_unit          varchar2(16);
    l_db_flow_unit          varchar2(16);
    l_db_power_unit         varchar2(16);
@@ -914,7 +932,7 @@ is
    l_turb_sub_location_id  varchar2(32);
    l_turbine_changes       turbine_change_tab_t;
    l_turbine_settings      turbine_setting_tab_t;
-   l_unit_system      varchar2(2);
+   l_unit_system           varchar2(2);
 begin
    -------------------
    -- sanity checks --
@@ -926,7 +944,7 @@ begin
       cwms_err.raise('NULL_ARGUMENT', 'p_start_time');
    end if;
    if p_end_time is null then
-      cwms_err.raise('NULL_ARGUMENT', 'p_end_time');    
+         cwms_err.raise('NULL_ARGUMENT', 'p_end_time');
    end if;
    if p_max_item_count = 0 then
       cwms_err.raise(
@@ -946,40 +964,40 @@ begin
       p_project_location.get_office_id);
    -------------------------
    -- get the unit system --
-   -------------------------      
-   l_unit_system := 
+   -------------------------
+   l_unit_system :=
       upper(
          substr(
             nvl(
-               p_unit_system, 
+               cwms_util.parse_unit(p_unit_system),
                cwms_properties.get_property(
-                  'Pref_User.'||cwms_util.get_user_id, 
-                  'Unit_System', 
+                  'Pref_User.'||cwms_util.get_user_id,
+                  'Unit_System',
                   cwms_properties.get_property(
                      'Pref_Office',
                      'Unit_System',
                      'SI',
-                     p_project_location.get_office_id), 
+                     p_project_location.get_office_id),
                   p_project_location.get_office_id)),
             1, 2));
    ---------------------------------
    -- get the start and end times --
    ---------------------------------
-   l_proj_loc_code := p_project_location.get_location_code;            
-   l_time_zone := nvl(p_time_zone, cwms_loc.get_local_timezone(l_proj_loc_code));
-   l_start_time := cwms_util.change_timezone(p_start_time, l_time_zone, 'UTC');
-   l_end_time   := cwms_util.change_timezone(p_end_time,   l_time_zone, 'UTC');
+   l_proj_loc_code := p_project_location.get_location_code;
+   l_time_zone     := nvl(p_time_zone, cwms_loc.get_local_timezone(l_proj_loc_code));
+   l_start_time    := cwms_util.change_timezone(p_start_time, l_time_zone, 'UTC');
+   l_end_time      := cwms_util.change_timezone(p_end_time,   l_time_zone, 'UTC');
    if not cwms_util.is_true(p_start_time_inclusive) then
       l_start_time := l_start_time + c_one_second;
-   end if;        
+   end if;
    if not cwms_util.is_true(p_end_time_inclusive) then
       l_end_time := l_end_time - c_one_second;
    end if;
-      cwms_display.retrieve_unit(l_flow_unit, 'Flow', l_unit_system, p_project_location.get_office_id);
-      cwms_display.retrieve_unit(l_elev_unit, 'Elev', l_unit_system, p_project_location.get_office_id);
-      l_db_elev_unit := cwms_util.get_default_units('Elev');
-      l_db_flow_unit := cwms_util.get_default_units('Flow');
-      l_db_power_unit := cwms_util.get_default_units('Power');
+   cwms_display.retrieve_unit(l_flow_unit, 'Flow', l_unit_system, p_project_location.get_office_id);
+   cwms_display.retrieve_unit(l_elev_unit, 'Elev', l_unit_system, p_project_location.get_office_id);
+   l_db_elev_unit  := cwms_util.get_default_units('Elev');
+   l_db_flow_unit  := cwms_util.get_default_units('Flow');
+   l_db_power_unit := cwms_util.get_default_units('Power');
    select factor,
           offset
      into l_elev_factor,
@@ -987,7 +1005,7 @@ begin
      from cwms_unit_conversion
     where from_unit_id = l_db_elev_unit
       and to_unit_id = l_elev_unit;
-          
+      
    select factor,
           offset
      into l_flow_factor,
@@ -996,6 +1014,14 @@ begin
     where from_unit_id = l_db_flow_unit
       and to_unit_id = l_flow_unit;
    
+   -----------------------------------
+   -- get the vertical datum offset --
+   -----------------------------------
+   l_vert_datum2 := cwms_util.get_effective_vertical_datum(p_unit_system);
+   if l_vert_datum2 is not null then
+      l_vert_datum1 := cwms_loc.get_location_vertical_datum(p_project_location.get_location_code);
+   end if;
+      
    l_max_item_count := abs(p_max_item_count);          
    ---------------------------------------
    -- select the turbine change records --
@@ -1009,8 +1035,20 @@ begin
                 abl.base_location_id,
                 apl.sub_location_id,
                 cast(from_tz(cast(atc.turbine_change_datetime as timestamp), 'UTC') at time zone (l_time_zone) as date),
-                atc.elev_pool * l_elev_factor + l_elev_offset,
-                atc.elev_tailwater * l_elev_factor + l_elev_offset,
+                (atc.elev_pool + nvl(cwms_loc.get_vertical_datum_offset(
+                    ap.project_location_code, 
+                    nvl(l_vert_datum1, '@'), 
+                    nvl(l_vert_datum2, '@'), 
+                    atc.turbine_change_datetime, 
+                    'm'), 0)
+                ) * l_elev_factor + l_elev_offset,
+                (atc.elev_tailwater + nvl(cwms_loc.get_vertical_datum_offset(
+                    ap.project_location_code, 
+                    nvl(l_vert_datum1, '@'), 
+                    nvl(l_vert_datum2, '@'), 
+                    atc.turbine_change_datetime, 
+                    'm'), 0)
+                ) * l_elev_factor + l_elev_offset,
                 atsr.turb_set_reason_display_value,
                 atsr.turb_set_reason_tooltip,
                 atsr.turb_set_reason_active,
@@ -1061,8 +1099,20 @@ begin
                 abl.base_location_id,
                 apl.sub_location_id,
                 cast(from_tz(cast(atc.turbine_change_datetime as timestamp), 'UTC') at time zone (l_time_zone) as date),
-                atc.elev_pool * l_elev_factor + l_elev_offset,
-                atc.elev_tailwater * l_elev_factor + l_elev_offset,
+                (atc.elev_pool + nvl(cwms_loc.get_vertical_datum_offset(
+                    ap.project_location_code, 
+                    nvl(l_vert_datum1, '@'), 
+                    nvl(l_vert_datum2, '@'), 
+                    atc.turbine_change_datetime, 
+                    'm'), 0)
+                ) * l_elev_factor + l_elev_offset,
+                (atc.elev_tailwater + nvl(cwms_loc.get_vertical_datum_offset(
+                    ap.project_location_code, 
+                    nvl(l_vert_datum1, '@'), 
+                    nvl(l_vert_datum2, '@'), 
+                    atc.turbine_change_datetime, 
+                    'm'), 0)
+                ) * l_elev_factor + l_elev_offset,
                 atsr.turb_set_reason_display_value,
                 atsr.turb_set_reason_tooltip,
                 atsr.turb_set_reason_active,
@@ -1143,11 +1193,11 @@ begin
             location_ref_t(l_turb_base_location_id, l_turb_sub_location_id, l_office_id),
             l_old_discharge,
             l_new_discharge,
-                  l_flow_unit,
+            l_flow_unit,
             l_real_power,
             l_scheduled_load,
-                  l_db_power_unit);                  
-            end loop;
+            l_db_power_unit);
+      end loop;
       l_turbine_changes.extend;
       l_turbine_changes(l_turbine_changes.count) := turbine_change_obj_t(
          location_ref_t(l_proj_base_location_id, l_proj_sub_location_id, l_office_id),
@@ -1166,7 +1216,7 @@ begin
       l_setting_count := l_setting_count + l_settings_crsr%rowcount;
       close l_settings_crsr;
       exit when l_cursor%rowcount = l_max_item_count; -- retrived specified limit
-      end loop;
+   end loop;
    close l_cursor;
    if p_max_item_count < 0 then
       ---------------------
