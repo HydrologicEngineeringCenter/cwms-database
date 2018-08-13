@@ -968,8 +968,10 @@ as
    member procedure validate_obj(
       p_include_points in varchar2 default 'T')
    is
+      type text_hash_t is table of boolean index by varchar(32767);
       l_code        number(10);
       l_count       pls_integer;
+      l_idx         pls_integer;
       l_parts       str_tab_t;
       l_params      str_tab_t;
       l_units       str_tab_t;
@@ -977,6 +979,8 @@ as
       l_connections str_tab_t;
       l_factor      binary_double;
       l_offset      binary_double;
+      l_unconnected text_hash_t;
+      l_input       varchar2(2);
    begin
       ---------------
       -- office_id --
@@ -1405,6 +1409,9 @@ as
             ------------------------------
             -- populate the connections --
             ------------------------------
+            for i in 1..self.get_ind_parameter_count loop
+               l_unconnected('I'||i) := true;
+            end loop;
             for i in 1..l_connections.count loop
                l_parts := cwms_util.split_text(l_connections(i), '=');
                for j in 1..2 loop
@@ -1413,7 +1420,9 @@ as
                   -- store l_parts(1) in slot specified by l_parts(2) unless l_parts(2) specifies input data --
                   ---------------------------------------------------------------------------------------------
                   if j = 2 and substr(l_parts(j), 1, 1) = 'I' then
-                     if not to_number(substr(l_parts(j), 2, 1)) between 1 and l_count then
+                     l_unconnected.delete(l_parts(j));
+                     l_idx := to_number(substr(l_parts(j), 2, 1));
+                     if not l_idx between 1 and l_count then
                         cwms_err.raise(
                            'ERROR',
                            'Connection part "'
@@ -1496,23 +1505,26 @@ as
             ---------------------------------------------------------------------------------------
             -- serially assign unconnected source rating ind_params and dep_params to input data --
             ---------------------------------------------------------------------------------------
-            l_count := 0;
-            <<connections_map>>
-            for i in 1..self.connections_map.count loop
-               for j in 1..self.connections_map(i).ind_params.count loop
-                  exit connections_map when l_count = self.get_ind_parameter_count;
-                  if self.connections_map(i).ind_params(j) is null then
+            l_input := l_unconnected.first;
+            if l_input is not null then
+               <<connections_map>>
+               for i in 1..self.connections_map.count loop
+                  for j in 1..self.connections_map(i).ind_params.count loop
+                        exit connections_map when l_input is null;
+                     if self.connections_map(i).ind_params(j) is null then
+                           self.connections_map(i).ind_params(j) := l_input;
+                           l_input := l_unconnected.next(l_input);
+                     end if;
+                  end loop;
+                     exit when l_input is null;
+                  if self.connections_map(i).dep_param is null then
                      l_count := l_count + 1;
-                     self.connections_map(i).ind_params(j) := 'I'||l_count;
+                        self.connections_map(i).dep_param := l_input;
+                        l_input := l_unconnected.next(l_input);
                   end if;
+                     exit when l_input is null;
                end loop;
-               exit when l_count = self.get_ind_parameter_count;
-               if self.connections_map(i).dep_param is null then
-                  l_count := l_count + 1;
-                  self.connections_map(i).dep_param := 'I'||l_count;
-               end if;
-               exit when l_count = self.get_ind_parameter_count;
-            end loop;
+            end if;
             -----------------------------------------
             -- validate the data input connections --
             -----------------------------------------
@@ -1648,7 +1660,6 @@ as
             ---------------------------------------------------------
             -- populate the internal connection conversion factors --
             ---------------------------------------------------------
-            begin
             for i in 1..self.connections_map.count loop
                for j in 1..self.connections_map(i).ind_params.count loop
                   if self.connections_map(i).ind_params(j) is not null and substr(self.connections_map(i).ind_params(j), 1, 1) != 'I' then
@@ -1745,7 +1756,6 @@ as
                   end;
                end if;
             end loop;
-            end;
          end;
       when self.evaluations is not null then
          -------------------------
