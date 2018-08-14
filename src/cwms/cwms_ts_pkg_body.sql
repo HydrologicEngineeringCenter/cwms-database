@@ -1,5 +1,5 @@
 /* Formatted on 1/18/2012 2:59:32 PM (QP5 v5.185.11230.41888) */
-SET DEFINE ON
+set define on
 @@defines
 CREATE OR REPLACE PACKAGE BODY cwms_ts
 AS
