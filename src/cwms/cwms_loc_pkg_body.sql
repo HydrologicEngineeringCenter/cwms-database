@@ -81,7 +81,7 @@ AS
       return varchar2
    is
       l_office_id   varchar2(16);
-      l_location_id varchar2(183);
+      l_location_id varchar2(57);
    begin
       l_office_id := nvl(upper(trim(p_office_id)), cwms_util.user_office_id);
       -----------------------------
@@ -5687,7 +5687,7 @@ end unassign_loc_groups;
    is
       location_id_not_found exception;
       pragma exception_init(location_id_not_found, -20025);
-      l_location_id    varchar2(49);
+      l_location_id    varchar2(57);
       l_location_code  number(10);
       l_office_id      varchar2(16);
       l_count           pls_integer;
