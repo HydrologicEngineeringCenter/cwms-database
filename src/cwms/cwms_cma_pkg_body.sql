@@ -1,4 +1,4 @@
-create or replace package BODY                                                                                                                                                                                                                         CWMS_CMA
+create or replace PACKAGE BODY                                           "CWMS_CMA" 
 IS
    /******************************************************************************
       NAME:       CWMS_CMA_ERDC
@@ -13,7 +13,6 @@ IS
       1.3.1      OCT 2015     JDK             1. Updated for CMA 2.03 with bug fixes
       1.3.2      JAN2015      JDK             1. Updated for CMA 2.03 with more bug fixes
       1.3.2.1    MAR2017      JDK             1. CWMS 3.06 bug fixes and cwms xxx a2w locatioN_id  to location_code fixes
-      1.4        JUL2018      JDK	      1. Bug fixes and additional A2W options
    ******************************************************************************/
 
    FUNCTION MyFunction (Param1 IN NUMBER)
@@ -30,12 +29,12 @@ IS
       l_error_id            at_cma_error_log.id%TYPE;
       l_is_internal_error   at_cma_error_log.is_internal_error%TYPE;
    BEGIN
-      IF p_error.is_internal_error
-      THEN
+      --IF p_error.is_internal_error
+      --THEN
          l_is_internal_error := 'Y';
-      ELSE
-         l_is_internal_error := 'N';
-      END IF;
+      --ELSE
+      --   l_is_internal_error := 'N';
+      --END IF;
 
       --
       INSERT INTO at_cma_error_log (MESSAGE,
@@ -260,15 +259,15 @@ IS
                                         ,f_app_id        IN NUMBER
                                         ,f_session_id    IN NUMBER
                                         ) RETURN VARCHAR2  IS
-   
-   
-   
+
+
+
   num_LL      NUMBER DEFAULT 0;
   temp_out    VARCHAR2(1999);
   BEGIN
-  
+
    FOR x  IN (SELECT locatioN_code
-                   , location_id   
+                   , location_id
                 FROM cwms_v_loc
                WHERE unit_system = 'EN'
                  AND locatioN_code = f_location_code
@@ -284,15 +283,15 @@ IS
                            || x.location_id
                            || '"><img src="#WORKSPACE_IMAGES#Search-16.png" title="Search" alt="Search"></a>';
                    END LOOP;
-  
+
       temp_out := REPLACE(temp_out
                       , '#WORKSPACE_IMAGES#Search-16.png'
                       , 'http://cpc-cwmsdb3.usace.army.mil:8082/apex/wwv_flow_file_mgr.get_file?p_security_group_id=1589520410177877&p_fname=Search-16.png'
                          );
-  
+
     num_ll := f_get_loc_num_ll(f_locatioN_code, 'ALL');
     IF num_ll > 0 THEN
-    
+
       temp_out := temp_Out || ' ' || '<img src="#WORKSPACE_IMAGES#Location_level-16.png" title="' || TO_CHAR(num_ll) || ' LL Exist" alt="LL Exist"></a>x' || TO_CHAR(num_ll) ;
       temp_out := REPLACE(temp_out
                       , '#WORKSPACE_IMAGES#Location_level-16.png'
@@ -306,59 +305,59 @@ IS
                            || TO_CHAR(f_SESSION_id)
                            || '::::F99_LOCATION_CODE:'
                            || f_location_code
-                           || '"> ' || temp_out;                  
-                         
+                           || '"> ' || temp_out;
+
     ELSE
       temp_out := temp_Out || ' ' || '<img src="#WORKSPACE_IMAGES#Location_level-16.png" title="No LLs" alt="No LLs"></a>';
       temp_out := REPLACE(temp_out
                       , '#WORKSPACE_IMAGES#Location_level-16.png'
                       , 'http://cpc-cwmsdb3.usace.army.mil:8082/apex/wwv_flow_file_mgr.get_file?p_security_group_id=1589520410177877&p_fname=Location_level-16.png'
                          );
-  
+
     END IF;
-  
-  
-  RETURN Temp_out;                   
+
+
+  RETURN Temp_out;
    END;
 FUNCTION f_get_loc_num_ll(f_location_code IN cwms_v_loc.location_code%TYPE
                             ,f_location_level_kind IN VARCHAR2 DEFAULT 'ALL'
                             ) RETURN NUMBER IS
   temp_out NUMBER DEFAULT 0;
-  BEGIN                            
+  BEGIN
 
     IF f_location_level_kind = 'ALL' THEN
 
-      SELECT COUNT(location_code) 
+      SELECT COUNT(location_code)
         INTO temp_out
         FROM at_location_level
       WHERE locatioN_code = f_location_code;
 
     ELSE
-    
-     CASE f_location_level_kind 
+
+     CASE f_location_level_kind
       WHEN 'CONSTANT' THEN
-       SELECT COUNT(location_code) 
+       SELECT COUNT(location_code)
          INTO temp_out
          FROM at_location_level
         WHERE locatioN_code = f_location_code
           AND interval_origin IS NULL
           AND ts_code IS NULL;
       WHEN 'SEASONAL' THEN
-       SELECT COUNT(location_code) 
+       SELECT COUNT(location_code)
          INTO temp_out
          FROM at_location_level
         WHERE locatioN_code = f_location_code
           AND interval_origin IS NOT NULL
           AND ts_code IS NULL;
-      WHEN 'TS_ID' THEN 
-       SELECT COUNT(location_code) 
+      WHEN 'TS_ID' THEN
+       SELECT COUNT(location_code)
          INTO temp_out
          FROM at_location_level
         WHERE locatioN_code = f_location_code
           AND ts_code IS NOT NULL;
       ELSE NULL;
     END CASE;
-    
+
     END IF;
 
    RETURN temp_out;
@@ -443,14 +442,14 @@ FUNCTION f_get_ll_home_container (f_location_code IN CWMS_V_LOC.location_code%TY
    FOR x IN (SELECT parameter_id, num_ll, rownum row_num
                 FROM (
               SELECT parameter_id, COUNT(parameter_id) num_ll
-                          FROM (SELECT DISTINCT location_level_id, parameter_id 
+                          FROM (SELECT DISTINCT location_level_id, parameter_id
                                   FROM cwms_v_location_level
                                  WHERE location_code = f_location_code
                                 )
                          GROUP BY parameter_id
                           ORDER BY 2 DESC
                           )
-            
+
 
               ) LOOP
              IF x.row_Num = 1 THEN temp_out := '<li><a href="#tabs-1">' || x.parameter_id || '</a></li>'; END IF;
@@ -468,18 +467,18 @@ FUNCTION f_get_ll_home_container (f_location_code IN CWMS_V_LOC.location_code%TY
              <li><a href="#tabs-7">' || x.parameter_id || '</a></li>';  END IF;
              IF x.row_num = 8 THEN temp_out := temp_out || '
              <li><a href="#tabs-8">' || x.parameter_id || '</a></li>';  END IF;
-          
+
             END LOOP;
-   
-   
+
+
    IF temp_out IS NOT NULL THEN
     Temp_out :=    '<div id="tabs">
-<ul> ' || temp_out ||' 
+<ul> ' || temp_out ||'
     </ul>
 </div>';
-   ELSE 
+   ELSE
          Temp_out :=    '<div id="tabs">
-<ul> '  ||' 
+<ul> '  ||'
     </ul>
 </div>';
 
@@ -1506,7 +1505,7 @@ FUNCTION f_get_ll_home_container (f_location_code IN CWMS_V_LOC.location_code%TY
                             p_delim                  VARCHAR2 DEFAULT ',',
                             p_optionally_enclosed    VARCHAR2 DEFAULT '"',
                             p_all_one_ts_id_tf       VARCHAR2 DEFAULT 'T'
-                            
+
                             )
    IS
       --
@@ -1684,7 +1683,7 @@ FUNCTION f_get_ll_home_container (f_location_code IN CWMS_V_LOC.location_code%TY
             IF l_lineno = 1
             THEN
                --Do nothing as this is the first line
-            
+
                NULL;
             ELSE
                IF ts_code_or_ts_id = temp_str_ts_code
@@ -1696,9 +1695,9 @@ FUNCTION f_get_ll_home_container (f_location_code IN CWMS_V_LOC.location_code%TY
                     FROM cwms_v_ts_id
                    WHERE ts_code      = temp_ts_code
                      AND db_office_id = temp_db_office_id;
-                         
+
                   END IF;
-                         
+
                END IF;
 
                IF ts_code_or_ts_id = temp_str_ts_id
@@ -1891,7 +1890,7 @@ FUNCTION f_get_ll_home_container (f_location_code IN CWMS_V_LOC.location_code%TY
     UPDATE at_a2w_ts_codes_By_loc
        SET ts_code_power_Gen    = NULL
      WHERE ts_code_power_Gen    = p_ts_code;
-    
+
     UPDATE at_a2w_ts_codes_By_loc
        SET ts_code_temp_air    = NULL
      WHERE ts_code_temp_air    = p_ts_code;
@@ -1903,7 +1902,7 @@ FUNCTION f_get_ll_home_container (f_location_code IN CWMS_V_LOC.location_code%TY
     UPDATE at_a2w_ts_codes_By_loc
        SET ts_code_do    = NULL
      WHERE ts_code_do    = p_ts_code;
-        
+
       FOR x IN (SELECT DISTINCT location_code, db_Office_id
                   FROM cwms_v_ts_id
                 WHERE ts_code = p_ts_code
@@ -3255,7 +3254,7 @@ NULL;
                                          temp_clob := temp_clob || temp_delim    || ' --- ' || ' New Public Name from RG Map Label = ' || temp_public_Name;
 
                                      ELSE
-                                         temp_public_Name := SUBSTR(y.statioN_desc, 1,57);
+                                         temp_public_Name := SUBSTR(y.statioN_desc, 1,32);
 
                                        IF LENGTH(y.statioN_desc) <= 32 THEN
                                          temp_clob := temp_clob || temp_delim    || ' --- ' || ' New Public Name from RG station desc = ' || temp_public_Name;
@@ -4535,7 +4534,7 @@ WHERE location_level_id = 'AGNI4.Elev-Pool.Inst.0.Flood' and office_id = 'MVR'
                                 ROUND (lat, 8) lat,
                                 ROUND (lon, 8) lon,
                                 nws_name,
-                                SUBSTR (nws_name, 1, 57) public_name
+                                SUBSTR (nws_name, 1, 32) public_name
                            FROM cwms_station_nws
                           WHERE nws_id = temp_nws_5_id)
                LOOP
@@ -5220,31 +5219,22 @@ WHERE location_level_id = 'AGNI4.Elev-Pool.Inst.0.Flood' and office_id = 'MVR'
       p_ts_code_stor_Flood     IN     at_a2w_ts_codes_by_loc.ts_code_stor_Flood%TYPE,
       p_ts_code_elev_tw        IN     at_a2w_ts_codes_by_loc.ts_code_elev_tw%TYPE,
       p_ts_code_stage_tw       IN     at_a2w_ts_codes_by_loc.ts_code_stage_tw%TYPE,
-      p_ts_code_rule_Curve_elev IN     at_a2w_ts_codes_by_loc.ts_code_rule_curve_elev%TYPE,
+      p_ts_code_rule_Curve_elev IN    at_a2w_ts_codes_by_loc.ts_code_rule_curve_elev%TYPE,
       p_ts_code_power_Gen       IN    at_a2w_ts_codes_By_loc.ts_code_power_Gen%TYPE,
       p_ts_code_temp_air        IN    at_a2w_ts_codes_by_loc.ts_code_temp_air%TYPE,
       p_ts_code_temp_water      IN    at_a2w_ts_codes_by_loc.ts_code_temp_water%TYPE,
       p_ts_code_do              IN    at_a2w_Ts_codes_by_loc.ts_code_do%TYPE,
-      p_ts_code_ph              IN    at_a2w_ts_codes_by_loc.ts_code_ph%TYPE,
-      p_ts_code_cond            IN    at_a2w_Ts_codes_By_loc.ts_code_cond%TYPE,
-      p_ts_code_wind_dir        IN    at_a2w_ts_codes_By_loc.ts_code_wind_dir%TYPE,
-      p_ts_code_wind_speed      IN    at_a2w_ts_codes_By_loc.ts_code_wind_speed%TYPE,
-      p_ts_code_volt            in   at_a2w_ts_codes_By_loc.ts_code_volt%TYPE,
-      p_ts_code_pct_flood       in   at_a2w_ts_codes_By_loc.ts_code_pct_flood%TYPE,
-      p_ts_code_pct_con         in   at_a2w_ts_codes_By_loc.ts_code_pct_con%TYPE,
-      p_ts_code_irrad           in   at_a2w_ts_codes_By_loc.ts_code_irrad%TYPE,
-      p_ts_code_evap            in   at_a2w_ts_codes_By_loc.ts_code_evap%TYPE,
-      p_rating_code_elev_stor   IN    NUMBER,
-      p_rating_code_elev_area   IN    NUMBER,
-      p_rating_code_outlet_Flow IN    NUMBER,
-      p_ts_code_opening         IN    at_a2w_ts_codes_By_loc.ts_code_opening%TYPE,
-      p_opening_source_obj      IN    VARCHAR2,
+      p_rating_code_elev_stor   IN    at_rating.rating_code%TYPE,
       p_lake_summary_tf         IN     at_a2w_ts_codes_by_loc.lake_summary_Tf%TYPE,
       p_error_msg                 OUT VARCHAR2)
    IS
       temp_location_code   cwms_v_loc.location_code%TYPE;
    BEGIN
       p_error_msg := NULL;
+
+	update at_a2w_ts_codes_by_loc
+           set location_id = cwms_loc.get_location_id(location_code)
+       ;
 
       SELECT location_code
         INTO temp_location_code
@@ -5273,18 +5263,8 @@ WHERE location_level_id = 'AGNI4.Elev-Pool.Inst.0.Flood' and office_id = 'MVR'
              ts_code_power_gen       = p_ts_code_power_Gen,
              ts_code_temp_air        = p_ts_code_temp_air,
              ts_code_temp_water      = p_ts_code_temp_water,
-             ts_code_do              = p_ts_code_do, 
-             ts_code_wind_dir        = p_ts_code_wind_dir,
-             ts_code_wind_speed      = p_ts_code_wind_Speed,
-             ts_code_volt            = p_ts_code_volt,
-             ts_code_pct_flood       = p_ts_code_pct_flood,
-             ts_code_pct_con         = p_ts_code_pct_con,
-             ts_code_irrad           = p_ts_code_irrad,
-             ts_code_evap            = p_ts_code_evap,
+             ts_code_do              = p_ts_code_do,
              rating_code_elev_stor   = p_rating_code_elev_stor ,
-	     rating_code_elev_area   = p_rating_code_elev_area,
-             rating_code_outlet_flow = p_rating_code_outlet_Flow,
-             opening_source_obj      = p_opening_source_obj,
              lake_summary_tf         = p_lake_summary_tf
        WHERE  db_office_id = p_db_office_id
          AND locatioN_code = temp_location_code;
@@ -5295,8 +5275,8 @@ WHERE location_level_id = 'AGNI4.Elev-Pool.Inst.0.Flood' and office_id = 'MVR'
          INSERT
            INTO at_a2w_ts_codes_by_loc (db_Office_id,
                                         location_code,
-                                        date_refreshed)
-         VALUES (p_db_office_id, temp_location_code, SYSDATE);
+                                        date_refreshed, location_id)
+         VALUES (p_db_office_id, temp_location_code, SYSDATE, p_location_id);
 
 
          UPDATE at_a2w_ts_codes_by_loc
@@ -5319,17 +5299,7 @@ WHERE location_level_id = 'AGNI4.Elev-Pool.Inst.0.Flood' and office_id = 'MVR'
                 ts_code_temp_air        = p_ts_code_temp_air        ,
                 ts_code_temp_water      = p_ts_code_temp_water      ,
                 ts_code_do              = p_ts_code_do              ,
-                ts_code_wind_dir        = p_ts_code_wind_dir,
-                ts_code_wind_speed      = p_ts_code_wind_Speed,
-             ts_code_volt            = p_ts_code_volt,
-             ts_code_pct_flood       = p_ts_code_pct_flood,
-             ts_code_pct_con         = p_ts_code_pct_con,
-             ts_code_irrad           = p_ts_code_irrad,
-             ts_code_evap            = p_ts_code_evap,
-                rating_code_elev_stor   = p_rating_code_elev_stor  ,
-	        rating_code_elev_area   = p_rating_code_elev_area  ,
-                rating_code_outlet_flow = p_rating_code_outlet_Flow,
-                opening_source_obj      = p_opening_source_obj     ,
+                rating_code_elev_stor   = p_rating_code_elev_stor   ,
                 lake_summary_tf         = p_lake_summary_tf
           WHERE db_office_id  = p_db_office_id
             AND locatioN_code = temp_location_code;
@@ -5361,9 +5331,12 @@ WHERE location_level_id = 'AGNI4.Elev-Pool.Inst.0.Flood' and office_id = 'MVR'
       p_embank_height                 IN     cwms_v_embankment.height_max%TYPE,
       p_embank_width                  IN     cwms_v_embankment.top_width%TYPE,
       p_embank_unit_id                IN     cwms_v_embankment.unit_id%TYPE,
-      p_lock_project_id               IN     cwms_v_lock.project_id%TYPE, --:P36_PROJECT_LOCATION_ID --project_location_ref,
-      p_lock_vol_per_lockage          IN     cwms_v_lock.volume_per_lockage%TYPE, --volume_per_lockage,
-      p_lock_vol_units_id             IN     cwms_v_lock.volume_unit_id%TYPE, --volume_units_id
+      p_lock_project_id               IN     cwms_v_lock.project_id%TYPE --:P36_PROJECT_LOCATION_ID --project_location_ref
+                                                                        ,
+      p_lock_vol_per_lockage          IN     cwms_v_lock.volume_per_lockage%TYPE --volume_per_lockage
+                                                                                ,
+      p_lock_vol_units_id             IN     cwms_v_lock.volume_unit_id%TYPE --volume_units_id
+                                                                            ,
       p_lock_lock_width               IN     cwms_v_lock.lock_width%TYPE --lock_width
                                                                         ,
       p_lock_lock_length              IN     cwms_v_lock.lock_length%TYPE --lock_length
@@ -6560,12 +6533,10 @@ on: {%Date}]]></format>
 
       temp_ind_1_parameter_id   VARCHAR2 (255);
       temp_dep_parameter_id     VARCHAR2 (255);
-
       temp_stage_or_elev        VARCHAR2 (5) DEFAULT 'ELEV';
 
 
       temp_current_val_clob     CLOB;
-
       temp_title_clob           CLOB;
    BEGIN
       NULL;
@@ -6966,15 +6937,12 @@ on: {%Date}]]></format>
    BEGIN
       FOR x
          IN (SELECT *
-               FROM cwms_v_a2w_ts_codes_By_loc2
-              WHERE db_Office_id = p_db_Office_id
-                AND location_code = p_locatioN_code
-             )
+               FROM at_a2w_ts_codes_by_loc
+              WHERE     db_Office_id = p_db_Office_id
+                    AND location_code = p_locatioN_code)
       LOOP
-
-        temp_i := temp_i  + 1;
          NULL;
-/*
+
          IF x.ts_code_elev IS NOT NULL
          THEN
             temp_i := temp_i + 1;
@@ -7011,31 +6979,24 @@ on: {%Date}]]></format>
          END IF;
 
          IF x.ts_code_power_Gen IS NOT NULL
-         THEN 
+         THEN
             temp_i := temp_i + 1;
         END IF;
-        
-         IF x.ts_code_temp_air IS NOT NULL
-         THEN 
-            temp_i := temp_i + 1;
-        END IF;
-       
-       IF x.ts_code_temp_water IS NOT NULL
-         THEN 
-            temp_i := temp_i + 1;
-        END IF;
-        
-       IF x.ts_code_do IS NOT NULL
-         THEN 
-            temp_i := temp_i + 1;
-        END IF;
-*/
-  END LOOP;
 
-FOR x IN (SELECT * FROM at_a2w_ts_codes_By_loc WHERE db_Office_id = p_db_office_id 
-             AND location_code = p_location_code)
-             
-      LOOP
+         IF x.ts_code_temp_air IS NOT NULL
+         THEN
+            temp_i := temp_i + 1;
+        END IF;
+
+       IF x.ts_code_temp_water IS NOT NULL
+         THEN
+            temp_i := temp_i + 1;
+        END IF;
+
+       IF x.ts_code_do IS NOT NULL
+         THEN
+            temp_i := temp_i + 1;
+        END IF;
 
          UPDATE at_a2w_ts_codes_by_loc
             SET date_refreshed = SYSDATE,
@@ -7047,8 +7008,8 @@ FOR x IN (SELECT * FROM at_a2w_ts_codes_By_loc WHERE db_Office_id = p_db_office_
                    || ' by '
                    || p_user_id,
                 num_ts_codes = temp_i
-          WHERE     db_office_id = p_db_office_id
-                AND location_code = p_location_code;
+          WHERE     db_office_id = x.db_office_id
+                AND location_code = x.location_code;
 
          IF temp_i = 0
          THEN
@@ -7063,14 +7024,12 @@ FOR x IN (SELECT * FROM at_a2w_ts_codes_By_loc WHERE db_Office_id = p_db_office_
                       || p_user_Id
                       || '. Set display flag to False because there are no TS IDs selected.',
                    display_flag = 'F'
-             WHERE     db_office_id = p_db_office_id
-                   AND location_code = p_location_code;
+             WHERE     db_office_id = x.db_office_id
+                   AND location_code = x.location_code;
          END IF;
 
-      END LOOP;
-
          temp_i := 0;
- 
+      END LOOP;
    END;
 
    PROCEDURE p_add_Missing_a2w_rows (
@@ -7079,7 +7038,8 @@ FOR x IN (SELECT * FROM at_a2w_ts_codes_By_loc WHERE db_Office_id = p_db_office_
       p_user_id        IN VARCHAR2)
    IS
     BEGIN
-   UPDATE at_a2w_ts_codes_by_loc
+
+	UPDATE at_a2w_ts_codes_by_loc
            SET location_id = cwms_loc.get_location_id(location_code)
          WHERE locatioN_id IS NULL;
 
@@ -7165,5 +7125,5 @@ FOR x IN (SELECT * FROM at_a2w_ts_codes_By_loc WHERE db_Office_id = p_db_office_
       HTP.p ('Hello Jeremy');
    END;
 
-END CWMS_CMA;
+end cwms_cma;
 /
