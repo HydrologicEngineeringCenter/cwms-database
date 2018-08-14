@@ -948,7 +948,8 @@ as
          l_rec.std_text_id := l_std_text_id; -- to change case if necessary
 
          update at_std_text
-            set row = l_rec;
+            set row = l_rec
+          where std_text_code = l_rec.std_text_code;
       else
          ------------------------------
          -- create new standard text --
@@ -1630,6 +1631,7 @@ as
       -- assign local variables --
       ----------------------------
       l_office_id   := cwms_util.get_db_office_id(p_office_id);
+      l_office_code := cwms_util.get_db_office_code(l_office_id);
       l_tsid        := cwms_ts.get_ts_id(p_tsid, l_office_id);
 
       if l_tsid is null then
@@ -1642,6 +1644,7 @@ as
       l_std_text_id := trim(upper(p_std_text_id));
       l_replace_all := cwms_util.return_true_or_false(p_replace_all);
       l_max_version := cwms_util.return_true_or_false(p_max_version);
+
 
       begin
          select std_text_code
