@@ -30,3 +30,6 @@ begin
 end;
 /
 
+insert into cwms_db_change_log (office_code, database_id, application, ver_major, ver_minor, ver_build, ver_date) values(51, 'CWMSDEV', 'CWMS', 99, 1, 0, sysdate);
+commit;
+
