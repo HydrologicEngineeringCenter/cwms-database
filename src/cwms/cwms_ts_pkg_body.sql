@@ -4173,17 +4173,21 @@ AS
       if job_count > 0 then
          cwms_err.raise('ERROR', 'Cannot start job '||l_job_name||',  another instance is already running');
       end if;
-      select time_zone_name
-        into l_timezone
-        from (select tz.time_zone_name,
-                     count(pl.location_code)as count
-                from at_physical_location pl,
-                     cwms_time_zone tz
-               where tz.time_zone_code = pl.time_zone_code
-               group by tz.time_zone_name
-               order by 2 desc
-             )
-       where rownum = 1;       
+      begin
+         select time_zone_name
+           into l_timezone
+           from (select tz.time_zone_name,
+                        count(pl.location_code)as count
+                   from at_physical_location pl,
+                        cwms_time_zone tz
+                  where tz.time_zone_code = pl.time_zone_code
+                  group by tz.time_zone_name
+                  order by 2 desc
+                )
+          where rownum = 1;
+      exception
+         when no_data_found then l_timezone := 'UTC';
+      end;   
       select systimestamp,
              to_char(systimestamp, 'DY')
         into l_now,
