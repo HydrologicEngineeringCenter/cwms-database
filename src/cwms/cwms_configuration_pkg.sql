@@ -1,4 +1,12 @@
-create or replace package cwms_configuration as
+create or replace package cwms_configuration
+/**
+ * Facilities for working with configurations in the CWMS database
+ *
+ * @author Mike Perryman
+ *
+ * @since CWMS 3.2
+ */
+as
 
 /**
  * Stores an configuration to the database
