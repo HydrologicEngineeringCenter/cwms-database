@@ -663,6 +663,15 @@ is
 begin
    return cwms_text.retrieve_text('/message_id/'||p_message_id);
 end get_message_clob;
+-------------------------------------------------------------------------------
+-- FUNCTION CREATE_MESSAGE_KEY
+--
+function create_message_key
+   return varchar2
+is
+begin
+   return get_msg_id; 
+end create_message_key;
    
 -------------------------------------------------------------------------------
 -- PROCEDURE LOG_DB_MESSAGE(...)

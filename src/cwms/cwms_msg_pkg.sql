@@ -17,6 +17,9 @@ create or replace package cwms_msg
  * &lt;/cwms_message&gt;
  * </pre></big>
  * <p>
+ * If a String property named "key" is specified, the message can be retrieved by retrieving its
+ * ID via the get_msgids_for_key() function.
+ * <p>
  * For messages to be logged, the message type property must be set to one of the following:
  * <ul>
  *   <li>AcknowledgeAlarm</li>
@@ -324,7 +327,7 @@ function create_message_key
 -- deprecated
 procedure log_db_message(
    p_procedure in varchar2,
-   p_msg_level in integer default msg_level_normal,
+   p_msg_level in integer,
    p_message   in varchar2);
 -- not documented
 procedure log_db_message(
