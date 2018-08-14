@@ -345,8 +345,10 @@ function log_long_message(
 	p_immediate  in  boolean default false) -- affects publishing only
    return integer
 is
+   l_invalid_identifier exception;
+   pragma exception_init(l_invalid_identifier, -904);
    pragma autonomous_transaction;
-
+   type bool_by_text_t is table of boolean index by varchar2(32767);
    l_now         integer;
    l_now_ts      timestamp;
    l_msg_id      varchar2(32);
@@ -376,6 +378,13 @@ is
    l_result      integer;
    l_max_tries   pls_integer := 25;
    l_code        integer;
+   l_call_stack  str_tab_tab_t;
+   l_parts       str_tab_t;
+   l_pkg_props   bool_by_text_t;
+   l_package     varchar2(61);
+   l_linenum     varchar2(6);
+   l_line_offset integer;
+   l_prop_text   varchar2(4000);
 begin
    if l_msg_level > msg_level_none then
       -----------------------------------------
@@ -521,13 +530,67 @@ begin
               into at_log_message_properties
             values (
                      l_msg_id,
-                     l_name,
+                     lower(l_name),
                      l_prop_type,
                      l_number,
                      l_text
                    );
          end loop;
       end if;
+      
+      select prop_type_code 
+        into l_prop_type 
+        from cwms_log_message_prop_types 
+       where prop_type_id = 'String';
+      --------------------------------------------------------------
+      -- insert the call stack and any package logging properties --
+      --------------------------------------------------------------
+      l_call_stack := cwms_util.get_call_stack;
+      for i in 2..l_call_stack.count loop
+         l_package := cwms_util.split_text(l_call_stack(i)(1), 1, '.');
+         continue when l_package = 'CWMS_MSG';
+         exit when l_package = '__anonymous_block';
+         if l_line_offset is null then
+            l_line_offset := i;
+         end if;   
+         insert
+           into at_log_message_properties
+         values ( l_msg_id,
+                  'call stack['||(i-l_line_offset)||']',
+                  l_prop_type,
+                  null,
+                  l_call_stack(i)(1)||' : '||l_call_stack(i)(2)
+                );
+         if not l_pkg_props.exists(l_package) then
+            l_pkg_props(l_package) := true;
+            begin
+               execute immediate 'select '||l_package||'.package_log_property_text from dual' into l_prop_text;
+               if l_prop_text is not null then
+                  insert
+                    into at_log_message_properties
+                  values ( l_msg_id,
+                           lower(l_package),
+                           l_prop_type,
+                           null,
+                           l_prop_text
+                         );
+               end if;
+            exception 
+               when l_invalid_identifier then null; 
+            end;
+   end if;
+      end loop;
+      ------------------------------------
+      -- insert the session_id property --
+      ------------------------------------
+      insert
+        into at_log_message_properties
+      values (l_msg_id,
+               'session_id',
+               l_prop_type,
+               null,
+               userenv('sessionid')
+             );
    end if;
    p_message_id := l_msg_id;
 
@@ -600,7 +663,7 @@ is
 begin
    return cwms_text.retrieve_text('/message_id/'||p_message_id);
 end get_message_clob;
-
+   
 -------------------------------------------------------------------------------
 -- PROCEDURE LOG_DB_MESSAGE(...)
 --
@@ -638,6 +701,111 @@ begin
       l_msg_level,
       false);
 end log_db_message;
+   
+-------------------------------------------------------------------------------
+-- PROCEDURE LOG_DB_MESSAGE(...)
+--
+procedure log_db_message(
+   p_msg_level in integer,
+   p_message   in varchar2)
+is
+   pragma autonomous_transaction;
+   l_message   varchar2(4000) := p_message;
+   i           integer;
+   lf constant varchar2(1) := chr(10);
+   l_msg_level integer := nvl(p_msg_level, msg_level_normal);
+begin
+   l_message := replace(l_message, '&', '&'||'amp;');
+   for c in 0..31 loop
+      if c not in (9,10,13) then
+         l_message := replace(l_message, chr(c), '&'||'#'||trim(to_char(c, '0X'))||';');
+      end if;
+   end loop;
+   l_message := utl_i18n.escape_reference(l_message, 'us7ascii');
+   commit;
+   i := log_message(
+      'CWMSDB',
+      null,
+      null,
+      null,
+      systimestamp at time zone 'UTC',
+      '<cwms_message type="Status">' || lf
+      || '  <text>' || lf
+      || '  ' || l_message || lf
+      || '  </text>' || lf
+      || '</cwms_message>',
+      l_msg_level,
+      false);
+end log_db_message;
+
+-------------------------------------------------------------------------------
+-- PROCEDURE LOG_DB_MESSAGE(...)
+--
+procedure log_db_message(
+   p_key       in varchar2,
+   p_message   in varchar2,
+   p_msg_level in integer)
+is
+   pragma autonomous_transaction;
+   l_message   varchar2(4000) := p_message;
+   i           integer;
+   lf constant varchar2(1) := chr(10);
+   l_msg_level integer := nvl(p_msg_level, msg_level_normal);
+begin
+   l_message := replace(l_message, '&', '&'||'amp;');
+   for c in 0..31 loop
+      if c not in (9,10,13) then
+         l_message := replace(l_message, chr(c), '&'||'#'||trim(to_char(c, '0X'))||';');
+      end if;
+   end loop;
+   l_message := utl_i18n.escape_reference(l_message, 'us7ascii');
+   commit;
+   i := log_message(
+      'CWMSDB',
+      null,
+      null,
+      null,
+      systimestamp at time zone 'UTC',
+      '<cwms_message type="Status">' || lf
+      || '  <property name="key" type="String">' || p_key || '</property>' || lf
+      || '  <text>' || lf
+      || '  ' || l_message || lf
+      || '  </text>' || lf
+      || '</cwms_message>',
+      l_msg_level,
+      false);
+end log_db_message;
+
+-------------------------------------------------------------------------------
+-- FUNCTION GET_MSG_IDS_FOR_KEY
+--
+function get_msg_ids_for_key(
+   p_key        in varchar2,
+   p_start_time in date     default null,
+   p_end_time   in date     default null,
+   p_time_zone  in varchar2 default null)
+   return str_tab_t
+is
+   l_msg_ids str_tab_t;
+   l_start_time timestamp;
+   l_end_time   timestamp;
+   l_time_zone  varchar2(28); 
+begin
+   l_time_zone := nvl(p_time_zone, 'UTC');
+   l_start_time := cwms_util.change_timezone(p_start_time, l_time_zone, 'UTC');
+   l_end_time := cwms_util.change_timezone(p_end_time, l_time_zone, 'UTC');
+   select lm.msg_id
+     bulk collect
+     into l_msg_ids
+     from at_log_message lm,
+          at_log_message_properties lmp
+    where lm.log_timestamp_utc between nvl(l_start_time, lm.log_timestamp_utc) and nvl(l_end_time, lm.log_timestamp_utc)
+      and lmp.msg_id = lm.msg_id
+      and lmp.prop_name = 'key'
+      and lmp.prop_text = p_key;
+      
+   return l_msg_ids;      
+end get_msg_ids_for_key;
 -------------------------------------------------------------------------------
 -- FUNCTION LOG_MESSAGE_SERVER_MESSAGE(...)
 --
@@ -902,6 +1070,441 @@ begin
    return log_message_server_message(l_message);
 end log_message_server_message;
 
+-------------------------------------------------------------------------------
+-- PROCEDURE RETRIEVE_LOG_MESSAGES(...)
+--
+procedure retrieve_log_messages(
+   p_log_crsr           out sys_refcursor,
+   p_min_msg_id         in  varchar2      default null,
+   p_max_msg_id         in  varchar2      default null,
+   p_min_log_time       in  date          default null,
+   p_max_log_time       in  date          default null,
+   p_time_zone          in  varchar2      default 'UTC',
+   p_min_msg_level      in  integer       default null,
+   p_max_msg_level      in  integer       default null,
+   p_msg_types          in  varchar2      default null,      
+   p_min_inclusive      in  varchar2      default 'T',
+   p_max_inclusive      in  varchar2      default 'T',
+   p_abbreviated        in  varchar2      default 'T',
+   p_message_mask       in  varchar2      default null,
+   p_message_match_type in  varchar2      default 'GLOBI',
+   p_ascending          in  varchar2      default 'T',
+   p_session_id         in  varchar2      default 'ALL',
+   p_properties         in  str_tab_tab_t default null,
+   p_props_combination  in  varchar2      default 'ANY') 
+is
+   l_min_inclusive     boolean;
+   l_max_inclusive     boolean;
+   l_msg_types         number_tab_t;
+   l_abbreviated       boolean;
+   l_ascending         boolean; 
+   l_case_insensitive  boolean;
+   l_negated           boolean;
+   l_match_type        varchar2(6);
+   l_session_id        varchar2(16);
+   l_combination       varchar2(3);
+   l_next_word         varchar2(32);
+   l_query             varchar2(32767); 
+   
+   procedure parse_match_type(
+      p_negated          out boolean,
+      p_case_insensitive out boolean,
+      p_match_type       out varchar2,
+      p_input            in  varchar2)
+   is
+      c_expression constant varchar2(24) := '(n)?(glob|sql|regex)(i)?';
+      l_match_type varchar2(6);
+   begin
+      if not regexp_like(p_input, c_expression, 'i') then
+         cwms_err.raise('ERROR', 'Invalid match type');
+      end if;
+      p_negated := regexp_substr(p_input, c_expression, 1, 1, 'i', 1) is not null;
+      p_case_insensitive := regexp_substr(p_input, c_expression, 1, 1, 'i', 3) is not null;
+      p_match_type := upper(regexp_substr(p_input, c_expression, 1, 1, 'i', 2));
+   end parse_match_type;
+   
+   function parse_msg_types(
+      p_input in varchar2)
+      return number_tab_t
+   is
+      type number_set_t is table of boolean index by pls_integer;
+      l_numbers   number_tab_t := number_tab_t();
+      l_parts     str_tab_t;
+      l_included  number_set_t;
+      msg_type    pls_integer;
+   begin
+      l_parts := cwms_util.split_text(p_input, ',');
+      l_numbers.extend;
+      for i in 1..l_parts.count loop
+         begin
+            if instr(l_parts(i), '-') > 0 then
+               select trim(column_value)
+                 bulk collect
+                 into l_numbers
+                 from table(cwms_util.split_text(l_parts(i), '-'));
+               if l_numbers.count != 2 or l_numbers(2) <= l_numbers(1) then 
+                  cwms_err.raise('ERROR', null);
+               end if;   
+            else
+               l_numbers(1) := trim(l_parts(i));
+            end if;
+            for j in 1..l_numbers.count loop
+               l_included(j) := true;
+            end loop;
+         exception
+            when others then
+               cwms_err.raise('ERROR', 'Invalid number or number range: '''||l_parts(i)||'''');
+         end;
+      end loop;
+      msg_type := l_included.first;
+      l_numbers.delete;
+      loop
+         exit when msg_type is null;
+         if msg_type not between 1 and 20 then
+            cwms_err.raise('ERROR', 'Invalid message type: '||msg_type);
+         end if;
+         l_numbers.extend;
+         l_numbers(l_numbers.count) := msg_type;
+      end loop;
+   end parse_msg_types;
+   
+   function has_wildcards(
+      p_input      in varchar2,
+      p_match_type in varchar2)
+      return boolean
+   is
+   begin
+      case p_match_type
+      when 'GLOB' then
+         return instr(p_input, '*') > 0 or instr(p_input, '?') > 0;
+      when 'SQL' then
+         return instr(p_input, '%') > 0 or instr(p_input, '_') > 0;
+      else
+         cwms_err.raise('ERROR', 'P_MATCH_TYPE must be ''GLOB'' or ''SQL''');
+      end case;   
+   end has_wildcards;
+begin
+   -------------------
+   -- sanity checks --
+   -------------------
+   l_ascending := cwms_util.is_true(p_ascending);
+   l_abbreviated := cwms_util.is_true(p_abbreviated);
+   
+   if p_min_msg_id is not null then
+      l_min_inclusive := cwms_util.is_true(p_min_inclusive);
+   end if;
+   
+   if p_max_msg_id is not null then
+      l_max_inclusive := cwms_util.is_true(p_max_inclusive);
+   end if;   
+   
+   if p_message_mask is not null then
+      begin
+         parse_match_type(l_negated, l_case_insensitive, l_match_type, p_message_match_type);
+      exception
+         when others then
+            cwms_err.raise('ERROR', 'P_message_match_type must be ''(N)GLOB(I)'', ''(N)SQL(I)'', or ''(N)REGEX(I)''');
+      end;
+   end if;
+   
+   case
+   when p_session_id is null then
+      l_session_id := userenv('sessionid');
+   when upper(p_session_id) = 'ALL' then
+      l_session_id := 'ALL';
+   else
+      l_session_id := p_session_id;
+   end case;
+   
+   if p_properties is not null and p_properties.count > 1 then
+      if upper(p_props_combination) in ('ANY', 'ALL') then
+         l_combination := upper(p_props_combination);
+      else
+         cwms_err.raise('ERROR', 'P_COMBINATION must be ''ANY'' or ''ALL''');
+      end if;
+   end if;
+   ---------------------
+   -- build the query --
+   ---------------------
+   l_query := 'select msg_id from at_log_message ';
+
+   if coalesce(p_min_msg_id, p_max_msg_id, p_message_mask) is not null then
+      l_next_word := 'where';
+      if p_min_msg_id is not null then
+         l_query := l_query
+         ||l_next_word
+         ||' msg_id'
+         ||case when l_min_inclusive then ' >= ' else ' > ' end
+         ||p_min_msg_id;
+         l_next_word := 'and';   
+      end if;
+      if p_max_msg_id is not null then
+         l_query := l_query
+         ||l_next_word
+         ||' msg_id'
+         ||case when l_max_inclusive then ' <= ' else ' < ' end
+         ||p_max_msg_id;
+         l_next_word := 'and';   
+      end if;
+      if p_min_log_time is not null then
+         l_query := l_query
+         ||l_next_word
+         ||' log_timestamp_utc'
+         ||case when l_min_inclusive then ' >= timestamp ''' else ' > timestamp ''' end
+         ||to_char(cwms_util.change_timezone(p_min_log_time, nvl(p_time_zone, 'UTC'), 'UTC'), 'yyyy-mm-dd hh24:mi:ss')
+         ||''' ';
+         l_next_word := 'and';
+      end if;
+      if p_max_log_time is not null then
+         l_query := l_query
+         ||l_next_word
+         ||' log_timestamp_utc'
+         ||case when l_max_inclusive then ' <= timestamp ''' else ' < timestamp ''' end
+         ||to_char(cwms_util.change_timezone(p_max_log_time, nvl(p_time_zone, 'UTC'), 'UTC'), 'yyyy-mm-dd hh24:mi:ss')
+         ||''' ';
+         l_next_word := 'and';
+      end if;
+      if p_min_msg_level is not null then
+         l_query := l_query
+         ||l_next_word
+         ||' msg_level'
+         ||case when l_min_inclusive then ' >= ' else ' > ' end
+         ||p_min_msg_level;
+         l_next_word := 'and';   
+      end if;
+      if p_max_msg_level is not null then
+         l_query := l_query
+         ||l_next_word
+         ||' msg_level'
+         ||case when l_max_inclusive then ' <= ' else ' < ' end
+         ||p_max_msg_level;
+         l_next_word := 'and';   
+      end if;
+      if p_msg_types is not null then
+         l_msg_types := parse_msg_types(p_msg_types);
+         if l_msg_types is not null and l_msg_types.count > 0 then
+            l_query := l_query
+            ||l_next_word
+            ||' msg_type in (';
+            for i in 1..l_msg_types.count loop
+               l_query := l_query
+               ||case 
+                 when i = 1 then l_msg_types(i) 
+                 else ','||l_msg_types(i) 
+                 end;
+            end loop;
+         end if;
+         l_next_word := 'and';   
+      end if;
+      if p_message_mask is not null then
+         if l_match_type in ('GLOB', 'SQL') then
+            if has_wildcards(p_message_mask, l_match_type) then
+               ------------------------------------------
+               -- GLOB or SQL with wildcard characters --
+               ------------------------------------------
+               l_query := l_query
+               ||l_next_word
+               ||case when l_case_insensitive then ' upper(msg_text)' else ' msg_text' end
+               ||case when l_negated then ' not like ''' else ' like ''' end
+               ||case
+                 when l_match_type = 'GLOB' then 
+                    case 
+                    when l_case_insensitive then cwms_util.normalize_wildcards(upper(p_message_mask))
+                    else cwms_util.normalize_wildcards(p_message_mask)
+                    end
+                 else  
+                    case 
+                    when l_case_insensitive then upper(p_message_mask)
+                    else p_message_mask
+                    end
+                 end  
+               ||''' escape ''\''';
+            else
+               ---------------------------------------------
+               -- GLOB or SQL without wildcard characters --
+               ---------------------------------------------
+               l_query := l_query
+               ||l_next_word
+               ||case when l_case_insensitive then ' upper(msg_text)' else ' msg_text' end
+               ||case when l_negated then ' <> ''' else ' = ''' end
+               ||case 
+                 when l_case_insensitive then upper(p_message_mask)
+                 else p_message_mask
+                 end
+               ||'''';
+            end if;
+         else
+            -----------
+            -- REGEX --
+            -----------
+            l_query := l_query
+            ||l_next_word
+            ||case when l_negated then ' not' else null end
+            ||' regexp_like(msg_text, '''
+            ||p_message_mask
+            ||case when l_case_insensitive then ''',''inm'')' else ''',''nm'') ' end;
+         end if;
+      end if;
+   end if;
+   if l_session_id != 'ALL' or (p_properties is not null and p_properties.count > 0) then
+      l_query := 'select msg_id from ('
+      ||l_query
+      ||') q1'
+      ||chr(10)
+      ||'join'
+      ||chr(10);
+      if l_session_id != 'ALL' then
+         l_query := l_query
+         ||'(select msg_id as msg_id2 from at_log_message_properties where prop_name = ''session_id'' and prop_text = '''
+         ||l_session_id
+         ||''') q2 on q2.msg_id2 = q1.msg_id'
+         ||chr(10);
+      end if;
+      if p_properties is not null and p_properties.count > 0 then
+         if l_combination = 'ANY' then
+            l_next_word := 'left outer join'||chr(10);
+         else
+            l_next_word := 'join'||chr(10);
+         end if;
+         -------------------------------------------------------------------
+         -- NOTE all message property names are lowercase in the database --
+         -------------------------------------------------------------------
+         for i in 1..p_properties.count loop
+            if p_properties(i).count = 0 then
+               cwms_err.raise('ERROR', 'Property specification record cannot be null');
+            end if;
+            if i > 1 or l_session_id != 'ALL' then
+               l_query := l_query||l_next_word;
+            end if;
+            l_query := l_query
+            ||'(select msg_id as msg_id2 from at_log_message_properties where prop_name = '''
+            ||lower(p_properties(i)(1))
+            ||'''';
+            if p_properties(i).count > 1 then
+               if p_properties(i).count < 3 then
+                  cwms_err.raise('ERROR', 'Property value mask specified without match type');
+               end if;
+               parse_match_type(l_negated, l_case_insensitive, l_match_type, p_properties(i)(3));
+               if l_match_type in ('GLOB', 'SQL') then
+                  if has_wildcards(p_properties(i)(2), l_match_type) then
+                     if l_match_type = 'GLOB' then
+                        -----------------------------------
+                        -- GLOB with wildcard characters --
+                        -----------------------------------
+                        l_query := l_query
+                        ||case when l_case_insensitive then ' and upper(nvl(prop_text, prop_value))' else ' and nvl(prop_text, prop_value)' end
+                        ||case when l_negated then ' not like ''' else ' like ''' end
+                        ||case when l_case_insensitive then cwms_util.normalize_wildcards(upper(p_properties(i)(2))) else cwms_util.normalize_wildcards(p_properties(i)(2)) end
+                        ||''' escape ''\'')';
+                     else
+                        ----------------------------------
+                        -- SQL with wildcard characters --
+                        ----------------------------------
+                        l_query := l_query
+                        ||case when l_case_insensitive then ' and upper(nvl(prop_text, prop_value))' else ' and nvl(prop_text, prop_value)' end
+                        ||case when l_negated then ' not like ''' else ' like ''' end
+                        ||case when l_case_insensitive then upper(p_properties(i)(2)) else p_properties(i)(2) end
+                        ||''' escape ''\'')';
+                     end if;
+                  else
+                     ---------------------------------------------
+                     -- GLOB or SQL without wildcard characters --
+                     ---------------------------------------------
+                     l_query := l_query
+                     ||case when l_case_insensitive then ' and upper(nvl(prop_text, prop_value))' else ' and nvl(prop_text, prop_value)' end
+                     ||case when l_negated then ' <> ''' else ' = ''' end
+                     ||case when l_case_insensitive then upper(p_properties(i)(2)) else p_properties(i)(2) end
+                     ||''')';
+                  end if;
+               else
+                  -----------
+                  -- REGEX --
+                  -----------
+                  l_query := l_query
+                  ||case when l_negated then ' and not' else ' and' end
+                  ||' regexp_like(nvl(prop_text, prop_value),'''
+                  ||p_properties(i)(2)
+                  ||case when l_case_insensitive then ''',''inm'')' else ''',''nm'')) ' end;
+               end if;
+            end if;
+            l_query := l_query
+            ||' q'||(i+2)||' on q'||(i+2)||'.msg_id2 = q1.msg_id';
+         end loop;
+      end if;
+   end if;
+   if l_abbreviated then
+      l_query := 'select msg_id, cwms_util.change_timezone(log_timestamp_utc, ''UTC'','''
+      ||nvl(p_time_zone, 'UTC')
+      ||''') as log_timestamp, msg_text from at_log_message where msg_id in ('||l_query||')';
+   else
+      l_query := 'select msg_id, office_code, cwms_util.change_timezone(log_timestamp_utc, ''UTC'','''
+      ||nvl(p_time_zone, 'UTC')
+      ||''') as log_timestamp, msg_level, component, instance, host, port, cwms_util.change_timezone(report_timestamp_utc, ''UTC'','''
+      ||nvl(p_time_zone, 'UTC')
+      ||''') as report_timestamp, session_username,'
+      ||' session_process, session_program, session_machine, msg_type, msg_text, cursor (select prop_name as name, prop_type as type, nvl(prop_text, prop_value)'
+      ||'  as value from at_log_message_properties where msg_id = a.msg_id order by prop_name) as properties from at_log_message a where msg_id in ('
+      ||l_query
+      ||')';
+   end if;
+   l_query := l_query
+   ||chr(10)
+   ||'order by 1'
+   ||case
+     when l_ascending then ' asc'
+     else ' desc'
+     end;
+--   dbms_output.put_line(l_query);
+   open p_log_crsr for l_query;
+end retrieve_log_messages;
+
+-------------------------------------------------------------------------------
+-- FUNCTION RETRIEVE_LOG_MESSAGES(...)
+--
+function retrieve_log_messages_f(
+   p_min_msg_id         in varchar2      default null,
+   p_max_msg_id         in varchar2      default null,
+   p_min_log_time       in date          default null,
+   p_max_log_time       in date          default null,
+   p_time_zone          in varchar2      default 'UTC',
+   p_min_msg_level      in integer       default null,
+   p_max_msg_level      in integer       default null,
+   p_msg_types          in varchar2      default null,      
+   p_min_inclusive      in varchar2      default 'T',
+   p_max_inclusive      in varchar2      default 'T',
+   p_abbreviated        in varchar2      default 'T',
+   p_message_mask       in varchar2      default null,
+   p_message_match_type in varchar2      default 'GLOBI',
+   p_ascending          in varchar2      default 'T',
+   p_session_id         in varchar2      default 'ALL',
+   p_properties         in str_tab_tab_t default null,
+   p_props_combination  in varchar2      default 'ANY') 
+   return sys_refcursor
+is
+   l_crsr sys_refcursor;
+begin
+   retrieve_log_messages(
+      p_log_crsr           => l_crsr,
+      p_min_msg_id         => p_min_msg_id,
+      p_max_msg_id         => p_max_msg_id,
+      p_min_log_time       => p_min_log_time,
+      p_max_log_time       => p_max_log_time,
+      p_time_zone          => p_time_zone,
+      p_min_msg_level      => p_min_msg_level,
+      p_max_msg_level      => p_max_msg_level,
+      p_msg_types          => p_msg_types,
+      p_min_inclusive      => p_min_inclusive,
+      p_max_inclusive      => p_max_inclusive,
+      p_abbreviated        => p_abbreviated,
+      p_message_mask       => p_message_mask,
+      p_message_match_type => p_message_match_type,
+      p_ascending          => p_ascending,
+      p_session_id         => p_session_id,
+      p_properties         => p_properties,        
+      p_props_combination  => p_props_combination); 
+      
+   return l_crsr;      
+end retrieve_log_messages_f;
 -------------------------------------------------------------------------------
 -- FUNCTION PARSE_LOG_MSG_PROP_TAB(...)
 --
@@ -2072,6 +2675,7 @@ begin
    commit;
 end update_queue_subscriber;
 
+function get_call_stack return str_tab_tab_t is begin return cwms_util.get_call_stack; end get_call_stack;
 end cwms_msg;
 /
 show errors;

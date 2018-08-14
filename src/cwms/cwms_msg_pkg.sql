@@ -319,10 +319,38 @@ function get_message_clob(
    p_message_id in varchar2)
    return clob;
 -- not documented
+function create_message_key
+   return varchar2;
+-- deprecated
 procedure log_db_message(
    p_procedure in varchar2,
    p_msg_level in integer default msg_level_normal,
    p_message   in varchar2);
+-- not documented
+procedure log_db_message(
+   p_msg_level in integer,
+   p_message   in varchar2);
+-- not documented
+procedure log_db_message(
+   p_key       in varchar2,
+   p_message   in varchar2,
+   p_msg_level in integer);
+/**
+ * Retrieves message IDs whose properties include the specified key, optionally within a time window.
+ *
+ * @param p_key        The key to retieve the message IDs for 
+ * @param p_start_time The start of the time window in the specified or default time zone. If unspecified or NULL, no beginning time limit is used.
+ * @param p_end_time   The end of the time window in the specified or default time zone. If unspecified or NULL, no ending time limit is used.
+ * @param p_time_zone  The time zone if the time window. If unspecified or NULL, 'UTC' is used.
+ *
+ * @return The associated message IDs, which can be used to retrieve the messages.
+ */
+function get_msg_ids_for_key(
+   p_key        in varchar2,
+   p_start_time in date     default null,
+   p_end_time   in date     default null,
+   p_time_zone  in varchar2 default null)
+   return str_tab_t;
 /**
  * Logs a message of the CWMS Message Server message format and publishes it
  * to the STATUS queue
@@ -345,6 +373,764 @@ function log_message_server_message(
 function log_message_server_message(
    p_message in out nocopy clob)
    return integer;
+/**
+ * Retrieves a cursor of database log messages that match the specified criteria
+ *
+ * @param p_log_crsr The cursor that contains the matched log messages. 
+ *        <p>The following columns are returned if p_abbreviated = 'T'
+ *        <p>
+ *        <table class="descr">
+ *          <tr>
+ *            <th class="descr">Column No.</th>
+ *            <th class="descr">Column Name</th>
+ *            <th class="descr">Data Type</th>
+ *            <th class="descr">Contents</th>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">1</td>
+ *            <td class="descr">msg_id</td>
+ *            <td class="descr">varchar2(32)</td>
+ *            <td class="descr">The log message identifier</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">2</td>
+ *            <td class="descr">log_timestamp_utc</td>
+ *            <td class="descr">timestamp(6)</td>
+ *            <td class="descr">Timestamp of when the message was logged</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">3</td>
+ *            <td class="descr">msg_text</td>
+ *            <td class="descr">varchar2(4000)</td>
+ *            <td class="descr">The text of the log message</td>
+ *          </tr>
+ *        </table>
+ *        <p>The following columns are returned if p_abbreviated = 'F'
+ *        <p>
+ *        <table class="descr">
+ *          <tr>
+ *            <th class="descr">Column No.</th>
+ *            <th class="descr">Column Name</th>
+ *            <th class="descr">Data Type</th>
+ *            <th class="descr">Contents</th>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">1</td>
+ *            <td class="descr">msg_id</td>
+ *            <td class="descr">varchar2(32)</td>
+ *            <td class="descr">The log message identifier</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">2</td>
+ *            <td class="descr">office_code</td>
+ *            <td class="descr">number(10,0)</td>
+ *            <td class="descr">Office code of the logging office</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">3</td>
+ *            <td class="descr">log_timestamp_utc</td>
+ *            <td class="descr">timestamp(6)</td>
+ *            <td class="descr">Timestamp of when the message was logged (set by database)</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">4</td>
+ *            <td class="descr">msg_level</td>
+ *            <td class="descr">number(2,0)</td>
+ *            <td class="descr">The detail level of the service</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">5</td>
+ *            <td class="descr">component</td>
+ *            <td class="descr">varchar2(64)</td>
+ *            <td class="descr">The reporting CWMS component</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">6</td>
+ *            <td class="descr">instance</td>
+ *            <td class="descr">varchar2(64)</td>
+ *            <td class="descr">Instance of the reporting CWMS component, if applicable</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">7</td>
+ *            <td class="descr">host</td>
+ *            <td class="descr">varchar2(256)</td>
+ *            <td class="descr">Host on which the reporting component is executing</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">8</td>
+ *            <td class="descr">port</td>
+ *            <td class="descr">number(5,0)</td>
+ *            <td class="descr">Port at which the reporting component is contacted, if applicable</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">9</td>
+ *            <td class="descr">report_timestamp_utc</td>
+ *            <td class="descr">timestamp(6)</td>
+ *            <td class="descr">Timestamp of when the message was reported (set by client)</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">10</td>
+ *            <td class="descr">session_username</td>
+ *            <td class="descr">varchar2(30)</td>
+ *            <td class="descr">The database session usernmae</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">11</td>
+ *            <td class="descr">session_osuser</td>
+ *            <td class="descr">varchar2(30)</td>
+ *            <td class="descr">The OS username on the client</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">12</td>
+ *            <td class="descr">session_process</td>
+ *            <td class="descr">varchar2(24)</td>
+ *            <td class="descr">The name of the client process</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">13</td>
+ *            <td class="descr">session_program</td>
+ *            <td class="descr">varchar2(64)</td>
+ *            <td class="descr">The name of the client program</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">14</td>
+ *            <td class="descr">session_machine</td>
+ *            <td class="descr">varchar2(64)</td>
+ *            <td class="descr">The machine name of the connect client</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">15</td>
+ *            <td class="descr">msg_type</td>
+ *            <td class="descr">number(2,0)</td>
+ *            <td class="descr">The message type</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">16</td>
+ *            <td class="descr">mst_text</td>
+ *            <td class="descr">varchar2(4000)</td>
+ *            <td class="descr">The text of the log message</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">17</td>
+ *            <td class="descr">properties</td>
+ *            <td class="descr">cursor</td>
+ *            <td class="descr">A cursor of properties for the message
+ *              <table class="descr">
+ *                <tr>
+ *                  <th class="descr">Column No.</th>
+ *                  <th class="descr">Column Name</th>
+ *                  <th class="descr">Data Type</th>
+ *                  <th class="descr">Contents</th>
+ *                </tr>
+ *                <tr>
+ *                  <td class="descr-center">1</td>
+ *                  <td class="descr">name</td>
+ *                  <td class="descr">varchar2(64)</td>
+ *                  <td class="descr">The log message identifier</td>
+ *                </tr>
+ *                <tr>
+ *                  <td class="descr-center">2</td>
+ *                  <td class="descr">type</td>
+ *                  <td class="descr">number(1,0)</td>                                    
+ *                  <td class="descr">The property type</td>
+ *                </tr>
+ *                <tr>
+ *                  <td class="descr-center">3</td>
+ *                  <td class="descr">value</td>
+ *                  <td class="descr">varchar2(4000)</td>
+ *                  <td class="descr">The value of the property</td>
+ *                </tr>
+ *              </table>
+ *            </td>
+ *          </tr>
+ *        </table>
+ * @param p_min_msg_id         The lowest message id to match. If unspecified or null, no lower limit will be applied. 
+ * @param p_max_msg_id         The highest message id to match. If unspecified or null, no upper limit will be applied.
+ * @param p_min_log_time       The lowest log timestamp to match. If unspecified or null, no lower limit will be applied. 
+ * @param p_max_log_time       The highest log timestamp to match. If unspecified or null, no upper limit will be applied.
+ * @param p_time_zone          The time zone of p_min/max_log_time and of the returned log times. If unspecified or null, 'UTC' will be used.
+ * @param p_min_msg_level      The lowest message level to match. If unspecified or null, no lower limit will be applied.
+ *                             <p>Defined levels are as follows. Levels between defined levels can be used. 
+ *                             <p>
+ *                             <table class="descr">
+ *                               <tr>
+ *                                 <th class="descr">Level</th>
+ *                                 <th class="descr">Meaning</th>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">1</td>
+ *                                 <td class="descr">Basic</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">3</td>
+ *                                 <td class="descr">Normal</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">5</td>
+ *                                 <td class="descr">Detailed</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">7</td>
+ *                                 <td class="descr">Verbose</td>
+ *                               </tr>
+ *                             </table>
+ * @param p_max_msg_level      The highest message level to match. If unspecified or null, no upper limit will be applied.
+ *                             <p>Defined levels are as follows. Levels between defined levels can be used. 
+ *                             <p>
+ *                             <table class="descr">
+ *                               <tr>
+ *                                 <th class="descr">Level</th>
+ *                                 <th class="descr">Meaning</th>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">1</td>
+ *                                 <td class="descr">Basic</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">3</td>
+ *                                 <td class="descr">Normal</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">5</td>
+ *                                 <td class="descr">Detailed</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">7</td>
+ *                                 <td class="descr">Verbose</td>
+ *                               </tr>
+ *                             </table>
+ * @param p_min_inclusive      A flag (T/F) specifying whether p_min_xxx is inclusive (can be in the matched messages). If unspecified, 'T' is used.
+ * @param p_max_inclusive      A flag (T/F) specifying whether p_max_xxx is inclusive (can be in the matched messages). If unspecified, 'T' is used.
+ * @param p_message_types      The numeric message types to match, as a comma-separated text of integers or integer ranges (a..b).
+ *                             For example, to match all alarm and error/exception message types: '1,3,5-8,10,12,14-15'.
+ *                             If unspecified or null, all message types are matched.
+ *                             <p>Defined types are as follows. 
+ *                             <p>
+ *                             <table class="descr">
+ *                               <tr>
+ *                                 <th class="descr">Type</th>
+ *                                 <th class="descr">Meaning</th>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">1</td>
+ *                                 <td class="descr">AcknowledgeAlarm</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">2</td>
+ *                                 <td class="descr">AcknowledgeRequest</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">3</td>
+ *                                 <td class="descr">Alarm</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">4</td>
+ *                                 <td class="descr">ControlMessage</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">5</td>
+ *                                 <td class="descr">DeactivateAlarm</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">6</td>
+ *                                 <td class="descr">Exception Thrown</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">7</td>
+ *                                 <td class="descr">Fatal Error</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">8</td>
+ *                                 <td class="descr">Initialization Error</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">9</td>
+ *                                 <td class="descr">Initiated</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">10</td>
+ *                                 <td class="descr">Load Library Error</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">11</td>
+ *                                 <td class="descr">MissedHeartBeat</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">12</td>
+ *                                 <td class="descr">PreventAlarm</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">13</td>
+ *                                 <td class="descr">RequestAction</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">14</td>
+ *                                 <td class="descr">ResetAlarm</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">15</td>
+ *                                 <td class="descr">Runtime Exec Error</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">16</td>
+ *                                 <td class="descr">Shutting Down</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">17</td>
+ *                                 <td class="descr">State</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">18</td>
+ *                                 <td class="descr">Status</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">19</td>
+ *                                 <td class="descr">StatusIntervalMinutes</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">20</td>
+ *                                 <td class="descr">Terminated</td>
+ *                               </tr>
+ *                             </table>
+ * @param p_abbreviated        A flag (T/F) specifying whether the cursror will contain abbreviated informtion. If unspecified, 'T' is used.
+ * @param p_message_mask       A value to match log message text against. If unspecified or null, no message text matching is performed.
+ * @param p_message_match_type Specifies the type of message text matching.
+ *                             <p>Match types are as follows. For literal (non-pattern) matching, the Glob and Sql matching types are equivalent.
+ *                             <p>
+ *                             <table class="descr">
+ *                               <tr>
+ *                                 <th class="descr">Matching Type</th>
+ *                                 <th class="descr">Normal Variant</th>
+ *                                 <th class="descr">Negated Variant</th>
+ *                                 <th class="descr">Case Insensitive Variant</th>
+ *                                 <th class="descr">Negated Case Insensitive Variant</th>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr">Glob-style wildcards: '*' and '?'</th>
+ *                                 <td class="descr">GLOB</th>
+ *                                 <td class="descr">NGLOB</th>
+ *                                 <td class="descr">GLOBI</th>
+ *                                 <td class="descr">NGLOBI</th>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr">Sql-style wildcards: '%' and '_'</th>
+ *                                 <td class="descr">SQL</th>
+ *                                 <td class="descr">NSQL</th>
+ *                                 <td class="descr">SQLI</th>
+ *                                 <td class="descr">NSQLI</th>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr">Regular Expressions</th>
+ *                                 <td class="descr">REGEX</th>
+ *                                 <td class="descr">NREGEX</th>
+ *                                 <td class="descr">REGEXI</th>
+ *                                 <td class="descr">NREGEXI</th>
+ *                               </tr>
+ *                             </table>
+ * @param p_ascending          A flag (T/F) specifying whether the results should be sorted ascending (T) or descending (F). If unspecified, 'T' is used.
+ * @param p_session_id         Specifies the database sessions to match messages from. Must be null (current session), 'ALL' (all sessions) or a valid session id.
+ * @param p_properties         The log message properties to match. If unspecified or null, no message property matching will be performed.
+ * @param p_props_combination  Specifies whether to match any specified property ('ANY') or all specified properties ('ALL'). If unspecified, 'ANY' is used.
+ */
+procedure retrieve_log_messages(
+   p_log_crsr           out sys_refcursor,
+   p_min_msg_id         in  varchar2      default null,
+   p_max_msg_id         in  varchar2      default null,
+   p_min_log_time       in  date          default null,
+   p_max_log_time       in  date          default null,
+   p_time_zone          in  varchar2      default 'UTC',
+   p_min_msg_level      in  integer       default null,
+   p_max_msg_level      in  integer       default null,
+   p_msg_types          in  varchar2      default null,      
+   p_min_inclusive      in  varchar2      default 'T',
+   p_max_inclusive      in  varchar2      default 'T',
+   p_abbreviated        in  varchar2      default 'T',
+   p_message_mask       in  varchar2      default null,
+   p_message_match_type in  varchar2      default 'GLOBI',
+   p_ascending          in  varchar2      default 'T',
+   p_session_id         in  varchar2      default 'ALL',
+   p_properties         in  str_tab_tab_t default null,
+   p_props_combination  in  varchar2      default 'ANY'); 
+/**
+ * Retrieves a cursor of database log messages that match the specified criteria
+ *
+ * @param p_min_msg_id         The lowest message id to match. If unspecified or null, no lower limit will be applied. 
+ * @param p_max_msg_id         The highest message id to match. If unspecified or null, no upper limit will be applied.
+ * @param p_min_log_time       The lowest log timestamp to match. If unspecified or null, no lower limit will be applied. 
+ * @param p_max_log_time       The highest log timestamp to match. If unspecified or null, no upper limit will be applied.
+ * @param p_time_zone          The time zone of p_min/max_log_time and of the returned log times. If unspecified or null, 'UTC' will be used.
+ * @param p_min_msg_level      The lowest message level to match. If unspecified or null, no lower limit will be applied.
+ *                             <p>Defined levels are as follows. Levels between defined levels can be used. 
+ *                             <p>
+ *                             <table class="descr">
+ *                               <tr>
+ *                                 <th class="descr">Level</th>
+ *                                 <th class="descr">Meaning</th>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">1</td>
+ *                                 <td class="descr">Basic</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">3</td>
+ *                                 <td class="descr">Normal</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">5</td>
+ *                                 <td class="descr">Detailed</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">7</td>
+ *                                 <td class="descr">Verbose</td>
+ *                               </tr>
+ *                             </table>
+ * @param p_max_msg_level      The highest message level to match. If unspecified or null, no upper limit will be applied.
+ *                             <p>Defined levels are as follows. Levels between defined levels can be used. 
+ *                             <p>
+ *                             <table class="descr">
+ *                               <tr>
+ *                                 <th class="descr">Level</th>
+ *                                 <th class="descr">Meaning</th>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">1</td>
+ *                                 <td class="descr">Basic</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">3</td>
+ *                                 <td class="descr">Normal</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">5</td>
+ *                                 <td class="descr">Detailed</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">7</td>
+ *                                 <td class="descr">Verbose</td>
+ *                               </tr>
+ *                             </table>
+ * @param p_min_inclusive      A flag (T/F) specifying whether p_min_xxx is inclusive (can be in the matched messages). If unspecified, 'T' is used.
+ * @param p_max_inclusive      A flag (T/F) specifying whether p_max_xxx is inclusive (can be in the matched messages). If unspecified, 'T' is used.
+ * @param p_message_types      The numeric message types to match, as a comma-separated text of integers or integer ranges (a..b).
+ *                             For example, to match all alarm and error/exception message types: '1,3,5-8,10,12,14-15'.
+ *                             If unspecified or null, all message types are matched.
+ *                             <p>Defined types are as follows. 
+ *                             <p>
+ *                             <table class="descr">
+ *                               <tr>
+ *                                 <th class="descr">Type</th>
+ *                                 <th class="descr">Meaning</th>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">1</td>
+ *                                 <td class="descr">AcknowledgeAlarm</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">2</td>
+ *                                 <td class="descr">AcknowledgeRequest</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">3</td>
+ *                                 <td class="descr">Alarm</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">4</td>
+ *                                 <td class="descr">ControlMessage</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">5</td>
+ *                                 <td class="descr">DeactivateAlarm</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">6</td>
+ *                                 <td class="descr">Exception Thrown</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">7</td>
+ *                                 <td class="descr">Fatal Error</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">8</td>
+ *                                 <td class="descr">Initialization Error</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">9</td>
+ *                                 <td class="descr">Initiated</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">10</td>
+ *                                 <td class="descr">Load Library Error</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">11</td>
+ *                                 <td class="descr">MissedHeartBeat</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">12</td>
+ *                                 <td class="descr">PreventAlarm</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">13</td>
+ *                                 <td class="descr">RequestAction</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">14</td>
+ *                                 <td class="descr">ResetAlarm</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">15</td>
+ *                                 <td class="descr">Runtime Exec Error</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">16</td>
+ *                                 <td class="descr">Shutting Down</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">17</td>
+ *                                 <td class="descr">State</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">18</td>
+ *                                 <td class="descr">Status</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">19</td>
+ *                                 <td class="descr">StatusIntervalMinutes</td>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr-center">20</td>
+ *                                 <td class="descr">Terminated</td>
+ *                               </tr>
+ *                             </table>
+ * @param p_abbreviated        A flag (T/F) specifying whether the cursror will contain abbreviated informtion. If unspecified, 'T' is used.
+ * @param p_message_mask       A value to match log message text against. If unspecified or null, no message text matching is performed.
+ * @param p_message_match_type Specifies the type of message text matching.
+ *                             <p>Match types are as follows. For literal (non-pattern) matching, the Glob and Sql matching types are equivalent.
+ *                             <p>
+ *                             <table class="descr">
+ *                               <tr>
+ *                                 <th class="descr">Matching Type</th>
+ *                                 <th class="descr">Normal Variant</th>
+ *                                 <th class="descr">Negated Variant</th>
+ *                                 <th class="descr">Case Insensitive Variant</th>
+ *                                 <th class="descr">Negated Case Insensitive Variant</th>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr">Glob-style wildcards: '*' and '?'</th>
+ *                                 <td class="descr">GLOB</th>
+ *                                 <td class="descr">NGLOB</th>
+ *                                 <td class="descr">GLOBI</th>
+ *                                 <td class="descr">NGLOBI</th>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr">Sql-style wildcards: '%' and '_'</th>
+ *                                 <td class="descr">SQL</th>
+ *                                 <td class="descr">NSQL</th>
+ *                                 <td class="descr">SQLI</th>
+ *                                 <td class="descr">NSQLI</th>
+ *                               </tr>
+ *                               <tr>
+ *                                 <td class="descr">Regular Expressions</th>
+ *                                 <td class="descr">REGEX</th>
+ *                                 <td class="descr">NREGEX</th>
+ *                                 <td class="descr">REGEXI</th>
+ *                                 <td class="descr">NREGEXI</th>
+ *                               </tr>
+ *                             </table>
+ * @param p_ascending          A flag (T/F) specifying whether the results should be sorted ascending (T) or descending (F). If unspecified, 'T' is used.
+ * @param p_session_id         Specifies the database sessions to match messages from. Must be null (current session), 'ALL' (all sessions) or a valid session id.
+ * @param p_properties         The log message properties to match. If unspecified or null, no message property matching will be performed.
+ * @param p_props_combination  Specifies whether to match any specified property ('ANY') or all specified properties ('ALL'). If unspecified, 'ANY' is used.
+ *
+ * @return The cursor that contains the matched log messages. 
+ *        <p>The following columns are returned if p_abbreviated = 'T'
+ *        <p>
+ *        <table class="descr">
+ *          <tr>
+ *            <th class="descr">Column No.</th>
+ *            <th class="descr">Column Name</th>
+ *            <th class="descr">Data Type</th>
+ *            <th class="descr">Contents</th>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">1</td>
+ *            <td class="descr">msg_id</td>
+ *            <td class="descr">varchar2(32)</td>
+ *            <td class="descr">The log message identifier</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">2</td>
+ *            <td class="descr">log_timestamp_utc</td>
+ *            <td class="descr">timestamp(6)</td>
+ *            <td class="descr">Timestamp of when the message was logged</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">3</td>
+ *            <td class="descr">msg_text</td>
+ *            <td class="descr">varchar2(4000)</td>
+ *            <td class="descr">The text of the log message</td>
+ *          </tr>
+ *        </table>
+ *        <p>The following columns are returned if p_abbreviated = 'F'
+ *        <p>
+ *        <table class="descr">
+ *          <tr>
+ *            <th class="descr">Column No.</th>
+ *            <th class="descr">Column Name</th>
+ *            <th class="descr">Data Type</th>
+ *            <th class="descr">Contents</th>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">1</td>
+ *            <td class="descr">msg_id</td>
+ *            <td class="descr">varchar2(32)</td>
+ *            <td class="descr">The log message identifier</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">2</td>
+ *            <td class="descr">office_code</td>
+ *            <td class="descr">number(10,0)</td>
+ *            <td class="descr">Office code of the logging office</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">3</td>
+ *            <td class="descr">log_timestamp_utc</td>
+ *            <td class="descr">timestamp(6)</td>
+ *            <td class="descr">Timestamp of when the message was logged (set by database)</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">4</td>
+ *            <td class="descr">msg_level</td>
+ *            <td class="descr">number(2,0)</td>
+ *            <td class="descr">The detail level of the service</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">5</td>
+ *            <td class="descr">component</td>
+ *            <td class="descr">varchar2(64)</td>
+ *            <td class="descr">The reporting CWMS component</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">6</td>
+ *            <td class="descr">instance</td>
+ *            <td class="descr">varchar2(64)</td>
+ *            <td class="descr">Instance of the reporting CWMS component, if applicable</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">7</td>
+ *            <td class="descr">host</td>
+ *            <td class="descr">varchar2(256)</td>
+ *            <td class="descr">Host on which the reporting component is executing</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">8</td>
+ *            <td class="descr">port</td>
+ *            <td class="descr">number(5,0)</td>
+ *            <td class="descr">Port at which the reporting component is contacted, if applicable</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">9</td>
+ *            <td class="descr">report_timestamp_utc</td>
+ *            <td class="descr">timestamp(6)</td>
+ *            <td class="descr">Timestamp of when the message was reported (set by client)</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">10</td>
+ *            <td class="descr">session_username</td>
+ *            <td class="descr">varchar2(30)</td>
+ *            <td class="descr">The database session usernmae</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">11</td>
+ *            <td class="descr">session_osuser</td>
+ *            <td class="descr">varchar2(30)</td>
+ *            <td class="descr">The OS username on the client</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">12</td>
+ *            <td class="descr">session_process</td>
+ *            <td class="descr">varchar2(24)</td>
+ *            <td class="descr">The name of the client process</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">13</td>
+ *            <td class="descr">session_program</td>
+ *            <td class="descr">varchar2(64)</td>
+ *            <td class="descr">The name of the client program</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">14</td>
+ *            <td class="descr">session_machine</td>
+ *            <td class="descr">varchar2(64)</td>
+ *            <td class="descr">The machine name of the connect client</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">15</td>
+ *            <td class="descr">msg_type</td>
+ *            <td class="descr">number(2,0)</td>
+ *            <td class="descr">The message type</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">16</td>
+ *            <td class="descr">mst_text</td>
+ *            <td class="descr">varchar2(4000)</td>
+ *            <td class="descr">The text of the log message</td>
+ *          </tr>
+ *          <tr>
+ *            <td class="descr-center">17</td>
+ *            <td class="descr">properties</td>
+ *            <td class="descr">cursor</td>
+ *            <td class="descr">A cursor of properties for the message
+ *              <table class="descr">
+ *                <tr>
+ *                  <th class="descr">Column No.</th>
+ *                  <th class="descr">Column Name</th>
+ *                  <th class="descr">Data Type</th>
+ *                  <th class="descr">Contents</th>
+ *                </tr>
+ *                <tr>
+ *                  <td class="descr-center">1</td>
+ *                  <td class="descr">name</td>
+ *                  <td class="descr">varchar2(64)</td>
+ *                  <td class="descr">The log message identifier</td>
+ *                </tr>
+ *                <tr>
+ *                  <td class="descr-center">2</td>
+ *                  <td class="descr">type</td>
+ *                  <td class="descr">number(1,0)</td>                                    
+ *                  <td class="descr">The property type</td>
+ *                </tr>
+ *                <tr>
+ *                  <td class="descr-center">3</td>
+ *                  <td class="descr">value</td>
+ *                  <td class="descr">varchar2(4000)</td>
+ *                  <td class="descr">The value of the property</td>
+ *                </tr>
+ *              </table>
+ *            </td>
+ *          </tr>
+ *        </table>
+ */
+function retrieve_log_messages_f(
+   p_min_msg_id         in varchar2      default null,
+   p_max_msg_id         in varchar2      default null,
+   p_min_log_time       in date          default null,
+   p_max_log_time       in date          default null,
+   p_time_zone          in varchar2      default 'UTC',
+   p_min_msg_level      in integer       default null,
+   p_max_msg_level      in integer       default null,
+   p_msg_types          in varchar2      default null,      
+   p_min_inclusive      in varchar2      default 'T',
+   p_max_inclusive      in varchar2      default 'T',
+   p_abbreviated        in varchar2      default 'T',
+   p_message_mask       in varchar2      default null,
+   p_message_match_type in varchar2      default 'GLOBI',
+   p_ascending          in varchar2      default 'T',
+   p_session_id         in varchar2      default 'ALL',
+   p_properties         in str_tab_tab_t default null,
+   p_props_combination  in varchar2      default 'ANY') 
+   return sys_refcursor;
+   
 -- not documented
 function parse_log_msg_prop_tab (
    p_tab in log_message_props_tab_t)
@@ -636,6 +1422,7 @@ procedure update_queue_subscriber(
    p_fail_on_wrong_host    in varchar2 default 'T',
    p_office_id             in varchar2 default null);   
    
+function get_call_stack return str_tab_tab_t;   
 end cwms_msg;
 /
 show errors;
