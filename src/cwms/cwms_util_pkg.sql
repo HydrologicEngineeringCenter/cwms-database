@@ -453,7 +453,7 @@ AS
     *         case-corrected version of p_timezone.
     */
    FUNCTION get_timezone (p_timezone IN VARCHAR2)
-      RETURN VARCHAR2;  
+      RETURN VARCHAR2 result_cache;  
                       
    /**
      * Formats a date/time for use in XML
@@ -719,7 +719,7 @@ AS
     * @return the time zone code associated with the time zone name                
     */       
    FUNCTION get_time_zone_code (p_time_zone_name IN VARCHAR2)
-      RETURN NUMBER;
+      RETURN NUMBER result_cache;
    /**
     * Retrieves a proper time zone name based on a time zone name or alias
     *
@@ -727,8 +727,8 @@ AS
     *
     * @return the proper time zone name associated with the time zone name or alias
     */
-   FUNCTION get_time_zone_name (p_time_zone_name IN VARCHAR2)
-      RETURN VARCHAR2;
+   function get_time_zone_name (p_time_zone_name in varchar2)
+      RETURN VARCHAR2 result_cache;
    --------------------------------------------------------------------------------
    -- function get_tz_usage_code
    --
