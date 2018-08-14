@@ -90,11 +90,11 @@ AS
       begin
          select bl.base_location_id
                 ||substr('-', 1, length(pl.sub_location_id))
-                      || pl.sub_location_id
+                ||pl.sub_location_id
            into l_location_id
            from at_physical_location pl,
-                      at_base_location bl,
-                      cwms_office o
+                at_base_location bl,
+                cwms_office o
           where o.office_id = l_office_id
             and bl.db_office_code = o.office_code
             and pl.base_location_code = bl.base_location_code
@@ -105,7 +105,7 @@ AS
          -- next try a location alias --
          -------------------------------
          l_location_id :=  get_location_id_from_alias(
-                   p_alias_id    => p_location_id_or_alias,
+            p_alias_id  => p_location_id_or_alias,
             p_office_id => l_office_id);
          if l_location_id is null then
             -------------------------------
@@ -124,8 +124,8 @@ AS
                   and pl.base_location_code = bl.base_location_code
                   and upper(p_location_id_or_alias) = upper(pl.public_name);
             exception 
-               when no_data_found or too_many_rows then
-            cwms_err.raise ('LOCATION_ID_NOT_FOUND', p_location_id_or_alias);
+               when no_data_found then
+                  cwms_err.raise('LOCATION_ID_NOT_FOUND', p_location_id_or_alias);
             end;
          end if;
       end;
@@ -5685,11 +5685,13 @@ end unassign_loc_groups;
                              p_office_id      in varchar2 default null
                             )
    is
-      l_location_id    varchar2(57);
+      location_id_not_found exception;
+      pragma exception_init(location_id_not_found, -20025);
+      l_location_id    varchar2(49);
       l_location_code  number(10);
       l_office_id      varchar2(16);
       l_count           pls_integer;
-      l_multiple_ids   boolean;
+      l_multiple_ids   boolean := false;
       l_property_id     varchar2(256);
    begin
       l_office_id := cwms_util.get_db_office_id(p_office_id);
@@ -5738,6 +5740,8 @@ end unassign_loc_groups;
       begin
          l_location_id  := get_location_id(p_alias_id, p_office_id);
       exception
+         when location_id_not_found then
+            null;
          when too_many_rows then
             l_multiple_ids := true;
       end;
