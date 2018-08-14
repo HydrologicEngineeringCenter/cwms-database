@@ -253,6 +253,7 @@ comment on column at_rating_value.dep_value                 is 'Dependent value 
 comment on column at_rating_value.dep_rating_ind_param_code is 'Dependent table for rating (for multi-parameter ratings)';
 comment on column at_rating_value.note_code                 is 'Reference to rating value note';
 
+create index at_rating_value_dep_idx on at_rating_value(dep_rating_ind_param_code) tablespace cwms_20at_data;
 commit;
 
 -------------------------------
