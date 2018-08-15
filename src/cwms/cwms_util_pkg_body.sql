@@ -416,10 +416,10 @@ as
       l_username := get_user_id;
 
       BEGIN
-      	SELECT prop_value INTO l_upass_id FROM at_properties where prop_id='sec.upass.id' and prop_category='CWMS' and office_code=53;
+        SELECT prop_value INTO l_upass_id FROM at_properties where prop_id='sec.upass.id' and prop_category='CWMS' and office_code=53;
       EXCEPTION WHEN OTHERS
       THEN
-	NULL;
+        NULL;
       END;
 
       SELECT SYS_CONTEXT ('CWMS_ENV', 'SESSION_OFFICE_ID')
@@ -4426,8 +4426,8 @@ as
    is
       l_dst   clob := p_dst.getclobval;
    begin
-      append (l_dst, p_src);
-      p_dst := xmltype (l_dst);
+      append(l_dst, p_src);
+      p_dst := xmltype(l_dst);
    end append;
 
    procedure append(
@@ -4436,8 +4436,8 @@ as
    is
       l_dst   clob := p_dst.getclobval;
    begin
-      append (l_dst, p_src);
-      p_dst := xmltype (l_dst);
+      append(l_dst, p_src);
+      p_dst := xmltype(l_dst);
    end append;
 
    procedure append(
@@ -4446,8 +4446,8 @@ as
    is
       l_dst   clob := p_dst.getclobval;
    begin
-      append (l_dst, p_src);
-      p_dst := xmltype (l_dst);
+      append(l_dst, p_src);
+      p_dst := xmltype(l_dst);
    end append;
 
    --------------------------
@@ -5156,8 +5156,8 @@ as
              )
              where mod(r, l_count) = mod(p_column, l_count);
       return l_results;
-   end get_column;            
-
+   end get_column;
+   
    procedure to_json(
       p_json     in out nocopy clob,
       p_xml      in     xmltype,
@@ -5465,12 +5465,53 @@ as
    is
       l_call_stack str_tab_tab_t := str_tab_tab_t();
    begin
-      l_call_stack.extend(utl_call_stack.dynamic_depth);
-      for i in 1..l_call_stack.count loop
-         l_call_stack(i) := str_tab_t(
-            utl_call_stack.concatenate_subprogram(utl_call_stack.subprogram(i)),
-            utl_call_stack.unit_line(i));
-      end loop;
+      $if dbms_db_version.version > 11 $then ---------------------------------------------------- conditional compilation oracle 12+
+         l_call_stack.extend(utl_call_stack.dynamic_depth);
+         for i in 1..l_call_stack.count loop
+            l_call_stack(i) := str_tab_t(
+               utl_call_stack.concatenate_subprogram(utl_call_stack.subprogram(i)),
+               utl_call_stack.unit_line(i));
+         end loop;
+      $else -------------------------------------------------------------------------------------- conditional compilation oracle 11
+         declare
+            l_parts str_tab_t;
+            function routine_name(
+               p_package_name in varchar2,
+               p_line_number  in integer)
+               return varchar2
+            as
+               l_routine_name varchar2(30);
+            begin
+               with routines as
+                  (select name, 
+                          line 
+                     from user_identifiers 
+                    where type in ('PROCEDURE', 'FUNCTION')
+                      and usage = 'DEFINITION'
+                      and object_name = p_package_name
+                    order by line
+                  )
+               select name
+                 into l_routine_name 
+                 from routines
+                where line = (select max(line) from routines where line <= p_line_number);       
+               return l_routine_name;
+            end routine_name;
+         begin
+            for rec in (select column_value from table(cwms_util.split_text(dbms_utility.format_call_stack, chr(10)))) loop
+               l_parts := cwms_util.split_text(rec.column_value);
+               if l_parts.count > 3 and l_parts(3) in ('function', 'procedure', 'trigger', 'package') then
+                  l_call_stack.extend;
+                  l_parts(l_parts.count) := replace(l_parts(l_parts.count), '&cwms_schema..', null);
+                  if l_parts(3) in ('function', 'procedure', 'trigger') then
+                     l_call_stack(l_call_stack.count) := str_tab_t(l_parts(4), l_parts(2));
+                  elsif l_parts(4) = 'body' then
+                     l_call_stack(l_call_stack.count) := str_tab_t(l_parts(5)||'.'||routine_name(l_parts(5), l_parts(2)), l_parts(2));
+                  end if;
+               end if;
+            end loop;
+         end;
+      $end --------------------------------------------------------------------------------------------- end conditional compilation
       return l_call_stack;
    end get_call_stack;
 
