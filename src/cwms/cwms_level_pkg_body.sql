@@ -356,7 +356,6 @@ begin
    end;     
 end get_location_level_codes;
 
-            
 function get_prev_effective_date(
    p_location_level_code in integer,
    p_timezone            in varchar2 default 'UTC')
