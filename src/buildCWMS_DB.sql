@@ -118,7 +118,12 @@ prompt Invalid objects...
 order by object_name, object_type asc;
 
 prompt Recompiling all invalid objects...
-exec utl_recomp.recomp_serial('&cwms_schema');
+begin
+   $if dbms_db_version.version < 12 $then
+      execute immediate 'alter session set plscope_settings=''IDENTIFIERS:ALL''';
+   $end
+   dbms_utility.compile_schema('&cwms_schema');
+end;
 /
 
 prompt Remaining invalid objects...
