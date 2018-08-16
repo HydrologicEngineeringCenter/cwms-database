@@ -26,11 +26,13 @@ prompt 'MODIFYING CWMS_DB_CHANGE_LOG TABLE'
 select systimestamp from dual;                                                                                   
 @@./18_1_1/modify_db_change_log
 prompt ################################################################################
-prompt 'ADDING AT_A2W_TS_CODES_BY_LOC2 VIEW'
-select systimestamp from dual;   
-whenever sqlerror continue;
-@@../cwms/views/av_a2w_ts_codes_by_loc2
-whenever sqlerror exit;
+prompt 'MODIFYING AT_SEC_CWMS_USERS TABLE'
+select systimestamp from dual;      
+alter table at_sec_cwms_users modify phone varchar2(24);
+prompt ################################################################################
+prompt 'MODIFYING TIME SERIES TABLES'
+select systimestamp from dual;      
+@@./18_1_1/modify_time_series_tables
 prompt ################################################################################
 prompt 'ADDING AT_RATING_VALUE_DEP_IDX INDEX'
 select systimestamp from dual;   
@@ -119,6 +121,14 @@ delete from at_clob where id in ('/VIEWDOCS/AV_CWMS_TS_ID', '/VIEWDOCS/AV_CWMS_T
 @@../cwms/cwms_ts_id_pkg_body
 @@../cwms/cwms_ts_pkg_body
 @@../cwms/cwms_ts_pkg        
+prompt ################################################################################
+prompt 'UPDATING CMA AND A2W'
+select systimestamp from dual;   
+@@./18_1_1/update_cma_and_a2w
+whenever sqlerror continue
+@@../cwms/views/av_a2w_ts_codes_by_loc
+@@../cwms/views/av_a2w_ts_codes_by_loc2
+whenever sqlerror exit
 prompt ################################################################################
 prompt 'LENGTHENING AT_BASE_LOCATION.BASE_LOCATION_ID'
 select systimestamp from dual;   
@@ -292,6 +302,13 @@ select systimestamp from dual;
 --@@../cwms/cwms_ts_pkg
 --@@../cwms/cwms_ts_pkg_body
 prompt ################################################################################
+prompt 'ADDING QUEUE SUBSCRIBER NAMES'
+select systimestamp from dual;
+whenever sqlerror continue;
+@@./18_1_1/add_at_queue_subscriber_name
+@@../cwms/views/av_queue_subscriber_name
+whenever sqlerror exit;
+prompt ################################################################################
 prompt 'ADDING KEYED LOG MESSAGES'
 select systimestamp from dual;
 @@../cwms/cwms_msg_pkg
@@ -300,11 +317,13 @@ prompt #########################################################################
 prompt 'MODIFYING OTHER TABLES'
 select systimestamp from dual;
 @@./18_1_1/update_tables
+@@./18_1_1/at_physical_location_t02
 whenever sqlerror continue;
 @@../cwms/mv_ts_code_filter
 drop trigger at_rating_value_trig;
-create index mv_time_zone_idx2 on mv_time_zone(time_zone_code);
-create index mv_time_zone_idx3 on mv_time_zone(UPPER("TIME_ZONE_NAME"));
+create index mv_time_zone_idx2 on mv_time_zone(time_zone_code) tablespace cwms_20at_data;
+create index mv_time_zone_idx3 on mv_time_zone(upper("TIME_ZONE_NAME")) tablespace cwms_20at_data;
+create index at_log_message_properties_idx1 on at_log_message_properties (prop_name, nvl(prop_text, prop_value), msg_id) tablespace cwms_20at_data;
 whenever sqlerror exit;
 prompt ################################################################################
 prompt 'UPDATING OTHER VIEWS'
@@ -325,6 +344,7 @@ select systimestamp from dual;
 prompt ################################################################################
 prompt 'UPDATING OTHER PACKAGE SPECIFICATIONS'
 select systimestamp from dual;
+@@../cwms/cwms_cma_pkg
 @@../cwms/cwms_configuration_pkg
 @@../cwms/cwms_util_pkg
 prompt ################################################################################
@@ -341,40 +361,7 @@ select systimestamp from dual;
 prompt ################################################################################
 prompt 'ADDING WRITE PRIVILEGE TRIGGERS ON NEW TABLES'
 select systimestamp from dual;
-declare
-   l_table_name varchar2(30);
-   l_trigger_name varchar2(30);
-   l_trigger_text varchar2(4000) :='
-         create or replace trigger :trigger_name 
-            before delete or insert or update on :table_name
-            referencing new as new old as old
-         declare
-            l_priv varchar2(16);
-         begin
-            select sys_context (''CWMS_ENV'', ''CWMS_PRIVILEGE'') 
-              into l_priv 
-             from dual;
-             
-            if ((l_priv is null or l_priv <> ''CAN_WRITE'') and user not in (''SYS'', ''&cwms_schema'')) then
-               cwms_20.cwms_err.raise(''NO_WRITE_PRIVILEGE'');
-            end if;
-         end;'; 
-begin
-   for rec in (select table_name
-                 from user_tables
-                where table_name like 'AT\_%' escape '\'
-               minus 
-               select table_name
-                 from user_triggers
-                where trigger_name = 'S'||substr(table_name, 2)
-              )
-   loop
-      l_table_name   := rec.table_name;
-      l_trigger_name := 'S'||substr(l_table_name, 2);
-      execute immediate replace(replace(l_trigger_text, ':trigger_name', l_trigger_name), ':table_name', l_table_name);
-   end loop;
-end;
-/
+@@../cwms/create_sec_triggers
 prompt ################################################################################
 prompt 'REBUILD MV_SEC_TS_PRIVILEGES'
 select systimestamp from dual;
