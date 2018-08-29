@@ -158,7 +158,7 @@ create table at_rating
    constraint at_rating_ck2 check (transition_date is null or transition_date < effective_date)
 )
 organization index
-tablespace CWMS_20AT_DATA;
+tablespace CWMS_20DATA;
 
 comment on table  at_rating                  is 'A dated rating in a rating time series';
 comment on column at_rating.rating_code      is 'Synthetic key';
@@ -253,7 +253,7 @@ comment on column at_rating_value.dep_value                 is 'Dependent value 
 comment on column at_rating_value.dep_rating_ind_param_code is 'Dependent table for rating (for multi-parameter ratings)';
 comment on column at_rating_value.note_code                 is 'Reference to rating value note';
 
-create index at_rating_value_dep_idx on at_rating_value(dep_rating_ind_param_code) tablespace cwms_20at_data;
+create index at_rating_value_dep_idx on at_rating_value(dep_rating_ind_param_code) tablespace cwms_20data;
 commit;
 
 -------------------------------
@@ -327,7 +327,7 @@ create table at_virtual_rating (
    constraint at_virtual_rating_ck3 check (transition_date is null or transition_date < effective_date)
 )
 organization index
-tablespace CWMS_20AT_DATA;
+tablespace CWMS_20DATA;
 
 comment on table  at_virtual_rating is 'Holds information about virtual ratings';
 comment on column at_virtual_rating.virtual_rating_code is 'Synthetic key';
@@ -406,7 +406,7 @@ create table at_transitional_rating(
    constraint at_transitional_rating_ck1 check (active_flag in ('T', 'F')),
    constraint at_transitional_rating_ck2 check (transition_date is null or transition_date < effective_date)
 ) organization index
-  tablespace cwms_20at_data;
+  tablespace cwms_20data;
 
 comment on table  at_transitional_rating is 'Holds information about transitional ratings';
 comment on column at_transitional_rating.transitional_rating_code is 'Synthetic key';
@@ -497,7 +497,7 @@ create table at_overflow (
    constraint at_overflow_fk1 foreign key (overflow_location_code) references at_outlet (outlet_location_code),
    constraint at_overflow_fk2 foreign key (rating_spec_code) references at_rating_spec (rating_spec_code),
    constraint at_overflow_ck1 check (length_or_diameter is NULL or is_circular in ('T', 'F'))
-) tablespace cwms_20at_data;
+) tablespace cwms_20data;
 
 comment on table  at_overflow is 'Holds information on uncontrolled overflow spillway or weir';
 comment on column at_overflow.overflow_location_code is 'The location code for this overflow';

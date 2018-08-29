@@ -541,7 +541,7 @@ CREATE TABLE AT_STREAM_LOCATION
   LOWEST_MEASURABLE_STAGE BINARY_DOUBLE,
   DRAINAGE_AREA           BINARY_DOUBLE,
   UNGAGED_AREA            BINARY_DOUBLE,
-  CONSTRAINT AT_STREAM_LOCATION_PK  PRIMARY KEY (LOCATION_CODE) USING INDEX
+  CONSTRAINT AT_STREAM_LOCATION_PK  PRIMARY KEY (LOCATION_CODE) USING INDEX TABLESPACE CWMS_20DATA
 )
 TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
@@ -591,7 +591,7 @@ CREATE TABLE AT_STREAM_REACH (
    CONSTRAINT AT_STREAM_REACH_FK3 FOREIGN KEY (UPSTREAM_LOCATION_CODE) REFERENCES AT_STREAM_LOCATION (LOCATION_CODE),
    CONSTRAINT AT_STREAM_REACH_FK4 FOREIGN KEY (DOWNSTREAM_LOCATION_CODE) REFERENCES AT_STREAM_LOCATION (LOCATION_CODE),
    CONSTRAINT AT_STREAM_REACH_FK5 FOREIGN KEY (CONFIGURATION_CODE) REFERENCES AT_CONFIGURATION (CONFIGURATION_CODE)
-) TABLESPACE CWMS_20AT_DATA
+) TABLESPACE CWMS_20DATA
 /
 
 COMMENT ON TABLE  AT_STREAM_REACH IS 'Contains placement information for stream reaches';
@@ -605,14 +605,14 @@ CREATE UNIQUE INDEX AT_STREAM_REACH_U1 ON AT_STREAM_REACH (
    STREAM_LOCATION_CODE, 
    DOWNSTREAM_LOCATION_CODE, 
    CONFIGURATION_CODE
-) TABLESPACE CWMS_20AT_DATA
+) TABLESPACE CWMS_20DATA
 /
 
 CREATE UNIQUE INDEX AT_STREAM_REACH_U2 ON AT_STREAM_REACH (
    STREAM_LOCATION_CODE, 
    UPSTREAM_LOCATION_CODE, 
    CONFIGURATION_CODE
-) TABLESPACE CWMS_20AT_DATA
+) TABLESPACE CWMS_20DATA
 /
 
 CREATE TABLE AT_BASIN
@@ -6128,7 +6128,7 @@ create table at_gate_group (
    constraint at_gate_group_ck1 check (can_be_submerged in ('T', 'F')),
    constraint at_gate_group_ck2 check (always_submerged in ('T', 'F')),
    constraint at_gate_group_ck3 check (can_be_submerged = 'T' or always_submerged = 'F')
-) tablespace cwms_20at_data;
+) tablespace cwms_20data;
 
 comment on table  at_gate_group is 'Holds gate definitions';
 comment on column at_gate_group.loc_group_code   is 'The location group whose SHARED_LOC_ALIAS_ID is the rating spec for this gate group';
@@ -6193,7 +6193,7 @@ create table at_entity_location (
    constraint at_entity_location_pk  primary key (location_code) using index,
    constraint at_entity_location_fk1 foreign key (location_code) references at_physical_location (location_code),
    constraint at_entity_location_fk2 foreign key (entity_code) references at_entity (entity_code)
-) tablespace cwms_20at_data;
+) tablespace cwms_20data;
 
 comment on table  at_entity_location is 'Connects locations to entities for ENTITY location kinds';
 comment on column at_entity_location.location_code is 'The location that is bound to the entity';
@@ -6206,7 +6206,7 @@ create table at_pump (
    description        varchar2(128),
    constraint at_pump_pk  primary key (pump_location_code) using index,
    constraint at_pump_pk1 foreign key (pump_location_code) references at_stream_location (location_code)
-) tablespace cwms_20at_data;
+) tablespace cwms_20data;
 
 comment on table  at_pump is 'Holds information on pump locations';
 comment on column at_pump.pump_location_code is 'The location code of the pump (must also be a stream location)';
