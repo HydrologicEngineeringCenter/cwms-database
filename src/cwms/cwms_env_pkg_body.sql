@@ -120,6 +120,7 @@ AS
         IF((C.user_group_id='CCP Mgr') OR 
             (C.user_group_id='CCP Proc') OR
             (C.user_group_id='CWMS DBA Users') OR
+            (C.user_group_id='CWMS PD Users') OR
             (C.user_group_id='CWMS User Admins') OR
             (C.user_group_id='Data Acquisition Mgr') OR
             (C.user_group_id='Data Exchange Mgr') OR
