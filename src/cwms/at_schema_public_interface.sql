@@ -140,8 +140,8 @@ BEGIN
 	LOOP
 		l_synonym :=
 			REGEXP_REPLACE (l_type_names (i),
-								 '^((AT|CWMS)_)?(\w+?)(_T(YPE)?)?$',
-								 'CWMS_T_\3'
+								 '^((AT|CWMS)_)?(\w+?)(_T(YPE)?(\d?))?$',
+								 'CWMS_T_\3\6'
 								);
 
 		IF LENGTH (l_synonym) > 30
