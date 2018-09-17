@@ -1177,6 +1177,14 @@ as
                 )
           order by 1;
 
+         for i in 1..l_parts.count loop
+            if length(l_parts(i)) > 5 or instr(l_parts(i), 'ARG') != 1 then
+               cwms_err.raise(
+                  'ERROR',
+                  'Rating formula could not be properly parsed: '||self.formula);
+            end if;
+         end loop;
+
          if to_number(substr(l_parts(l_parts.count), 4, 1)) > l_parts.count then
             cwms_err.raise(
                'ERROR',
