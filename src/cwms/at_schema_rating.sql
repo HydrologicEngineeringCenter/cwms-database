@@ -339,6 +339,8 @@ comment on column at_virtual_rating.active_flag         is 'Flag (T/F) specifyin
 comment on column at_virtual_rating.connections         is 'String specifying how source ratings are connected to form virtual rating';
 comment on column at_virtual_rating.description         is 'Descriptive text about this virtual rating';
 
+create unique index at_virtual_rating_u1 on at_virtual_rating(rating_spec_code, effective_date);
+
 commit;
 
 -------------------------------
@@ -417,6 +419,8 @@ comment on column at_transitional_rating.create_date              is 'Date/time 
 comment on column at_transitional_rating.active_flag              is 'Flag (T/F) specifying whether this rating is active';
 comment on column at_transitional_rating.native_units             is 'Units used for selection and evaluation, in format ind1_unit[,ind2_unit[,...]];dep_unit';
 comment on column at_transitional_rating.description              is 'Descriptive text about this transitional rating';
+
+create unique index at_transitional_rating_u1 on at_transitional_rating(rating_spec_code, effective_date);
 
 commit;
 
