@@ -224,4 +224,3 @@ values ('CWMS',
         null,
         'Updates all time series extents.',
         'cwms_ts.update_ts_extents');
-        

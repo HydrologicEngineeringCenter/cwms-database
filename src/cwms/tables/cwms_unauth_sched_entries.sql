@@ -14,7 +14,7 @@ create table cwms_unauth_sched_entries (
    constraint cwms_unauth_sched_entries_pk primary key (database_name, job_owner, job_name) using index
 )  tablespace cwms_20data;
 
-comment on table  cwms_unauth_sched_entries                 is'Holds detected unauthorized scheduler entries for th isdatabase';
+comment on table  cwms_unauth_sched_entries                 is 'Holds detected unauthorized scheduler entries for this database';
 comment on column cwms_unauth_sched_entries.database_name   is 'SID of prmimary database';
 comment on column cwms_unauth_sched_entries.job_owner       is '''OWNER'' column from DBA_SCHEDULER_JOBS';
 comment on column cwms_unauth_sched_entries.job_name        is '''JOB_NAME'' column from DBA_SCHEDULER_JOBS';
