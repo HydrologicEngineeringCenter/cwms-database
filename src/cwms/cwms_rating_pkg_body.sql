@@ -935,40 +935,46 @@ begin
    for i in 1..9999999 loop
       l_node := cwms_util.get_xml_node(p_xml, '(//rating|//simple-rating|//virtual-rating|//transitional-rating|//usgs-stream-rating)['||i||']');
       exit when l_node is null;
-      if l_node.existsnode('/usgs-stream-rating') = 1 then
-         cwms_msg.log_db_message(
-            cwms_msg.msg_level_detailed,
-            'Storing '
-            ||l_node.getrootelement
-            ||' '
-            ||cwms_util.get_xml_text(l_node, '/*/@office-id')
-            ||'/'||regexp_replace(cwms_util.get_xml_text(l_node, '/*/rating-spec-id'), '\s', '', 1, 0)
-            ||' ('
-            ||regexp_replace(cwms_util.get_xml_text(l_node, '/*/effective-date'), '\s', '', 1, 0)
-            ||')');
-         l_stream_rating := stream_rating_t(l_node);
-         l_stream_rating.store(p_fail_if_exists, p_replace_base);
-      elsif l_node.existsnode('/rating|/simple-rating|/virtual-rating|/transitional-rating') = 1 then
-         cwms_msg.log_db_message(
-            cwms_msg.msg_level_detailed,
-            'Storing '
-            ||l_node.getrootelement
-            ||' '
-            ||cwms_util.get_xml_text(l_node, '/*/@office-id')
-            ||'/'||regexp_replace(cwms_util.get_xml_text(l_node, '/*/rating-spec-id'), '\s', '', 1, 0)
-            ||case l_node.existsnode('/rating|/simple-rating')
-              when 1 then ' ('
-                          ||regexp_replace(cwms_util.get_xml_text(l_node, '/*/effective-date'), '\s', '', 1, 0)
-                          ||')'
-              else null
-              end);
-         l_rating := rating_t(l_node);
-         l_rating.store(p_fail_if_exists);
-      else
-         cwms_err.raise(
-            'ERROR',
-            'XML cannot be parsed as valid rating_t or stream_rating_t object');
-      end if;
+      begin
+         if l_node.existsnode('/usgs-stream-rating') = 1 then
+            cwms_msg.log_db_message(
+               cwms_msg.msg_level_detailed,
+               'Storing '
+               ||l_node.getrootelement
+               ||' '
+               ||cwms_util.get_xml_text(l_node, '/*/@office-id')
+               ||'/'||regexp_replace(cwms_util.get_xml_text(l_node, '/*/rating-spec-id'), '\s', '', 1, 0)
+               ||' ('
+               ||regexp_replace(cwms_util.get_xml_text(l_node, '/*/effective-date'), '\s', '', 1, 0)
+               ||')');
+            l_stream_rating := stream_rating_t(l_node);
+            l_stream_rating.store(p_fail_if_exists, p_replace_base);
+         elsif l_node.existsnode('/rating|/simple-rating|/virtual-rating|/transitional-rating') = 1 then
+            cwms_msg.log_db_message(
+               cwms_msg.msg_level_detailed,
+               'Storing '
+               ||l_node.getrootelement
+               ||' '
+               ||cwms_util.get_xml_text(l_node, '/*/@office-id')
+               ||'/'||regexp_replace(cwms_util.get_xml_text(l_node, '/*/rating-spec-id'), '\s', '', 1, 0)
+               ||case l_node.existsnode('/rating|/simple-rating')
+                 when 1 then ' ('
+                             ||regexp_replace(cwms_util.get_xml_text(l_node, '/*/effective-date'), '\s', '', 1, 0)
+                             ||')'
+                 else null
+                 end);
+            l_rating := rating_t(l_node);
+            l_rating.store(p_fail_if_exists);
+         else
+            cwms_err.raise(
+               'ERROR',
+               'XML cannot be parsed as valid rating_t or stream_rating_t object');
+         end if;
+      exception
+         when others then
+            dbms_output.put_line(dbms_utility.format_error_backtrace);
+            cwms_msg.log_db_message(cwms_msg.msg_level_normal, sqlerrm);
+      end;
    end loop;
 end store_ratings;
 
