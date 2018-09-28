@@ -80,10 +80,7 @@ drop table tmp_db_change_log;
 ---------------------------
 -- now, rebuild the view --
 ---------------------------
-begin
-   delete at_clob where id = '/VIEWDOCS/AV_DB_CHANGE_LOG';
-exception
-   when no_data_found then null;
-end;
-/
+whenever sqlerror continue;
+delete from at_clob where id = '/VIEWDOCS/AV_DB_CHANGE_LOG';
+whenever sqlerror exit;
 @@../cwms/views/av_db_change_log

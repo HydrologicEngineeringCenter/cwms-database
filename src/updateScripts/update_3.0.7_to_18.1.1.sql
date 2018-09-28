@@ -13,7 +13,7 @@ alter session set current_schema = &cwms_schema;
 ------------------------------------------------------------
 column db_name new_value dbname
 select nvl(primary_db_unique_name, db_unique_name) as db_name from v$database;
-spool update_&dbname._3.0.7_to_3.1.1.log; 
+spool update_&dbname._3.0.7_to_3.1.1.log;
 -------------------
 -- do the update --
 -------------------
@@ -23,21 +23,24 @@ select systimestamp from dual;
 @@./18_1_1/verify_db_version
 prompt ################################################################################
 prompt 'MODIFYING CWMS_DB_CHANGE_LOG TABLE'
-select systimestamp from dual;                                                                                   
+select systimestamp from dual;
 @@./18_1_1/modify_db_change_log
 prompt ################################################################################
 prompt 'MODIFYING AT_SEC_CWMS_USERS TABLE'
-select systimestamp from dual;      
+select systimestamp from dual;
 alter table at_sec_cwms_users modify phone varchar2(24);
 prompt ################################################################################
 prompt 'MODIFYING TIME SERIES TABLES'
-select systimestamp from dual;      
+select systimestamp from dual;
 @@./18_1_1/modify_time_series_tables
 prompt ################################################################################
 prompt 'ADDING AT_RATING_VALUE_DEP_IDX INDEX'
-select systimestamp from dual;   
-create index at_rating_value_dep_idx on at_rating_value (dep_rating_ind_param_code) 
+select systimestamp from dual;
+whenever sqlerror continue
+drop index at_rating_value_fk_idx_2;
+create index at_rating_value_dep_idx on at_rating_value (dep_rating_ind_param_code)
 tablespace cwms_20at_data ;
+whenever sqlerror exit
 prompt ################################################################################
 prompt 'ADDING CONFIGURATION CATEGORY'
 select systimestamp from dual;
@@ -45,7 +48,7 @@ select systimestamp from dual;
 prompt ################################################################################
 prompt 'REMOVING TRIGGER AT_STREAM_REACH_T01'
 select systimestamp from dual;
-@@./18_1_1/remove_at_stream_reach_t01                 
+@@./18_1_1/remove_at_stream_reach_t01
 prompt ################################################################################
 prompt 'DELETING CST, PST FROM CWMS_TIME_ZONE AND REBUILDING MV_TIME_ZONE'
 select systimestamp from dual;
@@ -54,10 +57,6 @@ prompt #########################################################################
 prompt 'UPDATING TRANSITIONAL AND VIRTUAL RATING TABLE CONSTRAINTS'
 select systimestamp from dual;
 @@./18_1_1/modify_transitional_virtual_rating_tables
-prompt ################################################################################
-prompt 'ADDING INDEX ON DEP_RATING_PARAM_CODE FOR AT_RATING_VALUE'
-select systimestamp from dual;
-@@./18_1_1/add_at_rating_value_dep_index
 prompt ################################################################################
 prompt 'UPDATING REGI LOOKUP TABLES'
 select systimestamp from dual;
@@ -72,22 +71,26 @@ select systimestamp from dual;
 prompt ################################################################################
 prompt 'ADDING NEW SCHEDULER MONITORING OBJECTS'
 select systimestamp from dual;
+whenever sqlerror continue
 @@../cwms/tables/cwms_auth_sched_entries
 @@../cwms/tables/cwms_unauth_sched_entries
 @@../cwms/views/av_auth_sched_entries
 @@../cwms/views/av_unauth_sched_entries
 @@../cwms/cwms_scheduler_auth_pkg
 @@../cwms/cwms_scheduler_auth_pkg_body
+whenever sqlerror exit
 prompt ################################################################################
 prompt 'ADDING CWMS POOLS'
 select systimestamp from dual;
+whenever sqlerror continue
 @@../cwms/types/number_tab_tab_t
 @@../cwms/tables/at_pool_name
 @@../cwms/tables/at_pool
 @@../cwms/views/av_pool_name
 @@../cwms/views/av_pool
 @@../cwms/cwms_pool_pkg
-@@../cwms/cwms_pool_pkg_body                         
+@@../cwms/cwms_pool_pkg_body
+whenever sqlerror exit
 prompt ################################################################################
 prompt 'ADDING LOCATION LEVEL LABELS AND SOURCES'
 select systimestamp from dual;
@@ -95,7 +98,7 @@ select systimestamp from dual;
 @@../cwms/views/av_loc_lvl_label
 @@../cwms/tables/at_loc_lvl_source
 @@../cwms/views/av_loc_lvl_source
-@@../cwms//cwms_level_pkg
+@@../cwms/cwms_level_pkg
 @@../cwms/cwms_level_pkg_body
 prompt ################################################################################
 prompt 'UPDATING CWMS FORECAST'
@@ -120,10 +123,10 @@ delete from at_clob where id in ('/VIEWDOCS/AV_CWMS_TS_ID', '/VIEWDOCS/AV_CWMS_T
 @@../cwms/views/zav_cwms_ts_id
 @@../cwms/cwms_ts_id_pkg_body
 @@../cwms/cwms_ts_pkg_body
-@@../cwms/cwms_ts_pkg        
+@@../cwms/cwms_ts_pkg
 prompt ################################################################################
 prompt 'UPDATING CMA AND A2W'
-select systimestamp from dual;   
+select systimestamp from dual;
 @@./18_1_1/update_cma_and_a2w
 whenever sqlerror continue
 @@../cwms/views/av_a2w_ts_codes_by_loc
@@ -131,7 +134,7 @@ whenever sqlerror continue
 whenever sqlerror exit
 prompt ################################################################################
 prompt 'LENGTHENING AT_BASE_LOCATION.BASE_LOCATION_ID'
-select systimestamp from dual;   
+select systimestamp from dual;
 -- alter tables
 drop index at_base_location_idx1;
 alter table at_base_location modify (
@@ -164,7 +167,7 @@ drop type loc_alias_type2 force;
 drop type loc_alias_type3 force;
 drop type loc_lvl_cur_max_ind_t force;
 drop type loc_lvl_indicator_t force;
-drop type loc_type_ds force;                                                       
+drop type loc_type_ds force;
 drop type location_level_t force;
 drop type location_ref_t force;
 drop type nested_ts_type force;
@@ -248,8 +251,8 @@ drop type ztimeseries_type force;
 @@../cwms/cwms_project_pkg_body
 @@../cwms/cwms_rating_pkg
 @@../cwms/cwms_rating_pkg_body
-@@../cwms/cwms_sec_pkg 
-@@../cwms/cwms_sec_pkg_body 
+@@../cwms/cwms_sec_pkg
+@@../cwms/cwms_sec_pkg_body
 @@../cwms/cwms_shef_pkg
 @@../cwms/cwms_shef_pkg_body
 @@../cwms/cwms_stream_pkg
@@ -259,7 +262,8 @@ drop type ztimeseries_type force;
 --@@../cwms/cwms_ts_pkg_body
 @@../cwms/cwms_turbine_pkg_body
 @@../cwms/cwms_usgs_pkg_body
-@@../cwms/cwms_util_pkg_body                                                          
+@@../cwms/cwms_util_pkg
+@@../cwms/cwms_util_pkg_body
 @@../cwms/cwms_vt_pkg_body
 @@../cwms/cwms_water_supply_pkg
 @@../cwms/cwms_water_supply_pkg_body
@@ -281,6 +285,7 @@ drop type location_obj_t force;
 @@../cwms/types/location_obj_t-body
 --@@../cwms/cwms_cat_pkg
 --@@../cwms/cwms_cat_pkg_body
+@@../cwms/cwms_cma_pkg
 @@../cwms/cwms_cma_pkg_body
 --@@../cwms/cwms_data_dissem_pkg
 --@@../cwms/cwms_embank_pkg
@@ -293,6 +298,7 @@ drop type location_obj_t force;
 prompt ################################################################################
 prompt 'UPDATING TIME SERIES EXTENTS'
 select systimestamp from dual;
+whenever sqlerror continue
 @@../cwms/tables/at_ts_extents
 @@../cwms/types/ts_extents_t
 @@../cwms/types/ts_extents_t-body
@@ -301,6 +307,7 @@ select systimestamp from dual;
 @@../cwms/views/av_ts_extents_local
 --@@../cwms/cwms_ts_pkg
 --@@../cwms/cwms_ts_pkg_body
+whenever sqlerror exit
 prompt ################################################################################
 prompt 'ADDING QUEUE SUBSCRIBER NAMES'
 select systimestamp from dual;
@@ -313,6 +320,15 @@ prompt 'ADDING KEYED LOG MESSAGES'
 select systimestamp from dual;
 @@../cwms/cwms_msg_pkg
 @@../cwms/cwms_msg_pkg_body
+prompt ################################################################################
+prompt 'ADDING APPLICATION LOGIN/LOGOUT'
+select systimestamp from dual;
+@@../cwms/tables/at_application_login
+@@../cwms/tables/at_application_session
+@@../cwms/views/av_application_login
+@@../cwms/views/av_application_session
+-- @@../cwms/cwms_util_pkg
+-- @@../cwms/cwms_util_pkg_body
 prompt ################################################################################
 prompt 'MODIFYING OTHER TABLES'
 select systimestamp from dual;
@@ -336,17 +352,31 @@ delete from at_clob where id = '/VIEWDOCS/AV_LOC2';
 @@../cwms/views/av_loc2
 delete from at_clob where id = '/VIEWDOCS/AV_LOCATION_LEVEL';
 @@../cwms/views/av_location_level
+delete from at_clob where id = '/VIEWDOCS/AV_BASE_PARAMETER_UNITS';
+@@../cwms/views/av_base_parameter_units
+delete from at_clob where id = '/VIEWDOCS/AV_RATING';
+@@../cwms/views/av_rating
+whenever sqlerror continue;
+@@../cwms/views/av_entity_category
+whenever sqlerror exit;
 prompt ################################################################################
 prompt 'UPDATING OTHER TYPES'
 select systimestamp from dual;
+whenever sqlerror continue
+drop type old_vdatum_stream_rating_t force;
+drop type old_stream_rating_t force;
+drop type old_vdatum_rating_t force;
+drop type old_rating_t force;
+whenever sqlerror exit
 @@../cwms/types/rating_ind_parameter_t-body
 @@../cwms/types/streamflow_meas_t-body
 prompt ################################################################################
 prompt 'UPDATING OTHER PACKAGE SPECIFICATIONS'
 select systimestamp from dual;
-@@../cwms/cwms_cma_pkg
+whenever sqlerror continue
+drop type old_cwms_rating;
+whenever sqlerror exit
 @@../cwms/cwms_configuration_pkg
-@@../cwms/cwms_util_pkg
 prompt ################################################################################
 prompt 'UPDATING OTHER PACKAGE BODDIES'
 select systimestamp from dual;
@@ -355,35 +385,72 @@ select systimestamp from dual;
 @@../cwms/cwms_env_pkg_body
 @@../cwms/cwms_lookup_pkg_body
 @@../cwms/cwms_mail_pkg_body
-@@../cwms/cwms_turbine_pkg_body
+@@../cwms/cwms_tsv_pkg_body
 @@../cwms/cwms_upass_pkg_body
-@@../cwms/cwms_util_pkg_body
+@@../cwms_dba/cwms_user_admin_pkg_body
 prompt ################################################################################
 prompt 'ADDING WRITE PRIVILEGE TRIGGERS ON NEW TABLES'
 select systimestamp from dual;
 @@../cwms/create_sec_triggers
+--prompt ################################################################################
+--prompt 'REBUILD MV_SEC_TS_PRIVILEGES'
+--select systimestamp from dual;
+-- -- I don't know why the following line is necessary - but it is
+--@@./18_1_1/rebuild_mv_sec_ts_privileges
 prompt ################################################################################
-prompt 'REBUILD MV_SEC_TS_PRIVILEGES'
+prompt 'CORRECT BAD WORDING IN TRIGGERS'
 select systimestamp from dual;
-@@./18_1_1/rebuild_mv_sec_ts_privileges -- I don't know why this is necessary - but it is
+begin
+   for rec in (select description,
+                      trigger_body
+                 from user_triggers
+                where regexp_like(description, 'REFERENCING\s+FOR', 'i')
+              )
+   loop
+      execute immediate
+         'create or replace TRIGGER '
+         ||regexp_replace(rec.description, 'REFERENCING\s+FOR', 'FOR', 1, 1, 'i')
+         ||rec.trigger_body;
+   end loop;
+end;
+/
 prompt ################################################################################
 prompt 'INVALID OBJECTS...'
 select systimestamp from dual;
-select substr(object_name, 1, 30) as invalid_object, object_type from user_objects where status = 'INVALID' order by 1, 2;
+set pagesize 100
+select substr(object_name, 1, 30) as invalid_object,
+       object_type
+  from user_objects
+ where status = 'INVALID'
+ order by 1, 2;
 prompt ################################################################################
 prompt 'RECOMPILING SCHEMA'
-select systimestamp from dual;
-exec sys.utl_recomp.recomp_serial('CWMS_20');
+exec sys.utl_recomp.recomp_serial('&cwms_schema');
 prompt ################################################################################
 prompt 'REMAINING INVALID OBJECTS...'
 select systimestamp from dual;
-select substr(object_name, 1, 30) as invalid_object, object_type from user_objects where status = 'INVALID' order by 1, 2;
+select substr(object_name, 1, 30) as invalid_object,
+       object_type
+  from user_objects
+ where status = 'INVALID'
+ order by 1, 2;
+select substr(name, 1, 30) as name,
+       type,
+       substr(line||':'||position, 1, 12) as location,
+       substr(text, 1, 132) as error
+  from user_errors
+ where attribute = 'ERROR'
+ order by type, name, sequence;
+prompt ################################################################################
+prompt 'UPDATING SERVICE_USER_POLICY'
+select systimestamp from dual;
+@@../cwms/create_service_user_policy
 prompt ################################################################################
 prompt 'UPDATING DB_CHANGE_LOG'
 select systimestamp from dual;
 @@./18_1_1/update_db_change_log
-select substr(version, 1, 10) as version, 
-       to_char(version_date, 'yyyy-mm-dd hh24:mi') as version_date, 
+select substr(version, 1, 10) as version,
+       to_char(version_date, 'yyyy-mm-dd hh24:mi') as version_date,
        to_char(apply_date, 'yyyy-mm-dd hh24:mi') as apply_date
   from av_db_change_log
  where application = 'CWMS'
@@ -393,7 +460,16 @@ prompt 'STARTING JOBS'
 select systimestamp from dual;
 begin
    cwms_ts.start_immediate_upd_tsx_job; -- one time job starting now
-   cwms_ts.start_update_ts_extents_job; -- weekly job at Fridays, 10:00 pm local time
+   begin
+      cwms_ts.start_update_ts_extents_job; -- weekly job at Fridays, 10:00 pm local time
+   exception
+      when others then
+         if instr(sqlerrm, 'another instance is already running') > 0 then
+            null;
+         else
+            raise;
+         end if;
+   end;
 end;
 /
 prompt ################################################################################

@@ -21,13 +21,11 @@ begin
       )
    loop
       execute immediate 'alter table '||rec.table_name||' add dest_flag number(1)';
-      if rec.table_name != 'AT_TSV' then
-         begin
-            execute immediate replace(trigger_text, ':table_name', rec.table_name);
-         exception
-            when others then null;
-         end;   
-      end if;
+      begin
+         execute immediate replace(trigger_text, ':table_name', rec.table_name);
+      exception
+         when others then null;
+      end;   
    end loop;
    commit;
 end;
