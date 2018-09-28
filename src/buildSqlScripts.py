@@ -9,7 +9,7 @@ def uniqueCombinationsGenerator(items, n):
     '''
     Generator which yields the combinations of a list of items taken n at a time
     '''
-    if n==0: 
+    if n==0:
         yield []
     else:
         for i in xrange(len(items)):
@@ -19,14 +19,14 @@ def uniqueCombinationsGenerator(items, n):
 def uniqueCombinations(items):
     '''
     Function returning all possible combinations of a list of items
-    '''    
-    count = len(items)                                        
+    '''
+    count = len(items)
     results = []
     for i in xrange(count) :
         for comb in uniqueCombinationsGenerator(items, i+1) :
             results.append(comb)
     return results
-    
+
 def getRandomFilename() :
 	for var in ("tmp", "temp") :
 		tmpdir = os.getenv(var)
@@ -39,10 +39,10 @@ def getRandomFilename() :
 		for i in range(10) : filename += random.choice(chars)
 		pathname = os.path.join(tmpdir, filename)
 		if not os.path.exists(pathname) : return pathname
-                
+
 testAccount  = None
 db_office_id = None
-db_cwms_count = -1 
+db_cwms_count = -1
 office_ids   = []
 tempFilename = getRandomFilename()
 
@@ -118,7 +118,7 @@ tableInfo = [
     {"ID" : "qTestFailed",        "TABLE" : "CWMS_DATA_Q_TEST_FAILED",    "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "qProtection",        "TABLE" : "CWMS_DATA_Q_PROTECTION",     "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "quality",            "TABLE" : "CWMS_DATA_QUALITY",          "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "ratingMethod",       "TABLE" : "CWMS_RATING_METHOD",         "SCHEMA" : "CWMS", "USERACCESS" : True}, 
+    {"ID" : "ratingMethod",       "TABLE" : "CWMS_RATING_METHOD",         "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "dssParameterType",   "TABLE" : "CWMS_DSS_PARAMETER_TYPE",    "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "dssXchgDirection",   "TABLE" : "CWMS_DSS_XCHG_DIRECTION",    "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "logMessageTypes",    "TABLE" : "CWMS_LOG_MESSAGE_TYPES",     "SCHEMA" : "CWMS", "USERACCESS" : True},
@@ -163,7 +163,7 @@ for item in tableInfo :
 #---------------#
 if __name__ in ("__main__", "main") : sys.stderr.write("Processing shef_durations.\n")
 shef_duration = [
-#    SHEF                                                                                                                      SHEF    CWMS 
+#    SHEF                                                                                                                      SHEF    CWMS
 #    CODE  Description                                                                                                         Numeric CODE
 #    ----  ------------------------------------------------------------------------------------------------------------------- ------ -----
     ['I', 'Instantaneous',                                                                                                     '0',    29],
@@ -594,9 +594,9 @@ counties = [
     [10001, 'Kent'],
     [10003, 'New Castle'],
     [10005, 'Sussex'],
-    [11000, 'Unknown County or County N/A'],                                                                      
+    [11000, 'Unknown County or County N/A'],
     [11001, 'Washington'],
-    [12000, 'Unknown County or County N/A'],                                                                      
+    [12000, 'Unknown County or County N/A'],
     [12001, 'Alachua'],
     [12003, 'Baker'],
     [12005, 'Bay'],
@@ -664,7 +664,7 @@ counties = [
     [12129, 'Wakulla'],
     [12131, 'Walton'],
     [12133, 'Washington'],
-    [13000, 'Unknown County or County N/A'],                                                                      
+    [13000, 'Unknown County or County N/A'],
     [13001, 'Appling'],
     [13003, 'Atkinson'],
     [13005, 'Bacon'],
@@ -824,12 +824,12 @@ counties = [
     [13317, 'Wilkes'],
     [13319, 'Wilkinson'],
     [13321, 'Worth'],
-    [15000, 'Unknown County or County N/A'],                                                                      
+    [15000, 'Unknown County or County N/A'],
     [15001, 'Hawaii'],
     [15003, 'Honolulu'],
     [15007, 'Kauai'],
     [15009, 'Maui'],
-    [16000, 'Unknown County or County N/A'],                                                                      
+    [16000, 'Unknown County or County N/A'],
     [16001, 'Ada'],
     [16003, 'Adams'],
     [16005, 'Bannock'],
@@ -874,7 +874,7 @@ counties = [
     [16083, 'Twin Falls'],
     [16085, 'Valley'],
     [16087, 'Washington'],
-    [17000, 'Unknown County or County N/A'],                                                                      
+    [17000, 'Unknown County or County N/A'],
     [17001, 'Adams'],
     [17003, 'Alexander'],
     [17005, 'Bond'],
@@ -977,7 +977,7 @@ counties = [
     [17199, 'Williamson'],
     [17201, 'Winnebago'],
     [17203, 'Woodford'],
-    [18000, 'Unknown County or County N/A'],                                                                      
+    [18000, 'Unknown County or County N/A'],
     [18001, 'Adams'],
     [18003, 'Allen'],
     [18005, 'Bartholomew'],
@@ -1070,7 +1070,7 @@ counties = [
     [18179, 'Wells'],
     [18181, 'White'],
     [18183, 'Whitley'],
-    [19000, 'Unknown County or County N/A'],                                                                      
+    [19000, 'Unknown County or County N/A'],
     [19001, 'Adair'],
     [19003, 'Adams'],
     [19005, 'Allamakee'],
@@ -1170,7 +1170,7 @@ counties = [
     [19193, 'Woodbury'],
     [19195, 'Worth'],
     [19197, 'Wright'],
-    [20000, 'Unknown County or County N/A'],                                                                      
+    [20000, 'Unknown County or County N/A'],
     [20001, 'Allen'],
     [20003, 'Anderson'],
     [20005, 'Atchison'],
@@ -1276,7 +1276,7 @@ counties = [
     [20205, 'Wilson'],
     [20207, 'Woodson'],
     [20209, 'Wyandotte'],
-    [21000, 'Unknown County or County N/A'],                                                                      
+    [21000, 'Unknown County or County N/A'],
     [21001, 'Adair'],
     [21003, 'Allen'],
     [21005, 'Anderson'],
@@ -1397,7 +1397,7 @@ counties = [
     [21235, 'Whitley'],
     [21237, 'Wolfe'],
     [21239, 'Woodford'],
-    [22000, 'Unknown County or County N/A'],                                                                      
+    [22000, 'Unknown County or County N/A'],
     [22001, 'Acadia'],
     [22003, 'Allen'],
     [22005, 'Ascension'],
@@ -1462,7 +1462,7 @@ counties = [
     [22123, 'West Carroll'],
     [22125, 'West Feliciana'],
     [22127, 'Winn'],
-    [23000, 'Unknown County or County N/A'],                                                                      
+    [23000, 'Unknown County or County N/A'],
     [23001, 'Androscoggin'],
     [23003, 'Aroostook'],
     [23005, 'Cumberland'],
@@ -1479,7 +1479,7 @@ counties = [
     [23027, 'Waldo'],
     [23029, 'Washington'],
     [23031, 'York'],
-    [24000, 'Unknown County or County N/A'],                                                                      
+    [24000, 'Unknown County or County N/A'],
     [24001, 'Allegany'],
     [24003, 'Anne Arundel'],
     [24005, 'Baltimore'],
@@ -1504,7 +1504,7 @@ counties = [
     [24045, 'Wicomico'],
     [24047, 'Worcester'],
     [24510, 'Baltimore City'],
-    [25000, 'Unknown County or County N/A'],                                                                      
+    [25000, 'Unknown County or County N/A'],
     [25001, 'Barnstable'],
     [25003, 'Berkshire'],
     [25005, 'Bristol'],
@@ -1519,7 +1519,7 @@ counties = [
     [25023, 'Plymouth'],
     [25025, 'Suffolk'],
     [25027, 'Worcester'],
-    [26000, 'Unknown County or County N/A'],                                                                      
+    [26000, 'Unknown County or County N/A'],
     [26001, 'Alcona'],
     [26003, 'Alger'],
     [26005, 'Allegan'],
@@ -1603,7 +1603,7 @@ counties = [
     [26161, 'Washtenaw'],
     [26163, 'Wayne'],
     [26165, 'Wexford'],
-    [27000, 'Unknown County or County N/A'],                                                                      
+    [27000, 'Unknown County or County N/A'],
     [27001, 'Aitkin'],
     [27003, 'Anoka'],
     [27005, 'Becker'],
@@ -1691,7 +1691,7 @@ counties = [
     [27169, 'Winona'],
     [27171, 'Wright'],
     [27173, 'Yellow Medicine'],
-    [28000, 'Unknown County or County N/A'],                                                                      
+    [28000, 'Unknown County or County N/A'],
     [28001, 'Adams'],
     [28003, 'Alcorn'],
     [28005, 'Amite'],
@@ -1774,7 +1774,7 @@ counties = [
     [28159, 'Winston'],
     [28161, 'Yalobusha'],
     [28163, 'Yazoo'],
-    [29000, 'Unknown County or County N/A'],                                                                      
+    [29000, 'Unknown County or County N/A'],
     [29001, 'Adair'],
     [29003, 'Andrew'],
     [29005, 'Atchison'],
@@ -1890,7 +1890,7 @@ counties = [
     [29227, 'Worth'],
     [29229, 'Wright'],
     [29510, 'St. Louis City'],
-    [30000, 'Unknown County or County N/A'],                                                                      
+    [30000, 'Unknown County or County N/A'],
     [30001, 'Beaverhead'],
     [30003, 'Big Horn'],
     [30005, 'Blaine'],
@@ -1947,7 +1947,7 @@ counties = [
     [30107, 'Wheatland'],
     [30109, 'Wibaux'],
     [30111, 'Yellowstone'],
-    [31000, 'Unknown County or County N/A'],                                                                      
+    [31000, 'Unknown County or County N/A'],
     [31001, 'Adams'],
     [31003, 'Antelope'],
     [31005, 'Arthur'],
@@ -2041,7 +2041,7 @@ counties = [
     [31181, 'Webster'],
     [31183, 'Wheeler'],
     [31185, 'York'],
-    [32000, 'Unknown County or County N/A'],                                                                      
+    [32000, 'Unknown County or County N/A'],
     [32001, 'Churchill'],
     [32003, 'Clark'],
     [32005, 'Douglas'],
@@ -2059,7 +2059,7 @@ counties = [
     [32031, 'Washoe'],
     [32033, 'White Pine'],
     [32510, 'Carson City'],
-    [33000, 'Unknown County or County N/A'],                                                                      
+    [33000, 'Unknown County or County N/A'],
     [33001, 'Belknap'],
     [33003, 'Carroll'],
     [33005, 'Cheshire'],
@@ -2070,7 +2070,7 @@ counties = [
     [33015, 'Rockingham'],
     [33017, 'Strafford'],
     [33019, 'Sullivan'],
-    [34000, 'Unknown County or County N/A'],                                                                      
+    [34000, 'Unknown County or County N/A'],
     [34001, 'Atlantic'],
     [34003, 'Bergen'],
     [34005, 'Burlington'],
@@ -2092,7 +2092,7 @@ counties = [
     [34037, 'Sussex'],
     [34039, 'Union'],
     [34041, 'Warren'],
-    [35000, 'Unknown County or County N/A'],                                                                      
+    [35000, 'Unknown County or County N/A'],
     [35001, 'Bernalillo'],
     [35003, 'Catron'],
     [35005, 'Chaves'],
@@ -2126,7 +2126,7 @@ counties = [
     [35057, 'Torrance'],
     [35059, 'Union'],
     [35061, 'Valencia'],
-    [36000, 'Unknown County or County N/A'],                                                                      
+    [36000, 'Unknown County or County N/A'],
     [36001, 'Albany'],
     [36003, 'Allegany'],
     [36005, 'Bronx'],
@@ -2189,7 +2189,7 @@ counties = [
     [36119, 'Westchester'],
     [36121, 'Wyoming'],
     [36123, 'Yates'],
-    [37000, 'Unknown County or County N/A'],                                                                      
+    [37000, 'Unknown County or County N/A'],
     [37001, 'Alamance'],
     [37003, 'Alexander'],
     [37005, 'Alleghany'],
@@ -2290,7 +2290,7 @@ counties = [
     [37195, 'Wilson'],
     [37197, 'Yadkin'],
     [37199, 'Yancey'],
-    [38000, 'Unknown County or County N/A'],                                                                      
+    [38000, 'Unknown County or County N/A'],
     [38001, 'Adams'],
     [38003, 'Barnes'],
     [38005, 'Benson'],
@@ -2344,7 +2344,7 @@ counties = [
     [38101, 'Ward'],
     [38103, 'Wells'],
     [38105, 'Williams'],
-    [39000, 'Unknown County or County N/A'],                                                                      
+    [39000, 'Unknown County or County N/A'],
     [39001, 'Adams'],
     [39003, 'Allen'],
     [39005, 'Ashland'],
@@ -2433,7 +2433,7 @@ counties = [
     [39171, 'Williams'],
     [39173, 'Wood'],
     [39175, 'Wyandot'],
-    [40000, 'Unknown County or County N/A'],                                                                      
+    [40000, 'Unknown County or County N/A'],
     [40001, 'Adair'],
     [40003, 'Alfalfa'],
     [40005, 'Atoka'],
@@ -2511,7 +2511,7 @@ counties = [
     [40149, 'Washita'],
     [40151, 'Woods'],
     [40153, 'Woodward'],
-    [41000, 'Unknown County or County N/A'],                                                                      
+    [41000, 'Unknown County or County N/A'],
     [41001, 'Baker'],
     [41003, 'Benton'],
     [41005, 'Clackamas'],
@@ -2548,7 +2548,7 @@ counties = [
     [41067, 'Washington'],
     [41069, 'Wheeler'],
     [41071, 'Yamhill'],
-    [42000, 'Unknown County or County N/A'],                                                                      
+    [42000, 'Unknown County or County N/A'],
     [42001, 'Adams'],
     [42003, 'Allegheny'],
     [42005, 'Armstrong'],
@@ -2616,13 +2616,13 @@ counties = [
     [42129, 'Westmoreland'],
     [42131, 'Wyoming'],
     [42133, 'York'],
-    [44000, 'Unknown County or County N/A'],                                                                      
+    [44000, 'Unknown County or County N/A'],
     [44001, 'Bristol'],
     [44003, 'Kent'],
     [44005, 'Newport'],
     [44007, 'Providence'],
     [44009, 'Washington'],
-    [45000, 'Unknown County or County N/A'],                                                                      
+    [45000, 'Unknown County or County N/A'],
     [45001, 'Abbeville'],
     [45003, 'Aiken'],
     [45005, 'Allendale'],
@@ -2669,7 +2669,7 @@ counties = [
     [45087, 'Union'],
     [45089, 'Williamsburg'],
     [45091, 'York'],
-    [46000, 'Unknown County or County N/A'],                                                                      
+    [46000, 'Unknown County or County N/A'],
     [46003, 'Aurora'],
     [46005, 'Beadle'],
     [46007, 'Bennett'],
@@ -2736,7 +2736,7 @@ counties = [
     [46129, 'Walworth'],
     [46135, 'Yankton'],
     [46137, 'Ziebach'],
-    [47000, 'Unknown County or County N/A'],                                                                      
+    [47000, 'Unknown County or County N/A'],
     [47001, 'Anderson'],
     [47003, 'Bedford'],
     [47005, 'Benton'],
@@ -2832,7 +2832,7 @@ counties = [
     [47185, 'White'],
     [47187, 'Williamson'],
     [47189, 'Wilson'],
-    [48000, 'Unknown County or County N/A'],                                                                      
+    [48000, 'Unknown County or County N/A'],
     [48001, 'Anderson'],
     [48003, 'Andrews'],
     [48005, 'Angelina'],
@@ -3087,7 +3087,7 @@ counties = [
     [48503, 'Young'],
     [48505, 'Zapata'],
     [48507, 'Zavala'],
-    [49000, 'Unknown County or County N/A'],                                                                      
+    [49000, 'Unknown County or County N/A'],
     [49001, 'Beaver'],
     [49003, 'Box Elder'],
     [49005, 'Cache'],
@@ -3117,7 +3117,7 @@ counties = [
     [49053, 'Washington'],
     [49055, 'Wayne'],
     [49057, 'Weber'],
-    [50000, 'Unknown County or County N/A'],                                                                      
+    [50000, 'Unknown County or County N/A'],
     [50001, 'Addison'],
     [50003, 'Bennington'],
     [50005, 'Caledonia'],
@@ -3132,7 +3132,7 @@ counties = [
     [50023, 'Washington'],
     [50025, 'Windham'],
     [50027, 'Windsor'],
-    [51000, 'Unknown County or County N/A'],                                                                      
+    [51000, 'Unknown County or County N/A'],
     [51001, 'Accomack'],
     [51003, 'Albemarle'],
     [51005, 'Alleghany'],
@@ -3269,7 +3269,7 @@ counties = [
     [51820, 'Waynesboro'],
     [51830, 'Williamsburg'],
     [51840, 'Winchester'],
-    [53000, 'Unknown County or County N/A'],                                                                      
+    [53000, 'Unknown County or County N/A'],
     [53001, 'Adams'],
     [53003, 'Asotin'],
     [53005, 'Benton'],
@@ -3309,7 +3309,7 @@ counties = [
     [53073, 'Whatcom'],
     [53075, 'Whitman'],
     [53077, 'Yakima'],
-    [54000, 'Unknown County or County N/A'],                                                                      
+    [54000, 'Unknown County or County N/A'],
     [54001, 'Barbour'],
     [54003, 'Berkeley'],
     [54005, 'Boone'],
@@ -3365,7 +3365,7 @@ counties = [
     [54105, 'Wirt'],
     [54107, 'Wood'],
     [54109, 'Wyoming'],
-    [55000, 'Unknown County or County N/A'],                                                                      
+    [55000, 'Unknown County or County N/A'],
     [55001, 'Adams'],
     [55003, 'Ashland'],
     [55005, 'Barron'],
@@ -3438,7 +3438,7 @@ counties = [
     [55137, 'Waushara'],
     [55139, 'Winnebago'],
     [55141, 'Wood'],
-    [56000, 'Unknown County or County N/A'],                                                                      
+    [56000, 'Unknown County or County N/A'],
     [56001, 'Albany'],
     [56003, 'Big Horn'],
     [56005, 'Campbell'],
@@ -3491,9 +3491,9 @@ offices = [
 # **WARNING!! DO NOT CHANGE The "ofc code" number!! You can add a new office to the
 #                     bottom of the list, but it must have a new unique number.
 #                     The max ofc code is 999.
-#   **ofc**                                                                               
+#   **ofc**
 #     code   ofc    longName                                        reportTo  dbHost  eroc  ofcType
-#     ----   ---    ----------------------------------------------  --------  ------  ----  -----  
+#     ----   ---    ----------------------------------------------  --------  ------  ----  -----
     [   0,  'UNK',  'Corps of Engineers Office Unknown',            '',       '',     '00', 'UNK' ],
     [   1,  'HQ',   'Headquarters, U.S. Army Corps of Engineers',   '',       'HQ',   'S0', 'HQ'  ],
     [   2,  'LRD',  'Great Lakes and Ohio River Division',          'HQ',     'LRD',  'H0', 'MSC' ],
@@ -3546,7 +3546,7 @@ offices = [
     [  49,  'SWG',  'Galveston District',                           'SWD',    'SWG',  'M3', 'DIS' ],
     [  50,  'SWL',  'Little Rock District',                         'SWD',    'SWL',  'M4', 'DIS' ],
     [  51,  'SWT',  'Tulsa District',                               'SWD',    'SWT',  'M5', 'DIS' ],
-    [  52,  'LCRA', 'Lower Colorado River Authority',               '',       'LCRA', 'Z0', 'UNK' ],        
+    [  52,  'LCRA', 'Lower Colorado River Authority',               '',       'LCRA', 'Z0', 'UNK' ],
     [  53,  'CWMS', 'All CWMS Offices',                             '',       '',     'X0', 'UNK' ],
     [  54,  'ERD',  'Engineer Research and Development Center',     'HQ',     'ERD',  'U0', 'FOA' ],
     [  55,  'CRREL','Cold Regions Research and Engineering Lab',    'ERD',    'CRREL','U4', 'FOA' ],
@@ -4248,7 +4248,7 @@ unitDefs = [
 unitDefsById = {}
 unitsByAbsParam = {}
 unitCode = 0
-for abstractParam, id, system, name, description in unitDefs : 
+for abstractParam, id, system, name, description in unitDefs :
     unitCode = unitCode + 1
     unitDefsById[abstractParam + "." + id] = {"CODE" : unitCode, "ID" : id, "SYSTEM" : system, "NAME" : name, "ABSTRACT" : abstractParam, "DESCRIPTION" : description}
     unitsByAbsParam.setdefault(abstractParam, []).append(id)
@@ -4257,7 +4257,7 @@ unitDefIds.sort()
 
 #------------------#
 # Unit conversions #
-#------------------#                                 
+#------------------#
 if __name__ in ("__main__", "main") : sys.stderr.write("Processing unit conversion definitions.\n")
 unitConversionsByUnitIds = {}
 cannotConvert = ("FNU", "JTU", "NTU")
@@ -4265,7 +4265,7 @@ for absParam in sorted(unitsByAbsParam.keys()) :
 	allUnits = sorted(unitsByAbsParam[absParam])
 	for fromUnit in allUnits :
 		for toUnit in allUnits :
-			if toUnit == fromUnit : 
+			if toUnit == fromUnit :
 				factor, offset, function = 1, 0, None
 				unitConversionsByUnitIds[absParam, fromUnit, toUnit] = {"FACTOR" : 1, "OFFSET" : 0, "FUNCTION" : None}
 			else :
@@ -4275,7 +4275,7 @@ for absParam in sorted(unitsByAbsParam.keys()) :
 				factor   = conversion["factor"],
 				offset   = conversion["offset"],
 				function = conversion["function"]
-				
+
 			unitConversionsByUnitIds[(absParam, fromUnit, toUnit)] = {
 				"FACTOR"   : factor,
 				"OFFSET"   : offset,
@@ -4289,10 +4289,10 @@ for absParam in sorted(unitsByAbsParam.keys()) :
 Data Quality Rules :
 
     1. Unless the Screened bit is set, no other bits can be set.
-       
-    2. Unused bits (22, 24, 27-31, 32+) must be reset (zero).       
 
-    3. The Okay, Missing, Questioned and Rejected bits are mutually 
+    2. Unused bits (22, 24, 27-31, 32+) must be reset (zero).
+
+    3. The Okay, Missing, Questioned and Rejected bits are mutually
        exclusive.
 
     4. No replacement cause or replacement method bits can be set unless
@@ -4307,10 +4307,10 @@ Data Quality Rules :
     7. The Test Failed bits are not mutually exclusive (multiple tests can be
        marked as failed).
 
-Bit Mappings :       
-    
-         3                   2                   1                     
-     2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 
+Bit Mappings :
+
+         3                   2                   1
+     2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1
 
      P - - - - - T T T T T T T T T T T M M M M C C C D R R V V V V S
      |           <---------+---------> <--+--> <-+-> | <+> <--+--> |
@@ -4322,7 +4322,7 @@ Bit Mappings :
      |                     |              +---------------------Replacement Method Integer
      |                     +-------------------------------------------Test Failed Flags
      +-------------------------------------------------------------------Protected T/F
-                                                              
+
 '''
 
 q_screened = {
@@ -4333,7 +4333,7 @@ q_screened = {
 
 q_validity = {
     "shift"  : 1,
-    "values" : [      
+    "values" : [
         (0,    "UNKNOWN",        "The validity of the value has not been assessed"),
         (1,    "OKAY",           "The value is accepted as valid"                 ),
         (2,    "MISSING",        "The value has not been reported or computed"    ),
@@ -4389,7 +4389,7 @@ q_test_failed = {
 # rebuild q_test_failed["values"] to include all combinations of values listed
 #
 testFailedCombinations = uniqueCombinations(q_test_failed["values"][1:])
-q_test_failed["values"] = q_test_failed["values"][:1] 
+q_test_failed["values"] = q_test_failed["values"][:1]
 for items in testFailedCombinations :
     if len(items) == 0 :
         continue
@@ -4402,7 +4402,7 @@ for items in testFailedCombinations :
         value = sum(values)
         id    = "+".join(ids)
         desc  = "The value failed %d tests" % len(items)
-    q_test_failed["values"].append((value, id, desc))        
+    q_test_failed["values"].append((value, id, desc))
 
 q_protection = {
     "shift"  : 31,
@@ -4473,7 +4473,7 @@ parameters = [
 ]
 
 cwmsUnitParamDefsById = {}
-for paramCode, abstractParam, paramId, name, id, siId, enId, desc in parameters : 
+for paramCode, abstractParam, paramId, name, id, siId, enId, desc in parameters :
 #    uid = abstractParam + '.' + id
     cwmsUnitParamDefsById[abstractParam + '.' + id] = unitDefsById[abstractParam + '.' + id]["CODE"]
 cwmsUnitParamIds = cwmsUnitParamDefsById.keys()
@@ -4483,26 +4483,26 @@ cwmsUnitParamIds = cwmsUnitParamDefsById.keys()
 #------------------------#
 if __name__ in ("__main__", "main") : sys.stderr.write("Processing default sub_parameter definitions.\n")
 subParameters = [
-#           --  DEFAULT Sub_Parameters -------------------------------    -- Display Units --  
-#           Base        Sub                                       
+#           --  DEFAULT Sub_Parameters -------------------------------    -- Display Units --
+#           Base        Sub
 #           Param       Param          Sub-Parameter Descripiton           SI         Non-SI
 #     ----- ----------- -------------- ---------------------------------- ---------- ---------
-    [ 301,  "%",        "ofArea-Snow", "Percent of Area Covered by Snow", "%",       "%"],                                         
-    [ 302,  "%",        "Opening",     "Percent Open",                    "%",       "%"],                                             
-    [ 303,  "Conc",     "Acidity",     "Acidity Concentration",           "mg/l",    "ppm"],                          
-    [ 304,  "Conc",     "Alkalinity",  "Alkalinity Concentration",        "mg/l",    "ppm"],                      
-    [ 305,  "Conc",     "DO",          "Disolved Oxygen Concentration",   "mg/l",    "ppm"],                              
-    [ 306,  "Conc",     "Iron",        "Iron Concentration",              "mg/l",    "ppm"],                            
-    [ 307,  "Conc",     "Sulfate",     "Sulfate Concentration",           "mg/l",    "ppm"],                         
-    [ 308,  "Conc",     "Salinity",    "Salinity Concentration",          "g/l",     "g/l"],                         
-    [ 309,  "Depth",    "Snow",        "Snow Depth",                      "mm",      "in"],                                         
-    [ 310,  "Depth",    "SnowWE",      "Snow Water Equivalance",          "mm",      "in"],                                       
-    [ 311,  "Flow",     "In",          "Inflow",                          "cms",     "cfs"],                                      
-    [ 312,  "Flow",     "Out",         "Outflow",                         "cms",     "cfs"],                                     
-    [ 313,  "Flow",     "Reg",         "Regulated Flow",                  "cms",     "cfs"],                                     
-    [ 314,  "Flow",     "Spill",       "Spillway Flow",                   "cms",     "cfs"],                                   
-    [ 315,  "Flow",     "Unreg",       "Unregulated Flow",                "cms",     "cfs"],                                   
-    [ 316,  "Temp",     "Air",         "Air Temperature",                 "C",       "F"],                                       
+    [ 301,  "%",        "ofArea-Snow", "Percent of Area Covered by Snow", "%",       "%"],
+    [ 302,  "%",        "Opening",     "Percent Open",                    "%",       "%"],
+    [ 303,  "Conc",     "Acidity",     "Acidity Concentration",           "mg/l",    "ppm"],
+    [ 304,  "Conc",     "Alkalinity",  "Alkalinity Concentration",        "mg/l",    "ppm"],
+    [ 305,  "Conc",     "DO",          "Disolved Oxygen Concentration",   "mg/l",    "ppm"],
+    [ 306,  "Conc",     "Iron",        "Iron Concentration",              "mg/l",    "ppm"],
+    [ 307,  "Conc",     "Sulfate",     "Sulfate Concentration",           "mg/l",    "ppm"],
+    [ 308,  "Conc",     "Salinity",    "Salinity Concentration",          "g/l",     "g/l"],
+    [ 309,  "Depth",    "Snow",        "Snow Depth",                      "mm",      "in"],
+    [ 310,  "Depth",    "SnowWE",      "Snow Water Equivalance",          "mm",      "in"],
+    [ 311,  "Flow",     "In",          "Inflow",                          "cms",     "cfs"],
+    [ 312,  "Flow",     "Out",         "Outflow",                         "cms",     "cfs"],
+    [ 313,  "Flow",     "Reg",         "Regulated Flow",                  "cms",     "cfs"],
+    [ 314,  "Flow",     "Spill",       "Spillway Flow",                   "cms",     "cfs"],
+    [ 315,  "Flow",     "Unreg",       "Unregulated Flow",                "cms",     "cfs"],
+    [ 316,  "Temp",     "Air",         "Air Temperature",                 "C",       "F"],
     [ 317,  "Temp",     "Water",       "Water Temperature",               "C",       "F"],
 ]
 
@@ -4644,61 +4644,63 @@ if __name__ in ("__main__", "main") : sys.stderr.write("Processing cwms error co
 #     ERR_CODE  ERR_NAME                    ERR_MSG
 #     --------  --------------------------- -----------------------------------------------------------------
 errorCodes = [
-    ['-20001', 'TS_ID_NOT_FOUND',       'The timeseries identifier "%1" was not found for office "%2"'],
-    ['-20002', 'TS_IS_INVALID',         'The timeseries identifier "%1" is not valid %2'              ],
-    ['-20003', 'TS_ALREADY_EXISTS',     'The timeseries identifier "%1" is already in use'            ],
-    ['-20004', 'INVALID_INTERVAL_ID',   '"%1" is not a valid CWMS timeseries interval'                ],
-    ['-20005', 'INVALID_DURATION_ID',   '"%1" is not a valid CWMS timeseries Duration'                ],
-    ['-20006', 'INVALID_PARAM_ID',      '"%1" is not a valid CWMS timeseries Parameter'               ],
-    ['-20007', 'INVALID_PARAM_TYPE',    '"%1" is not a valid CWMS timeseries Parameter Type'          ],
-    ['-20010', 'INVALID_OFFICE_ID',     '"%1" is not a valid CWMS office id'                          ],
-    ['-20011', 'INVALID_STORE_RULE',    '"%1" is not a recognized Store Rule'                         ],
-    ['-20012', 'INVALID_DELETE_ACTION', '"%1" is not a recognized Delete Action'                      ],
-    ['-20013', 'INVALID_UTC_OFFSET',    'The UTC Offset: "%1" is not valid for a "%2" Interval value' ],
-    ['-20014', 'TS_ID_NOT_CREATED',     'Unable to create TS ID: "%1"'                                ],
-    ['-20015', 'XCHG_TS_ERROR',         'Time series "%1" cannot be configured for realtime exchange in set "%2" in the opposite direction from its configuration in set "%3".'],
-    ['-20016', 'XCHG_RATING_ERROR',     'Rating series "%1" cannot be configured for realtime exchange in set "%2" in the opposite direction from its configuration in set "%3".'],
-    ['-20017', 'XCHG_TIME_VALUE',       'Error converting "%1" to timestamp. Required format is "%2".'],
-    ['-20018', 'XCHG_NO_DATA',          'Table "%1" has no data for code "%2" at time "%3".'          ],
-    ['-20019', 'INVALID_ITEM',          '"%1" is not a valid %2.'                                     ],
-    ['-20020', 'ITEM_ALREADY_EXISTS',   '"%1" "%2" already exists.'                                   ],
-    ['-20021', 'ITEM_NOT_CREATED',      'Unable to create %1 "%2".'                                   ],
-    ['-20022', 'STATE_CANNOT_BE_NULL',  '"%1"-The State/Provence must be specified when specifying a County/Region.'],
-    ['-20023', 'INVALID_T_F_FLAG',      '"%1" - Must be either T or F.'                               ],
-    ['-20024', 'INVALID_T_F_FLAG_OLD',  '"%1" - Must be either 1 for True or 0 for False.'            ],
-    ['-20025', 'LOCATION_ID_NOT_FOUND', 'The Location: "%1" does not exist.'                     ],
-    ['-20026', 'LOCATION_ID_ALREADY_EXISTS', '"%1"-The Location: "%2" already exists.'                ],
-    ['-20027', 'INVLAID_FULL_ID',       '"%1" is not a valid Location or Parameter id.'               ],
-    ['-20028', 'RENAME_LOC_BASE_1',     'Unable to rename. An old Base Location: "%1" can not be renamed to a non-Base Location: "%2".' ],
-    ['-20029', 'RENAME_LOC_BASE_2',     'Unable to rename. The new Location: "%1" already exists.' ],
-    ['-20030', 'RENAME_LOC_BASE_3',     'Unable to rename. The new Location: "%1" matches the existing old location.' ],
-    ['-20031', 'CAN_NOT_DELETE_LOC_1',  'Can not delete location: "%1" because Timeseries Identifiers exist.' ],
-    ['-20032', 'CANNOT_DELETE_UNIT_1',  'Cannot delete or rename unit alias "%1"; it is in use by %2.'],
-    ['-20033', 'DUPLICATE_XCHG_MAP',    'Mapping of "%1" to "%2 already exists in exchage set "%3", but with different parameters.'],
-    ['-20034', 'ITEM_DOES_NOT_EXIST',   '%1 "%2" does not exist.'],
-    ['-20035', 'DATA_STREAM_NOT_FOUND', 'The "%1" data stream was not found'                          ],
-    ['-20036', 'PARAM_CANNOT_BE_NULL ', 'The "%1" parameter cannot be "NULL".'                        ],
-    ['-20037', 'CANNOT_RENAME_1',       'Unable to rename. An old id of: "%1" was not found.'],
-    ['-20038', 'CANNOT_RENAME_2',       'Unable to rename. The new id: "%1" already exists.'],
-    ['-20039', 'CANNOT_RENAME_3',       'Unable to rename. The new id: "%1" matches the old.'],
-    ['-20040', 'CANNOT_DELETE_DATA_STREAM','Cannot delete data stream: "%". It still has SHEF spec''s assigned to it.'],
-    ['-20041', 'INVALID_FULL_ID',       '"%1" is an invalid id.'                                      ],
-    ['-20042', 'CANNOT_CHANGE_OFFSET',  'Cannot change interval utc offset of time series with stored data: "%1"' ],
-    ['-20043', 'INVALID_SNAP_WINDOW',   'Snap Window can not be greater than the cwms_ts_id Interval'],
-    ['-20044', 'SHEF_DUP_TS_ID',        'CWMS_TS_ID "%1" has already been used.'],
-    ['-20045', 'ITEM_OWNED_BY_CWMS',    'The %1: "%2" is owned by the system and cannot be changed or deleted.'],
-    ['-20046', 'NO_CRIT_FILE_FOUND',    'A crit file for the %1 datastream was not found.'],
-    ['-20047', 'SESSION_OFFICE_ID_NOT_SET',    'Session office id is not set by the application'],
-    ['-20048', 'NO_WRITE_PRIVILEGE',    'User doesn''t have write privileges'],
-    ['-20102', 'UNIT_CONV_NOT_FOUND',   'The units conversion for "%1" was not found'                 ],
-    ['-20103', 'INVALID_TIME_ZONE',     'The time zone "%1" is not a valid Oracle time zone region'   ],
-    ['-20104', 'UNITS_NOT_SPECIFIED',   'You must specifiy the UNITS of your data'                    ],
-    ['-20234', 'ITEMS_ARE_IDENTICAL',   '%1'                                                          ],
-    ['-20244', 'NULL_ARGUMENT',         'Argument %1 is not allowed to be null'                       ],
-    ['-20254', 'ARRAY_LENGTHS_DIFFER',  '%1 arrays must have identical lengths'                       ],
-    ['-20997', 'GENERIC_ERROR',         '%1'                                                          ],
-    ['-20998', 'ERROR',                 '%1'                                                          ],
-    ['-20999', 'UNKNOWN_EXCEPTION',     'The requested exception is not in the CWMS_ERROR table: "%1"'],
+    ['-20001', 'TS_ID_NOT_FOUND',                 'The timeseries identifier "%1" was not found for office "%2"'                                 ],
+    ['-20002', 'TS_IS_INVALID',                   'The timeseries identifier "%1" is not valid %2'                                               ],
+    ['-20003', 'TS_ALREADY_EXISTS',               'The timeseries identifier "%1" is already in use'                                             ],
+    ['-20004', 'INVALID_INTERVAL_ID',             '"%1" is not a valid CWMS timeseries interval'                                                 ],
+    ['-20005', 'INVALID_DURATION_ID',             '"%1" is not a valid CWMS timeseries Duration'                                                 ],
+    ['-20006', 'INVALID_PARAM_ID',                '"%1" is not a valid CWMS timeseries Parameter'                                                ],
+    ['-20007', 'INVALID_PARAM_TYPE',              '"%1" is not a valid CWMS timeseries Parameter Type'                                           ],
+    ['-20010', 'INVALID_OFFICE_ID',               '"%1" is not a valid CWMS office id'                                                           ],
+    ['-20011', 'INVALID_STORE_RULE',              '"%1" is not a recognized Store Rule'                                                          ],
+    ['-20012', 'INVALID_DELETE_ACTION',           '"%1" is not a recognized Delete Action'                                                       ],
+    ['-20013', 'INVALID_UTC_OFFSET',              'The UTC Offset: "%1" is not valid for a "%2" Interval value'                                  ],
+    ['-20014', 'TS_ID_NOT_CREATED',               'Unable to create TS ID: "%1"'                                                                 ],
+    ['-20015', 'XCHG_TS_ERROR',                   'Time series "%1" cannot be configured for realtime exchange in set "%2" in the opposite direction from its configuration in set "%3".'  ],
+    ['-20016', 'XCHG_RATING_ERROR',               'Rating series "%1" cannot be configured for realtime exchange in set "%2" in the opposite direction from its configuration in set "%3".'],
+    ['-20017', 'XCHG_TIME_VALUE',                 'Error converting "%1" to timestamp. Required format is "%2".'                                 ],
+    ['-20018', 'XCHG_NO_DATA',                    'Table "%1" has no data for code "%2" at time "%3".'                                           ],
+    ['-20019', 'INVALID_ITEM',                    '"%1" is not a valid %2.'                                                                      ],
+    ['-20020', 'ITEM_ALREADY_EXISTS',             '"%1" "%2" already exists.'                                                                    ],
+    ['-20021', 'ITEM_NOT_CREATED',                'Unable to create %1 "%2".'                                                                    ],
+    ['-20022', 'STATE_CANNOT_BE_NULL',            '"%1"-The State/Provence must be specified when specifying a County/Region.'                   ],
+    ['-20023', 'INVALID_T_F_FLAG',                '"%1" - Must be either T or F.'                                                                ],
+    ['-20024', 'INVALID_T_F_FLAG_OLD',            '"%1" - Must be either 1 for True or 0 for False.'                                             ],
+    ['-20025', 'LOCATION_ID_NOT_FOUND',           'The Location: "%1" does not exist.'                                                           ],
+    ['-20026', 'LOCATION_ID_ALREADY_EXISTS',      '"%1"-The Location: "%2" already exists.'                                                      ],
+    ['-20027', 'INVLAID_FULL_ID',                 '"%1" is not a valid Location or Parameter id.'                                                ],
+    ['-20028', 'RENAME_LOC_BASE_1',               'Unable to rename. An old Base Location: "%1" can not be renamed to a non-Base Location: "%2".'],
+    ['-20029', 'RENAME_LOC_BASE_2',               'Unable to rename. The new Location: "%1" already exists.'                                     ],
+    ['-20030', 'RENAME_LOC_BASE_3',               'Unable to rename. The new Location: "%1" matches the existing old location.'                  ],
+    ['-20031', 'CAN_NOT_DELETE_LOC_1',            'Can not delete location: "%1" because Timeseries Identifiers exist.'                          ],
+    ['-20032', 'CANNOT_DELETE_UNIT_1',            'Cannot delete or rename unit alias "%1"; it is in use by %2.'                                 ],
+    ['-20033', 'DUPLICATE_XCHG_MAP',              'Mapping of "%1" to "%2 already exists in exchage set "%3", but with different parameters.'    ],
+    ['-20034', 'ITEM_DOES_NOT_EXIST',             '%1 "%2" does not exist.'                                                                      ],
+    ['-20035', 'DATA_STREAM_NOT_FOUND',           'The "%1" data stream was not found'                                                           ],
+    ['-20036', 'PARAM_CANNOT_BE_NULL ',           'The "%1" parameter cannot be "NULL".'                                                         ],
+    ['-20037', 'CANNOT_RENAME_1',                 'Unable to rename. An old id of: "%1" was not found.'                                          ],
+    ['-20038', 'CANNOT_RENAME_2',                 'Unable to rename. The new id: "%1" already exists.'                                           ],
+    ['-20039', 'CANNOT_RENAME_3',                 'Unable to rename. The new id: "%1" matches the old.'                                          ],
+    ['-20040', 'CANNOT_DELETE_DATA_STREAM',      'Cannot delete data stream: "%". It still has SHEF spec''s assigned to it.'                     ],
+    ['-20041', 'INVALID_FULL_ID',                 '"%1" is an invalid id.'                                                                       ],
+    ['-20042', 'CANNOT_CHANGE_OFFSET',            'Cannot change interval utc offset of time series with stored data: "%1"'                      ],
+    ['-20043', 'INVALID_SNAP_WINDOW',             'Snap Window can not be greater than the cwms_ts_id Interval'                                  ],
+    ['-20044', 'SHEF_DUP_TS_ID',                  'CWMS_TS_ID "%1" has already been used.'                                                       ],
+    ['-20045', 'ITEM_OWNED_BY_CWMS',              'The %1: "%2" is owned by the system and cannot be changed or deleted.'                        ],
+    ['-20046', 'NO_CRIT_FILE_FOUND',              'A crit file for the %1 datastream was not found.'                                             ],
+    ['-20047', 'SESSION_OFFICE_ID_NOT_SET',       'Session office id is not set by the application'                                              ],
+    ['-20048', 'NO_WRITE_PRIVILEGE',              'User doesn''t have write privileges'                                                          ],
+    ['-20049', 'NO SUCH APPLICATION INSTANCE',    'No application instance is associated with the specified UUID'                                ],
+    ['-20050', 'APPLICATION INSTANCE LOGGED OUT', 'The application instance associated with the specified UUID has logged out'                   ],
+    ['-20102', 'UNIT_CONV_NOT_FOUND',             'The units conversion for "%1" was not found'                                                  ],
+    ['-20103', 'INVALID_TIME_ZONE',               'The time zone "%1" is not a valid Oracle time zone region'                                    ],
+    ['-20104', 'UNITS_NOT_SPECIFIED',             'You must specifiy the UNITS of your data'                                                     ],
+    ['-20234', 'ITEMS_ARE_IDENTICAL',             '%1'                                                                                           ],
+    ['-20244', 'NULL_ARGUMENT',                   'Argument %1 is not allowed to be null'                                                        ],
+    ['-20254', 'ARRAY_LENGTHS_DIFFER',            '%1 arrays must have identical lengths'                                                        ],
+    ['-20997', 'GENERIC_ERROR',                   '%1'                                                                                           ],
+    ['-20998', 'ERROR',                           '%1'                                                                                           ],
+    ['-20999', 'UNKNOWN_EXCEPTION',               'The requested exception is not in the CWMS_ERROR table: "%1"'                                 ],
 ]
 
 #-------------------#
@@ -4800,7 +4802,7 @@ gageTypes = [
 if __name__ in ("__main__", "main") : sys.stderr.write("Processing nations \n")
 nations = [
 #    CODE   ID
-#        ----   -------------   
+#        ----   -------------
     ["AF",  "AFGHANISTAN"],
     ["AX",  "ÅLAND ISLANDS"],
     ["AL",  "ALBANIA"],
@@ -5036,7 +5038,7 @@ nations = [
     ["US",  "UNITED STATES"],
     ["UM",  "UNITED STATES MINOR OUTLYING ISLANDS"],
     ["UY",  "URUGUAY"],
-    ["UZ",  "UZBEKISTAN"],                                                                                                                                                    
+    ["UZ",  "UZBEKISTAN"],
     ["VU",  "VANUATU"],
     ["VE",  "VENEZUELA, BOLIVARIAN REPUBLIC OF"],
     ["VN",  "VIET NAM"],
@@ -5056,104 +5058,104 @@ nations = [
 # streamTypes = [
 # #    ID      CHANNELS    ENTRENCHMENT WIDTH/DEPTH        SINUOSITY          SLOPE           MATERIAL
 # #    --------------------------------------------------------------------------------------------------
-#     ['A1a+', 'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '> 0.10',       'BEDROCK'  ],   
-#     ['A2a+', 'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '> 0.10',       'BOULDERS' ],   
-#     ['A3a+', 'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '> 0.10',       'COBBLE'   ],   
-#     ['A4a+', 'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '> 0.10',       'GRAVEL'   ],   
-#     ['A5a+', 'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '> 0.10',       'SAND'     ],   
+#     ['A1a+', 'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '> 0.10',       'BEDROCK'  ],
+#     ['A2a+', 'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '> 0.10',       'BOULDERS' ],
+#     ['A3a+', 'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '> 0.10',       'COBBLE'   ],
+#     ['A4a+', 'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '> 0.10',       'GRAVEL'   ],
+#     ['A5a+', 'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '> 0.10',       'SAND'     ],
 #     ['A6a+', 'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '> 0.10',       'SILT/CLAY'],
-#     ['A1',   'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '0.04 - 0.10',  'BEDROCK'  ],   
-#     ['A2',   'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '0.04 - 0.10',  'BOULDERS' ],   
-#     ['A3',   'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '0.04 - 0.10',  'COBBLE'   ],   
-#     ['A4',   'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '0.04 - 0.10',  'GRAVEL'   ],   
-#     ['A5',   'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '0.04 - 0.10',  'SAND'     ],   
+#     ['A1',   'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '0.04 - 0.10',  'BEDROCK'  ],
+#     ['A2',   'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '0.04 - 0.10',  'BOULDERS' ],
+#     ['A3',   'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '0.04 - 0.10',  'COBBLE'   ],
+#     ['A4',   'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '0.04 - 0.10',  'GRAVEL'   ],
+#     ['A5',   'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '0.04 - 0.10',  'SAND'     ],
 #     ['A6',   'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '0.04 - 0.10',  'SILT/CLAY'],
-#     ['G1',   'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '0.02 - 0.039', 'BEDROCK'  ],   
-#     ['G2',   'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '0.02 - 0.039', 'BOULDERS' ],   
-#     ['G3',   'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '0.02 - 0.039', 'COBBLE'   ],   
-#     ['G4',   'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '0.02 - 0.039', 'GRAVEL'   ],   
-#     ['G5',   'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '0.02 - 0.039', 'SAND'     ],   
+#     ['G1',   'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '0.02 - 0.039', 'BEDROCK'  ],
+#     ['G2',   'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '0.02 - 0.039', 'BOULDERS' ],
+#     ['G3',   'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '0.02 - 0.039', 'COBBLE'   ],
+#     ['G4',   'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '0.02 - 0.039', 'GRAVEL'   ],
+#     ['G5',   'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '0.02 - 0.039', 'SAND'     ],
 #     ['G6',   'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '0.02 - 0.039', 'SILT/CLAY'],
-#     ['G1c',  'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '< 0.02',       'BEDROCK'  ],   
-#     ['G2c',  'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '< 0.02',       'BOULDERS' ],   
-#     ['G3c',  'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '< 0.02',       'COBBLE'   ],   
-#     ['G4c',  'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '< 0.02',       'GRAVEL'   ],   
-#     ['G5c',  'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '< 0.02',       'SAND'     ],   
+#     ['G1c',  'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '< 0.02',       'BEDROCK'  ],
+#     ['G2c',  'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '< 0.02',       'BOULDERS' ],
+#     ['G3c',  'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '< 0.02',       'COBBLE'   ],
+#     ['G4c',  'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '< 0.02',       'GRAVEL'   ],
+#     ['G5c',  'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '< 0.02',       'SAND'     ],
 #     ['G6c',  'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '< 0.02',       'SILT/CLAY'],
-#     ['F1b',  'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '0.02 - 0.039', 'BEDROCK'  ],   
-#     ['F2b',  'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '0.02 - 0.039', 'BOULDERS' ],   
-#     ['F3b',  'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '0.02 - 0.039', 'COBBLE'   ],   
-#     ['F4b',  'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '0.02 - 0.039', 'GRAVEL'   ],   
-#     ['F5b',  'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '0.02 - 0.039', 'SAND'     ],   
+#     ['F1b',  'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '0.02 - 0.039', 'BEDROCK'  ],
+#     ['F2b',  'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '0.02 - 0.039', 'BOULDERS' ],
+#     ['F3b',  'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '0.02 - 0.039', 'COBBLE'   ],
+#     ['F4b',  'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '0.02 - 0.039', 'GRAVEL'   ],
+#     ['F5b',  'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '0.02 - 0.039', 'SAND'     ],
 #     ['F6b',  'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '0.02 - 0.039', 'SILT/CLAY'],
-#     ['F1',   'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '< 0.02',       'BEDROCK'  ],   
-#     ['F2',   'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '< 0.02',       'BOULDERS' ],   
-#     ['F3',   'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '< 0.02',       'COBBLE'   ],   
-#     ['F4',   'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '< 0.02',       'GRAVEL'   ],   
-#     ['F5',   'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '< 0.02',       'SAND'     ],   
+#     ['F1',   'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '< 0.02',       'BEDROCK'  ],
+#     ['F2',   'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '< 0.02',       'BOULDERS' ],
+#     ['F3',   'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '< 0.02',       'COBBLE'   ],
+#     ['F4',   'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '< 0.02',       'GRAVEL'   ],
+#     ['F5',   'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '< 0.02',       'SAND'     ],
 #     ['F6',   'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '< 0.02',       'SILT/CLAY'],
-#     ['B1a',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.04 - 0.099', 'BEDROCK'  ],   
-#     ['B2a',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.04 - 0.099', 'BOULDERS' ],   
-#     ['B3a',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.04 - 0.099', 'COBBLE'   ],   
-#     ['B4a',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.04 - 0.099', 'GRAVEL'   ],   
-#     ['B5a',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.04 - 0.099', 'SAND'     ],   
+#     ['B1a',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.04 - 0.099', 'BEDROCK'  ],
+#     ['B2a',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.04 - 0.099', 'BOULDERS' ],
+#     ['B3a',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.04 - 0.099', 'COBBLE'   ],
+#     ['B4a',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.04 - 0.099', 'GRAVEL'   ],
+#     ['B5a',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.04 - 0.099', 'SAND'     ],
 #     ['B6a',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.04 - 0.099', 'SILT/CLAY'],
-#     ['B1b',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.02 - 0.039', 'BEDROCK'  ],   
-#     ['B2b',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.02 - 0.039', 'BOULDERS' ],   
-#     ['B3b',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.02 - 0.039', 'COBBLE'   ],   
-#     ['B4b',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.02 - 0.039', 'GRAVEL'   ],   
-#     ['B5b',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.02 - 0.039', 'SAND'     ],   
+#     ['B1b',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.02 - 0.039', 'BEDROCK'  ],
+#     ['B2b',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.02 - 0.039', 'BOULDERS' ],
+#     ['B3b',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.02 - 0.039', 'COBBLE'   ],
+#     ['B4b',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.02 - 0.039', 'GRAVEL'   ],
+#     ['B5b',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.02 - 0.039', 'SAND'     ],
 #     ['B6b',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.02 - 0.039', 'SILT/CLAY'],
-#     ['B1',   'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '< 0.02',       'BEDROCK'  ],   
-#     ['B2',   'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '< 0.02',       'BOULDERS' ],   
-#     ['B3',   'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '< 0.02',       'COBBLE'   ],   
-#     ['B4',   'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '< 0.02',       'GRAVEL'   ],   
-#     ['B5',   'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '< 0.02',       'SAND'     ],   
+#     ['B1',   'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '< 0.02',       'BEDROCK'  ],
+#     ['B2',   'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '< 0.02',       'BOULDERS' ],
+#     ['B3',   'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '< 0.02',       'COBBLE'   ],
+#     ['B4',   'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '< 0.02',       'GRAVEL'   ],
+#     ['B5',   'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '< 0.02',       'SAND'     ],
 #     ['B6',   'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '< 0.02',       'SILT/CLAY'],
-#     ['E3b',  'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '0.02 - 0.039', 'COBBLE'   ],   
-#     ['E4b',  'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '0.02 - 0.039', 'GRAVEL'   ],   
-#     ['E5b',  'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '0.02 - 0.039', 'SAND'     ],   
+#     ['E3b',  'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '0.02 - 0.039', 'COBBLE'   ],
+#     ['E4b',  'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '0.02 - 0.039', 'GRAVEL'   ],
+#     ['E5b',  'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '0.02 - 0.039', 'SAND'     ],
 #     ['E6b',  'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '0.02 - 0.039', 'SILT/CLAY'],
-#     ['E3',   'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '< 0.02',       'COBBLE'   ],   
-#     ['E4',   'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '< 0.02',       'GRAVEL'   ],   
-#     ['E5',   'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '< 0.02',       'SAND'     ],   
+#     ['E3',   'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '< 0.02',       'COBBLE'   ],
+#     ['E4',   'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '< 0.02',       'GRAVEL'   ],
+#     ['E5',   'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '< 0.02',       'SAND'     ],
 #     ['E6',   'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '< 0.02',       'SILT/CLAY'],
-#     ['C1b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'BEDROCK'  ],   
-#     ['C2b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'BOULDERS' ],   
-#     ['C3b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'COBBLE'   ],   
-#     ['C4b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'GRAVEL'   ],   
-#     ['C5b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'SAND'     ],   
-#     ['C6b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'SILT/CLAY'],   
-#     ['C1',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'BEDROCK'  ],   
-#     ['C2',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'BOULDERS' ],   
-#     ['C3',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'COBBLE'   ],   
-#     ['C4',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'GRAVEL'   ],   
-#     ['C5',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'SAND'     ],   
-#     ['C6',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'SILT/CLAY'],   
-#     ['C1c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'BEDROCK'  ],   
-#     ['C2c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'BOULDERS' ],   
-#     ['C3c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'COBBLE'   ],   
-#     ['C4c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'GRAVEL'   ],   
-#     ['C5c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'SAND'     ],   
-#     ['C6c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'SILT/CLAY'],   
-#     ['D3b',  'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.02 - 0.039', 'COBBLE'   ],   
-#     ['D4b',  'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.02 - 0.039', 'GRAVEL'   ],   
-#     ['D5b',  'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.02 - 0.039', 'SAND'     ],   
-#     ['D6b',  'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.02 - 0.039', 'SILT/CLAY'],   
-#     ['D3',   'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.001 - 0.02', 'COBBLE'   ],   
-#     ['D4',   'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.001 - 0.02', 'GRAVEL'   ],   
-#     ['D5',   'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.001 - 0.02', 'SAND'     ],   
-#     ['D6',   'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.001 - 0.02', 'SILT/CLAY'],   
-#     ['D4c-', 'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '< 0.001',      'GRAVEL'   ],   
-#     ['D5c-', 'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '< 0.001',      'SAND'     ],   
-#     ['D6c-', 'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '< 0.001',      'SILT/CLAY'],   
-#     ['DA4',  'MULTIPLE', None,        'HIGHLY VARIABLE', 'HIGHLY VARIABLE', '< 0.005',      'GRAVEL'   ],   
-#     ['DA5',  'MULTIPLE', None,        'HIGHLY VARIABLE', 'HIGHLY VARIABLE', '< 0.005',      'SAND'     ],   
-#     ['DA6',  'MULTIPLE', None,        'HIGHLY VARIABLE', 'HIGHLY VARIABLE', '< 0.005',      'SILT/CLAY'],   
+#     ['C1b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'BEDROCK'  ],
+#     ['C2b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'BOULDERS' ],
+#     ['C3b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'COBBLE'   ],
+#     ['C4b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'GRAVEL'   ],
+#     ['C5b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'SAND'     ],
+#     ['C6b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'SILT/CLAY'],
+#     ['C1',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'BEDROCK'  ],
+#     ['C2',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'BOULDERS' ],
+#     ['C3',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'COBBLE'   ],
+#     ['C4',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'GRAVEL'   ],
+#     ['C5',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'SAND'     ],
+#     ['C6',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'SILT/CLAY'],
+#     ['C1c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'BEDROCK'  ],
+#     ['C2c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'BOULDERS' ],
+#     ['C3c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'COBBLE'   ],
+#     ['C4c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'GRAVEL'   ],
+#     ['C5c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'SAND'     ],
+#     ['C6c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'SILT/CLAY'],
+#     ['D3b',  'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.02 - 0.039', 'COBBLE'   ],
+#     ['D4b',  'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.02 - 0.039', 'GRAVEL'   ],
+#     ['D5b',  'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.02 - 0.039', 'SAND'     ],
+#     ['D6b',  'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.02 - 0.039', 'SILT/CLAY'],
+#     ['D3',   'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.001 - 0.02', 'COBBLE'   ],
+#     ['D4',   'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.001 - 0.02', 'GRAVEL'   ],
+#     ['D5',   'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.001 - 0.02', 'SAND'     ],
+#     ['D6',   'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.001 - 0.02', 'SILT/CLAY'],
+#     ['D4c-', 'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '< 0.001',      'GRAVEL'   ],
+#     ['D5c-', 'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '< 0.001',      'SAND'     ],
+#     ['D6c-', 'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '< 0.001',      'SILT/CLAY'],
+#     ['DA4',  'MULTIPLE', None,        'HIGHLY VARIABLE', 'HIGHLY VARIABLE', '< 0.005',      'GRAVEL'   ],
+#     ['DA5',  'MULTIPLE', None,        'HIGHLY VARIABLE', 'HIGHLY VARIABLE', '< 0.005',      'SAND'     ],
+#     ['DA6',  'MULTIPLE', None,        'HIGHLY VARIABLE', 'HIGHLY VARIABLE', '< 0.005',      'SILT/CLAY'],
 # ]
 
 #----------------#
-# location kinds #                            
+# location kinds #
 #----------------#
 if __name__ in ("__main__", "main") : sys.stderr.write("Processing location kinds \n")
 locationKinds = [
@@ -5167,7 +5169,7 @@ locationKinds = [
     [ 8,    1, 'LOCK',           'The center of the chamber',       'A structure that raises and lowers waterborne vessels between upper and lower pools'                           ],
     [ 9,    1, 'STREAM_LOCATION','The stream location',             'A location on or along a stream'                                                                               ],
     [10,    6, 'GATE',           'The discharge point',             'An outlet that can restrict or prevent the flow of water.'                                                     ],
-    [11,    6, 'OVERFLOW',       'The midpoint of the discharge',   'An outlet that passes the flow of water without restriction above a certain elevation'                         ], 
+    [11,    6, 'OVERFLOW',       'The midpoint of the discharge',   'An outlet that passes the flow of water without restriction above a certain elevation'                         ],
     [12,    9, 'STREAM_GAGE',    'The gage location',               'A stream location that has a gage used to measure stage and/or other hydrologic parameters'                    ],
     [13,    1, 'STREAM_REACH',   'The downstream-most point',       'A length of a stream bounded by upstream and downstream extents'                                               ],
     [14,    9, 'PUMP',           'The intake or discharge point',   'A stream location where water is pumped from or into a stream or reservoir'                                    ],
@@ -5514,11 +5516,11 @@ usgsParameters = [
 ]
 
 def main() :
-    global db_office_id                 
+    global db_office_id
     global office_ids
     global prefix
     global testAccount
-    global db_cwms_count 
+    global db_cwms_count
     #-------------------------#
     # Handle the command line #
     #-------------------------#
@@ -5529,8 +5531,8 @@ def main() :
         sys.stderr.write("Usage: python buildSqlScripts.py <schema name> <existing_cwms_instances> \n")
         sys.stderr.write("Ex:    python buildSqlScripts.py cwms 0\n")
         sys.exit(-1)
-    
-    
+
+
     args = sys.argv[3:]
     for arg in args :
         arg = arg.upper()
@@ -5542,7 +5544,7 @@ def main() :
             db_office_id = arg
         else :
             office_ids.append(arg)
-                                   
+
     #--------------------------------------------------#
     # parse the offices into dbhost_offices dictionary #
     #--------------------------------------------------#
@@ -5558,10 +5560,10 @@ def main() :
         office_names[office_id] = office_name
         if not dbhost_offices.has_key(dbhost) : dbhost_offices[dbhost] = []
         dbhost_offices[dbhost].append(office_id);
-    
+
     dbhosts = dbhost_offices.keys()
     dbhosts.sort()
-    
+
     #-------------------------------------------------------------------------------#
     # make sure the user entered a schema before the office ids on the command line #
     #-------------------------------------------------------------------------------#
@@ -5570,18 +5572,18 @@ def main() :
         sys.stderr.write("Usage: python buildSqlScripts.py <schema name> [<host officeid> [<other officeid(s)>]] [/[no]testaccount]\n")
         sys.stderr.write("Ex:    python buildSqlScripts.py cwms SWF SWG /testaccount\n")
         sys.exit(-1)
-    
-    #----------------------------------------------------------------------------------------#  
+
+    #----------------------------------------------------------------------------------------#
     # prompt the user for the primary and sharing offices if not entered on the command line #
-    #----------------------------------------------------------------------------------------#  
+    #----------------------------------------------------------------------------------------#
     if not db_office_id:
         print
         for dbhost in dbhosts :
             line = "%-5s : %s" % (dbhost, office_names[dbhost_offices[dbhost][0]])
-            for i in range(1, len(dbhost_offices[dbhost])) : 
+            for i in range(1, len(dbhost_offices[dbhost])) :
                 line += ", %s" % office_names[dbhost_offices[dbhost][i]]
             print line
-    
+
         #------------------------------------------------------------------------------
         # Ask for the db_office_id for this database, i.e., the primary office id
         # for this database.
@@ -5600,7 +5602,7 @@ def main() :
                 continue
             else :
                 ok = db_office_id in dbhosts
-    
+
             if ok :
                 print 'You have chosen the following office as the primary office for this'
                 print "database: %s" % db_office_id
@@ -5614,7 +5616,7 @@ def main() :
                 print
                 print "ERROR! Office %s does not host a database. Contact HEC if this" % db_office_id
                 print "is no longer the case."
-            
+
         #------------------------------------------------------------------------------
         # Ask if any other offices will be sharing this database - need to know so that
         # queues can be set-up for them.
@@ -5623,7 +5625,7 @@ def main() :
         for dbhost in dbhosts :
             if dbhost != db_office_id :
                 line = "%-5s : %s" % (dbhost, office_names[dbhost_offices[dbhost][0]])
-                for i in range(1, len(dbhost_offices[dbhost])) : 
+                for i in range(1, len(dbhost_offices[dbhost])) :
                     line += ", %s" % office_names[dbhost_offices[dbhost][i]]
                 print line
         print
@@ -5631,7 +5633,7 @@ def main() :
         print 'or as a backup database? If so, enter the office id(s) from the above'
         print 'list. If this datbase will only be used by your office, then simply'
         print 'press Enter.'
-        print 
+        print
         ok = False
         while not ok :
             print
@@ -5644,7 +5646,7 @@ def main() :
                 for office_id in office_ids :
                     if office_id == db_office_id :
                         office_ids.remove(office_id)
-                    if office_id == 'CWMS' : 
+                    if office_id == 'CWMS' :
                         office_ids = dbhosts[:]
                         office_ids.remove('LCRA')
                         ok = True
@@ -5654,7 +5656,7 @@ def main() :
                         break
                 else :
                     ok = True
-                    
+
             if ok :
                 print 'You have made the follwing choices:'
                 print "Primary office for this database: %s" % db_office_id
@@ -5665,10 +5667,10 @@ def main() :
                 line = raw_input("Is this correct? (y/n) [n] > ")
                 if not line or line[0].upper() != 'Y' :
                     ok = False
-    
-    #----------------------------------------------------------------------------------#        
+
+    #----------------------------------------------------------------------------------#
     # prompt the user about creating a test account if not entered on the command line #
-    #----------------------------------------------------------------------------------#        
+    #----------------------------------------------------------------------------------#
     if testAccount == None:
         print
         print '-----------TEST ACCOUNT-----------'
@@ -5676,7 +5678,7 @@ def main() :
         line = raw_input('--Do you want to create test accounts? [n]: ')
         testAccount = line.strip().upper().startswith('Y')
         print
-    
+
     if testAccount :
         db_office_eroc = office_erocs[db_office_id].lower()
         test_user_id = db_office_eroc +"hectest"
@@ -5691,18 +5693,18 @@ def main() :
     else:
         db_office_eroc = ''
         test_user_id = ''
-        
+
     #------------------------------------------------------------------------------
     # Consolidate db_office_id and shared office_ids
     #------------------------------------------------------------------------------
     office_ids.insert(0, db_office_id)
-    
+
     test_user_template = '''
     --
     -- ignore errors
     --
     whenever sqlerror continue
-    
+
     drop user &eroc.hectest;
     drop user &eroc.hectest_ro;
     drop user &eroc.hectest_db;
@@ -5716,17 +5718,17 @@ def main() :
     drop user &eroc.hectest_ccp_r;
     drop user &eroc.hectest_rdl_m;
     drop user &eroc.hectest_rdl_r;
-    
+
     --
     -- notice errors
     --
     whenever sqlerror exit sql.sqlcode
-    
-    variable test_passwd varchar2(50)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+
+    variable test_passwd varchar2(50)
     exec :test_passwd := '&test_passwd';
-    
+
     clear
-    
+
     DECLARE
         test_passwd  VARCHAR2 (50) := :test_passwd;
         group_list   "&cwms_schema"."CHAR_32_ARRAY_TYPE";
@@ -5774,7 +5776,7 @@ def main() :
         -- hectest_ccp_r
         group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS PD Users', 'CCP Reviewer', 'TS ID Creator', 'CWMS Users');
         "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_ccp_r', test_passwd, group_list, '&office_id');
-    
+
         -- hectest_rdl_r
         group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS PD Users', 'RDL Reviewer', 'TS ID Creator', 'CWMS Users');
         "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_rdl_r', test_passwd, group_list, '&office_id');
@@ -5784,75 +5786,75 @@ def main() :
     END;
     /
     '''
-    
+
     user_template = '''
     --
     -- ignore errors
     --
     whenever sqlerror continue
-    
+
     drop user &eroc.cwmspd;
     drop user &eroc.cwmsdbi;
-    
+
     --
     -- notice errors
     --
     whenever sqlerror exit sql.sqlcode
-    
+
     variable pd_passwd varchar2(50)
     exec :pd_passwd := '&pd_passwd';
     variable dbi_passwd varchar2(50)
     exec :dbi_passwd := '&dbi_passwd';
-    
+
     clear
-    
+
     DECLARE
         pd_passwd      VARCHAR2 (50) := :pd_passwd;
         dbi_passwd      VARCHAR2 (50) := :dbi_passwd;
         group_list      "&cwms_schema"."CHAR_32_ARRAY_TYPE" := "&cwms_schema"."CHAR_32_ARRAY_TYPE"('CWMS PD Users');
     BEGIN
-    
+
         "&cwms_schema"."CWMS_SEC"."CREATE_CWMSDBI_DB_USER"('&eroc.cwmsdbi', dbi_passwd, '&office_id');
         "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.cwmspd', pd_passwd, group_list, '&office_id');
-        
+
         "&cwms_schema"."CWMS_SEC"."ASSIGN_TS_GROUP_USER_GROUP" ('All Rev TS IDs', 'Viewer Users', 'Read', '&office_id');
-        
+
         "&cwms_schema"."CWMS_SEC"."ASSIGN_TS_GROUP_USER_GROUP" ('All TS IDs', 'CWMS Users', 'Read-Write', '&office_id');
-    
+
     END;
     /
     '''
-    
+
     ex_queue_template = '''
        dbms_aqadm.create_queue_table(
-          queue_table        => '%s_ex_table', 
+          queue_table        => '%s_ex_table',
           queue_payload_type => 'sys.aq$_jms_map_message',
           storage_clause        =>  'tablespace %s',
           multiple_consumers => true);
-          
+
        dbms_aqadm.create_queue(
           queue_name  => '%s_ex',
           queue_type  =>   sys.dbms_aqadm.exception_queue,
           queue_table => '%s_ex_table');
-          
+
        dbms_aqadm.start_queue(queue_name => '%s_ex',enqueue=>false,dequeue=>true);
     '''
     queue_template = '''
        dbms_aqadm.create_queue_table(
-          queue_table        => '%s_%s_table', 
+          queue_table        => '%s_%s_table',
           queue_payload_type => 'sys.aq$_jms_map_message',
           storage_clause        =>  'tablespace %s',
           multiple_consumers => true);
-          
+
        dbms_aqadm.create_queue(
           queue_name  => '%s_%s',
           queue_table => '%s_%s_table');
-          
+
        dbms_aqadm.start_queue(queue_name => '%s_%s');
     '''
-    
+
     #==============================================================================
-    
+
     sys.stderr.write("Creating py_ErocUsers.sql\n");
     f  = open("py_ErocUsers.sql", "w")
     users_created = []
@@ -5863,12 +5865,12 @@ def main() :
                 f.write(user_template.replace("&eroc.", eroc).replace("&office_id", dbhost_id))
                 user_id = eroc+"cwmspd"
                 users_created.append(eroc)
-    	if test_user_id : 
+    	if test_user_id :
         	db_ofc_code = db_office_code[db_office_id]
         	db_ofc_eroc = office_erocs[db_office_id]
         	f.write(test_user_template.replace("&eroc.", eroc).replace("&office_id", dbhost_id))
     f.close()
-    
+
     #==============================================================================
     #==
     #====
@@ -5876,20 +5878,20 @@ def main() :
     #--------------------------------------------------------------------#
     # generate a script to create and start queues for specified offices #
     #--------------------------------------------------------------------#
-    
+
     sys.stderr.write("Creating py_Queues.sql\n")
     f = open("py_Queues.sql", "w")
     f.write("set define off\nbegin")
     for office_id in office_ids :
         id = office_id.lower()
         f.write(ex_queue_template % (id,aqExTableSpaceName,id,id,id))
-        for q in ("realtime_ops", "status", "ts_stored") : 
+        for q in ("realtime_ops", "status", "ts_stored") :
             f.write(queue_template % (id,q,aqTableSpaceName,id,q,id,q,id,q))
     f.write("end;\n/\ncommit;\n")
     f.close()
-    
+
     #==============================================================================
-    
+
     prompt_template = '''
     prompt
     accept echo_state  char prompt 'Enter ON or OFF for echo         : '
@@ -5899,11 +5901,11 @@ def main() :
     accept dbi_passwd  char prompt 'Enter the password for %scwmsdbi : '
     accept pd_passwd  char prompt 'Enter the password for %scwmspd : '
     '''
-    
+
     prompt_test_line_template = '''
     accept test_passwd  char prompt 'Enter the password for %s : '
     '''
-    
+
     sys.stderr.write("Creating py_prompt.sql\n")
     f = open("py_prompt.sql","w")
     f.write(prompt_template % (db_office_eroc,db_office_eroc))
@@ -5913,21 +5915,21 @@ def main() :
     #====== createQueues
     #====
     #==
-    
+
     #==
     #====
     #======
     #---------------------------------------------------#
     # Table construction templates and loading commands #
     #---------------------------------------------------#
-    
+
     sys.stderr.write("Building cwmsOfficeCreationTemplate\n")
     cwmsOfficeCreationTemplate = \
     '''
     -- ## TABLE ###############################################
     -- ## @TABLE
     -- ##
-    CREATE TABLE @TABLE 
+    CREATE TABLE @TABLE
        (
            OFFICE_CODE           NUMBER(10)   NOT NULL,
            OFFICE_ID             VARCHAR2(16) NOT NULL,
@@ -5943,8 +5945,8 @@ def main() :
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-           ( 
+           STORAGE
+           (
               INITIAL 200K
               NEXT 200K
               MINEXTENTS 1
@@ -5954,17 +5956,17 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
            );
-    
-    
+
+
     -----------------------------
     -- @TABLE constraints --
     --
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (OFFICE_CODE);
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_UK  UNIQUE      (OFFICE_ID);
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK1 CHECK       (OFFICE_TYPE IN ('UNK','HQ','MSC','MSCR','DIS','FOA'));
-    
-    
-    -----------------------------                                              
+
+
+    -----------------------------
     -- @TABLE comments --
     --
     COMMENT ON TABLE @TABLE IS 'Corps of Engineer''s district and division offices.';
@@ -5977,7 +5979,7 @@ def main() :
     COMMENT ON COLUMN @TABLE.OFFICE_TYPE IS 'UNK=unknown, HQ=corps headquarters, MSC=division headquarters, MSCR=division regional, DIS=district, FOA=field operating activity';
     COMMIT;
     '''
-    
+
     sys.stderr.write("Building cwmsOfficeLoadTemplate\n")
     cwmsOfficeLoadTemplate = ''
     code = 0
@@ -5989,13 +5991,13 @@ def main() :
             cwmsOfficeLoadTemplate +="INSERT INTO @TABLE (OFFICE_CODE, OFFICE_ID, LONG_NAME, REPORT_TO_OFFICE_CODE, DB_HOST_OFFICE_CODE, EROC, OFFICE_TYPE)\n"
             cwmsOfficeLoadTemplate +="\tVALUES (%d, '%s', '%s', %d, %d, '%s', '%s');\n" % (ofcCode, ofc, longName, ofcCode, ofcCode, eroc, ofcType)
         code += 1
-        
+
     cwmsOfficeLoadTemplate +="UPDATE @TABLE SET DB_HOST_OFFICE_CODE=\n"
     cwmsOfficeLoadTemplate +="\t(SELECT OFFICE_CODE FROM @TABLE WHERE OFFICE_ID='NWDP')\n"
     cwmsOfficeLoadTemplate +="\tWHERE OFFICE_ID IN ('NWD', 'NWD', 'NWP', 'NWS', 'NWW');\n"
-    
+
     cwmsOfficeLoadTemplate +="COMMIT;"
-    
+
     sys.stderr.write("Building subLocationCreationTemplate\n")
     subLocationCreationTemplate = \
     '''
@@ -6013,7 +6015,7 @@ def main() :
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
+           STORAGE
            (
               INITIAL 20K
               NEXT 20K
@@ -6024,7 +6026,7 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
            );
-    
+
     -----------------------------
     -- @TABLE indicies
     --
@@ -6036,8 +6038,8 @@ def main() :
            INITRANS 2
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-           ( 
+           STORAGE
+           (
               INITIAL 20k
               NEXT 20k
               MINEXTENTS 1
@@ -6047,16 +6049,16 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
            );
-    
+
     COMMIT;
     '''
-    
+
     sys.stderr.write("Building subLocationLoadTemplate\n")
     subLocationLoadTemplate = ''
     for i in range(len(subLocations)) :
         subLocationLoadTemplate +="INSERT INTO @TABLE (SUBCWMS_CODE, SUBCWMS_ID) VALUES (%d, '%s');\n" % (i+1, subLocations[i])
     subLocationLoadTemplate +="COMMIT;"
-    
+
     sys.stderr.write("Building shefDurationCreationTemplate\n")
     shefDurationCreationTemplate = \
     '''
@@ -6081,14 +6083,14 @@ def main() :
                 PCTINCREASE      0
                 BUFFER_POOL      DEFAULT
                )
-    LOGGING 
-    NOCOMPRESS 
+    LOGGING
+    NOCOMPRESS
     NOCACHE
     NOPARALLEL
     MONITORING
     /
-    
-    
+
+
     CREATE UNIQUE INDEX @TABLE_PK ON @TABLE
     (SHEF_DURATION_CODE)
     LOGGING
@@ -6105,13 +6107,13 @@ def main() :
                )
     NOPARALLEL
     /
-    
-    
+
+
     ALTER TABLE @TABLE ADD (
       CONSTRAINT @TABLE_PK
      PRIMARY KEY
      (SHEF_DURATION_CODE)
-        USING INDEX 
+        USING INDEX
         TABLESPACE @DATASPACE
         PCTFREE    10
         INITRANS   2
@@ -6123,11 +6125,11 @@ def main() :
                     PCTINCREASE      0
                    ))
     /
-    
-    
+
+
     ALTER TABLE @TABLE ADD (
-      CONSTRAINT @TABLE_R01 
-     FOREIGN KEY (CWMS_DURATION_CODE) 
+      CONSTRAINT @TABLE_R01
+     FOREIGN KEY (CWMS_DURATION_CODE)
      REFERENCES CWMS_DURATION (DURATION_CODE))
     /
     '''
@@ -6139,7 +6141,7 @@ def main() :
         else :
             shefDurationLoadTemplate +="INSERT INTO @TABLE VALUES ('%s', '%s', '%s', %s);\n" % (durCode, desc, durNum, cwmsDurCode)
     shefDurationLoadTemplate +="COMMIT;\n"
-    
+
     sys.stderr.write("Building statesCreationTemplate\n")
     statesCreationTemplate = \
     '''
@@ -6157,8 +6159,8 @@ def main() :
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-           ( 
+           STORAGE
+           (
               INITIAL 20K
               NEXT 20K
               MINEXTENTS 1
@@ -6168,33 +6170,33 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
            );
-    
+
     ----------------------------
     -- @TABLE constraints --
     --
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (STATE_CODE);
-    
+
     -------------------------
     -- CWMS STATE comments --
     --
     COMMENT ON TABLE @TABLE IS 'STATE_CODE uses FIPS state number.';
-    
+
     COMMIT;
     '''
-    
+
     sys.stderr.write("Building statesLoadTemplate\n")
     statesLoadTemplate = ''
     for id, initial, name in states :
         statesLoadTemplate +="INSERT INTO @TABLE VALUES (%s, '%s', '%s');\n" % (id, initial, name)
     statesLoadTemplate +="COMMIT;\n"
-    
+
     sys.stderr.write("Building countiesCreationTemplate\n")
     countiesCreationTemplate = \
     '''
     -- ## TABLE ###############################################
     -- ## @TABLE
     -- ##
-    CREATE TABLE @TABLE 
+    CREATE TABLE @TABLE
        (
            COUNTY_CODE NUMBER(10)   NOT NULL,
            COUNTY_ID   VARCHAR2(3)  NOT NULL,
@@ -6206,8 +6208,8 @@ def main() :
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-           ( 
+           STORAGE
+           (
               INITIAL 100K
               NEXT 50K
               MINEXTENTS 1
@@ -6217,7 +6219,7 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
            );
-    
+
     -----------------------------
     -- @TABLE constraints --
     --
@@ -6227,10 +6229,10 @@ def main() :
     -- @TABLE comments --
     --
     COMMENT ON TABLE @TABLE IS 'County code uses state and county FIPS number   01 - State FIPS number   053 - FIPS number thus, county code is 01053.';
-    
+
     COMMIT;
     '''
-    
+
     controlFilename = "countiesLoader.ctl"
     sys.stderr.write("Building countiesLoadTemplate\n")
     countiesLoadTemplate = ''
@@ -6245,8 +6247,8 @@ def main() :
         countiesLoadTemplate +="\t'%s'\n" % countyName
         countiesLoadTemplate +=");\n"
     countiesLoadTemplate +="COMMIT;\n"
-    
-    
+
+
     sys.stderr.write("Building intervalOffsetCreationTemplate\n")
     intervalOffsetCreationTemplate = \
     '''
@@ -6258,14 +6260,14 @@ def main() :
            INTERVAL_OFFSET_CODE    NUMBER(10)   NOT NULL,
            INTERVAL_OFFSET_ID      VARCHAR2(16) NOT NULL,
            INTERVAL_OFFSET_VALUE   NUMBER(10)   NOT NULL,
-           DESCRIPTION             VARCHAR2(80) 
+           DESCRIPTION             VARCHAR2(80)
        )
            PCTFREE 10
            PCTUSED 40
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
+           STORAGE
            (
               INITIAL 20K
               NEXT 20K
@@ -6275,8 +6277,8 @@ def main() :
               FREELISTS 1
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
-           ); 
-    
+           );
+
     -----------------------------
     -- @TABLE indicies
     --
@@ -6288,8 +6290,8 @@ def main() :
            INITRANS 2
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-           ( 
+           STORAGE
+           (
               INITIAL 20k
               NEXT 20k
               MINEXTENTS 1
@@ -6299,10 +6301,10 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
            );
-         
+
     COMMIT;
     '''
-    
+
     sys.stderr.write("Building validValuesCreationTemplate\n")
     validValuesCreationTemplate = \
     '''
@@ -6319,7 +6321,7 @@ def main() :
             PCTUSED 40
             MAXTRANS 255
             TABLESPACE @DATASPACE
-            STORAGE 
+            STORAGE
             (
               INITIAL 20K
               NEXT 20K
@@ -6330,10 +6332,10 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
             );
-    
+
     COMMIT;
     '''
-    
+
     sys.stderr.write("Building errorMessageCreationTemplate\n")
     errorMessageCreationTemplate = \
     '''
@@ -6350,7 +6352,7 @@ def main() :
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
+           STORAGE
            (
               INITIAL 20K
               NEXT 20K
@@ -6361,10 +6363,10 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
            );
-    
+
     COMMIT;
     '''
-    
+
     sys.stderr.write("Building errorMessageNewCreationTemplate\n")
     errorMessageNewCreationTemplate = \
     '''
@@ -6389,13 +6391,13 @@ def main() :
                 PCTINCREASE      0
                 BUFFER_POOL      DEFAULT
                )
-    LOGGING 
-    NOCOMPRESS 
+    LOGGING
+    NOCOMPRESS
     NOCACHE
     NOPARALLEL
     MONITORING;
-    
-    
+
+
     CREATE UNIQUE INDEX @TABLE_PK ON @TABLE
     (ERR_CODE)
     LOGGING
@@ -6411,8 +6413,8 @@ def main() :
                 BUFFER_POOL      DEFAULT
                )
     NOPARALLEL;
-    
-    
+
+
     CREATE UNIQUE INDEX @TABLE_AK1 ON @TABLE
     (ERR_NAME)
     LOGGING
@@ -6428,8 +6430,8 @@ def main() :
                 BUFFER_POOL      DEFAULT
                )
     NOPARALLEL;
-    
-    
+
+
     CREATE OR REPLACE TRIGGER @TABLE_BIUR
     before insert or update
     on @TABLE
@@ -6439,18 +6441,18 @@ def main() :
     end;
     /
     SHOW ERRORS;
-    
-    
-    
+
+
+
     ALTER TABLE @TABLE ADD (
       CONSTRAINT ERR_CODE_VAL_CHECK
      CHECK (err_code <-20000 and err_code>=-20999));
-    
+
     ALTER TABLE @TABLE ADD (
       CONSTRAINT @TABLE_PK
      PRIMARY KEY
      (ERR_CODE)
-        USING INDEX 
+        USING INDEX
         TABLESPACE @DATASPACE
         PCTFREE    10
         INITRANS   2
@@ -6461,23 +6463,23 @@ def main() :
                     MAXEXTENTS       2147483645
                     PCTINCREASE      0
                    ));
-    
+
     '''
-    
+
     sys.stderr.write("Building errorMessageNewLoadTemplate\n")
     errorMessageNewLoadTemplate = ''
     for err_code, err_name, err_msg in errorCodes :
         errorMessageNewLoadTemplate +="INSERT INTO @TABLE (ERR_CODE, ERR_NAME, ERR_MSG) VALUES (%s, '%s', '%s');\n" % (err_code, err_name, err_msg)
     errorMessageNewLoadTemplate +="COMMIT;\n"
-    
-    
+
+
     sys.stderr.write("Building intervalCreationTemplate\n")
     intervalCreationTemplate = \
     '''
     -- ## TABLE ###############################################
     -- ## @TABLE
     -- ##
-    CREATE TABLE @TABLE 
+    CREATE TABLE @TABLE
        (
            INTERVAL_CODE  NUMBER(10)   NOT NULL,
            INTERVAL_ID    VARCHAR2(16) NOT NULL,
@@ -6489,8 +6491,8 @@ def main() :
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-           ( 
+           STORAGE
+           (
               INITIAL 20K
               NEXT 20K
               MINEXTENTS 1
@@ -6504,24 +6506,24 @@ def main() :
     -- @TABLE constraints --
     --
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY(INTERVAL_CODE);
-    
+
     COMMIT;
     '''
-    
-    
+
+
     sys.stderr.write("Building intervalLoadTemplate\n")
     intervalLoadTemplate = ''
     for code, id, minutesSignature, description in intervals :
         intervalLoadTemplate +="INSERT INTO @TABLE VALUES (%d, '%s', %d, '%s');\n" % (code, id, minutesSignature, description)
     intervalLoadTemplate +="COMMIT;\n"
-    
+
     sys.stderr.write("Building durationCreationTemplate\n")
     durationCreationTemplate = \
     '''
     -- ## TABLE ###############################################
     -- ## @TABLE
     -- ##
-    CREATE TABLE @TABLE 
+    CREATE TABLE @TABLE
        (
            DURATION_CODE NUMBER(10)   NOT NULL,
            DURATION_ID   VARCHAR2(16) NOT NULL,
@@ -6533,8 +6535,8 @@ def main() :
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-           ( 
+           STORAGE
+           (
               INITIAL 20K
               NEXT 20K
               MINEXTENTS 1
@@ -6544,24 +6546,24 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
            );
-    
+
     --------------------------------
     -- @TABLE constratints --
     --
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY(DURATION_CODE);
-    
+
     CREATE UNIQUE INDEX @TABLE_UI ON @TABLE(UPPER(DURATION_ID));
-    
+
     COMMIT;
     '''
-    
-    
+
+
     sys.stderr.write("Building durationLoadTemplate\n")
     durationLoadTemplate = ''
     for code, id, minutesSignature, description in durations :
         durationLoadTemplate +="INSERT INTO @TABLE VALUES (%d, '%s', %d, '%s');\n" % (code, id, minutesSignature, description)
     durationLoadTemplate +="COMMIT;\n"
-    
+
     sys.stderr.write("Building catalogCreationTemplate\n")
     catalogCreationTemplate = \
     '''
@@ -6580,8 +6582,8 @@ def main() :
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-           ( 
+           STORAGE
+           (
               INITIAL 20K
               NEXT 20K
               MINEXTENTS 1
@@ -6591,16 +6593,16 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
            );
-    
-    COMMIT;   
+
+    COMMIT;
     '''
-    
+
     sys.stderr.write("Building catalogLoadTemplate\n")
     catalogLoadTemplate = ''
     for objName, colName, objDesc, colDesc in catalogItems :
         catalogLoadTemplate +="INSERT INTO @TABLE VALUES ('%s', '%s', '%s', '%s');\n" % (objName, colName, objDesc, colDesc)
     catalogLoadTemplate +="COMMIT;\n"
-    
+
     sys.stderr.write("Building abstractParamCreationTemplate\n")
     abstractParamCreationTemplate = \
     '''
@@ -6617,8 +6619,8 @@ def main() :
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-           ( 
+           STORAGE
+           (
               INITIAL 200K
               NEXT 200K
               MINEXTENTS 1
@@ -6628,7 +6630,7 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
            );
-    
+
     -----------------------------
     -- @TABLE indicies
     --
@@ -6640,8 +6642,8 @@ def main() :
            INITRANS 2
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-           ( 
+           STORAGE
+           (
               INITIAL 200k
               NEXT 200k
               MINEXTENTS 1
@@ -6651,12 +6653,12 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
            );
-    
+
     -----------------------------
     -- @TABLE constraints
     --
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (ABSTRACT_PARAM_CODE);
-    
+
     -----------------------------
     -- @TABLE comments
     --
@@ -6665,7 +6667,7 @@ def main() :
     COMMENT ON COLUMN @TABLE.ABSTRACT_PARAM_ID IS 'Text identifier of abstract parameter';
     COMMIT;
     '''
-    
+
     abstractParamCodes = {}
     sys.stderr.write("Building abstractParamLoadTemplate\n")
     abstractParamLoadTemplate = ""
@@ -6675,7 +6677,7 @@ def main() :
         abstractParamLoadTemplate +="INSERT INTO @abstractParamTableName (ABSTRACT_PARAM_CODE, ABSTRACT_PARAM_ID) VALUES(%d, '%s');\n" % (code, id)
         abstractParamCodes[id] = code
     abstractParamLoadTemplate +="COMMIT;\n"
-    
+
     sys.stderr.write("Building unitCreationTemplate\n")
     unitCreationTemplate = \
     '''
@@ -6696,8 +6698,8 @@ def main() :
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-           ( 
+           STORAGE
+           (
               INITIAL 200K
               NEXT 200K
               MINEXTENTS 1
@@ -6707,14 +6709,14 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
            );
-    
+
     -----------------------------
     -- @TABLE constraints
     --
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (UNIT_CODE);
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_UK UNIQUE      (UNIT_ID, ABSTRACT_PARAM_CODE);
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK FOREIGN KEY (ABSTRACT_PARAM_CODE) REFERENCES @abstractParamTableName (ABSTRACT_PARAM_CODE);
-    
+
     -----------------------------
     -- @TABLE comments
     --
@@ -6726,9 +6728,9 @@ def main() :
     COMMENT ON COLUMN @TABLE.LONG_NAME IS 'Complete name of unit';
     COMMENT ON COLUMN @TABLE.DESCRIPTION IS 'Description of unit';
     COMMIT;
-    
+
     '''
-    
+
     sys.stderr.write("Building unitLoadTemplate\n")
     unitLoadTemplate = ''
     unitDefIds = unitDefsById.keys()
@@ -6742,19 +6744,19 @@ def main() :
         id = unitDef["ID"]
         system = unitDef["SYSTEM"]
         abstractParam = unitDef["ABSTRACT"]
-        unitLoadTemplate +="INSERT INTO @unitTableName (UNIT_CODE, UNIT_ID, ABSTRACT_PARAM_CODE, UNIT_SYSTEM, LONG_NAME, DESCRIPTION) VALUES (\n" 
-        unitLoadTemplate +="\t%d,\n" % code 
+        unitLoadTemplate +="INSERT INTO @unitTableName (UNIT_CODE, UNIT_ID, ABSTRACT_PARAM_CODE, UNIT_SYSTEM, LONG_NAME, DESCRIPTION) VALUES (\n"
+        unitLoadTemplate +="\t%d,\n" % code
         unitLoadTemplate +="\t'%s',\n" % id
         unitLoadTemplate +="\t%d, -- %s\n" % (abstractParamCodes[abstractParam], abstractParam)
         if system == "NULL" :
           unitLoadTemplate +="\tNULL,\n"
         else :
-          unitLoadTemplate +="\t'%s',\n" % system  
+          unitLoadTemplate +="\t'%s',\n" % system
         unitLoadTemplate +="\t'%s',\n" % name
         unitLoadTemplate +="\t'%s'\n" % description
         unitLoadTemplate +=");\n"
     unitLoadTemplate +="COMMIT;\n"
-    
+
     sys.stderr.write("Building cwmsUnitCreationTemplate\n")
     cwmsUnitCreationTemplate = \
     '''
@@ -6770,8 +6772,8 @@ def main() :
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-           ( 
+           STORAGE
+           (
               INITIAL 200K
               NEXT 200K
               MINEXTENTS 1
@@ -6781,22 +6783,22 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
            );
-    
+
     -----------------------------
     -- @TABLE constraints
     --
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (UNIT_CODE);
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK FOREIGN KEY (UNIT_CODE) REFERENCES @unitTableName (UNIT_CODE);
-    
+
     -----------------------------
     -- @TABLE comments
     --
     COMMENT ON TABLE @TABLE IS 'Contains references to all units allowed in CWMS database';
     COMMENT ON COLUMN @TABLE.UNIT_CODE IS 'Primary key used for relating cwms units to other entities';
     COMMIT;
-    
+
     '''
-    
+
     sys.stderr.write("Building cwmsUnitLoadTemplate\n")
     cwmsUnitLoadTemplate = ''
     for i in range(len(cwmsUnitParamDefsById)) :
@@ -6804,14 +6806,14 @@ def main() :
         cwmsUnitLoadTemplate +="INSERT INTO @cwmsUnitTableName (UNIT_CODE) VALUES (\n"
         cwmsUnitLoadTemplate +="\t%d);\n" % cwmsUnitCode
     cwmsUnitLoadTemplate +="COMMIT;\n"
-    
+
     sys.stderr.write("Building parameterTypeCreationTemplate\n")
     parameterTypeCreationTemplate = \
     '''
     -- ## TABLE ###############################################
     -- ## @TABLE
     -- ##
-    CREATE TABLE @TABLE 
+    CREATE TABLE @TABLE
       (
            PARAMETER_TYPE_CODE  NUMBER(10)   NOT NULL,
            PARAMETER_TYPE_ID    VARCHAR2(16) NOT NULL,
@@ -6822,8 +6824,8 @@ def main() :
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-           ( 
+           STORAGE
+           (
               INITIAL 20k
               NEXT 20k
               MINEXTENTS 1
@@ -6833,7 +6835,7 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
            );
-    
+
     -----------------------------
     -- @TABLE indicies
     --
@@ -6845,8 +6847,8 @@ def main() :
            INITRANS 2
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-           ( 
+           STORAGE
+           (
               INITIAL 20k
               NEXT 20k
               MINEXTENTS 1
@@ -6856,23 +6858,23 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
            );
-    
+
     -------------------------------------
     -- @TABLE constraints --
     --
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (PARAMETER_TYPE_CODE);
-    
+
     ----------------------------------
     -- @TABLE comments --
-    --    
+    --
     COMMENT ON TABLE  @TABLE IS 'Associated with a parameter to define the relationship of the data value to its duration.  The valid values include average, total, maximum, minimum, and constant.';
     COMMENT ON COLUMN @TABLE.PARAMETER_TYPE_CODE IS 'Unique record identifier, primarily used for internal database processing. This code is automatically assigned by the system.';
     COMMENT ON COLUMN @TABLE.PARAMETER_TYPE_ID IS 'Record identifier that is meaningful to the user.  This is user defined.  If not defined during data entry, it defaults to PARAMETER_TYPE_CODE.';
     COMMENT ON COLUMN @TABLE.DESCRIPTION IS 'Additional information.';
     COMMIT;
-    
+
     '''
-    
+
     sys.stderr.write("Building parameterTypeLoadTemplate\n")
     parameterTypeLoadTemplate = ''
     for i in range(len(parameterTypes)) :
@@ -6883,7 +6885,7 @@ def main() :
         parameterTypeLoadTemplate +="\t'%s'\n"  % parameterTypes[i]["DESCRIPTION"]
         parameterTypeLoadTemplate +=");\n"
     parameterTypeLoadTemplate +="COMMIT;\n"
-    
+
     sys.stderr.write("Building parameterCreationTemplate\n")
     parameterCreationTemplate = \
     '''
@@ -6892,7 +6894,7 @@ def main() :
     -- ##
     CREATE TABLE @TABLE
        (
-           BASE_PARAMETER_CODE      NUMBER(10)         NOT NULL, 
+           BASE_PARAMETER_CODE      NUMBER(10)         NOT NULL,
            BASE_PARAMETER_ID        VARCHAR2(16 BYTE)  NOT NULL,
            ABSTRACT_PARAM_CODE      NUMBER(10)         NOT NULL,
            UNIT_CODE                NUMBER(10)         NOT NULL,
@@ -6906,8 +6908,8 @@ def main() :
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-           ( 
+           STORAGE
+           (
               INITIAL 200K
               NEXT 200K
               MINEXTENTS 1
@@ -6917,7 +6919,7 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
            );
-    
+
     -----------------------------
     -- @TABLE indicies
     --
@@ -6929,8 +6931,8 @@ def main() :
            INITRANS 2
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-           ( 
+           STORAGE
+           (
               INITIAL 200k
               NEXT 200k
               MINEXTENTS 1
@@ -6940,7 +6942,7 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
            );
-    
+
     -----------------------------
     -- @TABLE constraints
     --
@@ -6949,7 +6951,7 @@ def main() :
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK2 FOREIGN KEY (UNIT_CODE) REFERENCES @unitTableName (UNIT_CODE);
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK3 FOREIGN KEY (DISPLAY_UNIT_CODE_SI) REFERENCES @unitTableName (UNIT_CODE);
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK4 FOREIGN KEY (DISPLAY_UNIT_CODE_EN) REFERENCES @unitTableName (UNIT_CODE);
-    
+
     -----------------------------
     -- @TABLE comments
     --
@@ -6962,7 +6964,7 @@ def main() :
     COMMENT ON COLUMN @TABLE.DISPLAY_UNIT_CODE_EN IS 'This is the default Non-SI display unit for this parameter. Foreign key referencing @cwmsUnitTableName table.';
     COMMENT ON COLUMN @TABLE.LONG_NAME IS 'Full name of parameter';
     COMMENT ON COLUMN @TABLE.DESCRIPTION IS 'Description of parameter';
-    
+
     -----------------------------
     -- @TABLE_UNIT trigger
     --
@@ -6988,48 +6990,48 @@ def main() :
          INTO unit_abstract_code
          FROM cwms_unit u
         WHERE u.unit_code = :NEW.unit_code;
-    
+
        IF :NEW.abstract_param_code != unit_abstract_code
        THEN
           SELECT u.unit_id
             INTO unit_id
             FROM cwms_unit u
            WHERE u.unit_code = :NEW.unit_code;
-    
+
           unit_type := 'DB Storage Unit';
           RAISE inconsistent_abstract_codes;
        END IF;
-    
+
        --
        SELECT u.abstract_param_code
          INTO unit_abstract_code
          FROM cwms_unit u
         WHERE u.unit_code = :NEW.display_unit_code_si;
-    
+
        IF :NEW.abstract_param_code != unit_abstract_code
        THEN
           SELECT u.unit_id
             INTO unit_id
             FROM cwms_unit u
            WHERE u.unit_code = :NEW.display_unit_code_si;
-    
+
           unit_type := 'SI Display Unit';
           RAISE inconsistent_abstract_codes;
        END IF;
-    
+
        --
        SELECT u.abstract_param_code
          INTO unit_abstract_code
          FROM cwms_unit u
         WHERE u.unit_code = :NEW.display_unit_code_en;
-    
+
        IF :NEW.abstract_param_code != unit_abstract_code
        THEN
           SELECT u.unit_id
             INTO unit_id
             FROM cwms_unit u
            WHERE u.unit_code = :NEW.display_unit_code_en;
-    
+
           unit_type := 'Non-SI Display Unit';
           RAISE inconsistent_abstract_codes;
        END IF;
@@ -7040,12 +7042,12 @@ def main() :
             INTO unit_abstract_id
             FROM cwms_abstract_parameter
            WHERE abstract_param_code = unit_abstract_code;
-    
+
           SELECT abstract_param_id
             INTO parameter_abstract_id
             FROM cwms_abstract_parameter
            WHERE abstract_param_code = :NEW.abstract_param_code;
-    
+
           DBMS_OUTPUT.put_line (   'ERROR: Parameter "'
                                 || :NEW.base_parameter_id
                                 || '" has abstract parameter "'
@@ -7067,9 +7069,9 @@ def main() :
     /
     SHOW ERRORS
     COMMIT;
-    
+
     '''
-    
+
     sys.stderr.write("Building parameterLoadTemplate\n")
     parameterLoadTemplate = ''
     for i in range(len(parameters)) :
@@ -7097,7 +7099,7 @@ def main() :
         parameterLoadTemplate +="\t'%s'\n" % description
         parameterLoadTemplate +=");\n"
     parameterLoadTemplate +="COMMIT;\n"
-    
+
     #-------------------------------------------------------
     #-------------------------------------------------------
     sys.stderr.write("Building subParameterCreationTemplate\n")
@@ -7106,7 +7108,7 @@ def main() :
     -- ## TABLE ###############################################
     -- ## @TABLE
     -- ##
-    
+
     CREATE TABLE @TABLE
     (
       PARAMETER_CODE       NUMBER,
@@ -7127,13 +7129,13 @@ def main() :
                 PCTINCREASE      0
                 BUFFER_POOL      DEFAULT
                )
-    LOGGING 
-    NOCOMPRESS 
+    LOGGING
+    NOCOMPRESS
     NOCACHE
     NOPARALLEL
     MONITORING
     /
-    
+
     -----------------------------
     -- @TABLE indicies
     --
@@ -7153,8 +7155,8 @@ def main() :
                )
     NOPARALLEL
     /
-    
-    
+
+
     CREATE UNIQUE INDEX @TABLE_UK1 ON @TABLE
     (BASE_PARAMETER_CODE, SUB_PARAMETER_ID, DB_OFFICE_CODE)
     LOGGING
@@ -7171,7 +7173,7 @@ def main() :
                )
     NOPARALLEL
     /
-    
+
     -----------------------------
     -- @TABLE constraints
     --
@@ -7179,7 +7181,7 @@ def main() :
       CONSTRAINT @TABLE_PK
      PRIMARY KEY
      (PARAMETER_CODE)
-        USING INDEX 
+        USING INDEX
         TABLESPACE @DATASPACE
         PCTFREE    10
         INITRANS   2
@@ -7191,11 +7193,11 @@ def main() :
                     PCTINCREASE      0
                    ))
     /
-    
+
     ALTER TABLE @TABLE ADD (
       CONSTRAINT @TABLE_UK1
      UNIQUE (BASE_PARAMETER_CODE, SUB_PARAMETER_ID, DB_OFFICE_CODE)
-        USING INDEX 
+        USING INDEX
         TABLESPACE @DATASPACE
         PCTFREE    10
         INITRANS   2
@@ -7207,28 +7209,28 @@ def main() :
                     PCTINCREASE      0
                    ))
     /
-    
+
     ALTER TABLE @TABLE ADD (
-      CONSTRAINT @TABLE_FK1 
-     FOREIGN KEY (DB_OFFICE_CODE) 
+      CONSTRAINT @TABLE_FK1
+     FOREIGN KEY (DB_OFFICE_CODE)
      REFERENCES CWMS_OFFICE (OFFICE_CODE))
     /
-    
+
     ALTER TABLE @TABLE ADD (
-      CONSTRAINT @TABLE_FK2 
-     FOREIGN KEY (BASE_PARAMETER_CODE) 
+      CONSTRAINT @TABLE_FK2
+     FOREIGN KEY (BASE_PARAMETER_CODE)
      REFERENCES CWMS_BASE_PARAMETER (BASE_PARAMETER_CODE))
     /
-    
+
     ALTER TABLE @TABLE ADD (
-      CONSTRAINT @TABLE_CK_1 
+      CONSTRAINT @TABLE_CK_1
            CHECK (TRIM(SUB_PARAMETER_ID)=SUB_PARAMETER_ID))
     /
     SHOW ERRORS
-    
+
     '''
-    
-    
+
+
     sys.stderr.write("Building subParameterLoadTemplate\n")
     subParameterLoadTemplate = \
     '''
@@ -7239,7 +7241,7 @@ def main() :
               base_parameter_code, NULL, cbp.long_name
          FROM cwms_base_parameter cbp
     /
-    
+
     '''
     for i in range(len(subParameters)) :
         baseCode, baseParamId, subParamId, longName, siUnitId, enUnitId = subParameters[i]
@@ -7257,11 +7259,11 @@ def main() :
         subParameterLoadTemplate +="\t'%s'\n" % longName
         subParameterLoadTemplate +=");\n"
     subParameterLoadTemplate +="COMMIT;\n"
-    
-    
+
+
     #-------------------------------------------------------
     #-------------------------------------------------------
-    
+
     sys.stderr.write("Building ratingMethodCreationTemplate\n")
     ratingMethodCreationTemplate = \
     '''
@@ -7274,10 +7276,10 @@ def main() :
            RATING_METHOD_ID   VARCHAR2(32),
            DESCRIPTION        VARCHAR2(256),
            CONSTRAINT @TABLE_PK PRIMARY KEY(RATING_METHOD_CODE)
-       ) 
+       )
            ORGANIZATION INDEX
            TABLESPACE @DATASPACE;
-    
+
     -----------------------------
     -- @TABLE indicies
     --
@@ -7289,8 +7291,8 @@ def main() :
            INITRANS 2
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-           ( 
+           STORAGE
+           (
               INITIAL 20k
               NEXT 20k
               MINEXTENTS 1
@@ -7300,10 +7302,10 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
            );
-        
-    COMMIT;   
+
+    COMMIT;
     '''
-    
+
     sys.stderr.write("Building ratingMethodLoadTemplate\n")
     ratingMethodLoadTemplate = ''
     code = 1
@@ -7311,14 +7313,14 @@ def main() :
         ratingMethodLoadTemplate +="INSERT INTO @TABLE VALUES (%d, '%s', '%s');\n" % (code, id, description)
         code += 1
     ratingMethodLoadTemplate +="COMMIT;\n"
-    
+
     sys.stderr.write("Building dssParameterTypeCreationTemplate\n")
     dssParameterTypeCreationTemplate = \
     '''
     -- ## TABLE ###############################################
     -- ## @TABLE
     -- ##
-    CREATE TABLE @TABLE 
+    CREATE TABLE @TABLE
       (
            DSS_PARAMETER_TYPE_CODE NUMBER(10)   NOT NULL,
            DSS_PARAMETER_TYPE_ID   VARCHAR2(8)  NOT NULL,
@@ -7330,8 +7332,8 @@ def main() :
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-           ( 
+           STORAGE
+           (
               INITIAL 200k
               NEXT 200k
               MINEXTENTS 1
@@ -7341,7 +7343,7 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
            );
-    
+
     -----------------------------
     -- @TABLE indicies
     --
@@ -7353,8 +7355,8 @@ def main() :
            INITRANS 2
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-           ( 
+           STORAGE
+           (
               INITIAL 200k
               NEXT 200k
               MINEXTENTS 1
@@ -7364,25 +7366,25 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
            );
-    
+
     -------------------------------------
     -- @TABLE constraints --
     --
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (DSS_PARAMETER_TYPE_CODE);
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK FOREIGN KEY (PARAMETER_TYPE_CODE) REFERENCES @parameterTypeTableName (PARAMETER_TYPE_CODE);
-    
+
     ----------------------------------
     -- @TABLE comments --
-    --    
+    --
     COMMENT ON TABLE  @TABLE IS 'List of valid HEC-DSS time series data types';
     COMMENT ON COLUMN @TABLE.DSS_PARAMETER_TYPE_CODE IS 'Primary key for relating HEC-DSS parameter types to other entities';
     COMMENT ON COLUMN @TABLE.DSS_PARAMETER_TYPE_ID IS 'HEC-DSS time series parameter type';
     COMMENT ON COLUMN @TABLE.PARAMETER_TYPE_CODE IS 'CWMS parameter type associated with the HEC-DSS parameter type';
     COMMENT ON COLUMN @TABLE.DESCRIPTION IS 'Description';
     COMMIT;
-    
+
     '''
-    
+
     sys.stderr.write("Building dssParameterTypeLoadTemplate\n")
     dssParameterTypeLoadTemplate = ''
     for i in range(len(dssParameterTypes)) :
@@ -7397,14 +7399,14 @@ def main() :
         dssParameterTypeLoadTemplate +="\t'%s'\n"  % dssParameterTypes[i]["DESCRIPTION"]
         dssParameterTypeLoadTemplate +=");\n"
     dssParameterTypeLoadTemplate +="COMMIT;\n"
-    
+
     sys.stderr.write("Building dssXchgDirectionCreationTemplate\n")
     dssXchgDirectionCreationTemplate = \
     '''
     -- ## TABLE ###############################################
     -- ## @TABLE
     -- ##
-    CREATE TABLE @TABLE 
+    CREATE TABLE @TABLE
       (
            DSS_XCHG_DIRECTION_CODE NUMBER       NOT NULL,
            DSS_XCHG_DIRECTION_ID   VARCHAR2(16) NOT NULL,
@@ -7415,8 +7417,8 @@ def main() :
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-           ( 
+           STORAGE
+           (
               INITIAL 200k
               NEXT 200k
               MINEXTENTS 1
@@ -7426,7 +7428,7 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
            );
-    
+
     -----------------------------
     -- @TABLE indicies
     --
@@ -7438,8 +7440,8 @@ def main() :
            INITRANS 2
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-           ( 
+           STORAGE
+           (
               INITIAL 200k
               NEXT 200k
               MINEXTENTS 1
@@ -7449,23 +7451,23 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
            );
-    
+
     -------------------------------------
     -- @TABLE constraints --
     --
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (DSS_XCHG_DIRECTION_CODE);
-    
+
     ----------------------------------
     -- @TABLE comments --
-    --    
+    --
     COMMENT ON TABLE  @TABLE IS 'List of valid Oracle/HEC-DSS exchange directions';
     COMMENT ON COLUMN @TABLE.DSS_XCHG_DIRECTION_CODE IS 'Primary key for relating exchange directions to other entities';
     COMMENT ON COLUMN @TABLE.DSS_XCHG_DIRECTION_ID IS 'Oracle/HEC-DSS exchange direction';
     COMMENT ON COLUMN @TABLE.DESCRIPTION IS 'Description';
     COMMIT;
-    
+
     '''
-    
+
     sys.stderr.write("Building dssXchgDirectionLoadTemplate\n")
     dssXchgDirectionLoadTemplate = ''
     for i in range(len(dssXchgDirections)) :
@@ -7476,7 +7478,7 @@ def main() :
         dssXchgDirectionLoadTemplate +="\t'%s'\n"  % dssXchgDirections[i]["DESCRIPTION"]
         dssXchgDirectionLoadTemplate +=");\n"
     dssParameterTypeLoadTemplate +="COMMIT;\n"
-    
+
     sys.stderr.write("Building conversionCreationTemplate\n")
     conversionCreationTemplate = \
     '''
@@ -7517,11 +7519,11 @@ def main() :
     NOPARALLEL
     MONITORING
     /
-    
+
     -----------------------------
     -- @TABLE indexes
     --
-    
+
     CREATE UNIQUE INDEX CWMS_UNIT_CONVERSION_U01 ON CWMS_UNIT_CONVERSION
     (FROM_UNIT_CODE, TO_UNIT_CODE)
     LOGGING
@@ -7538,7 +7540,7 @@ def main() :
                )
     NOPARALLEL
     /
-    
+
     -----------------------------
     -- @TABLE comments
     --
@@ -7550,13 +7552,13 @@ def main() :
     COMMENT ON COLUMN @TABLE.FACTOR IS         'Ratio of units    (m in y=mx+b for linear conversions)';
     COMMENT ON COLUMN @TABLE.OFFSET IS         'Offset of units   (b in y=mx+b for non-linear conversions)';
     COMMENT ON COLUMN @TABLE.FUNCTION IS       'Non-linear conversion function';
-    
+
     -----------------------------
     -- @TABLE_UNIT trigger
     --
     CREATE OR REPLACE TRIGGER @TABLE_UNIT
     BEFORE INSERT OR UPDATE OF FROM_UNIT_CODE, TO_UNIT_CODE
-    ON @TABLE 
+    ON @TABLE
     REFERENCING NEW AS NEW OLD AS OLD
     FOR EACH ROW
     DECLARE
@@ -7574,11 +7576,11 @@ def main() :
        PRAGMA EXCEPTION_INIT(INCONSISTENT_ABSTRACT_CODES, -20000);
     BEGIN
        SELECT ABSTRACT_PARAM_CODE
-          INTO   FROM_ABSTRACT_CODE 
+          INTO   FROM_ABSTRACT_CODE
           FROM   @unitTableName
           WHERE  UNIT_CODE = :NEW.FROM_UNIT_CODE;
        SELECT ABSTRACT_PARAM_CODE
-          INTO   TO_ABSTRACT_CODE 
+          INTO   TO_ABSTRACT_CODE
           FROM   @unitTableName
           WHERE  UNIT_CODE = :NEW.TO_UNIT_CODE;
        IF FROM_ABSTRACT_CODE != TO_ABSTRACT_CODE
@@ -7596,34 +7598,34 @@ def main() :
              FROM   @unitTableName
              WHERE  UNIT_CODE = :NEW.TO_UNIT_CODE;
           SELECT ABSTRACT_PARAM_ID
-             INTO   FROM_ABSTRACT_ID 
+             INTO   FROM_ABSTRACT_ID
              FROM   @abstractParamTableName
              WHERE  ABSTRACT_PARAM_CODE=FROM_ABSTRACT_CODE;
           SELECT ABSTRACT_PARAM_ID
-             INTO   TO_ABSTRACT_ID 
+             INTO   TO_ABSTRACT_ID
              FROM   @abstractParamTableName
              WHERE  ABSTRACT_PARAM_CODE=TO_ABSTRACT_CODE;
           DBMS_OUTPUT.PUT_LINE(
-             'ERROR: From-unit "' 
+             'ERROR: From-unit "'
              || FROM_ID
-             || '" has abstract parameter "' 
+             || '" has abstract parameter "'
              || FROM_ABSTRACT_ID
              || '" but To-unit "'
              || TO_ID
-             || '" has abstract parameter "'                                                 
+             || '" has abstract parameter "'
              || TO_ABSTRACT_ID
              || '".');
-          RAISE;                                    
+          RAISE;
        WHEN OTHERS THEN
           DBMS_OUTPUT.PUT_LINE(SQLERRM);
-          RAISE;                                    
+          RAISE;
     END R_PARAMETER_UNIT;
     /
     SHOW ERRORS
     COMMIT;
-    
+
     '''
-    
+
     sys.stderr.write("Building conversionLoadTemplate\n")
     conversionLoadTemplate = ''
     conversionUnitIds = unitConversionsByUnitIds.keys()
@@ -7644,12 +7646,12 @@ def main() :
         conversionLoadTemplate +="\t%s\n"  % ("'%s'" % str(function).replace("ARG 0", "ARG1").replace("|", " "), 'NULL')[function is None]
         conversionLoadTemplate +=");\n"
     conversionLoadTemplate +="COMMIT;\n"
-    
+
     sys.stderr.write("Building conversionTestTemplate\n")
     conversionTestTemplate = \
     '''
     CREATE OR REPLACE PROCEDURE @TABLE_TEST
-    IS                                    
+    IS
        L_PARAM @abstractParamTableName%ROWTYPE;
        L_FROM  @unitTableName%ROWTYPE;
        L_TO    @unitTableName%ROWTYPE;
@@ -7663,12 +7665,12 @@ def main() :
           L_COUNT := 0;
           DBMS_OUTPUT.PUT_LINE('.');
           DBMS_OUTPUT.PUT_LINE('.  Checking abstract parameter ' || L_PARAM.ABSTRACT_PARAM_ID);
-          FOR L_FROM IN (SELECT * FROM @unitTableName WHERE ABSTRACT_PARAM_CODE=L_PARAM.ABSTRACT_PARAM_CODE)                                                    
+          FOR L_FROM IN (SELECT * FROM @unitTableName WHERE ABSTRACT_PARAM_CODE=L_PARAM.ABSTRACT_PARAM_CODE)
           LOOP
              FOR L_TO IN (SELECT * FROM @unitTableName WHERE ABSTRACT_PARAM_CODE=L_PARAM.ABSTRACT_PARAM_CODE)
              LOOP
                 BEGIN
-                   SELECT * 
+                   SELECT *
                       INTO  L_CONV
                       FROM @conversionTableName
                       WHERE FROM_UNIT_CODE = L_FROM.UNIT_CODE
@@ -7705,15 +7707,15 @@ def main() :
     /
     SHOW ERRORS
     COMMIT;
-    
+
     BEGIN @TABLE_TEST; END;
     /
-    
+
     DROP PROCEDURE @TABLE_TEST;
     COMMIT;
-    
+
     '''
-    
+
     sys.stderr.write("Building timezoneCreationTemplate\n")
     timezoneCreationTemplate = \
     '''
@@ -7732,8 +7734,8 @@ def main() :
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-           ( 
+           STORAGE
+           (
               INITIAL 200K
               NEXT 200K
               MINEXTENTS 1
@@ -7743,7 +7745,7 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
            );
-    
+
     -----------------------------
     -- @TABLE constraints
     --
@@ -7753,7 +7755,7 @@ def main() :
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK2 CHECK       (UTC_OFFSET <= INTERVAL ' 18:00' HOUR TO MINUTE);
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK3 CHECK       (DST_OFFSET >= INTERVAL  ' 0:00' HOUR TO MINUTE);
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK4 CHECK       (DST_OFFSET <= INTERVAL   '1:00' HOUR TO MINUTE);
-    
+
     -----------------------------
     -- @TABLE comments
     --
@@ -7763,15 +7765,15 @@ def main() :
     COMMENT ON COLUMN @TABLE.UTC_OFFSET    IS 'Amount of time the timezone is ahead of UTC';
     COMMENT ON COLUMN @TABLE.DST_OFFSET    IS 'Amount of time the UTC_OFFSET increases during DST';
     COMMIT;
-    
+
     '''
-    
+
     sys.stderr.write("Building timezoneLoadTemplate\n")
     timezoneLoadTemplate = ''
     for time_zone_code,time_zone_name,utc_offset,dst_offset in timezones :
-    	timezoneLoadTemplate +="INSERT INTO @TABLE (TIME_ZONE_CODE,TIME_ZONE_NAME,UTC_OFFSET,DST_OFFSET) VALUES (%d, '%s', '%s', '%s');\n" % (time_zone_code, time_zone_name, utc_offset, dst_offset) 
+    	timezoneLoadTemplate +="INSERT INTO @TABLE (TIME_ZONE_CODE,TIME_ZONE_NAME,UTC_OFFSET,DST_OFFSET) VALUES (%d, '%s', '%s', '%s');\n" % (time_zone_code, time_zone_name, utc_offset, dst_offset)
     timezoneLoadTemplate +="COMMIT;"
-    
+
     sys.stderr.write("Building timezoneAliasCreationTemplate\n")
     timezoneAliasCreationTemplate = \
     '''
@@ -7799,13 +7801,13 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
            );
-    
+
     -----------------------------
     -- @TABLE constraints
     --
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (TIME_ZONE_ALIAS);
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK1 FOREIGN KEY (TIME_ZONE_NAME) REFERENCES @timezoneTableName (TIME_ZONE_NAME);
-    
+
     -----------------------------
     -- @TABLE comments
     --
@@ -7813,7 +7815,7 @@ def main() :
     COMMENT ON COLUMN @TABLE.TIME_ZONE_ALIAS IS 'Time zone alias.';
     COMMENT ON COLUMN @TABLE.TIME_ZONE_NAME IS 'References propert time zone name.';
     COMMIT;
-    
+
     '''
     sys.stderr.write("Building timezoneAliasLoadTemplate\n")
     timezoneAliasLoadTemplate = ''
@@ -7840,7 +7842,7 @@ def main() :
                    alias = '%s%s%d%s00' % (base_tzs[base_tz], signs[sign], hour, seps[sep])
                    timezoneAliasLoadTemplate += ("INSERT INTO %s VALUES ('%s', '%s');\n" % (timezoneAliasTableName, alias, tz))
     timezoneAliasLoadTemplate += 'COMMIT;\n'
-    
+
     sys.stderr.write("Building tzUsageCreationTemplate\n")
     tzUsageCreationTemplate = \
     '''
@@ -7858,8 +7860,8 @@ def main() :
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-           ( 
+           STORAGE
+           (
               INITIAL 200K
               NEXT 200K
               MINEXTENTS 1
@@ -7869,7 +7871,7 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
            );
-    
+
     -----------------------------
     -- @TABLE indicies
     --
@@ -7881,8 +7883,8 @@ def main() :
            INITRANS 2
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-           ( 
+           STORAGE
+           (
               INITIAL 200k
               NEXT 200k
               MINEXTENTS 1
@@ -7892,12 +7894,12 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
            );
-    
+
     -----------------------------
     -- @TABLE constraints
     --
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (TZ_USAGE_CODE);
-    
+
     -----------------------------
     -- @TABLE comments
     --
@@ -7906,9 +7908,9 @@ def main() :
     COMMENT ON COLUMN @TABLE.TZ_USAGE_ID   IS 'Timezone usage text identifier';
     COMMENT ON COLUMN @TABLE.DESCRIPTION   IS 'Timezone usage text description';
     COMMIT;
-    
+
     '''
-    
+
     sys.stderr.write("Building tzUsageLoadTemplate\n")
     tzUsageLoadTemplate = ''
     for i in range(len(tzUsages)) :
@@ -7919,14 +7921,14 @@ def main() :
         tzUsageLoadTemplate +="\t'%s'\n" % tzUsages[i]["DESCRIPTION"]
         tzUsageLoadTemplate +=");\n"
     tzUsageLoadTemplate +="COMMIT;\n"
-    
+
     sys.stderr.write("Building qScreenedCreationTemplate\n")
     qScreenedCreationTemplate = \
     '''
     -- ## TABLE ###############################################
     -- ## @TABLE
     -- ##
-    CREATE TABLE @TABLE 
+    CREATE TABLE @TABLE
        (
            SCREENED_ID   VARCHAR2(16)  NOT NULL,
            DESCRIPTION   VARCHAR2(80),
@@ -7937,8 +7939,8 @@ def main() :
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-       ( 
+           STORAGE
+       (
               INITIAL 10K
               NEXT 10K
               MINEXTENTS 1
@@ -7948,15 +7950,15 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
        );
-       
-    
+
+
     ---------------------------
     -- @TABLE comments --
     --
     COMMENT ON TABLE  @TABLE               IS 'Contains valid values for the screened component of CWMS data quality flags';
     COMMENT ON COLUMN @TABLE.SCREENED_ID   IS 'Text identifier of screened component and primary key';
     COMMENT ON COLUMN @TABLE.DESCRIPTION   IS 'Text description of screened component';
-    
+
     COMMIT;
     '''
     sys.stderr.write("Building qScreenedLoadTemplate\n")
@@ -7964,14 +7966,14 @@ def main() :
     for code, id, description in q_screened["values"] :
         qScreenedLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
     qScreenedLoadTemplate += "COMMIT;\n"
-    
+
     sys.stderr.write("Building qValidityCreationTemplate\n")
     qValidityCreationTemplate = \
     '''
     -- ## TABLE ###############################################
     -- ## @TABLE
     -- ##
-    CREATE TABLE @TABLE 
+    CREATE TABLE @TABLE
        (
            VALIDITY_ID   VARCHAR2(16)  NOT NULL,
            DESCRIPTION   VARCHAR2(80),
@@ -7982,8 +7984,8 @@ def main() :
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-       ( 
+           STORAGE
+       (
               INITIAL 10K
               NEXT 10K
               MINEXTENTS 1
@@ -7993,15 +7995,15 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
        );
-       
-    
+
+
     ---------------------------
     -- @TABLE comments --
     --
     COMMENT ON TABLE  @TABLE               IS 'Contains valid values for the validity component of CWMS data quality flags';
     COMMENT ON COLUMN @TABLE.VALIDITY_ID   IS 'Text identifier of validity component and primary key';
     COMMENT ON COLUMN @TABLE.DESCRIPTION   IS 'Text description of validity component';
-    
+
     COMMIT;
     '''
     sys.stderr.write("Building qValidityLoadTemplate\n")
@@ -8009,14 +8011,14 @@ def main() :
     for code, id, description in q_validity["values"] :
         qValidityLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
     qValidityLoadTemplate += "COMMIT;\n"
-    
+
     sys.stderr.write("Building qRangeCreationTemplate\n")
     qRangeCreationTemplate = \
     '''
     -- ## TABLE ###############################################
     -- ## @TABLE
     -- ##
-    CREATE TABLE @TABLE 
+    CREATE TABLE @TABLE
        (
            RANGE_ID    VARCHAR2(16)  NOT NULL,
            DESCRIPTION VARCHAR2(80),
@@ -8027,8 +8029,8 @@ def main() :
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-       ( 
+           STORAGE
+       (
               INITIAL 10K
               NEXT 10K
               MINEXTENTS 1
@@ -8038,15 +8040,15 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
        );
-       
-    
+
+
     ---------------------------
     -- @TABLE comments --
     --
     COMMENT ON TABLE  @TABLE             IS 'Contains valid values for the range component of CWMS data quality flags';
     COMMENT ON COLUMN @TABLE.RANGE_ID    IS 'Text identifier of range component and primary key';
     COMMENT ON COLUMN @TABLE.DESCRIPTION IS 'Text description of range component';
-    
+
     COMMIT;
     '''
     sys.stderr.write("Building qRangeLoadTemplate\n")
@@ -8054,14 +8056,14 @@ def main() :
     for code, id, description in q_value_range["values"] :
         qRangeLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
     qRangeLoadTemplate += "COMMIT;\n"
-    
+
     sys.stderr.write("Building qChangedCreationTemplate\n")
     qChangedCreationTemplate = \
     '''
     -- ## TABLE ###############################################
     -- ## @TABLE
     -- ##
-    CREATE TABLE @TABLE 
+    CREATE TABLE @TABLE
        (
            CHANGED_ID   VARCHAR2(16)  NOT NULL,
            DESCRIPTION  VARCHAR2(80),
@@ -8072,8 +8074,8 @@ def main() :
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-       ( 
+           STORAGE
+       (
               INITIAL 10K
               NEXT 10K
               MINEXTENTS 1
@@ -8083,15 +8085,15 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
        );
-       
-    
+
+
     ---------------------------
     -- @TABLE comments --
     --
     COMMENT ON TABLE  @TABLE              IS 'Contains valid values for the changed component of CWMS data quality flags';
     COMMENT ON COLUMN @TABLE.CHANGED_ID   IS 'Text identifier of changed component and primary key';
     COMMENT ON COLUMN @TABLE.DESCRIPTION  IS 'Text description of changed component';
-    
+
     COMMIT;
     '''
     sys.stderr.write("Building qChangedLoadTemplate\n")
@@ -8099,14 +8101,14 @@ def main() :
     for code, id, description in q_different["values"] :
         qChangedLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
     qChangedLoadTemplate += "COMMIT;\n"
-    
+
     sys.stderr.write("Building qReplCauseCreationTemplate\n")
     qReplCauseCreationTemplate = \
     '''
     -- ## TABLE ###############################################
     -- ## @TABLE
     -- ##
-    CREATE TABLE @TABLE 
+    CREATE TABLE @TABLE
        (
            REPL_CAUSE_ID   VARCHAR2(16)  NOT NULL,
            DESCRIPTION     VARCHAR2(80),
@@ -8117,8 +8119,8 @@ def main() :
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-       ( 
+           STORAGE
+       (
               INITIAL 10K
               NEXT 10K
               MINEXTENTS 1
@@ -8128,15 +8130,15 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
        );
-       
-    
+
+
     ---------------------------
     -- @TABLE comments --
     --
     COMMENT ON TABLE  @TABLE                 IS 'Contains valid values for the replacement cause component of CWMS data quality flags';
     COMMENT ON COLUMN @TABLE.REPL_CAUSE_ID   IS 'Text identifier of replacement cause component and primary key';
     COMMENT ON COLUMN @TABLE.DESCRIPTION     IS 'Text description of replacement cause component';
-    
+
     COMMIT;
     '''
     sys.stderr.write("Building qReplCauseLoadTemplate\n")
@@ -8144,14 +8146,14 @@ def main() :
     for code, id, description in q_replacement_cause["values"] :
         qReplCauseLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
     qReplCauseLoadTemplate += "COMMIT;\n"
-    
+
     sys.stderr.write("Building qReplMethodCreationTemplate\n")
     qReplMethodCreationTemplate = \
     '''
     -- ## TABLE ###############################################
     -- ## @TABLE
     -- ##
-    CREATE TABLE @TABLE 
+    CREATE TABLE @TABLE
        (
            REPL_METHOD_ID   VARCHAR2(16)  NOT NULL,
            DESCRIPTION      VARCHAR2(80),
@@ -8162,8 +8164,8 @@ def main() :
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-       ( 
+           STORAGE
+       (
               INITIAL 10K
               NEXT 10K
               MINEXTENTS 1
@@ -8173,14 +8175,14 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
        );
-       
+
     ---------------------------
     -- @TABLE comments --
     --
     COMMENT ON TABLE  @TABLE                  IS 'Contains valid values for the replacement method component of CWMS data quality flags';
     COMMENT ON COLUMN @TABLE.REPL_METHOD_ID   IS 'Text identifier of replacement method component and primary key';
     COMMENT ON COLUMN @TABLE.DESCRIPTION      IS 'Text description of replacement method component';
-    
+
     COMMIT;
     '''
     sys.stderr.write("Building qReplMethodLoadTemplate\n")
@@ -8188,14 +8190,14 @@ def main() :
     for code, id, description in q_replacement_method["values"] :
         qReplMethodLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
     qReplMethodLoadTemplate += "COMMIT;\n"
-            
+
     sys.stderr.write("Building qTestFailedCreationTemplate\n")
     qTestFailedCreationTemplate = \
     '''
     -- ## TABLE ###############################################
     -- ## @TABLE
     -- ##
-    CREATE TABLE @TABLE 
+    CREATE TABLE @TABLE
        (
            TEST_FAILED_ID   VARCHAR2(125)  NOT NULL,
            DESCRIPTION      VARCHAR2(80),
@@ -8206,8 +8208,8 @@ def main() :
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-       ( 
+           STORAGE
+       (
               INITIAL 10K
               NEXT 10K
               MINEXTENTS 1
@@ -8217,31 +8219,31 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
        );
-       
-    
+
+
     ---------------------------
     -- @TABLE comments --
     --
     COMMENT ON TABLE  @TABLE                  IS 'Contains valid values for the test failed component of CWMS data quality flags';
     COMMENT ON COLUMN @TABLE.TEST_FAILED_ID   IS 'Text identifier of test failed component and primary key';
     COMMENT ON COLUMN @TABLE.DESCRIPTION      IS 'Text description of test failed component';
-    
+
     COMMIT;
     '''
-    
+
     sys.stderr.write("Building qTestFailedLoadTemplate\n")
     qTestFailedLoadTemplate = ''
     for code, id, description in q_test_failed["values"] :
         qTestFailedLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
     qTestFailedLoadTemplate += "COMMIT;\n"
-            
+
     sys.stderr.write("Building qProtectionCreationTemplate\n")
     qProtectionCreationTemplate = \
     '''
     -- ## TABLE ###############################################
     -- ## @TABLE
     -- ##
-    CREATE TABLE @TABLE 
+    CREATE TABLE @TABLE
        (
            PROTECTION_ID   VARCHAR2(16)  NOT NULL,
            DESCRIPTION     VARCHAR2(80),
@@ -8252,8 +8254,8 @@ def main() :
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-       ( 
+           STORAGE
+       (
               INITIAL 10K
               NEXT 10K
               MINEXTENTS 1
@@ -8263,15 +8265,15 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
        );
-       
-    
+
+
     ---------------------------
     -- @TABLE comments --
     --
     COMMENT ON TABLE  @TABLE                 IS 'Contains valid values for the protection component of CWMS data quality flags';
     COMMENT ON COLUMN @TABLE.PROTECTION_ID   IS 'Text identifier of protection component and primary key';
     COMMENT ON COLUMN @TABLE.DESCRIPTION     IS 'Text description of protection component';
-    
+
     COMMIT;
     '''
     sys.stderr.write("Building qProtectionLoadTemplate\n")
@@ -8279,14 +8281,14 @@ def main() :
     for code, id, description in q_protection["values"] :
         qProtectionLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
     qProtectionLoadTemplate += "COMMIT;\n"
-    
+
     sys.stderr.write("Building qualityCreationTemplate\n")
     qualityCreationTemplate = \
     '''
     -- ## TABLE ###############################################
     -- ## @TABLE
     -- ##
-    CREATE TABLE @TABLE 
+    CREATE TABLE @TABLE
        (
            QUALITY_CODE   NUMBER(10)    NOT NULL,
            SCREENED_ID    VARCHAR2(16)  NOT NULL,
@@ -8304,8 +8306,8 @@ def main() :
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-       ( 
+           STORAGE
+       (
               INITIAL 300K
               NEXT 300K
               MINEXTENTS 1
@@ -8315,7 +8317,7 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
        );
-       
+
     -------------------------------
     -- @TABLE constraints  --
     --
@@ -8327,7 +8329,7 @@ def main() :
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK6 FOREIGN KEY (REPL_CAUSE_ID ) REFERENCES @qReplCauseTableName  (REPL_CAUSE_ID );
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK7 FOREIGN KEY (REPL_METHOD_ID) REFERENCES @qReplMethodTableName (REPL_METHOD_ID);
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK8 FOREIGN KEY (TEST_FAILED_ID) REFERENCES @qTestFailedTableName (TEST_FAILED_ID);
-    
+
     ---------------------------
     -- @TABLE comments --
     --
@@ -8353,7 +8355,7 @@ def main() :
       (QUALITY_CODE,SCREENED_ID,VALIDITY_ID,RANGE_ID,CHANGED_ID,REPL_CAUSE_ID,REPL_METHOD_ID,TEST_FAILED_ID,PROTECTION_ID)
     begindata
     ''')
-    
+
     qualityLoadFile.write("%lu,%s,%s,%s,%s,%s,%s,%s,%s\n" % (
         0,                                    # unsigned value
         q_screened["values"][0][1],           # screened code
@@ -8364,7 +8366,7 @@ def main() :
         q_replacement_method["values"][0][1], # replacement method code
         q_test_failed["values"][0][1],        # test failed code
         q_protection["values"][0][1]))        # protection code
-        
+
     for v in range(len(q_validity["values"])) :
         for r in range(len(q_value_range["values"])) :
             for d in range(len(q_different["values"])) :
@@ -8393,16 +8395,16 @@ def main() :
                                     q_replacement_method["values"][m][1], # replacement method code
                                     q_test_failed["values"][t][1],        # test failed code
                                     q_protection["values"][p][1]))        # protection code
-            
+
     qualityLoadFile.close()
-    
+
     sys.stderr.write("Building logMessageTypesCreationTemplate\n")
     logMessageTypesCreationTemplate = \
     '''
     -- ## TABLE ###############################################
     -- ## @TABLE
     -- ##
-    CREATE TABLE @TABLE 
+    CREATE TABLE @TABLE
        (
            MESSAGE_TYPE_CODE NUMBER(2)    NOT NULL,
            MESSAGE_TYPE_ID   VARCHAR2(32) NOT NULL
@@ -8412,8 +8414,8 @@ def main() :
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-       ( 
+           STORAGE
+       (
               INITIAL 1K
               NEXT 1K
               MINEXTENTS 1
@@ -8423,19 +8425,19 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
        );
-       
+
     -------------------------------
     -- @TABLE constraints  --
     --
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (MESSAGE_TYPE_CODE);
-    
+
     ---------------------------
     -- @TABLE comments --
     --
     COMMENT ON TABLE  @TABLE                   IS 'Contains valid values for the MSG_TYPE field of logged status messages';
     COMMENT ON COLUMN @TABLE.MESSAGE_TYPE_CODE IS 'Numeric code corresponding to the message type name';
     COMMENT ON COLUMN @TABLE.MESSAGE_TYPE_ID   IS 'The message type name';
-    
+
     COMMIT;
     '''
     sys.stderr.write("Building logMessageTypesLoadTemplate\n")
@@ -8443,14 +8445,14 @@ def main() :
     for code, id in logMessageTypes :
         logMessageTypesLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s');\n" % (code, id)
     logMessageTypesLoadTemplate += "COMMIT;\n"
-    
+
     sys.stderr.write("Building logMessagePropTypesCreationTemplate\n")
     logMessagePropTypesCreationTemplate = \
     '''
     -- ## TABLE ###############################################
     -- ## @TABLE
     -- ##
-    CREATE TABLE @TABLE 
+    CREATE TABLE @TABLE
        (
            PROP_TYPE_CODE NUMBER(1)   NOT NULL,
            PROP_TYPE_ID   VARCHAR2(8) NOT NULL
@@ -8460,8 +8462,8 @@ def main() :
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-       ( 
+           STORAGE
+       (
               INITIAL 1K
               NEXT 1K
               MINEXTENTS 1
@@ -8471,19 +8473,19 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
        );
-       
+
     -------------------------------
     -- @TABLE constraints  --
     --
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (PROP_TYPE_CODE);
-    
+
     ---------------------------
     -- @TABLE comments --
     --
     COMMENT ON TABLE  @TABLE                IS 'Contains valid values for the PROP_TYPE field of logged status message properties';
     COMMENT ON COLUMN @TABLE.PROP_TYPE_CODE IS 'Numeric code corresponding to the property type name';
     COMMENT ON COLUMN @TABLE.PROP_TYPE_ID   IS 'The property type name';
-    
+
     COMMIT;
     '''
     sys.stderr.write("Building logMessagePropTypesLoadTemplate\n")
@@ -8491,14 +8493,14 @@ def main() :
     for code, id in logMessagePropTypes :
         logMessagePropTypesLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s');\n" % (code, id)
     logMessagePropTypesLoadTemplate += "COMMIT;\n"
-    
+
     sys.stderr.write("Building intpolateUnitsCreationTemplate\n")
     interpolateUnitsCreationTemplate = \
     '''
     -- ## TABLE ###############################################
     -- ## @TABLE
     -- ##
-    CREATE TABLE @TABLE 
+    CREATE TABLE @TABLE
        (
            INTERPOLATE_UNITS_CODE NUMBER(1)   NOT NULL,
            INTERPOLATE_UNITS_ID   VARCHAR2(16) NOT NULL
@@ -8508,8 +8510,8 @@ def main() :
            INITRANS 1
            MAXTRANS 255
            TABLESPACE @DATASPACE
-           STORAGE 
-       ( 
+           STORAGE
+       (
               INITIAL 1K
               NEXT 1K
               MINEXTENTS 1
@@ -8519,19 +8521,19 @@ def main() :
               FREELIST GROUPS 1
               BUFFER_POOL DEFAULT
        );
-       
+
     -------------------------------
     -- @TABLE constraints  --
     --
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (INTERPOLATE_UNITS_CODE);
-    
+
     ---------------------------
     -- @TABLE comments --
     --
     COMMENT ON TABLE  @TABLE                       IS 'Contains valid values for time series interpolation units';
     COMMENT ON COLUMN @TABLE.INTERPOLATE_UNITS_CODE IS 'Numeric code corresponding to the interpolation units';
     COMMENT ON COLUMN @TABLE.INTERPOLATE_UNITS_ID   IS 'The interpolation units';
-    
+
     COMMIT;
     '''
     sys.stderr.write("Building interpolateUnitsLoadTemplate\n")
@@ -8539,13 +8541,13 @@ def main() :
     for code, id in interpolateUnits :
         interpolateUnitsLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s');\n" % (code, id)
     interpolateUnitsLoadTemplate += "COMMIT;\n"
-    
+
     sys.stderr.write("Building displayUnitsCreationTemplate\n")
     displayUnitsCreationTemplate = \
     '''
     ---------------------------------
     -- AT_DISPLAY_UNITS table
-    -- 
+    --
     CREATE TABLE AT_DISPLAY_UNITS
     (
       DB_OFFICE_CODE     NUMBER                     NOT NULL,
@@ -8565,13 +8567,13 @@ def main() :
                 PCTINCREASE      0
                 BUFFER_POOL      DEFAULT
                )
-    LOGGING 
-    NOCOMPRESS 
+    LOGGING
+    NOCOMPRESS
     NOCACHE
     NOPARALLEL
     MONITORING;
-    
-    
+
+
     CREATE UNIQUE INDEX AT_DISPLAY_UNITS_PK1 ON AT_DISPLAY_UNITS
     (DB_OFFICE_CODE, PARAMETER_CODE, UNIT_SYSTEM)
     LOGGING
@@ -8587,13 +8589,13 @@ def main() :
                 BUFFER_POOL      DEFAULT
                )
     NOPARALLEL;
-    
-    
+
+
     ALTER TABLE AT_DISPLAY_UNITS ADD (
       CONSTRAINT AT_DISPLAY_UNITS_PK1
      PRIMARY KEY
      (DB_OFFICE_CODE, PARAMETER_CODE, UNIT_SYSTEM)
-        USING INDEX 
+        USING INDEX
         tablespace @DATASPACE
         PCTFREE    10
         INITRANS   2
@@ -8604,22 +8606,22 @@ def main() :
                     MAXEXTENTS       2147483645
                     PCTINCREASE      0
                    ));
-    
-    
+
+
     ALTER TABLE AT_DISPLAY_UNITS ADD (
-      CONSTRAINT AT_DISPLAY_UNITS_FK02 
-     FOREIGN KEY (DISPLAY_UNIT_CODE) 
+      CONSTRAINT AT_DISPLAY_UNITS_FK02
+     FOREIGN KEY (DISPLAY_UNIT_CODE)
      REFERENCES CWMS_UNIT (UNIT_CODE));
-    
+
     ALTER TABLE AT_DISPLAY_UNITS ADD (
-      CONSTRAINT AT_DISPLAY_UNITS_FK01 
-     FOREIGN KEY (PARAMETER_CODE) 
+      CONSTRAINT AT_DISPLAY_UNITS_FK01
+     FOREIGN KEY (PARAMETER_CODE)
      REFERENCES AT_PARAMETER (PARAMETER_CODE));
     '''
-    
+
     sys.stderr.write("Building displayUnitsLoadTemplate\n")
     displayUnitsLoadTemplate = ''
-    
+
     for k in range(len(office_ids)) :
         dbOfcCode = db_office_code[office_ids[k]]
         displayUnitsLoadTemplate +="DECLARE\n"
@@ -8657,7 +8659,7 @@ def main() :
                 displayUnitsLoadTemplate +="            )\n"
                 displayUnitsLoadTemplate +="/\n"
     displayUnitsLoadTemplate +="COMMIT;\n"
-    
+
     sys.stderr.write("Building gageMethodCreationTemplate\n")
     gageMethodCreationTemplate = \
     '''
@@ -8683,12 +8685,12 @@ def main() :
                 PCTINCREASE      0
                 BUFFER_POOL      DEFAULT
                )
-    LOGGING 
-    NOCOMPRESS 
+    LOGGING
+    NOCOMPRESS
     NOCACHE
     NOPARALLEL
     MONITORING;
-    
+
     -------------------------------
     -- @TABLE constraints  --
     --
@@ -8696,15 +8698,15 @@ def main() :
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_U1  UNIQUE (METHOD_ID) USING INDEX;
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK1 CHECK (TRIM(METHOD_ID) = METHOD_ID);
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK2 CHECK (UPPER(METHOD_ID) = METHOD_ID);
-    
+
     ---------------------------
     -- @TABLE comments --
     --
     COMMENT ON TABLE  @TABLE             IS 'Contains inquiry and transmission methods gages.';
-    COMMENT ON COLUMN @TABLE.METHOD_CODE IS 'Primary key relating methods to other entities.'; 
-    COMMENT ON COLUMN @TABLE.METHOD_ID   IS 'Name of method (''MANUAL'', ''PHONE'', ''INTERNET'', ''GOES'', etc...).'; 
+    COMMENT ON COLUMN @TABLE.METHOD_CODE IS 'Primary key relating methods to other entities.';
+    COMMENT ON COLUMN @TABLE.METHOD_ID   IS 'Name of method (''MANUAL'', ''PHONE'', ''INTERNET'', ''GOES'', etc...).';
     COMMENT ON COLUMN @TABLE.DESCRIPTION IS 'Optional description.';
-    
+
     COMMIT;
     '''
     sys.stderr.write("Building gageMethodLoadTemplate\n")
@@ -8712,7 +8714,7 @@ def main() :
     for code, id, description in gageMethods :
         gageMethodLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s', '%s');\n" % (code, id, description)
     gageMethodLoadTemplate += "COMMIT;\n"
-    
+
     sys.stderr.write("Building gageTypeCreationTemplate\n")
     gageTypeCreationTemplate = \
     '''
@@ -8725,7 +8727,7 @@ def main() :
        GAGE_TYPE_ID        VARCHAR2(32)  NOT NULL,
        MANUALLY_READ       VARCHAR2(1)   NOT NULL,
        INQUIRY_METHOD      NUMBER(10),
-       TRANSMIT_METHOD     NUMBER(10), 
+       TRANSMIT_METHOD     NUMBER(10),
        DESCRIPTION         VARCHAR2(256)
     )
     tablespace @DATASPACE
@@ -8741,13 +8743,13 @@ def main() :
                 PCTINCREASE      0
                 BUFFER_POOL      DEFAULT
                )
-    LOGGING 
-    NOCOMPRESS 
+    LOGGING
+    NOCOMPRESS
     NOCACHE
     NOPARALLEL
     MONITORING;
-    
-    
+
+
     -------------------------------
     -- @TABLE constraints  --
     --
@@ -8755,7 +8757,7 @@ def main() :
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK1 CHECK (TRIM(GAGE_TYPE_ID) = GAGE_TYPE_ID);
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK1 FOREIGN KEY (INQUIRY_METHOD) REFERENCES CWMS_GAGE_METHOD (METHOD_CODE);
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK2 FOREIGN KEY (TRANSMIT_METHOD) REFERENCES CWMS_GAGE_METHOD (METHOD_CODE);
-    
+
     -------------------------------
     -- @TABLE indicies  --
     --
@@ -8774,7 +8776,7 @@ def main() :
                 BUFFER_POOL      DEFAULT
                )
     NOPARALLEL;
-    
+
     ---------------------------
     -- @TABLE comments --
     --
@@ -8785,7 +8787,7 @@ def main() :
     COMMENT ON COLUMN @TABLE.INQUIRY_METHOD  IS 'Reference to method of inquiry.';
     COMMENT ON COLUMN @TABLE.TRANSMIT_METHOD IS 'Reference to method of data transmission.';
     COMMENT ON COLUMN @TABLE.DESCRIPTION     IS 'Optional description.';
-    
+
     COMMIT;
     '''
     sys.stderr.write("Building gageTypeLoadTemplate\n")
@@ -8799,7 +8801,7 @@ def main() :
             (code, id, manually_read, inquiry_method, tx_method, description)
     gageTypeLoadTemplate += "COMMIT;\n"
     gageTypeLoadTemplate = gageTypeLoadTemplate.replace("'NULL'", "NULL")
-    
+
     sys.stderr.write("Building nationCreationTemplate\n")
     nationCreationTemplate = \
     '''
@@ -8824,18 +8826,18 @@ def main() :
                 PCTINCREASE      0
                 BUFFER_POOL      DEFAULT
                )
-    LOGGING 
-    NOCOMPRESS 
+    LOGGING
+    NOCOMPRESS
     NOCACHE
     NOPARALLEL
     MONITORING;
-    
+
     -------------------------------
     -- @TABLE constraints  --
     --
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (NATION_CODE) USING INDEX;
     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK1 CHECK (TRIM(NATION_ID) = NATION_ID);
-    
+
     -------------------------------
     -- @TABLE indicies  --
     --
@@ -8854,14 +8856,14 @@ def main() :
                 BUFFER_POOL      DEFAULT
                )
     NOPARALLEL;
-    
+
     ---------------------------
     -- @TABLE comments --
     --
     COMMENT ON TABLE  @TABLE             IS 'Contains names of nations';
     COMMENT ON COLUMN @TABLE.NATION_CODE IS 'Primary key used to relate nation to other entities';
     COMMENT ON COLUMN @TABLE.NATION_ID   IS 'Name of nation';
-    
+
     COMMIT;
     '''
     sys.stderr.write("Building nationLoadTemplate\n")
@@ -8869,7 +8871,7 @@ def main() :
     for code, id,  in nations :
         nationLoadTemplate += "INSERT INTO @TABLE VALUES ('%s', '%s');\n" % (code, id.replace("'", "''"))
     nationLoadTemplate += "COMMIT;\n"
-    
+
 #     sys.stderr.write("Building streamTypeCreationTemplate\n")
 #     streamTypeCreationTemplate = \
 #     '''
@@ -8899,17 +8901,17 @@ def main() :
 #                 PCTINCREASE      0
 #                 BUFFER_POOL      DEFAULT
 #                )
-#     LOGGING 
-#     NOCOMPRESS 
+#     LOGGING
+#     NOCOMPRESS
 #     NOCACHE
-#     NOPARALLEL                                                                                                                     
+#     NOPARALLEL
 #     MONITORING;
-#     
+#
 #     -------------------------------
 #     -- @TABLE constraints  --
 #     --
 #     ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (STREAM_TYPE_ID) USING INDEX;
-#     
+#
 #     ---------------------------
 #     -- @TABLE comments --
 #     --
@@ -8921,7 +8923,7 @@ def main() :
 #     COMMENT ON COLUMN @TABLE.SINUOSITY            IS 'Channel sinuosity range';
 #     COMMENT ON COLUMN @TABLE.SLOPE                IS 'Channel slope';
 #     COMMENT ON COLUMN @TABLE.CHANNEL_MATERIAL     IS 'Channel material';
-#     
+#
 #     COMMIT;
 #     '''
 #     sys.stderr.write("Building streamTypeLoadTemplate\n")
@@ -8929,7 +8931,7 @@ def main() :
 #     for v1, v2, v3, v4, v5, v6, v7 in streamTypes :
 #         streamTypeLoadTemplate += "INSERT INTO @TABLE VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s');\n" % (v1, v2, v3, v4, v5, v6, v7)
 #     streamTypeLoadTemplate += "COMMIT;\n"
-    
+
     sys.stderr.write("Building vertconHeaderCreationTemplate\n")
     vertconHeaderCreationTemplate = \
     '''
@@ -8961,10 +8963,10 @@ def main() :
        CONSTRAINT @TABLE_CK4 CHECK (MIN_LON BETWEEN -180 AND 180),
        CONSTRAINT @TABLE_CK5 CHECK (MAX_LON BETWEEN -180 AND 180),
        CONSTRAINT @TABLE_CK6 CHECK (MAX_LON > MIN_LON),
-       CONSTRAINT @TABLE_CK7 CHECK (MARGIN BETWEEN 0 AND MAX_LON - MIN_LON), 
-       CONSTRAINT @TABLE_CK8 CHECK (DELTA_LAT > 0 AND DELTA_LAT < (MAX_LAT - MIN_LAT) / 2), 
-       CONSTRAINT @TABLE_CK9 CHECK (DELTA_LON > 0 AND DELTA_LON < (MAX_LON - MIN_LON) / 2) 
-    )   
+       CONSTRAINT @TABLE_CK7 CHECK (MARGIN BETWEEN 0 AND MAX_LON - MIN_LON),
+       CONSTRAINT @TABLE_CK8 CHECK (DELTA_LAT > 0 AND DELTA_LAT < (MAX_LAT - MIN_LAT) / 2),
+       CONSTRAINT @TABLE_CK9 CHECK (DELTA_LON > 0 AND DELTA_LON < (MAX_LON - MIN_LON) / 2)
+    )
     /
     CREATE UNIQUE INDEX @TABLE_U1 ON @TABLE(UPPER(DATASET_ID)) TABLESPACE @DATASPACE
     /
@@ -8983,10 +8985,10 @@ def main() :
     COMMENT ON COLUMN @TABLE.MARGIN       IS 'Longitude buffer for maximum longitude';
     COMMENT ON COLUMN @TABLE.DELTA_LAT    IS 'Difference between adjacent latitudes in data set';
     COMMENT ON COLUMN @TABLE.DELTA_LON    IS 'Difference between adjacent longitudes in data set';
-    
+
     COMMIT;
-    '''            
-    
+    '''
+
     sys.stderr.write("Building vertconDataCreationTemplate\n")
     vertconDataCreationTemplate = \
     '''
@@ -9007,7 +9009,7 @@ def main() :
     ALTER TABLE @TABLE ADD (
        CONSTRAINT @TABLE_PK  PRIMARY KEY (DATASET_CODE, TABLE_ROW, TABLE_COL) USING INDEX TABLESPACE @DATASPACE,
        CONSTRAINT @TABLE_FK1 FOREIGN KEY (DATASET_CODE) REFERENCES CWMS_VERTCON_HEADER (DATASET_CODE)
-    )   
+    )
     /
     ---------------------------
     -- @TABLE comments --
@@ -9017,9 +9019,9 @@ def main() :
     COMMENT ON COLUMN @TABLE.TABLE_ROW    IS 'Row index in vertcon data table';
     COMMENT ON COLUMN @TABLE.TABLE_COL    IS 'Column index in vertcon data table';
     COMMENT ON COLUMN @TABLE.TABLE_VAL    IS 'Datum offset in millimeters for row and column in vertcon data table';
-    
+
     COMMIT;
-    '''            
+    '''
 
     sys.stderr.write("Building verticalDatumCreationTemplate\n")
     verticalDatumCreationTemplate = \
@@ -9037,10 +9039,10 @@ def main() :
     --
     COMMENT ON TABLE  @TABLE                   IS 'Contains constrained list of vertical datums';
     COMMENT ON COLUMN @TABLE.VERTICAL_DATUM_ID IS 'Text identifier of vertical datum';
-    
+
     COMMIT;
-    '''            
-    
+    '''
+
     sys.stderr.write("Building verticalDatumLoadTemplate\n")
     verticalDatumLoadTemplate = \
     '''
@@ -9060,7 +9062,7 @@ def main() :
        store_rule_code integer,
        store_rule_id   varchar2(32),
        description     varchar2(128),
-       use_as_default  varchar2(1) not null,  
+       use_as_default  varchar2(1) not null,
        constraint @TABLE_pk primary key(store_rule_code),
        constraint @TABLE_u1 unique(store_rule_id),
        constraint @TABLE_ck1 check (use_as_default in ('T', 'F'))
@@ -9069,15 +9071,15 @@ def main() :
     ---------------------------
     -- @TABLE comments --
     --
-    comment on table @TABLE is 'Holds CWMS data storage rules'; 
+    comment on table @TABLE is 'Holds CWMS data storage rules';
     comment on column @TABLE.store_rule_code is 'Primary key';
     comment on column @TABLE.store_rule_id is 'Text identifier, which is also the primary key';
     comment on column @TABLE.description   is 'Describes store rule behavior';
     comment on column @TABLE.use_as_default  is 'Use as default in UI choIce controls';
 
     COMMIT;
-    '''            
-    
+    '''
+
     sys.stderr.write("Building storeRuleLoadTemplate\n")
     storeRuleLoadTemplate = \
     '''
@@ -9102,8 +9104,8 @@ def main() :
       representative_point  varchar2(32 byte)  not null,
       description           varchar2(256 byte)
     )
-    /                                                      
-    
+    /
+
     alter table @TABLE add constraint @TABLE_pk  primary key (location_kind_code) using index;
     alter table @TABLE add constraint @TABLE_u1  unique (location_kind_id) using index;
     alter table @TABLE add constraint @TABLE_fk1 foreign key (parent_location_kind) references @TABLE (location_kind_code);
@@ -9116,7 +9118,7 @@ def main() :
     comment on column @TABLE.location_kind_id     is 'Text name used as an input to the lookup.';
     comment on column @TABLE.representative_point is 'The point represented by the single lat/lon in the physical location tabel.';
     comment on column @TABLE.description          is 'Descriptive text about the location kind.';
-        
+
     COMMIT;
     '''
 
@@ -9124,14 +9126,14 @@ def main() :
     locationKindLoadTemplate = ""
     for code, parentCode, name, representativePoint, description in locationKinds :
         locationKindLoadTemplate += "insert into @TABLE values(%s, %s, '%s', '%s', '%s');\n" % (
-            code, 
-            (parentCode,'NULL')[parentCode is None], 
-            name, 
-            representativePoint, 
+            code,
+            (parentCode,'NULL')[parentCode is None],
+            name,
+            representativePoint,
             description)
-        
+
     locationKindLoadTemplate += "COMMIT;\n"
-    
+
     sys.stderr.write("Building usgsTimeZoneCreationTemplate\n")
     usgsTimeZoneCreationTemplate = \
     '''
@@ -9145,7 +9147,7 @@ def main() :
        tz_utc_offset interval day (0) to second (3),
        constraint    cwms_usgs_time_zone_pk primary key(tz_id) using index
     )
-    /                                                      
+    /
     ---------------------------
     -- @TABLE comments --
     --
@@ -9153,18 +9155,18 @@ def main() :
     comment on column @TABLE.tz_id         is 'The time zone identifier (USGS tz_cd)';
     comment on column @TABLE.tz_name       is 'The time zone name';
     comment on column @TABLE.tz_utc_offset is 'The interval that the time zone is offset from UTC';
-        
+
     COMMIT;
     '''
-    
+
     sys.stderr.write("Building usgsTimeZoneLoadTemplate\n")
     usgsTimeZoneLoadTemplate = ""
     for tz_id, tz_name, utc_offset in usgsTimeZones :
         usgsTimeZoneLoadTemplate += "insert into @TABLE values('%s', '%s', to_dsinterval('%s'));\n" % (
         	tz_id, tz_name, utc_offset)
-        
+
     usgsTimeZoneLoadTemplate += "COMMIT;\n"
-    
+
     sys.stderr.write("Building usgsFlowAdjCreationTemplate\n")
     usgsFlowAdjCreationTemplate = \
     '''
@@ -9174,11 +9176,11 @@ def main() :
     create table @TABLE
     (
        adj_id      varchar2(4),
-       adj_name    varchar2(26),                     
+       adj_name    varchar2(26),
        description varchar2(112),
        constraint  cwms_usgs_flow_adj_pk primary key(adj_id)
-    )                                             
-    /                                                      
+    )
+    /
     ---------------------------
     -- @TABLE comments --
     --
@@ -9186,18 +9188,18 @@ def main() :
     comment on column @TABLE.adj_id      is 'The adjustment identifier (USGS discharge_cd)';
     comment on column @TABLE.adj_name    is 'The short description of the adjustment';
     comment on column @TABLE.description is 'The long description of the adjustment';
-        
+
     COMMIT;
     '''
-    
+
     sys.stderr.write("Building usgsFlowAdjLoadTemplate\n")
     usgsFlowAdjLoadTemplate = "set define off\n"
     for adj_id, adj_name, description in usgsFlowAdjustments :
         usgsFlowAdjLoadTemplate += "insert into @TABLE values('%s', '%s', '%s');\n" % (
         	adj_id, adj_name, description)
-        
+
     usgsFlowAdjLoadTemplate += "COMMIT;\n"
-    
+
     sys.stderr.write("Building usgsRatingCtrlCondCreationTemplate\n")
     usgsRatingCtrlCondCreationTemplate = \
     '''
@@ -9208,27 +9210,27 @@ def main() :
     (
        ctrl_cond_id varchar2(4),
        description  varchar2(59),
-       constraint   cwms_usgs_rating_ctrl_cond_pk primary key(ctrl_cond_id)    
+       constraint   cwms_usgs_rating_ctrl_cond_pk primary key(ctrl_cond_id)
     )
-    /                                                      
+    /
     ---------------------------
     -- @TABLE comments --
     --
     comment on table  @TABLE is 'Contains USGS Rating Control Condition Codes';
     comment on column @TABLE.ctrl_cond_id is 'The rating control condition identifier (USGS control_type_cd)';
     comment on column @TABLE.description  is 'The description of the rating control type';
-        
+
     COMMIT;
     '''
-    
+
     sys.stderr.write("Building usgsRatingCtrlCondLoadTemplate\n")
     usgsRatingCtrlCondLoadTemplate = ""
     for ctrl_cond_id, description in usgsRatingCtrlConditions :
         usgsRatingCtrlCondLoadTemplate += "insert into @TABLE values('%s', '%s');\n" % (
         	ctrl_cond_id, description)
-        
+
     usgsRatingCtrlCondLoadTemplate += "COMMIT;\n"
-    
+
     sys.stderr.write("Building usgsMeasQualCreationTemplate\n")
     usgsMeasQualCreationTemplate = \
     '''
@@ -9242,7 +9244,7 @@ def main() :
        description varchar2(51),
        constraint  cwms_usgs_meas_qual_pk primary key(qual_id)
     )
-    /                                                      
+    /
     ---------------------------
     -- @TABLE comments --
     --
@@ -9250,18 +9252,18 @@ def main() :
     comment on column @TABLE.qual_id     is 'The quality identifier (USGS measured_rating_diff)';
     comment on column @TABLE.qual_name   is 'The quality name';
     comment on column @TABLE.description is 'The quality description';
-        
+
     COMMIT;
     '''
-    
+
     sys.stderr.write("Building usgsMeasQualLoadTemplate\n")
     usgsMeasQualLoadTemplate = ""
     for qual_id, qual_name, description, in usgsMeasQualities :
         usgsMeasQualLoadTemplate += "insert into @TABLE values('%s', '%s', '%s');\n" % (
         	qual_id, qual_name, description)
-        
+
     usgsMeasQualLoadTemplate += "COMMIT;\n"
-    
+
     sys.stderr.write("Building usgsParameterCreationTemplate\n")
     usgsParameterCreationTemplate = \
     '''
@@ -9285,7 +9287,7 @@ def main() :
        constraint cwms_usgs_parameter_pk primary key (usgs_parameter_code)
     )
     /
-    
+
     ---------------------------
     -- @TABLE indexes --
     --
@@ -9309,8 +9311,8 @@ def main() :
     comment on column @TABLE.shef_conversion_offset   is 'The offset in SHEF = USGS * factor + offset';
     comment on column @TABLE.usgs_parameter_name      is 'The USGS parameter name';
     COMMIT;
-    '''                                                                             
-    
+    '''
+
     sys.stderr.write("Building usgsParameterLoadTemplate\n")
     buf = StringIO.StringIO()
     for usgsParam, cwmsBaseParam, cwmsSubParam, cwmsParamType, cwmsUnit, cwmsFactor, cwmsOffset, pe, shefEnglish, shefFactor, shefOffset, name in usgsParameters :
@@ -9322,7 +9324,7 @@ def main() :
         else          : buf.write("'%s', '%s', %s, %s, '%s');\n" % (pe, shefEnglish, shefFactor, shefOffset, name))
     usgsParameterLoadTemplate = buf.getvalue()
     buf.close()
-    		
+
     sys.stderr.write("Building entityCategoryCreationTemplate\n")
     entityCategoryCreationTemplate = \
     '''
@@ -9336,7 +9338,7 @@ def main() :
        constraint @TABLE_ck check (category_id = upper(trim(category_id)))
     ) organization index
     /
-    
+
     ---------------------------
     -- @TABLE comments --
     --
@@ -9376,19 +9378,19 @@ def main() :
        constraint @TABLE_ck2 check (trim(entity_name) = entity_name)
     ) organization index
     /
-    
+
     ---------------------------
     -- @TABLE indexes --
     --
     create unique index @TABLE_idx_id on @TABLE (office_code, upper(entity_id));
-    
+
     ---------------------------
     -- @TABLE comments --
     --
     comment on table  @TABLE is 'Holds entities referenced by other objects';
     comment on column @TABLE.entity_code is 'Unique numeric code that identifies the entity in the database';
     comment on column @TABLE.parent_code is 'Entity code of parent entity, if applicable';
-    comment on column @TABLE.office_code is 'Numeric code that identifies the office that owns this entity in the database';              
+    comment on column @TABLE.office_code is 'Numeric code that identifies the office that owns this entity in the database';
     comment on column @TABLE.category_id is 'Category describing the type of entity';
     comment on column @TABLE.entity_id   is 'The character identifier of the entity';
     comment on column @TABLE.entity_name is 'The name of the entity';
@@ -9555,7 +9557,7 @@ def main() :
        constraint @TABLE_ck check (category_id = upper(trim(category_id)))
     ) organization index
     /
-    
+
     ---------------------------
     -- @TABLE comments --
     --
@@ -9593,19 +9595,19 @@ def main() :
        constraint @TABLE_ck2 check (trim(configuration_name) = configuration_name)
     ) organization index
     /
-    
+
     ---------------------------
     -- @TABLE indexes --
     --
     create unique index @TABLE_idx_id on @TABLE (office_code, upper(configuration_id));
-    
+
     ---------------------------
     -- @TABLE comments --
     --
     comment on table  @TABLE is 'Holds configurations referenced by other objects';
     comment on column @TABLE.configuration_code is 'Unique numeric code that identifies the configuration in the database';
     comment on column @TABLE.parent_code        is 'Configuration code of parent configuration, if applicable';
-    comment on column @TABLE.office_code        is 'Numeric code that identifies the office that owns this configuration in the database';              
+    comment on column @TABLE.office_code        is 'Numeric code that identifies the office that owns this configuration in the database';
     comment on column @TABLE.category_id        is 'Category describing the type of configuration';
     comment on column @TABLE.configuration_id   is 'The character identifier of the configuration';
     comment on column @TABLE.configuration_name is 'The name of the configuration';
@@ -9631,20 +9633,20 @@ def main() :
     gateTypeCreationTemplate = \
     '''
     create table @TABLE (
-       gate_type_code number(10), 
-       gate_type_id   varchar2(32) not null, 
-       description    varchar2(128), 
-       constraint @TABLE_pk  primary key (gate_type_code) using index, 
-       constraint @TABLE_ck1 check (upper(trim(gate_type_id)) = gate_type_id), 
+       gate_type_code number(10),
+       gate_type_id   varchar2(32) not null,
+       description    varchar2(128),
+       constraint @TABLE_pk  primary key (gate_type_code) using index,
+       constraint @TABLE_ck1 check (upper(trim(gate_type_id)) = gate_type_id),
        constraint @TABLE_u01 unique (gate_type_id) using index
     ) tablespace cwms_20data;
-    
+
     comment on table  @TABLE  is 'Holds reference types for gates';
     comment on column @TABLE.gate_type_code is 'Unique numeric code identfying the gate type';
     comment on column @TABLE.gate_type_id   is 'The name of the gate type';
     comment on column @TABLE.description    is 'A description of the gate type';
     COMMIT;
-    '''    
+    '''
 
     sys.stderr.write("Building gateTypeLoadTemplate\n")
     gateTypeLoadTemplate = \
@@ -9664,8 +9666,8 @@ def main() :
     insert into @TABLE values(13, 'VERTICAL SLIDE', 'Flat gate that slides vertically in tracks (with or without rollers) for control');
     insert into @TABLE values(14, 'WICKET',         'A group of small connected hinged gates (wickets) that overlap when closed and rotate together to open');
     COMMIT;
-    '''    
-    
+    '''
+
     #==
     #====
     #======
@@ -9674,7 +9676,7 @@ def main() :
     #-----------------------------------------------------------------#
     tables_rev = tables[:]
     tables_rev.reverse()
-    
+
     sys.stderr.write("Outputting commands to drop and re-create tables.\n")
     for table1 in tables :
         for table2 in tables :
@@ -9683,29 +9685,29 @@ def main() :
                 cmdStr = "%sCreationTemplate = %sCreationTemplate.replace('@%sTableName', '%s')" % (table1, table1, table2, tableName)
                 #sys.stderr.write("%s\n" % cmdStr);
                 exec(cmdStr)
-            except : 
+            except :
                 sys.stderr.write("\nERROR : Variable %sCreationTemplate does not exist, cannot continue.\n" % table1)
                 sys.exit(-1)
-            try : 
+            try :
                 cmdStr = "%sLoadTemplate  = %sLoadTemplate.replace('@%sTableName', '%s')" % (table1, table1, table2, tableName)
                 #sys.stderr.write("%s\n" % cmdStr);
                 exec(cmdStr)
-            except : 
+            except :
                 pass
-            try : 
+            try :
                 cmdStr = "%sTestTemplate  = %sTestTemplate.replace('@%sTableName', '%s')" % (table1, table1, table2, tableName)
                 #sys.stderr.write("%s\n" % cmdStr);
                 exec(cmdStr)
-            except : 
+            except :
                 pass
-                
-    
-    
+
+
+
     #------------------------------------------------------------------------------
     # Redirect stdout to the temp file
     #------------------------------------------------------------------------------
     sys.stdout = open(tempFilename, "w")
-    
+
     #print prefix[ALL] + "SET TIME ON"
     #print "BUILDCWMS~SPOOL %s" % logFileName["BUILDCWMS"]
     #print "BUILDUSER~SPOOL %s" % logFileName["BUILDUSER"]
@@ -9716,15 +9718,15 @@ def main() :
     print prefix[ALL] + "SET SERVEROUTPUT ON"
     #print prefix[ALL] + "BEGIN DBMS_OUTPUT.ENABLE(20000); END;"
     #print prefix[ALL] + "/"
-    
+
     for table in tables_rev :
         tableName = eval("%sTableName" % table)
-    
+
         if   tableName.startswith("CWMS") : tableSpaceName = cwmsTableSpaceName
         elif tableName.startswith("AT")   : tableSpaceName = atTableSpaceName
         else : raise Exception("Don't know what tablespace to use for %s" % tableName)
         #if "TSV" in tableName or tableName.startswith("CWMS_DATA_Q") : tableSpaceName = tsTableSpaceName
-    
+
         if schema[table] == "CWMS"  : thisPrefix = prefix[CWMS]
         else                        : thisPrefix = prefix[USER]
         dropPrefix = thisPrefix.replace("BUILD", "DROP")
@@ -9750,7 +9752,7 @@ def main() :
         print dropPrefix
         print "%sDROP TABLE %s;" % (dropPrefix, tableName)
         print "%sCOMMIT;" % dropPrefix
-    
+
     #==============================================================================
     # Create CWMS_SEQ for the specified db_office_id's offset...
     #==============================================================================
@@ -9759,21 +9761,21 @@ def main() :
     dropPrefix = prefix[CWMS].replace('BUILD', 'DROP')
     print dropPrefix + "DROP SEQUENCE CWMS_SEQ;"
     print prefix[CWMS] + "CREATE SEQUENCE CWMS_SEQ"
-    print prefix[CWMS] + "\tSTART WITH %s" % dbStartIndex 
+    print prefix[CWMS] + "\tSTART WITH %s" % dbStartIndex
     print prefix[CWMS] + "\tINCREMENT BY 1000"
-    print prefix[CWMS] + "\tMINVALUE %s" % dbMinValue 
+    print prefix[CWMS] + "\tMINVALUE %s" % dbMinValue
     print prefix[CWMS] + "\tMAXVALUE 1.0e38"
     print prefix[CWMS] + "\tNOCYCLE"
     print prefix[CWMS] + "\tCACHE 20"
     print prefix[CWMS] + "\tORDER;"
-    
+
     #==============================================================================
     # Create any other sequences...
     #==============================================================================
     cycleStr = ['NOCYCLE', 'CYCLE']
     if len(cwmsSequences) :
         dropPrefix = prefix[CWMS].replace('BUILD', 'DROP')
-        for name, start, increment, minimum, maximum, cycle, cache in cwmsSequences : 
+        for name, start, increment, minimum, maximum, cycle, cache in cwmsSequences :
             print dropPrefix + "DROP SEQUENCE %s;" % name
             print prefix[CWMS] + "CREATE SEQUENCE %s" % name
             print prefix[CWMS] + "\tSTART WITH %s" % `start`
@@ -9783,10 +9785,10 @@ def main() :
             print prefix[CWMS] + "\t%s" % cycleStr[cycle]
             print prefix[CWMS] + "\tCACHE %s" % `cache`
             print prefix[CWMS] + "\tORDER;"
-    
+
     print dropPrefix + "COMMIT;"
     print prefix[CWMS] + "COMMIT;"
-    
+
     dropPrefix = prefix[USER].replace('BUILD', 'DROP')
     for table in tables :
         print eval("%sCreationStr" % table)
@@ -9798,7 +9800,7 @@ def main() :
     #        print prefix[USER] + "CREATE OR REPLACE SYNONYM %s FOR %s.%s;" % (tableName, schema[table], tableName)
     #        print dropPrefix + "DROP SYNONYM %s;" % (tableName)
     print dropPrefix + "COMMIT;"
-    
+
     for table in tables :
         try :
             print eval("%sLoadStr" % table)
@@ -9809,11 +9811,11 @@ def main() :
             print eval("%sTestStr" % table)
         except :
             pass
-    
+
     #print prefix[ALL] + "SPOOL OFF"
     #print prefix[ALL] + "SET ECHO OFF"
     #print prefix[ALL] + "SET TIME OFF"
-    
+
     #--------------------------------------------------------------------#
     # read in the output we just generated and parse to individual files #
     #--------------------------------------------------------------------#
