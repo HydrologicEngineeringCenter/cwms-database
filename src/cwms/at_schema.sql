@@ -16,16 +16,16 @@ declare
    table_names     id_array_t := new id_array_t();
    mview_log_names id_array_t := new id_array_t();
 begin
-   for rec in (select object_name 
-                  from dba_objects 
-                 where object_type = 'TABLE' 
+   for rec in (select object_name
+                  from dba_objects
+                 where object_type = 'TABLE'
                    and object_name not like 'AQ$%'
                    and object_name not like 'SYS\_%' escape '\')
-   loop                       
+   loop
       begin
             if substr(rec.object_name, 1, 6) = 'MLOG$_' then
                  execute immediate 'drop materialized view log on '
-                                   || substr(rec.object_name, 7); 
+                                   || substr(rec.object_name, 7);
 
                  dbms_output.put_line ('Dropped materialized view log on '
                                        || substr(rec.object_name, 7)
@@ -44,10 +44,10 @@ begin
                   dbms_output.put_line ('Dropped table ' || rec.object_name);
                end if;
             end if;
-      exception               
-         when others then null;             
-      end;                    
-   end loop;                  
+      exception
+         when others then null;
+      end;
+   end loop;
 end;
 /
 
@@ -55,7 +55,7 @@ end;
 -- CREATE TABLES --
 -------------------
 --------------------------------------------------------------------------------
--------------------------------------------------------------------------------- 
+--------------------------------------------------------------------------------
 @@./cwms/tables/cwms_auth_sched_entries.sql
 @@./cwms/tables/cwms_unauth_sched_entries.sql
 --------------------------------------------------------------------------------
@@ -63,7 +63,7 @@ end;
 
 -------------------------
 -- AT_TS_TABLE_PROPERTIES table
--- 
+--
 
 CREATE TABLE at_ts_table_properties
 (
@@ -104,7 +104,7 @@ COMMIT ;
 
 ---------------------------------
 -- AT_BASE_LOCATION table.
--- 
+--
 CREATE TABLE at_base_location
 (
   base_location_code  NUMBER,
@@ -212,7 +212,7 @@ INSERT INTO at_base_location
 COMMIT;
 --------------------
 -- AT_PHYSICAL_LOCATION table
--- 
+--
 
 
 CREATE TABLE AT_PHYSICAL_LOCATION
@@ -284,14 +284,14 @@ COMMENT ON COLUMN AT_PHYSICAL_LOCATION.NATION_CODE         IS 'References the na
 COMMENT ON COLUMN AT_PHYSICAL_LOCATION.NEAREST_CITY        IS 'Name of city nearest this location.';
 
 
-ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_CK1 CHECK (TRIM(SUB_LOCATION_ID) = SUB_LOCATION_ID);  
+ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_CK1 CHECK (TRIM(SUB_LOCATION_ID) = SUB_LOCATION_ID);
 ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_CK2 CHECK (ACTIVE_FLAG ='T' OR ACTIVE_FLAG = 'F');
-ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_FK1 FOREIGN KEY (BASE_LOCATION_CODE) REFERENCES AT_BASE_LOCATION (BASE_LOCATION_CODE); 
-ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_FK2 FOREIGN KEY (COUNTY_CODE) REFERENCES CWMS_COUNTY (COUNTY_CODE);  
+ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_FK1 FOREIGN KEY (BASE_LOCATION_CODE) REFERENCES AT_BASE_LOCATION (BASE_LOCATION_CODE);
+ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_FK2 FOREIGN KEY (COUNTY_CODE) REFERENCES CWMS_COUNTY (COUNTY_CODE);
 ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_FK3 FOREIGN KEY (TIME_ZONE_CODE) REFERENCES CWMS_TIME_ZONE (TIME_ZONE_CODE);
 ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_FK4 FOREIGN KEY (LOCATION_KIND) REFERENCES CWMS_LOCATION_KIND (LOCATION_KIND_CODE);
-ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_FK5 FOREIGN KEY (OFFICE_CODE) REFERENCES CWMS_OFFICE (OFFICE_CODE);  
-ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_FK6 FOREIGN KEY (NATION_CODE) REFERENCES CWMS_NATION (NATION_CODE);  
+ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_FK5 FOREIGN KEY (OFFICE_CODE) REFERENCES CWMS_OFFICE (OFFICE_CODE);
+ALTER TABLE AT_PHYSICAL_LOCATION ADD CONSTRAINT AT_PHYSICAL_LOCATION_FK6 FOREIGN KEY (NATION_CODE) REFERENCES CWMS_NATION (NATION_CODE);
 
 CREATE UNIQUE INDEX AT_PHYSICAL_LOCATION_U1 ON AT_PHYSICAL_LOCATION (BASE_LOCATION_CODE, UPPER(SUB_LOCATION_ID))
 LOGGING
@@ -310,7 +310,7 @@ STORAGE    (
 NOPARALLEL
 /
 
-   
+
 INSERT INTO at_physical_location
             (location_code, base_location_code, active_flag, location_kind)
      VALUES (0, 0, 'F', 1);
@@ -339,14 +339,14 @@ INITRANS   1
 MAXTRANS   255
 STORAGE    (
             INITIAL          504K
-            NEXT             1M                                                     
+            NEXT             1M
             MINEXTENTS       1
             MAXEXTENTS       UNLIMITED
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
@@ -372,10 +372,10 @@ INSERT INTO MDSYS.SDO_GEOM_METADATA_TABLE VALUES (
    'POINT',
    SDO_DIM_ARRAY(
       SDO_DIM_ELEMENT('X', -180,  180, 0.01),
-      SDO_DIM_ELEMENT('Y',  -90,   90, 0.01), 
+      SDO_DIM_ELEMENT('Y',  -90,   90, 0.01),
       SDO_DIM_ELEMENT('Z', -420, 8850, 0.05)),
-   (SELECT SRID 
-      FROM MDSYS.CS_SRS 
+   (SELECT SRID
+      FROM MDSYS.CS_SRS
      WHERE CS_NAME='WGS 84 (geographic 3D)'));
 
 INSERT INTO MDSYS.SDO_GEOM_METADATA_TABLE VALUES (
@@ -384,10 +384,10 @@ INSERT INTO MDSYS.SDO_GEOM_METADATA_TABLE VALUES (
    'MULTI_POINT',
    SDO_DIM_ARRAY(
       SDO_DIM_ELEMENT('X', -180,  180, 0.01),
-      SDO_DIM_ELEMENT('Y',  -90,   90, 0.01), 
+      SDO_DIM_ELEMENT('Y',  -90,   90, 0.01),
       SDO_DIM_ELEMENT('Z', -420, 8850, 0.05)),
-   (SELECT SRID 
-      FROM MDSYS.CS_SRS 
+   (SELECT SRID
+      FROM MDSYS.CS_SRS
      WHERE CS_NAME='WGS 84 (geographic 3D)'));
 
 INSERT INTO MDSYS.SDO_GEOM_METADATA_TABLE VALUES (
@@ -396,10 +396,10 @@ INSERT INTO MDSYS.SDO_GEOM_METADATA_TABLE VALUES (
    'POLYGON',
    SDO_DIM_ARRAY(
       SDO_DIM_ELEMENT('X', -180,  180, 0.01),
-      SDO_DIM_ELEMENT('Y',  -90,   90, 0.01), 
+      SDO_DIM_ELEMENT('Y',  -90,   90, 0.01),
       SDO_DIM_ELEMENT('Z', -420, 8850, 0.05)),
-   (SELECT SRID 
-      FROM MDSYS.CS_SRS 
+   (SELECT SRID
+      FROM MDSYS.CS_SRS
      WHERE CS_NAME='WGS 84 (geographic 3D)'));
 
 
@@ -439,8 +439,8 @@ STORAGE    (
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
@@ -503,8 +503,8 @@ STORAGE    (
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
@@ -556,8 +556,8 @@ STORAGE    (
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
@@ -602,15 +602,15 @@ COMMENT ON COLUMN AT_STREAM_REACH.CONFIGURATION_CODE       IS 'References the co
 COMMENT ON COLUMN AT_STREAM_REACH.COMMENTS                 IS 'Additional comments on reach';
 
 CREATE UNIQUE INDEX AT_STREAM_REACH_U1 ON AT_STREAM_REACH (
-   STREAM_LOCATION_CODE, 
-   DOWNSTREAM_LOCATION_CODE, 
+   STREAM_LOCATION_CODE,
+   DOWNSTREAM_LOCATION_CODE,
    CONFIGURATION_CODE
 ) TABLESPACE CWMS_20DATA
 /
 
 CREATE UNIQUE INDEX AT_STREAM_REACH_U2 ON AT_STREAM_REACH (
-   STREAM_LOCATION_CODE, 
-   UPSTREAM_LOCATION_CODE, 
+   STREAM_LOCATION_CODE,
+   UPSTREAM_LOCATION_CODE,
    CONFIGURATION_CODE
 ) TABLESPACE CWMS_20DATA
 /
@@ -639,7 +639,7 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 LOGGING
-NOCOMPRESS 
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
@@ -688,8 +688,8 @@ STORAGE    (
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
@@ -714,9 +714,9 @@ COMMENT ON COLUMN AT_GAGE.COMMENTS                 IS 'Comments';
 ALTER TABLE AT_GAGE ADD CONSTRAINT AT_GAGE_CK1 CHECK (TRIM(GAGE_ID) = GAGE_ID);
 ALTER TABLE AT_GAGE ADD CONSTRAINT AT_GAGE_CK2 CHECK (DISCONTINUED ='T' OR DISCONTINUED = 'F');
 ALTER TABLE AT_GAGE ADD CONSTRAINT AT_GAGE_CK3 CHECK (OUT_OF_SERVICE ='T' OR OUT_OF_SERVICE = 'F');
-ALTER TABLE AT_GAGE ADD CONSTRAINT AT_GAGE_FK2 FOREIGN KEY (GAGE_LOCATION_CODE) REFERENCES AT_PHYSICAL_LOCATION (LOCATION_CODE);  
-ALTER TABLE AT_GAGE ADD CONSTRAINT AT_GAGE_FK1 FOREIGN KEY (GAGE_TYPE_CODE) REFERENCES CWMS_GAGE_TYPE (GAGE_TYPE_CODE);  
-ALTER TABLE AT_GAGE ADD CONSTRAINT AT_GAGE_FK3 FOREIGN KEY (ASSOCIATED_LOCATION_CODE) REFERENCES AT_PHYSICAL_LOCATION (LOCATION_CODE);  
+ALTER TABLE AT_GAGE ADD CONSTRAINT AT_GAGE_FK2 FOREIGN KEY (GAGE_LOCATION_CODE) REFERENCES AT_PHYSICAL_LOCATION (LOCATION_CODE);
+ALTER TABLE AT_GAGE ADD CONSTRAINT AT_GAGE_FK1 FOREIGN KEY (GAGE_TYPE_CODE) REFERENCES CWMS_GAGE_TYPE (GAGE_TYPE_CODE);
+ALTER TABLE AT_GAGE ADD CONSTRAINT AT_GAGE_FK3 FOREIGN KEY (ASSOCIATED_LOCATION_CODE) REFERENCES AT_PHYSICAL_LOCATION (LOCATION_CODE);
 
 CREATE UNIQUE INDEX AT_GAGE_IDX1 ON AT_GAGE (GAGE_LOCATION_CODE, UPPER(GAGE_ID))
 LOGGING
@@ -763,8 +763,8 @@ STORAGE    (
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
@@ -814,7 +814,7 @@ CREATE TABLE AT_GOES
    SELFTIMED_DATA_RATE      NUMBER(6),
    SELFTIMED_INTERVAL       INTERVAL DAY TO SECOND,
    SELFTIMED_OFFSET         INTERVAL DAY TO SECOND,
-   SELFTIMED_LENGTH         INTERVAL DAY TO SECOND,   
+   SELFTIMED_LENGTH         INTERVAL DAY TO SECOND,
    RANDOM_CHANNEL           NUMBER(4),
    RANDOM_DATA_RATE         NUMBER(6),
    RANDOM_INTERVAL          INTERVAL DAY TO SECOND,
@@ -835,7 +835,7 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 LOGGING
-NOCOMPRESS 
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
@@ -855,7 +855,7 @@ COMMENT ON COLUMN AT_GOES.RANDOM_INTERVAL          IS 'Recurrence interval of pr
 COMMENT ON COLUMN AT_GOES.RANDOM_OFFSET            IS 'Offset into recurrence interval for programmed random transmissions.';
 
 ALTER TABLE AT_GOES ADD CONSTRAINT AT_GOES_CK1 CHECK (GOES_SATELLITE = 'E' OR GOES_SATELLITE = 'W');
-ALTER TABLE AT_GOES ADD CONSTRAINT AT_GOES_FK1 FOREIGN KEY (GAGE_CODE) REFERENCES AT_GAGE (GAGE_CODE); 
+ALTER TABLE AT_GOES ADD CONSTRAINT AT_GOES_FK1 FOREIGN KEY (GAGE_CODE) REFERENCES AT_GAGE (GAGE_CODE);
 
 CREATE TABLE AT_DISPLAY_SCALE
 (
@@ -865,7 +865,7 @@ CREATE TABLE AT_DISPLAY_SCALE
    SCALE_MAX      NUMBER,
    SCALE_MIN      NUMBER,
    CONSTRAINT AT_DISPLAY_SCALE_PK  PRIMARY KEY (LOCATION_CODE, PARAMETER_CODE, UNIT_CODE) USING INDEX
-)   
+)
 TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
 PCTFREE    10
@@ -879,8 +879,8 @@ STORAGE    (
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
@@ -978,7 +978,7 @@ ALTER TABLE at_loc_category ADD (
 ALTER TABLE AT_LOC_CATEGORY ADD CONSTRAINT AT_LOC_CATEGORY_FK1 FOREIGN KEY (DB_OFFICE_CODE) REFERENCES CWMS_OFFICE (OFFICE_CODE);
 
 INSERT INTO at_loc_category VALUES (0, 'Default',        53, 'Default');
-INSERT INTO at_loc_category VALUES (1, 'Agency Aliases', 53, 'Location aliases for other agencies'); 
+INSERT INTO at_loc_category VALUES (1, 'Agency Aliases', 53, 'Location aliases for other agencies');
 -- INSERT INTO at_loc_category VALUES (2, 'Basin',          53, 'Category for basin location groups');
 -- INSERT INTO at_loc_category VALUES (3, 'Outlet',         53, 'Category for outlet location groups');
 -- INSERT INTO at_loc_category VALUES (4, 'Turbine',        53, 'Category for turbine location groups');
@@ -1108,7 +1108,7 @@ begin
      into l_rec
      from at_gate_group
     where loc_group_code = :new.loc_group_code;
-    
+
    select office_id into l_office_id from cwms_office where office_code = :new.db_office_code;
    begin
       l_rating_spec := rating_spec_t(
@@ -1214,7 +1214,7 @@ ALTER TABLE at_loc_group_assignment ADD (
  FOREIGN KEY (office_code)
  REFERENCES cwms_office(office_code))
 /
-CREATE INDEX at_loc_group_assignment_idx1 ON 
+CREATE INDEX at_loc_group_assignment_idx1 ON
  at_loc_group_assignment(office_code, upper(loc_alias_id))
  LOGGING
  TABLESPACE CWMS_20DATA
@@ -1236,7 +1236,7 @@ COMMIT ;
 
 ---------------------------------
 -- AT_CWMS_TS_SPEC table.
--- 
+--
 
 CREATE TABLE at_cwms_ts_spec
 (
@@ -1907,7 +1907,7 @@ ALTER TABLE at_ts_category ADD (
 ALTER TABLE AT_TS_CATEGORY ADD CONSTRAINT AT_TS_CATEGORY_FK1 FOREIGN KEY (DB_OFFICE_CODE) REFERENCES CWMS_OFFICE (OFFICE_CODE);
 
 INSERT INTO at_ts_category VALUES (0, 'Default',        53, 'Default');
-INSERT INTO at_ts_category VALUES (1, 'Agency Aliases', 53, 'Time series aliases for various agencies'); 
+INSERT INTO at_ts_category VALUES (1, 'Agency Aliases', 53, 'Time series aliases for various agencies');
 
 --------
 --------
@@ -2099,7 +2099,7 @@ ALTER TABLE at_ts_group_assignment ADD (
  FOREIGN KEY (office_code)
  REFERENCES cwms_office(office_code))
 /
-CREATE INDEX at_ts_group_assignment_idx1 ON 
+CREATE INDEX at_ts_group_assignment_idx1 ON
  at_ts_group_assignment(office_code, upper(ts_alias_id))
  LOGGING
  TABLESPACE CWMS_20DATA
@@ -2108,7 +2108,7 @@ COMMIT ;
 
 ---------------------------------
 -- AT_SCREENING table.
--- 
+--
 CREATE TABLE at_screening
 (
   ts_code            NUMBER,
@@ -2180,7 +2180,7 @@ ALTER TABLE at_screening ADD (
 
 ---------------------------------
 -- AT_ALARM table.
--- 
+--
 CREATE TABLE at_alarm
 (
   ts_code      NUMBER,
@@ -2246,7 +2246,7 @@ ALTER TABLE at_alarm ADD (
 
 ---------------------------------
 -- AT_COMP_VT table.
--- 
+--
 
 CREATE TABLE at_comp_vt
 (
@@ -2355,7 +2355,7 @@ ALTER TABLE at_comp_vt ADD (
 /
 ---------------------------------
 -- AT_TRANSFORM_CRITERIA table.
--- 
+--
 
 CREATE TABLE at_transform_criteria
 (
@@ -2683,7 +2683,7 @@ ALTER TABLE at_office_settings ADD (
 
 ---------------------------------
 -- AT_PROPERTIES table.
--- 
+--
 CREATE TABLE at_properties
     (
         office_code    NUMBER(10),
@@ -2709,31 +2709,31 @@ COMMENT ON COLUMN at_properties.prop_value    IS 'Property value.';
 COMMENT ON COLUMN at_properties.prop_comment  IS 'Notes about property usage or value.';
 ---------------------------------
 -- AT_PROPERTIES constraints.
--- 
+--
 ALTER TABLE at_properties ADD CONSTRAINT at_properties_fk FOREIGN KEY(office_code)REFERENCES cwms_office (office_code);
 
 ---------------------------------
 -- AT_PROPERTIES indices.
--- 
+--
 CREATE UNIQUE INDEX at_properties_uk1 ON at_properties(office_code, UPPER("PROP_CATEGORY"), UPPER("PROP_ID")) TABLESPACE CWMS_20AT_DATA;
 
 ---------------------------------
 -- AT_PROPERTIES default data.
--- 
+--
 INSERT INTO at_properties values(
    (SELECT office_code FROM cwms_office WHERE office_id = 'CWMS'),
    'CWMSDB',
    'logging.table.max_entries',
    '100000',
    'Max number of rows to keep when trimming log.');
-   
+
 INSERT INTO at_properties values(
    (SELECT office_code FROM cwms_office WHERE office_id = 'CWMS'),
    'CWMSDB',
    'logging.entry.max_age',
    '120',
    'Max entry age in days to keep when trimming log.');
-   
+
 INSERT INTO at_properties values(
    (SELECT office_code FROM cwms_office WHERE office_id = 'CWMS'),
    'CWMSDB',
@@ -2747,14 +2747,14 @@ INSERT INTO at_properties values(
    'ts_deleted.table.max_entries',
    '1000000',
    'Max number of rows to keep when trimming AT_TS_DELETED_TIMES.');
-   
+
 INSERT INTO at_properties values(
    (SELECT office_code FROM cwms_office WHERE office_id = 'CWMS'),
    'CWMSDB',
    'ts_deleted.entry.max_age',
    '5',
    'Max entry age in days to keep when trimming AT_TS_DELETED_TIMES.');
-   
+
 INSERT INTO at_properties values(
    (SELECT office_code FROM cwms_office WHERE office_id = 'CWMS'),
    'CWMSDB',
@@ -2944,7 +2944,7 @@ CREATE TABLE AT_FORECAST_SPEC
 (
    FORECAST_SPEC_CODE   NUMBER(10)   NOT NULL,
    TARGET_LOCATION_CODE NUMBER(10)   NOT NULL,
-   FORECAST_ID          VARCHAR2(32) NOT NULL,   
+   FORECAST_ID          VARCHAR2(32) NOT NULL,
    SOURCE_AGENCY        VARCHAR2(16) NOT NULL,
    SOURCE_OFFICE        VARCHAR2(16) NOT NULL,
    FORECAST_TYPE        VARCHAR2(5),
@@ -2966,8 +2966,8 @@ STORAGE    (
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
@@ -2987,7 +2987,7 @@ ALTER TABLE AT_FORECAST_SPEC ADD CONSTRAINT AT_FORECAST_SPEC_CK1 CHECK (UPPER(TR
 ALTER TABLE AT_FORECAST_SPEC ADD CONSTRAINT AT_FORECAST_SPEC_CK2 CHECK (SOURCE_AGENCY = 'USACE' OR SOURCE_AGENCY = 'NWS');
 ALTER TABLE AT_FORECAST_SPEC ADD CONSTRAINT AT_FORECAST_SPEC_CK3 CHECK (UPPER(TRIM(SOURCE_OFFICE)) = SOURCE_OFFICE);
 ALTER TABLE AT_FORECAST_SPEC ADD CONSTRAINT AT_FORECAST_SPEC_CK4 CHECK (UPPER(TRIM(FORECAST_TYPE)) = FORECAST_TYPE);
-ALTER TABLE AT_FORECAST_SPEC ADD CONSTRAINT AT_FORECAST_SPEC_FK1 FOREIGN KEY (TARGET_LOCATION_CODE) REFERENCES AT_PHYSICAL_LOCATION (LOCATION_CODE);  
+ALTER TABLE AT_FORECAST_SPEC ADD CONSTRAINT AT_FORECAST_SPEC_FK1 FOREIGN KEY (TARGET_LOCATION_CODE) REFERENCES AT_PHYSICAL_LOCATION (LOCATION_CODE);
 ALTER TABLE AT_FORECAST_SPEC ADD CONSTRAINT AT_FORECAST_SPEC_FK2 FOREIGN KEY (SOURCE_LOCATION_CODE) REFERENCES AT_PHYSICAL_LOCATION (LOCATION_CODE);
 
 CREATE TABLE AT_FORECAST_TS
@@ -3038,8 +3038,8 @@ CREATE TABLE AT_TS_DELETED_TIMES (
    VERSION_DATE DATE       NOT NULL,
    DATE_TIME    DATE       NOT NULL,
    CONSTRAINT AT_TS_DELETED_TIMES_PK PRIMARY KEY (DELETED_TIME, TS_CODE, VERSION_DATE, DATE_TIME)
-) 
-ORGANIZATION INDEX 
+)
+ORGANIZATION INDEX
 TABLESPACE CWMS_20_TSV
 /
 
@@ -5599,8 +5599,8 @@ end;
 /
 commit;
 
---                 
--- CWMS_APEX_ROLES  (Table) 
+--
+-- CWMS_APEX_ROLES  (Table)
 --
 --   Row count:10
 CREATE TABLE CWMS_APEX_ROLES
@@ -5622,8 +5622,8 @@ STORAGE    (
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
@@ -5719,8 +5719,8 @@ create table at_specified_level_order (
    specified_level_code integer,
    sort_order           integer not null,
    constraint at_specified_level_order_pk  primary key (office_code, specified_level_code),
-   constraint at_specified_level_order_fk1 foreign key (office_code) references cwms_office (office_code), 
-   constraint at_specified_level_order_fk2 foreign key (specified_level_code) references at_specified_level (specified_level_code) 
+   constraint at_specified_level_order_fk1 foreign key (office_code) references cwms_office (office_code),
+   constraint at_specified_level_order_fk2 foreign key (specified_level_code) references at_specified_level (specified_level_code)
 ) tablespace cwms_20data
 /
 
@@ -5731,7 +5731,7 @@ comment on column at_specified_level_order.sort_order is           'The sort ord
 commit;
 
 create table at_store_rule_order (
-   office_code   integer, 
+   office_code   integer,
    store_rule_id varchar2(32),
    sort_order    integer not null,
    constraint at_store_rule_order_pk  primary key(office_code, store_rule_id),
@@ -5827,70 +5827,70 @@ comment on column at_usgs_parameter.cwms_unit_code           is 'The CWMS unit t
 comment on column at_usgs_parameter.factor                   is 'CWMS = USGS * factor + offset to get to CWMS unit';
 comment on column at_usgs_parameter.offset                   is 'CWMS = USGS * factor + offset to get to CWMS unit';
 -- 00010 - Temp-Water.Inst in C
-insert 
-  into at_usgs_parameter 
+insert
+  into at_usgs_parameter
  values((select office_code from cwms_office where office_id = '&host_office'),
         10,
-        (select parameter_code 
-           from at_parameter 
-          where base_parameter_code = (select base_parameter_code 
-                                         from cwms_base_parameter 
+        (select parameter_code
+           from at_parameter
+          where base_parameter_code = (select base_parameter_code
+                                         from cwms_base_parameter
                                         where base_parameter_id = 'Temp'
-                                      ) 
+                                      )
             and sub_parameter_id = 'Water'
         ),
-        (select parameter_type_code 
-           from cwms_parameter_type 
+        (select parameter_type_code
+           from cwms_parameter_type
           where parameter_type_id = 'Inst'
         ),
-        (select unit_code 
-           from cwms_unit 
+        (select unit_code
+           from cwms_unit
           where unit_id = 'C'
         ),
         1.0,
         0.0);
 -- 00021 - Temp-Air.Inst in F
-insert 
-  into at_usgs_parameter 
+insert
+  into at_usgs_parameter
  values((select office_code from cwms_office where office_id = '&host_office'),
         21,
-        (select parameter_code 
-           from at_parameter 
-          where base_parameter_code = (select base_parameter_code 
-                                         from cwms_base_parameter 
+        (select parameter_code
+           from at_parameter
+          where base_parameter_code = (select base_parameter_code
+                                         from cwms_base_parameter
                                         where base_parameter_id = 'Temp'
-                                      ) 
+                                      )
             and sub_parameter_id = 'Air'
         ),
-        (select parameter_type_code 
-           from cwms_parameter_type 
+        (select parameter_type_code
+           from cwms_parameter_type
           where parameter_type_id = 'Inst'
         ),
-        (select unit_code 
-           from cwms_unit 
+        (select unit_code
+           from cwms_unit
           where unit_id = 'F'
         ),
         1.0,
         0.0);
 -- 00045 - Precip.Total in in
-insert 
-  into at_usgs_parameter 
+insert
+  into at_usgs_parameter
  values((select office_code from cwms_office where office_id = '&host_office'),
         45,
-        (select parameter_code 
-           from at_parameter 
-          where base_parameter_code = (select base_parameter_code 
-                                         from cwms_base_parameter 
+        (select parameter_code
+           from at_parameter
+          where base_parameter_code = (select base_parameter_code
+                                         from cwms_base_parameter
                                         where base_parameter_id = 'Precip'
-                                      ) 
+                                      )
             and sub_parameter_id is null
         ),
-        (select parameter_type_code 
-           from cwms_parameter_type 
+        (select parameter_type_code
+           from cwms_parameter_type
           where parameter_type_id = 'Total'
         ),
-        (select unit_code 
-           from cwms_unit 
+        (select unit_code
+           from cwms_unit
           where unit_id = 'in'
         ),
         1.0,
@@ -5899,167 +5899,167 @@ insert
 --
 -- USGS specifies this is average discharge over 1 day but then uses it in
 -- combination with instantaneous gage heights on hourly or sub-hourly data!
-insert 
-  into at_usgs_parameter 
+insert
+  into at_usgs_parameter
  values((select office_code from cwms_office where office_id = '&host_office'),
         60,
-        (select parameter_code 
-           from at_parameter 
-          where base_parameter_code = (select base_parameter_code 
-                                         from cwms_base_parameter 
+        (select parameter_code
+           from at_parameter
+          where base_parameter_code = (select base_parameter_code
+                                         from cwms_base_parameter
                                         where base_parameter_id = 'Flow'
-                                      ) 
+                                      )
             and sub_parameter_id is null
         ),
-        (select parameter_type_code 
-           from cwms_parameter_type 
+        (select parameter_type_code
+           from cwms_parameter_type
           where parameter_type_id = 'Inst'
         ),
-        (select unit_code 
-           from cwms_unit 
+        (select unit_code
+           from cwms_unit
           where unit_id = 'cfs'
         ),
         1.0,
         0.0);
 -- 00061 - Flow.Inst in cfs
-insert 
-  into at_usgs_parameter 
+insert
+  into at_usgs_parameter
  values((select office_code from cwms_office where office_id = '&host_office'),
         61,
-        (select parameter_code 
-           from at_parameter 
-          where base_parameter_code = (select base_parameter_code 
-                                         from cwms_base_parameter 
+        (select parameter_code
+           from at_parameter
+          where base_parameter_code = (select base_parameter_code
+                                         from cwms_base_parameter
                                         where base_parameter_id = 'Flow'
-                                      ) 
+                                      )
             and sub_parameter_id is null
         ),
-        (select parameter_type_code 
-           from cwms_parameter_type 
+        (select parameter_type_code
+           from cwms_parameter_type
           where parameter_type_id = 'Inst'
         ),
-        (select unit_code 
-           from cwms_unit 
+        (select unit_code
+           from cwms_unit
           where unit_id = 'cfs'
         ),
         1.0,
         0.0);
 -- 00062 - Elev.Inst in ft
-insert 
-  into at_usgs_parameter 
+insert
+  into at_usgs_parameter
  values((select office_code from cwms_office where office_id = '&host_office'),
         62,
-        (select parameter_code 
-           from at_parameter 
-          where base_parameter_code = (select base_parameter_code 
-                                         from cwms_base_parameter 
+        (select parameter_code
+           from at_parameter
+          where base_parameter_code = (select base_parameter_code
+                                         from cwms_base_parameter
                                         where base_parameter_id = 'Elev'
-                                      ) 
+                                      )
             and sub_parameter_id is null
         ),
-        (select parameter_type_code 
-           from cwms_parameter_type 
+        (select parameter_type_code
+           from cwms_parameter_type
           where parameter_type_id = 'Inst'
         ),
-        (select unit_code 
-           from cwms_unit 
+        (select unit_code
+           from cwms_unit
           where unit_id = 'ft'
         ),
         1.0,
         0.0);
 -- 00065 - Stage.Inst in ft
-insert 
-  into at_usgs_parameter 
+insert
+  into at_usgs_parameter
  values((select office_code from cwms_office where office_id = '&host_office'),
         65,
-        (select parameter_code 
-           from at_parameter 
-          where base_parameter_code = (select base_parameter_code 
-                                         from cwms_base_parameter 
+        (select parameter_code
+           from at_parameter
+          where base_parameter_code = (select base_parameter_code
+                                         from cwms_base_parameter
                                         where base_parameter_id = 'Stage'
-                                      ) 
+                                      )
             and sub_parameter_id is null
         ),
-        (select parameter_type_code 
-           from cwms_parameter_type 
+        (select parameter_type_code
+           from cwms_parameter_type
           where parameter_type_id = 'Inst'
         ),
-        (select unit_code 
-           from cwms_unit 
+        (select unit_code
+           from cwms_unit
           where unit_id = 'ft'
         ),
         1.0,
         0.0);
 -- 00095 - Cond.Inst in umho/cm
-insert 
-  into at_usgs_parameter 
+insert
+  into at_usgs_parameter
  values((select office_code from cwms_office where office_id = '&host_office'),
         95,
-        (select parameter_code 
-           from at_parameter 
-          where base_parameter_code = (select base_parameter_code 
-                                         from cwms_base_parameter 
+        (select parameter_code
+           from at_parameter
+          where base_parameter_code = (select base_parameter_code
+                                         from cwms_base_parameter
                                         where base_parameter_id = 'Cond'
-                                      ) 
+                                      )
             and sub_parameter_id is null
         ),
-        (select parameter_type_code 
-           from cwms_parameter_type 
+        (select parameter_type_code
+           from cwms_parameter_type
           where parameter_type_id = 'Inst'
         ),
-        (select unit_code 
-           from cwms_unit 
+        (select unit_code
+           from cwms_unit
           where unit_id = 'umho/cm'
         ),
         1.0,
         0.0);
 -- 00096 - Conc-Salinity.Inst in mg/l
-insert 
-  into at_usgs_parameter 
+insert
+  into at_usgs_parameter
  values((select office_code from cwms_office where office_id = '&host_office'),
         96,
-        (select parameter_code 
-           from at_parameter 
-          where base_parameter_code = (select base_parameter_code 
-                                         from cwms_base_parameter 
+        (select parameter_code
+           from at_parameter
+          where base_parameter_code = (select base_parameter_code
+                                         from cwms_base_parameter
                                         where base_parameter_id = 'Conc'
-                                      ) 
+                                      )
             and sub_parameter_id = 'Salinity'
         ),
-        (select parameter_type_code 
-           from cwms_parameter_type 
+        (select parameter_type_code
+           from cwms_parameter_type
           where parameter_type_id = 'Inst'
         ),
-        (select unit_code 
-           from cwms_unit 
+        (select unit_code
+           from cwms_unit
           where unit_id = 'mg/l'
         ),
         0.001,
         0.0);
 -- 72036 - Stor.Inst in ac-ft
-insert 
-  into at_usgs_parameter 
+insert
+  into at_usgs_parameter
  values((select office_code from cwms_office where office_id = '&host_office'),
         72036,
-        (select parameter_code 
-           from at_parameter 
-          where base_parameter_code = (select base_parameter_code 
-                                         from cwms_base_parameter 
+        (select parameter_code
+           from at_parameter
+          where base_parameter_code = (select base_parameter_code
+                                         from cwms_base_parameter
                                         where base_parameter_id = 'Stor'
-                                      ) 
+                                      )
             and sub_parameter_id is null
         ),
-        (select parameter_type_code 
-           from cwms_parameter_type 
+        (select parameter_type_code
+           from cwms_parameter_type
           where parameter_type_id = 'Inst'
         ),
-        (select unit_code 
-           from cwms_unit 
+        (select unit_code
+           from cwms_unit
           where unit_id = 'ac-ft'
         ),
         1000.0,
         0.0);
-commit;        
+commit;
 
 create table at_streamflow_meas (
    location_code  number(10),
@@ -6081,7 +6081,7 @@ create table at_streamflow_meas (
    remarks        varchar2(256),
    air_temp       binary_double,
    water_temp     binary_double,
-   wm_comments    varchar2(256),       
+   wm_comments    varchar2(256),
    constraint     at_streamflow_meas_pk  primary key(location_code, meas_number) using index,
    constraint     at_streamflow_meas_fk1 foreign key(location_code) references at_physical_location(location_code),
    constraint     at_streamflow_meas_fk2 foreign key(agency_code) references at_entity (entity_code),
@@ -6158,7 +6158,7 @@ begin
           at_loc_category lc
     where lg.loc_group_code = :new.loc_group_code
       and lc.loc_category_code = lg.loc_category_code;
-      
+
    if upper(l_category_id) != 'RATING' then
       cwms_err.raise('ERROR', 'Location group is not a rating location group');
    elsif l_shared_loc_alias_id is not null then
@@ -6171,13 +6171,13 @@ begin
          when others then cwms_err.raise('ERROR', 'Location group specifies invalid rating specification: '||l_shared_loc_alias_id);
       end;
    end if;
-      
+
    select count(*)
      into l_count
      from at_loc_group_assignment
     where loc_group_code = :new.loc_group_code
       and location_code not in (select outlet_location_code from at_outlet);
-      
+
    if l_count > 0 then
       cwms_err.raise('ERROR', 'Location group contains non-outlet locations');
    end if;
@@ -6241,7 +6241,8 @@ create index at_queue_subscriber_name_idx1 on at_queue_subscriber_name (queue_na
 
 @@rowcps_schema.sql
 ---
-@@./cwms/tables/at_pool_name.sql
-@@./cwms/tables/at_pool.sql
-
-@@./cwms/tables/at_ts_extents.sql
+@@./cwms/tables/at_pool_name
+@@./cwms/tables/at_pool
+@@./cwms/tables/at_ts_extents
+@@./cwms/tables/at_application_login
+@@./cwms/tables/at_application_session

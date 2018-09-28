@@ -11,6 +11,8 @@ DECLARE
 	TYPE id_array_t IS TABLE OF VARCHAR2 (32);
 
 	view_names id_array_t := id_array_t (
+	   'av_application_login',      -- created in at_schema_2
+	   'av_application_session',    -- created in at_schema_2
       'av_auth_sched_entries',
       'av_db_change_log',
       'av_active_flag',
@@ -31,6 +33,7 @@ DECLARE
       'av_embankment',             -- created in at_schema_2
       'av_entity',
       'av_entity_location',
+      'av_entity_category',
       'av_forecast',              -- created in at_schema_2
       'av_forecast_ex',           -- created in at_schema_2
       'av_forecast_spec',         -- created in at_schema_2
@@ -150,6 +153,7 @@ END;
 @@cwms/views/av_document_type
 @@cwms/views/av_entity
 @@cwms/views/av_entity_location
+@@cwms/views/av_entity_category
 @@cwms/views/av_gage
 @@cwms/views/av_gage_method
 @@cwms/views/av_gage_sensor
