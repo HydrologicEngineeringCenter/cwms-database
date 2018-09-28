@@ -2416,11 +2416,12 @@ end is_message_queueing_paused;
 function generate_subscriber_name (
    p_queue_name     in varchar2,
    p_host_name      in varchar2,
+   p_app_name       in varchar2,
    p_process_id     in integer)
    return varchar2
 is
 begin
-   return substr(rawtohex(dbms_crypto.hash(to_clob(upper(p_queue_name||p_host_name||to_char(p_process_id))), dbms_crypto.hash_sh1)), 1, 28);
+   return substr(rawtohex(dbms_crypto.hash(to_clob(upper(p_queue_name||p_host_name||p_app_name||to_char(p_process_id))), dbms_crypto.hash_sh1)), 1, 28);
 end generate_subscriber_name;
 --------------------------------------------------------------------------------
 -- procedure retrieve_client_info
@@ -2507,7 +2508,7 @@ begin
     where office_code = cwms_util.get_office_code(p_office_id); 
     
    l_queue_name := upper(l_office_id||'_'||p_queue_name);    
-   l_subscriber_name := generate_subscriber_name(l_queue_name, l_host_name, p_process_id);  
+   l_subscriber_name := generate_subscriber_name(l_queue_name, l_host_name, l_app_name, p_process_id);  
    begin
       select * into l_rec from at_queue_subscriber_name where subscriber_name = l_subscriber_name;
       if cwms_util.is_true(p_fail_if_exists) then
@@ -2537,6 +2538,58 @@ begin
    p_host_name := l_host_name;
 end register_queue_subscriber;
 --------------------------------------------------------------------------------
+-- procedure register_queue_subscriber
+--
+procedure register_queue_subscriber(
+   p_subscriber_name out varchar2,
+   p_queue_name      in  varchar2,
+   p_uuid            in  varchar2,
+   p_fail_if_exists  in  varchar2 default 'F') 
+is
+   l_rowid     urowid;
+   l_office_id varchar2(16);
+   l_host_name varchar2(64);
+   l_app_name  varchar2(64);
+begin
+   ---------------------------------
+   -- valid application instance? --
+   ---------------------------------
+   begin
+      select al.rowid,
+             al.app_name,
+             co.office_id
+        into l_rowid,
+             l_app_name,
+             l_office_id
+        from at_application_login al,
+             cwms_office co
+       where al.uuid = p_uuid
+         and co.office_code = al.office_code;
+   exception
+      when no_data_found then cwms_err.raise('NO SUCH APPLICATION INSTANCE');
+   end;
+   ----------------------------
+   -- application logged in? --
+   ----------------------------
+   begin
+      select rowid
+        into l_rowid
+        from at_application_login
+       where rowid = l_rowid
+         and logout_time = 0;
+   exception
+      when others then cwms_err.raise('APPLICATION INSTANCE LOGGED OUT');
+   end;
+   register_queue_subscriber(
+      p_subscriber_name  => p_subscriber_name,
+      p_host_name        => l_host_name,
+      p_queue_name       => p_queue_name,
+      p_process_id       => 0,
+      p_app_name         => l_app_name,
+      p_fail_if_exists   => p_fail_if_exists,
+      p_office_id        => l_office_id); 
+end register_queue_subscriber;
+--------------------------------------------------------------------------------
 -- function register_queue_subscriber_f
 --
 function register_queue_subscriber_f(
@@ -2559,6 +2612,25 @@ begin
       p_fail_if_exists   => p_fail_if_exists,
       p_office_id        => p_office_id);
    return l_host_name||chr(10)||l_subscriber_name;
+end register_queue_subscriber_f;
+--------------------------------------------------------------------------------
+-- function register_queue_subscriber_f
+--
+function register_queue_subscriber_f(
+   p_queue_name     in varchar2,
+   p_uuid           in varchar2,
+   p_fail_if_exists in varchar2 default 'F')
+   return varchar2
+is
+   l_subscriber_name varchar2(30);
+begin
+   register_queue_subscriber(
+      p_subscriber_name => l_subscriber_name,
+      p_queue_name      => p_queue_name,
+      p_uuid            => p_uuid,
+      p_fail_if_exists  => p_fail_if_exists);
+      
+   return l_subscriber_name;      
 end register_queue_subscriber_f;
 --------------------------------------------------------------------------------
 -- procedure unregister_queue_subscriber
@@ -2625,6 +2697,47 @@ begin
    end if;
    delete from at_queue_subscriber_name where subscriber_name = p_subscriber_name;
    commit;
+end unregister_queue_subscriber;
+--------------------------------------------------------------------------------
+-- procedure unregister_queue_subscriber
+--
+procedure unregister_queue_subscriber(
+   p_queue_name in varchar2,
+   p_uuid       in varchar2)
+is   
+   l_office_id varchar2(16);
+   l_app_name  varchar2(64);
+   l_host_name varchar2(64);
+begin
+   if p_queue_name is null or upper(p_queue_name) not in ('TS_STORED', 'REALTIME_OPS', 'STATUS') then
+      cwms_err.raise(
+         'ERROR', 
+         'P_QUEUE_NAME ('||nvl(p_queue_name, '<NULL>')||' must be one of ''TS_STORED'', ''REALTIME_OPS'', ''STATUS''');
+   end if;
+   begin
+      select al.app_name,
+             co.office_id
+        into l_app_name,
+             l_office_id
+        from at_application_login al,
+             cwms_office co
+       where al.uuid = p_uuid
+         and co.office_code = al.office_code;
+   exception
+      when no_data_found then cwms_err.raise('NO SUCH APPLICATION INSTANCE');
+   end;   
+   
+   select machine
+     into l_host_name
+     from v$session
+    where audsid = userenv('sessionid');
+    
+   unregister_queue_subscriber(
+      p_subscriber_name       => generate_subscriber_name(upper(l_office_id||'_'||p_queue_name), l_host_name, l_app_name, 0),
+      p_process_id            => 0,
+      p_fail_on_wrong_host    => 'F',
+      p_fail_on_wrong_process => 'F',
+      p_office_id             => l_office_id);
 end unregister_queue_subscriber;
 --------------------------------------------------------------------------------
 -- procedure update_queue_subscriber
