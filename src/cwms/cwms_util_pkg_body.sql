@@ -93,7 +93,7 @@ as
             select time_zone_name
               into l_timezone
               from cwms_time_zone_alias
-             where upper(time_zone_alias) = upper(p_timezone); 
+             where upper(time_zone_alias) = upper(p_timezone);
          exception
             when no_data_found then l_timezone := p_timezone;
          end;
@@ -1094,8 +1094,8 @@ as
       l_first   PLS_INTEGER := 1;
       l_last    PLS_INTEGER := LENGTH (p_text);
    BEGIN
-      if p_text is null then 
-         return null; 
+      if p_text is null then
+         return null;
       end if;
       FOR i IN l_first .. l_last
       LOOP
@@ -1504,7 +1504,7 @@ as
       DBMS_LOB.close (l_clob);
       RETURN l_rows;
    END split_text;
-   
+
    function split_text_regexp(
       p_text               in varchar2,
       p_separator          in varchar2,
@@ -1520,7 +1520,7 @@ as
       l_include_separators boolean := is_true(p_include_separators);
    begin
       loop
-         exit when l_end_pos > l_len;         
+         exit when l_end_pos > l_len;
          l_start_pos := regexp_instr(p_text, p_separator, l_end_pos, 1, 0, p_match_parameter);
          if l_start_pos = 0 then
             l_rows.extend;
@@ -1536,9 +1536,9 @@ as
             l_rows.extend;
             l_rows(l_rows.count) := substr(p_text, l_start_pos, l_end_pos-l_start_pos);
          end if;
-      end loop; 
+      end loop;
       return l_rows;
-   end split_text_regexp;            
+   end split_text_regexp;
 
    -------------------------------------------------------------------------------
    -- function join_text(...)
@@ -1645,16 +1645,16 @@ as
       l_tab       str_tab_tab_t;
       l_row       str_tab_t;
       l_row_pos   integer;
-      l_row_start integer;         
+      l_row_start integer;
       l_col_pos   integer;
       l_col_start integer;
       l_row_done  boolean;
-      l_tab_done  boolean;         
+      l_tab_done  boolean;
    begin
       if p_clob is not null then
          l_tab := str_tab_tab_t();
          l_row_start := 1;
-         loop         
+         loop
             l_tab_done := false;
             l_row_pos := instr(p_clob, record_separator, l_row_start, 1);
             if l_row_pos = 0 then
@@ -1663,7 +1663,7 @@ as
             end if;
             l_col_start := l_row_start;
             l_row := str_tab_t();
-            loop    
+            loop
                l_row_done := false;
                l_col_pos := instr(p_clob, field_separator, l_col_start, 1);
                if l_col_pos = 0 or l_col_pos > l_row_pos then
@@ -1676,14 +1676,14 @@ as
                end if;
                l_row.extend;
                l_row(l_row.count) := dbms_lob.substr(p_clob, l_col_pos - l_col_start, l_col_start);
-               l_col_start := l_col_pos + 1;                                                       
+               l_col_start := l_col_pos + 1;
                exit when l_row_done;
             end loop;
             l_tab.extend;
             l_tab(l_tab.count) := l_row;
             l_row_start := l_row_pos + 1;
             exit when l_tab_done;
-         end loop; 
+         end loop;
       end if;
       return l_tab;
    end parse_clob_recordset;
@@ -1956,7 +1956,7 @@ as
    FUNCTION get_unit_id (p_unit_or_alias   IN VARCHAR2,
                          p_office_id       IN VARCHAR2 DEFAULT NULL)
       RETURN VARCHAR2
-   IS              
+   IS
       l_unit_id_in    VARCHAR2 (16) := parse_unit(p_unit_or_alias);
       l_unit_id_out   VARCHAR2 (16);
       l_office_code   NUMBER (10) := get_db_office_code (p_office_id);
@@ -2322,7 +2322,7 @@ as
          l_user_id := v ('APP_USER');
       ELSIF SYS_CONTEXT ('CWMS_ENV', 'CWMS_USER') IS NOT NULL
       THEN
-         l_user_id := SYS_CONTEXT ('CWMS_ENV', 'CWMS_USER'); 
+         l_user_id := SYS_CONTEXT ('CWMS_ENV', 'CWMS_USER');
       ELSE
 	 l_user_id := USER;
       END IF;
@@ -2652,7 +2652,7 @@ as
            from cwms_unit_conversion
           where from_unit_id = cwms_util.get_unit_id(p_from_unit_id)
             and to_unit_id = cwms_util.get_unit_id(p_to_unit_id);
-            
+
          if l_factor is null then
             l_converted := cwms_util.eval_expression(l_function, double_tab_t(p_value));
          else
@@ -2693,7 +2693,7 @@ as
            from cwms_unit_conversion
           where from_unit_code = p_from_unit_code
             and to_unit_code = p_to_unit_code;
-            
+
          if l_factor is null then
             l_converted := cwms_util.eval_expression(l_function, double_tab_t(p_value));
          else
@@ -2734,7 +2734,7 @@ as
            from cwms_unit_conversion
           where from_unit_code = p_from_unit_code
             and to_unit_id = cwms_util.get_unit_id(p_to_unit_id);
-            
+
          if l_factor is null then
             l_converted := cwms_util.eval_expression(l_function, double_tab_t(p_value));
          else
@@ -2775,7 +2775,7 @@ as
            from cwms_unit_conversion
           where from_unit_id = cwms_util.get_unit_id(p_from_unit_id)
             and to_unit_code = p_to_unit_code;
-            
+
          if l_factor is null then
             l_converted := cwms_util.eval_expression(l_function, double_tab_t(p_value));
          else
@@ -2914,7 +2914,7 @@ as
          if l_minutes > 0 or l_days + l_hours = 0 then
             l_duration := l_duration || l_minutes || 'M';
          end if;
-      end if;                      
+      end if;
       return l_duration;
    end minutes_to_duration;
 
@@ -2929,12 +2929,12 @@ as
       --                                     1      2      3      4 5      6      7   8
       l_pattern constant varchar2(128) := '^P(\d+Y)?(\d+M)?(\d+D)?(T(\d+H)?(\d+M)?(\d+([.]\d+)?S)?)?$';
       l_duration varchar2(64) := trim(p_duration);
-      l_text    varchar2(8);        
+      l_text    varchar2(8);
       l_minutes integer;
-   begin                                                                                     
+   begin
       if regexp_substr(l_duration, l_pattern, 1, 1, 'i', 0) is null then
          cwms_err.raise('INVALID_ITEM', l_duration, 'ISO 8601 duration');
-      end if;                                             
+      end if;
       for i in 1..2 loop
          if regexp_substr(l_duration, l_pattern, 1, 1, 'i', i) is not null then
             l_text := regexp_substr(l_duration, l_pattern, 1, 1, 'i', i);
@@ -2963,7 +2963,7 @@ as
          l_minutes := l_minutes + to_number(substr(l_text, 1, length(l_text)-1));
       end if;
       return l_minutes;
-   end duration_to_minutes;      
+   end duration_to_minutes;
 
    ------------------------------------
    -- procedure duration_to_interval --
@@ -2977,7 +2977,7 @@ as
       --                                     1      2      3      4 5      6      7   8
       l_pattern constant varchar2(128) := '^P(\d+Y)?(\d+M)?(\d+D)?(T(\d+H)?(\d+M)?(\d+([.]\d+)?S)?)?$';
       l_duration varchar2(64) := trim(p_duration);
-      l_text     varchar2(8);        
+      l_text     varchar2(8);
       l_years    pls_integer := 0;
       l_months   pls_integer := 0;
       l_days     pls_integer := 0;
@@ -2987,7 +2987,7 @@ as
    begin
       if regexp_substr(l_duration, l_pattern, 1, 1, 'i', 0) is null then
          cwms_err.raise('INVALID_ITEM', l_duration, 'ISO 8601 duration');
-      end if;                                             
+      end if;
       if regexp_substr(l_duration, l_pattern, 1, 1, 'i', 1) is not null then
          l_text := regexp_substr(l_duration, l_pattern, 1, 1, 'i', 1);
          l_years := to_number(substr(l_text, 1, length(l_text)-1));
@@ -3014,7 +3014,7 @@ as
       end if;
       p_ym_interval := to_yminterval(l_years||'-'||l_months);
       p_ds_interval := to_dsinterval(l_days||' '||l_hours||':'||l_minutes||':'||l_seconds);
-   end duration_to_interval;            
+   end duration_to_interval;
 
    -----------------------------------
    -- function parse_odbc_ts_string --
@@ -3168,11 +3168,11 @@ as
    function is_logic_operator(
       p_token in varchar2)
       return boolean
-   is        
+   is
    begin
       return is_comparison_operator(p_token) or is_combination_operator(p_token);
    end is_logic_operator;
-   
+
    function tokenize_comparison_expression(
       p_comparison_expression in varchar2)
       return str_tab_tab_t
@@ -3182,26 +3182,26 @@ as
       l_parts       str_tab_t;
       l_expressions str_tab_t;
       l_op          varchar2(3);
-      procedure invalid is 
-      begin 
+      procedure invalid is
+      begin
          cwms_err.raise('ERROR', 'Invalid comparison expression: '||p_comparison_expression);
       end;
-   begin        
+   begin
       l_parts := split_text(upper(trim(p_comparison_expression)));
       if is_comparison_operator(l_parts(l_parts.count)) then
-         l_op := l_parts(l_parts.count); 
+         l_op := l_parts(l_parts.count);
          l_parts := tokenize_expression2(join_text(sub_table(l_parts, 1, l_parts.count-1), ' '), 'T');
          l_tokenized := str_tab_tab_t();
          l_tokenized.extend(l_parts.count+1);
          for i in 1..l_parts.count loop
             l_tokenized(i) := split_text(l_parts(i));
          end loop;
-         l_tokenized(l_tokenized.count) := str_tab_t(l_op); 
+         l_tokenized(l_tokenized.count) := str_tab_t(l_op);
       else
-         select trim(column_value) 
-           bulk collect 
-           into l_parts 
-          from table(cwms_util.split_text_regexp(p_comparison_expression, c_re, 'T', 'i')); 
+         select trim(column_value)
+           bulk collect
+           into l_parts
+          from table(cwms_util.split_text_regexp(p_comparison_expression, c_re, 'T', 'i'));
          case l_parts.count
          when 2 then
             if is_comparison_operator(l_parts(2)) then
@@ -3228,20 +3228,20 @@ as
             else
                invalid;
             end if;
-         else 
+         else
             invalid;
          end case;
       end if;
       return l_tokenized;
    end tokenize_comparison_expression;
-   
+
    -----------------------------------------------------------------------------
    -- FUNCTION tokenize_logic_expression
    -----------------------------------------------------------------------------
    function tokenize_logic_expression(
-      p_expr in varchar2)                                                                                                                 
+      p_expr in varchar2)
       return str_tab_tab_t
-   is              
+   is
       c_re           constant varchar2(22) := '\W?('||cwms_util.join_text(cwms_util.combinators, '|')||')\W?';
       l_expr         varchar2(32767);
       l_temp         varchar2(32676);
@@ -3252,8 +3252,8 @@ as
       l_table1       str_tab_t;
       l_table2       str_tab_tab_t;
       l_start        pls_integer;
-      l_end          pls_integer;  
-      
+      l_end          pls_integer;
+
       function sub_expr(p_table in str_tab_t, p_first in pls_integer, p_last in pls_integer default null) return varchar2
       is
          l_table str_tab_t;
@@ -3263,12 +3263,12 @@ as
       begin
          select trim(column_value)
            bulk collect
-           into l_table 
-           from table(sub_table(p_table, p_first, p_last));    
-         l_expr := join_text(l_table, ' ');                           
-         return l_expr;                           
-      end sub_expr; 
-                     
+           into l_table
+           from table(sub_table(p_table, p_first, p_last));
+         l_expr := join_text(l_table, ' ');
+         return l_expr;
+      end sub_expr;
+
       function drop_elements(p_indices in number_tab_t, p_table in str_tab_t) return str_tab_t
       is
          l_table str_tab_t;
@@ -3282,8 +3282,8 @@ as
                 )
           where seq not in (select * from table(p_indices))
           order by seq;
-          
-         return l_table;                     
+
+         return l_table;
       end drop_elements;
    begin
       l_expr := upper(trim(p_expr));
@@ -3307,21 +3307,21 @@ as
       else
          l_parts := split_text(l_expr);
          l_len := l_parts.count;
-         if is_combination_operator(l_parts(l_len)) or 
+         if is_combination_operator(l_parts(l_len)) or
             is_comparison_operator(l_parts(l_len)) or
             is_expression_operator(l_parts(l_len)) or
             is_expression_function(l_parts(l_len))
          then
             -------------
             -- postfix --
-            ------------- 
+            -------------
             if instr(l_expr, '(') > 0 then
                cwms_err.raise('ERROR', 'Invalid logic expression: '||p_expr);
-            end if; 
+            end if;
             l_results := str_tab_tab_t();
             l_temp  := null;
-            for i in 1..l_len loop  
-               if is_comparison_operator(l_parts(i)) then 
+            for i in 1..l_len loop
+               if is_comparison_operator(l_parts(i)) then
                   l_temp := l_temp||' '||l_parts(i);
                   l_table2 := tokenize_comparison_expression(l_temp);
                   if l_table2.count != 3 then
@@ -3343,9 +3343,9 @@ as
             -----------
             -- infix --
             -----------
-            ---------------------------- 
+            ----------------------------
             -- bind parentheses first --
-            ---------------------------- 
+            ----------------------------
             l_replacements := replace_parentheticals(l_expr);
             l_replacements(l_replacements.count) := regexp_replace(l_replacements(l_replacements.count), '\$(\d+)', 'ARG10\1', 1, 0);
             l_expr := l_replacements(l_replacements.count);
@@ -3380,13 +3380,13 @@ as
                if i < l_start then
                   -------------------------------------
                   -- replace parentetical expression --
-                  -------------------------------------  
+                  -------------------------------------
                   l_table1 := split_text(l_replacements(i));
                   if is_expression_function(l_table1(1)) then
                      l_table2 := tokenize_logic_expression(sub_expr(l_table1, 2));
                      l_table2.extend;
                      l_table2(l_table2.count) := str_tab_t(l_table1(1));
-                  else 
+                  else
                      l_table2 := tokenize_logic_expression(l_replacements(i));
                   end if;
                   for j in 1..l_table2.count loop
@@ -3398,7 +3398,7 @@ as
                   ------------------------------
                   l_parts := split_text_regexp(l_replacements(i), c_re, 'T', 'i');
                   case l_parts.count
-                  when 2 then 
+                  when 2 then
                      --------------------------
                      -- unary operator (NOT) --
                      --------------------------
@@ -3411,11 +3411,11 @@ as
                      exception
                         when others then
                            l_temp := l_parts(2)||' '||l_parts(1);
-                     end; 
+                     end;
                   when 3 then
-                     --------------------- 
+                     ---------------------
                      -- binary operator --
-                     --------------------- 
+                     ---------------------
                      begin
                         l_table2 := tokenize_comparison_expression(l_parts(1));
                         for j in 1..l_table2.count loop
@@ -3424,7 +3424,7 @@ as
                      exception
                         when others then
                            l_temp := l_parts(1);
-                     end; 
+                     end;
                      begin
                         l_table2 := tokenize_comparison_expression(l_parts(3));
                         for j in 1..l_table2.count loop
@@ -3434,8 +3434,8 @@ as
                      exception
                         when others then
                            l_temp := l_temp||' '||l_parts(3)||' '||l_parts(2);
-                     end; 
-                  else 
+                     end;
+                  else
                      cwms_err.raise('ERROR', 'Invalid subexpression: '||l_replacements(i));
                   end case;
                end if;
@@ -3443,10 +3443,10 @@ as
             end loop;
             l_results := tokenize_logic_expression(l_expr);
          end if;
-      end if; 
+      end if;
       return l_results;
    end tokenize_logic_expression;
-   
+
    function tokenize_algebraic(
       p_algebraic_expr in varchar2)
       return str_tab_t
@@ -3480,7 +3480,7 @@ as
       function precedence(op in varchar2) return number
       is
          l_precedence pls_integer;
-      begin     
+      begin
          if op is not null then
             l_precedence :=  case op
                              when '+'  then 1
@@ -3496,7 +3496,7 @@ as
                cwms_err.raise('ERROR', 'Invalid arithmetic operator: '||op);
             end if;
          end if;
-         return l_precedence;                          
+         return l_precedence;
       end;
 
       procedure push(p_op in varchar2)
@@ -3547,7 +3547,7 @@ as
       -- process the tokens into postfix --
       -------------------------------------
       for i in 1 .. l_infix_tokens.count
-      loop   
+      loop
          case
          when is_expression_operator(l_infix_tokens(i)) then
             ---------------
@@ -3642,7 +3642,7 @@ as
          -- must be algebraic, rpn doesn't have parentheses --
          -----------------------------------------------------
          l_tokens := tokenize_algebraic(p_expr);
-      else            
+      else
          -------------------
          -- first try rpn --
          -------------------
@@ -3656,10 +3656,10 @@ as
                when others then
                   if not regexp_like(l_tokens(1), 'arg\d+', 'i') and not is_expression_constant(l_tokens(1)) then
                      cwms_err.raise('ERROR', 'Invalid expression: '||p_expr);
-                  end if; 
+                  end if;
             end;
          else
-            if not is_expression_operator(l_tokens(l_tokens.count)) and 
+            if not is_expression_operator(l_tokens(l_tokens.count)) and
                not is_expression_function(l_tokens(l_tokens.count)) and
                not is_comparison_operator(l_tokens(l_tokens.count)) and
                not is_combination_operator(l_tokens(l_tokens.count))
@@ -3674,18 +3674,18 @@ as
 
       return l_tokens;
    end tokenize_expression;
-   
+
    function tokenize_expression2(
       p_expr   in varchar2,
       p_is_rpn in varchar2 default 'F')
       return str_tab_t
       result_cache
-   is    
+   is
       l_rpn_tokens str_tab_t;
       l_stack      str_tab_t := str_tab_t();
       l_val1       varchar2(32767);
       l_val2       varchar2(32767);
-      l_idx        binary_integer; 
+      l_idx        binary_integer;
       l_number     number;
       --------------------
       -- local routines --
@@ -3717,7 +3717,7 @@ as
          l_stack.trim;
          return val;
       end;
-   begin                   
+   begin
       if is_true(p_is_rpn) then
          l_rpn_tokens := split_text(p_expr);
       else
@@ -3730,7 +3730,7 @@ as
          ---------------
          when is_expression_operator(l_rpn_tokens(i)) or
               is_comparison_operator(l_rpn_tokens(i)) or
-              is_combination_operator(l_rpn_tokens(i))          
+              is_combination_operator(l_rpn_tokens(i))
          then
             if l_rpn_tokens(i) = 'NOT' then
                push(pop||l_rpn_tokens(i));
@@ -3738,7 +3738,7 @@ as
                l_val2 := pop;
                l_val1 := pop;
                push(l_val1||' '||l_val2||' '||l_rpn_tokens(i));
-            end if; 
+            end if;
          ---------------
          -- constants --
          ---------------
@@ -3756,7 +3756,7 @@ as
          -------------
          -- numbers --
          -------------
-         else             
+         else
             begin
                l_number := to_number(l_rpn_tokens(i));
             exception
@@ -3767,7 +3767,7 @@ as
       end loop;
       return l_stack;
    end tokenize_expression2;
-   
+
    -----------------------------------------------------------------------------
    -- FUNCTION replace_parentheticals
    -----------------------------------------------------------------------------
@@ -3781,37 +3781,37 @@ as
       l_start     pls_integer;
       l_end       pls_integer;
       l_token     varchar2(4);
-      l_parts     str_tab_t;  
+      l_parts     str_tab_t;
    begin
       select pos
         bulk collect
-        into l_positions 
+        into l_positions
         from (select pos,
                      offset,
                      sum(offset) over (order by pos) as depth
                 from (select instr(p_expr, '(', 1, level) as pos,
-                             1 as offset 
+                             1 as offset
                         from dual
                      connect by level <= regexp_count(p_expr, '\(')
                       union all
                       select instr(p_expr, ')', 1, level) as pos,
-                             -1 as offset 
+                             -1 as offset
                         from dual
                      connect by level <= regexp_count(p_expr, '\)')
                      )
               )
         where offset =  1 and depth = 1
            or offset = -1 and depth = 0;
-      if l_positions.count = 1 then 
+      if l_positions.count = 1 then
          l_positions.trim;
-      end if;           
+      end if;
       l_results.extend(l_positions.count/2+1);
       l_expr := p_expr;
       for i in reverse 1..l_positions.count/2 loop
          l_start := l_positions(2*i-1);
-         l_end   := l_positions(2*i);  
-         l_results(i) := trim(substr(l_expr, l_start+1, l_end-l_start-1)); 
-                              
+         l_end   := l_positions(2*i);
+         l_results(i) := trim(substr(l_expr, l_start+1, l_end-l_start-1));
+
          l_token := '$'||i;
          l_expr  := rtrim(substr(l_expr, 1, l_start-1))||' '||l_token||' '||ltrim(substr(l_expr, l_end+1));
          l_parts := split_text(l_expr);
@@ -3824,11 +3824,11 @@ as
                end if;
                exit;
             end if;
-         end loop; 
+         end loop;
       end loop;
-      l_results(l_positions.count/2+1) := trim(l_expr);              
+      l_results(l_positions.count/2+1) := trim(l_expr);
       return l_results;
-   end replace_parentheticals;      
+   end replace_parentheticals;
 
    -----------------------------------------------------------------------------
    -- FUNCTION eval_tokenized_expression
@@ -3838,7 +3838,7 @@ as
       p_args          in double_tab_t,
       p_args_offset   in integer default 0)
       return number
-   is 
+   is
       l_stack double_tab_t;
    begin
       l_stack := eval_tokenized_expression2(
@@ -3848,8 +3848,8 @@ as
       if l_stack.count > 1 then
          cwms_err.raise ('ERROR', 'Remaining items on stack');
       end if;
-      return l_stack(1);         
-   end eval_tokenized_expression;      
+      return l_stack(1);
+   end eval_tokenized_expression;
 
    -----------------------------------------------------------------------------
    -- FUNCTION eval_tokenized_expression2
@@ -3961,7 +3961,7 @@ as
                if l_idx < 1 or l_idx > p_args.count then
                   argument_error(l_idx - p_args_offset);
                end if;
-               push(p_args(l_idx)); 
+               push(p_args(l_idx));
             exception
                when others then
                   token_error(p_rpn_tokens(i));
@@ -4084,7 +4084,7 @@ as
       when others then
          cwms_err.raise('ERROR', 'Invalid expression: ' || p_expr);
    end eval_expression;
-   
+
    -----------------------------------------------------------------------------
    -- FUNCTION eval_expression2
    -----------------------------------------------------------------------------
@@ -4129,7 +4129,7 @@ as
       end case;
       return l_result;
    end eval_tokenized_comparison;
-          
+
    -----------------------------------------------------------------------------
    -- FUNCTION eval_tokenized_comparison2
    -----------------------------------------------------------------------------
@@ -4145,7 +4145,7 @@ as
              when false then 'F'
              end;
    end eval_tokenized_comparison2;
-          
+
    -----------------------------------------------------------------------------
    -- FUNCTION eval_comparison_expression
    -----------------------------------------------------------------------------
@@ -4157,11 +4157,11 @@ as
    is
    begin
       return eval_tokenized_comparison(
-         tokenize_comparison_expression(p_expr), 
-         p_args, 
+         tokenize_comparison_expression(p_expr),
+         p_args,
          p_args_offset);
    end eval_comparison_expression;
-          
+
    -----------------------------------------------------------------------------
    -- FUNCTION eval_comparison_expression2
    -----------------------------------------------------------------------------
@@ -4177,7 +4177,7 @@ as
              when false then 'F'
              end;
    end eval_comparison_expression2;
-          
+
    -----------------------------------------------------------------------------
    -- FUNCTION get_expression_depth_at
    -----------------------------------------------------------------------------
@@ -4188,22 +4188,22 @@ as
    is
       l_expr  varchar2(32767) := substr(p_expr, 1, p_position);
       l_depth pls_integer;
-   begin                       
+   begin
       l_depth := regexp_count(l_expr, '\(') - regexp_count(l_expr, '\)');
       if substr(l_expr, p_position, 1) = ')' then
          l_depth := l_depth + 1;
       end if;
       return l_depth;
-   end get_expression_depth_at;      
-            
+   end get_expression_depth_at;
+
    function to_algebraic(
       p_expr in varchar2)
       return varchar2
    is
    begin
       return to_algebraic(tokenize_expression(p_expr));
-   end to_algebraic;      
-            
+   end to_algebraic;
+
    function to_algebraic(
       p_tokens in str_tab_t)
       return varchar2
@@ -4243,40 +4243,40 @@ as
          l_stack.trim;
          return val;
       end;
-      
+
       function precedence(p_op in varchar2) return integer
       is
          l_precedence integer;
       begin
-         case 
+         case
          when p_op in ('+','-')          then l_precedence := 1;
          when p_op in ('*','/','//','%') then l_precedence := 2;
          when p_op = '^'                 then l_precedence := 3;
-         else cwms_err.raise('ERROR', 'Invalid operator: '||p_op); 
+         else cwms_err.raise('ERROR', 'Invalid operator: '||p_op);
          end case;
          return l_precedence;
       end;
-   begin             
+   begin
       for i in 1 .. p_tokens.count loop
          case
          ---------------
          -- operators --
          ---------------
-         when p_tokens(i) in ('+','-','*','/','//','%','^')  then 
+         when p_tokens(i) in ('+','-','*','/','//','%','^')  then
             l_val2 := pop;
             l_rpn_tokens := tokenize_expression(l_val2);
-            if l_rpn_tokens(l_rpn_tokens.count) in ('+','-','*','/','//','%','^') and 
+            if l_rpn_tokens(l_rpn_tokens.count) in ('+','-','*','/','//','%','^') and
                precedence(l_rpn_tokens(l_rpn_tokens.count)) < precedence(p_tokens(i))
             then
                l_val2 := '('||l_val2||')';
-            end if; 
+            end if;
             l_val1 := pop;
             l_rpn_tokens := tokenize_expression(l_val1);
-            if l_rpn_tokens(l_rpn_tokens.count) in ('+','-','*','/','//','%','^') and 
+            if l_rpn_tokens(l_rpn_tokens.count) in ('+','-','*','/','//','%','^') and
             precedence(l_rpn_tokens(l_rpn_tokens.count)) < precedence(p_tokens(i))
             then
                l_val1 := '('||l_val1||')';
-            end if; 
+            end if;
             push(l_val1||' '||p_tokens(i)||' '||l_val2);
          ---------------
          -- constants --
@@ -4309,7 +4309,7 @@ as
       end if;
       return pop;
    end to_algebraic;
-         
+
    function to_algebraic_logic(
       p_expr in varchar2)
       return varchar2
@@ -4320,24 +4320,24 @@ as
       l_logic_expr := logic_expr_t(p_expr);
       l_logic_expr.to_algebraic(l_expr);
       return l_expr;
-   end to_algebraic_logic;            
-            
+   end to_algebraic_logic;
+
    function to_rpn(
       p_expr in varchar2)
       return varchar2
    is
    begin
       return to_rpn(tokenize_expression(p_expr));
-   end to_rpn;      
-            
+   end to_rpn;
+
    function to_rpn(
       p_tokens in str_tab_t)
       return varchar2
    is
    begin
       return join_text(p_tokens, ' ');
-   end to_rpn;      
-         
+   end to_rpn;
+
    function to_rpn_logic(
       p_expr in varchar2)
       return varchar2
@@ -4349,12 +4349,12 @@ as
       l_logic_expr.to_rpn(l_expr);
       return l_expr;
    end to_rpn_logic;
-               
+
    function get_comparison_op_symbol(
       p_operator in varchar2)
       return varchar2
    is
-      l_op varchar2(8); 
+      l_op varchar2(8);
    begin
       l_op := upper(trim(p_operator));
       case
@@ -4367,13 +4367,13 @@ as
       else cwms_err.raise('INVALID_ITEM', p_operator, 'comparison operator');
       end case;
       return l_op;
-   end;               
-               
+   end;
+
    function get_comparison_op_text(
       p_operator in varchar2)
       return varchar2
    is
-      l_op varchar2(8); 
+      l_op varchar2(8);
    begin
       l_op := upper(trim(p_operator));
       case
@@ -4386,14 +4386,14 @@ as
       else cwms_err.raise('INVALID_ITEM', p_operator, 'comparison operator');
       end case;
       return l_op;
-   end;               
+   end;
 
    ---------------------
    -- Append routines --
    ---------------------
 
    procedure append(
-      p_dst in out nocopy clob, 
+      p_dst in out nocopy clob,
       p_src in clob)
    is
    begin
@@ -4403,7 +4403,7 @@ as
    end append;
 
    procedure append(
-      p_dst in out nocopy clob, 
+      p_dst in out nocopy clob,
       p_src in varchar2)
    is
    begin
@@ -4413,7 +4413,7 @@ as
    end append;
 
    procedure append(
-      p_dst in out nocopy clob, 
+      p_dst in out nocopy clob,
       p_src in xmltype)
    is
    begin
@@ -4421,7 +4421,7 @@ as
    end append;
 
    procedure append(
-      p_dst in out nocopy xmltype, 
+      p_dst in out nocopy xmltype,
       p_src in clob)
    is
       l_dst   clob := p_dst.getclobval;
@@ -4431,7 +4431,7 @@ as
    end append;
 
    procedure append(
-      p_dst in out nocopy xmltype, 
+      p_dst in out nocopy xmltype,
       p_src in varchar2)
    is
       l_dst   clob := p_dst.getclobval;
@@ -4441,7 +4441,7 @@ as
    end append;
 
    procedure append(
-      p_dst in out nocopy xmltype, 
+      p_dst in out nocopy xmltype,
       p_src in xmltype)
    is
       l_dst   clob := p_dst.getclobval;
@@ -4455,7 +4455,7 @@ as
    --------------------------
 
    function get_xml_node (
-      p_xml  in xmltype, 
+      p_xml  in xmltype,
       p_path in varchar)
    return xmltype
    is
@@ -4465,14 +4465,14 @@ as
              when false then p_xml.extract (p_path)
              end;
    end get_xml_node;
-   
+
    function get_xml_attributes(
       p_xml  in xmltype,
       p_path in varchar2)
       return str_tab_t
    is
-      l_names      str_tab_t; 
-      l_values     str_tab_t; 
+      l_names      str_tab_t;
+      l_values     str_tab_t;
       l_attributes str_tab_t := str_tab_t();
       l_flwor      varchar2(32767);
    begin
@@ -4480,8 +4480,8 @@ as
       select element
         bulk collect
         into l_names
-        from xmltable(l_flwor 
-                      passing p_xml 
+        from xmltable(l_flwor
+                      passing p_xml
                       columns element varchar2(128) path '.'
                      );
       if l_names is not null and l_names.count > 0 then
@@ -4489,8 +4489,8 @@ as
          select element
            bulk collect
            into l_values
-           from xmltable(l_flwor 
-                         passing p_xml 
+           from xmltable(l_flwor
+                         passing p_xml
                          columns element varchar2(128) path '.'
                         );
          select n.text||'='||v.text
@@ -4504,18 +4504,18 @@ as
                 (select column_value as text,
                         rownum as seq
                    from table(l_values)
-                ) v on v.seq=n.seq;                              
-      end if;                     
-      return l_attributes;                     
-   end get_xml_attributes;      
-      
+                ) v on v.seq=n.seq;
+      end if;
+      return l_attributes;
+   end get_xml_attributes;
+
    function get_xml_nodes(
       p_xml        in xmltype,
       p_path       in varchar2,
       p_condition  in varchar2 default null,
       p_order_by   in varchar2 default null,
       p_descending in varchar2 default 'F')
-   return xml_tab_t  
+   return xml_tab_t
    is
       l_flwor   varchar2(32767);
       l_results xml_tab_t;
@@ -4538,20 +4538,20 @@ as
         bulk collect
         into l_results
         from xmltable(
-                l_flwor 
+                l_flwor
                 passing p_xml
                 columns element xmltype path '.'); -- included only for completeness
       return l_results;
    end get_xml_nodes;
 
    function get_xml_text(
-      p_xml  in xmltype, 
+      p_xml  in xmltype,
       p_path in varchar)
    return varchar2
    is
       l_xml    xmltype;
       l_text   varchar2(32767);
-   begin    
+   begin
       l_xml := get_xml_node(p_xml, p_path);
       if l_xml is not null and instr(p_path, '/@') = 0 then
          l_xml := l_xml.extract('/node()/text()');
@@ -4564,7 +4564,7 @@ as
    end get_xml_text;
 
    function get_xml_number(
-      p_xml  in xmltype, 
+      p_xml  in xmltype,
       p_path in varchar)
    return number
    is
@@ -4832,7 +4832,7 @@ as
       p_first in integer,
       p_last  in integer default null)
       return str_tab_t
-   is  
+   is
       l_last  integer;
       l_table str_tab_t;
    begin
@@ -4846,9 +4846,9 @@ as
                 from table(p_table)
              )
        where seq between p_first and l_last
-       order by seq; 
-       
-      return l_table;                        
+       order by seq;
+
+      return l_table;
    end sub_table;
 
    function sub_table(
@@ -4856,7 +4856,7 @@ as
       p_first in integer,
       p_last  in integer default null)
       return number_tab_t
-   is  
+   is
       l_last  integer;
       l_table number_tab_t;
    begin
@@ -4870,9 +4870,9 @@ as
                 from table(p_table)
              )
        where seq between p_first and l_last
-       order by seq; 
-       
-      return l_table;                        
+       order by seq;
+
+      return l_table;
    end sub_table;
 
    function sub_table(
@@ -4880,7 +4880,7 @@ as
       p_first in integer,
       p_last  in integer default null)
       return double_tab_t
-   is  
+   is
       l_last  integer;
       l_table double_tab_t;
    begin
@@ -4894,11 +4894,11 @@ as
                 from table(p_table)
              )
        where seq between p_first and l_last
-       order by seq; 
-       
-      return l_table;                        
+       order by seq;
+
+      return l_table;
    end sub_table;
-      
+
    function parse_unit_spec(
       p_unit_spec in varchar2,
       p_key       in varchar2)
@@ -4959,7 +4959,7 @@ as
 
    procedure check_dynamic_sql(
       p_sql in varchar2)
-   is 
+   is
       l_sql_no_quotes varchar2(32767);
 
       function remove_quotes(p_text in varchar2) return varchar2
@@ -4972,7 +4972,7 @@ as
          loop
             l_pos := regexp_instr(l_test, '[''"]');
             if l_pos > 0 then
-               if substr(l_test, l_pos, 1) = '"' then 
+               if substr(l_test, l_pos, 1) = '"' then
                   ------------------------
                   -- double-quote first --
                   ------------------------
@@ -5003,9 +5003,9 @@ as
             'ERROR',
             'UNSAFE DYNAMIC SQL : '||p_sql);
       end if;
-   end check_dynamic_sql;      
+   end check_dynamic_sql;
 
-   
+
    function get_url(
       p_url     in varchar2,
       p_timeout in integer default 60)
@@ -5015,30 +5015,30 @@ as
       l_resp utl_http.resp;
       l_buf  varchar2(32767);
       l_clob clob;
-      
+
       procedure write_clob(p_text in varchar2)
       is
          l_len binary_integer := length(p_text);
       begin
          dbms_lob.writeappend(l_clob, l_len, p_text);
       end;
-   begin       
+   begin
       dbms_lob.createtemporary(l_clob, true);
-      dbms_lob.open(l_clob, dbms_lob.lob_readwrite);   
+      dbms_lob.open(l_clob, dbms_lob.lob_readwrite);
    begin
          utl_http.set_transfer_timeout(p_timeout);
          l_req := utl_http.begin_request(p_url);
          utl_http.set_header(l_req, 'User-Agent', 'Mozilla/4.0');
          l_resp := utl_http.get_response(l_req);
          utl_http.set_transfer_timeout;
-          loop                             
+          loop
             utl_http.read_text(l_resp, l_buf);
             write_clob(l_buf);
          end loop;
       exception
          when utl_http.end_of_body then
             utl_http.end_response(l_resp);
-            
+
          when others then
             begin
                utl_http.end_response(l_resp);
@@ -5049,8 +5049,8 @@ as
       end;
       dbms_lob.close(l_clob);
       return l_clob;
-   end get_url;      
-   
+   end get_url;
+
    function get_column(
       p_table  in double_tab_tab_t,
       p_column in pls_integer)
@@ -5069,7 +5069,7 @@ as
          cwms_err.raise('NULL_ARGUMENT', 'p_column');
       end if;
       select count(*) into l_count from table(p_table) where column_value is null;
-      if l_count != 0 then 
+      if l_count != 0 then
          cwms_err.raise(
             'ERROR',
             'Table has one or more null rows');
@@ -5085,17 +5085,17 @@ as
       end if;
       select value_in_column
         bulk collect
-        into l_results 
-        from (select t2.column_value as value_in_column, 
-                     rownum as r 
+        into l_results
+        from (select t2.column_value as value_in_column,
+                     rownum as r
                 from table(p_table) t1,
                      table(t1.column_value) t2
-               where t2.column_value in (select column_value from table(t1.column_value))             
+               where t2.column_value in (select column_value from table(t1.column_value))
              )
              where mod(r, l_count) = mod(p_column, l_count);
       return l_results;
-   end get_column;            
-   
+   end get_column;
+
     FUNCTION str2tbl (p_str IN VARCHAR2, p_delim IN VARCHAR2 DEFAULT ',')
        RETURN str2tblType
        PIPELINED
@@ -5131,7 +5131,7 @@ as
          cwms_err.raise('NULL_ARGUMENT', 'p_column');
       end if;
       select count(*) into l_count from table(p_table) where column_value is null;
-      if l_count != 0 then 
+      if l_count != 0 then
          cwms_err.raise(
             'ERROR',
             'Table has one or more null rows');
@@ -5147,27 +5147,27 @@ as
       end if;
       select value_in_column
         bulk collect
-        into l_results 
-        from (select t2.column_value as value_in_column, 
-                     rownum as r 
+        into l_results
+        from (select t2.column_value as value_in_column,
+                     rownum as r
                 from table(p_table) t1,
                      table(t1.column_value) t2
-               where t2.column_value in (select column_value from table(t1.column_value))             
+               where t2.column_value in (select column_value from table(t1.column_value))
              )
              where mod(r, l_count) = mod(p_column, l_count);
       return l_results;
    end get_column;
-   
+
    procedure to_json(
       p_json     in out nocopy clob,
       p_xml      in     xmltype,
       p_in_array in     boolean default false)
    is
-      type bool_by_string_t is table of boolean index by varchar2(32767);         
+      type bool_by_string_t is table of boolean index by varchar2(32767);
       not_a_number exception;
       pragma exception_init(not_a_number, -6502);
       l_name     varchar2(128);
-      l_nodes    xml_tab_t; 
+      l_nodes    xml_tab_t;
       l_attrs    str_tab_t;
       l_text     varchar2(32767);
       l_number   number;
@@ -5180,10 +5180,10 @@ as
       l_attrs := get_xml_attributes(p_xml, '');
       l_nodes := get_xml_nodes(p_xml, '/*/*');
       l_text  := get_xml_text(p_xml, '/');
-      
-      if not p_in_array then                                     
+
+      if not p_in_array then
          append(p_json, ' "'||l_name||'":');
-      end if;  
+      end if;
       if l_attrs.count = 0 and l_nodes.count = 0 and l_text is null then
          ----------------------------------
          -- no attributes and no content --
@@ -5194,7 +5194,7 @@ as
          -- attributes and/or content --
          -------------------------------
          l_array := l_attrs.count + l_nodes.count + case l_text is null when true then 0 else 1 end > 1;
-         if l_array then append(p_json, '['); end if; 
+         if l_array then append(p_json, '['); end if;
          if l_attrs.count > 0 then
             ----------------
             -- attributes --
@@ -5246,9 +5246,9 @@ as
                      ---------------------------------
                      to_json(p_json, l_nodes(l_node_pos(1)));
                   else
-                     ----------------------------------                   
+                     ----------------------------------
                      -- this name has multiple nodes --
-                     ----------------------------------                   
+                     ----------------------------------
                      append(p_json, '"'||l_names(i)||'":[');
                      for j in 1..l_node_pos.count loop
                         if j > 1 then append(p_json, ','); end if;
@@ -5265,7 +5265,7 @@ as
                   if i > 1 then append(p_json, ','); end if;
                   to_json(p_json, l_nodes(i));
                end loop;
-            end if;              
+            end if;
             append(p_json, '}');
          elsif l_text is not null then
             -------------------
@@ -5286,10 +5286,10 @@ as
             end;
             append(p_json, l_text);
          end if;
-         if l_array then append(p_json, ']'); end if; 
+         if l_array then append(p_json, ']'); end if;
       end if;
    end to_json;
-         
+
    function to_json(
       p_xml in xmltype)
       return clob
@@ -5301,8 +5301,8 @@ as
       to_json(l_json, p_xml);
       append(l_json, '}');
       return l_json;
-   end to_json;      
-               
+   end to_json;
+
    FUNCTION is_irregular_code (
       p_interval_code   IN CWMS_INTERVAL.INTERVAL_CODE%TYPE)
       RETURN BOOLEAN
@@ -5332,7 +5332,7 @@ as
       p_office_id     in varchar2,
       p_user_group_id in varchar2 default null)
    is
-      l_user_id       varchar2(30); 
+      l_user_id       varchar2(30);
       l_office_id     varchar2(16);
       l_user_group_id varchar2(32);
    begin
@@ -5344,17 +5344,17 @@ as
          else
             l_user_group_id := p_user_group_id;
          end if;
-         select db_office_id 
-           into l_office_id     
+         select db_office_id
+           into l_office_id
            from table(cwms_sec.get_assigned_priv_groups_tab)
           where upper(user_group_id) = upper(l_user_group_id)
             and is_member = 'T'
-            and db_office_id = l_office_id; 
+            and db_office_id = l_office_id;
       end if;
-   exception 
+   exception
       when no_data_found then
          cwms_err.raise(
-            'ERROR', 
+            'ERROR',
             'User '
             ||get_user_id
             ||' does not have '
@@ -5385,10 +5385,10 @@ as
             and d.job_name = j.job_name
             and cast(d.actual_start_date as date) = cast(j.last_start_date as date)
           order by 1;
-          
-      return l_cursor;          
+
+      return l_cursor;
    end cat_scheduled_jobs;
-   
+
    function cat_scheduled_job_history(
       p_job_name in varchar2)
       return sys_refcursor
@@ -5402,7 +5402,7 @@ as
            from user_scheduler_job_run_details
           where job_name = upper(p_job_name)
           order by 1;
-      
+
       return l_cursor;
    end cat_scheduled_job_history;
 
@@ -5425,14 +5425,14 @@ as
             end if;
          end loop;
          if i > 1 then
-            cwms_util.append(l_csv, chr(10)||cwms_util.join_text(l_table(i), ',')); 
+            cwms_util.append(l_csv, chr(10)||cwms_util.join_text(l_table(i), ','));
          else
-            cwms_util.append(l_csv, cwms_util.join_text(l_table(i), ',')); 
+            cwms_util.append(l_csv, cwms_util.join_text(l_table(i), ','));
          end if;
       end loop;
       return l_csv;
    end tab_to_csv;
-   
+
    function tab_to_csv(
       p_tab in varchar2)
       return varchar2
@@ -5452,14 +5452,14 @@ as
             end if;
          end loop;
          if i > 1 then
-            l_csv := l_csv||chr(10)||cwms_util.join_text(l_table(i), ','); 
+            l_csv := l_csv||chr(10)||cwms_util.join_text(l_table(i), ',');
          else
-            l_csv := l_csv||cwms_util.join_text(l_table(i), ','); 
+            l_csv := l_csv||cwms_util.join_text(l_table(i), ',');
          end if;
       end loop;
       return l_csv;
    end tab_to_csv;
-   
+
    function get_call_stack
       return str_tab_tab_t
    is
@@ -5483,18 +5483,20 @@ as
                l_routine_name varchar2(30);
             begin
                with routines as
-                  (select name, 
-                          line 
-                     from user_identifiers 
+                  (select name,
+                          line
+                     from user_identifiers
                     where type in ('PROCEDURE', 'FUNCTION')
                       and usage = 'DEFINITION'
+                      and object_type = 'PACKAGE BODY'
                       and object_name = p_package_name
+                      and usage_id = 1
                     order by line
                   )
                select name
-                 into l_routine_name 
+                 into l_routine_name
                  from routines
-                where line = (select max(line) from routines where line <= p_line_number);       
+                where line = (select max(line) from routines where line <= p_line_number);
                return l_routine_name;
             end routine_name;
          begin
@@ -5515,13 +5517,13 @@ as
       return l_call_stack;
    end get_call_stack;
 
-   function package_log_property_text 
+   function package_log_property_text
       return varchar2
    is
    begin
       return v_package_log_prop_text;
    end package_log_property_text;
-   
+
    procedure set_package_log_property_text(
       p_text in varchar2 default null)
    is
@@ -5529,6 +5531,581 @@ as
       v_package_log_prop_text := nvl(p_text, userenv('sessionid'));
    end set_package_log_property_text;
 
+   procedure trim_application_sessions
+   is
+      pragma autonomous_transaction;
+   begin
+      delete from at_application_session where session_id not in (select distinct audsid from v$session);
+      commit;
+   end trim_application_sessions;
+   
+   procedure get_application_login(
+      p_office_id     out varchar2,
+      p_user_name     out varchar2,
+      p_app_name      out varchar2,
+      p_host_name     out varchar2,
+      p_login_time    out integer,
+      p_logout_time   out integer,
+      p_normal_logout out integer,
+      p_login_server  out varchar2,
+      p_uuid          in  varchar2)
+   is
+   begin
+      select co.office_id,
+             al.user_name,
+             al.app_name,
+             al.host_name,
+             al.login_time,
+             al.logout_time,
+             al.normal_logout,
+             al.login_server
+        into p_office_id,
+             p_user_name,
+             p_app_name,
+             p_host_name,
+             p_login_time,
+             p_logout_time,
+             p_normal_logout,
+             p_login_server
+        from at_application_login al,
+             cwms_office co
+       where al.uuid = p_uuid
+         and co.office_code = al.office_code;
+   exception
+      when no_data_found then null;
+   end get_application_login;
+
+   procedure get_application_login(
+      p_office_id     out varchar2,
+      p_user_name     out varchar2,
+      p_app_name      out varchar2,
+      p_host_name     out varchar2,
+      p_login_time    out integer,
+      p_login_server  out varchar2,
+      p_session_id    in  integer default 0)
+   is
+      l_session_id integer;
+   begin
+      if p_session_id = 0 then
+         l_session_id := userenv('sessionid');
+      else
+         l_session_id := p_session_id;
+      end if;   
+      select o.office_id,
+             l.user_name,
+             l.app_name,
+             l.host_name,
+             l.login_time,
+             l.login_server
+        into p_office_id,
+             p_user_name,
+             p_app_name,
+             p_host_name,
+             p_login_time,
+             p_login_server
+        from at_application_login l,
+             at_application_session s,
+             cwms_office o
+       where s.session_id = l_session_id
+         and l.uuid = s.uuid
+         and o.office_code = l.office_code;
+   exception
+      when no_data_found then null;
+   end get_application_login;
+
+   function get_application_login_f(
+      p_user_name_mask    in varchar2 default null,
+      p_app_name_mask     in varchar2 default null,
+      p_host_name_mask    in varchar2 default null,
+      p_login_server_mask in varchar2 default null,
+      p_start_time        in integer  default null,
+      p_end_time          in integer  default null,
+      p_max_count         in integer  default null,
+      p_office_id_mask    in varchar2 default null)
+      return sys_refcursor
+   is
+      l_cursor            sys_refcursor;
+      l_office_id_mask    varchar2(16);
+      l_user_name_mask    varchar2(32);
+      l_app_name_mask     varchar2(64);
+      l_host_name_mask    varchar2(64);
+      l_login_server_mask varchar2(128);
+   begin
+      l_office_id_mask    := cwms_util.normalize_wildcards(nvl(upper(p_office_id_mask),    cwms_util.user_office_id));
+      l_user_name_mask    := cwms_util.normalize_wildcards(nvl(upper(p_user_name_mask),    '*'));
+      l_app_name_mask     := cwms_util.normalize_wildcards(nvl(upper(p_app_name_mask),     '*'));
+      l_host_name_mask    := cwms_util.normalize_wildcards(nvl(upper(p_host_name_mask),    '*'));
+      l_login_server_mask := cwms_util.normalize_wildcards(nvl(upper(p_login_server_mask), '*'));
+
+      trim_application_sessions;
+      
+      if p_max_count < 0 then
+         ---------------------------------------------------
+         -- negative max count (last p_max_count entries) --
+         ---------------------------------------------------
+         open l_cursor for
+            select *
+              from (select *
+                      from (select q1.uuid,
+                                   q1.login_time,
+                                   q1.logout_time,
+                                   q1.office_id,
+                                   q1.user_name,
+                                   q1.app_name,
+                                   q1.host_name,
+                                   q1.normal_logout,
+                                   q1.login_server,
+                                   q2.session_ids
+                              from (select l.uuid,
+                                           l.login_time,
+                                           l.logout_time,
+                                           o.office_id,
+                                           l.user_name,
+                                           l.app_name,
+                                           l.host_name,
+                                           l.normal_logout,
+                                           l.login_server
+                                      from at_application_login l,
+                                           cwms_office o
+                                     where l.login_time between nvl(p_start_time, 0) and nvl(p_end_time, 1e+20)
+                                       and o.office_id like l_office_id_mask escape '\'
+                                       and l.office_code = o.office_code
+                                       and l.user_name like l_user_name_mask escape '\'
+                                       and l.app_name like l_app_name_mask escape '\'
+                                       and l.host_name like l_host_name_mask escape '\'
+                                       and l.login_server like l_login_server_mask escape '\'
+                                   ) q1
+                                   left outer join
+                                   (select uuid,
+                                           listagg(session_id, ',') within group (order by session_id) as session_ids
+                                      from at_application_session
+                                     group by uuid 
+                                   ) q2 on q2.uuid = q1.uuid
+                             order by 1 desc
+                           )
+                     where rownum <= -p_max_count
+                   )
+             order by 1;
+      else
+         -------------------------------------------------------------------
+         -- null or positive max count (first p_max_count or all entries) --
+         -------------------------------------------------------------------
+         open l_cursor for
+            select q1.uuid,
+                   q1.login_time,
+                   q1.logout_time,
+                   q1.office_id,
+                   q1.user_name,
+                   q1.app_name,
+                   q1.host_name,
+                   q1.normal_logout,
+                   q1.login_server,
+                   q2.session_ids
+              from (select l.uuid,
+                           l.login_time,
+                           l.logout_time,
+                           o.office_id,
+                           l.user_name,
+                           l.app_name,
+                           l.host_name,
+                           l.normal_logout,
+                           l.login_server
+                      from at_application_login l,
+                           cwms_office o
+                     where l.login_time between nvl(p_start_time, 0) and nvl(p_end_time, 1e+20)
+                       and o.office_id like l_office_id_mask escape '\'
+                       and l.office_code = o.office_code
+                       and l.user_name like l_user_name_mask escape '\'
+                       and l.app_name like l_app_name_mask escape '\'
+                       and l.host_name like l_host_name_mask escape '\'
+                       and l.login_server like l_login_server_mask escape '\'
+                   ) q1
+                   left outer join
+                   (select uuid,
+                           listagg(session_id, ',') within group (order by session_id) as session_ids
+                      from at_application_session
+                     group by uuid 
+                   ) q2 on q2.uuid = q1.uuid
+             where rownum <= nvl(p_max_count, 1e+20)
+             order by 1;
+      end if;
+      return l_cursor;
+   end get_application_login_f;
+
+   procedure set_application_login_x(
+      p_uuid             out  varchar2,
+      p_last_login_time  out integer,
+      p_last_logout_time out integer,
+      p_user_name        in  varchar2,
+      p_app_name         in  varchar2,
+      p_host_name        in  varchar2,
+      p_login_server     in  varchar2,
+      p_office_id        in  varchar2)
+   is
+      pragma autonomous_transaction;
+      l_uuid        varchar2(32);
+      l_office_code integer;
+      l_user_name   varchar2(32);
+      l_app_name    varchar2(64);
+      l_host_name   varchar2(64);
+      l_now         integer;
+   begin
+      l_uuid        := sys_guid(); 
+      l_office_code := cwms_util.get_db_office_code(p_office_id);
+      l_user_name   := upper(trim(p_user_name));
+      l_app_name    := upper(trim(p_app_name));
+      l_host_name   := upper(trim(p_host_name));
+      l_now         := cwms_util.to_millis(systimestamp);
+      
+      p_uuid := l_uuid;
+      ----------------------------------------------------------
+      -- populate the last login time from a previous session --
+      ----------------------------------------------------------
+      begin
+        select login_time
+          into p_last_login_time
+          from at_application_login
+         where office_code = l_office_code
+           and user_name = l_user_name
+           and app_name = l_app_name
+           and login_time = (select max(login_time)
+                                from at_application_login
+                               where office_code = l_office_code
+                                 and user_name = l_user_name
+                                 and app_name = l_app_name
+                             );
+      exception
+         ----------------------------
+         -- no previous login time --
+         ----------------------------
+         when no_data_found then null;
+      end;
+      --------------------------------------------------------------------------------
+      -- populate the last logout time from a (possibly different) previous session --
+      --------------------------------------------------------------------------------
+      begin
+        select logout_time
+          into p_last_logout_time
+          from at_application_login
+         where office_code = l_office_code
+           and user_name = l_user_name
+           and app_name = l_app_name
+           and logout_time = (select max(logout_time)
+                                from at_application_login
+                               where office_code = l_office_code
+                                 and user_name = l_user_name
+                                 and app_name = l_app_name
+                             );
+      exception
+         -----------------------------
+         -- no previous logout time --
+         -----------------------------
+         when no_data_found then null;
+      end;
+      --------------------------------------
+      -- insert the record for this login --
+      --------------------------------------
+      insert
+        into at_application_login
+             (uuid,
+              office_code,
+              user_name,
+              app_name,
+              host_name,
+              login_time,
+              login_server
+             )
+      values (l_uuid,
+              l_office_code,
+              l_user_name,
+              l_app_name,
+              l_host_name,
+              l_now,
+              p_login_server
+             );
+      commit;          
+   end set_application_login_x;
+
+   procedure set_application_login(
+      p_uuid             out varchar2,
+      p_last_login_time  out integer,
+      p_last_logout_time out integer,
+      p_user_name        in  varchar2,
+      p_app_name         in  varchar2,
+      p_host_name        in  varchar2,
+      p_login_server     in  varchar2,
+      p_office_id        in  varchar2)
+   is
+   begin
+      set_application_login_x(
+         p_uuid,
+         p_last_login_time,
+         p_last_logout_time,
+         p_user_name,
+         p_app_name,
+         p_host_name,
+         p_login_server,
+         p_office_id);
+   end set_application_login;
+      
+   procedure set_application_login(
+      p_uuid             out varchar2,
+      p_username         out varchar2,
+      p_last_login_time  out integer,
+      p_last_logout_time out integer,
+      p_edipi            in  integer,
+      p_app_name         in  varchar2,
+      p_host_name        in  varchar2,
+      p_login_server     in  varchar2,
+      p_office_id        in  varchar2)
+   is
+      l_username    varchar2(30);
+      l_session_key varchar2(16);
+      l_uuid        varchar2(32); 
+   begin
+      select userid
+        into l_username
+        from at_sec_cwms_users
+       where edipi = p_edipi;
+         
+      p_username := l_username;
+      
+      set_application_login_x(
+         p_uuid,
+         p_last_login_time,
+         p_last_logout_time,
+         p_username,
+         p_app_name,
+         p_host_name,
+         p_login_server,
+         p_office_id);
+   end set_application_login;
+
+   procedure set_application_logout(
+      p_last_login_time  out integer,
+      p_last_logout_time out integer,
+      p_uuid             in  varchar2)
+   is
+      pragma autonomous_transaction;
+      l_now         integer;
+      l_row         urowid;
+      l_logout_time integer;
+      l_office_code integer;
+      l_user_name   varchar2(32);
+      l_app_name    varchar2(64);
+   begin
+      l_now := cwms_util.to_millis(systimestamp);
+      ----------------------------------------------------------------------
+      -- get the row with the login info, raising an error if no such row --
+      ----------------------------------------------------------------------
+      begin
+         select rowid
+           into l_row
+           from at_application_login
+          where uuid = p_uuid;
+      exception
+         when no_data_found then
+            cwms_err.raise('ERROR', 'No matching login event found');
+      end;
+      -----------------------------------------------------
+      -- make sure the session is not already logged out --
+      -----------------------------------------------------
+      select logout_time
+        into l_logout_time
+        from at_application_login
+       where rowid = l_row;
+      if l_logout_time > 0 then
+         cwms_err.raise('APPLICATION INSTANCE LOGGED OUT');
+      end if;
+      ------------------------------------
+      -- set the logout info on the row --
+      ------------------------------------
+      update at_application_login
+         set logout_time = l_now,
+             normal_logout = 'T'
+       where rowid = l_row;
+      --------------------------------------------------------------
+      -- delete sessions associated with the application instance --
+      --------------------------------------------------------------
+      delete from at_application_session where uuid = p_uuid;
+      commit;
+      ---------------------------------------------------------------------------------
+      -- populate the last login time and get office, user and app from the same row --
+      ---------------------------------------------------------------------------------
+      select login_time,
+             office_code,
+             user_name,
+             app_name
+        into p_last_login_time,
+             l_office_code,
+             l_user_name,
+             l_app_name
+        from at_application_login
+       where rowid = l_row;
+      -----------------------------------------------------------
+      -- populate the last logout time from a previous session --
+      -----------------------------------------------------------
+      begin
+        select logout_time
+          into p_last_logout_time
+          from at_application_login
+         where office_code = l_office_code
+           and user_name = l_user_name
+           and app_name = l_app_name
+           and logout_time = (select max(logout_time)
+                                from at_application_login
+                               where office_code = l_office_code
+                                 and user_name = l_user_name
+                                 and app_name = l_app_name
+                                 and uuid != p_uuid
+                             );
+      exception
+         -----------------------------
+         -- no previous logout time --
+         -----------------------------
+         when no_data_found then null;
+      end;
+   end set_application_logout;
+
+   function get_application_sessions(
+      p_uuid in varchar2)
+      return varchar2
+   is
+      l_row      rowid;
+      l_sessions varchar2(4000);
+   begin
+      -----------------
+      -- valid UUID? --
+      -----------------
+      begin
+         select rowid
+           into l_row
+           from at_application_login
+          where uuid = p_uuid;
+      exception
+         when no_data_found then
+            cwms_err.raise('NO SUCH APPLICATION INSTANCE');
+      end;
+      ----------------------
+      -- still logged in? --
+      ----------------------
+      begin
+         select rowid
+           into l_row
+           from at_application_login
+          where rowid = l_row
+            and logout_time = 0;
+      exception
+         when no_data_found then
+            cwms_err.raise('APPLICATION INSTANCE LOGGED OUT');
+      end;
+      ----------------------
+      -- get the sessions --
+      ----------------------
+      trim_application_sessions;
+      begin
+         select listagg(session_id, ',') within group (order by session_id)
+           into l_sessions
+           from at_application_session
+          where uuid = p_uuid;
+      exception
+         when no_data_found then null;
+      end;
+      return l_sessions;
+   end get_application_sessions;
+
+   procedure set_application_session(
+      p_uuid        in varchar2,
+      p_session_key in varchar2 default null)
+   is
+      pragma autonomous_transaction;
+      l_row        urowid;
+      l_session_id integer := userenv('sessionid');
+      l_office     varchar2(16);
+      l_username   varchar2(30);
+   begin
+      -----------------
+      -- valid UUID? --
+      -----------------
+      begin
+         select al.rowid,
+                al.user_name,
+                co.office_id
+           into l_row,
+                l_username,
+                l_office
+           from at_application_login al,
+                cwms_office co
+          where al.uuid = p_uuid
+            and co.office_code = al.office_code;
+      exception
+         when no_data_found then
+            cwms_err.raise('NO SUCH APPLICATION INSTANCE');
+      end;
+      ----------------------
+      -- still logged in? --
+      ----------------------
+      begin
+         select rowid
+           into l_row
+           from at_application_login
+          where rowid = l_row
+            and logout_time = 0;
+      exception
+         when no_data_found then
+            cwms_err.raise('APPLICATION INSTANCE LOGGED OUT');
+      end;
+      ---------------------------------
+      -- session already associated? --
+      ---------------------------------
+      begin
+         select rowid
+           into l_row
+           from at_application_session
+          where uuid = p_uuid
+            and session_id = l_session_id;
+      exception
+         when no_data_found then
+            begin
+               insert into at_application_session values (p_uuid, l_session_id);
+               if p_session_key is not null then
+                  cwms_env.set_session_user(p_session_key);
+               end if;   
+               cwms_env.set_session_office_id(l_office);
+            end;   
+      end;
+      commit;
+   end set_application_session;
+
+   procedure logout_dead_app_logins
+   is
+      pragma autonomous_transaction;
+      l_now integer;
+   begin
+      l_now := cwms_util.to_millis(systimestamp);
+      update at_application_login l
+         set logout_time = l_now,
+             normal_logout = 'F'
+       where logout_time = 0
+         and (select count(*) from at_application_session where uuid = l.uuid) = 0;
+      trim_application_sessions;
+      commit;
+   end logout_dead_app_logins;
+
+   function current_session_ids
+      return number_tab_t
+   is
+      l_sessions number_tab_t;
+   begin
+      select audsid
+        bulk collect
+        into l_sessions
+        from v$session
+       where audsid != 0;
+       
+   return l_sessions;       
+   end current_session_ids;
+   
 END cwms_util;
 /
 
