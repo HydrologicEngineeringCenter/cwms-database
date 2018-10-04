@@ -78,6 +78,7 @@ whenever sqlerror continue
 @@../cwms/views/av_unauth_sched_entries
 @@../cwms/cwms_scheduler_auth_pkg
 @@../cwms/cwms_scheduler_auth_pkg_body
+create or replace public synonym cwms_scheduler_auth for cwms_scheduler_auth;
 whenever sqlerror exit
 prompt ################################################################################
 prompt 'ADDING CWMS POOLS'
@@ -90,6 +91,7 @@ whenever sqlerror continue
 @@../cwms/views/av_pool
 @@../cwms/cwms_pool_pkg
 @@../cwms/cwms_pool_pkg_body
+create or replace public synonym cwms_pool for cwms_pool;
 whenever sqlerror exit
 prompt ################################################################################
 prompt 'ADDING LOCATION LEVEL LABELS AND SOURCES'
@@ -340,6 +342,8 @@ drop trigger at_rating_value_trig;
 create index mv_time_zone_idx2 on mv_time_zone(time_zone_code) tablespace cwms_20at_data;
 create index mv_time_zone_idx3 on mv_time_zone(upper("TIME_ZONE_NAME")) tablespace cwms_20at_data;
 create index at_log_message_properties_idx1 on at_log_message_properties (prop_name, nvl(prop_text, prop_value), msg_id) tablespace cwms_20at_data;
+insert into cwms_error (err_code, err_name, err_msg) values (-20049, 'NO SUCH APPLICATION INSTANCE', 'No application instance is associated with the specified UUID');
+insert into cwms_error (err_code, err_name, err_msg) values (-20050, 'APPLICATION INSTANCE LOGGED OUT', 'The application instance associated with the specified UUID has logged out');
 whenever sqlerror exit;
 prompt ################################################################################
 prompt 'UPDATING OTHER VIEWS'
@@ -356,6 +360,7 @@ delete from at_clob where id = '/VIEWDOCS/AV_BASE_PARAMETER_UNITS';
 @@../cwms/views/av_base_parameter_units
 delete from at_clob where id = '/VIEWDOCS/AV_RATING';
 @@../cwms/views/av_rating
+create or replace public synonym CWMS_V_A2W_TS_CODES_BY_LOC for AV_A2W_TS_CODES_BY_LOC;
 whenever sqlerror continue;
 @@../cwms/views/av_entity_category
 whenever sqlerror exit;
@@ -377,6 +382,7 @@ whenever sqlerror continue
 drop type old_cwms_rating;
 whenever sqlerror exit
 @@../cwms/cwms_configuration_pkg
+create or replace public synonym cwms_tsv for cwms_tsv;
 prompt ################################################################################
 prompt 'UPDATING OTHER PACKAGE BODDIES'
 select systimestamp from dual;
