@@ -6514,7 +6514,28 @@ AS
       l_times_binary             date2_tab_t := date2_tab_t();
       l_cursor                   sys_refcursor;
       l_ts_extents_rec           at_ts_extents%rowtype;
+      l_text                     varchar2(32767);
    begin
+      if p_date_times_utc is null then
+         l_text := 'NULL';
+      else
+         select listagg(to_char(column_value, 'yyyy-mm-dd hh24:mi'), ',') within group (order by column_value) 
+           into l_text
+           from table(p_date_times_utc);
+         l_text := '('||l_text||')';
+      end if;
+      cwms_msg.log_db_message(
+         cwms_msg.msg_level_normal,
+         'CWMS_TS.PURGE_TS('
+         ||chr(10)||'   p_ts_code             =>'||p_ts_code||','
+         ||chr(10)||'   p_override_protection =>'||p_override_protection||','
+         ||chr(10)||'   p_version_date_utc    =>'||to_char(p_version_date_utc, 'yyyy-mm-dd hh24:mi')||','
+         ||chr(10)||'   p_start_time_utc      =>'||to_char(p_start_time_utc, 'yyyy-mm-dd hh24:mi')||','
+         ||chr(10)||'   p_end_time_utc        =>'||to_char(p_end_time_utc, 'yyyy-mm-dd hh24:mi')||','
+         ||chr(10)||'   p_date_times_utc      =>'||l_text||','
+         ||chr(10)||'   p_max_version         =>'||p_max_version||','
+         ||chr(10)||'   p_ts_item_mask        =>'||p_ts_item_mask||')');
+      
       l_max_version := cwms_util.return_true_or_false(p_max_version);
       if instr('ERROR', upper(trim(p_override_protection))) = 1 then
          l_override_protection := false;
@@ -6733,30 +6754,48 @@ AS
             where rowid in (select t.rowid
                               from at_tsv_binary t, table(l_times_binary) d
                              where ts_code = p_ts_code and t.date_time = d.date_1 and t.version_date = d.date_2);
-   ---------------------------
-   -- update the ts extents --
-   ---------------------------
---   update_ts_extents(p_ts_code, p_version_date_utc);
-   declare
-      l_job_name varchar2(64) := 'UTX_'||p_ts_code||'_'||to_char(p_version_date_utc, 'yyyymmdd_hh24miss');
-   begin
-      dbms_scheduler.create_job (
-         job_name            => l_job_name,
-         job_type            => 'stored_procedure',
-         job_action          => 'cwms_ts.update_ts_extents',
-         number_of_arguments => 2,
-         comments            => 'Updates the time series extents.');
-      dbms_scheduler.set_job_argument_value(
-         job_name          => l_job_name,
-         argument_position => 1,
-         argument_value    => p_ts_code);
-      dbms_scheduler.set_job_argument_value(
-         job_name          => l_job_name,
-         argument_position => 2,
-         argument_value    => p_version_date_utc);
-      dbms_scheduler.enable(l_job_name);         
-   end;
-   
+      ---------------------------
+      -- update the ts extents --
+      ---------------------------
+      declare
+         job_name_already_exists exception;
+         pragma exception_init(job_name_already_exists, -27477);
+         l_job_name varchar2(64) := 'UTX_'||p_ts_code||'_'||to_char(p_version_date_utc, 'yyyymmdd_hh24miss');
+      begin
+         for i in 1..2 loop
+            begin
+               dbms_scheduler.create_job (
+                  job_name            => l_job_name,
+                  job_type            => 'stored_procedure',
+                  job_action          => 'cwms_ts.update_ts_extents',
+                  number_of_arguments => 2,
+                  comments            => 'Updates the time series extents.');
+               dbms_scheduler.set_job_argument_value(
+                  job_name          => l_job_name,
+                  argument_position => 1,
+                  argument_value    => p_ts_code);
+               dbms_scheduler.set_job_argument_value(
+                  job_name          => l_job_name,
+                  argument_position => 2,
+                  argument_value    => p_version_date_utc);
+               dbms_scheduler.enable(l_job_name);
+               exit;
+            exception
+               when job_name_already_exists then
+                  dbms_scheduler.drop_job(
+                     job_name => l_job_name,
+                     force    => true,
+                     defer    => false);
+                  cwms_msg.log_db_message(
+                     cwms_msg.msg_level_normal, 
+                     'UPDATE_TS_EXTENTS with '
+                     ||p_ts_code
+                     ||', '
+                     ||nvl(to_char(p_version_date_utc), 'NULL')
+                     ||' aborted for restart.');
+            end;
+         end loop;
+      end;
    end purge_ts_data;
 
    procedure change_version_date(
