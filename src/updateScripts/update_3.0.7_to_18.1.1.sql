@@ -33,6 +33,7 @@ prompt #########################################################################
 prompt 'MODIFYING TIME SERIES TABLES'
 select systimestamp from dual;
 @@./18_1_1/modify_time_series_tables
+@@../cwms/mv_ts_code_filter
 prompt ################################################################################
 prompt 'ADDING AT_RATING_VALUE_DEP_IDX INDEX'
 select systimestamp from dual;
@@ -360,6 +361,7 @@ delete from at_clob where id = '/VIEWDOCS/AV_BASE_PARAMETER_UNITS';
 @@../cwms/views/av_base_parameter_units
 delete from at_clob where id = '/VIEWDOCS/AV_RATING';
 @@../cwms/views/av_rating
+@@./18_1_1/dqu_views
 create or replace public synonym CWMS_V_A2W_TS_CODES_BY_LOC for AV_A2W_TS_CODES_BY_LOC;
 whenever sqlerror continue;
 @@../cwms/views/av_entity_category
