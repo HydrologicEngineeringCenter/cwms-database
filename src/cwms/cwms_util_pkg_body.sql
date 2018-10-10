@@ -1,7 +1,26 @@
 SET DEFINE ON
 @@defines.sql
-
-
+begin
+   begin execute immediate 'drop view cwms_v_identifiers'; exception when others then null; end;
+   begin execute immediate 'drop table cwms_identifiers'; exception when others then null; end;
+   $if dbms_db_version.version < 12 $then
+      execute immediate 'create table cwms_identifiers as (select object_name, 
+                                                                  name,
+                                                                  line
+                                                             from dba_identifiers
+                                                            where owner = ''&cwms_schema''
+                                                              and type in (''PROCEDURE'', ''FUNCTION'')
+                                                              and usage = ''DEFINITION''
+                                                              and object_type = ''PACKAGE BODY''
+                                                              and usage_context_id = 1
+                                                          )';
+      execute immediate 'alter table cwms_identifiers add constraint cwms_identifiers_pk primary key (object_name, name, line) using index';
+      execute immediate 'create or replace force view av_cwms_identifiers as select * from cwms_identifiers';
+      execute immediate 'grant select on av_cwms_identifiers to cwms_user';
+      execute immediate 'create or replace public synonym cwms_v_identifiers for av_cwms_identifiers';
+   $end
+end;
+/
 CREATE OR REPLACE PACKAGE BODY cwms_util
 as
    FUNCTION min_dms (p_decimal_degrees IN NUMBER)
@@ -5482,22 +5501,15 @@ as
             as
                l_routine_name varchar2(30);
             begin
-               with routines as
-                  (select name,
-                          line
-                     from dba_identifiers
-                    where owner = '&cwms_schema'
-                      and type in ('PROCEDURE', 'FUNCTION')
-                      and usage = 'DEFINITION'
-                      and object_type = 'PACKAGE BODY'
-                      and object_name = p_package_name
-                      and usage_context_id = 1
-                    order by line
-                  )
                select name
                  into l_routine_name
-                 from routines
-                where line = (select max(line) from routines where line <= p_line_number);
+                 from cwms_v_identifiers
+                where object_name = p_package_name
+                  and line = (select max(line) 
+                                from cwms_v_identifiers
+                               where line <= p_line_number
+                                 and object_name = p_package_name
+                             );
                return l_routine_name;
             exception
                when no_data_found then return '<Unknown>';
