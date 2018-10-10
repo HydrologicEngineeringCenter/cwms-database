@@ -5485,12 +5485,13 @@ as
                with routines as
                   (select name,
                           line
-                     from user_identifiers
-                    where type in ('PROCEDURE', 'FUNCTION')
+                     from dba_identifiers
+                    where owner = '&cwms_schema'
+                      and type in ('PROCEDURE', 'FUNCTION')
                       and usage = 'DEFINITION'
                       and object_type = 'PACKAGE BODY'
                       and object_name = p_package_name
-                      and usage_id = 1
+                      and usage_context_id = 1
                     order by line
                   )
                select name
@@ -5498,6 +5499,8 @@ as
                  from routines
                 where line = (select max(line) from routines where line <= p_line_number);
                return l_routine_name;
+            exception
+               when no_data_found then return '<Unknown>';
             end routine_name;
          begin
             for rec in (select column_value from table(cwms_util.split_text(dbms_utility.format_call_stack, chr(10)))) loop
