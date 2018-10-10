@@ -6,7 +6,8 @@ set define on
 set verify off
 set pages 100
 set serveroutput on
-define cwms_schema='CWMS_20'
+define cwms_schema = 'CWMS_20'
+define cwms_dba_schema = 'CWMS_DBA'
 alter session set current_schema = &cwms_schema;
 ------------------------------------------------------------
 -- spool to file that identifies the database in the name --
@@ -22,6 +23,16 @@ prompt 'VERIFYING EXPECTED VERSION'
 select systimestamp from dual;
 @@./18_1_1/verify_db_version
 prompt ################################################################################
+prompt 'COLLECT CURRENT PRIVILEGES'
+select systimestamp from dual;
+create table prev_priv as (select privilege, 
+                                  owner, 
+                                  table_name
+                             from dba_tab_privs
+                            where grantee = 'CWMS_USER'
+                              and owner in ('&cwms_schema', '&cwms_dba_schema')
+                          );
+prompt ################################################################################
 prompt 'MODIFYING CWMS_DB_CHANGE_LOG TABLE'
 select systimestamp from dual;
 @@./18_1_1/modify_db_change_log
@@ -33,7 +44,9 @@ prompt #########################################################################
 prompt 'MODIFYING TIME SERIES TABLES'
 select systimestamp from dual;
 @@./18_1_1/modify_time_series_tables
+whenever sqlerror continue
 @@../cwms/mv_ts_code_filter
+whenever sqlerror exit
 prompt ################################################################################
 prompt 'ADDING AT_RATING_VALUE_DEP_IDX INDEX'
 select systimestamp from dual;
@@ -119,14 +132,19 @@ select systimestamp from dual;
 prompt ################################################################################
 prompt 'ADDING HISTORIC TIME SERIES FLAG'
 select systimestamp from dual;
-@@./18_1_1/add_historic_time_series
+whenever sqlerror continue
 delete from at_clob where id in ('/VIEWDOCS/AV_CWMS_TS_ID', '/VIEWDOCS/AV_CWMS_TS_ID2', '/VIEWDOCS/ZAV_CWMS_TS_ID');
+drop package cwms_ts_id;
+drop package cwms_ts;
+@@./18_1_1/add_historic_time_series
 @@../cwms/views/av_cwms_ts_id
 @@../cwms/views/av_cwms_ts_id2
 @@../cwms/views/zav_cwms_ts_id
+@@../cwms/cwms_ts_id_pkg
 @@../cwms/cwms_ts_id_pkg_body
-@@../cwms/cwms_ts_pkg_body
 @@../cwms/cwms_ts_pkg
+@@../cwms/cwms_ts_pkg_body
+whenever sqlerror exit
 prompt ################################################################################
 prompt 'UPDATING CMA AND A2W'
 select systimestamp from dual;
@@ -426,10 +444,11 @@ prompt #########################################################################
 prompt 'INVALID OBJECTS...'
 select systimestamp from dual;
 set pagesize 100
-select substr(object_name, 1, 30) as invalid_object,
+select owner||'.'||substr(object_name, 1, 30) as invalid_object,
        object_type
-  from user_objects
+  from all_objects
  where status = 'INVALID'
+   and owner in ('&cwms_schema', '&cwms_dba_schema')
  order by 1, 2;
 prompt ################################################################################
 prompt 'RECOMPILING SCHEMA'
@@ -437,22 +456,38 @@ exec sys.utl_recomp.recomp_serial('&cwms_schema');
 prompt ################################################################################
 prompt 'REMAINING INVALID OBJECTS...'
 select systimestamp from dual;
-select substr(object_name, 1, 30) as invalid_object,
+select owner||'.'||substr(object_name, 1, 30) as invalid_object,
        object_type
-  from user_objects
+  from all_objects
  where status = 'INVALID'
+   and owner in ('&cwms_schema', '&cwms_dba_schema')
  order by 1, 2;
-select substr(name, 1, 30) as name,
+select owner||'.'||substr(name, 1, 30) as name,
        type,
        substr(line||':'||position, 1, 12) as location,
        substr(text, 1, 132) as error
-  from user_errors
+  from all_errors
  where attribute = 'ERROR'
- order by type, name, sequence;
+   and owner in ('&cwms_schema', '&cwms_dba_schema')
+ order by owner, type, name, sequence;
 prompt ################################################################################
 prompt 'UPDATING SERVICE_USER_POLICY'
 select systimestamp from dual;
 @@../cwms/create_service_user_policy
+prompt ################################################################################
+prompt 'RESTORE PREVIOUS PRIVILEGES'
+select systimestamp from dual;
+begin
+   for rec in (select privilege, owner, table_name from prev_priv) loop
+      begin
+         execute immediate 'grant '||rec.privilege||' on '||rec.owner||'.'||rec.table_name||' to cwms_user';
+      exception
+         when others then null;
+      end;   
+   end loop;
+end;
+/
+drop table prev_priv;
 prompt ################################################################################
 prompt 'UPDATING DB_CHANGE_LOG'
 select systimestamp from dual;

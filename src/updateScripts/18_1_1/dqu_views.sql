@@ -1,3 +1,4 @@
+whenever sqlerror continue
 delete from at_clob where id = '/VIEWDOCS/AV_TSV_DQU';
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV_DQU', null,
 '
@@ -28,6 +29,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV_DQU', null,
  * @field ts_alias_group	    The time series group for the time series alias if aliased_item is ''TIME SERIES''
  */
 ');
+whenever sqlerror exit
 create or replace force view av_tsv_dqu (
    ts_code, 
    version_date, 
@@ -68,6 +70,7 @@ select tsv.ts_code,
  where tsv.ts_code = ts.ts_code
 	 and ts.unit_id  = c.from_unit_id;
 	 
+whenever sqlerror continue
 delete from at_clob where id = '/VIEWDOCS/AV_RATING_30D';
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV_DQU_30D', null,
 '
@@ -98,6 +101,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV_DQU_30D', nu
  * @field ts_alias_group	    The time series group for the time series alias if aliased_item is ''TIME SERIES''
  */
 ');
+whenever sqlerror exit
 create or replace force view av_tsv_dqu_30d (
    ts_code, 
    version_date, 
@@ -139,6 +143,7 @@ select tsv.ts_code,
 	 and ts.unit_id     = c.from_unit_id
 	 and tsv.date_time >= sysdate - 30;
 
+whenever sqlerror continue
 delete from at_clob where id = '/VIEWDOCS/AV_RATING_24H';
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV_DQU_24H', null,
 '
@@ -169,6 +174,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV_DQU_24H', nu
  * @field ts_alias_group	    The time series group for the time series alias if aliased_item is ''TIME SERIES''
  */
 ');
+whenever sqlerror exit
 create or replace force view av_tsv_dqu_24h (
    ts_code, 
    version_date, 

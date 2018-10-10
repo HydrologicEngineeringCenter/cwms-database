@@ -1,9 +1,9 @@
-alter table at_cwms_ts_id add historic_flag varchar2(1) default 'F';
-
+drop trigger at_cwms_ts_spec_t01;
 alter table at_cwms_ts_spec add historic_flag varchar2(1) default 'F';
 alter table at_cwms_ts_spec add constraint at_cwms_ts_spec_ck_6 check (historic_flag = 'T' or historic_flag = 'F');
+alter table at_cwms_ts_id add historic_flag varchar2(1) default 'F';
    
-create or replace TRIGGER at_cwms_ts_spec_t01
+create trigger at_cwms_ts_spec_t01
     AFTER INSERT OR UPDATE OR DELETE
     ON AT_CWMS_TS_SPEC     REFERENCING NEW AS new OLD AS old
     FOR EACH ROW
