@@ -516,6 +516,25 @@ begin
 end;
 /
 prompt ################################################################################
+prompt 'NOTIFICATIONS'
+select systimestamp from dual;
+prompt ================================================================================
+prompt 'The following locations (if any) have had their time zones changed from CST to US/Central or PST to US/Pacific.'
+select office_id,
+       substr(location_id, 1, 100) as location_id,
+       time_zone_name
+  from location_tz_changes;
+drop table location_tz_changes;
+prompt ================================================================================
+prompt 'The following exhcnage sets (if any) have had their time zones changed from CST to US/Central or PST to US/Pacific.'
+select office_id, 
+       xchg_set_id, 
+       substr(ts_id, 1, 100) as ts_id, 
+       substr(dss_pathname, 1, 100) as dss_pathname, 
+       time_zone_name 
+  from xchg_set_tz_changes;
+drop table xchg_set_tz_changes;
+prompt ################################################################################
 prompt 'UPDATE COMPLETE'
 select systimestamp from dual;
 exit
