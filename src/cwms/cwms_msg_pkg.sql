@@ -1359,7 +1359,7 @@ procedure retrieve_client_info(
  */
 function retrieve_host_name
    return varchar2;
-/*
+/**
  * Creates and registers a queue subscriber name with a unique name based on the office, queue name, client system name and process id
  *
  * @param p_subscriber_name An output parameter for the unique subscription name
@@ -1378,7 +1378,7 @@ procedure register_queue_subscriber(
    p_app_name        in  varchar2 default null,
    p_fail_if_exists  in  varchar2 default 'F',
    p_office_id       in  varchar2 default null); 
-/*
+/**
  * Creates and registers a queue subscriber name with a unique name based on the queue name and application instance UUID
  *
  * @param p_subscriber_name An output parameter for the unique subscription name
@@ -1394,7 +1394,7 @@ procedure register_queue_subscriber(
    p_queue_name      in  varchar2,
    p_uuid            in  varchar2,
    p_fail_if_exists  in  varchar2 default 'F'); 
-/*
+/**
  * Creates and registers a queue subscriber name with a unique name based on the office, queue name, client system name and process id
  *
  * @param p_queue_name     The name of the queue to subscribe to. Must be TS_STORED, STATUS, or REALTIME_OPS
@@ -1412,7 +1412,7 @@ function register_queue_subscriber_f(
    p_fail_if_exists   in varchar2 default 'F',
    p_office_id        in varchar2 default null)
    return varchar2;
-/*
+/**
  * Creates and registers a queue subscriber name with a unique name based on the queue name and application instance UUID
  *
  * @param p_queue_name     The name of the queue to subscribe to. Must be TS_STORED, STATUS, or REALTIME_OPS
@@ -1428,7 +1428,7 @@ function register_queue_subscriber_f(
    p_uuid           in varchar2,
    p_fail_if_exists in varchar2 default 'F')
    return varchar2;
-/*
+/**
  * Unregisters a queue subscriber name created with register_queue_subscriber or register_queue_subscriber_f
  *
  * @param p_subscriber_name       The unique name of the subscription to delete
@@ -1443,7 +1443,7 @@ procedure unregister_queue_subscriber(
    p_fail_on_wrong_host    in varchar2 default 'T',
    p_fail_on_wrong_process in varchar2 default 'T',
    p_office_id             in varchar2 default null);
-/*
+/**
  * Unregisters a queue subscriber name created with register_queue_subscriber or register_queue_subscriber_f using an application instance UUID
  *
  * @param p_queue_name     The name of the queue to subscribe to. Must be TS_STORED, STATUS, or REALTIME_OPS
@@ -1454,7 +1454,7 @@ procedure unregister_queue_subscriber(
 procedure unregister_queue_subscriber(
    p_queue_name in varchar2,
    p_uuid       in varchar2);
-/*
+/**
  * Updates the process identifier for a currently registered queue subscriber name
  *
  * @param p_subscriber_name       The unique name of the subscription to update
