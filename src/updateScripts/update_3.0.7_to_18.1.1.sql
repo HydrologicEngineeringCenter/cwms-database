@@ -12,9 +12,23 @@ alter session set current_schema = &cwms_schema;
 ------------------------------------------------------------
 -- spool to file that identifies the database in the name --
 ------------------------------------------------------------
-column db_name new_value dbname
-select nvl(primary_db_unique_name, db_unique_name) as db_name from v$database;
-spool update_&dbname._3.0.7_to_3.1.1.log;
+var db_name varchar2(61)
+declare
+   l_count pls_integer;
+begin
+   select count(*) into l_count from all_objects where object_name = 'CDB_PDBS';
+   if l_count = 0 then
+      select nvl(primary_db_unique_name, db_unique_name) into :db_name from v$database;
+   else
+      execute immediate 'select nvl(v1.primary_db_unique_name, v1.db_unique_name)||''-''||v2.pdb_name from v$database v1, cdb_pdbs v2' into :db_name;
+   end if;
+end;
+/
+column db_name new_value db_name
+select :db_name as db_name from dual;
+define logfile=update_&db_name._3.0.7_to_18.1.1.log
+prompt Log file = &logfile
+spool &logfile;
 -------------------
 -- do the update --
 -------------------
