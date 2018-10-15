@@ -40,11 +40,15 @@ begin
          -------------------------------
          -- get the local record code --
          -------------------------------
-         select protection_type_code
-           into l_matching_code
-           from at_embank_protection_type
-          where protection_type_display_value = rec.protection_type_display_value
-            and db_office_code = l_host_office_code;
+         begin
+            select protection_type_code
+              into l_matching_code
+              from at_embank_protection_type
+             where protection_type_display_value = rec.protection_type_display_value
+               and db_office_code = l_host_office_code;
+         exception
+            when no_data_found then continue;
+         end;   
          ----------------------------------------------------------
          -- update values foreign keyed to the local record code --
          ----------------------------------------------------------

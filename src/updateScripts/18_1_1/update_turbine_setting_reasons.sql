@@ -38,11 +38,15 @@ begin
          -------------------------------
          -- get the local record code --
          -------------------------------
-         select turb_set_reason_code
-           into l_matching_code                                       
-           from at_turbine_setting_reason
-          where turb_set_reason_display_value = rec.turb_set_reason_display_value
-            and db_office_code = l_host_office_code;
+         begin
+            select turb_set_reason_code
+              into l_matching_code                                       
+              from at_turbine_setting_reason
+             where turb_set_reason_display_value = rec.turb_set_reason_display_value
+               and db_office_code = l_host_office_code;
+         exception
+            when no_data_found then continue;
+         end;   
          ----------------------------------------------------------
          -- update values foreign keyed to the local record code --
          ----------------------------------------------------------

@@ -36,11 +36,15 @@ begin
          -------------------------------
          -- get the local record code --                                            
          -------------------------------
-         select turbine_comp_code
-           into l_matching_code
-           from at_turbine_computation_code
-          where turbine_comp_display_value = rec.turbine_comp_display_value
-            and db_office_code = l_host_office_code;
+         begin
+            select turbine_comp_code
+              into l_matching_code
+              from at_turbine_computation_code
+             where turbine_comp_display_value = rec.turbine_comp_display_value
+               and db_office_code = l_host_office_code;
+         exception
+            when no_data_found then continue;
+         end;   
          ----------------------------------------------------------
          -- update values foreign keyed to the local record code --
          ----------------------------------------------------------

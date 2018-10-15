@@ -39,11 +39,15 @@ begin
          -------------------------------
          -- get the local record code --
          -------------------------------
-         select phys_trans_type_code
-           into l_matching_code
-           from at_physical_transfer_type
-          where phys_trans_type_display_value = rec.phys_trans_type_display_value
-            and db_office_code = l_host_office_code;
+         begin
+            select phys_trans_type_code
+              into l_matching_code
+              from at_physical_transfer_type
+             where phys_trans_type_display_value = rec.phys_trans_type_display_value
+               and db_office_code = l_host_office_code;
+         exception
+            when no_data_found then continue;
+         end;   
          ----------------------------------------------------------
          -- update values foreign keyed to the local record code --
          ----------------------------------------------------------

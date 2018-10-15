@@ -38,11 +38,15 @@ begin
          -------------------------------
          -- get the local record code --
          -------------------------------
-         select ws_contract_type_code
-           into l_matching_code
-           from at_ws_contract_type
-          where ws_contract_type_display_value = rec.ws_contract_type_display_value
-            and db_office_code = l_host_office_code;
+         begin
+            select ws_contract_type_code
+              into l_matching_code
+              from at_ws_contract_type
+             where ws_contract_type_display_value = rec.ws_contract_type_display_value
+               and db_office_code = l_host_office_code;
+         exception
+            when no_data_found then continue;
+         end;   
          ----------------------------------------------------------
          -- update values foreign keyed to the local record code --
          ----------------------------------------------------------
