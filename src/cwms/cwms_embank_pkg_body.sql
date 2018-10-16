@@ -713,13 +713,21 @@ begin
          cwms_err.raise(
             'ITEM_ALREADY_EXISTS',
             'Embankment structure type',
-            p_lookup_type.office_id||'/'||p_lookup_type.display_value);
+            cwms_util.get_db_office_id(p_lookup_type.office_id)||'/'||p_lookup_type.display_value);
       end if;
       l_exists := true;         
    exception
       when no_data_found then
          l_exists := false;         
    end;
+   if l_exists and cwms_util.get_db_office_id != l_rec.db_office_code then
+       cwms_err.raise(
+         'ERROR'
+         ||'Office '
+         ||cwms_util.get_db_office_id
+         ||' cannot update structure type owned by office '
+         ||cwms_util.get_db_office_id(l_rec.db_office_code));
+   end if;
    l_rec.structure_type_tooltip := p_lookup_type.tooltip;
    l_rec.structure_type_active  := p_lookup_type.active;         
    if not l_exists then
@@ -741,11 +749,41 @@ procedure remove_structure_type(
    p_lookup_type in lookup_type_obj_t
 )
 is
+   l_rec at_embank_structure_type%rowtype;
 begin
-   delete 
+   ----------------------
+   -- see if it exists --
+   ----------------------
+   select *
+     into l_rec
      from at_embank_structure_type
-    where db_office_code = cwms_util.get_office_code(p_lookup_type.office_id)
+    where db_office_code in (cwms_util.db_office_code_all, cwms_util.get_office_code(p_lookup_type.office_id))
       and structure_type_display_value = p_lookup_type.display_value;
+   -----------------------------
+   -- see if we can delete it --
+   -----------------------------
+   if cwms_util.get_db_office_id != l_rec.db_office_code then
+       cwms_err.raise(
+         'ERROR'
+         ||'Office '
+         ||cwms_util.get_db_office_id
+         ||' cannot delete structure type owned by office '
+         ||cwms_util.get_db_office_id(l_rec.db_office_code));
+   end if;
+   ---------------   
+   -- delete it --
+   ---------------   
+   delete
+     from at_embank_structure_type
+    where structure_type_code = l_rec.structure_type_code;
+exception
+   when no_data_found then
+      cwms_err.raise(
+         'ITEM_DOES_NOT_EXIST',
+         'CWMS embankment structure type',
+         cwms_util.get_office_code(p_lookup_type.office_id)
+         ||'/'
+         ||p_lookup_type.display_value);
 end remove_structure_type;
 
 --
@@ -772,7 +810,7 @@ begin
    loop
       p_lookup_type_tab.extend;
       p_lookup_type_tab(p_lookup_type_tab.count) := lookup_type_obj_t(
-         l_db_office_id,
+         cwms_util.get_db_office_id_from_code(rec.db_office_code),
          rec.protection_type_display_value,
          rec.protection_type_tooltip,
          rec.protection_type_active);
@@ -822,19 +860,27 @@ begin
       select *
         into l_rec
         from at_embank_protection_type
-       where db_office_code = l_office_code
+       where db_office_code in (cwms_util.db_office_code_all, l_office_code)
          and protection_type_display_value = p_lookup_type.display_value;
       if cwms_util.is_true(p_fail_if_exists) then
          cwms_err.raise(
             'ITEM_ALREADY_EXISTS',
             'Embankment protection type',
-            p_lookup_type.office_id||'/'||p_lookup_type.display_value);
+            cwms_util.get_db_office_id(p_lookup_type.office_id)||'/'||p_lookup_type.display_value);
       end if;
       l_exists := true;         
    exception
       when no_data_found then
          l_exists := false;         
    end;
+   if l_exists and cwms_util.get_db_office_id != l_rec.db_office_code then
+       cwms_err.raise(
+         'ERROR'
+         ||'Office '
+         ||cwms_util.get_db_office_id
+         ||' cannot update protection type owned by office '
+         ||cwms_util.get_db_office_id(l_rec.db_office_code));
+   end if;
    l_rec.protection_type_tooltip := p_lookup_type.tooltip;
    l_rec.protection_type_active  := p_lookup_type.active;         
    if not l_exists then
@@ -856,11 +902,41 @@ procedure remove_protection_type(
    p_lookup_type in lookup_type_obj_t
 )
 is
+   l_rec at_embank_protection_type%rowtype;
 begin
-   delete 
+   ----------------------
+   -- see if it exists --
+   ----------------------
+   select *
+     into l_rec
      from at_embank_protection_type
-    where db_office_code = cwms_util.get_office_code(p_lookup_type.office_id)
+    where db_office_code in (cwms_util.db_office_code_all, cwms_util.get_office_code(p_lookup_type.office_id))
       and protection_type_display_value = p_lookup_type.display_value;
+   -----------------------------
+   -- see if we can delete it --
+   -----------------------------
+   if cwms_util.get_db_office_id != l_rec.db_office_code then
+       cwms_err.raise(
+         'ERROR'
+         ||'Office '
+         ||cwms_util.get_db_office_id
+         ||' cannot delete protection type owned by office '
+         ||cwms_util.get_db_office_id(l_rec.db_office_code));
+   end if;
+   ---------------   
+   -- delete it --
+   ---------------   
+   delete
+     from at_embank_protection_type
+    where protection_type_code = l_rec.protection_type_code;
+exception
+   when no_data_found then
+      cwms_err.raise(
+         'ITEM_DOES_NOT_EXIST',
+         'CWMS embankment protection type',
+         cwms_util.get_office_code(p_lookup_type.office_id)
+         ||'/'
+         ||p_lookup_type.display_value);
 end remove_protection_type;
 
 
