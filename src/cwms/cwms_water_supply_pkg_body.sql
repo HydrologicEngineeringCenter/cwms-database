@@ -471,8 +471,8 @@ IS
       --------------------------------
       SELECT ws_contract_type_code
         INTO l_contract_type_code
-        FROM at_ws_contract_type
-       WHERE db_office_code = cwms_util.get_office_code(p_obj.water_supply_contract_type.office_id)
+        from at_ws_contract_type
+       WHERE db_office_code in (cwms_util.db_office_code_all, cwms_util.get_office_code(p_obj.water_supply_contract_type.office_id))
          AND upper(ws_contract_type_display_value) = upper(p_obj.water_supply_contract_type.display_value);
       
 
@@ -768,8 +768,8 @@ BEGIN
          BEGIN
             SELECT *
               INTO l_rec
-              FROM at_ws_contract_type
-             WHERE db_office_code = l_office_code
+              from at_ws_contract_type
+             WHERE db_office_code in( l_office_code, cwms_util.db_office_code_all)
                AND upper(ws_contract_type_display_value) = 
                    upper(p_contract_types(i).display_value);
             IF l_fail_if_exists THEN
@@ -779,6 +779,9 @@ BEGIN
                   upper(p_contract_types(i).office_id)
                   || '/'
                   || p_contract_types(i).display_value);
+            IF l_rec.db_office_code = cwms_util.db_office_code_all THEN
+               cwms_err.raise('ERROR', 'Cannot update CWMS-owned contract type');
+            END IF;
             END IF;                   
             l_rec.ws_contract_type_display_value := p_contract_types(i).display_value;                  
             l_rec.ws_contract_type_tooltip := p_contract_types(i).tooltip;                  
@@ -1277,7 +1280,7 @@ BEGIN
               ) xfer_date,
             acct_tab.accounting_remarks remarks
         from table (cast (p_accounting_tab as wat_usr_contract_acct_tab_t)) acct_tab
-            left outer join cwms_office o on (o.office_id = acct_tab.physical_transfer_type.office_id)
+            left outer join cwms_office o on (o.office_id in ('CWMS', acct_tab.physical_transfer_type.office_id))
             left outer join at_physical_transfer_type ptt on (
                 ptt.phys_trans_type_display_value = acct_tab.physical_transfer_type.display_value 
                 and ptt.db_office_code = o.office_code
