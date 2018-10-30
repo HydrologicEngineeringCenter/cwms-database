@@ -5973,6 +5973,7 @@ as
                                  and user_name = l_user_name
                                  and app_name = l_app_name
                                  and uuid != p_uuid
+                                 and logout_time > 0
                              );
       exception
          -----------------------------
