@@ -2,14 +2,14 @@ set echo off
 set time on
 set define on
 set concat on
-set linesize 1024   
+set linesize 1024
 whenever sqlerror exit sql.sqlcode
 
 --
 -- prompt for info
 --
 @@py_prompt
- 
+
 spool buildCWMS_DB.log
 --
 -- log on as sysdba
@@ -40,7 +40,7 @@ grant execute on  cwms_dba.cwms_user_admin to &cwms_schema;
 grant execute on  dbms_crypto to cwms_user;
 
 --
--- switch to cwms_schema 
+-- switch to cwms_schema
 --
 alter session set current_schema = &cwms_schema;
 
@@ -83,7 +83,7 @@ alter session set current_schema = &cwms_schema;
 
 --
 -- structure that can't be built without the CWMS API,
--- 
+--
 @@cwms/at_schema_2
 @@cwms/at_schema_tsv_dqu
 --
@@ -111,9 +111,9 @@ set echo off
 set linesize 132
 set pagesize 1000
 prompt Invalid objects...
-  select substr(object_name, 1, 31) "INVALID OBJECT", object_type 
-    from dba_objects 
-   where owner = '&cwms_schema' 
+  select substr(object_name, 1, 31) "INVALID OBJECT", object_type
+    from dba_objects
+   where owner = '&cwms_schema'
      and status = 'INVALID'
 order by object_name, object_type asc;
 
@@ -127,22 +127,25 @@ end;
 /
 
 prompt Remaining invalid objects...
-  select substr(object_name, 1, 31) "INVALID OBJECT", object_type 
-    from dba_objects 
-   where owner = '&cwms_schema' 
+  select substr(object_name, 1, 31) "INVALID OBJECT", object_type
+    from dba_objects
+   where owner = '&cwms_schema'
      and status = 'INVALID'
 order by object_name, object_type asc;
 
 prompt Database errors...
-  select * from dba_errors order by 1,2,3,4;
-  
+  select *
+   from dba_errors
+  where owner = '&cwms_schema'
+  order by 1,2,3,4;
+
 declare
    obj_count integer;
 begin
    select count(*)
      into obj_count
      from dba_objects
-    where owner = '&cwms_schema' 
+    where owner = '&cwms_schema'
       and status = 'INVALID';
    if obj_count > 0 then
       dbms_output.put_line('' || obj_count || ' objects are still invalid.');
@@ -172,6 +175,31 @@ prompt Connected as &cwms_schema
 
 @@cwms/tables/at_clob_index.sql
 @@cwms/tables/indexes_for_spatial_data.sql
+--------------------------------------------------
+-- populate CWMS_IDENTIFIERS table on Oracle 11 --
+--------------------------------------------------
+prompt Popluating CWMS_IDENTIFIERS table
+begin
+   $if dbms_db_version.version < 12 $then
+      begin execute immediate 'drop view cwms_v_identifiers'; exception when others then null; end;
+      begin execute immediate 'drop table cwms_identifiers'; exception when others then null; end;
+      execute immediate 'create table cwms_identifiers as (select object_name,
+                                                                  name,
+                                                                  line
+                                                             from dba_identifiers
+                                                            where owner = ''&cwms_schema''
+                                                              and type in (''PROCEDURE'', ''FUNCTION'')
+                                                              and usage = ''DEFINITION''
+                                                              and object_type = ''PACKAGE BODY''
+                                                              and usage_context_id = 1
+                                                          )';
+      execute immediate 'alter table cwms_identifiers add constraint cwms_identifiers_pk primary key (object_name, name, line) using index';
+      execute immediate 'create or replace force view av_cwms_identifiers as select * from cwms_identifiers';
+      execute immediate 'grant select on av_cwms_identifiers to cwms_user';
+      execute immediate 'create or replace public synonym cwms_v_identifiers for av_cwms_identifiers';
+   $end
+end;
+/
 
 --------------------------------
 -- populate base data via API --
@@ -200,57 +228,57 @@ end;
 
 begin
    cwms_text.store_text_filter(
-      p_text_filter_id => 'LOCATION', 
-      p_description    => 'Matches valid CWMS locations', 
-      p_text_filter    => str_tab_t('in:^[^.-]{0,15}[^. -](-[^. -][^.]{0,31})?$', 'ex:^\W', 'ex:\W$'), 
-      p_fail_if_exists => 'F', 
-      p_uses_regex     => 'T', 
-      p_regex_flags    => null, 
+      p_text_filter_id => 'LOCATION',
+      p_description    => 'Matches valid CWMS locations',
+      p_text_filter    => str_tab_t('in:^[^.-]{0,15}[^. -](-[^. -][^.]{0,31})?$', 'ex:^\W', 'ex:\W$'),
+      p_fail_if_exists => 'F',
+      p_uses_regex     => 'T',
+      p_regex_flags    => null,
       p_office_id      => 'CWMS');
-      
+
    cwms_text.store_text_filter(
-      p_text_filter_id => 'BASE_PARAMETER', 
-      p_description    => 'Matches valid CWMS base parameters', 
-      p_text_filter    => str_tab_t('in:^(%|Area|Code|Con[cd]|Count|Currency|Depth|Dir|Dist|Elev|Energy|Evap(Rate)?|Fish|Flow|Frost|Irrad|Opening|pH|Power|Precip|Pres|Rad|Ratio|Speed|SpinRate|Stage|Stor|Temp|Thick|Timing|Travel|Turb[FJN]?|Volt)$'), 
-      p_fail_if_exists => 'F', 
-      p_uses_regex     => 'T', 
-      p_regex_flags    => null, 
+      p_text_filter_id => 'BASE_PARAMETER',
+      p_description    => 'Matches valid CWMS base parameters',
+      p_text_filter    => str_tab_t('in:^(%|Area|Code|Con[cd]|Count|Currency|Depth|Dir|Dist|Elev|Energy|Evap(Rate)?|Fish|Flow|Frost|Irrad|Opening|pH|Power|Precip|Pres|Rad|Ratio|Speed|SpinRate|Stage|Stor|Temp|Thick|Timing|Travel|Turb[FJN]?|Volt)$'),
+      p_fail_if_exists => 'F',
+      p_uses_regex     => 'T',
+      p_regex_flags    => null,
       p_office_id      => 'CWMS');
-      
+
    cwms_text.store_text_filter(
-      p_text_filter_id => 'PARAMETER', 
-      p_description    => 'Matches valid CWMS parameters', 
-      p_text_filter    => str_tab_t('in:^(%|Area|Code|Con[cd]|Count|Currency|Depth|Dir|Dist|Elev|Energy|Evap(Rate)?|Fish|Flow|Frost|Irrad|Opening|pH|Power|Precip|Pres|Rad|Ratio|Speed|SpinRate|Stage|Stor|Temp|Thick|Timing|Travel|Turb[FJN]?|Volt)(-[^.]{1,32})?$'), 
-      p_fail_if_exists => 'F', 
-      p_uses_regex     => 'T', 
-      p_regex_flags    => null, 
+      p_text_filter_id => 'PARAMETER',
+      p_description    => 'Matches valid CWMS parameters',
+      p_text_filter    => str_tab_t('in:^(%|Area|Code|Con[cd]|Count|Currency|Depth|Dir|Dist|Elev|Energy|Evap(Rate)?|Fish|Flow|Frost|Irrad|Opening|pH|Power|Precip|Pres|Rad|Ratio|Speed|SpinRate|Stage|Stor|Temp|Thick|Timing|Travel|Turb[FJN]?|Volt)(-[^.]{1,32})?$'),
+      p_fail_if_exists => 'F',
+      p_uses_regex     => 'T',
+      p_regex_flags    => null,
       p_office_id      => 'CWMS');
-      
+
    cwms_text.store_text_filter(
-      p_text_filter_id => 'PARAMETER_TYPE', 
-      p_description    => 'Matches valid CWMS parameter types', 
-      p_text_filter    => str_tab_t('in:^(Total|Max|Min|Const|Ave|Inst)$'), 
-      p_fail_if_exists => 'F', 
-      p_uses_regex     => 'T', 
-      p_regex_flags    => null, 
+      p_text_filter_id => 'PARAMETER_TYPE',
+      p_description    => 'Matches valid CWMS parameter types',
+      p_text_filter    => str_tab_t('in:^(Total|Max|Min|Const|Ave|Inst)$'),
+      p_fail_if_exists => 'F',
+      p_uses_regex     => 'T',
+      p_regex_flags    => null,
       p_office_id      => 'CWMS');
-      
+
    cwms_text.store_text_filter(
-      p_text_filter_id => 'INTERVAL', 
-      p_description    => 'Matches valid CWMS intervals', 
-      p_text_filter    => str_tab_t('in:^(0|~?(1(Minute|Hour|Day|Week|Month|Year|Decade)|([234568]|1[025]|[23]0)Minutes|([23468]|12)Hours|[23456]Days))$'), 
-      p_fail_if_exists => 'F', 
-      p_uses_regex     => 'T', 
-      p_regex_flags    => null, 
+      p_text_filter_id => 'INTERVAL',
+      p_description    => 'Matches valid CWMS intervals',
+      p_text_filter    => str_tab_t('in:^(0|~?(1(Minute|Hour|Day|Week|Month|Year|Decade)|([234568]|1[025]|[23]0)Minutes|([23468]|12)Hours|[23456]Days))$'),
+      p_fail_if_exists => 'F',
+      p_uses_regex     => 'T',
+      p_regex_flags    => null,
       p_office_id      => 'CWMS');
-      
+
    cwms_text.store_text_filter(
-      p_text_filter_id => 'DURATION', 
-      p_description    => 'Matches valid CWMS durations', 
-      p_text_filter    => str_tab_t('in:^(0|(1(Minute|Hour|Day|Week|Month|Year|Decade)|([234568]|1[025]|[23]0)Minutes|([23468]|12)Hours|[23456]Days)(BOP)?)$'), 
-      p_fail_if_exists => 'F', 
-      p_uses_regex     => 'T', 
-      p_regex_flags    => null, 
+      p_text_filter_id => 'DURATION',
+      p_description    => 'Matches valid CWMS durations',
+      p_text_filter    => str_tab_t('in:^(0|(1(Minute|Hour|Day|Week|Month|Year|Decade)|([234568]|1[025]|[23]0)Minutes|([23468]|12)Hours|[23456]Days)(BOP)?)$'),
+      p_fail_if_exists => 'F',
+      p_uses_regex     => 'T',
+      p_regex_flags    => null,
       p_office_id      => 'CWMS');
 end;
 /
@@ -262,10 +290,14 @@ prompt insert CWMS version entry
 --------------------------------------
 prompt Creating and starting queues...
 @py_Queues
+begin
+   cwms_msg.create_av_queue_subscr_msgs; -- view must be created after creating queues
+end;
+/
 prompt Starting jobs...
 begin
    cwms_msg.start_trim_log_job;
-   cwms_msg.start_purge_queues_job;
+   cwms_msg.start_remove_subscribers_job;
    cwms_ts.start_trim_ts_deleted_job;
    cwms_sec.start_refresh_mv_sec_privs_job;
    cwms_sec.start_clean_session_job;
