@@ -163,15 +163,15 @@ as
                                  ||cwms_rating.separator1||l_ind_param
                                  ||cwms_rating.separator2||l_ind_param||'-Shift'
                                  ||cwms_rating.separator1||l_template_version
-                                 ||cwms_rating.separator1||l_rating_version,     
-            p_native_units    => null,                                           
-            p_effective_date  => null,                                           
-            p_transition_date => null,                                           
-            p_active_flag     => null,                                           
-            p_formula         => null,                                           
-            p_rating_info     => null,                                           
-            p_description     => null,                                           
-            p_office_id       => self.office_id);                                
+                                 ||cwms_rating.separator1||l_rating_version,
+            p_native_units    => null,
+            p_effective_date  => null,
+            p_transition_date => null,
+            p_active_flag     => null,
+            p_formula         => null,
+            p_rating_info     => null,
+            p_description     => null,
+            p_office_id       => self.office_id);
          l_temp.create_date := null;
          ----------------------------------
          -- get the shift effective date --
@@ -261,7 +261,6 @@ as
             exception
                when others then
                   cwms_msg.log_db_message(
-                     'stream_rating_t.store',
                      cwms_msg.msg_level_normal,
                      'Rating shift '||i||' skipped due to '||sqlerrm);
                   continue shifts;
@@ -287,16 +286,16 @@ as
                p_rating_spec_id  => l_location_id
                                     ||cwms_rating.separator1||l_ind_param
                                     ||cwms_rating.separator2||l_ind_param||'-Offset'
-                                    ||cwms_rating.separator1||l_template_version                         
+                                    ||cwms_rating.separator1||l_template_version
                                     ||cwms_rating.separator1||l_rating_version,
-               p_native_units    => null,                                
+               p_native_units    => null,
                p_effective_date  => self.effective_date,
                p_transition_date => null,
-               p_active_flag     => self.active_flag,                    
-               p_formula         => null,                                
-               p_rating_info     => null,                                
-               p_description     => 'Logarithmic interpolation offsets', 
-               p_office_id       => self.office_id);                     
+               p_active_flag     => self.active_flag,
+               p_formula         => null,
+               p_rating_info     => null,
+               p_description     => 'Logarithmic interpolation offsets',
+               p_office_id       => self.office_id);
             self.offsets.create_date := self.create_date;
             ----------------------------
             -- get the offset units id --
@@ -333,7 +332,6 @@ as
                exception
                   when others then
                      cwms_msg.log_db_message(
-                        'stream_rating_t.store',
                         cwms_msg.msg_level_normal,
                         'Rating offsets error '||sqlerrm);
                      raise;
@@ -391,7 +389,7 @@ as
          end if;
       end if;
       self.current_units := 'N';
-      self.current_time := 'D'; 
+      self.current_time := 'D';
       if self.offsets is not null then
          self.offsets.current_units := self.current_units;
          self.offsets.current_time  := self.current_time;
@@ -411,13 +409,13 @@ as
    return self as result
    is
    begin
-      init(p_other);   
+      init(p_other);
       return;
    end;
-          
+
    member procedure init(
       p_other in stream_rating_t)
-   is 
+   is
    begin
       self.office_id       := p_other.office_id;
       self.rating_spec_id  := p_other.rating_spec_id;
@@ -432,9 +430,9 @@ as
       self.current_units   := p_other.current_units;
       self.current_time    := p_other.current_time;
       self.offsets         := p_other.offsets;
-      self.shifts          := p_other.shifts;                                 
+      self.shifts          := p_other.shifts;
    end;
-         
+
    overriding member procedure init(
       p_rating_code    in number,
       p_include_points in varchar2 default 'T')
@@ -469,7 +467,7 @@ as
 
          self.offsets := rating_t(l_offsets_code);
          self.offsets.effective_date := self.effective_date;
-         self.offsets.create_date    := self.create_date; 
+         self.offsets.create_date    := self.create_date;
       exception
          when no_data_found then null;
       end;
@@ -492,7 +490,7 @@ as
       l_parts         str_tab_t;
       l_ind_param     varchar2(256);
       l_dep_param     varchar2(256);
-      l_parameters_id varchar2(256); 
+      l_parameters_id varchar2(256);
       l_temp          rating_t;
       l_prev          rating_t;
    begin
@@ -582,7 +580,6 @@ as
          exception
             when others then
                cwms_msg.log_db_message(
-                  'stream_rating_t.store',
                   cwms_msg.msg_level_normal,
                   'Rating offsets error '||sqlerrm);
                raise;
@@ -593,7 +590,7 @@ as
       ---------------------
       if self.shifts is not null then
          for i in reverse 1..self.shifts.count loop
-            begin            
+            begin
                l_temp := treat(self.shifts(i) as rating_t);
                l_temp.validate_obj;
                if l_temp.office_id != self.office_id then
@@ -687,7 +684,6 @@ as
             exception
                when others then
                   cwms_msg.log_db_message(
-                     'stream_rating_t.validate_obj',
                      cwms_msg.msg_level_normal,
                      'Rating shift '||i||' skipped due to '||sqlerrm);
                   for j in i+1..self.shifts.count loop -- static limits
@@ -703,9 +699,9 @@ as
    overriding member procedure convert_to_database_units
    is
       l_temp rating_t;
-   begin               
+   begin
       (self as rating_t).convert_to_database_units;
-      if self.offsets is not null then 
+      if self.offsets is not null then
          self.offsets.convert_to_database_units;
       end if;
       if self.shifts is not null then
@@ -735,7 +731,7 @@ as
    end;
 
    overriding member procedure convert_to_database_time
-   is             
+   is
       l_temp rating_t;
    begin
       (self as rating_t).convert_to_database_time;
@@ -772,9 +768,9 @@ as
       p_fail_if_exists in varchar2)
    is
    begin
-      store(p_fail_if_exists, 'F'); 
+      store(p_fail_if_exists, 'F');
    end;
-   
+
    member procedure store(
       p_fail_if_exists in varchar2,
       p_replace        in varchar2)
@@ -793,12 +789,12 @@ as
       l_rating_spec      rating_spec_t;
       l_clone            stream_rating_t;
       l_temp             rating_t;
-      l_existing_rating  stream_rating_t; 
+      l_existing_rating  stream_rating_t;
       l_replace          boolean;
       l_new_base_rating  boolean;
       l_base_stored      boolean;
-      
-      function same_rating_values( 
+
+      function same_rating_values(
          p_rv1 in rating_value_tab_t,
          p_rv2 in rating_value_tab_t)
          return boolean
@@ -819,7 +815,7 @@ as
                         exit when p_rv2(i).dep_value is null;
                         exit when cwms_rounding.round_dd_f(p_rv1(i).dep_value - p_rv2(i).dep_value, '9999999999') != 0D;
                      end if;
-                     l_same := true;   
+                     l_same := true;
                   end loop;
                end if;
             end if;
@@ -828,7 +824,7 @@ as
       end same_rating_values;
    begin
       if self.current_units = 'N' or self.current_time = 'L' then
-         l_clone := stream_rating_t(self);  
+         l_clone := stream_rating_t(self);
          if self.current_units = 'N' then
             l_clone.convert_to_database_units;
          end if;
@@ -849,17 +845,17 @@ as
       ---------------------------------------------------------------------------
       -- try to store the base rating, returning the rating code for reference --
       ---------------------------------------------------------------------------
-      begin  
+      begin
          l_new_base_rating := false;
          l_base_stored := false;
          (self as rating_t).store(l_ref_rating_code, 'T');
          l_new_base_rating := true;
          l_base_stored := true;
-      exception                
+      exception
          when item_already_exists then
-            if cwms_util.return_true_or_false(p_fail_if_exists) then 
-               raise; 
-            end if; 
+            if cwms_util.return_true_or_false(p_fail_if_exists) then
+               raise;
+            end if;
             if not l_replace then
                ----------------------------------------
                -- see if the base rating is the same --
@@ -869,23 +865,23 @@ as
                  from at_rating
                 where rating_spec_code = rating_spec_t.get_rating_spec_code(self.rating_spec_id, self.office_id)
                   and effective_date = self.effective_date;
-               
+
                l_existing_rating := stream_rating_t(l_ref_rating_code);
                l_existing_rating.convert_to_database_units;
-               l_existing_rating.convert_to_database_time;  
+               l_existing_rating.convert_to_database_time;
                l_new_base_rating := false;
                for i in 1..1 loop
-                  exit when 
-                     (l_existing_rating.offsets is null) != 
+                  exit when
+                     (l_existing_rating.offsets is null) !=
                      (self.offsets is null);
-                  exit when not same_rating_values( 
-                     l_existing_rating.rating_info.rating_values, 
+                  exit when not same_rating_values(
+                     l_existing_rating.rating_info.rating_values,
                      self.rating_info.rating_values);
                   l_new_base_rating := true;
                end loop;
                l_base_stored := false;
             end if;
-      end;   
+      end;
       if l_replace or l_new_base_rating then
          -------------------------------------------------
          -- store the base rating if we haven't already --
@@ -896,28 +892,28 @@ as
          ------------------------------------------------------------------------
          -- delete any existing shift or offset data before storing new values --
          ------------------------------------------------------------------------
-         for rec1 in (select rating_code 
-                        from at_rating 
+         for rec1 in (select rating_code
+                        from at_rating
                        where ref_rating_code = l_ref_rating_code
-                     ) 
+                     )
          loop
-            for rec2 in (select rating_ind_param_code 
-                           from at_rating_ind_parameter 
+            for rec2 in (select rating_ind_param_code
+                           from at_rating_ind_parameter
                           where rating_code = rec1.rating_code
                         )
             loop
-               delete 
-                 from at_rating_value 
+               delete
+                 from at_rating_value
                 where rating_ind_param_code = rec2.rating_ind_param_code;
-               delete 
-                 from at_rating_extension_value 
+               delete
+                 from at_rating_extension_value
                 where rating_ind_param_code = rec2.rating_ind_param_code;
                delete
                  from at_rating_ind_parameter
                 where rating_ind_param_code = rec2.rating_ind_param_code;
             end loop;
-            delete 
-              from at_rating 
+            delete
+              from at_rating
              where rating_code = rec1.rating_code;
          end loop;
          -----------------------
@@ -1018,8 +1014,8 @@ as
       l_tzone varchar2(28);
       l_temp  rating_t;
       l_parts str_tab_t;
-      l_units varchar2(64);       
-      
+      l_units varchar2(64);
+
       function bool_text(
          p_state in boolean)
       return varchar2
@@ -1033,7 +1029,7 @@ as
    begin
       if self is of (vdatum_stream_rating_t) then
          l_clone := vdatum_stream_rating_t(treat(self as vdatum_stream_rating_t));
-      else 
+      else
          l_clone := stream_rating_t(self);
       end if;
       l_clone.convert_to_database_units;
@@ -1043,10 +1039,10 @@ as
       l_tzone := coalesce(
          p_timezone,
          cwms_loc.get_local_timezone(cwms_util.split_text(l_clone.rating_spec_id, cwms_rating.separator1)(1), l_clone.office_id),
-         'UTC');  
-      ----------------------     
+         'UTC');
+      ----------------------
       -- handle the units --
-      ----------------------     
+      ----------------------
       if p_units is not null and upper(trim(p_units)) != 'NATIVE' then
          l_parts := cwms_util.split_text(replace(cwms_util.split_text(l_clone.rating_spec_id, 2, '.'), ';', ','), ',');
          l_units := cwms_util.get_default_units(l_parts(1), upper(trim(p_units)))||';'||cwms_util.get_default_units(l_parts(2), upper(trim(p_units)));
@@ -1458,12 +1454,12 @@ as
             if l_shift_count > 0 and p_ind_values(i).date_time >= effective_date then
                if l_rounding_spec is null then
                   select rir.rounding_spec
-                    into l_rounding_spec  
+                    into l_rounding_spec
                     from at_rating_ind_rounding rir
-                   where rir.rating_spec_code = 
+                   where rir.rating_spec_code =
                          (select r.rating_spec_code
                             from at_rating r
-                           where r.rating_code 
+                           where r.rating_code
                                  = rating_t.get_rating_code(
                                       p_rating_spec_id => self.rating_spec_id,
                                       p_effective_date => self.effective_date,
@@ -1471,13 +1467,13 @@ as
                                       p_time_zone      => case self.current_time
                                                           when 'D' then 'UTC'
                                                           else cwms_loc.get_local_timezone(
-                                                             cwms_util.split_text(self.rating_spec_id, 1, '.'), 
+                                                             cwms_util.split_text(self.rating_spec_id, 1, '.'),
                                                              self.office_id)
                                                           end,
                                       p_office_id      => self.office_id)
-                         )   
-                     and rir.parameter_position = 1; 
-               end if;   
+                         )
+                     and rir.parameter_position = 1;
+               end if;
                l_height := cwms_rounding.round_nn_f(l_height, l_rounding_spec);
                l_date_offset := p_ind_values(i).date_time - c_base_date;
                l_hi_index := cwms_lookup.find_high_index(
@@ -1514,9 +1510,9 @@ as
                l_shift := case l_ratio
                           when 0D then l_lo_value
                           when 1D then l_hi_value
-                          else l_lo_value + l_ratio * (l_hi_value - l_lo_value) 
+                          else l_lo_value + l_ratio * (l_hi_value - l_lo_value)
                           end;
-               if l_shift != 0D then                         
+               if l_shift != 0D then
                   l_height := l_height + cwms_rounding.round_nn_f(l_shift, l_rounding_spec);
                end if;
             end if;
@@ -1662,7 +1658,7 @@ as
                else
                   cwms_err.raise('ERROR', 'Invalid rating method');
                end if;
-            end case;   
+            end case;
             if l_results(i).value is null then
                l_results(i).quality_code := 5;
             end if;

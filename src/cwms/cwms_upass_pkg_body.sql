@@ -17,7 +17,6 @@ AS
 
         COMMIT;
         CWMS_MSG.LOG_DB_MESSAGE (
-            'UPASS',
             CWMS_MSG.MSG_LEVEL_NORMAL,
             'User ' || UPPER (p_userid) || ' is deleted by UPASS');
     END delete_upass_user;
@@ -117,8 +116,7 @@ AS
         THEN
             DELETE_UPASS_USER (p_userid);
         ELSE
-            CWMS_MSG.LOG_DB_MESSAGE ('UPASS',
-                                     CWMS_MSG.MSG_LEVEL_NORMAL,
+            CWMS_MSG.LOG_DB_MESSAGE (CWMS_MSG.MSG_LEVEL_NORMAL,
                                      'Invalid UPASS update code');
             COMMIT;
         END IF;
@@ -126,7 +124,6 @@ AS
         WHEN OTHERS
         THEN
             CWMS_MSG.LOG_DB_MESSAGE (
-                'UPASS',
                 CWMS_MSG.MSG_LEVEL_NORMAL,
                    'Exception while update user metadata in UPASS: '
                 || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);

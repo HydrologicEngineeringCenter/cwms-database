@@ -162,7 +162,7 @@ as
          when no_data_found then
             cwms_err.raise('ITEM_DOES_NOT_EXIST', 'Specified level', upper(l_id));
       end;
-                 
+
       if attr_value is not null then
          l_parts := cwms_util.split_text(attr_parameter_id, '-', 1);
          l_sub_id := case l_parts.count
@@ -230,24 +230,24 @@ as
       p_eval_time in date     default null,
       p_time_zone in varchar2 default null)
       return double_tab_tab_t
-   is                         
+   is
       l_results       double_tab_tab_t;
       l_unit          varchar2(16);
       l_default_unit  varchar2(16);
       l_conditions    number_tab_t;
       l_eval_times    date_table_type;
-      l_values        double_tab_t;    
-      l_time_zone     varchar2(28); 
+      l_values        double_tab_t;
+      l_time_zone     varchar2(28);
       l_level1_id     varchar2(512);
       l_level2_id     varchar2(512);
       l_level_attr_id varchar2(256);
       l_level1_values double_tab_t;
       l_level2_values double_tab_t;
-      l_rate          binary_double;       
-      
-   begin            
+      l_rate          binary_double;
+
+   begin
       l_default_unit := cwms_util.get_default_units(self.parameter_id);
-      l_unit := cwms_util.get_unit_id(nvl(p_unit, l_default_unit)); 
+      l_unit := cwms_util.get_unit_id(nvl(p_unit, l_default_unit));
       l_time_zone := cwms_util.get_timezone(nvl(p_time_zone, 'UTC'));
       -----------------------------------------
       -- get the evaluation times and values --
@@ -261,14 +261,14 @@ as
             l_eval_times(i) := p_ts(i).date_time;
             l_values(i) := p_ts(i).value;
          end loop;
-      else      
+      else
          l_eval_times.extend;
          l_values.extend;
          l_eval_times(1) := p_eval_time;
          select value
            into l_values(1)
            from table(p_ts)
-          where date_time = (select max(date_time) from table(p_ts) where date_time <= p_eval_time);    
+          where date_time = (select max(date_time) from table(p_ts) where date_time <= p_eval_time);
       end if;
       if l_time_zone != 'UTC' then
          for i in 1..l_eval_times.count loop
@@ -280,107 +280,107 @@ as
             l_values(i) := cwms_util.convert_units(l_values(i), l_unit, l_default_unit);
          end loop;
       end if;
-      --------------------------------------------------                
+      --------------------------------------------------
       -- get the level values for the specified times --
-      --------------------------------------------------                
+      --------------------------------------------------
       l_level1_id := cwms_util.join_text(
          str_tab_t(
-            self.location_id, 
-            self.parameter_id, 
-            self.parameter_type_id, 
-            self.duration_id, 
-            self.specified_level_id), 
+            self.location_id,
+            self.parameter_id,
+            self.parameter_type_id,
+            self.duration_id,
+            self.specified_level_id),
          '.');
-         
+
       if self.ref_specified_level_id is not null then
          l_level2_id := cwms_util.join_text(
             str_tab_t(
-               self.location_id, 
-               self.parameter_id, 
-               self.parameter_type_id, 
-               self.duration_id, 
-               self.ref_specified_level_id), 
+               self.location_id,
+               self.parameter_id,
+               self.parameter_type_id,
+               self.duration_id,
+               self.ref_specified_level_id),
             '.');
-      end if;         
-         
+      end if;
+
       if self.attr_parameter_id is not null then
          l_level_attr_id := cwms_util.join_text(
             str_tab_t(
-               self.attr_parameter_id, 
-               self.attr_parameter_type_id, 
-               self.attr_duration_id), 
+               self.attr_parameter_id,
+               self.attr_parameter_type_id,
+               self.attr_duration_id),
             '.');
       end if;
-       
+
       l_level1_values := cwms_level.retrieve_loc_lvl_values3(
-         p_specified_times   => l_eval_times, 
-         p_location_level_id => l_level1_id, 
-         p_level_units       => l_default_unit, 
-         p_attribute_id      => l_level_attr_id, 
-         p_attribute_value   => self.attr_value, 
-         p_attribute_units   => self.attr_units_id, 
-         p_timezone_id       => 'UTC', 
+         p_specified_times   => l_eval_times,
+         p_location_level_id => l_level1_id,
+         p_level_units       => l_default_unit,
+         p_attribute_id      => l_level_attr_id,
+         p_attribute_value   => self.attr_value,
+         p_attribute_units   => self.attr_units_id,
+         p_timezone_id       => 'UTC',
          p_office_id         => self.office_id);
-         
+
       if l_level2_id is null then
          l_level2_values := double_tab_t();
          l_level2_values.extend(l_eval_times.count);
       else
          l_level2_values := cwms_level.retrieve_loc_lvl_values3(
-            p_specified_times   => l_eval_times, 
-            p_location_level_id => l_level2_id, 
-            p_level_units       => l_default_unit, 
-            p_attribute_id      => l_level_attr_id, 
-            p_attribute_value   => self.ref_attr_value, 
-            p_attribute_units   => self.attr_units_id, 
-            p_timezone_id       => 'UTC', 
+            p_specified_times   => l_eval_times,
+            p_location_level_id => l_level2_id,
+            p_level_units       => l_default_unit,
+            p_attribute_id      => l_level_attr_id,
+            p_attribute_value   => self.ref_attr_value,
+            p_attribute_units   => self.attr_units_id,
+            p_timezone_id       => 'UTC',
             p_office_id         => self.office_id);
       end if;
-      -----------------------------               
+      -----------------------------
       -- build the results table --
-      -----------------------------               
+      -----------------------------
       l_results := double_tab_tab_t();
       l_results.extend(l_eval_times.count);
       for i in 1..l_results.count loop
          l_results(i) := double_tab_t();
          l_results(i).extend(case when p_condition is null then 5 else 1 end);
       end loop;
-      --------------------------------      
+      --------------------------------
       -- populate the results table --
-      --------------------------------      
+      --------------------------------
       for i in 1..l_eval_times.count loop
          if p_condition is null then
             for j in 1..5 loop
                if self.conditions(j).rate_expression is null then
                   l_results(i)(j) := self.conditions(j).eval_expression(
-                     l_values(i), 
-                     l_level1_values(i), 
+                     l_values(i),
+                     l_level1_values(i),
                      l_level2_values(i));
                else
                if i > 1 then
                   l_rate := (l_values(i) - l_values(i-1)) / (l_eval_times(i) - l_eval_times(i-1)); -- per day
                   l_rate := l_rate / 24; -- per hour, condition will convert from here to final interval
-                  l_results(i)(j) := self.conditions(j).eval_rate_expression(l_rate);                  
+                  l_results(i)(j) := self.conditions(j).eval_rate_expression(l_rate);
                end if;
                end if;
             end loop;
-         else   
+         else
             if self.conditions(p_condition).rate_expression is null then
                l_results(i)(1) := self.conditions(p_condition).eval_expression(
-                  l_values(i), 
-                  l_level1_values(i), 
+                  l_values(i),
+                  l_level1_values(i),
                   l_level2_values(i));
             else
                if i > 1 then
                   l_rate := (l_values(i) - l_values(i-1)) / (l_eval_times(i) - l_eval_times(i-1)); -- per day
                   l_rate := l_rate / 24; -- per hour, condition will convert from here to final interval
-                  l_results(i)(1) := self.conditions(p_condition).eval_rate_expression(l_rate);                  
+                  l_results(i)(1) := self.conditions(p_condition).eval_rate_expression(l_rate);
                end if;
             end if;
-         end if;   
-      end loop;  
-      return l_results;    
-   end get_indicator_expr_values;      
+         end if;
+      end loop;
+      return l_results;
+   end get_indicator_expr_values;
 
    member function get_indicator_values(
       p_ts        in ztsv_array,
@@ -429,14 +429,14 @@ as
                   (extract(hour   from minimum_duration) / 24) +
                   (extract(minute from minimum_duration) / 1440) +
                   (extract(second from minimum_duration) / 86400);
-      -------------------------------------                  
+      -------------------------------------
       -- determine whether we need rates --
       -------------------------------------
       for i in 1..conditions.count loop
          if not l_rate_of_change and conditions(i).rate_expression is not null then
             l_rate_of_change := true;
          end if;
-         exit when l_rate_of_change;          
+         exit when l_rate_of_change;
       end loop;
       ----------------------------------------------------------------
       -- find the last valid value on or before the evaluation time --
@@ -467,7 +467,6 @@ as
                l_rate_values_array(i) :=
                   (p_ts(i).value - p_ts(j).value) /
                   ((p_ts(i).date_time - p_ts(j).date_time) * 24);
-               -- cwms_msg.log_db_message('z', 7, ''||i||', '||j||': '||l_rate_values_array(i));                  
             end loop;
          end if;
          --------------------------------------------------
@@ -612,7 +611,7 @@ as
       end loop;
       return l_results;
    end get_max_indicator_values;
-   
+
 end;
 /
 show errors;

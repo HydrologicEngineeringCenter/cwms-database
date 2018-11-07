@@ -1020,7 +1020,7 @@ CREATE OR REPLACE package body cwms_xchg as
       l_text               varchar2(32767);
       l_can_insert         boolean := false;
       l_can_update         boolean := false;
-      l_can_delete         boolean := false; 
+      l_can_delete         boolean := false;
       l_log_msg            varchar2(4000);
 
       -------------------
@@ -1075,13 +1075,13 @@ CREATE OR REPLACE package body cwms_xchg as
          end loop;
          return l_attr;
       end;
-        
+
       procedure log_entry(p_msg in varchar2, p_msg_level in integer default cwms_msg.msg_level_normal)
       is
       begin
-         cwms_msg.log_db_message('store_dataexchange_conf', p_msg_level, p_msg);
+         cwms_msg.log_db_message(p_msg_level, p_msg);
       end;
-   begin 
+   begin
       log_entry('Storing data exchange configuration with store rule '''||p_store_rule||'''');
       -----------------------------
       -- validate the store rule --
@@ -1103,14 +1103,14 @@ CREATE OR REPLACE package body cwms_xchg as
             l_can_insert := true;
             l_can_update := true;
             l_can_delete := true;
-         else    
+         else
             log_entry('ERROR: HEC-DSS exhange set store rule, should be [I]nsert, [U]pdate, [R]eplace, or [M]erge');
             cwms_err.raise(
                'INVALID_ITEM',
                p_store_rule,
                'HEC-DSS exhange set store rule, should be [I]nsert, [U]pdate, [R]eplace, or [M]erge');
       end case;
-      
+
       -------------------------------------------------
       -- log the incoming XML for debugging purposes --
       -------------------------------------------------
@@ -1243,7 +1243,7 @@ CREATE OR REPLACE package body cwms_xchg as
                      ||' for office '
                      ||l_office_id
                      ||' references non-existent datastore';
-                  log_entry('ERROR: '||l_log_msg); 
+                  log_entry('ERROR: '||l_log_msg);
                   cwms_err.raise('ERROR', l_log_msg);
                end if;
             end if;
@@ -1268,7 +1268,7 @@ CREATE OR REPLACE package body cwms_xchg as
                   ||' for office '
                   ||l_office_id
                   ||' specifies incomplete time window';
-               log_entry('ERROR: '||l_log_msg); 
+               log_entry('ERROR: '||l_log_msg);
                cwms_err.raise('ERROR', l_log_msg);
             end if;
             if instr(l_xchg_set_text, '<max-interpolate') > 0  then
@@ -1404,7 +1404,7 @@ CREATE OR REPLACE package body cwms_xchg as
             if l_attributes.exists('office-id') then
                l_ts_office_id := l_attributes('office-id');
             else
-               l_ts_office_id := l_office_id; 
+               l_ts_office_id := l_office_id;
             end if;
             cwms_ts.create_ts_code(l_ts_code, l_tsid, null, null, null, 'F', 'T', 'F', l_ts_office_id);
             cwms_xchg.parse_dss_pathname(
@@ -1513,9 +1513,9 @@ CREATE OR REPLACE package body cwms_xchg as
          --------------------------------------------
          -- delete mappings that weren't specified --
          --------------------------------------------
-         for rec in 
-            (select * 
-               from at_xchg_dss_ts_mappings 
+         for rec in
+            (select *
+               from at_xchg_dss_ts_mappings
               where mapping_code not in (select * from table(l_mappings_specified))
             )
          loop
@@ -1561,7 +1561,7 @@ CREATE OR REPLACE package body cwms_xchg as
             l_dss_filemgr_urls(rec.dss_filemgr_url) := true;
          end if;
       end loop;
-      
+
       if l_dss_filemgr_urls.count > 0 then
          l_text := null;
          l_url := l_dss_filemgr_urls.first;
@@ -1593,7 +1593,7 @@ CREATE OR REPLACE package body cwms_xchg as
 --
    procedure del_unused_dss_xchg_info(
       p_office_id in varchar2 default null)
-   is                 
+   is
       pragma autonomous_transaction;
       l_codes       number_tab_t;
       l_office_code number(10);
@@ -1606,41 +1606,41 @@ CREATE OR REPLACE package body cwms_xchg as
       exception
          when others then null;
       end;
-      
-      select ts.ts_code 
-        bulk collect 
-        into l_codes 
+
+      select ts.ts_code
+        bulk collect
+        into l_codes
         from at_cwms_ts_spec ts,
              at_physical_location pl,
-             at_base_location bl 
+             at_base_location bl
        where bl.db_office_code = nvl(l_office_code, bl.db_office_code)
          and pl.base_location_code = bl.base_location_code
          and ts.location_code = pl.location_code
-         and ts.delete_date is not null;      
-      
+         and ts.delete_date is not null;
+
       if l_codes is not null and l_codes.count > 0 then
          delete from at_xchg_dss_ts_mappings where cwms_ts_code in (select * from table(l_codes));
-         commit; 
+         commit;
       end if;
-      
+
       select distinct xchg_set_code bulk collect into l_codes from at_xchg_dss_ts_mappings;
-      
+
       if l_codes is not null and l_codes.count > 0 then
          delete from at_xchg_set where xchg_set_code not in (select * from table(l_codes));
       else
          delete from at_xchg_set;
-      end if;   
+      end if;
       commit;
-      
+
       select distinct datastore_code bulk collect into l_codes from at_xchg_set;
-      
+
       if l_codes is not null and l_codes.count > 0 then
          delete from at_xchg_datastore_dss where datastore_code not in (select * from table(l_codes));
       else
          delete from at_xchg_datastore_dss;
       end if;
       commit;
-      
+
    end del_unused_dss_xchg_info;
 
 -------------------------------------------------------------------------------
@@ -2532,14 +2532,14 @@ begin
        where xchg_set_code = p_xchg_set_code
          and cwms_ts_code = p_cwms_ts_code;
    exception
-      when no_data_found then 
+      when no_data_found then
          l_time_zone := cwms_util.get_time_zone_code(p_time_zone);
-         begin    
+         begin
             select tz_usage_code
               into l_tz_usage
               from cwms_tz_usage
              where upper(tz_usage_id) = upper(p_tz_usage);
-         exception             
+         exception
             when no_data_found then
                cwms_err.raise('INVALID_ITEM', p_tz_usage, 'CWMS time zone usage');
          end;
