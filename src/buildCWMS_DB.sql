@@ -197,6 +197,8 @@ begin
       execute immediate 'create or replace force view av_cwms_identifiers as select * from cwms_identifiers';
       execute immediate 'grant select on av_cwms_identifiers to cwms_user';
       execute immediate 'create or replace public synonym cwms_v_identifiers for av_cwms_identifiers';
+   $else
+      null;
    $end
 end;
 /
