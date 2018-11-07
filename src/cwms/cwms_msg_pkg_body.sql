@@ -2882,7 +2882,7 @@ begin
       end if;
       l_sql := l_sql||replace(replace(l_portion, '<queue>', rec.queue_name), '<table>', rec.table_name);
    end loop;
-   l_sql := 'create or replace force view av_queue_messages
+   l_sql := 'create view av_queue_messages
    (queue,
     subscriber,
     ready,
@@ -2914,6 +2914,12 @@ select *
               )
        )
  order by upper(queue), upper(subscriber)';
+   dbms_output.put_line(l_sql);
+   begin
+      execute immediate 'drop view av_queue_messages';
+   exception
+      when others then null;
+   end;
    execute immediate l_sql;
    execute immediate 'create or replace public synonym cwms_v_queue_messages for av_queue_messages';
    begin
