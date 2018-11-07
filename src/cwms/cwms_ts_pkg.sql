@@ -1239,6 +1239,14 @@ AS
       return varchar2;
 
    -- not documented
+   function same_vq2(
+      v1 in binary_double,
+      q1 in integer,
+      v2 in binary_double,
+      q2 in integer)
+      return varchar2;
+
+   -- not documented
    function same_val(
       v1 in binary_double,
       v2 in binary_double)
