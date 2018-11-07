@@ -47,6 +47,18 @@ create table prev_priv as (select privilege,
                               and owner in ('&cwms_schema', '&cwms_dba_schema')
                           );
 prompt ################################################################################
+prompt 'DROP PURGE_QUEUES_JOB IF SCHEDULED'
+select systimestamp from dual;
+begin
+   dbms_scheduler.drop_job(
+      job_name => 'PURGE_QUEUES_JOB',
+      defer => false,
+      force => false);
+exception
+   when others then null;
+end;
+/
+prompt ################################################################################
 prompt 'MODIFYING CWMS_DB_CHANGE_LOG TABLE'
 select systimestamp from dual;
 @@./18_1_1/modify_db_change_log
@@ -527,6 +539,7 @@ begin
             raise;
          end if;
    end;
+   cwms_msg.start_remove_subscribers_job;
 end;
 /
 prompt ################################################################################
