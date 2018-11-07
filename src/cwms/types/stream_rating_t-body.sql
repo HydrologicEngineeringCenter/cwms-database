@@ -261,7 +261,6 @@ as
             exception
                when others then
                   cwms_msg.log_db_message(
-                     'stream_rating_t.store',
                      cwms_msg.msg_level_normal,
                      'Rating shift '||i||' skipped due to '||sqlerrm);
                   continue shifts;
@@ -333,7 +332,6 @@ as
                exception
                   when others then
                      cwms_msg.log_db_message(
-                        'stream_rating_t.store',
                         cwms_msg.msg_level_normal,
                         'Rating offsets error '||sqlerrm);
                      raise;
@@ -582,7 +580,6 @@ as
          exception
             when others then
                cwms_msg.log_db_message(
-                  'stream_rating_t.store',
                   cwms_msg.msg_level_normal,
                   'Rating offsets error '||sqlerrm);
                raise;
@@ -687,7 +684,6 @@ as
             exception
                when others then
                   cwms_msg.log_db_message(
-                     'stream_rating_t.validate_obj',
                      cwms_msg.msg_level_normal,
                      'Rating shift '||i||' skipped due to '||sqlerrm);
                   for j in i+1..self.shifts.count loop -- static limits

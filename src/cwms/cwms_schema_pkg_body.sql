@@ -12,14 +12,14 @@ begin
       dbms_crypto.hash(
          regexp_replace(
             replace(
-               p_ddl, 
-               '"&cwms_schema"', 
+               p_ddl,
+               '"&cwms_schema"',
                '"<cwms_schema>"'
-            ), 
-            'SYS_[A-Z0-9_$]+', 
-            '<sys_defined_name>', 
-            1, 
-            0, 
+            ),
+            'SYS_[A-Z0-9_$]+',
+            '<sys_defined_name>',
+            1,
+            0,
             'm'),
          dbms_crypto.hash_sh1));
 end get_hash_code;
@@ -46,7 +46,7 @@ is
             l_sub_ddl := dbms_metadata.get_dependent_ddl(dependent_type_names(i), p_object_name);
             dbms_lob.append(l_ddl, l_sub_ddl);
          exception
-            when others then 
+            when others then
             if l_sub_ddl is not null then
                dbms_lob.trim(l_sub_ddl, 0);
             end if;
@@ -79,7 +79,7 @@ begin
    -- check the list of view names --
    ----------------------------------
    l_object_names.delete;
-   select object_name bulk collect 
+   select object_name bulk collect
      into l_object_names
      from user_objects
     where object_type = 'VIEW'
@@ -160,20 +160,20 @@ begin
    --------------------------------------------------------------
    -- remove previous entries for objects that haven't changed --
    --------------------------------------------------------------
-      for l_old_ver in 
-      (with all_ as (select hash_code, 
-                             schema_version 
+      for l_old_ver in
+      (with all_ as (select hash_code,
+                             schema_version
                         from cwms_schema_object_version
                      ),
-            cur_ as (select hash_code, 
-                             max(schema_version) as schema_version 
-                        from cwms_schema_object_version 
-                       group 
+            cur_ as (select hash_code,
+                             max(schema_version) as schema_version
+                        from cwms_schema_object_version
+                       group
                           by hash_code
-                     )  
-       select all_.hash_code, 
+                     )
+       select all_.hash_code,
               all_.schema_version
-         from all_, 
+         from all_,
               cur_
         where all_.hash_code       = cur_.hash_code
           and all_.schema_version != cur_.schema_version
@@ -212,7 +212,7 @@ is
                   l_sub_ddl := dbms_metadata.get_dependent_ddl(dependent_type_names(j), p_items(i));
                   dbms_lob.append(l_ddl, l_sub_ddl);
                exception
-                  when others then 
+                  when others then
                   if l_sub_ddl is not null then
                      dbms_lob.trim(l_sub_ddl, 0);
                   end if;
@@ -228,19 +228,19 @@ is
             if l_version is null then
                l_count := l_count + 1;
                l_message := 'CHECK_SCHEMA_VERSION : '||l_item_type||' '||p_items(i)||' = unknown version.';
-               cwms_msg.log_db_message('CWMS_SCHEMA.CHECK_SCHEMA_VERSION', cwms_msg.msg_level_normal , l_message);
+               cwms_msg.log_db_message(cwms_msg.msg_level_normal , l_message);
                dbms_output.put_line(l_message);
             elsif l_version  != l_max_version then
                l_count := l_count + 1;
                l_message := 'CHECK_SCHEMA_VERSION : '||l_item_type||' '||p_items(i)||' = version "'||l_version||'"';
-               cwms_msg.log_db_message('CWMS_SCHEMA.CHECK_SCHEMA_VERSION', cwms_msg.msg_level_normal , l_message);
+               cwms_msg.log_db_message(cwms_msg.msg_level_normal , l_message);
                dbms_output.put_line(l_message);
             end if;
          exception
             when no_such_object then
                l_count := l_count + 1;
                l_message := 'CHECK_SCHEMA_VERSION : '||l_item_type||' '||p_items(i)||' does not exist.';
-               cwms_msg.log_db_message('CWMS_SCHEMA.CHECK_SCHEMA_VERSION', cwms_msg.msg_level_normal , l_message);
+               cwms_msg.log_db_message(cwms_msg.msg_level_normal , l_message);
                dbms_output.put_line(l_message);
          end;
       end loop;
@@ -253,7 +253,7 @@ begin
      into l_max_version
      from cwms_schema_object_version;
    l_message := 'CHECK_SCHEMA_VERSION : Checking database objects against current version: '||l_max_version;
-   cwms_msg.log_db_message('CWMS_SCHEMA.CHECK_SCHEMA_VERSION', cwms_msg.msg_level_detailed , l_message);
+   cwms_msg.log_db_message(cwms_msg.msg_level_detailed , l_message);
    dbms_output.put_line(l_message);
    if check_items('table', table_names) = 0 then
       dbms_output.put_line('CHECK_SCHEMA_VERSION : All tables are of the current version.');
@@ -274,7 +274,7 @@ begin
       dbms_output.put_line('CHECK_SCHEMA_VERSION : All type bodies are of the current version.');
    end if;
    l_message := 'CHECK_SCHEMA_VERSION : Done';
-   cwms_msg.log_db_message('CWMS_SCHEMA.CHECK_SCHEMA_VERSION', cwms_msg.msg_level_detailed , l_message);
+   cwms_msg.log_db_message(cwms_msg.msg_level_detailed , l_message);
    dbms_output.put_line(l_message);
 end check_schema_version;
 
@@ -396,7 +396,7 @@ begin
                            );
       end;
    end if;
-   
+
 end start_check_schema_job;
 
 function get_schema_version
@@ -407,8 +407,8 @@ begin
    select max(schema_version)
      into l_schema_version
      from cwms_schema_object_version;
-     
-   return l_schema_version;     
+
+   return l_schema_version;
 end get_schema_version;
 
 procedure output_latest_results
@@ -417,17 +417,17 @@ is
    l_max_id at_log_message.msg_id%type;
 begin
    select max(msg_id)
-     into l_max_id  
-     from at_log_message 
+     into l_max_id
+     from at_log_message
     where msg_text = 'CHECK_SCHEMA_VERSION : Done';
-    
+
    select max(msg_id)
-     into l_min_id  
-     from at_log_message 
+     into l_min_id
+     from at_log_message
     where msg_text like 'CHECK_SCHEMA_VERSION : Checking database objects against current version:%'
       and msg_id < l_max_id;
-      
-   for rec in 
+
+   for rec in
       (  select log_timestamp_utc,
                 msg_text
            from at_log_message
@@ -437,7 +437,7 @@ begin
       )
    loop
       dbms_output.put_line(to_char(rec.log_timestamp_utc, 'yyyy/mm/dd hh24:mi:ss : ')||substr(rec.msg_text, 24));
-   end loop;            
+   end loop;
 end output_latest_results;
 
 
@@ -458,8 +458,8 @@ begin
                              where object_type = upper(p_object_type)
                                and object_name = upper(p_object_name)
                            );
-   return l_hash;                           
-end get_latest_hash;   
+   return l_hash;
+end get_latest_hash;
 
 function get_latest_ddl(
    p_object_type in varchar2,
@@ -472,8 +472,8 @@ begin
      into l_ddl
      from at_clob
     where id = '/DDL/'||get_latest_hash(p_object_type, p_object_name);
-    
-   return l_ddl;    
+
+   return l_ddl;
 end get_latest_ddl;
 
 
@@ -484,16 +484,16 @@ is
    l_static_data        clob;
 begin
    select max(schema_version)
-     into l_max_schema_version 
+     into l_max_schema_version
      from cwms_schema_object_version;
 
    select value
-     into l_static_data 
-     from at_clob 
+     into l_static_data
+     from at_clob
     where id = '/DDL/STATIC_DATA/'||substr(l_max_schema_version, 21);
 
-   return l_static_data;    
-end get_latest_static_data;   
+   return l_static_data;
+end get_latest_static_data;
 
 function get_current_ddl(
    p_object_type in varchar2,
@@ -509,7 +509,7 @@ begin
          l_sub_ddl := dbms_metadata.get_dependent_ddl(dependent_type_names(i), upper(p_object_name));
          dbms_lob.append(l_ddl, l_sub_ddl);
       exception
-         when others then 
+         when others then
          if l_sub_ddl is not null then
             dbms_lob.trim(l_sub_ddl, 0);
          end if;
@@ -527,8 +527,8 @@ is
 begin
    l_object_type := upper(p_object_type);
    l_object_name := upper(p_object_name);
-   
-   merge 
+
+   merge
     into at_schema_object_diff dst
    using (select l_object_type as object_type,
                  l_object_name as object_name,
@@ -540,15 +540,15 @@ begin
              and object_name = l_object_name
          ) src
       on (dst.object_type = src.object_type and dst.object_name = src.object_name)
-    when 
- matched 
+    when
+ matched
     then update
             set dst.deployed_version = src.deployed_version,
                 dst.deployed_ddl = src.deployed_ddl,
-                dst.current_ddl = src.current_ddl 
+                dst.current_ddl = src.current_ddl
     when
-     not 
- matched 
+     not
+ matched
     then insert
          values (src.object_type,
                  src.object_name,
@@ -556,7 +556,7 @@ begin
                  src.deployed_ddl,
                  src.current_ddl
                 );
-end compare_ddl;   
+end compare_ddl;
 
 end cwms_schema;
 /

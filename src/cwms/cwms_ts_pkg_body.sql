@@ -3881,72 +3881,72 @@ AS
          if p_ts_extents_rec.earliest_time is not null
             and (l_rec.earliest_time is null or p_ts_extents_rec.earliest_time < l_rec.earliest_time)
          then
-            l_rec.earliest_time       := p_ts_extents_rec.earliest_time;
-            l_rec.earliest_time_entry := p_ts_extents_rec.earliest_time_entry;
-            l_updated                 := true;
+            l_rec.earliest_time                 := p_ts_extents_rec.earliest_time;
+            l_rec.earliest_time_entry           := p_ts_extents_rec.earliest_time_entry;
+            l_updated                           := true;
          end if;            
          if p_ts_extents_rec.earliest_non_null_time is not null 
             and (l_rec.earliest_non_null_time is null or p_ts_extents_rec.earliest_non_null_time < l_rec.earliest_non_null_time)
          then
-            l_rec.earliest_non_null_time       := p_ts_extents_rec.earliest_non_null_time;
-            l_rec.earliest_non_null_time_entry := p_ts_extents_rec.earliest_non_null_time_entry;
-            l_updated                          := true;
+            l_rec.earliest_non_null_time        := p_ts_extents_rec.earliest_non_null_time;
+            l_rec.earliest_non_null_time_entry  := p_ts_extents_rec.earliest_non_null_time_entry;
+            l_updated                           := true;
          end if;            
          if p_ts_extents_rec.earliest_non_null_entry_time is not null 
             and (l_rec.earliest_non_null_entry_time is null or p_ts_extents_rec.earliest_non_null_entry_time < l_rec.earliest_non_null_entry_time)
          then
-            l_rec.earliest_non_null_entry_time := p_ts_extents_rec.earliest_non_null_entry_time;
-            l_updated                          := true;
+            l_rec.earliest_non_null_entry_time  := p_ts_extents_rec.earliest_non_null_entry_time;
+            l_updated                           := true;
          end if;            
          if p_ts_extents_rec.latest_time is not null
             and (l_rec.latest_time is null or p_ts_extents_rec.latest_time > l_rec.latest_time)
          then
-            l_rec.latest_time       := p_ts_extents_rec.latest_time;      
-            l_rec.latest_time_entry := p_ts_extents_rec.latest_time_entry;
-            l_updated               := true;
+            l_rec.latest_time                   := p_ts_extents_rec.latest_time;      
+            l_rec.latest_time_entry             := p_ts_extents_rec.latest_time_entry;
+            l_updated                           := true;
          end if;            
          if p_ts_extents_rec.latest_non_null_time is not null 
             and (l_rec.latest_non_null_time is null or p_ts_extents_rec.latest_non_null_time > l_rec.latest_non_null_time)
          then
-            l_rec.latest_non_null_time       := p_ts_extents_rec.latest_non_null_time;      
-            l_rec.latest_non_null_time_entry := p_ts_extents_rec.latest_non_null_time_entry;
-            l_updated                        := true;
+            l_rec.latest_non_null_time          := p_ts_extents_rec.latest_non_null_time;      
+            l_rec.latest_non_null_time_entry    := p_ts_extents_rec.latest_non_null_time_entry;
+            l_updated                           := true;
          end if;            
          if p_ts_extents_rec.latest_entry_time is not null 
             and (l_rec.latest_entry_time is null or p_ts_extents_rec.latest_entry_time > l_rec.latest_entry_time)
          then
-            l_rec.latest_entry_time := p_ts_extents_rec.latest_entry_time;
-            l_updated               := true;
+            l_rec.latest_entry_time             := p_ts_extents_rec.latest_entry_time;
+            l_updated                           := true;
          end if;            
          if p_ts_extents_rec.latest_non_null_entry_time is not null
             and (l_rec.latest_non_null_entry_time is null or p_ts_extents_rec.latest_non_null_entry_time > l_rec.latest_non_null_entry_time)
          then
-            l_rec.latest_non_null_entry_time := p_ts_extents_rec.latest_non_null_entry_time;
-            l_updated                        := true;
+            l_rec.latest_non_null_entry_time    := p_ts_extents_rec.latest_non_null_entry_time;
+            l_updated                           := true;
          end if;            
          if p_ts_extents_rec.least_value is not null 
             and (l_rec.least_value is null or p_ts_extents_rec.least_value < l_rec.least_value) 
          then
-            l_rec.least_value       := p_ts_extents_rec.least_value;      
-            l_rec.least_value_time  := p_ts_extents_rec.least_value_time; 
-            l_rec.least_value_entry := p_ts_extents_rec.least_value_entry;
-            l_updated               := true;
+            l_rec.least_value                   := p_ts_extents_rec.least_value;      
+            l_rec.least_value_time              := p_ts_extents_rec.least_value_time; 
+            l_rec.least_value_entry             := p_ts_extents_rec.least_value_entry;
+            l_updated                           := true;
          end if;            
          if p_ts_extents_rec.least_accepted_value is not null 
             and (l_rec.least_accepted_value is null or p_ts_extents_rec.least_accepted_value < l_rec.least_accepted_value) 
          then
-            l_rec.least_accepted_value       := p_ts_extents_rec.least_accepted_value;      
-            l_rec.least_accepted_value_time  := p_ts_extents_rec.least_accepted_value_time; 
-            l_rec.least_accepted_value_entry := p_ts_extents_rec.least_accepted_value_entry;
-            l_updated                        := true;
+            l_rec.least_accepted_value          := p_ts_extents_rec.least_accepted_value;      
+            l_rec.least_accepted_value_time     := p_ts_extents_rec.least_accepted_value_time; 
+            l_rec.least_accepted_value_entry    := p_ts_extents_rec.least_accepted_value_entry;
+            l_updated                           := true;
          end if;            
          if p_ts_extents_rec.greatest_value is not null 
             and (l_rec.greatest_value is null or p_ts_extents_rec.greatest_value > l_rec.greatest_value) 
          then
-            l_rec.greatest_value       := p_ts_extents_rec.greatest_value;      
-            l_rec.greatest_value_time  := p_ts_extents_rec.greatest_value_time; 
-            l_rec.greatest_value_entry := p_ts_extents_rec.greatest_value_entry;
-            l_updated                  := true;
+            l_rec.greatest_value                := p_ts_extents_rec.greatest_value;      
+            l_rec.greatest_value_time           := p_ts_extents_rec.greatest_value_time; 
+            l_rec.greatest_value_entry          := p_ts_extents_rec.greatest_value_entry;
+            l_updated                           := true;
          end if; 
          if p_ts_extents_rec.greatest_accepted_value is not null 
             and (l_rec.greatest_accepted_value is null or p_ts_extents_rec.greatest_accepted_value > l_rec.greatest_accepted_value) 
@@ -3980,19 +3980,19 @@ AS
       p_version_date in date default null)
    is
       type at_ts_extents_tabtype is table of at_ts_extents%rowtype;   
-      l_crsr           sys_refcursor;
-      l_ts1            timestamp;
-      l_ts2            timestamp;
+      l_crsr       sys_refcursor;
+      l_ts1        timestamp;
+      l_ts2        timestamp;
       l_ts_start       timestamp;
       l_ts_end         timestamp;
       l_ts_table_start timestamp;
       l_ts_table_end   timestamp;
-      l_elapsed        interval day (0) to second (6);
+      l_elapsed    interval day (0) to second (6);
       l_ts_extents     at_ts_extents_tabtype;
-      l_rec            at_ts_extents%rowtype;
-      l_updated        integer;
+      l_rec        at_ts_extents%rowtype;
+      l_updated    integer;
       l_ts_codes       number_tab_t;
-      l_query          varchar2(32767) := '
+      l_query      varchar2(32767) := '
          select
                 q1.ts_code,
                 q1.version_date as version_time,
@@ -4184,7 +4184,7 @@ AS
                     and q15.date_time = q14.greatest_accepted_value_time';
    begin
       l_ts_start := systimestamp;
-      cwms_msg.log_db_message('update_ts_extents', cwms_msg.msg_level_normal, 'UPDATE_TS_EXTENTS starting with '||nvl(to_char(p_ts_code), 'NULL')||', '||nvl(to_char(p_version_date), 'NULL'));
+      cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'UPDATE_TS_EXTENTS starting with '||nvl(to_char(p_ts_code), 'NULL')||', '||nvl(to_char(p_version_date), 'NULL'));
       if p_ts_code is null then
          select ts_code bulk collect into l_ts_codes from at_cwms_ts_id;
       end if;
@@ -4194,7 +4194,7 @@ AS
       for rec in (select table_name from at_ts_table_properties order by start_date) loop
          l_ts1 := systimestamp;
          l_ts_table_start := l_ts1;
-         cwms_msg.log_db_message('update_ts_extents', cwms_msg.msg_level_normal, 'Starting table '||rec.table_name);
+         cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'Starting table '||rec.table_name);
          if p_ts_code is null then
             -------------------------
             -- update all ts_codes --
@@ -4209,19 +4209,18 @@ AS
             -- MDP
             for i in 1..l_ts_codes.count loop
                if mod(i, 100) = 1 then
-                  cwms_msg.log_db_message('update_ts_extents', cwms_msg.msg_level_verbose, 'Starting ts_codes '||i||'..'||least(i+99, l_ts_codes.count)||' in '||rec.table_name);
+                  cwms_msg.log_db_message(cwms_msg.msg_level_verbose, 'Starting ts_codes '||i||'..'||least(i+99, l_ts_codes.count)||' in '||rec.table_name);
                end if; 
                ------------
                -- select --
                ------------
                open l_crsr for replace(l_query, ':table_name', rec.table_name) using l_ts_codes(i), p_version_date;
-               fetch l_crsr bulk collect into l_ts_extents;
-               close l_crsr;
+         fetch l_crsr bulk collect into l_ts_extents;
+         close l_crsr;
                if mod(i, 100) = 1 then
-                  l_ts2 := systimestamp;
-                  l_elapsed := l_ts2 - l_ts1;
+            l_ts2 := systimestamp;
+            l_elapsed := l_ts2 - l_ts1;
                   cwms_msg.log_db_message(
-                     'update_ts_extents', 
                      cwms_msg.msg_level_verbose, 
                      'Selected '
                      ||l_ts_extents.count
@@ -4233,9 +4232,9 @@ AS
                      ||rec.table_name
                      ||' in '
                      ||l_elapsed);
-                  l_ts1 := systimestamp;
+            l_ts1 := systimestamp;
                   l_updated := 0;
-               end if;
+         end if;      
                ------------
                -- update --
                ------------
@@ -4248,7 +4247,6 @@ AS
                   l_ts2 := systimestamp;
                   l_elapsed := l_ts2 - l_ts1;
                   cwms_msg.log_db_message(
-                     'update_ts_extents', 
                      cwms_msg.msg_level_verbose, 
                      'Updated '
                      ||l_updated
@@ -4278,20 +4276,20 @@ AS
             ------------
             -- update --
             ------------
-            l_updated := 0;
-            for i in 1..l_ts_extents.count loop
-               if update_ts_extents(l_ts_extents(i)) then
-                  l_updated := l_updated + 1;
-               end if;   
-               if mod(l_updated, 100) = 0 then
-                  commit;
-               end if;
-            end loop;
-            commit;
+         l_updated := 0;
+         for i in 1..l_ts_extents.count loop
+            if update_ts_extents(l_ts_extents(i)) then
+               l_updated := l_updated + 1;
+            end if;   
+            if mod(l_updated, 100) = 0 then
+               commit;
+            end if;
+         end loop;
+         commit;
          end if;
          l_ts_table_end := systimestamp;
          l_elapsed := l_ts_table_end - l_ts_table_start;
-         cwms_msg.log_db_message('update_ts_extents', cwms_msg.msg_level_normal, 'Finished table '||rec.table_name||' in '||l_elapsed);
+         cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'Finished table '||rec.table_name||' in '||l_elapsed);
       end loop;
       -------------------------
       -- update null extents --
@@ -4317,10 +4315,10 @@ AS
          if p_ts_code is null then
             l_ts2 := systimestamp;
             l_elapsed := l_ts2 - l_ts1;
-            cwms_msg.log_db_message( 'update_ts_extents', cwms_msg.msg_level_verbose, 'Updated '||l_updated||' null time series extents in '||l_elapsed);
+            cwms_msg.log_db_message(cwms_msg.msg_level_verbose, 'Updated '||l_updated||' null time series extents in '||l_elapsed);
          end if;
-      end if;
-      cwms_msg.log_db_message('update_ts_extents', cwms_msg.msg_level_normal, 'UPDATE_TS_EXTENTS done');
+         end if;
+      cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'UPDATE_TS_EXTENTS done');
    end update_ts_extents;
 
    -- not documented
@@ -4369,7 +4367,7 @@ AS
           where rownum = 1;
       exception
          when no_data_found then l_timezone := 'UTC';
-      end;
+      end;   
       ----------------------------------------------------------------------------------
       -- create the job to start next Friday at 10:00 pm local time and repeat weekly --
       ----------------------------------------------------------------------------------
@@ -5775,7 +5773,6 @@ AS
       when others
       then
          cwms_msg.log_db_message ( 
-            'store_ts',
             1,
                'STORE_TS ERROR ***'
             || l_cwms_ts_id
@@ -11394,8 +11391,7 @@ end retrieve_existing_item_counts;
       l_max_days       NUMBER;
       l_office_id      VARCHAR2 (16) := cwms_util.user_office_id;
    BEGIN
-      cwms_msg.log_db_message ('TRIM_TS_DELETED_TIMES',
-                               cwms_msg.msg_level_basic,
+      cwms_msg.log_db_message (cwms_msg.msg_level_basic,
                                'Start trimming AT_TS_DELETED_TIMES entries');
       ---------------------------------------
       -- get the count and date properties --
@@ -11418,7 +11414,6 @@ end retrieve_existing_item_counts;
       SELECT COUNT (*) INTO l_count FROM at_ts_deleted_times;
 
       cwms_msg.log_db_message (
-         'TRIM_TS_DELETED_TIMES',
          cwms_msg.msg_level_detailed,
          'AT_TS_DELETED_TIMES has ' || l_count || ' records.');
 
@@ -11450,12 +11445,10 @@ end retrieve_existing_item_counts;
 
       l_count := l_count - l_count2;
       cwms_msg.log_db_message (
-         'TRIM_TS_DELETED_TIMES',
          cwms_msg.msg_level_detailed,
          'Deleted ' || l_count || ' records from AT_TS_DELETED_TIMES');
 
-      cwms_msg.log_db_message ('TRIM_TS_DELETED_TIMES',
-                               cwms_msg.msg_level_basic,
+      cwms_msg.log_db_message (cwms_msg.msg_level_basic,
                                'Done trimming AT_TS_DELETED_TIMES entries');
    END trim_ts_deleted_times;
 
@@ -11669,7 +11662,6 @@ end retrieve_existing_item_counts;
             'P_STORAGE_POLICY must be one of FILTER_OUT_NULL_VALUES, SET_NULL_VALUES_TO_MISSING, or REJECT_TS_WITH_NULL_VALUES'); 
       end if;
       cwms_msg.log_db_message(
-         'CWMS_TS.SET_NULLS_STORAGE_POLICY',
          cwms_msg.msg_level_normal,
          'Setting NULLs storage policy to '
          || case p_storage_policy is null
@@ -11720,7 +11712,6 @@ end retrieve_existing_item_counts;
             'P_STORAGE_POLICY must be one of FILTER_OUT_NULL_VALUES, SET_NULL_VALUES_TO_MISSING, or REJECT_TS_WITH_NULL_VALUES'); 
       end if;
       cwms_msg.log_db_message(
-         'CWMS_TS.SET_NULLS_STORAGE_POLICY',
          cwms_msg.msg_level_normal,
          'Setting NULLs storage policy to '
          || case p_storage_policy is null
@@ -11829,7 +11820,6 @@ end retrieve_existing_item_counts;
             'P_FILTER_DUPLICATES must be NULL, ''T'', or ''F'''); 
       end if;
       cwms_msg.log_db_message(
-         'CWMS_TS.SET_FILTER_DUPLICATES_OFC',
          cwms_msg.msg_level_normal,
          'Setting filter duplicates policy to '
          || nvl(p_filter_duplicates, 'NULL (reset) for office')
@@ -11896,7 +11886,6 @@ end retrieve_existing_item_counts;
         from at_cwms_ts_id
        where ts_code = p_ts_code; 
       cwms_msg.log_db_message(
-         'CWMS_TS.SET_FILTER_DUPLICATES_TS',
          cwms_msg.msg_level_normal,
          'Setting filter duplicates policy to '
          || nvl(p_filter_duplicates, 'NULL (reset)')
@@ -11997,7 +11986,7 @@ end retrieve_existing_item_counts;
    begin
       update at_cwms_ts_spec
          set historic_flag = nvl(upper(p_is_historic), 'T')
-       where ts_code = p_ts_code;
+       where ts_code = p_ts_code;  
    end set_historic;
       
    function is_historic(

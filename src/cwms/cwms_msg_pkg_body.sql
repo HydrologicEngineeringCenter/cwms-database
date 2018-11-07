@@ -8,11 +8,11 @@ declare
 begin
    select count(*)
      into l_count
-     from user_views 
+     from user_views
     where view_name = 'AV_QUEUE_MESSAGES';
 
    if l_count = 0 then
-      execute immediate 'create view av_queue_messages as select null as queue, null as subscriber, null as ready, null as processed, null as expired, null as undeliverable, null as total from dual';       
+      execute immediate 'create view av_queue_messages as select null as queue, null as subscriber, null as ready, null as processed, null as expired, null as undeliverable, null as total from dual';
    end if;
 end;
 /
@@ -43,7 +43,7 @@ is
 begin
    return '&cwms_schema..' || p_office_id || '_EX';
 end;
-	
+
 -------------------------------------------------------------------------------
 -- FUNCTION GET_QUEUE_NAME(...)
 --
@@ -408,14 +408,14 @@ begin
       l_now         := cwms_util.current_millis;
       l_now_ts      := cwms_util.to_timestamp(l_now);
       l_msg_id      := get_msg_id;
-      l_office_code := cwms_util.user_office_code; 
+      l_office_code := cwms_util.user_office_code;
       begin
          l_document := xmltype(p_short_msg);
       exception
          when others then
             l_code := cwms_text.store_text(p_short_msg, '/_bad_message/'||l_msg_id, null, 'F', cwms_util.user_office_id);
             commit;
-         raise;  
+         raise;
       end;
       l_msgtype     := l_document.extract('/cwms_message/@type').getstringval();
       l_node        := l_document.extract('/cwms_message/text');
@@ -449,7 +449,7 @@ begin
              l_machine
         from v$session
        where audsid = userenv('sessionid');
-       
+
       for i in 1..l_max_tries loop
          begin
             insert
@@ -483,7 +483,7 @@ begin
                      end if;
                end if;
          end;
-         exit; -- no exception                   
+         exit; -- no exception
       end loop;
 
       -------------------------------
@@ -552,10 +552,10 @@ begin
                    );
          end loop;
       end if;
-      
-      select prop_type_code 
-        into l_prop_type 
-        from cwms_log_message_prop_types 
+
+      select prop_type_code
+        into l_prop_type
+        from cwms_log_message_prop_types
        where prop_type_id = 'String';
       --------------------------------------------------------------
       -- insert the call stack and any package logging properties --
@@ -567,7 +567,7 @@ begin
          exit when l_package = '__anonymous_block';
          if l_line_offset is null then
             l_line_offset := i;
-         end if;   
+         end if;
          insert
            into at_log_message_properties
          values ( l_msg_id,
@@ -590,8 +590,8 @@ begin
                            l_prop_text
                          );
                end if;
-            exception 
-               when l_invalid_identifier then null; 
+            exception
+               when l_invalid_identifier then null;
             end;
          end if;
       end loop;
@@ -685,9 +685,9 @@ function create_message_key
    return varchar2
 is
 begin
-   return get_msg_id; 
+   return get_msg_id;
 end create_message_key;
-   
+
 -------------------------------------------------------------------------------
 -- PROCEDURE LOG_DB_MESSAGE(...)
 --
@@ -725,7 +725,7 @@ begin
       l_msg_level,
       false);
 end log_db_message;
-   
+
 -------------------------------------------------------------------------------
 -- PROCEDURE LOG_DB_MESSAGE(...)
 --
@@ -813,7 +813,7 @@ is
    l_msg_ids str_tab_t;
    l_start_time timestamp;
    l_end_time   timestamp;
-   l_time_zone  varchar2(28); 
+   l_time_zone  varchar2(28);
 begin
    l_time_zone := nvl(p_time_zone, 'UTC');
    l_start_time := cwms_util.change_timezone(p_start_time, l_time_zone, 'UTC');
@@ -827,8 +827,8 @@ begin
       and lmp.msg_id = lm.msg_id
       and lmp.prop_name = 'key'
       and lmp.prop_text = p_key;
-      
-   return l_msg_ids;      
+
+   return l_msg_ids;
 end get_msg_ids_for_key;
 -------------------------------------------------------------------------------
 -- FUNCTION LOG_MESSAGE_SERVER_MESSAGE(...)
@@ -1106,7 +1106,7 @@ procedure retrieve_log_messages(
    p_time_zone          in  varchar2      default 'UTC',
    p_min_msg_level      in  integer       default null,
    p_max_msg_level      in  integer       default null,
-   p_msg_types          in  varchar2      default null,      
+   p_msg_types          in  varchar2      default null,
    p_min_inclusive      in  varchar2      default 'T',
    p_max_inclusive      in  varchar2      default 'T',
    p_abbreviated        in  varchar2      default 'T',
@@ -1115,21 +1115,21 @@ procedure retrieve_log_messages(
    p_ascending          in  varchar2      default 'T',
    p_session_id         in  varchar2      default 'ALL',
    p_properties         in  str_tab_tab_t default null,
-   p_props_combination  in  varchar2      default 'ANY') 
+   p_props_combination  in  varchar2      default 'ANY')
 is
    l_min_inclusive     boolean;
    l_max_inclusive     boolean;
    l_msg_types         number_tab_t;
    l_abbreviated       boolean;
-   l_ascending         boolean; 
+   l_ascending         boolean;
    l_case_insensitive  boolean;
    l_negated           boolean;
    l_match_type        varchar2(6);
    l_session_id        varchar2(16);
    l_combination       varchar2(3);
    l_next_word         varchar2(32);
-   l_query             varchar2(32767); 
-   
+   l_query             varchar2(32767);
+
    procedure parse_match_type(
       p_negated          out boolean,
       p_case_insensitive out boolean,
@@ -1146,7 +1146,7 @@ is
       p_case_insensitive := regexp_substr(p_input, c_expression, 1, 1, 'i', 3) is not null;
       p_match_type := upper(regexp_substr(p_input, c_expression, 1, 1, 'i', 2));
    end parse_match_type;
-   
+
    function parse_msg_types(
       p_input in varchar2)
       return number_tab_t
@@ -1166,9 +1166,9 @@ is
                  bulk collect
                  into l_numbers
                  from table(cwms_util.split_text(l_parts(i), '-'));
-               if l_numbers.count != 2 or l_numbers(2) <= l_numbers(1) then 
+               if l_numbers.count != 2 or l_numbers(2) <= l_numbers(1) then
                   cwms_err.raise('ERROR', null);
-               end if;   
+               end if;
             else
                l_numbers(1) := trim(l_parts(i));
             end if;
@@ -1191,7 +1191,7 @@ is
          l_numbers(l_numbers.count) := msg_type;
       end loop;
    end parse_msg_types;
-   
+
    function has_wildcards(
       p_input      in varchar2,
       p_match_type in varchar2)
@@ -1205,7 +1205,7 @@ is
          return instr(p_input, '%') > 0 or instr(p_input, '_') > 0;
       else
          cwms_err.raise('ERROR', 'P_MATCH_TYPE must be ''GLOB'' or ''SQL''');
-      end case;   
+      end case;
    end has_wildcards;
 begin
    -------------------
@@ -1213,15 +1213,15 @@ begin
    -------------------
    l_ascending := cwms_util.is_true(p_ascending);
    l_abbreviated := cwms_util.is_true(p_abbreviated);
-   
+
    if p_min_msg_id is not null then
       l_min_inclusive := cwms_util.is_true(p_min_inclusive);
    end if;
-   
+
    if p_max_msg_id is not null then
       l_max_inclusive := cwms_util.is_true(p_max_inclusive);
-   end if;   
-   
+   end if;
+
    if p_message_mask is not null then
       begin
          parse_match_type(l_negated, l_case_insensitive, l_match_type, p_message_match_type);
@@ -1230,7 +1230,7 @@ begin
             cwms_err.raise('ERROR', 'P_message_match_type must be ''(N)GLOB(I)'', ''(N)SQL(I)'', or ''(N)REGEX(I)''');
       end;
    end if;
-   
+
    case
    when p_session_id is null then
       l_session_id := userenv('sessionid');
@@ -1239,7 +1239,7 @@ begin
    else
       l_session_id := p_session_id;
    end case;
-   
+
    if p_properties is not null and p_properties.count > 1 then
       if upper(p_props_combination) in ('ANY', 'ALL') then
          l_combination := upper(p_props_combination);
@@ -1260,7 +1260,7 @@ begin
          ||' msg_id'
          ||case when l_min_inclusive then ' >= ' else ' > ' end
          ||p_min_msg_id;
-         l_next_word := 'and';   
+         l_next_word := 'and';
       end if;
       if p_max_msg_id is not null then
          l_query := l_query
@@ -1268,7 +1268,7 @@ begin
          ||' msg_id'
          ||case when l_max_inclusive then ' <= ' else ' < ' end
          ||p_max_msg_id;
-         l_next_word := 'and';   
+         l_next_word := 'and';
       end if;
       if p_min_log_time is not null then
          l_query := l_query
@@ -1294,7 +1294,7 @@ begin
          ||' msg_level'
          ||case when l_min_inclusive then ' >= ' else ' > ' end
          ||p_min_msg_level;
-         l_next_word := 'and';   
+         l_next_word := 'and';
       end if;
       if p_max_msg_level is not null then
          l_query := l_query
@@ -1302,7 +1302,7 @@ begin
          ||' msg_level'
          ||case when l_max_inclusive then ' <= ' else ' < ' end
          ||p_max_msg_level;
-         l_next_word := 'and';   
+         l_next_word := 'and';
       end if;
       if p_msg_types is not null then
          l_msg_types := parse_msg_types(p_msg_types);
@@ -1312,13 +1312,13 @@ begin
             ||' msg_type in (';
             for i in 1..l_msg_types.count loop
                l_query := l_query
-               ||case 
-                 when i = 1 then l_msg_types(i) 
-                 else ','||l_msg_types(i) 
+               ||case
+                 when i = 1 then l_msg_types(i)
+                 else ','||l_msg_types(i)
                  end;
             end loop;
          end if;
-         l_next_word := 'and';   
+         l_next_word := 'and';
       end if;
       if p_message_mask is not null then
          if l_match_type in ('GLOB', 'SQL') then
@@ -1331,17 +1331,17 @@ begin
                ||case when l_case_insensitive then ' upper(msg_text)' else ' msg_text' end
                ||case when l_negated then ' not like ''' else ' like ''' end
                ||case
-                 when l_match_type = 'GLOB' then 
-                    case 
+                 when l_match_type = 'GLOB' then
+                    case
                     when l_case_insensitive then cwms_util.normalize_wildcards(upper(p_message_mask))
                     else cwms_util.normalize_wildcards(p_message_mask)
                     end
-                 else  
-                    case 
+                 else
+                    case
                     when l_case_insensitive then upper(p_message_mask)
                     else p_message_mask
                     end
-                 end  
+                 end
                ||''' escape ''\''';
             else
                ---------------------------------------------
@@ -1351,7 +1351,7 @@ begin
                ||l_next_word
                ||case when l_case_insensitive then ' upper(msg_text)' else ' msg_text' end
                ||case when l_negated then ' <> ''' else ' = ''' end
-               ||case 
+               ||case
                  when l_case_insensitive then upper(p_message_mask)
                  else p_message_mask
                  end
@@ -1493,7 +1493,7 @@ function retrieve_log_messages_f(
    p_time_zone          in varchar2      default 'UTC',
    p_min_msg_level      in integer       default null,
    p_max_msg_level      in integer       default null,
-   p_msg_types          in varchar2      default null,      
+   p_msg_types          in varchar2      default null,
    p_min_inclusive      in varchar2      default 'T',
    p_max_inclusive      in varchar2      default 'T',
    p_abbreviated        in varchar2      default 'T',
@@ -1502,7 +1502,7 @@ function retrieve_log_messages_f(
    p_ascending          in varchar2      default 'T',
    p_session_id         in varchar2      default 'ALL',
    p_properties         in str_tab_tab_t default null,
-   p_props_combination  in varchar2      default 'ANY') 
+   p_props_combination  in varchar2      default 'ANY')
    return sys_refcursor
 is
    l_crsr sys_refcursor;
@@ -1524,10 +1524,10 @@ begin
       p_message_match_type => p_message_match_type,
       p_ascending          => p_ascending,
       p_session_id         => p_session_id,
-      p_properties         => p_properties,        
-      p_props_combination  => p_props_combination); 
-      
-   return l_crsr;      
+      p_properties         => p_properties,
+      p_props_combination  => p_props_combination);
+
+   return l_crsr;
 end retrieve_log_messages_f;
 -------------------------------------------------------------------------------
 -- FUNCTION PARSE_LOG_MSG_PROP_TAB(...)
@@ -1568,7 +1568,7 @@ is
    l_max_days     number;
    l_office_id    varchar2(16) := cwms_util.user_office_id;
 begin
-   log_db_message('TRIM_LOG', msg_level_basic, 'Start trimming log entries');
+   log_db_message(msg_level_basic, 'Start trimming log entries');
    ---------------------------------------
    -- get the count and date properties --
    ---------------------------------------
@@ -1580,7 +1580,7 @@ begin
    select count(*)
      into l_count
      from at_log_message;
-   log_db_message('TRIM_LOG', msg_level_detailed, 'AT_LOG_MESSAGE has '||l_count||' records.');
+   log_db_message(msg_level_detailed, 'AT_LOG_MESSAGE has '||l_count||' records.');
    if l_count > l_max_count then
       select msg_id
         into l_msg_id_count
@@ -1603,19 +1603,19 @@ begin
     where msg_id < greatest(l_msg_id_count, l_msg_id_date)
 returning count(*)
      into l_count;
-   log_db_message('TRIM_LOG', msg_level_detailed, 'Deleted '||l_count||' records from AT_LOG_MESSAGE_PROPERTIES');
+   log_db_message(msg_level_detailed, 'Deleted '||l_count||' records from AT_LOG_MESSAGE_PROPERTIES');
 
    delete
      from at_log_message
     where msg_id < greatest(l_msg_id_count, l_msg_id_date)
 returning count(*)
      into l_count;
-     
-   commit;
-        
-   log_db_message('TRIM_LOG', msg_level_detailed, 'Deleted '||l_count||' records from AT_LOG_MESSAGE');
 
-   log_db_message('TRIM_LOG', msg_level_basic, 'Done trimming log entries');
+   commit;
+
+   log_db_message(msg_level_detailed, 'Deleted '||l_count||' records from AT_LOG_MESSAGE');
+
+   log_db_message(msg_level_basic, 'Done trimming log entries');
 end trim_log;
 
 --------------------------------------------------------------------------------
@@ -1820,30 +1820,30 @@ begin
    -- make sure we have a valid office id --
    -----------------------------------------
    select office_id
-     into l_office_id 
+     into l_office_id
      from cwms_office
     where office_id = upper(p_office_id);
-   ----------------------------------------    
+   ----------------------------------------
    -- eliminate and re-create the queues --
-   ----------------------------------------    
+   ----------------------------------------
       l_queue_name := l_office_id || '_EX';
-      l_table_name := l_queue_name || '_TABLE'; 
+      l_table_name := l_queue_name || '_TABLE';
          begin
             sys.dbms_aqadm.stop_queue(queue_name => '&cwms_schema..' || l_queue_name);
             sys.dbms_aqadm.drop_queue(queue_name => '&cwms_schema..' || l_queue_name);
             dbms_output.put_line('Dropped queue '||l_queue_name);
          exception
-            when others then dbms_output.put_line('Could not drop queue '||l_queue_name);   
+            when others then dbms_output.put_line('Could not drop queue '||l_queue_name);
          end;
          begin
             sys.dbms_aqadm.drop_queue_table(queue_table => '&cwms_schema..' || l_table_name);
             dbms_output.put_line('Dropped queue table '||l_table_name);
          exception
-            when others then dbms_output.put_line('Could not drop queue table '||l_table_name);   
+            when others then dbms_output.put_line('Could not drop queue table '||l_table_name);
          end;
          begin
             sys.dbms_aqadm.create_queue_table(
-               queue_table        => '&cwms_schema..' || l_table_name, 
+               queue_table        => '&cwms_schema..' || l_table_name,
                queue_payload_type => 'SYS.AQ$_JMS_MAP_MESSAGE',
 	       storage_clause        =>  'tablespace CWMS_AQ_EX',
                multiple_consumers => true);
@@ -1866,12 +1866,12 @@ is
    l_msg_id             raw(16);
    l_msg_count          pls_integer;
    l_crsr               sys_refcursor;
-   
-begin   
+
+begin
    l_dequeue_options.wait         := dbms_aq.no_wait;
    l_dequeue_options.navigation   := dbms_aq.first_message;
    l_dequeue_options.dequeue_mode := dbms_aq.remove_nodata;
-   
+
    for rec in (select name as queue_name, queue_table from user_queues where queue_type = 'EXCEPTION_QUEUE') loop
       -----------------------------------------------
       -- enable dequeuing from the exception queue --
@@ -1899,8 +1899,8 @@ begin
             when others then commit;
          end;
          l_msg_count := l_msg_count + 1;
-         if mod(l_msg_count, 100) = 0 then 
-            commit; 
+         if mod(l_msg_count, 100) = 0 then
+            commit;
          end if;
          l_dequeue_options.msgid := null;
          l_dequeue_options.navigation := dbms_aq.next_message;
@@ -1916,7 +1916,7 @@ begin
          -- log that we dequeued messages from this exception queue --
          -------------------------------------------------------------
          log_db_message(cwms_msg.msg_level_normal, 'Dequeued '||l_msg_count||' messages from exception queue '||rec.queue_name);
-      end if;   
+      end if;
    end loop;
 end purge_exception_queues;
 
@@ -1946,7 +1946,7 @@ begin
                dbms_aqadm.remove_subscriber(
                   rec.queue,
                   sys.aq$_agent('"'||rec.subscriber||'"', rec.queue, 0));
-            when others then         
+            when others then
                cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'Error removing subscriber: '||sqlerrm);
          end;
          --------------------------------
@@ -2048,7 +2048,7 @@ procedure stop_remove_subscribers_job
 is
 begin
    start_remove_subscribers_job(0);
-end stop_remove_subscribers_job;   
+end stop_remove_subscribers_job;
 
 
 -- function get_registration_info
@@ -2064,7 +2064,7 @@ is
    l_subscriber_name varchar2(30) := nvl(p_subscriber_name, dbms_random.string('l', 16));
    l_schema_name     varchar2(30);
    l_office_id       varchar2(16);
-   l_parts           str_tab_t;  
+   l_parts           str_tab_t;
    l_prop_id         varchar2(256);
    l_prop_val        varchar2(256);
    l_interval        number;
@@ -2102,26 +2102,26 @@ begin
    l_queue_name := l_schema_name
                    ||'.'||l_office_id
                    ||'_'||l_queue_name;
-   ---------------------------------------------                   
+   ---------------------------------------------
    -- get the queue callback minimum interval --
    ---------------------------------------------
    l_prop_val := cwms_properties.get_property(
-      p_category  => 'CWMSDB', 
-      p_id        => l_prop_id, 
-      p_default   => '1', 
+      p_category  => 'CWMSDB',
+      p_id        => l_prop_id,
+      p_default   => '1',
       p_office_id => l_office_id);
    begin
       l_interval := to_number(l_prop_val);
       if l_interval is null or l_interval != trunc(l_interval) then
          cwms_err.raise('ERROR', 'Queue callback interval must be specified in integer seconds.');
       end if;
-   exception        
+   exception
       when others then
          cwms_err.raise('ERROR', l_prop_val||' is not a valid queue callback interval');
    end;
-   ----------------------------------                      
+   ----------------------------------
    -- create the registration info --
-   ----------------------------------                      
+   ----------------------------------
    l_reg_info.extend();
    if l_interval > 0 then
       l_reg_info(1) := sys.aq$_reg_info(
@@ -2136,7 +2136,7 @@ begin
          ntfn_grouping_type         => dbms_aq.ntfn_grouping_type_summary,
          ntfn_grouping_start_time   => systimestamp,
          ntfn_grouping_repeat_count => dbms_aq.ntfn_grouping_forever);
-   else 
+   else
       l_reg_info(1) := sys.aq$_reg_info(
          name      => upper(l_queue_name||':'||l_subscriber_name),
          namespace => dbms_aq.namespace_aq,
@@ -2170,9 +2170,8 @@ begin
    dbms_aqadm.add_subscriber(
       queue_name => l_queue_name,
       subscriber => sys.aq$_agent(l_subscriber_name, null, null));
-   dbms_aq.register(l_reg_info, l_reg_info.count); 
+   dbms_aq.register(l_reg_info, l_reg_info.count);
    cwms_msg.log_db_message(
-      'CWMS_MSG.REGISTER_MSG_CALLBACK',
       cwms_msg.msg_level_normal,
       'Callback registered:'
       ||' Q='||l_queue_name
@@ -2221,7 +2220,7 @@ begin
          subscriber => sys.aq$_agent(l_subscriber_name, null, null));
    exception
       when not_a_subscriber then dbms_output.put_line(sqlerrm); -- harmless
-   end;         
+   end;
 end unregister_msg_callback;
 
 --------------------------------------------------------------------------------
@@ -2240,10 +2239,10 @@ begin
       end if;
    else
       l_prop_id := l_prop_id||'.session='||sys_context('USERENV', 'SESSIONID');
-   end if; 
+   end if;
    dbms_output.put_line(l_prop_id);
    return l_prop_id;
-end get_queueing_pause_prop_key;   
+end get_queueing_pause_prop_key;
 
 --------------------------------------------------------------------------------
 -- procedure set_pause_until
@@ -2255,17 +2254,17 @@ procedure set_pause_until(
 is
 begin
    cwms_properties.set_property(
-      'CWMSDB', 
-      get_queueing_pause_prop_key(p_all_sessions), 
-      to_char(p_until, 'yyyy/mm/dd hh24:mi'), 
-      'set at '||to_char(sysdate, 'yyyy/mm/dd hh24:mi'), 
+      'CWMSDB',
+      get_queueing_pause_prop_key(p_all_sessions),
+      to_char(p_until, 'yyyy/mm/dd hh24:mi'),
+      'set at '||to_char(sysdate, 'yyyy/mm/dd hh24:mi'),
       p_office_id);
 end set_pause_until;
 
 --------------------------------------------------------------------------------
 -- function get_pause_until
 --
-function get_pause_until(   
+function get_pause_until(
    p_all_sessions boolean,
    p_office_id    varchar2)
    return date
@@ -2274,17 +2273,17 @@ is
    l_prop_value at_properties.prop_value%type;
 begin
    l_prop_value := cwms_properties.get_property(
-      'CWMSDB', 
-      get_queueing_pause_prop_key(p_all_sessions), 
-      null, 
+      'CWMSDB',
+      get_queueing_pause_prop_key(p_all_sessions),
+      null,
       p_office_id);
       l_until := case l_prop_value is null
-         when true  then date '1000-01-01' 
+         when true  then date '1000-01-01'
          when false then to_date(l_prop_value, 'yyyy/mm/dd hh24:mi')
       end;
-   return l_until;      
-end get_pause_until;      
-   
+   return l_until;
+end get_pause_until;
+
 --------------------------------------------------------------------------------
 -- procedure pause_message_queueing
 --
@@ -2317,17 +2316,16 @@ begin
       cwms_err.raise('ERROR', 'Pause time cannot be less than 1 minute or more than 1 week');
    end if;
    l_until := l_now + l_number / 1440;
-   
+
    if get_pause_until(l_all_sessions, l_office_id) < l_until then
-   
+
       set_pause_until(
-         l_until, 
-         l_all_sessions, 
+         l_until,
+         l_all_sessions,
          l_office_id);
-                  
+
       cwms_msg.log_db_message(
-         'PAUSE_MESSAGE_QUEUEING', 
-         cwms_msg.msg_level_normal, 
+         cwms_msg.msg_level_normal,
          'Pausing message queueing until '
          ||to_char(l_until, 'yyyy/mm/dd hh24:mi')
          ||' ('
@@ -2338,10 +2336,9 @@ begin
               when true  then ' session '||sys_context('USERENV', 'SESSIONID')
               when false then ' all sessions'
            end);
-   else                  
+   else
       cwms_msg.log_db_message(
-         'PAUSE_MESSAGE_QUEUEING', 
-         cwms_msg.msg_level_normal, 
+         cwms_msg.msg_level_normal,
          'Message queueing already paused until '
          ||to_char(get_pause_until(l_all_sessions, l_office_id), 'yyyy/mm/dd hh24:mi')
          ||' for office '
@@ -2352,8 +2349,8 @@ begin
            end
          ||', request ignored.');
    end if;
-end pause_message_queueing;   
-   
+end pause_message_queueing;
+
 --------------------------------------------------------------------------------
 -- procedure unpause_message_queueing
 --
@@ -2371,8 +2368,7 @@ begin
    l_force := cwms_util.return_true_or_false(p_force);
    l_office_id := cwms_util.get_db_office_id(p_office_id);
    cwms_msg.log_db_message(
-      'UNPAUSE_MESSAGE_QUEUEING', 
-      cwms_msg.msg_level_normal, 
+      cwms_msg.msg_level_normal,
       'Unpausing queueing for office '
       ||l_office_id
       ||case l_all_sessions
@@ -2387,15 +2383,15 @@ begin
    if l_all_sessions then
       begin
          cwms_properties.delete_property(
-            'CWMSDB', 
-            get_queueing_pause_prop_key(true), 
+            'CWMSDB',
+            get_queueing_pause_prop_key(true),
             l_office_id);
       exception
          when no_data_found then null;
       end;
       if (l_force) then
          l_prop_id_mask := get_queueing_pause_prop_key(true, true);
-         delete 
+         delete
            from at_properties
           where office_code = cwms_util.get_db_office_code(l_office_id)
             and prop_category = 'CWMSDB'
@@ -2404,14 +2400,14 @@ begin
    else
       begin
          cwms_properties.delete_property(
-            'CWMSDB', 
-            get_queueing_pause_prop_key(false), 
+            'CWMSDB',
+            get_queueing_pause_prop_key(false),
             l_office_id);
       exception
          when no_data_found then null;
       end;
-   end if;        
-end unpause_message_queueing;   
+   end if;
+end unpause_message_queueing;
 
 --------------------------------------------------------------------------------
 -- function get_message_queueing_pause_min
@@ -2431,9 +2427,9 @@ begin
    l_minutes := case l_until > sysdate
                    when true  then ceil((l_until - sysdate) * 1440)
                    when false then -1
-                end;      
-   return l_minutes;      
-end get_message_queueing_pause_min;   
+                end;
+   return l_minutes;
+end get_message_queueing_pause_min;
 
 --------------------------------------------------------------------------------
 -- function is_message_queueing_paused
@@ -2444,7 +2440,7 @@ function is_message_queueing_paused(
 is
 begin
    return get_message_queueing_pause_min(p_office_id) > 0;
-end is_message_queueing_paused;         
+end is_message_queueing_paused;
 -----------------------------------------------------------
 -- function generate_subscriber_name
 --
@@ -2508,7 +2504,7 @@ procedure register_queue_subscriber(
    p_process_id       in integer,
    p_app_name         in varchar2 default null,
    p_fail_if_exists   in varchar2 default 'F',
-   p_office_id        in varchar2 default null) 
+   p_office_id        in varchar2 default null)
 is
    pragma autonomous_transaction;
    l_rec              at_queue_subscriber_name%rowtype;
@@ -2522,7 +2518,7 @@ is
 begin
    if p_queue_name is null or upper(p_queue_name) not in ('TS_STORED', 'REALTIME_OPS', 'STATUS') then
       cwms_err.raise(
-         'ERROR', 
+         'ERROR',
          'P_QUEUE_NAME ('||nvl(p_queue_name, '<NULL>')||' must be one of ''TS_STORED'', ''REALTIME_OPS'', ''STATUS''');
    end if;
    select username,
@@ -2540,10 +2536,10 @@ begin
    select office_id
      into l_office_id
      from cwms_office
-    where office_code = cwms_util.get_office_code(p_office_id); 
-    
-   l_queue_name := upper(l_office_id||'_'||p_queue_name);    
-   l_subscriber_name := generate_subscriber_name(l_queue_name, l_host_name, l_app_name, p_process_id);  
+    where office_code = cwms_util.get_office_code(p_office_id);
+
+   l_queue_name := upper(l_office_id||'_'||p_queue_name);
+   l_subscriber_name := generate_subscriber_name(l_queue_name, l_host_name, l_app_name, p_process_id);
    begin
       select * into l_rec from at_queue_subscriber_name where subscriber_name = l_subscriber_name;
       if cwms_util.is_true(p_fail_if_exists) then
@@ -2566,7 +2562,7 @@ begin
       l_rec.os_process_id    := p_process_id;
       insert
         into at_queue_subscriber_name
-      values l_rec;  
+      values l_rec;
    end if;
    commit;
    p_subscriber_name := l_subscriber_name;
@@ -2579,7 +2575,7 @@ procedure register_queue_subscriber(
    p_subscriber_name out varchar2,
    p_queue_name      in  varchar2,
    p_uuid            in  varchar2,
-   p_fail_if_exists  in  varchar2 default 'F') 
+   p_fail_if_exists  in  varchar2 default 'F')
 is
    l_rowid     urowid;
    l_office_id varchar2(16);
@@ -2622,7 +2618,7 @@ begin
       p_process_id       => 0,
       p_app_name         => l_app_name,
       p_fail_if_exists   => p_fail_if_exists,
-      p_office_id        => l_office_id); 
+      p_office_id        => l_office_id);
 end register_queue_subscriber;
 --------------------------------------------------------------------------------
 -- function register_queue_subscriber_f
@@ -2664,8 +2660,8 @@ begin
       p_queue_name      => p_queue_name,
       p_uuid            => p_uuid,
       p_fail_if_exists  => p_fail_if_exists);
-      
-   return l_subscriber_name;      
+
+   return l_subscriber_name;
 end register_queue_subscriber_f;
 --------------------------------------------------------------------------------
 -- procedure unregister_queue_subscriber
@@ -2699,8 +2695,8 @@ begin
    select office_id
      into l_office_id
      from cwms_office
-    where office_code = cwms_util.get_office_code(p_office_id); 
-    
+    where office_code = cwms_util.get_office_code(p_office_id);
+
    begin
       select * into l_rec from at_queue_subscriber_name where subscriber_name = p_subscriber_name;
    exception
@@ -2739,14 +2735,14 @@ end unregister_queue_subscriber;
 procedure unregister_queue_subscriber(
    p_queue_name in varchar2,
    p_uuid       in varchar2)
-is   
+is
    l_office_id varchar2(16);
    l_app_name  varchar2(64);
    l_host_name varchar2(64);
 begin
    if p_queue_name is null or upper(p_queue_name) not in ('TS_STORED', 'REALTIME_OPS', 'STATUS') then
       cwms_err.raise(
-         'ERROR', 
+         'ERROR',
          'P_QUEUE_NAME ('||nvl(p_queue_name, '<NULL>')||' must be one of ''TS_STORED'', ''REALTIME_OPS'', ''STATUS''');
    end if;
    begin
@@ -2760,13 +2756,13 @@ begin
          and co.office_code = al.office_code;
    exception
       when no_data_found then cwms_err.raise('NO SUCH APPLICATION INSTANCE');
-   end;   
-   
+   end;
+
    select machine
      into l_host_name
      from v$session
     where audsid = userenv('sessionid');
-    
+
    unregister_queue_subscriber(
       p_subscriber_name       => generate_subscriber_name(upper(l_office_id||'_'||p_queue_name), l_host_name, l_app_name, 0),
       p_process_id            => 0,
@@ -2782,7 +2778,7 @@ procedure update_queue_subscriber(
    p_process_id            in integer,
    p_fail_on_wrong_host    in varchar2 default 'T',
    p_office_id             in varchar2 default null)
-is    
+is
    pragma autonomous_transaction;
    l_rec              at_queue_subscriber_name%rowtype;
    l_db_user          varchar2(30);
@@ -2805,8 +2801,8 @@ begin
    select office_id
      into l_office_id
      from cwms_office
-    where office_code = cwms_util.get_office_code(p_office_id); 
-    
+    where office_code = cwms_util.get_office_code(p_office_id);
+
    begin
       select * into l_rec from at_queue_subscriber_name where subscriber_name = p_subscriber_name;
    exception
@@ -2864,7 +2860,7 @@ procedure create_av_queue_subscr_msgs as
                                 group by consumer_name, msg_state
                               ) counts
                               full outer join
-                              (select name 
+                              (select name
                                  from aq$<table>_s
                               ) subs on subs.name = counts.subscriber
                               full outer join
@@ -2873,11 +2869,11 @@ procedure create_av_queue_subscr_msgs as
                                select ''EXPIRED''       as msg_state from dual union all
                                select ''UNDELIVERABLE'' as msg_state from dual
                               ) states on counts.state = states.msg_state
-                        where subscriber is not null';   
+                        where subscriber is not null';
    l_sql varchar2(32767);
 begin
-   for rec in (select name queue_name, queue_table table_name 
-               from all_queues 
+   for rec in (select name queue_name, queue_table table_name
+               from all_queues
                where owner = 'CWMS_20' and queue_type = 'NORMAL_QUEUE'
               )
    loop
@@ -2895,8 +2891,8 @@ begin
     undeliverable,
     total
    )
-as   
-select * 
+as
+select *
   from (select queue,
                subscriber,
                nvl(ready, 0) as ready,
@@ -2904,26 +2900,26 @@ select *
                nvl(expired, 0) as expired,
                nvl(undeliverable, 0) as undeliverable,
                nvl(ready, 0) + nvl(processed, 0) + nvl(expired, 0)  + nvl(undeliverable, 0) as total
-         from (select * 
+         from (select *
                  from ('||trim(l_sql)||'
                       )
-                      pivot 
-                      (sum(msg_count) 
-                       for msg_state in (''READY'' ready, 
-                                         ''PROCESSED'' processed, 
-                                         ''EXPIRED'' expired, 
+                      pivot
+                      (sum(msg_count)
+                       for msg_state in (''READY'' ready,
+                                         ''PROCESSED'' processed,
+                                         ''EXPIRED'' expired,
                                          ''UNDELIVERABLE'' undeliverable
                                         )
                       )
               )
-       ) 
+       )
  order by upper(queue), upper(subscriber)';
    execute immediate l_sql;
    execute immediate 'create or replace public synonym cwms_v_queue_messages for av_queue_messages';
    begin
-      insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_QUEUE_MESSAGES', null, l_docstring); 
+      insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_QUEUE_MESSAGES', null, l_docstring);
    exception
-      when unique_const_violated then 
+      when unique_const_violated then
          update at_clob set value = l_docstring where id = '/VIEWDOCS/AV_QUEUE_MESSAGES';
    end;
 end create_av_queue_subscr_msgs;

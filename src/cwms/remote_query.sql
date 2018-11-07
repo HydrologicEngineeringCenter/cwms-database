@@ -370,7 +370,6 @@ begin
    l_clob := get_ts_codes(p_office_id, l_masks);
    l_data := cwms_util.parse_clob_recordset(l_clob);
    cwms_msg.log_db_message(
-      'remote_query.populate_tsids',
       cwms_msg.msg_level_detailed,
       '' || l_data.count
       || ' matching timeseries ids retrieved from '
@@ -648,7 +647,6 @@ begin
             else l_loc_rec.base_location_id || '-' || l_loc_rec.sub_location_id
          end;
       cwms_msg.log_db_message(
-         'remote_query.create_locations',
          cwms_msg.msg_level_detailed,
          'Creating location ' || l_location);
       begin
@@ -784,25 +782,21 @@ begin
    -- finally, get the remote tsids and create local locations and tsids --
    ------------------------------------------------------------------------
    cwms_msg.log_db_message(
-      'remote_query.set_office',
       cwms_msg.msg_level_normal,
       l_dst_office_id
       || ': Creating local queues');
    cwms_msg.create_queues(l_dst_office_id);
    cwms_msg.log_db_message(
-      'remote_query.set_office',
       cwms_msg.msg_level_normal,
       l_dst_office_id
       || ': Retrieving remote timeseires ids');
    populate_tsids(p_office_id);
    cwms_msg.log_db_message(
-      'remote_query.set_office',
       cwms_msg.msg_level_normal,
       l_dst_office_id
       || ': Creating local locations');
    create_locations(p_office_id);
    cwms_msg.log_db_message(
-      'remote_query.set_office',
       cwms_msg.msg_level_normal,
       l_dst_office_id
       || ': Creating local timeseries ids');
@@ -821,7 +815,6 @@ begin
    end loop;
    commit;
    cwms_msg.log_db_message(
-      'remote_query.set_office',
       cwms_msg.msg_level_normal,
       l_dst_office_id
       || ': Done');
@@ -1094,7 +1087,6 @@ begin
    -- loop through office masks and offices --
    -------------------------------------------
    cwms_msg.log_db_message(
-      'remote_query.retrieve_timeseries',
       cwms_msg.msg_level_normal,
       'Retrieving remote timeseries data for interval '
       || to_char(p_start_time_utc, 'yyyy/mm/dd hh24:mi:ss')
@@ -1110,7 +1102,6 @@ begin
       loop
          l_offices_processed := l_offices_processed + 1;
          cwms_msg.log_db_message(
-            'remote_query.retrieve_timeseries',
             cwms_msg.msg_level_normal,
             'Retrieving timeseries data for office '
             || ofc_rec.dst_office_id
@@ -1128,7 +1119,6 @@ begin
          loop
             l_tsids_processed := l_tsids_processed + 1;
             cwms_msg.log_db_message(
-               'remote_query.retrieve_timeseries',
                cwms_msg.msg_level_detailed,
                'Retrieving timeseries data for '
                || tsid_rec.ts_id);
@@ -1145,7 +1135,6 @@ begin
             exception
                when others then
                   cwms_msg.log_db_message(
-                     'remote_query.retrieve_timeseries',
                      cwms_msg.msg_level_normal,
                      'Error ' || sqlcode || ' on ' || tsid_rec.ts_id || ': ' || sqlerrm);
                   dbms_output.put_line('Error ' || sqlcode || ' on ' || tsid_rec.ts_id || ': ' || sqlerrm);
@@ -1193,7 +1182,6 @@ begin
             end if;
             close l_ts_cur;
             cwms_msg.log_db_message(
-               'remote_query.retrieve_timeseries',
                cwms_msg.msg_level_detailed,
                '' || l_tsv_array.count
                || ' timeseries values retrieved for '
@@ -1216,7 +1204,6 @@ begin
                exception
                   when others then
                      cwms_msg.log_db_message(
-                        'remote_query.retrieve_timeseries',
                         cwms_msg.msg_level_normal,
                         'Error during interval: ' || sqlerrm);
                end;
@@ -1226,7 +1213,6 @@ begin
    end loop;
    execute immediate 'alter session set "_optimizer_connect_by_cost_based"=true';
    cwms_msg.log_db_message(
-      'remote_query.retrieve_timeseries',
       cwms_msg.msg_level_normal,
       'Remote timeseries data retrieval completed for interval '
       || to_char(p_start_time_utc, 'yyyy/mm/dd hh24:mi:ss')
@@ -1253,7 +1239,6 @@ is
    l_end_time_utc       date := nvl(p_end_time_utc, cast(systimestamp at time zone 'UTC' as date));
 begin
    cwms_msg.log_db_message(
-      'retrieve timeseries',
       cwms_msg.msg_level_normal,
       to_char(systimestamp)
       || ' Starting retrieval for offices ('
@@ -1272,7 +1257,6 @@ begin
       p_end_time_utc);
 
    cwms_msg.log_db_message(
-      'retrieve timeseries',
       cwms_msg.msg_level_normal,
       to_char(systimestamp)
       || ' Retrieved '
@@ -1342,5 +1326,5 @@ begin
 end;
 
 commit;
-   
+
 
