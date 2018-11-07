@@ -1206,36 +1206,22 @@ procedure create_queues(
 procedure create_exception_queue(
    p_office_id in varchar2);
 /**
- * Purges message queues of undeliverable messages.  If a queue subscriber aborts without
- * unsubscribing, a zombie subscription is left behind and messages for that subscription accumulate in the queue.
- * This procedure kills zombie subscribers and purges queues of undeliverable messages
+ * Removes unresponsive (usually aborted) queue subscribers from CWMS queues.
+ * Unresponsive queue subscribers are defined as any subscriber who at any time has zero processed messages and more than zero expired messages in a queueu. 
+ * No attempt is made to dequeue undeliverable messages.
  */
-procedure purge_queues;
+procedure remove_dead_subscribers;
 /**
- * Starts the background job to purges the queues.  If already running, the
- * existing job is stopped and restarted. This procedure uses the following
- * database property entry:
- * <p>
- * <table class="descr">
- *   <tr>
- *     <th class="descr">Owning Office</th>
- *     <th class="descr">Property Category Identifier</th>
- *     <th class="descr">Property Identifier</th>
- *     <th class="descr">Meaning</th>
- *     <th class="descr">Default Value if Property Not Set</th>
- *   </tr>
- *   <tr>
- *     <td class="descr">CWMS</td>
- *     <td class="descr">CWMSDB</td>
- *     <td class="descr">queues.all.purge_interval</td>
- *     <td class="descr">Interval in minutes for purge_queues to execute.</td>
- *     <td class="descr-center">5</td>
- *   </tr>
- * </table>
+ * Starts a scheduler job that runs Remove_Dead_Subscribers at the specified interval. If an existing job is already scheduled it is stopped and rescheduled.
  *
- * @see cwms_properties
+ * @param p_interval minutes The interval to run the job on. If NULL or unspecified, the job is scheduled to run every 5 minutes. 
  */
-procedure start_purge_queues_job;
+procedure start_remove_subscribers_job(
+   p_interval_minutes in integer default null);
+/**
+ * Stops an existing scheduler job that runs Remove_Dead_Subscribers
+ */
+procedure stop_remove_subscribers_job;   
 /**
  * Registers a callback procedure for a message queue.  A registered callback callback
  * procedures is called for every message that is enqueued into the queue, and must
@@ -1467,8 +1453,12 @@ procedure update_queue_subscriber(
    p_process_id            in integer,
    p_fail_on_wrong_host    in varchar2 default 'T',
    p_office_id             in varchar2 default null);   
-   
-function get_call_stack return str_tab_tab_t;   
+-- not documented   
+function get_call_stack return str_tab_tab_t;
+/**
+ * Creates or rebuilds the AV_QUEUE_MESSAGES view, (re)assigns then CWMS_V_QUEUE_MESSAGES public synonym, and store current view documentation for API docs.
+ */
+procedure create_av_queue_subscr_msgs;
 end cwms_msg;
 /
 show errors;

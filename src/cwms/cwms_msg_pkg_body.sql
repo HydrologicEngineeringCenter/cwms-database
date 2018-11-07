@@ -1,8 +1,23 @@
 SET define on
 @@defines.sql
+--------------------------------------------------------------------------------------
+-- ensure at least a dummy version of AV_QUEUE_MESSAGES exists so this will compile --
+--------------------------------------------------------------------------------------
+declare
+   l_count pls_integer;
+begin
+   select count(*)
+     into l_count
+     from user_views 
+    where view_name = 'AV_QUEUE_MESSAGES';
+
+   if l_count = 0 then
+      execute immediate 'create view av_queue_messages as select null as queue, null as subscriber, null as ready, null as processed, null as expired, null as undeliverable, null as total from dual';       
+   end if;
+end;
+/
 create or replace package body cwms_msg
 as
-
 -------------------------------------------------------------------------------
 -- FUNCTION GET_MSG_ID
 --
@@ -1843,84 +1858,136 @@ begin
          dbms_output.put_line('Started queue '||l_queue_name);
 end create_exception_queue;
 
-PROCEDURE purge_queues
-IS
-   dequeue_options      DBMS_AQ.DEQUEUE_OPTIONS_T;
-   message_properties   DBMS_AQ.MESSAGE_PROPERTIES_T;
-   dq_msgid             RAW (16);
-   payload              RAW (1);
-   no_messages          EXCEPTION;
-   PRAGMA EXCEPTION_INIT (no_messages, -25263);
-   msg_count            NUMBER;
-   l_table_name         VARCHAR2 (64);
-   l_queue_name         VARCHAR2 (64);
-   l_query              VARCHAR2 (128);
-   l_cur                SYS_REFCURSOR;
-   l_msg_id             RAW (16);
-   l_state              VARCHAR2(32);
-BEGIN
-   FOR rec IN (SELECT name,queue_table
-                 FROM user_queues
-                WHERE QUEUE_TYPE = 'EXCEPTION_QUEUE')
-   LOOP
-      l_queue_name := rec.name;
-      l_table_name := rec.queue_table; 
-      sys.dbms_aqadm.start_queue(
-           queue_name => l_queue_name,
-           enqueue    => false, 
-           dequeue    => true);
+procedure purge_exception_queues
+is
+   l_dequeue_options    dbms_aq.dequeue_options_t;
+   l_message_properties dbms_aq.message_properties_t;
+   l_payload            raw(1);
+   l_msg_id             raw(16);
+   l_msg_count          pls_integer;
+   l_crsr               sys_refcursor;
+   
+begin   
+   l_dequeue_options.wait         := dbms_aq.no_wait;
+   l_dequeue_options.navigation   := dbms_aq.first_message;
+   l_dequeue_options.dequeue_mode := dbms_aq.remove_nodata;
+   
+   for rec in (select name as queue_name, queue_table from user_queues where queue_type = 'EXCEPTION_QUEUE') loop
+      -----------------------------------------------
+      -- enable dequeuing from the exception queue --
+      -----------------------------------------------
+      dbms_aqadm.start_queue(
+         queue_name => rec.queue_name,
+         enqueue    => false,
+         dequeue    => true);
+      ------------------------------
+      -- dequeue all the messages --
+      ------------------------------
+      l_msg_count := 0;
+      open l_crsr for 'select msgid from '||rec.queue_table||' where q_name = '''||rec.queue_name||'''';
+      loop
+         fetch l_crsr into l_dequeue_options.msgid;
+         exit when l_crsr%notfound;
+         begin
+            dbms_aq.dequeue(
+               queue_name         => rec.queue_name,
+               dequeue_options    => l_dequeue_options,
+               message_properties => l_message_properties,
+               payload            => l_payload,
+               msgid              => l_msg_id);
+         exception
+            when others then commit;
+         end;
+         l_msg_count := l_msg_count + 1;
+         if mod(l_msg_count, 100) = 0 then 
+            commit; 
+         end if;
+         l_dequeue_options.msgid := null;
+         l_dequeue_options.navigation := dbms_aq.next_message;
+      end loop;
+      close l_crsr;
+      commit;
+      ----------------------------------------------------------
+      -- disable enqueuing/dedqueuing for the exception queue --
+      ----------------------------------------------------------
+      dbms_aqadm.stop_queue(queue_name => rec.queue_name);
+      if l_msg_count > 0 then
+         -------------------------------------------------------------
+         -- log that we dequeued messages from this exception queue --
+         -------------------------------------------------------------
+         log_db_message(cwms_msg.msg_level_normal, 'Dequeued '||l_msg_count||' messages from exception queue '||rec.queue_name);
+      end if;   
+   end loop;
+end purge_exception_queues;
 
-      dequeue_options.wait := DBMS_AQ.NO_WAIT;
-      dequeue_options.navigation := DBMS_AQ.FIRST_MESSAGE;
-      dequeue_options.dequeue_mode := DBMS_AQ.remove_nodata;
-      msg_count := 0;
+procedure remove_dead_subscribers
+is
+   invalid_agent_name exception;
+   pragma exception_init(invalid_agent_name, -24047);
+   l_message    varchar2(128);
+   l_email_to   varchar2(256);
+   l_email_cc   varchar2(256);
+   l_must_purge boolean := false;
+begin
+   for rec in (select * from av_queue_messages) loop
+      if rec.processed = 0 and rec.expired > 0 then
+         begin
+            ------------------------------------
+            -- first try naked subscriber name -
+            ------------------------------------
+            dbms_aqadm.remove_subscriber(
+               rec.queue,
+               sys.aq$_agent(rec.subscriber, rec.queue, 0));
+         exception
+            when invalid_agent_name then
+               -------------------------------------------------
+               -- invalid subscriber name, must put in quotes --
+               -------------------------------------------------
+               dbms_aqadm.remove_subscriber(
+                  rec.queue,
+                  sys.aq$_agent('"'||rec.subscriber||'"', rec.queue, 0));
+            when others then         
+               cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'Error removing subscriber: '||sqlerrm);
+         end;
+         --------------------------------
+         -- log the subscriber removal --
+         --------------------------------
+         l_message := 'Removed subscriber '||rec.subscriber||' from queue '||rec.queue||' due to non-processing of messages';
+         cwms_msg.log_db_message(cwms_msg.msg_level_normal, l_message);
+         -----------------------------------------------
+         -- email the subscriber removal if specified --
+         -----------------------------------------------
+         l_email_to := cwms_properties.get_property('CWMSDB', 'remove_queue_subscriber.email.to', null, substr(rec.queue, 1, 3));
+         if l_email_to is not null then
+            l_email_cc := cwms_properties.get_property('CWMSDB', 'remove_queue_subscriber.email.cc', null, substr(rec.queue, 1, 3));
+            begin
+               cwms_mail.send_mail(
+                  p_to      => l_email_to,
+                  p_subject => 'CWMS Queue Subcriber Removal',
+                  p_message => l_message||chr(10),
+                  p_cc      => l_email_cc);
+            exception
+               when others then
+                  cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'Error sending email: '||sqlerrm);
+            end;
+         end if;
+      end if;
+   end loop;
+   ------------------------------------------------------------
+   -- purge any undeliverable messages from exception queues --
+   ------------------------------------------------------------
+   purge_exception_queues;
+end remove_dead_subscribers;
 
-      l_query := 'SELECT msgid FROM ' || l_table_name || ' WHERE Q_NAME= ''' || l_queue_name || '''';
-
-      OPEN l_cur FOR l_query;
-
-      LOOP
-         FETCH l_cur INTO l_msg_id;
-	 EXIT WHEN l_cur%NOTFOUND;
-         dequeue_options.msgid := l_msg_id;
-         BEGIN 
-         	DBMS_AQ.DEQUEUE (queue_name           => l_queue_name,
-                          dequeue_options      => dequeue_options,
-                          message_properties   => message_properties,
-                          payload              => payload,
-                          msgid                => dq_msgid);
-         EXCEPTION 
-		WHEN OTHERS THEN
-		COMMIT;
-	 END;
-
-         msg_count := msg_count + 1;
-
-         IF (MOD (msg_count, 1000) = 0)
-         THEN
-            COMMIT;
-         END IF;
-
-         dequeue_options.msgid := NULL;
-         dequeue_options.navigation := DBMS_AQ.NEXT_MESSAGE;
-     END LOOP;
-     CLOSE l_cur;
-
-      COMMIT;
-      sys.dbms_aqadm.stop_queue(queue_name => l_queue_name);
-      END LOOP;
-END purge_queues;
-
---------------------------------------------------------------------------------
--- procedure start_purge_queues_job
---
-procedure start_purge_queues_job
+procedure start_remove_subscribers_job(
+   p_interval_minutes in integer default null)
 is
    l_count        binary_integer;
    l_user_id      varchar2(30);
-   l_job_id       varchar2(30)  := 'PURGE_QUEUES_JOB';
+   l_job_id       varchar2(30)  := 'REMOVE_DEAD_SUBSCRIBERS_JOB';
    l_run_interval varchar2(8);
    l_comment      varchar2(256);
+   l_interval     integer := nvl(p_interval_minutes, 5);
 
    function job_count
       return binary_integer
@@ -1938,83 +2005,51 @@ begin
    -- make sure we're the correct user --
    --------------------------------------
    l_user_id := cwms_util.get_user_id;
-
-   if l_user_id != '&cwms_schema'
-   then
-      raise_application_error (-20999,
-                                  'Must be &cwms_schema user to start job '
-                               || l_job_id,
-                               true
-                              );
+   if l_user_id != '&cwms_schema' then
+      cwms_err.raise('ERROR',  'Must be &cwms_schema user to start job '|| l_job_id);
    end if;
 
    -------------------------------------------
    -- drop the job if it is already running --
    -------------------------------------------
-   if job_count > 0
-   then
-      dbms_output.put ('Dropping existing job ' || l_job_id || '...');
-      dbms_scheduler.drop_job (l_job_id);
-
-      --------------------------------
-      -- verify that it was dropped --
-      --------------------------------
-      if job_count = 0
-      then
-         dbms_output.put_line ('done.');
-      else
-         dbms_output.put_line ('failed.');
-      end if;
+   if job_count > 0 then
+      dbms_scheduler.drop_job(l_job_id);
    end if;
 
-   if job_count = 0
-   then
+   if job_count = 0 and l_interval > 0 then
       begin
          ---------------------
          -- restart the job --
          ---------------------
-         cwms_properties.get_property(
-            l_run_interval,
-            l_comment,
-            'CWMSDB',
-            'queues.all.purge_interval',
-            '5',
-            'CWMS');
          dbms_scheduler.create_job
             (job_name             => l_job_id,
              job_type             => 'stored_procedure',
-             job_action           => 'cwms_msg.purge_queues',
+             job_action           => 'cwms_msg.remove_dead_subscribers',
              start_date           => null,
-             repeat_interval      => 'freq=minutely; interval=' || l_run_interval,
+             repeat_interval      => 'freq=minutely; interval='||l_interval,
              end_date             => null,
              job_class            => 'default_job_class',
              enabled              => true,
              auto_drop            => false,
-             comments             => 'Purges expired and undeliverable messages from queues.'
+             comments             => 'Removes unresponsive queue subscribers.'
             );
 
-         if job_count = 1
-         then
-            dbms_output.put_line
-                           (   'Job '
-                            || l_job_id
-                            || ' successfully scheduled to execute every '
-                            || l_run_interval
-                            || ' minutes.'
-                           );
-         else
-            cwms_err.raise ('ITEM_NOT_CREATED', 'job', l_job_id);
+         if job_count != 1 then
+            cwms_err.raise('ITEM_NOT_CREATED', 'job', l_job_id||': reason unknown');
          end if;
       exception
-         when others
-         then
-            cwms_err.raise ('ITEM_NOT_CREATED',
-                            'job',
-                            l_job_id || ':' || sqlerrm
-                           );
+         when others then
+            cwms_err.raise ('ITEM_NOT_CREATED', 'job', l_job_id||': '||sqlerrm);
       end;
    end if;
-end start_purge_queues_job;
+end start_remove_subscribers_job;
+
+procedure stop_remove_subscribers_job
+is
+begin
+   start_remove_subscribers_job(0);
+end stop_remove_subscribers_job;   
+
 
 -- function get_registration_info
 --
@@ -2798,6 +2833,101 @@ begin
 end update_queue_subscriber;
 
 function get_call_stack return str_tab_tab_t is begin return cwms_util.get_call_stack; end get_call_stack;
+
+procedure create_av_queue_subscr_msgs as
+   unique_const_violated exception;
+   pragma exception_init(unique_const_violated, -1);
+   l_docstring varchar2(1000) := '
+/**
+ * Displays basin information
+ *
+ * @since Schema 18.1
+ *
+ * @field queue         The name of the CWMS queue
+ * @field subscriber    The name of the subscriber to the CWMS queue
+ * @field ready         The number of messages currently in the READY state for the subscriber
+ * @field processed     The number of messages currently in the PROCESSED state for the subscriber
+ * @field expired       The number of messages currently in the EXPIRED state for the subscriber
+ * @field undeliverable The number of messages currently in the UNDELIVERABLE state for the subscriber
+ * @field total         The total number of messages currently in the queue for the subscriber
+ */
+';
+   l_portion varchar2(4000) :=
+'                       select ''<queue>'' as queue,
+                              subscriber,
+                              msg_state,
+                              nvl(count, 0) as msg_count
+                         from (select consumer_name as subscriber,
+                                      msg_state as state,
+                                      count(*) as count
+                                 from aq$<table>
+                                group by consumer_name, msg_state
+                              ) counts
+                              full outer join
+                              (select name 
+                                 from aq$<table>_s
+                              ) subs on subs.name = counts.subscriber
+                              full outer join
+                              (select ''READY''         as msg_state from dual union all
+                               select ''PROCESSED''     as msg_state from dual union all
+                               select ''EXPIRED''       as msg_state from dual union all
+                               select ''UNDELIVERABLE'' as msg_state from dual
+                              ) states on counts.state = states.msg_state
+                        where subscriber is not null';   
+   l_sql varchar2(32767);
+begin
+   for rec in (select name queue_name, queue_table table_name 
+               from all_queues 
+               where owner = 'CWMS_20' and queue_type = 'NORMAL_QUEUE'
+              )
+   loop
+      if l_sql is not null then
+         l_sql := l_sql||chr(10)||'                       union all'||chr(10);
+      end if;
+      l_sql := l_sql||replace(replace(l_portion, '<queue>', rec.queue_name), '<table>', rec.table_name);
+   end loop;
+   l_sql := 'create or replace force view av_queue_messages
+   (queue,
+    subscriber,
+    ready,
+    processed,
+    expired,
+    undeliverable,
+    total
+   )
+as   
+select * 
+  from (select queue,
+               subscriber,
+               nvl(ready, 0) as ready,
+               nvl(processed, 0) as processed,
+               nvl(expired, 0) as expired,
+               nvl(undeliverable, 0) as undeliverable,
+               nvl(ready, 0) + nvl(processed, 0) + nvl(expired, 0)  + nvl(undeliverable, 0) as total
+         from (select * 
+                 from ('||trim(l_sql)||'
+                      )
+                      pivot 
+                      (sum(msg_count) 
+                       for msg_state in (''READY'' ready, 
+                                         ''PROCESSED'' processed, 
+                                         ''EXPIRED'' expired, 
+                                         ''UNDELIVERABLE'' undeliverable
+                                        )
+                      )
+              )
+       ) 
+ order by upper(queue), upper(subscriber)';
+   execute immediate l_sql;
+   execute immediate 'create or replace public synonym cwms_v_queue_messages for av_queue_messages';
+   begin
+      insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_QUEUE_MESSAGES', null, l_docstring); 
+   exception
+      when unique_const_violated then 
+         update at_clob set value = l_docstring where id = '/VIEWDOCS/AV_QUEUE_MESSAGES';
+   end;
+end create_av_queue_subscr_msgs;
+
 end cwms_msg;
 /
 show errors;
