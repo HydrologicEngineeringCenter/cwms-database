@@ -7110,42 +7110,12 @@ AS
        WHERE ts_code = l_ts_code_old;
 
       l_has_data := l_tmp > 0;
-
-      ------------------------------------------------------------------
-      -- Perform these checks only if the ts_code has associated data --
-      ------------------------------------------------------------------
-      IF l_has_data
-      THEN
-         --------------------------------------------------------------
-         -- Do not allow the interval to change, except to irregular --
-         --------------------------------------------------------------
-         IF CWMS_UTIL.IS_IRREGULAR_CODE (l_interval_code_new)
-         THEN
-            IF NVL(l_utc_offset_new, cwms_util.utc_offset_irregular) <> cwms_util.utc_offset_irregular
-            THEN
-               cwms_err.RAISE (
-                  'GENERIC_ERROR',
-                  'Cannot change to a constrained pseudo-regular interval when data is present');
-            end if;
-         ELSE
-            IF l_interval_code_new <> l_interval_code_old
-            THEN
-               cwms_err.RAISE (
-                  'GENERIC_ERROR',
-                  'Cannot change to a regular interval when data is present');
-            END IF;
-
-            ----------------------------------------------------
-            -- Do not allow the interval UTC offset to change --
-            ----------------------------------------------------
-            IF l_utc_offset_new <> l_utc_offset_old
-            THEN
-               cwms_err.RAISE (
-                  'GENERIC_ERROR',
-                  'Cannot change interval offsets when data is present');
-            END IF;
-         END IF;
-      END IF;
+      if l_has_data then
+         -- will verify new offset is okay or raise an exception
+         update_ts_id(
+            p_ts_code             => l_ts_code_old,
+            p_interval_utc_offset => l_utc_offset_new);
+      end if;
       ----------------------------------------------------
       -- Determine the new location_code --
       ----------------------------------------------------
