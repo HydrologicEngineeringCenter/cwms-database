@@ -123,6 +123,9 @@ msg_level_detailed constant integer :=  5;
  * level is set to include all messages
  */
 msg_level_verbose  constant integer :=  7;
+
+msg_timeout_seconds constant integer := 900; -- 15 minutes
+
 -- not documented
 function get_msg_id 
    return varchar2;
