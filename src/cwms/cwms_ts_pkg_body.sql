@@ -7033,35 +7033,65 @@ AS
       END;
 
       --------------------------------------------------------
-      -- Set default utc_offset if null was passed in as new...
+      -- set default utc_offset if null was passed in as new...
       --------------------------------------------------------
-      IF p_utc_offset_new IS NULL
-      THEN
-         DBMS_OUTPUT.put_line ('l_utc_offset_old-2: ' || l_utc_offset_old);
-
-         IF CWMS_UTIL.IS_IRREGULAR_CODE (l_interval_code_new)
-         THEN
-            l_utc_offset_new := cwms_util.utc_offset_irregular;
-         ELSIF CWMS_UTIL.IS_IRREGULAR_CODE (l_interval_code_old)
-         THEN
-            l_utc_offset_new := cwms_util.utc_offset_undefined;
-         ELSE
+      if p_utc_offset_new is null then
+         -------------------------
+         -- no offset specified --
+         -------------------------
+         if l_interval_code_new = l_interval_code_old then
+            -------------------
+            -- same interval --
+            -------------------
             l_utc_offset_new := l_utc_offset_old;
-         END IF;
-      ELSE
-         IF CWMS_UTIL.IS_IRREGULAR_CODE (l_interval_code_new)
-         THEN
-            l_utc_offset_new := cwms_util.utc_offset_irregular;
-         ELSIF p_utc_offset_new >= l_interval_dur_new
-         THEN
-            cwms_err.RAISE ('INVALID_UTC_OFFSET',
-                            p_utc_offset_new,
-                            l_interval_dur_new);
-         ELSE
+         else
+            -------------------------
+            -- different intervals --
+            -------------------------
+            if cwms_util.is_irregular_code (l_interval_code_new) then
+               if cwms_util.is_irregular_code (l_interval_code_old) then
+                  ----------------
+                  -- irr -> irr --
+                  ----------------
+                  l_utc_offset_new := l_utc_offset_old;
+               else
+                  ----------------
+                  -- reg -> irr --
+                  ----------------
+                  l_utc_offset_new := cwms_util.utc_offset_irregular;
+               end if;
+            elsif cwms_util.is_irregular_code (l_interval_code_old) then
+               if l_utc_offset_old < 0 then
+                  -----------------
+                  -- lrts -> reg --
+                  -----------------
+                  l_utc_offset_new := abs(l_utc_offset_old);
+               else
+                  ----------------------
+                  -- other irr -> reg --
+                  ----------------------
+                  l_utc_offset_new := cwms_util.utc_offset_undefined;
+               end if;
+            else
+               ----------------
+               -- reg -> reg --
+               ----------------
+               l_utc_offset_new := l_utc_offset_old;
+            end if;
+         end if;
+      else
+         ----------------------
+         -- offset specified --
+         ----------------------
+         if abs(p_utc_offset_new) >= l_interval_dur_new then
+            cwms_err.raise ('INVALID_UTC_OFFSET', p_utc_offset_new, l_interval_dur_new);
+         end if;
+         if cwms_util.is_irregular_code (l_interval_code_new) then
+            l_utc_offset_new := -abs(p_utc_offset_new);
+         else
             l_utc_offset_new := p_utc_offset_new;
-         END IF;
-      END IF;
---      DBMS_OUTPUT.put_line ('l_utc_offset_new: ' || l_utc_offset_new);
+         end if;
+      end if;
 
       -------------------------------------------------------------
       ---- Make sure that 'Inst' Parameter type doesn't have a duration--
