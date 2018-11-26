@@ -12,7 +12,7 @@ begin
     where view_name = 'AV_QUEUE_MESSAGES';
 
    if l_count = 0 then
-      execute immediate 'create view av_queue_messages as select null as queue, null as subscriber, null as ready, null as processed, null as expired, null as undeliverable, null as total from dual';
+      execute immediate 'create view av_queue_messages as select null as queue, null as subscriber, null as ready, null as processed, null as expired, null as undeliverable, null as total, null as max_ready_age from dual';
    end if;
 end;
 /
