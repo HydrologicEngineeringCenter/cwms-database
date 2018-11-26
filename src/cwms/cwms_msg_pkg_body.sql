@@ -109,7 +109,6 @@ is
    l_msgid              raw(16);
    l_queuename          varchar2(64);
    l_now                integer := cwms_util.current_millis;
-   l_expiration_time    constant binary_integer := 900; -- 15 minutes
    l_java_action        varchar2(4000);
    l_queueing_paused    boolean;
    l_parts              str_tab_t;
@@ -123,7 +122,7 @@ begin
    else
       l_enqueue_options.visibility := dbms_aq.on_commit;
    end if;
-   l_message_properties.expiration := l_expiration_time;
+   l_message_properties.expiration := msg_timeout_seconds;
    p_message.set_long(p_messageid, 'millis', l_now);
    p_message.flush(p_messageid);
    p_message.clean(p_messageid);
@@ -1930,7 +1929,7 @@ is
    l_must_purge boolean := false;
 begin
    for rec in (select * from av_queue_messages) loop
-      if rec.processed = 0 and rec.expired > 0 then
+      if rec.processed = 0 and (rec.expired > 0 or rec.max_ready_age >= msg_timeout_seconds) then
          begin
             ------------------------------------
             -- first try naked subscriber name -
@@ -2852,13 +2851,21 @@ procedure create_av_queue_subscr_msgs as
 '                       select ''<queue>'' as queue,
                               subscriber,
                               msg_state,
-                              nvl(count, 0) as msg_count
+                              nvl(count, 0) as msg_count,
+                              max_ready_age
                          from (select consumer_name as subscriber,
                                       msg_state as state,
                                       count(*) as count
                                  from aq$<table>
                                 group by consumer_name, msg_state
                               ) counts
+                              left outer join
+                              (select consumer_name,
+                                      round((sysdate - cast(min(enq_timestamp at time zone ''UTC'') as date)) * 86400) as max_ready_age
+                                 from aq$<table>
+                                where msg_state = ''READY''
+                                group by consumer_name
+                              ) ages on ages.consumer_name = counts.subscriber
                               full outer join
                               (select name
                                  from aq$<table>_s
@@ -2882,14 +2889,15 @@ begin
       end if;
       l_sql := l_sql||replace(replace(l_portion, '<queue>', rec.queue_name), '<table>', rec.table_name);
    end loop;
-   l_sql := 'create view av_queue_messages
+   l_sql := 'create or replace force view av_queue_messages
    (queue,
     subscriber,
     ready,
     processed,
     expired,
     undeliverable,
-    total
+    total,
+    max_ready_age
    )
 as
 select *
@@ -2899,7 +2907,8 @@ select *
                nvl(processed, 0) as processed,
                nvl(expired, 0) as expired,
                nvl(undeliverable, 0) as undeliverable,
-               nvl(ready, 0) + nvl(processed, 0) + nvl(expired, 0)  + nvl(undeliverable, 0) as total
+               nvl(ready, 0) + nvl(processed, 0) + nvl(expired, 0)  + nvl(undeliverable, 0) as total,
+               nvl(max_ready_age, 0) as max_ready_age
          from (select *
                  from ('||trim(l_sql)||'
                       )
