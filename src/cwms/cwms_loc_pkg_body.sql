@@ -3665,24 +3665,28 @@ AS
    --------------------------------------------------------------------------------
    -- FUNCTION get_local_timezone
    --------------------------------------------------------------------------------
-   FUNCTION get_local_timezone (p_location_code IN NUMBER)
-      RETURN VARCHAR2
-   IS
-      l_local_tz    VARCHAR2 (28);
-   BEGIN
-      SELECT   time_zone_name
-        INTO   l_local_tz
-        FROM   cwms_time_zone ctz, at_physical_location atp
-       WHERE   atp.location_code = p_location_code
-               AND ctz.time_zone_code = NVL (atp.time_zone_code, 0);
-
-      IF l_local_tz = 'Unknown or Not Applicable'
-      THEN
+   function get_local_timezone (p_location_code in number)
+      return varchar2
+   is
+      l_local_tz varchar2 (28);
+      l_rec      at_physical_location%rowtype;
+   begin
+      select * into l_rec from at_physical_location where location_code = p_location_code;
+      if l_rec.time_zone_code is null and l_rec.base_location_code != p_location_code then
+         select * into l_rec from at_physical_location where location_code = l_rec.base_location_code;
+      end if;
+      
+      select time_zone_name
+        into l_local_tz
+        from cwms_time_zone
+       where time_zone_code = nvl(l_rec.time_zone_code, 0); 
+   
+      if l_local_tz = 'Unknown or Not Applicable' then
          l_local_tz := 'UTC';
-      END IF;
+      end if;
 
-      RETURN l_local_tz;
-   END get_local_timezone;
+      return l_local_tz;
+   end get_local_timezone;
 
    --------------------------------------------------------------------------------
    -- FUNCTION get_local_timezone
