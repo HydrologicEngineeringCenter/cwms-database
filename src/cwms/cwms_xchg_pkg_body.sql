@@ -424,6 +424,10 @@ CREATE OR REPLACE package body cwms_xchg as
          return 0;
       end;
 
+      function xml_encode(p_str varchar2) return varchar2 is begin
+         return dbms_xmlgen.convert(p_str, 0);
+      end;
+
    begin
       l_xchg_set_id_mask     := cwms_util.normalize_wildcards(nvl(p_dss_xchg_set_id, '%'), true);
       l_office_id_mask       := cwms_util.normalize_wildcards(nvl(p_office_id, cwms_util.user_office_id), true);
@@ -491,9 +495,9 @@ CREATE OR REPLACE package body cwms_xchg as
        order by office_id)
       loop
          l_office_ids(rec.office_code) := rec.office_id;
-         writeln_xml('<office id="'||rec.office_id||'">');
+         writeln_xml('<office id="'||xml_encode(rec.office_id)||'">');
          indent;
-         writeln_xml('<name>'||rec.long_name||'</name>');
+         writeln_xml('<name>'||xml_encode(rec.long_name)||'</name>');
          dedent;
          writeln_xml('</office>');
       end loop;
@@ -506,9 +510,9 @@ CREATE OR REPLACE package body cwms_xchg as
             from cwms_office
            where office_code = cwms_util.user_office_code;
           l_office_ids(rec.office_code) := rec.office_id;
-          writeln_xml('<office id="'||rec.office_id||'">');
+          writeln_xml('<office id="'||xml_encode(rec.office_id)||'">');
           indent;
-          writeln_xml('<name>'||rec.long_name||'</name>');
+          writeln_xml('<name>'||xml_encode(rec.long_name)||'</name>');
           dedent;
           writeln_xml('</office>');
         end;
@@ -520,10 +524,10 @@ CREATE OR REPLACE package body cwms_xchg as
       l_oracle_id := db_datastore_id;
       writeln_xml('<datastore>');
       indent;
-      writeln_xml('<oracle id="'||l_oracle_id||'">');
+      writeln_xml('<oracle id="'||xml_encode(l_oracle_id)||'">');
       indent;
-      writeln_xml('<host>'||utl_inaddr.get_host_address||'</host>');
-      writeln_xml('<sid>'||l_db_name||'</sid>');
+      writeln_xml('<host>'||xml_encode(utl_inaddr.get_host_address)||'</host>');
+      writeln_xml('<sid>'||xml_encode(l_db_name)||'</sid>');
       dedent;
       writeln_xml('</oracle>');
       dedent;
@@ -543,14 +547,14 @@ CREATE OR REPLACE package body cwms_xchg as
       loop
          writeln_xml('<datastore>');
          indent;
-         writeln_xml('<dssfilemanager id="'||rec.datastore_id||'" office-id="'||l_office_ids(rec.office_code)||'">');
+         writeln_xml('<dssfilemanager id="'||xml_encode(rec.datastore_id)||'" office-id="'||xml_encode(l_office_ids(rec.office_code))||'">');
          indent;
          l_pos := rinstr(rec.dss_filemgr_url, ':');
-         writeln_xml('<host>'||substr(rec.dss_filemgr_url, 3, l_pos-3)||'</host>');
-         writeln_xml('<port>'||substr(rec.dss_filemgr_url, l_pos+1)||'</port>');
-         writeln_xml('<filepath>'||rec.dss_file_name||'</filepath>');
+         writeln_xml('<host>'||xml_encode(substr(rec.dss_filemgr_url, 3, l_pos-3))||'</host>');
+         writeln_xml('<port>'||xml_encode(substr(rec.dss_filemgr_url, l_pos+1))||'</port>');
+         writeln_xml('<filepath>'||xml_encode(rec.dss_file_name)||'</filepath>');
          if rec.description is not null then
-            writeln_xml('<description>'||rec.description||'</description>');
+            writeln_xml('<description>'||xml_encode(rec.description)||'</description>');
          end if;
          dedent;
          writeln_xml('</dssfilemanager>');
@@ -589,15 +593,15 @@ CREATE OR REPLACE package body cwms_xchg as
          writeln_xml('>');
          indent;
          if rec.description is not null then
-            writeln_xml('<description>'||rec.description||'</description>');
+            writeln_xml('<description>'||xml_encode(rec.description)||'</description>');
          end if;
-         writeln_xml('<datastore-ref id="'||l_oracle_id||'"/>');
-         writeln_xml('<datastore-ref id="'||l_datastore_id||'"/>');
+         writeln_xml('<datastore-ref id="'||xml_encode(l_oracle_id)||'"/>');
+         writeln_xml('<datastore-ref id="'||xml_encode(l_datastore_id)||'"/>');
          if rec.start_time is not null then
             writeln_xml('<timewindow>');
             indent;
-            writeln_xml('<starttime>'||rec.start_time||'</starttime>');
-            writeln_xml('<endtime>'||rec.end_time||'</endtime>');
+            writeln_xml('<starttime>'||xml_encode(rec.start_time)||'</starttime>');
+            writeln_xml('<endtime>'||xml_encode(rec.end_time)||'</endtime>');
             dedent;
             writeln_xml('</timewindow>');
          end if;
@@ -606,10 +610,10 @@ CREATE OR REPLACE package body cwms_xchg as
               into l_interpolate_units
               from cwms_interpolate_units
              where interpolate_units_code = rec.interpolate_units;
-            writeln_xml('<max-interpolate units="'||l_interpolate_units||'">'||rec.interpolate_count||'</max-interpolate>');
+            writeln_xml('<max-interpolate units="'||xml_encode(l_interpolate_units)||'">'||xml_encode(rec.interpolate_count)||'</max-interpolate>');
          end if;
          if rec.override_time_zone is not null then
-            writeln_xml('<override-timezone>'||rec.override_time_zone||'</override-timezone>');
+            writeln_xml('<override-timezone>'||xml_encode(rec.override_time_zone)||'</override-timezone>');
          end if;
          ---------------------------------------------------
          -- output the mappings for this dataexchange set --
@@ -645,35 +649,35 @@ CREATE OR REPLACE package body cwms_xchg as
             writeln_xml('<ts-mapping>');
             indent;
             writeln_xml('<cwms-timeseries datastore-id="'
-                        ||l_oracle_id
+                        ||xml_encode(l_oracle_id)
                         || case
                              when rec2.db_office_id != l_office_ids(rec.office_code) then
                                 '" office-id="'
-                                || rec2.db_office_id
+                                || xml_encode(rec2.db_office_id)
                              else
                                 null
                            end
                         ||'">'
-                        ||rec2.cwms_ts_id
+                        ||xml_encode(rec2.cwms_ts_id)
                         ||'</cwms-timeseries>');
             writeln_xml('<dss-timeseries datastore-id="'
-                        || l_datastore_id
+                        || xml_encode(l_datastore_id)
                         || '" type="'
-                        || rec2.dss_parameter_type_id
+                        || xml_encode(rec2.dss_parameter_type_id)
                         || '" units="'
-                        || rec2.unit_id
+                        || xml_encode(rec2.unit_id)
                         || '" timezone="'
-                        || rec2.time_zone_name
+                        || xml_encode(rec2.time_zone_name)
                         || '" tz-usage="'
-                        || rec2.tz_usage_id
+                        || xml_encode(rec2.tz_usage_id)
                         || '">'
-                        || make_dss_pathname(
+                        || xml_encode(make_dss_pathname(
                               rec2.a_pathname_part,
                               rec2.b_pathname_part,
                               rec2.c_pathname_part,
                               null,
                               rec2.e_pathname_part,
-                              rec2.f_pathname_part)
+                              rec2.f_pathname_part))
                         || '</dss-timeseries>');
             dedent;
             writeln_xml('</ts-mapping>');
@@ -975,6 +979,7 @@ CREATE OR REPLACE package body cwms_xchg as
          time_zone   varchar2(28),
          tz_usage    varchar2(16));
       type dss_filemgr_by_id is table of dss_filemgr_t index by varchar2(49);
+      l_dx_config          clob;
       l_mappings           str_tab_t;
       l_parts              str_tab_t;
       l_offices            int_by_id16;
@@ -1118,7 +1123,8 @@ CREATE OR REPLACE package body cwms_xchg as
       -----------------------------------------------------------------------
       -- split the incoming XML around the ts-mapping element opening tags --
       -----------------------------------------------------------------------
-      l_mappings := split(p_dx_config, '<ts-mapping>');
+      l_dx_config := dbms_xmlgen.convert(p_dx_config, 1);
+      l_mappings := split(l_dx_config, '<ts-mapping>');
       -------------------------
       -- process the offices --
       -------------------------
