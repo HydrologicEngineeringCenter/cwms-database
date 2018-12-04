@@ -1440,6 +1440,11 @@ begin
    if p_level_value is null then
       l_interpolate := p_interpolate;
    end if;
+   if upper(p_parameter_type_id) not in ('INST', 'CONST') and upper(p_duration_id) in ('0', '0BOP') then
+      cwms_err.raise(
+         'ERROR',
+         'Location level parameter type of '||p_parameter_type_id||' cannot have 0 (zero) duration');
+   end if;
    -------------------------------------------------------
    -- default the time zone to the location's time zone --
    -------------------------------------------------------

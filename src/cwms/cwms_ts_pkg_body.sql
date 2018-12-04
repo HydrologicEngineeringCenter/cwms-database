@@ -1608,7 +1608,8 @@ AS
          OR l_duration_code IS NULL
          OR l_parameter_type_code IS NULL
          OR l_interval_code IS NULL
-         OR (UPPER (l_parameter_type_id) = 'INST' AND l_duration <> 0)
+         OR (upper (l_parameter_type_id) =  'INST' AND l_duration <> 0)
+         OR (UPPER (l_parameter_type_id) <> 'INST' AND l_duration =  0 AND l_interval <> 0)
       THEN
          l_str_error :=
             'ERROR: Invalid Time Series Description: ' || p_cwms_ts_id;
@@ -1645,7 +1646,15 @@ AS
             l_str_error :=
                   l_str_error
                || CHR (10)
-               || ' Inst parameter type can not have non-zero duration';
+               || ' Inst parameter type cannot have non-zero duration';
+         END IF;
+
+         IF (UPPER (l_parameter_type_id) <> 'INST' AND l_duration = 0 and l_interval <> 0)
+         THEN
+            l_str_error :=
+                  l_str_error
+               || chr (10)
+               || ' Non-Inst parameter type cannot have zero duration on regular time series';
          END IF;
 
          IF l_can_create
