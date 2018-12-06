@@ -10620,6 +10620,7 @@ end retrieve_existing_item_counts;
          end;
       else
          l_time_zone := p_time_zone;
+      end if;   
       if p_version_date is null or p_version_date = cwms_util.non_versioned then
          l_version_date_utc := cwms_util.non_versioned;
       else
