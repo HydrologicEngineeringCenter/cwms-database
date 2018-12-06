@@ -10383,14 +10383,8 @@ end retrieve_existing_item_counts;
       p_version_date in  date default cwms_util.non_versioned,
       p_office_id    in  varchar2 default null)
    is
-      l_version_date_utc date;
       l_ts_extents       ts_extents_t;
    begin
-      if p_version_date is null or p_version_date = cwms_util.non_versioned then
-         l_version_date_utc := cwms_util.non_versioned;
-      else
-         l_version_date_utc := cwms_util.change_timezone(p_version_date, p_time_zone, 'UTC');
-      end if;
       get_ts_extents(
          p_ts_extents   => l_ts_extents,
          p_ts_code      => cwms_ts.get_ts_code(p_cwms_ts_id => p_cwms_ts_id, p_db_office_id => p_office_id),
@@ -10497,7 +10491,10 @@ end retrieve_existing_item_counts;
       p_office_id  in  varchar2 default null)
 	is
 	begin
-		null;
+		get_ts_extents(
+         p_ts_extents => p_ts_extents,
+         p_ts_code    => cwms_ts.get_ts_code(p_cwms_ts_id => p_cwms_ts_id, p_db_office_id => p_office_id),
+         p_unit       => p_unit);
 	end get_ts_extents;
 
    function get_ts_extents_f(
@@ -10506,8 +10503,14 @@ end retrieve_existing_item_counts;
       p_office_id  in varchar2 default null)
       return ts_extents_tab_t
 	is
+      l_ts_extents ts_extents_tab_t;
 	begin
-		return null;
+      get_ts_extents(
+         p_ts_extents => l_ts_extents,
+         p_cwms_ts_id => p_cwms_ts_id,
+         p_unit       => p_unit,
+         p_office_id  => p_office_id);
+		return l_ts_extents;
 	end get_ts_extents_f;
 
    procedure get_ts_extents(
@@ -10515,8 +10518,26 @@ end retrieve_existing_item_counts;
       p_ts_code    in  integer,
       p_unit       in  varchar2 default null)
 	is
+      l_version_dates date_table_type;
 	begin
-		null;
+		select distinct
+             version_date
+        bulk collect
+        into l_version_dates
+        from av_tsv
+       where ts_code = p_ts_code
+       order by 1;
+       
+      p_ts_extents := ts_extents_tab_t();
+      p_ts_extents.extend(l_version_dates.count);
+      for i in 1..l_version_dates.count loop
+         get_ts_extents(
+            p_ts_extents   => p_ts_extents(i),
+            p_ts_code      => p_ts_code,
+            p_version_date => l_version_dates(i),
+            p_time_zone    => 'UTC',
+            p_unit         => p_unit);
+      end loop;
 	end get_ts_extents;
 
    function get_ts_extents_f(
@@ -10524,8 +10545,13 @@ end retrieve_existing_item_counts;
       p_unit    in varchar2 default null)
       return ts_extents_tab_t
 	is
+      l_ts_extents ts_extents_tab_t;
 	begin
-		return null;
+      get_ts_extents(
+         p_ts_extents => l_ts_extents,
+         p_ts_code    => p_ts_code,
+         p_unit       => p_unit);
+		return l_ts_extents;
 	end get_ts_extents_f;
 
    procedure get_ts_extents(
@@ -10571,11 +10597,12 @@ end retrieve_existing_item_counts;
       p_time_zone    in  varchar2,
       p_unit         in  varchar2 default null)
 	is
-      l_rowid        urowid;
-      l_ts_extents   ts_extents_t;
-      l_time_zone    varchar(28);
-      l_parameter_id varchar2(49);
-      l_default_unit varchar2(16);
+      l_rowid            urowid;
+      l_ts_extents       ts_extents_t;
+      l_version_date_utc date;
+      l_time_zone        varchar(28);
+      l_parameter_id     varchar2(49);
+      l_default_unit     varchar2(16);
 	begin
       if p_time_zone is null then
          begin
@@ -10593,6 +10620,10 @@ end retrieve_existing_item_counts;
          end;
       else
          l_time_zone := p_time_zone;
+      if p_version_date is null or p_version_date = cwms_util.non_versioned then
+         l_version_date_utc := cwms_util.non_versioned;
+      else
+         l_version_date_utc := cwms_util.change_timezone(p_version_date, l_time_zone, 'UTC');
       end if;
       for i in 1..2 loop
          begin
@@ -10600,12 +10631,12 @@ end retrieve_existing_item_counts;
               into l_rowid
               from at_ts_extents
              where ts_code = p_ts_code
-               and version_time = p_version_date;
+               and version_time = l_version_date_utc;
          exception
             when no_data_found then null;
          end;
          exit when l_rowid is not null;
-         update_ts_extents(p_ts_code, p_version_date);
+         update_ts_extents(p_ts_code, l_version_date_utc);
       end loop;
       if l_rowid is not null then
          l_ts_extents := ts_extents_t(l_rowid);
