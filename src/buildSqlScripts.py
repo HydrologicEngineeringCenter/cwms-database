@@ -6380,7 +6380,7 @@ def main() :
         countiesLoadTemplate +="\t%d,\n" % county_code
         countiesLoadTemplate +="\t'%s',\n" % county_id
         countiesLoadTemplate +="\t%d,\n" % int(stateId)
-        countiesLoadTemplate +="\t'%s'\n" % countyName.replace("'", "'')
+        countiesLoadTemplate +="\t'%s'\n" % countyName.replace("'", "''")
         countiesLoadTemplate +=");\n"
     countiesLoadTemplate +="COMMIT;\n"
 
