@@ -63,6 +63,12 @@ prompt 'MODIFYING CWMS_DB_CHANGE_LOG TABLE'
 select systimestamp from dual;
 @@./18_1_1/modify_db_change_log
 prompt ################################################################################
+prompt 'ADDING NEW STATES AND COUNTIES'
+select systimestamp from dual;
+whenever sqlerror continue;
+@@./18_1_1/add_states+counties
+whenever sqlerror exit;
+prompt ################################################################################
 prompt 'MODIFYING AT_SEC_CWMS_USERS TABLE'
 select systimestamp from dual;
 alter table at_sec_cwms_users modify phone varchar2(24);
