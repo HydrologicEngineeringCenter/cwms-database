@@ -3468,13 +3468,16 @@ counties = [
     [56041, 'Uinta'],
     [56043, 'Washakie'],
     [56045, 'Weston'],
+    [60000, 'Unknown County or County N/A'],
     [60010, 'Eastern District'],
     [60020, 'Manu\'a District'],
     [60030, 'Rose Island'],
     [60040, 'Swains Island'],
     [60050, 'Western District'],
+    [66000, 'Unknown County or County N/A'],
     [66010, 'Guam'],
     [68007, 'Ailinginae Atoll '],
+    [68000, 'Unknown County or County N/A'],
     [68010, 'Ailinglaplap Atoll '],
     [68030, 'Ailuk Atoll '],
     [68040, 'Arno Atoll '],
@@ -3507,10 +3510,12 @@ counties = [
     [68410, 'Utrik Atoll '],
     [68420, 'Wotho Atoll '],
     [68430, 'Wotje Atoll '],
+    [69000, 'Unknown County or County N/A'],
     [69085, 'Northern Islands Municipality'],
     [69100, 'Rota Municipality'],
     [69110, 'Saipan Municipality'],
     [69120, 'Tinian Municipality'],
+    [72000, 'Unknown County or County N/A'],
     [72001, 'Adjuntas Municipio'],
     [72003, 'Aguada Municipio'],
     [72005, 'Aguadilla Municipio'],
@@ -3589,6 +3594,7 @@ counties = [
     [72149, 'Villalba Municipio'],
     [72151, 'Yabucoa Municipio'],
     [72153, 'Yauco Municipio'],
+    [78000, 'Unknown County or County N/A'],
     [78010, 'St. Croix Island'],
     [78020, 'St. John Island'],
     [78030, 'St. Thomas Island'],
@@ -6374,7 +6380,7 @@ def main() :
         countiesLoadTemplate +="\t%d,\n" % county_code
         countiesLoadTemplate +="\t'%s',\n" % county_id
         countiesLoadTemplate +="\t%d,\n" % int(stateId)
-        countiesLoadTemplate +="\t'%s'\n" % countyName
+        countiesLoadTemplate +="\t'%s'\n" % countyName.replace("'", "'')
         countiesLoadTemplate +=");\n"
     countiesLoadTemplate +="COMMIT;\n"
 
