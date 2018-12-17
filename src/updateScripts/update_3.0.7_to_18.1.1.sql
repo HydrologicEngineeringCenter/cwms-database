@@ -15,12 +15,26 @@ alter session set current_schema = &cwms_schema;
 var db_name varchar2(61)
 declare
    l_count pls_integer;
+   l_name  varchar2(30);
 begin
+   select nvl(primary_db_unique_name, db_unique_name) into :db_name from v$database;
    select count(*) into l_count from all_objects where object_name = 'CDB_PDBS';
-   if l_count = 0 then
-      select nvl(primary_db_unique_name, db_unique_name) into :db_name from v$database;
-   else
-      execute immediate 'select nvl(v1.primary_db_unique_name, v1.db_unique_name)||''-''||v2.pdb_name from v$database v1, cdb_pdbs v2' into :db_name;
+   if l_count > 0 then
+      select nvl(primary_db_unique_name, db_unique_name)
+        into l_name 
+        from v$database;
+      :db_name := l_name;
+      begin
+         select pdb_name
+           into l_name
+           from cdb_pdbs;
+      exception
+         when no_data_found then 
+            l_name := null;
+      end;   
+      if l_name is not null then
+         :db_name := :db_name||'-'||l_name;
+      end if;
    end if;
 end;
 /
