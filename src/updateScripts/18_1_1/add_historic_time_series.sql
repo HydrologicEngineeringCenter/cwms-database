@@ -1,3 +1,4 @@
+set define on
 drop trigger at_cwms_ts_spec_t01;
 declare
    l_tables str_tab_t := str_tab_t(
