@@ -1,8 +1,29 @@
 drop trigger at_cwms_ts_spec_t01;
-alter table at_cwms_ts_spec add historic_flag varchar2(1) default 'F';
-alter table at_cwms_ts_spec add constraint at_cwms_ts_spec_ck_6 check (historic_flag = 'T' or historic_flag = 'F');
-alter table at_cwms_ts_id add historic_flag varchar2(1) default 'F';
-   
+declare
+   l_tables str_tab_t := str_tab_t(
+      'AT_CWMS_TS_SPEC',
+      'AT_CWMS_TS_ID');
+begin
+   for i in 1..l_tables.count loop
+      dbms_rls.drop_policy(
+         object_schema => '&cwms_schema',
+         object_name   => l_tables(i),
+         policy_name   => 'SERVICE_USER_POLICY');
+         
+      execute immediate 'alter table '||l_tables(i)||' add historic_flag varchar2(1) default ''F''';
+      
+      dbms_rls.add_policy (
+         object_schema    => '&cwms_schema',
+         object_name      => l_tables(i),
+         policy_name      => 'SERVICE_USER_POLICY',
+         function_schema  => '&cwms_schema',
+         policy_function  => 'CHECK_SESSION_USER',
+         policy_type      => dbms_rls.shared_context_sensitive,
+         statement_types  => 'select');
+   end loop;
+end;
+/
+
 create trigger at_cwms_ts_spec_t01
     AFTER INSERT OR UPDATE OR DELETE
     ON AT_CWMS_TS_SPEC     REFERENCING NEW AS new OLD AS old
