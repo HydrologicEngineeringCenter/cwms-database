@@ -1392,6 +1392,40 @@ function retrieve_location_level_value(
    p_office_id               in  varchar2 default null)
    return number;
 /**
+ * Retrieves a location level value for a specified location level and time
+ *
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_level_units        The value unit to retrieve the level value in
+ * @param p_date               The date/time to retrieve the level for. If not specified or NULL, the current date/time is used
+ * @param p_timezone_id        The time zone of p_date, ignored if p_date is null. If not specified or NULL when p_date is not NULL, the local time zone of the level's location is used
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_value    The value of the attribute, if applicable
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_max_ts_timespan    The maximum timespan allowed for irregularly varying levels (i.e., levels backed by time series), in ISO 8601 (web time duration) format.
+ *                             The timespan is one of
+ *                             <ul>
+ *                             <li>For un-interpolated (step) levels or intepolated levels with no time seires values after the specified or default date/time, this is the time between the latest time seiries value prior to the date/time and the date/time itself</li>
+ *                             <li>For interpolated levels with a time series value after the specified or default date/time, this is the timespan between latest time series value before the date/time to the earliest time series value after the date/time</li>
+ *                             </ul>
+ *                             If the timepsan exceeds the specified maximum, NULL is returned. If not specified or NULL, no restriction on the timespan is used
+ * @param p_ignore_errors      A flag ('T'/'F') that specifies whether to handle any exceptions raised during execution and return a NULL value ('T'). If 'F', exceptions are passed back to the calling environment
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ *
+ * @return The location level value
+ */
+function retrieve_loc_lvl_value_ex(
+   p_location_level_id       in  varchar2,
+   p_level_units             in  varchar2,
+   p_date                    in  date     default null, -- defaults to current time
+   p_timezone_id             in  varchar2 default null, -- defaults to location time zone with non-null p_date
+   p_attribute_id            in  varchar2 default null,
+   p_attribute_value         in  number   default null, -- required with non-null p_attribute_id
+   p_attribute_units         in  varchar2 default null, -- required with non-null p_attribute_id
+   p_max_ts_timespan         in  varchar2 default null, -- ISO 8601 format, returns null if time series timespan too long
+   p_ignore_errors           in  varchar2 default 'F',  -- returns null on error if 'T'
+   p_office_id               in  varchar2 default null) -- user's office id if null
+   return number result_cache;
+   /**
  * Retrieves all the attribute values for a Location Level in effect at a specified time
  *
  * @param p_attribute_values   The retrieved attribute values
@@ -1973,8 +2007,8 @@ procedure delete_location_level(
    p_office_id               in  varchar2 default null);
 /**
  * Deletes a location level, optionally deleting any recurring pattern records
- * 
- * @param p_location_level_code  The unique numeric value that identifies the location level in the database 
+ *
+ * @param p_location_level_code  The unique numeric value that identifies the location level in the database
  * @param p_cascade              A flag ('T' or 'F') that specifies whether to delete any recurring pattern records. If 'F' and such records exist, the routine will fail
  */
 procedure delete_location_level(
@@ -2031,7 +2065,7 @@ procedure delete_location_level2(
 /**
  * Deletes a location level, optionally deleting any recurring pattern records and location level indicators
  *
- * @param p_location_level_code  The unique numeric value that identifies the location level in the database 
+ * @param p_location_level_code  The unique numeric value that identifies the location level in the database
  * @param p_cascade              A flag ('T' or 'F') that specifies whether to delete any recurring pattern records. If 'F' and such records exist, the routine will fail
  * @param p_delete_indicators    A flag ('T' or 'F') that specifies whether to delete any location level indicators associated with the location level
  */
@@ -2067,7 +2101,7 @@ procedure delete_location_level3(
 /**
  * Deletes a location level, optionally deleting any recurring pattern records, location level indicators, and associated pool definitions
  *
- * @param p_location_level_code  The unique numeric value that identifies the location level in the database 
+ * @param p_location_level_code  The unique numeric value that identifies the location level in the database
  * @param p_cascade              A flag ('T' or 'F') that specifies whether to delete any recurring pattern records. If 'F' and such records exist, the routine will fail
  * @param p_delete_pools         A flag ('T' or 'F') that specifies whether to delete any explicit pool definitions associated with the location level
  * @param p_delete_indicators    A flag ('T' or 'F') that specifies whether to delete any location level indicators associated with the location level
@@ -2077,10 +2111,10 @@ procedure delete_location_level3(
    p_cascade             in  varchar2 default 'F',
    p_delete_pools        in  varchar2 default 'F',
    p_delete_indicators   in  varchar2 default 'F');
-/**     
+/**
  * Sets the configuration-specific label for a location level
  *
- * @param p_loc_lvl_label     The configuration-specific label for the location level, 
+ * @param p_loc_lvl_label     The configuration-specific label for the location level,
  * @param p_location_level_id The location level identifier
  * @param p_attribute_value   The value of the attribute, if any
  * @param p_attribute_units   The unit for the attribute value, if any
@@ -2090,7 +2124,7 @@ procedure delete_location_level3(
  * @param p_office_id         The office that owns the location level. If NULL or not specified, the current session's default office is used.
  */
 procedure set_loc_lvl_label(
-   p_loc_lvl_label           in varchar2, 
+   p_loc_lvl_label           in varchar2,
    p_location_level_id       in varchar2,
    p_attribute_value         in number   default null,
    p_attribute_units         in varchar2 default null,
@@ -2101,7 +2135,7 @@ procedure set_loc_lvl_label(
 /**
  * Gets the configuration-specific label for a location level
  *
- * @param p_loc_lvl_label     The configuration-specific label for the location level, 
+ * @param p_loc_lvl_label     The configuration-specific label for the location level,
  * @param p_location_level_id The location level identifier
  * @param p_attribute_value   The value of the attribute, if any
  * @param p_attribute_units   The unit for the attribute value, if any
@@ -2110,14 +2144,14 @@ procedure set_loc_lvl_label(
  * @param p_office_id         The office that owns the location level. If NULL or not specified, the current session's default office is used.
  */
 procedure get_loc_lvl_label(
-   p_loc_lvl_label           out varchar2, 
+   p_loc_lvl_label           out varchar2,
    p_location_level_id       in  varchar2,
    p_attribute_value         in  number   default null,
    p_attribute_units         in  varchar2 default null,
    p_attribute_id            in  varchar2 default null,
    p_configuration_id        in  varchar2 default null,
    p_office_id               in  varchar2 default null);
-/**       
+/**
  * Gets the configuration-specific label for a location level
  *
  * @param p_location_level_id The location level identifier
@@ -2127,7 +2161,7 @@ procedure get_loc_lvl_label(
  * @param p_configuration_id  The configuration associated with the label. If NULL or not specified, the configuration will default to 'GENERAL/OTHER'
  * @param p_office_id         The office that owns the location level. If NULL or not specified, the current session's default office is used.
  *
- * @return The configuration-specific label for the location level, 
+ * @return The configuration-specific label for the location level,
  */
 function get_loc_lvl_label_f(
    p_location_level_id       in varchar2,
@@ -2137,7 +2171,7 @@ function get_loc_lvl_label_f(
    p_configuration_id        in varchar2 default null,
    p_office_id               in varchar2 default null)
    return varchar2;
-/**     
+/**
  * Deletes the configuration-specific label for a location level
  *
  * @param p_location_level_id The location level identifier
@@ -2154,10 +2188,10 @@ procedure delete_loc_lvl_label(
    p_attribute_id            in varchar2 default null,
    p_configuration_id        in varchar2 default null,
    p_office_id               in varchar2 default null);
-/**     
+/**
  * Sets the configuration-specific label for a location level
  *
- * @param p_loc_lvl_label            The configuration-specific label for the location level, 
+ * @param p_loc_lvl_label            The configuration-specific label for the location level,
  * @param p_location_code            The location code for the location level
  * @param p_specified_level_code     The specified level code for the location level
  * @param p_parameter_code           The parameter code for the location level
@@ -2171,7 +2205,7 @@ procedure delete_loc_lvl_label(
  * @param p_fail_if_exists           A flag (T/F) specifying whether to fail if a label already exists for the level and configuration
  */
 procedure set_loc_lvl_label(
-   p_loc_lvl_label            in varchar2, 
+   p_loc_lvl_label            in varchar2,
    p_location_code            in integer,
    p_specified_level_code     in integer,
    p_parameter_code           in integer,
@@ -2182,11 +2216,11 @@ procedure set_loc_lvl_label(
    p_attr_parameter_type_code in integer default null,
    p_attr_duration_code       in integer default null,
    p_configuration_code       in integer default null,
-   p_fail_if_exists           in varchar2 default 'T'); 
-/**     
+   p_fail_if_exists           in varchar2 default 'T');
+/**
  * Gets the configuration-specific label for a location level
  *
- * @param p_loc_lvl_label            The configuration-specific label for the location level, 
+ * @param p_loc_lvl_label            The configuration-specific label for the location level,
  * @param p_location_code            The location code for the location level
  * @param p_specified_level_code     The specified level code for the location level
  * @param p_parameter_code           The parameter code for the location level
@@ -2199,7 +2233,7 @@ procedure set_loc_lvl_label(
  * @param p_configuration_code       The configuration associated with the label. If NULL or not specified, the configuration will default to 'GENERAL/OTHER'
  */
 procedure get_loc_lvl_label(
-   p_loc_lvl_label            out varchar2, 
+   p_loc_lvl_label            out varchar2,
    p_location_code            in  integer,
    p_specified_level_code     in  integer,
    p_parameter_code           in  integer,
@@ -2209,8 +2243,8 @@ procedure get_loc_lvl_label(
    p_attr_parameter_code      in  integer default null,
    p_attr_parameter_type_code in  integer default null,
    p_attr_duration_code       in  integer default null,
-   p_configuration_code       in  integer default null); 
-/**     
+   p_configuration_code       in  integer default null);
+/**
  * Deletes the configuration-specific label for a location level
  *
  * @param p_location_code            The location code for the location level
@@ -2234,11 +2268,11 @@ procedure delete_loc_lvl_label(
    p_attr_parameter_code      in integer default null,
    p_attr_parameter_type_code in integer default null,
    p_attr_duration_code       in integer default null,
-   p_configuration_code       in integer default null); 
-/**     
+   p_configuration_code       in integer default null);
+/**
  * Sets the source for a location level
  *
- * @param p_loc_lvl_source    The source for the location level, 
+ * @param p_loc_lvl_source    The source for the location level,
  * @param p_location_level_id The location level identifier
  * @param p_attribute_value   The value of the attribute, if any
  * @param p_attribute_units   The unit for the attribute value, if any
@@ -2247,7 +2281,7 @@ procedure delete_loc_lvl_label(
  * @param p_office_id         The office that owns the location level. If NULL or not specified, the current session's default office is used.
  */
 procedure set_loc_lvl_source(
-   p_loc_lvl_source          in varchar2, 
+   p_loc_lvl_source          in varchar2,
    p_location_level_id       in varchar2,
    p_attribute_value         in number   default null,
    p_attribute_units         in varchar2 default null,
@@ -2257,7 +2291,7 @@ procedure set_loc_lvl_source(
 /**
  * Gets the source for a location level
  *
- * @param p_loc_lvl_source    The source for the location level, 
+ * @param p_loc_lvl_source    The source for the location level,
  * @param p_location_level_id The location level identifier
  * @param p_attribute_value   The value of the attribute, if any
  * @param p_attribute_units   The unit for the attribute value, if any
@@ -2265,13 +2299,13 @@ procedure set_loc_lvl_source(
  * @param p_office_id         The office that owns the location level. If NULL or not specified, the current session's default office is used.
  */
 procedure get_loc_lvl_source(
-   p_loc_lvl_source          out varchar2, 
+   p_loc_lvl_source          out varchar2,
    p_location_level_id       in  varchar2,
    p_attribute_value         in  number   default null,
    p_attribute_units         in  varchar2 default null,
    p_attribute_id            in  varchar2 default null,
    p_office_id               in  varchar2 default null);
-/**       
+/**
  * Gets the source for a location level
  *
  * @param p_location_level_id The location level identifier
@@ -2280,7 +2314,7 @@ procedure get_loc_lvl_source(
  * @param p_attribute_id      The attribute identifier for the location level
  * @param p_office_id         The office that owns the location level. If NULL or not specified, the current session's default office is used.
  *
- * @return The source for the location level, 
+ * @return The source for the location level,
  */
 function get_loc_lvl_source_f(
    p_location_level_id       in varchar2,
@@ -2289,7 +2323,7 @@ function get_loc_lvl_source_f(
    p_attribute_id            in varchar2 default null,
    p_office_id               in varchar2 default null)
    return varchar2;
-/**     
+/**
  * Deletes the source for a location level
  *
  * @param p_location_level_id The location level identifier
@@ -2304,10 +2338,10 @@ procedure delete_loc_lvl_source(
    p_attribute_units         in varchar2 default null,
    p_attribute_id            in varchar2 default null,
    p_office_id               in varchar2 default null);
-/**     
+/**
  * Sets the source for a location level
  *
- * @param p_loc_lvl_source           The source for the location level, 
+ * @param p_loc_lvl_source           The source for the location level,
  * @param p_location_code            The location code for the location level
  * @param p_specified_level_code     The specified level code for the location level
  * @param p_parameter_code           The parameter code for the location level
@@ -2320,7 +2354,7 @@ procedure delete_loc_lvl_source(
  * @param p_fail_if_exists           A flag (T/F) specifying whether to fail if a source already exists for the level
  */
 procedure set_loc_lvl_source(
-   p_loc_lvl_source           in varchar2, 
+   p_loc_lvl_source           in varchar2,
    p_location_code            in integer,
    p_specified_level_code     in integer,
    p_parameter_code           in integer,
@@ -2330,11 +2364,11 @@ procedure set_loc_lvl_source(
    p_attr_parameter_code      in integer default null,
    p_attr_parameter_type_code in integer default null,
    p_attr_duration_code       in integer default null,
-   p_fail_if_exists           in varchar2 default 'T'); 
-/**     
+   p_fail_if_exists           in varchar2 default 'T');
+/**
  * Gets the source for a location level
  *
- * @param p_loc_lvl_source           The source for the location level, 
+ * @param p_loc_lvl_source           The source for the location level,
  * @param p_location_code            The location code for the location level
  * @param p_specified_level_code     The specified level code for the location level
  * @param p_parameter_code           The parameter code for the location level
@@ -2346,7 +2380,7 @@ procedure set_loc_lvl_source(
  * @param p_attr_duration_code       The duration code of the attributes for the location lavel, if any
  */
 procedure get_loc_lvl_source(
-   p_loc_lvl_source           out varchar2, 
+   p_loc_lvl_source           out varchar2,
    p_location_code            in  integer,
    p_specified_level_code     in  integer,
    p_parameter_code           in  integer,
@@ -2355,8 +2389,8 @@ procedure get_loc_lvl_source(
    p_attr_value               in  number  default null,
    p_attr_parameter_code      in  integer default null,
    p_attr_parameter_type_code in  integer default null,
-   p_attr_duration_code       in  integer default null); 
-/**     
+   p_attr_duration_code       in  integer default null);
+/**
  * Deletes the source for a location level
  *
  * @param p_location_code            The location code for the location level
@@ -2378,7 +2412,7 @@ procedure delete_loc_lvl_source(
    p_attr_value               in number  default null,
    p_attr_parameter_code      in integer default null,
    p_attr_parameter_type_code in integer default null,
-   p_attr_duration_code       in integer default null); 
+   p_attr_duration_code       in integer default null);
 --------------------------------------------------------------------------------
 /**
  * Catalogs location levels in the database that match input parameters. Matching is
@@ -2486,14 +2520,14 @@ procedure store_loc_lvl_indicator_cond(
    p_comparison_operator_1       in varchar2,
    p_comparison_value_1          in binary_double,
    p_comparison_unit_code        in number                 default null,
-   p_connector                   in varchar2               default null, 
+   p_connector                   in varchar2               default null,
    p_comparison_operator_2       in varchar2               default null,
    p_comparison_value_2          in binary_double          default null,
    p_rate_expression             in varchar2               default null,
    p_rate_comparison_operator_1  in varchar2               default null,
    p_rate_comparison_value_1     in binary_double          default null,
    p_rate_comparison_unit_code   in number                 default null,
-   p_rate_connector              in varchar2               default null, 
+   p_rate_connector              in varchar2               default null,
    p_rate_comparison_operator_2  in varchar2               default null,
    p_rate_comparison_value_2     in binary_double          default null,
    p_rate_interval               in dsinterval_unconstrained default null,
@@ -2567,14 +2601,14 @@ procedure store_loc_lvl_indicator_cond(
    p_comparison_operator_1       in varchar2,
    p_comparison_value_1          in number,
    p_comparison_unit_id          in varchar2 default null,
-   p_connector                   in varchar2 default null, 
+   p_connector                   in varchar2 default null,
    p_comparison_operator_2       in varchar2 default null,
    p_comparison_value_2          in number   default null,
    p_rate_expression             in varchar2 default null,
    p_rate_comparison_operator_1  in varchar2 default null,
    p_rate_comparison_value_1     in number   default null,
    p_rate_comparison_unit_id     in varchar2 default null,
-   p_rate_connector              in varchar2 default null, 
+   p_rate_connector              in varchar2 default null,
    p_rate_comparison_operator_2  in varchar2 default null,
    p_rate_comparison_value_2     in number   default null,
    p_rate_interval               in varchar2 default null,
@@ -2632,15 +2666,15 @@ procedure store_loc_lvl_indicator(
    p_maximum_age            in  dsinterval_unconstrained default null,
    p_fail_if_exists         in  varchar2 default 'F',
    p_ignore_nulls_on_update in  varchar2 default 'T',
-   p_office_id              in  varchar2 default null); 
+   p_office_id              in  varchar2 default null);
 /**
  * Stores (inserts or updates) a location level indicator to the database
  *
  * @param p_loc_lvl_indicator  The location level indicator object to store
  */
 procedure store_loc_lvl_indicator(
-   p_loc_lvl_indicator in  loc_lvl_indicator_t); 
-   
+   p_loc_lvl_indicator in  loc_lvl_indicator_t);
+
 /**
  * Stores (inserts or updates) a location level indicator to the database using simple types
  *
@@ -3539,7 +3573,7 @@ procedure delete_loc_lvl_indicator(
  * Renames a location level indicator in the database
  *
  * @param p_loc_lvl_indicator_id   The complete location level indidicator identifier
- * @param p_new_indicator_id       The new level indicator identifier (last portion only, does not include location...specified level) 
+ * @param p_new_indicator_id       The new level indicator identifier (last portion only, does not include location...specified level)
  * @param p_attr_value             The location level attribute value, if applicable
  * @param p_attr_units_id          The location level attribute unit, if applicable
  * @param p_attr_id                The location level attribute identifier, if applicable
@@ -3560,10 +3594,10 @@ procedure rename_loc_lvl_indicator(
  * Evaluates time series values in a location level indicator condition expression and return the results in a time series. If the specified (or default) condition
  * is a rate expression, the results of the rate expression evaluation will be returned. Otherwise, the results of the level expression will be returned.
  *
- * @param p_tsid                   The time series whose values are to be evaluated in the location level indicator condition expression 
+ * @param p_tsid                   The time series whose values are to be evaluated in the location level indicator condition expression
  * @param p_start_time             The start of the time window to retrieve data from p_tsid to evaluate
  * @param p_end_time               The end of the time window to retrieve data from p_tsid to evaluate
- * @param p_unit                   The unit of the values in the time series 
+ * @param p_unit                   The unit of the values in the time series
  * @param p_specified_level_id     The specified level identifier to evaluate the indicator condition expression for (L or L1 in the level expression)
  * @param p_indicator_id           The location level indicator id to evaluate the condition expression for
  * @param p_attribute_id           The attribute id of the location level to evaluate the indicator condition expression for. If unspecifed or NULL, no attribute will be used.
@@ -3573,14 +3607,14 @@ procedure rename_loc_lvl_indicator(
  * @param p_ref_attribute_value    The attribute value of the referenced specified level (L2 in the level expression), if any
  * @param p_time_zone              The time zone of p_start_time, p_end_time, and the retrieved data.  If not specified or NULL, the location's local time zone is used.
  * @param p_condition_number       The condition number whose expression is to be evaluated.  If not specified, the first condition (number 1) will be used.
- * @param p_office_id              The office that owns the time series, location level, and location level indicator          
+ * @param p_office_id              The office that owns the time series, location level, and location level indicator
  *
  * @return The results of the evaluation expressions, one element for every element in the input time series.
- */   
+ */
 function eval_level_indicator_expr(
    p_tsid                   in varchar2,
    p_start_time             in date,
-   p_end_time               in date,      
+   p_end_time               in date,
    p_unit                   in varchar2,
    p_specified_level_id     in varchar2,
    p_indicator_id           in varchar2,
@@ -3592,13 +3626,13 @@ function eval_level_indicator_expr(
    p_time_zone              in varchar2      default null,
    p_condition_number       in integer       default 1,
    p_office_id              in varchar2      default null)
-   return ztsv_array; 
+   return ztsv_array;
 /**
  * Evaluates time series values in a location level indicator condition expression and return the results in a time series. If the specified (or default) condition
  * is a rate expression, the results of the rate expression evaluation will be returned. Otherwise, the results of the level expression will be returned.
  *
  * @param p_ts                     The time series whose values are to be evaluated in the location level indicator condition expression
- * @param p_unit                   The unit of the values in the time series 
+ * @param p_unit                   The unit of the values in the time series
  * @param p_loc_lvl_indicator_id   The location level indicator id to evaluate the condition expression for
  * @param p_attribute_id           The attribute id of the location level to evaluate the indicator condition expression for. If unspecifed or NULL, no attribute will be used.
  * @param p_attribute_value        The attribute value of the location level to evaluate the indicator condition expression for. May be NULL if no attribute is used.
@@ -3607,12 +3641,12 @@ function eval_level_indicator_expr(
  * @param p_ref_attribute_value    The attribute value of the referenced specified level (L2 in the level expression), if any
  * @param p_time_zone              The time zone of p_start_time, p_end_time, and the retrieved data.  If not specified or NULL, the location's local time zone is used.
  * @param p_condition_number       The condition number whose expression is to be evaluated.  If not specified, the first condition (number 1) will be used.
- * @param p_office_id              The office that owns the time series, location level, and location level indicator          
+ * @param p_office_id              The office that owns the time series, location level, and location level indicator
  *
  * @return The results of the evaluation expressions, one element for every element in the input time series.
- */   
+ */
 function eval_level_indicator_expr(
-   p_ts                     in ztsv_array,  
+   p_ts                     in ztsv_array,
    p_unit                   in varchar2,
    p_loc_lvl_indicator_id   in varchar2,
    p_attribute_id           in varchar2      default null,
@@ -3623,7 +3657,7 @@ function eval_level_indicator_expr(
    p_time_zone              in varchar2      default null,
    p_condition_number       in integer       default 1,
    p_office_id              in varchar2      default null)
-   return ztsv_array; 
+   return ztsv_array;
 /**
  * Retreieves the values for all Location level indicator conditions that are set at
  * p_eval_time and that match the input parameters.  Each indicator may have multiple condions set. Matching is
@@ -3700,7 +3734,7 @@ procedure get_level_indicator_values(
    p_specified_level_mask in  varchar2 default null,
    p_indicator_id_mask    in  varchar2 default null,
    p_unit_system          in  varchar2 default null,
-   p_office_id            in  varchar2 default null); 
+   p_office_id            in  varchar2 default null);
 /**
  * Retrieves a time series of the maximum Condition value that is set for each location
  * level indicator that matches the input parameters.  Each time series has the same
@@ -3781,7 +3815,7 @@ procedure get_level_indicator_max_values(
    p_specified_level_mask in  varchar2 default null,
    p_indicator_id_mask    in  varchar2 default null,
    p_unit_system          in  varchar2 default null,
-   p_office_id            in  varchar2 default null); 
+   p_office_id            in  varchar2 default null);
 
 /**
  * Retreives location level values as time series in a number of formats for a combination time window, timezone, formats, and vertical datums
@@ -3797,34 +3831,34 @@ procedure get_level_indicator_max_values(
  *                         <li>a combination of 1 and 2 (multiple name positions with one or more positions matching possibly more than one location levels)</li></ol>
  *                         If unspecified or NULL, a listing of location levels identifiers with data in the specified or default time window will be returned.
  * @param p_format         The format to retrieve the location levels in. Valid formats are <ul><li>TAB</li><li>CSV</li><li>XML</li><li>JSON</li></ul>
- *                         If the format is unspecified or NULL, the TAB format will be used. 
+ *                         If the format is unspecified or NULL, the TAB format will be used.
  * @param p_units          The units to return the location levels in.  Valid units are <ul><li>EN</li><li>SI</li><li>actual unit of parameter (e.g. ft, cfs)</li></ul> If the p_names variable (q.v.) has more
- *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_units variable may also have multiple positions separated by the 
- *                         <b>'|',</b> charcter. If the p_units variable has fewer positions than the p_name variable, the last unit position is used for all 
+ *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_units variable may also have multiple positions separated by the
+ *                         <b>'|',</b> charcter. If the p_units variable has fewer positions than the p_name variable, the last unit position is used for all
  * @param p_datums         The vertical datums to return the units in.  Valid datums are <ul><li>NATIVE</li><li>NGVD29</li><li>NAVD88</li></ul> If the p_names variable (q.v.) has more
- *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_datums variable may also have multiple positions separated by the 
- *                         <b>'|',</b> charcter. If the p_datums variable has fewer positions than the p_name variable, the last datum position is used for all 
+ *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_datums variable may also have multiple positions separated by the
+ *                         <b>'|',</b> charcter. If the p_datums variable has fewer positions than the p_name variable, the last datum position is used for all
  *                         remaning names. If the datums are unspecified or NULL, the NATIVE veritcal datum will be used for all location levels.
  * @param p_start          The start of the time window to retrieve location levels for.  No location levels values earlier this time will be retrieved.
- *                         If unspecified or NULL, a value of 24 hours prior to the specified or default end of the time window will be used. for the start of the time window       
+ *                         If unspecified or NULL, a value of 24 hours prior to the specified or default end of the time window will be used. for the start of the time window
  * @param p_end            The end of the time window to retrieve location levels for.  No location levels values later this time will be retrieved.
  *                         If unspecified or NULL, the current time will be used for the end of the time window.
  * @param p_timezone       The time zone to retrieve the location levels in. The p_start and p_end parameters - if used - are also interpreted according to this time zone.
- *                         If unspecified or NULL, the UTC time zone is used. 
+ *                         If unspecified or NULL, the UTC time zone is used.
  * @param p_office_id      The office to retrieve location levels for.  If unspecified or NULL, location levels for all offices in the database that match the other criteria will be retrieved.
- */         
+ */
 procedure retrieve_location_levels(
    p_results        out clob,
    p_date_time      out date,
    p_query_time     out integer,
-   p_format_time    out integer, 
+   p_format_time    out integer,
    p_count          out integer,
-   p_names          in  varchar2 default null,            
+   p_names          in  varchar2 default null,
    p_format         in  varchar2 default null,
-   p_units          in  varchar2 default null,   
+   p_units          in  varchar2 default null,
    p_datums         in  varchar2 default null,
    p_start          in  varchar2 default null,
-   p_end            in  varchar2 default null, 
+   p_end            in  varchar2 default null,
    p_timezone       in  varchar2 default null,
    p_office_id      in  varchar2 default null);
 /**
@@ -3836,33 +3870,33 @@ procedure retrieve_location_levels(
  *                         <li>a combination of 1 and 2 (multiple name positions with one or more positions matching possibly more than one location levels)</li></ol>
  *                         If unspecified or NULL, a listing of location levels identifiers with data in the specified or default time window will be returned.
  * @param p_format         The format to retrieve the location levels in. Valid formats are <ul><li>TAB</li><li>CSV</li><li>XML</li><li>JSON</li></ul>
- *                         If the format is unspecified or NULL, the TAB format will be used. 
+ *                         If the format is unspecified or NULL, the TAB format will be used.
  * @param p_units          The units to return the location levels in.  Valid units are <ul><li>EN</li><li>SI</li><li>actual unit of parameter (e.g. ft, cfs)</li></ul> If the p_names variable (q.v.) has more
- *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_units variable may also have multiple positions separated by the 
- *                         <b>'|',</b> charcter. If the p_units variable has fewer positions than the p_name variable, the last unit position is used for all 
+ *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_units variable may also have multiple positions separated by the
+ *                         <b>'|',</b> charcter. If the p_units variable has fewer positions than the p_name variable, the last unit position is used for all
  *                         remaning names. If the units are unspecified or NULL, the NATIVE units will be used for all time series.
  * @param p_datums         The vertical datums to return the units in.  Valid datums are <ul><li>NATIVE</li><li>NGVD29</li><li>NAVD88</li></ul> If the p_names variable (q.v.) has more
- *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_datums variable may also have multiple positions separated by the 
- *                         <b>'|',</b> charcter. If the p_datums variable has fewer positions than the p_name variable, the last datum position is used for all 
+ *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_datums variable may also have multiple positions separated by the
+ *                         <b>'|',</b> charcter. If the p_datums variable has fewer positions than the p_name variable, the last datum position is used for all
  *                         remaning names. If the datums are unspecified or NULL, the NATIVE veritcal datum will be used for all location levels.
  * @param p_start          The start of the time window to retrieve location levels for.  No location levels values earlier this time will be retrieved.
- *                         If unspecified or NULL, a value of 24 hours prior to the specified or default end of the time window will be used. for the start of the time window       
+ *                         If unspecified or NULL, a value of 24 hours prior to the specified or default end of the time window will be used. for the start of the time window
  * @param p_end            The end of the time window to retrieve location levels for.  No location levels values later this time will be retrieved.
  *                         If unspecified or NULL, the current time will be used for the end of the time window.
  * @param p_timezone       The time zone to retrieve the location levels in. The p_start and p_end parameters - if used - are also interpreted according to this time zone.
- *                         If unspecified or NULL, the UTC time zone is used. 
+ *                         If unspecified or NULL, the UTC time zone is used.
  * @param p_office_id      The office to retrieve location levels for.  If unspecified or NULL, location levels for all offices in the database that match the other criteria will be retrieved.
- *                         
+ *
  * @return                 The location level values as time series, in the specified time zones, formats, and vertical datums
- */         
-         
+ */
+
 function retrieve_location_levels_f(
-   p_names       in  varchar2,            
+   p_names       in  varchar2,
    p_format      in  varchar2,
-   p_units       in  varchar2 default null,   
+   p_units       in  varchar2 default null,
    p_datums      in  varchar2 default null,
    p_start       in  varchar2 default null,
-   p_end         in  varchar2 default null, 
+   p_end         in  varchar2 default null,
    p_timezone    in  varchar2 default null,
    p_office_id   in  varchar2 default null)
    return clob;
