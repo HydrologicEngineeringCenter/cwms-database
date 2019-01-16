@@ -428,6 +428,7 @@ delete from at_clob where id = '/VIEWDOCS/AV_RATING';
 @@./18_1_1/dqu_views
 create or replace public synonym CWMS_V_A2W_TS_CODES_BY_LOC for AV_A2W_TS_CODES_BY_LOC;
 whenever sqlerror continue;
+@@../cwms/views/av_location_level_curval
 @@../cwms/views/av_entity_category
 whenever sqlerror exit;
 prompt ################################################################################
