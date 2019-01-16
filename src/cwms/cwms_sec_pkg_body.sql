@@ -279,7 +279,6 @@ AS
 
    USERNAME
    USER_DB_OFFICE_ID
-   DB_OFFICE_ID
    USER_GROUP_TYPE     (either "Privelege User Group" or "TS Collection User Group"
    USER_GROUP_OWNER  ("CWMS" or the owning DB_OFFICE_ID)
    USER_GROUP_ID
@@ -338,7 +337,6 @@ AS
 
          OPEN p_priv_groups FOR
             SELECT username,
-                   db_office_id,
                    db_office_id,
                    user_group_type,
                    user_group_owner,
