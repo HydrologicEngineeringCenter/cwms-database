@@ -21,7 +21,7 @@ begin
    select count(*) into l_count from all_objects where object_name = 'CDB_PDBS';
    if l_count > 0 then
       select nvl(primary_db_unique_name, db_unique_name)
-        into l_name 
+        into l_name
         from v$database;
       :db_name := l_name;
       begin
@@ -29,9 +29,9 @@ begin
            into l_name
            from cdb_pdbs;
       exception
-         when no_data_found then 
+         when no_data_found then
             l_name := null;
-      end;   
+      end;
       if l_name is not null then
          :db_name := :db_name||'-'||l_name;
       end if;
@@ -53,8 +53,8 @@ select systimestamp from dual;
 prompt ################################################################################
 prompt 'COLLECT CURRENT PRIVILEGES'
 select systimestamp from dual;
-create table prev_priv as (select privilege, 
-                                  owner, 
+create table prev_priv as (select privilege,
+                                  owner,
                                   table_name
                              from dba_tab_privs
                             where grantee = 'CWMS_USER'
@@ -401,6 +401,7 @@ prompt 'MODIFYING OTHER TABLES'
 select systimestamp from dual;
 @@./18_1_1/update_tables
 @@./18_1_1/at_physical_location_t02
+alter table at_seasonal_location_level modify (value null);
 whenever sqlerror continue;
 @@../cwms/mv_ts_code_filter
 drop trigger at_rating_value_trig;
@@ -530,7 +531,7 @@ begin
          execute immediate 'grant '||rec.privilege||' on '||rec.owner||'.'||rec.table_name||' to cwms_user';
       exception
          when others then null;
-      end;   
+      end;
    end loop;
 end;
 /
@@ -575,11 +576,11 @@ select office_id,
 drop table location_tz_changes;
 prompt ================================================================================
 prompt 'The following exchange sets (if any) have had their time zones changed from CST to US/Central or PST to US/Pacific.'
-select office_id, 
-       xchg_set_id, 
-       substr(ts_id, 1, 100) as ts_id, 
-       substr(dss_pathname, 1, 100) as dss_pathname, 
-       time_zone_name 
+select office_id,
+       xchg_set_id,
+       substr(ts_id, 1, 100) as ts_id,
+       substr(dss_pathname, 1, 100) as dss_pathname,
+       time_zone_name
   from xchg_set_tz_changes;
 drop table xchg_set_tz_changes;
 prompt ################################################################################
