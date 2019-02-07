@@ -4,7 +4,7 @@ begin
    begin execute immediate 'drop view cwms_v_identifiers'; exception when others then null; end;
    begin execute immediate 'drop table cwms_identifiers'; exception when others then null; end;
    $if dbms_db_version.version < 12 $then
-      execute immediate 'create table cwms_identifiers as (select object_name, 
+      execute immediate 'create table cwms_identifiers as (select object_name,
                                                                   name,
                                                                   line
                                                              from dba_identifiers
@@ -5030,10 +5030,11 @@ as
       p_timeout in integer default 60)
       return clob
    is
-      l_req  utl_http.req;
-      l_resp utl_http.resp;
-      l_buf  varchar2(32767);
-      l_clob clob;
+      l_req    utl_http.req;
+      l_resp   utl_http.resp;
+      l_wallet varchar2(256);
+      l_buf    varchar2(32767);
+      l_clob   clob;
 
       procedure write_clob(p_text in varchar2)
       is
@@ -5044,7 +5045,20 @@ as
    begin
       dbms_lob.createtemporary(l_clob, true);
       dbms_lob.open(l_clob, dbms_lob.lob_readwrite);
-   begin
+      begin
+         l_wallet := cwms_properties.get_property(
+            p_category  => 'CWMSDB',
+            p_id        => 'oracle.wallet.filename.usgs',
+            p_default   => cwms_properties.get_property(
+                              p_category  => 'CWMSDB',
+                              p_id        => 'oracle.wallet.filename',
+                              p_default   => null,
+                              p_office_id =>'CWMS'),
+            p_office_id =>'CWMS');
+         if l_wallet is not null then
+            cwms_msg.log_db_message(cwms_msg.msg_level_detailed, '"Using Oracle wallet '||l_wallet);
+            utl_http.set_wallet('file:'||l_wallet, null);
+         end if;
          utl_http.set_transfer_timeout(p_timeout);
          l_req := utl_http.begin_request(p_url);
          utl_http.set_header(l_req, 'User-Agent', 'Mozilla/4.0');
@@ -5505,7 +5519,7 @@ as
                  into l_routine_name
                  from cwms_v_identifiers
                 where object_name = p_package_name
-                  and line = (select max(line) 
+                  and line = (select max(line)
                                 from cwms_v_identifiers
                                where line <= p_line_number
                                  and object_name = p_package_name
@@ -5553,7 +5567,7 @@ as
       delete from at_application_session where session_id not in (select distinct audsid from v$session);
       commit;
    end trim_application_sessions;
-   
+
    procedure get_application_login(
       p_office_id     out varchar2,
       p_user_name     out varchar2,
@@ -5605,7 +5619,7 @@ as
          l_session_id := userenv('sessionid');
       else
          l_session_id := p_session_id;
-      end if;   
+      end if;
       select o.office_id,
              l.user_name,
              l.app_name,
@@ -5653,7 +5667,7 @@ as
       l_login_server_mask := cwms_util.normalize_wildcards(nvl(upper(p_login_server_mask), '*'));
 
       trim_application_sessions;
-      
+
       if p_max_count < 0 then
          ---------------------------------------------------
          -- negative max count (last p_max_count entries) --
@@ -5694,7 +5708,7 @@ as
                                    (select uuid,
                                            listagg(session_id, ',') within group (order by session_id) as session_ids
                                       from at_application_session
-                                     group by uuid 
+                                     group by uuid
                                    ) q2 on q2.uuid = q1.uuid
                              order by 1 desc
                            )
@@ -5739,7 +5753,7 @@ as
                    (select uuid,
                            listagg(session_id, ',') within group (order by session_id) as session_ids
                       from at_application_session
-                     group by uuid 
+                     group by uuid
                    ) q2 on q2.uuid = q1.uuid
              where rownum <= nvl(p_max_count, 1e+20)
              order by 1;
@@ -5765,13 +5779,13 @@ as
       l_host_name   varchar2(64);
       l_now         integer;
    begin
-      l_uuid        := sys_guid(); 
+      l_uuid        := sys_guid();
       l_office_code := cwms_util.get_db_office_code(p_office_id);
       l_user_name   := upper(trim(p_user_name));
       l_app_name    := upper(trim(p_app_name));
       l_host_name   := upper(trim(p_host_name));
       l_now         := cwms_util.to_millis(systimestamp);
-      
+
       p_uuid := l_uuid;
       ----------------------------------------------------------
       -- populate the last login time from a previous session --
@@ -5838,7 +5852,7 @@ as
               l_now,
               p_login_server
              );
-      commit;          
+      commit;
    end set_application_login_x;
 
    procedure set_application_login(
@@ -5862,7 +5876,7 @@ as
          p_login_server,
          p_office_id);
    end set_application_login;
-      
+
    procedure set_application_login(
       p_uuid             out varchar2,
       p_username         out varchar2,
@@ -5876,15 +5890,15 @@ as
    is
       l_username    varchar2(30);
       l_session_key varchar2(16);
-      l_uuid        varchar2(32); 
+      l_uuid        varchar2(32);
    begin
       select userid
         into l_username
         from at_sec_cwms_users
        where edipi = p_edipi;
-         
+
       p_username := l_username;
-      
+
       set_application_login_x(
          p_uuid,
          p_last_login_time,
@@ -6086,9 +6100,9 @@ as
                insert into at_application_session values (p_uuid, l_session_id);
                if p_session_key is not null then
                   cwms_env.set_session_user(p_session_key);
-               end if;   
+               end if;
                cwms_env.set_session_office_id(l_office);
-            end;   
+            end;
       end;
       commit;
    end set_application_session;
@@ -6118,10 +6132,10 @@ as
         into l_sessions
         from v$session
        where audsid != 0;
-       
-   return l_sessions;       
+
+   return l_sessions;
    end current_session_ids;
-   
+
 END cwms_util;
 /
 

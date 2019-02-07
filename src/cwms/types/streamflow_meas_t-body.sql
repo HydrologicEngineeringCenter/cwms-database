@@ -5,76 +5,60 @@ as
       p_office_id in varchar2 default null)
       return self as result
    is
-      c_agency_cd                 constant pls_integer :=  1;
-      c_site_no                   constant pls_integer :=  2;
-      c_measurement_nu            constant pls_integer :=  3;
-      c_measurement_dt            constant pls_integer :=  4;
-      c_tz_cd                     constant pls_integer :=  5;
-      c_q_meas_used_fg            constant pls_integer :=  6;
-      c_party_nm                  constant pls_integer :=  7;
-      c_site_visit_coll_agency_cd constant pls_integer :=  8;
-      c_gage_height_va            constant pls_integer :=  9;
-      c_discharge_va              constant pls_integer := 10;
-      c_current_rating_nu         constant pls_integer := 11;
-      c_shift_adj_va              constant pls_integer := 12;
-      c_diff_from_rating_pc       constant pls_integer := 13;
-      c_measured_rating_diff      constant pls_integer := 14;
-      c_gage_va_change            constant pls_integer := 15;
-      c_gage_va_time              constant pls_integer := 16;
-      c_control_type_cd           constant pls_integer := 17;
-      c_discharge_cd              constant pls_integer := 18;
       l_office_id  varchar2(16);
       l_parts      str_tab_t;
       l_timestamp  timestamp;
       l_utc_offset interval day (0) to second (3);
+      l_field_count pls_integer;
    begin
       for i in 1..1 loop
          if p_rdb_line is null or substr(p_rdb_line, 1, 1) = '#' then
             exit;
          end if;
          l_parts := cwms_util.split_text(p_rdb_line, chr(9));
-         if l_parts.count not in (18, 35) then
+         l_field_count := l_parts.count;
+         if l_field_count not in (15, 18, 35) then
             cwms_err.raise(
                'ERROR',
-               'Expected 18 or 35 fields in input, got '||l_parts.count||chr(10)||p_rdb_line);
+               'Expected 15, 18, or 35 fields in input, got '||l_parts.count||chr(10)||p_rdb_line);
          end if;
-         if upper(l_parts(c_agency_cd)) != l_parts(c_agency_cd) then
+         if upper(l_parts(1)) != l_parts(1) then
             -- return null object
             self := null;
             exit;
          end if;
          l_office_id         := cwms_util.get_db_office_id(p_office_id);
-         self.location       := location_ref_t(cwms_loc.get_location_id(l_parts(c_site_no), l_office_id), l_office_id);
-         self.meas_number    := l_parts(c_measurement_nu);
-         if length(l_parts(c_measurement_dt)) = 10 then
-            l_timestamp := cast(to_date(l_parts(c_measurement_dt), 'yyyy-mm-dd') as timestamp);
+         self.location       := location_ref_t(cwms_loc.get_location_id(l_parts(2), l_office_id), l_office_id);
+         self.meas_number    := l_parts(3);
+         if length(l_parts(4)) = 10 then
+            l_timestamp := cast(to_date(l_parts(4), 'yyyy-mm-dd') as timestamp);
          else
-            l_timestamp := to_timestamp(l_parts(c_measurement_dt), 'yyyy-mm-dd hh24:mi:ss');
+            l_timestamp := to_timestamp(l_parts(4), 'yyyy-mm-dd hh24:mi:ss');
          end if;
          begin
             select tz_utc_offset
               into l_utc_offset
               from cwms_usgs_time_zone
-             where tz_id = l_parts(c_tz_cd);
+             where tz_id = l_parts(5);
          exception
             when no_data_found then l_utc_offset := to_dsinterval('0 00:00:00');
             when others        then raise;
          end;
          self.date_time      := cast((l_timestamp - l_utc_offset) as date);
          self.time_zone      := 'UTC';
-         self.used           := case when substr(l_parts(c_q_meas_used_fg), 1, 1) = 'Y' then 'T' else 'F' end;
-         self.party          := l_parts(c_party_nm);
-         self.agency_id      := l_parts(c_site_visit_coll_agency_cd);
-         self.gage_height    := to_binary_double(l_parts(c_gage_height_va));
-         self.flow           := to_binary_double(l_parts(c_discharge_va));
-         self.cur_rating_num := l_parts(c_current_rating_nu);
-         self.shift_used     := to_binary_double(l_parts(c_shift_adj_va));
-         self.pct_diff       := to_binary_double(l_parts(c_diff_from_rating_pc));
-         self.quality        := upper(substr(l_parts(c_measured_rating_diff), 1, 1));
-         self.delta_height   := to_binary_double(l_parts(c_gage_va_change));
-         self.delta_time     := to_binary_double(l_parts(c_gage_va_time));
-         self.ctrl_cond_id   := l_parts(c_control_type_cd);
-         self.flow_adj_id    := l_parts(c_discharge_cd);
+         self.used           := case when substr(l_parts(6), 1, 1) = 'Y' then 'T' else 'F' end;
+         self.party          := l_parts(7);
+         self.agency_id      := l_parts(8);
+         self.gage_height    := to_binary_double(l_parts(9));
+         self.flow           := to_binary_double(l_parts(10));
+         self.cur_rating_num := case when l_field_count = 15 then null else l_parts(11) end;
+         self.shift_used     := case when l_field_count = 15 then null else to_binary_double(l_parts(12)) end;
+         self.pct_diff       := case when l_field_count = 15 then null else to_binary_double(l_parts(13)) end;
+         self.quality        := upper(substr(case when l_field_count = 15 then l_parts(11) else l_parts(14) end, 1, 1));
+         self.delta_height   := to_binary_double(case when l_field_count = 15 then l_parts(12) else l_parts(15) end);
+         self.delta_time     := to_binary_double(case when l_field_count = 15 then l_parts(13) else l_parts(16) end);
+         self.ctrl_cond_id   := case when l_field_count = 15 then l_parts(14) else l_parts(17) end;
+         self.flow_adj_id    := case when l_field_count = 15 then l_parts(15) else l_parts(18) end;
          self.height_unit    := 'ft';
          self.flow_unit      := 'cfs';
       end loop;
