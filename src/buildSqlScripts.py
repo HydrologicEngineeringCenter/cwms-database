@@ -9361,7 +9361,7 @@ def main() :
     -- ##
     create table @TABLE
     (
-       ctrl_cond_id varchar2(4),
+       ctrl_cond_id varchar2(20),
        description  varchar2(59),
        constraint   cwms_usgs_rating_ctrl_cond_pk primary key(ctrl_cond_id)
     )
