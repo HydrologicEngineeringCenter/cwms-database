@@ -94,6 +94,13 @@ whenever sqlerror continue
 @@../cwms/mv_ts_code_filter
 whenever sqlerror exit
 prompt ################################################################################
+prompt 'MODIFYING FOR UPDATED STREAMFLOW MEASUREMENTS'
+whenever sqlerror continue
+@@./18_1_1/modify_stream_meas_tables
+whenever sqlerror exit
+@@../cwms/types/streamflow_meas_t
+@@../cwms/types/streamflow_meas_t-body
+prompt ################################################################################
 prompt 'ADDING AT_RATING_VALUE_DEP_IDX INDEX'
 select systimestamp from dual;
 whenever sqlerror continue
@@ -442,7 +449,6 @@ drop type old_vdatum_rating_t force;
 drop type old_rating_t force;
 whenever sqlerror exit
 @@../cwms/types/rating_ind_parameter_t-body
-@@../cwms/types/streamflow_meas_t-body
 prompt ################################################################################
 prompt 'UPDATING OTHER PACKAGE SPECIFICATIONS'
 select systimestamp from dual;
