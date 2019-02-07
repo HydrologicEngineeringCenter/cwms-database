@@ -1265,6 +1265,9 @@ procedure retrieve_and_store_stream_meas(
    p_sites      in varchar2,
    p_office_id  in varchar2 default null)
 is
+   certificate_validation_failure exception;
+   pragma exception_init(certificate_validation_failure, -29024);
+
    l_office_id  varchar2(16);
    l_start_time varchar2(10);
    l_end_time   varchar2(10);
@@ -1355,49 +1358,71 @@ begin
             cwms_msg.msg_level_detailed,
             l_office_id||': USGS URL: '||l_url);
          if i = 1 then
-            l_data := cwms_util.get_url(l_url, 60 + l_sites_tab.count * 15);
+            for tries in 1..5 loop
+               begin
+                  l_data := cwms_util.get_url(l_url, 60 + l_sites_tab.count * 15);
+                  exit;
+               exception
+                  when certificate_validation_failure then continue;
+               end;
+            end loop;
             cwms_msg.log_db_message(
                cwms_msg.msg_level_detailed,
                l_office_id||': bytes retrieved: '||dbms_lob.getlength(l_data));
          else
-            l_data2 := cwms_util.get_url(l_url, 60 + l_sites_tab.count * 15);
+            for tries in 1..5 loop
+               begin
+                  l_data2 := cwms_util.get_url(l_url, 60 + l_sites_tab.count * 15);
+                  exit;
+               exception
+                  when certificate_validation_failure then continue;
+               end;
+            end loop;
             cwms_msg.log_db_message(
                cwms_msg.msg_level_detailed,
                l_office_id||': bytes retrieved: '||dbms_lob.getlength(l_data2));
             dbms_lob.append(l_data, l_data2);
          end if;
       end loop;
-      cwms_msg.log_db_message(
-         cwms_msg.msg_level_detailed,
-         'Processing measurements');
-      l_lines := cwms_util.split_text(l_data, chr(10));
       l_count := 0;
-      for i in 1..l_lines.count loop
-         if length(l_lines(i)) < 20
-            or substr(l_lines(i), 1, 1) = '#'
-            or substr(l_lines(i), 1, 9) = 'agency_cd'
-            or substr(l_lines(i), 1, 2) = '5s'
-         then
-            continue;
-         end if;
-         begin
-            l_meas := streamflow_meas_t(l_lines(i), l_office_id);
-         exception
-            when others then
-               cwms_msg.log_db_message(
-                  cwms_msg.msg_level_normal,
-                  l_office_id||': cannot process: '||sqlerrm||chr(10)||l_lines(i));
+      if instr(l_data, 'No sites') = 1 then
+         cwms_msg.log_db_message(
+            'cwms_usgs.retrieve_and_store_stream_meas',
+            cwms_msg.msg_level_detailed,
+            l_office_id||': '||l_data);
+      else
+         cwms_msg.log_db_message(
+            'cwms_usgs.retrieve_and_store_stream_meas',
+            cwms_msg.msg_level_detailed,
+            'Processing measurements');
+         l_lines := cwms_util.split_text(l_data, chr(10));
+         for i in 1..l_lines.count loop
+            if length(l_lines(i)) < 20
+               or substr(l_lines(i), 1, 1) = '#'
+               or substr(l_lines(i), 1, 9) = 'agency_cd'
+               or substr(l_lines(i), 1, 2) = '5s'
+            then
                continue;
-         end;
-         if l_meas is null or l_meas.location is null then
-            continue;
-         end if;
-         l_meas.store('F');
-         l_count := l_count + 1;
-      end loop;
+            end if;
+            begin
+               l_meas := streamflow_meas_t(l_lines(i), l_office_id);
+            exception
+               when others then
+                  cwms_msg.log_db_message(
+                     cwms_msg.msg_level_normal,
+                        l_office_id||': cannot process: '||sqlerrm||chr(10)||l_lines(i)||chr(10)||dbms_utility.format_error_backtrace);
+                  continue;
+            end;
+            if l_meas is null or l_meas.location is null then
+               continue;
+            end if;
+            l_meas.store('F');
+            l_count := l_count + 1;
+         end loop;
+      end if;
       cwms_msg.log_db_message(
          cwms_msg.msg_level_detailed,
-         l_count||' measurements stored');
+         l_office_id||': '||l_count||' measurements stored');
    end if;
    cwms_msg.log_db_message(
       cwms_msg.msg_level_normal,
