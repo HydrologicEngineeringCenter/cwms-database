@@ -6076,7 +6076,7 @@ create table at_streamflow_meas (
    quality        varchar2(1),
    delta_height   binary_double,
    delta_time     binary_double,
-   ctrl_cond_id   varchar2(4),
+   ctrl_cond_id   varchar2(20),
    flow_adj_id    varchar2(4),
    remarks        varchar2(256),
    air_temp       binary_double,
