@@ -480,13 +480,18 @@ as
       -- rounding specs --
       --------------------
       if self.ind_rounding_specs is null then
-         cwms_err.raise(
-            'ERROR',
-            'Independent rounding specifications cannot be null');
+         self.ind_rounding_specs := str_tab_t();
+         self.ind_rounding_specs.extend(l_template.ind_parameters.count);
       end if;
       for i in 1..self.ind_rounding_specs.count loop
+         if self.ind_rounding_specs(i) is null or self.ind_rounding_specs(i) = '????' then
+            self.ind_rounding_specs(i) := '4444444444';
+         end if;
          validate_rounding_spec(self.ind_rounding_specs(i));
       end loop;
+      if self.dep_rounding_spec is null or self.dep_rounding_spec = '????' then
+         self.dep_rounding_spec := '4444444444';
+      end if;
       validate_rounding_spec(self.dep_rounding_spec);
    end;
    
