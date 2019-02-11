@@ -713,10 +713,10 @@ CONSTRAINT at_tst_active_ck
 CHECK ( turb_set_reason_active = 'T' OR turb_set_reason_active = 'F'))
 /
 
-insert into at_turbine_setting_reason values(1, 53, 'S', 'Scheduled release to meet loads', 'T'); 
-insert into at_turbine_setting_reason values(2, 53, 'F', 'Flood control release',           'T'); 
-insert into at_turbine_setting_reason values(3, 53, 'W', 'Water supply release',            'T'); 
-insert into at_turbine_setting_reason values(4, 53, 'Q', 'Water quality release',           'T'); 
+insert into at_turbine_setting_reason values(1, 53, 'S', 'Scheduled release to meet loads', 'T');
+insert into at_turbine_setting_reason values(2, 53, 'F', 'Flood control release',           'T');
+insert into at_turbine_setting_reason values(3, 53, 'W', 'Water supply release',            'T');
+insert into at_turbine_setting_reason values(4, 53, 'Q', 'Water quality release',           'T');
 insert into at_turbine_setting_reason values(5, 53, 'H', 'Hydropower release',              'T');
 insert into at_turbine_setting_reason values(6, 53, 'O', 'Other release',                   'T');
 
@@ -765,7 +765,7 @@ tablespace CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
-STORAGE    (                                                                     
+STORAGE    (
             INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
@@ -796,7 +796,7 @@ ALTER TABLE at_turbine_computation_code ADD (
 ALTER TABLE at_turbine_computation_code ADD (
   CONSTRAINT at_turbine_computation_fk1
  FOREIGN KEY (db_office_code)
- REFERENCES cwms_office (office_code))                                                               
+ REFERENCES cwms_office (office_code))
 /
 
 ALTER TABLE at_turbine_computation_code ADD (
@@ -1067,7 +1067,12 @@ CONSTRAINT at_ws_cntrct_typ_activ_ck
 CHECK ( ws_contract_type_active = 'T' OR ws_contract_type_active = 'F'))
 /
 
--- INSERT INTO at_ws_contract_type VALUES (0, 53, 'Default', 'Default', 'T');
+insert into at_ws_contract_type values (1,53,'Storage','Storage contract','T');
+insert into at_ws_contract_type values (2,53,'Irrigation','Irrigation contract','T');
+insert into at_ws_contract_type values (3,53,'Surplus','Surplus contract','T');
+insert into at_ws_contract_type values (4,53,'Conduit','Conduit contract','T');
+insert into at_ws_contract_type values (5,53,'Conveyance','Conveyance contract','T');
+insert into at_ws_contract_type values (6,53,'Interim Irrigation','Interim use irrigation','T');
 
 --------
 --------
@@ -2094,7 +2099,7 @@ create table at_comp_outlet(
    constraint at_comp_outlet_ck1 check (trim(compound_outlet_id) = compound_outlet_id)
 ) organization index
   tablespace cwms_20at_data
-;  
+;
 
 comment on table  at_comp_outlet is 'Holds information about sequential outlet groups';
 comment on column at_comp_outlet.compound_outlet_code  is 'Synthetic key';
@@ -2103,7 +2108,7 @@ comment on column at_comp_outlet.compound_outlet_id    is 'Name of this compound
 
 create unique index at_comp_outlet_idx1 on at_comp_outlet (project_location_code, upper(compound_outlet_id))
 /
-   
+
 create table at_comp_outlet_conn (
    at_comp_outlet_conn_code number(10) primary key,
    compound_outlet_code     number(10) not null,
@@ -2115,8 +2120,8 @@ create table at_comp_outlet_conn (
    constraint at_comp_outlet_conn_ck1 check (outlet_location_code != nvl(next_outlet_code, 0))
 ) organization index
   tablespace cwms_20at_data
-/  
-  
+/
+
 comment on table  at_comp_outlet_conn is 'Holds information about compound outlet connectivity';
 comment on column at_comp_outlet_conn.at_comp_outlet_conn_code is 'Synthetic key';
 comment on column at_comp_outlet_conn.compound_outlet_code     is 'References sequential outlet group';
@@ -2134,36 +2139,36 @@ create or replace trigger at_comp_outlet_conn_tr1
    referencing new as new old as old
    for each row
 declare
-   l_proj_code1 number(10);   
+   l_proj_code1 number(10);
    l_proj_code2 number(10);
 begin
    select project_location_code
      into l_proj_code1
      from at_comp_outlet
-    where compound_outlet_code = :new.compound_outlet_code; 
-    
+    where compound_outlet_code = :new.compound_outlet_code;
+
    select project_location_code
      into l_proj_code2
      from at_outlet
     where outlet_location_code = :new.outlet_location_code;
-    
+
    if l_proj_code1 != l_proj_code2 then
       cwms_err.raise('ERROR', 'Cannot assign outlet from one project to a compound outlet from another project');
    end if;
-            
+
    if :new.next_outlet_code is not null then
       select project_location_code
         into l_proj_code2
         from at_outlet
        where outlet_location_code = :new.next_outlet_code;
-       
+
       if l_proj_code1 != l_proj_code2 then
          cwms_err.raise('ERROR', 'Cannot assign outlet from one project to a compound outlet from another project');
       end if;
    end if;
 end at_comp_outlet_conn_tr1;
 /
-    
+
 --------
 --------
 
@@ -2525,7 +2530,7 @@ NOPARALLEL
 ALTER TABLE at_water_user_contract ADD (
   CONSTRAINT at_water_user_contract_ck1
   CHECK (nvl(pump_out_location_code, -1) not in (nvl(pump_out_below_location_code, -2), nvl(pump_in_location_code, -3))))
-/      
+/
 ALTER TABLE at_water_user_contract ADD (
   CONSTRAINT at_water_user_contract_ck2
   CHECK (nvl(pump_out_below_location_code, -2) != nvl(pump_in_location_code, -3)))
@@ -2996,16 +3001,16 @@ create table at_project_lock (
    session_machine varchar2(64),
    constraint at_project_lock_ck1 check (application_id = lower(application_id)),
    constraint at_project_lock_u1  unique (project_code, application_id) using index,
-   constraint at_project_lock_fk1 foreign key (project_code) references at_project (project_location_code)   
+   constraint at_project_lock_fk1 foreign key (project_code) references at_project (project_location_code)
 )
 tablespace cwms_20at_data
 /
 
-comment on table at_project_lock is 'Contains information on projects locked for various applications';  
+comment on table at_project_lock is 'Contains information on projects locked for various applications';
 comment on column at_project_lock.lock_id         is 'Unique lock identifier';
 comment on column at_project_lock.project_code    is 'References project that is locked for application';
 comment on column at_project_lock.application_id  is 'Specifies the application the project is locked for';
-comment on column at_project_lock.acquire_time    is 'The UTC time the project lock was acquired'; 
+comment on column at_project_lock.acquire_time    is 'The UTC time the project lock was acquired';
 comment on column at_project_lock.session_user    is 'The session user that acquired the lock';
 comment on column at_project_lock.os_user         is 'The session user''s operating system user name';
 comment on column at_project_lock.session_program is 'The program that acquired the lock';
@@ -3028,7 +3033,7 @@ tablespace cwms_20at_data
 comment on table at_prj_lck_revoker_rights is 'Contains information about who can revoke project locks';
 comment on column at_prj_lck_revoker_rights.user_id        is 'The user whose rights are described';
 comment on column at_prj_lck_revoker_rights.office_code    is 'The office the user rights are described for';
-comment on column at_prj_lck_revoker_rights.application_id is 'The application the user rights are described for';     
-comment on column at_prj_lck_revoker_rights.allow_flag     is 'Specifies whether this list is the ALLOW or DISALLOW list';  
+comment on column at_prj_lck_revoker_rights.application_id is 'The application the user rights are described for';
+comment on column at_prj_lck_revoker_rights.allow_flag     is 'Specifies whether this list is the ALLOW or DISALLOW list';
 comment on column at_prj_lck_revoker_rights.project_list   is 'Comma-separated list of project identiers and/or project identifer masks';
 
