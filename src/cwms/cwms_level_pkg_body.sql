@@ -5598,30 +5598,34 @@ begin
          -- check for pools --
          ---------------------
          if l_attribute_value is null then
-            select bp.base_parameter_id
-                   ||'.'||pt.parameter_type_id
-                   ||'.'||d.duration_id
-                   ||'.'||sl.specified_level_id
-              into l_pool_level_id
-              from at_parameter p,
-                   cwms_base_parameter bp,
-                   cwms_parameter_type pt,
-                   cwms_duration d,
-                   at_specified_level sl
-             where p.parameter_code = l_parameter_code
-               and p.sub_parameter_id is null
-               and bp.base_parameter_code = p.base_parameter_code
-               and pt.parameter_type_code = l_parameter_type_code
-               and d.duration_code = l_duration_code
-               and sl.specified_level_code = l_specified_level_code;
-
-            select pool_code
-              bulk collect
-              into l_pool_codes
-              from at_pool
-             where project_code = l_location_code
-               and upper(l_pool_level_id) in (bottom_level, top_level);
-            if l_pool_codes.count > 0 and not l_delete_pools then
+            begin
+               select bp.base_parameter_id
+                      ||'.'||pt.parameter_type_id
+                      ||'.'||d.duration_id
+                      ||'.'||sl.specified_level_id
+                 into l_pool_level_id
+                 from at_parameter p,
+                      cwms_base_parameter bp,
+                      cwms_parameter_type pt,
+                      cwms_duration d,
+                      at_specified_level sl
+                where p.parameter_code = l_parameter_code
+                  and p.sub_parameter_id is null
+                  and bp.base_parameter_code = p.base_parameter_code
+                  and pt.parameter_type_code = l_parameter_type_code
+                  and d.duration_code = l_duration_code
+                  and sl.specified_level_code = l_specified_level_code;
+                  
+               select pool_code
+                 bulk collect
+                 into l_pool_codes
+                 from at_pool
+                where project_code = l_location_code
+                  and upper(l_pool_level_id) in (bottom_level, top_level);
+            exception
+               when no_data_found then null;
+            end;
+            if l_pool_codes is not null and l_pool_codes.count > 0 and not l_delete_pools then
                ------------------
                -- can't delete --
                ------------------
