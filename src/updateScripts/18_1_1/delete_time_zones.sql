@@ -1,3 +1,4 @@
+set define on
 create table location_tz_changes as 
    select co.office_id,
           cwms_loc.get_location_id(pl.location_code) as location_id,
@@ -90,4 +91,3 @@ begin
    end loop;
 end;
 /
-

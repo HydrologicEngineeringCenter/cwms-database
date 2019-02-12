@@ -98,6 +98,7 @@ prompt 'MODIFYING FOR UPDATED STREAMFLOW MEASUREMENTS'
 whenever sqlerror continue
 @@./18_1_1/modify_stream_meas_tables
 whenever sqlerror exit
+drop type streamflow_meas_t force;
 @@../cwms/types/streamflow_meas_t
 @@../cwms/types/streamflow_meas_t-body
 prompt ################################################################################
@@ -135,6 +136,7 @@ select systimestamp from dual;
 @@./18_1_1/update_turbine_computation_codes
 @@./18_1_1/update_turbine_setting_reasons
 @@./18_1_1/update_ws_contract_types
+@@./18_1_1/add_rowcps_triggers
 prompt ################################################################################
 prompt 'ADDING NEW SCHEDULER MONITORING OBJECTS'
 select systimestamp from dual;
