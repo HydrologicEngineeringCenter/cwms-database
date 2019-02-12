@@ -1073,6 +1073,220 @@ insert into at_ws_contract_type values (3,53,'Surplus','Surplus contract','T');
 insert into at_ws_contract_type values (4,53,'Conduit','Conduit contract','T');
 insert into at_ws_contract_type values (5,53,'Conveyance','Conveyance contract','T');
 insert into at_ws_contract_type values (6,53,'Interim Irrigation','Interim use irrigation','T');
+commit;
+
+--------
+--------
+
+create or replace trigger at_document_type_t1
+   before insert or update or delete
+   on at_document_type
+   referencing new as new old as old
+   for each row
+declare
+   l_user_office_code integer;
+begin
+   l_user_office_code := cwms_util.user_office_code;
+   if l_user_office_code != cwms_util.db_office_code_all and :new.db_office_code != l_user_office_code then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot modify value owned by '
+         ||cwms_util.get_db_office_id_from_code(:new.db_office_code)
+         ||' from office '
+         ||cwms_util.get_db_office_id_from_code(l_user_office_code));
+   end if;
+end at_document_type_t1;
+/
+create or replace trigger at_embank_protection_type_t1
+   before insert or update or delete
+   on at_embank_protection_type
+   referencing new as new old as old
+   for each row
+declare
+   l_user_office_code integer;
+begin
+   l_user_office_code := cwms_util.user_office_code;
+   if l_user_office_code != cwms_util.db_office_code_all and :new.db_office_code != l_user_office_code then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot modify value owned by '
+         ||cwms_util.get_db_office_id_from_code(:new.db_office_code)
+         ||' from office '
+         ||cwms_util.get_db_office_id_from_code(l_user_office_code));
+   end if;
+end at_embank_protection_type_t1;
+/
+create or replace trigger at_embank_structure_type_t1
+   before insert or update or delete
+   on at_embank_structure_type
+   referencing new as new old as old
+   for each row
+declare
+   l_user_office_code integer;
+begin
+   l_user_office_code := cwms_util.user_office_code;
+   if l_user_office_code != cwms_util.db_office_code_all and :new.db_office_code != l_user_office_code then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot modify value owned by '
+         ||cwms_util.get_db_office_id_from_code(:new.db_office_code)
+         ||' from office '
+         ||cwms_util.get_db_office_id_from_code(l_user_office_code));
+   end if;
+end at_embank_structure_type_t1;
+/
+create or replace trigger at_gate_ch_computation_code_t1
+   before insert or update or delete
+   on at_gate_ch_computation_code
+   referencing new as new old as old
+   for each row
+declare
+   l_user_office_code integer;
+begin
+   l_user_office_code := cwms_util.user_office_code;
+   if l_user_office_code != cwms_util.db_office_code_all and :new.db_office_code != l_user_office_code then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot modify value owned by '
+         ||cwms_util.get_db_office_id_from_code(:new.db_office_code)
+         ||' from office '
+         ||cwms_util.get_db_office_id_from_code(l_user_office_code));
+   end if;
+end at_gate_ch_computation_code_t1;
+/
+create or replace trigger at_gate_release_reason_code_t1
+   before insert or update or delete
+   on at_gate_release_reason_code
+   referencing new as new old as old
+   for each row
+declare
+   l_user_office_code integer;
+begin
+   l_user_office_code := cwms_util.user_office_code;
+   if l_user_office_code != cwms_util.db_office_code_all and :new.db_office_code != l_user_office_code then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot modify value owned by '
+         ||cwms_util.get_db_office_id_from_code(:new.db_office_code)
+         ||' from office '
+         ||cwms_util.get_db_office_id_from_code(l_user_office_code));
+   end if;
+end at_gate_release_reason_code_t1;
+/
+create or replace trigger at_operational_status_code_t1
+   before insert or update or delete
+   on at_operational_status_code
+   referencing new as new old as old
+   for each row
+declare
+   l_user_office_code integer;
+begin
+   l_user_office_code := cwms_util.user_office_code;
+   if l_user_office_code != cwms_util.db_office_code_all and :new.db_office_code != l_user_office_code then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot modify value owned by '
+         ||cwms_util.get_db_office_id_from_code(:new.db_office_code)
+         ||' from office '
+         ||cwms_util.get_db_office_id_from_code(l_user_office_code));
+   end if;
+end at_operational_status_code_t1;
+/
+create or replace trigger at_physical_transfer_type_t1
+   before insert or update or delete
+   on at_physical_transfer_type
+   referencing new as new old as old
+   for each row
+declare
+   l_user_office_code integer;
+begin
+   l_user_office_code := cwms_util.user_office_code;
+   if l_user_office_code != cwms_util.db_office_code_all and :new.db_office_code != l_user_office_code then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot modify value owned by '
+         ||cwms_util.get_db_office_id_from_code(:new.db_office_code)
+         ||' from office '
+         ||cwms_util.get_db_office_id_from_code(l_user_office_code));
+   end if;
+end at_physical_transfer_type_t1;
+/
+create or replace trigger at_project_purposes_t1
+   before insert or update or delete
+   on at_project_purposes
+   referencing new as new old as old
+   for each row
+declare
+   l_user_office_code integer;
+begin
+   l_user_office_code := cwms_util.user_office_code;
+   if l_user_office_code != cwms_util.db_office_code_all and :new.db_office_code != l_user_office_code then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot modify value owned by '
+         ||cwms_util.get_db_office_id_from_code(:new.db_office_code)
+         ||' from office '
+         ||cwms_util.get_db_office_id_from_code(l_user_office_code));
+   end if;
+end at_project_purposes_t1;
+/
+create or replace trigger at_turbine_computation_code_t1
+   before insert or update or delete
+   on at_turbine_computation_code
+   referencing new as new old as old
+   for each row
+declare
+   l_user_office_code integer;
+begin
+   l_user_office_code := cwms_util.user_office_code;
+   if l_user_office_code != cwms_util.db_office_code_all and :new.db_office_code != l_user_office_code then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot modify value owned by '
+         ||cwms_util.get_db_office_id_from_code(:new.db_office_code)
+         ||' from office '
+         ||cwms_util.get_db_office_id_from_code(l_user_office_code));
+   end if;
+end at_turbine_computation_code_t1;
+/
+create or replace trigger at_turbine_setting_reason_t1
+   before insert or update or delete
+   on at_turbine_setting_reason
+   referencing new as new old as old
+   for each row
+declare
+   l_user_office_code integer;
+begin
+   l_user_office_code := cwms_util.user_office_code;
+   if l_user_office_code != cwms_util.db_office_code_all and :new.db_office_code != l_user_office_code then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot modify value owned by '
+         ||cwms_util.get_db_office_id_from_code(:new.db_office_code)
+         ||' from office '
+         ||cwms_util.get_db_office_id_from_code(l_user_office_code));
+   end if;
+end at_turbine_setting_reason_t1;
+/
+create or replace trigger at_ws_contract_type_t1
+   before insert or update or delete
+   on at_ws_contract_type
+   referencing new as new old as old
+   for each row
+declare
+   l_user_office_code integer;
+begin
+   l_user_office_code := cwms_util.user_office_code;
+   if l_user_office_code != cwms_util.db_office_code_all and :new.db_office_code != l_user_office_code then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot modify value owned by '
+         ||cwms_util.get_db_office_id_from_code(:new.db_office_code)
+         ||' from office '
+         ||cwms_util.get_db_office_id_from_code(l_user_office_code));
+   end if;
+end at_ws_contract_type_t1;
+/
 
 --------
 --------
