@@ -13,11 +13,15 @@ alter session set current_schema = &cwms_schema;
 -- spool to file that identifies the database in the name --
 ------------------------------------------------------------
 var db_name varchar2(61)
+begin
+   select nvl(primary_db_unique_name, db_unique_name) into :db_name from v$database;
+end;
+/
+whenever sqlerror continue;
 declare
    l_count pls_integer;
    l_name  varchar2(30);
 begin
-   select nvl(primary_db_unique_name, db_unique_name) into :db_name from v$database;
    select count(*) into l_count from all_objects where object_name = 'CDB_PDBS';
    if l_count > 0 then
       select nvl(primary_db_unique_name, db_unique_name)
@@ -38,6 +42,7 @@ begin
    end if;
 end;
 /
+whenever sqlerror exit;
 column db_name new_value db_name
 select :db_name as db_name from dual;
 define logfile=update_&db_name._3.0.7_to_18.1.1.log
@@ -128,6 +133,7 @@ select systimestamp from dual;
 prompt ################################################################################
 prompt 'UPDATING REGI LOOKUP TABLES'
 select systimestamp from dual;
+whenever sqlerror continue
 @@./18_1_1/update_embankment_protection_types
 @@./18_1_1/update_embankment_structure_types
 @@./18_1_1/update_gate_change_computations
@@ -136,6 +142,7 @@ select systimestamp from dual;
 @@./18_1_1/update_turbine_computation_codes
 @@./18_1_1/update_turbine_setting_reasons
 @@./18_1_1/update_ws_contract_types
+whenever sqlerror exit
 @@./18_1_1/add_rowcps_triggers
 prompt ################################################################################
 prompt 'ADDING NEW SCHEDULER MONITORING OBJECTS'
@@ -591,6 +598,10 @@ select office_id,
        time_zone_name
   from xchg_set_tz_changes;
 drop table xchg_set_tz_changes;
+prompt ================================================================================
+prompt 'The following ratings (if any) have had their source agencies set to NULL because they were not in the AT_ENTITIES table'
+select * from rating_source_changes;
+drop table rating_source_changes;
 prompt ################################################################################
 prompt 'UPDATE COMPLETE'
 select systimestamp from dual;

@@ -1,3 +1,34 @@
+create table rating_source_changes as 
+   select o.office_id,
+          bl.base_location_id
+          ||substr('-', 1, length(pl.sub_location_id))
+          ||pl.sub_location_id
+          ||'.'
+          ||rt.parameters_id
+          ||'.'
+          ||rt.version
+          ||'.'
+          ||rs.version as rating_spec_id,
+          lg.loc_group_id
+     from at_rating_spec rs,
+          at_rating_template rt,
+          at_loc_group lg,
+          at_physical_location pl,
+          at_base_location bl,
+          cwms_office o,
+          (select rating_spec_code, 
+                  source_agency_code
+             from at_rating_spec
+            where source_agency_code not in (select entity_code from at_entity)
+          ) q
+    where rs.rating_spec_code = q.rating_spec_code
+      and lg.loc_group_code = q.source_agency_code
+      and rt.template_code = rs.template_code
+      and pl.location_code = rs.location_code
+      and bl.base_location_code = pl.base_location_code
+      and o.office_code = bl.db_office_code
+    order by 1, 2, 3;   
+
 declare
    l_val pls_integer;
    l_sql varchar2(4000) := '
@@ -328,6 +359,7 @@ begin
       and constraint_name = 'AT_RATING_SPEC_FK3';
       
    if l_val = 0 then
+      execute immediate 'update at_rating_spec set source_agency_code = null where source_agency_code not in (select entity_code from at_entity)';
       execute immediate 'alter table at_rating_spec add constraint at_rating_spec_fk3 foreign key (source_agency_code) references at_entity (entity_code)';
    end if;
    ---------------------------------
