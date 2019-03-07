@@ -123,7 +123,7 @@ AS
                   and bl.db_office_code = o.office_code
                   and pl.base_location_code = bl.base_location_code
                   and upper(p_location_id_or_alias) = upper(pl.public_name);
-            exception 
+            exception
                when no_data_found then
                   cwms_err.raise('LOCATION_ID_NOT_FOUND', p_location_id_or_alias);
             end;
@@ -179,9 +179,9 @@ AS
       RESULT_CACHE
    IS
       l_location_code   NUMBER;
-   BEGIN     
+   BEGIN
       IF p_location_id IS NULL
-      THEN         
+      THEN
          cwms_err.raise ('ERROR',
                          'The P_LOCATION_ID parameter cannot be NULL'
                         );
@@ -228,10 +228,10 @@ AS
             RAISE;
          END IF;
       WHEN OTHERS
-      THEN     
+      THEN
          RAISE;
    END get_location_code;
-   
+
    FUNCTION get_location_code (p_db_office_code   IN NUMBER,
                                p_location_id      IN VARCHAR2
                               )
@@ -241,7 +241,7 @@ AS
    BEGIN
       return get_location_code(p_db_office_code, p_location_id, 'T');
    END get_location_code;
-      
+
    FUNCTION get_location_code (p_db_office_id   IN VARCHAR2,
                                p_location_id    IN VARCHAR2
                               )
@@ -905,7 +905,7 @@ AS
          := cwms_util.get_office_code (p_db_office_id);
       l_cwms_office_code       NUMBER (10)
                                   := cwms_util.get_office_code ('CWMS');
-      l_old_time_zone_code      number(10); 
+      l_old_time_zone_code      number(10);
    BEGIN
       --.
       -- dbms_output.put_line('Bienvenue a update_loc');
@@ -1106,21 +1106,21 @@ AS
                               and ci.interval_id = substr(tsi.interval_id, 2)
                           )
                loop
-                  select count(*) 
+                  select count(*)
                     into l_tmp
-                    from (select local_time, 
+                    from (select local_time,
                                  cwms_ts.get_time_on_before_interval(
-                                    local_time, 
-                                    rec.interval_utc_offset, 
+                                    local_time,
+                                    rec.interval_utc_offset,
                                     rec.interval) as interval_time
-                            from (select cwms_util.change_timezone(date_time, 'UTC', p_time_zone_id) as local_time 
+                            from (select cwms_util.change_timezone(date_time, 'UTC', p_time_zone_id) as local_time
                                     from av_tsv where ts_code = rec.ts_code
                                  )
                          )
                    where local_time != interval_time;
                   if l_tmp > 0 then
                      cwms_err.raise(
-                        'ERROR', 
+                        'ERROR',
                         'Cannot change time zone.  Time series is incompatible with new time zone: '||rec.cwms_ts_id);
                   end if;
                end loop;
@@ -1167,7 +1167,7 @@ AS
       -------------------
       -- location kind --  NOT UPDATED
       -------------------
-      
+
       ---------------
       -- map label --
       ---------------
@@ -1339,7 +1339,7 @@ AS
       l_state_initial      cwms_state.state_initial%TYPE;
       l_county_name         cwms_county.county_name%TYPE;
       l_ignorenulls         BOOLEAN := cwms_util.is_true (p_ignorenulls);
-      l_old_time_zone_code      number(10);                                  
+      l_old_time_zone_code      number(10);
    BEGIN
       --.
       -- dbms_output.put_line('Bienvenue a update_loc');
@@ -1535,21 +1535,21 @@ AS
                               and ci.interval_id = substr(tsi.interval_id, 2)
                           )
                loop
-                  select count(*) 
+                  select count(*)
                     into l_tmp
-                    from (select local_time, 
+                    from (select local_time,
                                  cwms_ts.get_time_on_before_interval(
-                                    local_time, 
-                                    rec.interval_utc_offset, 
+                                    local_time,
+                                    rec.interval_utc_offset,
                                     rec.interval) as interval_time
-                            from (select cwms_util.change_timezone(date_time, 'UTC', p_time_zone_id) as local_time 
+                            from (select cwms_util.change_timezone(date_time, 'UTC', p_time_zone_id) as local_time
                                     from av_tsv where ts_code = rec.ts_code
                                  )
                          )
                    where local_time != interval_time;
                   if l_tmp > 0 then
                      cwms_err.raise(
-                        'ERROR', 
+                        'ERROR',
                         'Cannot change time zone.  Time series is incompatible with new time zone: '||rec.cwms_ts_id);
                   end if;
                end loop;
@@ -1797,8 +1797,8 @@ AS
                          'cwms_loc',
                          l_db_office_id || ':' || p_location_id
                         );
-      END IF;  
-      
+      END IF;
+
       check_alias_id(p_location_id, p_location_id, null, null, l_db_office_id);
 
       ----------------------------------------------------------
@@ -2594,15 +2594,15 @@ AS
             (cwms_util.delete_data,
              cwms_util.delete_all,
              cwms_util.delete_loc_cascade)
-      then 
+      then
          if l_this_is_a_base_loc then
             --------------------------------------------
             -- collect location and all sub-locations --
             --------------------------------------------
             select location_code,
                    p_location_id || substr ('-', 1, length (sub_location_id)) || sub_location_id
-              bulk collect into 
-                   l_location_codes, 
+              bulk collect into
+                   l_location_codes,
                    l_location_ids
               from at_physical_location
              where base_location_code = l_base_location_code;
@@ -2616,33 +2616,33 @@ AS
               into l_location_codes,
                    l_location_ids
               from at_physical_location
-             where location_code = l_location_code;           
+             where location_code = l_location_code;
          end if;
          -----------------------
          -- group assignments --
          -----------------------
-         delete 
-           from at_loc_group_assignment 
+         delete
+           from at_loc_group_assignment
           where location_code in (select * from table(l_location_codes));
-             
+
          update at_loc_group_assignment
             set loc_ref_code = null
           where loc_ref_code in (select * from table(l_location_codes));
          ------------
          -- groups --
-         ------------             
+         ------------
          update at_loc_group
             set shared_loc_ref_code = null
           where shared_loc_ref_code in (select * from table(l_location_codes));
-         ---------------------          
+         ---------------------
          -- vertical datums --
          ---------------------
          delete
            from at_vert_datum_local
-          where location_code in (select * from table(l_location_codes));           
+          where location_code in (select * from table(l_location_codes));
          delete
            from at_vert_datum_offset
-          where location_code in (select * from table(l_location_codes));           
+          where location_code in (select * from table(l_location_codes));
          ------------
          -- basins --
          ------------
@@ -2660,7 +2660,7 @@ AS
          -- pumps --
          -----------
          delete
-           from at_pump 
+           from at_pump
           where pump_location_code in (select * from table(l_location_codes));
          -----------------------------------------------------------------------------
          -- streams, stream reaches, stream locations, and stream flow measurements --
@@ -2673,7 +2673,7 @@ AS
             set receiving_stream_code = null
           where receiving_stream_code in (select * from table (l_location_codes));
 
-         delete 
+         delete
            from at_stream_reach
           where stream_reach_location_code in (select * from table (l_location_codes))
              or upstream_location_code     in (select * from table (l_location_codes))
@@ -2684,34 +2684,34 @@ AS
             set stream_location_code = null
           where stream_location_code in (select *from table (l_location_codes));
 
-         delete 
+         delete
            from at_stream_location
           where location_code in (select * from table (l_location_codes));
 
-         delete 
+         delete
            from at_stream
           where stream_location_code in (select * from table (l_location_codes));
-          
+
          delete
            from at_streamflow_meas
-          where location_code in (select * from table (l_location_codes));            
-         -----------------               
+          where location_code in (select * from table (l_location_codes));
+         -----------------
          -- embankments --
-         -----------------               
-         delete 
+         -----------------
+         delete
            from at_embankment
           where embankment_location_code in (select * from table (l_location_codes));
          -----------
          -- locks --
          -----------
-         delete 
-           from at_lockage               
+         delete
+           from at_lockage
           where lockage_location_code in (select * from table (l_location_codes));
 
-         delete 
+         delete
            from at_lock
           where lock_location_code in (select * from table (l_location_codes));
-         ----------------------------- 
+         -----------------------------
          -- compound outlet outlets --
          -----------------------------
          delete
@@ -2723,37 +2723,37 @@ AS
          ---------------
          delete
            from at_overflow
-          where overflow_location_code in (select * from table(l_location_codes)); 
-         -------------               
+          where overflow_location_code in (select * from table(l_location_codes));
+         -------------
          -- outlets --
-         -------------   
-         delete 
-           from at_gate_setting            
+         -------------
+         delete
+           from at_gate_setting
           where outlet_location_code in (select * from table (l_location_codes));
 
-         delete 
+         delete
            from at_outlet
           where outlet_location_code in (select * from table (l_location_codes));
-         ------------------------------ 
+         ------------------------------
          -- compound outlet projects --
          ------------------------------
          for rec in (select compound_outlet_id,
-                            get_location_id(project_location_code) as project_id 
-                       from at_comp_outlet 
+                            get_location_id(project_location_code) as project_id
+                       from at_comp_outlet
                       where project_location_code in (select * from table (l_location_codes))
                     )
          loop
             cwms_outlet.delete_compound_outlet(
-               rec.project_id, 
-               rec.compound_outlet_id, 
-               cwms_util.delete_all, 
+               rec.project_id,
+               rec.compound_outlet_id,
+               cwms_util.delete_all,
                p_db_office_id);
-         end loop;                     
-         --------------               
+         end loop;
+         --------------
          -- turbines --
-         --------------   
-         delete 
-           from at_turbine_setting            
+         --------------
+         delete
+           from at_turbine_setting
           where turbine_location_code in (select * from table (l_location_codes));
 
          delete from at_turbine
@@ -2783,51 +2783,51 @@ AS
          -----------
          -- gages --
          -----------
-         delete 
+         delete
            from at_gage_sensor
           where gage_code in
                    (select gage_code
                       from at_gage
                      where gage_location_code in (select * from table (l_location_codes)));
 
-         delete 
-           from at_goes                                   
-          where gage_code in                              
-                   (select gage_code                    
-                      from at_gage                      
+         delete
+           from at_goes
+          where gage_code in
+                   (select gage_code
+                      from at_gage
                      where gage_location_code in (select * from table (l_location_codes)));
 
-         delete 
+         delete
            from at_gage
           where gage_location_code in (select * from table (l_location_codes));
          ---------------
          -- documents --
          ---------------
-         delete 
+         delete
            from at_document
           where document_location_code in (select * from table (l_location_codes));
          --------------------------
          -- geographic locations --
          --------------------------
-         delete 
+         delete
            from at_geographic_location
           where location_code in (select * from table (l_location_codes));
          -----------
          -- urls --
          -----------
-         delete 
+         delete
            from at_location_url
           where location_code in (select * from table (l_location_codes));
          -------------------
          -- display scale --
          -------------------
-         delete 
+         delete
            from at_display_scale
           where location_code in (select * from table (l_location_codes));
          ---------------
          -- forecasts --
          ---------------
-         delete 
+         delete
            from at_forecast_spec
           where target_location_code in (select * from table (l_location_codes))
              or source_location_code in (select * from table (l_location_codes));
@@ -2845,12 +2845,12 @@ AS
          ---------------------
          for i in 1..l_location_ids.count loop
             for rec
-               in (select distinct 
-                          office_id, 
+               in (select distinct
+                          office_id,
                           location_level_id,
-                          level_date, 
+                          level_date,
                           attribute_id,
-                          attribute_value, 
+                          attribute_value,
                           attribute_unit
                      from cwms_v_location_level
                     where office_id = nvl (upper (trim (p_db_office_id)),cwms_util.user_office_id)
@@ -2872,9 +2872,9 @@ AS
          ----------------------------------
          -- A2W time series associations -- NOTE: Not foreign keyed
          ----------------------------------
-         delete 
+         delete
            from at_a2w_ts_codes_by_loc
-          where location_code in (select * from table (l_location_codes));           
+          where location_code in (select * from table (l_location_codes));
       end if;
 
       --------------------------------------------------------------
@@ -2891,22 +2891,22 @@ AS
             ----------------------
             -- actual locations --
             ----------------------
-            delete 
+            delete
               from at_physical_location apl
              where apl.base_location_code = l_base_location_code;
 
-            delete 
+            delete
               from at_base_location abl
              where abl.base_location_code = l_base_location_code;
          else -- Deleting a single Sub Location --------------------------------
-            delete 
+            delete
               from at_physical_location apl
              where apl.location_code = l_location_code;
          end if;
       end if;
 
       commit;
-      
+
    end delete_location;
 
    --********************************************************************** -
@@ -3318,7 +3318,7 @@ AS
          THEN
             RAISE;
          WHEN OTHERS
-         THEN 
+         THEN
             CASE
             WHEN instr(lower(sqlerrm), 'time zone') > 0 THEN
                RAISE;
@@ -3550,20 +3550,20 @@ AS
    --
    --
    END retrieve_location2;
-                                                                       
+
    function adjust_location_elevation(
       p_location      in out nocopy location_obj_t,
-      p_location_code in integer, 
-      p_elev_unit     in varchar2, 
+      p_location_code in integer,
+      p_elev_unit     in varchar2,
       p_vert_datum    in varchar2)
       return varchar2
-   is                
+   is
       l_estimate       varchar2(8)  := 'false';
       l_elev_unit      varchar2(16) := nvl(trim(p_elev_unit), 'm');
       l_vert_datum     varchar2(16) := upper(trim(p_vert_datum));
       l_vert_datum_xml xmltype;
       l_offset_xml     xmltype;
-   begin  
+   begin
       if p_location.elevation is null then
          p_location.vertical_datum := null;
          l_estimate := null;
@@ -3588,15 +3588,15 @@ AS
                      p_location.vertical_datum := 'NAVD88';
                      l_estimate := cwms_util.get_xml_text(l_offset_xml, '/offset/@estimate');
                   end if;
-               else 
+               else
                   cwms_err.raise('ERROR', 'Vertical datum must be eithe NGVD29 or NAVD88');
             end case;
-         end if; 
+         end if;
          p_location.elevation := cwms_rounding.round_nn_f(p_location.elevation, '7777777773');
       end if;
       return l_estimate;
-   end adjust_location_elevation;   
-   
+   end adjust_location_elevation;
+
    --
    --********************************************************************** -
    --********************************************************************** -
@@ -3675,12 +3675,12 @@ AS
       if l_rec.time_zone_code is null and l_rec.base_location_code != p_location_code then
          select * into l_rec from at_physical_location where location_code = l_rec.base_location_code;
       end if;
-      
+
       select time_zone_name
         into l_local_tz
         from cwms_time_zone
-       where time_zone_code = nvl(l_rec.time_zone_code, 0); 
-   
+       where time_zone_code = nvl(l_rec.time_zone_code, 0);
+
       if l_local_tz = 'Unknown or Not Applicable' then
          l_local_tz := 'UTC';
       end if;
@@ -3918,7 +3918,7 @@ AS
                               p_shared_loc_ref_id   IN VARCHAR2 DEFAULT NULL,
                               p_db_office_id        in varchar2 default null
                              )
-   IS                             
+   IS
    begin
       store_loc_group2 (
          p_loc_category_id,
@@ -3929,7 +3929,7 @@ AS
          p_ignore_nulls,
          p_shared_alias_id,
          p_shared_loc_ref_id,
-         p_db_office_id);   
+         p_db_office_id);
    END store_loc_group;
 
    PROCEDURE store_loc_group2 (p_loc_category_id     IN VARCHAR2,
@@ -4810,22 +4810,22 @@ begin
             p_db_office_code  => l_db_office_code);
 
    begin
-      if l_unassign_all then 
+      if l_unassign_all then
          -------------------------------------------
          -- delete all group/location assignments --
          -------------------------------------------
-         delete 
+         delete
            from at_loc_group_assignment
           where loc_group_code = l_loc_group_code
             and office_code = l_db_office_code;
-      else 
+      else
          ----------------------------------------------------------------
          -- delete only group/location assignments for given locations --
          ----------------------------------------------------------------
-         delete 
+         delete
            from at_loc_group_assignment
           where loc_group_code = l_loc_group_code
-            and location_code in 
+            and location_code in
                 (select cwms_loc.get_location_code(l_db_office_code, trim(column_value))
                   from table(p_location_array)
                 );
@@ -5590,8 +5590,8 @@ end unassign_loc_groups;
       p_category_id    in varchar2 default null,
       p_office_id     in varchar2 default null)
       return varchar2
-   is  
-      l_office_code   number(10);  
+   is
+      l_office_code   number(10);
       l_location_code number(10);
       l_office_id     varchar2(16);
       l_location_id   varchar2(57);
@@ -5617,8 +5617,8 @@ end unassign_loc_groups;
             and g.loc_group_code = a.loc_group_code
             and c.loc_category_code = g.loc_category_code
             and upper(a.loc_alias_id) = upper(trim(p_alias_id))
-            and upper(g.loc_group_id) = upper(trim(nvl(p_group_id, g.loc_group_id)))           
-            and upper(c.loc_category_id) = upper(trim(nvl(p_category_id, c.loc_category_id)));           
+            and upper(g.loc_group_id) = upper(trim(nvl(p_group_id, g.loc_group_id)))
+            and upper(c.loc_category_id) = upper(trim(nvl(p_category_id, c.loc_category_id)));
       exception
          when no_data_found then
             -----------------------------------------------
@@ -5627,14 +5627,14 @@ end unassign_loc_groups;
             l_parts := cwms_util.split_text(trim(p_alias_id), '-', 1);
             if (l_parts.count = 2) then
                l_location_id := get_location_id_from_alias(l_parts(1), p_group_id, p_category_id, l_office_id);
-               if l_location_id is not null then    
+               if l_location_id is not null then
                   begin
                      select distinct
                             location_id
                        into l_location_id
                        from cwms_v_loc
                       where location_id = l_location_id || '-' || trim(l_parts(2))
-                        and db_office_id = l_office_id; 
+                        and db_office_id = l_office_id;
                   exception
                      when no_data_found then
                         l_location_id := null;
@@ -5669,17 +5669,17 @@ end unassign_loc_groups;
       -- sanity checks --
       -------------------
       l_office_id := cwms_util.get_db_office_id(p_office_id);
-                       
+
       l_location_id := get_location_id_from_alias(p_alias_id, p_group_id, p_category_id, l_office_id);
       if l_location_id is not null then
          l_location_code := cwms_loc.get_location_code(
             p_db_office_id  => l_office_id,
-            p_location_id   => l_location_id, 
+            p_location_id   => l_location_id,
             p_check_aliases => 'F');
-      end if; 
-         
-      return l_location_code; 
-         
+      end if;
+
+      return l_location_code;
+
    end get_location_code_from_alias;
 
    procedure check_alias_id (p_alias_id      in varchar2,
@@ -5714,7 +5714,7 @@ end unassign_loc_groups;
              where upper(c.loc_category_id) = upper(p_category_id)
                and upper(g.loc_group_id) = upper(p_group_id)
                and upper(a.loc_alias_id) = upper(p_alias_id)
-               and a.location_code != l_location_code 
+               and a.location_code != l_location_code
                and g.loc_category_code = c.loc_category_code
                and a.loc_group_code = g.loc_group_code;
          exception
@@ -6125,7 +6125,7 @@ end unassign_loc_groups;
          str_tab_t('AT_PROJECT',         'PROJECT_LOCATION_CODE',      'PROJECT'),    -- can also be stream location
          str_tab_t('AT_OUTLET',          'OUTLET_LOCATION_CODE',       'OUTLET'),     -- can also be stream location
          str_tab_t('AT_TURBINE',         'TURBINE_LOCATION_CODE',      'TURBINE'),    -- can also be stream location
-         str_tab_t('AT_BASIN',           'BASIN_LOCATION_CODE',        'BASIN'),     
+         str_tab_t('AT_BASIN',           'BASIN_LOCATION_CODE',        'BASIN'),
          str_tab_t('AT_STREAM',          'STREAM_LOCATION_CODE',       'STREAM'),
          str_tab_t('AT_ENTITY_LOCATION', 'LOCATION_CODE',              'ENTITY'),
          str_tab_t('AT_STREAM_REACH',    'STREAM_REACH_LOCATION_CODE', 'STREAM_REACH'),
@@ -6149,7 +6149,7 @@ end unassign_loc_groups;
          then
             l_type_names.extend;
             l_type_names(l_type_names.count) := l_table_types(i)(3);
-         end if;                                
+         end if;
       end loop;
       -----------------------------------------------------
       -- change WEATHER_GAGE to STREAM_GAGE if necessary --
@@ -6187,7 +6187,7 @@ end unassign_loc_groups;
             exit;
          end if;
       end loop;
-      
+
       return l_type_names;
    end get_loc_kind_names;
 
@@ -6243,16 +6243,16 @@ end unassign_loc_groups;
                                                                str_tab_t('TURBINE',        'STREAM_LOCATION'                                  ),
                                                                str_tab_t('TURBINE',        'STREAM_LOCATION', 'STREAM_GAGE'                   ));
       l_valid_combinations('WEATHER_GAGE'   ) := str_tab_tab_t(str_tab_t('WEATHER_GAGE'                                                       ));
-   
+
       l_type_names := get_loc_kind_names(p_location_code);
       if l_type_names.count = 0 then
          select location_kind_id
            into l_location_kind_id
            from at_physical_location pl,
-                cwms_location_kind lk 
+                cwms_location_kind lk
           where pl.location_code = p_location_code
             and lk.location_kind_code = pl.location_kind;
-            
+
          if l_location_kind_id != 'SITE' then
             l_location_kind_id := null;
          end if;
@@ -6272,10 +6272,10 @@ end unassign_loc_groups;
             l_location_kind_id := l_valid_combinations.next(l_location_kind_id);
          end loop;
       end if;
-      
+
       if l_location_kind_id is null then
          cwms_err.raise(
-            'ERROR', 
+            'ERROR',
             'Location '
             ||p_location_code
             ||'/'
@@ -6284,7 +6284,7 @@ end unassign_loc_groups;
             ||cwms_util.join_text(l_type_names, ', ')
             ||') is invalid and/or does not agree with tables');
       end if;
-      
+
       return l_location_kind_id;
    end check_location_kind;
 
@@ -6292,10 +6292,10 @@ end unassign_loc_groups;
       p_location_code in number)
       return varchar2
    is
-   begin                 
+   begin
       return check_location_kind(p_location_code);
    end get_location_type;
-         
+
    function check_location_kind_code(
       p_location_code in number)
       return integer
@@ -6306,10 +6306,10 @@ end unassign_loc_groups;
         into l_location_kind_code
         from cwms_location_kind
        where location_kind_id = check_location_kind(p_location_code);
-       
-      return l_location_kind_code;  
+
+      return l_location_kind_code;
    end check_location_kind_code;
-   
+
    function check_location_kind(
       p_location_id in varchar2,
       p_office_id   in varchar2 default null)
@@ -6333,15 +6333,15 @@ end unassign_loc_groups;
    is
    begin
       -- use loop for convenience; will only match once
-      for rec in (select db_office_id, 
-                         location_id 
-                    from av_loc 
+      for rec in (select db_office_id,
+                         location_id
+                    from av_loc
                    where location_code = p_location_code
                  )
       loop
          clear_location_kind(rec.location_id, rec.db_office_id);
-      end loop;                 
-   end clear_location_kind;      
+      end loop;
+   end clear_location_kind;
 
    procedure clear_location_kind(
       p_location_id in varchar2,
@@ -6349,7 +6349,7 @@ end unassign_loc_groups;
    is
       l_location_code         integer;
    begin
-      l_location_code := get_location_code(p_office_id, p_location_id); 
+      l_location_code := get_location_code(p_office_id, p_location_id);
       case check_location_kind(l_location_code)
          when 'BASIN'      then cwms_basin.delete_basin(p_location_id, cwms_util.delete_key, p_office_id);
          when 'STREAM'     then cwms_stream.delete_stream(p_location_id, cwms_util.delete_key, p_office_id);
@@ -6360,25 +6360,25 @@ end unassign_loc_groups;
          when 'PROJECT'    then cwms_project.delete_project(p_location_id, cwms_util.delete_key, p_office_id);
          else null;
       end case;
-      
+
       update at_physical_location
          set location_kind = check_location_kind_code(l_location_code)
-       where location_code = l_location_code;   
-   end clear_location_kind;      
+       where location_code = l_location_code;
+   end clear_location_kind;
 
    function get_vertcon_offset(
       p_lat in binary_double,
       p_lon in binary_double)
       return binary_double
       deterministic
-   is           
+   is
       l_missing        constant binary_double := 9999;
-      l_file_names     str_tab_t; 
+      l_file_names     str_tab_t;
       l_data_set_codes double_tab_t;
       l_min_lat        binary_double;
       l_min_lon        binary_double;
       l_delta_lat      binary_double;
-      l_delta_lon      binary_double; 
+      l_delta_lon      binary_double;
       -------------------------------------
       -- variables below are named after --
       -- variables in vertcon.for source --
@@ -6413,8 +6413,8 @@ end unassign_loc_groups;
           where p_lat >= min_lat
             and p_lat <= max_lat
             and p_lon >= min_lon
-            and p_lon <= max_lon - margin; 
-                              
+            and p_lon <= max_lon - margin;
+
          select min_lat,
                 min_lon,
                 delta_lat,
@@ -6424,7 +6424,7 @@ end unassign_loc_groups;
                 l_delta_lat,
                 l_delta_lon
            from cwms_vertcon_header
-          where dataset_code = l_data_set_codes(1);       
+          where dataset_code = l_data_set_codes(1);
       exception
          when no_data_found then
             cwms_err.raise('ERROR', 'No VERTCON data found for lat, lon : '||p_lat||', '||p_lon);
@@ -6433,10 +6433,10 @@ end unassign_loc_groups;
       -- variables xgrid and ygrid from vertcon.for --
       ------------------------------------------------
       x := (p_lon - l_min_lon) / l_delta_lon + 1;
-      y := (p_lat - l_min_lat) / l_delta_lat + 1;   
-      ----------------------------------------------   
+      y := (p_lat - l_min_lat) / l_delta_lat + 1;
+      ----------------------------------------------
       -- variables irow and jcol from vertcon.for --
-      ----------------------------------------------   
+      ----------------------------------------------
       i := trunc(y);
       j := trunc(x);
       -----------------------------------------------------------
@@ -6453,24 +6453,24 @@ end unassign_loc_groups;
       ------------------------------------------------------
       -- variables ay, bee, cee, and dee from vertcon.for --
       ------------------------------------------------------
-      a := t1;                          
+      a := t1;
       b := t3-t1;
       c := t2-t1;
-      d := t4-t3-t2+t1;               
-      ----------------------------------   
+      d := t4-t3-t2+t1;
+      ----------------------------------
       -- same names as in vertcon.for --
-      ----------------------------------   
+      ----------------------------------
       row := y - i;
       col := x - j;
-      ----------------------------------------------------------------                                 
+      ----------------------------------------------------------------
       -- variables zee1, zee2, zee3, zee4, and zee from vertcon.for --
-      ----------------------------------------------------------------                                 
+      ----------------------------------------------------------------
       z1 := a;
       z2 := b*col;
       z3 := c*row;
       z4 := d*col*row;
       z  := z1 + z2 + z3 + z4;
-      
+
       return z / 1000.;
    end get_vertcon_offset;
 
@@ -6512,8 +6512,8 @@ end unassign_loc_groups;
       l_vertical_datum_id_2 := upper(p_vertical_datum_id_2);
       l_location_code       := cwms_loc.get_location_code(p_office_id, p_location_id);
       l_effective_date_utc  := cwms_util.change_timezone(
-         p_effective_date, 
-         nvl(p_time_zone, cwms_loc.get_local_timezone(l_location_code)), 
+         p_effective_date,
+         nvl(p_time_zone, cwms_loc.get_local_timezone(l_location_code)),
          'UTC');
       begin
          if cwms_util.is_true(p_match_effective_date) then
@@ -6547,10 +6547,10 @@ end unassign_loc_groups;
          end if;
       exception
          when no_data_found then null;
-      end;      
+      end;
       return l_rowid;
    end get_vertical_datum_offset_row;
-   
+
    procedure store_vertical_datum_offset(
       p_location_id         in varchar2,
       p_vertical_datum_id_1 in varchar2,
@@ -6565,44 +6565,44 @@ end unassign_loc_groups;
    is
       l_rowid          urowid;
       l_fail_if_exists boolean := cwms_util.is_true(p_fail_if_exists);
-      l_effective_date date := p_effective_date; 
+      l_effective_date date := p_effective_date;
       l_time_zone      varchar2(28) := nvl(p_time_zone, cwms_loc.get_local_timezone(p_location_id, p_office_id));
       l_reversed       boolean := false;
       l_delete         boolean := false;
       l_insert         boolean := false;
       l_update         boolean := false;
-   begin               
+   begin
       ---------------------------
       -- normalize cookie date --
       ---------------------------
       if abs(l_effective_date - date '1000-01-01') < 1 then
          l_effective_date := date '1000-01-01';
          l_time_zone := 'UTC';
-      end if;               
+      end if;
       -------------------------------------------------
       -- get the existing record if it already exits --
       -------------------------------------------------
       l_rowid := get_vertical_datum_offset_row(
-         p_location_id, 
-         p_vertical_datum_id_1, 
-         p_vertical_datum_id_2, 
-         l_effective_date, 
-         l_time_zone, 
-         'T', 
+         p_location_id,
+         p_vertical_datum_id_1,
+         p_vertical_datum_id_2,
+         l_effective_date,
+         l_time_zone,
+         'T',
          p_office_id);
       if l_rowid is null then
-         ------------------------------------------ 
+         ------------------------------------------
          -- get the reversed record if it exists --
-         ------------------------------------------ 
+         ------------------------------------------
          l_rowid := get_vertical_datum_offset_row(
-            p_location_id, 
-            p_vertical_datum_id_2, 
-            p_vertical_datum_id_1, 
-            l_effective_date, 
-            l_time_zone, 
-            'T', 
+            p_location_id,
+            p_vertical_datum_id_2,
+            p_vertical_datum_id_1,
+            l_effective_date,
+            l_time_zone,
+            'T',
             p_office_id);
-         l_reversed := l_rowid is not null;            
+         l_reversed := l_rowid is not null;
       end if;
       if l_rowid is null then
          --------------------------
@@ -6641,20 +6641,20 @@ end unassign_loc_groups;
          if l_reversed then
             l_delete := true;
             l_insert := true;
-         else                
+         else
             l_update := true;
          end if;
       end if;
       if l_update then
             update at_vert_datum_offset
                set offset = cwms_util.convert_units(p_offset, p_unit, 'm'),
-                   description = p_description 
+                   description = p_description
              where rowid = l_rowid;
       elsif l_insert then
          if l_delete then
-            delete 
+            delete
               from at_vert_datum_offset
-             where rowid = l_rowid; 
+             where rowid = l_rowid;
          end if;
          insert
            into at_vert_datum_offset
@@ -6662,15 +6662,15 @@ end unassign_loc_groups;
                  regexp_replace(upper(p_vertical_datum_id_1), '(N[AG]VD)[ -]', '\1', 1, 0),
                  regexp_replace(upper(p_vertical_datum_id_2), '(N[AG]VD)[ -]', '\1', 1, 0),
                  cwms_util.change_timezone(
-                    l_effective_date, 
-                    l_time_zone, 
+                    l_effective_date,
+                    l_time_zone,
                     'UTC'),
                  cwms_util.convert_units(p_offset, p_unit, 'm'),
                  p_description
                 );
       end if;
     end store_vertical_datum_offset;
-      
+
    procedure store_vertical_datum_offset(
       p_vertical_datum_offset in vert_datum_offset_t,
       p_fail_if_exists        in varchar2 default 'T')
@@ -6681,7 +6681,7 @@ end unassign_loc_groups;
       -------------------
       if p_vertical_datum_offset is null then
          cwms_err.raise('NULL_ARGUMENT', 'p_vertical_datum_offset');
-      end if;   
+      end if;
       -----------------
       -- do the work --
       -----------------
@@ -6697,7 +6697,7 @@ end unassign_loc_groups;
          p_fail_if_exists      => p_fail_if_exists,
          p_office_id           => p_vertical_datum_offset.location.office_id);
    end store_vertical_datum_offset;
-      
+
    procedure retrieve_vertical_datum_offset(
       p_offset               out binary_double,
       p_unit_out             out varchar2,
@@ -6721,13 +6721,13 @@ end unassign_loc_groups;
       -------------------
       if p_location_id is null then
          cwms_err.raise('NULL_ARGUMENT', p_location_id);
-      end if;   
+      end if;
       if p_vertical_datum_id_1 is null then
          cwms_err.raise('NULL_ARGUMENT', p_vertical_datum_id_1);
-      end if;   
+      end if;
       if p_vertical_datum_id_2 is null then
          cwms_err.raise('NULL_ARGUMENT', p_vertical_datum_id_2);
-      end if;   
+      end if;
       -----------------
       -- do the work --
       -----------------
@@ -6735,7 +6735,7 @@ end unassign_loc_groups;
       l_time_zone := case p_effective_date_in is null
                         when true then 'UTC'
                         else nvl(p_time_zone, cwms_loc.get_local_timezone(p_location_id, p_office_id))
-                     end;      
+                     end;
       l_rowid := get_vertical_datum_offset_row(
          p_location_id          => p_location_id,
          p_vertical_datum_id_1  => p_vertical_datum_id_1,
@@ -6743,7 +6743,7 @@ end unassign_loc_groups;
          p_effective_date       => l_effective_date,
          p_time_zone            => l_time_zone,
          p_match_effective_date => p_match_effective_date,
-         p_office_id            => p_office_id); 
+         p_office_id            => p_office_id);
       if l_rowid is null then
          cwms_err.raise(
             'ITEM_DOES_NOT_EXIST',
@@ -6755,20 +6755,20 @@ end unassign_loc_groups;
             ||'@'||to_char(l_effective_date, 'yyyy-mm-dd hh24:mi:ss')
             ||'('||l_time_zone
             ||')');
-      end if;             
-      select case 
+      end if;
+      select case
                 when p_unit_in is null then offset
                 else cwms_util.convert_units(offset, 'm', p_unit_in)
              end,
              nvl(p_unit_in, 'm'),
-             description 
+             description
         into p_offset,
              p_unit_out,
-             p_description 
+             p_description
         from at_vert_datum_offset
        where rowid = l_rowid;
    end retrieve_vertical_datum_offset;
-      
+
    function retrieve_vertical_datum_offset(
       p_location_id          in varchar2,
       p_vertical_datum_id_1  in varchar2,
@@ -6784,7 +6784,7 @@ end unassign_loc_groups;
       l_unit_out           varchar2(16);
       l_description        varchar2(64);
       l_effective_date_out date;
-   begin     
+   begin
       retrieve_vertical_datum_offset(
          p_offset               => l_offset,
          p_unit_out             => l_unit_out,
@@ -6798,7 +6798,7 @@ end unassign_loc_groups;
          p_unit_in              => p_unit,
          p_match_effective_date => p_match_effective_date,
          p_office_id            => p_office_id);
-         
+
       return vert_datum_offset_t(
          location_ref_t(p_location_id, p_office_id),
          p_vertical_datum_id_1,
@@ -6807,13 +6807,13 @@ end unassign_loc_groups;
          case p_effective_date_in is null
             when true then 'UTC'
             else nvl(p_time_zone, cwms_loc.get_local_timezone(p_location_id, p_office_id))
-         end,  
+         end,
          l_offset,
          l_unit_out,
          l_description);
-                     
+
    end retrieve_vertical_datum_offset;
-      
+
    procedure delete_vertical_datum_offset(
       p_location_id          in varchar2,
       p_vertical_datum_id_1  in varchar2,
@@ -6832,13 +6832,13 @@ end unassign_loc_groups;
       -------------------
       if p_location_id is null then
          cwms_err.raise('NULL_ARGUMENT', p_location_id);
-      end if;   
+      end if;
       if p_vertical_datum_id_1 is null then
          cwms_err.raise('NULL_ARGUMENT', p_vertical_datum_id_1);
-      end if;   
+      end if;
       if p_vertical_datum_id_2 is null then
          cwms_err.raise('NULL_ARGUMENT', p_vertical_datum_id_2);
-      end if;   
+      end if;
       -----------------
       -- do the work --
       -----------------
@@ -6846,7 +6846,7 @@ end unassign_loc_groups;
       l_time_zone := case p_effective_date_in is null
                         when true then 'UTC'
                         else nvl(p_time_zone, cwms_loc.get_local_timezone(p_location_id, p_office_id))
-                     end;      
+                     end;
       l_rowid := get_vertical_datum_offset_row(
          p_location_id          => p_location_id,
          p_vertical_datum_id_1  => p_vertical_datum_id_1,
@@ -6854,7 +6854,7 @@ end unassign_loc_groups;
          p_effective_date       => l_effective_date,
          p_time_zone            => l_time_zone,
          p_match_effective_date => p_match_effective_date,
-         p_office_id            => p_office_id); 
+         p_office_id            => p_office_id);
       if l_rowid is null then
          cwms_err.raise(
             'ITEM_DOES_NOT_EXIST',
@@ -6867,20 +6867,20 @@ end unassign_loc_groups;
             ||'('||l_time_zone
             ||')');
       end if;
-      
+
       delete from at_vert_datum_offset where rowid = l_rowid;
-                   
+
    end delete_vertical_datum_offset;
-      
-   procedure get_vertical_datum_offset(   
-      p_offset              out binary_double, 
+
+   procedure get_vertical_datum_offset(
+      p_offset              out binary_double,
       p_effective_date      out date,
       p_estimate            out varchar2,
       p_location_code       in  number,
-      p_vertical_datum_id_1 in  varchar2,   
+      p_vertical_datum_id_1 in  varchar2,
       p_vertical_datum_id_2 in  varchar2,
-      p_datetime_utc        in  date default sysdate) 
-   is       
+      p_datetime_utc        in  date default sysdate)
+   is
       pragma autonomous_transaction; -- for inserting VERTCON offset estimate
       l_offset              binary_double;
       l_effective_date      date;
@@ -6901,11 +6901,11 @@ end unassign_loc_groups;
          cwms_err.raise('NULL_ARGUMENT', 'p_vertical_datum_id_2');
       end if;
       if p_datetime_utc is null then
-         cwms_err.raise('NULL_ARGUMENT', 'p_datetime_utc'); 
+         cwms_err.raise('NULL_ARGUMENT', 'p_datetime_utc');
       end if;
       -----------------
       -- do the work --
-      -----------------    
+      -----------------
       l_vertical_datum_id_1 := upper(p_vertical_datum_id_1);
       l_vertical_datum_id_2 := upper(p_vertical_datum_id_2);
       if l_vertical_datum_id_2 = l_vertical_datum_id_1 then
@@ -6916,14 +6916,14 @@ end unassign_loc_groups;
          l_effective_date := date '1000-01-01';
       end if;
       if l_offset is null then
-         begin     
+         begin
             -------------------------------------------------
             -- generate a 29->88 estimate if it might help --
             -------------------------------------------------
-            if (l_vertical_datum_id_1 in ('NGVD29', 'NAVD88')  or 
+            if (l_vertical_datum_id_1 in ('NGVD29', 'NAVD88')  or
                 l_vertical_datum_id_2 in ('NGVD29', 'NAVD88')) and not
-               (l_vertical_datum_id_1 in ('NGVD29', 'NAVD88')  and 
-                l_vertical_datum_id_2 in ('NGVD29', 'NAVD88')) 
+               (l_vertical_datum_id_1 in ('NGVD29', 'NAVD88')  and
+                l_vertical_datum_id_2 in ('NGVD29', 'NAVD88'))
             then
                get_vertical_datum_offset(
                   l_offset,
@@ -6934,7 +6934,7 @@ end unassign_loc_groups;
                   'NAVD88');
                l_offset := null;
                l_effective_date := null;
-               l_description := null;               
+               l_description := null;
             end if;
             --------------------------------------
             -- search for the specified mapping --
@@ -6947,12 +6947,12 @@ end unassign_loc_groups;
                    l_description
               from at_vert_datum_offset
              where location_code = p_location_code
-               and vertical_datum_id_1 = l_vertical_datum_id_1  
+               and vertical_datum_id_1 = l_vertical_datum_id_1
                and vertical_datum_id_2 = l_vertical_datum_id_2
                and effective_date = (select max(effective_date)
-                                       from at_vert_datum_offset  
+                                       from at_vert_datum_offset
                                       where location_code = p_location_code
-                                        and vertical_datum_id_1 = l_vertical_datum_id_1  
+                                        and vertical_datum_id_1 = l_vertical_datum_id_1
                                         and vertical_datum_id_2 = l_vertical_datum_id_2
                                         and effective_date <= p_datetime_utc
                                     );
@@ -6972,12 +6972,12 @@ end unassign_loc_groups;
                       l_description
                  from at_vert_datum_offset
                 where location_code = p_location_code
-                  and vertical_datum_id_1 = l_vertical_datum_id_2  
+                  and vertical_datum_id_1 = l_vertical_datum_id_2
                   and vertical_datum_id_2 = l_vertical_datum_id_1
                   and effective_date = (select max(effective_date)
-                                          from at_vert_datum_offset  
+                                          from at_vert_datum_offset
                                          where location_code = p_location_code
-                                           and vertical_datum_id_1 = l_vertical_datum_id_2  
+                                           and vertical_datum_id_1 = l_vertical_datum_id_2
                                            and vertical_datum_id_2 = l_vertical_datum_id_1
                                            and effective_date <= p_datetime_utc
                                        );
@@ -7008,7 +7008,7 @@ end unassign_loc_groups;
                                         and effective_date <= p_datetime_utc
                                     )
                     )
-         loop                                                                                             
+         loop
             for rec_2 in (
                select v2.vertical_datum_id_1,
                       v2.vertical_datum_id_2,
@@ -7034,14 +7034,14 @@ end unassign_loc_groups;
                         -- datum_1 ==> common; datum_2 ==> common --
                         --------------------------------------------
                         l_offset := rec_1.offset - rec_2.offset;
-                     end if; 
+                     end if;
                   elsif rec_2.vertical_datum_id_2 = l_vertical_datum_id_2 then
                      if rec_2.vertical_datum_id_1 = rec_1.vertical_datum_id_2 then
                         --------------------------------------------
                         -- datum_1 ==> common; common ==> datum_2 --
                         --------------------------------------------
                         l_offset := rec_1.offset + rec_2.offset;
-                     end if; 
+                     end if;
                   end if;
                elsif rec_1.vertical_datum_id_2 = l_vertical_datum_id_1 then
                   if rec_2.vertical_datum_id_1 = l_vertical_datum_id_2 then
@@ -7050,16 +7050,16 @@ end unassign_loc_groups;
                         -- common ==> datum_1; datum_2 ==> common --
                         --------------------------------------------
                         l_offset := -rec_1.offset - rec_2.offset;
-                     end if; 
+                     end if;
                   elsif rec_2.vertical_datum_id_2 = l_vertical_datum_id_2 then
                      if rec_2.vertical_datum_id_1 = rec_1.vertical_datum_id_1 then
                         --------------------------------------------
                         -- common ==> datum_1; common ==> datum_2 --
                         --------------------------------------------
                         l_offset := -rec_1.offset + rec_2.offset;
-                     end if; 
+                     end if;
                   end if;
-               end if; 
+               end if;
                if l_offset is not null then
                   l_effective_date := greatest(rec_1.effective_date, rec_2.effective_date);
                   if rec_1.description is not null and instr(upper(rec_1.description), 'ESTIMATE') > 0 then
@@ -7070,11 +7070,11 @@ end unassign_loc_groups;
                   exit;
                end if;
             end loop;
-            exit when l_offset is not null;                                      
-         end loop;                                      
+            exit when l_offset is not null;
+         end loop;
       end if;
       if l_offset is null then
-         if l_vertical_datum_id_1 in ('NGVD29', 'NAVD88') and 
+         if l_vertical_datum_id_1 in ('NGVD29', 'NAVD88') and
             l_vertical_datum_id_2 in ('NGVD29', 'NAVD88')
          then
             ---------------------------------------------
@@ -7083,7 +7083,7 @@ end unassign_loc_groups;
             declare
                l_lat binary_double;
                l_lon binary_double;
-            begin    
+            begin
                select latitude,
                       longitude
                  into l_lat,
@@ -7091,7 +7091,7 @@ end unassign_loc_groups;
                  from cwms_v_loc
                 where location_code = p_location_code
                   and unit_system = 'SI';
-                
+
                if l_lat is not null and l_lon is not null then
                   begin
                      l_offset := get_vertcon_offset(l_lat, l_lon);
@@ -7113,14 +7113,14 @@ end unassign_loc_groups;
                   if l_vertical_datum_id_1 = 'NAVD88' then
                      l_offset := -l_offset;
                   end if;
-                  commit;                               
-               end if;                
+                  commit;
+               end if;
             exception
                when no_data_found then null;
             end;
-         end if;           
+         end if;
       end if;
---      if l_offset is null then 
+--      if l_offset is null then
 --         ---------------------
 --         -- declare failure --
 --         ---------------------
@@ -7136,7 +7136,7 @@ end unassign_loc_groups;
 --               ||' from '
 --               ||l_vertical_datum_id_1
 --               ||' to '
---               ||l_vertical_datum_id_2);              
+--               ||l_vertical_datum_id_2);
 --         end;
 --      end if;
       p_offset := l_offset;
@@ -7145,9 +7145,9 @@ end unassign_loc_groups;
          p_estimate := 'F';
       else
          p_estimate := 'T';
-      end if; 
-   end get_vertical_datum_offset; 
-      
+      end if;
+   end get_vertical_datum_offset;
+
    function get_vertical_datum_offsets(
       p_location_code       in number,
       p_vertical_datum_id_1 in varchar2,
@@ -7155,21 +7155,21 @@ end unassign_loc_groups;
       p_start_time_utc      in date,
       p_end_time_utc        in date)
       return ztsv_array
-   is 
+   is
       l_offsets ztsv_array;
    begin
-      get_vertical_datum_offsets(  
+      get_vertical_datum_offsets(
          l_offsets,
          p_location_code,
          p_vertical_datum_id_1,
          p_vertical_datum_id_2,
          p_start_time_utc,
          p_end_time_utc);
-         
-      return l_offsets;
-   end get_vertical_datum_offsets;        
 
-   procedure get_vertical_datum_offsets(  
+      return l_offsets;
+   end get_vertical_datum_offsets;
+
+   procedure get_vertical_datum_offsets(
       p_offsets             out ztsv_array,
       p_location_code       in  number,
       p_vertical_datum_id_1 in  varchar2,
@@ -7197,22 +7197,22 @@ end unassign_loc_groups;
       end if;
       -----------------
       -- do the work --
-      -----------------    
+      -----------------
       l_effective_date := p_end_time_utc;
-      loop           
+      loop
          begin
-            get_vertical_datum_offset(   
-               l_offset, 
+            get_vertical_datum_offset(
+               l_offset,
                l_effective_date,
                l_estimate,
                p_location_code,
-               p_vertical_datum_id_1,   
+               p_vertical_datum_id_1,
                p_vertical_datum_id_2,
-               l_effective_date); 
+               l_effective_date);
             if l_offsets is null then
                l_offsets := ztsv_array();
                l_offsets.extend;
-            end if;               
+            end if;
             l_offsets(l_offsets.count) := ztsv_type(l_effective_date, l_offset, null);
             exit when l_effective_date < p_start_time_utc;
             l_effective_date := l_effective_date - 1 / 86400;
@@ -7228,18 +7228,18 @@ end unassign_loc_groups;
          end loop;
       end if;
       p_offsets := l_offsets2;
-   end get_vertical_datum_offsets;        
+   end get_vertical_datum_offsets;
 
    function get_vertical_datum_offset(
       p_location_code       in number,
-      p_vertical_datum_id_1 in varchar2,   
-      p_vertical_datum_id_2 in varchar2, 
+      p_vertical_datum_id_1 in varchar2,
+      p_vertical_datum_id_2 in varchar2,
       p_datetime_utc        in date     default sysdate,
       p_unit                in varchar2 default null)
       return binary_double
    is
       l_offset         binary_double;
-      l_effective_date date;  
+      l_effective_date date;
       l_estimate       varchar2(1);
    begin
       -------------------
@@ -7250,24 +7250,24 @@ end unassign_loc_groups;
       end if;
       -----------------
       -- do the work --
-      -----------------    
+      -----------------
       get_vertical_datum_offset(
           p_offset              => l_offset,
           p_effective_date      => l_effective_date,
           p_estimate            => l_estimate,
           p_location_code       => p_location_code,
-          p_vertical_datum_id_1 => p_vertical_datum_id_1,   
+          p_vertical_datum_id_1 => p_vertical_datum_id_1,
           p_vertical_datum_id_2 => p_vertical_datum_id_2,
           p_datetime_utc        => p_datetime_utc);
       if p_unit is not null then
          l_offset := cwms_util.convert_units(l_offset, 'm', p_unit);
       end if;
       return l_offset;
-   end get_vertical_datum_offset;   
-      
+   end get_vertical_datum_offset;
+
    function get_vertical_datum_offset(
       p_location_id         in varchar,
-      p_vertical_datum_id_1 in varchar2,   
+      p_vertical_datum_id_1 in varchar2,
       p_vertical_datum_id_2 in varchar2,
       p_datetime            in date     default null,
       p_time_zone           in varchar2 default null,
@@ -7276,7 +7276,7 @@ end unassign_loc_groups;
       return binary_double
    is
       l_offset         binary_double;
-      l_effective_date date;  
+      l_effective_date date;
       l_estimate       varchar2(1);
    begin
       get_vertical_datum_offset(
@@ -7284,21 +7284,21 @@ end unassign_loc_groups;
          l_effective_date,
          l_estimate,
          p_location_id,
-         p_vertical_datum_id_1,   
+         p_vertical_datum_id_1,
          p_vertical_datum_id_2,
          p_datetime,
          p_time_zone,
          p_unit,
          p_office_id);
-      return l_offset;         
-   end get_vertical_datum_offset;   
-      
+      return l_offset;
+   end get_vertical_datum_offset;
+
    procedure get_vertical_datum_offset(
       p_offset              out binary_double,
       p_effective_date      out date,
       p_estimate            out varchar2,
       p_location_id         in  varchar,
-      p_vertical_datum_id_1 in  varchar2,   
+      p_vertical_datum_id_1 in  varchar2,
       p_vertical_datum_id_2 in  varchar2,
       p_datetime            in  date     default null,
       p_time_zone           in  varchar2 default null,
@@ -7319,7 +7319,7 @@ end unassign_loc_groups;
       end if;
       -----------------
       -- do the work --
-      -----------------    
+      -----------------
       l_location_code := cwms_loc.get_location_code(p_office_id, p_location_id);
       l_timezone := nvl(p_time_zone, cwms_loc.get_local_timezone(l_location_code));
       get_vertical_datum_offset(
@@ -7327,19 +7327,19 @@ end unassign_loc_groups;
          l_effective_date,
          l_estimate,
          l_location_code,
-         p_vertical_datum_id_1,   
+         p_vertical_datum_id_1,
          p_vertical_datum_id_2,
          nvl(cwms_util.change_timezone(p_datetime, l_timezone, 'UTC'), sysdate));
       if p_unit is null then
          p_offset := l_offset;
       else
          p_offset := cwms_util.convert_units(l_offset, 'm', p_unit);
-      end if; 
+      end if;
       p_effective_date := cwms_util.change_timezone(l_effective_date, 'UTC', l_timezone);
       p_estimate := l_estimate;
-      
-   end get_vertical_datum_offset;   
-      
+
+   end get_vertical_datum_offset;
+
    function get_vertical_datum_offsets(
       p_location_id         in varchar,
       p_vertical_datum_id_1 in varchar2,
@@ -7363,9 +7363,9 @@ end unassign_loc_groups;
          p_time_zone,
          p_unit,
          p_office_id);
-      return l_offsets;         
-   end get_vertical_datum_offsets;        
-      
+      return l_offsets;
+   end get_vertical_datum_offsets;
+
    procedure get_vertical_datum_offsets(
       p_offsets             out ztsv_array,
       p_location_id         in  varchar,
@@ -7389,10 +7389,10 @@ end unassign_loc_groups;
       end if;
       -----------------
       -- do the work --
-      -----------------    
+      -----------------
       l_location_code := cwms_loc.get_location_code(p_office_id, p_location_id);
       l_timezone := nvl(p_time_zone, cwms_loc.get_local_timezone(l_location_code));
-      get_vertical_datum_offsets(  
+      get_vertical_datum_offsets(
          l_offsets,
          l_location_code,
          p_vertical_datum_id_1,
@@ -7406,10 +7406,10 @@ end unassign_loc_groups;
                l_offsets(i).value := cwms_util.convert_units(l_offsets(i).value, 'm', p_unit);
             end if;
          end loop;
-      end if;         
+      end if;
    end get_vertical_datum_offsets;
-            
-   
+
+
    procedure set_default_vertical_datum(
       p_vertical_datum in varchar2)
    is
@@ -7423,27 +7423,27 @@ end unassign_loc_groups;
            from cwms_vertical_datum
           where vertical_datum_id = upper(p_vertical_datum)
             and vertical_datum_id <> 'STAGE';
-         cwms_util.set_session_info('VERTICAL DATUM', l_vertical_datum);            
+         cwms_util.set_session_info('VERTICAL DATUM', l_vertical_datum);
       end if;
    exception
       when no_data_found then
          cwms_err.raise('INVALID_ITEM', p_vertical_datum, 'CWMS vertical datum');
    end set_default_vertical_datum;
-      
+
    procedure get_default_vertical_datum(
       p_vertical_datum out varchar2)
    is
    begin
       p_vertical_datum := get_default_vertical_datum;
    end get_default_vertical_datum;
-      
+
    function get_default_vertical_datum
       return varchar2
    is
    begin
       return cwms_util.get_session_info_txt('VERTICAL DATUM');
    end get_default_vertical_datum;
-      
+
    procedure get_location_vertical_datum(
       p_vertical_datum out varchar2,
       p_location_code  in  number)
@@ -7451,14 +7451,14 @@ end unassign_loc_groups;
       l_vertical_datum     varchar2(16);
       l_base_location_code number(10);
    begin
-      select base_location_code, 
+      select base_location_code,
              vertical_datum
         into l_base_location_code,
              l_vertical_datum
         from at_physical_location
        where location_code = p_location_code;
       if l_vertical_datum is null and l_base_location_code != p_location_code then
-         select base_location_code, 
+         select base_location_code,
                 vertical_datum
            into l_base_location_code,
                 l_vertical_datum
@@ -7467,7 +7467,7 @@ end unassign_loc_groups;
       end if;
       p_vertical_datum := l_vertical_datum;
    end get_location_vertical_datum;
-      
+
    procedure get_location_vertical_datum(
       p_vertical_datum out varchar2,
       p_location_id    in  varchar2,
@@ -7478,7 +7478,7 @@ end unassign_loc_groups;
          p_vertical_datum,
          get_location_code(p_office_id, p_location_id));
    end get_location_vertical_datum;
-      
+
    function get_location_vertical_datum(
       p_location_code in number)
       return varchar2
@@ -7488,7 +7488,7 @@ end unassign_loc_groups;
       get_location_vertical_datum(l_vertical_datum, p_location_code);
       return l_vertical_datum;
    end get_location_vertical_datum;
-      
+
    function get_location_vertical_datum(
       p_location_id in varchar2,
       p_office_id   in varchar2 default null)
@@ -7516,10 +7516,10 @@ end unassign_loc_groups;
             l_datum_offset := 0;
          when l_location_datum is null then
             cwms_err.raise('ERROR', 'Cannot convert between NULL and non-NULL vertical datums');
-         else 
+         else
             l_datum_offset := get_vertical_datum_offset(
-                 p_location_code, 
-                 l_location_datum, 
+                 p_location_code,
+                 l_location_datum,
                  l_effective_datum,
                  sysdate,
                  p_unit);
@@ -7538,13 +7538,13 @@ end unassign_loc_groups;
          get_location_code(p_office_id, p_location_id),
          p_unit);
    end get_vertical_datum_offset;
-            
-   
+
+
    procedure get_vertical_datum_info(
       p_vert_datum_info out varchar2,
       p_location_code   in  number,
       p_unit            in  varchar2)
-   is   
+   is
       l_location_id      varchar2(57);
       l_office_id        varchar2(16);
       l_elevation        number;
@@ -7554,7 +7554,7 @@ end unassign_loc_groups;
       l_local_datum_name varchar2(16);
       l_datum_offset     binary_double;
       l_effective_date   date;
-      l_estimate         varchar2(1); 
+      l_estimate         varchar2(1);
       l_rounding_spec    varchar2(10) := '4444444449';
    begin
       l_unit := cwms_util.get_unit_id(p_unit);
@@ -7568,7 +7568,7 @@ end unassign_loc_groups;
         into l_location_id,
              l_office_id,
              l_elevation,
-             l_native_datum          
+             l_native_datum
         from at_physical_location pl,
              at_base_location bl,
              cwms_office o
@@ -7591,7 +7591,7 @@ end unassign_loc_groups;
          ||nvl(replace(l_native_datum, 'LOCAL', 'OTHER'), 'UNKNOWN')
          ||'</native-datum>'
          ||chr(10);
-      if l_native_datum = 'LOCAL' then 
+      if l_native_datum = 'LOCAL' then
          l_local_datum_name := get_local_vert_datum_name_f(p_location_code);
          if l_local_datum_name is null then
             l_vert_datum_info := l_vert_datum_info
@@ -7604,15 +7604,15 @@ end unassign_loc_groups;
                ||'</local-datum-name>'
                ||chr(10);
          end if;
-      end if;   
+      end if;
       if l_elevation is not null then
-         l_vert_datum_info := l_vert_datum_info 
+         l_vert_datum_info := l_vert_datum_info
             ||'  <elevation>'
             ||cwms_rounding.round_nt_f(l_elevation, l_rounding_spec)
             ||'</elevation>'
             ||chr(10);
       end if;
-      
+
       for rec in (select vertical_datum_id
                     from cwms_vertical_datum
                    where vertical_datum_id != l_native_datum
@@ -7648,10 +7648,10 @@ end unassign_loc_groups;
             when others then
                if instr(sqlerrm, 'No vertical offset exists') = 1 then null; end if;
          end;
-      end loop;                      
+      end loop;
       l_vert_datum_info := l_vert_datum_info
          ||'</vertical-datum-info>';
-      l_vert_datum_info := regexp_replace(l_vert_datum_info, '(N[AG]VD)(29|88)', '\1-\2');         
+      l_vert_datum_info := regexp_replace(l_vert_datum_info, '(N[AG]VD)(29|88)', '\1-\2');
       p_vert_datum_info := l_vert_datum_info;
    end get_vertical_datum_info;
 
@@ -7660,7 +7660,7 @@ end unassign_loc_groups;
       p_location_id     in  varchar2,
       p_unit            in  varchar2,
       p_office_id       in  varchar2 default null)
-   is                            
+   is
       l_location_records str_tab_tab_t;
       l_office_records   str_tab_tab_t;
       l_record_count     pls_integer := 0;
@@ -7680,7 +7680,7 @@ end unassign_loc_groups;
          end loop;
          return substr(l_str, 1, length(l_str)-1);
       end;
-   begin           
+   begin
       l_location_records := cwms_util.parse_string_recordset(p_location_id);
       l_record_count := l_location_records.count;
       if p_office_id is not null then
@@ -7700,7 +7700,7 @@ end unassign_loc_groups;
                      -- no office ids
                      l_office_id := null;
                   when l_office_records.count = l_record_count then
-                     case 
+                     case
                         when l_office_records(i) is null or l_office_records(i).count = 0 then
                            -- null office for this record
                            l_office_id := null;
@@ -7713,7 +7713,7 @@ end unassign_loc_groups;
                         else
                            -- office count error for this record
                            cwms_err.raise(
-                              'ERROR', 
+                              'ERROR',
                               'Invalid office count on record '
                               ||i
                               ||', expected 0, 1, or '
@@ -7731,7 +7731,7 @@ end unassign_loc_groups;
                   else
                      -- total office count error
                      cwms_err.raise(
-                        'ERROR', 
+                        'ERROR',
                         'Invalid office record count, expected 0, 1, or '
                         ||l_record_count
                         ||', got '
@@ -7763,9 +7763,9 @@ end unassign_loc_groups;
          l_vert_datum_info,
          p_location_code,
          p_unit);
-      return l_vert_datum_info;      
-   end get_vertical_datum_info_f;   
-      
+      return l_vert_datum_info;
+   end get_vertical_datum_info_f;
+
    procedure set_vertical_datum_info(
       p_location_code   in number,
       p_vert_datum_info in xmltype,
@@ -7789,7 +7789,7 @@ end unassign_loc_groups;
       l_fail_if_exists      boolean;
    begin
       delete from at_vert_datum_local  where location_code = p_location_code;
-      delete from at_vert_datum_offset where location_code = p_location_code; 
+      delete from at_vert_datum_offset where location_code = p_location_code;
       l_location_id := get_location_id(p_location_code);
       select o.office_id
         into l_office_id
@@ -7798,7 +7798,7 @@ end unassign_loc_groups;
              cwms_office o
        where pl.location_code = p_location_code
          and bl.base_location_code = pl.base_location_code
-         and o.office_code = bl.db_office_code;               
+         and o.office_code = bl.db_office_code;
       l_fail_if_exists := cwms_util.is_true(p_fail_if_exists);
       l_node := cwms_util.get_xml_node(p_vert_datum_info, '/vertical-datum-info');
       if l_node is null then
@@ -7813,19 +7813,19 @@ end unassign_loc_groups;
          if get_location_code(l_office_id_2, l_location_id_2) != p_location_code then
             cwms_err.raise('ERROR', 'Location specified in XML is not same as that specified in p_location_code parameter');
          end if;
-      end if;         
+      end if;
       l_unit := cwms_util.get_xml_text(l_node, '/vertical-datum-info/@unit');
       if l_unit is null then
          cwms_err.raise('ERROR', 'Vertical datum info does not specify unit');
       end if;
       l_native_datum := upper(cwms_util.get_xml_text(l_node, '/vertical-datum-info/native-datum'));
-      if l_native_datum is not null then 
+      if l_native_datum is not null then
          l_native_datum := replace(l_native_datum, 'OTHER', 'LOCAL');
          l_native_datum := regexp_replace(l_native_datum, '(N[AG]VD).+(29|88)', '\1\2');
          l_native_datum_db := get_location_vertical_datum(p_location_code);
          if l_native_datum_db is not null and l_native_datum_db != l_native_datum then
             cwms_err.raise(
-               'ERROR', 
+               'ERROR',
                'Specified native datum for '
                ||l_office_id||'/'||l_location_id
                ||' of '
@@ -7839,7 +7839,7 @@ end unassign_loc_groups;
                l_local_datum_name_db := get_local_vert_datum_name_f(p_location_code);
                if l_local_datum_name_db is not null and l_local_datum_name_db != l_local_datum_name then
                   cwms_err.raise(
-                     'ERROR', 
+                     'ERROR',
                      'Specified local datum name for '
                      ||l_office_id||'/'||l_location_id
                      ||' of '
@@ -7858,7 +7858,7 @@ end unassign_loc_groups;
           where location_code = p_location_code;
          if l_elevation_db is not null and l_elevation_db != l_elevation then
             cwms_err.raise(
-               'ERROR', 
+               'ERROR',
                'Specified elevation for '
                ||l_office_id||'/'||l_location_id
                ||' of '
@@ -7901,7 +7901,7 @@ end unassign_loc_groups;
       if l_native_datum_db is null then
          update at_physical_location
             set vertical_datum = l_native_datum_db
-          where location_code = p_location_code;  
+          where location_code = p_location_code;
       end if;
       if l_local_datum_name is not null and l_local_datum_name_db is null then
          set_local_vert_datum_name(p_location_code, l_local_datum_name);
@@ -7909,9 +7909,9 @@ end unassign_loc_groups;
       if l_elevation_db is null and l_elevation is not null then
          update at_physical_location
             set elevation = cwms_util.convert_units(l_elevation, l_unit, 'm')
-          where location_code = p_location_code;  
+          where location_code = p_location_code;
       end if;
-   end set_vertical_datum_info;           
+   end set_vertical_datum_info;
 
    function get_vertical_datum_info_f(
       p_location_id in varchar2,
@@ -7920,7 +7920,7 @@ end unassign_loc_groups;
       return varchar2
    is
       l_vert_datum_info varchar2(4000);
-   begin                      
+   begin
       get_vertical_datum_info(
          l_vert_datum_info,
          p_location_id,
@@ -7928,7 +7928,7 @@ end unassign_loc_groups;
          p_office_id);
       return l_vert_datum_info;
    end get_vertical_datum_info_f;
-            
+
    procedure set_vertical_datum_info(
       p_vert_datum_info in varchar2,
       p_fail_if_exists  in varchar2)
@@ -7969,12 +7969,12 @@ end unassign_loc_groups;
                p_fail_if_exists);
          else
             cwms_err.raise(
-               'ERROR', 
+               'ERROR',
                'Unexpected root element for vertical datum info: '
                ||l_xml.getrootelement);
       end case;
    end set_vertical_datum_info;
-      
+
    procedure set_vertical_datum_info(
       p_location_code   in number,
       p_vert_datum_info in varchar2,
@@ -7986,11 +7986,11 @@ end unassign_loc_groups;
          xmltype(p_vert_datum_info),
          p_fail_if_exists);
    end set_vertical_datum_info;
-      
+
    procedure set_vertical_datum_info(
       p_location_id     in varchar2,
       p_vert_datum_info in varchar2,
-      p_fail_if_exists  in varchar2,     
+      p_fail_if_exists  in varchar2,
       p_office_id       in varchar2 default null)
    is
    begin
@@ -7998,7 +7998,7 @@ end unassign_loc_groups;
          get_location_code(p_office_id, p_location_id),
          p_vert_datum_info,
          p_fail_if_exists);
-   end set_vertical_datum_info;     
+   end set_vertical_datum_info;
 
    procedure get_local_vert_datum_name (
       p_local_vert_datum_name out varchar2,
@@ -8007,24 +8007,24 @@ end unassign_loc_groups;
    begin
       p_local_vert_datum_name := get_local_vert_datum_name_f(p_location_code);
    end get_local_vert_datum_name;
-   
+
    function get_local_vert_datum_name_f (
       p_location_code in number)
       return varchar2
    is
       l_local_vert_datum_name varchar2(16);
    begin
-      begin                           
-         select local_datum_name                
+      begin
+         select local_datum_name
            into l_local_vert_datum_name
            from at_vert_datum_local
-          where location_code = p_location_code; 
+          where location_code = p_location_code;
       exception
          when no_data_found then null;
       end;
       return l_local_vert_datum_name;
    end get_local_vert_datum_name_f;
-   
+
    procedure get_local_vert_datum_name (
       p_local_vert_datum_name out varchar2,
       p_location_id           in  varchar2,
@@ -8042,7 +8042,7 @@ end unassign_loc_groups;
    begin
       return get_local_vert_datum_name_f(cwms_loc.get_location_code(p_office_id, p_location_id));
    end get_local_vert_datum_name_f;
-   
+
    procedure set_local_vert_datum_name(
       p_location_code   in number,
       p_vert_datum_name in varchar2,
@@ -8051,7 +8051,7 @@ end unassign_loc_groups;
       l_local_vert_datum_name varchar2(16);
    begin
       l_local_vert_datum_name := get_local_vert_datum_name_f(p_location_code);
-      case 
+      case
          when l_local_vert_datum_name is null then
             insert into at_vert_datum_local values (p_location_code, p_vert_datum_name);
          when l_local_vert_datum_name = p_vert_datum_name then
@@ -8072,12 +8072,12 @@ end unassign_loc_groups;
                       cwms_office o
                 where pl.location_code = p_location_code
                   and bl.base_location_code = pl.base_location_code
-                  and o.office_code = bl.db_office_code;      
+                  and o.office_code = bl.db_office_code;
                cwms_err.raise(
                   'ERROR',
                   'Location '
                   ||l_office_id
-                  ||'/'                
+                  ||'/'
                   ||l_location_id
                   ||' already has a local vertical datum name of '
                   ||l_local_vert_datum_name);
@@ -8085,10 +8085,10 @@ end unassign_loc_groups;
          else
             update at_vert_datum_local
                set local_datum_name = p_vert_datum_name
-             where location_code = p_location_code;     
+             where location_code = p_location_code;
       end case;
-   end set_local_vert_datum_name;   
-   
+   end set_local_vert_datum_name;
+
    procedure set_local_vert_datum_name(
       p_location_id     in varchar2,
       p_vert_datum_name in varchar2,
@@ -8100,8 +8100,8 @@ end unassign_loc_groups;
          p_location_code   => cwms_loc.get_location_code(p_office_id, p_location_id),
          p_vert_datum_name => p_vert_datum_name,
          p_fail_if_exists  => p_fail_if_exists);
-   end set_local_vert_datum_name;   
- 
+   end set_local_vert_datum_name;
+
    procedure delete_local_vert_datum_name (
       p_location_code in number)
    is
@@ -8110,7 +8110,7 @@ end unassign_loc_groups;
    exception
       when no_data_found then null;
    end delete_local_vert_datum_name;
-   
+
    procedure delete_local_vert_datum_name (
       p_location_id in varchar2,
       p_office_id   in varchar2)
@@ -8118,8 +8118,8 @@ end unassign_loc_groups;
    begin
       delete_local_vert_datum_name(get_location_code(p_office_id, p_location_id));
    end delete_local_vert_datum_name;
-                                      
-      
+
+
    function is_vert_datum_offset_estimated(
       p_location_code in integer,
       p_from_datum    in varchar2,
@@ -8137,10 +8137,10 @@ end unassign_loc_groups;
          p_location_code,
          p_from_datum,
          p_to_datum);
-         
-      return l_estimate;         
-   end is_vert_datum_offset_estimated;      
-      
+
+      return l_estimate;
+   end is_vert_datum_offset_estimated;
+
    function is_vert_datum_offset_estimated(
       p_location_id in varchar2,
       p_from_datum  in varchar2,
@@ -8160,37 +8160,37 @@ end unassign_loc_groups;
          p_from_datum,
          p_to_datum,
          p_office_id=>p_office_id);
-         
-      return l_estimate;         
-   end is_vert_datum_offset_estimated;            
-   
-   
+
+      return l_estimate;
+   end is_vert_datum_offset_estimated;
+
+
    function get_location_kind_ancestors(
       p_location_kind_id  in varchar2,
       p_include_this_kind in varchar2 default 'F')
       return str_tab_t
    is
       l_ancestors          str_tab_t;
-      l_location_kind_code integer; 
+      l_location_kind_code integer;
    begin
       begin
          select location_kind_code
-           into l_location_kind_code 
-           from cwms_location_kind 
+           into l_location_kind_code
+           from cwms_location_kind
           where location_kind_id = upper(trim(p_location_kind_id));
       exception
          when no_data_found then
-            cwms_err.raise('INVALID_ITEM', p_location_kind_id, 'CWMS location kind');        
+            cwms_err.raise('INVALID_ITEM', p_location_kind_id, 'CWMS location kind');
       end;
       select location_kind_id
         bulk collect
         into l_ancestors
         from cwms_location_kind
        where location_kind_code in (select * from table(get_location_kind_ancestors(l_location_kind_code, p_include_this_kind)));
-        
-      return l_ancestors;        
+
+      return l_ancestors;
    end get_location_kind_ancestors;
-               
+
    function get_location_kind_code(p_location_code in number)
       return integer
    is
@@ -8202,49 +8202,49 @@ end unassign_loc_groups;
          return 0;
      end;
    end get_location_kind_code;
-               
+
    function get_location_kind_ancestors(
       p_location_kind_code in integer,
       p_include_this_kind  in varchar2 default 'F')
       return number_tab_t
-   is 
+   is
       l_ancestors  number_tab_t;
       l_code       integer;
-   begin                                                       
+   begin
       -------------------
       -- sanity checks --
       -------------------
       if p_location_kind_code is null then
-         cwms_err.raise('NULL_ARGUMENT', 'P_LOCATION_KIND_CODE'); 
+         cwms_err.raise('NULL_ARGUMENT', 'P_LOCATION_KIND_CODE');
       end if;
       if p_include_this_kind is null then
-         cwms_err.raise('NULL_ARGUMENT', 'P_INCLUDE_THIS_KIND'); 
+         cwms_err.raise('NULL_ARGUMENT', 'P_INCLUDE_THIS_KIND');
       end if;
       begin
          select location_kind_code
            into l_code
            from cwms_location_kind
-          where location_kind_code = p_location_kind_code; 
+          where location_kind_code = p_location_kind_code;
       exception
          when no_data_found then
-            cwms_err.raise('INVALID_ITEM', p_location_kind_code, 'CWMS location kind code');        
+            cwms_err.raise('INVALID_ITEM', p_location_kind_code, 'CWMS location kind code');
       end;
       select location_kind_code
         bulk collect
-        into l_ancestors 
+        into l_ancestors
         from (select location_kind_code,
                       rownum as seq
-                 from cwms_location_kind 
-                start with location_kind_code = p_location_kind_code 
+                 from cwms_location_kind
+                start with location_kind_code = p_location_kind_code
              connect by prior parent_location_kind = location_kind_code
              )
        order by seq desc;
       if not cwms_util.return_true_or_false(p_include_this_kind) then
          l_ancestors.trim;
       end if;
-      return l_ancestors;       
+      return l_ancestors;
    end get_location_kind_ancestors;
-         
+
    function get_location_kind_descendants(
       p_location_kind_id   in varchar2,
       p_include_this_kind  in varchar2 default 'F',
@@ -8258,30 +8258,30 @@ end unassign_loc_groups;
       -- sanity checks --
       -------------------
       if p_location_kind_id is null then
-         cwms_err.raise('NULL_ARGUMENT', 'P_LOCATION_KIND_ID'); 
+         cwms_err.raise('NULL_ARGUMENT', 'P_LOCATION_KIND_ID');
       end if;
       if p_include_all_levels is null then
-         cwms_err.raise('NULL_ARGUMENT', 'P_INCLUDE_ALL_LEVELS'); 
+         cwms_err.raise('NULL_ARGUMENT', 'P_INCLUDE_ALL_LEVELS');
       end if;
       begin
          select location_kind_code
-           into l_location_kind_code 
-           from cwms_location_kind 
+           into l_location_kind_code
+           from cwms_location_kind
           where location_kind_id = upper(trim(p_location_kind_id));
       exception
          when no_data_found then
-            cwms_err.raise('INVALID_ITEM', p_location_kind_id, 'CWMS location kind');        
+            cwms_err.raise('INVALID_ITEM', p_location_kind_id, 'CWMS location kind');
       end;
-      
+
       select location_kind_id
         bulk collect
         into l_descendants
         from cwms_location_kind
        where location_kind_code in (select * from table(get_location_kind_descendants(l_location_kind_code, p_include_this_kind, p_include_all_levels)));
 
-      return l_descendants;      
+      return l_descendants;
    end get_location_kind_descendants;
-         
+
    function get_location_kind_descendants(
       p_location_kind_code in integer,
       p_include_this_kind  in varchar2 default 'F',
@@ -8295,44 +8295,44 @@ end unassign_loc_groups;
       -- sanity checks --
       -------------------
       if p_location_kind_code is null then
-         cwms_err.raise('NULL_ARGUMENT', 'P_LOCATION_KIND_CODE'); 
+         cwms_err.raise('NULL_ARGUMENT', 'P_LOCATION_KIND_CODE');
       end if;
       if p_include_all_levels is null then
-         cwms_err.raise('NULL_ARGUMENT', 'P_INCLUDE_ALL_LEVELS'); 
+         cwms_err.raise('NULL_ARGUMENT', 'P_INCLUDE_ALL_LEVELS');
       end if;
       begin
          select location_kind_code
            into l_code
            from cwms_location_kind
-          where location_kind_code = p_location_kind_code; 
+          where location_kind_code = p_location_kind_code;
       exception
          when no_data_found then
-            cwms_err.raise('INVALID_ITEM', p_location_kind_code, 'CWMS location kind code');        
+            cwms_err.raise('INVALID_ITEM', p_location_kind_code, 'CWMS location kind code');
       end;
-      
+
       if cwms_util.return_true_or_false(p_include_all_levels) then
           select location_kind_code
              bulk collect
              into l_descendants
-             from cwms_location_kind 
-            start with location_kind_code = p_location_kind_code 
+             from cwms_location_kind
+            start with location_kind_code = p_location_kind_code
          connect by prior location_kind_code = parent_location_kind;
          if not cwms_util.return_true_or_false(p_include_this_kind) then
             l_descendants.delete(1);
-         end if; 
+         end if;
       else
          if cwms_util.return_true_or_false(p_include_this_kind) then
             select location_kind_code
               bulk collect
-              into l_descendants 
-              from cwms_location_kind 
+              into l_descendants
+              from cwms_location_kind
              where p_location_kind_code in (location_kind_code, parent_location_kind);
          else
             select location_kind_code
               bulk collect
-              into l_descendants 
-              from cwms_location_kind 
-             where parent_location_kind = p_location_kind_code;  
+              into l_descendants
+              from cwms_location_kind
+             where parent_location_kind = p_location_kind_code;
          end if;
       end if;
       return l_descendants;
@@ -8361,10 +8361,10 @@ end unassign_loc_groups;
       l_valid_kinds('STREAM_REACH'   ) := 'STREAM_REACH';
       l_valid_kinds('TURBINE'        ) := 'TURBINE,STREAM_LOCATION,WEATHER_GAGE';
       l_valid_kinds('WEATHER_GAGE'   ) := 'EMBANKMENT,ENTITY,LOCK,OUTLET,PROJECT,PUMP,TURBINE,STREAM_LOCATION,WEATHER_GAGE';
-      
+
       return l_valid_kinds(upper(trim(p_loc_kind_id)));
    end get_valid_loc_kind_ids_txt;
-   
+
    function get_valid_loc_kind_ids(
       p_loc_kind_id in varchar)
       return str_tab_t
@@ -8372,7 +8372,7 @@ end unassign_loc_groups;
    begin
       return cwms_util.split_text(get_valid_loc_kind_ids_txt(p_loc_kind_id), ',');
    end get_valid_loc_kind_ids;
-   
+
    function get_valid_loc_kind_ids_txt(
       p_location_code in integer)
       return varchar2
@@ -8386,11 +8386,11 @@ end unassign_loc_groups;
              cwms_location_kind lk
        where pl.location_code = p_location_code
          and lk.location_kind_code = pl.location_kind;
-      
+
       l_valid_kind_ids := cwms_util.split_text(get_valid_loc_kind_ids_txt(l_loc_kind_id), ',');
-      return cwms_util.join_text(l_valid_kind_ids, ',');         
+      return cwms_util.join_text(l_valid_kind_ids, ',');
    end get_valid_loc_kind_ids_txt;
-   
+
    function get_valid_loc_kind_ids(
       p_location_code in integer)
       return str_tab_t
@@ -8398,7 +8398,7 @@ end unassign_loc_groups;
    begin
       return cwms_util.split_text(get_valid_loc_kind_ids_txt(p_location_code), ',');
    end get_valid_loc_kind_ids;
-      
+
    function can_store(
       p_location_code    in integer,
       p_location_kind_id in varchar2)
@@ -8414,7 +8414,7 @@ end unassign_loc_groups;
         into l_location_kind
         from at_physical_location
        where location_code = p_location_code;
-       
+
       select location_kind_id
         bulk collect
         into l_can_store_kind_ids
@@ -8423,8 +8423,8 @@ end unassign_loc_groups;
               union
               select location_kind_id
                 from cwms_location_kind
-               where location_kind_code in 
-                     (select column_value 
+               where location_kind_code in
+                     (select column_value
                        from table(get_location_kind_ancestors(l_location_kind))
                      )
              );
@@ -8432,12 +8432,12 @@ end unassign_loc_groups;
         into l_count
         from table(l_can_store_kind_ids)
        where column_value = l_location_kind_id
-          or (l_location_kind_id = 'GAGE' 
+          or (l_location_kind_id = 'GAGE'
               and column_value in ('STREAM_GAGE', 'WEATHER_GAGE')
              );
-      return l_count > 0;             
+      return l_count > 0;
    end can_store;
-      
+
    function can_store_txt(
       p_location_code    in integer,
       p_location_kind_id in varchar2)
@@ -8446,10 +8446,10 @@ end unassign_loc_groups;
    begin
       return case can_store(p_location_code, p_location_kind_id)
              when true  then 'T'
-             when false then 'F'   
-             end; 
+             when false then 'F'
+             end;
    end can_store_txt;
-   
+
    procedure update_location_kind(
       p_location_code    in integer,
       p_location_kind_id in varchar2,
@@ -8467,14 +8467,14 @@ end unassign_loc_groups;
          cwms_err.raise('ERROR', 'Parameter P_Add_Delete must be one of ''A'' or ''D''');
       end if;
       l_add := p_add_delete in ('a', 'A');
-   
+
       select lk.location_kind_id
         into l_current_kind_id
         from at_physical_location pl,
              cwms_location_kind lk
        where pl.location_code = p_location_code
          and lk.location_kind_code = pl.location_kind;
-         
+
       l_location_kind_id := upper(trim(p_location_kind_id));
 
       if l_add then
@@ -8494,20 +8494,20 @@ end unassign_loc_groups;
             end case;
          else
             l_update := case l_location_kind_id
-                        when 'BASIN'           then l_current_kind_id = 'SITE'          
-                        when 'EMBANKMENT'      then l_current_kind_id in ('SITE', 'STREAM_LOCATION', 'STREAM_GAGE', 'WEATHER_GAGE')     
-                        when 'ENTITY'          then l_current_kind_id in ('SITE', 'STREAM_LOCATION', 'STREAM_GAGE', 'WEATHER_GAGE')         
-                        when 'GATE'            then l_current_kind_id = 'OUTLET'           
-                        when 'LOCK'            then l_current_kind_id in ('SITE', 'STREAM_LOCATION', 'STREAM_GAGE', 'WEATHER_GAGE')           
-                        when 'OUTLET'          then l_current_kind_id in ('SITE', 'STREAM_LOCATION', 'STREAM_GAGE', 'WEATHER_GAGE')         
-                        when 'OVERFLOW'        then l_current_kind_id = 'OUTLET'       
-                        when 'PROJECT'         then l_current_kind_id in ('SITE', 'STREAM_LOCATION', 'STREAM_GAGE', 'WEATHER_GAGE')        
-                        when 'PUMP'            then l_current_kind_id in ('STREAM_LOCATION', 'STREAM_GAGE')           
-                        when 'SITE'            then false           
-                        when 'STREAM'          then l_current_kind_id = 'SITE'         
+                        when 'BASIN'           then l_current_kind_id = 'SITE'
+                        when 'EMBANKMENT'      then l_current_kind_id in ('SITE', 'STREAM_LOCATION', 'STREAM_GAGE', 'WEATHER_GAGE')
+                        when 'ENTITY'          then l_current_kind_id in ('SITE', 'STREAM_LOCATION', 'STREAM_GAGE', 'WEATHER_GAGE')
+                        when 'GATE'            then l_current_kind_id = 'OUTLET'
+                        when 'LOCK'            then l_current_kind_id in ('SITE', 'STREAM_LOCATION', 'STREAM_GAGE', 'WEATHER_GAGE')
+                        when 'OUTLET'          then l_current_kind_id in ('SITE', 'STREAM_LOCATION', 'STREAM_GAGE', 'WEATHER_GAGE')
+                        when 'OVERFLOW'        then l_current_kind_id = 'OUTLET'
+                        when 'PROJECT'         then l_current_kind_id in ('SITE', 'STREAM_LOCATION', 'STREAM_GAGE', 'WEATHER_GAGE')
+                        when 'PUMP'            then l_current_kind_id in ('STREAM_LOCATION', 'STREAM_GAGE')
+                        when 'SITE'            then false
+                        when 'STREAM'          then l_current_kind_id = 'SITE'
                         when 'STREAM_LOCATION' then l_current_kind_id = 'SITE'
-                        when 'STREAM_REACH'    then l_current_kind_id = 'SITE'   
-                        when 'TURBINE'         then l_current_kind_id in ('SITE', 'STREAM_LOCATION', 'STREAM_GAGE', 'WEATHER_GAGE')        
+                        when 'STREAM_REACH'    then l_current_kind_id = 'SITE'
+                        when 'TURBINE'         then l_current_kind_id in ('SITE', 'STREAM_LOCATION', 'STREAM_GAGE', 'WEATHER_GAGE')
                         end;
          end if;
       else
@@ -8520,7 +8520,7 @@ end unassign_loc_groups;
             when l_current_kind_id = 'WEATHER_GAGE' then
                l_location_kind_id := 'SITE';
                l_update := true;
-            when l_current_kind_id = 'STREAM_GAGE' then 
+            when l_current_kind_id = 'STREAM_GAGE' then
                l_location_kind_id := 'STREAM_LOCATION';
                l_update := true;
             else
@@ -8548,7 +8548,7 @@ end unassign_loc_groups;
                    );
             select count(*)
               into l_count
-              from table(l_loc_kind_names) a, 
+              from table(l_loc_kind_names) a,
                    table(l_loc_kind_descendants) b
              where a.column_value = b.column_value;
             l_update := l_count = 0;
@@ -8562,39 +8562,39 @@ end unassign_loc_groups;
                   else
                      l_location_kind_id := 'SITE';
                   end if;
-               when 'ENTITY' then    
+               when 'ENTITY' then
                   select count(*) into l_count from at_stream_location where location_code = p_location_code;
                   if l_count = 0 then
                      l_location_kind_id := 'SITE';
                   else
                      l_location_kind_id := 'STREAM_LOCATION';
                   end if;
-               when 'GATE' then 
+               when 'GATE' then
                   l_location_kind_id := 'OUTLET';
-               when 'LOCK' then            
+               when 'LOCK' then
                   select count(*) into l_count from at_stream_location where location_code = p_location_code;
                   if l_count = 0 then
                      l_location_kind_id := 'SITE';
                   else
                      l_location_kind_id := 'STREAM_LOCATION';
                   end if;
-               when 'OUTLET' then          
+               when 'OUTLET' then
                   select count(*) into l_count from at_stream_location where location_code = p_location_code;
                   if l_count = 0 then
                      l_location_kind_id := 'SITE';
                   else
                      l_location_kind_id := 'STREAM_LOCATION';
                   end if;
-               when 'OVERFLOW' then 
+               when 'OVERFLOW' then
                   l_location_kind_id := 'OUTLET';
-               when 'PROJECT' then                                  
+               when 'PROJECT' then
                   select count(*) into l_count from at_stream_location where location_code = p_location_code;
                   if l_count = 0 then
                      l_location_kind_id := 'SITE';
                   else
                      l_location_kind_id := 'STREAM_LOCATION';
                   end if;
-               when 'PUMP' then 
+               when 'PUMP' then
                   l_location_kind_id := 'STREAM_LOCATION';
                when 'SITE' then
                   l_update := false;
@@ -8609,7 +8609,7 @@ end unassign_loc_groups;
                   end if;
                when 'STREAM_REACH' then
                   l_location_kind_id := 'SITE';
-               when 'TURBINE' then         
+               when 'TURBINE' then
                   select count(*) into l_count from at_stream_location where location_code = p_location_code;
                   if l_count = 0 then
                      l_location_kind_id := 'SITE';
@@ -8625,15 +8625,15 @@ end unassign_loc_groups;
       end if;
       if l_update then
          update at_physical_location
-            set location_kind = 
+            set location_kind =
                 (select location_kind_code
                    from cwms_location_kind
                   where location_kind_id = l_location_kind_id
                 )
-          where location_code = p_location_code;      
+          where location_code = p_location_code;
       end if;
    end update_location_kind;
-   
+
    PROCEDURE get_valid_loc_kind_ids (p_loc_kind_ids      OUT SYS_REFCURSOR,
                                  p_location_id    IN     VARCHAR2,
                                  p_office_id      IN     VARCHAR2)
@@ -8644,18 +8644,18 @@ end unassign_loc_groups;
          l_loc_kind_id :=
             cwms_loc.check_location_kind (p_location_id   => p_location_id,
                                           p_office_id     => p_office_id);
-                                          
-         l_loc_kind_id := get_valid_loc_kind_ids_txt(l_loc_kind_id);                                          
+
+         l_loc_kind_id := get_valid_loc_kind_ids_txt(l_loc_kind_id);
       EXCEPTION
          WHEN OTHERS
          THEN
             l_loc_kind_id := 'ERROR';
       END;
-   
+
       open p_loc_kind_ids for
          select * from table(cwms_util.split_text(l_loc_kind_id, ','));
    END;
-   
+
    FUNCTION get_valid_loc_kind_ids_tab (p_location_id   IN VARCHAR2,
                                     p_office_id     IN VARCHAR2)
       RETURN cat_loc_kind_tab_t
@@ -8665,14 +8665,14 @@ end unassign_loc_groups;
       output_row     cat_loc_kind_rec_t;
    BEGIN
       get_valid_loc_kind_ids (query_cursor, p_location_id, p_office_id);
-                   
+
       LOOP
          FETCH query_cursor INTO output_row;
-   
+
          EXIT WHEN query_cursor%NOTFOUND;
          PIPE ROW (output_row);
       END LOOP;
-   
+
       CLOSE query_cursor;
    END;
 
@@ -8688,27 +8688,27 @@ end unassign_loc_groups;
       l_loc_code :=
          CWMS_LOC.get_location_code (p_db_office_id   => p_office_id,
                                      p_location_id    => p_location_id);
-      
+
       l_loc_kind_id :=
          cwms_loc.check_location_kind (p_location_id   => p_location_id,
                                        p_office_id     => p_office_id);
-              
-      case                                       
+
+      case
       when l_loc_kind_id in ('BASIN', 'STREAM', 'STREAM_LOCATION', 'STREAM_REACH', 'WEATHER_GAGE') then
          l_loc_kind_id := 'SITE';
       when l_loc_kind_id in ('EMBANKMENT', 'ENTITY', 'LOCK', 'OUTLET', 'PROJECT', 'TURBINE') then
          select count(*) into l_gage from at_gage where gage_location_code = l_loc_code;
          select count(*) into l_stream from at_stream_location where location_code = l_loc_code;
          if l_gage = 0 then
-            if l_stream = 0 then 
+            if l_stream = 0 then
                l_loc_kind_id := 'SITE';
-            else 
+            else
                l_loc_kind_id := 'STREAM_LOCATION';
             end if;
          else
-            if l_stream = 0 then 
+            if l_stream = 0 then
                l_loc_kind_id := 'WEATHER_GAGE';
-            else 
+            else
                l_loc_kind_id := 'STREAM_GAGE';
             end if;
          end if;
@@ -8726,7 +8726,7 @@ end unassign_loc_groups;
       else
          l_loc_kind_id := 'ERROR';
       end case;
-      
+
       return l_loc_kind_id;
    END;
 
@@ -8826,11 +8826,11 @@ end unassign_loc_groups;
          l_count := 0;
          for i in 1..l_vertex_count-1 loop
             if point_below_line(
-                  l_x, 
-                  l_y, 
-                  l_vertices(i)(1), 
-                  l_vertices(i)(2), 
-                  l_vertices(i+1)(1), 
+                  l_x,
+                  l_y,
+                  l_vertices(i)(1),
+                  l_vertices(i)(2),
+                  l_vertices(i+1)(1),
                   l_vertices(i+1)(2))
             then
                l_count := l_count + 1;
@@ -8869,13 +8869,13 @@ end unassign_loc_groups;
         into l_min_x,
              l_max_x
         from table(cwms_util.get_column(p_vertices, 1));
-        
+
       select min(column_value),
              max(column_value)
         into l_min_y,
              l_max_y
         from table(cwms_util.get_column(p_vertices, 2));
-              
+
       if l_x between l_min_x and l_max_x and
          l_y between l_min_y and l_max_y
       then
@@ -8887,7 +8887,7 @@ end unassign_loc_groups;
            from table(p_vertices);
          l_vertices := p_vertices;
          ------------------------------------
-         -- close the polygon if necessary -- 
+         -- close the polygon if necessary --
          ------------------------------------
          if l_vertices(l_vertex_count) != l_vertices(1) then
             l_vertex_count := l_vertex_count + 1;
@@ -8900,11 +8900,11 @@ end unassign_loc_groups;
          l_count := 0;
          for i in 1..l_vertex_count-1 loop
             if point_below_line(
-                  l_x, 
-                  l_y, 
-                  p_vertices(i)(1), 
-                  p_vertices(i)(2), 
-                  p_vertices(i+1)(1), 
+                  l_x,
+                  l_y,
+                  p_vertices(i)(1),
+                  p_vertices(i)(2),
+                  p_vertices(i+1)(1),
                   p_vertices(i+1)(2))
             then
                l_count := l_count + 1;
@@ -8918,7 +8918,7 @@ end unassign_loc_groups;
          return 'F';
       end if;
    end point_in_polygon;
-   
+
    function get_bounding_ofc_code(
       p_lat in number,
       p_lon in number)
@@ -8926,22 +8926,22 @@ end unassign_loc_groups;
    is
       l_codes number_tab_t;
    begin
-      select office_code 
+      select office_code
         bulk collect
         into l_codes
         from cwms_agg_district ad
        where sdo_contains(
-         ad.shape, 
+         ad.shape,
          sdo_geometry(
-            2003, 
-            8265 , 
+            2003,
+            8265 ,
             null,
-            mdsys.sdo_elem_info_array(1,1003,1), 
+            mdsys.sdo_elem_info_array(1,1003,1),
             mdsys.sdo_ordinate_array(p_lon, p_lat))) = 'TRUE';
       return case
-             when l_codes.count = 1 then l_codes(1) 
+             when l_codes.count = 1 then l_codes(1)
              else null
-             end;       
+             end;
    end get_bounding_ofc_code;
 
    function get_bounding_ofc_id(
@@ -8955,8 +8955,8 @@ end unassign_loc_groups;
         into l_office_id
         from cwms_office
        where office_code = get_bounding_ofc_code(p_lat, p_lon);
-       
-      return l_office_id;       
+
+      return l_office_id;
    end get_bounding_ofc_id;
 
    function get_bounding_ofc_code_for_loc(
@@ -8992,8 +8992,8 @@ end unassign_loc_groups;
         into l_office_id
         from cwms_office
        where office_code = get_bounding_ofc_code_for_loc(p_location_code);
-       
-      return l_office_id;       
+
+      return l_office_id;
    end get_bounding_ofc_id_for_loc;
 
    function get_bounding_ofc_id_for_loc(
@@ -9004,7 +9004,7 @@ end unassign_loc_groups;
    begin
       return get_bounding_ofc_id_for_loc(get_location_code(p_office_id, p_location_id));
    end get_bounding_ofc_id_for_loc;
-      
+
    function get_county_code(
       p_lat in number,
       p_lon in number)
@@ -9017,17 +9017,17 @@ end unassign_loc_groups;
      into l_codes
      from cwms_county_sp c
     where sdo_contains(
-      c.shape, 
+      c.shape,
       sdo_geometry(
-         2003, 
-         8265 , 
+         2003,
+         8265 ,
          null,
-         mdsys.sdo_elem_info_array(1,1003,1), 
+         mdsys.sdo_elem_info_array(1,1003,1),
          mdsys.sdo_ordinate_array(p_lon, p_lat))) = 'TRUE';
       return case
-             when l_codes.count = 1 then l_codes(1) 
+             when l_codes.count = 1 then l_codes(1)
              else null
-             end;       
+             end;
    end get_county_code;
 
    function get_county_id(
@@ -9047,7 +9047,7 @@ end unassign_loc_groups;
            from cwms_county_sp
           where county_code = l_county_code;
       end if;
-      return l_results;         
+      return l_results;
    end get_county_id;
 
    function get_county_code_for_loc(
@@ -9089,7 +9089,7 @@ end unassign_loc_groups;
            from cwms_county_sp
           where county_code = l_county_code;
       end if;
-      return l_results;         
+      return l_results;
    end get_county_id_for_loc;
 
    function get_county_id_for_loc(
@@ -9146,11 +9146,11 @@ end unassign_loc_groups;
       p_results        out clob,
       p_date_time      out date,
       p_query_time     out integer,
-      p_format_time    out integer, 
-      p_location_count out integer,  
-      p_names          in  varchar2 default null,            
+      p_format_time    out integer,
+      p_location_count out integer,
+      p_names          in  varchar2 default null,
       p_format         in  varchar2 default null,
-      p_units          in  varchar2 default null,   
+      p_units          in  varchar2 default null,
       p_datums         in  varchar2 default null,
       p_office_id      in  varchar2 default null)
    is
@@ -9175,7 +9175,7 @@ end unassign_loc_groups;
          nearest_city        at_physical_location.nearest_city%type,
          bounding_office     cwms_office.office_id%type,
          location_kind       cwms_location_kind.location_kind_id%type,
-         location_type       at_physical_location.location_type%type);                                                                          
+         location_type       at_physical_location.location_type%type);
       type loc_tab_t is table of loc_rec_t;
       type loc_tab_tab_t is table of loc_tab_t;
       type vchar_set_t is table of boolean index by varchar2(32767);
@@ -9225,7 +9225,7 @@ end unassign_loc_groups;
          end if;
          return l_iso;
       end;
-      
+
    begin
    l_query_time := sysdate;
    ----------------------------
@@ -9249,7 +9249,7 @@ end unassign_loc_groups;
    ------------
    if p_format is null then
       l_format := 'TAB';
-   else                 
+   else
       l_format := upper(trim(p_format));
       if l_format not in ('TAB','CSV','XML','JSON') then
          cwms_err.raise('INVALID_ITEM', l_format, 'rating response format');
@@ -9260,15 +9260,15 @@ end unassign_loc_groups;
    ------------
    if p_office_id is null then
       l_office_id := '*';
-   else               
-      begin                                                                              
+   else
+      begin
          l_office_id := upper(trim(p_office_id));
          select office_id into l_office_id from cwms_office where office_id = l_office_id;
       exception
          when no_data_found then
             cwms_err.raise('INVALID_OFFICE_ID', l_office_id);
       end;
-   end if;  
+   end if;
    -----------
    -- units --
    -----------
@@ -9286,7 +9286,7 @@ end unassign_loc_groups;
             cwms_err.raise('ERROR', 'Expected unit specification of EN or SI, got '||l_units(i));
          end if;
       end loop;
-      l_count := l_units.count - l_names.count; 
+      l_count := l_units.count - l_names.count;
       if l_count > 0 then
          l_units.trim(l_count);
       elsif l_count < 0 then
@@ -9295,9 +9295,9 @@ end unassign_loc_groups;
          l_units.extend(l_count);
          for i in 1..l_count loop
             l_units(l_units.count - i + 1) := l_temp;
-         end loop; 
+         end loop;
       end if;
-   end if;   
+   end if;
    ------------
    -- datums --
    ------------
@@ -9315,9 +9315,9 @@ end unassign_loc_groups;
             l_datums(i) := upper(l_datums(i));
          else
             cwms_err.raise('INVALID_ITEM', l_datums(i), 'rating response datum');
-         end if; 
+         end if;
       end loop;
-      l_count := l_datums.count - l_names.count; 
+      l_count := l_datums.count - l_names.count;
       if l_count > 0 then
          l_datums.trim(l_count);
       elsif l_count < 0 then
@@ -9326,12 +9326,12 @@ end unassign_loc_groups;
          l_datums.extend(l_count);
          for i in 1..l_count loop
             l_datums(l_datums.count - i + 1) := l_temp;
-         end loop;       
+         end loop;
       end if;
-   end if;   
-   
+   end if;
+
    l_ts1 := systimestamp;
-   
+
    l_count := 0;
    l_locations := loc_tab_tab_t();
    l_alternate_names := str_tab_tab_tab_t();
@@ -9377,7 +9377,7 @@ end unassign_loc_groups;
                                replace(l_datums(i), 'NATIVE', pl2.vertical_datum),
                                sysdate,
                                'm'), null)
-                         end   
+                         end
                       else
                          -- use sub-location vertical datum to compute the offset
                          pl2.elevation + nanvl(cwms_loc.get_vertical_datum_offset(
@@ -9386,7 +9386,7 @@ end unassign_loc_groups;
                             replace(l_datums(i), 'NATIVE', pl1.vertical_datum),
                             sysdate,
                             'm'), null)
-                      end   
+                      end
                    else
                       -- English Units
                       case
@@ -9404,7 +9404,7 @@ end unassign_loc_groups;
                                replace(l_datums(i), 'NATIVE', pl2.vertical_datum),
                                sysdate,
                                'm'), null), 'm', 'ft')
-                         end   
+                         end
                       else
                          -- use sub-location vertical datum to compute the offset
                          cwms_util.convert_units(pl2.elevation + nanvl(cwms_loc.get_vertical_datum_offset(
@@ -9436,7 +9436,7 @@ end unassign_loc_groups;
                             replace(l_datums(i), 'NATIVE', pl2.vertical_datum),
                             sysdate,
                             'm'), null)
-                      end   
+                      end
                    else
                       -- use sub-location vertical datum to compute the offset
                       pl1.elevation + nanvl(cwms_loc.get_vertical_datum_offset(
@@ -9445,7 +9445,7 @@ end unassign_loc_groups;
                          replace(l_datums(i), 'NATIVE', pl1.vertical_datum),
                          sysdate,
                          'm'), null)
-                   end   
+                   end
                 else
                    -- English Units
                    case
@@ -9463,7 +9463,7 @@ end unassign_loc_groups;
                             replace(l_datums(i), 'NATIVE', pl2.vertical_datum),
                             sysdate,
                             'm'), null), 'm', 'ft')
-                      end   
+                      end
                    else
                       -- use sub-location vertical datum to compute the offset
                       cwms_util.convert_units(pl1.elevation + nanvl(cwms_loc.get_vertical_datum_offset(
@@ -9476,13 +9476,13 @@ end unassign_loc_groups;
                 end
              end,
              -- elevation unit
-             case 
+             case
              when coalesce(pl1.elevation, pl2.elevation) is null then null
              else
                 case when l_units(i) = 'SI' then 'm' else 'ft' end
              end,
              -- elevation is estimated
-             case 
+             case
              when coalesce(pl1.elevation, pl2.elevation) is null then null
              else
                 case
@@ -9508,10 +9508,10 @@ end unassign_loc_groups;
                 case
                 when nvl(pl1.vertical_datum, nvl(pl2.vertical_datum, 'UNKNOWN')) = 'LOCAL' then
                    cwms_loc.get_local_vert_datum_name_f(pl1.location_code)
-                else 
+                else
                    nvl(pl1.vertical_datum, nvl(pl2.vertical_datum, 'UNKNOWN'))
                 end
-             else 
+             else
                 l_datums(i)
              end,
              -- time zone
@@ -9586,6 +9586,7 @@ end unassign_loc_groups;
              cwms_office o2,
              cwms_location_kind lk
        where upper(v2.location_id) like l_location_id_mask
+         and v2.db_office_id = case when l_office_id = '*' then v2.db_office_id else l_office_id end
          and pl1.location_code = v2.location_code
          and tz1.time_zone_code = nvl(pl1.time_zone_code, 0)
          and c1.county_code = nvl(pl1.county_code, 0)
@@ -9599,9 +9600,9 @@ end unassign_loc_groups;
          and s2.state_code = c2.state_code
          and n2.nation_code = nvl(pl2.nation_code, 'US')
          and o2.office_code = nvl(pl2.office_code, 0);
-         
+
       l_count := l_count + l_locations(i).count;
-   
+
       l_alternate_names.extend;
       l_alternate_names(i) := str_tab_tab_t();
       for j in 1..l_locations(i).count loop
@@ -9613,17 +9614,17 @@ end unassign_loc_groups;
          l_text := l_locations(i)(j).office_id||'/'||l_locations(i)(j).location_id;
          l_indexes(l_text).i := i;
          l_indexes(l_text).j := j;
-         select distinct 
+         select distinct
                 location_id
            bulk collect
            into l_alternate_names(i)(j)
            from av_loc2
           where location_code = l_locations(i)(j).location_code
             and location_id != l_locations(i)(j).location_id
-          order by 1;  
+          order by 1;
       end loop;
    end loop;
-     
+
    l_ts2 := systimestamp;
    l_elapsed_query := l_ts2 - l_ts1;
    l_ts1 := systimestamp;
@@ -9635,12 +9636,12 @@ end unassign_loc_groups;
       ---------
       -- XML --
       ---------
-      cwms_util.append(l_data, '<locations>');
+		cwms_util.append(l_data, '<?xml version="1.0" encoding="windows-1252"?><locations>');
       l_text := l_indexes.first;
       loop
          exit when l_text is null;
          cwms_util.append(
-            l_data, 
+            l_data,
             '<location><identity><office>'
             ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).office_id
             ||'</office><name>'
@@ -9656,7 +9657,7 @@ end unassign_loc_groups;
          end loop;
          cwms_util.append(l_data, '</alternate-names>');
          cwms_util.append(
-            l_data, 
+            l_data,
             '</identity><label><public-name>'
             ||dbms_xmlgen.convert(l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).public_name, dbms_xmlgen.entity_encode)
             ||'</public-name><long-name>'
@@ -9698,12 +9699,12 @@ end unassign_loc_groups;
             ||'</bounding-office></political><classification><location-kind>'
             ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).location_kind
             ||'</location-kind><location-type>'
-            ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).location_type
+            ||dbms_xmlgen.convert(l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).location_type, dbms_xmlgen.entity_encode)
             ||'</location-type></classification></location>');
          l_text := l_indexes.next(l_text);
       end loop;
-      cwms_util.append(l_data, '</locations>');
       l_data := regexp_replace(l_data, '<([^>]+)></\1>', '<\1/>', 1, 0);
+      cwms_util.append(l_data, '</locations>');
    when l_format = 'JSON' then
       null;
       ----------
@@ -9714,9 +9715,9 @@ end unassign_loc_groups;
       loop
          exit when l_text is null;
          cwms_util.append(
-            l_data, 
+            l_data,
             case
-            when l_text = l_indexes.first then 
+            when l_text = l_indexes.first then
                '{"identity":{"office":"'
             else
                ',{"identity":{"office":"'
@@ -9783,7 +9784,7 @@ end unassign_loc_groups;
             ||'","location-type":"'
             ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).location_type
             ||'"}}');
-         l_text := l_indexes.next(l_text);            
+         l_text := l_indexes.next(l_text);
       end loop;
       cwms_util.append(l_data, ']}}');
       l_data := replace(l_data, '""', 'null');
@@ -9830,7 +9831,7 @@ end unassign_loc_groups;
             ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).horizontal_datum||chr(9)
             ||case
               when l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).elevation is null then null
-              else 
+              else
                  cwms_rounding.round_dt_f(l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).elevation, '7777777777')
                  ||' '||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).elevation_unit
                  ||case
@@ -9842,7 +9843,7 @@ end unassign_loc_groups;
                    else null
                    end
               end
-            ||chr(9)    
+            ||chr(9)
             ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).time_zone_name||chr(9)
             ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).nation_id||chr(9)
             ||l_locations(l_indexes(l_text).i)(l_indexes(l_text).j).state_initial||chr(9)
@@ -9859,18 +9860,18 @@ end unassign_loc_groups;
          l_text := l_indexes.next(l_text);
       end loop;
    end case;
-      
+
    if l_format = 'CSV' then
       ---------
       -- CSV --
       ---------
       l_data := cwms_util.tab_to_csv(l_data);
    end if;
-      
+
    l_ts2 := systimestamp;
    l_elapsed_format := l_ts2 - l_ts1;
 
-      
+
    declare
       l_data2 clob;
       l_name  varchar2(32767);
@@ -9880,7 +9881,7 @@ end unassign_loc_groups;
       case
       when l_format = 'XML' then
          cwms_util.append(
-            l_data2, 
+            l_data2,
             '<query-info><processed-at>'
             ||utl_inaddr.get_host_name
             ||':'
@@ -9908,17 +9909,17 @@ end unassign_loc_groups;
                   ||'</datum></requested-item>');
             end loop;
          cwms_util.append(
-            l_data2, 
+            l_data2,
             '<total-locations-retrieved>'
             ||l_count
             ||'</total-locations-retrieved><unique-locations_retrieved>'
             ||l_unique_codes.count
             ||'</unique-locations_retrieved></query-info>');
-         l_data := regexp_replace(l_data, '^(<locations.*?>)', '\1'||l_data2, 1, 1);
+         l_data := regexp_replace(l_data, '^((<\?xml .+?\?>)?(<locations>))', '\1'||l_data2, 1, 1);
          p_results := l_data;
       when l_format = 'JSON' then
          cwms_util.append(
-            l_data2, 
+            l_data2,
             '"query-info":{"processed-at":"'
             ||utl_inaddr.get_host_name
             ||':'
@@ -9949,7 +9950,7 @@ end unassign_loc_groups;
                ||'"}');
          end loop;
          cwms_util.append(
-            l_data2, 
+            l_data2,
             '],"total-locations-retrieved":'
             ||l_count
             ||',"unique-locations-retrieved":'
@@ -9976,18 +9977,18 @@ end unassign_loc_groups;
          p_results := l_data2;
       end case;
    end;
-   
+
    p_date_time      := l_query_time;
    p_query_time     := trunc(1000 * (extract(minute from l_elapsed_query) * 60 + extract(second from l_elapsed_query)));
    p_format_time    := trunc(1000 * (extract(minute from l_elapsed_format) *60 +  extract(second from l_elapsed_format)));
    p_location_count := l_count;
-   
-   end retrieve_locations;      
-      
+
+   end retrieve_locations;
+
    function retrieve_locations_f(
-      p_names       in  varchar2 default null,            
+      p_names       in  varchar2 default null,
       p_format      in  varchar2 default null,
-      p_units       in  varchar2 default null,   
+      p_units       in  varchar2 default null,
       p_datums      in  varchar2 default null,
       p_office_id   in  varchar2 default null)
       return clob
@@ -9995,41 +9996,41 @@ end unassign_loc_groups;
       l_results        clob;
       l_date_time      date;
       l_query_time     integer;
-      l_format_time    integer; 
-      l_location_count integer;  
+      l_format_time    integer;
+      l_location_count integer;
    begin
       retrieve_locations(
             l_results,
             l_date_time,
             l_query_time,
-            l_format_time, 
-            l_location_count,  
-            p_names,            
+            l_format_time,
+            l_location_count,
+            p_names,
             p_format,
-            p_units,   
+            p_units,
             p_datums,
             p_office_id);
-            
+
       -- dbms_output.put_line(l_query_time);
       -- dbms_output.put_line(l_format_time);
-      return l_results;            
-   end retrieve_locations_f;      
-   
+      return l_results;
+   end retrieve_locations_f;
 
-   function package_log_property_text 
+
+   function package_log_property_text
       return varchar2
    is
    begin
       return v_package_log_prop_text;
    end package_log_property_text;
-   
+
    procedure set_package_log_property_text(
       p_text in varchar2 default null)
    is
    begin
       v_package_log_prop_text := nvl(p_text, userenv('sessionid'));
    end set_package_log_property_text;
-   
+
 END cwms_loc;
 /
 show errors;

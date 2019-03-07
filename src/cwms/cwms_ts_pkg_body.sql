@@ -10527,7 +10527,7 @@ end retrieve_existing_item_counts;
         from av_tsv
        where ts_code = p_ts_code
        order by 1;
-       
+
       p_ts_extents := ts_extents_tab_t();
       p_ts_extents.extend(l_version_dates.count);
       for i in 1..l_version_dates.count loop
@@ -10620,7 +10620,7 @@ end retrieve_existing_item_counts;
          end;
       else
          l_time_zone := p_time_zone;
-      end if;   
+      end if;
       if p_version_date is null or p_version_date = cwms_util.non_versioned then
          l_version_date_utc := cwms_util.non_versioned;
       else
@@ -12316,12 +12316,8 @@ end retrieve_existing_item_counts;
                close c;
                select column_value
                  bulk collect
-                 into l_codes3
-                 from (select column_value from table(l_codes1)
-                       union all
-                       select column_value from table(l_codes2)
-                      );
-               l_codes2 := l_codes3;
+                 into l_codes2
+                 from (select column_value from table(l_codes1));
             end loop;
 
             l_unique_tsid_count := l_codes2.count;
@@ -12365,7 +12361,7 @@ end retrieve_existing_item_counts;
                -----------------
                cwms_util.append(
                   l_data,
-                  '<time-series-catalog><!-- Catalog of time series that contain data between '
+                  '<?xml version="1.0" encoding="windows-1252"?><time-series-catalog><!-- Catalog of time series that contain data between '
                   ||cwms_util.get_xml_time(l_start, l_timezone)
                   ||' and '
                   ||cwms_util.get_xml_time(l_end, l_timezone)
@@ -12644,7 +12640,7 @@ end retrieve_existing_item_counts;
                               ----------------
                               -- XML Header --
                               ----------------
-                              cwms_util.append(l_data, '<time-series>!!Quality Codes!!');
+                              cwms_util.append(l_data, '<?xml version="1.0" encoding="windows-1252"?><time-series>!!Quality Codes!!');
                            when l_format = 'JSON' then
                               -----------------
                               -- JSON Header --
@@ -12666,7 +12662,7 @@ end retrieve_existing_item_counts;
                            ---------------
                            cwms_util.append(
                               l_data,
-                              '<time-series><office>'
+                              '<?xml version="1.0" encoding="windows-1252"?><time-series><office>'
                               ||l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).office
                               ||'</office><name>'
                               ||dbms_xmlgen.convert(l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).name, dbms_xmlgen.entity_encode)
@@ -12815,7 +12811,7 @@ end retrieve_existing_item_counts;
                      ----------------
                      -- XML Header --
                      ----------------
-                     cwms_util.append(l_data, '<time-series>!!Quality Codes!!');
+                     cwms_util.append(l_data, '<?xml version="1.0" encoding="windows-1252"?><time-series>!!Quality Codes!!');
                   when l_format = 'JSON' then
                      -----------------
                      -- JSON Header --
@@ -13159,8 +13155,7 @@ end retrieve_existing_item_counts;
                         else column_value + 4294967296
                         end as qcode
                    from table(l_codes1)
-                )
-          order by 1;
+                );
           select cwms_ts.get_quality_description(column_value)
            bulk collect
            into l_lines
@@ -13178,7 +13173,7 @@ end retrieve_existing_item_counts;
                for i in 1..l_lines.count loop
                   l_text := l_text
                      ||'<code value="'
-                     ||l_codes2(i)
+                     ||l_codes1(i)
                      ||'" meaning="'
                      ||l_lines(i)
                      ||'"/>';
@@ -13196,7 +13191,7 @@ end retrieve_existing_item_counts;
                l_text := l_text
                   ||case when i = 1 then '{' else ',{' end
                   ||'"code":'
-                  ||l_codes2(i)
+                  ||l_codes1(i)
                   ||',"meaning":"'
                   ||l_lines(i)
                   ||'"}';
@@ -13209,7 +13204,7 @@ end retrieve_existing_item_counts;
          when l_format in ('TAB', 'CSV') then
             l_text := '#Quality Codes Used';
             for i in 1..l_lines.count loop
-               l_text := l_text||chr(9)||l_codes2(i)||' = '||l_lines(i);
+               l_text := l_text||chr(9)||l_codes1(i)||' = '||l_lines(i);
             end loop;
             l_text := l_text||chr(10);
             l_data := replace(l_data, '!!Quality Codes!!', l_text);
@@ -13337,7 +13332,7 @@ end retrieve_existing_item_counts;
                   ||l_unique_value_count
                   ||'</unique-values-retrieved></query-info>');
             end if;
-            l_data := regexp_replace(l_data, '^(<time-series.*?>)', '\1'||l_data2, 1, 1);
+				l_data := regexp_replace(l_data, '^((<\?xml .+?\?>)?(<time-series.*?>))', '\1'||l_data2, 1, 1);
             p_results := l_data;
          when l_format = 'JSON' then
             ----------

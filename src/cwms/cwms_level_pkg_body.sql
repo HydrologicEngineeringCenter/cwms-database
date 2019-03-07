@@ -5615,7 +5615,7 @@ begin
                   and pt.parameter_type_code = l_parameter_type_code
                   and d.duration_code = l_duration_code
                   and sl.specified_level_code = l_specified_level_code;
-                  
+
                select pool_code
                  bulk collect
                  into l_pool_codes
@@ -9923,7 +9923,7 @@ begin
             -----------------
             cwms_util.append(
                l_data,
-               '<location-levels-catalog><!-- Catalog of location levels that are effective between '
+               '<?xml version="1.0" encoding="windows-1252"?><location-levels-catalog><!-- Catalog of location levels that are effective between '
                ||cwms_util.get_xml_time(l_start, l_timezone)
                ||' and '
                ||cwms_util.get_xml_time(l_end, l_timezone)
@@ -10645,7 +10645,7 @@ begin
                         l_datum := null;
                      end if;
                      if l_count = 1 then
-                        cwms_util.append(l_data, '<location-levels>');
+                        cwms_util.append(l_data, '<?xml version="1.0" encoding="windows-1252"?><location-levels>');
                      end if;
                      cwms_util.append(
                         l_data,
@@ -11082,7 +11082,7 @@ begin
                   ||l_unique_count
                   ||'</unique-location-levels-retrieved></query-info>');
             end if;
-         l_data := regexp_replace(l_data, '(<location-levels(-catalog)?>)', '\1'||l_data2, 1, 1);
+         l_data := regexp_replace(l_data, '^((<\?xml .+?\?>)?(<location-levels(-catalog)?>))', '\1'||l_data2, 1, 1);
          p_results := l_data;
       when l_format = 'JSON' then
          ----------

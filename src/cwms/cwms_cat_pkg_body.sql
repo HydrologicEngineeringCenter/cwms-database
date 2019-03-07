@@ -1269,7 +1269,7 @@ IS
                                           l_db_office_code
                                          );
       END IF;
-      
+
        ---------------------------------------------------
       -- get the ts_group_code if cat/group passed in --
       ---------------------------------------------------
@@ -1315,7 +1315,7 @@ IS
                                     FROM     at_loc_group_assignment
                                   WHERE     loc_group_code = l_loc_group_code))
                      AND(l_ts_group_code IS NULL
-                     OR ts_code IN 
+                     OR ts_code IN
                         (SELECT ts_code
                             FROM at_ts_group_assignment
                                 WHERE ts_group_code=l_ts_group_code))
@@ -1411,7 +1411,7 @@ END cat_ts_id;
       -----------------------------
       -- open the catalog cursor --
       -----------------------------
-      open p_cwms_cat for 
+      open p_cwms_cat for
          select o.office_id,
                 cwms_ts.get_ts_id(a.ts_code) as ts_id,
                 g.ts_group_id as agency_id,
@@ -1427,7 +1427,7 @@ END cat_ts_id;
             and upper(cwms_ts.get_ts_id(a.ts_code)) = upper(nvl(p_cwms_ts_id, cwms_ts.get_ts_id(a.ts_code)))
        order by cwms_ts.get_ts_id(a.ts_code),
                 g.ts_group_id,
-                a.ts_alias_id;           
+                a.ts_alias_id;
    end cat_ts_alias;
 
    procedure cat_ts_aliases (
@@ -1440,7 +1440,7 @@ END cat_ts_id;
    )
    is
       l_abbreviated boolean;
-      l_office_code number(10);   
+      l_office_code number(10);
    begin
       l_office_code := cwms_util.get_db_office_code(p_db_office_id);
       l_abbreviated := cwms_util.is_true(p_abbreviated);
@@ -1458,7 +1458,7 @@ END cat_ts_id;
                    ts_group_id,
                    ts_group_desc,
                    ts_alias_id,
-                   case 
+                   case
                      when ts_ref_code is null then null
                      else cwms_ts.get_ts_id(ts_ref_code)
                    end as ref_ts_id,
@@ -1487,13 +1487,13 @@ END cat_ts_id;
                         and o1.office_code = c.db_office_code
                         and o2.office_code = g.db_office_code
                    ) grp
-                   join 
+                   join
                    ( select a.ts_code,
                             a.ts_group_code,
                             a.ts_attribute,
                             a.ts_alias_id,
                             a.ts_ref_code,
-                            o.office_id as db_office_id 
+                            o.office_id as db_office_id
                        from at_ts_group_assignment a,
                             at_cwms_ts_id t,
                             cwms_office o
@@ -1514,7 +1514,7 @@ END cat_ts_id;
                    ts_group_id,
                    ts_group_desc,
                    ts_alias_id,
-                   case 
+                   case
                      when ts_ref_code is null then null
                      else cwms_ts.get_ts_id(ts_ref_code)
                    end as ref_ts_id,
@@ -1549,7 +1549,7 @@ END cat_ts_id;
                             a.ts_attribute,
                             a.ts_alias_id,
                             a.ts_ref_code,
-                            o.office_id as db_office_id 
+                            o.office_id as db_office_id
                        from at_ts_group_assignment a,
                             at_cwms_ts_id t,
                             cwms_office o
@@ -1557,8 +1557,8 @@ END cat_ts_id;
                         and t.ts_code = a.ts_code
                         and o.office_code = t.db_office_code
                    ) assgn on assgn.ts_group_code = grp.ts_group_code;
-      end if;      
-                         
+      end if;
+
    end cat_ts_aliases;
 
    function cat_ts_aliases_tab (
@@ -1641,7 +1641,7 @@ END cat_ts_id;
       close query_cursor;
       return;
    end cat_ts_group_tab;
-      
+
    -------------------------------------------------------------------------------
    -- CAT_LOCATION
    --
@@ -2705,14 +2705,14 @@ END cat_ts_id;
             := cwms_util.get_db_office_code (p_db_office_id) ;
    BEGIN
       open p_cwms_cat for
-         select cp.base_parameter_id 
-                || substr('-', 1, length(atp.sub_parameter_id)) 
+         select cp.base_parameter_id
+                || substr('-', 1, length(atp.sub_parameter_id))
                 || atp.sub_parameter_id as parameter_id,
                 cp.base_parameter_id,
                 atp.sub_parameter_id,
-                case 
-                   when atp.sub_parameter_desc is null then cp.description 
-                   else atp.sub_parameter_desc 
+                case
+                   when atp.sub_parameter_desc is null then cp.description
+                   else atp.sub_parameter_desc
                 end as sub_parameter_desc,
                 co.office_id as db_office_id,
                 cu.unit_id as db_unit_id,
@@ -2727,7 +2727,7 @@ END cat_ts_id;
             and cp.unit_code = cu.unit_code
             and co.office_code = atp.db_office_code
             and atp.db_office_code in (cwms_util.db_office_code_all, l_db_office_code)
-          order by cp.base_parameter_id asc;   
+          order by cp.base_parameter_id asc;
    END cat_parameter;
 
    FUNCTION cat_parameter_tab (p_db_office_id IN VARCHAR2 DEFAULT NULL )
@@ -3420,10 +3420,10 @@ END cat_ts_id;
             OPEN p_cwms_cat FOR
                  SELECT   db_office_id, location_id, cat_db_office_id,
                           loc_category_id, grp_db_office_id, loc_group_id,
-                          loc_group_desc, loc_alias_id, 
+                          loc_group_desc, loc_alias_id,
                           cwms_util.get_location_id(loc_ref_code) ref_location_id,
-                          shared_loc_alias_id, 
-                          cwms_util.get_location_id(shared_loc_ref_code) shared_loc_ref_id, 
+                          shared_loc_alias_id,
+                          cwms_util.get_location_id(shared_loc_ref_code) shared_loc_ref_id,
                           loc_attribute as attribute,
                           loc_group_attribute as group_attribute
                    FROM      (SELECT   e1.office_id db_office_id,
@@ -3466,14 +3466,14 @@ END cat_ts_id;
                ORDER BY   UPPER (location_id),
                           UPPER (loc_category_id),
                           UPPER (loc_group_id);
-         ELSE 
+         ELSE
             -- Refined abbreviated listing...
             OPEN p_cwms_cat FOR
                  SELECT   db_office_id, location_id, cat_db_office_id,
                           loc_category_id, grp_db_office_id, loc_group_id,
-                          loc_group_desc, loc_alias_id, 
+                          loc_group_desc, loc_alias_id,
                           cwms_util.get_location_id(loc_ref_code) ref_location_id,
-                          shared_loc_alias_id, 
+                          shared_loc_alias_id,
                           cwms_util.get_location_id(shared_loc_ref_code) shared_loc_ref_id,
                           loc_attribute as attribute,
                           loc_group_attribute as group_attribute
@@ -3528,9 +3528,9 @@ END cat_ts_id;
             OPEN p_cwms_cat FOR
                  SELECT   db_office_id, location_id, cat_db_office_id,
                           loc_category_id, grp_db_office_id, loc_group_id,
-                          loc_group_desc, loc_alias_id, 
+                          loc_group_desc, loc_alias_id,
                           cwms_util.get_location_id(loc_ref_code) ref_location_id,
-                          shared_loc_alias_id, 
+                          shared_loc_alias_id,
                           cwms_util.get_location_id(shared_loc_ref_code) shared_loc_ref_id,
                           loc_attribute as attribute,
                           loc_group_attribute as group_attribute
@@ -3579,9 +3579,9 @@ END cat_ts_id;
             OPEN p_cwms_cat FOR
                  SELECT   db_office_id, location_id, cat_db_office_id,
                           loc_category_id, grp_db_office_id, loc_group_id,
-                          loc_group_desc, loc_alias_id, 
+                          loc_group_desc, loc_alias_id,
                           cwms_util.get_location_id(loc_ref_code) ref_location_id,
-                          shared_loc_alias_id, 
+                          shared_loc_alias_id,
                           cwms_util.get_location_id(shared_loc_ref_code) shared_loc_ref_id,
                           loc_attribute as attribute,
                           loc_group_attribute as group_attribute
@@ -3679,10 +3679,10 @@ END cat_ts_id;
       l_prop_id       := upper(cwms_util.normalize_wildcards(nvl(p_prop_id, '*'), true));
 
       open p_cwms_cat for
-           select o.office_id, 
-                  p.prop_category, 
+           select o.office_id,
+                  p.prop_category,
                   p.prop_id
-             from at_properties p, 
+             from at_properties p,
                   cwms_office o
             where o.office_id = l_office_id
               and p.office_code = o.office_code
@@ -3738,8 +3738,8 @@ END cat_ts_id;
 
       RETURN;
    END cat_loc_group_tab;
-  
-  
+
+
 -------------------------------------------------------------------------------
 --  manipulate generic lookup tables in the database.
 --
@@ -3770,7 +3770,7 @@ END cat_ts_id;
       if l_lookup_category is null then
          cwms_err.raise('NULL_ARGUMENT', 'p_lookup_prefix');
       end if;
-      
+
       begin
          l_str := dbms_assert.simple_sql_name(nvl(l_db_office_id, cwms_util.user_office_id));
       exception
@@ -3794,7 +3794,7 @@ END cat_ts_id;
       --do work.
       dbms_application_info.set_action('querying lookups for: '||p_lookup_category);
       p_lookup_type_tab := lookup_type_tab_t();
-      
+
       l_str := 'SELECT CAST (MULTISET (SELECT :bv1 office_id,
         '|| l_lookup_prefix || '_display_value display_value,
         '|| l_lookup_prefix || '_tooltip tooltip,
@@ -3802,9 +3802,9 @@ END cat_ts_id;
       FROM '||l_lookup_category||'
       WHERE db_office_code = cwms_util.get_office_code(:bv2)
       ) AS lookup_type_tab_t) FROM dual';
-      
+
       cwms_util.check_dynamic_sql(l_str);
-      
+
       EXECUTE IMMEDIATE l_str
       INTO p_lookup_type_tab
       USING l_db_office_id, l_db_office_id;
@@ -3821,16 +3821,16 @@ END cat_ts_id;
       p_lookup_prefix IN VARCHAR2
       )
    is
-   
-      child_rec_exception EXCEPTION; 
-      PRAGMA exception_init (child_rec_exception, -2292);   
+
+      child_rec_exception EXCEPTION;
+      PRAGMA exception_init (child_rec_exception, -2292);
       l_lookup_category VARCHAR2(30) := trim(p_lookup_category);
       l_lookup_prefix   VARCHAR2(30) := trim(p_lookup_prefix);
       l_str             varchar2(32767);
-      
+
    begin
       dbms_application_info.set_module ('cwms_cat.set_lookup_table','setting lookups');
-      
+
       --sanitize vars
       dbms_application_info.set_action('sanitizing vars');
       if l_lookup_category is null then
@@ -3851,31 +3851,31 @@ END cat_ts_id;
          when others then
             cwms_err.raise('INVALID_ITEM', l_lookup_prefix, 'lookup prefix');
       end;
-      
+
       --this should be a merge.
-      --incoming object array sanitized when being used. 
-      
+      --incoming object array sanitized when being used.
+
       l_str := 'MERGE INTO '||l_lookup_category||' lutab
-        USING (  SELECT cwms_util.get_office_code(ltab.office_id) office_code, 
-                    ltab.display_value display_value, 
-                    ltab.tooltip tooltip, 
-                    ltab.active active 
+        USING (  SELECT cwms_util.get_office_code(ltab.office_id) office_code,
+                    ltab.display_value display_value,
+                    ltab.tooltip tooltip,
+                    ltab.active active
                 from table (cast (:bv1 as lookup_type_tab_t)) ltab
         ) mtab
-        ON (  lutab.db_office_code = mtab.office_code 
+        ON (  lutab.db_office_code = mtab.office_code
               AND upper(lutab.'||l_lookup_prefix||'_display_value) = upper(mtab.display_value)
-        )  
+        )
         WHEN MATCHED THEN
-            UPDATE SET 
+            UPDATE SET
               lutab.'||l_lookup_prefix||'_tooltip = mtab.tooltip,
               lutab.'||l_lookup_prefix||'_active = mtab.active
         WHEN NOT MATCHED THEN
-            INSERT 
+            INSERT
             ( lutab.'||l_lookup_prefix||'_code,
               lutab.db_office_code,
               lutab.'||l_lookup_prefix||'_display_value,
               lutab.'||l_lookup_prefix||'_tooltip,
-              lutab.'||l_lookup_prefix||'_active 
+              lutab.'||l_lookup_prefix||'_active
             )
             VALUES (
               cwms_seq.nextval,
@@ -3884,15 +3884,15 @@ END cat_ts_id;
               mtab.tooltip,
               mtab.active
             )';
-            
+
       cwms_util.check_dynamic_sql(l_str);
-                   
+
       EXECUTE IMMEDIATE l_str
       USING p_lookup_type_tab;
-   
+
    end set_lookup_table;
 
---Deletes a set of lookup values that conform to a common structure but different names. 
+--Deletes a set of lookup values that conform to a common structure but different names.
 --The identifying parts within the arg lookup table type are used to determine which row
 --values to delete from the look up table.d.
    procedure delete_lookups(
@@ -3905,15 +3905,15 @@ END cat_ts_id;
       )
    is
 
-      child_rec_exception EXCEPTION; 
-      PRAGMA exception_init (child_rec_exception, -2292);   
+      child_rec_exception EXCEPTION;
+      PRAGMA exception_init (child_rec_exception, -2292);
       l_lookup_category VARCHAR2(30) := trim(p_lookup_category);
       l_lookup_prefix   VARCHAR2(30) := trim(p_lookup_prefix);
       l_str             varchar2(32767);
 
    begin
-      dbms_application_info.set_module ('cwms_cat.delete_lookups','deleting lookups');  
-      
+      dbms_application_info.set_module ('cwms_cat.delete_lookups','deleting lookups');
+
       --sanitize vars
       dbms_application_info.set_action('sanitizing vars');
       --sanitize vars
@@ -3937,27 +3937,27 @@ END cat_ts_id;
             cwms_err.raise('INVALID_ITEM', l_lookup_prefix, 'lookup prefix');
       end;
 
-      l_str := 'DELETE FROM '||l_lookup_category||'   
-         WHERE '||l_lookup_prefix||'_code IN (    
-         SELECT lu.'||l_lookup_prefix||'_code     
-         FROM '||l_lookup_category||' lu    
-         INNER JOIN TABLE (CAST (:bv1 AS lookup_type_tab_t)) ltab     
-         ON lu.db_office_code = cwms_util.get_office_code(ltab.office_id)    
+      l_str := 'DELETE FROM '||l_lookup_category||'
+         WHERE '||l_lookup_prefix||'_code IN (
+         SELECT lu.'||l_lookup_prefix||'_code
+         FROM '||l_lookup_category||' lu
+         INNER JOIN TABLE (CAST (:bv1 AS lookup_type_tab_t)) ltab
+         ON lu.db_office_code = cwms_util.get_office_code(ltab.office_id)
          AND UPPER(lu.'||l_lookup_prefix||'_display_value) = UPPER(ltab.display_value))';
-         
+
       cwms_util.check_dynamic_sql(l_str);
-         
+
       BEGIN
-         --delete the passed in lookups. this will fail if lookups are fked. 
-         
-         EXECUTE IMMEDIATE 
-            l_str 
+         --delete the passed in lookups. this will fail if lookups are fked.
+
+         EXECUTE IMMEDIATE
+            l_str
             USING p_lookup_type_tab;
       EXCEPTION
          WHEN CHILD_REC_EXCEPTION THEN
             NULL;
-      END;    
- 
+      END;
+
   END delete_lookups;
 
    --------------------------------------------------------------------------------
@@ -3970,16 +3970,16 @@ END cat_ts_id;
    --    stationing_starts_ds varchar2(1)
    --    flows_into_stream    varchar2(57)
    --    flows_into_station   binary_double
-   --    flows_into_bank      varchar2(1) 
+   --    flows_into_bank      varchar2(1)
    --    diverts_from_stream  varchar2(57)
    --    diverts_from_station binary_double
    --    diverts_from_bank    varchar2(1)
    --    stream_length        binary_double
    --    average_slope        binary_double
-   --    comments             varchar2(256) 
+   --    comments             varchar2(256)
    --
    --------------------------------------------------------------------------------
-   procedure cat_streams(          
+   procedure cat_streams(
       p_stream_catalog              out sys_refcursor,
       p_stream_id_mask              in  varchar2 default '*',
       p_station_units               in  varchar2 default 'km',
@@ -4000,7 +4000,7 @@ END cat_ts_id;
       p_office_id_mask              in  varchar2 default null)
    is
    begin
-      cwms_stream.cat_streams(          
+      cwms_stream.cat_streams(
          p_stream_catalog,
          p_stream_id_mask,
          p_station_units,
@@ -4019,7 +4019,7 @@ END cat_ts_id;
          p_average_slope_max,
          p_comments_mask,
          p_office_id_mask);
-   end cat_streams;      
+   end cat_streams;
 
    --------------------------------------------------------------------------------
    -- function cat_streams_f
@@ -4031,16 +4031,16 @@ END cat_ts_id;
    --    stationing_starts_ds varchar2(1)
    --    flows_into_stream    varchar2(57)
    --    flows_into_station   binary_double
-   --    flows_into_bank      varchar2(1) 
+   --    flows_into_bank      varchar2(1)
    --    diverts_from_stream  varchar2(57)
    --    diverts_from_station binary_double
    --    diverts_from_bank    varchar2(1)
    --    stream_length        binary_double
    --    average_slope        binary_double
-   --    comments             varchar2(256) 
+   --    comments             varchar2(256)
    --
    --------------------------------------------------------------------------------
-   function cat_streams_f(          
+   function cat_streams_f(
       p_stream_id_mask              in varchar2 default '*',
       p_station_units               in varchar2 default 'km',
       p_stationing_starts_ds_mask   in varchar2 default '*',
@@ -4061,7 +4061,7 @@ END cat_ts_id;
       return sys_refcursor
    is
    begin
-      return cwms_stream.cat_streams_f(          
+      return cwms_stream.cat_streams_f(
          p_stream_id_mask,
          p_station_units,
          p_stationing_starts_ds_mask,
@@ -4079,7 +4079,7 @@ END cat_ts_id;
          p_average_slope_max,
          p_comments_mask,
          p_office_id_mask);
-   end cat_streams_f;      
+   end cat_streams_f;
 
    --------------------------------------------------------------------------------
    -- procedure cat_stream_reaches
@@ -4140,8 +4140,8 @@ END cat_ts_id;
          p_stream_type_id_mask,
          p_comments_mask,
          p_office_id_mask);
-   end cat_stream_reaches_f;      
-      
+   end cat_stream_reaches_f;
+
    --------------------------------------------------------------------------------
    -- procedure cat_stream_locations
    --
@@ -4178,10 +4178,10 @@ END cat_ts_id;
          p_stage_unit,
          p_area_unit,
          p_office_id_mask);
-   end cat_stream_locations;      
-      
+   end cat_stream_locations;
+
    --------------------------------------------------------------------------------
-   -- function cat_stream_locations_f   
+   -- function cat_stream_locations_f
    --
    -- catalog includes, sorted by office_id, stream_id, station, location_id
    --
@@ -4215,7 +4215,7 @@ END cat_ts_id;
          p_stage_unit,
          p_area_unit,
          p_office_id_mask);
-   end cat_stream_locations_f;      
+   end cat_stream_locations_f;
 
    --------------------------------------------------------------------------------
    -- procedure cat_basins
@@ -4285,24 +4285,24 @@ END cat_ts_id;
    function cat_loc_lvl_cur_max_ind
       return loc_lvl_cur_max_ind_tab_t
       pipelined
-   as   
+   as
       l_cursor sys_refcursor;
       l_indicator_id     varchar2(431);
       l_attribute_id     varchar2(83);
-      l_attribute_value  number;           
+      l_attribute_value  number;
       l_attribute_units  varchar2(16);
       l_indicator_values number_tab_t;
       l_output_row       loc_lvl_cur_max_ind_t := loc_lvl_cur_max_ind_t(null, null, null, null, null, null, null);
    begin
       for rec in (select distinct * from av_loc_lvl_ts_map) loop
          cwms_level.get_level_indicator_values(
-            p_cursor               => l_cursor, 
-            p_tsid                 => rec.cwms_ts_id, 
-            p_specified_level_mask => cwms_util.split_text(rec.location_level_id, 5, '.'), 
-            p_indicator_id_mask    => rec.level_indicator_id, 
+            p_cursor               => l_cursor,
+            p_tsid                 => rec.cwms_ts_id,
+            p_specified_level_mask => cwms_util.split_text(rec.location_level_id, 5, '.'),
+            p_indicator_id_mask    => rec.level_indicator_id,
             p_office_id            => rec.office_id);
          begin
-            fetch l_cursor 
+            fetch l_cursor
              into l_indicator_id,
                   l_attribute_id,
                   l_attribute_value,
@@ -4310,22 +4310,22 @@ END cat_ts_id;
                   l_indicator_values;
          exception
             when others then null;
-                    
-         end;         
-         close l_cursor;        
-         
+
+         end;
+         close l_cursor;
+
          l_output_row.office_id          := rec.office_id;
          l_output_row.cwms_ts_id         := rec.cwms_ts_id;
          l_output_row.level_indicator_id := rec.location_level_id||'.'||rec.level_indicator_id;
          l_output_row.attribute_id       := rec.attribute_id;
          l_output_row.attribute_value    := rec.attribute_value;
-                         
+
          if l_indicator_values is null or l_indicator_values.count = 0 then
             l_output_row.max_indicator := 0;
          else
             l_output_row.max_indicator := l_indicator_values(l_indicator_values.count);
          end if;
-           
+
          if l_output_row.max_indicator = 0 then
             l_output_row.indicator_name := 'None';
          else
@@ -4336,12 +4336,12 @@ END cat_ts_id;
                and lli.level_indicator_id = l_output_row.level_indicator_id
                and nvl(lli.attribute_id, '.') = nvl(l_output_row.attribute_id, '.')
                and nvl(lli.attribute_value, -1) = nvl(l_output_row.attribute_value, -1)
-               and lli.value = l_output_row.max_indicator; 
+               and lli.value = l_output_row.max_indicator;
          end if;
          pipe row(l_output_row);
       end loop;
    end cat_loc_lvl_cur_max_ind;
-    
+
    function iso_duration(
       p_intvl in dsinterval_unconstrained)
       return varchar2
@@ -4365,7 +4365,7 @@ END cat_ts_id;
       end if;
       return l_iso;
    end;
-      
+
    procedure retrieve_offices(
       p_offices out clob,
       p_format  in  varchar2)
@@ -4373,7 +4373,7 @@ END cat_ts_id;
    begin
       p_offices := retrieve_offices_f(p_format);
    end retrieve_offices;
-   
+
    function retrieve_offices_f(
       p_format in varchar2)
       return clob
@@ -4401,19 +4401,19 @@ END cat_ts_id;
                 when 'FOA'  then 'Field Operating Activity'
                 when 'UNK'  then 'Other/Unknown'
                 when 'MSC'  then 'Division Headquarters'
-                when 'MSCR' then 'Division Regional Office' 
+                when 'MSCR' then 'Division Regional Office'
              end,
              report_to_office_id
         bulk collect
-        into l_offices     
+        into l_offices
         from av_office
        order by office_id;
       l_ts2 := systimestamp;
       l_elapsed_query := l_ts2 - l_ts1;
       l_ts1 := systimestamp;
-                 
+
       dbms_lob.createtemporary(l_data, true);
-      case 
+      case
       when l_format in ('tab', 'csv') then
          ----------------
          -- TAB or CSV --
@@ -4421,7 +4421,7 @@ END cat_ts_id;
          cwms_util.append(l_data, '#Office Name'||l_tab||'Long Name'||l_tab||'Office Type'||l_tab||'Reports To Office'||l_nl);
          for i in 1..l_offices.count loop
             cwms_util.append(
-               l_data, 
+               l_data,
                l_offices(i).office_id           ||l_tab
                ||l_offices(i).long_name         ||l_tab
                ||l_offices(i).office_type       ||l_tab
@@ -4434,7 +4434,7 @@ END cat_ts_id;
          ---------
          -- XML --
          ---------
-         cwms_util.append(l_data, '<offices>');
+         cwms_util.append(l_data, '<?xml version="1.0" encoding="windows-1252"?><offices>');
          for i in 1..l_offices.count loop
             cwms_util.append(
                l_data,
@@ -4467,7 +4467,7 @@ END cat_ts_id;
          cwms_util.append(l_data, ']}}');
       else
          cwms_err.raise('ERROR', p_format||' must be ''tab'', ''csv'', ''xml'', or ''json''');
-      end case; 
+      end case;
       l_ts2 := systimestamp;
       l_elapsed_format := l_ts2 - l_ts1;
 
@@ -4480,7 +4480,7 @@ END cat_ts_id;
          case
          when l_format = 'xml' then
             cwms_util.append(
-               l_data2, 
+               l_data2,
                '<query-info><processed-at>'
                ||utl_inaddr.get_host_name
                ||':'
@@ -4496,10 +4496,10 @@ END cat_ts_id;
                ||'</requested-format><offices-retrieved>'
                ||l_offices.count
                ||'</offices-retrieved></query-info>');
-            l_data := regexp_replace(l_data, '^(<offices.*?>)', '\1'||l_data2, 1, 1);
+            l_data := regexp_replace(l_data, '^((<\?xml .+?\?>)?(<offices>))', '\1'||l_data2, 1, 1);
          when l_format = 'json' then
             cwms_util.append(
-               l_data2, 
+               l_data2,
                '{"query-info":{"processed-at":"'
                ||utl_inaddr.get_host_name
                ||':'
@@ -4529,10 +4529,10 @@ END cat_ts_id;
             l_data := regexp_replace(l_data, '^', l_data2, 1, 1);
          end case;
       end;
-      
-      return l_data;       
+
+      return l_data;
    end retrieve_offices_f;
-      
+
    procedure retrieve_time_zones(
       p_time_zones out clob,
       p_format     in  varchar2)
@@ -4540,7 +4540,7 @@ END cat_ts_id;
    begin
       p_time_zones := retrieve_time_zones_f(p_format);
    end retrieve_time_zones;
-   
+
    function retrieve_time_zones_f(
       p_format in varchar2)
       return clob
@@ -4557,21 +4557,22 @@ END cat_ts_id;
       l_query_time     date;
       l_elapsed_query  interval day (0) to second (6);
       l_elapsed_format interval day (0) to second (6);
-      
+
    begin
       l_query_time := sysdate;
       l_ts1 := systimestamp;
-      select time_zone_name, 
-             to_char(extract(hour from utc_offset), 'S09')||':'||trim(to_char(abs(extract(minute from utc_offset)), '09')) as utc_offset, 
+      select time_zone_name,
+             to_char(extract(hour from utc_offset), 'S09')||':'||trim(to_char(abs(extract(minute from utc_offset)), '09')) as utc_offset,
              to_char(extract(hour from dst_offset), 'S09')||':'||trim(to_char(abs(extract(minute from dst_offset)), '09')) as dst_offset
         bulk collect
-        into l_time_zones              
-        from (select time_zone_name, 
-                     utc_offset, 
-                     dst_offset 
+        into l_time_zones
+        from (select time_zone_name,
+                     utc_offset,
+                     dst_offset
                 from cwms_time_zone
-               where time_zone_code > 0 
-              union all  
+               where time_zone_code > 0
+                 and time_zone_name not in (select time_zone_alias from cwms_time_zone_alias)
+              union all
               select time_zone_alias as time_zone_name,
                      utc_offset,
                      dst_offset
@@ -4579,7 +4580,7 @@ END cat_ts_id;
                      cwms_time_zone_alias tza
                where tz.time_zone_name = tza.time_zone_name
              )
-       order by time_zone_name;  
+       order by time_zone_name;
       l_ts2 := systimestamp;
       l_elapsed_query := l_ts2 - l_ts1;
       l_ts1 := systimestamp;
@@ -4592,7 +4593,7 @@ END cat_ts_id;
          cwms_util.append(l_data, '#Time Zone Name'||l_tab||'Utc Offset'||l_tab||'Dst Offset'||l_nl);
          for i in 1..l_time_zones.count loop
             cwms_util.append(
-               l_data, 
+               l_data,
                l_time_zones(i).time_zone_name ||l_tab
                ||l_time_zones(i).utc_offset   ||l_tab
                ||l_time_zones(i).dst_offset   ||l_nl);
@@ -4604,7 +4605,7 @@ END cat_ts_id;
          ---------
          -- XML --
          ---------
-         cwms_util.append(l_data, '<time-zones>');
+         cwms_util.append(l_data, '<?xml version="1.0" encoding="windows-1252"?><time-zones>');
          for i in 1..l_time_zones.count loop
             cwms_util.append(
                l_data,
@@ -4634,7 +4635,7 @@ END cat_ts_id;
          cwms_util.append(l_data, ']}}');
       else
          cwms_err.raise('ERROR', p_format||' must be ''tab'', ''xml'', or ''json''');
-      end case; 
+      end case;
       l_ts2 := systimestamp;
       l_elapsed_format := l_ts2 - l_ts1;
 
@@ -4647,7 +4648,7 @@ END cat_ts_id;
          case
          when l_format = 'xml' then
             cwms_util.append(
-               l_data2, 
+               l_data2,
                '<query-info><processed-at>'
                ||utl_inaddr.get_host_name
                ||':'
@@ -4663,10 +4664,10 @@ END cat_ts_id;
                ||'</requested-format><time-zones-retrieved>'
                ||l_time_zones.count
                ||'</time-zones-retrieved></query-info>');
-            l_data := regexp_replace(l_data, '^(<time-zones.*?>)', '\1'||l_data2, 1, 1);
+            l_data := regexp_replace(l_data, '^((<\?xml .+?\?>)?(<time-zones>))', '\1'||l_data2, 1, 1);
          when l_format = 'json' then
             cwms_util.append(
-               l_data2, 
+               l_data2,
                '{"query-info":{"processed-at":"'
                ||utl_inaddr.get_host_name
                ||':'
@@ -4696,7 +4697,7 @@ END cat_ts_id;
             l_data := regexp_replace(l_data, '^', l_data2, 1, 1);
          end case;
       end;
-      return l_data;       
+      return l_data;
    end retrieve_time_zones_f;
 
    procedure retrieve_units(
@@ -4706,7 +4707,7 @@ END cat_ts_id;
    begin
       p_units := retrieve_units_f(p_format);
    end retrieve_units;
-            
+
    function retrieve_units_f(
       p_format in varchar2)
       return clob
@@ -4714,8 +4715,8 @@ END cat_ts_id;
       type unit_rec_t is record(
          abstract_param varchar2(32),
          code integer,
-         name varchar2(32), 
-         unit_system varchar2(5), 
+         name varchar2(32),
+         unit_system varchar2(5),
          long_name varchar2(80),
          description varchar2(80));
       type unit_tab_t is table of unit_rec_t;
@@ -4733,7 +4734,7 @@ END cat_ts_id;
       l_elapsed_query  interval day (0) to second (6);
       l_elapsed_format interval day (0) to second (6);
       l_code_str       varchar2(16);
-      
+
    begin
       l_query_time := sysdate;
       l_ts1 := systimestamp;
@@ -4744,7 +4745,7 @@ END cat_ts_id;
              long_name,
              description
         bulk collect
-        into l_units     
+        into l_units
         from cwms_abstract_parameter ap,
              (select abstract_param_code,
                      unit_code,
@@ -4763,12 +4764,12 @@ END cat_ts_id;
                 from cwms_unit cu,
                      at_unit_alias ca
                where cu.unit_code = ca.unit_code
-                 and ca.db_office_code = 53               
-             ) u                 
+                 and ca.db_office_code = 53
+             ) u
        where ap.abstract_param_code = u.abstract_param_code
        order by abstract_param_id,
                 upper(unit_id);
-                
+
       for i in 1..l_units.count loop
          l_code_str := to_char(l_units(i).code);
          if not l_names_by_code.exists(l_code_str) then
@@ -4777,7 +4778,7 @@ END cat_ts_id;
             l_names_by_code(l_code_str).extend;
             l_names_by_code(l_code_str)(l_names_by_code(l_code_str).count) := l_units(i).name;
       end loop;
-                
+
       l_ts2 := systimestamp;
       l_elapsed_query := l_ts2 - l_ts1;
       l_ts1 := systimestamp;
@@ -4790,7 +4791,7 @@ END cat_ts_id;
          cwms_util.append(l_data, '#Abstract Parameter'||l_tab||'Name'||l_tab||'Unit System'||l_tab||'Long Name'||l_tab||'Description'||l_tab||'Alternate Names'||l_nl);
          for i in 1..l_units.count loop
             cwms_util.append(
-               l_data, 
+               l_data,
                l_units(i).abstract_param ||l_tab
                ||l_units(i).name         ||l_tab
                ||l_units(i).unit_system  ||l_tab
@@ -4803,7 +4804,7 @@ END cat_ts_id;
                  into l_alt_names
                  from table(l_names_by_code(l_code_str))
                 where column_value != l_units(i).name;
-               cwms_util.append(l_data, l_tab||cwms_util.join_text(l_alt_names, l_tab));    
+               cwms_util.append(l_data, l_tab||cwms_util.join_text(l_alt_names, l_tab));
             end if;
             cwms_util.append(l_data, l_nl);
          end loop;
@@ -4814,7 +4815,7 @@ END cat_ts_id;
          ---------
          -- XML --
          ---------
-         cwms_util.append(l_data, '<units>');
+			cwms_util.append(l_data, '<?xml version="1.0" encoding="windows-1252"?><units>');
          for i in 1..l_units.count loop
             cwms_util.append(
                l_data,
@@ -4832,10 +4833,10 @@ END cat_ts_id;
                  from table(l_names_by_code(l_code_str))
                 where column_value != l_units(i).name;
                cwms_util.append(
-                  l_data, 
+                  l_data,
                   '<name>'
                   ||cwms_util.join_text(l_alt_names, '</name><name>')
-                  ||'</name>');    
+                  ||'</name>');
             end if;
             cwms_util.append(l_data, '</alternate-names></unit>');
          end loop;
@@ -4850,7 +4851,7 @@ END cat_ts_id;
                l_data,
                case i
                when 1 then '{"abstract-parameter":"' else ',{"abstract-parameter":"' end
-               ||l_units(i).abstract_param 
+               ||l_units(i).abstract_param
                ||'","name":"'
                ||l_units(i).name
                ||'","unit-system":"'
@@ -4868,17 +4869,17 @@ END cat_ts_id;
                  from table(l_names_by_code(l_code_str))
                 where column_value != l_units(i).name;
                cwms_util.append(
-                  l_data, 
+                  l_data,
                   '"'
                   ||cwms_util.join_text(l_alt_names, '","')
-                  ||'"');    
+                  ||'"');
             end if;
             cwms_util.append(l_data, ']}');
          end loop;
          cwms_util.append(l_data, ']}}');
       else
          cwms_err.raise('ERROR', p_format||' must be ''tab'', ''xml'', or ''json''');
-      end case; 
+      end case;
       l_ts2 := systimestamp;
       l_elapsed_format := l_ts2 - l_ts1;
 
@@ -4891,7 +4892,7 @@ END cat_ts_id;
          case
          when l_format = 'xml' then
             cwms_util.append(
-               l_data2, 
+               l_data2,
                '<query-info><processed-at>'
                ||utl_inaddr.get_host_name
                ||':'
@@ -4909,10 +4910,10 @@ END cat_ts_id;
                ||'</total-units-retrieved><unique-units-retrieved>'
                ||l_names_by_code.count
                ||'</unique-units-retrieved></query-info>');
-            l_data := regexp_replace(l_data, '^(<units.*?>)', '\1'||l_data2, 1, 1);
+				l_data := regexp_replace(l_data, '^((<\?xml .+?\?>)?(<units>))', '\1'||l_data2, 1, 1);
          when l_format = 'json' then
             cwms_util.append(
-               l_data2, 
+               l_data2,
                '{"query-info":{"processed-at":"'
                ||utl_inaddr.get_host_name
                ||':'
@@ -4955,19 +4956,19 @@ END cat_ts_id;
    begin
       p_parameters := retrieve_parameters_f(p_format);
    end retrieve_parameters;
-            
+
    function retrieve_parameters_f(
       p_format in varchar2)
       return clob
    is
       type rec_t is record(
-         abstract_param varchar2(32), 
+         abstract_param varchar2(32),
          base_param     varchar2(16),
          sub_param      varchar2(32),
          office         varchar2(16),
-         en_unit        varchar2(16), 
-         si_unit        varchar2(16), 
-         long_name      varchar2(80), 
+         en_unit        varchar2(16),
+         si_unit        varchar2(16),
+         long_name      varchar2(80),
          description varchar2(160));
       type tab_t is table of rec_t;
       l_format         varchar2(16) := lower(trim(p_format));
@@ -4980,7 +4981,7 @@ END cat_ts_id;
       l_query_time     date;
       l_elapsed_query  interval day (0) to second (6);
       l_elapsed_format interval day (0) to second (6);
-      
+
    begin
       l_query_time := sysdate;
       l_ts1 := systimestamp;
@@ -5009,7 +5010,7 @@ END cat_ts_id;
                where ap.abstract_param_code = bp.abstract_param_code
                  and u1.unit_code = bp.display_unit_code_en
                  and u2.unit_code = bp.display_unit_code_si
-              union all    
+              union all
               select ap.abstract_param_id,
                      bp.base_parameter_id,
                      p.sub_parameter_id,
@@ -5017,7 +5018,7 @@ END cat_ts_id;
                      u1.unit_id as en_unit,
                      u2.unit_id as si_unit,
                      bp.long_name,
-                     case 
+                     case
                      when p.sub_parameter_desc is null then bp.description||'-'||p.sub_parameter_id
                      else p.sub_parameter_desc
                      end as description
@@ -5050,7 +5051,7 @@ END cat_ts_id;
          cwms_util.append(l_data, '#Abstract Parameter'||l_tab||'Parameter'||l_tab||'Office'||l_tab||'Default English Unit'||l_tab||'Default SI Unit'||l_tab||'Long Name'||l_tab||'Description'||l_nl);
          for i in 1..l_params.count loop
             cwms_util.append(
-               l_data, 
+               l_data,
                l_params(i).abstract_param ||l_tab
                ||l_params(i).base_param
                ||substr('-', 1, length(l_params(i).sub_param))
@@ -5068,7 +5069,7 @@ END cat_ts_id;
          ---------
          -- XML --
          ---------
-         cwms_util.append(l_data, '<parameters>');
+			cwms_util.append(l_data, '<?xml version="1.0" encoding="windows-1252"?><parameters>');
          for i in 1..l_params.count loop
             cwms_util.append(
                l_data,
@@ -5094,7 +5095,7 @@ END cat_ts_id;
             cwms_util.append(
                l_data,
                case i when 1 then '{"abstract-param":"' else ',{"abstract-param":"' end
-               ||l_params(i).abstract_param 
+               ||l_params(i).abstract_param
                ||'","name":"'
                ||l_params(i).base_param
                ||substr('-', 1, length(l_params(i).sub_param))
@@ -5114,7 +5115,7 @@ END cat_ts_id;
          cwms_util.append(l_data,']}}');
       else
          cwms_err.raise('ERROR', p_format||' must be ''tab'', ''xml'', or ''json''');
-      end case; 
+      end case;
       l_ts2 := systimestamp;
       l_elapsed_format := l_ts2 - l_ts1;
 
@@ -5127,7 +5128,7 @@ END cat_ts_id;
          case
          when l_format = 'xml' then
             cwms_util.append(
-               l_data2, 
+               l_data2,
                '<query-info><processed-at>'
                ||utl_inaddr.get_host_name
                ||':'
@@ -5143,10 +5144,10 @@ END cat_ts_id;
                ||'</requested-format><parameters-retrieved>'
                ||l_params.count
                ||'</parameters-retrieved></query-info>');
-            l_data := regexp_replace(l_data, '^(<parameters.*?>)', '\1'||l_data2, 1, 1);
+				l_data := regexp_replace(l_data, '^((<\?xml .+?\?>)?(<parameters>))', '\1'||l_data2, 1, 1);
          when l_format = 'json' then
             cwms_util.append(
-               l_data2, 
+               l_data2,
                '{"query-info":{"processed-at":"'
                ||utl_inaddr.get_host_name
                ||':'
@@ -5178,7 +5179,7 @@ END cat_ts_id;
       end;
       return l_data;
    end retrieve_parameters_f;
-    
+
 END cwms_cat;
 /
 
