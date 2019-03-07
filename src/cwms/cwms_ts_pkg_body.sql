@@ -49,9 +49,9 @@ AS
       exception
          when no_data_found then
             cwms_err.raise (
-               'TS_ID_NOT_FOUND', 
+               'TS_ID_NOT_FOUND',
                trim (p_cwms_ts_id),
-               l_office_id); 
+               l_office_id);
       end;
       return l_cwms_ts_code;
    end get_ts_code;
@@ -90,17 +90,17 @@ AS
       l_parts := cwms_util.split_text(p_ts_id, '.');
       for i in 1..l_parts.count loop
          l_parts(i) := cwms_util.strip(l_parts(i));
-      end loop;                                    
+      end loop;
       l_ts_id := cwms_util.join_text(l_parts, '.');
       if length(l_ts_id) != length(p_ts_id) then
          cwms_msg.log_db_message(
-            'CWMS_TS.CLEAN_TS_ID', 
-            cwms_msg.msg_level_normal, 
-            'Cleaned invalid TSID: '||p_ts_id); 
+            'CWMS_TS.CLEAN_TS_ID',
+            cwms_msg.msg_level_normal,
+            'Cleaned invalid TSID: '||p_ts_id);
       end if;
       return l_ts_id;
    end clean_ts_id;
-   
+
    --******************************************************************************/
    --
    --*******************************************************************   --
@@ -423,7 +423,7 @@ AS
               FROM at_cwms_ts_id
              WHERE ts_code = p_cwms_ts_code;
       END;
-      
+
       RETURN l_location_id;
    END;
 
@@ -861,15 +861,15 @@ AS
             IF l_interval_id LIKE '~%'
             THEN
                --
-               -- pseudo-irregular 
+               -- pseudo-irregular
                --
                IF p_interval_utc_offset != cwms_util.utc_offset_irregular
                THEN
                   SELECT INTERVAL
                     INTO l_irregular_interval
                     FROM cwms_interval
-                   WHERE interval_id = substr(l_interval_id, 2); 
-                   
+                   WHERE interval_id = substr(l_interval_id, 2);
+
                   IF p_interval_utc_offset >= l_irregular_interval
                   THEN
                      cwms_err.RAISE ('INVALID_UTC_OFFSET',
@@ -880,19 +880,19 @@ AS
                   -- see if we can change interval
                   --
                   l_tz := cwms_loc.get_local_timezone(l_location_code);
-                  SELECT COUNT (*) 
+                  SELECT COUNT (*)
                     INTO l_tmp
-                    FROM (SELECT local_time, 
+                    FROM (SELECT local_time,
                                  cwms_ts.get_time_on_before_interval(
-                                    local_time, 
-                                    p_interval_utc_offset, 
+                                    local_time,
+                                    p_interval_utc_offset,
                                     l_irregular_interval) as interval_time
-                            FROM (SELECT cwms_util.change_timezone(date_time, 'UTC', l_tz) AS local_time 
+                            FROM (SELECT cwms_util.change_timezone(date_time, 'UTC', l_tz) AS local_time
                                     FROM av_tsv WHERE ts_code = p_ts_code
                                  )
                          )
                    WHERE local_time != interval_time;
-                  
+
                   IF l_tmp > 0
                   THEN
                      cwms_err.RAISE ('CANNOT_CHANGE_OFFSET',
@@ -1067,7 +1067,7 @@ AS
 
       IF l_interval_val > 60
       THEN
-         BEGIN   
+         BEGIN
             l_query := REPLACE (
                'select distinct mod(round((cast((cast(date_time as timestamp) at time zone ''$tz'') as date)
                                    - trunc(cast((cast(date_time as timestamp) at time zone ''$tz'') as date)))
@@ -1078,10 +1078,10 @@ AS
                        )',
                        '$tz',
                        l_time_zone_name);
-                       
+
             cwms_util.check_dynamic_sql(l_query);
-                                    
-            EXECUTE IMMEDIATE l_query               
+
+            EXECUTE IMMEDIATE l_query
                INTO l_tz_offset
                USING l_interval_val, p_ts_code;
          EXCEPTION
@@ -1485,7 +1485,7 @@ AS
 
       DBMS_APPLICATION_INFO.set_module ('create_ts_code',
                                         'parse timeseries_desc using regexp');
-      ----------------------------------------------                                        
+      ----------------------------------------------
       -- remove any aliases from location portion --
       ----------------------------------------------
       l_parts := cwms_util.split_text(p_cwms_ts_id, '.', 1);
@@ -1641,7 +1641,7 @@ AS
                || ' is not a valid interval';
          END IF;
 
-         IF (UPPER (l_parameter_type_id) = 'INST' AND l_duration <> 0) 
+         IF (UPPER (l_parameter_type_id) = 'INST' AND l_duration <> 0)
          THEN
             l_str_error :=
                   l_str_error
@@ -2131,7 +2131,7 @@ AS
       p_office_id         IN     VARCHAR2 DEFAULT NULL)
       RETURN SYS_REFCURSOR
    IS
-      l_ts_code           NUMBER;      
+      l_ts_code           NUMBER;
       l_location_code     NUMBER;
       l_interval          NUMBER;
       l_interval2         NUMBER := 60 / 1440;
@@ -2139,7 +2139,7 @@ AS
       l_office_id         VARCHAR2 (16);
       l_cwms_ts_id        VARCHAR2(191);
       l_units             VARCHAR2 (16);
-      l_time_zone         VARCHAR2 (28); 
+      l_time_zone         VARCHAR2 (28);
       l_base_parameter_id VARCHAR2(16);
       l_trim              BOOLEAN;
       l_start_inclusive   BOOLEAN;
@@ -2161,7 +2161,7 @@ AS
       l_date_format       VARCHAR2 (32) := 'yyyy/mm/dd-hh24.mi.ss';
       l_cursor            SYS_REFCURSOR;
       l_strict_times      BOOLEAN := FALSE;
-      l_value_offset      binary_double := 0;  
+      l_value_offset      binary_double := 0;
 
       PROCEDURE set_action (text IN VARCHAR2)
       IS
@@ -2235,13 +2235,13 @@ AS
                                         'Get TS Code');
 
       BEGIN
-         select ts_code, 
-                interval, 
+         select ts_code,
+                interval,
                 interval_utc_offset,
                 base_parameter_id,
                 location_code
-           into l_ts_code, 
-                l_interval, 
+           into l_ts_code,
+                l_interval,
                 l_utc_offset,
                 l_base_parameter_id,
                 l_location_code
@@ -2252,13 +2252,13 @@ AS
          WHEN NO_DATA_FOUND
          THEN
             BEGIN
-               select ts_code, 
-                      interval, 
+               select ts_code,
+                      interval,
                       interval_utc_offset,
                       base_parameter_id,
                       location_code
-                 into l_ts_code, 
-                      l_interval, 
+                 into l_ts_code,
+                      l_interval,
                       l_utc_offset,
                       l_base_parameter_id,
                       l_location_code
@@ -2271,11 +2271,11 @@ AS
                   cwms_err.raise('TS_ID_NOT_FOUND', l_cwms_ts_id, l_office_id);
             END;
       END;
-                          
+
       if l_base_parameter_id = 'Elev' then
          l_value_offset := cwms_loc.get_vertical_datum_offset(l_location_code, p_units);
       end if;
-      
+
       set_action ('Handle start and end times');
       setup_retrieve (l_start_time,
                       l_end_time,
@@ -2363,7 +2363,7 @@ AS
                       order by t.date_time asc';
                replace_strings;
                cwms_util.check_dynamic_sql(l_query_str);
-               
+
                OPEN l_cursor FOR l_query_str
                   USING l_value_offset,
                         l_missing,
@@ -3432,7 +3432,7 @@ AS
       return integer
    is
       l_score pls_integer;
-   
+
    begin
       return case bitand(p_quality_code, 1)
              when 0 then 1      -- unscreened
@@ -3445,7 +3445,7 @@ AS
                   end
              end;
    end quality_score;
-   
+
    --
    --
    --*******************************************************************   --
@@ -3520,7 +3520,7 @@ AS
       l_different                      boolean;
 
       function bitor(
-         num1 in integer, 
+         num1 in integer,
          num2 in integer)
          return integer
       is
@@ -3553,7 +3553,7 @@ AS
                   -- ensure only used bits are set(also counteracts sign-extension) --
                   ---------------------------------------------------------------------
                   l_quality_code := bitand(l_quality_code, c_used_bits);
-   
+
                   -----------------------------------------
                   -- ensure only one validity bit is set --
                   -----------------------------------------
@@ -3566,32 +3566,32 @@ AS
                   elsif bitand(l_quality_code, c_ok) != 0 then
                      l_quality_code := bitand(l_quality_code, c_ok_mask);
                   end if;
-   
+
                   --------------------------------------------------------
                   -- ensure the replacement cause is not greater than 4 --
                   --------------------------------------------------------
                   l_repl_cause := trunc(bitand(l_quality_code, c_repl_cause_mask) / c_repl_cause_factor);
-   
+
                   if l_repl_cause > 4 then
                      l_repl_cause := 4;
                      l_quality_code := bitor(bitand(l_quality_code, c_no_repl_cause_mask), l_repl_cause * c_repl_cause_factor);
                   end if;
-   
+
                   ---------------------------------------------------------
                   -- ensure the replacement method is not greater than 4 --
                   ---------------------------------------------------------
                   l_repl_method := trunc(bitand(l_quality_code, c_repl_method_mask)/ c_repl_method_factor);
-   
+
                   if l_repl_method > 4 then
                      l_repl_method := 4;
                      l_quality_code := bitor(bitand(l_quality_code, c_no_repl_method_mask), l_repl_method * c_repl_method_factor);
                   end if;
-   
+
                   --------------------------------------------------------------------------------------------------------------
                   -- ensure that if 2 of replacement cause, replacement method, and different are 0, the remaining one is too --
                   --------------------------------------------------------------------------------------------------------------
                   l_different := bitand(l_quality_code, c_different_mask) != 0;
-   
+
                   if l_repl_cause = 0 then
                      if l_repl_method = 0 and l_different then
                         l_quality_code := bitand(l_quality_code, c_not_different_mask);
@@ -3604,7 +3604,7 @@ AS
                      l_repl_cause := 0;
                      l_quality_code := bitand(l_quality_code, c_no_repl_cause_mask);
                   end if;
-   
+
                   ------------------------------------------------------------------------------------------------------------------------------
                   -- ensure that if 2 of replacement cause, replacement method, and different are NOT 0, the remaining one is set accordingly --
                   ------------------------------------------------------------------------------------------------------------------------------
@@ -3666,7 +3666,7 @@ AS
    BEGIN
       RETURN use_first_table (cwms_util.TO_TIMESTAMP (p_timestamp));
    END use_first_table;
-   
+
    -------------------------------------------------------------------------------
    -- PROCEDURE TIME_SERIES_UPDATED(...)
    --
@@ -3729,8 +3729,8 @@ AS
                   if i < 3 then
                      continue;
                   else
-                     cwms_err.raise('ERROR', 'Could not get unique message id in 3 attempts'); 
-                  end if; 
+                     cwms_err.raise('ERROR', 'Could not get unique message id in 3 attempts');
+                  end if;
                end if;
          end;
          exit; -- no exception
@@ -3783,7 +3783,7 @@ AS
       l_result varchar2(1);
    begin
       case
-      when (v1 is null) != (v2 is null) then 
+      when (v1 is null) != (v2 is null) then
          l_result := 'F'; -- mixed nullity
       when v1 is null then
          l_result := 'T'; -- null values
@@ -3807,14 +3807,14 @@ AS
       l_result varchar2(1);
    begin
       case
-      when (v1 is null) != (v2 is null) then 
+      when (v1 is null) != (v2 is null) then
          l_result := 'F'; -- mixed nullity on values
-      when (q1 is null) != (q2 is null) then 
+      when (q1 is null) != (q2 is null) then
          l_result := 'F'; -- mixed nullity on quality
       when v1 is null then
-         if q1 is null or q1 = q2 then 
+         if q1 is null or q1 = q2 then
             l_result := 'T'; -- null values / same quality
-         else 
+         else
             l_result := 'F'; -- null values / different quality
          end if;
       else
@@ -3843,19 +3843,19 @@ AS
    begin
       if q1 is not null then
          qq1 := bitand(q1, to_number('7FFFFFFF', 'XXXXXXXX')); -- unset protection bit
-      end if;   
+      end if;
       if q2 is not null then
          qq2 := bitand(q2, to_number('7FFFFFFF', 'XXXXXXXX')); --unset protection bit
-      end if;   
+      end if;
       case
-      when (v1 is null) != (v2 is null) then 
+      when (v1 is null) != (v2 is null) then
          l_result := 'F'; -- mixed nullity on values
-      when (qq1 is null) != (qq2 is null) then 
+      when (qq1 is null) != (qq2 is null) then
          l_result := 'F'; -- mixed nullity on quality
       when v1 is null then
-         if qq1 is null or qq1 = qq2 then 
+         if qq1 is null or qq1 = qq2 then
             l_result := 'T'; -- null values / same quality
-         else 
+         else
             l_result := 'F'; -- null values / different quality
          end if;
       else
@@ -3893,78 +3893,78 @@ AS
             l_rec.earliest_time                 := p_ts_extents_rec.earliest_time;
             l_rec.earliest_time_entry           := p_ts_extents_rec.earliest_time_entry;
             l_updated                           := true;
-         end if;            
-         if p_ts_extents_rec.earliest_non_null_time is not null 
+         end if;
+         if p_ts_extents_rec.earliest_non_null_time is not null
             and (l_rec.earliest_non_null_time is null or p_ts_extents_rec.earliest_non_null_time < l_rec.earliest_non_null_time)
          then
             l_rec.earliest_non_null_time        := p_ts_extents_rec.earliest_non_null_time;
             l_rec.earliest_non_null_time_entry  := p_ts_extents_rec.earliest_non_null_time_entry;
             l_updated                           := true;
-         end if;            
-         if p_ts_extents_rec.earliest_non_null_entry_time is not null 
+         end if;
+         if p_ts_extents_rec.earliest_non_null_entry_time is not null
             and (l_rec.earliest_non_null_entry_time is null or p_ts_extents_rec.earliest_non_null_entry_time < l_rec.earliest_non_null_entry_time)
          then
             l_rec.earliest_non_null_entry_time  := p_ts_extents_rec.earliest_non_null_entry_time;
             l_updated                           := true;
-         end if;            
+         end if;
          if p_ts_extents_rec.latest_time is not null
             and (l_rec.latest_time is null or p_ts_extents_rec.latest_time > l_rec.latest_time)
          then
-            l_rec.latest_time                   := p_ts_extents_rec.latest_time;      
+            l_rec.latest_time                   := p_ts_extents_rec.latest_time;
             l_rec.latest_time_entry             := p_ts_extents_rec.latest_time_entry;
             l_updated                           := true;
-         end if;            
-         if p_ts_extents_rec.latest_non_null_time is not null 
+         end if;
+         if p_ts_extents_rec.latest_non_null_time is not null
             and (l_rec.latest_non_null_time is null or p_ts_extents_rec.latest_non_null_time > l_rec.latest_non_null_time)
          then
-            l_rec.latest_non_null_time          := p_ts_extents_rec.latest_non_null_time;      
+            l_rec.latest_non_null_time          := p_ts_extents_rec.latest_non_null_time;
             l_rec.latest_non_null_time_entry    := p_ts_extents_rec.latest_non_null_time_entry;
             l_updated                           := true;
-         end if;            
-         if p_ts_extents_rec.latest_entry_time is not null 
+         end if;
+         if p_ts_extents_rec.latest_entry_time is not null
             and (l_rec.latest_entry_time is null or p_ts_extents_rec.latest_entry_time > l_rec.latest_entry_time)
          then
             l_rec.latest_entry_time             := p_ts_extents_rec.latest_entry_time;
             l_updated                           := true;
-         end if;            
+         end if;
          if p_ts_extents_rec.latest_non_null_entry_time is not null
             and (l_rec.latest_non_null_entry_time is null or p_ts_extents_rec.latest_non_null_entry_time > l_rec.latest_non_null_entry_time)
          then
             l_rec.latest_non_null_entry_time    := p_ts_extents_rec.latest_non_null_entry_time;
             l_updated                           := true;
-         end if;            
-         if p_ts_extents_rec.least_value is not null 
-            and (l_rec.least_value is null or p_ts_extents_rec.least_value < l_rec.least_value) 
+         end if;
+         if p_ts_extents_rec.least_value is not null
+            and (l_rec.least_value is null or p_ts_extents_rec.least_value < l_rec.least_value)
          then
-            l_rec.least_value                   := p_ts_extents_rec.least_value;      
-            l_rec.least_value_time              := p_ts_extents_rec.least_value_time; 
+            l_rec.least_value                   := p_ts_extents_rec.least_value;
+            l_rec.least_value_time              := p_ts_extents_rec.least_value_time;
             l_rec.least_value_entry             := p_ts_extents_rec.least_value_entry;
             l_updated                           := true;
-         end if;            
-         if p_ts_extents_rec.least_accepted_value is not null 
-            and (l_rec.least_accepted_value is null or p_ts_extents_rec.least_accepted_value < l_rec.least_accepted_value) 
+         end if;
+         if p_ts_extents_rec.least_accepted_value is not null
+            and (l_rec.least_accepted_value is null or p_ts_extents_rec.least_accepted_value < l_rec.least_accepted_value)
          then
-            l_rec.least_accepted_value          := p_ts_extents_rec.least_accepted_value;      
-            l_rec.least_accepted_value_time     := p_ts_extents_rec.least_accepted_value_time; 
+            l_rec.least_accepted_value          := p_ts_extents_rec.least_accepted_value;
+            l_rec.least_accepted_value_time     := p_ts_extents_rec.least_accepted_value_time;
             l_rec.least_accepted_value_entry    := p_ts_extents_rec.least_accepted_value_entry;
             l_updated                           := true;
-         end if;            
-         if p_ts_extents_rec.greatest_value is not null 
-            and (l_rec.greatest_value is null or p_ts_extents_rec.greatest_value > l_rec.greatest_value) 
+         end if;
+         if p_ts_extents_rec.greatest_value is not null
+            and (l_rec.greatest_value is null or p_ts_extents_rec.greatest_value > l_rec.greatest_value)
          then
-            l_rec.greatest_value                := p_ts_extents_rec.greatest_value;      
-            l_rec.greatest_value_time           := p_ts_extents_rec.greatest_value_time; 
+            l_rec.greatest_value                := p_ts_extents_rec.greatest_value;
+            l_rec.greatest_value_time           := p_ts_extents_rec.greatest_value_time;
             l_rec.greatest_value_entry          := p_ts_extents_rec.greatest_value_entry;
             l_updated                           := true;
-         end if; 
-         if p_ts_extents_rec.greatest_accepted_value is not null 
-            and (l_rec.greatest_accepted_value is null or p_ts_extents_rec.greatest_accepted_value > l_rec.greatest_accepted_value) 
+         end if;
+         if p_ts_extents_rec.greatest_accepted_value is not null
+            and (l_rec.greatest_accepted_value is null or p_ts_extents_rec.greatest_accepted_value > l_rec.greatest_accepted_value)
          then
-            l_rec.greatest_accepted_value       := p_ts_extents_rec.greatest_accepted_value;      
-            l_rec.greatest_accepted_value_time  := p_ts_extents_rec.greatest_accepted_value_time; 
+            l_rec.greatest_accepted_value       := p_ts_extents_rec.greatest_accepted_value;
+            l_rec.greatest_accepted_value_time  := p_ts_extents_rec.greatest_accepted_value_time;
             l_rec.greatest_accepted_value_entry := p_ts_extents_rec.greatest_accepted_value_entry;
             l_updated                           := true;
-         end if; 
+         end if;
          if l_updated then
             update at_ts_extents
                set row = l_rec
@@ -3983,12 +3983,12 @@ AS
       end;
       return l_updated;
    end update_ts_extents;
-   
+
    procedure update_ts_extents(
       p_ts_code      in integer default null,
       p_version_date in date default null)
    is
-      type at_ts_extents_tabtype is table of at_ts_extents%rowtype;   
+      type at_ts_extents_tabtype is table of at_ts_extents%rowtype;
       l_crsr       sys_refcursor;
       l_ts1        timestamp;
       l_ts2        timestamp;
@@ -4053,7 +4053,7 @@ AS
                    from :table_name
                   where ts_code = :ts_code
                     and version_date = nvl(:version_date, version_date)
-                  group by ts_code, version_date 
+                  group by ts_code, version_date
                 ) q1
                 join
                 (select ts_code,
@@ -4064,26 +4064,26 @@ AS
                         max(data_entry_date) as latest_non_null_entry_time
                    from :table_name
                   where value is not null
-                  group by ts_code, version_date 
+                  group by ts_code, version_date
                 ) q2 on q2.ts_code = q1.ts_code
                     and q2.version_date = q1.version_date
                 join
                 (select ts_code,
                         version_date,
-                        date_time, 
+                        date_time,
                         max(data_entry_date) as earliest_non_null_time_entry
                    from :table_name
-                  group by ts_code, version_date, date_time 
+                  group by ts_code, version_date, date_time
                 ) q3 on q3.ts_code = q1.ts_code
                     and q3.version_date = q1.version_date
                     and q3.date_time = q2.earliest_non_null_time
                 join
                 (select ts_code,
                         version_date,
-                        date_time, 
+                        date_time,
                         max(data_entry_date) as latest_non_null_time_entry
                    from :table_name
-                  group by ts_code, version_date, date_time 
+                  group by ts_code, version_date, date_time
                 ) q4 on q4.ts_code = q1.ts_code
                     and q4.version_date = q1.version_date
                     and q4.date_time = q2.latest_non_null_time
@@ -4094,7 +4094,7 @@ AS
                         max(value) as greatest_accepted_value
                    from :table_name
                   where bitand(quality_code, 30) in (0,2,8)
-                  group by ts_code, version_date 
+                  group by ts_code, version_date
                 ) q5 on q5.ts_code = q1.ts_code
                     and q5.version_date = q1.version_date
                 join
@@ -4125,7 +4125,7 @@ AS
                 ) q8 on q8.ts_code = q1.ts_code
                     and q8.version_date = q1.version_date
                     and q8.value = q1.least_value
-                join    
+                join
                 (select ts_code,
                         version_date,
                         date_time,
@@ -4143,8 +4143,8 @@ AS
                   group by ts_code, version_date, value
                 ) q10 on q10.ts_code = q1.ts_code
                     and q10.version_date = q1.version_date
-                    and q10.value = q1.greatest_value   
-                join    
+                    and q10.value = q1.greatest_value
+                join
                 (select ts_code,
                         version_date,
                         date_time,
@@ -4209,17 +4209,17 @@ AS
             -- update all ts_codes --
             -------------------------
             --
-            -- NOTE: I tried various methods of selecting values from each table, including a single query to get the extents for 
+            -- NOTE: I tried various methods of selecting values from each table, including a single query to get the extents for
             --       every ts_cod as well as a single query to get extents for no more than 100 ts_codes at a time. Each of these
             --       seemed to work okay interactively but took *way* too long when running as a job. I wasn't able to account for
             --       this, but I found that querying each table for a single ts_code at a time performed much faster than the bulk
-            --       queries - at least when running as a job. 
+            --       queries - at least when running as a job.
             --
             -- MDP
             for i in 1..l_ts_codes.count loop
                if mod(i, 100) = 1 then
                   cwms_msg.log_db_message(cwms_msg.msg_level_verbose, 'Starting ts_codes '||i||'..'||least(i+99, l_ts_codes.count)||' in '||rec.table_name);
-               end if; 
+               end if;
                ------------
                -- select --
                ------------
@@ -4230,7 +4230,7 @@ AS
             l_ts2 := systimestamp;
             l_elapsed := l_ts2 - l_ts1;
                   cwms_msg.log_db_message(
-                     cwms_msg.msg_level_verbose, 
+                     cwms_msg.msg_level_verbose,
                      'Selected '
                      ||l_ts_extents.count
                      ||' time series extents from ts_codes '
@@ -4243,20 +4243,20 @@ AS
                      ||l_elapsed);
             l_ts1 := systimestamp;
                   l_updated := 0;
-         end if;      
+         end if;
                ------------
                -- update --
                ------------
                for j in 1..l_ts_extents.count loop
-                  if update_ts_extents(l_ts_extents(j)) then 
-                     l_updated := l_updated + 1; 
-                  end if;   
+                  if update_ts_extents(l_ts_extents(j)) then
+                     l_updated := l_updated + 1;
+                  end if;
                end loop;
                if mod(i, 100) = 1 then
                   l_ts2 := systimestamp;
                   l_elapsed := l_ts2 - l_ts1;
                   cwms_msg.log_db_message(
-                     cwms_msg.msg_level_verbose, 
+                     cwms_msg.msg_level_verbose,
                      'Updated '
                      ||l_updated
                      ||' time series extents from ts_codes '
@@ -4269,7 +4269,7 @@ AS
                      ||l_elapsed);
                   l_ts1 := systimestamp;
                   commit;
-               end if;   
+               end if;
             end loop;
             commit;
          else
@@ -4289,7 +4289,7 @@ AS
          for i in 1..l_ts_extents.count loop
             if update_ts_extents(l_ts_extents(i)) then
                l_updated := l_updated + 1;
-            end if;   
+            end if;
             if mod(l_updated, 100) = 0 then
                commit;
             end if;
@@ -4315,7 +4315,7 @@ AS
             l_ts_extents(1).ts_code := rec.ts_code;
             if update_ts_extents(l_ts_extents(1)) then
                l_updated := l_updated + 1;
-            end if;   
+            end if;
             if mod(l_updated, 100) = 0 then
                commit;
             end if;
@@ -4338,7 +4338,7 @@ AS
       l_dow    varchar2(3);
       l_start  date;
       l_timezone varchar2(28);
-      
+
       function job_count return pls_integer
       is
          l_count pls_integer;
@@ -4376,7 +4376,7 @@ AS
           where rownum = 1;
       exception
          when no_data_found then l_timezone := 'UTC';
-      end;   
+      end;
       ----------------------------------------------------------------------------------
       -- create the job to start next Friday at 10:00 pm local time and repeat weekly --
       ----------------------------------------------------------------------------------
@@ -4398,7 +4398,7 @@ AS
          argument_position => 2,
          argument_value    => null);
       dbms_scheduler.enable(l_job_name);
-      if job_count != 1 then 
+      if job_count != 1 then
          cwms_err.raise('ERROR', 'Job '||l_job_name||' not started');
       end if;
    end start_update_ts_extents_job;
@@ -4407,7 +4407,7 @@ AS
    procedure start_immediate_upd_tsx_job
    is
       l_job_name varchar2(30) := 'IMMEDIATE_UPD_TS_EXTENTS_JOB';
-      
+
       function job_count return pls_integer
       is
          l_count pls_integer;
@@ -4446,7 +4446,7 @@ AS
          argument_position => 2,
          argument_value    => null);
       dbms_scheduler.enable(l_job_name);
-      if job_count != 1 then 
+      if job_count != 1 then
          cwms_err.raise('ERROR', 'Job '||l_job_name||' not started');
       end if;
    end start_immediate_upd_tsx_job;
@@ -4547,7 +4547,7 @@ AS
       l_date_times          date_table_type;
       l_min_interval        number;
       l_count               number;
-      l_value_offset        binary_double := 0; 
+      l_value_offset        binary_double := 0;
    --
       l_tz_code             integer;
       l_loc_tz              varchar2(28);
@@ -4565,7 +4565,7 @@ AS
       begin
          return num1 + num2 - bitand (num1, num2);
       end bitor;
-      
+
    begin
       DBMS_APPLICATION_INFO.set_module ('cwms_ts_store.store_ts',
                                         'get tscode from ts_id');
@@ -4591,14 +4591,14 @@ AS
          l_office_id := cwms_util.strip(p_office_id);
       END IF;
       l_office_code := CWMS_UTIL.GET_OFFICE_CODE (l_office_id);
-                                                                
+
       begin
          l_cwms_ts_id := clean_ts_id(p_cwms_ts_id);
          l_cwms_ts_id := get_cwms_ts_id(l_cwms_ts_id, l_office_id);
       exception
          when ts_id_not_found then
             null;
-      end;                                        
+      end;
 
       l_location_code := cwms_loc.get_location_code(l_office_code, cwms_Util.split_text(l_cwms_ts_id, 1, '.', 1));
 
@@ -4667,7 +4667,7 @@ AS
                             p_cwms_ts_id     => l_cwms_ts_id,
                             p_fail_if_exists => 'F', -- in case of race condition will return ts_code generated by other thread
                             p_utc_offset     => cwms_util.UTC_OFFSET_UNDEFINED);
-                            
+
             existing_utc_offset := cwms_util.UTC_OFFSET_UNDEFINED;
       END;                                               -- END - Find TS_CODE
 
@@ -4678,7 +4678,7 @@ AS
             'Unable to create or locate ts_code for ' || l_cwms_ts_id,
             TRUE);
       END IF;
-      
+
 
       if p_timeseries_data.count = 0 then
          dbms_application_info.set_action ('Returning due to no data provided');
@@ -4686,7 +4686,7 @@ AS
       end if;
 
       DBMS_APPLICATION_INFO.set_action ('Check for nulls in incoming data');
-      
+
       case get_nulls_storage_policy(l_ts_code)
       when set_null_values_to_missing then
          --------------------------------------------
@@ -4707,7 +4707,7 @@ AS
            into l_count
            from table(p_timeseries_data)
           where value is null and get_quality_validity(quality_code) != 'MISSING';
-         if l_count > 0 then 
+         if l_count > 0 then
             cwms_err.raise('ERROR', 'Incoming data contains null values with non-missing quality.');
          end if;
          l_timeseries_data := p_timeseries_data;
@@ -4729,8 +4729,8 @@ AS
          dbms_application_info.set_action ('Returning due to no data passed null filter');
          return;      -- have already created ts_code if it didn't exist
       end if;
-      
-         
+
+
       DBMS_APPLICATION_INFO.set_action (
          'Truncate incoming times to minute and verify validity');
       ---------------------------------------------------------
@@ -4776,7 +4776,7 @@ AS
             --------------------
             update at_cwms_ts_spec
                set interval_utc_offset = l_utc_offset
-             where ts_code = l_ts_code; 
+             where ts_code = l_ts_code;
          else
             -----------------------------
             -- test for invalid offset --
@@ -4817,21 +4817,21 @@ AS
             if l_tz_code > 0 then
                select time_zone_name
                  into l_loc_tz
-                 from cwms_time_zone 
+                 from cwms_time_zone
                 where time_zone_code = l_tz_code;
-            
+
                select cwms_util.change_timezone(trunc(cast(date_time at time zone 'UTC' as date), 'mi'), 'UTC', l_loc_tz)
-                 bulk collect 
+                 bulk collect
                  into l_date_times
                  from table(l_timeseries_data);
-            
-               l_count := 0; 
+
+               l_count := 0;
                l_filtered_ts_data := tsv_array();
                l_filtered_ts_data.extend(l_timeseries_data.count);
                for i in 1..l_timeseries_data.count loop
                   if get_time_on_before_interval(
-                        l_date_times(i), 
-                        l_irr_offset, 
+                        l_date_times(i),
+                        l_irr_offset,
                         l_irr_interval) = l_date_times(i)
                   then
                      l_filtered_ts_data(i-l_count) := l_timeseries_data(i);
@@ -4852,11 +4852,11 @@ AS
             end if;
          end if;
       END IF;
-                    
+
 
       DBMS_APPLICATION_INFO.set_action (
          'getting vertical datum offset if parameter is elevation');
-       
+
       l_units := cwms_util.get_unit_id(p_units, l_office_id);
       if l_units is null then l_units := p_units; end if;
       if l_base_parameter_id = 'Elev' then
@@ -4865,7 +4865,7 @@ AS
 
       DBMS_APPLICATION_INFO.set_action (
          'check p_units is a valid unit for this parameter');
-         
+
       SELECT a.base_parameter_id
         INTO l_base_parameter_id
         FROM cwms_base_parameter a, at_parameter b, at_cwms_ts_spec c
@@ -4924,7 +4924,7 @@ AS
              MAX (trunc(CAST ( (t.date_time AT TIME ZONE 'UTC') AS DATE), 'mi'))
         INTO mindate, maxdate
         FROM TABLE (CAST (l_timeseries_data AS tsv_array)) t;
-        
+
       l_filter_duplicates := get_filter_duplicates(l_ts_code);
 
 --      DBMS_OUTPUT.put_line (
@@ -4949,7 +4949,7 @@ AS
       /*
      A WHILE LOOP was added to catch primary key violations when multiple
      threads are simultaneously processing data for the same ts code and
-     the data blocks have overlapping time windows. The loop allows    
+     the data blocks have overlapping time windows. The loop allows
      repeated attempts to store the data block, with the hope that the
      initial data block that successfully stored data for the overlapping
      date/times has finally completed and COMMITed the inserts. If after
@@ -5010,7 +5010,7 @@ AS
                                     t2.value,
                                     t2.quality_code,
                                     :l_version_date)'
-                  using l_value_offset,                                    
+                  using l_value_offset,
                         l_timeseries_data,
                         l_ts_code,
                         l_units,
@@ -5023,8 +5023,8 @@ AS
                         l_ts_code,
                         l_store_date,
                         l_version_date;
-                        
-               l_count := l_count + sql%rowcount;            
+
+               l_count := l_count + sql%rowcount;
             end loop;
          when not l_override_prot and upper (p_store_rule) = cwms_util.replace_all then
             --------------------------------------
@@ -5095,8 +5095,8 @@ AS
                         l_ts_code,
                         l_store_date,
                         l_version_date;
-                        
-               l_count := l_count + sql%rowcount;            
+
+               l_count := l_count + sql%rowcount;
             end loop;
          when upper (p_store_rule) = cwms_util.do_not_replace then
             -------------------------------------------
@@ -5155,8 +5155,8 @@ AS
                         l_ts_code,
                         l_store_date,
                         l_version_date;
-                        
-               l_count := l_count + sql%rowcount;            
+
+               l_count := l_count + sql%rowcount;
             end loop;
          when upper (p_store_rule) = cwms_util.replace_missing_values_only then
             --------------------------------------------------------
@@ -5204,7 +5204,7 @@ AS
                                     ((t1.quality_code in (select quality_code
                                                             from cwms_data_quality q
                                                            where q.protection_id = ''UNPROTECTED''))
-                                     or                      
+                                     or
                                      (t2.quality_code in (select quality_code
                                                             from cwms_data_quality q
                                                            where q.protection_id = ''PROTECTED'')))
@@ -5285,8 +5285,8 @@ AS
                         l_ts_code,
                         l_store_date,
                         l_version_date;
-                        
-               l_count := l_count + sql%rowcount;            
+
+               l_count := l_count + sql%rowcount;
             end loop;
          when l_override_prot and upper (p_store_rule) = cwms_util.replace_with_non_missing then
             ---------------------------------------------------
@@ -5359,8 +5359,8 @@ AS
                         l_ts_code,
                         l_store_date,
                         l_version_date;
-                        
-               l_count := l_count + sql%rowcount;            
+
+               l_count := l_count + sql%rowcount;
             end loop;
          when not l_override_prot and upper (p_store_rule) = cwms_util.replace_with_non_missing then
             ---------------------------------------------------
@@ -5374,7 +5374,7 @@ AS
                        where start_date <= maxdate and end_date > mindate
                      )
             loop
-               execute immediate 
+               execute immediate
                   'merge into '||x.table_name||' t1
                         using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date), ''mi'') date_time,
                                       (t.value * c.factor + c.offset) - :l_value_offset value,
@@ -5404,11 +5404,11 @@ AS
                        where (((t1.quality_code in (select quality_code
                                                       from cwms_data_quality q
                                                      where q.protection_id = ''UNPROTECTED''))
-                               or                        
+                               or
                                (t2.quality_code in (select quality_code
                                                       from cwms_data_quality q
                                                      where q.protection_id = ''PROTECTED'')))
-                              and                       
+                              and
                               (t2.quality_code not in (select quality_code
                                                          from cwms_data_quality q
                                                         where q.validity_id = ''MISSING''))
@@ -5441,8 +5441,8 @@ AS
                         l_ts_code,
                         l_store_date,
                         l_version_date;
-                        
-               l_count := l_count + sql%rowcount;            
+
+               l_count := l_count + sql%rowcount;
             end loop;
          when upper (p_store_rule) = cwms_util.delete_insert then
             ----------------------------------------
@@ -5472,12 +5472,12 @@ AS
               and p.parameter_code = s.parameter_code
               and bp.base_parameter_code = p.base_parameter_code
               and c.to_unit_code = bp.unit_code;
-            
+
             for x in (select start_date, end_date, table_name
                         from at_ts_table_properties
                        where start_date <= maxdate and end_date > mindate
                      )
-            loop  
+            loop
                -------------------------------------------------
                -- capture the times to delete from this table --
                -------------------------------------------------
@@ -5496,18 +5496,18 @@ AS
                                     or
                                     t1.quality_code not in (select quality_code from cwms_data_quality where protection_id = ''PROTECTED'')
                                    )
-                                  ) 
-                           union all       
+                                  )
+                           union all
                            select t1.date_time
                              from '||x.table_name||' t1
                             where t1.ts_code = :ts_code
-                              and t1.date_time between :mindate and :maxdate 
+                              and t1.date_time between :mindate and :maxdate
                               and t1.date_time not in (select date_time from table(:z_timeseries_data))
                               and t1.version_date = :version_date
                               and (nvl(:override_prot, ''F'') = ''T''
                                    or
                                    t1.quality_code not in (select quality_code from cwms_data_quality where protection_id = ''PROTECTED'')
-                                  ) 
+                                  )
                           )
                     order by 1'
                bulk collect
@@ -5527,7 +5527,7 @@ AS
                ----------------------------------------------------------------
                -- short circuit if there's nothing to delete from this table --
                ----------------------------------------------------------------
-               continue when l_times.count = 0;   
+               continue when l_times.count = 0;
                ------------------------
                -- record the deletes --
                ------------------------
@@ -5543,7 +5543,7 @@ AS
                   l_millis,
                   l_ts_code,
                   l_version_date,
-                  l_times;   
+                  l_times;
                -------------------------
                -- delete the old data --
                -------------------------
@@ -5560,11 +5560,11 @@ AS
                -------------------------
                -- insert the new data --
                -------------------------
-               execute immediate 
+               execute immediate
                   'insert
                      into '||x.table_name||'
                    select :ts_code,
-                          date_time,                  
+                          date_time,
                           :version_date,
                           :data_entry_date,
                           value,
@@ -5574,7 +5574,7 @@ AS
                     where date_time in (select column_value from table(:times))
                       and date_time >= from_tz(cast(:start_date as timestamp), ''UTC'')
                       and date_time <  from_tz(cast(:end_date as timestamp), ''UTC'')'
-               using 
+               using
                   l_ts_code,
                   l_version_date,
                   l_store_date,
@@ -5582,8 +5582,8 @@ AS
                   l_times,
                   x.start_date,
                   x.end_date;
-                        
-               l_count := l_count + sql%rowcount;            
+
+               l_count := l_count + sql%rowcount;
             end loop;
          ELSE
             cwms_err.raise ('INVALID_STORE_RULE',
@@ -5604,7 +5604,7 @@ AS
                END IF;
          END;
       END LOOP;
-      
+
       if l_count > 0  then
          ------------------------------------
          -- update the time series extents --
@@ -5638,7 +5638,7 @@ AS
                   exception
                      when job_name_already_exists then
                         cwms_msg.log_db_message(
-                           cwms_msg.msg_level_normal, 
+                           cwms_msg.msg_level_normal,
                            'UPDATE_TS_EXTENTS with '
                            ||l_ts_code
                            ||', '
@@ -5690,7 +5690,7 @@ AS
                    q7.greatest_accepted_value_time,
                    l_store_date,
                    l_store_date
-              into l_ts_extents_rec     
+              into l_ts_extents_rec
               from at_cwms_ts_spec s,
                    at_parameter p,
                    cwms_unit_conversion c,
@@ -5723,7 +5723,7 @@ AS
                            max(date_time) as greatest_value_time
                       from table(l_timeseries_data)
                      group by value
-                   ) q5 on q5.value = q1.greatest_value   
+                   ) q5 on q5.value = q1.greatest_value
                    join
                    (select max(date_time) as least_accepted_value_time,
                            value
@@ -5740,16 +5740,16 @@ AS
                and u.unit_id = l_units
                and c.from_unit_code = u.unit_code
                and p.parameter_code = s.parameter_code
-               and bp.base_parameter_code = p.base_parameter_code 
+               and bp.base_parameter_code = p.base_parameter_code
                and c.to_unit_code = bp.unit_code;
-               
+
             declare
                l_updated boolean;
             begin
                l_updated := update_ts_extents(l_ts_extents_rec);
             end;
          end if;
-                      
+
          ---------------------------------
          -- archive and publish message --
          ---------------------------------
@@ -5774,14 +5774,14 @@ AS
                upper(p_store_rule));
          end;
       end if;
-     
+
 
       dbms_application_info.set_module (null, null);
       commit;
    exception
       when others
       then
-         cwms_msg.log_db_message ( 
+         cwms_msg.log_db_message (
             1,
                'STORE_TS ERROR ***'
             || l_cwms_ts_id
@@ -5915,7 +5915,7 @@ AS
       l_num_errors     pls_integer := 0;
       l_excep_errors   pls_integer := 0;
    begin
-                 
+
       if p_timeseries_array is not null then
          dbms_application_info.set_module (
             'cwms_ts_store.store_ts_multi',
@@ -5923,14 +5923,14 @@ AS
          if p_version_dates is not null and p_version_dates.count != p_timeseries_array.count then
             cwms_err.raise(
                'ERROR',
-               'Counts of time series and version dates don''t match.');               
+               'Counts of time series and version dates don''t match.');
          end if;
          l_version_dates.extend(p_timeseries_array.count);
          for i in 1..l_version_dates.count loop
             if p_version_dates is null or p_version_dates(i) is null then
                l_version_dates(i) := cwms_util.non_versioned;
             else
-               l_version_dates(i) := p_version_dates(i); 
+               l_version_dates(i) := p_version_dates(i);
             end if;
          end loop;
          for i in 1..p_timeseries_array.count loop
@@ -6217,7 +6217,7 @@ AS
       -- update the ts extents --
       ---------------------------
       delete from at_ts_extents where ts_code = l_ts_code;
-      
+
       if l_delete_action in (cwms_util.delete_ts_id, cwms_util.delete_ts_cascade) then
          -------------------------------
          -- publish TSDeleted message --
@@ -6229,12 +6229,12 @@ AS
          i := cwms_msg.publish_message(l_msg, l_msgid, l_db_office_id || '_ts_stored');
       end if;
    end delete_ts;
-   
+
    procedure delete_ts (
       p_cwms_ts_id           in varchar2,
       p_override_protection  in varchar2,
       p_start_time           in date,
-      p_end_time             in date,                        
+      p_end_time             in date,
       p_start_time_inclusive in varchar2,
       p_end_time_inclusive   in varchar2,
       p_version_date         in date,
@@ -6272,18 +6272,18 @@ AS
       end if;
       purge_ts_data(
          l_ts_code,
-         p_override_protection, 
-         case p_version_date = cwms_util.non_versioned 
+         p_override_protection,
+         case p_version_date = cwms_util.non_versioned
             when true then p_version_date
             else cwms_util.change_timezone(p_version_date, l_time_zone, 'UTC')
-         end, 
-         cwms_util.change_timezone(l_start_time, l_time_zone, 'UTC'), 
-         cwms_util.change_timezone(l_end_time, l_time_zone, 'UTC'), 
-         l_date_times, 
-         p_max_version, 
+         end,
+         cwms_util.change_timezone(l_start_time, l_time_zone, 'UTC'),
+         cwms_util.change_timezone(l_end_time, l_time_zone, 'UTC'),
+         l_date_times,
+         p_max_version,
          p_ts_item_mask);
    end delete_ts;
-   
+
    procedure delete_ts (
       p_timeseries_info      in timeseries_req_array,
       p_override_protection  in varchar2,
@@ -6313,8 +6313,8 @@ AS
                 p_db_office_id         => p_db_office_id);
          end loop;
       end if;
-   end delete_ts;      
-         
+   end delete_ts;
+
    procedure purge_ts_data(
       p_ts_code          in number,
       p_version_date_utc in date,
@@ -6335,7 +6335,7 @@ AS
          p_max_version,
          p_ts_item_mask);
    end purge_ts_data;
-         
+
    procedure purge_ts_data(
       p_ts_code             in number,
       p_override_protection in varchar2,
@@ -6375,7 +6375,7 @@ AS
       if p_date_times_utc is null then
          l_text := 'NULL';
       else
-         select listagg(to_char(column_value, 'yyyy-mm-dd hh24:mi'), ',') within group (order by column_value) 
+         select listagg(to_char(column_value, 'yyyy-mm-dd hh24:mi'), ',') within group (order by column_value)
            into l_text
            from table(p_date_times_utc);
          l_text := '('||l_text||')';
@@ -6391,7 +6391,7 @@ AS
          ||chr(10)||'   p_date_times_utc      =>'||l_text||','
          ||chr(10)||'   p_max_version         =>'||p_max_version||','
          ||chr(10)||'   p_ts_item_mask        =>'||p_ts_item_mask||')');
-      
+
       l_max_version := cwms_util.return_true_or_false(p_max_version);
       if instr('ERROR', upper(trim(p_override_protection))) = 1 then
          l_override_protection := false;
@@ -6399,7 +6399,7 @@ AS
       else
          l_override_protection := cwms_util.return_true_or_false(p_override_protection);
          l_error_on_protection := false;
-      end if;      
+      end if;
 
       --------------------------------------------------------------------
       -- get the date_times and version_dates of all the items to purge --
@@ -6521,10 +6521,10 @@ AS
                                           and bitand(t.quality_code, 2147483648) <> 0)', '$t', rec.table_name)
                   into l_protected_count
                  using l_times_values, p_ts_code;
-                 
+
                if l_protected_count > 0 then
                   cwms_err.raise('ERROR', 'One or more values are protected');
-               end if;     
+               end if;
             end loop;
 
          end if;
@@ -6572,7 +6572,7 @@ AS
                                     where v.ts_code = p_ts_code and v.date_time = d.date_1 and v.version_date = d.date_2)) loop
          if l_override_protection then
             execute immediate replace(
-                 'delete 
+                 'delete
                     from $t
                    where rowid in (select t.rowid
                                       from $t t,
@@ -6583,7 +6583,7 @@ AS
                using l_times_values, p_ts_code;
          else
             execute immediate replace(
-                 'delete 
+                 'delete
                     from $t
                    where rowid in (select t.rowid
                                       from $t t,
@@ -6593,7 +6593,7 @@ AS
                                        and t.version_date = d.date_2
                                        and bitand(t.quality_code, 2147483648) = 0)', '$t', rec.table_name)
                using l_times_values, p_ts_code;
-         end if;                                    
+         end if;
       end loop;
 
       delete from at_tsv_std_text
@@ -6637,7 +6637,7 @@ AS
          exception
             when job_name_already_exists then
                cwms_msg.log_db_message(
-                  cwms_msg.msg_level_normal, 
+                  cwms_msg.msg_level_normal,
                   'UPDATE_TS_EXTENTS with '
                   ||p_ts_code
                   ||', '
@@ -9523,10 +9523,10 @@ end retrieve_existing_item_counts;
          DELETE FROM at_ts_group_assignment
                WHERE ts_group_code = l_ts_group_code
                  AND get_db_office_code(ts_code) = l_office_code;
-      ELSE                               
+      ELSE
          l_ts_code := get_ts_code (p_ts_id, l_office_code);
          DELETE FROM at_ts_group_assignment
-               WHERE ts_group_code = l_ts_group_code 
+               WHERE ts_group_code = l_ts_group_code
                  AND ts_code = l_ts_code;
       END IF;
    END unassign_ts_group;
@@ -9602,8 +9602,8 @@ end retrieve_existing_item_counts;
       begin
          select distinct ts_code
            into l_ts_code
-           from at_ts_group_assignment a, 
-                at_ts_group g, 
+           from at_ts_group_assignment a,
+                at_ts_group g,
                 at_ts_category c
           where a.office_code = l_office_code
             and upper(c.ts_category_id) = upper(nvl(p_category_id, c.ts_category_id))
@@ -9708,9 +9708,9 @@ end retrieve_existing_item_counts;
       SELECT validity_id
         INTO l_validity
         FROM cwms_data_quality
-       WHERE quality_code = p_quality_code + case 
+       WHERE quality_code = p_quality_code + case
                                                 when p_quality_code < 0 then 4294967296
-                                                else  0 
+                                                else  0
                                              end;
       RETURN l_validity;
    EXCEPTION
@@ -9932,9 +9932,9 @@ end retrieve_existing_item_counts;
       SELECT *
         INTO l_rec
         FROM cwms_data_quality
-       WHERE quality_code = p_quality_code + case 
+       WHERE quality_code = p_quality_code + case
                                                 when p_quality_code < 0 then 4294967296
-                                                else  0 
+                                                else  0
                                              end;
 
       IF l_rec.screened_id = 'UNSCREENED'
@@ -10219,7 +10219,7 @@ end retrieve_existing_item_counts;
          p_version_date => p_version_date,
          p_time_zone    => p_time_zone);
       return l_ts_extents.earliest_time;
-   end get_ts_min_date2;   
+   end get_ts_min_date2;
 
    function get_ts_max_date_utc (
       p_ts_code          in number,
@@ -10281,7 +10281,7 @@ end retrieve_existing_item_counts;
          p_version_date => p_version_date,
          p_time_zone    => p_time_zone);
       return l_ts_extents.latest_time;
-   end get_ts_max_date2;   
+   end get_ts_max_date2;
 
    function get_ts_max_date_utc_2 (
       p_ts_code            in number,
@@ -10296,7 +10296,7 @@ end retrieve_existing_item_counts;
                       from at_ts_table_properties
                   order by start_date desc)
       loop
-  
+
          case
           when p_year is null then
           --process for the max date time for this at_tsv_xxxx table
@@ -10308,9 +10308,9 @@ end retrieve_existing_item_counts;
                       and version_date = :2'
                   into l_max_date_utc
                   using p_ts_code, p_version_date_utc;
-            
+
             exception
-             when no_data_found then 
+             when no_data_found then
               l_max_date_utc := null;
             end;
 
@@ -10325,9 +10325,9 @@ end retrieve_existing_item_counts;
                 and version_date = :2'
             into l_max_date_utc
             using p_ts_code, p_version_date_utc;
-        
+
         exception
-         when no_data_found then 
+         when no_data_found then
           l_max_date_utc := null;
         end;
         else
@@ -10423,7 +10423,7 @@ end retrieve_existing_item_counts;
       p_ts_extents   out ts_extents_t,
       p_cwms_ts_id   in  varchar2,
       p_version_date in  date,
-      p_unit         in  varchar2 default null, 
+      p_unit         in  varchar2 default null,
       p_office_id    in  varchar2 default null)
 	is
 	begin
@@ -10433,7 +10433,7 @@ end retrieve_existing_item_counts;
          p_version_date => p_version_date,
          p_unit         => p_unit);
 	end get_ts_extents;
-   
+
    function get_ts_extents_f(
       p_cwms_ts_id   in varchar2,
       p_version_date in date,
@@ -10448,10 +10448,10 @@ end retrieve_existing_item_counts;
          p_ts_code      => cwms_ts.get_ts_code(p_cwms_ts_id => p_cwms_ts_id, p_db_office_id => p_office_id),
          p_version_date => p_version_date,
          p_unit         => p_unit);
-         
-      return l_ts_extents;         
+
+      return l_ts_extents;
 	end get_ts_extents_f;
-   
+
    procedure get_ts_extents(
       p_ts_extents   out ts_extents_t,
       p_ts_code      in  integer,
@@ -10466,7 +10466,7 @@ end retrieve_existing_item_counts;
          p_time_zone    => 'UTC',
          p_unit         => p_unit);
 	end get_ts_extents;
-   
+
    function get_ts_extents_f(
       p_ts_code      in integer,
       p_version_date in date,
@@ -10480,10 +10480,10 @@ end retrieve_existing_item_counts;
          p_ts_code      => p_ts_code,
          p_version_date => p_version_date,
          p_unit         => p_unit);
-         
-      return l_ts_extents;         
+
+      return l_ts_extents;
 	end get_ts_extents_f;
-   
+
    procedure get_ts_extents(
       p_ts_extents out ts_extents_tab_t,
       p_cwms_ts_id in  varchar2,
@@ -10496,7 +10496,7 @@ end retrieve_existing_item_counts;
          p_ts_code    => cwms_ts.get_ts_code(p_cwms_ts_id => p_cwms_ts_id, p_db_office_id => p_office_id),
          p_unit       => p_unit);
 	end get_ts_extents;
-   
+
    function get_ts_extents_f(
       p_cwms_ts_id in varchar2,
       p_unit       in varchar2 default null,
@@ -10512,7 +10512,7 @@ end retrieve_existing_item_counts;
          p_office_id  => p_office_id);
 		return l_ts_extents;
 	end get_ts_extents_f;
-   
+
    procedure get_ts_extents(
       p_ts_extents out ts_extents_tab_t,
       p_ts_code    in  integer,
@@ -10539,7 +10539,7 @@ end retrieve_existing_item_counts;
             p_unit         => p_unit);
       end loop;
 	end get_ts_extents;
-   
+
    function get_ts_extents_f(
       p_ts_code in integer,
       p_unit    in varchar2 default null)
@@ -10553,7 +10553,7 @@ end retrieve_existing_item_counts;
          p_unit       => p_unit);
 		return l_ts_extents;
 	end get_ts_extents_f;
-   
+
    procedure get_ts_extents(
       p_ts_extents   out ts_extents_t,
       p_cwms_ts_id   in  varchar2,
@@ -10570,7 +10570,7 @@ end retrieve_existing_item_counts;
          p_time_zone    => p_time_zone,
          p_unit         => p_unit);
 	end get_ts_extents;
-   
+
    function get_ts_extents_f(
       p_cwms_ts_id   in varchar2,
       p_version_date in date,
@@ -10587,9 +10587,9 @@ end retrieve_existing_item_counts;
          p_version_date => p_version_date,
          p_time_zone    => p_time_zone,
          p_unit         => p_unit);
-      return l_ts_extents;   
+      return l_ts_extents;
 	end get_ts_extents_f;
-   
+
    procedure get_ts_extents(
       p_ts_extents   out ts_extents_t,
       p_ts_code      in  integer,
@@ -10617,7 +10617,7 @@ end retrieve_existing_item_counts;
          exception
             when no_data_found then
                l_time_zone := 'UTC';
-         end;      
+         end;
       else
          l_time_zone := p_time_zone;
       end if;   
@@ -10650,7 +10650,7 @@ end retrieve_existing_item_counts;
       end if;
       p_ts_extents := l_ts_extents;
 	end get_ts_extents;
-   
+
    function get_ts_extents_f(
       p_ts_code      in integer,
       p_version_date in date,
@@ -10668,7 +10668,7 @@ end retrieve_existing_item_counts;
          p_unit         => p_unit);
 		return l_ts_extents;
 	end get_ts_extents_f;
-   
+
    procedure get_ts_extents(
       p_ts_extents out ts_extents_tab_t,
       p_cwms_ts_id in  varchar2,
@@ -10683,7 +10683,7 @@ end retrieve_existing_item_counts;
          p_time_zone  => p_time_zone,
          p_unit       => p_unit);
 	end get_ts_extents;
-   
+
    function get_ts_extents_f(
       p_cwms_ts_id in varchar2,
       p_time_zone  in varchar2,
@@ -10698,10 +10698,10 @@ end retrieve_existing_item_counts;
          p_ts_code    => cwms_ts.get_ts_code(p_cwms_ts_id => p_cwms_ts_id, p_db_office_id => p_office_id),
          p_time_zone  => p_time_zone,
          p_unit       => p_unit);
-         
-      return l_ts_extents;         
+
+      return l_ts_extents;
 	end get_ts_extents_f;
-   
+
    procedure get_ts_extents(
       p_ts_extents out ts_extents_tab_t,
       p_ts_code    in  integer,
@@ -10728,14 +10728,14 @@ end retrieve_existing_item_counts;
          exception
             when no_data_found then
                l_time_zone := 'UTC';
-         end;      
+         end;
       else
          l_time_zone := p_time_zone;
-      end if;   
+      end if;
       for i in 1..2 loop
          begin
             select rowid
-              bulk collect 
+              bulk collect
               into l_rowids
               from at_ts_extents
              where ts_code = p_ts_code
@@ -10759,7 +10759,7 @@ end retrieve_existing_item_counts;
       end loop;
       p_ts_extents := l_ts_extents;
 	end get_ts_extents;
-   
+
    function get_ts_extents_f(
       p_ts_code   in integer,
       p_time_zone in varchar2,
@@ -10773,7 +10773,7 @@ end retrieve_existing_item_counts;
          p_ts_code    => p_ts_code,
          p_time_zone  => p_time_zone,
          p_unit       => p_unit);
-         
+
 		return l_ts_extents;
 	end get_ts_extents_f;
 
@@ -10858,7 +10858,7 @@ end retrieve_existing_item_counts;
                then
                   cwms_util.change_timezone (p_max_date, l_time_zone, 'UTC')
             end;
-   
+
          -----------------------
          -- perform the query --
          -----------------------
@@ -10868,7 +10868,7 @@ end retrieve_existing_item_counts;
          loop
             continue when    rec.start_date > l_max_date
                           or rec.end_date < l_min_date;
-   
+
             begin
                execute immediate
                   'select min(value),
@@ -10878,12 +10878,12 @@ end retrieve_existing_item_counts;
                       and date_time between :2 and :3'
                   into l_temp_min, l_temp_max
                   using l_ts_code, l_min_date, l_max_date;
-   
+
                if l_min_value is null or l_temp_min < l_min_value
                then
                   l_min_value := l_temp_min;
                end if;
-   
+
                if l_max_value is null or l_temp_max > l_max_value
                then
                   l_max_value := l_temp_max;
@@ -10894,12 +10894,12 @@ end retrieve_existing_item_counts;
                   null;
             end;
          end loop;
-   
+
          if l_min_value is not null
          then
             p_min_value := cwms_util.convert_units (l_min_value, l_unit, p_unit);
          end if;
-   
+
          if l_max_value is not null
          then
             p_max_value := cwms_util.convert_units (l_max_value, l_unit, p_unit);
@@ -10998,7 +10998,7 @@ end retrieve_existing_item_counts;
                then
                   cwms_util.change_timezone (p_max_date, l_time_zone, 'utc')
             end;
-   
+
          -----------------------
          -- perform the query --
          -----------------------
@@ -11008,7 +11008,7 @@ end retrieve_existing_item_counts;
          loop
             continue when    rec.start_date > l_max_date
                           or rec.end_date < l_min_date;
-   
+
             begin
                execute immediate
                   'select date_time,
@@ -11029,7 +11029,7 @@ end retrieve_existing_item_counts;
                         l_ts_code,
                         l_min_date,
                         l_max_date;
-   
+
                if l_min_value is null or l_temp_min < l_min_value
                then
                   l_min_value_date := l_temp_min_date;
@@ -11040,7 +11040,7 @@ end retrieve_existing_item_counts;
                then
                   null;
             end;
-   
+
             begin
                execute immediate
                   'select date_time,
@@ -11061,7 +11061,7 @@ end retrieve_existing_item_counts;
                         l_ts_code,
                         l_min_date,
                         l_max_date;
-   
+
                if l_max_value is null or l_temp_max > l_max_value
                then
                   l_max_value_date := l_temp_max_date;
@@ -11073,14 +11073,14 @@ end retrieve_existing_item_counts;
                   null;
             end;
          end loop;
-   
+
          if l_min_value is not null
          then
             p_min_value := cwms_util.convert_units (l_min_value, l_unit, p_unit);
             p_min_value_date :=
                cwms_util.change_timezone (l_min_value_date, 'utc', l_time_zone);
          end if;
-   
+
          if l_max_value is not null
          then
             p_max_value := cwms_util.convert_units (l_max_value, l_unit, p_unit);
@@ -11694,13 +11694,13 @@ end retrieve_existing_item_counts;
       ------------------
       if p_storage_policy is not null and
          p_storage_policy not in (
-            filter_out_null_values, 
-            set_null_values_to_missing, 
+            filter_out_null_values,
+            set_null_values_to_missing,
             reject_ts_with_null_values)
       then
          cwms_err.raise(
             'ERROR',
-            'P_STORAGE_POLICY must be one of FILTER_OUT_NULL_VALUES, SET_NULL_VALUES_TO_MISSING, or REJECT_TS_WITH_NULL_VALUES'); 
+            'P_STORAGE_POLICY must be one of FILTER_OUT_NULL_VALUES, SET_NULL_VALUES_TO_MISSING, or REJECT_TS_WITH_NULL_VALUES');
       end if;
       cwms_msg.log_db_message(
          cwms_msg.msg_level_normal,
@@ -11708,7 +11708,7 @@ end retrieve_existing_item_counts;
          || case p_storage_policy is null
                when true then 'NULL'
                else case p_storage_policy
-               	      when filter_out_null_values then 
+               	      when filter_out_null_values then
                	         'FILTER_OUT_NULL_VALUES'
                	      when set_null_values_to_missing then
                	      	 'SET_NULL_VALUES_TO_MISSING'
@@ -11720,19 +11720,19 @@ end retrieve_existing_item_counts;
          ||cwms_util.get_db_office_id(p_office_id));
       if p_storage_policy is null then
          cwms_properties.delete_property(
-            p_category  => 'TIMESERIES', 
-            p_id        => 'storage.nulls.office.'||cwms_util.get_db_office_code(p_office_id), 
+            p_category  => 'TIMESERIES',
+            p_id        => 'storage.nulls.office.'||cwms_util.get_db_office_code(p_office_id),
             p_office_id => 'CWMS');
       else
          cwms_properties.set_property(
-            p_category  => 'TIMESERIES', 
-            p_id        => 'storage.nulls.office.'||cwms_util.get_db_office_code(p_office_id), 
-            p_value     => p_storage_policy, 
-            p_comment   => null, 
+            p_category  => 'TIMESERIES',
+            p_id        => 'storage.nulls.office.'||cwms_util.get_db_office_code(p_office_id),
+            p_value     => p_storage_policy,
+            p_comment   => null,
             p_office_id => 'CWMS');
-      end if;   
+      end if;
    end set_nulls_storage_policy_ofc;
-      
+
    procedure set_nulls_storage_policy_ts(
       p_storage_policy in integer,
       p_ts_id          in varchar2,
@@ -11744,13 +11744,13 @@ end retrieve_existing_item_counts;
       ------------------
       if p_storage_policy is not null and
          p_storage_policy not in (
-            filter_out_null_values, 
-            set_null_values_to_missing, 
+            filter_out_null_values,
+            set_null_values_to_missing,
             reject_ts_with_null_values)
       then
          cwms_err.raise(
             'ERROR',
-            'P_STORAGE_POLICY must be one of FILTER_OUT_NULL_VALUES, SET_NULL_VALUES_TO_MISSING, or REJECT_TS_WITH_NULL_VALUES'); 
+            'P_STORAGE_POLICY must be one of FILTER_OUT_NULL_VALUES, SET_NULL_VALUES_TO_MISSING, or REJECT_TS_WITH_NULL_VALUES');
       end if;
       cwms_msg.log_db_message(
          cwms_msg.msg_level_normal,
@@ -11758,7 +11758,7 @@ end retrieve_existing_item_counts;
          || case p_storage_policy is null
                when true then 'NULL'
                else case p_storage_policy
-               	      when filter_out_null_values then 
+               	      when filter_out_null_values then
                	         'FILTER_OUT_NULL_VALUES'
                	      when set_null_values_to_missing then
                	      	 'SET_NULL_VALUES_TO_MISSING'
@@ -11775,32 +11775,32 @@ end retrieve_existing_item_counts;
          ||')');
       if p_storage_policy is null then
          cwms_properties.delete_property(
-            p_category  => 'TIMESERIES', 
-            p_id        => 'storage.nulls.tscode.'||get_ts_code(p_ts_id, p_office_id), 
+            p_category  => 'TIMESERIES',
+            p_id        => 'storage.nulls.tscode.'||get_ts_code(p_ts_id, p_office_id),
             p_office_id => 'CWMS');
       else
          cwms_properties.set_property(
-            p_category  => 'TIMESERIES', 
-            p_id        => 'storage.nulls.tscode.'||get_ts_code(p_ts_id, p_office_id), 
-            p_value     => p_storage_policy, 
-            p_comment   => null, 
+            p_category  => 'TIMESERIES',
+            p_id        => 'storage.nulls.tscode.'||get_ts_code(p_ts_id, p_office_id),
+            p_value     => p_storage_policy,
+            p_comment   => null,
             p_office_id => 'CWMS');
 
-      end if;   
+      end if;
    end set_nulls_storage_policy_ts;
-      
+
    function get_nulls_storage_policy_ofc(
       p_office_id in varchar2 default null)
       return integer
    as
    begin
       return cwms_properties.get_property(
-         p_category  => 'TIMESERIES', 
-         p_id        => 'storage.nulls.office.'||cwms_util.get_db_office_code(p_office_id), 
-         p_default   => null, 
+         p_category  => 'TIMESERIES',
+         p_id        => 'storage.nulls.office.'||cwms_util.get_db_office_code(p_office_id),
+         p_default   => null,
          p_office_id => 'CWMS');
-   end get_nulls_storage_policy_ofc;                  
-      
+   end get_nulls_storage_policy_ofc;
+
    function get_nulls_storage_policy_ts(
       p_ts_id     in varchar2,
       p_office_id in varchar2 default null)
@@ -11808,27 +11808,27 @@ end retrieve_existing_item_counts;
    as
    begin
       return cwms_properties.get_property(
-         p_category  => 'TIMESERIES', 
-         p_id        => 'storage.nulls.tscode.'||get_ts_code(p_ts_id, p_office_id), 
-         p_default   => null, 
+         p_category  => 'TIMESERIES',
+         p_id        => 'storage.nulls.tscode.'||get_ts_code(p_ts_id, p_office_id),
+         p_default   => null,
          p_office_id => 'CWMS');
    end get_nulls_storage_policy_ts;
-      
+
    function get_nulls_storage_policy(
       p_ts_code in integer)
       return integer
    as
-      l_policy      integer; 
+      l_policy      integer;
       l_office_code integer;
    begin
       l_policy := cwms_properties.get_property(
-         p_category  => 'TIMESERIES', 
-         p_id        => 'storage.nulls.tscode.'||p_ts_code, 
-         p_default   => null, 
+         p_category  => 'TIMESERIES',
+         p_id        => 'storage.nulls.tscode.'||p_ts_code,
+         p_default   => null,
          p_office_id => 'CWMS');
       if l_policy is null then
          select bl.db_office_code
-           into l_office_code 
+           into l_office_code
            from at_cwms_ts_spec ts,
                 at_physical_location pl,
                 at_base_location bl
@@ -11836,9 +11836,9 @@ end retrieve_existing_item_counts;
             and pl.location_code = ts.location_code
             and bl.base_location_code = pl.base_location_code;
          l_policy := cwms_properties.get_property(
-            p_category  => 'TIMESERIES', 
-            p_id        => 'storage.nulls.office.'||l_office_code, 
-            p_default   => null, 
+            p_category  => 'TIMESERIES',
+            p_id        => 'storage.nulls.office.'||l_office_code,
+            p_default   => null,
             p_office_id => 'CWMS');
          if l_policy is null then
             l_policy := filter_out_null_values;
@@ -11846,7 +11846,7 @@ end retrieve_existing_item_counts;
       end if;
       return l_policy;
    end get_nulls_storage_policy;
-      
+
    procedure set_filter_duplicates_ofc(
       p_filter_duplicates in varchar2,
       p_office_id         in varchar2 default null)
@@ -11858,7 +11858,7 @@ end retrieve_existing_item_counts;
       if p_filter_duplicates is not null and p_filter_duplicates not in ('T', 'F') then
          cwms_err.raise(
             'ERROR',
-            'P_FILTER_DUPLICATES must be NULL, ''T'', or ''F'''); 
+            'P_FILTER_DUPLICATES must be NULL, ''T'', or ''F''');
       end if;
       cwms_msg.log_db_message(
          cwms_msg.msg_level_normal,
@@ -11868,19 +11868,19 @@ end retrieve_existing_item_counts;
       if p_filter_duplicates is null
       then
          cwms_properties.delete_property(
-            p_category  => 'TIMESERIES', 
-            p_id        => 'storage.filter_duplicates.office', 
+            p_category  => 'TIMESERIES',
+            p_id        => 'storage.filter_duplicates.office',
             p_office_id => cwms_util.get_db_office_id(p_office_id));
       else
          cwms_properties.set_property(
-            p_category  => 'TIMESERIES', 
-            p_id        => 'storage.filter_duplicates.office', 
-            p_value     => p_filter_duplicates, 
-            p_comment   => null, 
+            p_category  => 'TIMESERIES',
+            p_id        => 'storage.filter_duplicates.office',
+            p_value     => p_filter_duplicates,
+            p_comment   => null,
             p_office_id => cwms_util.get_db_office_id(p_office_id));
       end if;
    end set_filter_duplicates_ofc;
-      
+
    procedure set_filter_duplicates_ts(
       p_filter_duplicates in varchar2,
       p_ts_id             in varchar2,
@@ -11893,13 +11893,13 @@ end retrieve_existing_item_counts;
       if p_ts_id is null then
          cwms_err.raise(
             'ERROR',
-            'P_TS_ID must not be NULL'); 
+            'P_TS_ID must not be NULL');
       end if;
       set_filter_duplicates_ts(
          p_filter_duplicates,
          get_ts_code(p_ts_id, p_office_id));
    end set_filter_duplicates_ts;
-      
+
    procedure set_filter_duplicates_ts(
       p_filter_duplicates in varchar2,
       p_ts_code           in integer)
@@ -11913,19 +11913,19 @@ end retrieve_existing_item_counts;
       if p_ts_code is null then
          cwms_err.raise(
             'ERROR',
-            'P_TS_CODE must not be NULL'); 
+            'P_TS_CODE must not be NULL');
       end if;
       if p_filter_duplicates is not null and p_filter_duplicates not in ('T', 'F') then
          cwms_err.raise(
             'ERROR',
-            'P_FILTER_DUPLICATES must be NULL, ''T'', or ''F'''); 
+            'P_FILTER_DUPLICATES must be NULL, ''T'', or ''F''');
       end if;
       select db_office_id,
              cwms_ts_id
         into l_office_id,
              l_ts_id
         from at_cwms_ts_id
-       where ts_code = p_ts_code; 
+       where ts_code = p_ts_code;
       cwms_msg.log_db_message(
          cwms_msg.msg_level_normal,
          'Setting filter duplicates policy to '
@@ -11938,15 +11938,15 @@ end retrieve_existing_item_counts;
          ||l_ts_id);
       if p_filter_duplicates is null then
          cwms_properties.delete_property(
-            p_category  => 'TIMESERIES', 
-            p_id        => 'storage.filter_duplicates.tscode.'||p_ts_code, 
+            p_category  => 'TIMESERIES',
+            p_id        => 'storage.filter_duplicates.tscode.'||p_ts_code,
             p_office_id => cwms_util.get_db_office_id(l_office_id));
       else
          cwms_properties.set_property(
-            p_category  => 'TIMESERIES', 
-            p_id        => 'storage.filter_duplicates.tscode.'||p_ts_code, 
-            p_value     => p_filter_duplicates, 
-            p_comment   => null, 
+            p_category  => 'TIMESERIES',
+            p_id        => 'storage.filter_duplicates.tscode.'||p_ts_code,
+            p_value     => p_filter_duplicates,
+            p_comment   => null,
             p_office_id => l_office_id);
       end if;
    end set_filter_duplicates_ts;
@@ -11957,12 +11957,12 @@ end retrieve_existing_item_counts;
    is
    begin
       return cwms_properties.get_property(
-         p_category  => 'TIMESERIES', 
-         p_id        => 'storage.filter_duplicates.office', 
-         p_default   => null, 
+         p_category  => 'TIMESERIES',
+         p_id        => 'storage.filter_duplicates.office',
+         p_default   => null,
          p_office_id => cwms_util.get_db_office_id(p_office_id));
    end get_filter_duplicates_ofc;
-      
+
    function get_filter_duplicates(
       p_ts_id     in varchar2,
       p_office_id in varchar2 default null)
@@ -11975,11 +11975,11 @@ end retrieve_existing_item_counts;
       if p_ts_id is null then
          cwms_err.raise(
             'ERROR',
-            'P_TS_ID must not be NULL'); 
+            'P_TS_ID must not be NULL');
       end if;
       return get_filter_duplicates(get_ts_code(p_ts_id, p_office_id));
    end get_filter_duplicates;
-      
+
    function get_filter_duplicates(
       p_ts_code in integer)
       return varchar2
@@ -11994,23 +11994,23 @@ end retrieve_existing_item_counts;
       if p_ts_code is null then
          cwms_err.raise(
             'ERROR',
-            'P_TS_CODE must not be NULL'); 
+            'P_TS_CODE must not be NULL');
       end if;
       select db_office_id
         into l_office_id
         from at_cwms_ts_id
        where ts_code = p_ts_code;
       l_prop_val := cwms_properties.get_property(
-         p_category  => 'TIMESERIES', 
-         p_id        => 'storage.filter_duplicates.tscode.'||p_ts_code, 
-         p_default   => null, 
+         p_category  => 'TIMESERIES',
+         p_id        => 'storage.filter_duplicates.tscode.'||p_ts_code,
+         p_default   => null,
          p_office_id => cwms_util.get_db_office_id(l_office_id));
       if l_prop_val is null then
          l_prop_val := get_filter_duplicates_ofc(l_office_id);
       end if;
       return nvl(l_prop_val, 'F');
    end get_filter_duplicates;
-      
+
    procedure set_historic(
       p_ts_id       in varchar2,
       p_is_historic in varchar2 default 'T',
@@ -12019,7 +12019,7 @@ end retrieve_existing_item_counts;
    begin
       set_historic(get_ts_code(p_ts_id, p_office_id), p_is_historic);
    end set_historic;
-      
+
    procedure set_historic(
       p_ts_code     in integer,
       p_is_historic in varchar2 default 'T')
@@ -12027,9 +12027,9 @@ end retrieve_existing_item_counts;
    begin
       update at_cwms_ts_spec
          set historic_flag = nvl(upper(p_is_historic), 'T')
-       where ts_code = p_ts_code;  
+       where ts_code = p_ts_code;
    end set_historic;
-      
+
    function is_historic(
       p_ts_id       in varchar2,
       p_office_id   in varchar2 default null)
@@ -12038,7 +12038,7 @@ end retrieve_existing_item_counts;
    begin
       return is_historic(get_ts_code(p_ts_id, p_office_id));
    end is_historic;
-      
+
    function is_historic(
       p_ts_code     in integer,
       p_office_id   in varchar2 default null)
@@ -12054,15 +12054,15 @@ end retrieve_existing_item_counts;
       p_results        out clob,
       p_date_time      out date,
       p_query_time     out integer,
-      p_format_time    out integer, 
+      p_format_time    out integer,
       p_ts_count       out integer,
       p_value_count    out integer,
-      p_names          in  varchar2 default null,            
+      p_names          in  varchar2 default null,
       p_format         in  varchar2 default null,
-      p_units          in  varchar2 default null,   
+      p_units          in  varchar2 default null,
       p_datums         in  varchar2 default null,
       p_start          in  varchar2 default null,
-      p_end            in  varchar2 default null, 
+      p_end            in  varchar2 default null,
       p_timezone       in  varchar2 default null,
       p_office_id      in  varchar2 default null)
    is
@@ -12078,7 +12078,7 @@ end retrieve_existing_item_counts;
       type values_by_code_t is table of tsv_tab_t index by varchar2(32767);
       type segment_t is record(start_time date, end_time date, first_index integer, last_index integer);
       type seg_tab_t is table of segment_t;
-      l_data               clob;  
+      l_data               clob;
       l_format             varchar2(16);
       l_names              str_tab_t;
       l_normalized_names   str_tab_t;
@@ -12086,9 +12086,9 @@ end retrieve_existing_item_counts;
       l_datums             str_tab_t;
       l_alternate_names    str_tab_t;
       l_start              date;
-      l_end                date;   
+      l_end                date;
       l_start_utc          date;
-      l_end_utc            date;   
+      l_end_utc            date;
       l_timezone           varchar2(28);
       l_office_id          varchar2(16);
       l_code               integer;
@@ -12096,13 +12096,13 @@ end retrieve_existing_item_counts;
       l_codes1             number_tab_t;
       l_codes2             number_tab_t;
       l_codes3             number_tab_t;
-      l_parts              str_tab_t; 
-      l_unit               varchar2(16);  
-      l_datum              varchar2(16);  
+      l_parts              str_tab_t;
+      l_unit               varchar2(16);
+      l_datum              varchar2(16);
       l_count              pls_integer;
       l_tsid_count         integer := 0;
       l_unique_tsid_count  integer := 0;
-      l_value_count        integer := 0;      
+      l_value_count        integer := 0;
       l_unique_value_count integer := 0;
       l_name               varchar2(512);
       l_xml                xmltype;
@@ -12112,9 +12112,9 @@ end retrieve_existing_item_counts;
       l_ts2                timestamp;
       l_elapsed_query      interval day (0) to second (6);
       l_elapsed_format     interval day (0) to second (6);
-      l_query_time         date; 
+      l_query_time         date;
       c                    sys_refcursor;
-      l_tsids              tsid_tab_tab_t;  
+      l_tsids              tsid_tab_tab_t;
       l_tsids2             idx_t;
       l_quality_used       bool_t;
       l_text               varchar2(32767);
@@ -12131,7 +12131,7 @@ end retrieve_existing_item_counts;
       l_max_time           interval day (0) to second (3);
       l_max_size_msg       varchar2(17) := 'MAX SIZE EXCEEDED';
       l_max_time_msg       varchar2(17) := 'MAX TIME EXCEEDED';
-   
+
    function iso_duration(
       p_intvl in dsinterval_unconstrained)
       return varchar2
@@ -12155,10 +12155,10 @@ end retrieve_existing_item_counts;
       end if;
       return l_iso;
    end;
-   
+
    begin
       l_query_time := cast(systimestamp at time zone 'UTC' as date);
-   
+
       l_max_size := to_number(cwms_properties.get_property('CWMS-RADAR', 'results.max-size', '5242880', 'CWMS')); -- 5 MB default
       l_max_time := to_dsinterval(cwms_properties.get_property('CWMS-RADAR', 'query.max-time', '00 00:00:30', 'CWMS')); -- 30 sec default
       ----------------------------
@@ -12178,7 +12178,7 @@ end retrieve_existing_item_counts;
       ------------
       if p_format is null then
          l_format := 'TAB';
-      else                 
+      else
          l_format := upper(trim(p_format));
          if l_format not in ('TAB','CSV','XML','JSON') then
             cwms_err.raise('INVALID_ITEM', l_format, 'time series response format');
@@ -12189,8 +12189,8 @@ end retrieve_existing_item_counts;
       ------------
       if p_office_id is null then
          l_office_id := '*';
-      else               
-         begin                                                                              
+      else
+         begin
             l_office_id := upper(trim(p_office_id));
             select office_id into l_office_id from cwms_office where office_id = l_office_id;
          exception
@@ -12211,7 +12211,7 @@ end retrieve_existing_item_counts;
             end loop;
          else
             l_units := cwms_util.split_text(p_units, '|');
-            l_count := l_units.count - l_names.count; 
+            l_count := l_units.count - l_names.count;
             if l_count > 0 then
                l_units.trim(l_count);
             elsif l_count < 0 then
@@ -12220,9 +12220,9 @@ end retrieve_existing_item_counts;
                l_units.extend(l_count);
                for i in 1..l_count loop
                   l_units(l_units.count - i + 1) := l_unit;
-               end loop; 
+               end loop;
             end if;
-         end if;   
+         end if;
          ------------
          -- datums --
          ------------
@@ -12240,9 +12240,9 @@ end retrieve_existing_item_counts;
                   l_datums(i) := upper(l_datums(i));
                else
                   cwms_err.raise('INVALID_ITEM', l_datums(i), 'time series response datum');
-               end if; 
+               end if;
             end loop;
-            l_count := l_datums.count - l_names.count; 
+            l_count := l_datums.count - l_names.count;
             if l_count > 0 then
                l_datums.trim(l_count);
             elsif l_count < 0 then
@@ -12251,11 +12251,11 @@ end retrieve_existing_item_counts;
                l_datums.extend(l_count);
                for i in 1..l_count loop
                   l_datums(l_datums.count - i + 1) := l_datum;
-               end loop; 
+               end loop;
             end if;
          end if;
       end if;
-      -----------------      
+      -----------------
       -- time window --
       -----------------
       if p_timezone is null then
@@ -12295,15 +12295,15 @@ end retrieve_existing_item_counts;
             -- retrieve catalog of time series with data in time window --
             --------------------------------------------------------------
             l_tsids.extend;
-            for rec in (select table_name 
+            for rec in (select table_name
                           from at_ts_table_properties
                          where start_date <= l_end_utc
                            and end_date > l_start_utc
                        )
             loop
-               open c for 
-                  'select distinct 
-                          tsv.ts_code 
+               open c for
+                  'select distinct
+                          tsv.ts_code
                      from '||rec.table_name||' tsv,
                           at_cwms_ts_id tsid,
                           cwms_office o
@@ -12316,33 +12316,29 @@ end retrieve_existing_item_counts;
                close c;
                select column_value
                  bulk collect
-                 into l_codes3
-                 from (select column_value from table(l_codes1)
-                       union all
-                       select column_value from table(l_codes2)
-                      );
-               l_codes2 := l_codes3;
+                 into l_codes2
+                 from (select column_value from table(l_codes1));
             end loop;
-            
+
             l_unique_tsid_count := l_codes2.count;
-            
+
             select distinct
                    ts_code,
                    db_office_id,
-                   cwms_ts_id 
+                   cwms_ts_id
               bulk collect
               into l_tsids(1)
               from av_cwms_ts_id2 ts
              where ts_code in (select * from table(l_codes2))
              order by db_office_id, cwms_ts_id;
-             
+
             l_ts2 := systimestamp;
             l_elapsed_query := l_ts2 - l_ts1;
             if l_elapsed_query > l_max_time then
                cwms_err.raise('ERROR', l_max_time_msg);
             end if;
             l_tsid_count := l_tsids(1).count;
-            
+
             for i in 1..l_tsids(1).count loop
                if not l_tsids2.exists(l_tsids(1)(i).ts_code) then
                   l_tsids2(l_tsids(1)(i).ts_code) := str_tab_t();
@@ -12350,22 +12346,22 @@ end retrieve_existing_item_counts;
                l_tsids2(l_tsids(1)(i).ts_code).extend;
                l_tsids2(l_tsids(1)(i).ts_code)(l_tsids2(l_tsids(1)(i).ts_code).count) := l_tsids(1)(i).name;
             end loop;
-                   
+
             l_ts2 := systimestamp;
             l_elapsed_query := l_ts2 - l_ts1;
             if l_elapsed_query > l_max_time then
                cwms_err.raise('ERROR', l_max_time_msg);
             end if;
             l_ts1 := systimestamp;
-            
+
             case
             when l_format = 'XML' then
                -----------------
                -- XML Catalog --
                -----------------
                cwms_util.append(
-                  l_data, 
-                  '<time-series-catalog><!-- Catalog of time series that contain data between '
+                  l_data,
+                  '<?xml version="1.0" encoding="windows-1252"?><time-series-catalog><!-- Catalog of time series that contain data between '
                   ||cwms_util.get_xml_time(l_start, l_timezone)
                   ||' and '
                   ||cwms_util.get_xml_time(l_end, l_timezone)
@@ -12377,7 +12373,7 @@ end retrieve_existing_item_counts;
                      ||l_tsids(1)(i).office
                      ||'</office><name>'
                      ||dbms_xmlgen.convert(l_tsids(1)(i).name, dbms_xmlgen.entity_encode)
-                     ||'</name><alternate-names>'); 
+                     ||'</name><alternate-names>');
                   for j in 1..l_tsids2(l_tsids(1)(i).ts_code).count loop
                      if l_tsids2(l_tsids(1)(i).ts_code)(j) != l_tsids(1)(i).name then
                         cwms_util.append(
@@ -12398,7 +12394,7 @@ end retrieve_existing_item_counts;
                -- JSON catalog --
                ------------------
                cwms_util.append(
-                  l_data, 
+                  l_data,
                   '{"time-series-catalog":{"comment":"Catalog of time series that contain data between '
                   ||cwms_util.get_xml_time(l_start, l_timezone)
                   ||' and '
@@ -12410,7 +12406,7 @@ end retrieve_existing_item_counts;
                      ||'","name":"'
                      ||replace(l_tsids(1)(i).name, '"', '\"')
                      ||'","alternate-names":[';
-                  l_first := true;   
+                  l_first := true;
                   for j in 1..l_tsids2(l_tsids(1)(i).ts_code).count loop
                      if l_tsids2(l_tsids(1)(i).ts_code)(j) != l_tsids(1)(i).name then
                         case l_first
@@ -12433,7 +12429,7 @@ end retrieve_existing_item_counts;
                -- TAB or CSV catalog --
                ------------------------
                cwms_util.append(
-                  l_data, 
+                  l_data,
                   '#Catalog of time series that contain data between '
                   ||to_char(l_start, 'dd-Mon-yyyy hh24:mi')
                   ||' and '
@@ -12479,19 +12475,19 @@ end retrieve_existing_item_counts;
             <<names>>
             for i in 1..l_names.count loop
                l_normalized_names(i) := upper(cwms_util.normalize_wildcards(l_names(i)));
-               for rec in (select table_name 
+               for rec in (select table_name
                              from at_ts_table_properties
                             where start_date <= l_end_utc
                               and end_date > l_start_utc
                           )
                loop
-                  open c for 
-                     'select distinct 
-                             tsv.ts_code 
+                  open c for
+                     'select distinct
+                             tsv.ts_code
                         from '||rec.table_name||' tsv,
                              av_cwms_ts_id2 v
                        where v.db_office_id like :office
-                         and upper(v.cwms_ts_id) like :name escape ''\'' 
+                         and upper(v.cwms_ts_id) like :name escape ''\''
                          and tsv.ts_code = v.ts_code
                          and tsv.date_time between :begin and :end'
                      using l_office_id, l_normalized_names(i), l_start_utc, l_end_utc;
@@ -12523,7 +12519,7 @@ end retrieve_existing_item_counts;
                end if;
             end loop names;
             l_unique_tsid_count := l_codes2.count;
-   
+
             for i in 1..l_tsids.count loop
                for j in 1..l_tsids(i).count loop
                   l_text := l_tsids(i)(j).office||'/'||l_tsids(i)(j).name;
@@ -12531,7 +12527,7 @@ end retrieve_existing_item_counts;
                   l_indexes(l_text).j := j;
                end loop;
             end loop;
-            
+
             l_text := l_indexes.first;
             <<tsids>>
             loop
@@ -12545,7 +12541,7 @@ end retrieve_existing_item_counts;
                   when l_intvl >= 43200   then l_intvl_str := 'P' ||(l_intvl/43200) ||'M';
                   when l_intvl >= 1440    then l_intvl_str := 'P' ||(l_intvl/1440)  ||'D';
                   when l_intvl >= 60      then l_intvl_str := 'PT'||(l_intvl/60)    ||'H';
-                  else                         l_intvl_str := 'PT'||(l_intvl)       ||'M'; 
+                  else                         l_intvl_str := 'PT'||(l_intvl)       ||'M';
                   end case;
                end if;
                l_code := l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).ts_code;
@@ -12563,7 +12559,7 @@ end retrieve_existing_item_counts;
                      l_errmsg       varchar2(32767);
                      l_native_datum varchar2(32);
                      l_unit_spec    varchar2(64);
-                     l_xml          xmltype; 
+                     l_xml          xmltype;
                   begin
                      --------------------------------
                      -- get the actual unit to use --
@@ -12571,7 +12567,7 @@ end retrieve_existing_item_counts;
                      l_parts := cwms_util.split_text(l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).name, '.');
                      if l_units(l_indexes(l_text).i) in ('EN', 'SI') then
                         l_unit := cwms_util.get_default_units(l_parts(2), l_units(l_indexes(l_text).i));
-                     else 
+                     else
                         l_unit := l_units(l_indexes(l_text).i);
                         declare
                            l_converted binary_double;
@@ -12629,7 +12625,7 @@ end retrieve_existing_item_counts;
                         p_version_date      => NULL,
                         p_max_version       => 'T',
                         p_office_id         => l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).office);
-                        
+
                      fetch c bulk collect into l_values_by_code(l_code_str);
                      close c;
                   exception
@@ -12644,7 +12640,7 @@ end retrieve_existing_item_counts;
                               ----------------
                               -- XML Header --
                               ----------------
-                              cwms_util.append(l_data, '<time-series>!!Quality Codes!!');
+                              cwms_util.append(l_data, '<?xml version="1.0" encoding="windows-1252"?><time-series>!!Quality Codes!!');
                            when l_format = 'JSON' then
                               -----------------
                               -- JSON Header --
@@ -12666,7 +12662,7 @@ end retrieve_existing_item_counts;
                            ---------------
                            cwms_util.append(
                               l_data,
-                              '<time-series><office>'
+                              '<?xml version="1.0" encoding="windows-1252"?><time-series><office>'
                               ||l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).office
                               ||'</office><name>'
                               ||dbms_xmlgen.convert(l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).name, dbms_xmlgen.entity_encode)
@@ -12690,8 +12686,8 @@ end retrieve_existing_item_counts;
                            cwms_util.append(
                               l_data,
                               case l_text = l_indexes.first
-                              when true then '{"office":"' 
-                              else ',{"office":"' 
+                              when true then '{"office":"'
+                              else ',{"office":"'
                               end
                               ||l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).office
                               ||'","name":"'
@@ -12705,7 +12701,7 @@ end retrieve_existing_item_counts;
                                  ||'"');
                            end loop;
                            cwms_util.append(
-                              l_data, 
+                              l_data,
                               '],"error":"'
                               ||replace(l_errmsg, '"', '\"')
                               ||'"}');
@@ -12763,7 +12759,7 @@ end retrieve_existing_item_counts;
                   l_unique_value_count := l_unique_value_count + l_values_by_code(l_code_str).count;
                end if;
                l_value_count := l_value_count + l_values_by_code(l_code_str).count;
-               
+
                l_ts2 := systimestamp;
                l_elapsed_query := l_elapsed_query + l_ts2 - l_ts1;
                if l_elapsed_query > l_max_time then
@@ -12815,7 +12811,7 @@ end retrieve_existing_item_counts;
                      ----------------
                      -- XML Header --
                      ----------------
-                     cwms_util.append(l_data, '<time-series>!!Quality Codes!!');
+                     cwms_util.append(l_data, '<?xml version="1.0" encoding="windows-1252"?><time-series>!!Quality Codes!!');
                   when l_format = 'JSON' then
                      -----------------
                      -- JSON Header --
@@ -12867,7 +12863,7 @@ end retrieve_existing_item_counts;
                         ||'" last-time="'
                         ||cwms_util.get_xml_time(l_values_by_code(l_code_str)(l_values_by_code(l_code_str).count).date_time, l_timezone)
                         ||'" value-count="'
-                        ||l_values_by_code(l_code_str).count 
+                        ||l_values_by_code(l_code_str).count
                         ||'"><!-- date-time value quality-code -->'
                         ||chr(10));
                      for i in 1..l_values_by_code(l_code_str).count loop
@@ -12905,7 +12901,7 @@ end retrieve_existing_item_counts;
                         ||chr(10));
                      for i in 1..l_segments.count loop
                         cwms_util.append(
-                           l_data, 
+                           l_data,
                            '<segment position="'
                            ||i
                            ||'" first-time="'
@@ -12913,7 +12909,7 @@ end retrieve_existing_item_counts;
                            ||'" last-time="'
                            ||cwms_util.get_xml_time(l_segments(i).end_time, l_timezone)
                            ||'" value-count="'
-                           ||(l_segments(i).last_index - l_segments(i).first_index + 1) 
+                           ||(l_segments(i).last_index - l_segments(i).first_index + 1)
                            ||'"><!-- value quality-code -->'
                            ||chr(10));
                         for j in l_segments(i).first_index..l_segments(i).last_index loop
@@ -12934,9 +12930,9 @@ end retrieve_existing_item_counts;
                   ---------------
                   cwms_util.append(
                      l_data,
-                     case l_text = l_indexes.first 
-                     when true then '{"office":"' 
-                     else ',{"office":"' 
+                     case l_text = l_indexes.first
+                     when true then '{"office":"'
+                     else ',{"office":"'
                      end
                      ||l_tsids(l_indexes(l_text).i)(l_indexes(l_text).j).office
                      ||'","name":"'
@@ -12945,9 +12941,9 @@ end retrieve_existing_item_counts;
                   for i in 1..l_alternate_names.count loop
                      cwms_util.append(
                         l_data,
-                        case i 
-                        when 1 then '"' 
-                        else ',"' 
+                        case i
+                        when 1 then '"'
+                        else ',"'
                         end
                         ||replace(l_alternate_names(i), '"', '\"')
                         ||'"');
@@ -13004,7 +13000,7 @@ end retrieve_existing_item_counts;
                         ||',"segments":[');
                      for i in 1..l_segments.count loop
                         cwms_util.append(
-                           l_data, 
+                           l_data,
                            case
                            when i = 1 then '{"first-time":"'
                            else ',{"first-time":"'
@@ -13062,10 +13058,10 @@ end retrieve_existing_item_counts;
                           ||case l_estimated
                             when true then
                                ' estimated'
-                            else 
+                            else
                                null
                             end
-                       else 
+                       else
                           null
                        end
                      ||chr(9)
@@ -13077,7 +13073,7 @@ end retrieve_existing_item_counts;
                      -- irregular time series data --
                      --------------------------------
                      cwms_util.append(
-                        l_data, 
+                        l_data,
                         '#Time'
                         ||chr(9)
                         ||'Value'
@@ -13101,7 +13097,7 @@ end retrieve_existing_item_counts;
                      ------------------------------
                      for i in 1..l_segments.count loop
                         cwms_util.append(
-                           l_data, 
+                           l_data,
                            '#Segment '
                            ||i
                            ||' of '
@@ -13114,7 +13110,7 @@ end retrieve_existing_item_counts;
                            ||to_char(l_segments(i).end_time, 'dd-Mon-yyyy hh24:mi')
                            ||chr(9)
                            ||'Count = '
-                           ||(l_segments(i).last_index - l_segments(i).first_index + 1) 
+                           ||(l_segments(i).last_index - l_segments(i).first_index + 1)
                            ||chr(10)
                            ||'#Value'
                            ||chr(9)
@@ -13146,7 +13142,7 @@ end retrieve_existing_item_counts;
          l_codes1 := number_tab_t();
          l_codes1.extend(l_quality_used.count);
          for i in 1..l_quality_used.count loop
-            case 
+            case
             when i = 1 then l_codes1(i) := to_number(l_quality_used.first);
             else l_codes1(i) := to_number(l_quality_used.next(l_codes1(i-1)));
             end case;
@@ -13159,12 +13155,11 @@ end retrieve_existing_item_counts;
                         else column_value + 4294967296
                         end as qcode
                    from table(l_codes1)
-                )
-          order by 1;             
+                );
           select cwms_ts.get_quality_description(column_value)
            bulk collect
            into l_lines
-           from table(l_codes2);   
+           from table(l_codes2);
          l_ts2 := systimestamp;
          l_elapsed_query := l_elapsed_query + l_ts2 - l_ts1;
          l_ts1 := systimestamp;
@@ -13178,7 +13173,7 @@ end retrieve_existing_item_counts;
                for i in 1..l_lines.count loop
                   l_text := l_text
                      ||'<code value="'
-                     ||l_codes2(i)
+                     ||l_codes1(i)
                      ||'" meaning="'
                      ||l_lines(i)
                      ||'"/>';
@@ -13194,9 +13189,9 @@ end retrieve_existing_item_counts;
             l_text := '{"quality-codes":{"comment":"The following quality codes are used in this dataset","codes":[';
             for i in 1..l_lines.count loop
                l_text := l_text
-                  ||case when i = 1 then '{' else ',{' end 
+                  ||case when i = 1 then '{' else ',{' end
                   ||'"code":'
-                  ||l_codes2(i)
+                  ||l_codes1(i)
                   ||',"meaning":"'
                   ||l_lines(i)
                   ||'"}';
@@ -13209,7 +13204,7 @@ end retrieve_existing_item_counts;
          when l_format in ('TAB', 'CSV') then
             l_text := '#Quality Codes Used';
             for i in 1..l_lines.count loop
-               l_text := l_text||chr(9)||l_codes2(i)||' = '||l_lines(i);
+               l_text := l_text||chr(9)||l_codes1(i)||' = '||l_lines(i);
             end loop;
             l_text := l_text||chr(10);
             l_data := replace(l_data, '!!Quality Codes!!', l_text);
@@ -13221,14 +13216,14 @@ end retrieve_existing_item_counts;
                -- CSV Wrapup --
                ----------------
                l_data := cwms_util.tab_to_csv(l_data);
-            end if;            
+            end if;
          end case;
-            
+
          l_ts2 := systimestamp;
          l_elapsed_format := l_elapsed_format + l_ts2 - l_ts1;
-         
+
       exception
-         when others then 
+         when others then
             case
             when instr(sqlerrm, l_max_time_msg) > 0 then
                dbms_lob.createtemporary(l_data, true);
@@ -13273,7 +13268,7 @@ end retrieve_existing_item_counts;
             else raise;
             end case;
       end;
-               
+
       declare
          l_data2 clob;
       begin
@@ -13285,7 +13280,7 @@ end retrieve_existing_item_counts;
             -- XML --
             ---------
             cwms_util.append(
-               l_data2, 
+               l_data2,
                '<query-info><processed-at>'
                ||utl_inaddr.get_host_name
                ||':'
@@ -13337,14 +13332,14 @@ end retrieve_existing_item_counts;
                   ||l_unique_value_count
                   ||'</unique-values-retrieved></query-info>');
             end if;
-            l_data := regexp_replace(l_data, '^(<time-series.*?>)', '\1'||l_data2, 1, 1);
+				l_data := regexp_replace(l_data, '^((<\?xml .+?\?>)?(<time-series.*?>))', '\1'||l_data2, 1, 1);
             p_results := l_data;
          when l_format = 'JSON' then
             ----------
             -- JSON --
             ----------
             cwms_util.append(
-               l_data2, 
+               l_data2,
                '{"query-info":{"processed-at":"'
                ||utl_inaddr.get_host_name
                ||':'
@@ -13366,7 +13361,7 @@ end retrieve_existing_item_counts;
                ||'"');
             if l_names is null then
                cwms_util.append(
-                  l_data2, 
+                  l_data2,
                   ',"total-time-series-cataloged":'
                   ||l_tsid_count
                   ||',"unique-time-series-cataloged":'
@@ -13389,7 +13384,7 @@ end retrieve_existing_item_counts;
                      ||'"}');
                end loop;
                cwms_util.append(
-                  l_data2, 
+                  l_data2,
                   '],"total-time-series-retrieved":'
                   ||l_tsid_count
                   ||',"unique-time-series-retrieved":'
@@ -13434,21 +13429,21 @@ end retrieve_existing_item_counts;
             p_results := l_data2;
          end case;
       end;
-            
+
       p_date_time   := l_query_time;
       p_query_time  := trunc(1000 * (extract(minute from l_elapsed_query) * 60 + extract(second from l_elapsed_query)));
       p_format_time := trunc(1000 * (extract(minute from l_elapsed_format) *60 +  extract(second from l_elapsed_format)));
       p_ts_count    := l_tsids.count;
       p_value_count := l_value_count;
-   end retrieve_time_series;   
-            
+   end retrieve_time_series;
+
    function retrieve_time_series_f(
-      p_names       in  varchar2,            
+      p_names       in  varchar2,
       p_format      in  varchar2,
-      p_units       in  varchar2 default null,   
+      p_units       in  varchar2 default null,
       p_datums      in  varchar2 default null,
       p_start       in  varchar2 default null,
-      p_end         in  varchar2 default null, 
+      p_end         in  varchar2 default null,
       p_timezone    in  varchar2 default null,
       p_office_id   in  varchar2 default null)
       return clob
@@ -13456,7 +13451,7 @@ end retrieve_existing_item_counts;
       l_results        clob;
       l_date_time      date;
       l_query_time     integer;
-      l_format_time    integer; 
+      l_format_time    integer;
       l_ts_count       integer;
       l_value_count    integer;
    begin
@@ -13467,26 +13462,26 @@ end retrieve_existing_item_counts;
          l_format_time,
          l_ts_count,
          l_value_count,
-         p_names,            
+         p_names,
          p_format,
-         p_units,   
+         p_units,
          p_datums,
          p_start,
-         p_end, 
+         p_end,
          p_timezone,
          p_office_id);
-   
+
       return l_results;
    end retrieve_time_series_f;
 
 
-   function package_log_property_text 
+   function package_log_property_text
       return varchar2
    is
    begin
       return v_package_log_prop_text;
    end package_log_property_text;
-   
+
    procedure set_package_log_property_text(
       p_text in varchar2 default null)
    is

@@ -4341,7 +4341,7 @@ END cat_ts_id;
          pipe row(l_output_row);
       end loop;
    end cat_loc_lvl_cur_max_ind;
-   
+    
    function iso_duration(
       p_intvl in dsinterval_unconstrained)
       return varchar2
@@ -4434,7 +4434,7 @@ END cat_ts_id;
          ---------
          -- XML --
          ---------
-         cwms_util.append(l_data, '<offices>');
+         cwms_util.append(l_data, '<?xml version="1.0" encoding="windows-1252"?><offices>');
          for i in 1..l_offices.count loop
             cwms_util.append(
                l_data,
@@ -4496,7 +4496,7 @@ END cat_ts_id;
                ||'</requested-format><offices-retrieved>'
                ||l_offices.count
                ||'</offices-retrieved></query-info>');
-            l_data := regexp_replace(l_data, '^(<offices.*?>)', '\1'||l_data2, 1, 1);
+            l_data := regexp_replace(l_data, '^((<\?xml .+?\?>)?(<offices>))', '\1'||l_data2, 1, 1);
          when l_format = 'json' then
             cwms_util.append(
                l_data2, 
@@ -4571,6 +4571,7 @@ END cat_ts_id;
                      dst_offset 
                 from cwms_time_zone
                where time_zone_code > 0 
+                 and time_zone_name not in (select time_zone_alias from cwms_time_zone_alias)
               union all  
               select time_zone_alias as time_zone_name,
                      utc_offset,
@@ -4604,7 +4605,7 @@ END cat_ts_id;
          ---------
          -- XML --
          ---------
-         cwms_util.append(l_data, '<time-zones>');
+         cwms_util.append(l_data, '<?xml version="1.0" encoding="windows-1252"?><time-zones>');
          for i in 1..l_time_zones.count loop
             cwms_util.append(
                l_data,
@@ -4663,7 +4664,7 @@ END cat_ts_id;
                ||'</requested-format><time-zones-retrieved>'
                ||l_time_zones.count
                ||'</time-zones-retrieved></query-info>');
-            l_data := regexp_replace(l_data, '^(<time-zones.*?>)', '\1'||l_data2, 1, 1);
+            l_data := regexp_replace(l_data, '^((<\?xml .+?\?>)?(<time-zones>))', '\1'||l_data2, 1, 1);
          when l_format = 'json' then
             cwms_util.append(
                l_data2, 
@@ -4814,7 +4815,7 @@ END cat_ts_id;
          ---------
          -- XML --
          ---------
-         cwms_util.append(l_data, '<units>');
+			cwms_util.append(l_data, '<?xml version="1.0" encoding="windows-1252"?><units>');
          for i in 1..l_units.count loop
             cwms_util.append(
                l_data,
@@ -4909,7 +4910,7 @@ END cat_ts_id;
                ||'</total-units-retrieved><unique-units-retrieved>'
                ||l_names_by_code.count
                ||'</unique-units-retrieved></query-info>');
-            l_data := regexp_replace(l_data, '^(<units.*?>)', '\1'||l_data2, 1, 1);
+				l_data := regexp_replace(l_data, '^((<\?xml .+?\?>)?(<units>))', '\1'||l_data2, 1, 1);
          when l_format = 'json' then
             cwms_util.append(
                l_data2, 
@@ -5068,7 +5069,7 @@ END cat_ts_id;
          ---------
          -- XML --
          ---------
-         cwms_util.append(l_data, '<parameters>');
+			cwms_util.append(l_data, '<?xml version="1.0" encoding="windows-1252"?><parameters>');
          for i in 1..l_params.count loop
             cwms_util.append(
                l_data,
@@ -5143,7 +5144,7 @@ END cat_ts_id;
                ||'</requested-format><parameters-retrieved>'
                ||l_params.count
                ||'</parameters-retrieved></query-info>');
-            l_data := regexp_replace(l_data, '^(<parameters.*?>)', '\1'||l_data2, 1, 1);
+				l_data := regexp_replace(l_data, '^((<\?xml .+?\?>)?(<parameters>))', '\1'||l_data2, 1, 1);
          when l_format = 'json' then
             cwms_util.append(
                l_data2, 
