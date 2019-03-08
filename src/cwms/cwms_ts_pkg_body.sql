@@ -5459,7 +5459,7 @@ AS
                       cwms_ts.clean_quality_code(t.quality_code))
              bulk collect
              into z_timeseries_data
-             from table(cast(p_timeseries_data as tsv_array)) t,
+             from table(cast(l_timeseries_data as tsv_array)) t,
                   at_cwms_ts_spec s,
                   at_parameter p,
                   cwms_unit_conversion c,
@@ -5467,7 +5467,7 @@ AS
                   cwms_unit u
             where cwms_util.is_nan(t.value) = 'F'
               and s.ts_code = l_ts_code
-              and u.unit_id = 'ft'
+              and u.unit_id = l_units
               and c.from_unit_code = u.unit_code
               and p.parameter_code = s.parameter_code
               and bp.base_parameter_code = p.base_parameter_code
@@ -5524,10 +5524,7 @@ AS
                   z_timeseries_data,
                   l_version_date,
                   p_override_prot;
-               ----------------------------------------------------------------
-               -- short circuit if there's nothing to delete from this table --
-               ----------------------------------------------------------------
-               continue when l_times.count = 0;
+               if l_times.count > 0 then
                ------------------------
                -- record the deletes --
                ------------------------
@@ -5557,6 +5554,7 @@ AS
                   l_ts_code,
                   l_version_date,
                   l_times;
+               end if;
                -------------------------
                -- insert the new data --
                -------------------------
@@ -5571,15 +5569,13 @@ AS
                           quality_code,
                           null
                      from (select date_time, value, quality_code from table(:z_timeseries_data))
-                    where date_time in (select column_value from table(:times))
-                      and date_time >= from_tz(cast(:start_date as timestamp), ''UTC'')
+                    where date_time >= from_tz(cast(:start_date as timestamp), ''UTC'')
                       and date_time <  from_tz(cast(:end_date as timestamp), ''UTC'')'
                using
                   l_ts_code,
                   l_version_date,
                   l_store_date,
                   z_timeseries_data,
-                  l_times,
                   x.start_date,
                   x.end_date;
 
