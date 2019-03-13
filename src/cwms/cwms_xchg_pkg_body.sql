@@ -479,7 +479,7 @@ CREATE OR REPLACE package body cwms_xchg as
       writeln_xml('<cwms-dataexchange-configuration');
       indent;
       writeln_xml('xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"');
-      writeln_xml('xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/dataexchangeconfiguration.xsd">');
+      writeln_xml('xsi:noNamespaceSchemaLocation="https://www.hec.usace.army.mil/xmlSchema/cwms/dataexchangeconfiguration.xsd">');
       ------------------------
       -- output the offices --
       ------------------------
