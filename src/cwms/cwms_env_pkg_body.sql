@@ -17,7 +17,8 @@ AS
 
    PROCEDURE set_session_office_id (p_office_id IN VARCHAR2)
    IS
-      l_attribute   VARCHAR2 (30) := 'SESSION_OFFICE_ID';
+      l_office_id_attr   VARCHAR2 (30) := 'SESSION_OFFICE_ID';
+      l_office_code_attr   VARCHAR2 (30) := 'SESSION_OFFICE_CODE';
       l_office_id   VARCHAR2 (16);
       --
       l_cnt         NUMBER;
@@ -47,7 +48,8 @@ AS
 
       IF l_cnt > 0
       THEN
-         SET_CWMS_ENV (l_attribute, l_office_id);
+         SET_CWMS_ENV (l_office_id_attr, l_office_id);
+         SET_CWMS_ENV (l_office_code_attr, CWMS_UTIL.GET_DB_OFFICE_CODE(l_office_id));
          SET_SESSION_PRIVILEGES; 
       ELSE
          l_username := cwms_util.get_user_id;
