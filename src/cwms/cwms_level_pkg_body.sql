@@ -4216,52 +4216,64 @@ begin
          -- irregularly varying value --
          -------------------------------
          l_ts_code := cwms_ts.get_ts_code(l_tsid, p_office_id);
+         if p_max_ts_timespan is not null then
+            cwms_util.duration_to_interval(l_ymintvl, l_dsintvl, p_max_ts_timespan);
+         end if;
          ---------------------------------------------------
          -- get the latest time on or before current time --
          ---------------------------------------------------
-         for rec in (select table_name from at_ts_table_properties where start_date <= l_date_utc order by start_date desc) loop
+         for rec in (select table_name
+                       from at_ts_table_properties
+                      where start_date <= l_date_utc
+                        and (p_max_ts_timespan is null
+                             or end_date > l_date_utc - l_ymintvl - l_dsintvl
+                            )
+                      order by start_date desc
+                    )
+         loop
             execute immediate
                'select max(date_time)
                   from '||rec.table_name||'
                  where ts_code = :1
-                   and version_date = :2
+                   and date_time <= :2
+                   and version_date = :3
                    and value is not null'
                into l_date1
-               using l_ts_code, cwms_util.non_versioned;
+               using l_ts_code, l_date_utc, cwms_util.non_versioned;
             exit when l_date1 is not null;
          end loop;
-         if l_date1 is not null and p_max_ts_timespan is not null then
+         if l_date1 is null then return l_value; end if;
+         if p_max_ts_timespan is not null then
             ------------------------------------------------------------
             -- make sure the previous time series value isn't too old --
             ------------------------------------------------------------
-            cwms_util.duration_to_interval(l_ymintvl, l_dsintvl, p_max_ts_timespan);
             if l_date1 < l_date_utc - l_ymintvl - l_dsintvl then
                l_date1 := null;
             end if;
          end if;
-         if l_date1 is not null then
-            if l_interpolate = 'T' then
-               ----------------------------------------------------
-               -- get the earliest time on or after current time --
-               ----------------------------------------------------
-               for rec in (select table_name from at_ts_table_properties where end_date > l_date_utc order by start_date) loop
-                  execute immediate
-                     'select min(date_time)
-                        from '||rec.table_name||'
-                       where ts_code = :1
-                         and version_date = :2
-                         and value is not null'
-                     into l_date2
-                     using l_ts_code, cwms_util.non_versioned;
-                  exit when l_date1 is not null;
-               end loop;
-            end if;
+         if l_interpolate = 'T' then
+            ----------------------------------------------------
+            -- get the earliest time on or after current time --
+            ----------------------------------------------------
+            for rec in (select table_name from at_ts_table_properties where end_date > l_date_utc order by start_date) loop
+               execute immediate
+                  'select min(date_time)
+                     from '||rec.table_name||'
+                    where ts_code = :1
+                   and date_time > :2
+                   and version_date = :3
+                      and value is not null'
+                  into l_date2
+               using l_ts_code, l_date_utc, cwms_util.non_versioned;
+            exit when l_date2 is not null;
+            end loop;
          end if;
+         if l_date1 is null then return l_value; end if;
          begin
-            if l_date2 is null then
-               -----------------------------------------------------------------------------------------
-               -- use the value from the max time on or before current time (already in current unit) --
-               -----------------------------------------------------------------------------------------
+            if l_date2 is null or l_date2 = l_date1 then
+               ---------------------------------------------------------------
+               -- use the value from the max time on or before current time --
+               ---------------------------------------------------------------
                select value
                  into l_value
                  from av_tsv_dqu
@@ -4289,7 +4301,8 @@ begin
                      and version_date = cwms_util.non_versioned
                      and start_date <= l_date1
                      and end_date > l_date1
-                     and unit_id = p_level_units;
+                     and unit_id = p_level_units
+                     and aliased_item is null;
 
                   select value
                     into l_value2
@@ -4299,7 +4312,8 @@ begin
                      and version_date = cwms_util.non_versioned
                      and start_date <= l_date2
                      and end_date > l_date2
-                     and unit_id = p_level_units;
+                     and unit_id = p_level_units
+                     and aliased_item is null;
 
                   l_value := l_value1 + (l_date_utc - l_date1) / (l_date2 - l_date1) * (l_value2 - l_value1);
                end if;
@@ -4308,7 +4322,7 @@ begin
             when others then
                case
                when l_ignore_errors then null;
-               else raise;
+               else cwms_err.raise('ERROR', dbms_utility.format_error_backtrace);
                end case;
          end;
       when l_seasonal_values is not null then
