@@ -267,9 +267,11 @@ as
       l_text   clob;
    begin
       dbms_lob.createtemporary(l_text, true);
-      dbms_lob.open(l_text, dbms_lob.lob_readwrite);
-      dbms_lob.writeappend(l_text, length(p_text), p_text);
-      dbms_lob.close(l_text);
+      if p_text is not null then
+         dbms_lob.open(l_text, dbms_lob.lob_readwrite);
+         dbms_lob.writeappend(l_text, length(p_text), p_text);
+         dbms_lob.close(l_text);
+      end if;   
       store_text(
          p_text_code      => p_text_code,
          p_text           => l_text,
