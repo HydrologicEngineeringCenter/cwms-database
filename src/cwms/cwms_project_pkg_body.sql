@@ -282,7 +282,8 @@ procedure store_project(
    p_project IN project_obj_t,
    p_fail_if_exists      IN       VARCHAR2 DEFAULT 'T'
 )
-AS
+as
+   l_currency_unit           varchar2(16);
    l_project_location_code   number := null;
    l_pump_back_location_code number := null;
    l_near_gage_location_code number := null;
@@ -295,6 +296,25 @@ BEGIN
    if p_project is null then
       cwms_err.raise('NULL_ARGUMENT', 'P_PROJECT');
    end if;
+   if p_project.cost_units_id is not null then
+      l_currency_unit := cwms_util.get_unit_id(p_project.cost_units_id);
+      if l_currency_unit is null then 
+         cwms_err.raise('INVALID_ITEM', p_project.cost_units_id, 'CWMS unit id');
+      end if;   
+   end if;
+   begin
+      select unit_id
+        into l_currency_unit
+        from cwms_unit
+       where abstract_param_code = (select abstract_param_code 
+                                      from cwms_abstract_parameter
+                                     where abstract_param_id = 'Currency'
+                                   )
+         and unit_id = nvl(l_currency_unit, '$');
+   exception                                
+      when no_data_found then
+         cwms_err.raise('INVALID_ITEM', p_project.cost_units_id, 'currency unit id');
+   end;      
    --
    -- get the location codes
    --
