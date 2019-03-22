@@ -12,6 +12,7 @@ SET serveroutput ON
 @@cwms/types/document_obj_t
 @@cwms/types/document_tab_t
 @@cwms/types/project_obj_t
+@@cwms/types/project_obj_t-body
 @@cwms/types/embankment_obj_t
 @@cwms/types/embankment_tab_t
 @@cwms/types/water_user_obj_t

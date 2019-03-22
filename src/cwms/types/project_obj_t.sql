@@ -1,4 +1,4 @@
-CREATE TYPE project_obj_t
+create or replace TYPE project_obj_t
 /**
  * Holds information about a CWMS project
  *
@@ -24,7 +24,7 @@ CREATE TYPE project_obj_t
 AS
   OBJECT
   (
-  
+
     --locations
     --the location associated with this project,
     --an instance of the location type.
@@ -52,17 +52,38 @@ AS
     --The description of the hydro-power located at this project
     hydropower_description VARCHAR2(255),
     --The description of the projects sedimentation
-    sedimentation_description VARCHAR(255),
+    sedimentation_description VARCHAR2(255),
     --The description of the urban area downstream
-    downstream_urban_description VARCHAR(255),
+    downstream_urban_description VARCHAR2(255),
     --The description of the full capacity
-    bank_full_capacity_description VARCHAR(255),
+    bank_full_capacity_description VARCHAR2(255),
     --The start date of the yield time frame
     yield_time_frame_start DATE,
     --The end date of the yield time frame
-    yield_time_frame_end DATE );
+    yield_time_frame_end DATE,
+    
+   constructor function project_obj_t(
+      self                             in out nocopy project_obj_t,
+      p_project_location               in            location_obj_t,
+      p_pump_back_location             in            location_obj_t,
+      p_near_gage_location             in            location_obj_t,
+      p_authorizing_law                in            varchar2,
+      p_cost_year                      in            date,
+      p_federal_cost                   in            number,
+      p_nonfederal_cost                in            number,
+      p_federal_om_cost                in            number,
+      p_nonfederal_om_cost             in            number,
+      p_remarks                        in            varchar2,
+      p_project_owner                  in            varchar2,
+      p_hydropower_description         in            varchar2,
+      p_sedimentation_description      in            varchar2,
+      p_downstream_urban_description   in            varchar2,
+      p_bank_full_capacity_descript    in            varchar2,
+      p_yield_time_frame_start         in            date,
+      p_yield_time_frame_end           in            date)
+      return self as result       
+   )
 /
-
 
 create or replace public synonym cwms_t_project_obj for project_obj_t;
 
