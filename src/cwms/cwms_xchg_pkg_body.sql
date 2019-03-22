@@ -20,13 +20,24 @@ CREATE OR REPLACE package body cwms_xchg as
    function db_datastore_id
       return varchar2
    is
-      l_db_name      v$database.name%type;
+      l_db_name      varchar2(64);
       l_datastore_id varchar2(64);
    begin
-      select name into l_db_name from v$database;
+      begin
+         select pdb_name
+           into l_db_name
+           from cdb_pdbs;
+      exception
+         when no_data_found then
+            select name into l_db_name from v$database;
+      end;
       l_datastore_id := utl_inaddr.get_host_name || ':' || l_db_name;
-      l_datastore_id := substr(l_datastore_id, -(least(length(l_datastore_id), 16)));
-      l_datastore_id := substr(l_datastore_id, regexp_instr(l_datastore_id, '[a-zA-Z0-9]'));
+      if length(l_datastore_id) > 32 then
+         l_datastore_id := substr(l_datastore_id, regexp_instr(l_datastore_id, '[a-zA-Z0-9]'));
+      end if;   
+      if length(l_datastore_id) > 32 then
+         l_datastore_id := substr(l_datastore_id, -(least(length(l_datastore_id), 32)));
+      end if;
       return l_datastore_id;
    end db_datastore_id;
 
