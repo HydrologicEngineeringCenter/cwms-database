@@ -265,7 +265,6 @@ begin
       l_project.nonfederal_cost,                 --    nonfederal_cost                NUMBER,
       l_project.federal_om_cost,                 --    federal_om_cost                NUMBER,
       l_project.nonfederal_om_cost,              --    nonfederal_om_cost             NUMBER,
-      null, -- cost units.
       l_project.project_remarks,                 --    remarks                        VARCHAR2(1000),
       l_project.project_owner,                   --    project_owner                  VARCHAR2(255),
       l_project.hydropower_description,          --    hydropower_description         VARCHAR2(255),
