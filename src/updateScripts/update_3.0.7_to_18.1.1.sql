@@ -456,15 +456,19 @@ drop type old_vdatum_stream_rating_t force;
 drop type old_stream_rating_t force;
 drop type old_vdatum_rating_t force;
 drop type old_rating_t force;
+drop type project_obj_t force;
+@@../cwms/types/project_obj_t
+@@../cwms/types/project_obj_t-body
 whenever sqlerror exit
 @@../cwms/types/rating_ind_parameter_t-body
 prompt ################################################################################
 prompt 'UPDATING OTHER PACKAGE SPECIFICATIONS'
 select systimestamp from dual;
 whenever sqlerror continue
-drop type old_cwms_rating;
+drop package old_cwms_rating;
 whenever sqlerror exit
 @@../cwms/cwms_configuration_pkg
+@@../cwms/cwms_xchg_pkg
 create or replace public synonym cwms_tsv for cwms_tsv;
 prompt ################################################################################
 prompt 'UPDATING OTHER PACKAGE BODDIES'
