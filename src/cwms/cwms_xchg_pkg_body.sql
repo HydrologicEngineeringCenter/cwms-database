@@ -34,7 +34,7 @@ CREATE OR REPLACE package body cwms_xchg as
       l_datastore_id := utl_inaddr.get_host_name || ':' || l_db_name;
       if length(l_datastore_id) > 32 then
          l_datastore_id := substr(l_datastore_id, regexp_instr(l_datastore_id, '[a-zA-Z0-9]'));
-      end if;   
+      end if;
       if length(l_datastore_id) > 32 then
          l_datastore_id := substr(l_datastore_id, -(least(length(l_datastore_id), 32)));
       end if;
@@ -388,6 +388,8 @@ CREATE OR REPLACE package body cwms_xchg as
       l_xml                  clob;
       l_level                binary_integer := 0;
       l_indent_str           varchar2(256) := null;
+      l_url_mask             varchar2(256);
+      l_dss_file_mask        varchar2(256);
       l_xchg_set_id_mask     varchar2(256);
       l_office_id_mask       varchar2(256);
       l_xchg_set_codes       number_tab_t := new number_tab_t();
@@ -440,8 +442,10 @@ CREATE OR REPLACE package body cwms_xchg as
       end;
 
    begin
-      l_xchg_set_id_mask     := cwms_util.normalize_wildcards(nvl(p_dss_xchg_set_id, '%'), true);
-      l_office_id_mask       := cwms_util.normalize_wildcards(nvl(p_office_id, cwms_util.user_office_id), true);
+      l_url_mask         := cwms_util.normalize_wildcards(nvl(p_dss_filemgr_url, '%'), true);
+      l_dss_file_mask    := cwms_util.normalize_wildcards(nvl(p_dss_file_name,   '%'), true);
+      l_xchg_set_id_mask := cwms_util.normalize_wildcards(nvl(p_dss_xchg_set_id, '%'), true);
+      l_office_id_mask   := cwms_util.normalize_wildcards(nvl(p_office_id, cwms_util.user_office_id), true);
       ----------------------------------------------
       -- retrieve all the matching xchg set codes --
       ----------------------------------------------
@@ -450,10 +454,15 @@ CREATE OR REPLACE package body cwms_xchg as
          select xchg_set_code
            from at_xchg_set
           where upper(xchg_set_id) like upper(l_xchg_set_id_mask)
-            and office_code in (
-                   select office_code
-                     from cwms_office
-                    where upper(office_id) like upper(l_office_id_mask) escape '\'))
+            and datastore_code in (select datastore_code
+                                     from at_xchg_datastore_dss
+                                    where upper(dss_filemgr_url) like upper(l_url_mask) escape '\'
+                                      and upper(dss_file_name) like upper(l_dss_file_mask) escape '\'
+                                  )
+            and office_code in (select office_code
+                                  from cwms_office
+                                 where upper(office_id) like upper(l_office_id_mask) escape '\')
+                               )
       loop
          l_xchg_set_codes.extend;
          l_xchg_set_codes(l_xchg_set_codes.last) := rec.xchg_set_code;
