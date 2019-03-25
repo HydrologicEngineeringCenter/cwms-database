@@ -179,17 +179,13 @@ procedure update_dss_xchg_set_time(
  *   </tr>
  * </table>
  *
- * @param p_dss_filemgr_url Reserved for future use. Not used.
+ * @param p_dss_filemgr_url DSSFileManager URL pattern to use. Only data exchange sets for data stores whose DSSFileManager URL match this pattern (cases insensitive) are returned. If not specified, or NULL, no matching is performed on the DSSFileManager URL of the data store.
  *
- * @param p_dss_file_name   Reserved for future use. Not used.
+ * @param p_dss_file_name   DSS file name pattern to use. Only data exchange sets for data stores whose DSS file names match this pattern (cases insensitive) are returned. If not specified, or NULL, no matching is performed on the DSS file name of the data store.
  *
- * @param p_dss_xchg_set_id Data exchange set identifier pattern to match. Use glob-style
- * wildcard characters as shown above. If not specified or NULL, all data exchange sets for the specified office will be retrieved
+ * @param p_dss_xchg_set_id Data exchange set identifier pattern to match. Only data exchage sets whose identifier match this pattern (case insensitive) are returned. If not specified, or NULL, no matching is performed on the data exchange set identifier.
  *
- * @param p_office_id  The office pattern to match.  If the routine is called
- * without this parameter, or if this parameter is set to NULL, the session user's
- * default office will be used. For matching multiple office, use glob-style
- * wildcard characters as shown above.
+ * @param p_office_id  The office pattern to match.  If not specified, or NULL, the session user's default office is used.
  *
  * @return The matching data exchange sets in XML format
  */
@@ -321,11 +317,11 @@ function request_batch_exchange(
  * @param p_office_id       The office that owns the datastore. If not specified or NULL, the session user's default office is used.
  */
 procedure retrieve_dss_datastore(
-   p_datastore_code  out number,                            
+   p_datastore_code  out number,
    p_dss_filemgr_url out nocopy varchar2,
    p_dss_file_name   out nocopy varchar2,
    p_description     out nocopy varchar2,
-   p_datastore_id    in  varchar2,                                
+   p_datastore_id    in  varchar2,
    p_office_id       in  varchar2 default null);
 /**
  * Stores a datastore to the database
@@ -341,8 +337,8 @@ procedure retrieve_dss_datastore(
  * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and the datastore already exists in the database
  */
 procedure store_dss_datastore(
-   p_datastore_code  out number,                            
-   p_datastore_id    in  varchar2,                                
+   p_datastore_code  out number,
+   p_datastore_id    in  varchar2,
    p_dss_filemgr_url in  varchar2,
    p_dss_file_name   in  varchar2,
    p_description     in  varchar2 default null,
