@@ -20,15 +20,15 @@ CREATE OR REPLACE package body cwms_xchg as
    function db_datastore_id
       return varchar2
    is
+      no_such_table  exception;
       l_db_name      varchar2(64);
       l_datastore_id varchar2(64);
+      pragma exception_init(no_such_table, -942);
    begin
       begin
-         select pdb_name
-           into l_db_name
-           from cdb_pdbs;
+         execute immediate 'select pdb_name from cdb_pdbs' into l_db_name;
       exception
-         when no_data_found then
+         when no_such_table or no_data_found then
             select name into l_db_name from v$database;
       end;
       l_datastore_id := utl_inaddr.get_host_name || ':' || l_db_name;
