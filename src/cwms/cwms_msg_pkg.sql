@@ -273,6 +273,57 @@ function log_message(
  * @see constant msg_level_detailed
  * @see constant msg_level_verbose
  *
+ * @param p_text_msg_id the text identifier of the logged message
+ *
+ * @param p_queue_msg_id the message identifier of the enqueued message
+ *
+ * @param p_component The CWMS component that is logging the messsage
+ *
+ * @param p_instance  The instance of the CWMS component that is logging the message
+ *
+ * @param p_host      The host on which the reporting component is executing
+ *
+ * @param p_port      The port at which the reporting component is listening, if applicable
+ *
+ * @param p_reported  The UTC time of the report as determined by the reporting component
+ *
+ * @param p_short_msg The message to publish, in the XML format shown above
+ *
+ * @param p_long_msg The long message to store in the AT_CLOB table
+ *
+ * @param p_msg_lvel The visibility level of the message
+ *
+ * @param p_publish specifies whether to publish the message to the STATUS queue
+ *
+ * @param p_immediate  Specifies whether to execute a database commit.  If TRUE,
+ * a database commit is performed and the message is enqueued immediately. If FALSE,
+ * no commit is performed and the message is not enqueued until the current transaction
+ * is commited. If the current transaction is rolled back, either explicitly or due
+ * to an error condition, the message is not enqueued.
+ */
+procedure log_long_message(
+   p_text_msg_id  out varchar2,
+   p_queue_msg_id out integer,
+   p_component    in  varchar2,
+   p_instance     in  varchar2,
+   p_host         in  varchar2,
+   p_port         in  integer,
+   p_reported     in  timestamp,
+   p_short_msg    in  varchar2,
+   p_long_msg     in  clob,
+   p_msg_level    in  integer default msg_level_normal,
+   p_publish      in  boolean default true,
+   p_immediate    in boolean default false);
+/**
+ * Logs a message to the datbase log table, optionally publishing the message to the
+ * STATUS queue for the session user, and storing a related long message to the
+ * AT_CLOB table
+ *
+ * @see constant msg_level_basic
+ * @see constant msg_level_normal
+ * @see constant msg_level_detailed
+ * @see constant msg_level_verbose
+ *
  * @param p_message_id the logged message identifier
  *
  * @param p_component The CWMS component that is logging the messsage

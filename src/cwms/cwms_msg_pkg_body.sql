@@ -327,10 +327,12 @@ function log_message(
    p_immediate in boolean default false)
    return integer
 is
-   l_message_id varchar2(32);
+   l_text_msg_id  varchar2(32);
+   l_queue_msg_id integer;
 begin
-   return log_long_message(
-      l_message_id,
+   log_long_message(
+      l_text_msg_id,
+      l_queue_msg_id,
       p_component,
       p_instance,
       p_host,
@@ -340,24 +342,26 @@ begin
       null,
       p_msg_level,
       p_publish);
+
+   return l_queue_msg_id;      
 end log_message;
 
 -------------------------------------------------------------------------------
--- FUNCTION LOG_LONG_MESSAGE(...)
+-- PROCEDURE LOG_LONG_MESSAGE(...)
 --
-function log_long_message(
-   p_message_id out varchar2,
-   p_component  in  varchar2,
-   p_instance   in  varchar2,
-   p_host       in  varchar2,
-   p_port       in  integer,
-   p_reported   in  timestamp,
-   p_short_msg  in  varchar2,
-   p_long_msg   in  clob,
-   p_msg_level  in  integer default msg_level_normal,
-   p_publish    in  boolean default true,
-	p_immediate  in  boolean default false) -- affects publishing only
-   return integer
+procedure log_long_message(
+   p_text_msg_id  out varchar2,
+   p_queue_msg_id out integer,
+   p_component    in  varchar2,
+   p_instance     in  varchar2,
+   p_host         in  varchar2,
+   p_port         in  integer,
+   p_reported     in  timestamp,
+   p_short_msg    in  varchar2,
+   p_long_msg     in  clob,
+   p_msg_level    in  integer default msg_level_normal,
+   p_publish      in  boolean default true,
+   p_immediate    in boolean default false)
 is
    l_invalid_identifier exception;
    pragma exception_init(l_invalid_identifier, -904);
@@ -389,7 +393,6 @@ is
    l_process     varchar2(24);
    l_program     varchar2(64);
    l_machine     varchar2(64);
-   l_result      integer;
    l_max_tries   pls_integer := 25;
    l_code        integer;
    l_call_stack  str_tab_tab_t;
@@ -606,7 +609,7 @@ begin
                userenv('sessionid')
              );
    end if;
-   p_message_id := l_msg_id;
+   p_text_msg_id := l_msg_id;
 
    if l_publish then
       -------------------------
@@ -659,12 +662,47 @@ begin
                  || lf;
 
       l_pos := instr(p_short_msg, '>');
-      l_result := publish_status_message(substr(p_short_msg, 1, l_pos) || l_extra || substr(p_short_msg, l_pos+1), p_immediate);
+      p_queue_msg_id := publish_status_message(substr(p_short_msg, 1, l_pos) || l_extra || substr(p_short_msg, l_pos+1), p_immediate);
    else
-      l_result := 0;
+      p_queue_msg_id := 0;
    end if;
    commit;
-   return l_result;
+end  log_long_message;
+
+-------------------------------------------------------------------------------
+-- FUNCTION LOG_LONG_MESSAGE(...)
+--
+function log_long_message(
+   p_message_id out varchar2,
+   p_component  in  varchar2,
+   p_instance   in  varchar2,
+   p_host       in  varchar2,
+   p_port       in  integer,
+   p_reported   in  timestamp,
+   p_short_msg  in  varchar2,
+   p_long_msg   in  clob,
+   p_msg_level  in  integer default msg_level_normal,
+   p_publish    in  boolean default true,
+	p_immediate  in  boolean default false) -- affects publishing only
+   return integer
+is
+   l_queue_msg_id integer;
+begin   
+   log_long_message(
+      p_text_msg_id  => p_message_id,
+      p_queue_msg_id => l_queue_msg_id,
+      p_component    => p_component,
+      p_instance     => p_instance,
+      p_host         => p_host,
+      p_port         => p_port,
+      p_reported     => p_reported,
+      p_short_msg    => p_short_msg,
+      p_long_msg     => p_long_msg,
+      p_msg_level    => p_msg_level,
+      p_publish      => p_publish,     
+      p_immediate    => p_immediate);
+      
+   return l_queue_msg_id;      
 end log_long_message;
 
 -------------------------------------------------------------------------------
