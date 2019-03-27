@@ -3,6 +3,42 @@ set define on
 create or replace package body cwms_usgs
 as
 
+function split_clob(
+   p_text       in clob,
+   p_delimiter  in varchar2,
+   p_max_splits in integer default null)
+   return clob_tab_t
+is
+   l_text_pos  integer := 1;
+   l_delim_pos integer;
+   l_text_len  integer := dbms_lob.getlength(p_text);
+   l_delim_len integer := length(p_delimiter);
+   l_part_len  integer;
+   l_results   clob_tab_t := clob_tab_t();
+   l_done      boolean := false;
+begin
+   loop
+      l_results.extend;
+      if p_max_splits is not null and l_results.count > p_max_splits then
+         l_part_len := l_text_len - l_text_pos + 1;
+         l_done := true;
+      else
+         l_delim_pos := instr(p_text, p_delimiter, l_text_pos);
+         if l_delim_pos = 0 then
+            l_part_len := l_text_len - l_text_pos + 1;
+            l_done := true;
+         else
+            l_part_len := l_delim_pos - l_text_pos;
+         end if;
+      end if;
+      dbms_lob.createtemporary(l_results(l_results.count), true);
+      dbms_lob.copy(l_results(l_results.count), p_text, l_part_len, 1, l_text_pos);
+      exit when l_done;
+      l_text_pos := l_delim_pos + l_delim_len;
+   end loop;
+   return l_results;
+end split_clob;
+
 procedure set_auto_ts_filter_id(
    p_text_filter_id in varchar2,
    p_office_id      in varchar2 default null)
@@ -157,7 +193,12 @@ begin
       ---------------------------------------------------------
       -- no filter specified and no auto-ts-filter on record --
       ---------------------------------------------------------
-      l_filtered := str_tab_t();
+      cwms_err.raise(
+         'ERROR',
+         'No text filter specified and no stored default filter for USGS time sereies locations exists.'
+         ||chr(10)
+         ||'Create a text filter that includes all locations that can have USGS time series '
+         ||'retrived and store it using CWMS_USGS.SET_AUTO_TS_FILTER_ID(filter_id, office_id)');
    else
       if p_parameter is null then
          ------------------------------
@@ -227,7 +268,7 @@ begin
      bulk collect
      into l_parameter_codes
      from at_usgs_parameter
-    where office_code = cwms_util.get_db_office_code(p_office_id)
+    where office_code in (cwms_util.db_office_code_all, cwms_util.get_db_office_code(p_office_id))
     order by usgs_parameter_code;
    return l_parameter_codes;
 end get_parameters;
@@ -387,6 +428,86 @@ begin
    end if;
 end get_parameter_info;
 
+function get_url(
+   p_url     in varchar2,
+   p_timeout in integer default 60)
+   return clob
+is
+   l_max_tries       pls_integer := 15;
+   l_cert_error      boolean;
+   l_req             utl_http.req;
+   l_resp            utl_http.resp;
+   l_buf             varchar2(32767);
+   l_wallet          varchar2(256);
+   l_clob            clob;
+
+   procedure write_clob(p_text in varchar2)
+   is
+      l_len binary_integer := length(p_text);
+   begin
+      dbms_lob.writeappend(l_clob, l_len, p_text);
+   end;
+begin
+   dbms_lob.createtemporary(l_clob, true);
+   dbms_lob.open(l_clob, dbms_lob.lob_readwrite);
+
+   l_wallet := cwms_properties.get_property(
+      p_category  => 'CWMSDB',
+      p_id        => 'oracle.wallet.filename.usgs',
+      p_default   => cwms_properties.get_property(
+                        p_category  => 'CWMSDB',
+                        p_id        => 'oracle.wallet.filename',
+                        p_default   => null,
+                        p_office_id =>'CWMS'),
+      p_office_id =>'CWMS');
+   if l_wallet is not null then
+      utl_http.set_wallet('file:'||l_wallet, null);
+   end if;
+   utl_http.set_transfer_timeout(p_timeout);
+   for i in 1..l_max_tries loop
+      begin
+         l_req := utl_http.begin_request(p_url);
+         utl_http.set_header(l_req, 'User-Agent', 'Mozilla/4.0');
+         l_resp := utl_http.get_response(l_req);
+         utl_http.set_transfer_timeout;
+          loop
+            utl_http.read_text(l_resp, l_buf);
+            write_clob(l_buf);
+         end loop;
+      exception
+         when utl_http.end_of_body then
+            utl_http.end_response(l_resp);
+            if i > 1 then
+               cwms_msg.log_db_message(cwms_msg.msg_level_detailed, 'Connected after '||i-1||' failed attempts');
+            end if;
+            exit;
+         when others then
+            l_cert_error := instr(dbms_utility.format_error_backtrace, 'Certificate validation failure') > 0;
+            begin
+               utl_http.end_response(l_resp);
+            exception
+               when others then null;
+            end;
+            if l_cert_error then
+               if i = l_max_tries then
+                  raise;
+               else
+                  begin
+                     utl_http.end_response(l_resp);
+                  exception
+                     when others then null;
+                  end;
+                  dbms_lock.sleep(1);
+               end if;
+            else
+               raise;
+            end if;
+      end;
+   end loop;
+   dbms_lob.close(l_clob);
+   return l_clob;
+end get_url;
+
 function get_ts_id(
    p_location_id    in varchar2,
    p_usgs_parameter in integer,
@@ -517,12 +638,12 @@ begin
             cwms_msg.msg_level_detailed,
             l_office_id||': USGS URL: '||l_url);
          if i = 1 then
-            l_data := cwms_util.get_url(l_url, 60 + l_sites_tab.count * 15);
+            l_data := get_url(l_url, 60 + l_sites_tab.count * 15);
             cwms_msg.log_db_message(
                cwms_msg.msg_level_detailed,
                l_office_id||': bytes retrieved: '||dbms_lob.getlength(l_data));
          else
-            l_data2 := cwms_util.get_url(l_url, 60 + l_sites_tab.count * 15);
+            l_data2 := get_url(l_url, 60 + l_sites_tab.count * 15);
             cwms_msg.log_db_message(
                cwms_msg.msg_level_detailed,
                l_office_id||': bytes retrieved: '||dbms_lob.getlength(l_data2));
@@ -555,7 +676,7 @@ begin
    else
       l_url := replace(l_url, '<parameters>', p_parameters);
    end if;
-   return cwms_util.get_url(l_url);
+   return get_url(l_url);
 end get_ts_data;
 
 function get_ts_data_rdb(
@@ -641,7 +762,7 @@ procedure process_ts_rdb(
    p_units       out str_tab_t,
    p_ts_data     out tsv_array_tab,
    p_location_id in  varchar2,
-   p_rdb_data    in  varchar2,
+   p_rdb_data    in  clob,
    p_office_id   in  varchar2 default null)
 is
    type col_t is table of integer index by varchar2(16);
@@ -662,10 +783,15 @@ is
    l_interval   integer;
    l_interval2  integer;
 begin
+   l_all_params := get_parameters(p_location_id, p_office_id);
+   if l_params is null or l_all_params.count = 0 then
+      cwms_msg.log_db_message(cwms_msg.msg_level_detailed, 'No USGS parameters specified for location '||p_location_id);
+      return;
+   end if;
    -----------------------------------------------
    -- skip the header and parse the column info --
    -----------------------------------------------
-   l_all_params := get_parameters(p_location_id, p_office_id);
+   cwms_msg.log_db_message(7, p_location_id||' : '||length(p_rdb_data)||' bytes');
    select column_value
      bulk collect
      into l_lines
@@ -680,7 +806,7 @@ begin
          when 'datetime'  then l_col_info('time')   := j;
          when 'tz_cd'     then l_col_info('tz')     := j;
          else
-            l_value := to_number(regexp_substr(l_cols(j), '^\d{2}_(\d{5})$', 1, 1, null, 1));
+            l_value := to_number(regexp_substr(l_cols(j), '^\d+_(\d{5})$', 1, 1, null, 1));
             if l_value is not null and l_value member of l_all_params then
                l_col_info(to_char(l_value)) := j;
                l_params.extend;
@@ -812,7 +938,7 @@ exception
       cwms_msg.log_db_message(
          cwms_msg.msg_level_detailed,
          dbms_utility.format_error_backtrace);
-      raise;
+      cwms_err.raise('ERROR', dbms_utility.format_error_backtrace);
 end process_ts_rdb;
 
 procedure process_ts_rdb_and_store(
@@ -820,8 +946,8 @@ procedure process_ts_rdb_and_store(
    p_office_id in varchar2 default null)
 is
    l_office_id   varchar2(16);
-   l_datasets    str_tab_t;
-   l_parts       str_tab_t;
+   l_datasets    clob_tab_t;
+   l_parts       clob_tab_t;
    l_ts_ids      str_tab_t;
    l_units       str_tab_t;
    l_ts_data     tsv_array_tab;
@@ -832,7 +958,7 @@ begin
    -------------------------------------------------------
    -- split the clob into datasets for individual sites --
    -------------------------------------------------------
-   l_datasets := cwms_util.split_text(p_rdb_data, '# Data provided for site ');
+   l_datasets := split_clob(p_rdb_data, '# Data provided for site ');
    if l_datasets is null then
       cwms_msg.log_db_message(
          cwms_msg.msg_level_detailed,
@@ -847,13 +973,13 @@ begin
             ------------------------------------------------------
             -- split the site number off the top of the dataset --
             ------------------------------------------------------
-            l_parts := cwms_util.split_text(l_datasets(i), chr(10), 1);
+            l_parts := split_clob(l_datasets(i), chr(10), 1);
             ----------------------------------------------
             -- parse the time series out of the dataset --
             ----------------------------------------------
             cwms_msg.log_db_message(
                cwms_msg.msg_level_detailed,
-               l_office_id||': Processing site '||(i-1)||' of '||(l_datasets.count-1));
+               l_office_id||': Processing site '||(i-1)||' of '||(l_datasets.count-1)||' : '||trim(l_parts(1)));
             begin
                process_ts_rdb(l_ts_ids, l_units, l_ts_data, trim(l_parts(1)), trim(l_parts(2)), p_office_id);
             exception
@@ -867,6 +993,7 @@ begin
                   cwms_msg.log_db_message(
                      cwms_msg.msg_level_basic,
                      l_office_id||': RDB Clob ID is '||make_text_id(l_parts(1)));
+                  dbms_lob.freetemporary(l_datasets(i));
                   continue dataset_loop;
             end;
             -----------------------------------------------------
@@ -891,6 +1018,7 @@ begin
                end loop;
             end if;
          end if;
+         dbms_lob.freetemporary(l_datasets(i));
       end loop;
       cwms_msg.log_db_message(
          cwms_msg.msg_level_detailed,
@@ -1265,9 +1393,6 @@ procedure retrieve_and_store_stream_meas(
    p_sites      in varchar2,
    p_office_id  in varchar2 default null)
 is
-   certificate_validation_failure exception;
-   pragma exception_init(certificate_validation_failure, -29024);
-
    l_office_id  varchar2(16);
    l_start_time varchar2(10);
    l_end_time   varchar2(10);
@@ -1358,26 +1483,12 @@ begin
             cwms_msg.msg_level_detailed,
             l_office_id||': USGS URL: '||l_url);
          if i = 1 then
-            for tries in 1..5 loop
-               begin
-                  l_data := cwms_util.get_url(l_url, 60 + l_sites_tab.count * 15);
-                  exit;
-               exception
-                  when certificate_validation_failure then continue;
-               end;
-            end loop;
+            l_data := get_url(l_url, 60 + l_sites_tab.count * 15);
             cwms_msg.log_db_message(
                cwms_msg.msg_level_detailed,
                l_office_id||': bytes retrieved: '||dbms_lob.getlength(l_data));
          else
-            for tries in 1..5 loop
-               begin
-                  l_data2 := cwms_util.get_url(l_url, 60 + l_sites_tab.count * 15);
-                  exit;
-               exception
-                  when certificate_validation_failure then continue;
-               end;
-            end loop;
+            l_data2 := get_url(l_url, 60 + l_sites_tab.count * 15);
             cwms_msg.log_db_message(
                cwms_msg.msg_level_detailed,
                l_office_id||': bytes retrieved: '||dbms_lob.getlength(l_data2));
@@ -1387,12 +1498,10 @@ begin
       l_count := 0;
       if instr(l_data, 'No sites') = 1 then
          cwms_msg.log_db_message(
-            'cwms_usgs.retrieve_and_store_stream_meas',
             cwms_msg.msg_level_detailed,
             l_office_id||': '||l_data);
       else
          cwms_msg.log_db_message(
-            'cwms_usgs.retrieve_and_store_stream_meas',
             cwms_msg.msg_level_detailed,
             'Processing measurements');
          l_lines := cwms_util.split_text(l_data, chr(10));
@@ -2816,7 +2925,7 @@ begin
          ------------------------------------------------------------
          l_url := replace(l_url, 'base', 'exsa');
          begin
-            l_rating_exsa := cwms_util.get_url(replace(l_url, '<site>', p_sites(i)));
+            l_rating_exsa := get_url(replace(l_url, '<site>', p_sites(i)));
          exception
             when others then
                cwms_msg.log_db_message(
@@ -3080,7 +3189,7 @@ begin
       -- get the rating from the USGS NWIS site --
       --------------------------------------------
       begin
-         l_rating_text := cwms_util.get_url(replace(replace(rating_url, '<site>', rec.site_number), '<type>', rec.rating_type));
+         l_rating_text := get_url(replace(replace(rating_url, '<site>', rec.site_number), '<type>', rec.rating_type));
       exception
          when others then
             cwms_msg.log_db_message(
@@ -3095,7 +3204,7 @@ begin
       end;
       if rec.rating_type = 'base' then
          begin
-            l_rating_exsa := cwms_util.get_url(replace(replace(rating_url, '<site>', rec.site_number), '<type>', 'exsa'));
+            l_rating_exsa := get_url(replace(replace(rating_url, '<site>', rec.site_number), '<type>', 'exsa'));
          exception
             when others then
                cwms_msg.log_db_message(

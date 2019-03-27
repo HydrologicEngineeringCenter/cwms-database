@@ -177,6 +177,7 @@ end;
 @@cwms/types/ts_extents_t
 @@cwms/types/ts_extents_t-body
 @@cwms/types/ts_extents_tab_t
+@@cwms/types/clob_tab_t
 -- HOST pwd
 @@rowcps_types
 @@cwms_types_rating

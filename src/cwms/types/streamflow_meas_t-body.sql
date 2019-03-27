@@ -22,30 +22,26 @@ as
                'ERROR',
                'Expected 15, 18, or 35 fields in input, got '||l_parts.count||chr(10)||p_rdb_line);
          end if;
-         if upper(l_parts(1)) != l_parts(1) then
-            -- return null object
-            self := null;
+         if upper(l_parts(1)) != l_parts(1) or upper(l_parts(6)) not in ('Y', 'YES') then
             exit;
          end if;
          l_office_id         := cwms_util.get_db_office_id(p_office_id);
          self.location       := location_ref_t(cwms_loc.get_location_id(l_parts(2), l_office_id), l_office_id);
          self.meas_number    := l_parts(3);
          if length(l_parts(4)) = 10 then
-            l_timestamp := cast(to_date(l_parts(4), 'yyyy-mm-dd') as timestamp);
+            -- date only
+            self.date_time   := to_date(l_parts(4), 'yyyy-mm-dd');
+            self.time_zone   := null;
          else
+            -- date, time, and tz
             l_timestamp := to_timestamp(l_parts(4), 'yyyy-mm-dd hh24:mi:ss');
-         end if;
-         begin
             select tz_utc_offset
               into l_utc_offset
               from cwms_usgs_time_zone
              where tz_id = l_parts(5);
-         exception
-            when no_data_found then l_utc_offset := to_dsinterval('0 00:00:00');
-            when others        then raise;
-         end;
          self.date_time      := cast((l_timestamp - l_utc_offset) as date);
          self.time_zone      := 'UTC';
+         end if;
          self.used           := case when substr(l_parts(6), 1, 1) = 'Y' then 'T' else 'F' end;
          self.party          := l_parts(7);
          self.agency_id      := l_parts(8);
@@ -61,6 +57,7 @@ as
          self.flow_adj_id    := case when l_field_count = 15 then l_parts(15) else l_parts(18) end;
          self.height_unit    := 'ft';
          self.flow_unit      := 'cfs';
+         self.time_zone      := 'UTC';
       end loop;
       return;
    end streamflow_meas_t;
@@ -69,7 +66,6 @@ as
       p_xml in xmltype)
       return self as result
    is
-      l_datetime_str varchar2(32);
       function get_text(p_path in varchar2, p_required in boolean default false) return varchar2
       is
          l_text varchar2(32767);
@@ -86,13 +82,12 @@ as
             'ERROR',
             'Expected <stream-flow-measurement>, got <'||p_xml.getrootelement||'>');
       end if;
-      l_datetime_str := get_text('/*/date', true);
       self.location       := location_ref_t(get_text('/*/location', true), get_text('/*/@office-id', true));
       self.used           := case get_text('/*/@used', true) when 'true' then 'T' else 'F' end;
       self.height_unit    := get_text('/*/@height-unit', self.used='T');
       self.flow_unit      := get_text('/*/@flow-unit', self.used='T');
       self.meas_number    := get_text('/*/number', true);
-      self.date_time      := cast(cwms_util.to_timestamp(l_datetime_str) as date);
+      self.date_time      := cast(cwms_util.to_timestamp(get_text('/*/date', true)) as date);
       self.agency_id      := get_text('/*/agency');
       self.party          := get_text('/*/party');
       self.gage_height    := to_binary_double(get_text('/*/gage-height', self.used='T'));
@@ -110,23 +105,6 @@ as
       self.water_temp     := to_binary_double(get_text('/*/water-temp', false));
       self.temp_unit      := get_text('/*/@temp-unit', self.used='T' and (self.air_temp is not null or self.water_temp is not null));
       self.wm_comments    := get_text('/*/wm-comments');
-      if regexp_instr(l_datetime_str, '[-+]\d{2}:\d{2}|Z', 1, 1, 1) = 0 then
-         -- no time zone on date string
-          begin
-            select tz.time_zone_name
-              into self.time_zone
-              from at_physical_location pl,
-                   cwms_time_zone tz
-             where pl.location_code = self.location.get_location_code
-               and tz.time_zone_code = pl.time_zone_code;
-         exception
-            when no_data_found then self.time_zone := 'UTC';
-            when others        then raise;
-         end;
-      else
-         -- time zone included in date string, taken into account by cwms_util.to_timestamp
-         self.time_zone := 'UTC';
-      end if;
       return;
    end streamflow_meas_t;
 
