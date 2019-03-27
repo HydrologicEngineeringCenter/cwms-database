@@ -461,6 +461,7 @@ drop type project_obj_t force;
 @@../cwms/types/project_obj_t-body
 whenever sqlerror exit
 @@../cwms/types/rating_ind_parameter_t-body
+@@../cwms/types/clob_tab_t
 prompt ################################################################################
 prompt 'UPDATING OTHER PACKAGE SPECIFICATIONS'
 select systimestamp from dual;
