@@ -1226,7 +1226,7 @@ unit_aliases = {
 	"acre"       : ["acres","ACRES"],
 	"ampere"     : ["amp","AMP","Amp","AMPERE","Ampere","Amperes","AMPERES","amperes","AMPS","amps","Amps"],
 	"B"          : ["b", "b_unit", "b-unit", "B_UNIT", "B-UNIT"],
-	"C"          : ["Celsius","Celcius","Centigrade","DEG C","deg C","DEG-C","Deg-C","DegC","degC","deg c"],
+	"C"          : ["Celsius","Centigrade","DEG C","deg C","DEG-C","Deg-C","DegC","degC","deg c"],
 	"C-day"      : ["degC-day"],
 	"cfs"        : ["CFS","cu-ft/sec","cuft/sec","cusecs","ft3/sec","ft^3/s","FT3/S","FT3/SEC","ft3/s"],
 	"cm"         : ["centimeter","centimeters"],
