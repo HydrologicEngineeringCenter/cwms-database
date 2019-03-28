@@ -417,6 +417,7 @@ prompt 'MODIFYING OTHER TABLES'
 select systimestamp from dual;
 @@./18_1_1/update_tables
 @@./18_1_1/at_physical_location_t02
+@@./18_1_1/at_water_user_contract_t01
 alter table at_seasonal_location_level modify (value null);
 whenever sqlerror continue;
 @@../cwms/mv_ts_code_filter
