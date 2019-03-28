@@ -2742,14 +2742,6 @@ NOPARALLEL
 /
 
 ALTER TABLE at_water_user_contract ADD (
-  CONSTRAINT at_water_user_contract_ck1
-  CHECK (nvl(pump_out_location_code, -1) not in (nvl(pump_out_below_location_code, -2), nvl(pump_in_location_code, -3))))
-/
-ALTER TABLE at_water_user_contract ADD (
-  CONSTRAINT at_water_user_contract_ck2
-  CHECK (nvl(pump_out_below_location_code, -2) != nvl(pump_in_location_code, -3)))
-/
-ALTER TABLE at_water_user_contract ADD (
   CONSTRAINT at_water_user_contract_fk2
  FOREIGN KEY (water_user_code)
  REFERENCES at_water_user (water_user_code))
@@ -2781,6 +2773,76 @@ ALTER TABLE at_water_user_contract ADD (
   CONSTRAINT at_water_user_contract_fk5
  FOREIGN KEY (storage_unit_code)
  REFERENCES cwms_unit (unit_code))
+/
+
+create or replace trigger at_water_user_contract_t01
+for insert or update of pump_out_location_code, pump_out_below_location_code, pump_in_location_code
+on at_water_user_contract
+compound trigger
+
+   type l_pumps_t is table of boolean index by varchar2(16);
+   l_pumps l_pumps_t;
+   
+   before statement is
+   begin
+      for rec in (select pump_out_location_code as pump_code
+                    from at_water_user_contract
+                   where pump_out_location_code is not null
+                  union all 
+                  select pump_out_below_location_code as pump_code
+                    from at_water_user_contract
+                   where pump_out_below_location_code is not null
+                  union all
+                  select pump_in_location_code as pump_code
+                    from at_water_user_contract
+                   where pump_in_location_code is not null
+                 )
+      loop
+         l_pumps(to_char(rec.pump_code)) := true;
+      end loop;
+   end before statement;
+   
+   before each row is
+   begin
+      if :new.pump_out_location_code       = :new.pump_out_below_location_code or 
+         :new.pump_out_location_code       = :new.pump_in_location_code        or 
+         :new.pump_out_below_location_code = :new.pump_in_location_code
+      then
+         cwms_err.raise('ERROR', 'Water supply contract cannot have same pump in mulitple locations');
+      end if;
+      -----------------------
+      -- pump_out_location --
+      -----------------------
+      if :new.pump_out_location_code is not null then
+         if l_pumps.exists(:new.pump_out_location_code) and :new.pump_out_location_code != nvl(:old.pump_out_location_code, 0) then
+            cwms_err.raise('ERROR', 'Pump out location is already used in another water supply contract');
+         else
+            l_pumps(to_char(:new.pump_out_location_code)) := true;
+         end if;
+      end if;
+      -----------------------------
+      -- pump_out_below_location --
+      -----------------------------
+      if :new.pump_out_below_location_code is not null then
+         if l_pumps.exists(:new.pump_out_below_location_code) and :new.pump_out_below_location_code != nvl(:old.pump_out_below_location_code, 0)  then
+            cwms_err.raise('ERROR', 'Pump out below location is already used in another water supply contract');
+         else
+            l_pumps(to_char(:new.pump_out_below_location_code)) := true;
+         end if;
+      end if;
+      ----------------------
+      -- pump_in_location --
+      ----------------------
+      if :new.pump_in_location_code is not null then
+         if l_pumps.exists(:new.pump_in_location_code) and :new.pump_in_location_code != nvl(:old.pump_in_location_code, 0) then
+            cwms_err.raise('ERROR', 'Pump in location is already used in another water supply contract');
+         else
+            l_pumps(to_char(:new.pump_in_location_code)) := true;
+         end if;
+      end if;
+   end before each row;
+
+end at_water_user_contract_t01;
 /
 
 --------
