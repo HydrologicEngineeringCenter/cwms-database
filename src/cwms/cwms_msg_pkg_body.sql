@@ -343,7 +343,7 @@ begin
       p_msg_level,
       p_publish);
 
-   return l_queue_msg_id;      
+   return l_queue_msg_id;
 end log_message;
 
 -------------------------------------------------------------------------------
@@ -687,7 +687,7 @@ function log_long_message(
    return integer
 is
    l_queue_msg_id integer;
-begin   
+begin
    log_long_message(
       p_text_msg_id  => p_message_id,
       p_queue_msg_id => l_queue_msg_id,
@@ -699,10 +699,10 @@ begin
       p_short_msg    => p_short_msg,
       p_long_msg     => p_long_msg,
       p_msg_level    => p_msg_level,
-      p_publish      => p_publish,     
+      p_publish      => p_publish,
       p_immediate    => p_immediate);
-      
-   return l_queue_msg_id;      
+
+   return l_queue_msg_id;
 end log_long_message;
 
 -------------------------------------------------------------------------------
@@ -2918,8 +2918,9 @@ procedure create_av_queue_subscr_msgs as
    l_sql varchar2(32767);
 begin
    for rec in (select name queue_name, queue_table table_name
-               from all_queues
-               where owner = 'CWMS_20' and queue_type = 'NORMAL_QUEUE'
+                 from all_queues
+                where owner = 'CWMS_20' and queue_type = 'NORMAL_QUEUE'
+                order by 1
               )
    loop
       if l_sql is not null then

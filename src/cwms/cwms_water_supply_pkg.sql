@@ -354,6 +354,30 @@ PROCEDURE rename_contract(
     p_old_contract_name   IN VARCHAR2,
     p_new_contract_name   IN VARCHAR2 );
 /**
+ * Associates an existing pump with a specified contract and usage.
+ *
+ * @param p_water_user_contract The water user contract to associate the pump with
+ * @param p_pump_location_id    The pump to associate with the contract,
+ * @param p_pump_usage_id       The usage of the pump for the contract, must be one of IN, OUT, or BELOW. If the specified usage already has an associated pump, an exception is raised.
+ */
+procedure associate_pump(
+    p_water_user_contract IN water_user_contract_ref_t,
+    p_pump_location_id    IN varchar2,
+    p_pump_usage_id       IN varchar2);
+/**
+ * Disassociates a pump from a specified contract and usage.
+ *
+ * @param p_water_user_contract The water user contract to disassociate the pump from
+ * @param p_pump_location_id    The pump to disassociate from the contract
+ * @param p_pump_usage_id       The current usage of the pump for the contract, must be one of IN, OUT, or BELOW. If the specified usage doesn't match the current usage, an exception is raised.
+ * @param p_delete_acct_data    A flag (T/F) that specifies whether existing water user accounting records for the specified pump
+ */
+procedure disassociate_pump(
+    p_water_user_contract IN water_user_contract_ref_t,
+    p_pump_location_id    IN varchar2,
+    p_pump_usage_id       IN varchar2,
+    p_delete_acct_data    IN varchar2 default 'F');
+/**
  * Retrieves the set of water supply contract types for the specified office
  *
  * @param p_contract_types The retrieved contract
@@ -396,7 +420,7 @@ PROCEDURE retrieve_accounting_set(
 
     -- the water user contract ref, does this need to be the project instead?
     p_contract_ref IN water_user_contract_ref_t,
-    
+
     -- the units to return the flow as.
     p_units IN VARCHAR2,
     --time window stuff
@@ -410,14 +434,14 @@ PROCEDURE retrieve_accounting_set(
     p_start_inclusive IN VARCHAR2 DEFAULT 'T',
     -- if the end time is inclusive
     p_end_inclusive IN VARCHAR2 DEFAULT 'T',
-    
+
     -- a boolean flag indicating if the returned data should be the head or tail
     -- of the set, i.e. the first n values or last n values.
     p_ascending_flag IN VARCHAR2 DEFAULT 'T',
-    
+
     -- limit on the number of rows returned
     p_row_limit IN INTEGER DEFAULT NULL,
-    
+
     -- a mask for the transfer type.
     -- if null, return all transfers.
     p_transfer_type IN VARCHAR2 DEFAULT NULL
@@ -431,9 +455,9 @@ PROCEDURE retrieve_pump_accounting(
     p_contract_code in number,
     -- the water user contract ref
     p_contract_ref IN water_user_contract_ref_t,
-    
+
     p_pump_loc_code IN number,
-    
+
     -- the units to return the flow as.
     p_units IN VARCHAR2,
     --time window stuff
@@ -447,14 +471,14 @@ PROCEDURE retrieve_pump_accounting(
     p_start_inclusive IN VARCHAR2 DEFAULT 'T',
     -- if the end time is inclusive
     p_end_inclusive IN VARCHAR2 DEFAULT 'T',
-    
+
     -- a boolean flag indicating if the returned data should be the head or tail
     -- of the set, i.e. the first n values or last n values.
     p_ascending_flag IN VARCHAR2 DEFAULT 'T',
-    
+
     -- limit on the number of rows returned
     p_row_limit IN integer DEFAULT NULL,
-    
+
     -- a mask for the transfer type.
     -- if null, return all transfers.
     -- do we need this?
@@ -477,18 +501,18 @@ PROCEDURE store_accounting_set(
 
     -- the contract ref for the incoming accountings.
     p_contract_ref IN water_user_contract_ref_t,
-    
+
     --the following represents pump time windows where data needs to be cleared
     --out as part of the delete insert process.
     p_pump_time_window_tab loc_ref_time_window_tab_t,
 
     -- the time zone of all of the incoming data.
-    p_time_zone IN VARCHAR2 DEFAULT NULL,    
-    
-    -- the units of the incoming accounting flow data
-    p_flow_unit_id IN VARCHAR2 DEFAULT NULL,    
+    p_time_zone IN VARCHAR2 DEFAULT NULL,
 
-		-- store rule, this variable is not supported. 
+    -- the units of the incoming accounting flow data
+    p_flow_unit_id IN VARCHAR2 DEFAULT NULL,
+
+		-- store rule, this variable is not supported.
     -- only delete insert initially supported.
     p_store_rule		IN VARCHAR2 DEFAULT NULL,
 

@@ -2782,13 +2782,13 @@ compound trigger
 
    type l_pumps_t is table of boolean index by varchar2(16);
    l_pumps l_pumps_t;
-   
+
    before statement is
    begin
       for rec in (select pump_out_location_code as pump_code
                     from at_water_user_contract
                    where pump_out_location_code is not null
-                  union all 
+                  union all
                   select pump_out_below_location_code as pump_code
                     from at_water_user_contract
                    where pump_out_below_location_code is not null
@@ -2801,11 +2801,11 @@ compound trigger
          l_pumps(to_char(rec.pump_code)) := true;
       end loop;
    end before statement;
-   
+
    before each row is
    begin
-      if :new.pump_out_location_code       = :new.pump_out_below_location_code or 
-         :new.pump_out_location_code       = :new.pump_in_location_code        or 
+      if :new.pump_out_location_code       = :new.pump_out_below_location_code or
+         :new.pump_out_location_code       = :new.pump_in_location_code        or
          :new.pump_out_below_location_code = :new.pump_in_location_code
       then
          cwms_err.raise('ERROR', 'Water supply contract cannot have same pump in mulitple locations');
@@ -2942,7 +2942,7 @@ ALTER TABLE at_wat_usr_contract_accounting ADD (
 ALTER TABLE at_wat_usr_contract_accounting ADD (
   CONSTRAINT at_wat_usr_contr_accting_fk3
  FOREIGN KEY (pump_location_code)
- REFERENCES at_physical_location (location_code))
+ REFERENCES at_pump (pump_location_code))
 /
 
 --------
