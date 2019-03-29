@@ -10,9 +10,9 @@ begin
          object_schema => '&cwms_schema',
          object_name   => l_tables(i),
          policy_name   => 'SERVICE_USER_POLICY');
-         
+
       execute immediate 'alter table '||l_tables(i)||' add historic_flag varchar2(1) default ''F''';
-      
+
       dbms_rls.add_policy (
          object_schema    => '&cwms_schema',
          object_name      => l_tables(i),
@@ -24,6 +24,8 @@ begin
    end loop;
 end;
 /
+
+alter table at_cwms_ts_spec add constraint at_cwms_ts_spec_ck_6 check (historic_flag = 'T' or historic_flag = 'F');
 
 create trigger at_cwms_ts_spec_t01
     AFTER INSERT OR UPDATE OR DELETE

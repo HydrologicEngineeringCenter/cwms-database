@@ -417,7 +417,7 @@ prompt 'MODIFYING OTHER TABLES'
 select systimestamp from dual;
 @@./18_1_1/update_tables
 @@./18_1_1/at_physical_location_t02
-@@./18_1_1/at_water_user_contract_t01
+@@./18_1_1/modify_water_supply_tables
 alter table at_seasonal_location_level modify (value null);
 whenever sqlerror continue;
 @@../cwms/mv_ts_code_filter
@@ -453,6 +453,10 @@ prompt #########################################################################
 prompt 'UPDATING OTHER TYPES'
 select systimestamp from dual;
 whenever sqlerror continue
+drop public synonym cwms_t_group_type2;
+drop public synonym cwms_t_group_type3;
+drop public synonym cwms_t_loc_alias_type2;
+drop public synonym cwms_t_loc_alias_type3;
 drop type old_vdatum_stream_rating_t force;
 drop type old_stream_rating_t force;
 drop type old_vdatum_rating_t force;
@@ -470,6 +474,7 @@ whenever sqlerror continue
 drop package old_cwms_rating;
 whenever sqlerror exit
 @@../cwms/cwms_configuration_pkg
+@@../cwms/cwms_pump_pkg
 @@../cwms/cwms_xchg_pkg
 create or replace public synonym cwms_tsv for cwms_tsv;
 prompt ################################################################################
@@ -480,6 +485,7 @@ select systimestamp from dual;
 @@../cwms/cwms_env_pkg_body
 @@../cwms/cwms_lookup_pkg_body
 @@../cwms/cwms_mail_pkg_body
+@@../cwms/cwms_pump_pkg_body
 @@../cwms/cwms_tsv_pkg_body
 @@../cwms/cwms_upass_pkg_body
 @@../cwms_dba/cwms_user_admin_pkg_body
@@ -521,10 +527,10 @@ select owner||'.'||substr(object_name, 1, 30) as invalid_object,
  order by 1, 2;
 prompt ################################################################################
 prompt 'RECOMPILING SCHEMA'
+select systimestamp from dual;
 exec sys.utl_recomp.recomp_serial('&cwms_schema');
 prompt ################################################################################
 prompt 'REMAINING INVALID OBJECTS...'
-select systimestamp from dual;
 select owner||'.'||substr(object_name, 1, 30) as invalid_object,
        object_type
   from all_objects
@@ -568,6 +574,10 @@ select substr(version, 1, 10) as version,
  where application = 'CWMS'
  order by version_date;
 prompt ################################################################################
+prompt 'CREATE THE AV_QUEUE_MESSAGES VIEW'
+select systimestamp from dual;
+exec cwms_msg.create_av_queue_subscr_msgs;
+prompt ################################################################################
 prompt 'STARTING JOBS'
 select systimestamp from dual;
 begin
@@ -604,6 +614,13 @@ select office_id,
        time_zone_name
   from xchg_set_tz_changes;
 drop table xchg_set_tz_changes;
+prompt ================================================================================
+prompt 'The locations (if any) have been changed to PUMP location kind'
+select office_id,
+       location_id,
+       location_kind_id
+  from pump_location_changes;
+drop table pump_location_changes;
 prompt ================================================================================
 prompt 'The following ratings (if any) have had their source agencies set to NULL because they were not in the AT_ENTITIES table'
 select * from rating_source_changes;
