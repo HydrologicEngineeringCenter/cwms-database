@@ -37,7 +37,7 @@ begin
       select * into l_rec from at_pump where pump_location_code = l_location_code;
       if p_fail_if_exists = 'T' then
          cwms_err.raise(
-            'ITEM_ALREADY_EXISTS', 
+            'ITEM_ALREADY_EXISTS',
             'Pump location '
             ||cwms_util.get_db_office_id(p_office_id)
             ||'/'
@@ -56,7 +56,7 @@ begin
    else
       update at_pump set row = l_rec where pump_location_code = l_location_code;
    end if;
-end store_pump;   
+end store_pump;
 --------------------------------------------------------------------------------
 -- PROCEDURE RETRIEVE_PUMP
 procedure retrieve_pump(
@@ -93,11 +93,13 @@ begin
    -- sanity checks --
    -------------------
    if p_location_id is null then cwms_err.raise('NULL_ARGUMENT', 'P_Location_Id'); end if;
-   if p_delete_action not in (cwms_util.delete_key, cwms_util.delete_all) then
+   if p_delete_action not in (cwms_util.delete_key, cwms_util.delete_data, cwms_util.delete_all) then
       cwms_err.raise(
-         'ERROR', 
+         'ERROR',
          'Argument P_Delete_Action must be '''
          ||cwms_util.delete_key
+         ||''', '''
+         ||cwms_util.delete_data
          ||''' or '''
          ||cwms_util.delete_all
          ||'''');
@@ -106,11 +108,17 @@ begin
    -----------------
    -- do the work --
    -----------------
-   if p_delete_action = cwms_util.delete_key then
+   if p_delete_action in (cwms_util.delete_data, cwms_util.delete_all) then
+      delete from at_wat_usr_contract_accounting where pump_location_code = l_rec.pump_location_code;
+      update at_water_user_contract set pump_out_location_code       = null where pump_out_location_code       = l_rec.pump_location_code;
+      update at_water_user_contract set pump_out_below_location_code = null where pump_out_below_location_code = l_rec.pump_location_code;
+      update at_water_user_contract set pump_in_location_code        = null where pump_in_location_code        = l_rec.pump_location_code;
+   end if;
+   if p_delete_action in (cwms_util.delete_key, cwms_util.delete_all) then
       delete from at_pump where pump_location_code = l_rec.pump_location_code;
-      cwms_loc.update_location_kind(l_rec.pump_location_code, 'PUMP', 'D');
-   else
-      cwms_loc.delete_location(p_location_id, p_delete_action, p_office_id);
+      update at_physical_location
+         set location_kind = (select location_kind_code from cwms_location_kind where location_kind_id = 'STREAM_LOCATION')
+       where location_code = l_rec.pump_location_code;
    end if;
 end delete_pump;
 

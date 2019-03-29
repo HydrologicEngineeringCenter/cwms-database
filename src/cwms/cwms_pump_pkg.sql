@@ -49,10 +49,13 @@ procedure rename_pump(
  * @param p_delete_action the type of deletion to perform.
  *        <dl>
  *        <dt><code><big><b>cwms_util.delete_key</b></big></code></dt>
- *        <dd>only the pump information is deleted.</dd>
+ *        <dd>only the pump is deleted. This will fail if the pump has any dependent data</dd>
+ *        <dt><code><big><b>cwms_util.delete_data</b></big></code></dt>
+ *        <dd>only the dependent data is deleted.</dd>
  *        <dt><code><big><b>cwms_util.delete_all</b></big></code></dt>
- *        <dd>the pump location and any depedent data will be deleted</dd>
- *        </dl> 
+ *        <dd>the pump and any depedent data is deleted</dd>
+ *        </dl>
+ *        The <code><big><b>cwms_util.delete_key</b></big> or <code><big><b>cwms_util.delete_all</b></big> operations will set the location kind to <code>STREAM_LOCATION</code>
  * @param p_office_id The office that owns the pump location in the database. If not specified or NULL, the session user's current office is used.
  */
 procedure delete_pump(
