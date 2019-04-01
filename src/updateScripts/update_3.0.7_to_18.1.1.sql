@@ -439,6 +439,10 @@ delete from at_clob where id = '/VIEWDOCS/AV_LOC2';
 @@../cwms/views/av_loc2
 delete from at_clob where id = '/VIEWDOCS/AV_LOCATION_LEVEL';
 @@../cwms/views/av_location_level
+delete from at_clob where id = '/VIEWDOCS/AV_LOCK';
+@@../cwms/views/av_lock
+delete from at_clob where id = '/VIEWDOCS/AV_LOC_LVL_ATTRIBUTE';
+@@../cwms/views/av_loc_lvl_attribute
 delete from at_clob where id = '/VIEWDOCS/AV_BASE_PARAMETER_UNITS';
 @@../cwms/views/av_base_parameter_units
 delete from at_clob where id = '/VIEWDOCS/AV_RATING';
