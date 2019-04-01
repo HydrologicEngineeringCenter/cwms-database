@@ -30,38 +30,38 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_LVL_SOURCE',
  * @field specified_level_code     The unique numeric code that identifies the specified level
  * @field attr_parameter_code      The unique numeric code that identifies the attribute parameter, if any
  * @field attr_parameter_type_code The unique numeric code that identifies the attribute parameter type, if any
- * @field attr_duration_code       The unique numeric code that identifies the attribute parameter, if any     
+ * @field attr_duration_code       The unique numeric code that identifies the attribute parameter, if any
  */
 ');
 
 create or replace force view av_loc_lvl_source (
-   office_id, 
-   location_level_id, 
-   attribute_id, 
-   attr_value_si, 
-   attr_unit_si, 
-   attr_value_en, 
-   attr_unit_en, 
-   source_entity, 
-   location_id, 
-   parameter_id, 
-   parameter_type_id, 
-   duration_id, 
-   specified_level_id, 
-   attr_parameter_id, 
-   attr_parameter_type_id, 
-   attr_duration_id, 
-   loc_lvl_source_code, 
-   office_code, 
-   location_code, 
-   base_location_code, 
-   parameter_code, 
-   duration_code, 
-   specified_level_code, 
-   attr_parameter_code, 
-   attr_parameter_type_code, 
+   office_id,
+   location_level_id,
+   attribute_id,
+   attr_value_si,
+   attr_unit_si,
+   attr_value_en,
+   attr_unit_en,
+   source_entity,
+   location_id,
+   parameter_id,
+   parameter_type_id,
+   duration_id,
+   specified_level_id,
+   attr_parameter_id,
+   attr_parameter_type_id,
+   attr_duration_id,
+   loc_lvl_source_code,
+   office_code,
+   location_code,
+   base_location_code,
+   parameter_code,
+   duration_code,
+   specified_level_code,
+   attr_parameter_code,
+   attr_parameter_type_code,
    attr_duration_code)
-as 
+as
 select q1.office_id,
        q1.location_level_id,
        q2.attribute_id,
@@ -92,10 +92,10 @@ select q1.office_id,
                o.office_code,
                lls.location_code,
                bl.base_location_code,
-               lls.parameter_code,                                                              
+               lls.parameter_code,
                lls.parameter_type_code,
-               lls.duration_code,                                                      
-               lls.specified_level_code,  
+               lls.duration_code,
+               lls.specified_level_code,
                o.office_id,
                bl.base_location_id
                   ||substr('-', 1, length(pl.sub_location_id))
@@ -137,19 +137,24 @@ select q1.office_id,
                cwms_util.get_parameter_id(lls.attr_parameter_code) as attr_parameter_id,
                pt.parameter_type_id as attr_parameter_type_id,
                d.duration_id as attr_duration_id,
-               case 
+               case
                   when lls.attr_parameter_code is null or lls.attr_parameter_type_code is null or lls.duration_code is null then null
                   else cwms_util.get_parameter_id(lls.attr_parameter_code)||'.'||pt.parameter_type_id||'.'||d.duration_id
                end as attribute_id,
-               cwms_rounding.round_f(attr_value, 9) as attr_value_si,
-               cwms_util.get_default_units(cwms_util.get_parameter_id(lls.attr_parameter_code), 'SI') as attr_unit_si,
                cwms_rounding.round_f(
                   cwms_util.convert_units(
                      attr_value,
                      cwms_util.get_default_units(cwms_util.get_parameter_id(lls.attr_parameter_code), 'SI'),
-                     cwms_util.get_default_units(cwms_util.get_parameter_id(lls.attr_parameter_code), 'EN')),
+                     cwms_display.retrieve_user_unit_f(cwms_util.get_parameter_id(lls.attr_parameter_code), 'SI')),
+                  9) as attr_value_si,
+               cwms_display.retrieve_user_unit_f(cwms_util.get_parameter_id(lls.attr_parameter_code), 'SI') as attr_unit_si,
+               cwms_rounding.round_f(
+                  cwms_util.convert_units(
+                     attr_value,
+                     cwms_util.get_default_units(cwms_util.get_parameter_id(lls.attr_parameter_code), 'SI'),
+                     cwms_display.retrieve_user_unit_f(cwms_util.get_parameter_id(lls.attr_parameter_code), 'EN')),
                   9) as attr_value_en,
-               cwms_util.get_default_units(cwms_util.get_parameter_id(lls.attr_parameter_code), 'EN') as attr_unit_en
+               cwms_display.retrieve_user_unit_f(cwms_util.get_parameter_id(lls.attr_parameter_code), 'EN') as attr_unit_en
           from at_loc_lvl_source lls,
                cwms_parameter_type pt,
                cwms_duration d

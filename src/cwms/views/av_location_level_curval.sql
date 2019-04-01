@@ -55,22 +55,22 @@ select q1.office_id,
        q2.unit_en as attribute_unit_en,
        cwms_rounding.round_f(cwms_level.retrieve_loc_lvl_value_ex(
          p_location_level_id => q1.location_level_id,
-         p_level_units       => cwms_util.get_default_units(q1.parameter_id, 'SI'),
+         p_level_units       => cwms_display.retrieve_user_unit_f(q1.parameter_id, 'SI'),
          p_attribute_id      => q2.attribute_id,
          p_attribute_value   => q1.attribute_value,
          p_attribute_units   => q2.unit_si,
          p_ignore_errors     => 'T',
          p_office_id         => q1.office_id), 10) as current_value_si,
-       cwms_util.get_default_units(q1.parameter_id, 'SI') as value_unit_si,
+       cwms_display.retrieve_user_unit_f(q1.parameter_id, 'SI') as value_unit_si,
        cwms_rounding.round_f(cwms_level.retrieve_loc_lvl_value_ex(
          p_location_level_id => q1.location_level_id,
-         p_level_units       => cwms_util.get_default_units(q1.parameter_id, 'EN'),
+         p_level_units       => cwms_display.retrieve_user_unit_f(q1.parameter_id, 'EN'),
          p_attribute_id      => q2.attribute_id,
          p_attribute_value   => q1.attribute_value,
          p_attribute_units   => q2.unit_si,
          p_ignore_errors     => 'T',
          p_office_id         => q1.office_id), 10) as current_value_en,
-       cwms_util.get_default_units(q1.parameter_id, 'EN') as value_unit_en,
+       cwms_display.retrieve_user_unit_f(q1.parameter_id, 'EN') as value_unit_en,
        case
        when q1.location_level_value is not null then 'CONSTANT'
        when q1.interval_origin is not null then 'REGULAR'
@@ -205,8 +205,8 @@ select q1.office_id,
                ||p.sub_parameter_id as parameter_id,
                pt.parameter_type_id,
                d.duration_id,
-               cwms_util.get_default_units(bp.base_parameter_id||substr('-', 1, length(p.sub_parameter_id)) ||p.sub_parameter_id, 'SI') as unit_si,
-               cwms_util.get_default_units(bp.base_parameter_id||substr('-', 1, length(p.sub_parameter_id)) ||p.sub_parameter_id, 'EN') as unit_en
+               cwms_display.retrieve_user_unit_f(bp.base_parameter_id||substr('-', 1, length(p.sub_parameter_id)) ||p.sub_parameter_id, 'SI') as unit_si,
+               cwms_display.retrieve_user_unit_f(bp.base_parameter_id||substr('-', 1, length(p.sub_parameter_id)) ||p.sub_parameter_id, 'EN') as unit_en
           from at_parameter p,
                cwms_base_parameter bp,
                cwms_parameter_type pt,

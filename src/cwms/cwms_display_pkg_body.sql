@@ -674,6 +674,8 @@ procedure retrieve_unit(
    p_unit_system    in  varchar2,
    p_office_id      in  varchar2 default null)
 is
+   invalid_param_id exception;
+   pragma exception_init(invalid_param_id, -20006);
    l_rec at_display_units%rowtype;
 begin
    -------------------
@@ -709,15 +711,8 @@ begin
       and du.unit_system    = l_rec.unit_system
       and u.unit_code = du.display_unit_code;
 exception
-   when no_data_found then
-      cwms_err.raise(
-         'ITEM_DOES_NOT_EXIST',
-         'CWMS display unit',
-         nvl(upper(p_office_id), cwms_util.user_office_id)
-         ||'/'
-         ||p_parameter_id
-         ||'/'
-         ||p_unit_system);
+   when no_data_found or invalid_param_id then
+      p_unit_id := cwms_util.get_default_units(p_parameter_id, p_unit_system);
 end retrieve_unit;
 --------------------------------------------------------------------------------
 -- function retrieve_unit_f

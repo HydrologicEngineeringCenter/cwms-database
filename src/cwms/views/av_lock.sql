@@ -41,32 +41,32 @@ as
           loc1.location_code as lock_location_code,
           loc2.location_code as project_location_code,
           loc1.unit_system,
-          cwms_util.get_default_units('Length', loc1.unit_system) as length_unit_id,
-          cwms_util.get_default_units('Volume', loc1.unit_system) as volume_unit_id,
+          cwms_display.retrieve_user_unit_f('Length', loc1.unit_system) as length_unit_id,
+          cwms_display.retrieve_user_unit_f('Volume', loc1.unit_system) as volume_unit_id,
           cwms_util.convert_units(
              lck.lock_length,
              cwms_util.get_default_units('Length', 'SI'),
-             cwms_util.get_default_units('Length', loc1.unit_system))
+             cwms_display.retrieve_user_unit_f('Length-Lock', loc1.unit_system))
              as lock_length,
           cwms_util.convert_units(
              lck.lock_width,
              cwms_util.get_default_units('Length', 'SI'),
-             cwms_util.get_default_units('Length', loc1.unit_system))
+             cwms_display.retrieve_user_unit_f('Width-Lock', loc1.unit_system))
              as lock_width,
           cwms_util.convert_units(
              lck.volume_per_lockage,
              cwms_util.get_default_units('Volume', 'SI'),
-             cwms_util.get_default_units('Volume', loc1.unit_system))
+             cwms_display.retrieve_user_unit_f('Volume-Lock', loc1.unit_system))
              as volume_per_lockage,
           cwms_util.convert_units(
              lck.minimum_draft,
              cwms_util.get_default_units('Length', 'SI'),
-             cwms_util.get_default_units('Length', loc1.unit_system))
+             cwms_display.retrieve_user_unit_f('Depth-Draft', loc1.unit_system))
              as minimum_draft,
           cwms_util.convert_units(
              lck.normal_lock_lift,
              cwms_util.get_default_units('Length', 'SI'),
-             cwms_util.get_default_units('Length', loc1.unit_system))
+             cwms_display.retrieve_user_unit_f('Height-Lift', loc1.unit_system))
              as normal_lock_lift,
          loc1.db_office_id
      from cwms_v_loc2 loc1, cwms_v_loc2 loc2, at_lock lck
