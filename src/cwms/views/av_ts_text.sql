@@ -13,9 +13,9 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TS_TEXT', null,
  * @field date_time_utc       The date/time the value+text or text is for
  * @field version_date_utc    The version date/time of the time series
  * @field data_entry_date_utc The date/time the value (value+text) or first text (text only) was stored to the database
- * @field attribute           A numeric value (can be used for sorting multiple text values for a specified date_time/version) 
+ * @field attribute           A numeric value (can be used for sorting multiple text values for a specified date_time/version)
  * @field si_value            The SI unit value for value time series (parameter not in (''Text'', ''Binary'')
- * @field si_unit             The SI unit of the value for value time series (parameter not in (''Text'', ''Binary'') 
+ * @field si_unit             The SI unit of the value for value time series (parameter not in (''Text'', ''Binary'')
  * @field en_value            The English unit value for value time series (parameter not in (''Text'', ''Binary'')
  * @field en_unit             The English unit of the value for value time series (parameter not in (''Text'', ''Binary'')
  * @field quality_code        The quality code of the value for value time series (parameter not in (''Text'', ''Binary'')
@@ -35,39 +35,39 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TS_TEXT', null,
 
 
 create or replace force view av_ts_text (
-   office_id, 
-   location_id, 
+   office_id,
+   location_id,
    cwms_ts_id,
    text_time_series,
-   date_time_utc, 
-   version_date_utc, 
-   data_entry_date_utc, 
-   attribute, 
-   si_value, 
-   si_unit, 
-   en_value, 
-   en_unit, 
-   quality_code, 
-   std_text_id, 
-   text_value, 
-   aliased_item, 
-   loc_alias_category, 
-   loc_alias_group, 
-   ts_alias_category, 
+   date_time_utc,
+   version_date_utc,
+   data_entry_date_utc,
+   attribute,
+   si_value,
+   si_unit,
+   en_value,
+   en_unit,
+   quality_code,
+   std_text_id,
+   text_value,
+   aliased_item,
+   loc_alias_category,
+   loc_alias_group,
+   ts_alias_category,
    ts_alias_group,
    office_code,
    location_code,
-   ts_code, 
+   ts_code,
    clob_code
-) 
-as 
+)
+as
 select q1.office_id,
        v1.location_id,
-       case 
+       case
           when v1.aliased_item is null then q1.cwms_ts_id
           else v1.location_id||substr(q1.cwms_ts_id, instr(q1.cwms_ts_id, '.'))
-       end as cwms_ts_id,   
-       case   
+       end as cwms_ts_id,
+       case
           when cwms_util.split_text(q1.cwms_ts_id, 2, '.') = 'Text' then 'T'
           else 'F'
        end as text_time_series,
@@ -75,13 +75,16 @@ select q1.office_id,
        q1.version_date_utc,
        q1.data_entry_date_utc,
        q1.attribute,
-       q1.value as si_value,
-       cwms_util.get_default_units(cwms_util.split_text(q1.cwms_ts_id, 2, '.'), 'SI') as si_unit,
        cwms_util.convert_units(
           q1.value,
           cwms_util.get_default_units(cwms_util.split_text(q1.cwms_ts_id, 2, '.'), 'SI'),
-          cwms_util.get_default_units(cwms_util.split_text(q1.cwms_ts_id, 2, '.'), 'EN')) as en_value,
-       cwms_util.get_default_units(cwms_util.split_text(q1.cwms_ts_id, 2, '.'), 'EN') as en_unit,
+          cwms_display.retrieve_user_unit_f(cwms_util.split_text(q1.cwms_ts_id, 2, '.'), 'SI')) as si_value,
+       cwms_display.retrieve_user_unit_f(cwms_util.split_text(q1.cwms_ts_id, 2, '.'), 'SI') as si_unit,
+       cwms_util.convert_units(
+          q1.value,
+          cwms_util.get_default_units(cwms_util.split_text(q1.cwms_ts_id, 2, '.'), 'SI'),
+          cwms_display.retrieve_user_unit_f(cwms_util.split_text(q1.cwms_ts_id, 2, '.'), 'EN')) as en_value,
+       cwms_display.retrieve_user_unit_f(cwms_util.split_text(q1.cwms_ts_id, 2, '.'), 'EN') as en_unit,
        q1.quality_code,
        q1.std_text_id,
        q1.text_value,
@@ -95,7 +98,7 @@ select q1.office_id,
        q1.ts_code,
        q1.clob_code
   from (select q111.db_office_id as office_id,
-               q111.cwms_ts_id,  
+               q111.cwms_ts_id,
                q111.date_time as date_time_utc,
                q111.version_date as version_date_utc,
                q111.data_entry_date as data_entry_date_utc,
@@ -136,7 +139,7 @@ select q1.office_id,
                left outer join
                (select clob_code,
                        value as text_value
-                  from at_clob       
+                  from at_clob
                ) q113 on q113.clob_code = q111.clob_code
         union all
         select q121.db_office_id as office_id,
@@ -179,16 +182,16 @@ select q1.office_id,
                left outer join
                (select clob_code,
                        value as text_value
-                  from at_clob       
+                  from at_clob
                ) q123 on q123.clob_code = q121.clob_code
        ) q1
        join
-       av_loc2 v1 on v1.location_code = q1.location_code and v1.unit_system = 'EN' 
-union all       
+       av_loc2 v1 on v1.location_code = q1.location_code and v1.unit_system = 'EN'
+union all
 select q2.office_id,
-       v2.location_id,                              
-       v2.cwms_ts_id,   
-       case   
+       v2.location_id,
+       v2.cwms_ts_id,
+       case
           when cwms_util.split_text(q2.cwms_ts_id, 2, '.') = 'Text' then 'T'
           else 'F'
        end as text_time_series,
@@ -196,13 +199,16 @@ select q2.office_id,
        q2.version_date_utc,
        q2.data_entry_date_utc,
        q2.attribute,
-       q2.value as si_value,
-       cwms_util.get_default_units(cwms_util.split_text(q2.cwms_ts_id, 2, '.'), 'SI') as si_unit,
-       cwms_util.convert_units(                                                                                     
+       cwms_util.convert_units(
           q2.value,
           cwms_util.get_default_units(cwms_util.split_text(q2.cwms_ts_id, 2, '.'), 'SI'),
-          cwms_util.get_default_units(cwms_util.split_text(q2.cwms_ts_id, 2, '.'), 'EN')) as en_value,
-       cwms_util.get_default_units(cwms_util.split_text(q2.cwms_ts_id, 2, '.'), 'EN') as en_unit,
+          cwms_display.retrieve_user_unit_f(cwms_util.split_text(q2.cwms_ts_id, 2, '.'), 'SI')) as si_value,
+       cwms_display.retrieve_user_unit_f(cwms_util.split_text(q2.cwms_ts_id, 2, '.'), 'SI') as si_unit,
+       cwms_util.convert_units(
+          q2.value,
+          cwms_util.get_default_units(cwms_util.split_text(q2.cwms_ts_id, 2, '.'), 'SI'),
+          cwms_display.retrieve_user_unit_f(cwms_util.split_text(q2.cwms_ts_id, 2, '.'), 'EN')) as en_value,
+       cwms_display.retrieve_user_unit_f(cwms_util.split_text(q2.cwms_ts_id, 2, '.'), 'EN') as en_unit,
        q2.quality_code,
        q2.std_text_id,
        q2.text_value,
@@ -257,7 +263,7 @@ select q2.office_id,
                left outer join
                (select clob_code,
                        value as text_value
-                  from at_clob       
+                  from at_clob
                ) q213 on q213.clob_code = q211.clob_code
         union all
         select q221.db_office_id as office_id,
@@ -300,11 +306,11 @@ select q2.office_id,
                left outer join
                (select clob_code,
                        value as text_value
-                  from at_clob       
+                  from at_clob
                ) q223 on q223.clob_code = q221.clob_code
        ) q2
        join
        av_cwms_ts_id2 v2 on v2.ts_code = q2.ts_code and v2.ts_alias_group is not null;
-       
-create or replace public synonym cwms_v_ts_text for av_ts_text;       
+
+create or replace public synonym cwms_v_ts_text for av_ts_text;
 

@@ -67,16 +67,22 @@ as
           || '.'
           || d2.duration_id
              as attribute_id,
-          cwms_rounding.round_f(ll.attribute_value, 9) as si_attr_value,
-          cwms_util.get_default_units(cwms_util.get_parameter_id(ll.attribute_parameter_code), 'SI') as si_attr_unit,
           cwms_rounding.round_f(
              cwms_util.convert_units(
                 ll.attribute_value,
                 cwms_util.get_default_units(cwms_util.get_parameter_id(ll.attribute_parameter_code), 'SI'),
-                cwms_util.get_default_units(cwms_util.get_parameter_id(ll.attribute_parameter_code), 'EN')),
+                cwms_display.retrieve_user_unit_f(cwms_util.get_parameter_id(ll.attribute_parameter_code), 'SI')),
+             9)
+             as si_attr_value,
+          cwms_display.retrieve_user_unit_f(cwms_util.get_parameter_id(ll.attribute_parameter_code), 'SI') as si_attr_unit,
+          cwms_rounding.round_f(
+             cwms_util.convert_units(
+                ll.attribute_value,
+                cwms_util.get_default_units(cwms_util.get_parameter_id(ll.attribute_parameter_code), 'SI'),
+                cwms_display.retrieve_user_unit_f(cwms_util.get_parameter_id(ll.attribute_parameter_code), 'EN')),
              9)
              as en_attr_value,
-          cwms_util.get_default_units(cwms_util.get_parameter_id(ll.attribute_parameter_code), 'EN') as en_attr_unit,
+          cwms_display.retrieve_user_unit_f(cwms_util.get_parameter_id(ll.attribute_parameter_code), 'EN') as en_attr_unit,
           bl.base_location_id,
           pl.sub_location_id,
           bp1.base_parameter_id,
