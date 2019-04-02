@@ -60,9 +60,9 @@ insert into at_clob
  * @field nation_id            Nation encompassing location (may be inherited from base location)
  * @field nearest_city         City nearest to location (may be inherited from base location)
  * @field active_flag          Deprecated - loc_active_flag replaces active_flag as of v2.1
- * @field aliased_item         Null if the location_id is not an alias, ''LOCATION'' if the entire location_id is aliased, or ''BASE LOCATION'' if only the base_location_id is alaised.  
- * @field loc_alias_category   The location category that owns the location group to which the alias for the location_id or base_location_id belongs. Null if location_id is not an alias.  
- * @field loc_alias_group      The location group to which the alias for the location_id or base_location_id belongs. Null if location_id is not an alias.  
+ * @field aliased_item         Null if the location_id is not an alias, ''LOCATION'' if the entire location_id is aliased, or ''BASE LOCATION'' if only the base_location_id is alaised.
+ * @field loc_alias_category   The location category that owns the location group to which the alias for the location_id or base_location_id belongs. Null if location_id is not an alias.
+ * @field loc_alias_group      The location group to which the alias for the location_id or base_location_id belongs. Null if location_id is not an alias.
  * @field db_office_code       Unique number identifying the office that owns the location
  */
 ');
@@ -113,8 +113,11 @@ as
           q1.location_id,
           q3.location_type,
           q2.unit_system,
-          nvl(q4.elevation, q5.elevation) * factor + offset as elevation,
-          q6.to_unit_id as unit_id,
+          cwms_util.convert_units(
+            nvl(q4.elevation, q5.elevation),
+            cwms_util.get_default_units('Elev'),
+            cwms_display.retrieve_user_unit_f('Elev', q2.unit_system, null, db_office_id)) as elevation,
+          cwms_display.retrieve_user_unit_f('Elev', q2.unit_system, null, db_office_id) unit_id,
           nvl(q4.vertical_datum, q5.vertical_datum) as vertical_datum,
           round (nvl(q4.longitude, q5.longitude), 12) as longitude,
           round (nvl(q4.latitude, q5.latitude), 12) as latitude,
@@ -162,7 +165,7 @@ as
                    cwms_office o
              where bl.base_location_code = pl.base_location_code
                and o.office_code = bl.db_office_code
-           )  
+           )
            union all
            (------------------------
             -- alias for location --
@@ -419,21 +422,6 @@ as
                     where nt.nation_code = pl.nation_code
                   ) q55 on q55.location_code = q51.location_code
           ) q5 on q5.location_code = q1.base_location_code
-          join
-          (--------------------------
-           -- elevation conversion --
-           --------------------------
-           select adu.db_office_code,
-                  adu.unit_system,
-                  cuc.to_unit_id,
-                  cuc.factor,
-                  cuc.offset
-             from at_display_units adu,
-                  cwms_unit_conversion cuc
-            where adu.parameter_code = 10
-              and adu.display_unit_code = cuc.to_unit_code
-              and cuc.from_unit_code = 38
-          ) q6 on q6.db_office_code = q1.db_office_code and q6.unit_system = q2.unit_system;
 /
 
 show errors;
