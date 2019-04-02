@@ -32,7 +32,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_LEVEL',
  * @field sub_parameter_id    The sub-parameter portion of the location level
  * @field parameter_id        The full parameter portion of the location level
  * @field duration_id         The duration portion of the location level
- * @field specified_level_id  The specified level portion of the location level  
+ * @field specified_level_id  The specified level portion of the location level
  * @field location_code       The unique numeric code that identifies the location in the database
  * @field location_level_code The unique numeric code that identifies the location level in the database
  * @field expiration_date             The date/time at which the level expires
@@ -52,13 +52,39 @@ as
 select q1.office_id,
        q1.location_id || '.' || q1.parameter_id || '.' || q1.parameter_type_id || '.' || q1.duration_id || '.' || q1.specified_level_id as location_level_id,
        q1.attribute_parameter_id || substr ('.', 1, length (q1.attribute_parameter_type_id)) || q1.attribute_parameter_type_id || substr ('.', 1, length (q1.attribute_duration_id)) || q1.attribute_duration_id as attribute_id,
-       q1.level_date, q1.unit_system, q1.attribute_unit, q1.level_unit,
-       q1.attribute_value, q1.constant_level, q1.interval_origin,
+       q1.level_date,
+       q1.unit_system,
+       case
+       when q1.attribute_parameter_id is null then null
+       else cwms_display.retrieve_user_unit_f(q1.attribute_parameter_id, q1.unit_system)
+       end as attribute_unit,
+       cwms_display.retrieve_user_unit_f(q1.parameter_id, q1.unit_system) as level_unit,
+       case
+       when q1.attribute_parameter_id is null then null
+       else cwms_util.convert_units(
+              q1.attribute_value,
+              cwms_util.get_default_units(q1.attribute_parameter_id, q1.unit_system),
+              cwms_display.retrieve_user_unit_f(q1.attribute_parameter_id, q1.unit_system))
+       end as attribute_value,
+       case
+       when q1.constant_level is null then null
+       else cwms_util.convert_units(
+              q1.constant_level,
+              cwms_util.get_default_units(q1.parameter_id, q1.unit_system),
+              cwms_display.retrieve_user_unit_f(q1.parameter_id, q1.unit_system))
+       end as constant_level,
+       q1.interval_origin,
        substr (q1.calendar_interval_, 2) as calendar_interval,
        q1.time_interval, q1.interpolate,
        substr (q1.calendar_offset_, 2) as calendar_offset,
        substr (q1.time_offset_, 2) as time_offset,
-       q1.seasonal_level,
+       case
+       when q1.seasonal_level is null then null
+       else cwms_util.convert_units(
+              q1.seasonal_level,
+              cwms_util.get_default_units(q1.parameter_id, q1.unit_system),
+              cwms_display.retrieve_user_unit_f(q1.parameter_id, q1.unit_system))
+       end as seasonal_level,
        q1.tsid,
        q1.level_comment,
        q1.attribute_comment,
@@ -96,10 +122,8 @@ select q1.office_id,
                 null as attribute_duration_id,
                 a_ll.location_level_date as level_date,
                 us.unit_system as unit_system,
-                c_uc1.to_unit_id as level_unit,
-                null as attribute_unit,
                 a_ll.attribute_value as attribute_value,
-                a_ll.location_level_value * c_uc1.factor + c_uc1.offset as constant_level,
+                a_ll.location_level_value as constant_level,
                 a_ll.interval_origin as interval_origin,
                 a_ll.calendar_interval as calendar_interval_,
                 a_ll.time_interval as time_interval,
@@ -119,7 +143,7 @@ select q1.office_id,
                 a_ll.location_level_comment,
                 a_ll.attribute_parameter_code,
                 a_ll.attribute_parameter_type_code,
-                a_ll.attribute_duration_code,                
+                a_ll.attribute_duration_code,
                 a_ll.location_level_code,
                 a_ll.expiration_date
            from at_location_level a_ll,
@@ -130,7 +154,6 @@ select q1.office_id,
                 cwms_duration c_d1,
                 cwms_base_parameter c_bp1,
                 cwms_parameter_type c_pt1,
-                cwms_unit_conversion c_uc1,
                 cwms_office c_o,
                 (select 'EN' as unit_system from  dual
                  union all
@@ -143,12 +166,6 @@ select q1.office_id,
             and c_pt1.parameter_type_code = a_ll.parameter_type_code
             and c_d1.duration_code = a_ll.duration_code
             and a_sl.specified_level_code = a_ll.specified_level_code
-            and c_uc1.from_unit_code = c_bp1.unit_code
-            and c_uc1.to_unit_code =
-                   decode (us.unit_system,
-                           'EN', c_bp1.display_unit_code_en,
-                           'SI', c_bp1.display_unit_code_si
-                           )
             and a_ll.attribute_parameter_code is null
             and a_ll.location_level_value is not null
             and a_ll.ts_code is null
@@ -169,7 +186,6 @@ select q1.office_id,
                  null as attribute_duration_id,
                  a_ll.location_level_date as level_date,
                  us.unit_system as unit_system,
-                 c_uc1.to_unit_id as level_unit, null as attribute_unit,
                  a_ll.attribute_value as attribute_value,
                  null as constant_level,
                  a_ll.interval_origin as interval_origin,
@@ -178,7 +194,7 @@ select q1.office_id,
                  a_ll.interpolate as interpolate,
                  a_sll.calendar_offset as calendar_offset_,
                  a_sll.time_offset as time_offset_,
-                 a_sll.value * c_uc1.factor + c_uc1.offset as seasonal_level,
+                 a_sll.value as seasonal_level,
                  null as tsid,
                  a_ll.location_level_comment as level_comment,
                  a_ll.attribute_comment as attribute_comment,
@@ -192,7 +208,7 @@ select q1.office_id,
                  a_ll.location_level_comment,
                  a_ll.attribute_parameter_code,
                  a_ll.attribute_parameter_type_code,
-                 a_ll.attribute_duration_code,                
+                 a_ll.attribute_duration_code,
                  a_ll.location_level_code,
                  a_ll.expiration_date
             from at_location_level a_ll,
@@ -204,7 +220,6 @@ select q1.office_id,
                  cwms_duration c_d1,
                  cwms_base_parameter c_bp1,
                  cwms_parameter_type c_pt1,
-                 cwms_unit_conversion c_uc1,
                  cwms_office c_o,
                  (select 'EN' as unit_system from dual
                   union all
@@ -218,12 +233,6 @@ select q1.office_id,
              and c_pt1.parameter_type_code = a_ll.parameter_type_code
              and c_d1.duration_code = a_ll.duration_code
              and a_sl.specified_level_code = a_ll.specified_level_code
-             and c_uc1.from_unit_code = c_bp1.unit_code
-             and c_uc1.to_unit_code =
-                    decode (us.unit_system,
-                            'EN', c_bp1.display_unit_code_en,
-                            'SI', c_bp1.display_unit_code_si
-                           )
              and a_ll.attribute_parameter_code is null
              and a_ll.location_level_value is null
              and a_ll.ts_code is null
@@ -245,10 +254,8 @@ select q1.office_id,
                    c_d2.duration_id as attribute_duration_id,
                    a_ll.location_level_date as level_date,
                    us.unit_system as unit_system,
-                   c_uc1.to_unit_id as level_unit,
-                   c_uc2.to_unit_id as attribute_unit,
-                   a_ll.attribute_value * c_uc2.factor + c_uc2.offset as attribute_value,
-                   a_ll.location_level_value * c_uc1.factor + c_uc1.offset as constant_level,
+                   a_ll.attribute_value,
+                   a_ll.location_level_value as constant_level,
                    a_ll.interval_origin as interval_origin,
                    a_ll.calendar_interval as calendar_interval_,
                    a_ll.time_interval as time_interval,
@@ -268,7 +275,7 @@ select q1.office_id,
                    a_ll.location_level_comment,
                    a_ll.attribute_parameter_code,
                    a_ll.attribute_parameter_type_code,
-                   a_ll.attribute_duration_code,                
+                   a_ll.attribute_duration_code,
                    a_ll.location_level_code,
                    a_ll.expiration_date
               from at_location_level a_ll,
@@ -280,11 +287,9 @@ select q1.office_id,
                    cwms_duration c_d1,
                    cwms_base_parameter c_bp1,
                    cwms_parameter_type c_pt1,
-                   cwms_unit_conversion c_uc1,
                    cwms_duration c_d2,
                    cwms_base_parameter c_bp2,
                    cwms_parameter_type c_pt2,
-                   cwms_unit_conversion c_uc2,
                    cwms_office c_o,
                    (select 'EN' as unit_system from dual
                     union all
@@ -298,23 +303,11 @@ select q1.office_id,
                and c_pt1.parameter_type_code = a_ll.parameter_type_code
                and c_d1.duration_code = a_ll.duration_code
                and a_sl.specified_level_code = a_ll.specified_level_code
-               and c_uc1.from_unit_code = c_bp1.unit_code
-               and c_uc1.to_unit_code =
-                      decode (us.unit_system,
-                              'EN', c_bp1.display_unit_code_en,
-                              'SI', c_bp1.display_unit_code_si
-                             )
                and a_ll.attribute_parameter_code is not null
                and a_p2.parameter_code = a_ll.attribute_parameter_code
                and c_bp2.base_parameter_code = a_p2.base_parameter_code
                and c_pt2.parameter_type_code = a_ll.attribute_parameter_type_code
                and c_d2.duration_code = a_ll.attribute_duration_code
-               and c_uc2.from_unit_code = c_bp2.unit_code
-               and c_uc2.to_unit_code =
-                      decode (us.unit_system,
-                              'EN', c_bp2.display_unit_code_en,
-                              'SI', c_bp2.display_unit_code_si
-                             )
                and a_ll.location_level_value is not null
                and a_ll.ts_code is null
            )
@@ -334,9 +327,7 @@ select q1.office_id,
                    c_d2.duration_id as attribute_duration_id,
                    a_ll.location_level_date as level_date,
                    us.unit_system as unit_system,
-                   c_uc1.to_unit_id as level_unit,
-                   c_uc2.to_unit_id as attribute_unit,
-                   a_ll.attribute_value * c_uc2.factor + c_uc2.offset as attribute_value,
+                   a_ll.attribute_value,
                    null as constant_level,
                    a_ll.interval_origin as interval_origin,
                    a_ll.calendar_interval as calendar_interval_,
@@ -344,7 +335,7 @@ select q1.office_id,
                    a_ll.interpolate as interpolate,
                    a_sll.calendar_offset as calendar_offset_,
                    a_sll.time_offset as time_offset_,
-                   a_sll.value * c_uc1.factor + c_uc1.offset as seasonal_level,
+                   a_sll.value as seasonal_level,
                    null as tsid,
                    a_ll.location_level_comment as level_comment,
                    a_ll.attribute_comment as attribute_comment,
@@ -358,7 +349,7 @@ select q1.office_id,
                    a_ll.location_level_comment,
                    a_ll.attribute_parameter_code,
                    a_ll.attribute_parameter_type_code,
-                   a_ll.attribute_duration_code,                
+                   a_ll.attribute_duration_code,
                    a_ll.location_level_code,
                    a_ll.expiration_date
               from at_location_level a_ll,
@@ -371,14 +362,12 @@ select q1.office_id,
                    cwms_duration c_d1,
                    cwms_base_parameter c_bp1,
                    cwms_parameter_type c_pt1,
-                   cwms_unit_conversion c_uc1,
                    cwms_duration c_d2,
                    cwms_base_parameter c_bp2,
                    cwms_parameter_type c_pt2,
-                   cwms_unit_conversion c_uc2,
                    cwms_office c_o,
                    (select 'EN' as unit_system from dual
-                    union all                       
+                    union all
                     select 'SI' as unit_system from dual) us
             where  a_pl.location_code = a_ll.location_code
                and a_bl.base_location_code = a_pl.base_location_code
@@ -388,23 +377,11 @@ select q1.office_id,
                and c_pt1.parameter_type_code = a_ll.parameter_type_code
                and c_d1.duration_code = a_ll.duration_code
                and a_sl.specified_level_code = a_ll.specified_level_code
-               and c_uc1.from_unit_code = c_bp1.unit_code
-               and c_uc1.to_unit_code =
-                      decode (us.unit_system,
-                              'EN', c_bp1.display_unit_code_en,
-                              'SI', c_bp1.display_unit_code_si
-                             )
                and a_ll.attribute_parameter_code is not null
                and a_p2.parameter_code = a_ll.attribute_parameter_code
                and c_bp2.base_parameter_code = a_p2.base_parameter_code
                and c_pt2.parameter_type_code = a_ll.attribute_parameter_type_code
                and c_d2.duration_code = a_ll.attribute_duration_code
-               and c_uc2.from_unit_code = c_bp2.unit_code
-               and c_uc2.to_unit_code =
-                      decode (us.unit_system,
-                              'EN', c_bp2.display_unit_code_en,
-                              'SI', c_bp2.display_unit_code_si
-                             )
                and a_ll.location_level_value is null
                and a_ll.ts_code is null
                and a_sll.location_level_code = a_ll.location_level_code
@@ -425,8 +402,6 @@ select q1.office_id,
                    null as attribute_duration_id,
                    a_ll.location_level_date as level_date,
                    null as unit_system,
-                   null as level_unit,
-                   null as attribute_unit,
                    a_ll.attribute_value as attribute_value,
                    null as constant_level,
                    a_ll.interval_origin as interval_origin,
@@ -448,7 +423,7 @@ select q1.office_id,
                    a_ll.location_level_comment,
                    a_ll.attribute_parameter_code,
                    a_ll.attribute_parameter_type_code,
-                   a_ll.attribute_duration_code,                
+                   a_ll.attribute_duration_code,
                    a_ll.location_level_code,
                    a_ll.expiration_date
             from   at_location_level a_ll,
@@ -488,9 +463,7 @@ select q1.office_id,
                    c_d2.duration_id as attribute_duration_id,
                    a_ll.location_level_date as level_date,
                    us.unit_system as unit_system,
-                   null as level_unit,
-                   c_uc2.to_unit_id as attribute_unit,
-                   a_ll.attribute_value * c_uc2.factor + c_uc2.offset as attribute_value,
+                   a_ll.attribute_value,
                    null as constant_level,
                    a_ll.interval_origin as interval_origin,
                    a_ll.calendar_interval as calendar_interval_,
@@ -512,7 +485,7 @@ select q1.office_id,
                    a_ll.location_level_comment,
                    a_ll.attribute_parameter_code,
                    a_ll.attribute_parameter_type_code,
-                   a_ll.attribute_duration_code,                
+                   a_ll.attribute_duration_code,
                    a_ll.location_level_code,
                    a_ll.expiration_date
               from at_location_level a_ll,
@@ -527,7 +500,6 @@ select q1.office_id,
                    cwms_duration c_d2,
                    cwms_base_parameter c_bp2,
                    cwms_parameter_type c_pt2,
-                   cwms_unit_conversion c_uc2,
                    cwms_office c_o,
                    (select 'EN' as unit_system from dual
                     union all
@@ -546,12 +518,6 @@ select q1.office_id,
                and c_bp2.base_parameter_code = a_p2.base_parameter_code
                and c_pt2.parameter_type_code = a_ll.attribute_parameter_type_code
                and c_d2.duration_code = a_ll.attribute_duration_code
-               and c_uc2.from_unit_code = c_bp2.unit_code
-               and c_uc2.to_unit_code =
-                      decode (us.unit_system,
-                              'EN', c_bp2.display_unit_code_en,
-                              'SI', c_bp2.display_unit_code_si
-                             )
                and a_ll.location_level_value is null
                and a_ll.ts_code is not null)
            ) q1
@@ -567,16 +533,16 @@ select q1.office_id,
                    attr_duration_code,
                    label
               from at_loc_lvl_label
-             where configuration_code = 1 -- default configuration 
-           ) q2 on q2.location_code                                 = q1.location_code                                
-               and q2.specified_level_code                          = q1.specified_level_code                         
-               and q2.parameter_code                                = q1.parameter_code                               
-               and q2.parameter_type_code                           = q1.parameter_type_code                          
-               and q2.duration_code                                 = q1.duration_code                                
+             where configuration_code = 1 -- default configuration
+           ) q2 on q2.location_code                                 = q1.location_code
+               and q2.specified_level_code                          = q1.specified_level_code
+               and q2.parameter_code                                = q1.parameter_code
+               and q2.parameter_type_code                           = q1.parameter_type_code
+               and q2.duration_code                                 = q1.duration_code
                and nvl(cwms_rounding.round_f(q2.attr_value, 9), -1) = nvl(cwms_rounding.round_f(q1.attribute_value, 9), -1)
-               and nvl(q2.attr_parameter_code, -1)                  = nvl(q1.attribute_parameter_code, -1)                 
-               and nvl(q2.attr_parameter_type_code, -1)             = nvl(q1.attribute_parameter_type_code, -1)            
-               and nvl(q2.attr_duration_code, -1)                   = nvl(q1.attribute_duration_code, -1)                  
+               and nvl(q2.attr_parameter_code, -1)                  = nvl(q1.attribute_parameter_code, -1)
+               and nvl(q2.attr_parameter_type_code, -1)             = nvl(q1.attribute_parameter_type_code, -1)
+               and nvl(q2.attr_duration_code, -1)                   = nvl(q1.attribute_duration_code, -1)
            left outer join
            (select location_code,
                    specified_level_code,
@@ -589,15 +555,15 @@ select q1.office_id,
                    attr_duration_code,
                    cwms_entity.get_entity_id(source_entity) as source_entity
               from at_loc_lvl_source
-           ) q3 on q3.location_code                                 = q1.location_code                                
-               and q3.specified_level_code                          = q1.specified_level_code                         
-               and q3.parameter_code                                = q1.parameter_code                               
-               and q3.parameter_type_code                           = q1.parameter_type_code                          
-               and q3.duration_code                                 = q1.duration_code                                
+           ) q3 on q3.location_code                                 = q1.location_code
+               and q3.specified_level_code                          = q1.specified_level_code
+               and q3.parameter_code                                = q1.parameter_code
+               and q3.parameter_type_code                           = q1.parameter_type_code
+               and q3.duration_code                                 = q1.duration_code
                and nvl(cwms_rounding.round_f(q3.attr_value, 9), -1) = nvl(cwms_rounding.round_f(q1.attribute_value, 9), -1)
-               and nvl(q3.attr_parameter_code, -1)                  = nvl(q1.attribute_parameter_code, -1)                 
-               and nvl(q3.attr_parameter_type_code, -1)             = nvl(q1.attribute_parameter_type_code, -1)            
-               and nvl(q3.attr_duration_code, -1)                   = nvl(q1.attribute_duration_code, -1)                  
+               and nvl(q3.attr_parameter_code, -1)                  = nvl(q1.attribute_parameter_code, -1)
+               and nvl(q3.attr_parameter_type_code, -1)             = nvl(q1.attribute_parameter_type_code, -1)
+               and nvl(q3.attr_duration_code, -1)                   = nvl(q1.attribute_duration_code, -1)
            order by q1.office_id,
               q1.location_id || '.' || q1.parameter_id || '.' || q1.parameter_type_id || '.' || q1.duration_id || '.' || q1.specified_level_id,
               q1.attribute_parameter_id || substr ('.', 1, length (q1.attribute_parameter_type_id)) || q1.attribute_parameter_type_id || substr ('.', 1, length (q1.attribute_duration_id)) || q1.attribute_duration_id,
@@ -606,4 +572,4 @@ select q1.office_id,
               q1.attribute_value,
               q1.interval_origin + q1.calendar_offset_ + q1.time_offset_;
 
-create or replace public synonym cwms_v_location_level for av_location_level;                  
+create or replace public synonym cwms_v_location_level for av_location_level;
