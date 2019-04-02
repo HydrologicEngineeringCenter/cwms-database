@@ -93,7 +93,7 @@ create or replace force view av_loc
    active_flag
 )
 as
-   select location_code,
+  select location_code,
           base_location_code,
           db_office_id,
           base_location_id,
@@ -101,8 +101,11 @@ as
           location_id,
           location_type,
           unit_system,
-          (elevation * factor + offset) elevation,
-          to_unit_id unit_id,
+          cwms_util.convert_units(
+            elevation,
+            cwms_util.get_default_units('Elev'),
+            cwms_display.retrieve_user_unit_f('Elev', unit_system, null, db_office_id)) as elevation,
+          cwms_display.retrieve_user_unit_f('Elev', unit_system, null, db_office_id) unit_id,
           vertical_datum,
           round (longitude, 12) as longitude,
           round (latitude, 12) as latitude,
@@ -178,17 +181,13 @@ as
                   left outer join cwms_nation n
                      on n.nation_code =
                            coalesce (p1.nation_code, p2.nation_code)
-            where p1.location_code > 0 and p2.sub_location_id is null) aa
-          natural join
-          (select adu.db_office_code,
-                  adu.unit_system,
-                  cuc.to_unit_id,
-                  factor,
-                  offset
-             from at_display_units adu, cwms_unit_conversion cuc
-            where     adu.parameter_code = 10
-                  and adu.display_unit_code = cuc.to_unit_code
-                  and cuc.from_unit_code = 38) bb;
+            where p1.location_code != 0 and p2.sub_location_id is null
+          ) aa
+          join
+          (select office_id, 'EN' as unit_system from cwms_office
+           union all
+           select office_id, 'SI' as unit_system from cwms_office
+          ) bb on aa.db_office_id = bb.office_id;
 /
 
 show errors;
