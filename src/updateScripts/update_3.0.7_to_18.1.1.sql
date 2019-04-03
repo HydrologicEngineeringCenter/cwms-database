@@ -453,6 +453,7 @@ whenever sqlerror continue;
 @@../cwms/views/av_location_level_curval
 @@../cwms/views/av_entity_category
 whenever sqlerror exit;
+@@../cwms/views/mv_location_level_curval
 prompt ################################################################################
 prompt 'UPDATING OTHER TYPES'
 select systimestamp from dual;
