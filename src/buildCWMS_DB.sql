@@ -156,6 +156,7 @@ begin
 end;
 /
 
+
 -- Create CWMS_DBXC_ROLE
 
 @@cwms/User-Roles/cwms_dbx_role_et_user
@@ -173,6 +174,7 @@ connect &cwms_schema/&cwms_passwd@&inst
 set serveroutput on
 prompt Connected as &cwms_schema
 
+@@cwms/views/mv_location_level_curval
 @@cwms/tables/at_clob_index.sql
 @@cwms/tables/indexes_for_spatial_data.sql
 --------------------------------------------------
