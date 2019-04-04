@@ -5426,7 +5426,7 @@ usgsRatingCtrlConditions = [
 	("SICE",                "The stream control has shore ice."                         ),
 	("SUBM",                "The stream control was submerged."                         ),
 	("Unknown",             "The stream control conditions are unknown."                ),
-	("Unspecifed",          "The stream control conditions were not specified."         ),
+	("Unspecified",         "The stream control conditions were not specified."         ),
 	("Clear",               "The stream control was clear of any obstructions."         ),
 	("FillControlChanged",  "The stream control was filled."                            ),
 	("ScourControlChanged", "The stream control has scour conditions."                  ),
