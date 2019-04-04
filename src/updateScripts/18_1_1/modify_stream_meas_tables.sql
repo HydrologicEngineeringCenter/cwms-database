@@ -1,7 +1,7 @@
 alter table at_streamflow_meas modify (ctrl_cond_id varchar2(20));
 alter table cwms_usgs_rating_ctrl_cond modify (ctrl_cond_id varchar2(20));
 insert into cwms_usgs_rating_ctrl_cond values ('Unknown',              'The stream control conditions are unknown.'                );
-insert into cwms_usgs_rating_ctrl_cond values ('Unspecifed',           'The stream control conditions were not specified.'         );
+insert into cwms_usgs_rating_ctrl_cond values ('Unspecified',          'The stream control conditions were not specified.'         );
 insert into cwms_usgs_rating_ctrl_cond values ('Clear',                'The stream control was clear of any obstructions.'         );
 insert into cwms_usgs_rating_ctrl_cond values ('FillControlChanged',   'The stream control was filled.'                            );
 insert into cwms_usgs_rating_ctrl_cond values ('ScourControlChanged',  'The stream control has scour conditions.'                  );
