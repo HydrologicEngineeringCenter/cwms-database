@@ -58,6 +58,9 @@ as
          self.height_unit    := 'ft';
          self.flow_unit      := 'cfs';
          self.time_zone      := 'UTC';
+
+         if upper(self.quality) = 'UNKNOWN' then self.quality := 'Unspecified'; end if;
+         if upper(self.flow_adj_id) = 'UNKN' then self.flow_adj_id := 'UNSP';  end if;
       end loop;
       return;
    end streamflow_meas_t;
