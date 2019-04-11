@@ -498,6 +498,7 @@ select systimestamp from dual;
 prompt ################################################################################
 prompt 'ADDING WRITE PRIVILEGE TRIGGERS ON NEW TABLES'
 select systimestamp from dual;
+set define on
 @@../cwms/create_sec_triggers
 --prompt ################################################################################
 --prompt 'REBUILD MV_SEC_TS_PRIVILEGES'
@@ -554,6 +555,7 @@ select owner||'.'||substr(name, 1, 30) as name,
 prompt ################################################################################
 prompt 'UPDATING SERVICE_USER_POLICY'
 select systimestamp from dual;
+set define on
 @@../cwms/create_service_user_policy
 prompt ################################################################################
 prompt 'RESTORE PREVIOUS PRIVILEGES'
