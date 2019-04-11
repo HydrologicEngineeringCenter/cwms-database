@@ -1,7 +1,7 @@
 set define off
 create or replace package cwms_usgs
 /**
- * Facilities for retrieving data from USGS 
+ * Facilities for retrieving data from USGS
  *
  * @author Mike Perryman
  *
@@ -82,17 +82,17 @@ auto_stream_meas_period_prop constant varchar2(31) := 'streamflow_meas_retrieve_
  */
 auto_stream_meas_filter_prop constant varchar2(32) := 'streamflow_meas_locations_filter';
 /**
- * URL for retrieving rating update info from the USGS NWIS rating depot for all ratings updated within a specified period 
+ * URL for retrieving rating update info from the USGS NWIS rating depot for all ratings updated within a specified period
  * @see http://waterdata.usgs.gov/nwisweb/get_ratings?help
  */
 rating_query_url_period   constant varchar2(71) := 'http://waterdata.usgs.gov/nwisweb/get_ratings?format=rdb&period=<hours>';
 /**
- * URL for retrieving rating update info from the USGS NWIS rating depot for all ratings for a specified site 
+ * URL for retrieving rating update info from the USGS NWIS rating depot for all ratings for a specified site
  * @see http://waterdata.usgs.gov/nwisweb/get_ratings?help
  */
 rating_query_url_site constant varchar2(71) := 'http://waterdata.usgs.gov/nwisweb/get_ratings?format=rdb&site_no=<site>';
 /**
- * URL for retrieving rating from the USGS NWIS rating depot 
+ * URL for retrieving rating from the USGS NWIS rating depot
  * @see http://waterdata.usgs.gov/nwisweb/get_ratings?help
  */
 rating_url constant varchar2(76) := 'http://waterdata.usgs.gov/nwisweb/data/ratings/<type>/USGS.<site>.<type>.rdb';
@@ -117,7 +117,7 @@ auto_upd_rating_interval_prop constant varchar2(28) := 'upd_rating_retrieve_inte
 /**
  * Sets the text filter used to determine locations for which to retrieve instantaneous value time series data from USGS NWIS.
  *
- * @param p_text_filter_id The text filter to use to determine location for which to retrieve time series data. 
+ * @param p_text_filter_id The text filter to use to determine location for which to retrieve time series data.
  * @param p_office_id      The office to set the text filter for. If NULL or not specified, the session user's default office is used.
  *
  * @see constant auto_ts_filter_prop
@@ -129,7 +129,7 @@ procedure set_auto_ts_filter_id(
  * Retrieves the text filter used to determine locations for which to retrieve instantaneous value time series data from USGS NWIS.
  *
  * @param p_office_id The office that owns the text filter. If NULL or not specified, the session user's default office is used.
- * @return The text filter to use to determine location for which to retrieve time series data. 
+ * @return The text filter to use to determine location for which to retrieve time series data.
  *
  * @see constant auto_ts_filter_prop
  */
@@ -139,9 +139,9 @@ function get_auto_ts_filter_id(
 /**
  * Sets the lookback period to use for retrieving instantaneous value time series data from USGS NWIS.
  *
- * @param p_period     The period in minutes to use for retrieving time series data from USGS NWIS 
+ * @param p_period     The period in minutes to use for retrieving time series data from USGS NWIS
  * @param p_office_id  The office to set the period for. If NULL or not specified, the session user's default office is used.
- *                                        
+ *
  * @see constant auto_ts_period_prop
  */
 procedure set_auto_ts_period(
@@ -151,8 +151,8 @@ procedure set_auto_ts_period(
  * Retrieves the lookback period in minutes to use for retrieving instantaneous value time series data from USGS NWIS.
  *
  * @param p_office_id  The office to get the period for. If NULL or not specified, the session user's default office is used.
- * @return             The period in minutes to use for retrieving time series data from USGS NWIS 
- *                                        
+ * @return             The period in minutes to use for retrieving time series data from USGS NWIS
+ *
  * @see constant auto_ts_period_prop
  */
 function get_auto_ts_period(
@@ -161,9 +161,9 @@ function get_auto_ts_period(
 /**
  * Sets the run interval for automatically retrieving instantaneous value time series data from USGS NWIS.
  *
- * @param p_interval   The run interval in minutes for automatically retrieving time series data from USGS NWIS. 
+ * @param p_interval   The run interval in minutes for automatically retrieving time series data from USGS NWIS.
  * @param p_office_id  The office to set the period for. If NULL or not specified, the session user's default office is used.
- *                                        
+ *
  * @see constant auto_ts_interval_prop
  */
 procedure set_auto_ts_interval(
@@ -173,8 +173,8 @@ procedure set_auto_ts_interval(
  * Retrieves the run interval for automatically retrieving instantaneous value time series data from USGS NWIS.
  *
  * @param p_office_id  The office to set the period for. If NULL or not specified, the session user's default office is used.
- * @return             The run interval in minutes for automatically retrieving time series data from USGS NWIS. 
- *                                        
+ * @return             The run interval in minutes for automatically retrieving time series data from USGS NWIS.
+ *
  * @see constant auto_ts_interval_prop
  */
 function get_auto_ts_interval(
@@ -186,16 +186,16 @@ function get_auto_ts_interval(
  * if the main text filter is named USGS_Auto_TS, the text filter for USGS parameter 65 would be USGS_Auto_TS.00065.
  *
  * @param p_parameter The USGS parameter to retrieve the locations for, specified as an integer.
- * @param p_filter_id The name of the text filter to use for locations. If not specified or null, the filter returned by the get_auto_ts_filter_id function is used. 
+ * @param p_filter_id The name of the text filter to use for locations. If not specified or null, the filter returned by the get_auto_ts_filter_id function is used.
  * @param p_office_id The office to retrieve locations for. If NULL or not spcecified, the session user's default office is used.
  *
  * @see get_auto_ts_filter_id
- */   
+ */
 function get_parameter_ts_locations(
    p_parameter in integer,
    p_filter_id in varchar2 default null,
    p_office_id in varchar2 default null)
-   return str_tab_t;   
+   return str_tab_t;
 /**
  * Retrieves the list of locations that will be processed for a specified parameter. This function uses a text filter with a
  * name based on the one returned from the get_auto_ts_filter_id function; it has a five-character parameter as a suffix. For example,
@@ -205,37 +205,37 @@ function get_parameter_ts_locations(
  * @param p_office_id The office to retrieve locations for. If NULL or not spcecified, the session user's default office is used.
  *
  * @see get_auto_ts_filter_id
- */   
+ */
 function get_auto_param_ts_locations(
    p_parameter in integer,
    p_office_id in varchar2 default null)
-   return str_tab_t;   
+   return str_tab_t;
 /**
  * Retrieves the list of locations whose instantaneous value time series will be retrieved from the USGS NWIS.
  *
  * @param p_office_id The office to retrieve locations for. If NULL or not spcecified, the session user's default office is used.
  *
  * @see get_auto_ts_filter_id
- */   
+ */
 function get_auto_ts_locations(
    p_office_id in varchar2 default null)
-   return str_tab_t;   
+   return str_tab_t;
 /**
  * Retrieves the USGS parameters that will be processed when retrieving instantaneous value time series data from USGS NWIS.
  *
  * @param p_office_id The office to retrieve parameters for. If NULL or not spcecified, the session user's default office is used.
  * @return      The USGS parameters as a table of integers.
- */                        
+ */
 function get_parameters(
    p_office_id in varchar2 default null)
-   return number_tab_t;   
+   return number_tab_t;
 /**
  * Retrieves the USGS parameters that will be processed when retrieving instantaneous value time series data for a specified site from USGS NWIS.
- *                                
- * @param p_usgs_id   The USGS site name (station number) to retrieve the parameters for   
+ *
+ * @param p_usgs_id   The USGS site name (station number) to retrieve the parameters for
  * @param p_office_id The office to retrieve parameters for. If NULL or not spcecified, the session user's default office is used.
  * @return The USGS parameters as a table of integers.
- */                        
+ */
 function get_parameters(
    p_usgs_id   in varchar2,
    p_office_id in varchar2 default null)
@@ -245,7 +245,7 @@ function get_parameters(
  *
  * @param p_parameter     The USGS parameter to set the mapping for, specified as an integer
  * @param p_parameter_id  The CWMS parameter to use for the USGS parameter
- * @param p_param_type_id The CWMS parameter type to use for the USGS parameter 
+ * @param p_param_type_id The CWMS parameter type to use for the USGS parameter
  * @param p_unit          The CWMS unit  to use for the USGS parameter
  * @param p_factor        The factor in CWMS = USGS * factor + offset to get the data into the specified CWMS unit
  * @param p_offset        The offset in CWMS = USGS * factor + offset to get the data into the specified CWMS unit
@@ -256,14 +256,14 @@ procedure set_parameter_info(
    p_parameter_id  in varchar2,
    p_param_type_id in varchar2,
    p_unit          in varchar2,
-   p_factor        in binary_double default 1.0, 
+   p_factor        in binary_double default 1.0,
    p_offset        in binary_double default 0.0,
    p_office_id     in varchar2 default null);
 /**
  * Retrieves the USGS-to-CWMS parameter mapping for a specified USGS parameter and office
  *
  * @param p_parameter_id  The CWMS parameter to use for the USGS parameter
- * @param p_param_type_id The CWMS parameter type to use for the USGS parameter 
+ * @param p_param_type_id The CWMS parameter type to use for the USGS parameter
  * @param p_unit          The CWMS unit  to use for the USGS parameter
  * @param p_factor        The factor in CWMS = USGS * factor + offset to get the data into the specified CWMS unit. If not specified, the factor defaults to 1.0
  * @param p_offset        The offset in CWMS = USGS * factor + offset to get the data into the specified CWMS unit  If not specified, the offset defatuls to 0.0
@@ -274,10 +274,10 @@ procedure get_parameter_info(
    p_parameter_id  out varchar2,
    p_param_type_id out varchar2,
    p_unit          out varchar2,
-   p_factor        out binary_double, 
+   p_factor        out binary_double,
    p_offset        out binary_double,
    p_parameter     in integer,
-   p_office_id     in varchar2 default null);      
+   p_office_id     in varchar2 default null);
 /**
  * Deletes the USGS-to-CWMS parameter mapping for a specified USGS parameter and office
  *
@@ -286,9 +286,9 @@ procedure get_parameter_info(
  */
 procedure delete_parameter_info(
    p_parameter in integer,
-   p_office_id in varchar2 default null);      
+   p_office_id in varchar2 default null);
 /**
- * Retrieves the CWMS time series identifer based on specified location, version, USGS parameter, and interval 
+ * Retrieves the CWMS time series identifer based on specified location, version, USGS parameter, and interval
  *
  * @param p_location_id    The location identifier for the time series
  * @param p_usgs_parameter The USGS parameter to use, specified as an integer
@@ -303,7 +303,7 @@ function get_ts_id(
    p_interval       in integer,
    p_version        in varchar2 default 'USGS',
    p_office_id      in varchar2 default null)
-   return varchar2; 
+   return varchar2;
 /**
  * Retrieve instantaneous value time series data from USGS NWIS based on a lookback period
  *
@@ -343,8 +343,8 @@ function get_ts_id(
  *     <td class="descr">the OGC WaterML 2.0 format</td>
  *   </tr>
  * </table>
- * @param p_period     The lookback period to retrieve data for. If NULL, the value returned by get_auto_ts_period for the specified or default office is used. 
- * @param p_sites      A comma-separated list of USGS site names (station numbers) to retrieve the data for. If NULL, the same list of sites as returned from get_auto_ts_locations (without the input parameter) for the specified or default office is used. 
+ * @param p_period     The lookback period to retrieve data for. If NULL, the value returned by get_auto_ts_period for the specified or default office is used.
+ * @param p_sites      A comma-separated list of USGS site names (station numbers) to retrieve the data for. If NULL, the same list of sites as returned from get_auto_ts_locations (without the input parameter) for the specified or default office is used.
  * @param p_parameters A comma-separated list of parameters to be used on the data requrest URL. If NULL, all available parameters are retrieved for each site
  * @param p_office_id  The office to retrieve the data for. If NULL or not specified, the session user's default office is used
  * @return The time series data in the requested format as a CLOB
@@ -360,7 +360,7 @@ function get_ts_data(
    p_sites      in varchar2,
    p_parameters in varchar2,
    p_office_id  in varchar2 default null)
-   return clob;   
+   return clob;
 /**
  * Retrieve instantaneous value time series data from USGS NWIS based on start and end times
  *
@@ -401,8 +401,8 @@ function get_ts_data(
  *   </tr>
  * </table>
  * @param p_start_time The beginning of the time window specified in ISO 8601 date/time format
- * @param p_end_time   The end of the time window specified in ISO 8601 date/time format  
- * @param p_sites      A comma-separated list of USGS site names (station numbers) to retrieve the data for. If NULL, the same list of sites as returned from get_auto_ts_locations (without the input parameter) for the specified or default office is used. 
+ * @param p_end_time   The end of the time window specified in ISO 8601 date/time format
+ * @param p_sites      A comma-separated list of USGS site names (station numbers) to retrieve the data for. If NULL, the same list of sites as returned from get_auto_ts_locations (without the input parameter) for the specified or default office is used.
  * @param p_parameters A comma-separated list of parameters to be used on the data requrest URL. If NULL, all available parameters are retrieved for each site
  * @param p_office_id  The office to retrieve the data for. If NULL or not specified, the session user's default office is used
  * @return The time series data in the requested format as a CLOB
@@ -420,12 +420,12 @@ function get_ts_data(
    p_sites      in varchar2,
    p_parameters in varchar2,
    p_office_id  in varchar2 default null)
-   return clob;   
+   return clob;
 /**
  * Retrieve instantaneous value time series data in RDB format from USGS NWIS based on a lookback period
  *
- * @param p_period     The lookback period to retrieve data for. If NULL, the value returned by get_auto_ts_period for the specified or default office is used. 
- * @param p_sites      A comma-separated list of USGS site names (station numbers) to retrieve the data for. If NULL, the same list of sites as returned from get_auto_ts_locations (without the input parameter) for the specified or default office is used. 
+ * @param p_period     The lookback period to retrieve data for. If NULL, the value returned by get_auto_ts_period for the specified or default office is used.
+ * @param p_sites      A comma-separated list of USGS site names (station numbers) to retrieve the data for. If NULL, the same list of sites as returned from get_auto_ts_locations (without the input parameter) for the specified or default office is used.
  * @param p_parameters A comma-separated list of parameters to be used on the data requrest URL. If NULL, all available parameters are retrieved for each site
  * @param p_office_id  The office to retrieve the data for. If NULL or not specified, the session user's default office is used
  * @return The time series data in RDB format format as a CLOB
@@ -435,13 +435,13 @@ function get_ts_data_rdb(
    p_sites      in varchar2,
    p_parameters in varchar2,
    p_office_id  in varchar2 default null)
-   return clob;   
+   return clob;
 /**
  * Retrieve instantaneous value time series data in RDB format from USGS NWIS based on based on start and end times
  *
  * @param p_start_time The beginning of the time window specified in ISO 8601 date/time format
- * @param p_end_time   The end of the time window specified in ISO 8601 date/time format  
- * @param p_sites      A comma-separated list of USGS site names (station numbers) to retrieve the data for. If NULL, the same list of sites as returned from get_auto_ts_locations (without the input parameter) for the specified or default office is used. 
+ * @param p_end_time   The end of the time window specified in ISO 8601 date/time format
+ * @param p_sites      A comma-separated list of USGS site names (station numbers) to retrieve the data for. If NULL, the same list of sites as returned from get_auto_ts_locations (without the input parameter) for the specified or default office is used.
  * @param p_parameters A comma-separated list of parameters to be used on the data requrest URL. If NULL, all available parameters are retrieved for each site
  * @param p_office_id  The office to retrieve the data for. If NULL or not specified, the session user's default office is used
  * @return The time series data in RDB format format as a CLOB
@@ -457,21 +457,21 @@ function get_ts_data_rdb(
  * Retrieve instantaneous value time series data from USGS NWIS based on a lookback period and store in CWMS.
  * The period used is the same as returned from get_auto_ts_period for the specified or defatul office
  * The list of sites is the same as returned from get_auto_ts_locations (without the input parameter) for the specified or default office
- * All available parameters for each site will be retrieved, but only those parameters with USGS-to-CWMS parameter mapping will be processed and stored  
+ * All available parameters for each site will be retrieved, but only those parameters with USGS-to-CWMS parameter mapping will be processed and stored
  *
  * @param p_office_id  The office to retrieve the data for. If NULL or not specified, the session user's default office is used
  */
-procedure retrieve_and_store_ts(      
+procedure retrieve_and_store_ts(
    p_office_id in varchar2 default null);
 /**
  * Retrieve instantaneous value time series data from USGS NWIS based on a lookback period and store in CWMS
  *
- * @param p_period     The lookback period to retrieve data for. If NULL, the value returned by get_auto_ts_period for the specified or default office is used. 
- * @param p_sites      A comma-separated list of USGS site names (station numbers) to retrieve the data for. If NULL, the same list of sites as returned from get_auto_ts_locations (without the input parameter) for the specified or default office is used. 
+ * @param p_period     The lookback period to retrieve data for. If NULL, the value returned by get_auto_ts_period for the specified or default office is used.
+ * @param p_sites      A comma-separated list of USGS site names (station numbers) to retrieve the data for. If NULL, the same list of sites as returned from get_auto_ts_locations (without the input parameter) for the specified or default office is used.
  * @param p_parameters A comma-separated list of parameters to be used on the data requrest URL. If NULL, all available parameters are retrieved for each site, but only those parameters with USGS-to-CWMS parameter mapping will be processed and stored
  * @param p_office_id  The office to retrieve the data for. If NULL or not specified, the session user's default office is used
  */
-procedure retrieve_and_store_ts(      
+procedure retrieve_and_store_ts(
    p_period     in varchar2,
    p_sites      in varchar2,
    p_parameters in varchar2,
@@ -480,12 +480,12 @@ procedure retrieve_and_store_ts(
  * Retrieve instantaneous value time series data from USGS NWIS based on based on start and end times and store in CWMS
  *
  * @param p_start_time The beginning of the time window specified in ISO 8601 date/time format
- * @param p_end_time   The end of the time window specified in ISO 8601 date/time format  
- * @param p_sites      A comma-separated list of USGS site names (station numbers) to retrieve the data for. If NULL, the same list of sites as returned from get_auto_ts_locations (without the input parameter) for the specified or default office is used. 
+ * @param p_end_time   The end of the time window specified in ISO 8601 date/time format
+ * @param p_sites      A comma-separated list of USGS site names (station numbers) to retrieve the data for. If NULL, the same list of sites as returned from get_auto_ts_locations (without the input parameter) for the specified or default office is used.
  * @param p_parameters A comma-separated list of parameters to be used on the data requrest URL. If NULL, all available parameters are retrieved for each site, but only those parameters with USGS-to-CWMS parameter mapping will be processed and stored
  * @param p_office_id  The office to retrieve the data for. If NULL or not specified, the session user's default office is used
  */
-procedure retrieve_and_store_ts(      
+procedure retrieve_and_store_ts(
    p_start_time in varchar2,
    p_end_time   in varchar2,
    p_sites      in varchar2,
@@ -511,9 +511,9 @@ procedure stop_auto_ts_job(
 /**
  * Sets the lookback period to use for retrieving instantaneous value time series data from USGS NWIS.
  *
- * @param p_period     The period in minutes to use for retrieving time series data from USGS NWIS 
+ * @param p_period     The period in minutes to use for retrieving time series data from USGS NWIS
  * @param p_office_id  The office to set the period for. If NULL or not specified, the session user's default office is used.
- *                                        
+ *
  * @see constant auto_ts_period_prop
  */
 procedure set_auto_stream_meas_period(
@@ -523,8 +523,8 @@ procedure set_auto_stream_meas_period(
  * Retrieves the lookback period in minutes to use for retrieving streamflow measurements data from USGS NWIS.
  *
  * @param p_office_id  The office to get the period for. If NULL or not specified, the session user's default office is used.
- * @return             The period in minutes to use for retrieving time series data from USGS NWIS 
- *                                        
+ * @return             The period in minutes to use for retrieving time series data from USGS NWIS
+ *
  * @see constant auto_stream_meas_period_prop
  */
 function get_auto_stream_meas_period(
@@ -533,9 +533,9 @@ function get_auto_stream_meas_period(
 /**
  * Sets the run interval for automatically retrieving streamflow measurements data from USGS NWIS.
  *
- * @param p_interval   The run interval in minutes for automatically retrieving time series data from USGS NWIS. 
+ * @param p_interval   The run interval in minutes for automatically retrieving time series data from USGS NWIS.
  * @param p_office_id  The office to set the period for. If NULL or not specified, the session user's default office is used.
- *                                        
+ *
  * @see constant auto_stream_meas_interval_prop
  */
 procedure set_auto_stream_meas_interval(
@@ -545,8 +545,8 @@ procedure set_auto_stream_meas_interval(
  * Retrieves the run interval for automatically retrieving streamflow measurements data from USGS NWIS.
  *
  * @param p_office_id  The office to set the period for. If NULL or not specified, the session user's default office is used.
- * @return             The run interval in minutes for automatically retrieving time series data from USGS NWIS. 
- *                                        
+ * @return             The run interval in minutes for automatically retrieving time series data from USGS NWIS.
+ *
  * @see constant auto_stream_meas_interval_prop
  */
 function get_auto_stream_meas_interval(
@@ -555,7 +555,7 @@ function get_auto_stream_meas_interval(
 /**
  * Sets the text filter used to determine locations for which to retrieve streamflow measurement data from USGS NWIS.
  *
- * @param p_text_filter_id The text filter to use to determine locations for which to retrieve streamflow measurement data. 
+ * @param p_text_filter_id The text filter to use to determine locations for which to retrieve streamflow measurement data.
  * @param p_office_id      The office to set the text filter for. If NULL or not specified, the session user's default office is used.
  *
  * @see constant auto_ts_filter_prop
@@ -567,7 +567,7 @@ procedure set_auto_stream_meas_filter_id(
  * Retrieves the text filter used to determine locations for which to retrieve streamflow measurement data from USGS NWIS.
  *
  * @param p_office_id The office that owns the text filter. If NULL or not specified, the session user's default office is used.
- * @return The text filter to use to determine locations for which to retrieve streamflow measurement data. 
+ * @return The text filter to use to determine locations for which to retrieve streamflow measurement data.
  *
  * @see constant auto_stream_meas_filter_prop
  */
@@ -580,25 +580,25 @@ function get_auto_stream_meas_filter_id(
  * @param p_office_id The office to retrieve locations for. If NULL or not spcecified, the session user's default office is used.
  *
  * @see get_auto_stream_meas_filter_id
- */   
+ */
 function get_auto_stream_meas_locations(
    p_office_id in varchar2 default null)
-   return str_tab_t;   
+   return str_tab_t;
 /**
  * Retrieve streamflow measurement data from USGS NWIS based on a lookback period and store in CWMS
  *
  * @param p_office_id  The office to retrieve the data for. If NULL or not specified, the session user's default office is used
  */
-procedure retrieve_and_store_stream_meas(      
+procedure retrieve_and_store_stream_meas(
    p_office_id  in varchar2 default null);
 /**
  * Retrieve streamflow measurement data from USGS NWIS based on a lookback period and store in CWMS
  *
- * @param p_period     The lookback period to retrieve data for. If NULL, the value returned by get_auto_stream_meas_period for the specified or default office is used. 
- * @param p_sites      A comma-separated list of USGS site names (station numbers) to retrieve the data for. If NULL, the same list of sites as returned from get_auto_stream_meas_locations (without the input parameter) for the specified or default office is used. 
+ * @param p_period     The lookback period to retrieve data for. If NULL, the value returned by get_auto_stream_meas_period for the specified or default office is used.
+ * @param p_sites      A comma-separated list of USGS site names (station numbers) to retrieve the data for. If NULL, the same list of sites as returned from get_auto_stream_meas_locations (without the input parameter) for the specified or default office is used.
  * @param p_office_id  The office to retrieve the data for. If NULL or not specified, the session user's default office is used
  */
-procedure retrieve_and_store_stream_meas(      
+procedure retrieve_and_store_stream_meas(
    p_period     in varchar2,
    p_sites      in varchar2,
    p_office_id  in varchar2 default null);
@@ -606,11 +606,11 @@ procedure retrieve_and_store_stream_meas(
  * Retrieve streamflow measurement data from USGS NWIS based on based on start and end times and store in CWMS
  *
  * @param p_start_time The beginning of the time window specified in ISO 8601 date/time format
- * @param p_end_time   The end of the time window specified in ISO 8601 date/time format  
- * @param p_sites      A comma-separated list of USGS site names (station numbers) to retrieve the data for. If NULL, the same list of sites as returned from get_auto_stream_meas_locations (without the input parameter) for the specified or default office is used. 
+ * @param p_end_time   The end of the time window specified in ISO 8601 date/time format
+ * @param p_sites      A comma-separated list of USGS site names (station numbers) to retrieve the data for. If NULL, the same list of sites as returned from get_auto_stream_meas_locations (without the input parameter) for the specified or default office is used.
  * @param p_office_id  The office to retrieve the data for. If NULL or not specified, the session user's default office is used
  */
-procedure retrieve_and_store_stream_meas(      
+procedure retrieve_and_store_stream_meas(
    p_start_time in varchar2,
    p_end_time   in varchar2,
    p_sites      in varchar2,
@@ -631,13 +631,13 @@ procedure start_auto_stream_meas_job(
  *
  */
 procedure stop_auto_stream_meas_job(
-   p_office_id in varchar2 default null);   
+   p_office_id in varchar2 default null);
 /**
  * Retreives all the rating specification codes that have a template version of USGS-BASE, USGS-EXSA, USGS-CORR, a specification version of USGS, and are set to auto-update.
  *
  * @param p_office_id  The office to retrieve the rating specification identifiers for.  If NULL or not specified, the session user's default office is used.
  * @return A table of the matching rating specification identifiers.
- */   
+ */
 function get_auto_update_ratings(
    p_office_id in varchar2 default null)
    return number_tab_t;
@@ -645,112 +645,112 @@ function get_auto_update_ratings(
  * Updates any BASE, EXSA, or CORR ratings from USGS ratings depot that are set to auto update
  *
  * @param p_office_id   The office to update the ratings for.  If NULL or not specified, the session user's default office is used.
- */   
+ */
 procedure update_existing_ratings(
    p_office_id in varchar2 default null);
 /**
  * Retreieves BASE, EXSA, or CORR ratings from USGS ratings depot for specified locations
  *
  * @param p_rating_type The rating type. Must be 'BASE', 'EXSA', or 'CORR'.
- * @param p_sites       A comma-separated string of the locations to retrieve ratings for.  If the name of an existing text filter is specified, the locations that match the filter will be used.  If NULL, all locations with a USGS Station Number alias will be used. 
+ * @param p_sites       A comma-separated string of the locations to retrieve ratings for.  If the name of an existing text filter is specified, the locations that match the filter will be used.  If NULL, all locations with a USGS Station Number alias will be used.
  * @param p_office_id   The office to retrieve the ratings for.  If NULL or not specified, the session user's default office is used.
- */   
+ */
 procedure retrieve_and_store_ratings(
    p_rating_type in varchar2,
    p_sites       in varchar2 default null,
-   p_office_id   in varchar2 default null);  
+   p_office_id   in varchar2 default null);
 /**
  * Generates <site>.Stage;Flow.USGS-Production.USGS ratings for every site that has a <site>.Stage;Flow.USGS-BASE.USGS or <site>.Stage;Flow.USGS-EXSA.USGS rating.
  * The procedure generates a virtual rating if the site has a <site.Stage;Stage-Correction.USGS-CORR.USGS rating and a transitional rating if it does not.  The virtual rating
- * will compute the stage correction and add it to the input stage before rating via the BASE or EXSA rating.  The procedure will not retrieve the stage correction ratings; 
+ * will compute the stage correction and add it to the input stage before rating via the BASE or EXSA rating.  The procedure will not retrieve the stage correction ratings;
  * they must be retrieved separately. Executing this procedure allows a similar rating specification identifier to be used for every site regardless of whether the site
- * has a stage correction rating. 
+ * has a stage correction rating.
  *
- * @param p_office_id The office to generate the production ratings for.  If NULL or not specified, the session user's default office is used. 
- */  
+ * @param p_office_id The office to generate the production ratings for.  If NULL or not specified, the session user's default office is used.
+ */
 procedure generate_production_ratings2(
-   p_office_id in varchar2 default null);   
+   p_office_id in varchar2 default null);
 /**
  * Generates <site>.Stage;Flow.USGS-Production.USGS ratings for the specified site if it has a <site>.Stage;Flow.USGS-BASE.USGS or <site>.Stage;Flow.USGS-EXSA.USGS rating.
  * The procedure generates a virtual rating if the site has a <site.Stage;Stage-Correction.USGS-CORR.USGS rating and a transitional rating if it does not.  The virtual rating
- * will compute the stage correction and add it to the input stage before rating via the BASE or EXSA rating.  The procedure will not retrieve the stage correction rating; 
+ * will compute the stage correction and add it to the input stage before rating via the BASE or EXSA rating.  The procedure will not retrieve the stage correction rating;
  * it must be retrieved separately. Executing this procedure allows a similar rating specification identifier to be used for every site regardless of whether the site
- * has a stage correction rating. 
+ * has a stage correction rating.
  *
  * @param location_id The location to generate the production rating for.
- * @param p_office_id The office to generate the production ratings for.  If NULL or not specified, the session user's default office is used. 
- */  
+ * @param p_office_id The office to generate the production ratings for.  If NULL or not specified, the session user's default office is used.
+ */
 procedure generate_production_ratings(
    p_location_id in varchar2,
-   p_office_id in varchar2 default null);   
+   p_office_id in varchar2 default null);
 /**
  * Retrieves BASE and CORR ratings for all locations that have USGS Station Number aliases, if such ratings exist. Also generates production ratings
  * that use the CORR+BASE ratings where the CORR ratings exist and just BASE ratings otherwise. Note that the use of the BASE ratings includes using
- * any available shifts and offsets in the same manner as they are used by the USGS and does not just use the BASE rating points for lookup. 
+ * any available shifts and offsets in the same manner as they are used by the USGS and does not just use the BASE rating points for lookup.
  *
- * @param p_office_id The office retreive ratings for.  If NULL or not specified, the session user's default office is used. 
- */             
+ * @param p_office_id The office retreive ratings for.  If NULL or not specified, the session user's default office is used.
+ */
 procedure retrieve_available_ratings2(
    p_office_id in varchar2 default null);
 /**
  * Retrieves BASE and CORR ratings for the specified location, if such ratings exist. Also generates production rating
  * that use the CORR+BASE ratings if the CORR rating exists and just BASE rating otherwise. Note that the use of the BASE rating includes using
- * any available shifts and offsets in the same manner as they are used by the USGS and does not just use the BASE rating points for lookup. 
+ * any available shifts and offsets in the same manner as they are used by the USGS and does not just use the BASE rating points for lookup.
  *
  * @param location_id The location to retrieve the available ratings for.
- * @param p_office_id The office retreive ratings for.  If NULL or not specified, the session user's default office is used. 
- */             
+ * @param p_office_id The office retreive ratings for.  If NULL or not specified, the session user's default office is used.
+ */
 procedure retrieve_available_ratings(
    p_location_id in varchar2,
    p_office_id   in varchar2 default null);
 /**
  * Sets the run interval for automatically retrieving new ratings from USGS.
  *
- * @param p_interval   The run interval in minutes for automatically retrieving new ratings from USGS. 
+ * @param p_interval   The run interval in minutes for automatically retrieving new ratings from USGS.
  * @param p_office_id  The office to set the period for. If NULL or not specified, the session user's default office is used.
- *                                        
+ *
  * @see constant auto_new_rating_interval_prop
  */
 procedure set_auto_new_rating_interval(
-   p_interval  in integer,      
+   p_interval  in integer,
    p_office_id in varchar2 default null);
 /**
  * Sets the run interval for automatically retrieving new ratings from USGS.
  *
  * @param p_office_id  The office to set the period for. If NULL or not specified, the session user's default office is used.
- *                                        
- * @return  The run interval in minutes for automatically retrieving new ratings from USGS. 
- *                                        
+ *
+ * @return  The run interval in minutes for automatically retrieving new ratings from USGS.
+ *
  * @see constant auto_new_rating_interval_prop
  *
  */
 function get_auto_new_rating_interval(
    p_office_id in varchar2 default null)
-   return integer;   
+   return integer;
 /**
  * Sets the run interval for automatically retrieving updated ratings from USGS.
  *
- * @param p_interval   The run interval in minutes for automatically retrieving updated ratings from USGS. 
+ * @param p_interval   The run interval in minutes for automatically retrieving updated ratings from USGS.
  * @param p_office_id  The office to set the period for. If NULL or not specified, the session user's default office is used.
- *                                        
+ *
  * @see constant auto_upd_rating_interval_prop
  */
 procedure set_auto_upd_rating_interval(
-   p_interval  in integer,      
+   p_interval  in integer,
    p_office_id in varchar2 default null);
 /**
  * Sets the run interval for automatically retrieving updated ratings from USGS.
  *
  * @param p_office_id  The office to set the period for. If NULL or not specified, the session user's default office is used.
- *                                        
- * @return  The run interval in minutes for automatically retrieving updated ratings from USGS. 
- *                                        
+ *
+ * @return  The run interval in minutes for automatically retrieving updated ratings from USGS.
+ *
  * @see constant auto_upd_rating_interval_prop
  *
  */
 function get_auto_upd_rating_interval(
    p_office_id in varchar2 default null)
-   return integer;   
+   return integer;
 /**
  * Schedules (or re-schedules) the job to automatically retrieve USGS ratings for locations that have USGS Station Number aliases
  * The scheduled job name is USGS_AUTO_NEW_RATE_XXX, where XXX is the office identifier the job is running for
@@ -767,7 +767,7 @@ procedure start_auto_new_rating_job(
  *
  */
 procedure stop_auto_new_rating_job(
-   p_office_id in varchar2 default null);   
+   p_office_id in varchar2 default null);
 /**
  * Schedules (or re-schedules) the job to automatically retrieve updates to existing USGS ratings that are so specified..
  * The scheduled job name is USGS_AUTO_UPD_RATE_XXX, where XXX is the office identifier the job is running for
@@ -784,8 +784,63 @@ procedure start_auto_update_rating_job(
  *
  */
 procedure stop_auto_update_rating_job(
-   p_office_id in varchar2 default null);   
-      
+   p_office_id in varchar2 default null);
+/**
+ * Generates CWMS Rating XML instance for a USGS stage correction rating in RDB format. The location will be converted to the CWMS location id for the specified office, if possible.
+ *
+ * @param p_rating_text The RDB-formatted USGS stage correction rating
+ * @param p_office_id   The office to use for resolving the USGS station number into a location id. If NULL or not specified, the current user's default office is used.
+ *
+ * @return The XML-formatted rating
+ */
+function corr_to_xml(
+   p_rating_text in clob,
+   p_office_id   in varchar2)
+   return clob;
+/**
+ * Generates CWMS Rating XML instance for a USGS base stage-flow rating in RDB format. The location will be converted to the CWMS location id for the specified office, if possible.
+ *
+ * @param p_rating_base The RDB-formatted USGS base stage-flow rating
+ * @param p_rating_exsa The RDB-formatted USGS EXSA stage-flow rating for the same location. This rating is used to get the shift information. If NULL or not specified, no shifts will be in the generated XML.
+ * @param p_office_id   The office to use for resolving the USGS station number into a location id. If NULL or not specified, the current user's default office is used.
+ *
+ * @return The XML-formatted rating
+ */
+function base_to_xml(
+   p_rating_base in clob,
+   p_rating_exsa in clob,
+   p_office_id   in varchar2)
+   return clob;
+/**
+ * Generates CWMS Rating XML instance for a USGS extended, shift-adjusted (EXSA) stage-flow rating in RDB format. The location will be converted to the CWMS location id for the specified office, if possible.
+ *
+ * @param p_rating_text The RDB-formatted USGS EXSA stage-flow rating
+ * @param p_office_id   The office to use for resolving the USGS station number into a location id. If NULL or not specified, the current user's default office is used.
+ *
+ * @return The XML-formatted rating
+ */
+function exsa_to_xml(
+   p_rating_text in clob,
+   p_office_id   in varchar2)
+   return clob;
+/**
+ * Retrieves a rating from the USGS ratings depot and returns it as a CLOB in either the USGS RDB format or  the CWMS ratings XML format.
+ *
+ * @param p_location_id The location to retreive the rating for. May be any valid location identifier or alias for the specified or default office.
+ * @param p_rating_type The type of rating to retrieve. Must be one of ''EXSA'', ''BASE'', or ''CORR''.
+ * @param xml_encode    A flag (''T''/''F'') specifying whether to enccode the retrieved rating in the CWMS ratings XML format.
+ * @param p_office_id   The office that the specified location belongs to. If NULL or not specified, the current user's default office is used.
+ *
+ * @return The rating in RDB or XML format
+ */
+function retrieve_rating(
+   p_location_id in varchar2,
+   p_rating_type in varchar2,
+   p_xml_encode  in varchar2,
+   p_office_id   in varchar2 default null)
+   return clob;
+
+
 end cwms_usgs;
 /
 show errors
