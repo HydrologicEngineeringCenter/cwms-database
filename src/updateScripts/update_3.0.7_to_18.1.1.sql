@@ -480,6 +480,7 @@ drop package old_cwms_rating;
 whenever sqlerror exit
 @@../cwms/cwms_configuration_pkg
 @@../cwms/cwms_pump_pkg
+@@../cwms/cwms_usgs_pkg
 @@../cwms/cwms_xchg_pkg
 create or replace public synonym cwms_tsv for cwms_tsv;
 prompt ################################################################################
