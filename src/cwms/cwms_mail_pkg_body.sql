@@ -32,6 +32,8 @@ as
       gw2.usace.army.mil      internet address = 140.194.100.150
       > 
       */
+      no_such_table exception;
+      pragma exception_init(no_such_table, -942);
       crlf          constant varchar2(2):= chr(13)||chr(10);
       l_mxch        constant varchar2(30) := cwms_properties.get_property('CWMSDB', 'email.mail-exchanger', 'gw2.usace.army.mil', 'CWMS');
       l_boundary    constant varchar2(24) := '~~this~is~the~boundary~~';
@@ -45,8 +47,9 @@ as
       l_msg         varchar2(32767);
       l_time        varchar2(20);    
       l_db_name     varchar2(30); 
-      l_db_user     varchar2(30);
       l_db_host     varchar2(64);
+      l_count       pls_integer;
+      l_name        varchar2(30);
       l_client_user varchar2(30);
       l_client_host varchar2(64);  
       l_client_pgm  varchar2(48);
@@ -85,24 +88,34 @@ as
       l_to_str := cwms_util.join_text(l_to, ', ');
       l_cc_str := cwms_util.join_text(l_cc, ', ');
       
-      select db_unique_name 
-        into l_db_name 
+      select nvl(primary_db_unique_name, db_unique_name)
+        into l_db_name
         from v$database;
+
+      select count(*) into l_count from all_objects where object_name = 'CDB_PDBS';
+      if l_count > 0 then
+         begin
+            execute immediate 'select pdb_name from cdb_pdbs' into l_name;
+         exception
+            when no_such_table or no_data_found then null;
+         end;
+         if l_name is not null then
+            l_db_name := l_db_name||'-'||l_name;
+         end if;
+      end if;
                       
       l_db_host := utl_inaddr.get_host_name;
            
-      select username,
-             osuser,
+      select osuser,
              machine,
              program
-        into l_db_user,
-             l_client_user,
+        into l_client_user,
              l_client_host,
              l_client_pgm     
         from v$session
        where sid = sys_context('USERENV', 'SID');           
    
-      l_from := nvl(p_from , l_db_user||'@'||l_db_host);
+      l_from := nvl(p_from , l_db_name||'@'||l_db_host||'.usace.army.mil');
       l_is_html := cwms_util.return_true_or_false(p_is_html);                  
       l_msg := cwms_util.join_text(cwms_util.split_text(p_message, chr(10)), crlf);
       if l_is_html then
@@ -111,8 +124,9 @@ as
          l_msg := regexp_replace(l_msg, '</(html|body)>', null)||'<hr/><pre>';
       end if;
       l_msg := l_msg 
+         ||crlf
          ||'This message was sent by CWMS:'||crlf
-         ||'  Database : '||l_db_user    ||'@' ||l_db_host    ||'/'||l_db_name||crlf
+         ||'  Database : '||l_db_name    ||'@' ||l_db_host    ||'.usace.army.mil'||crlf
          ||'  Client   : '||l_client_user||'@' ||l_client_host||crlf
          ||'  Program  : '||l_client_pgm ||crlf;
       if l_is_html then
