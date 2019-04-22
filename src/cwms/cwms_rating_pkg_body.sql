@@ -6768,9 +6768,19 @@ begin
                 l_descriptions,
                 l_codes
            from av_rating_spec rs,
-                av_rating r
+                av_rating r,
+                at_rating_spec trs,
+                at_physical_location pl,
+                at_base_location bl
           where rs.office_id = case when l_office_id = '*' then rs.office_id else l_office_id end
+            and trs.rating_spec_code = rs.rating_spec_code
+            and pl.location_code = trs.rating_spec_code
+            and pl.active_flag = 'T'
+            and bl.base_location_code = pl.base_location_code
+            and bl.active_flag = 'T'
+            and rs.active_flag = 'T'
             and r.rating_spec_code = rs.rating_spec_code
+            and r.active_flag = 'T'
             and r.parent_rating_code is null
             and (r.effective_date >= l_start_utc
                  or rs.date_methods like '%,NEXT'
@@ -6929,13 +6939,19 @@ begin
                          l_codes(2),
                          l_codes(3)
                     from av_rating r,
-                         at_rating_spec rs
-                   where office_id = l_ratings(i)(j).office_id
-                     and rating_id = l_ratings(i)(j).rating_spec_id
-                     and effective_date = l_ratings(i)(j).effective_date
-                     and rs.rating_spec_code = r.rating_spec_code
+                         at_rating_spec rs,
+                         at_physical_location pl,
+                         at_base_location bl
+                   where r.office_id = l_ratings(i)(j).office_id
+                     and r.rating_id = l_ratings(i)(j).rating_spec_id
+                     and r.effective_date = l_ratings(i)(j).effective_date
                      and r.active_flag = 'T'
-                     and rs.active_flag = 'T';
+                     and rs.rating_spec_code = r.rating_spec_code
+                     and rs.active_flag = 'T'
+                     and pl.location_code = rs.location_code
+                     and pl.active_flag = 'T'
+                     and bl.base_location_code = pl.base_location_code
+                     and bl.active_flag = 'T';
                exception
                   when no_data_found then
                      begin

@@ -9587,6 +9587,8 @@ end unassign_loc_groups;
              cwms_location_kind lk
        where upper(v2.location_id) like l_location_id_mask
          and v2.db_office_id = case when l_office_id = '*' then v2.db_office_id else l_office_id end
+         and v2.base_loc_active_flag = 'T'
+         and v2.loc_active_flag = 'T'
          and pl1.location_code = v2.location_code
          and tz1.time_zone_code = nvl(pl1.time_zone_code, 0)
          and c1.county_code = nvl(pl1.county_code, 0)
