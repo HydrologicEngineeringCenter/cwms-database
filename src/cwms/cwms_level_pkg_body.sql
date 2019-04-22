@@ -9672,6 +9672,7 @@ begin
                         at_specified_level sl,
                         cwms_office o
                   where pl.location_code = ll.location_code
+                    and pl.active_flag = 'T'
                     and p1.parameter_code = ll.parameter_code
                     and pt1.parameter_type_code = ll.parameter_type_code
                     and d1.duration_code = ll.duration_code
@@ -9684,6 +9685,7 @@ begin
                          get_next_effective_date(ll.location_level_code) > l_start_utc
                         )
                     and bl.base_location_code = pl.base_location_code
+                    and bl.active_flag = 'T'
                     and bp1.base_parameter_code = p1.base_parameter_code
                     and o.office_code = bl.db_office_code
                     and o.office_id like l_office_id escape '\'
@@ -9763,6 +9765,8 @@ begin
                         at_loc_category lc,
                         at_loc_group lg,
                         at_loc_group_assignment lga,
+                        at_physical_location pl,
+                        at_base_location bl,
                         cwms_base_parameter bp1,
                         cwms_base_parameter bp2,
                         at_parameter p1,
@@ -9774,6 +9778,10 @@ begin
                         at_specified_level sl,
                         cwms_office o
                   where lga.location_code = ll.location_code
+                    and pl.location_code = ll.location_code
+                    and pl.active_flag = 'T'
+                    and bl.base_location_code = pl.base_location_code
+                    and bl.active_flag = 'T'
                     and p1.parameter_code = ll.parameter_code
                     and pt1.parameter_type_code = ll.parameter_type_code
                     and d1.duration_code = ll.duration_code
@@ -9883,8 +9891,10 @@ begin
                         at_specified_level sl,
                         cwms_office o
                   where pl.location_code = ll.location_code
+                    and pl.active_flag = 'T'
                     and pl.sub_location_id is not null
                     and bl.base_location_code = pl.base_location_code
+                    and bl.active_flag = 'T'
                     and bl.base_location_code = lga.location_code
                     and p1.parameter_code = ll.parameter_code
                     and pt1.parameter_type_code = ll.parameter_type_code
@@ -10245,6 +10255,7 @@ begin
                    ||'.'
                    ||sl.specified_level_id) like upper(l_names_sql(i)) escape '\'
                and pl.location_code = ll.location_code
+               and pl.active_flag = 'T'
                and p1.parameter_code = ll.parameter_code
                and pt1.parameter_type_code = ll.parameter_type_code
                and d1.duration_code = ll.duration_code
@@ -10257,6 +10268,7 @@ begin
                     get_next_effective_date(ll.location_level_code, l_timezone) > l_start
                    )
                and bl.base_location_code = pl.base_location_code
+               and bl.active_flag = 'T'
                and bp1.base_parameter_code = p1.base_parameter_code
                and o.office_code = bl.db_office_code
                and o.office_id like l_office_id escape '\'
@@ -10345,6 +10357,8 @@ begin
                      l_attr_unit
                    end
               from at_location_level ll,
+                   at_physical_location pl,
+                   at_base_location bl,
                    at_loc_category lc,
                    at_loc_group lg,
                    at_loc_group_assignment lga,
@@ -10370,6 +10384,10 @@ begin
                    ||'.'
                    ||sl.specified_level_id) like upper(l_names_sql(i)) escape '\'
                and lga.location_code = ll.location_code
+               and pl.location_code = ll.location_code
+               and pl.active_flag = 'T'
+               and bl.base_location_code = pl.base_location_code
+               and bl.active_flag = 'T'
                and p1.parameter_code = ll.parameter_code
                and pt1.parameter_type_code = ll.parameter_type_code
                and d1.duration_code = ll.duration_code
@@ -10504,8 +10522,10 @@ begin
                    ||'.'
                    ||sl.specified_level_id) like upper(l_names_sql(i)) escape '\'
                and pl.location_code = ll.location_code
+               and pl.active_flag = 'T'
                and pl.sub_location_id is not null
                and bl.base_location_code = pl.base_location_code
+               and bl.active_flag = 'T'
                and bl.base_location_code = lga.location_code
                and p1.parameter_code = ll.parameter_code
                and pt1.parameter_type_code = ll.parameter_type_code

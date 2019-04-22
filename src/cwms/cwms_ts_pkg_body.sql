@@ -12373,7 +12373,8 @@ end retrieve_existing_item_counts;
                     where o.office_id like :office
                       and tsid.db_office_code = o.office_code
                       and tsv.ts_code = tsid.ts_code
-                      and tsv.date_time between :begin and :end'
+                      and tsv.date_time between :begin and :end
+                      and tsid.net_ts_active_flag = ''T'''
                   using l_office_id, l_start_utc, l_end_utc;
                fetch c bulk collect into l_codes1;
                close c;
@@ -12551,6 +12552,7 @@ end retrieve_existing_item_counts;
                              av_cwms_ts_id2 v
                        where v.db_office_id like :office
                          and upper(v.cwms_ts_id) like :name escape ''\''
+                         and v.net_ts_active_flag = ''T''
                          and tsv.ts_code = v.ts_code
                          and tsv.date_time between :begin and :end'
                      using l_office_id, l_normalized_names(i), l_start_utc, l_end_utc;
