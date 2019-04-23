@@ -6967,30 +6967,42 @@ begin
                                at_rating_spec rs,
                                at_rating_template rt
                          where l.db_office_id = l_ratings(i)(j).office_id
+                           and l.active_flag = 'T'
+                           and l.base_loc_active_flag = 'T'
                            and rs.location_code = l.location_code
+                           and rs.active_flag = 'T'
                            and rt.template_code = rs.template_code
                            and tr.rating_spec_code = rs.rating_spec_code
+                           and tr.active_flag = 'T'
                            and l.location_id||'.'||rt.parameters_id||'.'||rt.version||'.'||rs.version = l_ratings(i)(j).rating_spec_id
                            and tr.effective_date = l_ratings(i)(j).effective_date;
                      exception
                         when no_data_found then
-                           select distinct
-                                  vr.virtual_rating_code,
-                                  vr.rating_spec_code,
-                                  rt.template_code
-                             into l_codes(1),
-                                  l_codes(2),
-                                  l_codes(3)
-                             from av_loc2 l,
-                                  at_virtual_rating vr,
-                                  at_rating_spec rs,
-                                  at_rating_template rt
-                            where l.db_office_id = l_ratings(i)(j).office_id
-                              and rs.location_code = l.location_code
-                              and rt.template_code = rs.template_code
-                              and vr.rating_spec_code = rs.rating_spec_code
-                              and l.location_id||'.'||rt.parameters_id||'.'||rt.version||'.'||rs.version = l_ratings(i)(j).rating_spec_id
-                              and vr.effective_date = l_ratings(i)(j).effective_date;
+                           begin
+                              select distinct
+                                     vr.virtual_rating_code,
+                                     vr.rating_spec_code,
+                                     rt.template_code
+                                into l_codes(1),
+                                     l_codes(2),
+                                     l_codes(3)
+                                from av_loc2 l,
+                                     at_virtual_rating vr,
+                                     at_rating_spec rs,
+                                     at_rating_template rt
+                               where l.db_office_id = l_ratings(i)(j).office_id
+                                 and l.active_flag = 'T'
+                                 and l.base_loc_active_flag = 'T'
+                                 and rs.location_code = l.location_code
+                                 and rs.active_flag = 'T'
+                                 and rt.template_code = rs.template_code
+                                 and vr.rating_spec_code = rs.rating_spec_code
+                                 and vr.active_flag = 'T'
+                                 and l.location_id||'.'||rt.parameters_id||'.'||rt.version||'.'||rs.version = l_ratings(i)(j).rating_spec_id
+                                 and vr.effective_date = l_ratings(i)(j).effective_date;
+                           exception
+                              when no_data_found then continue;
+                           end;
                      end;
                end;
                l_ratings_used(l_codes(1)) := true;
@@ -7199,7 +7211,7 @@ begin
             when 'JSON' then
                cwms_util.append(l_data, '{"ratings":{"error":"['||l_name||'] '||sqlerrm||'"}}');
             when 'TAB' then
-               cwms_util.append(l_data, 'ERROR'||chr(9)||'['||l_name||'] '||sqlerrm||chr(10));
+               cwms_util.append(l_data, 'ERROR'||chr(9)||'['||l_name||'] '||dbms_utility.format_error_backtrace||chr(10));
             when 'CSV' then
                cwms_util.append(l_data, 'ERROR,"||['||l_name||'] '||sqlerrm||'"'||chr(10));
             end case;
