@@ -60,7 +60,7 @@ as
          self.time_zone      := 'UTC';
 
          if upper(self.quality) = 'UNKNOWN' then self.quality := 'Unspecified'; end if;
-         if upper(self.flow_adj_id) = 'UNKN' then self.flow_adj_id := 'UNSP';  end if;
+         if upper(self.flow_adj_id) in('NONE','UNKN') then self.flow_adj_id := 'UNSP';  end if;
       end loop;
       return;
    end streamflow_meas_t;
@@ -228,6 +228,7 @@ as
    is
       l_rec            at_streamflow_meas%rowtype;
       l_exists         boolean;
+      l_error_message  varchar2(4000);
 
       function make_meas_number(
          p_date in date)
@@ -257,13 +258,7 @@ as
       is
          l_agency_code integer;
       begin
---         begin
             l_agency_code := cwms_entity.get_entity_code(p_agency_id, self.location.office_id);
---         exception
---            when others then
---               cwms_entity.store_entity(p_agency_id, p_agency_id, null, 'GOV', 'F', 'T', self.location.office_id);
---               l_agency_code := cwms_entity.get_entity_code(p_agency_id, self.location.office_id);
---         end;
          return l_agency_code;
       end get_entity_code;
    begin
@@ -307,6 +302,7 @@ as
       l_rec.air_temp       := nvl(cwms_util.convert_units(self.air_temp, self.temp_unit, 'C'), l_rec.air_temp);
       l_rec.water_temp     := nvl(cwms_util.convert_units(self.water_temp, self.temp_unit, 'C'), l_rec.water_temp);
       l_rec.wm_comments    := nvl(self.wm_comments, l_rec.wm_comments);
+      begin
       if l_exists then
          update at_streamflow_meas
             set row = l_rec
@@ -317,6 +313,35 @@ as
            into at_streamflow_meas
          values l_rec;
       end if;
+      exception
+         when others then
+            l_error_message := 'ERROR Storing Stream Measurement: '||sqlerrm
+            ||chr(10)||chr(9)||'location       = '||self.location.get_office_id||'/'||self.location.get_location_id
+            ||chr(10)||chr(9)||'meas_number    = '||self.meas_number
+            ||chr(10)||chr(9)||'date_time      = '||to_char(self.date_time, 'yyyy-mm-dd hh24:mi')
+            ||chr(10)||chr(9)||'used           = '||self.used
+            ||chr(10)||chr(9)||'party          = '||self.party
+            ||chr(10)||chr(9)||'agency_id      = '||self.agency_id
+            ||chr(10)||chr(9)||'gage_height    = '||to_number(self.gage_height)
+            ||chr(10)||chr(9)||'flow           = '||to_number(self.flow)
+            ||chr(10)||chr(9)||'cur_rating_num = '||self.cur_rating_num
+            ||chr(10)||chr(9)||'shift_used     = '||to_number(self.shift_used)
+            ||chr(10)||chr(9)||'pct_diff       = '||to_number(self.pct_diff)
+            ||chr(10)||chr(9)||'quality        = '||self.quality
+            ||chr(10)||chr(9)||'delta_height   = '||to_number(self.delta_height)
+            ||chr(10)||chr(9)||'delta_time     = '||to_number(self.delta_time)
+            ||chr(10)||chr(9)||'ctrl_cond_id   = '||self.ctrl_cond_id
+            ||chr(10)||chr(9)||'flow_adj_id    = '||self.flow_adj_id
+            ||chr(10)||chr(9)||'remarks        = '||self.remarks
+            ||chr(10)||chr(9)||'time_zone      = '||self.time_zone
+            ||chr(10)||chr(9)||'height_unit    = '||self.height_unit
+            ||chr(10)||chr(9)||'flow_unit      = '||self.flow_unit
+            ||chr(10)||chr(9)||'temp_unit      = '||self.temp_unit
+            ||chr(10)||chr(9)||'air_temp       = '||to_number(self.air_temp)
+            ||chr(10)||chr(9)||'water_temp     = '||to_number(self.water_temp)
+            ||chr(10)||chr(9)||'wm_comments    = '||self.wm_comments;
+         cwms_msg.log_db_message('streamflow_meas_t.store', cwms_msg.msg_level_normal, l_error_message);
+      end;
    end store;
 
    member function to_xml
