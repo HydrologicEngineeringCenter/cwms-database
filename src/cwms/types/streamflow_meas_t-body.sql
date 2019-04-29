@@ -340,7 +340,7 @@ as
             ||chr(10)||chr(9)||'air_temp       = '||to_number(self.air_temp)
             ||chr(10)||chr(9)||'water_temp     = '||to_number(self.water_temp)
             ||chr(10)||chr(9)||'wm_comments    = '||self.wm_comments;
-         cwms_msg.log_db_message('streamflow_meas_t.store', cwms_msg.msg_level_normal, l_error_message);
+         cwms_msg.log_db_message(cwms_msg.msg_level_normal, l_error_message);
          raise;
       end;
    end store;
