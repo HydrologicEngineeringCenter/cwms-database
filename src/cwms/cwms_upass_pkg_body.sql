@@ -112,7 +112,6 @@ AS
                 p_email,
                 p_principle_name);
             CWMS_DBA.CWMS_USER_ADMIN.UNLOCK_DB_ACCOUNT(p_userid);
-         commit;
             COMMIT;
         ELSIF ((UPPER (p_control_code)) = 'D')
         THEN
