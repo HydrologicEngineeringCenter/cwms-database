@@ -49,18 +49,18 @@ conversion_factors = {
 	'C_per_F'          : Decimal('1')/Decimal('1.8'),     # pg 48
 	'rad_per_deg'      : Decimal('1.745329e-2'),          # pg 48
 #
-#	gravitational acceleration	
+#	gravitational acceleration
 #
-	'm/s2_per_g'       : Decimal('9.80665'),              # pg 53 (footnote)    
+	'm/s2_per_g'       : Decimal('9.80665'),              # pg 53 (footnote)
 #
-#	time	
+#	time
 #
 	'hr_per_day'       : Decimal('24'),
 	'min_per_hr'       : Decimal('60'),
 	's_per_min'        : Decimal('60'),
 #
-#	angle	
-#                                                                               
+#	angle
+#
 	'deg_per_rev'      : Decimal('360'),
 #
 #	scale
@@ -83,7 +83,7 @@ conversion_factors['s_per_hr']    = conversion_factors['s_per_min']   * conversi
 conversion_factors['s_per_day']   = conversion_factors['s_per_hr']    * conversion_factors['hr_per_day']
 conversion_factors['ft3_per_dsf'] = conversion_factors['s_per_day']
 #
-# Offsets for conversions that require them (applied after factors) 
+# Offsets for conversions that require them (applied after factors)
 #
 offsets = {
 	'C_to_F' : Decimal('32'),
@@ -148,6 +148,62 @@ conversion_definitions = [
 	('1000 m3',     'mcm',         '*_per_k*[m3]/[1000 m3] | [mcm]/*_per_M*[m3]'),
 	('1000 m3',     'mgal',        '*_per_k*[m3]/[1000 m3] | [gal]/m3_per_gal[m3] | [mgal]/*_per_M*[gal]'),
 	('1000 m3',     'mile3',       '*_per_k*[m3]/[1000 m3] | [ft3]/m_per_ft^3[m3] | [mile3]/ft_per_mile^3[ft3]'),
+	('B',           'Hz',          'function[Hz]/[B]'),
+	('B',           'MHz',         'function[Hz]/[B] | [MHz]/*_per_M*[Hz]'),
+	('B',           'kHz',         'function[Hz]/[B] | [kHz]/*_per_k*[Hz]'),
+	('C',           'F',           '[F]/C_per_F[C]'),
+	('C',           'K',           '[K]/C_per_K[C]'),
+	('C-day',       'F-day',       '[F-day]/C_per_F[C-day]'),
+	('F',           'C',           'C_per_F[C]/[F]'),
+	('F',           'K',           'function[K]/[F]'),
+	('F-day',       'C-day',       'C_per_F[C-day]/[F-day]'),
+	('GW',          'MW',          '*_per_G*[W]/[GW] | [MW]/*_per_M*[W]'),
+	('GW',          'TW',          '*_per_G*[W]/[GW] | [TW]/*_per_T*[W]'),
+	('GW',          'W',           '*_per_G*[W]/[GW]'),
+	('GW',          'kW',          '*_per_G*[W]/[GW] | [kW]/*_per_k*[W]'),
+	('GWh',         'MWh',         '*_per_G*[Wh]/[GWh] | [MWh]/*_per_M*[Wh]'),
+	('GWh',         'TWh',         '*_per_G*[Wh]/[GWh] | [TWh]/*_per_T*[Wh]'),
+	('GWh',         'Wh',          '*_per_G*[Wh]/[GWh]'),
+	('GWh',         'kWh',         '*_per_G*[Wh]/[GWh] | [kWh]/*_per_k*[Wh]'),
+	('Hz',          'B',           'function[B]/[Hz]'),
+	('Hz',          'MHz',         '[MHz]/*_per_M*[Hz]'),
+	('Hz',          'kHz',         '[kHz]/*_per_k*[Hz]'),
+	('J/m2',        'langley',     '[langley]/J/m2_per_langley[J/m2]'),
+	('K',           'C',           'C_per_K[C]/[K]'),
+	('K',           'F',           'function[F]/[K]'),
+	('KAF/mon',    'mcm/mon',      '[kaf]/[KAF] | *_per_k*[ac-ft]/[kaf] | ft2_per_acre[ft3]/[ac-ft] | m_per_ft^3[m3]/[ft3] | [mcm]/*_per_M*[m3]'),
+	('MHz',         'B',           '*_per_M*[Hz]/[MHz] | function[B]/[Hz]'),
+	('MHz',         'Hz',          '*_per_M*[Hz]/[MHz]'),
+	('MHz',         'kHz',         '*_per_M*[Hz]/[MHz] | [kHz]/*_per_k*[Hz]'),
+	('MW',          'GW',          '*_per_M*[W]/[MW] | [GW]/*_per_G*[W]'),
+	('MW',          'TW',          '*_per_M*[W]/[MW] | [TW]/*_per_T*[W]'),
+	('MW',          'W',           '*_per_M*[W]/[MW]'),
+	('MW',          'kW',          '*_per_M*[W]/[MW] | [kW]/*_per_k*[W]'),
+	('MWh',         'GWh',         '*_per_M*[Wh]/[MWh] | [GWh]/*_per_G*[Wh]'),
+	('MWh',         'TWh',         '*_per_M*[Wh]/[MWh] | [TWh]/*_per_T*[Wh]'),
+	('MWh',         'Wh',          '*_per_M*[Wh]/[MWh]'),
+	('MWh',         'kWh',         '*_per_M*[Wh]/[MWh] | [kWh]/*_per_k*[Wh]'),
+	('N',           'lb',          '[kg*m/s2]/[N] | [lbm]/kg_per_lbm[kg] | [g]/m/s2_per_g[m/s2] | [lb]/[lbm*g]'),
+	('S',           'mho',         '[mho]/[S]'),
+	('S',           'uS',          'u*_per_*[uS]/[S]'),
+	('S',           'umho',        'u*_per_*[umho]/[S]'),
+	('TW',          'GW',          '*_per_T*[W]/[TW] | [GW]/*_per_G*[W]'),
+	('TW',          'MW',          '*_per_T*[W]/[TW] | [MW]/*_per_M*[W]'),
+	('TW',          'W',           '*_per_T*[W]/[TW]'),
+	('TW',          'kW',          '*_per_T*[W]/[TW] | [kW]/*_per_k*[W]'),
+	('TWh',         'GWh',         '*_per_T*[Wh]/[TWh] | [GWh]/*_per_G*[Wh]'),
+	('TWh',         'MWh',         '*_per_T*[Wh]/[TWh] | [MWh]/*_per_M*[Wh]'),
+	('TWh',         'Wh',          '*_per_T*[Wh]/[TWh]'),
+	('TWh',         'kWh',         '*_per_T*[Wh]/[TWh] | [kWh]/*_per_k*[Wh]'),
+	('W',           'GW',          '[GW]/*_per_G*[W]'),
+	('W',           'MW',          '[MW]/*_per_M*[W]'),
+	('W',           'TW',          '[TW]/*_per_T*[W]'),
+	('W',           'kW',          '[kW]/*_per_k*[W]'),
+	('W/m2',        'langley/min', '[J/s]/[W] | [langley]/J/m2_per_langley[J/m2] | s_per_min[s]/[min]'),
+	('Wh',          'GWh',         '[GWh]/*_per_G*[Wh]'),
+	('Wh',          'MWh',         '[MWh]/*_per_M*[Wh]'),
+	('Wh',          'TWh',         '[TWh]/*_per_T*[Wh]'),
+	('Wh',          'kWh',         '[kWh]/*_per_k*[Wh]'),
 	('ac-ft',       '1000 m3',     'ft2_per_acre[ft3]/[ac-ft] | m_per_ft^3[m3]/[ft3] | [1000 m3]/*_per_k*[m3]'),
 	('ac-ft',       'dsf',         'ft2_per_acre[ft3]/[ac-ft] | [dsf]/ft3_per_dsf[ft3]'),
 	('ac-ft',       'ft3',         'ft2_per_acre[ft3]/[ac-ft]'),
@@ -167,12 +223,11 @@ conversion_definitions = [
 	('acre',        'km2',         'ft2_per_acre[ft2]/[acre] | m_per_ft^2[m2]/[ft2] | [km2]/*_per_k*^2[m2]'),
 	('acre',        'm2',          'ft2_per_acre[ft2]/[acre] | m_per_ft^2[m2]/[ft2]'),
 	('acre',        'mile2',       'ft2_per_acre[ft2]/[acre] | [mile2]/ft_per_mile^2[ft2]'),
-	('B',           'Hz',          'function[Hz]/[B]'),
-	('B',           'kHz',         'function[Hz]/[B] | [kHz]/*_per_k*[Hz]'),
-	('B',           'MHz',         'function[Hz]/[B] | [MHz]/*_per_M*[Hz]'),
-	('C',           'F',           '[F]/C_per_F[C]'),
-	('C',           'K',           '[K]/C_per_K[C]'),
-	('C-day',       'F-day',       '[F-day]/C_per_F[C-day]'),
+	('bar',         'in-hg',       'Pa_per_bar[Pa]/[bar] | [in-hg]/Pa_per_in-hg[Pa]'),
+	('bar',         'kPa',         'Pa_per_bar[Pa]/[bar] | [kPa]/*_per_k*[Pa]'),
+	('bar',         'mb',          'm*_per_*[mb]/[bar]'),
+	('bar',         'mm-hg',       'Pa_per_bar[Pa]/[bar] | [mm-hg]/Pa_per_mm-hg[Pa]'),
+	('bar',         'psi',         'Pa_per_bar[Pa]/[bar] | [psi]/Pa_per_psi[Pa]'),
 	('cfs',         'cms',         '[ft3/s]/[cfs] | m_per_ft^3[m3]/[ft3] | [cms]/[m3/s]'),
 	('cfs',         'gpm',         '[ft3/s]/[cfs] | m_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3] | s_per_min[s]/[min] | [gpm]/[gal/min]'),
 	('cfs',         'kcfs',        '[kcfs]/*_per_k*[cfs]'),
@@ -224,9 +279,6 @@ conversion_definitions = [
 	('dsf',         'mcm',         'ft3_per_dsf[ft3]/[dsf] | m_per_ft^3[m3]/[ft3] | [mcm]/*_per_M*[m3]'),
 	('dsf',         'mgal',        'ft3_per_dsf[ft3]/[dsf] | m_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3] | [mgal]/*_per_M*[gal]'),
 	('dsf',         'mile3',       'ft3_per_dsf[ft3]/[dsf] | [mile3]/ft_per_mile^3[ft3]'),
-	('F',           'C',           'C_per_F[C]/[F]'),           
-	('F',           'K',           'function[K]/[F]'),           
-	('F-day',       'C-day',       'C_per_F[C-day]/[F-day]'),           
 	('ft',          'cm',          'm_per_ft[m]/[ft] | c*_per_*[cm]/[m]'),
 	('ft',          'ftUS',        'ftUS_per_ft[ftUS]/[ft]'),
 	('ft',          'in',          'in_per_ft[in]/[ft]'),
@@ -246,7 +298,7 @@ conversion_definitions = [
 	('ft/hr',       'mm/hr',       'm_per_ft[m]/[ft] | m*_per_*[mm]/[m]'),
 	('ft/hr',       'mph',         '[mi]/ft_per_mile[ft] | [mph]/[mi/hr]'),
 	('ft/s',        'cm/day',      'm_per_ft[m]/[ft] | c*_per_*[cm]/[m] | s_per_day[s]/[day]'),
-	('ft/s',        'ft/hr',       's_per_hr[s]/[hr]'),                                                
+	('ft/s',        'ft/hr',       's_per_hr[s]/[hr]'),
 	('ft/s',        'in/day',      'in_per_ft[in]/[ft] | s_per_day[s]/[day]'),
 	('ft/s',        'in/hr',       'in_per_ft[in]/[ft] | s_per_hr[s]/[hr]'),
 	('ft/s',        'knot',        'm_per_ft[m/s]/[ft/s] | [knot]/m/s_per_knot[m/s]'),
@@ -267,10 +319,10 @@ conversion_definitions = [
 	('ft3',         '1000 m3',     'm_per_ft^3[m3]/[ft3] | [1000 m3]/*_per_k*[m3]'),
 	('ft3',         'ac-ft',       '[ac-ft]/ft2_per_acre[ft3]'),
 	('ft3',         'dsf',         '[dsf]/ft3_per_dsf[ft3]'),
-	('ft3',         'gal',         'm_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3]'),  
+	('ft3',         'gal',         'm_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3]'),
 	('ft3',         'kaf',         '[ac-ft]/ft2_per_acre[ft3] | [kaf]/*_per_k*[ac-ft]'),
 	('ft3',         'kdsf',        '[dsf]/ft3_per_dsf[ft3] | [kdsf]/*_per_k*[dsf]'),
-	('ft3',         'kgal',        'm_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3] | [kgal]/*_per_k*[gal]'),  
+	('ft3',         'kgal',        'm_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3] | [kgal]/*_per_k*[gal]'),
 	('ft3',         'km3',         'm_per_ft^3[m3]/[ft3] | [km3]/*_per_k*^3[m3]'),
 	('ft3',         'm3',          'm_per_ft^3[m3]/[ft3]'),
 	('ft3',         'mcm',         'm_per_ft^3[m3]/[ft3] | [mcm]/*_per_M*[m3]'),
@@ -298,18 +350,18 @@ conversion_definitions = [
 	('g/m3',        'lbm/ft3',     '[kg]/*_per_k*[g] | [lbm]/kg_per_lbm[kg] | m_per_ft^3[m3]/[ft3]'),
 	('g/m3',        'mg/l',        '[m3]/l_per_m3[l] | m*_per_*[mg]/[g]'),
 	('g/m3',        'ppm',         '[m3]/l_per_m3[l] | m*_per_*[mg]/[g] | [ppm]/[mg/l]'),
-	('gal',         '1000 m3',     'm3_per_gal[m3]/[gal] | [1000 m3]/*_per_k*[m3]'),     
-	('gal',         'ac-ft',       'm3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [ac-ft]/ft2_per_acre[ft3]'),     
+	('gal',         '1000 m3',     'm3_per_gal[m3]/[gal] | [1000 m3]/*_per_k*[m3]'),
+	('gal',         'ac-ft',       'm3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [ac-ft]/ft2_per_acre[ft3]'),
 	('gal',         'dsf',         'm3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [dsf]/ft3_per_dsf[ft3]'),
-	('gal',         'ft3',         'm3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3]'),     
-	('gal',         'kaf',         'm3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [ac-ft]/ft2_per_acre[ft3] | [kaf]/*_per_k*[ac-ft]'),     
+	('gal',         'ft3',         'm3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3]'),
+	('gal',         'kaf',         'm3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [ac-ft]/ft2_per_acre[ft3] | [kaf]/*_per_k*[ac-ft]'),
 	('gal',         'kdsf',        'm3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [dsf]/ft3_per_dsf[ft3] | [kdsf]/*_per_k*[dsf]'),
 	('gal',         'kgal',        '[kgal]/*_per_k*[gal]'),
-	('gal',         'km3',         'm3_per_gal[m3]/[gal] | [km3]/*_per_k*^3[m3]'),     
-	('gal',         'm3',          'm3_per_gal[m3]/[gal]'),     
-	('gal',         'mcm',         'm3_per_gal[m3]/[gal] | [mcm]/*_per_M*[m3]'),     
+	('gal',         'km3',         'm3_per_gal[m3]/[gal] | [km3]/*_per_k*^3[m3]'),
+	('gal',         'm3',          'm3_per_gal[m3]/[gal]'),
+	('gal',         'mcm',         'm3_per_gal[m3]/[gal] | [mcm]/*_per_M*[m3]'),
 	('gal',         'mgal',        '[mgal]/*_per_M*[gal]'),
-	('gal',         'mile3',       'm3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [mile3]/ft_per_mile^3[ft3]'),     
+	('gal',         'mile3',       'm3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [mile3]/ft_per_mile^3[ft3]'),
 	('gm/cm3',      'g/l',         '[g]/[gm] | c*_per_*^3[cm3]/[m3] | [m3]/l_per_m3[l]'),
 	('gm/cm3',      'g/m3',        '[g]/[gm] | c*_per_*^3[cm3]/[m3]'),
 	('gm/cm3',      'lbm/ft3',     '[g]/[gm] | [kg]/*_per_k*[g] | [lbm]/kg_per_lbm[kg] | c*_per_*^3[cm3]/[m3] | m_per_ft^3[m3]/[ft3]'),
@@ -320,14 +372,6 @@ conversion_definitions = [
 	('gpm',         'kcfs',        '[gal/min]/[gpm] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [min]/s_per_min[s] | [cfs]/[ft3/s] | [kcfs]/*_per_k*[cfs]'),
 	('gpm',         'kcms',        '[gal/min]/[gpm] | m3_per_gal[m3]/[gal] |[min]/s_per_min[s] | [cms]/[m3/s] | [kcms]/*_per_k*[cms]'),
 	('gpm',         'mgd',         '[gal/min]/[gpm] | [Mgal]/*_per_M*[gal] | min_per_day[min]/[day] | [mgd]/[Mgal/day]'),
-	('GW',          'kW',          '*_per_G*[W]/[GW] | [kW]/*_per_k*[W]'),
-	('GW',          'MW',          '*_per_G*[W]/[GW] | [MW]/*_per_M*[W]'),
-	('GW',          'TW',          '*_per_G*[W]/[GW] | [TW]/*_per_T*[W]'),
-	('GW',          'W',           '*_per_G*[W]/[GW]'),
-	('GWh',         'kWh',         '*_per_G*[Wh]/[GWh] | [kWh]/*_per_k*[Wh]'),
-	('GWh',         'MWh',         '*_per_G*[Wh]/[GWh] | [MWh]/*_per_M*[Wh]'),
-	('GWh',         'TWh',         '*_per_G*[Wh]/[GWh] | [TWh]/*_per_T*[Wh]'),
-	('GWh',         'Wh',          '*_per_G*[Wh]/[GWh]'),
 	('ha',          '1000 acre',   'm2_per_ha[m2]/[ha] | [ft2]/m_per_ft^2[m2] | [acre]/ft2_per_acre[ft2]| [1000 acre]/*_per_k*[acre]'),
 	('ha',          '1000 m2',     'm2_per_ha[m2]/[ha] | [1000 m2]/*_per_k*[m2]'),
 	('ha',          'acre',        'm2_per_ha[m2]/[ha] | [ft2]/m_per_ft^2[m2] | [acre]/ft2_per_acre[ft2]'),
@@ -338,21 +382,19 @@ conversion_definitions = [
 	('ha',          'mile2',       'm2_per_ha[m2]/[ha] | [ft2]/m_per_ft^2[m2] | [mile2]/ft_per_mile^2[ft2]'),
 	('hr',          'min',         'min_per_hr[min]/[hr]'),
 	('hr',          'sec',         's_per_hr[sec]/[hr]'),
-	('Hz',          'B',           'function[B]/[Hz]'),
-	('Hz',          'kHz',         '[kHz]/*_per_k*[Hz]'),
-	('Hz',          'MHz',         '[MHz]/*_per_M*[Hz]'),
-	('in',          'cm',          '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | c*_per_*[cm]/[m]'),	
-	('in',          'ft',          '[ft]/in_per_ft[in]'),	
-	('in',          'ftUS',        '[ft]/in_per_ft[in] | ftUS_per_ft[ftUS]/[ft]'),	
+	('in',          'cm',          '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | c*_per_*[cm]/[m]'),
+	('in',          'ft',          '[ft]/in_per_ft[in]'),
+	('in',          'ftUS',        '[ft]/in_per_ft[in] | ftUS_per_ft[ftUS]/[ft]'),
 	('in',          'km',          '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | [km]/*_per_k*[m]'),
-	('in',          'm',           '[ft]/in_per_ft[in] | m_per_ft[m]/[ft]'),	
-	('in',          'mi',          '[ft]/in_per_ft[in] | [mi]/ft_per_mile[ft]'),	
-	('in',          'mm',          '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m]'),	
+	('in',          'm',           '[ft]/in_per_ft[in] | m_per_ft[m]/[ft]'),
+	('in',          'mi',          '[ft]/in_per_ft[in] | [mi]/ft_per_mile[ft]'),
+	('in',          'mm',          '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m]'),
+	('in-hg',       'bar',         'Pa_per_in-hg[Pa]/[in-hg] | [bar]/Pa_per_bar[Pa]'),
 	('in-hg',       'kPa',         'Pa_per_in-hg[Pa]/[in-hg] | [kPa]/*_per_k*[Pa]'),
 	('in-hg',       'mb',          'Pa_per_in-hg[Pa]/[in-hg] | [bar]/Pa_per_bar[Pa] | m*_per_*[mb]/[bar]'),
 	('in-hg',       'mm-hg',       '[ft-hg]/in_per_ft[in-hg] | m_per_ft[m-hg]/[ft-hg] | m*_per_*[mm-hg]/[m-hg]'),
 	('in-hg',       'psi',         'Pa_per_in-hg[Pa]/[in-hg] | [psi]/Pa_per_psi[Pa]'),
-	('in/day',      'cm/day',      '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | c*_per_*[cm]/[m]'),	
+	('in/day',      'cm/day',      '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | c*_per_*[cm]/[m]'),
 	('in/day',      'ft/hr',       '[ft]/in_per_ft[in] | [day]/hr_per_day[hr]'),
 	('in/day',      'ft/s',        '[ft]/in_per_ft[in] | [day]/s_per_day[s]'),
 	('in/day',      'in/hr',       '[day]/hr_per_day[hr]'),
@@ -360,8 +402,8 @@ conversion_definitions = [
 	('in/day',      'kph',         '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | [km]/*_per_k*[m] | [day]/hr_per_day[hr] | [kph]/[km/hr]'),
 	('in/day',      'm/hr',        '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | [day]/hr_per_day[hr]'),
 	('in/day',      'm/s',         '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | [day]/s_per_day[s]'),
-	('in/day',      'mm/day',      '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m]'),	
-	('in/day',      'mm/hr',       '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m] | [day]/hr_per_day[hr]'),	
+	('in/day',      'mm/day',      '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m]'),
+	('in/day',      'mm/hr',       '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m] | [day]/hr_per_day[hr]'),
 	('in/day',      'mph',         '[ft]/in_per_ft[in] | [mi]/ft_per_mile[ft] | [day]/hr_per_day[hr] | [mph]/[mi/hr]'),
 	('in/deg-day',  'mm/deg-day',  '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m] | [deg-day]/C_per_F[deg-day]'),
 	('in/hr',       'cm/day',      '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | c*_per_*[cm]/[m] | hr_per_day[hr]/[day]'),
@@ -375,9 +417,22 @@ conversion_definitions = [
 	('in/hr',       'mm/day',      '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m] | hr_per_day[hr]/[day]'),
 	('in/hr',       'mm/hr',       '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m]'),
 	('in/hr',       'mph',         '[ft]/in_per_ft[in] | [mi]/ft_per_mile[ft] | [mph]/[mi/hr]'),
-	('J/m2',        'langley',     '[langley]/J/m2_per_langley[J/m2]'),
-	('K',           'C',           'C_per_K[C]/[K]'),
-	('K',           'F',           'function[F]/[K]'),
+	('kHz',         'B',           '*_per_k*[Hz]/[kHz] | function[B]/[Hz]'),
+	('kHz',         'Hz',          '*_per_k*[Hz]/[kHz]'),
+	('kHz',         'MHz',         '*_per_k*[Hz]/[kHz] | [MHz]/*_per_M*[Hz]'),
+	('kPa',         'bar',         '*_per_k*[Pa]/[kPa] | [bar]/Pa_per_bar[Pa]'),
+	('kPa',         'in-hg',       '*_per_k*[Pa]/[kPa] | [in-hg]/Pa_per_in-hg[Pa]'),
+	('kPa',         'mb',          '*_per_k*[Pa]/[kPa] | [bar]/Pa_per_bar[Pa] | m*_per_*[mb]/[bar]'),
+	('kPa',         'mm-hg',       '*_per_k*[Pa]/[kPa] | [mm-hg]/Pa_per_mm-hg[Pa]'),
+	('kPa',         'psi',         '*_per_k*[Pa]/[kPa] | [psi]/Pa_per_psi[Pa]'),
+	('kW',          'GW',          '*_per_k*[W]/[kW] | [GW]/*_per_G*[W]'),
+	('kW',          'MW',          '*_per_k*[W]/[kW] | [MW]/*_per_M*[W]'),
+	('kW',          'TW',          '*_per_k*[W]/[kW] | [TW]/*_per_T*[W]'),
+	('kW',          'W',           '*_per_k*[W]/[kW]'),
+	('kWh',         'GWh',         '*_per_k*[Wh]/[kWh] | [GWh]/*_per_G*[Wh]'),
+	('kWh',         'MWh',         '*_per_k*[Wh]/[kWh] | [MWh]/*_per_M*[Wh]'),
+	('kWh',         'TWh',         '*_per_k*[Wh]/[kWh] | [TWh]/*_per_T*[Wh]'),
+	('kWh',         'Wh',          '*_per_k*[Wh]/[kWh]'),
 	('kaf',         '1000 m3',     '*_per_k*[ac-ft]/[kaf] | ft2_per_acre[ft3]/[ac-ft] | m_per_ft^3[m3]/[ft3] | [1000 m3]/*_per_k*[m3]'),
 	('kaf',         'ac-ft',       '*_per_k*[ac-ft]/[kaf]'),
 	('kaf',         'dsf',         '*_per_k*[ac-ft]/[kaf] | ft2_per_acre[ft3]/[ac-ft] | [dsf]/ft3_per_dsf[ft3]'),
@@ -390,7 +445,6 @@ conversion_definitions = [
 	('kaf',         'mcm',         '*_per_k*[ac-ft]/[kaf] | ft2_per_acre[ft3]/[ac-ft] | m_per_ft^3[m3]/[ft3] | [mcm]/*_per_M*[m3]'),
 	('kaf',         'mgal',        '*_per_k*[ac-ft]/[kaf] | ft2_per_acre[ft3]/[ac-ft] | m_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3] | [mgal]/*_per_M*[gal]'),
 	('kaf',         'mile3',       '*_per_k*[ac-ft]/[kaf] | ft2_per_acre[ft3]/[ac-ft] | [mile3]/ft_per_mile^3[ft3]'),
-	('KAF/mon',    'mcm/mon',      '[kaf]/[KAF] | *_per_k*[ac-ft]/[kaf] | ft2_per_acre[ft3]/[ac-ft] | m_per_ft^3[m3]/[ft3] | [mcm]/*_per_M*[m3]'),
 	('kcfs',        'cfs',         '*_per_k*[cfs]/[kcfs]'),
 	('kcfs',        'cms',         '*_per_k*[ft3/s]/[kcfs] | m_per_ft^3[m3]/[ft3] | [cms]/[m3/s]'),
 	('kcfs',        'gpm',         '*_per_k*[ft3/s]/[kcfs] | m_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3] | s_per_min[s]/[min] | [gpm]/[gal/min]'),
@@ -418,21 +472,18 @@ conversion_definitions = [
 	('kg',          'mg',          '*_per_k*[g]/[kg] | m*_per_*[mg]/[g]'),
 	('kg',          'ton',         '[lbm]/kg_per_lbm[kg] | [ton]/lbm_per_ton[lbm]'),
 	('kg',          'tonne',       '[tonne]/kg_per_tonne[kg]'),
-	('kgal',        '1000 m3',     '*_per_k*[gal]/[kgal] | m3_per_gal[m3]/[gal] | [1000 m3]/*_per_k*[m3]'),     
-	('kgal',        'ac-ft',       '*_per_k*[gal]/[kgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [ac-ft]/ft2_per_acre[ft3]'),     
+	('kgal',        '1000 m3',     '*_per_k*[gal]/[kgal] | m3_per_gal[m3]/[gal] | [1000 m3]/*_per_k*[m3]'),
+	('kgal',        'ac-ft',       '*_per_k*[gal]/[kgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [ac-ft]/ft2_per_acre[ft3]'),
 	('kgal',        'dsf',         '*_per_k*[gal]/[kgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [dsf]/ft3_per_dsf[ft3]'),
-	('kgal',        'ft3',         '*_per_k*[gal]/[kgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3]'),     
+	('kgal',        'ft3',         '*_per_k*[gal]/[kgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3]'),
 	('kgal',        'gal',         '*_per_k*[gal]/[kgal]'),
-	('kgal',        'kaf',         '*_per_k*[gal]/[kgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [ac-ft]/ft2_per_acre[ft3] | [kaf]/*_per_k*[ac-ft]'),     
+	('kgal',        'kaf',         '*_per_k*[gal]/[kgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [ac-ft]/ft2_per_acre[ft3] | [kaf]/*_per_k*[ac-ft]'),
 	('kgal',        'kdsf',        '*_per_k*[gal]/[kgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [dsf]/ft3_per_dsf[ft3] | [kdsf]/*_per_k*[dsf]'),
-	('kgal',        'km3',         '*_per_k*[gal]/[kgal] | m3_per_gal[m3]/[gal] | [km3]/*_per_k*^3[m3]'),     
-	('kgal',        'm3',          '*_per_k*[gal]/[kgal] | m3_per_gal[m3]/[gal]'),     
-	('kgal',        'mcm',         '*_per_k*[gal]/[kgal] | m3_per_gal[m3]/[gal] | [mcm]/*_per_M*[m3]'),     
+	('kgal',        'km3',         '*_per_k*[gal]/[kgal] | m3_per_gal[m3]/[gal] | [km3]/*_per_k*^3[m3]'),
+	('kgal',        'm3',          '*_per_k*[gal]/[kgal] | m3_per_gal[m3]/[gal]'),
+	('kgal',        'mcm',         '*_per_k*[gal]/[kgal] | m3_per_gal[m3]/[gal] | [mcm]/*_per_M*[m3]'),
 	('kgal',        'mgal',        '*_per_k*[gal]/[kgal] | [mgal]/*_per_M*[gal]'),
-	('kgal',        'mile3',       '*_per_k*[gal]/[kgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [mile3]/ft_per_mile^3[ft3]'),  
-	('kHz',         'B',           '*_per_k*[Hz]/[kHz] | function[B]/[Hz]'),
-	('kHz',         'Hz',          '*_per_k*[Hz]/[kHz]'),
-	('kHz',         'MHz',         '*_per_k*[Hz]/[kHz] | [MHz]/*_per_M*[Hz]'),
+	('kgal',        'mile3',       '*_per_k*[gal]/[kgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [mile3]/ft_per_mile^3[ft3]'),
 	('km',          'cm',          '*_per_k*[m]/[km] | c*_per_*[cm]/[m]'),
 	('km',          'ft',          '*_per_k*[m]/[km] | [ft]/m_per_ft[m]'),
 	('km',          'ftUS',        '*_per_k*[m]/[km] | [ft]/m_per_ft[m] | ftUS_per_ft[ftUS]/[ft]'),
@@ -471,10 +522,6 @@ conversion_definitions = [
 	('knot',        'mm/day',      'm/s_per_knot[m/s]/[knot] | s_per_day[m/day]/[m/s] | m*_per_*[mm/day]/[m/day]'),
 	('knot',        'mm/hr',       'm/s_per_knot[m/s]/[knot] | s_per_hr[m/hr]/[m/s] | m*_per_*[mm/hr]/[m/hr]'),
 	('knot',        'mph',         'm/s_per_knot[m/s]/[knot] | s_per_hr[s]/[hr] | [ft]/m_per_ft[m] | [mile]/ft_per_mile[ft] | [mph]/[mile/hr]'),
-	('kPa',         'in-hg',       '*_per_k*[Pa]/[kPa] | [in-hg]/Pa_per_in-hg[Pa]'),
-	('kPa',         'mb',          '*_per_k*[Pa]/[kPa] | [bar]/Pa_per_bar[Pa] | m*_per_*[mb]/[bar]'),
-	('kPa',         'mm-hg',       '*_per_k*[Pa]/[kPa] | [mm-hg]/Pa_per_mm-hg[Pa]'),
-	('kPa',         'psi',         '*_per_k*[Pa]/[kPa] | [psi]/Pa_per_psi[Pa]'),
 	('kph',         'cm/day',      '[km/hr]/[kph] | *_per_k*[m]/[km] | c*_per_*[cm]/[m] | hr_per_day[hr]/[day]'),
 	('kph',         'ft/hr',       '[km/hr]/[kph] | *_per_k*[m]/[km] | [ft]/m_per_ft[m]'),
 	('kph',         'ft/s',        '[km/hr]/[kph] | *_per_k*[m]/[km] | [ft]/m_per_ft[m] | [hr]/s_per_hr[s]'),
@@ -486,15 +533,7 @@ conversion_definitions = [
 	('kph',         'mm/day',      '[km/hr]/[kph] | *_per_k*[m]/[km] | m*_per_*[mm]/[m] | hr_per_day[hr]/[day]'),
 	('kph',         'mm/hr',       '[km/hr]/[kph] | *_per_k*[m]/[km] | m*_per_*[mm]/[m]'),
 	('kph',         'mph',         '[km/hr]/[kph] | *_per_k*[m]/[km] | [ft]/m_per_ft[m] | [mi]/ft_per_mile[ft] | [mph]/[mi/hr]'),
-	('kW',          'GW',          '*_per_k*[W]/[kW] | [GW]/*_per_G*[W]'),
-	('kW',          'MW',          '*_per_k*[W]/[kW] | [MW]/*_per_M*[W]'),
-	('kW',          'TW',          '*_per_k*[W]/[kW] | [TW]/*_per_T*[W]'),
-	('kW',          'W',           '*_per_k*[W]/[kW]'),
-	('kWh',         'GWh',         '*_per_k*[Wh]/[kWh] | [GWh]/*_per_G*[Wh]'),                                 
-	('kWh',         'MWh',         '*_per_k*[Wh]/[kWh] | [MWh]/*_per_M*[Wh]'),
-	('kWh',         'TWh',         '*_per_k*[Wh]/[kWh] | [TWh]/*_per_T*[Wh]'),    
-	('kWh',         'Wh',          '*_per_k*[Wh]/[kWh]'),                                
-	('langley',     'J/m2',        'J/m2_per_langley[J/m2]/[langley]'),                
+	('langley',     'J/m2',        'J/m2_per_langley[J/m2]/[langley]'),
 	('langley/min', 'W/m2',        'J/m2_per_langley[J/m2]/[langley] | [W]/[J/s] | [min]/s_per_min[s]'),
 	('lb',          'N',           '[lbm*g]/[lb] | m/s2_per_g[m/s2]/[g] | kg_per_lbm[kg]/[lbm] | [N]/[kg*m/s2]'),
 	('lbm',         'g',           'kg_per_lbm[kg]/[lbm] | *_per_k*[g]/[kg]'),
@@ -555,6 +594,7 @@ conversion_definitions = [
 	('m3',          'km3',         '[km3]/*_per_k*^3[m3]'),
 	('m3',          'mgal',        '[gal]/m3_per_gal[m3] | [mgal]/*_per_M*[gal]'),
 	('m3',          'mile3',       '[ft3]/m_per_ft^3[m3] | [mile3]/ft_per_mile^3[ft3]'),
+	('mb',          'bar',         '[bar]/m*_per_*[mb]'),
 	('mb',          'in-hg',       '[bar]/m*_per_*[mb] | Pa_per_bar[Pa]/[bar] | [in-hg]/Pa_per_in-hg[Pa]'),
 	('mb',          'kPa',         '[bar]/m*_per_*[mb] | Pa_per_bar[Pa]/[bar] | [kPa]/*_per_k*[Pa]'),
 	('mb',          'mm-hg',       '[bar]/m*_per_*[mb] | Pa_per_bar[Pa]/[bar] | [mm-hg]/Pa_per_mm-hg[Pa]'),
@@ -580,29 +620,26 @@ conversion_definitions = [
 	('mg/l',        'gm/cm3',      '[g]/m*_per_*[mg] | l_per_m3[l]/[m3] | [m3]/c*_per_*^3[cm3] | [gm]/[g]'),
 	('mg/l',        'lbm/ft3',     '[g]/m*_per_*[mg] | [kg]/*_per_k*[g] | [lbm]/kg_per_lbm[kg] | l_per_m3[l]/[m3] | m_per_ft^3[m3]/[ft3]'),
 	('mg/l',        'ppm',         '[ppm]/[mg/l]'),
-	('mgal',        '1000 m3',     '*_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [1000 m3]/*_per_k*[m3]'),     
-	('mgal',        'ac-ft',       '*_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [ac-ft]/ft2_per_acre[ft3]'),     
+	('mgal',        '1000 m3',     '*_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [1000 m3]/*_per_k*[m3]'),
+	('mgal',        'ac-ft',       '*_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [ac-ft]/ft2_per_acre[ft3]'),
 	('mgal',        'dsf',         '*_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [dsf]/ft3_per_dsf[ft3]'),
-	('mgal',        'ft3',         '*_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3]'),     
+	('mgal',        'ft3',         '*_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3]'),
 	('mgal',        'gal',         '*_per_M*[gal]/[mgal]'),
-	('mgal',        'kaf',         '*_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [ac-ft]/ft2_per_acre[ft3] | [kaf]/*_per_k*[ac-ft]'),     
+	('mgal',        'kaf',         '*_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [ac-ft]/ft2_per_acre[ft3] | [kaf]/*_per_k*[ac-ft]'),
 	('mgal',        'kdsf',        '*_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [dsf]/ft3_per_dsf[ft3] | [kdsf]/*_per_k*[dsf]'),
 	('mgal',        'kgal',        '*_per_M*[gal]/[mgal] | [kgal]/*_per_k*[gal]'),
-	('mgal',        'km3',         '*_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [km3]/*_per_k*^3[m3]'),     
-	('mgal',        'm3',          '*_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal]'),     
-	('mgal',        'mcm',         '*_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [mcm]/*_per_M*[m3]'),     
-	('mgal',        'mile3',       '*_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [mile3]/ft_per_mile^3[ft3]'), 
+	('mgal',        'km3',         '*_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [km3]/*_per_k*^3[m3]'),
+	('mgal',        'm3',          '*_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal]'),
+	('mgal',        'mcm',         '*_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [mcm]/*_per_M*[m3]'),
+	('mgal',        'mile3',       '*_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [mile3]/ft_per_mile^3[ft3]'),
 	('mgd',         'cfs',         '[mgal/day]/[mgd] | *_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [day]/s_per_day[s] | [cfs]/[ft3/s]'),
 	('mgd',         'cms',         '[mgal/day]/[mgd] | *_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [day]/s_per_day[s] | [cms]/[m3/s]'),
 	('mgd',         'gpm',         '*_per_M*[gal/day]/[mgd] | [day]/min_per_day[min] | [gpm]/[gal/min]'),
 	('mgd',         'kcfs',        '[mgal/day]/[mgd] | *_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [day]/s_per_day[s] | [kcfs]/*_per_k*[ft3/s]'),
 	('mgd',         'kcms',        '[mgal/day]/[mgd] | *_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [day]/s_per_day[s] | [cms]/[m3/s] | [kcms]/*_per_k*[cms]'),
 	('mho',         'S',           '[S]/[mho]'),
-	('mho',         'umho',        'u*_per_*[umho]/[mho]'),
 	('mho',         'uS',          '[S]/[mho] | u*_per_*[uS]/[S]'),
-	('MHz',         'B',           '*_per_M*[Hz]/[MHz] | function[B]/[Hz]'),
-	('MHz',         'Hz',          '*_per_M*[Hz]/[MHz]'),
-	('MHz',         'kHz',         '*_per_M*[Hz]/[MHz] | [kHz]/*_per_k*[Hz]'),
+	('mho',         'umho',        'u*_per_*[umho]/[mho]'),
 	('mi',          'cm',          'ft_per_mile[ft]/[mi] | m_per_ft[m]/[ft] | c*_per_*[cm]/[m]'),
 	('mi',          'ft',          'ft_per_mile[ft]/[mi]'),
 	('mi',          'ftUS',        'ft_per_mile[ft]/[mi] | ftUS_per_ft[ftUS]/[ft]'),
@@ -629,7 +666,7 @@ conversion_definitions = [
 	('mile3',       'km3',         'ft_per_mile^3[ft3]/[mile3] | m_per_ft^3[m3]/[ft3] | [km3]/*_per_k*^3[m3]'),
 	('mile3',       'm3',          'km_per_mile^3[km3]/[mile3] | *_per_k*^3[m3]/[km3]'),
 	('mile3',       'mcm',         'km_per_mile^3[km3]/[mile3] | *_per_k*^3[m3]/[km3] | [mcm]/*_per_M*[m3]'),
-	('mile3',       'mgal',        'km_per_mile^3[km3]/[mile3] | *_per_k*^3[m3]/[km3] | [gal]/m3_per_gal[m3]] | [mgal]/*_per_M*[gal]'),  
+	('mile3',       'mgal',        'km_per_mile^3[km3]/[mile3] | *_per_k*^3[m3]/[km3] | [gal]/m3_per_gal[m3]] | [mgal]/*_per_M*[gal]'),
 	('min',         'hr',          '[hr]/min_per_hr[min]'),
 	('min',         'sec',         's_per_min[sec]/[min]'),
 	('mm',          'cm',          '[m]/m*_per_*[mm] | c*_per_*[cm]/[m]'),
@@ -639,6 +676,7 @@ conversion_definitions = [
 	('mm',          'km',          '[m]/m*_per_*[mm] | [km]/*_per_k*[m]'),
 	('mm',          'm',           '[m]/m*_per_*[mm]'),
 	('mm',          'mi',          '[m]/m*_per_*[mm] | [ft]/m_per_ft[m] | [mi]/ft_per_mile[ft]'),
+	('mm-hg',       'bar',         'Pa_per_mm-hg[Pa]/[mm-hg] | [bar]/Pa_per_bar[Pa]'),
 	('mm-hg',       'in-hg',       '[m-hg]/m*_per_*[mm-hg] | [ft-hg]/m_per_ft[m-hg] | in_per_ft[in-hg]/[ft-hg]'),
 	('mm-hg',       'kPa',         'Pa_per_mm-hg[Pa]/[mm-hg] | [kPa]/*_per_k*[Pa]'),
 	('mm-hg',       'mb',          'Pa_per_mm-hg[Pa]/[mm-hg] | [bar]/Pa_per_bar[Pa] | m*_per_*[mb]/[bar]'),
@@ -677,21 +715,13 @@ conversion_definitions = [
 	('mph',         'm/s',         '[mile/hr]/[mph] | ft_per_mile[ft]/[mile] | m_per_ft[m]/[ft] | [hr]/s_per_hr[s]'),
 	('mph',         'mm/day',      '[mile/hr]/[mph] | ft_per_mile[ft]/[mile] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m] | hr_per_day[hr]/[day]'),
 	('mph',         'mm/hr',       '[mile/hr]/[mph] | ft_per_mile[ft]/[mile] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m]'),
-	('MW',          'GW',          '*_per_M*[W]/[MW] | [GW]/*_per_G*[W]'),
-	('MW',          'kW',          '*_per_M*[W]/[MW] | [kW]/*_per_k*[W]'),
-	('MW',          'TW',          '*_per_M*[W]/[MW] | [TW]/*_per_T*[W]'),
-	('MW',          'W',           '*_per_M*[W]/[MW]'),
-	('MWh',         'GWh',         '*_per_M*[Wh]/[MWh] | [GWh]/*_per_G*[Wh]'),
-	('MWh',         'kWh',         '*_per_M*[Wh]/[MWh] | [kWh]/*_per_k*[Wh]'),
-	('MWh',         'TWh',         '*_per_M*[Wh]/[MWh] | [TWh]/*_per_T*[Wh]'),
-	('MWh',         'Wh',          '*_per_M*[Wh]/[MWh]'),
-	('N',           'lb',          '[kg*m/s2]/[N] | [lbm]/kg_per_lbm[kg] | [g]/m/s2_per_g[m/s2] | [lb]/[lbm*g]'),
 	('n/a',         '%',           'c*_per_*[%]/[n/a]'),
 	('ppm',         'g/l',         '[mg/l]/[ppm] | [g]/m*_per_*[mg]'),
 	('ppm',         'g/m3',        '[mg/l]/[ppm] | [g]/m*_per_*[mg] | l_per_m3[l]/[m3]'),
 	('ppm',         'gm/cm3',      '[mg/l]/[ppm] | [g]/m*_per_*[mg] | l_per_m3[l]/[m3] | [m3]/c*_per_*^3[cm3] | [gm]/[g]'),
 	('ppm',         'lbm/ft3',     '[mg/l]/[ppm] | [g]/m*_per_*[mg] | [kg]/*_per_k*[g] | [lbm]/kg_per_lbm[kg] | l_per_m3[l]/[m3] | m_per_ft^3[m3]/[ft3]'),
 	('ppm',         'mg/l',        '[mg/l]/[ppm]'),
+	('psi',         'bar',         'Pa_per_psi[Pa]/[psi] | [bar]/Pa_per_bar[Pa]'),
 	('psi',         'in-hg',       'Pa_per_psi[Pa]/[psi] | [in-hg]/Pa_per_in-hg[Pa]'),
 	('psi',         'kPa',         'Pa_per_psi[Pa]/[psi] | [kPa]/*_per_k*[Pa]'),
 	('psi',         'mb',          'Pa_per_psi[Pa]/[psi] | [bar]/Pa_per_bar[Pa] | m*_per_*[mb]/[bar]'),
@@ -700,9 +730,6 @@ conversion_definitions = [
 	('rad',         'rev',         '[rev]/deg_per_rev[deg] | [deg]/rad_per_deg[rad]'),
 	('rev',         'deg',         'deg_per_rev[deg]/[rev]'),
 	('rev',         'rad',         'rad_per_deg[rad]/[deg] | deg_per_rev[deg]/[rev]'),
-	('S',           'mho',         '[mho]/[S]'),
-	('S',           'umho',        'u*_per_*[umho]/[S]'),
-	('S',           'uS',          'u*_per_*[uS]/[S]'),
 	('sec',         'hr',          '[hr]/s_per_hr[sec]'),
 	('sec',         'min',         '[min]/s_per_min[sec]'),
 	('ton',         'g',           'lbm_per_ton[lbm]/[ton] | kg_per_lbm[kg]/[lbm] | *_per_k*[g]/[kg]'),
@@ -717,41 +744,25 @@ conversion_definitions = [
 	('tonne',       'mg',          'kg_per_tonne[kg]/[tonne] | *_per_k*[g]/[kg] | m*_per_*[mg]/[g]'),
 	('tonne',       'ton',         'kg_per_tonne[kg]/[tonne] | [lbm]/kg_per_lbm[kg] | [ton]/lbm_per_ton[lbm]'),
 	('tonne/day',   'ton/day',     'kg_per_tonne[kg]/[tonne] | [lbm]/kg_per_lbm[kg] | [ton]/lbm_per_ton[lbm]'),
-	('TW',          'GW',          '*_per_T*[W]/[TW] | [GW]/*_per_G*[W]'),
-	('TW',          'kW',          '*_per_T*[W]/[TW] | [kW]/*_per_k*[W]'),
-	('TW',          'MW',          '*_per_T*[W]/[TW] | [MW]/*_per_M*[W]'),
-	('TW',          'W',           '*_per_T*[W]/[TW]'),
-	('TWh',         'GWh',         '*_per_T*[Wh]/[TWh] | [GWh]/*_per_G*[Wh]'),
-	('TWh',         'kWh',         '*_per_T*[Wh]/[TWh] | [kWh]/*_per_k*[Wh]'),
-	('TWh',         'MWh',         '*_per_T*[Wh]/[TWh] | [MWh]/*_per_M*[Wh]'),
-	('TWh',         'Wh',          '*_per_T*[Wh]/[TWh]'),
-	('umho',        'mho',         '[mho]/u*_per_*[umho]'),
-	('umho',        'S',           '[mho]/u*_per_*[umho] | [S]/[mho]'),
-	('umho',        'uS',          '[uS]/[umho]'),
-	('uS',          'mho',         '[mho]/u*_per_*[uS]'),
 	('uS',          'S',           '[S]/u*_per_*[uS]'),
+	('uS',          'mho',         '[mho]/u*_per_*[uS]'),
 	('uS',          'umho',        '[umho]/[uS]'),
-	('W',           'GW',          '[GW]/*_per_G*[W]'),
-	('W',           'kW',          '[kW]/*_per_k*[W]'),
-	('W',           'MW',          '[MW]/*_per_M*[W]'),
-	('W',           'TW',          '[TW]/*_per_T*[W]'),
-	('W/m2',        'langley/min', '[J/s]/[W] | [langley]/J/m2_per_langley[J/m2] | s_per_min[s]/[min]'),
-	('Wh',          'GWh',         '[GWh]/*_per_G*[Wh]'),
-	('Wh',          'kWh',         '[kWh]/*_per_k*[Wh]'),
-	('Wh',          'MWh',         '[MWh]/*_per_M*[Wh]'),
-	('Wh',          'TWh',         '[TWh]/*_per_T*[Wh]'),
-]   
+	('umho',        'S',           '[mho]/u*_per_*[umho] | [S]/[mho]'),
+	('umho',        'mho',         '[mho]/u*_per_*[umho]'),
+	('umho',        'uS',          '[uS]/[umho]'),
+]
 
 english_units = {"English" : [
 	"$",
 	"$/kaf",
-	"%",   
+	"%",
 	"1/ft",
 	"1000 acre",
 	"ac-ft",
 	"acre",
-	"ampere",  
+	"ampere",
 	"B",
+	"bar",
 	"cfs",
 	"cfs/mi2",
 	"deg",
@@ -838,6 +849,7 @@ si_units = {"SI" : [
 	"1000 m3",
 	"ampere",
 	"B",
+	"bar",
 	"C",
 	"C-day",
 	"cm",
@@ -872,7 +884,7 @@ si_units = {"SI" : [
 	"kWh",
 	"langley",
 	"langley/min",
-	"m", 
+	"m",
 	"m/hr",
 	"m/s",
 	"m2",
@@ -916,7 +928,7 @@ si_units = {"SI" : [
 	"Wh",
 ]}
 
-units_by_unit_system = [  
+units_by_unit_system = [
 	english_units,
 	si_units
 ]
@@ -998,12 +1010,12 @@ energy_units = {"Energy" : [
 	"TWh",
 	"Wh",
 ]}
-        
+
 force_units = {"Force" : [
 	"lb",
 	"N",
 ]}
-        
+
 frequency_units = {"Frequency" : [
 	"B",
 	"Hz",
@@ -1037,7 +1049,7 @@ length_units = {"Length" : [
 	"in",
 	"km",
 	"m",
-	"mi",                                                          
+	"mi",
 	"mm",
 ]}
 
@@ -1107,6 +1119,7 @@ power_units = {"Power" : [
 ]}
 
 pressure_units = {"Pressure" : [
+	"bar",
 	"in-hg",
 	"kPa",
 	"mb",
@@ -1190,7 +1203,7 @@ units_by_param = [
 ]
 
 all_from_units        = [cd[0] for cd in conversion_definitions]
-all_to_units          = [cd[1] for cd in conversion_definitions] 
+all_to_units          = [cd[1] for cd in conversion_definitions]
 all_unit_system_units = reduce(lambda a, b : {"" : a.values()[0] + b.values()[0]}, units_by_unit_system)
 all_unit_system_units = all_unit_system_units.values()[0]
 all_param_units       = reduce(lambda a, b : {"" : a.values()[0] + b.values()[0]}, units_by_param)
@@ -1201,7 +1214,7 @@ all_units_lists = [
 	all_to_units,
 	all_unit_system_units,
 	all_param_units
-]                                                                            
+]
 
 no_conversion_units = [
 	"$",
@@ -1216,8 +1229,8 @@ no_conversion_units = [
 	"unit",
 	"volt"
 ]
-				
-unit_aliases = { 				
+
+unit_aliases = {
 	"$/kaf"      : ["$/KAF"],
 	"%"          : ["percent","PERCENT"],
 	"1000 m2"    : ["1000 sq m","1000 sq meters","1000 M2"],
@@ -1226,6 +1239,7 @@ unit_aliases = {
 	"acre"       : ["acres","ACRES"],
 	"ampere"     : ["amp","AMP","Amp","AMPERE","Ampere","Amperes","AMPERES","amperes","AMPS","amps","Amps"],
 	"B"          : ["b", "b_unit", "b-unit", "B_UNIT", "B-UNIT"],
+	"bar"        : ["BAR", 'bars', "BARS","atm", "ATM","atmosphere" "ATMOSPHERE", "atmospheres", "ATMOSPHERES"],
 	"C"          : ["Celsius","Centigrade","DEG C","deg C","DEG-C","Deg-C","DegC","degC","deg c"],
 	"C-day"      : ["degC-day"],
 	"cfs"        : ["CFS","cu-ft/sec","cuft/sec","cusecs","ft3/sec","ft^3/s","FT3/S","FT3/SEC","ft3/s"],
@@ -1284,7 +1298,7 @@ unit_aliases = {
 	"mile3"      : ["cu mile","cu miles"],
 	"min"        : ["minute","minutes","MIN","MINUTE","MINUTES"],
 	"mm"         : ["millimeter","millimeters","MM"],
-	"mm/deg-day" : ["mm/deg-d"],                                           
+	"mm/deg-day" : ["mm/deg-d"],
 	"MWh"        : ["MWH"],
 	"N"          : ["newton", "newtons"],
 	"NTU"        : ["ntu"],
@@ -1344,13 +1358,13 @@ for i in range(len(all_units_lists)) :
 	for j in range(len(all_units_lists)) :
 		if i == j : continue
 		for unit in all_units_lists[i] :
-			if unit in no_conversion_units and j < 2 : 
+			if unit in no_conversion_units and j < 2 :
 				continue
 			if unit not in all_units_lists[j] :
 				raise Exception("Unit %s is not in list %d (%s)" % (unit, j, all_units_lists[j]))
 
 def contains(test, unit) :
-	if type(test) == type([]) : 
+	if type(test) == type([]) :
 		found =  any([contains(item, unit) for item in test])
 		if found : return True
 		if re.search("\d+", unit) is not None :
@@ -1362,7 +1376,7 @@ def contains(test, unit) :
 	if re.search("\d+", test) is not None and contains(re.sub("\s+", "", re.sub("\^?\d+", "", test)), unit) : return True
 	if contains_unit.has_key(test) and contains(contains_unit[test], unit) : return True
 	return False
-				
+
 def expand_units(unit) :
 	'''
 	m     -> [m]
@@ -1388,7 +1402,7 @@ def expand_units(unit) :
 				count = 1
 			units = count * [unit]
 	return units
-	
+
 def process_conversion_definition(from_unit, definition) :
 	'''
 	perform dimensional analysis to determine the conversion factor
@@ -1402,7 +1416,7 @@ def process_conversion_definition(from_unit, definition) :
 	id_count = len(identities)
 	func_ids = []
 	for i in range(id_count) :
-		if patternFunc.match(identities[i]) :  
+		if patternFunc.match(identities[i]) :
 			if i in (0, id_count-1) :
 				func_ids.append(i)
 			else :
@@ -1431,7 +1445,7 @@ def process_conversion_definition(from_unit, definition) :
 						func_body  += "|%s|-" % offset
 					else :
 						func_body  += "|%s|+" % offset
-						
+
 			else :
 				factor, dummy, unit = process_conversion_definition(_from_unit, " | ".join(identities[:-1]))
 				try    : offset = offsets["%s_to_%s" % (from_unit, _from_unit)]
@@ -1474,7 +1488,7 @@ def process_conversion_definition(from_unit, definition) :
 					factor /= conversion_factors[d_quant] ** Decimal(d_power)
 				else :
 					factor /= conversion_factors[d_quant]
-			
+
 			try    : n, d = map(string.strip, n_unit.split('/'))
 			except : n, d = n_unit.strip(), None
 			n_units.extend(expand_units(n))
@@ -1511,7 +1525,7 @@ def process_conversion_definition(from_unit, definition) :
 						raise Exception("%s is not in %s for identity %s" % (n_unit, n_units, identity))
 				else :
 					for _n_unit in n_unit.split("-") :
-						if _n_unit not in n_units and not contains(n_units, _n_unit): 
+						if _n_unit not in n_units and not contains(n_units, _n_unit):
 							raise Exception("%s is not in %s for identity %s" % (_n_unit, n_units, identity))
 				if d_unit.startswith("*") :
 					pass
@@ -1531,7 +1545,7 @@ def process_conversion_definition(from_unit, definition) :
 						raise Exception("%s is not in %s for identity %s" % (d_unit, d_units, identity))
 				else :
 					for _d_unit in d_unit.split("-") :
-						if _d_unit not in d_units and not contains(d_units, _d_unit): 
+						if _d_unit not in d_units and not contains(d_units, _d_unit):
 							raise Exception("%s is not in %s for identity %s" % (_d_unit, d_units, identity))
 			elif m.group(9) is not None :
 				d_unit, n_unit = m.group(9).split("_per_")
@@ -1552,7 +1566,7 @@ def process_conversion_definition(from_unit, definition) :
 							break
 						found = False
 						if contains_unit.has_key(unit) :
-							for _unit in contains_unit[unit] :                                
+							for _unit in contains_unit[unit] :
 								if _unit.startswith(prefix) :
 									found = True
 									break
@@ -1561,7 +1575,7 @@ def process_conversion_definition(from_unit, definition) :
 						raise Exception("%s is not in %s for identity %s" % (n_unit, n_units, identity))
 				else :
 					for _n_unit in n_unit.split("-") :
-						if _n_unit not in n_units and not contains(n_units, _n_unit): 
+						if _n_unit not in n_units and not contains(n_units, _n_unit):
 							raise Exception("%s is not in %s for identity %s" % (_n_unit, n_units, identity))
 				if d_unit.startswith("*") :
 					pass
@@ -1579,7 +1593,7 @@ def process_conversion_definition(from_unit, definition) :
 							if found : break
 				else :
 					for _d_unit in d_unit.split("-") :
-						if _d_unit not in d_units and not contains(d_units, _d_unit): 
+						if _d_unit not in d_units and not contains(d_units, _d_unit):
 							raise Exception("%s is not in %s for identity %s" % (_d_unit, d_units, identity))
 		#------------------#
 		# reduce the units #
@@ -1591,9 +1605,9 @@ def process_conversion_definition(from_unit, definition) :
 					n_units.remove(unit)
 					d_units.remove(unit)
 					reduced = True
-					break                                                                                         
+					break
 			if not reduced : break
-		failed = False		
+		failed = False
 		if len(n_units) == 1 :
 			n_units = n_units[0]
 		elif n_units == len(n_units) * [n_units[0]] :
@@ -1609,8 +1623,8 @@ def process_conversion_definition(from_unit, definition) :
 		else :
 			failed = True
 		if failed :
-			raise Exception('Unexpected units: %s / %s' % (n_units, d_units))		
-		if d_units : 
+			raise Exception('Unexpected units: %s / %s' % (n_units, d_units))
+		if d_units :
 			unit = '%s/%s' % (n_units, d_units)
 		else :
 			unit = n_units
@@ -1626,14 +1640,14 @@ for from_unit, to_unit, definition in conversion_definitions :
 	if unit != to_unit and unit != to_unit.replace("1/", "/") :
 		raise Exception('Expected unit %s, got %s converting from %s' % (to_unit, unit, from_unit))
 	conversion_to = conversions.setdefault(from_unit, {})
-	if factor is None : 
+	if factor is None :
 		offset = None
 	else :
 		try    : offset = offsets['%s_to_%s' % (from_unit, to_unit)]
 		except : offset = Decimal('0')
 	conversion_to[to_unit] = {"factor" : factor, "offset" : offset, "function" : func_body}
-	
-def convert(value, from_unit, to_unit) :       
+
+def convert(value, from_unit, to_unit) :
 	try :
 		factor   = conversions[from_unit][to_unit]["factor"]
 		offset   = conversions[from_unit][to_unit]["offset"]
@@ -1641,11 +1655,11 @@ def convert(value, from_unit, to_unit) :
 	except :
 		raise Exception("No conversion defined from '%s' to '%s'" % (from_unit, to_unit))
 	if function :
-		result = Computation(function).compute(1.0) 
-	else :		
-		result = value * factor + offset  
+		result = Computation(function).compute(1.0)
+	else :
+		result = value * factor + offset
 	return result
-		
+
 def get_java_resource_format() :
 	buf = StringIO.StringIO()
 	buf.write("// UNIT DEFINITIONS\n")
@@ -1675,7 +1689,7 @@ def get_java_resource_format() :
 				for check_units in units_by_unit_system :
 					check_unit_system = check_units.keys()[0];
 					#is this the unit system that we are looking at right now
-					if (check_unit_system == unit_system) : 
+					if (check_unit_system == unit_system) :
 						#dont do conversions to our selves in the same unit system
 						continue
 					#check if our unit is in this other unit system
@@ -1688,7 +1702,7 @@ def get_java_resource_format() :
 						for to_unit in sorted(conversions[unit].keys()) :
 							if not to_unit in to_unit_system_units.values()[0] : continue
 							to_unit_system = to_unit_system_units.keys()[0]
-							conversion = conversions[unit][to_unit] 
+							conversion = conversions[unit][to_unit]
 							factor, offset, function = conversion["factor"], conversion["offset"], conversion["function"]
 							if unit_aliases.has_key(to_unit) :
 								aliases = unit_aliases[to_unit][:]
@@ -1706,7 +1720,7 @@ def get_java_resource_format() :
 										else :
 											buf2.write("ARG 0|%s|*|%s|-\n" % (factor, -offset))
 								else :
-										if factor == 1.0 : 
+										if factor == 1.0 :
 											buf2.write("ARG 0|%s|+\n" % (offset))
 										else :
 											buf2.write("ARG 0|%s|*|%s|+\n" % (factor, offset))
