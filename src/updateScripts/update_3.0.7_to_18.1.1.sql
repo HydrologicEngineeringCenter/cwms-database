@@ -157,6 +157,16 @@ whenever sqlerror continue
 create or replace public synonym cwms_scheduler_auth for cwms_scheduler_auth;
 whenever sqlerror exit
 prompt ################################################################################
+prompt 'ADDING APPLICATION LOG OBJECTS'
+select systimestamp from dual;
+@@../cwms/tables/at_app_log_dir
+@@../cwms/tables/at_app_log_file
+@@../cwms/tables/at_app_log_entry
+@@../cwms/tables/at_app_log_ingest_control
+@@../cwms/cwms_log_ingest_pkg
+@@../cwms/cwms_log_ingest_pkg_body
+create or replace public synonym CWMS_LOG_INGEST for cwms_20.cwms_log_ingest;
+prompt ################################################################################
 prompt 'ADDING CWMS POOLS'
 select systimestamp from dual;
 whenever sqlerror continue
@@ -212,6 +222,7 @@ prompt 'UPDATING CMA AND A2W'
 select systimestamp from dual;
 @@./18_1_1/update_cma_and_a2w
 whenever sqlerror continue
+delete from at_clob where id like '/VIEWDOCS/AV_A2W_TS_CODES_BY_LOC%';
 @@../cwms/views/av_a2w_ts_codes_by_loc
 @@../cwms/views/av_a2w_ts_codes_by_loc2
 whenever sqlerror exit
@@ -425,8 +436,21 @@ drop trigger at_rating_value_trig;
 create index mv_time_zone_idx2 on mv_time_zone(time_zone_code) tablespace cwms_20at_data;
 create index mv_time_zone_idx3 on mv_time_zone(upper("TIME_ZONE_NAME")) tablespace cwms_20at_data;
 create index at_log_message_properties_idx1 on at_log_message_properties (prop_name, nvl(prop_text, prop_value), msg_id) tablespace cwms_20at_data;
+insert into at_unit_alias values('ft^3/s', 53, 72);
 insert into cwms_error (err_code, err_name, err_msg) values (-20049, 'NO SUCH APPLICATION INSTANCE', 'No application instance is associated with the specified UUID');
-insert into cwms_error (err_code, err_name, err_msg) values (-20050, 'APPLICATION INSTANCE LOGGED OUT', 'The application instance associated with the specified UUID has logged out');
+insert into cwms_error (err_code, err_name, err_msg) values (-20050, 'APPLICATION INSTANCE LOGGED OUT', 'The application instance associated with the specified UUID has logged out'); 
+insert into cwms_unit values(99, 'bar', 22, null,  'Bars', 'Pressure of 1 standard atmosphere');
+insert into cwms_unit_conversion values('bar',   'bar',   22, 99, 99, 1.0,           0.0, null);
+insert into cwms_unit_conversion values('bar',   'in-hg', 22, 99, 62, 29.5299801647, 0.0, null);
+insert into cwms_unit_conversion values('bar',   'kPa',   22, 99, 63, 100.0,         0.0, null);
+insert into cwms_unit_conversion values('bar',   'mb',    22, 99, 64, 1000.0,        0.0, null);
+insert into cwms_unit_conversion values('bar',   'mm-hg', 22, 99, 65, 750.061505043, 0.0, null);
+insert into cwms_unit_conversion values('bar',   'psi',   22, 99, 66, 14.5037743897, 0.0, null);
+insert into cwms_unit_conversion values('in-hg', 'bar',   22, 62, 99, 0.03386389,    0.0, null);
+insert into cwms_unit_conversion values('kPa',   'bar',   22, 63, 99, 0.01,          0.0, null);
+insert into cwms_unit_conversion values('mb',    'bar',   22, 64, 99, 0.001,         0.0, null);
+insert into cwms_unit_conversion values('mm-hg', 'bar',   22, 65, 99, 0.001333224,   0.0, null);
+insert into cwms_unit_conversion values('psi',   'bar',   22, 66, 99, 0.06894757,    0.0, null);
 whenever sqlerror exit;
 prompt ################################################################################
 prompt 'UPDATING OTHER VIEWS'
