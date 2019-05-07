@@ -4418,7 +4418,22 @@ for absParam in sorted(unitsByAbsParam.keys()) :
 				"OFFSET"   : offset,
 				"FUNCTION" : function
 			}
+#--------------#
+# Unit aliases #
+#--------------#
+unitIds = set([unitDef[1] for unitDef in unitDefs])
+units_by_alias = {}
+for unit in unitConversions.unit_aliases.keys() :
+	for alias in unitConversions.unit_aliases[unit] :
+		units_by_alias[alias] = unit
 
+with open('data/unit_alias_data.sql', 'w') as f :
+	f.write("begin\n")
+	for alias in sorted(units_by_alias.keys()) :
+		unit = units_by_alias[alias]
+		if not unit in unitIds : continue
+		f.write("\tinsert into at_unit_alias values ('%s', 53, (select unit_code from cwms_unit where unit_id = '%s'));\n" % (alias, unit))
+	f.write("end;\n/\n")
 #--------------#
 # Data quality #
 #--------------#
