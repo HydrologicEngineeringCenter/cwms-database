@@ -147,6 +147,9 @@
 @@cwms_pool_pkg
 @@cwms_pool_pkg_body
 
+@@cwms_log_ingest_pkg
+@@cwms_log_ingest_pkg_body
+
 @@cwms/functions/str2tbl.sql
 
 @@cwms/procedures/download_file
