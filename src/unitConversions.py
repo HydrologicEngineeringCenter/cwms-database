@@ -1239,7 +1239,7 @@ unit_aliases = {
 	"acre"       : ["acres","ACRES"],
 	"ampere"     : ["amp","AMP","Amp","AMPERE","Ampere","Amperes","AMPERES","amperes","AMPS","amps","Amps"],
 	"B"          : ["b", "b_unit", "b-unit", "B_UNIT", "B-UNIT"],
-	"bar"        : ["BAR", 'bars', "BARS","atm", "ATM","atmosphere" "ATMOSPHERE", "atmospheres", "ATMOSPHERES"],
+	"bar"        : ["BAR", 'bars', "BARS","atm", "ATM","atmosphere", "ATMOSPHERE", "atmospheres", "ATMOSPHERES"],
 	"C"          : ["Celsius","Centigrade","DEG C","deg C","DEG-C","Deg-C","DegC","degC","deg c"],
 	"C-day"      : ["degC-day"],
 	"cfs"        : ["CFS","cu-ft/sec","cuft/sec","cusecs","ft3/sec","ft^3/s","FT3/S","FT3/SEC","ft3/s"],
