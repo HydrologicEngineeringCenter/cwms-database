@@ -540,6 +540,17 @@ insert into cwms_unit_conversion values('kPa',   'bar',   22, 63, 99, 0.01,     
 insert into cwms_unit_conversion values('mb',    'bar',   22, 64, 99, 0.001,         0.0, null);
 insert into cwms_unit_conversion values('mm-hg', 'bar',   22, 65, 99, 0.001333224,   0.0, null);
 insert into cwms_unit_conversion values('psi',   'bar',   22, 66, 99, 0.06894757,    0.0, null);
+-- new USGS Parameter Conversions
+insert into at_usgs_parameter values (53,    10, 317, 6, 67,    1.0, 0.0);
+insert into at_usgs_parameter values (53,    21, 316, 6, 68,    1.0, 0.0);
+insert into at_usgs_parameter values (53,    45,  19, 1, 36,    1.0, 0.0);
+insert into at_usgs_parameter values (53,    60,  14, 6, 72,    1.0, 0.0);
+insert into at_usgs_parameter values (53,    61,  14, 6, 72,    1.0, 0.0);
+insert into at_usgs_parameter values (53,    62,  10, 6, 35,    1.0, 0.0);
+insert into at_usgs_parameter values (53,    65,  23, 6, 35,    1.0, 0.0);
+insert into at_usgs_parameter values (53,    95,   6, 6, 16,    1.0, 0.0);
+insert into at_usgs_parameter values (53,    96, 308, 6, 51,  0.001, 0.0);
+insert into at_usgs_parameter values (53, 72036,  24, 6, 78, 1000.0, 0.0);
 whenever sqlerror exit;
 prompt ################################################################################
 prompt 'UPDATING OTHER VIEWS'
@@ -565,6 +576,8 @@ create or replace public synonym CWMS_V_A2W_TS_CODES_BY_LOC for AV_A2W_TS_CODES_
 whenever sqlerror continue;
 @@../cwms/views/av_location_level_curval
 @@../cwms/views/av_entity_category
+@@../cwms/views/av_loc_vert_datum
+@@../cwms/views/av_tsv_elev
 whenever sqlerror exit;
 @@../cwms/views/mv_location_level_curval
 prompt ################################################################################
