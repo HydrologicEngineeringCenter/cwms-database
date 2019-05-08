@@ -31,6 +31,8 @@ create unique index at_loc_lvl_indicator_u1 on at_loc_lvl_indicator (
 @@cwms/views/av_forecast_spec
 @@cwms/views/av_application_login
 @@cwms/views/av_application_session
+@@cwms/views/av_loc_vert_datum
+@@cwms/views/av_tsv_elev
 
 ---------------------------------------------------------
 COMMIT;
