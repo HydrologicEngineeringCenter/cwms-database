@@ -1,6 +1,3 @@
----------------------
--- AV_RATING_LOCAL --
----------------------
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TEXT_FILTER_ELEMENT', null,
 '
 /**
