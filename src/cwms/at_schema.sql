@@ -5829,7 +5829,7 @@ comment on column at_usgs_parameter.offset                   is 'CWMS = USGS * f
 -- 00010 - Temp-Water.Inst in C
 insert
   into at_usgs_parameter
- values((select office_code from cwms_office where office_id = '&host_office'),
+ values((select office_code from cwms_office where office_id = 'CWMS'),
         10,
         (select parameter_code
            from at_parameter
@@ -5852,7 +5852,7 @@ insert
 -- 00021 - Temp-Air.Inst in F
 insert
   into at_usgs_parameter
- values((select office_code from cwms_office where office_id = '&host_office'),
+ values((select office_code from cwms_office where office_id = 'CWMS'),
         21,
         (select parameter_code
            from at_parameter
@@ -5875,7 +5875,7 @@ insert
 -- 00045 - Precip.Total in in
 insert
   into at_usgs_parameter
- values((select office_code from cwms_office where office_id = '&host_office'),
+ values((select office_code from cwms_office where office_id = 'CWMS'),
         45,
         (select parameter_code
            from at_parameter
@@ -5901,7 +5901,7 @@ insert
 -- combination with instantaneous gage heights on hourly or sub-hourly data!
 insert
   into at_usgs_parameter
- values((select office_code from cwms_office where office_id = '&host_office'),
+ values((select office_code from cwms_office where office_id = 'CWMS'),
         60,
         (select parameter_code
            from at_parameter
@@ -5924,7 +5924,7 @@ insert
 -- 00061 - Flow.Inst in cfs
 insert
   into at_usgs_parameter
- values((select office_code from cwms_office where office_id = '&host_office'),
+ values((select office_code from cwms_office where office_id = 'CWMS'),
         61,
         (select parameter_code
            from at_parameter
@@ -5947,7 +5947,7 @@ insert
 -- 00062 - Elev.Inst in ft
 insert
   into at_usgs_parameter
- values((select office_code from cwms_office where office_id = '&host_office'),
+ values((select office_code from cwms_office where office_id = 'CWMS'),
         62,
         (select parameter_code
            from at_parameter
@@ -5970,7 +5970,7 @@ insert
 -- 00065 - Stage.Inst in ft
 insert
   into at_usgs_parameter
- values((select office_code from cwms_office where office_id = '&host_office'),
+ values((select office_code from cwms_office where office_id = 'CWMS'),
         65,
         (select parameter_code
            from at_parameter
@@ -5993,7 +5993,7 @@ insert
 -- 00095 - Cond.Inst in umho/cm
 insert
   into at_usgs_parameter
- values((select office_code from cwms_office where office_id = '&host_office'),
+ values((select office_code from cwms_office where office_id = 'CWMS'),
         95,
         (select parameter_code
            from at_parameter
@@ -6016,7 +6016,7 @@ insert
 -- 00096 - Conc-Salinity.Inst in mg/l
 insert
   into at_usgs_parameter
- values((select office_code from cwms_office where office_id = '&host_office'),
+ values((select office_code from cwms_office where office_id = 'CWMS'),
         96,
         (select parameter_code
            from at_parameter
@@ -6039,7 +6039,7 @@ insert
 -- 72036 - Stor.Inst in ac-ft
 insert
   into at_usgs_parameter
- values((select office_code from cwms_office where office_id = '&host_office'),
+ values((select office_code from cwms_office where office_id = 'CWMS'),
         72036,
         (select parameter_code
            from at_parameter
