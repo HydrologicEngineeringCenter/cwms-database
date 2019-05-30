@@ -52,7 +52,7 @@ conversion_factors = {
 #
 #	energy
 #
-	'J_per_Wh'         : Decimal('3600'),
+	'J_per_Wh'         : Decimal('3.6e3'),                # pg 55
 #
 #	gravitational acceleration
 #
@@ -60,9 +60,9 @@ conversion_factors = {
 #
 #	time
 #
-	'hr_per_day'       : Decimal('24'),
-	'min_per_hr'       : Decimal('60'),
-	's_per_min'        : Decimal('60'),
+	'hr_per_day'       : Decimal('24'),                   # pg 8
+	'min_per_hr'       : Decimal('60'),                   # pg 8
+	's_per_min'        : Decimal('60'),                   # pg 8
 #
 #	angle
 #
@@ -169,11 +169,17 @@ conversion_definitions = [
 	('GWh',         'MWh',         '*_per_G*[Wh]/[GWh] | [MWh]/*_per_M*[Wh]'),
 	('GWh',         'TWh',         '*_per_G*[Wh]/[GWh] | [TWh]/*_per_T*[Wh]'),
 	('GWh',         'Wh',          '*_per_G*[Wh]/[GWh]'),
+	('GWh',         'J',           '*_per_G*[Wh]/[GWh] | J_per_Wh[J]/[Wh]'),
+	('GWh',         'MJ',          '*_per_G*[Wh]/[GWh] | J_per_Wh[J]/[Wh] | [MJ]/*_per_M*[J]'),
 	('GWh',         'kWh',         '*_per_G*[Wh]/[GWh] | [kWh]/*_per_k*[Wh]'),
 	('Hz',          'B',           'function[B]/[Hz]'),
 	('Hz',          'MHz',         '[MHz]/*_per_M*[Hz]'),
 	('Hz',          'kHz',         '[kHz]/*_per_k*[Hz]'),
 	('J',           'Wh',          '[Wh]/J_per_Wh[J]'),
+	('J',           'kWh',         '[Wh]/J_per_Wh[J] | [kWh]/*_per_k*[Wh]'),
+	('J',           'MWh',         '[Wh]/J_per_Wh[J] | [MWh]/*_per_M*[Wh]'),
+	('J',           'GWh',         '[Wh]/J_per_Wh[J] | [GWh]/*_per_G*[Wh]'),
+	('J',           'TWh',         '[Wh]/J_per_Wh[J] | [TWh]/*_per_T*[Wh]'),	
 	('J',           'MJ',          '[MJ]/*_per_M*[J]'),
 	('J/m2',        'langley',     '[langley]/J/m2_per_langley[J/m2]'),
 	('K',           'C',           'C_per_K[C]/[K]'),
@@ -183,6 +189,11 @@ conversion_definitions = [
 	('MHz',         'Hz',          '*_per_M*[Hz]/[MHz]'),
 	('MHz',         'kHz',         '*_per_M*[Hz]/[MHz] | [kHz]/*_per_k*[Hz]'),
 	('MJ',          'J',           '*_per_M*[J]/[MJ]'),
+	('MJ',          'Wh',          '*_per_M*[J]/[MJ] | [Wh]/J_per_Wh[J]'),
+	('MJ',          'kWh',         '*_per_M*[J]/[MJ] | [Wh]/J_per_Wh[J] | [kWh]/*_per_k*[Wh]'),
+	('MJ',          'MWh',         '*_per_M*[J]/[MJ] | [Wh]/J_per_Wh[J] | [MWh]/*_per_M*[Wh]'),
+	('MJ',          'GWh',         '*_per_M*[J]/[MJ] | [Wh]/J_per_Wh[J] | [GWh]/*_per_G*[Wh]'),
+	('MJ',          'TWh',         '*_per_M*[J]/[MJ] | [Wh]/J_per_Wh[J] | [TWh]/*_per_T*[Wh]'),
 	('MW',          'GW',          '*_per_M*[W]/[MW] | [GW]/*_per_G*[W]'),
 	('MW',          'TW',          '*_per_M*[W]/[MW] | [TW]/*_per_T*[W]'),
 	('MW',          'W',           '*_per_M*[W]/[MW]'),
@@ -190,6 +201,8 @@ conversion_definitions = [
 	('MWh',         'GWh',         '*_per_M*[Wh]/[MWh] | [GWh]/*_per_G*[Wh]'),
 	('MWh',         'TWh',         '*_per_M*[Wh]/[MWh] | [TWh]/*_per_T*[Wh]'),
 	('MWh',         'Wh',          '*_per_M*[Wh]/[MWh]'),
+	('MWh',         'J',           '*_per_M*[Wh]/[MWh] | J_per_Wh[J]/[Wh]'),	
+	('MWh',         'MJ',          '*_per_M*[Wh]/[MWh] | J_per_Wh[J]/[Wh] | [MJ]/*_per_M*[J]'),
 	('MWh',         'kWh',         '*_per_M*[Wh]/[MWh] | [kWh]/*_per_k*[Wh]'),
 	('N',           'lb',          '[kg*m/s2]/[N] | [lbm]/kg_per_lbm[kg] | [g]/m/s2_per_g[m/s2] | [lb]/[lbm*g]'),
 	('S',           'mho',         '[mho]/[S]'),
@@ -202,6 +215,8 @@ conversion_definitions = [
 	('TWh',         'GWh',         '*_per_T*[Wh]/[TWh] | [GWh]/*_per_G*[Wh]'),
 	('TWh',         'MWh',         '*_per_T*[Wh]/[TWh] | [MWh]/*_per_M*[Wh]'),
 	('TWh',         'Wh',          '*_per_T*[Wh]/[TWh]'),
+	('TWh',         'J',           '*_per_T*[Wh]/[TWh] | J_per_Wh[J]/[Wh]'),
+	('TWh',         'MJ',          '*_per_T*[Wh]/[TWh] | J_per_Wh[J]/[Wh] | [MJ]/*_per_M*[J]'),
 	('TWh',         'kWh',         '*_per_T*[Wh]/[TWh] | [kWh]/*_per_k*[Wh]'),
 	('W',           'GW',          '[GW]/*_per_G*[W]'),
 	('W',           'MW',          '[MW]/*_per_M*[W]'),
@@ -213,6 +228,7 @@ conversion_definitions = [
 	('Wh',          'TWh',         '[TWh]/*_per_T*[Wh]'),
 	('Wh',          'kWh',         '[kWh]/*_per_k*[Wh]'),
 	('Wh',          'J',           'J_per_Wh[J]/[Wh]'),
+	('Wh',          'MJ',          'J_per_Wh[J]/[Wh] | [MJ]/*_per_M*[J]'),
 	('ac-ft',       '1000 m3',     'ft2_per_acre[ft3]/[ac-ft] | m_per_ft^3[m3]/[ft3] | [1000 m3]/*_per_k*[m3]'),
 	('ac-ft',       'dsf',         'ft2_per_acre[ft3]/[ac-ft] | [dsf]/ft3_per_dsf[ft3]'),
 	('ac-ft',       'ft3',         'ft2_per_acre[ft3]/[ac-ft]'),
@@ -446,6 +462,8 @@ conversion_definitions = [
 	('kWh',         'MWh',         '*_per_k*[Wh]/[kWh] | [MWh]/*_per_M*[Wh]'),
 	('kWh',         'TWh',         '*_per_k*[Wh]/[kWh] | [TWh]/*_per_T*[Wh]'),
 	('kWh',         'Wh',          '*_per_k*[Wh]/[kWh]'),
+	('kWh',         'J',          '*_per_k*[Wh]/[kWh] | J_per_Wh[J]/[Wh]'),
+	('kWh',         'MJ',          '*_per_k*[Wh]/[kWh] | J_per_Wh[J]/[Wh] | [MJ]/*_per_M*[J]'),
 	('kaf',         '1000 m3',     '*_per_k*[ac-ft]/[kaf] | ft2_per_acre[ft3]/[ac-ft] | m_per_ft^3[m3]/[ft3] | [1000 m3]/*_per_k*[m3]'),
 	('kaf',         'ac-ft',       '*_per_k*[ac-ft]/[kaf]'),
 	('kaf',         'dsf',         '*_per_k*[ac-ft]/[kaf] | ft2_per_acre[ft3]/[ac-ft] | [dsf]/ft3_per_dsf[ft3]'),
@@ -1321,6 +1339,7 @@ unit_aliases = {
 	"mile2"      : ["mi2","sq mi","sq mile","sq miles","square miles"],
 	"mile3"      : ["cu mile","cu miles"],
 	"min"        : ["minute","minutes","MIN","MINUTE","MINUTES"],
+	"MJ"         : ["megajoule", "megajoules", "MEGAJOULE", "MEGAJOULES"],
 	"mm"         : ["millimeter","millimeters","MM"],
 	"mm/deg-day" : ["mm/deg-d"],
 	"MWh"        : ["MWH"],
