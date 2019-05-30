@@ -53,6 +53,7 @@ conversion_factors = {
 #	energy
 #
 	'J_per_Wh'         : Decimal('3.6e3'),                # pg 55
+	'J_per_cal'        : Decimal('4.184e00'),             # pg 47 calorie_thermochemical
 #
 #	gravitational acceleration
 #
@@ -159,6 +160,7 @@ conversion_definitions = [
 	('C',           'F',           '[F]/C_per_F[C]'),
 	('C',           'K',           '[K]/C_per_K[C]'),
 	('C-day',       'F-day',       '[F-day]/C_per_F[C-day]'),
+	('cal',         'J',           'J_per_cal[J]/[cal]'),
 	('F',           'C',           'C_per_F[C]/[F]'),
 	('F',           'K',           'function[K]/[F]'),
 	('F-day',       'C-day',       'C_per_F[C-day]/[F-day]'),
@@ -170,11 +172,13 @@ conversion_definitions = [
 	('GWh',         'TWh',         '*_per_G*[Wh]/[GWh] | [TWh]/*_per_T*[Wh]'),
 	('GWh',         'Wh',          '*_per_G*[Wh]/[GWh]'),
 	('GWh',         'J',           '*_per_G*[Wh]/[GWh] | J_per_Wh[J]/[Wh]'),
+	('GWh',         'cal',         '*_per_G*[Wh]/[GWh] | J_per_Wh[J]/[Wh] | [cal]/J_per_cal[J]'),
 	('GWh',         'MJ',          '*_per_G*[Wh]/[GWh] | J_per_Wh[J]/[Wh] | [MJ]/*_per_M*[J]'),
 	('GWh',         'kWh',         '*_per_G*[Wh]/[GWh] | [kWh]/*_per_k*[Wh]'),
 	('Hz',          'B',           'function[B]/[Hz]'),
 	('Hz',          'MHz',         '[MHz]/*_per_M*[Hz]'),
 	('Hz',          'kHz',         '[kHz]/*_per_k*[Hz]'),
+	('J',           'cal',         '[cal]/J_per_cal[J]'),
 	('J',           'Wh',          '[Wh]/J_per_Wh[J]'),
 	('J',           'kWh',         '[Wh]/J_per_Wh[J] | [kWh]/*_per_k*[Wh]'),
 	('J',           'MWh',         '[Wh]/J_per_Wh[J] | [MWh]/*_per_M*[Wh]'),
@@ -189,6 +193,7 @@ conversion_definitions = [
 	('MHz',         'Hz',          '*_per_M*[Hz]/[MHz]'),
 	('MHz',         'kHz',         '*_per_M*[Hz]/[MHz] | [kHz]/*_per_k*[Hz]'),
 	('MJ',          'J',           '*_per_M*[J]/[MJ]'),
+	('MJ',          'cal',         '*_per_M*[J]/[MJ] | [cal]/J_per_cal[J]'),
 	('MJ',          'Wh',          '*_per_M*[J]/[MJ] | [Wh]/J_per_Wh[J]'),
 	('MJ',          'kWh',         '*_per_M*[J]/[MJ] | [Wh]/J_per_Wh[J] | [kWh]/*_per_k*[Wh]'),
 	('MJ',          'MWh',         '*_per_M*[J]/[MJ] | [Wh]/J_per_Wh[J] | [MWh]/*_per_M*[Wh]'),
@@ -202,6 +207,7 @@ conversion_definitions = [
 	('MWh',         'TWh',         '*_per_M*[Wh]/[MWh] | [TWh]/*_per_T*[Wh]'),
 	('MWh',         'Wh',          '*_per_M*[Wh]/[MWh]'),
 	('MWh',         'J',           '*_per_M*[Wh]/[MWh] | J_per_Wh[J]/[Wh]'),	
+	('MWh',         'cal',         '*_per_M*[Wh]/[MWh] | J_per_Wh[J]/[Wh] | [cal]/J_per_cal[J]'),	
 	('MWh',         'MJ',          '*_per_M*[Wh]/[MWh] | J_per_Wh[J]/[Wh] | [MJ]/*_per_M*[J]'),
 	('MWh',         'kWh',         '*_per_M*[Wh]/[MWh] | [kWh]/*_per_k*[Wh]'),
 	('N',           'lb',          '[kg*m/s2]/[N] | [lbm]/kg_per_lbm[kg] | [g]/m/s2_per_g[m/s2] | [lb]/[lbm*g]'),
@@ -216,6 +222,7 @@ conversion_definitions = [
 	('TWh',         'MWh',         '*_per_T*[Wh]/[TWh] | [MWh]/*_per_M*[Wh]'),
 	('TWh',         'Wh',          '*_per_T*[Wh]/[TWh]'),
 	('TWh',         'J',           '*_per_T*[Wh]/[TWh] | J_per_Wh[J]/[Wh]'),
+	('TWh',         'cal',         '*_per_T*[Wh]/[TWh] | J_per_Wh[J]/[Wh] | [cal]/J_per_cal[J]'),
 	('TWh',         'MJ',          '*_per_T*[Wh]/[TWh] | J_per_Wh[J]/[Wh] | [MJ]/*_per_M*[J]'),
 	('TWh',         'kWh',         '*_per_T*[Wh]/[TWh] | [kWh]/*_per_k*[Wh]'),
 	('W',           'GW',          '[GW]/*_per_G*[W]'),
@@ -228,6 +235,7 @@ conversion_definitions = [
 	('Wh',          'TWh',         '[TWh]/*_per_T*[Wh]'),
 	('Wh',          'kWh',         '[kWh]/*_per_k*[Wh]'),
 	('Wh',          'J',           'J_per_Wh[J]/[Wh]'),
+	('Wh',          'cal',         'J_per_Wh[J]/[Wh] |  [cal]/J_per_cal[J]'),
 	('Wh',          'MJ',          'J_per_Wh[J]/[Wh] | [MJ]/*_per_M*[J]'),
 	('ac-ft',       '1000 m3',     'ft2_per_acre[ft3]/[ac-ft] | m_per_ft^3[m3]/[ft3] | [1000 m3]/*_per_k*[m3]'),
 	('ac-ft',       'dsf',         'ft2_per_acre[ft3]/[ac-ft] | [dsf]/ft3_per_dsf[ft3]'),
@@ -462,7 +470,8 @@ conversion_definitions = [
 	('kWh',         'MWh',         '*_per_k*[Wh]/[kWh] | [MWh]/*_per_M*[Wh]'),
 	('kWh',         'TWh',         '*_per_k*[Wh]/[kWh] | [TWh]/*_per_T*[Wh]'),
 	('kWh',         'Wh',          '*_per_k*[Wh]/[kWh]'),
-	('kWh',         'J',          '*_per_k*[Wh]/[kWh] | J_per_Wh[J]/[Wh]'),
+	('kWh',         'J',           '*_per_k*[Wh]/[kWh] | J_per_Wh[J]/[Wh]'),
+	('kWh',         'cal',         '*_per_k*[Wh]/[kWh] | J_per_Wh[J]/[Wh]|[cal]/J_per_cal[J]'),
 	('kWh',         'MJ',          '*_per_k*[Wh]/[kWh] | J_per_Wh[J]/[Wh] | [MJ]/*_per_M*[J]'),
 	('kaf',         '1000 m3',     '*_per_k*[ac-ft]/[kaf] | ft2_per_acre[ft3]/[ac-ft] | m_per_ft^3[m3]/[ft3] | [1000 m3]/*_per_k*[m3]'),
 	('kaf',         'ac-ft',       '*_per_k*[ac-ft]/[kaf]'),
@@ -886,6 +895,7 @@ si_units = {"SI" : [
 	"bar",
 	"C",
 	"C-day",
+	"cal",
 	"cm",
 	"cm/day",
 	"cm2",
@@ -1048,7 +1058,8 @@ energy_units = {"Energy" : [
 	"TWh",
 	"Wh",
 	"J",
-	"MJ"
+	"MJ",
+	"cal"
 ]}
 
 force_units = {"Force" : [
@@ -1282,6 +1293,7 @@ unit_aliases = {
 	"bar"        : ["BAR", 'bars', "BARS","atm", "ATM","atmosphere", "ATMOSPHERE", "atmospheres", "ATMOSPHERES"],
 	"C"          : ["Celsius","Centigrade","DEG C","deg C","DEG-C","Deg-C","DegC","degC","deg c"],
 	"C-day"      : ["degC-day"],
+	"cal"		 : ["calorie", "calories"],
 	"cfs"        : ["CFS","cu-ft/sec","cuft/sec","cusecs","ft3/sec","ft^3/s","FT3/S","FT3/SEC","ft3/s"],
 	"cm"         : ["centimeter","centimeters"],
 	"cms"        : ["CMS","cu-meters/sec","M3/S","m3/s","m3/sec","M3/SEC"],
