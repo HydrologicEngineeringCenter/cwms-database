@@ -9,7 +9,7 @@ as
     *
     * @param p_binary_code       A unique numeric value that identifies the binary
     * @param p_binary            The binary to store
-    * @param p_id                A text identifier for the binary to store    
+    * @param p_id                A text identifier for the binary to store
     * @param p_media_type_or_ext The MIME media type or file extension for the binary
     * @param p_description       A description of the binary
     * @param p_fail_if_exists    A flag ('T' or 'F') that specifies whether the routine should fail if the text identifier already exists in the database
@@ -22,12 +22,12 @@ as
       p_binary_code          out number, -- the code for use in foreign keys
       p_binary            in     blob, -- the binary, unlimited length
       p_id                in     varchar2, -- identifier with which to retrieve binary (256 chars max)
-      p_media_type_or_ext in     varchar2, -- the MIME media type or file extension 
+      p_media_type_or_ext in     varchar2, -- the MIME media type or file extension
       p_description       in     varchar2 default null, -- description, defaults to null
       p_fail_if_exists    in     varchar2 default 'T', -- flag specifying whether to fail if p_id already exists
       p_ignore_nulls      in     varchar2 default 'T', -- flag specifying whether to ignore null parameters on update
       p_office_id         in     varchar2 default null); -- office id, defaults current user's office
-      
+
    /**
     * Store (insert or update) text to the database
     *
@@ -2148,7 +2148,7 @@ as
     */
    function cat_media_types_f(p_media_type_mask in varchar2 default '*', p_office_id_mask in varchar2 default null)
       return sys_refcursor;
-                 
+
    /**
     * Stores a text filter to the database
     *
@@ -2190,11 +2190,61 @@ as
    procedure store_text_filter(
       p_text_filter_id in varchar2,
       p_description    in varchar2,
-      p_text_filter    in str_tab_t, 
+      p_text_filter    in str_tab_t,
       p_fail_if_exists in varchar2 default 'T',
       p_uses_regex     in varchar2 default 'F',
       p_regex_flags    in varchar2 default null,
       p_office_id      in varchar2 default null);
+
+   /**
+    * Stores a text filter to the database
+    *
+    * @param p_text_filter_id    The text identifier (name) of the text filter to store. May be up to 32 characters.
+    * @param p_description       Description of the text filter and/or its use. May be up to 256 characters.
+    * @param p_configuration_id  The text identifier (name) of the configuration this text filter belongs to. If unknown or not important, use the other signature of this procedure.
+    * @param p_text_filter       The text filter elements.  Each element is a string composed of the following items concatenated together:
+    * <p>
+    * <table class="descr">
+    *   <tr>
+    *    <th class="descr">Item</th>
+    *    <th class="descr">Usage</th>
+    *    <th class="descr">Format</th>
+    *    <th class="descr">Examples</th>
+    *   </tr>
+    *   <tr>
+    *    <td class="descr">Inclusion</td>
+    *    <td class="descr">Required</td>
+    *    <td class="descr">"INCLUDE:" or "EXCLUDE:" (any case, may be abbreviated)</td>
+    *    <td class="descr"><ul><li>in:</li><li>EXCL:</li><li>I:</li></ul></td>
+    *   </tr>
+    *   <tr>
+    *    <td class="descr">Element-specific regex flags</td>
+    *    <td class="descr">Optional</td>
+    *    <td class="descr">"FLAGS=&lt;flags&gt;:" (any case, may be abbreviated)</td>
+    *    <td class="descr"><ul><li>FLAGS=IM:</li><li>f=n:</li></ul></td>
+    *   </tr>
+    *   <tr>
+    *    <td class="descr">Filter text</td>
+    *    <td class="descr">Required</td>
+    *    <td class="descr">One of:<ul><li>glob-style wildcard mask (uses * and ?)</li><li>Oracle regular expression</li></ul></td>
+    *    <td class="descr"></td>
+    *   </tr>
+    * </table>
+    * @param p_fail_if_exists  A flag (T/F) specifying whether to fail if a text filter of the same name already exists. F = overwrite any existing text filter
+    * @param p_uses_regex      A flag (T/F) specifying whether the text filter uses regular expressions. F = filter uses glob-style wildcards (*, ?)
+    * @param p_regex_flags     The regular expression flags (Oracle match parameter) to use with all elements. Can be overridden by specific element flags.
+    * @param p_office_id       The text identifier of the office that owns the text filter.  If not specified or NULL, the session user's default office is used.
+    */
+   procedure store_text_filter(
+      p_text_filter_id   in varchar2,
+      p_description      in varchar2,
+      p_configuration_id in varchar2,
+      p_text_filter      in str_tab_t,
+      p_fail_if_exists   in varchar2 default 'T',
+      p_uses_regex       in varchar2 default 'F',
+      p_regex_flags      in varchar2 default null,
+      p_office_id        in varchar2 default null);
+
    /**
     * Retrieves a text filter from the database
     *
@@ -2231,6 +2281,45 @@ as
       p_uses_regex     out varchar2,
       p_text_filter_id in  varchar2,
       p_office_id      in  varchar2 default null);
+
+   /**
+    * Retrieves a text filter from the database
+    *
+    * @param p_text_filter     The text filter elements.  Each element is a string composed of the following items concatenated together:
+    * <p>
+    * <table class="descr">
+    *   <tr>
+    *    <th class="descr">Item</th>
+    *    <th class="descr">Present?</th>
+    *    <th class="descr">Format</th>
+    *   </tr>
+    *   <tr>
+    *    <td class="descr">Inclusion</td>
+    *    <td class="descr">Always</td>
+    *    <td class="descr">"INCLUDE:" or "EXCLUDE:"</td>
+    *   </tr>
+    *   <tr>
+    *    <td class="descr">Element-specific regex flags</td>
+    *    <td class="descr">Only if filter is regular expression and element uses flags</td>
+    *    <td class="descr">"FLAGS=&lt;flags&gt;:"</td>
+    *   </tr>
+    *   <tr>
+    *    <td class="descr">Filter text</td>
+    *    <td class="descr">Always</td>
+    *    <td class="descr">The actual filter text (regular expression or glob-style wildcard mask)</td>
+    *   </tr>
+    * </table>
+    * @param p_uses_regex        A flag (T/F) specifying whether the retrieved text filter uses regular expressions. F = filter uses glob-style wildcards (*, ?).
+    * @param p_configuration_id  The text identifier of the configuration this text filter belongs to. May be up to 32 characters
+    * @param p_text_filter_id    The text identifier (name) of the text filter to retrieve. May be up to 32 characters.
+    * @param p_office_id         The text identifier of the office that owns the text filter.  If not specified or NULL, the session user's default office is used.
+    */
+   procedure retrieve_text_filter(
+      p_text_filter      out str_tab_t,
+      p_uses_regex       out varchar2,
+      p_configuration_id out varchar2,
+      p_text_filter_id   in  varchar2,
+      p_office_id        in  varchar2 default null);
    /**
     * Deletes a text filter from the database
     *
@@ -2255,8 +2344,8 @@ as
     * Filters a table of strings using a stored text filter
     *
     * @param p_text_filter_id The text identifier (name) of the text filter to use.
-    * @param p_values         A table of strings to filter        
-    * @param p_office_id      The text identifier of the office that owns the text filter. If not specified or NULL, the session user's default office is used.     
+    * @param p_values         A table of strings to filter
+    * @param p_office_id      The text identifier of the office that owns the text filter. If not specified or NULL, the session user's default office is used.
     *
     * @return A table of strings that passed the filter
     */
@@ -2264,13 +2353,13 @@ as
       p_text_filter_id in varchar2,
       p_values         in str_tab_t,
       p_office_id      in varchar2 default null)
-      return str_tab_t;            
+      return str_tab_t;
    /**
     * Filters a string using a stored text filter
     *
     * @param p_text_filter_id The text identifier (name) of the text filter to use.
-    * @param p_value          The string to filter        
-    * @param p_office_id      The text identifier of the office that owns the text filter. If not specified or NULL, the session user's default office is used.     
+    * @param p_value          The string to filter
+    * @param p_office_id      The text identifier of the office that owns the text filter. If not specified or NULL, the session user's default office is used.
     *
     * @return The input string if it passed the filter, otherwise NULL
     */
@@ -2319,7 +2408,7 @@ as
       p_filter in str_tab_t,
       p_values in str_tab_t,
       p_regex  in varchar2 default 'F')
-      return str_tab_t;            
+      return str_tab_t;
    /**
     * Filters a string using an ad-hoc text filter
     *
@@ -2351,7 +2440,7 @@ as
     *    <td class="descr"></td>
     *   </tr>
     * </table>
-    * @param p_value  The string to filter        
+    * @param p_value  The string to filter
     * @param p_regex  A flag (T/F) specifying whether the filter uses regular expressions
     *
     * @return The input string if it passed the filter, otherwise NULL
