@@ -823,7 +823,7 @@ begin
             cwms_err.raise('ERROR', 'Gate changes are not in ascending time order.');
          end if;
       end if;
-      if upper(trim(p_gate_changes(i).discharge_computation.office_id)) != l_office_id then
+      if upper(trim(p_gate_changes(i).discharge_computation.office_id)) not in (l_office_id, 'CWMS') then
          cwms_err.raise(
             'ERROR', 
             'gate change for office '
@@ -831,7 +831,7 @@ begin
             ||' cannot reference discharge computation for office '
             ||upper(p_gate_changes(i).discharge_computation.office_id));
       end if;
-      if upper(trim(p_gate_changes(i).release_reason.office_id)) != l_office_id then
+      if upper(trim(p_gate_changes(i).release_reason.office_id)) not in (l_office_id, 'CWMS') then
          cwms_err.raise(
             'ERROR', 
             'gate change for office '
