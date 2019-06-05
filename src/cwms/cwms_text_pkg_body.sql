@@ -29,7 +29,7 @@ as
       close p_cursor;
 
       return group_times(l_times_1, l_times_2);
-   end group_times; 
+   end group_times;
 
    function get_media_type_code(p_type_or_ext in varchar2, p_office_code in number)
       return number
@@ -106,15 +106,15 @@ as
 
       return l_media_type_code;
    end get_media_type_code;
-   
+
    --
    -- store binary with optional description
-   -- 
+   --
    procedure store_binary(
       p_binary_code       out number, -- the code for use in foreign keys
       p_binary            in     blob, -- the binary, unlimited length
       p_id                in     varchar2, -- identifier with which to retrieve binary (256 chars max)
-      p_media_type_or_ext in     varchar2, -- the MIME media type or file extension 
+      p_media_type_or_ext in     varchar2, -- the MIME media type or file extension
       p_description       in     varchar2 default null, -- description, defaults to null
       p_fail_if_exists    in     varchar2 default 'T', -- flag specifying whether to fail if p_id already exists
       p_ignore_nulls      in     varchar2 default 'T', -- flag specifying whether to ignore null parameters on update
@@ -134,8 +134,8 @@ as
            from at_blob
           where office_code in (l_office_code, cwms_util.db_office_code_all)
             and id = l_id;
-         l_exists := true;            
-      exception           
+         l_exists := true;
+      exception
          when no_data_found then
             l_exists := false;
       end;
@@ -147,16 +147,16 @@ as
             -- update the record
             --
             if l_ignore_nulls then
-               l_rec.value := case p_binary is null 
-                                 when true then l_rec.value 
-                                 else p_binary 
+               l_rec.value := case p_binary is null
+                                 when true then l_rec.value
+                                 else p_binary
                               end;
                l_rec.description := nvl(p_description, l_rec.description);
-               l_rec.media_type_code := case p_media_type_or_ext is null                               
+               l_rec.media_type_code := case p_media_type_or_ext is null
                                            when true then l_rec.media_type_code
                                            else get_media_type_code(p_media_type_or_ext, l_office_code)
                                         end;
-            else               
+            else
                l_rec.value := p_binary;
                l_rec.description := p_description;
                l_rec.media_type_code := get_media_type_code(p_media_type_or_ext, l_office_code);
@@ -165,7 +165,7 @@ as
                set row = l_rec;
          end if;
       else
-         -- 
+         --
          -- insert the record
          --
          l_rec.blob_code := cwms_seq.nextval;
@@ -175,8 +175,8 @@ as
          l_rec.media_type_code := get_media_type_code(p_media_type_or_ext, l_office_code);
          insert into at_blob values l_rec;
       end if;
-      p_binary_code := l_rec.blob_code;                          
-   end store_binary;      
+      p_binary_code := l_rec.blob_code;
+   end store_binary;
 
    --
    -- store text with optional description
@@ -271,7 +271,7 @@ as
          dbms_lob.open(l_text, dbms_lob.lob_readwrite);
          dbms_lob.writeappend(l_text, length(p_text), p_text);
          dbms_lob.close(l_text);
-      end if;   
+      end if;
       store_text(
          p_text_code      => p_text_code,
          p_text           => l_text,
@@ -304,7 +304,7 @@ as
 
       return l_text_code;
    end store_text;
-   
+
    --
    -- retrieve binary only
    --
@@ -316,7 +316,7 @@ as
       l_description     at_blob.description%type;
       l_media_type      cwms_media_type.media_type_id%type;
       l_file_extensions varchar2(256);
-   begin                              
+   begin
       retrieve_binary2(
          p_binary,
          l_description,
@@ -335,7 +335,7 @@ as
       return blob
    is
       l_binary blob;
-   begin            
+   begin
       retrieve_binary(l_binary, p_id, p_office_id);
       return l_binary;
    end retrieve_binary;
@@ -354,7 +354,7 @@ as
       l_rec             at_blob%rowtype;
       l_description     at_blob.description%type;
       l_media_type      cwms_media_type.media_type_id%type;
-      l_office_code     number(10) := cwms_util.get_office_code(p_office_id); 
+      l_office_code     number(10) := cwms_util.get_office_code(p_office_id);
       l_file_extensions str_tab_t := str_tab_t();
    begin
       begin
@@ -376,8 +376,8 @@ as
         into p_media_type
         from cwms_media_type
        where media_type_code = l_rec.media_type_code;
-       
-      for rec in 
+
+      for rec in
          (  select file_ext
               from at_file_extension
              where office_code in (l_office_code, cwms_util.db_office_code_all)
@@ -388,7 +388,7 @@ as
          l_file_extensions.extend;
          l_file_extensions(l_file_extensions.count) := rec.file_ext;
       end loop;
-      p_file_extensions := cwms_util.join_text(l_file_extensions, ',');       
+      p_file_extensions := cwms_util.join_text(l_file_extensions, ',');
    end retrieve_binary2;
 
    --
@@ -572,7 +572,7 @@ as
       l_office_code   number := cwms_util.get_office_code(p_office_id);
    begin
       cwms_util.check_office_permission(p_office_id);
-      delete 
+      delete
         from at_blob
        where office_code = l_office_code and id = l_id;
    end delete_binary;
@@ -588,7 +588,7 @@ as
       l_office_code   number := cwms_util.get_office_code(p_office_id);
    begin
       cwms_util.check_office_permission(p_office_id);
-      delete 
+      delete
         from at_clob
        where office_code = l_office_code and id = l_id;
    end delete_text;
@@ -685,7 +685,7 @@ as
       -- build the query string --
       ----------------------------
       if l_include_descriptions then
-         l_query_str := 
+         l_query_str :=
             'select o.office_id,
                     c.id,
                     c.description
@@ -695,7 +695,7 @@ as
                 and c.office_code = o.office_code
                 and c.id in (:ids)';
       else
-         l_query_str := 
+         l_query_str :=
             'select o.office_id,
                     c.id
                from cwms_office o,
@@ -982,8 +982,8 @@ as
    end store_std_text;
 
    procedure retrieve_std_text(
-      p_std_text    out clob, 
-      p_std_text_id in  varchar2, 
+      p_std_text    out clob,
+      p_std_text_id in  varchar2,
       p_office_id   in  varchar2 default null)
    is
    begin
@@ -991,7 +991,7 @@ as
    end retrieve_std_text;
 
    function retrieve_std_text_f(
-      p_std_text_id in varchar2, 
+      p_std_text_id in varchar2,
       p_office_id   in varchar2 default null)
       return clob
    is
@@ -1063,25 +1063,25 @@ as
       else
          cwms_err.raise('INVALID_ITEM', p_delete_action, 'delete action');
       end case;
-      
+
       select std_text_code
         into l_std_text_code
         from at_std_text
        where upper(std_text_id) = upper(trim(p_std_text_id))
          and office_code = l_office_code;
-         
+
       if l_delete_data then
          delete
            from at_tsv_std_text
-          where std_text_code = l_std_text_code;    
+          where std_text_code = l_std_text_code;
       end if;
-      
+
       if l_delete_key then
          delete
            from at_std_text
-          where std_text_code = l_std_text_code; 
+          where std_text_code = l_std_text_code;
       end if;
-      
+
    end delete_std_text;
 
    procedure cat_std_text(
@@ -1110,12 +1110,12 @@ as
                 left outer join
                 (select clob_code,
                         value
-                   from at_clob     
-                ) b on b.clob_code = a.clob_code;         
+                   from at_clob
+                ) b on b.clob_code = a.clob_code;
    end cat_std_text;
 
    function cat_std_text_f(
-      p_std_text_id_mask in varchar2 default '*', 
+      p_std_text_id_mask in varchar2 default '*',
       p_office_id_mask   in varchar2 default null)
       return sys_refcursor
    is
@@ -1125,7 +1125,7 @@ as
          l_cursor,
          p_std_text_id_mask,
          p_office_id_mask);
-         
+
       return l_cursor;
    end cat_std_text_f;
 
@@ -1143,7 +1143,7 @@ as
       select db_office_id
         into l_office_id
         from at_cwms_ts_id
-       where ts_code = p_ts_code; 
+       where ts_code = p_ts_code;
       cwms_util.check_office_permission(l_office_id);
       l_rec.ts_code         := p_ts_code;
       l_rec.date_time       := p_date_time_utc;
@@ -1204,7 +1204,7 @@ as
       select db_office_id
         into l_office_id
         from at_cwms_ts_id
-       where ts_code = p_ts_code; 
+       where ts_code = p_ts_code;
       cwms_util.check_office_permission(l_office_id);
       if p_version_dates_utc is null then
          ------------------------------------------------------------
@@ -1817,9 +1817,9 @@ as
          -------------------
          open l_cursor for
               select cwms_util.change_timezone(d.date_1, 'UTC', l_time_zone) as date_time,
-                     cwms_util.change_timezone(d.date_2, 'UTC', case 
-                                                                when d.date_2 = cwms_util.non_versioned then 'UTC' 
-                                                                else l_time_zone 
+                     cwms_util.change_timezone(d.date_2, 'UTC', case
+                                                                when d.date_2 = cwms_util.non_versioned then 'UTC'
+                                                                else l_time_zone
                                                                 end) as version_date,
                      cwms_util.change_timezone(t.data_entry_date, 'UTC', l_time_zone) as data_entry_date,
                      s.std_text_id,
@@ -1847,9 +1847,9 @@ as
          ----------------------
          open l_cursor for
               select cwms_util.change_timezone(d.date_1, 'UTC', l_time_zone) as date_time,
-                     cwms_util.change_timezone(d.date_2, 'UTC', case 
-                                                                when d.date_2 = cwms_util.non_versioned then 'UTC' 
-                                                                else l_time_zone 
+                     cwms_util.change_timezone(d.date_2, 'UTC', case
+                                                                when d.date_2 = cwms_util.non_versioned then 'UTC'
+                                                                else l_time_zone
                                                                 end) as version_date,
                      cwms_util.change_timezone(t.data_entry_date, 'UTC', l_time_zone) as data_entry_date,
                      s.std_text_id,
@@ -2083,7 +2083,7 @@ as
       select db_office_id
         into l_office_id
         from at_cwms_ts_id
-       where ts_code = p_ts_code; 
+       where ts_code = p_ts_code;
       cwms_util.check_office_permission(l_office_id);
       l_rec.ts_code         := p_ts_code;
       l_rec.date_time       := p_date_time_utc;
@@ -2144,7 +2144,7 @@ as
       select db_office_id
         into l_office_id
         from at_cwms_ts_id
-       where ts_code = p_ts_code; 
+       where ts_code = p_ts_code;
       cwms_util.check_office_permission(l_office_id);
       if p_version_dates_utc is null then
          ------------------------------------------------------------
@@ -3095,9 +3095,9 @@ as
       ------------------
       open l_cursor for
            select cwms_util.change_timezone(d.date_1, 'UTC', l_time_zone) as date_time,
-                  cwms_util.change_timezone(d.date_2, 'UTC', case 
-                                                             when d.date_2 = cwms_util.non_versioned then 'UTC' 
-                                                             else l_time_zone 
+                  cwms_util.change_timezone(d.date_2, 'UTC', case
+                                                             when d.date_2 = cwms_util.non_versioned then 'UTC'
+                                                             else l_time_zone
                                                              end) as version_date,
                   cwms_util.change_timezone(t.data_entry_date, 'UTC', l_time_zone) as data_entry_date,
                   c.id as text_id,
@@ -3384,7 +3384,7 @@ as
       select db_office_id
         into l_office_id
         from at_cwms_ts_id
-       where ts_code = p_ts_code; 
+       where ts_code = p_ts_code;
       cwms_util.check_office_permission(l_office_id);
       l_rec.ts_code         := p_ts_code;
       l_rec.date_time       := p_date_time_utc;
@@ -3445,7 +3445,7 @@ as
       select db_office_id
         into l_office_id
         from at_cwms_ts_id
-       where ts_code = p_ts_code; 
+       where ts_code = p_ts_code;
       cwms_util.check_office_permission(l_office_id);
       if p_version_dates_utc is null then
          ------------------------------------------------------------
@@ -4855,7 +4855,7 @@ as
    end store_file_extension;
 
    procedure delete_file_extension(
-      p_file_extension in varchar2, 
+      p_file_extension in varchar2,
       p_office_id      in varchar2 default null)
    is
       l_file_extension   varchar2(16);
@@ -4909,7 +4909,7 @@ as
    end cat_file_extensions;
 
    function cat_file_extensions_f(
-      p_file_extension_mask in varchar2 default '*', 
+      p_file_extension_mask in varchar2 default '*',
       p_office_id_mask      in varchar2 default null)
       return sys_refcursor
    is
@@ -4970,7 +4970,7 @@ as
    end cat_media_types;
 
    function cat_media_types_f(
-      p_media_type_mask in varchar2 default '*', 
+      p_media_type_mask in varchar2 default '*',
       p_office_id_mask  in varchar2 default null)
       return sys_refcursor
    is
@@ -5012,17 +5012,40 @@ as
    end cat_media_types_f;
 
    procedure store_text_filter(
-      p_text_filter_id in varchar2,
-      p_description    in varchar2,
-      p_text_filter    in str_tab_t,
-      p_fail_if_exists in varchar2 default 'T',
-      p_uses_regex     in varchar2 default 'F',
-      p_regex_flags    in varchar2 default null,
-      p_office_id      in varchar2 default null)
-   is      
-      type filter_elements_t is table of at_text_filter_element%rowtype; 
+      p_text_filter_id   in varchar2,
+      p_description      in varchar2,
+      p_text_filter      in str_tab_t,
+      p_fail_if_exists   in varchar2 default 'T',
+      p_uses_regex       in varchar2 default 'F',
+      p_regex_flags      in varchar2 default null,
+      p_office_id        in varchar2 default null)
+   is
+   begin
+      store_text_filter(
+         p_text_filter_id   => p_text_filter_id,
+         p_description      => p_description,
+         p_configuration_id => 'OTHER',
+         p_text_filter      => p_text_filter,
+         p_fail_if_exists   => p_fail_if_exists,
+         p_uses_regex       => p_uses_regex,
+         p_regex_flags      => p_regex_flags,
+         p_office_id        => p_office_id);
+   end store_text_filter;
+
+   procedure store_text_filter(
+      p_text_filter_id   in varchar2,
+      p_description      in varchar2,
+      p_configuration_id in varchar2,
+      p_text_filter      in str_tab_t,
+      p_fail_if_exists   in varchar2 default 'T',
+      p_uses_regex       in varchar2 default 'F',
+      p_regex_flags      in varchar2 default null,
+      p_office_id        in varchar2 default null)
+   is
+      type filter_elements_t is table of at_text_filter_element%rowtype;
       c_element_pattern1 constant varchar2(57) := '^\s*(i(n(c(l(u(de?)?)?)?)?)?|e(x(c(l(u(de?)?)?)?)?)?)\s*:';
       c_element_pattern2 constant varchar2(35) := '\s*:\s*f(l(a(gs?)?)?)?\s*=.*$';
+      l_config_code      integer;
       l_header_rec       at_text_filter%rowtype;
       l_elements         filter_elements_t;
       l_exists           boolean;
@@ -5033,7 +5056,16 @@ as
       l_parts            str_tab_t;
       l_pos              integer;
    begin
-      cwms_util.check_office_permission(p_office_id);
+      begin
+         cwms_util.check_office_permission(p_office_id);
+         select configuration_code
+           into l_config_code
+           from at_configuration
+          where upper(configuration_id) = upper(trim(p_configuration_id));
+      exception
+         when no_data_found then
+            cwms_err.raise('ITEM_DOES_NOT_EXIST', 'Configuration', p_configuration_id);
+      end;
       -------------------------------------------------
       -- get the existing header record if it exists --
       -------------------------------------------------
@@ -5044,16 +5076,16 @@ as
            from at_text_filter
           where office_code in (l_office_code, cwms_util.db_office_code_all)
             and upper(text_filter_id) = upper(l_header_rec.text_filter_id);
-         l_exists := true;            
+         l_exists := true;
       exception
-         when no_data_found then l_exists := false; 
+         when no_data_found then l_exists := false;
       end;
       if l_exists then
          if l_fail_if_exists then
             select office_id
               into l_office_id
               from cwms_office
-             where office_code = l_header_rec.office_code; 
+             where office_code = l_header_rec.office_code;
             cwms_err.raise(
                'ITEM_ALREADY_EXISTS',
                'Text filter',
@@ -5073,43 +5105,44 @@ as
          ------------------------------------------
          -- exists, delete the existing elements --
          ------------------------------------------
-         delete 
+         delete
            from at_text_filter_element
           where text_filter_code = l_header_rec.text_filter_code;
       else
          --------------------------------------------
          -- doesn't exist, prime header for insert --
          --------------------------------------------
-         l_header_rec.text_filter_code := cwms_seq.nextval; 
+         l_header_rec.text_filter_code := cwms_seq.nextval;
          l_header_rec.office_code      := l_office_code;
       end if;
-      ------------------------------------------------      
+      ------------------------------------------------
       -- finish setting header for update or insert --
       ------------------------------------------------
-      l_header_rec.description := trim(p_description);      
+      l_header_rec.configuration_code := l_config_code;
       l_header_rec.is_regex := case l_is_regex when true then 'T' else 'F' end;
       l_header_rec.regex_flags := lower(trim(p_regex_flags));
-      ---------------------------------      
+      l_header_rec.description := trim(p_description);
+      ---------------------------------
       -- update or insert the header --
-      ---------------------------------      
+      ---------------------------------
       if l_exists then
          update at_text_filter
             set row = l_header_rec
-          where text_filter_code = l_header_rec.text_filter_code;  
+          where text_filter_code = l_header_rec.text_filter_code;
       else
          insert
            into at_text_filter
-         values l_header_rec;  
-      end if;                                              
-      
+         values l_header_rec;
+      end if;
+
       if p_text_filter is not null then
          l_elements := filter_elements_t();
          for i in 1..p_text_filter.count loop
             l_elements.extend;
             l_elements(i).text_filter_code := l_header_rec.text_filter_code;
             l_elements(i).element_sequence := i;
-            l_elements(i).regex_flags := l_header_rec.regex_flags; -- may be overwritten       
-            l_pos := regexp_instr(p_text_filter(i), c_element_pattern1, 1, 1, 1, 'i'); 
+            l_elements(i).regex_flags := l_header_rec.regex_flags; -- may be overwritten
+            l_pos := regexp_instr(p_text_filter(i), c_element_pattern1, 1, 1, 1, 'i');
             if l_pos = 0 then
                cwms_err.raise(
                   'ERROR',
@@ -5129,10 +5162,10 @@ as
             if l_pos = 0 then
                l_elements(i).filter_text := l_parts(2);
                l_elements(i).regex_flags := null;
-            else   
+            else
                l_elements(i).filter_text := substr(l_parts(2), 1, l_pos - 1);
                l_parts(2) := regexp_replace(substr(l_parts(2), l_pos), '\s+', null, 1, 0);
-               l_parts(2) := lower(trim(substr(l_parts(2), instr(l_parts(2), '=') + 1))); 
+               l_parts(2) := lower(trim(substr(l_parts(2), instr(l_parts(2), '=') + 1)));
                if instr(l_parts(2), 'm') != 0 then
                   l_elements(i).regex_flags := l_elements(i).regex_flags || 'm';
                end if;
@@ -5150,13 +5183,30 @@ as
          forall i in 1..l_elements.count
             insert into at_text_filter_element values l_elements(i);
       end if;
-   end store_text_filter;      
-      
+   end store_text_filter;
+
    procedure retrieve_text_filter(
-      p_text_filter    out str_tab_t,
-      p_uses_regex     out varchar2,
-      p_text_filter_id in  varchar2,
-      p_office_id      in  varchar2 default null)
+      p_text_filter      out str_tab_t,
+      p_uses_regex       out varchar2,
+      p_text_filter_id   in  varchar2,
+      p_office_id        in  varchar2 default null)
+   is
+      l_configuration_id varchar2(32);
+   begin
+      retrieve_text_filter(
+         p_text_filter      => p_text_filter,
+         p_uses_regex       => p_uses_regex,
+         p_configuration_id => l_configuration_id,
+         p_text_filter_id   => p_text_filter_id,
+         p_office_id        => p_office_id);
+   end retrieve_text_filter;
+
+   procedure retrieve_text_filter(
+      p_text_filter      out str_tab_t,
+      p_uses_regex       out varchar2,
+      p_configuration_id out varchar2,
+      p_text_filter_id   in  varchar2,
+      p_office_id        in  varchar2 default null)
    is
       type filter_elements_t is table of at_text_filter_element%rowtype;
       l_office_code integer := cwms_util.get_db_office_code(p_office_id);
@@ -5173,20 +5223,20 @@ as
           where office_code in (l_office_code, cwms_util.db_office_code_all)
             and upper(text_filter_id) = upper(l_header_rec.text_filter_id);
       exception
-         when no_data_found then 
+         when no_data_found then
             cwms_err.raise(
                'ITEM_DOES_NOT_EXIST',
                'Text filter',
                l_header_rec.text_filter_id);
       end;
       begin
-         select *      
+         select *
            bulk collect
            into l_elements
            from at_text_filter_element
           where text_filter_code = l_header_rec.text_filter_code
           order by element_sequence;
-          
+
          l_text_filter := str_tab_t();
          l_text_filter.extend(l_elements.count);
          for i in 1..l_elements.count loop
@@ -5197,22 +5247,26 @@ as
                l_text_filter(i) := l_text_filter(i)||'flags='||l_header_rec.regex_flags||':';
             end if;
             l_text_filter(i) := l_text_filter(i)||l_elements(i).filter_text;
-         end loop;            
+         end loop;
       exception
          when no_data_found then null;
       end;
+      select configuration_id
+        into p_configuration_id
+        from at_configuration
+       where configuration_code = l_header_rec.configuration_code;
       p_text_filter := l_text_filter;
-      p_uses_regex := l_header_rec.is_regex; 
-   end retrieve_text_filter;               
-                                      
+      p_uses_regex := l_header_rec.is_regex;
+   end retrieve_text_filter;
+
    procedure delete_text_filter(
       p_text_filter_id in varchar2,
       p_office_id      in varchar2 default null)
-   is      
+   is
       l_header_rec  at_text_filter%rowtype;
       l_office_id   varchar2(16) := cwms_util.get_db_office_id(p_office_id);
       l_office_code integer := cwms_util.get_db_office_code(l_office_id);
-   begin                     
+   begin
       cwms_util.check_office_permission(p_office_id);
       l_header_rec.text_filter_id := trim(p_text_filter_id);
       begin
@@ -5226,7 +5280,7 @@ as
             cwms_err.raise(
                'ITEM_DOES_NOT_EXIST',
                'Text filter',
-               l_office_id||'/'||l_header_rec.text_filter_id); 
+               l_office_id||'/'||l_header_rec.text_filter_id);
       end;
       if l_header_rec.office_code = cwms_util.db_office_code_all then
          if l_office_code != cwms_util.db_office_code_all then
@@ -5237,26 +5291,26 @@ as
                ||' is owned by CWMS - cannot delete.');
          end if;
       end if;
-      delete 
+      delete
         from at_text_filter_element
        where text_filter_code = l_header_rec.text_filter_code;
-       
-      delete 
+
+      delete
         from at_text_filter
        where text_filter_code = l_header_rec.text_filter_code;
-       
+
    end delete_text_filter;
-                                      
+
    procedure rename_text_filter(
       p_old_text_filter_id in varchar2,
       p_new_text_filter_id in varchar2,
       p_office_id          in varchar2 default null)
-   is      
+   is
       l_header_old  at_text_filter%rowtype;
       l_header_new at_text_filter%rowtype;
       l_office_id   varchar2(16) := cwms_util.get_db_office_id(p_office_id);
       l_office_code integer := cwms_util.get_db_office_code(l_office_id);
-   begin                     
+   begin
       cwms_util.check_office_permission(p_office_id);
       l_header_old.text_filter_id := trim(p_old_text_filter_id);
       begin
@@ -5270,7 +5324,7 @@ as
             cwms_err.raise(
                'ITEM_DOES_NOT_EXIST',
                'Text filter',
-               l_office_id||'/'||l_header_old.text_filter_id); 
+               l_office_id||'/'||l_header_old.text_filter_id);
       end;
       l_header_new.text_filter_id := trim(p_new_text_filter_id);
       begin
@@ -5279,21 +5333,21 @@ as
            from at_text_filter
           where office_code in (l_office_code, cwms_util.db_office_code_all)
             and upper(text_filter_id) = upper(l_header_new.text_filter_id);
-            
+
          cwms_err.raise(
             'ITEM_ALREADY_EXISTS',
             'Text filter',
-            l_office_id||'/'||l_header_new.text_filter_id);           
+            l_office_id||'/'||l_header_new.text_filter_id);
       exception
          when no_data_found then null;
       end;
-      
+
       update at_text_filter
          set text_filter_id = l_header_new.text_filter_id
-       where text_filter_code = l_header_old.text_filter_code;         
-       
+       where text_filter_code = l_header_old.text_filter_code;
+
    end rename_text_filter;
-            
+
    function filter_text(
       p_text_filter_id in varchar2,
       p_values         in str_tab_t,
@@ -5324,10 +5378,10 @@ as
             cwms_err.raise(
                'ITEM_DOES_NOT_EXIST',
                'Text filter',
-               l_office_id||'/'||l_header_rec.text_filter_id); 
+               l_office_id||'/'||l_header_rec.text_filter_id);
       end;
       begin
-         select *      
+         select *
            bulk collect
            into l_elements
            from at_text_filter_element
@@ -5336,7 +5390,7 @@ as
       exception
          when no_data_found then null;
       end;
-      
+
       if p_values is not null and l_elements is not null then
          l_is_regex := l_header_rec.is_regex = 'T';
          if not l_is_regex then
@@ -5353,7 +5407,7 @@ as
              where text_filter_code = l_header_rec.text_filter_code
              order by element_sequence;
          end if;
-         
+
          if l_elements(1).include = 'T' then
             l_excluded := p_values;
          else
@@ -5367,20 +5421,20 @@ as
                        bulk collect
                        into l_matched
                        from table(l_excluded)
-                      where regexp_like(column_value, l_elements(i).filter_text, l_elements(i).regex_flags); 
+                      where regexp_like(column_value, l_elements(i).filter_text, l_elements(i).regex_flags);
                   else
                      if l_header_rec.regex_flags is not null then
                         select *
                           bulk collect
                           into l_matched
                           from table(l_excluded)
-                         where regexp_like(column_value, l_elements(i).filter_text, l_header_rec.regex_flags); 
+                         where regexp_like(column_value, l_elements(i).filter_text, l_header_rec.regex_flags);
                      else
                         select *
                           bulk collect
                           into l_matched
                           from table(l_excluded)
-                         where regexp_like(column_value, l_elements(i).filter_text); 
+                         where regexp_like(column_value, l_elements(i).filter_text);
                      end if;
                   end if;
                else
@@ -5389,13 +5443,13 @@ as
                        bulk collect
                        into l_matched
                        from table(l_excluded)
-                      where upper(column_value) like upper(l_filters(i)); 
+                      where upper(column_value) like upper(l_filters(i));
                   else
                      select *
                        bulk collect
                        into l_matched
                        from table(l_excluded)
-                      where column_value like l_filters(i); 
+                      where column_value like l_filters(i);
                   end if;
                end if;
                l_included := l_included multiset union all l_matched;
@@ -5407,20 +5461,20 @@ as
                        bulk collect
                        into l_matched
                        from table(l_included)
-                      where regexp_like(column_value, l_elements(i).filter_text, l_elements(i).regex_flags); 
+                      where regexp_like(column_value, l_elements(i).filter_text, l_elements(i).regex_flags);
                   else
                      if l_header_rec.regex_flags is not null then
                         select *
                           bulk collect
                           into l_matched
                           from table(l_included)
-                         where regexp_like(column_value, l_elements(i).filter_text, l_header_rec.regex_flags); 
+                         where regexp_like(column_value, l_elements(i).filter_text, l_header_rec.regex_flags);
                      else
                         select *
                           bulk collect
                           into l_matched
                           from table(l_included)
-                         where regexp_like(column_value, l_elements(i).filter_text); 
+                         where regexp_like(column_value, l_elements(i).filter_text);
                      end if;
                   end if;
                else
@@ -5429,26 +5483,26 @@ as
                        bulk collect
                        into l_matched
                        from table(l_included)
-                      where upper(column_value) like upper(l_filters(i)); 
+                      where upper(column_value) like upper(l_filters(i));
                   else
                      select *
                        bulk collect
                        into l_matched
                        from table(l_included)
-                      where column_value like l_filters(i); 
+                      where column_value like l_filters(i);
                   end if;
                end if;
                l_included := l_included multiset except all l_matched;
                l_excluded := l_excluded multiset union all l_matched;
             end if;
          end loop;
-      else 
+      else
          l_included := p_values;
       end if;
-            
+
       return l_included;
-   end filter_text;           
-      
+   end filter_text;
+
    function filter_text(
       p_text_filter_id in varchar2,
       p_value          in varchar2,
@@ -5461,15 +5515,15 @@ as
       return case l_filtered is null
                 when true then null
                 else l_filtered(0)
-             end; 
-   end filter_text;           
-   
+             end;
+   end filter_text;
+
    function filter_text(
       p_filter in str_tab_t,
       p_values in str_tab_t,
       p_regex  in varchar2 default 'F')
       return str_tab_t
-   is                      
+   is
       type filter_element_t is record(include boolean, flags varchar2(16), text varchar2(256));
       type filter_element_tab_t is table of filter_element_t;
       c_element_pattern1 constant varchar2(57) := '^\s*(i(n(c(l(u(de?)?)?)?)?)?|e(x(c(l(u(de?)?)?)?)?)?)\s*:';
@@ -5482,18 +5536,18 @@ as
       l_included         str_tab_t;
       l_excluded         str_tab_t;
       l_matched          str_tab_t;
-   begin   
+   begin
       if p_filter is null then
          l_included := p_values;
-      else 
+      else
          ----------------------
          -- build the filter --
-         ----------------------         
+         ----------------------
          l_filter := filter_element_tab_t();
          l_filter.extend(p_filter.count);
          for i in 1..p_filter.count loop
-         
-            l_pos := regexp_instr(p_filter(i), c_element_pattern1, 1, 1, 1, 'i'); 
+
+            l_pos := regexp_instr(p_filter(i), c_element_pattern1, 1, 1, 1, 'i');
             if l_pos = 0 then
                cwms_err.raise(
                   'ERROR',
@@ -5514,10 +5568,10 @@ as
             if l_pos = 0 then
                l_filter(i).text := l_parts(2);
                l_filter(i).flags := null;
-            else   
+            else
                l_filter(i).text := substr(l_parts(2), 1, l_pos - 1);
                l_parts(2) := regexp_replace(substr(l_parts(2), l_pos), '\s+', null, 1, 0);
-               l_parts(2) := lower(trim(substr(l_parts(2), instr(l_parts(2), '=') + 1))); 
+               l_parts(2) := lower(trim(substr(l_parts(2), instr(l_parts(2), '=') + 1)));
                if instr(l_parts(2), 'm') != 0 then
                   l_filter(i).flags := l_filter(i).flags || 'm';
                end if;
@@ -5532,10 +5586,10 @@ as
                end if;
             end if;
             if not l_regex then
-               l_filter(i).text := cwms_util.normalize_wildcards(l_filter(i).text); 
+               l_filter(i).text := cwms_util.normalize_wildcards(l_filter(i).text);
             end if;
          end loop;
-         ---------------------      
+         ---------------------
          -- filter the text --
          ---------------------
          if l_filter(1).include then
@@ -5553,13 +5607,13 @@ as
                        bulk collect
                        into l_matched
                        from table(l_excluded)
-                      where regexp_like(column_value, l_filter(i).text, l_filter(i).flags); 
+                      where regexp_like(column_value, l_filter(i).text, l_filter(i).flags);
                   else
                      select *
                        bulk collect
                        into l_matched
                        from table(l_excluded)
-                      where regexp_like(column_value, l_filter(i).text); 
+                      where regexp_like(column_value, l_filter(i).text);
                   end if;
                else
                   if instr(l_filter(i).flags, 'i') > 0 then
@@ -5567,13 +5621,13 @@ as
                        bulk collect
                        into l_matched
                        from table(l_excluded)
-                      where upper(column_value) like upper(l_filter(i).text); 
+                      where upper(column_value) like upper(l_filter(i).text);
                   else
                      select *
                        bulk collect
                        into l_matched
                        from table(l_excluded)
-                      where column_value like l_filter(i).text; 
+                      where column_value like l_filter(i).text;
                   end if;
                end if;
                l_included := l_included multiset union all l_matched;
@@ -5585,13 +5639,13 @@ as
                        bulk collect
                        into l_matched
                        from table(l_included)
-                      where regexp_like(column_value, l_filter(i).text, l_filter(i).flags); 
+                      where regexp_like(column_value, l_filter(i).text, l_filter(i).flags);
                   else
                      select *
                        bulk collect
                        into l_matched
                        from table(l_included)
-                      where regexp_like(column_value, l_filter(i).text); 
+                      where regexp_like(column_value, l_filter(i).text);
                   end if;
                else
                   if instr(l_filter(i).flags, 'i') > 0 then
@@ -5599,13 +5653,13 @@ as
                        bulk collect
                        into l_matched
                        from table(l_included)
-                      where upper(column_value) like upper(l_filter(i).text); 
+                      where upper(column_value) like upper(l_filter(i).text);
                   else
                      select *
                        bulk collect
                        into l_matched
                        from table(l_included)
-                      where column_value like l_filter(i).text; 
+                      where column_value like l_filter(i).text;
                   end if;
                end if;
                l_included := l_included multiset except all l_matched;
@@ -5614,8 +5668,8 @@ as
          end loop;
       end if;
       return l_included;
-   end filter_text;            
-      
+   end filter_text;
+
    function filter_text(
       p_filter in str_tab_t,
       p_value  in varchar2,
@@ -5628,7 +5682,7 @@ as
       return case l_filtered is null
                 when true then null
                 else l_filtered(0)
-             end; 
+             end;
     end filter_text;
 end;
 /
