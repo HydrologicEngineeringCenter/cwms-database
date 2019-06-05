@@ -4623,24 +4623,41 @@ as
          CASE p_state WHEN TRUE THEN 'T' WHEN FALSE THEN 'F' END);
    END set_boolean_state;
 
-   PROCEDURE set_boolean_state (p_name IN VARCHAR2, p_state IN CHAR)
-   IS
-      l_name   VARCHAR2 (64);
-   BEGIN
-      SELECT name
-        INTO l_name
-        FROM at_boolean_state
-       WHERE UPPER (name) = UPPER (p_name);
+   procedure set_boolean_state (p_name in varchar2, p_state in char)
+   is
+      l_name     varchar2 (64);
+      l_start    timestamp;
+      l_max_time constant interval day (0) to second (3) := to_dsinterval('0 00:00:02.000');
+      deadlock   exception;
+      pragma exception_init(deadlock, -60);
+      pragma autonomous_transaction;
+   begin
+      l_start := systimestamp;
+      loop
+         begin
+            select name
+              into l_name
+              from at_boolean_state
+             where upper(name) = upper(p_name);
 
-      UPDATE at_boolean_state
-         SET state = p_state
-       WHERE name = l_name;
-   EXCEPTION
-      WHEN NO_DATA_FOUND
-      THEN
-         INSERT INTO at_boolean_state
-              VALUES (p_name, p_state);
-   END set_boolean_state;
+            update at_boolean_state
+               set state = p_state
+             where name = l_name;
+            exit;
+         exception
+            when no_data_found then
+               insert into at_boolean_state
+                    values (p_name, p_state);
+               exit;
+            when deadlock then
+               if systimestamp - l_start > l_max_time then
+                  raise;
+               end if;
+               dbms_lock.sleep(0.2);
+         end;
+      end loop;
+      commit;
+   end set_boolean_state;
 
    FUNCTION get_boolean_state_char (p_name IN VARCHAR2)
       RETURN CHAR
