@@ -15,7 +15,7 @@ AS
     */
    v_package_log_prop_text varchar2(30);
    function package_log_property_text return varchar2;
-   
+
    /**
     * Sets text value of package logging property
     *
@@ -47,11 +47,11 @@ AS
     * Number of minutes in a decade (10 365-day years).
     */
    min_in_dc CONSTANT NUMBER := 5256000;
-                                                  
+
    /**
     * Behavior for STORE_TS when storing data to remove nulls from the data that don't have quality code that indicates missing.
     */
-   filter_out_null_values     constant number := 1; 
+   filter_out_null_values     constant number := 1;
    /**
     * Behavior for STORE_TS when storing data to set all quality codes to missing for null values.
     */
@@ -59,8 +59,8 @@ AS
    /**
     * Behavior for STORE_TS when storing data to reject storing any data set that contains null values and non-missing quality.
     */
-   reject_ts_with_null_values constant number := 3;                                      
-   
+   reject_ts_with_null_values constant number := 3;
+
    /**
     * Type for holding a time series value.
     *
@@ -458,7 +458,7 @@ AS
       p_cwms_ts_id           in varchar2,
       p_override_protection  in varchar2,
       p_start_time           in date,
-      p_end_time             in date,                        
+      p_end_time             in date,
       p_start_time_inclusive in varchar2,
       p_end_time_inclusive   in varchar2,
       p_version_date         in date,
@@ -470,7 +470,7 @@ AS
 
    /**
     * Deletes time series values for specified time series, version date, and time windows
-    *                    
+    *
     * @see type timeseries_req_array
     * @see constant cwms_util.non_versioned
     * @see constant cwms_util.all_version_dates
@@ -1216,7 +1216,7 @@ AS
    function quality_score(
       p_quality_code in integer)
       return integer;
-      
+
    -- not documented, for LRTS
    FUNCTION shift_for_localtime (p_date_time IN DATE, p_tz_name IN VARCHAR2)
       RETURN DATE;
@@ -2700,7 +2700,7 @@ AS
       p_ts_code            IN NUMBER,
       p_version_date_utc   IN DATE DEFAULT cwms_util.non_versioned,
       p_year               IN NUMBER DEFAULT NULL)
-      RETURN DATE;      
+      RETURN DATE;
 
    /**
     * Retrieves the latest non-null time series data date in the database for a time series
@@ -2866,7 +2866,7 @@ AS
     * @param p_ts_extents   The time series extents
     * @param p_cwms_ts_id   The time series identifier
     * @param p_version_date The version date. If null, the non-versioned date '1111-11-11 00:00:00' is used
-    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used
     * @param p_office_id    The office that owns the time series. If unspecified or null the current session user's default office is used
     *
     * @see type ts_extents_t
@@ -2875,14 +2875,14 @@ AS
       p_ts_extents   out ts_extents_t,
       p_cwms_ts_id   in  varchar2,
       p_version_date in  date,
-      p_unit         in  varchar2 default null, 
+      p_unit         in  varchar2 default null,
       p_office_id    in  varchar2 default null);
    /**
     * Retrieves UTC time and value extents for a specified time series and version date in specified units
     *
     * @param p_cwms_ts_id   The time series identifier
     * @param p_version_date The version date. If null, the non-versioned date '1111-11-11 00:00:00' is used
-    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used
     * @param p_office_id    The office that owns the time series. If unspecified or null the current session user's default office is used
     *
     * @return The time series extents
@@ -2901,7 +2901,7 @@ AS
     * @param p_ts_extents   The time series extents
     * @param p_ts_code      The unique numeric value identifying the time series
     * @param p_version_date The version date. If null, the non-versioned date '1111-11-11 00:00:00' is used
-    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used
     *
     * @see type ts_extents_t
     */
@@ -2915,7 +2915,7 @@ AS
     *
     * @param p_ts_code      The unique numeric value identifying the time series
     * @param p_version_date The version date. If null, the non-versioned date '1111-11-11 00:00:00' is used
-    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used
     *
     * @return The time series extents
     *
@@ -2931,7 +2931,7 @@ AS
     *
     * @param p_ts_extents   The time series extents
     * @param p_cwms_ts_id   The time series identifier
-    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used
     * @param p_office_id    The office that owns the time series. If unspecified or null the current session user's default office is used
     *
     * @see type ts_extents_tab_t
@@ -2945,7 +2945,7 @@ AS
     * Retrieves UTC time and value extents for all version dates of a specified time series in specified units
     *
     * @param p_cwms_ts_id   The time series identifier
-    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used
     * @param p_office_id    The office that owns the time series. If unspecified or null the current session user's default office is used
     *
     * @return The time series extents
@@ -2962,7 +2962,7 @@ AS
     *
     * @param p_ts_extents   The time series extents
     * @param p_ts_code      The unique numeric value identifying the time series
-    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used
     *
     * @see type ts_extents_tab_t
     */
@@ -2975,7 +2975,7 @@ AS
     *
     * @param p_ts_code      The unique numeric value identifying the time series
     * @param p_version_date The version date. If null, the non-versioned date '1111-11-11 00:00:00' is used
-    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used
     *
     * @return The time series extents
     *
@@ -2992,7 +2992,7 @@ AS
     * @param p_cwms_ts_id   The time series identifier
     * @param p_version_date The version date. If null, the non-versioned date '1111-11-11 00:00:00' is used
     * @param p_time_zone    The time zone for the time extents. If null, the location's local time zone is used
-    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used
     * @param p_office_id    The office that owns the time series. If unspecified or null the current session user's default office is used
     *
     * @see type ts_extents_t
@@ -3010,7 +3010,7 @@ AS
     * @param p_cwms_ts_id   The time series identifier
     * @param p_version_date The version date. If null, the non-versioned date '1111-11-11 00:00:00' is used
     * @param p_time_zone    The time zone for the time extents. If null, the location's local time zone is used
-    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used
     * @param p_office_id    The office that owns the time series. If unspecified or null the current session user's default office is used
     *
     * @return The time series extents
@@ -3031,7 +3031,7 @@ AS
     * @param p_ts_code      The unique nummeric value identifying the time series
     * @param p_version_date The version date. If null, the non-versioned date '1111-11-11 00:00:00' is used
     * @param p_time_zone    The time zone for the time extents. If null, the location's local time zone is used
-    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used
     *
     * @see type ts_extents_t
     */
@@ -3047,7 +3047,7 @@ AS
     * @param p_ts_code      The unique nummeric value identifying the time series
     * @param p_version_date The version date. If null, the non-versioned date '1111-11-11 00:00:00' is used
     * @param p_time_zone    The time zone for the time extents. If null, the location's local time zone is used
-    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used
     *
     * @return The time series extents
     *
@@ -3065,7 +3065,7 @@ AS
     * @param p_ts_extents   The time series extents
     * @param p_cwms_ts_id   The time series identifier
     * @param p_time_zone    The time zone for the time extents. If null, the location's local time zone is used
-    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used
     * @param p_office_id    The office that owns the time series. If unspecified or null the current session user's default office is used
     *
     * @see type ts_extents_tab_t
@@ -3081,7 +3081,7 @@ AS
     *
     * @param p_cwms_ts_id   The time series identifier
     * @param p_time_zone    The time zone for the time extents. If null, the location's local time zone is used
-    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used
     * @param p_office_id    The office that owns the time series. If unspecified or null the current session user's default office is used
     *
     * @return The time series extents
@@ -3100,7 +3100,7 @@ AS
     * @param p_ts_extents   The time series extents
     * @param p_ts_code      The unique nummeric value identifying the time series
     * @param p_time_zone    The time zone for the time extents. If null, the location's local time zone is used
-    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used
     *
     * @see type ts_extents_tab_t
     */
@@ -3114,7 +3114,7 @@ AS
     *
     * @param p_ts_code      The unique nummeric value identifying the time series
     * @param p_time_zone    The time zone for the time extents. If null, the location's local time zone is used
-    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used 
+    * @param p_unit         The unit for the value extents. If unspecified or null, the default SI unit is used
     *
     * @return The time series extents
     *
@@ -3288,8 +3288,8 @@ AS
    function normalize_quality(
       p_quality in number)
       return number
-      result_cache;  
-      
+      result_cache;
+
    /**
     * Sets the default storage policy for an office for time series data that contains null values with non-missing quality codes.
     *
@@ -3304,7 +3304,7 @@ AS
    procedure set_nulls_storage_policy_ofc(
       p_storage_policy in integer,
       p_office_id      in varchar2 default null);
-      
+
    /**
     * Sets the storage policy for specified time series for time series data that contains null values with non-missing quality codes.
     *
@@ -3321,7 +3321,7 @@ AS
       p_storage_policy in integer,
       p_ts_id          in varchar2,
       p_office_id      in varchar2 default null);
-      
+
    /**
     * Retrieves the default storage policy for an office for time series data that contains null values with non-missing quality codes.
     *
@@ -3336,8 +3336,8 @@ AS
     */
    function get_nulls_storage_policy_ofc(
       p_office_id in varchar2 default null)
-      return integer;                  
-      
+      return integer;
+
    /**
     * Retrieves the storage policy for specified time series for time series data that contains null values with non-missing quality codes.
     *
@@ -3355,7 +3355,7 @@ AS
       p_ts_id     in varchar2,
       p_office_id in varchar2 default null)
       return integer;
-      
+
    /**
     * Retrieves the effective storage policy for specified time series for time series data that contains null values with non-missing quality codes.
     *
@@ -3371,7 +3371,7 @@ AS
    function get_nulls_storage_policy(
       p_ts_code in integer)
       return integer;
-      
+
    /**
     * Sets the default policy for whether to filter out duplicate value/quality combinations when storing for the specified office
     *
@@ -3383,7 +3383,7 @@ AS
    procedure set_filter_duplicates_ofc(
       p_filter_duplicates in varchar2,
       p_office_id         in varchar2 default null);
-      
+
    /**
     * Sets the policy for the specified time series to filter out time/value/quality combinations that duplicate existing data before storing
     *
@@ -3397,7 +3397,7 @@ AS
       p_filter_duplicates in varchar2,
       p_ts_id             in varchar2,
       p_office_id         in varchar2 default null);
-      
+
    /**
     * Sets whether to filter out duplicate value/quality combinations when storing the specified time series
     *
@@ -3409,7 +3409,7 @@ AS
    procedure set_filter_duplicates_ts(
       p_filter_duplicates in varchar2,
       p_ts_code           in integer);
-      
+
    /**
     * Retrieves whether to filter out duplicate value/quality combinations when storing time series for the specified office
     *
@@ -3421,8 +3421,8 @@ AS
     */
    function get_filter_duplicates_ofc(
       p_office_id in varchar2 default null)
-      return varchar2;                  
-      
+      return varchar2;
+
    /**
     * Retrieves whether to filter out duplicate value/quality combinations when storing the specified time series
     *
@@ -3437,7 +3437,7 @@ AS
       p_ts_id     in varchar2,
       p_office_id in varchar2 default null)
       return varchar2;
-      
+
    /**
     * Retrieves whether to filter out duplicate value/quality combinations when storing the specified time series
     *
@@ -3493,7 +3493,7 @@ AS
       p_ts_code     in integer,
       p_office_id   in varchar2 default null)
       return varchar2;
-                           
+
    /**
     * Retreives time series in a number of formats for a combination time window, timezone, formats, and vertical datums
     *
@@ -3509,36 +3509,36 @@ AS
     *                         <li>a combination of 1 and 2 (multiple name positions with one or more positions matching possibly more than one time series)</li></ol>
     *                         If unspecified or NULL, a listing of time series identifiers with data in the specified or default time window will be returned.
     * @param p_format         The format to retrieve the time series in. Valid formats are <ul><li>TAB</li><li>CSV</li><li>XML</li><li>JSON</li></ul>
-    *                         If the format is unspecified or NULL, the TAB format will be used. 
+    *                         If the format is unspecified or NULL, the TAB format will be used.
     * @param p_units          The units to return the time series in.  Valid units are <ul><li>EN</li><li>SI</li><li>actual unit of parameter (e.g. ft, cfs)</li></ul> If the p_names variable (q.v.) has more
-    *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_units variable may also have multiple positions separated by the 
-    *                         <b>'|',</b> charcter. If the p_units variable has fewer positions than the p_name variable, the last unit position is used for all 
+    *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_units variable may also have multiple positions separated by the
+    *                         <b>'|',</b> charcter. If the p_units variable has fewer positions than the p_name variable, the last unit position is used for all
     *                         remaning names. If the units are unspecified or NULL, the NATIVE units will be used for all time series.
     * @param p_datums         The vertical datums to return the units in.  Valid datums are <ul><li>NATIVE</li><li>NGVD29</li><li>NAVD88</li></ul> If the p_names variable (q.v.) has more
-    *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_datums variable may also have multiple positions separated by the 
-    *                         <b>'|',</b> charcter. If the p_datums variable has fewer positions than the p_name variable, the last datum position is used for all 
+    *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_datums variable may also have multiple positions separated by the
+    *                         <b>'|',</b> charcter. If the p_datums variable has fewer positions than the p_name variable, the last datum position is used for all
     *                         remaning names. If the datums are unspecified or NULL, the NATIVE veritcal datum will be used for all time series.
     * @param p_start          The start of the time window to retrieve time series for.  No time series values earlier this time will be retrieved.
-    *                         If unspecified or NULL, a value of 24 hours prior to the specified or default end of the time window will be used. for the start of the time window       
+    *                         If unspecified or NULL, a value of 24 hours prior to the specified or default end of the time window will be used. for the start of the time window
     * @param p_end            The end of the time window to retrieve time series for.  No time series values later this time will be retrieved.
     *                         If unspecified or NULL, the current time will be used for the end of the time window.
     * @param p_timezone       The time zone to retrieve the time series in. The p_start and p_end parameters - if used - are also interpreted according to this time zone.
-    *                         If unspecified or NULL, the UTC time zone is used. 
+    *                         If unspecified or NULL, the UTC time zone is used.
     * @param p_office_id      The office to retrieve time series for.  If unspecified or NULL, time series for all offices in the database that match the other criteria will be retrieved.
-    */         
+    */
    procedure retrieve_time_series(
       p_results        out clob,
       p_date_time      out date,
       p_query_time     out integer,
-      p_format_time    out integer, 
+      p_format_time    out integer,
       p_ts_count       out integer,
       p_value_count    out integer,
-      p_names          in  varchar2 default null,            
+      p_names          in  varchar2 default null,
       p_format         in  varchar2 default null,
-      p_units          in  varchar2 default null,   
+      p_units          in  varchar2 default null,
       p_datums         in  varchar2 default null,
       p_start          in  varchar2 default null,
-      p_end            in  varchar2 default null, 
+      p_end            in  varchar2 default null,
       p_timezone       in  varchar2 default null,
       p_office_id      in  varchar2 default null);
    /**
@@ -3550,37 +3550,43 @@ AS
     *                         <li>a combination of 1 and 2 (multiple name positions with one or more positions matching possibly more than one time series)</li></ol>
     *                         If unspecified or NULL, a listing of time series identifiers with data in the specified or default time window will be returned.
     * @param p_format         The format to retrieve the time series in. Valid formats are <ul><li>TAB</li><li>CSV</li><li>XML</li><li>JSON</li></ul>
-    *                         If the format is unspecified or NULL, the TAB format will be used. 
+    *                         If the format is unspecified or NULL, the TAB format will be used.
     * @param p_units          The units to return the time series in.  Valid units are <ul><li>EN</li><li>SI</li><li>actual unit of parameter (e.g. ft, cfs)</li></ul> If the p_names variable (q.v.) has more
-    *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_units variable may also have multiple positions separated by the 
-    *                         <b>'|',</b> charcter. If the p_units variable has fewer positions than the p_name variable, the last unit position is used for all 
+    *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_units variable may also have multiple positions separated by the
+    *                         <b>'|',</b> charcter. If the p_units variable has fewer positions than the p_name variable, the last unit position is used for all
     *                         remaning names. If the units are unspecified or NULL, the NATIVE units will be used for all time series.
     * @param p_datums         The vertical datums to return the units in.  Valid datums are <ul><li>NATIVE</li><li>NGVD29</li><li>NAVD88</li></ul> If the p_names variable (q.v.) has more
-    *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_datums variable may also have multiple positions separated by the 
-    *                         <b>'|',</b> charcter. If the p_datums variable has fewer positions than the p_name variable, the last datum position is used for all 
+    *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_datums variable may also have multiple positions separated by the
+    *                         <b>'|',</b> charcter. If the p_datums variable has fewer positions than the p_name variable, the last datum position is used for all
     *                         remaning names. If the datums are unspecified or NULL, the NATIVE veritcal datum will be used for all time series.
     * @param p_start          The start of the time window to retrieve time series for.  No time series values earlier this time will be retrieved.
-    *                         If unspecified or NULL, a value of 24 hours prior to the specified or default end of the time window will be used. for the start of the time window       
+    *                         If unspecified or NULL, a value of 24 hours prior to the specified or default end of the time window will be used. for the start of the time window
     * @param p_end            The end of the time window to retrieve time series for.  No time series values later this time will be retrieved.
     *                         If unspecified or NULL, the current time will be used for the end of the time window.
     * @param p_timezone       The time zone to retrieve the time series in. The p_start and p_end parameters - if used - are also interpreted according to this time zone.
-    *                         If unspecified or NULL, the UTC time zone is used. 
+    *                         If unspecified or NULL, the UTC time zone is used.
     * @param p_office_id      The office to retrieve time series for.  If unspecified or NULL, time series for all offices in the database that match the other criteria will be retrieved.
-    *                         
+    *
     * @return                 The time series, in the specified time zones, formats, and vertical datums
-    */         
-            
+    */
+
    function retrieve_time_series_f(
-      p_names       in  varchar2,            
+      p_names       in  varchar2,
       p_format      in  varchar2,
-      p_units       in  varchar2 default null,   
+      p_units       in  varchar2 default null,
       p_datums      in  varchar2 default null,
       p_start       in  varchar2 default null,
-      p_end         in  varchar2 default null, 
+      p_end         in  varchar2 default null,
       p_timezone    in  varchar2 default null,
       p_office_id   in  varchar2 default null)
       return clob;
-                           
+
+   -- not documented
+   procedure truncate_ts_msg_archive_table;
+
+   -- not documented
+   procedure start_truncate_ts_msg_arch_job;
+
 END;
 /
 
