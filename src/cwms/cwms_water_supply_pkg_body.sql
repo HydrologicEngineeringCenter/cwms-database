@@ -1234,8 +1234,8 @@ BEGIN
         INNER JOIN at_water_user_contract wuc
         ON (limited_wuca.water_user_contract_code = wuc.water_user_contract_code)
         INNER JOIN at_physical_transfer_type ptt
-        ON (limited_wuca.phys_trans_type_code = ptt.phys_trans_type_code)
-        INNER JOIN cwms_office o ON ptt.db_office_code = o.office_code
+        on (limited_wuca.phys_trans_type_code = ptt.phys_trans_type_code)
+        INNER JOIN cwms_office o ON ptt.db_office_code in (o.office_code, cwms_util.db_office_code_all)
         inner join cwms_unit_conversion uc
         on (uc.to_unit_code = l_unit_code)
         inner join cwms_base_parameter bp
