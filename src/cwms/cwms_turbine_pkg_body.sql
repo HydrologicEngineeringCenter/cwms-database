@@ -594,7 +594,7 @@ begin
                'Gate changes are not in ascending time order.');
          end if;
       end if;
-      if upper(trim(p_turbine_changes(i).discharge_computation.office_id)) != l_office_id then
+      if upper(trim(p_turbine_changes(i).discharge_computation.office_id)) not in (l_office_id, 'CWMS') then
          cwms_err.raise(
             'ERROR',
             'Turbine change for office '
@@ -602,7 +602,7 @@ begin
             ||' cannot reference discharge computation for office '
             ||upper(p_turbine_changes(i).discharge_computation.office_id));
       end if;   
-      if upper(trim(p_turbine_changes(i).setting_reason.office_id)) != l_office_id then
+      if upper(trim(p_turbine_changes(i).setting_reason.office_id)) not in (l_office_id, 'CWMS') then
          cwms_err.raise(
             'ERROR',
             'Turbine change for office '
