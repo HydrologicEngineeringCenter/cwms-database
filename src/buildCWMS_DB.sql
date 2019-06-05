@@ -308,6 +308,7 @@ begin
    cwms_shef.start_update_shef_spec_map_job;
    cwms_ts.start_update_ts_extents_job;
    cwms_ts.start_immediate_upd_tsx_job;
+   cwms_ts.start_truncate_ts_msg_arch_job;
 end;
 /
 set define on

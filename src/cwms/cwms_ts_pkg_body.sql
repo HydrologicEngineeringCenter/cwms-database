@@ -3641,19 +3641,19 @@ AS
    BEGIN
       l_ts_month := to_number(to_char(nvl(p_timestamp, systimestamp), 'MM'));
       l_first_table := mod(l_ts_month, 2) = 1;
-      if l_first_table then
-         select min(message_time) into l_table_ts from at_ts_msg_archive_1;
-      else
-         select min(message_time) into l_table_ts from at_ts_msg_archive_2;
-      end if;
-      l_table_month := to_number(to_char(l_table_ts, 'MM'));
-      if l_table_month != l_ts_month then
-         execute immediate case l_first_table
-                              when true  then 'truncate table at_ts_msg_archive_1'
-                              when false then 'truncate table at_ts_msg_archive_2'
-                           end;
-         commit;
-      end if;
+      -- if l_first_table then
+      --    select min(message_time) into l_table_ts from at_ts_msg_archive_1;
+      -- else
+      --    select min(message_time) into l_table_ts from at_ts_msg_archive_2;
+      -- end if;
+      -- l_table_month := to_number(to_char(l_table_ts, 'MM'));
+      -- if l_table_month != l_ts_month then
+      --    execute immediate case l_first_table
+      --                         when true  then 'truncate table at_ts_msg_archive_1'
+      --                         when false then 'truncate table at_ts_msg_archive_2'
+      --                      end;
+      --    commit;
+      -- end if;
       return l_first_table;
    END use_first_table;
 
@@ -13539,6 +13539,100 @@ end retrieve_existing_item_counts;
       return l_results;
    end retrieve_time_series_f;
 
+   procedure truncate_ts_msg_archive_table
+   is
+      l_today            date;
+      l_truncate_date    date;
+      l_truncate_weekday integer;
+      l_rowcount         integer;
+   begin
+      cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'TRUNCATE_TS_MSG_ARCHIVE_TABLE Starting');
+      -------------------------------
+      -- weekdays are SUN=1..SAT=7 --
+      -------------------------------
+      l_today            := trunc(sysdate, 'DD');
+      l_truncate_date    := add_months(trunc(l_today, 'MM'), 1) - 1; -- last day of this month
+      l_truncate_weekday := to_char(l_truncate_date, 'D');
+      --------------------------------
+      -- only truncate on TUE..THUR --
+      --------------------------------
+      if l_truncate_weekday in (1, 2) then
+         l_truncate_date := l_truncate_date - (l_truncate_weekday + 2);
+      elsif l_truncate_weekday in (6,7) then
+         l_truncate_date := l_truncate_date - (l_truncate_weekday - 5);
+      end if;
+      cwms_msg.log_db_message(cwms_msg.msg_level_detailed, 'Truncate date = '||to_char(l_truncate_date, 'yyyy-mm-dd'));
+      ----------------------------------------------
+      -- truncate the table if it's time to do so --
+      ----------------------------------------------
+      if l_today >= l_truncate_date then
+         if mod(extract(month from l_today), 2) = 0 then
+            ------------------------------------------
+            -- even month, truncate odd month table --
+            ------------------------------------------
+            select count(*) into l_rowcount from at_ts_msg_archive_1;
+            if l_rowcount > 0 then
+               cwms_msg.log_db_message(cwms_msg.msg_level_detailed, 'Truncationg table AT_TS_MSG_ARCHIVE_1 ('||l_rowcount||' rows)');
+               execute immediate 'truncate table at_ts_msg_archive_1 drop storage';
+            else
+               cwms_msg.log_db_message(cwms_msg.msg_level_detailed, 'Table AT_TS_MSG_ARCHIVE_1 already truncated');
+            end if;
+         else
+            ------------------------------------------
+            -- odd month, truncate even month table --
+            ------------------------------------------
+            select count(*) into l_rowcount from at_ts_msg_archive_2;
+            if l_rowcount > 0 then
+               cwms_msg.log_db_message(cwms_msg.msg_level_detailed, 'Truncationg table AT_TS_MSG_ARCHIVE_2 ('||l_rowcount||' rows)');
+               execute immediate 'truncate table at_ts_msg_archive_2 drop storage';
+            else
+               cwms_msg.log_db_message(cwms_msg.msg_level_detailed, 'Table AT_TS_MSG_ARCHIVE_2 already truncated');
+            end if;
+         end if;
+      end if;
+      cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'TRUNCATE_TS_MSG_ARCHIVE_TABLE Ending');
+   end truncate_ts_msg_archive_table;
+
+   procedure start_truncate_ts_msg_arch_job
+   is
+      l_job_name varchar2(30) := 'TRUNCATE_TS_MSG_ARCH_JOB';
+
+      function job_count return pls_integer
+      is
+         l_count pls_integer;
+      begin
+         select count(*) into l_count from user_scheduler_jobs where job_name = l_job_name;
+         return l_count;
+      end job_count;
+   begin
+      ----------------------------------------
+      -- only allow schema owner to execute --
+      ----------------------------------------
+      if cwms_util.get_user_id != '&cwms_schema' then
+         cwms_err.raise('ERROR', 'Must be &cwms_schema user to start job '||l_job_name);
+      end if;
+      ----------------------------------------------
+      -- allow only a single copy to be scheduled --
+      ----------------------------------------------
+      if job_count > 0 then
+         cwms_err.raise('ERROR', 'Cannot start job '||l_job_name||',  another instance is already running');
+      end if;
+      ----------------------------------------------------------
+      -- create the job to start immediately and never repeat --
+      ----------------------------------------------------------
+      dbms_scheduler.create_job (
+         job_name            => l_job_name,
+         job_type            => 'stored_procedure',
+         job_action          => 'cwms_ts.truncate_ts_msg_archive_table',
+         start_date          => sysdate,
+         repeat_interval     => 'freq=hourly; interval=6',
+         number_of_arguments => 0,
+         comments            => 'Truncates AS_TS_MSG_ARCHIVE_X table that is not currently in use.');
+      dbms_scheduler.enable(l_job_name);
+      if job_count != 1 then
+         cwms_err.raise('ERROR', 'Job '||l_job_name||' not started');
+      end if;
+   end start_truncate_ts_msg_arch_job;
 
    function package_log_property_text
       return varchar2
