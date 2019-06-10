@@ -850,19 +850,19 @@ AS
 
 
    PROCEDURE update_location2 (
-      p_location_id            IN VARCHAR2,
+      p_location_id           IN VARCHAR2,
       p_location_type         IN VARCHAR2 DEFAULT NULL,
       p_elevation             IN NUMBER DEFAULT NULL,
       p_elev_unit_id          IN VARCHAR2 DEFAULT NULL,
-      p_vertical_datum         IN VARCHAR2 DEFAULT NULL,
-      p_latitude               IN NUMBER DEFAULT NULL,
+      p_vertical_datum        IN VARCHAR2 DEFAULT NULL,
+      p_latitude              IN NUMBER DEFAULT NULL,
       p_longitude             IN NUMBER DEFAULT NULL,
       p_horizontal_datum      IN VARCHAR2 DEFAULT NULL,
-      p_public_name            IN VARCHAR2 DEFAULT NULL,
+      p_public_name           IN VARCHAR2 DEFAULT NULL,
       p_long_name             IN VARCHAR2 DEFAULT NULL,
-      p_description            IN VARCHAR2 DEFAULT NULL,
+      p_description           IN VARCHAR2 DEFAULT NULL,
       p_time_zone_id          IN VARCHAR2 DEFAULT NULL,
-      p_county_name            IN VARCHAR2 DEFAULT NULL,
+      p_county_name           IN VARCHAR2 DEFAULT NULL,
       p_state_initial         IN VARCHAR2 DEFAULT NULL,
       p_active                IN VARCHAR2 DEFAULT NULL,
       p_location_kind_id      IN VARCHAR2 DEFAULT NULL,
@@ -872,30 +872,31 @@ AS
       p_bounding_office_id    IN VARCHAR2 DEFAULT NULL,
       p_nation_id             IN VARCHAR2 DEFAULT NULL,
       p_nearest_city          IN VARCHAR2 DEFAULT NULL,
-      p_ignorenulls            IN VARCHAR2 DEFAULT 'T',
+      p_ignorenulls           IN VARCHAR2 DEFAULT 'T',
       p_db_office_id          IN VARCHAR2 DEFAULT NULL
    )
    IS
       l_location_code          at_physical_location.location_code%TYPE;
-      l_time_zone_code          at_physical_location.time_zone_code%TYPE;
-      l_county_code             cwms_county.county_code%TYPE;
+      l_base_location_code     at_physical_location.base_location_code%TYPE;
+      l_time_zone_code         at_physical_location.time_zone_code%TYPE;
+      l_county_code            cwms_county.county_code%TYPE;
       l_location_type          at_physical_location.location_type%TYPE;
       l_elevation              at_physical_location.elevation%TYPE;
-      l_vertical_datum          at_physical_location.vertical_datum%TYPE;
+      l_vertical_datum         at_physical_location.vertical_datum%TYPE;
       l_longitude              at_physical_location.longitude%TYPE;
-      l_latitude                at_physical_location.latitude%TYPE;
+      l_latitude               at_physical_location.latitude%TYPE;
       l_horizontal_datum       at_physical_location.horizontal_datum%TYPE;
       l_state_code             cwms_state.state_code%TYPE;
-      l_public_name             at_physical_location.public_name%TYPE;
+      l_public_name            at_physical_location.public_name%TYPE;
       l_long_name              at_physical_location.long_name%TYPE;
-      l_description             at_physical_location.description%TYPE;
-      l_active_flag             at_physical_location.active_flag%TYPE;
+      l_description            at_physical_location.description%TYPE;
+      l_active_flag            at_physical_location.active_flag%TYPE;
       l_location_kind_code     at_physical_location.location_kind%TYPE;
       l_map_label              at_physical_location.map_label%TYPE;
       l_published_latitude     at_physical_location.published_latitude%TYPE;
       l_published_longitude    at_physical_location.published_longitude%TYPE;
-      l_bounding_office_code    at_physical_location.office_code%TYPE;
-      l_nation_code             at_physical_location.nation_code%TYPE;
+      l_bounding_office_code   at_physical_location.office_code%TYPE;
+      l_nation_code            at_physical_location.nation_code%TYPE;
       l_nearest_city           at_physical_location.nearest_city%TYPE;
       --
       l_state_initial          cwms_state.state_initial%TYPE;
@@ -920,12 +921,12 @@ AS
       --  office_id pair was passed in, therefore continue to update the.
       --  at_physical_location table by first retrieving data for the existing location...
       --
-      SELECT   location_type, elevation, vertical_datum, latitude, longitude,
+      SELECT   base_location_code, location_type, elevation, vertical_datum, latitude, longitude,
                horizontal_datum, public_name, long_name, description,
                time_zone_code, county_code, active_flag, location_kind,
                map_label, published_latitude, published_longitude,
                office_code, nation_code, nearest_city
-        INTO   l_location_type, l_elevation, l_vertical_datum, l_latitude,
+        INTO   l_base_location_code, l_location_type, l_elevation, l_vertical_datum, l_latitude,
                l_longitude, l_horizontal_datum, l_public_name, l_long_name,
                l_description, l_time_zone_code, l_county_code, l_active_flag,
                l_location_kind_code, l_map_label, l_published_latitude,
@@ -1256,31 +1257,38 @@ AS
       END IF;
 
 
-      --.
-      --*************************************.
-      -- Update at_physical_location table...
-      --.
-      UPDATE   at_physical_location
-         SET   location_type = l_location_type,
-               elevation = l_elevation,
-               vertical_datum = l_vertical_datum,
-               latitude = l_latitude,
-               longitude = l_longitude,
-               horizontal_datum = l_horizontal_datum,
-               public_name = l_public_name,
-               long_name = l_long_name,
-               description = l_description,
-               time_zone_code = l_time_zone_code,
-               county_code = l_county_code,
-               active_flag = l_active_flag,
-               location_kind = l_location_kind_code,
-               map_label = l_map_label,
-               published_latitude = l_published_latitude,
-               published_longitude = l_published_longitude,
-               office_code = l_bounding_office_code,
-               nation_code = l_nation_code,
-               nearest_city = l_nearest_city
-       WHERE   location_code = l_location_code;
+      ---------------------------------------
+      -- update at_physical_location table --
+      ---------------------------------------
+      UPDATE at_physical_location
+         SET location_type = l_location_type,
+             elevation = l_elevation,
+             vertical_datum = l_vertical_datum,
+             latitude = l_latitude,
+             longitude = l_longitude,
+             horizontal_datum = l_horizontal_datum,
+             public_name = l_public_name,
+             long_name = l_long_name,
+             description = l_description,
+             time_zone_code = l_time_zone_code,
+             county_code = l_county_code,
+             active_flag = l_active_flag,
+             location_kind = l_location_kind_code,
+             map_label = l_map_label,
+             published_latitude = l_published_latitude,
+             published_longitude = l_published_longitude,
+             office_code = l_bounding_office_code,
+             nation_code = l_nation_code,
+             nearest_city = l_nearest_city
+       WHERE location_code = l_location_code;
+       if l_base_location_code = l_location_code and p_active is not null then
+          -----------------------------------
+          -- update at_base_location table --
+          -----------------------------------
+          update at_base_location
+             set active_flag = l_active_flag
+           where base_location_code = l_base_location_code;
+       end if;
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
