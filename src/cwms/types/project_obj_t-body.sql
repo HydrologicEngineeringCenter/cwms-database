@@ -19,33 +19,35 @@ as
       p_bank_full_capacity_descript    in            varchar2,
       p_yield_time_frame_start         in            date,
       p_yield_time_frame_end           in            date)
-      return self as result       
+      return self as result
    is
-      l_currency_unit varchar2(16);
+      l_currency_unit constant varchar2(1) := '$';
+      l_count         pls_integer;
    begin
       ------------------------------------------------------------
       -- this will explode if we ever add another currency unit --
+      -- that isn't a multiple of '$'                           --
       --                                                        --
       -- if that happens we will have to add a currency_unit    --
       -- column to the AT_PROJECT table                         --
       --                                                        --
-      -- for now, it's always $                                 --
+      -- for now, it's always '$'                               --
       ------------------------------------------------------------
-      begin
-         select unit_id
-           into l_currency_unit
-           from cwms_unit
-          where abstract_param_code = (select abstract_param_code 
-                                         from cwms_abstract_parameter
-                                        where abstract_param_id = 'Currency'
-                                      );
-      exception
-         when too_many_rows then 
-            cwms_err.raise(
-               'ERROR',
-               'Cannot use this PROJECT_OBJ_T constructor because a cost unit must be specified.');
-      end;
-      
+      select count(unit_id)
+        into l_count
+        from cwms_unit
+       where abstract_param_code = (select abstract_param_code
+                                      from cwms_abstract_parameter
+                                     where abstract_param_id = 'Currency'
+                                   )
+         and instr(unit_id, '$') = 0;
+
+      if l_count > 0 then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot use this PROJECT_OBJ_T constructor because a cost unit must be specified.');
+      end if;
+
       project_location               := p_project_location;
       pump_back_location             := p_pump_back_location;
       near_gage_location             := p_near_gage_location;
@@ -64,7 +66,7 @@ as
       bank_full_capacity_description := p_bank_full_capacity_descript;
       yield_time_frame_start         := p_yield_time_frame_start;
       yield_time_frame_end           := p_yield_time_frame_end;
-      
+
       return;
    end project_obj_t;
 end;
