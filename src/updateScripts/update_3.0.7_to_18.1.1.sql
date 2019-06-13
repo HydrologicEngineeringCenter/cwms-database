@@ -438,7 +438,62 @@ drop trigger at_rating_value_trig;
 create index mv_time_zone_idx2 on mv_time_zone(time_zone_code) tablespace cwms_20at_data;
 create index mv_time_zone_idx3 on mv_time_zone(upper("TIME_ZONE_NAME")) tablespace cwms_20at_data;
 create index at_log_message_properties_idx1 on at_log_message_properties (prop_name, nvl(prop_text, prop_value), msg_id) tablespace cwms_20at_data;
-update cwms_county set county_name = trim(chr(160) from county_name);
+declare
+   l_code integer;
+begin
+   begin
+      select text_filter_code into l_code from at_text_filter where office_code = 53 and text_filter_id = 'LOCATION';
+   exception
+      when no_data_found then
+         l_code := cwms_seq.nextval;
+         insert into at_text_filter values (l_code, 53, 1, 'LOCATION', 'T', null, 'Matches valid CWMS locations');
+         insert into at_text_filter_element values (l_code, 1, 'T', '^[^.-]{0,15}[^. -](-[^. -][^.]{0,31})?$', null);
+         insert into at_text_filter_element values (l_code, 2, 'F', '^\W', null);
+         insert into at_text_filter_element values (l_code, 3, 'F', '\W$', null);
+   end;
+   begin
+      select text_filter_code into l_code from at_text_filter where office_code = 53 and text_filter_id = 'BASE_PARAMETER';
+   exception
+      when no_data_found then
+         l_code := cwms_seq.nextval;
+         insert into at_text_filter values (l_code, 53, 1, 'BASE_PARAMETER', 'T', null, 'Matches valid CWMS base parameters');
+         insert into at_text_filter_element values (l_code, 1, 'T', '^(%|Area|Code|Con[cd]|Count|Currency|Depth|Dir|Dist|Elev|Energy|Evap(Rate)?|Fish|Flow|Frost|Irrad|Opening|pH|Power|Precip|Pres|Rad|Ratio|Speed|SpinRate|Stage|Stor|Temp|Thick|Timing|Travel|Turb[FJN]?|Volt)$', null);
+   end;
+   begin
+      select text_filter_code into l_code from at_text_filter where office_code = 53 and text_filter_id = 'PARAMETER';
+   exception
+      when no_data_found then
+         l_code := cwms_seq.nextval;
+         insert into at_text_filter values (l_code, 53, 1, 'PARAMETER', 'T', null, 'Matches valid CWMS parameters');
+         insert into at_text_filter_element values (l_code, 1, 'T', '^(%|Area|Code|Con[cd]|Count|Currency|Depth|Dir|Dist|Elev|Energy|Evap(Rate)?|Fish|Flow|Frost|Irrad|Opening|pH|Power|Precip|Pres|Rad|Ratio|Speed|SpinRate|Stage|Stor|Temp|Thick|Timing|Travel|Turb[FJN]?|Volt)(-[^.]{1,32})?$', null);
+   end;
+   begin
+      select text_filter_code into l_code from at_text_filter where office_code = 53 and text_filter_id = 'PARAMETER_TYPE';
+   exception
+      when no_data_found then
+         l_code := cwms_seq.nextval;
+         insert into at_text_filter values (l_code, 53, 1, 'PARAMETER_TYPE', 'T', null, 'Matches valid CWMS parameter types');
+         insert into at_text_filter_element values (l_code, 1, 'T', '^(Total|Max|Min|Const|Ave|Inst)$', null);
+   end;
+   begin
+      select text_filter_code into l_code from at_text_filter where office_code = 53 and text_filter_id = 'INTERVAL';
+   exception
+      when no_data_found then
+         l_code := cwms_seq.nextval;
+         insert into at_text_filter values (l_code, 53, 1, 'INTERVAL', 'T', null, 'Matches valid CWMS intervals');
+         insert into at_text_filter_element values (l_code, 1, 'T', '^(0|~?(1(Minute|Hour|Day|Week|Month|Year|Decade)|([234568]|1[025]|[23]0)Minutes|([23468]|12)Hours|[23456]Days))$', null);
+   end;
+   begin
+      select text_filter_code into l_code from at_text_filter where office_code = 53 and text_filter_id = 'DURATION';
+   exception
+      when no_data_found then
+         l_code := cwms_seq.nextval;
+         insert into at_text_filter values (l_code, 53, 1, 'DURATION', 'T', null, 'Matches valid CWMS durations');
+         insert into at_text_filter_element values (l_code, 1, 'T', '^(0|(1(Minute|Hour|Day|Week|Month|Year|Decade)|([234568]|1[025]|[23]0)Minutes|([23468]|12)Hours|[23456]Days)(BOP)?)$', null);
+   end;
+end;
+/
+commit;
 -- New Configurations
 insert into cwms_config_category values ('DATA RETRIEVAL', 'Data Retrieval configurations');
 insert into at_configuration values (9, null, 53, 'DATA RETRIEVAL', 'Other Data Retrieval', 'Generalized Data Retreival');
