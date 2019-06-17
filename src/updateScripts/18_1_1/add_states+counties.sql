@@ -13,8 +13,8 @@ insert into cwms_county values (60050,  50, 60, 'Western District'             )
 insert into cwms_county values (66000,   0, 66, 'Unknown County or County N/A' ); 
 insert into cwms_county values (66010,  10, 66, 'Guam'                         ); 
 insert into cwms_county values (68000,   0, 68, 'Unknown County or County N/A' ); 
-insert into cwms_county values (68007,   7, 68, 'Ailinginae Atoll '            ); 
-insert into cwms_county values (68010,  10, 68, 'Ailinglaplap Atoll '          ); 
+insert into cwms_county values (68007,   7, 68, 'Ailinginae Atoll'             ); 
+insert into cwms_county values (68010,  10, 68, 'Ailinglaplap Atoll'           ); 
 insert into cwms_county values (68030,  30, 68, 'Ailuk Atoll'                  ); 
 insert into cwms_county values (68040,  40, 68, 'Arno Atoll'                   ); 
 insert into cwms_county values (68050,  50, 68, 'Aur Atoll'                    ); 
