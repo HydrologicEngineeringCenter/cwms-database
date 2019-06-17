@@ -4519,7 +4519,8 @@ AS
       l_location_code       NUMBER;
       l_ucount              NUMBER;
       l_store_date          TIMESTAMP (3) DEFAULT SYSTIMESTAMP AT TIME ZONE 'UTC';
-      l_ts_code             NUMBER;
+      l_ts_code             number;
+      l_ts_active           char(1);
       l_interval_id         cwms_interval.interval_id%TYPE;
       l_interval_value      NUMBER;
       l_utc_offset          NUMBER;
@@ -4680,14 +4681,28 @@ AS
             TRUE);
       END IF;
 
-
+      --------------------------------------
+      -- verify the time series is active --
+      --------------------------------------
+      select net_ts_active_flag
+        into l_ts_active
+        from at_cwms_ts_id
+       where ts_code = l_ts_code;
+       
+      if l_ts_active <> 'T' then
+         cwms_err.raise('ERROR', 'Cannot store to inactive time series '||l_office_id||'/'||l_cwms_ts_id);
+      end if;
+      ------------------------------------
+      -- verify we have values to store --
+      ------------------------------------
       if p_timeseries_data.count = 0 then
          dbms_application_info.set_action ('Returning due to no data provided');
          return;      -- have already created ts_code if it didn't exist
       end if;
-
+      ------------------------
+      -- handle null values --
+      ------------------------
       DBMS_APPLICATION_INFO.set_action ('Check for nulls in incoming data');
-
       case get_nulls_storage_policy(l_ts_code)
       when set_null_values_to_missing then
          --------------------------------------------
@@ -4730,7 +4745,6 @@ AS
          dbms_application_info.set_action ('Returning due to no data passed null filter');
          return;      -- have already created ts_code if it didn't exist
       end if;
-
 
       DBMS_APPLICATION_INFO.set_action (
          'Truncate incoming times to minute and verify validity');
@@ -5830,29 +5844,41 @@ AS
    exception
       when others
       then
-         cwms_msg.log_db_message (
-            1,
-            'STORE_TS ERROR on '
-            || l_cwms_ts_id
-            ||chr(10)
-            ||dbms_utility.format_error_backtrace
-            ||l_timeseries_data.count
-            ||' values'
-            ||chr(10)
-            ||'first = '
-            ||l_timeseries_data(1).date_time
-            ||chr(9)
-            ||l_timeseries_data(1).value
-            ||chr(9)
-            ||l_timeseries_data(1).quality_code
-            ||chr(10)
-            ||'last = '
-            ||l_timeseries_data(l_timeseries_data.count).date_time
-            ||chr(9)
-            ||l_timeseries_data(l_timeseries_data.count).value
-            ||chr(9)
-            ||l_timeseries_data(l_timeseries_data.count).quality_code);
-
+         if l_timeseries_data is null then
+            cwms_msg.log_db_message (
+               1,
+               'STORE_TS ERROR on '
+               || l_cwms_ts_id
+               ||chr(10)
+               ||sqlerrm
+               ||chr(10)
+               ||dbms_utility.format_error_backtrace);
+         else
+            cwms_msg.log_db_message (
+               1,
+               'STORE_TS ERROR on '
+               || l_cwms_ts_id
+               ||chr(10)
+               ||sqlerrm
+               ||chr(10)
+               ||dbms_utility.format_error_backtrace
+               ||l_timeseries_data.count
+               ||' values'
+               ||chr(10)
+               ||'first = '
+               ||l_timeseries_data(1).date_time
+               ||chr(9)
+               ||l_timeseries_data(1).value
+               ||chr(9)
+               ||l_timeseries_data(1).quality_code
+               ||chr(10)
+               ||'last = '
+               ||l_timeseries_data(l_timeseries_data.count).date_time
+               ||chr(9)
+               ||l_timeseries_data(l_timeseries_data.count).value
+               ||chr(9)
+               ||l_timeseries_data(l_timeseries_data.count).quality_code);
+         end if;
          cwms_err.raise ('ERROR', dbms_utility.format_error_backtrace);
    end store_ts;
 
