@@ -48,7 +48,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/MV_LOCATION_LEVEL_C
 create materialized view mv_location_level_curval
    tablespace cwms_20data
    build immediate using index
-   refresh force on demand start with sysdate next sysdate+1 with rowid using trusted constraints
+   refresh force on demand start with sysdate next sysdate+1/24 with rowid using trusted constraints
 as
    select ll.*,
           sysdate as ll_as_of
