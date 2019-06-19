@@ -129,11 +129,16 @@ select systimestamp from dual;
 prompt ################################################################################
 prompt 'UPDATING TRANSITIONAL AND VIRTUAL RATING TABLE CONSTRAINTS'
 select systimestamp from dual;
+whenever sqlerror continue
 @@./18_1_1/modify_transitional_virtual_rating_tables
+whenever sqlerror continue
 prompt ################################################################################
 prompt 'UPDATING REGI LOOKUP TABLES'
 select systimestamp from dual;
 whenever sqlerror continue
+-------------------------------------------------------------
+-- COMMENT OUT FROM HERE FOR STREAMS TARGET DATABASES ONLY --
+-------------------------------------------------------------
 @@./18_1_1/update_embankment_protection_types
 @@./18_1_1/update_embankment_structure_types
 @@./18_1_1/update_gate_change_computations
@@ -142,6 +147,9 @@ whenever sqlerror continue
 @@./18_1_1/update_turbine_computation_codes
 @@./18_1_1/update_turbine_setting_reasons
 @@./18_1_1/update_ws_contract_types
+-----------------------------------------------------------
+-- COMMENT OUT TO HERE FOR STREAMS TARGET DATABASES ONLY --
+-----------------------------------------------------------
 whenever sqlerror exit
 @@./18_1_1/add_rowcps_triggers
 prompt ################################################################################
@@ -509,7 +517,8 @@ insert into cwms_abstract_parameter values(32, 'Mass');
 insert into cwms_abstract_parameter values(33, 'Mass Per Volume');
 insert into cwms_abstract_parameter values(34, 'Mass Rate');
 -- New Units
-insert into cwms_unit values( 99, 'bar',       22, null,    'Bars',                             'Pressure of 1 standard atmosphere');
+insert into cwms_unit values( 98, 'K',         23,'SI',    'Kelvins',                           'Temperature in Kelvins');
+insert into cwms_unit values( 99, 'bar',       22, null,   'Bars',                              'Pressure of 1 standard atmosphere');
 insert into cwms_unit values(100, 'cm2',        3, 'SI',   'Square centimeters',                'Area of 1 square centimeter');
 insert into cwms_unit values(101, '$/kaf',     29, 'EN',   'Dollars per 1000 acre-feet',        'Monetary Value of 1 United States dollar Per 1E+03 acre feet');
 insert into cwms_unit values(102, '$/mcm',     29, 'SI',   'Dollars per milliion cubic meters', 'Monetary Value of 1 United States dollar Per 1E+06 cubic meters');
@@ -1022,11 +1031,11 @@ prompt 'ADDING WRITE PRIVILEGE TRIGGERS ON NEW TABLES'
 select systimestamp from dual;
 set define on
 @@../cwms/create_sec_triggers
---prompt ################################################################################
---prompt 'REBUILD MV_SEC_TS_PRIVILEGES'
---select systimestamp from dual;
--- -- I don't know why the following line is necessary - but it is
---@@./18_1_1/rebuild_mv_sec_ts_privileges
+prompt ################################################################################
+prompt 'REBUILD MV_SEC_TS_PRIVILEGES'
+select systimestamp from dual;
+ -- I don't know why the following line is necessary - but it is
+@@./18_1_1/rebuild_mv_sec_ts_privileges
 prompt ################################################################################
 prompt 'CORRECT BAD WORDING IN TRIGGERS'
 select systimestamp from dual;
@@ -1157,7 +1166,8 @@ prompt 'The following ratings (if any) have had their source agencies set to NUL
 select * from rating_source_changes;
 drop table rating_source_changes;
 prompt ################################################################################
-prompt 'UPDATE COMPLETE'
+prompt 'AUTOMATED UPDATE COMPLETE'
+prompt 'You must now run the load_data.py script in the 18_1_1 directory to complete the process'
 select systimestamp from dual;
 exit
 
