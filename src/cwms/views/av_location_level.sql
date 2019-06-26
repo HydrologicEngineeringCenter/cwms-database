@@ -63,14 +63,14 @@ select q1.office_id,
        when q1.attribute_parameter_id is null then null
        else cwms_util.convert_units(
               q1.attribute_value,
-              cwms_util.get_default_units(q1.attribute_parameter_id, q1.unit_system),
+              cwms_util.get_default_units(q1.attribute_parameter_id),
               cwms_display.retrieve_user_unit_f(q1.attribute_parameter_id, q1.unit_system))
        end as attribute_value,
        case
        when q1.constant_level is null then null
        else cwms_util.convert_units(
               q1.constant_level,
-              cwms_util.get_default_units(q1.parameter_id, q1.unit_system),
+              cwms_util.get_default_units(q1.parameter_id),
               cwms_display.retrieve_user_unit_f(q1.parameter_id, q1.unit_system))
        end as constant_level,
        q1.interval_origin,
@@ -82,7 +82,7 @@ select q1.office_id,
        when q1.seasonal_level is null then null
        else cwms_util.convert_units(
               q1.seasonal_level,
-              cwms_util.get_default_units(q1.parameter_id, q1.unit_system),
+              cwms_util.get_default_units(q1.parameter_id),
               cwms_display.retrieve_user_unit_f(q1.parameter_id, q1.unit_system))
        end as seasonal_level,
        q1.tsid,
