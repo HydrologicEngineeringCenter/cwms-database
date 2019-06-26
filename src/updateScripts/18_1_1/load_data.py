@@ -14,7 +14,11 @@ crsr.execute("truncate table cwms_nid")
 conn.close()
 t1 = datetime.datetime.now()
 print("Loading new data for CWMS_NID")
-os.system("sqlldr %s/%s@%s:%s/%s control=CWMS_NID_DATA_TABLE.ctl" % (usr, pwd, host, port, sid))
+if pwd.find("^") != -1 :
+	pwd2 = '"%s"' % pwd
+else :
+	pwd2 = pwd
+os.system("sqlldr %s/%s@%s:%s/%s control=CWMS_NID_DATA_TABLE.ctl" % (usr, pwd2, host, port, sid))
 logfile = "%s_data.log" % sid
 try    : os.remove(logfile)
 except : pass
