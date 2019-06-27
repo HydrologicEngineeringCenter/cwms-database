@@ -3409,7 +3409,7 @@ begin
             l_ratings2(l_ratings2.count).convert_to_database_time;
             l_effective_date := greatest(l_ratings1(l_ratings1.count).effective_date, l_ratings2(l_ratings2.count).effective_date);
             l_lines.delete;
-            append(l_lines, '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
+            append(l_lines, '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
             append(l_lines, '  <rating-template office-id="'||p_office_id||'">');
             append(l_lines, '    <parameters-id>Stage;Flow</parameters-id>');
             append(l_lines, '    <version>USGS-Production</version>');
@@ -3470,7 +3470,7 @@ begin
             l_ratings2(l_ratings2.count).convert_to_database_time;
             l_effective_date := greatest(l_ratings1(l_ratings1.count).effective_date, l_ratings2(l_ratings2.count).effective_date);
             l_lines.delete;
-            append(l_lines, '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
+            append(l_lines, '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
             append(l_lines, '  <rating-template office-id="'||p_office_id||'">');
             append(l_lines, '    <parameters-id>Stage;Flow</parameters-id>');
             append(l_lines, '    <version>USGS-Production</version>');
@@ -3531,7 +3531,7 @@ begin
             l_ratings1(l_ratings1.count).convert_to_database_time;
             l_effective_date := l_ratings1(l_ratings1.count).effective_date;
             l_lines.delete;
-            append(l_lines, '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
+            append(l_lines, '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
             append(l_lines, '  <rating-template office-id="'||p_office_id||'">');
             append(l_lines, '    <parameters-id>Stage;Flow</parameters-id>');
             append(l_lines, '    <version>USGS-Production</version>');
@@ -3585,7 +3585,7 @@ begin
             l_ratings1(l_ratings1.count).convert_to_database_time;
             l_effective_date := l_ratings1(l_ratings1.count).effective_date;
             l_lines.delete;
-            append(l_lines, '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
+            append(l_lines, '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
             append(l_lines, '  <rating-template office-id="'||p_office_id||'">');
             append(l_lines, '    <parameters-id>Stage;Flow</parameters-id>');
             append(l_lines, '    <version>USGS-Production</version>');
