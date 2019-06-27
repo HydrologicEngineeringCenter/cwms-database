@@ -11,14 +11,14 @@ as
 
 /**
  * URL for retrieving instantaneous value time series data from USGS NWIS for a period ending at current time
- * @see http://waterservices.usgs.gov/rest/IV-Service.html
+ * @see https://waterservices.usgs.gov/rest/IV-Service.html
  */
-realtime_ts_url_period constant varchar2(109) := 'http://waterservices.usgs.gov/nwis/iv/?format=<format>&period=<period>&parameterCd=<parameters>&sites=<sites>';
+realtime_ts_url_period constant varchar2(110) := 'https://waterservices.usgs.gov/nwis/iv/?format=<format>&period=<period>&parameterCd=<parameters>&sites=<sites>';
 /**
  * URL for retrieving instantaneous value time series data from USGS NWIS for specified start and end dates
- * @see http://waterservices.usgs.gov/rest/IV-Service.html
+ * @see https://waterservices.usgs.gov/rest/IV-Service.html
  */
-realtime_ts_url_dates  constant varchar2(121) := 'http://waterservices.usgs.gov/nwis/iv/?format=<format>&startDT=<start>&endDT=<end>&parameterCd=<parameters>&sites=<sites>';
+realtime_ts_url_dates  constant varchar2(122) := 'https://waterservices.usgs.gov/nwis/iv/?format=<format>&startDT=<start>&endDT=<end>&parameterCd=<parameters>&sites=<sites>';
 /**
  * Maximum number of sites that can be requested at once from USGS NWIS
  */
@@ -53,7 +53,7 @@ auto_ts_period_prop constant varchar2(26) := 'timeseries_retrieve_period';
 /**
  * URL for retrieving streamflow measurement data from USGS NWIS for specified start and end dates
  */
-stream_meas_url     constant varchar2(113) := 'http://waterdata.usgs.gov/nwis/measurements?format=rdb&begin_date=<start>&end_date=<end>&multiple_site_no=<sites>';
+stream_meas_url     constant varchar2(114) := 'https://waterdata.usgs.gov/nwis/measurements?format=rdb&begin_date=<start>&end_date=<end>&multiple_site_no=<sites>';
 /**
  * CWMS Properties ID for specifying run interval in minutes for automatic streamflow measurements retrieval job. Job doesn't run if property is not set. Property category is 'USGS'. Property value is integer.
  * May be managed using CWMS_PROPERTIES package or by routines in this package.
@@ -83,19 +83,19 @@ auto_stream_meas_period_prop constant varchar2(31) := 'streamflow_meas_retrieve_
 auto_stream_meas_filter_prop constant varchar2(32) := 'streamflow_meas_locations_filter';
 /**
  * URL for retrieving rating update info from the USGS NWIS rating depot for all ratings updated within a specified period
- * @see http://waterdata.usgs.gov/nwisweb/get_ratings?help
+ * @see https://waterdata.usgs.gov/nwisweb/get_ratings?help
  */
-rating_query_url_period   constant varchar2(71) := 'http://waterdata.usgs.gov/nwisweb/get_ratings?format=rdb&period=<hours>';
+rating_query_url_period   constant varchar2(72) := 'https://waterdata.usgs.gov/nwisweb/get_ratings?format=rdb&period=<hours>';
 /**
  * URL for retrieving rating update info from the USGS NWIS rating depot for all ratings for a specified site
- * @see http://waterdata.usgs.gov/nwisweb/get_ratings?help
+ * @see https://waterdata.usgs.gov/nwisweb/get_ratings?help
  */
-rating_query_url_site constant varchar2(71) := 'http://waterdata.usgs.gov/nwisweb/get_ratings?format=rdb&site_no=<site>';
+rating_query_url_site constant varchar2(72) := 'https://waterdata.usgs.gov/nwisweb/get_ratings?format=rdb&site_no=<site>';
 /**
  * URL for retrieving rating from the USGS NWIS rating depot
- * @see http://waterdata.usgs.gov/nwisweb/get_ratings?help
+ * @see https://waterdata.usgs.gov/nwisweb/get_ratings?help
  */
-rating_url constant varchar2(76) := 'http://waterdata.usgs.gov/nwisweb/data/ratings/<type>/USGS.<site>.<type>.rdb';
+rating_url constant varchar2(77) := 'https://waterdata.usgs.gov/nwisweb/data/ratings/<type>/USGS.<site>.<type>.rdb';
 /**
  * CWMS Properties ID for specifying run interval in minutes for job to automatically retrieve new ratings. Job doesn't run if property is not set. Property category is 'USGS'. Property value is integer.
  * May be managed using CWMS_PROPERTIES package or by routines in this package.
@@ -349,7 +349,7 @@ function get_ts_id(
  * @param p_office_id  The office to retrieve the data for. If NULL or not specified, the session user's default office is used
  * @return The time series data in the requested format as a CLOB
  *
- * @see http://waterservices.usgs.gov/rest/IV-Service.html
+ * @see https://waterservices.usgs.gov/rest/IV-Service.html
  * @see http://en.wikipedia.org/wiki/JSON
  * @see http://river.sdsc.edu/wiki/WaterML.ashx
  * @see http://www.waterml2.org/
@@ -408,7 +408,7 @@ function get_ts_data(
  * @return The time series data in the requested format as a CLOB
  *
  * @see http://en.wikipedia.org/wiki/ISO_8601#Combined_date_and_time_representations
- * @see http://waterservices.usgs.gov/rest/IV-Service.html
+ * @see https://waterservices.usgs.gov/rest/IV-Service.html
  * @see http://en.wikipedia.org/wiki/JSON
  * @see http://river.sdsc.edu/wiki/WaterML.ashx
  * @see http://www.waterml2.org/
