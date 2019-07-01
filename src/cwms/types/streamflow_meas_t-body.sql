@@ -59,7 +59,19 @@ as
          self.flow_unit      := 'cfs';
          self.time_zone      := 'UTC';
 
-         if upper(self.quality) = 'UNKNOWN' then self.quality := 'Unspecified'; end if;
+         if upper(self.quality) = 'UNKNOWN' then
+            self.quality := 'Unknown';
+         elsif upper(self.quality) = 'UNSPECIFED' then
+            self.quality := 'Unspecified';
+         end if;
+         select count(*)
+           into l_field_count
+           from cwms_usgs_rating_ctrl_cond
+          where ctrl_cond_id = self.quality;
+          
+         if l_field_count = 0 then
+            self.quality := null;
+         end if;
          if upper(self.flow_adj_id) in('NONE','UNKN') then self.flow_adj_id := 'UNSP';  end if;
       end loop;
       return;
