@@ -5819,6 +5819,7 @@ as
                                where office_code = l_office_code
                                  and user_name = l_user_name
                                  and app_name = l_app_name
+                                 and logout_time <> 0
                              );
       exception
          ----------------------------
