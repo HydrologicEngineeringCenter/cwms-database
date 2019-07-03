@@ -1,9 +1,9 @@
 create table cwms_db_change_log(
    office_code integer,
-   database_id varchar2(30),
-   application varchar2(32), 
-	ver_major   integer, 
-	ver_minor   integer, 
+   database_id varchar2(61),
+   application varchar2(32),
+	ver_major   integer,
+	ver_minor   integer,
    ver_build   integer,
    ver_date      date,
    apply_date    date,
@@ -30,20 +30,20 @@ begin
 end;
 /
 
-insert 
-   into cwms_db_change_log (office_code, 
-                            database_id, 
-                            application, 
-                            ver_major, 
-                            ver_minor, 
-                            ver_build, 
-                            ver_date) 
- values (51, 
-         (select nvl(primary_db_unique_name, db_unique_name) from v$database), 
-         'CWMS', 
-         18, 
-         1, 
-         1, 
+insert
+   into cwms_db_change_log (office_code,
+                            database_id,
+                            application,
+                            ver_major,
+                            ver_minor,
+                            ver_build,
+                            ver_date)
+ values (51,
+         cwms_util.get_db_name,
+         'CWMS',
+         18,
+         1,
+         1,
          date '2018-08-15');
 commit;
 

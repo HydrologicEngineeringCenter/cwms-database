@@ -9,7 +9,7 @@ procedure store_auth_scheduler_entry(
    p_job_name      in varchar2,
    p_database_name in varchar2 default null)
 is
-   l_dbname    varchar2(30);
+   l_dbname    varchar2(61);
    l_auth_rec  cwms_auth_sched_entries%rowtype;
    l_sched_rec dba_scheduler_jobs%rowtype;
    l_exists    boolean;
@@ -27,9 +27,7 @@ begin
    -- get the database name --
    ---------------------------
    if p_database_name is null then
-      select nvl(primary_db_unique_name, db_unique_name)
-        into l_dbname
-        from v$database;
+      l_dbname := cwms_util.get_db_name;
    else
       l_dbname := upper(p_database_name);
    end if;
@@ -45,8 +43,8 @@ begin
    exception
       when no_data_found then
          cwms_err.raise(
-            'ITEM_DOES_NOT_EXIST', 
-            'Scheduler job', 
+            'ITEM_DOES_NOT_EXIST',
+            'Scheduler job',
             l_dbname
             ||'/'
             ||upper(p_job_owner)
@@ -66,8 +64,8 @@ begin
        where database_name = l_auth_rec.database_name
          and job_owner     = l_auth_rec.job_owner
          and job_name      = l_auth_rec.job_name;
-         
-      l_exists := true;         
+
+      l_exists := true;
    exception
       when no_data_found then l_exists := false;
    end;
@@ -94,9 +92,9 @@ begin
    else
       insert
         into cwms_auth_sched_entries
-      values l_auth_rec;  
+      values l_auth_rec;
    end if;
-   
+
 end store_auth_scheduler_entry;
 
 --------------------------------------------------------------------------------
@@ -107,7 +105,7 @@ procedure delete_auth_scheduler_entry(
    p_job_name      in varchar2,
    p_database_name in varchar2 default null)
 is
-   l_dbname varchar2(30);
+   l_dbname varchar2(61);
 begin
    -------------------
    -- sanity checks --
@@ -122,9 +120,7 @@ begin
    -- get the database name --
    ---------------------------
    if p_database_name is null then
-      select nvl(primary_db_unique_name, db_unique_name)
-        into l_dbname
-        from v$database;
+      l_dbname := cwms_util.get_db_name;
    else
       l_dbname := upper(p_database_name);
    end if;
@@ -140,8 +136,8 @@ begin
    exception
       when no_data_found then
          cwms_err.raise(
-            'ITEM_DOES_NOT_EXIST', 
-            'Scheduler job authorization', 
+            'ITEM_DOES_NOT_EXIST',
+            'Scheduler job authorization',
             l_dbname
             ||'/'
             ||upper(p_job_owner)
@@ -161,7 +157,7 @@ procedure cat_auth_scheduler_entries(
 is
    l_job_owner_mask     varchar2(30);
    l_job_name_mask      varchar2(30);
-   l_database_name_mask varchar2(30);
+   l_database_name_mask varchar2(61);
 begin
    --------------------------------
 	-- get the selection criteria --
@@ -169,9 +165,7 @@ begin
    l_job_owner_mask := cwms_util.normalize_wildcards(nvl(upper(p_job_owner_mask), '*'));
    l_job_name_mask  := cwms_util.normalize_wildcards(nvl(upper(p_job_name_mask),  '*'));
    if p_database_name_mask is null then
-      select nvl(primary_db_unique_name, db_unique_name)
-        into l_database_name_mask
-        from v$database;
+     l_database_name_mask := cwms_util.get_db_name;
    else
       l_database_name_mask := cwms_util.normalize_wildcards(nvl(upper(p_database_name_mask),  '*'));
    end if;
@@ -213,8 +207,8 @@ begin
       p_job_owner_mask,
       p_job_name_mask,
       p_database_name_mask);
-      
-   return l_cat_cursor;      
+
+   return l_cat_cursor;
 end cat_auth_scheduler_entries_f;
 
 --------------------------------------------------------------------------------
@@ -228,7 +222,7 @@ procedure cat_unauth_scheduler_entries(
 is
    l_job_owner_mask     varchar2(30);
    l_job_name_mask      varchar2(30);
-   l_database_name_mask varchar2(30);
+   l_database_name_mask varchar2(61);
 begin
    --------------------------------
 	-- get the selection criteria --
@@ -236,9 +230,7 @@ begin
    l_job_owner_mask := cwms_util.normalize_wildcards(nvl(upper(p_job_owner_mask), '*'));
    l_job_name_mask  := cwms_util.normalize_wildcards(nvl(upper(p_job_name_mask),  '*'));
    if p_database_name_mask is null then
-      select nvl(primary_db_unique_name, db_unique_name)
-        into l_database_name_mask
-        from v$database;
+      l_database_name_mask := cwms_util.get_db_name;
    else
       l_database_name_mask := cwms_util.normalize_wildcards(nvl(upper(p_database_name_mask),  '*'));
    end if;
@@ -280,8 +272,8 @@ begin
       p_job_owner_mask,
       p_job_name_mask,
       p_database_name_mask);
-      
-   return l_cat_cursor;      
+
+   return l_cat_cursor;
 end cat_unauth_scheduler_entries_f;
 
 --------------------------------------------------------------------------------
@@ -299,7 +291,7 @@ begin
    delete_email_recipients;
    if p_email_recipients is not null then
       select trim(column_value)
-        bulk collect 
+        bulk collect
         into l_recipients
         from table(p_email_recipients);
       ----------------------------------------------
@@ -372,7 +364,7 @@ begin
       select count(*)
         into l_count
         from table(l_recipients)
-       where column_value = p_email_recipient; 
+       where column_value = p_email_recipient;
       if l_count = 0 then
          l_recipients.extend;
          l_recipients(l_recipients.count) := p_email_recipient;
@@ -397,7 +389,7 @@ begin
         into l_recipients2
         from table(l_recipients1)
        where column_value != p_email_recipient;
-       
+
       if l_recipients2.count < l_recipients1.count then
          store_email_recipients(l_recipients2);
       end if;
@@ -422,7 +414,7 @@ begin
          recipients_prop_name||'.'||i,
          recipients_prop_office);
    end loop;
-end delete_email_recipients;   
+end delete_email_recipients;
 
 --------------------------------------------------------------------------------
 -- procedure retrieve_email_recipients
@@ -496,10 +488,10 @@ procedure check_scheduler_entries
 is
    l_message     varchar2(32767);
    l_to_addrs    varchar2(32767);
-   l_dbname      varchar2(30);
+   l_dbname      varchar2(61);
    l_count       pls_integer := 0;
    l_rec         cwms_unauth_sched_entries%rowtype;
-   
+
    function encode(l_raw in varchar2)
    return varchar2
    is
@@ -510,9 +502,7 @@ begin
    -----------------------------------
    -- get the primary database name --
    -----------------------------------
-   select nvl(primary_db_unique_name, db_unique_name)
-     into l_dbname
-     from v$database;
+   l_dbname := cwms_util.get_db_name;
    -----------------------------
    -- get the email addresses --
    -----------------------------
@@ -548,7 +538,7 @@ begin
                        repeat_interval,
                        comments,
                        job_action
-                      ) not in 
+                      ) not in
                       (select job_owner,
                               job_creator,
                               job_name,
@@ -558,7 +548,7 @@ begin
                               schedule_type,
                               repeat_interval,
                               comments,
-                              job_action 
+                              job_action
                          from cwms_auth_sched_entries
                         where database_name in (l_dbname, 'CWMS')
                       )
@@ -572,23 +562,23 @@ begin
          select *
            into l_rec
            from cwms_unauth_sched_entries
-          where database_name = l_dbname 
+          where database_name = l_dbname
             and job_owner = rec.owner
             and job_name = rec.job_name;
-            
-            l_rec.first_detected     := sysdate;              
-            l_rec.job_creator        := rec.job_creator;      
-            l_rec.job_style          := rec.job_style;        
-            l_rec.job_type           := rec.job_type;         
-            l_rec.job_priority       := rec.job_priority;     
-            l_rec.schedule_type      := rec.schedule_type;    
-            l_rec.repeat_interval    := rec.repeat_interval;  
-            l_rec.comments           := rec.comments;         
+
+            l_rec.first_detected     := sysdate;
+            l_rec.job_creator        := rec.job_creator;
+            l_rec.job_style          := rec.job_style;
+            l_rec.job_type           := rec.job_type;
+            l_rec.job_priority       := rec.job_priority;
+            l_rec.schedule_type      := rec.schedule_type;
+            l_rec.repeat_interval    := rec.repeat_interval;
+            l_rec.comments           := rec.comments;
             l_rec.job_action         := rec.job_action;
-            
+
             update cwms_unauth_sched_entries
                set row = l_rec
-          where database_name = l_rec.database_name 
+          where database_name = l_rec.database_name
             and job_owner = l_rec.job_owner
             and job_name = l_rec.job_name;
       exception
@@ -634,7 +624,7 @@ begin
          l_message := l_message||'<tr><th align="left">Last&nbsp;Duration</th><td>'                         ||encode(rec.last_run_duration)||'</td></tr>';
          l_message := l_message||'<tr><th align="left">Next&nbsp;Start</th><td>'                            ||encode(rec.next_run_date)    ||'</td></tr>';
          l_message := l_message||'<tr><th align="left">Comments</th><td>'                                   ||encode(rec.comments)         ||'</td></tr>';
-      end if;   
+      end if;
    end loop;
    if l_message is not null then
       l_message := l_message||'</table></body></html>';
@@ -644,7 +634,7 @@ begin
    ----------------
    cwms_mail.send_mail(
       p_from       => lower(l_dbname)||'.db.cwms@usace.army.mil',
-      p_to         => l_to_addrs, 
+      p_to         => l_to_addrs,
       p_subject    => l_count||' Unauthorized Database Scheduler Entries',
       p_message    => l_message,
       p_is_html    => 'T');
@@ -660,10 +650,10 @@ begin
                        job_owner,
                        job_name
                   from cwms_auth_sched_entries
-               );   
+               );
 end check_scheduler_entries;
 
-function job_count 
+function job_count
    return pls_integer
 is
    l_count pls_integer;
@@ -684,7 +674,7 @@ begin
    dbms_scheduler.create_job(
       job_name             => monitor_scheduler_job_name,
       job_type             => 'stored_procedure',
-      job_action           => 'cwms_scheduler_auth.check_scheduler_entries',   
+      job_action           => 'cwms_scheduler_auth.check_scheduler_entries',
       number_of_arguments  => 0,
       start_date           => from_tz(trunc(sysdate)+10/24, 'UTC'), -- 10:00 UTC
       repeat_interval      => 'freq=daily; interval=1',
@@ -697,7 +687,7 @@ begin
    if job_count = 0 then
       cwms_err.raise('ERROR', 'Could not start '||monitor_scheduler_job_name);
    end if;
-   
+
 end start_check_sched_entries_job;
 
 procedure stop_check_sched_entries_job
@@ -708,15 +698,15 @@ begin
    if l_office_id != 'CWMS' then
       cwms_err.raise('ERROR', 'Must be logged in as schema owner to stop '||monitor_scheduler_job_name);
    end if;
-   
+
    if job_count > 0 then
       dbms_scheduler.drop_job(job_name => monitor_scheduler_job_name, force => true);
    end if;
-   
+
    if job_count > 0 then
       cwms_err.raise('ERROR', 'Could not stop '||monitor_scheduler_job_name);
    end if;
-   
+
 end stop_check_sched_entries_job;
 
 end cwms_scheduler_auth;

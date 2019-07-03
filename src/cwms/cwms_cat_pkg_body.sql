@@ -4476,7 +4476,7 @@ END cat_ts_id;
          l_name  varchar2(32767);
       begin
          dbms_lob.createtemporary(l_data2, true);
-         select db_unique_name into l_name from v$database;
+         l_name := cwms_util.get_db_name;
          case
          when l_format = 'xml' then
             cwms_util.append(
@@ -4644,7 +4644,7 @@ END cat_ts_id;
          l_name  varchar2(32767);
       begin
          dbms_lob.createtemporary(l_data2, true);
-         select db_unique_name into l_name from v$database;
+         l_name := cwms_util.get_db_name;
          case
          when l_format = 'xml' then
             cwms_util.append(
@@ -4888,7 +4888,7 @@ END cat_ts_id;
          l_name  varchar2(32767);
       begin
          dbms_lob.createtemporary(l_data2, true);
-         select db_unique_name into l_name from v$database;
+         l_name := cwms_util.get_db_name;
          case
          when l_format = 'xml' then
             cwms_util.append(
@@ -5124,7 +5124,7 @@ END cat_ts_id;
          l_name  varchar2(32767);
       begin
          dbms_lob.createtemporary(l_data2, true);
-         select db_unique_name into l_name from v$database;
+         l_name := cwms_util.get_db_name;
          case
          when l_format = 'xml' then
             cwms_util.append(
