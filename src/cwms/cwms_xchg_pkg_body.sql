@@ -21,16 +21,11 @@ CREATE OR REPLACE package body cwms_xchg as
       return varchar2
    is
       no_such_table  exception;
-      l_db_name      varchar2(64);
-      l_datastore_id varchar2(64);
+      l_db_name      varchar2(61);
+      l_datastore_id varchar2(128);
       pragma exception_init(no_such_table, -942);
    begin
-      begin
-         execute immediate 'select pdb_name from cdb_pdbs' into l_db_name;
-      exception
-         when no_such_table or no_data_found then
-            select name into l_db_name from v$database;
-      end;
+      l_db_name := cwms_util.get_db_name;
       l_datastore_id := utl_inaddr.get_host_name || ':' || l_db_name;
       if length(l_datastore_id) > 32 then
          l_datastore_id := substr(l_datastore_id, regexp_instr(l_datastore_id, '[a-zA-Z0-9]'));
@@ -398,7 +393,7 @@ CREATE OR REPLACE package body cwms_xchg as
       l_office_ids           vc16_by_pi;
       l_datastore_id         varchar2(32);
       l_interpolate_units    varchar2(16);
-      l_db_name              v$database.db_unique_name%type;
+      l_db_name              varchar2(61);
       l_oracle_id            varchar2(256);
       l_line_break           boolean := true;
 
@@ -540,7 +535,7 @@ CREATE OR REPLACE package body cwms_xchg as
       ---------------------------
       -- output the datastores --
       ---------------------------
-      select db_unique_name into l_db_name from v$database;
+      l_db_name := cwms_util.get_db_name;
       l_oracle_id := db_datastore_id;
       writeln_xml('<datastore>');
       indent;

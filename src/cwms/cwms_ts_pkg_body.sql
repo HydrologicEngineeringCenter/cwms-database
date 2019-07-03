@@ -4688,7 +4688,7 @@ AS
         into l_ts_active
         from at_cwms_ts_id
        where ts_code = l_ts_code;
-       
+
       if l_ts_active <> 'T' then
          cwms_err.raise('ERROR', 'Cannot store to inactive time series '||l_office_id||'/'||l_cwms_ts_id);
       end if;
@@ -13271,6 +13271,9 @@ end retrieve_existing_item_counts;
                end loop;
                l_text := l_text||'</quality-codes>';
                l_data := replace(l_data, '!!Quality Codes!!', l_text);
+               if dbms_lob.getlength(l_data) = 0 then
+                  cwms_util.append(l_data, '<?xml version="1.0" encoding="windows-1252"?><time-series>');
+               end if;
                cwms_util.append(l_data, '</time-series>');
             end if;
          when l_format = 'JSON' then
@@ -13290,6 +13293,9 @@ end retrieve_existing_item_counts;
             l_text := l_text||']},';
             l_data := replace(l_data, '!!Quality Codes!!{', l_text);
             if l_names is not null then
+               if dbms_lob.getlength(l_data) = 0 then
+                  cwms_util.append(l_data, '{"time-series":{"time-series":[');
+               end if;
                cwms_util.append(l_data, ']}}');
             end if;
          when l_format in ('TAB', 'CSV') then
@@ -13364,7 +13370,7 @@ end retrieve_existing_item_counts;
          l_data2 clob;
       begin
          dbms_lob.createtemporary(l_data2, true);
-         select db_unique_name into l_name from v$database;
+         l_name := cwms_util.get_db_name;
          case
          when l_format = 'XML' then
             ---------
@@ -13492,7 +13498,7 @@ end retrieve_existing_item_counts;
             ----------------
             -- TAB or CSV --
             ----------------
-            select db_unique_name into l_name from v$database;
+            l_name := cwms_util.get_db_name;
             cwms_util.append(l_data2, '#Processed At'||chr(9)||utl_inaddr.get_host_name ||':'||l_name||chr(10));
             cwms_util.append(l_data2, '#Time of Query'||chr(9)||to_char(l_query_time, 'dd-Mon-yyyy hh24:mi')||' UTC'||chr(10));
             cwms_util.append(l_data2, '#Process Query'||chr(9)||trunc(1000 * (extract(minute from l_elapsed_query) * 60 + extract(second from l_elapsed_query)))||' milliseconds'||chr(10));

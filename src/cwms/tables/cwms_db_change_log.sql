@@ -1,13 +1,13 @@
 create table cwms_db_change_log(
    office_code integer,
-   database_id varchar2(30),
+   database_id varchar2(61),
    application varchar2(32), 
 	ver_major   integer, 
 	ver_minor   integer, 
    ver_build   integer,
-	ver_date    date, 
-	apply_date  date, 
-	title       varchar2(256 byte), 
+   ver_date      date,
+   apply_date    date,
+   title         varchar2 (256 byte),
 	description clob,
 	constraint cwms_db_change_log_pk primary key (office_code, database_id, application, ver_major, ver_minor, ver_build) using index,
    constraint cwms_db_change_log_fk foreign key (office_code) references cwms_office (office_code)
@@ -30,6 +30,6 @@ begin
 end;
 /
 
-insert into cwms_db_change_log (office_code, database_id, application, ver_major, ver_minor, ver_build, ver_date) values(51, 'CWMSDEV', 'CWMS', 99, 1, 0, sysdate);
+insert into cwms_db_change_log (office_code, database_id, application, ver_major, ver_minor, ver_build, ver_date) values(51, cwms_util.get_db_name, 'CWMS', 99, 1, 0, sysdate);
 commit;
 
