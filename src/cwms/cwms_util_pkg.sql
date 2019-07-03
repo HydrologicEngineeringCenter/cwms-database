@@ -2926,7 +2926,11 @@ AS
    -- not documented
    function current_session_ids
       return number_tab_t;
-
+   /**
+    * @return a suitable name for identifying this database, regardless of whether it is a container database
+    */
+   function get_db_name 
+      return varchar2;
 END cwms_util;
 /
 

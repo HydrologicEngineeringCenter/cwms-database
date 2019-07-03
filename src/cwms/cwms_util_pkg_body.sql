@@ -6154,6 +6154,30 @@ as
    return l_sessions;
    end current_session_ids;
 
+   function get_db_name 
+      return varchar2
+   is
+      l_db_name  varchar2(61);
+      l_pdb_name varchar2(30);
+   begin
+      select nvl(primary_db_unique_name, db_unique_name) 
+        into l_db_name 
+        from v$database;
+        
+      begin
+         select pdb_name
+           into l_pdb_name
+           from cdb_pdbs;
+      exception
+         when others then null;
+      end;
+      
+      if l_pdb_name is not null then
+         l_db_name := l_db_name||'-'||l_pdb_name;
+      end if;
+      return l_db_name;
+   end;
+
 END cwms_util;
 /
 
