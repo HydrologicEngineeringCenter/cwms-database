@@ -1,11 +1,11 @@
 import cx_Oracle, datetime, getpass, os, sys
 
 
-host = raw_input("Database Host     > ")
-sid  = raw_input("Database SID      > ")
-pwd  = getpass.getpass("CWMS_20 Password  > ")
+host = raw_input("Database Host      > ")
+sid  = raw_input("Database SID       > ")
+usr  = raw_input("Database User      > ")
+pwd  = getpass.getpass("Database Password  > ")
 port = 1521
-usr  = "CWMS_20"
 
 conn = cx_Oracle.connect(dsn = cx_Oracle.makedsn(host, port, sid), user=usr, password=pwd)
 crsr = conn.cursor()
