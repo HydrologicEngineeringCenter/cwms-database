@@ -62,7 +62,7 @@ as
          if upper(self.ctrl_cond_id) = 'UNSPECIFED'    then self.ctrl_cond_id := 'Unspecified'; end if;
          if upper(self.flow_adj_id) in ('NONE','UNKN') then self.flow_adj_id  := 'UNSP';        end if;
          
-         select count(*) into l_field_count from cwms_usgs_meas_qual where qual_name = self.quality;
+         select count(*) into l_field_count from cwms_usgs_meas_qual where qual_id = self.quality;
          if l_field_count = 0 then self.quality := null; end if;
          
          select count(*) into l_field_count from cwms_usgs_rating_ctrl_cond where ctrl_cond_id = self.ctrl_cond_id;
