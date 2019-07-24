@@ -1,9 +1,9 @@
 create table cwms_db_change_log(
    office_code integer,
    database_id varchar2(61),
-   application varchar2(32), 
-	ver_major   integer, 
-	ver_minor   integer, 
+   application varchar2(32),
+	ver_major   integer,
+	ver_minor   integer,
    ver_build   integer,
    ver_date      date,
    apply_date    date,
@@ -30,6 +30,29 @@ begin
 end;
 /
 
-insert into cwms_db_change_log (office_code, database_id, application, ver_major, ver_minor, ver_build, ver_date) values(51, cwms_util.get_db_name, 'CWMS', 99, 1, 0, sysdate);
+insert
+   into cwms_db_change_log (
+      office_code,
+      database_id,
+      application,
+      ver_major,
+      ver_minor,
+      ver_build,
+      ver_date)
+   values (
+      51,
+      'LOCAL',
+      'CWMS',
+      99,
+      1,
+      0,
+      date '2018-08-15');
 commit;
+whenever sqlerror continue
+update cwms_db_change_log
+   set database_id = cwms_util.get_db_name
+ where database_id = 'LOCAL';
+commit;
+whenever sqlerror exit
+
 
