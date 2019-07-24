@@ -156,7 +156,18 @@ begin
 end;
 /
 
-
+-- update CWMS_DB_CHANGE_LOG
+alter session set current_schema = &cwms_schema;
+whenever sqlerror continue
+select cwms_util.get_db_name from dual;
+whenever sqlerror exit
+begin
+   update cwms_db_change_log
+      set database_id = cwms_util.get_db_name
+    where database_id = 'LOCAL';
+end;
+/
+alter session set current_schema = sys
 -- Create CWMS_DBXC_ROLE
 
 @@cwms/User-Roles/cwms_dbx_role_et_user
