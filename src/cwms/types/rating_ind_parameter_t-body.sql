@@ -843,35 +843,13 @@ as
          l_ind_params := double_tab_t();
       end if;
       l_position := l_ind_params.count + 1;
-      for i in 1..self.rating_values.count loop
-         if l_deepest is null then
-            l_deepest := self.rating_values(i).dep_rating_ind_param is null;
-         else
-            if(self.rating_values(i).dep_rating_ind_param is null) != l_deepest then
-               cwms_err.raise(
-                  'ERROR',
-                  'Rating parameter position '||l_position||' contains both values and ratings');
-            end if;
-         end if;
-         if self.rating_values(i).dep_value is null then
-            ----------------------------
-            -- recurse down one level --
-            ----------------------------
-            l_ind_params.extend;
-            l_ind_params(l_ind_params.count) := self.rating_values(i).ind_value;
-            cwms_util.append(l_text, self.rating_values(i).dep_rating_ind_param.to_clob(l_ind_params, p_is_extension));
-            l_ind_params.trim(1);
-         else
+      if p_is_extension then
+         for i in 1..self.extension_values.count loop
             if i = 1 then
                ----------------------------
                -- output the opening tag --
                ----------------------------
-               cwms_util.append(
-                  l_text,
-                  case p_is_extension
-                     when true  then '<extension-points>'
-                     when false then '<rating-points>'
-                  end);
+               cwms_util.append(l_text, '<extension-points>');
                ---------------------------------------------------
                -- output any other independent parameter values --
                ---------------------------------------------------
@@ -886,17 +864,61 @@ as
             --------------------------------
             -- output the <point> element --
             --------------------------------
-            if p_is_extension then
-               cwms_util.append(l_text, '<point><ind>'
-                  ||cwms_rounding.round_dt_f(self.extension_values(i).ind_value, '9999999999')
-                  ||'</ind><dep>'
-                  ||cwms_rounding.round_dt_f(self.extension_values(i).dep_value, '9999999999')
-                  ||'</dep>'
-                  ||case self.extension_values(i).note_id is not null
-                       when true then '<note>'||self.extension_values(i).note_id||'</note>'
-                    end
-                  ||'</point>');
+            cwms_util.append(l_text, '<point><ind>'
+               ||cwms_rounding.round_dt_f(self.extension_values(i).ind_value, '9999999999')
+               ||'</ind><dep>'
+               ||cwms_rounding.round_dt_f(self.extension_values(i).dep_value, '9999999999')
+               ||'</dep>'
+               ||case self.extension_values(i).note_id is not null
+                    when true then '<note>'||self.extension_values(i).note_id||'</note>'
+                 end
+               ||'</point>');
+            if i = self.extension_values.count then
+               ----------------------------
+               -- output the closing tag --
+               ----------------------------
+               cwms_util.append(l_text, '</extension-points>');
+            end if;
+         end loop;
+      else
+         for i in 1..self.rating_values.count loop
+            if l_deepest is null then
+               l_deepest := self.rating_values(i).dep_rating_ind_param is null;
             else
+               if(self.rating_values(i).dep_rating_ind_param is null) != l_deepest then
+                  cwms_err.raise(
+                     'ERROR',
+                     'Rating parameter position '||l_position||' contains both values and ratings');
+               end if;
+            end if;
+            if self.rating_values(i).dep_value is null then
+               ----------------------------
+               -- recurse down one level --
+               ----------------------------
+               l_ind_params.extend;
+               l_ind_params(l_ind_params.count) := self.rating_values(i).ind_value;
+               cwms_util.append(l_text, self.rating_values(i).dep_rating_ind_param.to_clob(l_ind_params, p_is_extension));
+               l_ind_params.trim(1);
+            else
+               if i = 1 then
+                  ----------------------------
+                  -- output the opening tag --
+                  ----------------------------
+                  cwms_util.append(l_text, '<rating-points>');
+                  ---------------------------------------------------
+                  -- output any other independent parameter values --
+                  ---------------------------------------------------
+                  for j in 1..l_ind_params.count loop
+                     cwms_util.append(l_text, '<other-ind position="'
+                        ||j
+                        ||'" value="'
+                        ||cwms_rounding.round_dt_f(l_ind_params(j), '9999999999')
+                        ||'"/>');
+                  end loop;
+               end if;
+               --------------------------------
+               -- output the <point> element --
+               --------------------------------
                cwms_util.append(l_text, '<point><ind>'
                   ||cwms_rounding.round_dt_f(self.rating_values(i).ind_value, '9999999999')
                   ||'</ind><dep>'
@@ -907,18 +929,13 @@ as
                     end
                   ||'</point>');
             end if;
+         end loop;
+         if l_deepest then
+            ----------------------------
+            -- output the closing tag --
+            ----------------------------
+            cwms_util.append(l_text, '</rating-points>');
          end if;
-      end loop;
-      if l_deepest then
-         ----------------------------
-         -- output the closing tag --
-         ----------------------------
-         cwms_util.append(
-            l_text,
-            case p_is_extension
-               when true  then '</extension-points>'
-               when false then '</rating-points>'
-            end);
       end if;
       dbms_lob.close(l_text);
       return l_text;
