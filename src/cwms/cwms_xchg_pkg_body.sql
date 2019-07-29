@@ -26,7 +26,7 @@ CREATE OR REPLACE package body cwms_xchg as
       pragma exception_init(no_such_table, -942);
    begin
       l_db_name := cwms_util.get_db_name;
-      l_datastore_id := utl_inaddr.get_host_name || ':' || l_db_name;
+      l_datastore_id := cwms_util.get_db_host || ':' || l_db_name;
       if length(l_datastore_id) > 32 then
          l_datastore_id := substr(l_datastore_id, regexp_instr(l_datastore_id, '[a-zA-Z0-9]'));
       end if;
@@ -541,7 +541,7 @@ CREATE OR REPLACE package body cwms_xchg as
       indent;
       writeln_xml('<oracle id="'||xml_encode(l_oracle_id)||'">');
       indent;
-      writeln_xml('<host>'||xml_encode(utl_inaddr.get_host_address)||'</host>');
+      writeln_xml('<host>'||xml_encode(cwms_util.get_db_host)||'</host>');
       writeln_xml('<sid>'||xml_encode(l_db_name)||'</sid>');
       dedent;
       writeln_xml('</oracle>');
