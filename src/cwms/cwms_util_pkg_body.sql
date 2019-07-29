@@ -6178,6 +6178,19 @@ as
       return l_db_name;
    end;
 
+   function get_db_host
+      return varchar2
+   is
+      --According to RFC 1035 the length of a FQDN is limited to 255 characters
+      l_hostaddress varchar2(255);
+   begin
+      l_hostaddress := SYS.UTL_INADDR.GET_HOST_ADDRESS;
+      if l_hostaddress = '::1' or l_hostaddress = '127.0.0.1' then
+         l_hostaddress := SYS.UTL_INADDR.GET_HOST_NAME;
+      end if;
+      return l_hostaddress;      
+   end;
+
 END cwms_util;
 /
 
