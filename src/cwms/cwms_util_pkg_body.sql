@@ -6165,9 +6165,7 @@ as
         from v$database;
         
       begin
-         select pdb_name
-           into l_pdb_name
-           from cdb_pdbs;
+         execute immediate 'select pdb_name from cdb_pdbs' into l_pdb_name;
       exception
          when others then null;
       end;
