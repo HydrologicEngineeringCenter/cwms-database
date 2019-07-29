@@ -2931,6 +2931,11 @@ AS
     */
    function get_db_name 
       return varchar2;
+   /**
+    * @return the host address or name for identifying this database. If the host address is detected to be ::1 or localhost, then the host name will be returned
+    */
+   function get_db_host 
+      return varchar2;
 END cwms_util;
 /
 
