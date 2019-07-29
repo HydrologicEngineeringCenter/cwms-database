@@ -6173,7 +6173,7 @@ as
       end;
       
       if l_pdb_name is not null then
-         l_db_name := l_db_name||'-'||l_pdb_name;
+         l_db_name := l_pdb_name;
       end if;
       return l_db_name;
    end;
