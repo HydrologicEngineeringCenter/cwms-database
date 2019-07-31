@@ -140,11 +140,13 @@ AS
                           p_password             IN VARCHAR2,
                           p_user_group_id_list   IN char_32_array_type,
                           p_db_office_id         IN VARCHAR2 DEFAULT NULL);
+	PRAGMA DEPRECATE (create_user, 'This method is no longer supported through client-side API. All Oracle account administration is done by the Oracle DBA.');
 
 
    PROCEDURE create_cwms_service_user;
 
    PROCEDURE delete_user (p_username IN VARCHAR2);
+   PRAGMA DEPRECATE (delete_user, 'This method is no longer supported through client-side API. All Oracle account administration is done by the Oracle DBA.');
 
    PROCEDURE lock_user (p_username       IN VARCHAR2,
                         p_db_office_id   IN VARCHAR2 DEFAULT NULL);
@@ -240,6 +242,8 @@ AS
                                p_office     IN VARCHAR2,
                                p_phone      IN VARCHAR2,
                                p_email      IN VARCHAR2);
+   PRAGMA DEPRECATE (update_user_data, 'This method is no longer supported through client-side API. All Oracle account administration is done by the Oracle DBA.');
+
   PROCEDURE remove_session_key(p_session_key VARCHAR2);
   PROCEDURE clean_session_keys;
   PROCEDURE get_user_credentials (p_edipi      IN     NUMBER,
