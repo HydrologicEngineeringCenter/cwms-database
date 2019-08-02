@@ -1528,6 +1528,20 @@ AS
     */
    function is_logic_operator(p_token in varchar2) return boolean;
    /**
+    * Parses an algebraic expression and returns a normalized version.
+    *
+    * @param p_algebraic_expr a mathematical expression in infix (algebraic) notation.
+    *        All tokens in the normalized expression (numbers, variables, operators,
+    *        constants, functions) will be separated from adjacent tokens by whitespace.
+    *        No whitespace is inserted before or after parentheses. Variables are specified
+    *        as arg1, arg2, ... argN. Negated variables (e.g., -argN) are accepted.
+    *
+    * @return a normalized version of the infix (algebraic) expression
+    */
+   function normalize_algebraic(
+      p_algebraic_expr in varchar2)
+      return varchar2;
+   /**
     * Generates a table of RPN tokens from an algebraic expression.
     *
     * @param p_algebraic_expr a mathematical expression in infix (algebraic) notation.
@@ -2728,7 +2742,7 @@ AS
     * @param p_host_name    The name of the system the user is running the application on
     * @param p_login_time   The login time of the application, in Java milliseconds
     * @param p_login_server The URL of the login server that handled the application's login
-    * @param p_session_id   The AUDSID of the session to retrieve information for. If unspecified (or zero) the current session's AUDSID is used  
+    * @param p_session_id   The AUDSID of the session to retrieve information for. If unspecified (or zero) the current session's AUDSID is used
     */
    procedure get_application_login(
       p_office_id     out varchar2,
@@ -2929,7 +2943,7 @@ AS
    /**
     * @return a suitable name for identifying this database, regardless of whether it is a container database
     */
-   function get_db_name 
+   function get_db_name
       return varchar2;
    /**
     * @return the host address or name for identifying this database. If the host address is detected to be ::1 or localhost, then the host name will be returned

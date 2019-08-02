@@ -3466,6 +3466,28 @@ as
       return l_results;
    end tokenize_logic_expression;
 
+   function normalize_algebraic(
+      p_algebraic_expr in varchar2)
+      return varchar2
+   is
+   begin
+      return upper(
+                trim(
+                   regexp_replace(
+                      regexp_replace(
+                         regexp_replace(
+                            regexp_replace(
+                               p_algebraic_expr,
+                               '([^a-z0-9_-]+)(-?[a-z0-9_]+)', -- insert space before start of name/number
+                               '\1 \2', 1, 0, 'im'),
+                            '(-?[a-z0-9_-]+)([^a-z0-9_]+)',    -- insert space after end of name/number
+                            '\1 \2', 1, 0, 'im'),
+                         '\s+',                                -- collapse contiguous spaces
+                         ' ', 1, 0, 'im'),
+                      '\s*([()])\s*',                          -- collapse spaces around parentheses
+                      '\1', 1, 0, 'im')));
+   end normalize_algebraic;
+
    function tokenize_algebraic(
       p_algebraic_expr in varchar2)
       return str_tab_t
@@ -3561,7 +3583,7 @@ as
       ---------------------------------
       -- parse the infix into tokens --
       ---------------------------------
-      l_infix_tokens := cwms_util.split_text(trim(regexp_replace(upper(replace(p_algebraic_expr,chr(10),' ')),'([()])',' \1 ')));
+      l_infix_tokens := cwms_util.split_text(regexp_replace(normalize_algebraic(p_algebraic_expr),'([()])',' \1 '));
       -------------------------------------
       -- process the tokens into postfix --
       -------------------------------------
@@ -6154,22 +6176,22 @@ as
    return l_sessions;
    end current_session_ids;
 
-   function get_db_name 
+   function get_db_name
       return varchar2
    is
       l_db_name  varchar2(61);
       l_pdb_name varchar2(30);
    begin
-      select nvl(primary_db_unique_name, db_unique_name) 
-        into l_db_name 
+      select nvl(primary_db_unique_name, db_unique_name)
+        into l_db_name
         from v$database;
-        
+
       begin
          execute immediate 'select pdb_name from cdb_pdbs' into l_pdb_name;
       exception
          when others then null;
       end;
-      
+
       if l_pdb_name is not null then
          l_db_name := l_pdb_name;
       end if;
@@ -6186,7 +6208,7 @@ as
       if l_hostaddress = '::1' or l_hostaddress = '127.0.0.1' then
          l_hostaddress := SYS.UTL_INADDR.GET_HOST_NAME;
       end if;
-      return l_hostaddress;      
+      return l_hostaddress;
    end;
 
 END cwms_util;
