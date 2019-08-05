@@ -197,6 +197,11 @@ as
       l_rowid              urowid;
    begin
       cwms_util.check_office_permission(p_office_id);
+      
+      if p_text is null or dbms_lob.getlength(p_text) = 0 then
+         cwms_err.raise('NULL_ARGUMENT', 'P_TEXT');
+      end if;
+      
       select count(*)
         into l_count
         from at_clob
@@ -473,6 +478,9 @@ as
              where office_code in (l_office_code, l_cwms_office_code) and id = l_id;
          end if;
       else
+         if p_text is null or dbms_lob.getlength(p_text) = 0 then
+            cwms_err.raise('NULL_ARGUMENT', 'P_TEXT');
+         end if;
          update at_clob
             set value = p_text, description = p_description
           where office_code in (l_office_code, l_cwms_office_code) and id = l_id;
