@@ -3800,7 +3800,7 @@ END cat_ts_id;
         '|| l_lookup_prefix || '_tooltip tooltip,
         '|| l_lookup_prefix || '_active active
       FROM '||l_lookup_category||'
-      WHERE db_office_code = cwms_util.get_office_code(:bv2)
+      WHERE db_office_code in (cwms_util.get_office_code(:bv2), 53)
       ) AS lookup_type_tab_t) FROM dual';
 
       cwms_util.check_dynamic_sql(l_str);
