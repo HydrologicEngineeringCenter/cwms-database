@@ -27,11 +27,11 @@ CREATE OR REPLACE package body cwms_xchg as
    begin
       l_db_name := cwms_util.get_db_name;
       l_datastore_id := cwms_util.get_db_host || ':' || l_db_name;
-      if length(l_datastore_id) > 32 then
+      if length(l_datastore_id) > 16 then
          l_datastore_id := substr(l_datastore_id, regexp_instr(l_datastore_id, '[a-zA-Z0-9]'));
       end if;
-      if length(l_datastore_id) > 32 then
-         l_datastore_id := substr(l_datastore_id, -(least(length(l_datastore_id), 32)));
+      if length(l_datastore_id) > 16 then
+         l_datastore_id := substr(l_datastore_id, -(least(length(l_datastore_id), 16)));
       end if;
       return l_datastore_id;
    end db_datastore_id;
