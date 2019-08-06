@@ -3470,22 +3470,15 @@ as
       p_algebraic_expr in varchar2)
       return varchar2
    is
+      l_expr varchar2(512);
    begin
-      return upper(
-                trim(
-                   regexp_replace(
-                      regexp_replace(
-                         regexp_replace(
-                            regexp_replace(
-                               p_algebraic_expr,
-                               '([^a-z0-9_-]+)(-?[a-z0-9_]+)', -- insert space before start of name/number
-                               '\1 \2', 1, 0, 'im'),
-                            '(-?[a-z0-9_-]+)([^a-z0-9_]+)',    -- insert space after end of name/number
-                            '\1 \2', 1, 0, 'im'),
-                         '\s+',                                -- collapse contiguous spaces
-                         ' ', 1, 0, 'im'),
-                      '\s*([()])\s*',                          -- collapse spaces around parentheses
-                      '\1', 1, 0, 'im')));
+      l_expr := regexp_replace(p_algebraic_expr, '([+*%^]|//)', ' \1 ');               -- insert spaces around most operators 
+      l_expr := regexp_replace(l_expr, '([^/])/([^/])', '\1 / \2');                    -- insert spaces around operator '/'
+      l_expr := regexp_replace(l_expr, '([a-zA-Z0-9_])\s*-([a-zA-Z0-9_])', '\1 - \2'); -- insert spaces around binary operator '-' 
+      l_expr := regexp_replace(l_expr, '\s+', ' ', 1, 0, 'm');                         -- collapse contiguous spaces
+      l_expr := regexp_replace(l_expr, '\s*([()])\s*', '\1', 1, 0, 'm');               -- collapse spaces around parentheses
+      
+      return l_expr;
    end normalize_algebraic;
 
    function tokenize_algebraic(
@@ -3605,6 +3598,11 @@ as
             -- functions --
             ---------------
             push_func(l_infix_tokens(i));
+         when substr(l_infix_tokens(i), 1, 1) = '-' and is_expression_function(substr(l_infix_tokens(i), 2)) then
+            -----------------------
+            -- negated functions --
+            -----------------------
+            push_func(l_infix_tokens(i));
          when l_infix_tokens(i) = '(' then
             ----------------------
             -- open parentheses --
@@ -3626,8 +3624,15 @@ as
 
             if l_func_stack.count > 0 and l_func_stack(l_func_stack.count) is not null then
                l_func := pop_func;
-               l_postfix_tokens.extend;
-               l_postfix_tokens(l_postfix_tokens.count) := l_func;
+               if substr(l_func, 1, 1) = '-' then
+                  l_postfix_tokens.extend;
+                  l_postfix_tokens(l_postfix_tokens.count) := substr(l_func, 2);
+                  l_postfix_tokens.extend;
+                  l_postfix_tokens(l_postfix_tokens.count) := 'NEG';
+               else
+                  l_postfix_tokens.extend;
+                  l_postfix_tokens(l_postfix_tokens.count) := l_func;
+               end if;
             end if;
 
             l_right_paren_count := l_right_paren_count + 1;
@@ -4014,7 +4019,7 @@ as
                then
                   argument_error(l_idx - p_args_offset);
                end if;
-               push(p_args(l_idx));
+               push(-p_args(l_idx));
             exception
                when others then
                   token_error(p_rpn_tokens(i));
