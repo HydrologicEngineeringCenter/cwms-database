@@ -515,16 +515,22 @@ AS
          END;
       END IF;
 
-      BEGIN
-         SELECT   nation_code
-           INTO   l_nation_code
-           FROM   cwms_nation
-          WHERE   nation_id = UPPER (l_nation_id);
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            cwms_err.raise ('INVALID_ITEM', l_nation_id, 'nation id');
-      END;
+      ------------------------------------------------
+      -- allow nation to be passed in as code or id --
+      ------------------------------------------------
+      if length(l_nation_id) = 2 then
+         l_nation_code := l_nation_id;
+      else
+         begin
+            select nation_code
+              into l_nation_code
+              from cwms_nation
+             where nation_id = upper(l_nation_id);
+         exception
+            when no_data_found then
+               cwms_err.raise ('INVALID_ITEM', l_nation_id, 'nation id');
+         end;
+      end if;
 
       BEGIN
          -- Check if base_location exists -
