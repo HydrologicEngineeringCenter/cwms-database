@@ -1154,6 +1154,11 @@ begin
 end;
 /
 prompt ################################################################################
+prompt 'NETWORK SETUP'
+select systimestamp from dual;
+@@./18_1_1/network_acl
+@@./18_1_1/create_wallet
+prompt ################################################################################
 prompt 'NOTIFICATIONS'
 select systimestamp from dual;
 prompt ================================================================================

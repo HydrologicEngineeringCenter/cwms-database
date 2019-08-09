@@ -57,10 +57,16 @@ select systimestamp from dual;
 @@./18_1_2/verify_db_version
 prompt ################################################################################
 prompt UPDATING OBJECTS
+------------
+-- TABLES --
+------------
 -- Extend expression length on virtual rating expressions
 alter table at_virtual_rating_element modify (rating_expression varchar2(80));
 -- Extend database id length in db change log
 alter table cwms_db_change_log modify (database_id varchar2(61));
+--------------
+-- PACKAGES --
+--------------
 -- Switch to new method of retrieving database name
 -- Modify GET_LOOKUP_TABLE to retrieve CWMS-owned records in addition to specified office
 @../cwms/cwms_cat_pkg_body
@@ -69,12 +75,11 @@ alter table cwms_db_change_log modify (database_id varchar2(61));
 @../cwms/cwms_mail_pkg_body
 @../cwms/cwms_rating_pkg_body
 @../cwms/cwms_scheduler_auth_pkg_body
-@../cwms/cwms_xchg_auth_pkg_body
 -- Switch to new method of retrieving database name
 -- Modify CREATE_LOCATION_RAW2 to allow nation to be passed in as id or code
 @../cwms/cwms_loc_pkg_body
--- Fix bug in retrieve_time_series for JSON and XML formats when no data
 -- Switch to new method of retrieving database name
+-- Fix bug in retrieve_time_series for JSON and XML formats when no data
 @../cwms/ts_pkg_body
 -- Switch from http to https on URLs
 @../cwms/usgs_pkg
@@ -85,10 +90,19 @@ alter table cwms_db_change_log modify (database_id varchar2(61));
 -- Fix bugs on parsing infix (algebraic) expressions that have negated arguments or functions
 @../cwms/util_pkg
 @../cwms/util_pkg_body
+-- Switch to new method of retrieving database name
+-- Restore maximum length of 16 for DB data store ID to prevent XML validation errors
+@../cwms/cwms_xchg_pkg_body
+-----------
+-- TYPES --
+-----------
 -- Handle anomalies in USGS measurements records better
 @../cwms/types/streamflow_meas_t-body
 -- Fix bug in generating <extsion-points> XML data
 @../cwms/types/rating_ind_parameter_t-body
+-----------
+-- VIEWS --
+-----------
 -- Fix bug in units conversion
 @../cwms/views/av_location_level
 prompt ################################################################################
