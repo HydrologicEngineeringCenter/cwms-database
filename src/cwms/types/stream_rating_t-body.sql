@@ -7,9 +7,7 @@ as
    is
    begin
       (self as rating_t).init(p_rating_code, p_include_points);
-      if cwms_util.is_true(p_include_points) then
-         self.init(p_rating_code);
-      end if;
+      self.init(p_rating_code, p_include_points);
       return;
    end;
 
@@ -437,11 +435,62 @@ as
       p_rating_code    in number,
       p_include_points in varchar2 default 'T')
    is
-      l_offsets_code number(10);
+      l_offsets_code       number(10);
+      l_shift_rating_codes number_tab_t;
    begin
-      begin
-         select rating_t(r.rating_code) bulk collect
-           into self.shifts
+      if cwms_util.is_true(p_include_points) then
+         --------------------
+         -- include points --
+         --------------------
+         begin
+            select rating_t(r.rating_code) bulk collect
+              into self.shifts
+              from at_rating r,
+                   at_rating_spec rs,
+                   at_rating_template rt
+             where ref_rating_code = p_rating_code
+               and rs.rating_spec_code = r.rating_spec_code
+               and rt.template_code = rs.template_code
+               and rt.parameters_id = 'Stage;Stage-Shift'
+          order by r.effective_date;
+         exception
+            when no_data_found then null;
+         end;
+   
+         begin
+            select r.rating_code
+              into l_offsets_code
+              from at_rating r,
+                   at_rating_spec rs,
+                   at_rating_template rt
+             where ref_rating_code = p_rating_code
+               and rs.rating_spec_code = r.rating_spec_code
+               and rt.template_code = rs.template_code
+               and rt.parameters_id = 'Stage;Stage-Offset';
+   
+            self.offsets := rating_t(l_offsets_code);
+            self.offsets.effective_date := self.effective_date;
+            self.offsets.create_date    := self.create_date;
+         exception
+            when no_data_found then null;
+         end;
+         if self.offsets is not null then
+            self.offsets.current_units := self.current_units;
+            self.offsets.current_time  := self.current_time;
+         end if;
+         if self.shifts is not null then
+            for i in 1..self.shifts.count loop
+               self.shifts(i).current_units := self.current_units;
+               self.shifts(i).current_time  := self.current_time;
+            end loop;
+         end if;
+      else
+         ----------------------------------------
+         -- include only shift effective dates --
+         ----------------------------------------
+         select r.rating_code
+                bulk collect
+           into l_shift_rating_codes
            from at_rating r,
                 at_rating_spec rs,
                 at_rating_template rt
@@ -449,39 +498,16 @@ as
             and rs.rating_spec_code = r.rating_spec_code
             and rt.template_code = rs.template_code
             and rt.parameters_id = 'Stage;Stage-Shift'
-       order by r.effective_date;
-      exception
-         when no_data_found then null;
-      end;
-
-      begin
-         select r.rating_code
-           into l_offsets_code
-           from at_rating r,
-                at_rating_spec rs,
-                at_rating_template rt
-          where ref_rating_code = p_rating_code
-            and rs.rating_spec_code = r.rating_spec_code
-            and rt.template_code = rs.template_code
-            and rt.parameters_id = 'Stage;Stage-Offset';
-
-         self.offsets := rating_t(l_offsets_code);
-         self.offsets.effective_date := self.effective_date;
-         self.offsets.create_date    := self.create_date;
-      exception
-         when no_data_found then null;
-      end;
-      if self.offsets is not null then
-         self.offsets.current_units := self.current_units;
-         self.offsets.current_time  := self.current_time;
+          order by r.effective_date;
+         if l_shift_rating_codes.count > 0 then
+            self.shifts := rating_tab_t();
+            self.shifts.extend(l_shift_rating_codes.count);
+            for i in 1..l_shift_rating_codes.count loop
+               self.shifts(i) := rating_t(l_shift_rating_codes(i), 'F');
+            end loop;
+         end if;
       end if;
-      if self.shifts is not null then
-         for i in 1..self.shifts.count loop
-            self.shifts(i).current_units := self.current_units;
-            self.shifts(i).current_time  := self.current_time;
-         end loop;
-      end if;
-      self.validate_obj;
+      self.validate_obj(p_include_points);
    end;
 
    overriding member procedure validate_obj(
@@ -589,19 +615,120 @@ as
       -- validate shifts --
       ---------------------
       if self.shifts is not null then
-         for i in reverse 1..self.shifts.count loop
-            begin
-               l_temp := treat(self.shifts(i) as rating_t);
-               l_temp.validate_obj;
-               if l_temp.office_id != self.office_id then
-                  cwms_err.raise('ERROR', 'Shifts office does not match rating office');
-               end if;
-               l_parts := cwms_util.split_text(l_temp.rating_spec_id, cwms_rating.separator1);
-               l_parameters_id := l_parts(2);
-               if l_parameters_id != l_ind_param || cwms_rating.separator2 || l_ind_param || '-Shift' then
-                  cwms_err.raise('ERROR', 'Invalid shift parameter id - should be '||l_ind_param||cwms_rating.separator2||l_ind_param||'-Shift');
-               end if;
-               if l_temp.effective_date < self.effective_date then
+         if cwms_util.is_true(p_include_points) then
+            -----------------
+            -- full shifts --
+            -----------------
+            for i in reverse 1..self.shifts.count loop
+               begin
+                  l_temp := treat(self.shifts(i) as rating_t);
+                  l_temp.validate_obj;
+                  if l_temp.office_id != self.office_id then
+                     cwms_err.raise('ERROR', 'Shifts office does not match rating office');
+                  end if;
+                  l_parts := cwms_util.split_text(l_temp.rating_spec_id, cwms_rating.separator1);
+                  l_parameters_id := l_parts(2);
+                  if l_parameters_id != l_ind_param || cwms_rating.separator2 || l_ind_param || '-Shift' then
+                     cwms_err.raise('ERROR', 'Invalid shift parameter id - should be '||l_ind_param||cwms_rating.separator2||l_ind_param||'-Shift');
+                  end if;
+                  if l_temp.effective_date < self.effective_date then
+                     cwms_err.raise(
+                        'ERROR',
+                        'Shift '||i||' effective date ('
+                        ||l_temp.effective_date
+                        ||') is earlier than rating effective date ('
+                        ||self.effective_date
+                        ||')');
+                  end if;
+                  if l_temp.transition_date is not null then
+                     if i = 1 then
+                        if l_temp.transition_date < self.effective_date then
+                           cwms_err.raise(
+                              'ERROR',
+                              'Shift 1 transition date ('
+                              ||to_char(l_temp.transition_date, 'yyyy/mm/dd hh24:mi:ss')
+                              ||') is earlier than rating effective date ('
+                              ||to_char(self.effective_date, 'yyyy/mm/dd hh24:mi:ss')
+                              ||')');
+                        end if;
+                     else
+                        l_prev := treat(self.shifts(i-1) as rating_t);
+                        if l_temp.transition_date < l_prev.effective_date then
+                           cwms_err.raise(
+                              'ERROR',
+                              'Shift '|| i ||' transition date ('
+                              ||to_char(l_temp.transition_date, 'yyyy/mm/dd hh24:mi:ss')
+                              ||') is earlier than shift '|| (i-1) ||' effective date ('
+                              ||to_char(l_prev.effective_date, 'yyyy/mm/dd hh24:mi:ss')
+                              ||')');
+                        end if;
+                     end if;
+                  end if;
+                  if l_temp.create_date is not null then
+                     if self.create_date is null or l_temp.create_date < self.create_date then
+                        cwms_err.raise(
+                           'ERROR',
+                           'Shift '||i||' create date ('
+                           ||to_char(l_temp.create_date, 'yyyy/mm/dd hh24:mi:ss')
+                           ||') is earlier than rating create date ('
+                           ||to_char(self.create_date, 'yyyy/mm/dd hh24:mi:ss')
+                           ||')');
+                     end if;
+                  end if;
+                  if l_temp.formula is not null then
+                     cwms_err.raise('ERROR', 'Shifts cannot use a formula');
+                  end if;
+                  if l_temp.native_units is null then
+                     cwms_err.raise('ERROR', 'Shifts must use same unit as rating stage or elevation unit');
+                  end if;
+                  l_parts := cwms_util.split_text(l_temp.native_units, cwms_rating.separator2);
+                  if l_parts.count != 2 or l_parts(1) != l_parts(2) then
+                     cwms_err.raise('ERROR', 'Invalid native units for shifts');
+                  end if;
+                  if substr(self.native_units, 1, instr(self.native_units, cwms_rating.separator2) - 1) != l_parts(1) then
+                     cwms_err.raise('ERROR', 'Shifts must use same unit as rating stage or elevation unit');
+                  end if;
+                  if l_temp.rating_info.extension_values is not null then
+                     cwms_err.raise('ERROR', 'Shifts cannot contain extension values');
+                  end if;
+                  if l_temp.rating_info.rating_values is null then
+                     cwms_err.raise('ERROR', 'Shifts must contain rating values if specified');
+                  end if;
+                  for j in 1..l_temp.rating_info.rating_values.count loop
+                     if j > 1 then
+                        if l_temp.rating_info.rating_values(j).ind_value <=
+                           l_temp.rating_info.rating_values(j-1).ind_value
+                        then
+                           cwms_err.raise(
+                              'ERROR',
+                              'Shifts stages/elevations do not monotonically increase after value '
+                              ||cwms_rounding.round_dt_f(l_temp.rating_info.rating_values(j-1).ind_value, '9999999999'));
+                        end if;
+                     end if;
+                     if l_temp.rating_info.rating_values(j).dep_value is null or
+                        l_temp.rating_info.rating_values(j).dep_rating_ind_param is not null
+                     then
+                        cwms_err.raise('ERROR', 'Shifts must contain shift values as dependent parameter');
+                     end if;
+                  end loop;
+               exception
+                  when others then
+                     cwms_msg.log_db_message(
+                        cwms_msg.msg_level_normal,
+                        'Rating shift '||i||' skipped due to '||sqlerrm);
+                     for j in i+1..self.shifts.count loop -- static limits
+                        exit when j > self.shifts.count;  -- dynamically evaluated
+                        self.shifts(j-1) := self.shifts(j);
+                        self.shifts.trim(1);
+                     end loop;
+               end;
+            end loop;
+         else
+            --------------------------------
+            -- shift effective dates only --
+            --------------------------------
+            for i in 1..self.shifts.count loop
+               if self.shifts(i).effective_date < self.effective_date then
                   cwms_err.raise(
                      'ERROR',
                      'Shift '||i||' effective date ('
@@ -610,89 +737,8 @@ as
                      ||self.effective_date
                      ||')');
                end if;
-               if l_temp.transition_date is not null then
-                  if i = 1 then
-                     if l_temp.transition_date < self.effective_date then
-                        cwms_err.raise(
-                           'ERROR',
-                           'Shift 1 transition date ('
-                           ||to_char(l_temp.transition_date, 'yyyy/mm/dd hh24:mi:ss')
-                           ||') is earlier than rating effective date ('
-                           ||to_char(self.effective_date, 'yyyy/mm/dd hh24:mi:ss')
-                           ||')');
-                     end if;
-                  else
-                     l_prev := treat(self.shifts(i-1) as rating_t);
-                     if l_temp.transition_date < l_prev.effective_date then
-                        cwms_err.raise(
-                           'ERROR',
-                           'Shift '|| i ||' transition date ('
-                           ||to_char(l_temp.transition_date, 'yyyy/mm/dd hh24:mi:ss')
-                           ||') is earlier than shift '|| (i-1) ||' effective date ('
-                           ||to_char(l_prev.effective_date, 'yyyy/mm/dd hh24:mi:ss')
-                           ||')');
-                     end if;
-                  end if;
-               end if;
-               if l_temp.create_date is not null then
-                  if self.create_date is null or l_temp.create_date < self.create_date then
-                     cwms_err.raise(
-                        'ERROR',
-                        'Shift '||i||' create date ('
-                        ||to_char(l_temp.create_date, 'yyyy/mm/dd hh24:mi:ss')
-                        ||') is earlier than rating create date ('
-                        ||to_char(self.create_date, 'yyyy/mm/dd hh24:mi:ss')
-                        ||')');
-                  end if;
-               end if;
-               if l_temp.formula is not null then
-                  cwms_err.raise('ERROR', 'Shifts cannot use a formula');
-               end if;
-               if l_temp.native_units is null then
-                  cwms_err.raise('ERROR', 'Shifts must use same unit as rating stage or elevation unit');
-               end if;
-               l_parts := cwms_util.split_text(l_temp.native_units, cwms_rating.separator2);
-               if l_parts.count != 2 or l_parts(1) != l_parts(2) then
-                  cwms_err.raise('ERROR', 'Invalid native units for shifts');
-               end if;
-               if substr(self.native_units, 1, instr(self.native_units, cwms_rating.separator2) - 1) != l_parts(1) then
-                  cwms_err.raise('ERROR', 'Shifts must use same unit as rating stage or elevation unit');
-               end if;
-               if l_temp.rating_info.extension_values is not null then
-                  cwms_err.raise('ERROR', 'Shifts cannot contain extension values');
-               end if;
-               if l_temp.rating_info.rating_values is null then
-                  cwms_err.raise('ERROR', 'Shifts must contain rating values if specified');
-               end if;
-               for j in 1..l_temp.rating_info.rating_values.count loop
-                  if j > 1 then
-                     if l_temp.rating_info.rating_values(j).ind_value <=
-                        l_temp.rating_info.rating_values(j-1).ind_value
-                     then
-                        cwms_err.raise(
-                           'ERROR',
-                           'Shifts stages/elevations do not monotonically increase after value '
-                           ||cwms_rounding.round_dt_f(l_temp.rating_info.rating_values(j-1).ind_value, '9999999999'));
-                     end if;
-                  end if;
-                  if l_temp.rating_info.rating_values(j).dep_value is null or
-                     l_temp.rating_info.rating_values(j).dep_rating_ind_param is not null
-                  then
-                     cwms_err.raise('ERROR', 'Shifts must contain shift values as dependent parameter');
-                  end if;
-               end loop;
-            exception
-               when others then
-                  cwms_msg.log_db_message(
-                     cwms_msg.msg_level_normal,
-                     'Rating shift '||i||' skipped due to '||sqlerrm);
-                  for j in i+1..self.shifts.count loop -- static limits
-                     exit when j > self.shifts.count;  -- dynamically evaluated
-                     self.shifts(j-1) := self.shifts(j);
-                     self.shifts.trim(1);
-                  end loop;
-            end;
-         end loop;
+            end loop;
+         end if;
       end if;
    end;
 
@@ -1092,38 +1138,42 @@ as
             cwms_util.append(l_text,
                '<height-shifts><effective-date>'
                ||cwms_util.get_xml_time(cwms_util.change_timezone(l_temp.effective_date, 'UTC', l_tzone), l_tzone)||'</effective-date>');
-            if l_temp.transition_date is null then
-               null; -- cwms_util.append(l_text, '<transition-start-date/>');
-            else
-               cwms_util.append(l_text, '<transition-start-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(l_temp.transition_date, 'UTC', l_tzone), l_tzone)||'</transition-start-date>');
-            end if;
-            if l_temp.create_date is null then
-               cwms_util.append(l_text, '<create-date/>');
-            else
-               cwms_util.append(l_text, '<create-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(l_temp.create_date, 'UTC', l_tzone), l_tzone)||'</create-date>');
-            end if;
+            if l_temp.rating_info is not null then
+               if l_temp.transition_date is null then
+                  null; -- cwms_util.append(l_text, '<transition-start-date/>');
+               else
+                  cwms_util.append(l_text, '<transition-start-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(l_temp.transition_date, 'UTC', l_tzone), l_tzone)||'</transition-start-date>');
+               end if;
+               if l_temp.create_date is null then
+                  cwms_util.append(l_text, '<create-date/>');
+               else
+                  cwms_util.append(l_text, '<create-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(l_temp.create_date, 'UTC', l_tzone), l_tzone)||'</create-date>');
+               end if;
+            end if;   
             cwms_util.append(l_text,
                '<active>'
                ||bool_text(cwms_util.is_true(l_temp.active_flag))
                ||'</active>');
-            if l_temp.description is not null then
-               cwms_util.append(l_text, '<description>'||l_temp.description||'</description>');
-            end if;
-            for j in 1..l_temp.rating_info.rating_values.count loop
-               cwms_util.append(l_text,
-                  '<point><ind>'
-                  ||cwms_rounding.round_dt_f(l_temp.rating_info.rating_values(j).ind_value, '9999999999')
-                  ||'</ind><dep>'
-                  ||cwms_rounding.round_dt_f(l_temp.rating_info.rating_values(j).dep_value, '9999999999')
-                  ||'</dep>');
-               if l_temp.rating_info.rating_values(j).note_id is not null then
-                  cwms_util.append(l_text,
-                     '<note>'
-                     ||l_temp.rating_info.rating_values(j).note_id
-                     ||'</note>');
+            if l_temp.rating_info is not null then
+               if l_temp.description is not null then
+                  cwms_util.append(l_text, '<description>'||l_temp.description||'</description>');
                end if;
-               cwms_util.append(l_text, '</point>');
-            end loop;
+               for j in 1..l_temp.rating_info.rating_values.count loop
+                  cwms_util.append(l_text,
+                     '<point><ind>'
+                     ||cwms_rounding.round_dt_f(l_temp.rating_info.rating_values(j).ind_value, '9999999999')
+                     ||'</ind><dep>'
+                     ||cwms_rounding.round_dt_f(l_temp.rating_info.rating_values(j).dep_value, '9999999999')
+                     ||'</dep>');
+                  if l_temp.rating_info.rating_values(j).note_id is not null then
+                     cwms_util.append(l_text,
+                        '<note>'
+                        ||l_temp.rating_info.rating_values(j).note_id
+                        ||'</note>');
+                  end if;
+                  cwms_util.append(l_text, '</point>');
+               end loop;
+            end if;
             cwms_util.append(l_text, '</height-shifts>');
          end loop;
       end if;
