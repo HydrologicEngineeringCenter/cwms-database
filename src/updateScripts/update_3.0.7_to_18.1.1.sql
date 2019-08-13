@@ -82,6 +82,10 @@ prompt 'MODIFYING CWMS_DB_CHANGE_LOG TABLE'
 select systimestamp from dual;
 @@./18_1_1/modify_db_change_log
 prompt ################################################################################
+prompt 'DROP INDEX AT_CLOB_CIDX'
+select systimestamp from dual;
+drop index AT_CLOB_CIDX;
+prompt ################################################################################
 prompt 'ADDING NEW STATES AND COUNTIES'
 select systimestamp from dual;
 whenever sqlerror continue;
@@ -505,19 +509,24 @@ commit;
 -- Updated Gage Types
 update cwms_gage_type set description = 'Internet TX-only' where gage_type_code = 5;
 update cwms_gage_type set description = 'Internet TX+INQ'  where gage_type_code = 6;
+commit;
 -- Updated Location Kinds
 update cwms_location_kind set description = 'A structure protruding above the ground constructed to impede or direct the flow of water in a river or stream' where location_kind_code = 5;
 update cwms_location_kind set description = 'A structure constructed to generate electricity from the flow of water' where location_kind_code = 7;
 update cwms_location_kind set parent_location_kind = 9 where location_kind_code = 14;
+commit;
 -- Updated Media Types
 update cwms_media_type set media_type_clob_tf = 'F' where media_type_code in (406,407,579,583,620,621,622,623,624,625,626,627,628,629,630,631,632,633,634,635,636,794,828,892);
+commit;
 -- New Configurations
 insert into cwms_config_category values ('DATA RETRIEVAL', 'Data Retrieval configurations');
 insert into at_configuration values (9, null, 53, 'DATA RETRIEVAL', 'Other Data Retrieval', 'Generalized Data Retreival');
 insert into at_configuration values (10, 9, 53, 'DATA RETRIEVAL', 'USGS Data Retrieval', 'USGS Data Retreival');
+commit;
 -- New Error Messages
 insert into cwms_error (err_code, err_name, err_msg) values (-20049, 'NO SUCH APPLICATION INSTANCE', 'No application instance is associated with the specified UUID');
 insert into cwms_error (err_code, err_name, err_msg) values (-20050, 'APPLICATION INSTANCE LOGGED OUT', 'The application instance associated with the specified UUID has logged out');
+commit;
 -- New Abstract Parameters
 insert into cwms_abstract_parameter values(29, 'Currency Per Volume');
 insert into cwms_abstract_parameter values(30, 'Quantity Per Length');
@@ -525,10 +534,12 @@ insert into cwms_abstract_parameter values(31, 'Temerature Index');
 insert into cwms_abstract_parameter values(32, 'Mass');
 insert into cwms_abstract_parameter values(33, 'Mass Per Volume');
 insert into cwms_abstract_parameter values(34, 'Mass Rate');
+commit;
 -- New Parameters
 insert into at_parameter values(45, 53, 45, null, 'Head');
 insert into at_parameter values(46, 53, 46, null, 'Current');
 insert into at_parameter values(47, 53, 47, null, 'Frequency');
+commit;
 -- New Units
 insert into cwms_unit values( 98, 'K',         23,'SI',    'Kelvins',                           'Temperature in Kelvins');
 insert into cwms_unit values( 99, 'bar',       22, null,   'Bars',                              'Pressure of 1 standard atmosphere');
@@ -562,6 +573,7 @@ insert into cwms_unit values(126, 'kcms',      26, 'SI',   'Kilo-cubic meters pe
 insert into cwms_unit values(127, 'mcm/mon',   26, 'EN',   'Million cubic meters per month',    'Volume rate of 1E+06 cubic meters per month');
 insert into cwms_unit values(128, 'kdsf',      25, 'EN',   'Kilo-day-second-foot',              'Volume of 1E+03 dsf');
 insert into cwms_unit values(129, 'mcm',       25, 'SI',   'Millions of cubic meters',          'Volume of 1E+06 cubic meters');
+commit;
 -- New Unit Aliases
 delete from at_unit_alias where alias_id = 'Celcius';
 insert into at_unit_alias values('1000 M2',         53,   3);
@@ -675,6 +687,7 @@ insert into at_unit_alias values('lb/ft3',          53, 112);
 insert into at_unit_alias values('lbs/ft3',         53, 112);
 insert into at_unit_alias values('megajoule',       53, 106);
 insert into at_unit_alias values('megajoules',      53, 106);
+commit;
 -- New Unit Conversions
 insert into cwms_unit_conversion values ('C',        'K',         23,    67,  98,  1.0,               273.15,        null);
 insert into cwms_unit_conversion values ('F',        'K',         23,    68,  98,  null,              null,          'ARG1 32 - 1.8 / 273.15 +');
@@ -962,6 +975,7 @@ insert into cwms_unit_conversion values('tonne',     'ton',       32,    120, 11
 insert into cwms_unit_conversion values('tonne',     'tonne',     32,    120, 120, 1.0,               0.0,           null);
 insert into cwms_unit_conversion values('tonne/day', 'ton/day',   34,    114, 113, 1.10231131092,     0.0,           null);
 insert into cwms_unit_conversion values('tonne/day', 'tonne/day', 34,    114, 114, 1.0,               0.0,           null);
+commit;
 -- new USGS Parameter Conversions
 insert into at_usgs_parameter values (53,    10, 317, 6, 67,    1.0, 0.0);
 insert into at_usgs_parameter values (53,    21, 316, 6, 68,    1.0, 0.0);
@@ -973,6 +987,7 @@ insert into at_usgs_parameter values (53,    65,  23, 6, 35,    1.0, 0.0);
 insert into at_usgs_parameter values (53,    95,   6, 6, 16,    1.0, 0.0);
 insert into at_usgs_parameter values (53,    96, 308, 6, 51,  0.001, 0.0);
 insert into at_usgs_parameter values (53, 72036,  24, 6, 78, 1000.0, 0.0);
+commit;
 whenever sqlerror exit;
 prompt ################################################################################
 prompt 'UPDATING OTHER VIEWS'
