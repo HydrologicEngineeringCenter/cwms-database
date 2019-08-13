@@ -22,10 +22,10 @@ begin
            'CWMS',
            18,
            1,
-           1,
-           to_date ('15AUG2018', 'DDMONYYYY'),
-           'CWMS Database Release 18.1.1',
-           'Multiple performance and functionality updates'
+           2,
+           to_date ('13AUG2019', 'DDMONYYYY'),
+           'CWMS Database Release 18.1.2',
+           'Bug fixes for 18.1.1'
           );
    commit;
 end;

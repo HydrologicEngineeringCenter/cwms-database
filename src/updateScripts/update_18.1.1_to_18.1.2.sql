@@ -45,7 +45,7 @@ end;
 whenever sqlerror exit;
 column db_name new_value db_name
 select :db_name as db_name from dual;
-define logfile=update_&db_name._3.0.7_to_18.1.1.log
+define logfile=update_&db_name._18.1.1_to_18.1.2.log
 prompt Log file = &logfile
 spool &logfile;
 -------------------
@@ -80,16 +80,16 @@ alter table cwms_db_change_log modify (database_id varchar2(61));
 @../cwms/cwms_loc_pkg_body
 -- Switch to new method of retrieving database name
 -- Fix bug in retrieve_time_series for JSON and XML formats when no data
-@../cwms/ts_pkg_body
+@../cwms/cwms_ts_pkg_body
 -- Switch from http to https on URLs
-@../cwms/usgs_pkg
-@../cwms/usgs_pkg_body
+@../cwms/cwms_usgs_pkg
+@../cwms/cwms_usgs_pkg_body
 -- Fix bug in reporting last logout time when there have been multiple logins, but no logouts
 -- Add function to retrieve appropriate database name for standard or containerized dbs
 -- Add and use function to normalize Java rating expressions into PL/SQL rating expressions
 -- Fix bugs on parsing infix (algebraic) expressions that have negated arguments or functions
-@../cwms/util_pkg
-@../cwms/util_pkg_body
+@../cwms/cwms_util_pkg
+@../cwms/cwms_util_pkg_body
 -- Switch to new method of retrieving database name
 -- Restore maximum length of 16 for DB data store ID to prevent XML validation errors
 @../cwms/cwms_xchg_pkg_body
@@ -106,6 +106,7 @@ alter table cwms_db_change_log modify (database_id varchar2(61));
 -- VIEWS --
 -----------
 -- Fix bug in units conversion
+delete from at_clob where id = '/VIEWDOCS/AV_LOCATION_LEVEL';
 @../cwms/views/av_location_level
 prompt ################################################################################
 prompt INVALID OBJECTS...
