@@ -100,6 +100,8 @@ alter table cwms_db_change_log modify (database_id varchar2(61));
 @../cwms/types/streamflow_meas_t-body
 -- Fix bug in generating <extsion-points> XML data
 @../cwms/types/rating_ind_parameter_t-body
+-- Modify constructor from database to return shift effective dates and shift active flags when not returning rating points
+@../cwms/types/stream_rating_t-body
 -----------
 -- VIEWS --
 -----------
