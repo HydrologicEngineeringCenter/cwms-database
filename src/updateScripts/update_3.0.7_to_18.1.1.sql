@@ -1156,7 +1156,9 @@ end;
 prompt ################################################################################
 prompt 'NETWORK SETUP'
 select systimestamp from dual;
+whenever sqlerror continue
 @@./18_1_1/network_acl
+whenever sqlerror exit
 @@./18_1_1/create_wallet
 prompt ################################################################################
 prompt 'NOTIFICATIONS'
