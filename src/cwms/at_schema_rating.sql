@@ -83,7 +83,7 @@ create table at_rating_spec
    constraint at_rating_spec_pk  primary key (rating_spec_code),
    constraint at_rating_spec_fk1 foreign key (template_code) references at_rating_template (template_code),
    constraint at_rating_spec_fk2 foreign key (location_code) references at_physical_location (location_code),
-   constraint at_rating_spec_fk3 foreign key (source_agency_code) references at_entity (entity_code), 
+   constraint at_rating_spec_fk3 foreign key (source_agency_code) references at_entity (entity_code),
    constraint at_rating_spec_fk4 foreign key (in_range_rating_method) references cwms_rating_method (rating_method_code),
    constraint at_rating_spec_fk5 foreign key (out_range_low_rating_method) references cwms_rating_method (rating_method_code),
    constraint at_rating_spec_fk6 foreign key (out_range_high_rating_method) references cwms_rating_method (rating_method_code),
@@ -184,7 +184,7 @@ create table at_rating_ind_parameter
    ind_param_spec_code   number(10) not null,
    constraint at_rating_ind_parameter_pk  primary key (rating_ind_param_code),
    constraint at_rating_ind_parameter_fk1 foreign key (rating_code) references at_rating (rating_code),
-   constraint at_rating_ind_parameter_fk2 foreign key (ind_param_spec_code) references at_rating_ind_param_spec (ind_param_spec_code) 
+   constraint at_rating_ind_parameter_fk2 foreign key (ind_param_spec_code) references at_rating_ind_param_spec (ind_param_spec_code)
 )
 tablespace CWMS_20AT_DATA;
 
@@ -351,11 +351,11 @@ create table at_virtual_rating_element (
    virtual_rating_code         number(10),
    position                    integer,
    rating_spec_code            number(10),
-   rating_expression           varchar2(32),
+   rating_expression           varchar2(80),
    constraint at_virtual_rating_element_pk  primary key (virtual_rating_element_code),
    constraint at_virtual_rating_element_fk1 foreign key (virtual_rating_code) references at_virtual_rating (virtual_rating_code),
    constraint at_virtual_rating_element_fk2 foreign key (rating_spec_code) references at_rating_spec (rating_spec_code),
-   constraint at_virtual_rating_element_ck1 check ((rating_spec_code is null or  rating_expression is null) and not 
+   constraint at_virtual_rating_element_ck1 check ((rating_spec_code is null or  rating_expression is null) and not
                                                    (rating_spec_code is null and rating_expression is null))
 )
 organization index
@@ -404,7 +404,7 @@ create table at_transitional_rating(
    native_units             varchar2(256) not null,
    description              varchar2(256),
    constraint at_transitional_rating_pk  primary key (transitional_rating_code),
-   constraint at_transitional_rating_fk1 foreign key(rating_spec_code) references at_rating_spec(rating_spec_code), 
+   constraint at_transitional_rating_fk1 foreign key(rating_spec_code) references at_rating_spec(rating_spec_code),
    constraint at_transitional_rating_ck1 check (active_flag in ('T', 'F')),
    constraint at_transitional_rating_ck2 check (transition_date is null or transition_date < effective_date)
 ) organization index
@@ -433,9 +433,9 @@ create table at_transitional_rating_src
   position                     integer    not null,
   rating_spec_code             number(10) not null,
   constraint at_trans_rating_src_pk  primary key (transitional_rating_code, position),
-  constraint at_trans_rating_src_ck1 check (position > 0), 
-  constraint at_trans_rating_src_fk1 foreign key(transitional_rating_code) references at_transitional_rating(transitional_rating_code), 
-  constraint at_trans_rating_src_fk2 foreign key(rating_spec_code) references at_rating_spec(rating_spec_code) 
+  constraint at_trans_rating_src_ck1 check (position > 0),
+  constraint at_trans_rating_src_fk1 foreign key(transitional_rating_code) references at_transitional_rating(transitional_rating_code),
+  constraint at_trans_rating_src_fk2 foreign key(rating_spec_code) references at_rating_spec(rating_spec_code)
 ) organization index
   tablespace cwms_20at_data;
 
@@ -456,18 +456,18 @@ create table at_transitional_rating_sel
   expression                   varchar2(256) not null,
   condition                    varchar2(1024),
   constraint at_trans_rating_sel_pk  primary key (transitional_rating_code, position),
-  constraint at_trans_rating_sel_ck1 check (position > -1), 
-  constraint at_trans_rating_sel_ck2 check (position > 0 or condition is null), 
-  constraint at_trans_rating_sel_ck3 check (not (position > 0 and condition is null)), 
+  constraint at_trans_rating_sel_ck1 check (position > -1),
+  constraint at_trans_rating_sel_ck2 check (position > 0 or condition is null),
+  constraint at_trans_rating_sel_ck3 check (not (position > 0 and condition is null)),
   constraint at_trans_rating_sel_fk1 foreign key(transitional_rating_code) references at_transitional_rating(transitional_rating_code)
 ) organization index
   tablespace cwms_20at_data;
-  
-comment on table  at_transitional_rating_sel is 'Holds selection information for transitional ratings';  
-comment on column at_transitional_rating_sel.transitional_rating_code is 'Foreign key to the transitional rating this selection is for';  
-comment on column at_transitional_rating_sel.position is 'The sequential order of this selection.  Selections are evaluated in sequential order.';  
-comment on column at_transitional_rating_sel.expression is 'The expression which yields the result of the rating if this condition is null or evaulates to true.';  
-comment on column at_transitional_rating_sel.condition is 'The condition to be evaluated to determine if the expression is used as the result of the rating';  
+
+comment on table  at_transitional_rating_sel is 'Holds selection information for transitional ratings';
+comment on column at_transitional_rating_sel.transitional_rating_code is 'Foreign key to the transitional rating this selection is for';
+comment on column at_transitional_rating_sel.position is 'The sequential order of this selection.  Selections are evaluated in sequential order.';
+comment on column at_transitional_rating_sel.expression is 'The expression which yields the result of the rating if this condition is null or evaulates to true.';
+comment on column at_transitional_rating_sel.condition is 'The condition to be evaluated to determine if the expression is used as the result of the rating';
 
 commit;
 
@@ -483,7 +483,7 @@ create table at_usgs_rating_hash (
 
 comment on table  at_usgs_rating_hash is 'Holds hash codes for rating text from USGS NWIS';
 comment on column at_usgs_rating_hash.rating_spec_code is 'The rating specification for this hash code';
-comment on column at_usgs_rating_hash.hash_value       is 'The hash value for this rating specification';   
+comment on column at_usgs_rating_hash.hash_value       is 'The hash value for this rating specification';
 
 commit;
 
@@ -514,4 +514,4 @@ comment on column at_overflow.description            is 'A description of the ov
 commit;
 
 
- 
+
