@@ -78,6 +78,8 @@ alter table cwms_db_change_log modify (database_id varchar2(61));
 -- Switch to new method of retrieving database name
 -- Modify CREATE_LOCATION_RAW2 to allow nation to be passed in as id or code
 @../cwms/cwms_loc_pkg_body
+-- Prevent storing null text via STORE_TEXT or UPDATE_TEXT
+@../cwms/cwms_text_pkg_body
 -- Switch to new method of retrieving database name
 -- Fix bug in retrieve_time_series for JSON and XML formats when no data
 @../cwms/cwms_ts_pkg_body
