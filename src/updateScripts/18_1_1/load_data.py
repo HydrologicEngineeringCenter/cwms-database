@@ -19,11 +19,21 @@ if pwd.find("^") != -1 :
 else :
 	pwd2 = pwd
 os.system("sqlldr %s/%s@%s:%s/%s control=CWMS_NID_DATA_TABLE.ctl" % (usr, pwd2, host, port, sid))
-logfile = "%s_data.log" % sid
+logfile = "%s_NID_data.log" % sid
 try    : os.remove(logfile)
 except : pass
 os.rename("CWMS_NID_DATA_TABLE.log", logfile)
-print("\nLog is in %s" % logfile)
+print("\nNID log is in %s" % logfile)
 t2 = datetime.datetime.now()
-print("Data loaded in %s" % (t2-t1))
+print("NID data loaded in %s" % (t2-t1))
+t1 = datetime.datetime.now()
+print("Loading Ratings XSLT data")
+os.system("sqlldr %s/%s@%s:%s/%s control=radar_xslt_clobs.ctl" % (usr, pwd2, host, port, sid))
+t2 = datetime.datetime.now()
+logfile = "%s_XSLT_data.log" % sid
+try    : os.remove(logfile)
+except : pass
+os.rename("radar_xslt_clobs.log", logfile)
+print("\nXSLT log is in %s" % logfile)
+print("Ratings XSLT data loaded in %s" % (t2-t1))
 
