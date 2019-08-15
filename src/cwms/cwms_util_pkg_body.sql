@@ -3472,12 +3472,12 @@ as
    is
       l_expr varchar2(512);
    begin
-      l_expr := regexp_replace(p_algebraic_expr, '([+*%^]|//)', ' \1 ');               -- insert spaces around most operators 
+      l_expr := regexp_replace(p_algebraic_expr, '([+*%^]|//)', ' \1 ');               -- insert spaces around most operators
       l_expr := regexp_replace(l_expr, '([^/])/([^/])', '\1 / \2');                    -- insert spaces around operator '/'
-      l_expr := regexp_replace(l_expr, '([a-zA-Z0-9_])\s*-([a-zA-Z0-9_])', '\1 - \2'); -- insert spaces around binary operator '-' 
+      l_expr := regexp_replace(l_expr, '([a-zA-Z0-9_])\s*-([a-zA-Z0-9_])', '\1 - \2'); -- insert spaces around binary operator '-'
       l_expr := regexp_replace(l_expr, '\s+', ' ', 1, 0, 'm');                         -- collapse contiguous spaces
       l_expr := regexp_replace(l_expr, '\s*([()])\s*', '\1', 1, 0, 'm');               -- collapse spaces around parentheses
-      
+
       return l_expr;
    end normalize_algebraic;
 
@@ -6187,7 +6187,7 @@ as
       l_db_name  varchar2(61);
       l_pdb_name varchar2(30);
    begin
-      select nvl(primary_db_unique_name, db_unique_name)
+      select db_name
         into l_db_name
         from v$database;
 
