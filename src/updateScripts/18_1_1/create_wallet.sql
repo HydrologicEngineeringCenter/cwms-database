@@ -7,6 +7,7 @@ declare
    l_directory_names str_tab_t;
    l_file            utl_file.file_type;
    l_len             pls_integer;
+   l_dbname          varchar2(30);
    l_filename        varchar2(256);
    l_text            str_tab_t; 
    l_buf             raw(64); 
@@ -98,8 +99,8 @@ FF3A9969E856B718DB5B0408156441DE133D035702020400';
 
 begin
    l_property_value := cwms_properties.get_property('CWMSDB', 'oracle.wallet.filename', null, 'CWMS');
-   
-   select distinct substr(name, 1, regexp_instr(name, cwms_util.get_db_name, 1, 1, 1)-1) 
+   select db_uniques_name into l_dbname from v$database;
+   select distinct substr(name, 1, regexp_instr(name, l_dbname, 1, 1, 1)-1) 
      bulk collect
      into l_directory_names
      from v$datafile;
