@@ -24,7 +24,7 @@ declare
 begin
    select count(*) into l_count from all_objects where object_name = 'CDB_PDBS';
    if l_count > 0 then
-      select db_name
+      select name
         into l_name
         from v$database;
       :db_name := l_name;
