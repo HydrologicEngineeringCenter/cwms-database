@@ -6188,7 +6188,7 @@ as
       l_db_name  varchar2(61);
       l_pdb_name varchar2(30);
    begin
-      select db_name
+      select name
         into l_db_name
         from v$database;
 
