@@ -99,7 +99,7 @@ FF3A9969E856B718DB5B0408156441DE133D035702020400';
 
 begin
    l_property_value := cwms_properties.get_property('CWMSDB', 'oracle.wallet.filename', null, 'CWMS');
-   select db_uniques_name into l_dbname from v$database;
+   select db_unique_name into l_dbname from v$database;
    select distinct substr(name, 1, regexp_instr(name, l_dbname, 1, 1, 1)-1) 
      bulk collect
      into l_directory_names

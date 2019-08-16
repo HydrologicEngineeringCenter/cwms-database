@@ -46,8 +46,8 @@ whenever sqlerror exit;
 column db_name new_value db_name
 select :db_name as db_name from dual;
 define logfile=update_&db_name._3.0.7_to_18.1.1.log
-prompt Log file = &logfile
-spool &logfile;
+prompt log file = &logfile
+spool &logfile append;
 -------------------
 -- do the update --
 -------------------
@@ -78,13 +78,13 @@ exception
 end;
 /
 prompt ################################################################################
+prompt 'DROP INDEX AT_CLOB_CIDX'
+select systimestamp from dual;
+drop index at_clob_cidx;
+prompt ################################################################################
 prompt 'MODIFYING CWMS_DB_CHANGE_LOG TABLE'
 select systimestamp from dual;
 @@./18_1_1/modify_db_change_log
-prompt ################################################################################
-prompt 'DROP INDEX AT_CLOB_CIDX'
-select systimestamp from dual;
-drop index AT_CLOB_CIDX;
 prompt ################################################################################
 prompt 'ADDING NEW STATES AND COUNTIES'
 select systimestamp from dual;
@@ -443,6 +443,9 @@ select systimestamp from dual;
 @@./18_1_1/at_physical_location_t02
 @@./18_1_1/modify_water_supply_tables
 @@./18_1_1/modify_at_text_filter
+whenever sqlerror continue;
+@@./18_1_1/update_at_clob_data
+whenever sqlerror exit;
 alter table at_seasonal_location_level modify (value null);
 whenever sqlerror continue;
 @@../cwms/mv_ts_code_filter
@@ -506,6 +509,11 @@ begin
 end;
 /
 commit;
+-- Updated Nations
+update cwms_nation set nation_id = 'ÅLAND ISLANDS'    where nation_code = 'AX';
+update cwms_nation set nation_id = 'SAINT BARTHÉLEMY' where nation_code = 'BL';
+update cwms_nation set nation_id = 'CÔTE D''IVOIRE'   where nation_code = 'CI';
+update cwms_nation set nation_id = 'RÉUNION'          where nation_code = 'RE';
 -- Updated Gage Types
 update cwms_gage_type set description = 'Internet TX-only' where gage_type_code = 5;
 update cwms_gage_type set description = 'Internet TX+INQ'  where gage_type_code = 6;

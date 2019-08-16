@@ -46,8 +46,8 @@ whenever sqlerror exit;
 column db_name new_value db_name
 select :db_name as db_name from dual;
 define logfile=update_&db_name._18.1.1_to_18.1.2.log
-prompt Log file = &logfile
-spool &logfile;
+prompt log file = &logfile
+spool &logfile append;
 -------------------
 -- do the update --
 -------------------

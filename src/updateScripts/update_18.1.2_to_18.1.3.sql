@@ -46,8 +46,8 @@ whenever sqlerror exit;
 column db_name new_value db_name
 select :db_name as db_name from dual;
 define logfile=update_&db_name._18.1.1_to_18.1.2.log
-prompt Log file = &logfile
-spool &logfile;
+prompt log file = &logfile
+spool &logfile append;
 -------------------
 -- do the update --
 -------------------
@@ -105,12 +105,14 @@ select owner||'.'||substr(name, 1, 30) as name,
 prompt ################################################################################
 prompt 'RESTORE CCP PRIVILEGES'
 select systimestamp from dual;
+whenever sqlerror continue;
 begin
    for rec in (select object_name from user_objects where object_type in ('PACKAGE', 'TYPE')) loop
       execute immediate 'grant execute on '||rec.object_name||' to ccp';
    end loop;
 end;
 /
+whenever sqlerror exit;
 prompt ################################################################################
 prompt UPDATING DB_CHANGE_LOG
 select systimestamp from dual;

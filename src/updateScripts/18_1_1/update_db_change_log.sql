@@ -1,7 +1,7 @@
 declare
    l_database_id varchar2(30);
 begin
-   select nvl(primary_db_unique_name, db_unique_name)
+   select name
      into l_database_id
      from v$database;
      
