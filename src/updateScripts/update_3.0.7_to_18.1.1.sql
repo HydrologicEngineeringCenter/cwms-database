@@ -24,7 +24,7 @@ declare
 begin
    select count(*) into l_count from all_objects where object_name = 'CDB_PDBS';
    if l_count > 0 then
-      select nvl(primary_db_unique_name, db_unique_name)
+      select db_name
         into l_name
         from v$database;
       :db_name := l_name;
@@ -1135,6 +1135,15 @@ begin
 end;
 /
 drop table prev_priv;
+prompt ################################################################################
+prompt 'RESTORE CCP PRIVILEGES'
+select systimestamp from dual;
+begin
+   for rec in (select object_name from user_objects where object_type in ('PACKAGE', 'TYPE')) loop
+      execute immediate 'grant execute on '||rec.object_name||' to ccp';
+   end loop;
+end;
+/
 prompt ################################################################################
 prompt 'UPDATING DB_CHANGE_LOG'
 select systimestamp from dual;

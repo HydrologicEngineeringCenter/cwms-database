@@ -54,62 +54,24 @@ spool &logfile;
 prompt ################################################################################
 prompt VERIFYING EXPECTED VERSION
 select systimestamp from dual;
-@@./18_1_2/verify_db_version
+@@./18_1_3/verify_db_version
 prompt ################################################################################
 prompt UPDATING OBJECTS
 ------------
 -- TABLES --
 ------------
--- Extend expression length on virtual rating expressions
-alter table at_virtual_rating_element modify (rating_expression varchar2(80));
--- Extend database id length in db change log
-alter table cwms_db_change_log modify (database_id varchar2(61));
 --------------
 -- PACKAGES --
 --------------
--- Switch to new method of retrieving database name
--- Modify GET_LOOKUP_TABLE to retrieve CWMS-owned records in addition to specified office
-@../cwms/cwms_cat_pkg_body
--- Switch to new method of retrieving database name
-@../cwms/cwms_level_pkg_body
-@../cwms/cwms_mail_pkg_body
-@../cwms/cwms_rating_pkg_body
-@../cwms/cwms_scheduler_auth_pkg_body
--- Switch to new method of retrieving database name
--- Modify CREATE_LOCATION_RAW2 to allow nation to be passed in as id or code
-@../cwms/cwms_loc_pkg_body
--- Prevent storing null text via STORE_TEXT or UPDATE_TEXT
-@../cwms/cwms_text_pkg_body
--- Switch to new method of retrieving database name
--- Fix bug in retrieve_time_series for JSON and XML formats when no data
-@../cwms/cwms_ts_pkg_body
--- Switch from http to https on URLs
-@../cwms/cwms_usgs_pkg
-@../cwms/cwms_usgs_pkg_body
+-- Fix bug in GET_DB_NAME that returns incorrect name for dbs with DataGuard
 -- Fix bug in reporting last logout time when there have been multiple logins, but no logouts
--- Add function to retrieve appropriate database name for standard or containerized dbs
--- Add and use function to normalize Java rating expressions into PL/SQL rating expressions
--- Fix bugs on parsing infix (algebraic) expressions that have negated arguments or functions
-@../cwms/cwms_util_pkg
 @../cwms/cwms_util_pkg_body
--- Switch to new method of retrieving database name
--- Restore maximum length of 16 for DB data store ID to prevent XML validation errors
-@../cwms/cwms_xchg_pkg_body
 -----------
 -- TYPES --
 -----------
--- Handle anomalies in USGS measurements records better
-@../cwms/types/streamflow_meas_t-body
--- Fix bug in generating <extsion-points> XML data
-@../cwms/types/rating_ind_parameter_t-body
--- Modify constructor from database to return shift effective dates and shift active flags when not returning rating points
-@../cwms/types/stream_rating_t-body
 -----------
 -- VIEWS --
 -----------
--- Fix bug in units conversion
-delete from at_clob where id = '/VIEWDOCS/AV_LOCATION_LEVEL';
-@../cwms/views/av_location_level
 prompt ################################################################################
 prompt INVALID OBJECTS...
 select systimestamp from dual;
@@ -152,7 +114,7 @@ end;
 prompt ################################################################################
 prompt UPDATING DB_CHANGE_LOG
 select systimestamp from dual;
-@@./18_1_2/update_db_change_log
+@@./18_1_3/update_db_change_log
 select substr(version, 1, 10) as version,
        to_char(version_date, 'yyyy-mm-dd hh24:mi') as version_date,
        to_char(apply_date, 'yyyy-mm-dd hh24:mi') as apply_date
