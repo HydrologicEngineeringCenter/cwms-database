@@ -80,7 +80,9 @@ end;
 prompt ################################################################################
 prompt 'DROP INDEX AT_CLOB_CIDX'
 select systimestamp from dual;
+whenever sqlerror continue
 drop index at_clob_cidx;
+whenever sqlerror exit
 prompt ################################################################################
 prompt 'MODIFYING CWMS_DB_CHANGE_LOG TABLE'
 select systimestamp from dual;
