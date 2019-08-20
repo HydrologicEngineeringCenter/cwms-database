@@ -557,12 +557,10 @@ as
          -- simple rating --
          -------------------
          if self.rating_info is null and self.formula is null then
-            cwms_err.raise(
-               'ERROR',
-               'One of <rating-points> or <formula> must be specified on rating '
-               ||self.office_id
-               ||'/'
-               ||self.rating_spec_id);
+            -------------------------------------------------------------------
+            -- table rating with no points, probably lazily loaded from java --
+            -------------------------------------------------------------------
+            null;
          elsif self.rating_info is not null and self.formula is not null then
             cwms_err.raise(
                'ERROR',
@@ -574,7 +572,11 @@ as
          self.current_units := 'N';
          self.current_time  := 'D';
       end if;
-      self.validate_obj;
+      if self.rating_info is null and self.formula is null then
+         self.validate_obj('F');
+      else
+         self.validate_obj('T');
+      end if;
       if not l_is_virtual and not l_is_transitional and self.rating_info is not null then
          --------------------------------------------------
          -- convert to native datum if                   --
