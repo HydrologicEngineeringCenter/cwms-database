@@ -2299,7 +2299,7 @@ begin
          end if;
       end if ;
       if p_ratings is not null then
-         cwms_util.append(p_ratings, l_ratings(i).to_clob);
+         cwms_util.append(p_ratings, l_ratings(i).to_clob(p_time_zone));
       end if;
 
       if p_recurse and l_ratings(i).source_ratings is not null then
