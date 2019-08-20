@@ -63,12 +63,18 @@ prompt UPDATING OBJECTS
 --------------
 -- PACKAGES --
 --------------
+-- Fix bug in RETRIEVE_RATINGS_XML_DATA that ignored specified time zone
+@../cwms/cwms_rating_pkg_body
 -- Fix bug in GET_DB_NAME that returns incorrect name for dbs with DataGuard
 -- Fix bug in reporting last logout time when there have been multiple logins, but no logouts
+-- Fix bug in storing ratings with algebraic formulas without spaces
 @../cwms/cwms_util_pkg_body
 -----------
 -- TYPES --
 -----------
+-- Fix bug in storing ratings with algebraic formulas without spaces
+-- Modified to allow contstrutor from XML to allow simple-rating with no formula or points
+@../cwms/types/rating_t-body
 -----------
 -- VIEWS --
 -----------
