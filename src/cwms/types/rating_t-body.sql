@@ -1172,13 +1172,13 @@ as
            bulk collect
            into l_parts
            from (select substr(column_value, instr(column_value, '-') + 1)
-           from table(l_tokens)
-          where regexp_like(column_value, '-?ARG\d')
+                   from table(l_tokens)
+                  where regexp_like(column_value, '-?ARG\d', 'i')
                 )
           order by 1;
-
+      
          for i in 1..l_parts.count loop
-            if length(l_parts(i)) > 5 or instr(l_parts(i), 'ARG') != 1 then
+            if length(l_parts(i)) > 5 or instr(upper(l_parts(i)), 'ARG') != 1 then
                cwms_err.raise(
                   'ERROR',
                   'Rating formula could not be properly parsed: '||self.formula);

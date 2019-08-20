@@ -3700,8 +3700,11 @@ as
                l_number := to_number(l_tokens(1));
             exception
                when others then
-                  if not regexp_like(l_tokens(1), 'arg\d+', 'i') and not is_expression_constant(l_tokens(1)) then
-                     cwms_err.raise('ERROR', 'Invalid expression: '||p_expr);
+                  if not regexp_like(upper(l_tokens(1)), '^arg\d+$', 'i') and not is_expression_constant(l_tokens(1)) then
+                     --------------------------------------
+                     -- invalid rpn token, try algebraic --
+                     --------------------------------------
+                     l_tokens := tokenize_algebraic(p_expr);
                   end if;
             end;
          else
