@@ -6,7 +6,7 @@ begin
       (select version,
               to_char(version_date, 'DDMONYYYY') as version_date
          from &cwms_schema..av_db_change_log
-        where version_date = (select max(version_date) from &cwms_schema..av_db_change_log)
+        where version_date = (select max(version_date) from &cwms_schema..av_db_change_log where application = 'CWMS')
       )
    loop
       if rec.version !=  '18.1.2' then
