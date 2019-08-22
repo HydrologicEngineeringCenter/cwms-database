@@ -63,8 +63,13 @@ prompt UPDATING OBJECTS
 --------------
 -- PACKAGES --
 --------------
+-- Fix bugs in testing for invalid results of LOG function
+@../cwms/cwms_lookup_pkg_body
 -- Fix bug in RETRIEVE_RATINGS_XML_DATA that ignored specified time zone
+-- Fix bugs in testing for invalid results of LOG function
 @../cwms/cwms_rating_pkg_body
+-- Fix bugs in testing for invalid results of LOG function
+@../cwms/cwms_rounding_pkg_body
 -- Fix bug in GET_DB_NAME that returns incorrect name for dbs with DataGuard
 -- Fix bug in reporting last logout time when there have been multiple logins, but no logouts
 -- Fix bug in storing ratings with algebraic formulas without spaces
@@ -72,9 +77,13 @@ prompt UPDATING OBJECTS
 -----------
 -- TYPES --
 -----------
+-- Fix bugs in testing for invalid results of LOG function
+@../cwms/types/rating_ind_parameter_t-body
 -- Fix bug in storing ratings with algebraic formulas without spaces
 -- Modified to allow contstrutor from XML to allow simple-rating with no formula or points
 @../cwms/types/rating_t-body
+-- Modified to allow contstrutor from XML to allow usgs-stream-rating with no points
+@../cwms/types/stream_rating_t-body
 -----------
 -- VIEWS --
 -----------
