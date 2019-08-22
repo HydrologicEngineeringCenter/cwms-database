@@ -1006,12 +1006,19 @@ AS
       COMMIT;
    END CREATE_USER;
 
+   FUNCTION GENERATE_DOD_PASSWORD
+   RETURN VARCHAR2
+   IS
+   BEGIN
+	return DBMS_RANDOM.string('u',5) || '_' || DBMS_RANDOM.string('l',5) || '^' || TRUNC(DBMS_RANDOM.value(100,1000));
+   END GENERATE_DOD_PASSWORD;
+
    PROCEDURE create_cwms_service_user
    IS
    BEGIN
     if(sys_context('userenv', 'current_user')='&cwms_schema')
     then
-        CWMS_DBA.CWMS_USER_ADMIN.CREATE_CWMS_SERVICE_ACCOUNT(cac_service_user, RAWTOHEX (DBMS_CRYPTO.RANDOMBYTES (8)));
+        CWMS_DBA.CWMS_USER_ADMIN.CREATE_CWMS_SERVICE_ACCOUNT(cac_service_user, GENERATE_DOD_PASSWORD);
     end if;
    END create_cwms_service_user;
 
@@ -2622,7 +2629,7 @@ AS
         
         IF (SYSDATE > l_timeout)
         THEN
-            l_password := RAWTOHEX (DBMS_CRYPTO.RANDOMBYTES (8));
+            l_password := GENERATE_DOD_PASSWORD; 
             DBMS_LOCK.ALLOCATE_UNIQUE (lockname     => 'AT_SEC_SERVICE_USER',
                                        lockhandle   => l_handle);
 
