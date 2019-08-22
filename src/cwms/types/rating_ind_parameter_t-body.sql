@@ -1298,37 +1298,28 @@ as
                            l_log_hi_val binary_double;
                            l_log_lo_val binary_double;
                         begin
-                           begin
-                              l_log_hi_val := log(10, l_hi_val);
-                              l_log_lo_val := log(10, l_lo_val);
-                              case
-                              when l_log_hi_val = +binary_double_infinity then cwms_err.raise('ERROR', 'Infinity');
-                              when l_log_hi_val = -binary_double_infinity then cwms_err.raise('ERROR', 'Infinity');
-                              when l_log_hi_val =  binary_double_nan      then cwms_err.raise('ERROR', 'NaN');
-                              when l_log_lo_val = +binary_double_infinity then cwms_err.raise('ERROR', 'Infinity');
-                              when l_log_lo_val = -binary_double_infinity then cwms_err.raise('ERROR', 'Infinity');
-                              when l_log_lo_val =  binary_double_nan      then cwms_err.raise('ERROR', 'NaN');
-                              else null;
-                              end case;
-                           exception
-                              when others then
-                                 l_dependent_log := false;
-                                 if l_independent_log then
-                                    ---------------------------------------
-                                    -- fall back from LOG-LoG to LIN-LIN --
-                                    ---------------------------------------
-                                    l_independent_log := false;
-                                    l_ratio := cwms_lookup.find_ratio(
-                                       l_independent_log,
-                                       p_ind_values(p_position),
-                                       l_ind,
-                                       l_high_index,
-                                       l_independent_properties.increasing_range,
-                                       cwms_lookup.method_linear,
-                                       cwms_lookup.method_linear,
-                                       cwms_lookup.method_linear);
-                                 end if;
-                           end;
+                           l_log_hi_val := log(10, l_hi_val);
+                           l_log_lo_val := log(10, l_lo_val);
+                           if l_log_hi_val is NaN or l_log_hi_val is Infinite or
+                              l_log_lo_val is Nan or l_log_lo_val is Infinite
+                           then
+                              l_dependent_log := false;
+                              if l_independent_log then
+                                 ---------------------------------------
+                                 -- fall back from LOG-LoG to LIN-LIN --
+                                 ---------------------------------------
+                                 l_independent_log := false;
+                                 l_ratio := cwms_lookup.find_ratio(
+                                    l_independent_log,
+                                    p_ind_values(p_position),
+                                    l_ind,
+                                    l_high_index,
+                                    l_independent_properties.increasing_range,
+                                    cwms_lookup.method_linear,
+                                    cwms_lookup.method_linear,
+                                    cwms_lookup.method_linear);
+                              end if;
+                           end if;
                            if l_dependent_log then
                               l_hi_val := l_log_hi_val;
                               l_lo_val := l_log_lo_val;

@@ -3625,6 +3625,11 @@ begin
                if l_independent_log then
                   l_ratio := (log(10, l_date_offset) - log(10, l_date_offset_2))
                            / (log(10, l_date_offsets(l_hi_index)) - log(10, l_date_offset_2));
+                  if l_ratio is nan or l_ratio is infinite then
+                     l_independent_log := false;
+                     l_ratio := (l_date_offset - l_date_offset_2)
+                              / (l_date_offsets(l_hi_index) - l_date_offset_2);
+                  end if;
                else
                   l_ratio := (l_date_offset - l_date_offset_2)
                            / (l_date_offsets(l_hi_index) - l_date_offset_2);
@@ -3648,34 +3653,34 @@ begin
                      l_log_hi_val binary_double;
                      l_log_lo_val binary_double;
                   begin
-                     begin
-                        l_log_hi_val := log(10, l_hi_value);
-                        l_log_lo_val := log(10, l_lo_value);
-                     exception
-                        when others then
-                           l_dependent_log := false;
-                           if l_independent_log then
-                              ---------------------------------------
-                              -- fall back from LOG-LoG to LIN-LIN --
-                              ---------------------------------------
-                              l_independent_log := false;
-                              if l_ratings(l_date_ratings(l_hi_index-1)) is of (stream_rating_t) and l_ratio > 0. and l_ratio < 1.
-                              then
-                                 l_ratio := (l_date_offset - l_date_offset_2)
-                                          / (l_date_offsets(l_hi_index) - l_date_offset_2);
-                              else
-                                 l_ratio := cwms_lookup.find_ratio(
-                                    l_independent_log,
-                                    l_date_offset,
-                                    l_date_offsets,
-                                    l_hi_index,
-                                    date_properties.increasing_range,
-                                    cwms_lookup.method_linear,
-                                    cwms_lookup.method_linear,
-                                    cwms_lookup.method_linear);
-                              end if;
+                     l_log_hi_val := log(10, l_hi_value);
+                     l_log_lo_val := log(10, l_lo_value);
+                     if l_log_hi_val is NaN or l_log_hi_val is Infinite or
+                        l_log_lo_val is NaN or l_log_lo_val is Infinite
+                     then
+                        l_dependent_log := false;
+                        if l_independent_log then
+                           ---------------------------------------
+                           -- fall back from LOG-LoG to LIN-LIN --
+                           ---------------------------------------
+                           l_independent_log := false;
+                           if l_ratings(l_date_ratings(l_hi_index-1)) is of (stream_rating_t) and l_ratio > 0. and l_ratio < 1.
+                           then
+                              l_ratio := (l_date_offset - l_date_offset_2)
+                                       / (l_date_offsets(l_hi_index) - l_date_offset_2);
+                           else
+                              l_ratio := cwms_lookup.find_ratio(
+                                 l_independent_log,
+                                 l_date_offset,
+                                 l_date_offsets,
+                                 l_hi_index,
+                                 date_properties.increasing_range,
+                                 cwms_lookup.method_linear,
+                                 cwms_lookup.method_linear,
+                                 cwms_lookup.method_linear);
                            end if;
-                     end;
+                        end if;
+                     end if;
                      if l_dependent_log then
                         l_hi_value := l_log_hi_val;
                         l_lo_value := l_log_lo_val;
@@ -4742,6 +4747,11 @@ begin
                if l_independent_log then
                   l_ratio := (log(10, l_date_offset) - log(10, l_date_offset_2))
                            / (log(10, l_date_offsets(l_hi_index)) - log(10, l_date_offset_2));
+                  if l_ratio is NaN or l_ratio is Infinite then
+                     l_independent_log := false;
+                     l_ratio := (l_date_offset - l_date_offset_2)
+                              / (l_date_offsets(l_hi_index) - l_date_offset_2);
+                  end if;
                else
                   l_ratio := (l_date_offset - l_date_offset_2)
                            / (l_date_offsets(l_hi_index) - l_date_offset_2);
@@ -4765,34 +4775,34 @@ begin
                      l_log_hi_val binary_double;
                      l_log_lo_val binary_double;
                   begin
-                     begin
-                        l_log_hi_val := log(10, l_hi_value);
-                        l_log_lo_val := log(10, l_lo_value);
-                     exception
-                        when others then
-                           l_dependent_log := false;
-                           if l_independent_log then
-                              ---------------------------------------
-                              -- fall back from LOG-LoG to LIN-LIN --
-                              ---------------------------------------
-                              l_independent_log := false;
-                              if l_ratings(l_date_ratings(l_hi_index-1)) is of (stream_rating_t) and l_ratio > 0. and l_ratio < 1.
-                              then
-                                 l_ratio := (l_date_offset - l_date_offset_2)
-                                          / (l_date_offsets(l_hi_index) - l_date_offset_2);
-                              else
-                                 l_ratio := cwms_lookup.find_ratio(
-                                    l_independent_log,
-                                    l_date_offset,
-                                    l_date_offsets,
-                                    l_hi_index,
-                                    date_properties.increasing_range,
-                                    cwms_lookup.method_linear,
-                                    cwms_lookup.method_linear,
-                                    cwms_lookup.method_linear);
-                              end if;
+                     l_log_hi_val := log(10, l_hi_value);
+                     l_log_lo_val := log(10, l_lo_value);
+                     if l_log_hi_val is NaN or l_log_hi_val is Infinite or
+                        l_log_lo_val is NaN or l_log_lo_val is Infinite
+                     then
+                        l_dependent_log := false;
+                        if l_independent_log then
+                           ---------------------------------------
+                           -- fall back from LOG-LoG to LIN-LIN --
+                           ---------------------------------------
+                           l_independent_log := false;
+                           if l_ratings(l_date_ratings(l_hi_index-1)) is of (stream_rating_t) and l_ratio > 0. and l_ratio < 1.
+                           then
+                              l_ratio := (l_date_offset - l_date_offset_2)
+                                       / (l_date_offsets(l_hi_index) - l_date_offset_2);
+                           else
+                              l_ratio := cwms_lookup.find_ratio(
+                                 l_independent_log,
+                                 l_date_offset,
+                                 l_date_offsets,
+                                 l_hi_index,
+                                 date_properties.increasing_range,
+                                 cwms_lookup.method_linear,
+                                 cwms_lookup.method_linear,
+                                 cwms_lookup.method_linear);
                            end if;
-                     end;
+                        end if;
+                     end if;
                      if l_dependent_log then
                         l_hi_value := l_log_hi_val;
                         l_lo_value := l_log_lo_val;
