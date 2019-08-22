@@ -70,6 +70,8 @@ prompt UPDATING OBJECTS
 @../cwms/cwms_rating_pkg_body
 -- Fix bugs in testing for invalid results of LOG function
 @../cwms/cwms_rounding_pkg_body
+-- Make CWMS9999 password DoD compliant
+@../cwms/cwms_sec_pkg_body.sql
 -- Fix bug in GET_DB_NAME that returns incorrect name for dbs with DataGuard
 -- Fix bug in reporting last logout time when there have been multiple logins, but no logouts
 -- Fix bug in storing ratings with algebraic formulas without spaces
