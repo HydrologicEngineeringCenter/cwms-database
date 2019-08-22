@@ -398,7 +398,11 @@ as
             self.shifts(i).current_time  := self.current_time;
          end loop;
       end if;
-      self.validate_obj;
+      if self.rating_info is null then
+         self.validate_obj('F');
+      else
+         self.validate_obj('T');
+      end if;
       return;
    end;
 
