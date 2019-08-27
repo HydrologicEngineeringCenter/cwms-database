@@ -424,13 +424,14 @@ as
       -- rating values table --
       -------------------------
       if self.rating_values is null or self.rating_values.count = 0 then
-         ----------------------------------------------
-         -- create a dummy table if none is supplied --
-         ----------------------------------------------
-         self.rating_values := rating_value_tab_t(rating_value_t(0, 0, null, null));
---       cwms_err.raise(
---          'ERROR',
---          'Rating independent parameter '||p_parameter_position||' has no values');
+         null; -- allow null rating values
+--         ----------------------------------------------
+--         -- create a dummy table if none is supplied --
+--         ----------------------------------------------
+--         self.rating_values := rating_value_tab_t(rating_value_t(0, 0, null, null));
+----       cwms_err.raise(
+----          'ERROR',
+----          'Rating independent parameter '||p_parameter_position||' has no values');
       else
          for i in 1..self.rating_values.count loop
             -------------------------------
