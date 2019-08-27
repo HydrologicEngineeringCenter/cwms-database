@@ -3576,7 +3576,7 @@ as
       ---------------------------------
       -- parse the infix into tokens --
       ---------------------------------
-      l_infix_tokens := cwms_util.split_text(regexp_replace(normalize_algebraic(p_algebraic_expr),'([()])',' \1 '));
+      l_infix_tokens := cwms_util.split_text(regexp_replace(normalize_algebraic(trim(p_algebraic_expr)),'([()])',' \1 '));
       -------------------------------------
       -- process the tokens into postfix --
       -------------------------------------
