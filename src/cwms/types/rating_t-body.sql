@@ -2102,7 +2102,7 @@ as
             values l_rating_rec;
          end if;
 
-         if self.rating_info is not null then
+         if self.rating_info is not null and (not l_exists or (self.rating_info.rating_values is not null and rating_info.rating_values.count > 0)) then
             self.rating_info.store(l_rating_rec.rating_code, null, 'F');
          end if;
 
