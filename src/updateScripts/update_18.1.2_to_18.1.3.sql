@@ -76,6 +76,8 @@ prompt UPDATING OBJECTS
 -- Fix bug in reporting last logout time when there have been multiple logins, but no logouts
 -- Fix bug in storing ratings with algebraic formulas without spaces
 @../cwms/cwms_util_pkg_body
+-- Fix bug in STORE_ACCOUNTING_SET to handle the change from locally-owned to CWMS-owned common physical transfer types
+@../cwms/cwms_water_supply_pkg_body
 -----------
 -- TYPES --
 -----------
