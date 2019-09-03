@@ -1438,7 +1438,7 @@ BEGIN
             left outer join cwms_office o on (o.office_id in ('CWMS', acct_tab.physical_transfer_type.office_id))
             left outer join at_physical_transfer_type ptt on (
                 ptt.phys_trans_type_display_value = acct_tab.physical_transfer_type.display_value
-                and ptt.db_office_code = o.office_code
+                and ptt.db_office_code in (o.office_code, cwms_util.db_office_code_all)
             )
             left outer join at_water_user_contract wuc on (
                 upper(acct_tab.water_user_contract_ref.contract_name) = upper(wuc.contract_name)
