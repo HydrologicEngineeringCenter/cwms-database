@@ -3315,8 +3315,10 @@ AS
 
       TYPE qual_tab_t IS TABLE OF NUMBER;
 
-      TS_ID_NOT_FOUND   EXCEPTION;
+      TS_ID_NOT_FOUND       EXCEPTION;
+      LOCATION_ID_NOT_FOUND EXCEPTION;
       PRAGMA EXCEPTION_INIT (TS_ID_NOT_FOUND, -20001);
+      PRAGMA EXCEPTION_INIT (LOCATION_ID_NOT_FOUND, -20025);
       date_tab          date_tab_t := date_tab_t ();
       val_tab           val_tab_t := val_tab_t ();
       qual_tab          qual_tab_t := qual_tab_t ();
@@ -3398,7 +3400,7 @@ AS
                      qual_tab (j));
             END LOOP;
          EXCEPTION
-            WHEN TS_ID_NOT_FOUND
+            WHEN TS_ID_NOT_FOUND OR LOCATION_ID_NOT_FOUND
             THEN
                IF NOT must_exist
                THEN
