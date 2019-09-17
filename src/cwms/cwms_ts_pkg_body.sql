@@ -1840,10 +1840,7 @@ AS
                               l_utc_offset,
                               p_interval_forward,
                               p_interval_backward,
-                              CASE UPPER (p_versioned)
-                                 WHEN 'T' THEN 'Y'
-                                 WHEN 'F' THEN NULL
-                              END,
+                              UPPER (p_versioned),
                               UPPER (p_active_flag))
                  RETURNING ts_code
                       INTO p_ts_code;
