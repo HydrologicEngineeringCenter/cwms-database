@@ -1026,6 +1026,7 @@ whenever sqlerror continue;
 @@../cwms/views/av_location_level_curval
 @@../cwms/views/av_entity_category
 @@../cwms/views/av_loc_vert_datum
+whenever sqlerror continue;
 insert into at_clob values(cwms_seq.nextval, 53, '/VIEWDOCS/AV_VERT_DATUM_OFFSET', null, '	
 /**
  * Displays information on vertical datum offsets
