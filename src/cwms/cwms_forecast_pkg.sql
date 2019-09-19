@@ -410,7 +410,7 @@ procedure retrieve_ts(
    p_end_inclusive   in  varchar2 default 'T',
    p_previous        in  varchar2 default 'F',
    p_next            in  varchar2 default 'F',
-   p_office_id       in  varchar2 default null); -- null = user's office id   
+   p_office_id       in  varchar2 default null); -- null = user's office id
 /**
  * Catalogs forecast time series that match the specified parameters. Matching is
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
@@ -515,7 +515,7 @@ procedure cat_ts(
    p_forecast_id     in  varchar2,
    p_cwms_ts_id_mask in  varchar2 default '*',
    p_time_zone       in  varchar2 default null,  -- null = location time zone
-   p_office_id       in  varchar2 default null); -- null = user's office id   
+   p_office_id       in  varchar2 default null); -- null = user's office id
 /**
  * Catalogs forecast time series that match the specified parameters. Matching is
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
@@ -619,8 +619,8 @@ function cat_ts_f(
    p_forecast_id     in varchar2,
    p_cwms_ts_id_mask in varchar2 default '*',
    p_time_zone       in varchar2 default null, -- null = location time zone
-   p_office_id       in varchar2 default null) -- null = user's office id   
-   return sys_refcursor;   
+   p_office_id       in varchar2 default null) -- null = user's office id
+   return sys_refcursor;
 /**
  * Retrieves text for a forecast from the database
  *
@@ -639,7 +639,7 @@ procedure retrieve_text(
    p_forecast_time   in  date,
    p_issue_time      in  date,
    p_time_zone       in  varchar2 default null,  -- null = location time zone
-   p_office_id       in  varchar2 default null); -- null = user's office id   
+   p_office_id       in  varchar2 default null); -- null = user's office id
 /**
  * Catalogs all forecast text for a forecast specification
  *
@@ -693,7 +693,7 @@ procedure cat_text(
    p_location_id  in  varchar2,
    p_forecast_id  in  varchar2,
    p_time_zone    in  varchar2 default null,  -- null = location time zone
-   p_office_id    in  varchar2 default null); -- null = user's office id   
+   p_office_id    in  varchar2 default null); -- null = user's office id
 /**
  * Catalogs all forecast text for a forecast specification
  *
@@ -747,8 +747,8 @@ function cat_text_f (
    p_location_id  in varchar2,
    p_forecast_id  in varchar2,
    p_time_zone    in varchar2 default null, -- null = location time zone
-   p_office_id    in varchar2 default null) -- null = user's office id   
-   return sys_refcursor;   
+   p_office_id    in varchar2 default null) -- null = user's office id
+   return sys_refcursor;
 /**
  * Stores time series and text for a forecast to the database
  *
@@ -775,7 +775,7 @@ procedure store_forecast(
    p_text            in clob,
    p_time_series     in ztimeseries_array,
    p_store_rule      in varchar2 default null,  -- null = DELETE INSERT
-   p_office_id       in varchar2 default null); -- null = user's office id   
+   p_office_id       in varchar2 default null); -- null = user's office id
 /**
  * Retrieves time series and text for a forecast from the database
  *
@@ -817,7 +817,7 @@ procedure delete_forecast(
    p_issue_time      in date,
    p_time_zone       in varchar2 default null, -- null = location time zone
    p_override_prot   in varchar2 default 'F',
-   p_office_id       in varchar2 default null); -- null = user's office id   
+   p_office_id       in varchar2 default null); -- null = user's office id
 /**
  * Catalogs all forecast text for a forecast specification
  *
@@ -848,7 +848,7 @@ procedure delete_forecast(
  *     <td class="descr-center">3</td>
  *     <td class="descr">forecast_id</td>
  *     <td class="descr">varchar2(32)</td>
- *     <td class="descr">The forecast date of the forecast</td>
+ *     <td class="descr">The forecast identifier</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">4</td>
@@ -860,7 +860,7 @@ procedure delete_forecast(
  *     <td class="descr-center">5</td>
  *     <td class="descr">issue_date</td>
  *     <td class="descr">date</td>
- *     <td class="descr">The issue date of the forecast</td>                  
+ *     <td class="descr">The issue date of the forecast</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">6</td>
@@ -907,7 +907,7 @@ procedure delete_forecast(
  *     <td class="descr-center">2</td>
  *     <td class="descr">location_id</td>
  *     <td class="descr">varchar2(57)</td>
- *     <td class="descr">The target locaiton for the forecast</td>
+ *     <td class="descr">The target location for the forecast</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">3</td>
@@ -975,7 +975,7 @@ procedure delete_forecast(
  * @param p_max_fcst_age     A duration string in ISO duration format specifying how far prior to current time to look for forecast dates.
  * @param p_max_issue_age    A duration string in ISO duration format specifying how far prior to current time to look for issue dates.
  * @param p_abbreviated      A flag (T/F) specifying whether to return an abbreviated catalog. If NULL or not specified, 'T' will be used.
- * @param p_time_zone        The time zone for p_forecast_time and p_issue_time. If NULL or not specified, the specified location's local time zone will be used. 
+ * @param p_time_zone        The time zone for p_forecast_time and p_issue_time. If NULL or not specified, the specified location's local time zone will be used.
  * @param p_office_id_mask   The office that owns the forecast specification and time series.  If NULL or not specified, the session user's default office is used.
  */
 procedure cat_forecast(
@@ -986,7 +986,7 @@ procedure cat_forecast(
    p_max_issue_age    in  varchar2 default 'P1Y',
    p_abbreviated      in  varchar2 default 'T',
    p_time_zone        in  varchar2 default null,  -- null = location time zone
-   p_office_id_mask   in  varchar2 default null); -- null = user's office id   
+   p_office_id_mask   in  varchar2 default null); -- null = user's office id
 /**
  * Catalogs all forecast text for a forecast specification
  *
@@ -995,14 +995,14 @@ procedure cat_forecast(
  * @param p_max_fcst_age     A duration string in ISO duration format specifying how far prior to current time to look for forecast dates.
  * @param p_max_issue_age    A duration string in ISO duration format specifying how far prior to current time to look for issue dates.
  * @param p_abbreviated      A flag (T/F) specifying whether to return an abbreviated catalog. If NULL or not specified, 'T' will be used.
- * @param p_time_zone        The time zone for p_forecast_time and p_issue_time. If NULL or not specified, the specified location's local time zone will be used. 
+ * @param p_time_zone        The time zone for p_forecast_time and p_issue_time. If NULL or not specified, the specified location's local time zone will be used.
  * @param p_office_id_mask   The office that owns the forecast specification and time series.  If NULL or not specified, the session user's default office is used.
  *
  * @return A cursor containging the abbreviated or non-abbreviated catalog
  * <p>
  * If an abbreviated catalog is specified, the following columns will be returned, sorted by the first three
  * <p>
- * <table class="descr">                  
+ * <table class="descr">
  *   <tr>
  *     <th class="descr">Column No.</th>
  *     <th class="descr">Column Name</th>
@@ -1025,7 +1025,7 @@ procedure cat_forecast(
  *     <td class="descr-center">3</td>
  *     <td class="descr">location_id</td>
  *     <td class="descr">varchar2(57)</td>
- *     <td class="descr">The target locaiton for the forecast</td>
+ *     <td class="descr">The target location for the forecast</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">4</td>
@@ -1084,7 +1084,7 @@ procedure cat_forecast(
  *     <td class="descr-center">3</td>
  *     <td class="descr">location_id</td>
  *     <td class="descr">varchar2(57)</td>
- *     <td class="descr">The target locaiton for the forecast</td>
+ *     <td class="descr">The target location for the forecast</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">4</td>
@@ -1143,9 +1143,9 @@ function cat_forecast_f (
    p_max_issue_age    in varchar2 default 'P1Y',
    p_abbreviated      in varchar2 default 'T',
    p_time_zone        in varchar2 default null, -- null = location time zone
-   p_office_id_mask   in varchar2 default null) -- null = user's office id   
-   return sys_refcursor;   
-   
+   p_office_id_mask   in varchar2 default null) -- null = user's office id
+   return sys_refcursor;
+
 end cwms_forecast;
 /
 show errors;
