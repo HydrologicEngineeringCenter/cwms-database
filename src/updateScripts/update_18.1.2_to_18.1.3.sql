@@ -60,6 +60,8 @@ prompt UPDATING OBJECTS
 ------------
 -- TABLES --
 ------------
+-- Add trigger to location updates and deletions on AT_PHYSICAL_LOCATION
+@@./18_1_3/at_physical_location_t03
 --------------
 -- PACKAGES --
 --------------
