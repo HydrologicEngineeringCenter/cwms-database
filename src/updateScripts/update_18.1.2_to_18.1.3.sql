@@ -60,6 +60,10 @@ prompt UPDATING OBJECTS
 ------------
 -- TABLES --
 ------------
+-- Drop service user table
+@@./18_1_3/recreate_at_sec_service_user.sql 
+-- Add index to at_sec_user_groups table
+@@./18_1_3/update_at_sec_user_groups.sql
 -- Add trigger to location updates and deletions on AT_PHYSICAL_LOCATION
 @@./18_1_3/at_physical_location_t03
 --------------
@@ -74,8 +78,15 @@ prompt UPDATING OBJECTS
 @../cwms/cwms_rating_pkg_body
 -- Fix bugs in testing for invalid results of LOG function
 @../cwms/cwms_rounding_pkg_body
--- Make CWMS9999 password DoD compliant
+-- Make service account password DoD compliant
+-- Add procedures to get locked users and invalid login attempt
+-- API call to add 'read_only' users to National CWMS DB
+@../cwms/cwms_crypt_pkg
+@../cwms/cwms_crypt_pkg_body
+@../cwms/cwms_sec_pkg
 @../cwms/cwms_sec_pkg_body
+@../cwms_dba/cwms_user_admin_pkg.sql
+@../cwms_dba/cwms_user_admin_pkg_body.sql
 -- Modify RETRIEVE_TS_MULTI to handle LOCATION_ID_NOT_FOUND in addition to TS_ID_NOT_FOUND
 -- Fix bug in storing version flag
 @../cwms/cwms_ts_pkg_body
