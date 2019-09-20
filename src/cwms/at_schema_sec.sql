@@ -266,6 +266,23 @@ ALTER TABLE at_sec_user_groups ADD (
 					 PCTINCREASE		0
 					))
 /
+
+CREATE UNIQUE INDEX at_sec_user_groups_ui
+	ON at_sec_user_groups (db_office_code, upper(user_group_id))
+	LOGGING
+	tablespace CWMS_20AT_DATA
+	PCTFREE 10
+	INITRANS 2
+	MAXTRANS 255
+	STORAGE (INITIAL 64 K
+				MINEXTENTS 1
+				MAXEXTENTS 2147483645
+				PCTINCREASE 0
+				BUFFER_POOL DEFAULT
+			  )
+	NOPARALLEL
+/
+
 --
 --=============================================================================
 --=============================================================================

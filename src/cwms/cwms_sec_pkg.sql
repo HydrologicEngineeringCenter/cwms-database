@@ -16,6 +16,24 @@ AS
    acc_state_no_account          CONSTANT VARCHAR2 (16) := 'NO ACCOUNT';
    cac_service_user             CONSTANT VARCHAR2(8) := 'CWMS9999';
 
+   TYPE cat_invalid_login_rec_t IS RECORD
+   (
+     userhost      VARCHAR2 (128),
+      terminal     VARCHAR2 (128),
+      incoming_ip       VARCHAR2 (32),
+      login_time TIMESTAMP
+   );
+   TYPE cat_invalid_login_tab_t IS TABLE OF cat_invalid_login_rec_t;
+   
+   TYPE cat_locked_users_rec_t IS RECORD
+   (
+     username      VARCHAR2 (32),
+     account_status VARCHAR2(32),
+     lock_date     date,
+     expiry_date   date
+   );
+   TYPE cat_locked_users_tab_t IS TABLE OF cat_locked_users_rec_t;
+
    TYPE cat_at_sec_allow_rec_t IS RECORD
    (
       db_office_code    NUMBER,
@@ -135,6 +153,15 @@ AS
                                 p_user_group_id   IN VARCHAR2,
                                 p_db_office_id    IN VARCHAR2 DEFAULT NULL);
 
+    /*
+    * Adds a read-only user to all offices in a database. Mainly meant for National CWMS Database
+
+    *
+    * @param p_username Oracle userid of the user that needs this privelege
+    */
+
+   PROCEDURE add_read_only_user_all_offices (p_username IN VARCHAR2);
+
    PROCEDURE create_logon_trigger (p_username IN VARCHAR2);
    PROCEDURE create_user (p_username             IN VARCHAR2,
                           p_password             IN VARCHAR2,
@@ -166,6 +193,14 @@ AS
    FUNCTION cat_at_sec_allow_tab (p_db_office_id IN VARCHAR2 DEFAULT NULL)
       RETURN cat_at_sec_allow_tab_t
       PIPELINED;
+
+   FUNCTION cat_invalid_login_tab (p_username IN VARCHAR2,maxrows NUMBER default 3)
+        RETURN cat_invalid_login_tab_t
+        PIPELINED;
+
+   FUNCTION cat_locked_users_tab
+        RETURN cat_locked_users_tab_t
+        PIPELINED;
 
    PROCEDURE refresh_mv_sec_ts_privileges;
 
@@ -246,5 +281,7 @@ AS
                                    p_user          OUT VARCHAR2,
                                    p_session_key      OUT VARCHAR2);
   PROCEDURE get_service_credentials(p_username OUT VARCHAR2,p_password OUT VARCHAR2);
+  PROCEDURE confirm_pd_or_schema_user(p_user VARCHAR2);
+  PROCEDURE confirm_cwms_schema_user;
 END cwms_sec;
 /
