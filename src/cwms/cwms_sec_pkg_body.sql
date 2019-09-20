@@ -4,6 +4,8 @@ SET DEFINE ON
 /* Formatted on 7/1/2013 1:09:40 PM (QP5 v5.163.1008.3004) */
 CREATE OR REPLACE PACKAGE BODY cwms_sec
 AS
+
+
    FUNCTION is_user_cwms_locked (p_db_office_code IN NUMBER)
       RETURN BOOLEAN
    IS
@@ -98,6 +100,7 @@ AS
    BEGIN
       RETURN is_user_admin (p_db_office_code => l_db_office_code);
    END is_user_admin;
+
 
 
    PROCEDURE confirm_user_admin_priv (p_db_office_code IN NUMBER)
@@ -714,8 +717,14 @@ AS
    BEGIN
    	confirm_user_admin_priv (l_db_office_code);
 
+        IF(length(to_char(p_edipi)) <> 10)
+        THEN
+            cwms_err.raise (
+               'ERROR',
+               'Invalid EDIPI (length not 10 digits): ' || p_edipi);
+	END IF;
    	UPDATE AT_SEC_CWMS_USERS
-      	SET EDIPI = p_edipi
+      	SET principle_name = p_edipi||'@mil'
     	WHERE USERID = UPPER (p_username);
 
    	COMMIT;
@@ -814,25 +823,39 @@ AS
       RETURN l_user_group_code;
    END get_user_group_code;
 
-   PROCEDURE insert_noaccess_entry (p_username         IN VARCHAR2,
-                                    p_db_office_code      NUMBER)
-   IS
-      l_count              NUMBER;
-   BEGIN
-      SELECT COUNT (*)
-        INTO L_count
-        FROM AT_SEC_USER_OFFICE
-       WHERE USERNAME = p_username AND db_office_code = p_db_office_code;
+    PROCEDURE insert_noaccess_entry (p_username         IN VARCHAR2,
+                                     p_db_office_code      NUMBER)
+    IS
+        l_count   NUMBER;
+    BEGIN
+        SELECT COUNT (*)
+          INTO l_count
+          FROM AT_SEC_CWMS_USERS
+         WHERE userid = UPPER (p_username);
 
-      IF l_count = 0
-      THEN
-         INSERT
-           INTO AT_SEC_USER_OFFICE (USERNAME, DB_OFFICE_CODE)
-         VALUES (UPPER (p_username), p_db_office_code);
+        IF (l_count = 0)
+        THEN
+            cwms_upass.update_user_data (p_username,
+                                         NULL,
+                                         NULL,
+                                         NULL,
+                                         NULL,
+                                         NULL);
+        END IF;
 
-         COMMIT;
-      END IF;
-   END insert_noaccess_entry;
+        SELECT COUNT (*)
+          INTO L_count
+          FROM AT_SEC_USER_OFFICE
+         WHERE USERNAME = upper(p_username) AND db_office_code = p_db_office_code;
+
+        IF l_count = 0
+        THEN
+            INSERT INTO AT_SEC_USER_OFFICE (USERNAME, DB_OFFICE_CODE)
+                 VALUES (UPPER (p_username), p_db_office_code);
+
+            COMMIT;
+        END IF;
+    END insert_noaccess_entry;
 
    PROCEDURE add_user_to_group (p_username         IN VARCHAR2,
                                 p_user_group_id    IN VARCHAR2,
@@ -880,6 +903,73 @@ AS
                          p_user_group_id    => p_user_group_id,
                          p_db_office_code   => l_db_office_code);
    END add_user_to_group;
+
+   PROCEDURE CONFIRM_DB_USER(p_username IN VARCHAR2)
+   IS
+    l_count NUMBER;
+   BEGIN
+	select count(*) INTO l_count FROM dba_users where username=upper(p_username);
+	IF(l_count>0)
+	THEN
+	  return;
+        ELSE
+            raise_application_error (
+                -20999,
+                'The user ' || p_username || ' doesn''t exist in the database',
+                TRUE);
+        END IF;
+    END CONFIRM_DB_USER;
+
+    /*
+    * Adds a read-only user to all offices in a database. Mainly meant for National CWMS Database
+
+    *
+    * @param p_username Oracle userid of the user that needs this privelege
+    */
+
+    PROCEDURE add_read_only_user_all_offices (p_username IN VARCHAR2)
+    IS
+     group_exists EXCEPTION;
+     PRAGMA EXCEPTION_INIT(group_exists,-20998);
+    BEGIN
+	confirm_cwms_schema_user;
+
+	CONFIRM_DB_USER(p_username);
+
+        FOR c IN (SELECT office_code, office_id FROM cwms_office)
+        LOOP
+            insert_noaccess_entry (p_username, c.office_code);
+            BEGIN
+                create_user_group ('Viewer Users',
+                                   'Limited Access CWMS Users.',
+                                   c.office_id);
+            EXCEPTION
+                WHEN group_exists
+                THEN
+                    NULL;
+            END;
+
+            BEGIN
+                create_user_group ('CWMS Users',
+                                   'Routine CWMS Users.',
+                                   c.office_id);
+            EXCEPTION
+                WHEN group_exists
+                THEN
+                    NULL;
+            END;
+
+            add_user_to_group (p_username         => p_username,
+                               p_user_group_id    => 'Viewer Users',
+                               p_db_office_code   => c.office_code);
+            add_user_to_group (p_username         => p_username,
+                               p_user_group_id    => 'CWMS Users',
+                               p_db_office_code   => c.office_code);
+        END LOOP;
+        create_logon_trigger(p_username);
+	cwms_dba.cwms_user_admin.grant_cwms_permissions(p_username);
+        COMMIT;
+    END add_read_only_user_all_offices;
 
    PROCEDURE create_cwmsdbi_db_user (
       p_dbi_username   IN VARCHAR2,
@@ -988,123 +1078,60 @@ AS
 
       insert_noaccess_entry (UPPER (p_username), l_db_office_code);
 
-      SELECT COUNT (*)
-        INTO l_count
-        FROM AT_SEC_CWMS_USERS
-       WHERE userid = UPPER (p_username);
-
-      IF (l_count = 0)
-      THEN
-         cwms_upass.update_user_data (p_username,
-                           NULL,
-                           NULL,
-                           NULL,
-                           NULL,
-                           NULL);
-      END IF;
       create_logon_trigger(p_username);
       COMMIT;
    END CREATE_USER;
 
-   FUNCTION GENERATE_DOD_PASSWORD
-   RETURN VARCHAR2
+   FUNCTION generate_dod_password
+   RETURN RAW
    IS
    BEGIN
-	return DBMS_RANDOM.string('u',5) || '_' || DBMS_RANDOM.string('l',5) || '^' || TRUNC(DBMS_RANDOM.value(100,1000));
-   END GENERATE_DOD_PASSWORD;
+	return cwms_crypt.encrypt(DBMS_RANDOM.string('u',5) || '_' || DBMS_RANDOM.string('l',5) || '^' || TRUNC(DBMS_RANDOM.value(100,1000)));
+   END generate_dod_password;
 
    PROCEDURE create_cwms_service_user
    IS
    BEGIN
     if(sys_context('userenv', 'current_user')='&cwms_schema')
     then
-        CWMS_DBA.CWMS_USER_ADMIN.CREATE_CWMS_SERVICE_ACCOUNT(cac_service_user, GENERATE_DOD_PASSWORD);
+        CWMS_DBA.CWMS_USER_ADMIN.CREATE_CWMS_SERVICE_ACCOUNT(cac_service_user, cwms_crypt.decrypt(generate_dod_password));
     end if;
    END create_cwms_service_user;
 
-   ----------------------------------------------------------------------------
-   -- delete_user
-   ----------------------------------------------------------------------------
-   /*
+    ----------------------------------------------------------------------------
+    -- delete_user
+    ----------------------------------------------------------------------------
+    /*
 
-       From cwmsdb.CwmsSecJdbc
-         deleteUser(String username, String officeId)
+        From cwmsdb.CwmsSecJdbc
+          deleteUser(String username)
 
-       This procedure will delete the p_username from the identified
-                         p_db_office_id. It will not delete the Oracle account associated
-                 with the p_username. If the p_username is not associated with another
-                     db_office_id, then this procedure will Lock the p_username's Oracle
-                      Account.
+        This procedure will delete the p_username from all offices
 
-                 Exceptions are thrown if:
-                            - If the user runing this procedure is not a member of the "CWMS DBA
-                             Users" privilege group or the "Users Admin" privilege group for the
-                         p_db_office_id.
-                      - If p_username is not associated with the identified p_db_office_id.
-                           - If p_username does not have an Oracle Account in the DB, then a Warning
-                            exception is thrown indicating that an Oracle Account does not exist
-                         for this p_username.
+        Exceptions are thrown if:
+            - If the user running this procedure is not CWMS schema user
 
-                     */
-   /*
+    */
 
-   */
-
-   PROCEDURE delete_user (p_username IN VARCHAR2)
-   IS
-      l_username   VARCHAR2 (31);
-      l_count      NUMBER := 0;
-   BEGIN
-      SELECT COUNT (UNIQUE db_office_code)
-        INTO l_count
-        FROM at_sec_users
-       WHERE username = cwms_util.get_user_id
-             AND user_group_code IN
-                    (user_group_code_dba_users, user_group_code_user_admins);
+    PROCEDURE delete_user (p_username IN VARCHAR2)
+    IS
+        l_username   VARCHAR2 (31);
+        l_count      NUMBER := 0;
+    BEGIN
+        l_username := UPPER (TRIM (p_username));
+        confirm_cwms_schema_user;
+        DELETE FROM at_sec_users
+              WHERE username = l_username;
 
 
-      IF l_count > 0
-      THEN
-         l_username := UPPER (TRIM (p_username));
+        DELETE FROM at_sec_locked_users
+              WHERE username = l_username;
 
-         DELETE FROM at_sec_users
-               WHERE username = l_username
-                     AND db_office_code IN
-                            (SELECT UNIQUE db_office_code
-                               FROM at_sec_users
-                              WHERE username = cwms_util.get_user_id
-                                    AND user_group_code IN
-                                           (user_group_code_dba_users,
-                                            user_group_code_user_admins));
+        DELETE FROM at_sec_user_office
+              WHERE username = l_username;
 
-         DELETE FROM at_sec_locked_users
-               WHERE username = l_username
-                     AND db_office_code IN
-                            (SELECT UNIQUE db_office_code
-                               FROM at_sec_users
-                              WHERE username = cwms_util.get_user_id
-                                    AND user_group_code IN
-                                           (user_group_code_dba_users,
-                                            user_group_code_user_admins));
-
-         DELETE FROM at_sec_user_office
-               WHERE username = l_username
-                     AND db_office_code IN
-                            (SELECT UNIQUE db_office_code
-                               FROM at_sec_users
-                              WHERE username = cwms_util.get_user_id
-                                    AND user_group_code IN
-                                           (user_group_code_dba_users,
-                                            user_group_code_user_admins));
-
-
-         --DELETE FROM at_sec_cwms_users
-         --WHERE userid = l_username;
-
-
-         COMMIT;
-      END IF;
-   END delete_user;
+        COMMIT;
+    END delete_user;
 
    ----------------------------------------------------------------------------
    -- lock_user
@@ -1912,7 +1939,6 @@ AS
            INTO l_user_group_desc
            FROM at_sec_user_groups
           WHERE     db_office_code = l_db_office_code
-                AND user_group_code > max_cwms_ts_ugroup_code
                 AND UPPER (user_group_id) = UPPER (l_user_group_id);
       EXCEPTION
          WHEN NO_DATA_FOUND
@@ -2393,6 +2419,7 @@ AS
       END IF;
    END is_user_server_admin;
 
+
    FUNCTION get_admin_cwms_permissions (p_user_name      IN VARCHAR2,
                                         p_db_office_id   IN VARCHAR2)
       RETURN VARCHAR2
@@ -2574,27 +2601,47 @@ AS
       cwms_upass.update_user_data(p_userid,p_fullname,p_org,p_office,p_phone,p_email);
    END update_user_data;
  
-   FUNCTION is_cwms_schema_user(p_user VARCHAR2)
-   RETURN BOOLEAN
+   PROCEDURE confirm_cwms_schema_user
    IS
    BEGIN
-    IF(p_user = '&cwms_schema')
+    IF(cwms_util.get_user_id <> '&cwms_schema')
     THEN
-        return true;
-    ELSE
-        return false;
+       raise_application_error (
+        -20999,
+        'Insufficient privileges',
+        TRUE);
     END IF;
-   END is_cwms_schema_user;
+   END confirm_cwms_schema_user;
 
 
-   FUNCTION is_pd_user(p_user VARCHAR2) 
-   RETURN BOOLEAN 
+   PROCEDURE confirm_pd_or_schema_user(p_user VARCHAR2) 
    IS
     l_db_office_code   NUMBER
                             := cwms_util.get_db_office_code (get_user_office_id);
    BEGIN
-    RETURN is_member_user_group(user_group_code_pd_users,p_user,l_db_office_code);
-   END is_pd_user;
+    IF((is_member_user_group(user_group_code_pd_users,p_user,l_db_office_code)=FALSE)
+	and (p_user <> '&cwms_schema'))
+    THEN
+       raise_application_error (
+        -20999,
+        'Insufficient privileges',
+        TRUE);
+    END IF;	
+   END confirm_pd_or_schema_user;
+
+   PROCEDURE confirm_pd_user(p_user VARCHAR2) 
+   IS
+    l_db_office_code   NUMBER
+                            := cwms_util.get_db_office_code (get_user_office_id);
+   BEGIN
+    IF(is_member_user_group(user_group_code_pd_users,p_user,l_db_office_code)=FALSE)
+    THEN
+       raise_application_error (
+        -20999,
+        'Insufficient privileges',
+        TRUE);
+    END IF;	
+   END confirm_pd_user;
    
     PROCEDURE update_service_timeout (p_username VARCHAR2)
     IS
@@ -2608,15 +2655,12 @@ AS
 
     PROCEDURE update_service_password (p_username VARCHAR2)
     IS
-        l_password   VARCHAR2 (64) := NULL;
+        l_raw_password  RAW(128); 
         l_handle     VARCHAR2 (128);
         l_ret        INTEGER := -1;
         l_timeout    DATE := SYSDATE-1;
     BEGIN
-        IF is_cwms_schema_user (CWMS_UTIL.GET_USER_ID) = FALSE
-        THEN
-            RETURN;
-        END IF;
+        confirm_cwms_schema_user;
 
         BEGIN
           SELECT TIMEOUT
@@ -2627,24 +2671,25 @@ AS
           NULL;
         END;
         
+        CWMS_DBA.CWMS_USER_ADMIN.UNLOCK_DB_ACCOUNT(p_username);
         IF (SYSDATE > l_timeout)
         THEN
-            l_password := GENERATE_DOD_PASSWORD; 
+            l_raw_password := generate_dod_password; 
             DBMS_LOCK.ALLOCATE_UNIQUE (lockname     => 'AT_SEC_SERVICE_USER',
                                        lockhandle   => l_handle);
 
             IF (DBMS_LOCK.REQUEST (lockhandle => l_handle, timeout => 10) = 0)
             THEN
                 CWMS_DBA.CWMS_USER_ADMIN.update_service_password (p_username,
-                                                              l_password);
+                                                              cwms_crypt.decrypt(l_raw_password));
                 MERGE INTO AT_SEC_SERVICE_USER d
 		  USING (SELECT 1 FROM DUAL) s
 		  ON (d.userid = p_username)
                 WHEN MATCHED THEN
                 	UPDATE 
-                   		SET passwd = l_password, timeout = (SYSDATE + 1 / 24)
+                   		SET passwd = l_raw_password, timeout = (SYSDATE + 1 / 2)
 		WHEN NOT MATCHED THEN
-			INSERT (userid,passwd,timeout) VALUES (p_username,l_password,SYSDATE+1/24);
+			INSERT (userid,passwd,timeout) VALUES (p_username,l_raw_password,SYSDATE+1/2);
                 COMMIT;
                 l_ret := DBMS_LOCK.RELEASE (l_handle);
             ELSE
@@ -2663,17 +2708,14 @@ AS
         l_ret        INTEGER := -1;
         l_username   VARCHAR2 (16) := cac_service_user;
     BEGIN
-        IF is_pd_user (CWMS_UTIL.GET_USER_ID) = FALSE
-        THEN
-            RETURN;
-        END IF;
+        confirm_pd_user (CWMS_UTIL.GET_USER_ID);
 
         DBMS_LOCK.ALLOCATE_UNIQUE (lockname     => 'AT_SEC_SERVICE_USER',
                                    lockhandle   => l_handle);
 
         IF (DBMS_LOCK.REQUEST (lockhandle => l_handle, timeout => 10) = 0)
         THEN
-            SELECT userid, passwd
+            SELECT userid, cwms_crypt.decrypt(passwd)
               INTO p_username, p_password
               FROM at_sec_service_user
              WHERE userid = l_username;
@@ -2702,10 +2744,7 @@ AS
    PROCEDURE remove_session_key(p_session_key VARCHAR2)
    IS
    BEGIN
-      IF is_pd_user(CWMS_UTIL.GET_USER_ID) = FALSE
-      THEN
-        RETURN;
-      END IF;
+      confirm_pd_user(CWMS_UTIL.GET_USER_ID);
       
       DELETE FROM AT_SEC_SESSION WHERE SESSION_KEY = p_session_key;
       COMMIT;
@@ -2719,10 +2758,7 @@ AS
    BEGIN
       p_user := NULL;
       p_session_key := NULL;
-      IF is_pd_user(CWMS_UTIL.GET_USER_ID) = FALSE
-      THEN
-        RETURN;
-      END IF;
+      confirm_pd_user(CWMS_UTIL.GET_USER_ID);
       BEGIN
          SELECT COUNT (*)
            INTO L_COUNT
@@ -2748,6 +2784,65 @@ AS
          END IF;
       END;
    END get_user_credentials;
+
+    FUNCTION cat_invalid_login_tab (p_username IN VARCHAR2,maxrows NUMBER default 3)
+        RETURN cat_invalid_login_tab_t
+        PIPELINED
+    AS
+        query_cursor   SYS_REFCURSOR;
+        output_row     cat_invalid_login_rec_t;
+    BEGIN
+        confirm_user_admin_priv(cwms_util.get_db_office_code(NULL));
+        OPEN query_cursor FOR
+              SELECT userhost,
+                     terminal,
+                     REGEXP_SUBSTR (comment$text,
+                                    '\d{2,3}\.\d{2,3}\.\d{2,3}\.\d{2,3}\')    AS incoming_ip,
+                                    ntimestamp# as login_time
+                FROM sys.aud$
+               WHERE returncode = 1017 AND userid = 'Q0HECRV9' AND ROWNUM <= maxrows
+            ORDER BY ntimestamp# DESC;
+
+        LOOP
+            FETCH query_cursor INTO output_row;
+
+            EXIT WHEN query_cursor%NOTFOUND;
+            PIPE ROW (output_row);
+        END LOOP;
+
+        CLOSE query_cursor;
+
+        RETURN;
+    END cat_invalid_login_tab;
+    
+    FUNCTION cat_locked_users_tab 
+        RETURN cat_locked_users_tab_t
+        PIPELINED
+    AS
+        query_cursor   SYS_REFCURSOR;
+        output_row     cat_locked_users_rec_t;
+    BEGIN
+        confirm_user_admin_priv(cwms_util.get_db_office_code(NULL));
+        OPEN query_cursor FOR
+	SELECT username,
+         	account_status,
+         	lock_date,
+         	expiry_date
+    	FROM dba_users
+   	WHERE     username IN (SELECT username FROM at_sec_users)
+         AND (account_status LIKE '%LOCKED%' OR account_status LIKE '%EXPIRED%')
+	ORDER BY username;
+        LOOP
+            FETCH query_cursor INTO output_row;
+
+            EXIT WHEN query_cursor%NOTFOUND;
+            PIPE ROW (output_row);
+        END LOOP;
+
+        CLOSE query_cursor;
+
+        RETURN;
+    END cat_locked_users_tab;
 END cwms_sec;
 /
 show errors

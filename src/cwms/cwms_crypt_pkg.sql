@@ -1,0 +1,11 @@
+CREATE OR REPLACE PACKAGE CWMS_20.cwms_crypt
+AS
+    FUNCTION ENCRYPT (val VARCHAR2)
+        RETURN RAW;
+
+    FUNCTION DECRYPT (val RAW)
+        RETURN VARCHAR2;
+END cwms_crypt;
+/
+
+SHOW error;

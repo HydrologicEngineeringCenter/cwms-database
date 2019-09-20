@@ -150,6 +150,9 @@
 @@cwms_log_ingest_pkg
 @@cwms_log_ingest_pkg_body
 
+@@cwms_crypt_pkg
+@@cwms_crypt_pkg_body
+
 @@cwms/functions/str2tbl.sql
 
 @@cwms/procedures/download_file
