@@ -45,7 +45,7 @@ end;
 whenever sqlerror exit;
 column db_name new_value db_name
 select :db_name as db_name from dual;
-define logfile=update_&db_name._18.1.1_to_18.1.2.log
+define logfile=update_&db_name._18.1.2_to_18.1.3.log
 prompt log file = &logfile
 spool &logfile append;
 -------------------
@@ -87,6 +87,7 @@ prompt UPDATING OBJECTS
 @../cwms/cwms_sec_pkg_body
 @../cwms_dba/cwms_user_admin_pkg.sql
 @../cwms_dba/cwms_user_admin_pkg_body.sql
+create or replace public synonym cwms_crypt for cwms_crypt;
 -- Modify RETRIEVE_TS_MULTI to handle LOCATION_ID_NOT_FOUND in addition to TS_ID_NOT_FOUND
 -- Fix bug in storing version flag
 @../cwms/cwms_ts_pkg_body
@@ -143,10 +144,16 @@ prompt #########################################################################
 prompt 'RESTORE CCP PRIVILEGES'
 select systimestamp from dual;
 whenever sqlerror continue;
+declare
+  l_count NUMBER;
 begin
-   for rec in (select object_name from user_objects where object_type in ('PACKAGE', 'TYPE')) loop
-      execute immediate 'grant execute on '||rec.object_name||' to ccp';
-   end loop;
+   select count(*) into l_count from dba_users where username='CCP';
+   if(l_count>0)
+   then
+     for rec in (select object_name from user_objects where object_type in ('PACKAGE', 'TYPE')) loop
+        execute immediate 'grant execute on '||rec.object_name||' to ccp';
+     end loop;
+   end if;
 end;
 /
 whenever sqlerror exit;
