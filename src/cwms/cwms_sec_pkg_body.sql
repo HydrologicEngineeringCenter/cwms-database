@@ -570,11 +570,33 @@ AS
       RETURN cwms_util.user_office_id;
    END get_user_office_id;
 
+   PROCEDURE confirm_cwms_user (p_username IN VARCHAR2)
+    IS
+        l_count      NUMBER;
+        l_username   VARCHAR2 (64);
+    BEGIN
+        l_username := UPPER (TRIM (p_username));
+
+        SELECT COUNT (*)
+          INTO l_count
+          FROM at_sec_user_office
+         WHERE username = l_username;
+
+        IF (l_count = 0 AND l_username <> cac_service_user)
+        THEN
+            raise_application_error (
+                -20999,
+                'The user ' || p_username || ' is not a valid CWMS user',
+                TRUE);
+        END IF;
+    END confirm_cwms_user;
+
    PROCEDURE lock_db_account (p_username IN VARCHAR2)
    IS
       l_db_office_code   NUMBER := cwms_util.get_db_office_code (NULL);
    BEGIN
       confirm_user_admin_priv (l_db_office_code);
+      confirm_cwms_user(p_username);
 
       cwms_dba.cwms_user_admin.lock_db_account (p_username);
    END lock_db_account;
@@ -584,6 +606,7 @@ AS
       l_db_office_code   NUMBER := cwms_util.get_db_office_code (NULL);
    BEGIN
       confirm_user_admin_priv (l_db_office_code);
+      confirm_cwms_user(p_username);
 
       cwms_dba.cwms_user_admin.unlock_db_account (p_username);
    END unlock_db_account;
@@ -760,6 +783,7 @@ AS
       l_username         VARCHAR2 (31);
    BEGIN
       confirm_user_admin_priv (l_db_office_code);
+      confirm_cwms_user(p_username);
 
 
       l_username := UPPER (TRIM (p_username));
