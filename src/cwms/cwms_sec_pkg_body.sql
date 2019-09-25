@@ -2824,7 +2824,7 @@ AS
                                     '\d{2,3}\.\d{2,3}\.\d{2,3}\.\d{2,3}\')    AS incoming_ip,
                                     ntimestamp# as login_time
                 FROM sys.aud$
-               WHERE returncode = 1017 AND userid = 'Q0HECRV9' AND ROWNUM <= maxrows
+               WHERE returncode = 1017 AND userid = p_username AND ROWNUM <= maxrows
             ORDER BY ntimestamp# DESC;
 
         LOOP
