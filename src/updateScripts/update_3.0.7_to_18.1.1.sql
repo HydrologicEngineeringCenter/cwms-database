@@ -1245,7 +1245,13 @@ select * from rating_source_changes;
 drop table rating_source_changes;
 prompt ################################################################################
 prompt 'AUTOMATED UPDATE COMPLETE'
-prompt 'You must now run the load_data.py script in the 18_1_1 directory to complete the process'
 select systimestamp from dual;
+prompt 'You must now run the load_data.py script in the 18_1_1 directory'
+prompt 'If load_data2.py has been executed instead, execute the following commands:'
+prompt
+prompt truncate table cwms_nid;;
+prompt insert into cwms_nid select * from cwms_nid2;;
+prompt commit;;
+prompt drop table cwms_nid2;;
 exit
 
