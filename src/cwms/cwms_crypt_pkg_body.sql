@@ -18,7 +18,7 @@ AS
     IS
     BEGIN
 	cwms_sec.confirm_cwms_schema_user;
-        RETURN DBMS_CRYPTO.ENCRYPT (src   => UTL_RAW.CAST_TO_RAW (val),
+        RETURN DBMS_CRYPTO.ENCRYPT (src   => UTL_I18N.STRING_TO_RAW(val,''utf8''), 
                typ   => l_encryption_type,
                key   => l_cwms_key,
                iv    => l_cwms_iv);
@@ -29,10 +29,10 @@ AS
     IS
     BEGIN
 	cwms_sec.confirm_pd_or_schema_user(cwms_util.get_user_id);
-        RETURN UTL_RAW.CAST_TO_VARCHAR2 (DBMS_CRYPTO.DECRYPT (src   => val,
+        RETURN UTL_I18N.RAW_TO_CHAR (DBMS_CRYPTO.DECRYPT (src   => val,
                                     typ   => l_encryption_type,
                                     key   => l_cwms_key,
-                                    iv    => l_cwms_iv));
+				    iv    => l_cwms_iv),''utf8'');
     END DECRYPT;
 END cwms_crypt;';
 BEGIN
