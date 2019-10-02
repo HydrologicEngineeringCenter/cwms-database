@@ -110,6 +110,13 @@ create or replace public synonym cwms_crypt for cwms_crypt;
 -----------
 -- VIEWS --
 -----------
+-- Additional views added for debugging purposes
+@../cwms/views/av_ts_msg_archive
+@../cwms/views/av_tsv_count_minute
+@../cwms/views/av_tsv_count_day
+-- Recreate mv_ts_code_filter
+drop materialized view mv_ts_code_filter;
+@../cwms/mv_ts_code_filter
 prompt ################################################################################
 prompt INVALID OBJECTS...
 select systimestamp from dual;
