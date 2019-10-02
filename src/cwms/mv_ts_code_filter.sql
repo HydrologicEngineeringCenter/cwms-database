@@ -23,13 +23,16 @@ WITH PRIMARY KEY
  USING TRUSTED CONSTRAINTS
 AS 
 /* Formatted on 8/3/2017 8:46:45 AM (QP5 v5.300) */
-SELECT UNIQUE ts_code, 2 as DEST
-  FROM (SELECT TS_CODE
-          FROM &cwms_schema..AV_CWMS_TS_ID2
-         WHERE LOC_ALIAS_CATEGORY LIKE 'CWMS Mobile Lo%'
+SELECT DISTINCT ts_code, 2 as DEST
+	FROM (SELECT TS_CODE
+          FROM CWMS_20.AV_LOC_GRP_ASSGN  locGrp
+               INNER JOIN CWMS_20.AV_TS_GRP_ASSGN tsGrp
+                   ON     locGrp.GROUP_ID = tsGrp.CATEGORY_ID
+                      AND locGrp.location_id = tsGrp.GROUP_ID
+                      AND locGrp.category_id =
+                          'CWMS Mobile Location Listings'
         UNION
-        SELECT ts_code FROM &cwms_schema..AV_A2W_TS_CODES_BY_LOC2);
-
+        SELECT ts_code FROM CWMS_20.AV_A2W_TS_CODES_BY_LOC2);
 
 
 CREATE UNIQUE INDEX &CWMS_SCHEMA..MV_TS_CODE_IDX ON &CWMS_SCHEMA..MV_TS_CODE_FILTER

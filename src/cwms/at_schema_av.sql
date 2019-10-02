@@ -216,7 +216,10 @@ END;
 @@cwms/views/av_ts_association
 @@cwms/views/av_ts_extents_local
 @@cwms/views/av_ts_extents_utc
+@@cwms/views/av_ts_msg_archive
 @@cwms/views/av_ts_text
+@@cwms/views/av_tsv_count_minute
+@@cwms/views/av_tsv_count_day
 @@cwms/views/av_turbine
 @@cwms/views/av_turbine_change
 @@cwms/views/av_turbine_setting
