@@ -928,7 +928,7 @@ AS
                          p_db_office_code   => l_db_office_code);
    END add_user_to_group;
 
-   PROCEDURE CONFIRM_DB_USER(p_username IN VARCHAR2)
+   PROCEDURE confirm_db_user(p_username IN VARCHAR2)
    IS
     l_count NUMBER;
    BEGIN
@@ -942,7 +942,7 @@ AS
                 'The user ' || p_username || ' doesn''t exist in the database',
                 TRUE);
         END IF;
-    END CONFIRM_DB_USER;
+    END confirm_db_user;
 
     /*
     * Adds a read-only user to all offices in a database. Mainly meant for National CWMS Database
@@ -1106,13 +1106,49 @@ AS
       COMMIT;
    END CREATE_USER;
 
-   FUNCTION generate_dod_password
-   RETURN RAW
-   IS
-   BEGIN
-	return cwms_crypt.encrypt(DBMS_RANDOM.string('u',5) || '_' || DBMS_RANDOM.string('l',5) || '^' || TRUNC(DBMS_RANDOM.value(100,1000)));
-   END generate_dod_password;
+    FUNCTION generate_dod_password
+        RETURN VARCHAR2
+    IS
+        --l_limit   VARCHAR2 (128) := NULL;
+    BEGIN
+        /*BEGIN
+            SELECT CASE
+                       WHEN LIMIT = 'DEFAULT'
+                       THEN
+                           (SELECT LIMIT
+                              FROM dba_profiles
+                             WHERE     resource_name =
+                                       'PASSWORD_VERIFY_FUNCTION'
+                                   AND profile = 'DEFAULT')
+                       ELSE
+                           LIMIT
+                   END    LIMIT
+              INTO l_limit
+              FROM dba_profiles
+             WHERE     resource_name = 'PASSWORD_VERIFY_FUNCTION'
+                   AND profile IN (SELECT profile
+                                     FROM dba_users
+                                    WHERE username = cac_service_user);
+        EXCEPTION
+            WHEN OTHERS
+            THEN
+                NULL;
+        END;*/
 
+        --IF (l_limit IS NULL OR l_limit = 'NULL')
+        --THEN
+            --RETURN cwms_crypt.encrypt (
+                          --DBMS_RANDOM.string ('u', 13)
+                       --|| TRUNC(DBMS_RANDOM.VALUE (100, 1000)));
+        --ELSE
+            RETURN cwms_crypt.encrypt (
+                          DBMS_RANDOM.string ('u', 5)
+                       || '_'
+                       || DBMS_RANDOM.string ('l', 5)
+                       || '^'
+                       || TRUNC (DBMS_RANDOM.VALUE (100, 1000)));
+        --END IF;
+    END generate_dod_password;
    PROCEDURE create_cwms_service_user
    IS
    BEGIN
@@ -2679,7 +2715,7 @@ AS
 
     PROCEDURE update_service_password (p_username VARCHAR2)
     IS
-        l_raw_password  RAW(128); 
+        l_password  VARCHAR2(128); 
         l_handle     VARCHAR2 (128);
         l_ret        INTEGER := -1;
         l_timeout    DATE := SYSDATE-1;
@@ -2698,22 +2734,22 @@ AS
         CWMS_DBA.CWMS_USER_ADMIN.UNLOCK_DB_ACCOUNT(p_username);
         IF (SYSDATE > l_timeout)
         THEN
-            l_raw_password := generate_dod_password; 
+            l_password := generate_dod_password; 
             DBMS_LOCK.ALLOCATE_UNIQUE (lockname     => 'AT_SEC_SERVICE_USER',
                                        lockhandle   => l_handle);
 
             IF (DBMS_LOCK.REQUEST (lockhandle => l_handle, timeout => 10) = 0)
             THEN
                 CWMS_DBA.CWMS_USER_ADMIN.update_service_password (p_username,
-                                                              cwms_crypt.decrypt(l_raw_password));
+                                                              cwms_crypt.decrypt(l_password));
                 MERGE INTO AT_SEC_SERVICE_USER d
 		  USING (SELECT 1 FROM DUAL) s
 		  ON (d.userid = p_username)
                 WHEN MATCHED THEN
                 	UPDATE 
-                   		SET passwd = l_raw_password, timeout = (SYSDATE + 1 / 2)
+                   		SET passwd = l_password, timeout = (SYSDATE + 1 / 2)
 		WHEN NOT MATCHED THEN
-			INSERT (userid,passwd,timeout) VALUES (p_username,l_raw_password,SYSDATE+1/2);
+			INSERT (userid,passwd,timeout) VALUES (p_username,l_password,SYSDATE+1/2);
                 COMMIT;
                 l_ret := DBMS_LOCK.RELEASE (l_handle);
             ELSE
