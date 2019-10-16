@@ -81,10 +81,10 @@ prompt UPDATING OBJECTS
 -- Make service account password DoD compliant
 -- Add procedures to get locked users and invalid login attempt
 -- API call to add 'read_only' users to National CWMS DB
-@../cwms/cwms_crypt_pkg
-@../cwms/cwms_crypt_pkg_body
 @../cwms/cwms_sec_pkg
 @../cwms/cwms_sec_pkg_body
+@../cwms/cwms_crypt_pkg
+@../cwms/cwms_crypt_pkg_body
 @../cwms_dba/cwms_user_admin_pkg.sql
 @../cwms_dba/cwms_user_admin_pkg_body.sql
 create or replace public synonym cwms_crypt for cwms_crypt;
