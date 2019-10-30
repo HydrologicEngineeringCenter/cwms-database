@@ -33,6 +33,4 @@ begin
       execute immediate 'create index at_queue_subscriber_name_idx1 on at_queue_subscriber_name (queue_name, nvl(update_time, create_time))';
    end if;
 end;   
-   
-
-
+/
