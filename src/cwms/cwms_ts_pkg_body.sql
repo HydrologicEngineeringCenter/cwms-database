@@ -5005,8 +5005,8 @@ AS
                                      and p.unit_code = c.to_unit_code
                                      and c.from_unit_code = u.unit_code
                                      and u.unit_id = :l_units
-                                     and date_time >= from_tz(cast(:start_date as timestamp), ''UTC'')
-                                     and date_time < from_tz(cast(:end_date as timestamp), ''UTC'')) t2
+                                     and date_time >= :start_date
+                                     and date_time < :end_date) t2
                               on (t1.ts_code = :l_ts_code and t1.date_time = t2.date_time and t1.version_date = :l_version_date)
                       when matched then
                          update set t1.value = t2.value, t1.data_entry_date = :l_store_date, t1.quality_code = t2.quality_code
@@ -5070,8 +5070,8 @@ AS
                                      and p.unit_code = c.to_unit_code
                                      and c.from_unit_code = u.unit_code
                                      and u.unit_id = :l_units
-                                     and date_time >= from_tz(cast(:start_date as timestamp), ''UTC'')
-                                     and date_time < from_tz(cast(:end_date as timestamp), ''UTC'')) t2
+                                     and date_time >= :start_date
+                                     and date_time < :end_date) t2
                               on (t1.ts_code = :l_ts_code and t1.date_time = t2.date_time and t1.version_date = :l_version_date)
                       when matched then
                          update set t1.value = t2.value, t1.data_entry_date = :l_store_date, t1.quality_code = t2.quality_code
@@ -5142,8 +5142,8 @@ AS
                                      and p.unit_code = c.to_unit_code
                                      and c.from_unit_code = u.unit_code
                                      and u.unit_id = :l_units
-                                     and date_time >= from_tz(cast(:start_date as timestamp), ''UTC'')
-                                     and date_time < from_tz(cast(:end_date as timestamp), ''UTC'')) t2
+                                     and date_time >= :start_date
+                                     and date_time < :end_date) t2
                               on (t1.ts_code = :l_ts_code and t1.date_time = t2.date_time and t1.version_date = :l_version_date)
                       when not matched then
                          insert     (  ts_code,
@@ -5260,8 +5260,8 @@ AS
                                            and p.unit_code = c.to_unit_code
                                            and c.from_unit_code = u.unit_code
                                            and u.unit_id = :l_units
-                                           and date_time >= from_tz(cast(:start_date as timestamp), ''UTC'')
-                                           and date_time < from_tz(cast(:end_date as timestamp), ''UTC'')) t2
+                                           and date_time >= :start_date
+                                           and date_time < :end_date) t2
                                     on (t1.ts_code = :l_ts_code and t1.date_time = t2.date_time and t1.version_date = :l_version_date)
                             when matched then
                                update set t1.value = t2.value, t1.quality_code = t2.quality_code, t1.data_entry_date = :l_store_date
@@ -5336,8 +5336,8 @@ AS
                                      and p.unit_code = c.to_unit_code
                                      and c.from_unit_code = u.unit_code
                                      and u.unit_id = :l_units
-                                     and date_time >= from_tz(cast(:start_date as timestamp), ''UTC'')
-                                     and date_time < from_tz(cast(:end_date as timestamp), ''UTC'')) t2
+                                     and date_time >= :start_date
+                                     and date_time <  :end_date) t2
                               on (t1.ts_code = :l_ts_code and t1.date_time = t2.date_time and t1.version_date = :l_version_date)
                       when matched then
                          update set t1.value = t2.value, t1.data_entry_date = :l_store_date, t1.quality_code = t2.quality_code
@@ -5410,8 +5410,8 @@ AS
                                      and p.unit_code = c.to_unit_code
                                      and c.from_unit_code = u.unit_code
                                      and u.unit_id = :l_units
-                                     and date_time >= from_tz(cast(:start_date as timestamp), ''UTC'')
-                                     and date_time < from_tz(cast(:end_date as timestamp), ''UTC'')) t2
+                                     and date_time >= :start_date
+                                     and date_time <  :end_date) t2
                               on (t1.ts_code = :l_ts_code and t1.date_time = t2.date_time and t1.version_date = :l_version_date)
                       when matched then
                          update set t1.value = t2.value, t1.data_entry_date = :l_store_date, t1.quality_code = t2.quality_code
@@ -5600,8 +5600,8 @@ AS
                              quality_code,
                              null
                            from (select date_time, value, quality_code from table(:z_timeseries_data) where date_time not in (select column_value from table(:times)))
-                       where date_time >= from_tz(cast(:start_date as timestamp), ''UTC'')
-                         and date_time <  from_tz(cast(:end_date as timestamp), ''UTC'')'
+                       where date_time >= :start_date
+                         and date_time <  :end_date'
                   using
                      l_ts_code,
                      l_version_date,
