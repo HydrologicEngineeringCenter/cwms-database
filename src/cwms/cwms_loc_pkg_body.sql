@@ -9196,6 +9196,9 @@ end unassign_loc_groups;
       type indexes_rec_t is record(i integer, j integer);
       type indexes_tab_t is table of indexes_rec_t index by varchar2(32767);
       type str_tab_tab_tab_t is table of str_tab_tab_t;
+      l_input_names          varchar2(32767);
+      l_only_cwms_names      boolean;
+      l_only_cwms_names_flag varchar2(1);
       l_data                 clob;
       l_names                str_tab_t;
       l_format               varchar2(16);
@@ -9248,12 +9251,20 @@ end unassign_loc_groups;
    -----------
    -- names --
    -----------
-   if p_names is null then
+   l_only_cwms_names := instr(p_names, '@') = 1;
+   if l_only_cwms_names then
+      l_input_names := substr(p_names, 2);
+      l_only_cwms_names_flag := 'T';
+   else
+      l_input_names := p_names;
+      l_only_cwms_names_flag := 'F';
+   end if;
+   if l_input_names is null then
       l_names := str_tab_t();
       l_names.extend;
       l_names(1) := '*';
    else
-      l_names := cwms_util.split_text(p_names, '|');
+      l_names := cwms_util.split_text(l_input_names, '|');
       for i in 1..l_names.count loop
          l_names(i) := trim(l_names(i));
       end loop;
@@ -9603,6 +9614,7 @@ end unassign_loc_groups;
          and v2.db_office_id = case when l_office_id = '*' then v2.db_office_id else l_office_id end
          and v2.base_loc_active_flag = 'T'
          and v2.loc_active_flag = 'T'
+         and nvl(v2.aliased_item, '@') = case when l_only_cwms_names_flag = 'T' then '@' else nvl(v2.aliased_item, '@') end
          and pl1.location_code = v2.location_code
          and tz1.time_zone_code = nvl(pl1.time_zone_code, 0)
          and c1.county_code = nvl(pl1.county_code, 0)
