@@ -171,6 +171,7 @@ as
          l_rec.blob_code := cwms_seq.nextval;
          l_rec.office_code := l_office_code;
          l_rec.value := p_binary;
+         l_rec.id := l_id;
          l_rec.description := p_description;
          l_rec.media_type_code := get_media_type_code(p_media_type_or_ext, l_office_code);
          insert into at_blob values l_rec;
