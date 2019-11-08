@@ -12654,7 +12654,7 @@ end retrieve_existing_item_counts;
                   cwms_err.raise('ERROR', l_max_time_msg);
                end if;
             end loop names;
-            l_unique_tsid_count := l_codes2.count;
+            l_unique_tsid_count := least(l_codes2.count, l_tsid_count);
 
             for i in 1..l_tsids.count loop
                for j in 1..l_tsids(i).count loop
