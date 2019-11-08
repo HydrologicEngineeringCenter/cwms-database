@@ -12166,6 +12166,7 @@ end retrieve_existing_item_counts;
       type values_by_code_t is table of tsv_tab_t index by varchar2(32767);
       type segment_t is record(start_time date, end_time date, first_index integer, last_index integer);
       type seg_tab_t is table of segment_t;
+      l_input_names        varchar2(32767);
       l_data               clob;
       l_format             varchar2(16);
       l_names              str_tab_t;
@@ -12213,6 +12214,7 @@ end retrieve_existing_item_counts;
       l_intvl_str          varchar2(16);
       l_estimated          boolean;
       l_is_elev            boolean;
+      l_only_cwms_names    boolean;
       l_indexes            indexes_tab_t;
       l_values_by_code     values_by_code_t;
       l_max_size           integer;
@@ -12255,8 +12257,14 @@ end retrieve_existing_item_counts;
       -----------
       -- names --
       -----------
-      if p_names is not null then
-         l_names := cwms_util.split_text(p_names, '|');
+      l_only_cwms_names := instr(p_names, '@') = 1;
+      if l_only_cwms_names then
+         l_input_names := substr(p_names, 2);
+      else
+         l_input_names := p_names;
+      end if;
+      if l_input_names is not null then
+         l_names := cwms_util.split_text(l_input_names, '|');
          for i in 1..l_names.count loop
             l_names(i) := trim(l_names(i));
          end loop;
@@ -12411,6 +12419,18 @@ end retrieve_existing_item_counts;
 
             l_unique_tsid_count := l_codes2.count;
 
+            if l_only_cwms_names then
+               select distinct
+                      ts_code,
+                      db_office_id,
+                      cwms_ts_id
+                 bulk collect
+                 into l_tsids(1)
+                 from av_cwms_ts_id2 ts
+                where ts_code in (select * from table(l_codes2))
+                  and aliased_item is null
+                order by db_office_id, cwms_ts_id;
+            else
             select distinct
                    ts_code,
                    db_office_id,
@@ -12420,6 +12440,7 @@ end retrieve_existing_item_counts;
               from av_cwms_ts_id2 ts
              where ts_code in (select * from table(l_codes2))
              order by db_office_id, cwms_ts_id;
+            end if;
 
             l_ts2 := systimestamp;
             l_elapsed_query := l_ts2 - l_ts1;
@@ -12428,6 +12449,17 @@ end retrieve_existing_item_counts;
             end if;
             l_tsid_count := l_tsids(1).count;
 
+            if l_only_cwms_names then
+               for i in 1..l_tsids(1).count loop
+                  select distinct
+                         cwms_ts_id
+                    bulk collect
+                    into l_tsids2(l_tsids(1)(i).ts_code)
+                    from av_cwms_ts_id2
+                   where ts_code = l_tsids(1)(i).ts_code
+                     and aliased_item in ('BASE LOCATION', 'LOCATION');
+               end loop;
+            else
             for i in 1..l_tsids(1).count loop
                if not l_tsids2.exists(l_tsids(1)(i).ts_code) then
                   l_tsids2(l_tsids(1)(i).ts_code) := str_tab_t();
@@ -12435,6 +12467,7 @@ end retrieve_existing_item_counts;
                l_tsids2(l_tsids(1)(i).ts_code).extend;
                l_tsids2(l_tsids(1)(i).ts_code)(l_tsids2(l_tsids(1)(i).ts_code).count) := l_tsids(1)(i).name;
             end loop;
+            end if;
 
             l_ts2 := systimestamp;
             l_elapsed_query := l_ts2 - l_ts1;
@@ -12592,6 +12625,18 @@ end retrieve_existing_item_counts;
                          );
                   l_codes2 := l_codes3;
                end loop;
+               if l_only_cwms_names then
+                  select distinct
+                         ts_code,
+                         db_office_id,
+                         cwms_ts_id
+                    bulk collect
+                    into l_tsids(i)
+                    from av_cwms_ts_id2
+                   where ts_code in (select column_value from table(l_codes2))
+                     and upper(cwms_ts_id) like l_normalized_names(i) escape '\'
+                     and aliased_item is null;
+               else
                select distinct
                       ts_code,
                       db_office_id,
@@ -12601,6 +12646,7 @@ end retrieve_existing_item_counts;
                  from av_cwms_ts_id2
                 where ts_code in (select column_value from table(l_codes2))
                   and upper(cwms_ts_id) like l_normalized_names(i) escape '\';
+               end if;
                l_tsid_count := l_tsid_count + l_tsids(i).count;
                l_ts2 := systimestamp;
                l_elapsed_query := l_ts2 - l_ts1;
