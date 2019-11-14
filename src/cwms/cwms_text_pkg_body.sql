@@ -162,7 +162,12 @@ as
                l_rec.media_type_code := get_media_type_code(p_media_type_or_ext, l_office_code);
             end if;
             update at_blob
-               set row = l_rec;
+            set office_code     = l_rec.office_code,
+                value           = l_rec.value,
+                id              = l_rec.id,
+                description     = l_rec.description,
+                media_type_code = l_rec.media_type_code
+            where blob_code = l_rec.blob_code;
          end if;
       else
          --
@@ -395,6 +400,7 @@ as
          l_file_extensions(l_file_extensions.count) := rec.file_ext;
       end loop;
       p_file_extensions := cwms_util.join_text(l_file_extensions, ',');
+      p_binary := l_rec.value;
    end retrieve_binary2;
 
    --
