@@ -2762,6 +2762,18 @@ AS
     END update_service_password;
 
     PROCEDURE get_service_credentials (p_username   OUT VARCHAR2,
+                                       p_password   OUT VARCHAR2,
+                                       p_duration   OUT VARCHAR2)
+    IS
+        l_handle     VARCHAR2 (128);
+        l_ret        INTEGER := -1;
+        l_username   VARCHAR2 (16) := cac_service_user;
+    BEGIN
+        get_service_credentials(p_username,p_password);
+        select cwms_util.minutes_to_duration( trunc(to_number(timeout-sysdate)*24*60)) into p_duration from AT_SEC_SERVICE_USER;
+    END get_service_credentials;
+
+    PROCEDURE get_service_credentials (p_username   OUT VARCHAR2,
                                        p_password   OUT VARCHAR2)
     IS
         l_handle     VARCHAR2 (128);
@@ -2775,12 +2787,15 @@ AS
 
         IF (DBMS_LOCK.REQUEST (lockhandle => l_handle, timeout => 10) = 0)
         THEN
+          BEGIN
             SELECT userid, cwms_crypt.decrypt(passwd)
               INTO p_username, p_password
               FROM at_sec_service_user
              WHERE userid = l_username;
 
             update_service_timeout(l_username);
+          EXCEPTION WHEN OTHERS THEN NULL;
+          END;
             l_ret := DBMS_LOCK.RELEASE (l_handle);
         ELSE
             raise_application_error (

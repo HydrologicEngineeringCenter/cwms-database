@@ -281,10 +281,22 @@ AS
 
   PROCEDURE remove_session_key(p_session_key VARCHAR2);
   PROCEDURE clean_session_keys;
-  PROCEDURE get_user_credentials (p_edipi      IN     NUMBER,
-                                   p_user          OUT VARCHAR2,
-                                   p_session_key      OUT VARCHAR2);
+   /**
+    * Returns service user name (used for CAC authentication),password
+    *
+    * @param p_username  Name of the service user
+    * @param p_password  Password for the service user 
+    */
   PROCEDURE get_service_credentials(p_username OUT VARCHAR2,p_password OUT VARCHAR2);
+   /**
+    * Returns service user name (used for CAC authentication),password and the duration of password expiration  
+    *
+    * @param p_username  Name of the service user
+    * @param p_password  Password for the service user 
+    * @param p_duration  Duration (ISO8601 standard) for which the password is valid 
+    */
+
+  PROCEDURE get_service_credentials(p_username OUT VARCHAR2,p_password OUT VARCHAR2,p_duration OUT VARCHAR2);
   PROCEDURE confirm_pd_or_schema_user(p_user VARCHAR2);
   PROCEDURE confirm_cwms_schema_user;
 END cwms_sec;
