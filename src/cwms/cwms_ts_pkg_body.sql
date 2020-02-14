@@ -5028,8 +5028,8 @@ AS
                            l_timeseries_data,
                            l_ts_code,
                            l_units,
-                           x.start_date,
-                           x.end_date,
+                           from_tz(cast(x.start_date as timestamp),'0:00'),
+                           from_tz(cast(x.end_date as timestamp),'0:00'),
                            l_ts_code,
                            l_version_date,
                            l_store_date,
@@ -5100,8 +5100,8 @@ AS
                            l_timeseries_data,
                            l_ts_code,
                            l_units,
-                           x.start_date,
-                           x.end_date,
+                           from_tz(cast(x.start_date as timestamp),'0:00'),
+                           from_tz(cast(x.end_date as timestamp),'0:00'),
                            l_ts_code,
                            l_version_date,
                            l_store_date,
@@ -5162,8 +5162,8 @@ AS
                            l_timeseries_data,
                            l_ts_code,
                            l_units,
-                           x.start_date,
-                           x.end_date,
+                           from_tz(cast(x.start_date as timestamp),'0:00'),
+                           from_tz(cast(x.end_date as timestamp),'0:00'),
                            l_ts_code,
                            l_version_date,
                            l_ts_code,
@@ -5290,8 +5290,8 @@ AS
                            l_timeseries_data,
                            l_ts_code,
                            l_units,
-                           x.start_date,
-                           x.end_date,
+                           from_tz(cast(x.start_date as timestamp),'0:00'),
+                           from_tz(cast(x.end_date as timestamp),'0:00'),
                            l_ts_code,
                            l_version_date,
                            l_store_date,
@@ -5364,8 +5364,8 @@ AS
                            l_timeseries_data,
                            l_ts_code,
                            l_units,
-                           x.start_date,
-                           x.end_date,
+                           from_tz(cast(x.start_date as timestamp),'0:00'),
+                           from_tz(cast(x.end_date as timestamp),'0:00'),
                            l_ts_code,
                            l_version_date,
                            l_store_date,
@@ -5446,8 +5446,8 @@ AS
                            l_timeseries_data,
                            l_ts_code,
                            l_units,
-                           x.start_date,
-                           x.end_date,
+                           from_tz(cast(x.start_date as timestamp),'0:00'),
+                           from_tz(cast(x.end_date as timestamp),'0:00'),
                            l_ts_code,
                            l_version_date,
                            l_store_date,
@@ -5607,9 +5607,9 @@ AS
                      l_version_date,
                      l_store_date,
                      z_timeseries_data,
-                        l_remaining_times,
-                     x.start_date,
-                     x.end_date;
+                     l_remaining_times,
+                     from_tz(cast(x.start_date as timestamp),'0:00'),
+                     from_tz(cast(x.end_date as timestamp),'0:00');
 
                   l_count := l_count + sql%rowcount;
                end loop;
@@ -5672,25 +5672,38 @@ AS
             if l_delete_times is not null then
                declare
                   job_name_already_exists exception;
+                  l_plsql_block             VARCHAR2 (256);
                   pragma exception_init(job_name_already_exists, -27477);
                   l_job_name varchar2(64) := 'UTX_'||l_ts_code||'_'||to_char(l_version_date, 'yyyymmdd_hh24miss');
                begin
                   begin
+                    IF (l_version_date IS NULL)
+                            THEN
+                                l_plsql_block :=
+                                       'begin cwms_env.set_session_office_id('''
+                                    || SYS_CONTEXT ('CWMS_ENV',
+                                                    'SESSION_OFFICE_ID')
+                                    || '''); cwms_ts.update_ts_extents('''
+                                    || l_ts_code
+                                    || '''); end;';
+                            ELSE
+                                l_plsql_block :=
+                                       'begin cwms_env.set_session_office_id('''
+                                    || SYS_CONTEXT ('CWMS_ENV',
+                                                    'SESSION_OFFICE_ID')
+                                    || '''); cwms_ts.update_ts_extents('''
+                                    || l_ts_code
+                                    || ''',to_date('''
+                                    || TO_CHAR (l_version_date,
+                                                'YYYY-MM-DD HH24:MI:SS')
+                                    || ''',''YYYY-MM-DD HH24:MI:SS'')); end;';
+                            END IF;
                      dbms_scheduler.create_job (
                         job_name            => l_job_name,
-                        job_type            => 'stored_procedure',
-                        job_action          => 'cwms_ts.update_ts_extents',
-                        number_of_arguments => 2,
+                        job_type            => 'PLSQL_BLOCK',
+                        job_action          => l_plsql_block,
                         comments            => 'Updates the time series extents.');
-                     dbms_scheduler.set_job_argument_value(
-                        job_name          => l_job_name,
-                        argument_position => 1,
-                        argument_value    => l_ts_code);
-                     dbms_scheduler.set_job_argument_value(
-                        job_name          => l_job_name,
-                        argument_position => 2,
-                        argument_value    => l_version_date);
-                     dbms_scheduler.enable(l_job_name);
+                       dbms_scheduler.enable(l_job_name);
                   exception
                      when job_name_already_exists then
                         cwms_msg.log_db_message(
