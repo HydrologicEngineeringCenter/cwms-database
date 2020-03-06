@@ -3965,6 +3965,7 @@ AS
             l_updated                           := true;
          end if;
          if l_updated then
+            l_rec.last_update := p_ts_extents_rec.last_update;
             update at_ts_extents
                set row = l_rec
              where ts_code = l_rec.ts_code
@@ -10628,7 +10629,7 @@ end retrieve_existing_item_counts;
         from av_tsv
        where ts_code = p_ts_code
        order by 1;
-       
+
       p_ts_extents := ts_extents_tab_t();
       p_ts_extents.extend(l_version_dates.count);
       for i in 1..l_version_dates.count loop
@@ -10721,7 +10722,7 @@ end retrieve_existing_item_counts;
          end;
       else
          l_time_zone := p_time_zone;
-      end if;   
+      end if;
       if p_version_date is null or p_version_date = cwms_util.non_versioned then
          l_version_date_utc := cwms_util.non_versioned;
       else
