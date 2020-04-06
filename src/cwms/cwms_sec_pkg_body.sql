@@ -740,6 +740,11 @@ AS
    BEGIN
    	confirm_user_admin_priv (l_db_office_code);
 
+        IF(p_edipi=0)
+        THEN
+          return;
+        END IF;
+
         IF(length(to_char(p_edipi)) <> 10)
         THEN
             cwms_err.raise (
@@ -2869,14 +2874,15 @@ AS
     BEGIN
         confirm_user_admin_priv(cwms_util.get_db_office_code(NULL));
         OPEN query_cursor FOR
+           SELECT * FROM (
               SELECT userhost,
                      terminal,
                      REGEXP_SUBSTR (comment$text,
                                     '\d{2,3}\.\d{2,3}\.\d{2,3}\.\d{2,3}\')    AS incoming_ip,
                                     ntimestamp# as login_time
                 FROM sys.aud$
-               WHERE returncode = 1017 AND userid = p_username AND ROWNUM <= maxrows
-            ORDER BY ntimestamp# DESC;
+               WHERE returncode = 1017 AND userid = p_username ORDER BY ntimestamp# DESC)
+            WHERE ROWNUM <= maxrows;
 
         LOOP
             FETCH query_cursor INTO output_row;
