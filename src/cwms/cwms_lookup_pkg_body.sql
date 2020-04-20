@@ -357,6 +357,13 @@ is
    l_hi_val                  number      := p_sequence(i);
    l_lo_val                  number      := p_sequence(i-1);
    l_ratio                   number;
+   l_method_name             varchar2(16);
+
+   function get_method_id(p_method_code in integer) return varchar2 is
+   begin
+      select rating_method_id into l_method_name from cwms_rating_method where rating_method_code = p_method_code;
+      return l_method_name;
+   end;
 begin
    --------------------------
    -- general sanity check --
@@ -377,145 +384,74 @@ begin
    -----------------------------
    -- sanity check on methods --
    -----------------------------
-   if l_in_range_behavior in
-      (  method_lin_log,
-         method_log_lin,
-         method_nearest
-      )
-   then
+   if l_in_range_behavior = method_nearest then
       cwms_err.raise(
          'INVALID_ITEM',
-         l_in_range_behavior,
-         'in range behavior for CWMS_LOOKUP.FIND_RATIO');
+         get_method_id(l_in_range_behavior),
+         'in-range behavior for CWMS_LOOKUP.FIND_RATIO');
+   end if;
+   if l_out_range_low_behavior = method_previous then
+         cwms_err.raise(
+            'INVALID_ITEM',
+            get_method_id(l_out_range_low_behavior),
+            'out-of-range low behavior in CWMS_LOOKUP.FIND_RATIO');
+   end if;
+   if l_out_range_high_behavior = method_next then
+         cwms_err.raise(
+            'INVALID_ITEM',
+            get_method_id(l_out_range_high_behavior),
+            'out-of-range high behavior in CWMS_LOOKUP.FIND_RATIO');
    end if;
    if p_increasing then
-      if l_out_range_low_behavior in
-         (  method_lin_log,
-            method_log_lin,
-            method_previous,
-            method_lower
-         )
-      then
+      -----------------------------------
+      -- increasing independent values --
+      -----------------------------------
+      if l_out_range_low_behavior = method_lower then
          cwms_err.raise(
             'INVALID_ITEM',
-            l_out_range_low_behavior,
-            'out-of-range low behavior for CWMS_LOOKUP.FIND_RATIO');
+            get_method_id(l_out_range_low_behavior),
+            'out-of-range low behavior for increasing values in CWMS_LOOKUP.FIND_RATIO');
       end if;
-      if l_out_range_high_behavior in
-         (  method_lin_log,
-            method_log_lin,
-            method_next,
-            method_higher
-         )
-      then
+      if l_out_range_high_behavior = method_higher then
          cwms_err.raise(
             'INVALID_ITEM',
-            l_out_range_high_behavior,
-            'out-of-range high behavior for CWMS_LOOKUP.FIND_RATIO');
-      end if;
-      -----------------------------------------------------
-      -- translate value-based methods to position-based --
-      -----------------------------------------------------
-      if    l_in_range_behavior        = method_lower then
-            l_in_range_behavior       := method_previous;
-      elsif l_in_range_behavior        = method_higher then
-            l_in_range_behavior       := method_next;
-      end if;
-      if    l_out_range_low_behavior   = method_higher then
-            l_out_range_low_behavior  := method_next;
-      elsif l_out_range_low_behavior   = method_nearest then
-            l_out_range_low_behavior  := method_next;
-      elsif l_out_range_low_behavior   = method_closest then
-            l_out_range_low_behavior  := method_next;
-      end if;
-      if    l_out_range_high_behavior  = method_lower then
-            l_out_range_high_behavior := method_previous;
-      elsif l_out_range_high_behavior  = method_nearest then
-            l_out_range_high_behavior := method_previous;
-      elsif l_out_range_high_behavior  = method_closest then
-            l_out_range_high_behavior := method_previous;
+            get_method_id(l_out_range_high_behavior),
+            'out-of-range high behavior for increasing values in CWMS_LOOKUP.FIND_RATIO');
       end if;
    else
-      if l_out_range_low_behavior in
-         (  method_lin_log,
-            method_log_lin,
-            method_next,
-            method_lower
-         )
-      then
-         cwms_err.raise(
-            'INVALID_ITEM',
-            l_out_range_low_behavior,
-            'out-of-range low behavior for CWMS_LOOKUP.FIND_RATIO');
-      end if;
-      if l_out_range_high_behavior in
-         (  method_lin_log,
-            method_log_lin,
-            method_previous,
-            method_higher
-         )
-      then
-         cwms_err.raise(
-            'INVALID_ITEM',
-            l_out_range_high_behavior,
-            'out-of-range high behavior for CWMS_LOOKUP.FIND_RATIO');
-      end if;
-      -----------------------------------------------------
-      -- translate value-based methods to position-based --
-      -----------------------------------------------------
-      if    l_in_range_behavior        = method_lower then
-            l_in_range_behavior       := method_next;
-      elsif l_in_range_behavior        = method_higher then
-            l_in_range_behavior       := method_previous;
-      end if;
+      -----------------------------------
+      -- decreasing independent values --
+      -----------------------------------
       if    l_out_range_low_behavior   = method_higher then
-            l_out_range_low_behavior  := method_previous;
-      elsif l_out_range_low_behavior   = method_nearest then
-            l_out_range_low_behavior  := method_previous;
-      elsif l_out_range_low_behavior   = method_closest then
-            l_out_range_low_behavior  := method_previous;
+         cwms_err.raise(
+            'INVALID_ITEM',
+            get_method_id(l_out_range_low_behavior),
+            'out-of-range low behavior for decreasing values in CWMS_LOOKUP.FIND_RATIO');
       end if;
       if    l_out_range_high_behavior  = method_lower then
-            l_out_range_high_behavior := method_next;
-      elsif l_out_range_high_behavior  = method_nearest then
-            l_out_range_high_behavior := method_next;
-      elsif l_out_range_high_behavior  = method_closest then
-            l_out_range_high_behavior := method_next;
+         cwms_err.raise(
+            'INVALID_ITEM',
+            get_method_id(l_out_range_high_behavior),
+            'out-of-range high behavior for decreasing values in CWMS_LOOKUP.FIND_RATIO');
       end if;
    end if;
 
-   l_use_log := l_in_range_behavior = method_logarithmic;
-   if l_use_log then
-      l_val    := log(10, l_val);
-      l_hi_val := log(10, l_hi_val);
-      l_lo_val := log(10, l_lo_val);
-      p_log_used   := true;
-      if l_val    is NaN or l_val    is Infinite or
-         l_hi_val is NaN or l_hi_val is Infinite or
-         l_lo_val is Nan or l_lo_val is Infinite
-      then
-         l_val    := p_value;
-         l_hi_val := p_sequence(i);
-         l_lo_val := p_sequence(i-1);
-         p_log_used := false;
-      end if;
-   end if;
    ---------------------------------------------
    -- determine whether the value is in range --
    ---------------------------------------------
    l_in_range :=
       case
          when p_increasing then
-            l_val >= p_sequence(1) and l_val <= p_sequence(p_sequence.count)
+            l_val between p_sequence(1) and p_sequence(p_sequence.count)
          else
-            l_val <= p_sequence(1) and l_val >= p_sequence(p_sequence.count)
+            l_val between p_sequence(p_sequence.count) and p_sequence(1)
       end;
    if l_in_range then
       --------------
       -- in range --
       --------------
-      case l_in_range_behavior
-         when method_null then
+      case
+         when l_in_range_behavior = method_null then
             -------------------------------
             -- don't use log values here --
             -------------------------------
@@ -526,7 +462,7 @@ begin
             else
                l_ratio := null;
             end if;
-         when method_error then
+         when l_in_range_behavior = method_error then
             -------------------------------
             -- don't use log values here --
             -------------------------------
@@ -537,15 +473,38 @@ begin
             else
                cwms_err.raise('ERROR', 'Value does not equal any value in sequence');
             end if;
-         when method_linear then
+         when l_in_range_behavior in (method_linear, method_logarithmic, method_lin_log, method_log_lin) then
+            l_use_log := l_in_range_behavior in (method_logarithmic, method_log_lin);
+   if l_use_log then
+               begin
+      l_val    := log(10, l_val);
+      l_hi_val := log(10, l_hi_val);
+      l_lo_val := log(10, l_lo_val);
+      if l_val    is NaN or l_val    is Infinite or
+         l_hi_val is NaN or l_hi_val is Infinite or
+         l_lo_val is Nan or l_lo_val is Infinite
+      then
+                     cwms_err.raise('ERROR', 'Invalid logarithmic operation');
+                  end if;
+                  p_log_used   := true;
+               exception
+                  when others then
+         l_val    := p_value;
+         l_hi_val := p_sequence(i);
+         l_lo_val := p_sequence(i-1);
+         p_log_used := false;
+      end;
+            end if;
             l_ratio := (l_val - l_lo_val) / (l_hi_val - l_lo_val);
-         when method_logarithmic then
-            l_ratio := (l_val - l_lo_val) / (l_hi_val - l_lo_val);
-         when method_previous then
-            l_ratio := 0.;
-         when method_next then
-            l_ratio := 1.;
-         when method_closest then
+         when l_in_range_behavior = method_previous then
+               l_ratio := 0.;
+         when l_in_range_behavior = method_next then
+               l_ratio := 1.;
+         when l_in_range_behavior = method_lower then
+            l_ratio := case when p_increasing then 0. else 1. end;
+         when l_in_range_behavior = method_higher then
+            l_ratio := case when p_increasing then 1. else 0. end;
+         when l_in_range_behavior = method_closest then
             -------------------------------
             -- don't use log values here --
             -------------------------------
@@ -556,7 +515,7 @@ begin
          else
             cwms_err.raise(
                'INVALID_ITEM',
-               l_in_range_behavior,
+               get_method_id(l_in_range_behavior),
                'in range behavior for CWMS_LOOKUP.FIND_RATIO');
       end case;
    else
@@ -572,46 +531,90 @@ begin
          ----------------------
          -- out of range low --
          ----------------------
-         case l_out_range_low_behavior
-            when method_null then
+         case
+            when l_out_range_low_behavior = method_null then
                l_ratio := null;
-            when method_error then
+            when l_out_range_low_behavior = method_error then
                cwms_err.raise('ERROR', 'Value is out of range low');
-            when method_linear then
+            when l_out_range_low_behavior in (method_linear, method_logarithmic, method_lin_log, method_log_lin) then
+               l_use_log := l_out_range_low_behavior in (method_logarithmic, method_log_lin);
+               if l_use_log then
+                  begin
+                     l_val    := log(10, l_val);
+                     l_hi_val := log(10, l_hi_val);
+                     l_lo_val := log(10, l_lo_val);
+                     if l_val    is NaN or l_val    is Infinite or
+                        l_hi_val is NaN or l_hi_val is Infinite or
+                        l_lo_val is Nan or l_lo_val is Infinite
+                     then
+                        cwms_err.raise('ERROR', 'Invalid logarithmic operation');
+                     end if;
+                     p_log_used   := true;
+                  exception
+                     when others then
+                        l_val    := p_value;
+                        l_hi_val := p_sequence(i);
+                        l_lo_val := p_sequence(i-1);
+                        p_log_used := false;
+                  end;
+               end if;
                l_ratio := (l_val - l_lo_val) / (l_hi_val - l_lo_val);
-            when method_logarithmic then
-               l_ratio := (l_val - l_lo_val) / (l_hi_val - l_lo_val);
-            when method_previous then
-               l_ratio := 1.;
-            when method_next then
+            when l_out_range_low_behavior in (method_lower, method_higher, method_next, method_nearest, method_closest) then
+               -- lower   is legal only on decreasing (exception raised previously on increasing)
+               -- higher  is legal only in increasing (exception raised previously on decreasing)
+               -- next    is legal on both
+               -- nearest is legal on both
+               -- closest is legal on both
                l_ratio := 0.;
             else
                cwms_err.raise(
                   'INVALID_ITEM',
-                  l_out_range_low_behavior,
+                  get_method_id(l_out_range_low_behavior),
                   'out-of-range low behavior for CWMS_LOOKUP.FIND_RATIO');
          end case;
       else
          -----------------------
          -- out of range high --
          -----------------------
-         case l_out_range_high_behavior
-            when method_null then
+         case
+            when l_out_range_high_behavior = method_null then
                l_ratio := null;
-            when method_error then
+            when l_out_range_high_behavior = method_error then
                cwms_err.raise('ERROR', 'Value is out of range high');
-            when method_linear then
+            when l_out_range_high_behavior in (method_linear, method_logarithmic, method_lin_log, method_log_lin) then
+               l_use_log := l_out_range_high_behavior in (method_logarithmic, method_log_lin);
+               if l_use_log then
+                  begin
+                     l_val    := log(10, l_val);
+                     l_hi_val := log(10, l_hi_val);
+                     l_lo_val := log(10, l_lo_val);
+                     if l_val    is NaN or l_val    is Infinite or
+                        l_hi_val is NaN or l_hi_val is Infinite or
+                        l_lo_val is Nan or l_lo_val is Infinite
+                     then
+                        cwms_err.raise('ERROR', 'Invalid logarithmic operation');
+                     end if;
+                     p_log_used   := true;
+                  exception
+                     when others then
+                        l_val    := p_value;
+                        l_hi_val := p_sequence(i);
+                        l_lo_val := p_sequence(i-1);
+                        p_log_used := false;
+                  end;
+               end if;
                l_ratio := (l_val - l_lo_val) / (l_hi_val - l_lo_val);
-            when method_logarithmic then
-               l_ratio := (l_val - l_lo_val) / (l_hi_val - l_lo_val);
-            when method_previous then
+            when l_out_range_high_behavior in (method_lower, method_higher, method_previous, method_nearest, method_closest) then
+               -- lower    is legal only on increasing (exception raised previously on decreasing)
+               -- higher   is legal only in decreasing (exception raised previously on increasing)
+               -- previous is legal on both
+               -- nearest  is legal on both
+               -- closest  is legal on both
                l_ratio := 1.;
-            when method_next then
-               l_ratio := 0.;
             else
                cwms_err.raise(
                   'INVALID_ITEM',
-                  l_out_range_high_behavior,
+                  get_method_id(l_out_range_high_behavior),
                   'out-of-range high behavior for CWMS_LOOKUP.FIND_RATIO');
          end case;
       end if;
@@ -645,13 +648,14 @@ is
    l_hi_val                  binary_double  := p_sequence(i);
    l_lo_val                  binary_double  := p_sequence(i-1);
    l_ratio                   binary_double;
+   l_method_name             varchar2(16);
+
+   function get_method_id(p_method_code in integer) return varchar2 is
 begin
-   pragma inline(eq, 'YES');
-   pragma inline(ne, 'YES');
-   pragma inline(gt, 'YES');
-   pragma inline(ge, 'YES');
-   pragma inline(lt, 'YES');
-   pragma inline(le, 'YES');
+      select rating_method_id into l_method_name from cwms_rating_method where rating_method_code = p_method_code;
+      return l_method_name;
+   end;
+begin
    --------------------------
    -- general sanity check --
    --------------------------
@@ -671,110 +675,55 @@ begin
    -----------------------------
    -- sanity check on methods --
    -----------------------------
-   if l_in_range_behavior in
-      (  method_lin_log,
-         method_log_lin,
-         method_nearest
-      )
-   then
+   if l_in_range_behavior = method_nearest then
       cwms_err.raise(
          'INVALID_ITEM',
-         l_in_range_behavior,
-         'in range behavior for CWMS_LOOKUP.FIND_RATIO');
+         get_method_id(l_in_range_behavior),
+         'in-range behavior for CWMS_LOOKUP.FIND_RATIO');
+   end if;
+   if l_out_range_low_behavior = method_previous then
+         cwms_err.raise(
+            'INVALID_ITEM',
+            get_method_id(l_out_range_low_behavior),
+            'out-of-range low behavior in CWMS_LOOKUP.FIND_RATIO');
+   end if;
+   if l_out_range_high_behavior = method_next then
+         cwms_err.raise(
+            'INVALID_ITEM',
+            get_method_id(l_out_range_high_behavior),
+            'out-of-range high behavior in CWMS_LOOKUP.FIND_RATIO');
    end if;
    if p_increasing then
-      if l_out_range_low_behavior in
-         (  method_lin_log,
-            method_log_lin,
-            method_previous,
-            method_lower
-         )
-      then
+      -----------------------------------
+      -- increasing independent values --
+      -----------------------------------
+      if l_out_range_low_behavior = method_lower then
          cwms_err.raise(
             'INVALID_ITEM',
-            l_out_range_low_behavior,
-            'out-of-range low behavior for CWMS_LOOKUP.FIND_RATIO');
+            get_method_id(l_out_range_low_behavior),
+            'out-of-range low behavior for increasing values in CWMS_LOOKUP.FIND_RATIO');
       end if;
-      if l_out_range_high_behavior in
-         (  method_lin_log,
-            method_log_lin,
-            method_next,
-            method_higher
-         )
-      then
+      if l_out_range_high_behavior = method_higher then
          cwms_err.raise(
             'INVALID_ITEM',
-            l_out_range_high_behavior,
-            'out-of-range high behavior for CWMS_LOOKUP.FIND_RATIO');
-      end if;
-      -----------------------------------------------------
-      -- translate value-based methods to position-based --
-      -----------------------------------------------------
-      if    l_in_range_behavior        = method_lower then
-            l_in_range_behavior       := method_previous;
-      elsif l_in_range_behavior        = method_higher then
-            l_in_range_behavior       := method_next;
-      end if;
-      if    l_out_range_low_behavior   = method_higher then
-            l_out_range_low_behavior  := method_next;
-      elsif l_out_range_low_behavior   = method_nearest then
-            l_out_range_low_behavior  := method_next;
-      elsif l_out_range_low_behavior   = method_closest then
-            l_out_range_low_behavior  := method_next;
-      end if;
-      if    l_out_range_high_behavior  = method_lower then
-            l_out_range_high_behavior := method_previous;
-      elsif l_out_range_high_behavior  = method_nearest then
-            l_out_range_high_behavior := method_previous;
-      elsif l_out_range_high_behavior  = method_closest then
-            l_out_range_high_behavior := method_previous;
+            get_method_id(l_out_range_high_behavior),
+            'out-of-range high behavior for increasing values in CWMS_LOOKUP.FIND_RATIO');
       end if;
    else
-      if l_out_range_low_behavior in
-         (  method_lin_log,
-            method_log_lin,
-            method_next,
-            method_lower
-         )
-      then
-         cwms_err.raise(
-            'INVALID_ITEM',
-            l_out_range_low_behavior,
-            'out-of-range low behavior for CWMS_LOOKUP.FIND_RATIO');
-      end if;
-      if l_out_range_high_behavior in
-         (  method_lin_log,
-            method_log_lin,
-            method_previous,
-            method_higher
-         )
-      then
-         cwms_err.raise(
-            'INVALID_ITEM',
-            l_out_range_high_behavior,
-            'out-of-range high behavior for CWMS_LOOKUP.FIND_RATIO');
-      end if;
-      -----------------------------------------------------
-      -- translate value-based methods to position-based --
-      -----------------------------------------------------
-      if    l_in_range_behavior        = method_lower then
-            l_in_range_behavior       := method_next;
-      elsif l_in_range_behavior        = method_higher then
-            l_in_range_behavior       := method_previous;
-      end if;
+      -----------------------------------
+      -- decreasing independent values --
+      -----------------------------------
       if    l_out_range_low_behavior   = method_higher then
-            l_out_range_low_behavior  := method_previous;
-      elsif l_out_range_low_behavior   = method_nearest then
-            l_out_range_low_behavior  := method_previous;
-      elsif l_out_range_low_behavior   = method_closest then
-            l_out_range_low_behavior  := method_previous;
+         cwms_err.raise(
+            'INVALID_ITEM',
+            get_method_id(l_out_range_low_behavior),
+            'out-of-range low behavior for decreasing values in CWMS_LOOKUP.FIND_RATIO');
       end if;
       if    l_out_range_high_behavior  = method_lower then
-            l_out_range_high_behavior := method_next;
-      elsif l_out_range_high_behavior  = method_nearest then
-            l_out_range_high_behavior := method_next;
-      elsif l_out_range_high_behavior  = method_closest then
-            l_out_range_high_behavior := method_next;
+         cwms_err.raise(
+            'INVALID_ITEM',
+            get_method_id(l_out_range_high_behavior),
+            'out-of-range high behavior for decreasing values in CWMS_LOOKUP.FIND_RATIO');
       end if;
    end if;
 
@@ -784,83 +733,80 @@ begin
    l_in_range :=
       case
          when p_increasing then
-            ge(l_val, p_sequence(1)) and le(l_val, p_sequence(p_sequence.count))
+            l_val between p_sequence(1) and p_sequence(p_sequence.count)
          else
-            le(l_val, p_sequence(1)) and ge(l_val, p_sequence(p_sequence.count))
+            l_val between p_sequence(p_sequence.count) and p_sequence(1)
       end;
    if l_in_range then
       --------------
       -- in range --
       --------------
-      case l_in_range_behavior
-         when method_null then
-            if eq(p_value, p_sequence(i-1)) then
+      case
+         when l_in_range_behavior = method_null then
+            -------------------------------
+            -- don't use log values here --
+            -------------------------------
+            if p_value = p_sequence(i-1) then
                l_ratio := 0.;
-            elsif eq(p_value, p_sequence(i)) then
+            elsif p_value = p_sequence(i) then
                l_ratio := 1.;
             else
                l_ratio := null;
             end if;
-         when method_error then
-            if eq(p_value, p_sequence(i-1)) then
+         when l_in_range_behavior = method_error then
+            -------------------------------
+            -- don't use log values here --
+            -------------------------------
+            if p_value = p_sequence(i-1) then
                l_ratio := 0.;
-            elsif eq(p_value, p_sequence(i)) then
+            elsif p_value = p_sequence(i) then
                l_ratio := 1.;
             else
                cwms_err.raise('ERROR', 'Value does not equal any value in sequence');
             end if;
-         when method_linear then
-            l_ratio := (l_val - l_lo_val) / (l_hi_val - l_lo_val);
-         when method_logarithmic then
+         when l_in_range_behavior in (method_linear, method_logarithmic, method_lin_log, method_log_lin) then
+            l_use_log := l_in_range_behavior in (method_logarithmic, method_log_lin);
+            if l_use_log then
+               begin
             l_val    := log(10, l_val);
             l_hi_val := log(10, l_hi_val);
             l_lo_val := log(10, l_lo_val);
-            p_log_used  := true;
             if l_val    is NaN or l_val    is Infinite or
                l_hi_val is NaN or l_hi_val is Infinite or
                l_lo_val is Nan or l_lo_val is Infinite
             then
+                     cwms_err.raise('ERROR', 'Invalid logarithmic operation');
+                  end if;
+                  p_log_used   := true;
+               exception
+                  when others then
                l_val    := p_value;
                l_hi_val := p_sequence(i);
                l_lo_val := p_sequence(i-1);
                p_log_used := false;
+               end;
             end if;
             l_ratio := (l_val - l_lo_val) / (l_hi_val - l_lo_val);
-         when method_previous then
-            case
-               when p_increasing then
-                  l_ratio := case ge(l_val, l_hi_val)
-                             when true then 1
-                             else 0
-                             end;
-               else
-                  l_ratio := case le(l_val, l_hi_val)
-                             when true then 1
-                             else 0
-                             end;
-            end case;
-         when method_next then
-            case
-               when p_increasing then
-                  l_ratio := case le(l_val, l_lo_val)
-                             when true then 0
-                             else 1
-                             end;
-               else
-                  l_ratio := case ge(l_val, l_lo_val)
-                             when true then 0
-                             else 1
-                             end;
-            end case;
-         when method_closest then
-            case le(abs(p_value - p_sequence(i-1)), abs(p_value - p_sequence(i)))
+         when l_in_range_behavior = method_previous then
+            l_ratio := 0.;
+         when l_in_range_behavior = method_next then
+            l_ratio := 1.;
+         when l_in_range_behavior = method_lower then
+            l_ratio := case when p_increasing then 0. else 1. end;
+         when l_in_range_behavior = method_higher then
+            l_ratio := case when p_increasing then 1. else 0. end;
+         when l_in_range_behavior = method_closest then
+            -------------------------------
+            -- don't use log values here --
+            -------------------------------
+            case abs(p_value - p_sequence(i-1)) < abs(p_value - p_sequence(i))
                when true then l_ratio := 0.;
                else           l_ratio := 1.;
             end case;
          else
             cwms_err.raise(
                'INVALID_ITEM',
-               l_in_range_behavior,
+               get_method_id(l_in_range_behavior),
                'in range behavior for CWMS_LOOKUP.FIND_RATIO');
       end case;
    else
@@ -868,80 +814,98 @@ begin
       -- out of range, determine if we are out low or high --
       -------------------------------------------------------
       if p_increasing then
-         l_out_low := lt(p_value, p_sequence(1));
+         l_out_low := p_value < p_sequence(1);
       else
-         l_out_low := gt(p_value, p_sequence(p_sequence.count));
+         l_out_low := p_value > p_sequence(p_sequence.count);
       end if;
       if l_out_low then
          ----------------------
          -- out of range low --
          ----------------------
-         case l_out_range_low_behavior
-            when method_null then
+         case
+            when l_out_range_low_behavior = method_null then
                l_ratio := null;
-            when method_error then
+            when l_out_range_low_behavior = method_error then
                cwms_err.raise('ERROR', 'Value is out of range low');
-            when method_linear then
-               l_ratio := (l_val - l_lo_val) / (l_hi_val - l_lo_val);
-            when method_logarithmic then
+            when l_out_range_low_behavior in (method_linear, method_logarithmic, method_lin_log, method_log_lin) then
+               l_use_log := l_out_range_low_behavior in (method_logarithmic, method_log_lin);
+               if l_use_log then
+                  begin
                l_val    := log(10, l_val);
                l_hi_val := log(10, l_hi_val);
                l_lo_val := log(10, l_lo_val);
-               p_log_used   := true;
                if l_val    is NaN or l_val    is Infinite or
                   l_hi_val is NaN or l_hi_val is Infinite or
                   l_lo_val is Nan or l_lo_val is Infinite
                then
+                        cwms_err.raise('ERROR', 'Invalid logarithmic operation');
+                     end if;
+                     p_log_used   := true;
+                  exception
+                     when others then
                   l_val    := p_value;
                   l_hi_val := p_sequence(i);
                   l_lo_val := p_sequence(i-1);
                   p_log_used := false;
+                  end;
                end if;
                l_ratio := (l_val - l_lo_val) / (l_hi_val - l_lo_val);
-            when method_previous then
-               l_ratio := 1.;
-            when method_next then
+            when l_out_range_low_behavior in (method_lower, method_higher, method_next, method_nearest, method_closest) then
+               -- lower   is legal only on decreasing (exception raised previously on increasing)
+               -- higher  is legal only in increasing (exception raised previously on decreasing)
+               -- next    is legal on both
+               -- nearest is legal on both
+               -- closest is legal on both
                l_ratio := 0.;
             else
                cwms_err.raise(
                   'INVALID_ITEM',
-                  l_out_range_low_behavior,
+                  get_method_id(l_out_range_low_behavior),
                   'out-of-range low behavior for CWMS_LOOKUP.FIND_RATIO');
          end case;
       else
          -----------------------
          -- out of range high --
          -----------------------
-         case l_out_range_high_behavior
-            when method_null then
+         case
+            when l_out_range_high_behavior = method_null then
                l_ratio := null;
-            when method_error then
+            when l_out_range_high_behavior = method_error then
                cwms_err.raise('ERROR', 'Value is out of range high');
-            when method_linear then
-               l_ratio := (l_val - l_lo_val) / (l_hi_val - l_lo_val);
-            when method_logarithmic then
+            when l_out_range_high_behavior in (method_linear, method_logarithmic, method_lin_log, method_log_lin) then
+               l_use_log := l_out_range_high_behavior in (method_logarithmic, method_log_lin);
+               if l_use_log then
+                  begin
                l_val    := log(10, l_val);
                l_hi_val := log(10, l_hi_val);
                l_lo_val := log(10, l_lo_val);
-               p_log_used   := true;
                if l_val    is NaN or l_val    is Infinite or
                   l_hi_val is NaN or l_hi_val is Infinite or
                   l_lo_val is Nan or l_lo_val is Infinite
                then
+                        cwms_err.raise('ERROR', 'Invalid logarithmic operation');
+                     end if;
+                     p_log_used   := true;
+                  exception
+                     when others then
                   l_val    := p_value;
                   l_hi_val := p_sequence(i);
                   l_lo_val := p_sequence(i-1);
                   p_log_used := false;
+                  end;
                end if;
                l_ratio := (l_val - l_lo_val) / (l_hi_val - l_lo_val);
-            when method_previous then
+            when l_out_range_high_behavior in (method_lower, method_higher, method_previous, method_nearest, method_closest) then
+               -- lower    is legal only on increasing (exception raised previously on decreasing)
+               -- higher   is legal only in decreasing (exception raised previously on increasing)
+               -- previous is legal on both
+               -- nearest  is legal on both
+               -- closest  is legal on both
                l_ratio := 1.;
-            when method_next then
-               l_ratio := 0.;
             else
                cwms_err.raise(
                   'INVALID_ITEM',
-                  l_out_range_high_behavior,
+                  get_method_id(l_out_range_high_behavior),
                   'out-of-range high behavior for CWMS_LOOKUP.FIND_RATIO');
          end case;
       end if;
@@ -966,7 +930,7 @@ is
    l_values number_tab_t;
 begin
    l_values := lookup(
-      number_tab_t(null),
+      number_tab_t(p_value),
       p_independent,
       p_dependent,
       p_independent_properties,
@@ -993,7 +957,7 @@ is
    l_values double_tab_t;
 begin
    l_values := lookup(
-      double_tab_t(null),
+      double_tab_t(p_value),
       p_independent,
       p_dependent,
       p_independent_properties,
@@ -1088,18 +1052,14 @@ begin
          p_out_range_low_behavior,
          p_out_range_high_behavior);
       if l_ratio is not null then
-         ---------------------------------------
-         -- set log properties dependent axis --
-         ---------------------------------------
-         l_dependent_log := p_in_range_behavior in (method_logarithmic, method_lin_log);
-         if l_dependent_log then
-            if p_in_range_behavior in (method_logarithmic, method_log_lin) and not l_independent_log then
-               ---------------------------------------
-               -- fall back from LOG-LoG to LIN-LIN --
-               ---------------------------------------
-               l_dependent_log := false;
-            end if;
-         end if;
+         ------------------------------------------
+         -- set log properties on dependent axis --
+         ------------------------------------------
+         case
+         when l_ratio < 0.0 then l_dependent_log := p_out_range_low_behavior  = method_lin_log or (p_out_range_low_behavior  = method_logarithmic and l_independent_log);
+         when l_ratio > 1.0 then l_dependent_log := p_out_range_high_behavior = method_lin_log or (p_out_range_high_behavior = method_logarithmic and l_independent_log);
+         else                    l_dependent_log := p_in_range_behavior       = method_lin_log or (p_in_range_behavior       = method_logarithmic and l_independent_log);
+         end case;
          ------------------------------------------------------------------
          -- handle log interpolation/extrapolation on dependent sequence --
          ------------------------------------------------------------------
@@ -1231,18 +1191,14 @@ begin
          p_out_range_low_behavior,
          p_out_range_high_behavior);
       if l_ratio is not null then
-         ---------------------------------------
-         -- set log properties dependent axis --
-         ---------------------------------------
-         l_dependent_log := p_in_range_behavior in (method_logarithmic, method_lin_log);
-         if l_dependent_log then
-            if p_in_range_behavior in (method_logarithmic, method_log_lin) and not l_independent_log then
-               ---------------------------------------
-               -- fall back from LOG-LoG to LIN-LIN --
-               ---------------------------------------
-               l_dependent_log := false;
-            end if;
-         end if;
+         ------------------------------------------
+         -- set log properties on dependent axis --
+         ------------------------------------------
+         case
+         when l_ratio < 0.0 then l_dependent_log := p_out_range_low_behavior  = method_lin_log or (p_out_range_low_behavior  = method_logarithmic and l_independent_log);
+         when l_ratio > 1.0 then l_dependent_log := p_out_range_high_behavior = method_lin_log or (p_out_range_high_behavior = method_logarithmic and l_independent_log);
+         else                    l_dependent_log := p_in_range_behavior       = method_lin_log or (p_in_range_behavior       = method_logarithmic and l_independent_log);
+         end case;
          ------------------------------------------------------------------
          -- handle log interpolation/extrapolation on dependent sequence --
          ------------------------------------------------------------------
