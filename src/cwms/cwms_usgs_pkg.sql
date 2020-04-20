@@ -351,7 +351,7 @@ function get_ts_id(
  *
  * @see https://waterservices.usgs.gov/rest/IV-Service.html
  * @see http://en.wikipedia.org/wiki/JSON
- * @see http://river.sdsc.edu/wiki/WaterML.ashx
+ * @see http://his.cuahsi.org/wofws.html
  * @see http://www.waterml2.org/
  */
 function get_ts_data(
@@ -410,7 +410,7 @@ function get_ts_data(
  * @see http://en.wikipedia.org/wiki/ISO_8601#Combined_date_and_time_representations
  * @see https://waterservices.usgs.gov/rest/IV-Service.html
  * @see http://en.wikipedia.org/wiki/JSON
- * @see http://river.sdsc.edu/wiki/WaterML.ashx
+ * @see http://his.cuahsi.org/wofws.html
  * @see http://www.waterml2.org/
  */
 function get_ts_data(
