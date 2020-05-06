@@ -1528,7 +1528,6 @@ as
                          )
                      and rir.parameter_position = 1;
                end if;
-               l_height := cwms_rounding.round_nn_f(l_height, l_rounding_spec);
                l_date_offset := p_ind_values(i).date_time - c_base_date;
                l_hi_index := cwms_lookup.find_high_index(
                   l_date_offset,
@@ -1566,9 +1565,8 @@ as
                           when 1D then l_hi_value
                           else l_lo_value + l_ratio * (l_hi_value - l_lo_value)
                           end;
-               if l_shift != 0D then
-                  l_height := l_height + cwms_rounding.round_nn_f(l_shift, l_rounding_spec);
-               end if;
+               l_shift := cwms_rounding.round_dd_f(l_shift, l_rounding_spec);
+               l_height := l_height + l_shift;
             end if;
             -----------------------------------
             -- find the interpolation values --
@@ -1846,6 +1844,38 @@ as
       l_rating_spec             rating_spec_t;
       l_rating_template         rating_template_t;
       l_rating_method           pls_integer;
+
+      function get_shift_from_unshifted(
+         p_shifted_height in binary_double,
+         p_shifts         in rating_t)
+      return binary_double
+      is
+         l_shifted   binary_double := p_shifted_height;
+         l_unshifted binary_double;
+         l_shift1    binary_double;
+         l_shift2    binary_double;
+         l_mean      binary_double;
+         l_diff      binary_double;
+         l_limit     pls_integer := 100;
+      begin
+         l_shift1    := p_shifts.rate(l_shifted);
+         l_unshifted := l_shifted - l_shift1;
+         l_shift2    := p_shifts.rate(l_unshifted);
+         l_mean      := (l_shift1 + l_shift2) / 2;
+         l_diff      := abs(l_shift2 - l_shift1);
+         for i in 1..l_limit loop
+            exit when l_diff <= abs(l_mean) * 1e-8;
+            if i = l_limit then
+               cwms_err.raise('ERROR', 'Couldn''t converge on shift for shifted value '||l_shifted||' in '||l_limit||' iterations');
+            end if;
+            l_shift1    := l_shift2;
+            l_unshifted := l_shifted - l_shift1;
+            l_shift2    := p_shifts.rate(l_unshifted);
+            l_mean      := (l_shift1 + l_shift2) / 2;
+            l_diff      := abs(l_shift2 - l_shift1);
+         end loop;
+         return l_mean;
+      end;
    begin
       if p_dep_values is not null then
          -----------------------------
@@ -1878,19 +1908,19 @@ as
             end loop;
             l_date_offsets_properties := cwms_lookup.analyze_sequence(l_date_offsets);
          end if;
-         ------------------------------------------------------
-         -- populate the rating heights and flows for lookup --
-         ------------------------------------------------------
-         i := 1;
-         j := 1;
-         k := 0;
+         ---------------------------------------------------------
+         -- populate the effective heights and flows for lookup --
+         ---------------------------------------------------------
+         i := 1; -- extension values index
+         j := 1; -- rating values index
+         k := 0; -- effective values index
          l_heights := double_tab_t();
          l_flows   := double_tab_t();
          -------------------------------------------------
          -- first any extension values below the rating --
          -------------------------------------------------
          if rating_info.extension_values is not null then
-            while i < rating_info.extension_values.count and
+            while i <= rating_info.extension_values.count and
                   rating_info.extension_values(i).ind_value < rating_info.rating_values(1).ind_value
             loop
                l_heights.extend;
@@ -1903,7 +1933,7 @@ as
          ----------------------------
          -- next the rating values --
          ----------------------------
-         while j < rating_info.rating_values.count loop
+         while j <= rating_info.rating_values.count loop
             l_heights.extend;
             l_flows.extend;
             k := k + 1;
@@ -1915,7 +1945,7 @@ as
          -- finally any extension values above the rating --
          ---------------------------------------------------
          if rating_info.extension_values is not null then
-            while i < rating_info.extension_values.count loop
+            while i <= rating_info.extension_values.count loop
                if rating_info.extension_values(i).ind_value >
                   rating_info.rating_values(rating_info.rating_values.count).ind_value
                then
@@ -2049,72 +2079,18 @@ as
                      if l_date_shifts(l_hi_index) = 0 then
                         l_hi_value := 0.; -- zero shift on base curve
                      else
-                        l_heights.delete;
-                        l_heights.extend(treat(shifts(l_date_shifts(l_hi_index)) as rating_t).rating_info.rating_values.count);
-                        l_shifts := double_tab_t();
-                        l_shifts.extend(treat(shifts(l_date_shifts(l_hi_index)) as rating_t).rating_info.rating_values.count);
-                        for j in 1..treat(shifts(l_date_shifts(l_hi_index)) as rating_t).rating_info.rating_values.count loop
-                           l_heights(j) := treat(shifts(l_date_shifts(l_hi_index)) as rating_t).rating_info.rating_values(j).ind_value;
-                           l_shifts(j) := treat(shifts(l_date_shifts(l_hi_index)) as rating_t).rating_info.rating_values(j).dep_value;
-                        end loop;
-                        if l_results(i).value - l_shifts(1) <= l_heights(1) then
-                           l_hi_value := l_shifts(1);
-                        elsif l_results(i).value - l_shifts(l_shifts.count) >= l_heights(l_heights.count) then
-                           l_hi_value := l_shifts(l_shifts.count);
-                        else
-                           for j in 2..l_shifts.count loop
-                              if l_results(i).value - l_shifts(j) <= l_heights(j) then
-                                 declare
-                                    k    pls_integer   := case j = l_shifts.count when true then j-1 else j end;
-                                    s0   binary_double := l_shifts(k);
-                                    s1   binary_double := l_shifts(k+1);
-                                    h0   binary_double := l_heights(k);
-                                    h1   binary_double := l_heights(k+1);
-                                    hs   binary_double := l_results(i).value;
-                                    dsdh binary_double := (s1-s0)/(h1-h0);
-                                 begin
-                                    l_hi_value := hs-(hs-s0+h0*dsdh)/(1+dsdh);
-                                 end;
-                                 exit;
-                              end if;
-                           end loop;
-                        end if;
+                        l_hi_value := get_shift_from_unshifted(
+                           l_results(i).value,
+                           treat(shifts(l_date_shifts(l_hi_index)) as rating_t));
                      end if;
                   end if;
                   if l_ratio != 1. then
                      if l_date_shifts(l_hi_index) = 0 then
                         l_lo_value := 0.; -- zero shift on base curve
                      else
-                        l_heights.delete;
-                        l_heights.extend(treat(shifts(l_date_shifts(l_hi_index-1)) as rating_t).rating_info.rating_values.count);
-                        l_shifts := double_tab_t();
-                        l_shifts.extend(treat(shifts(l_date_shifts(l_hi_index-1)) as rating_t).rating_info.rating_values.count);
-                        for j in 1..treat(shifts(l_date_shifts(l_hi_index-1)) as rating_t).rating_info.rating_values.count loop
-                           l_heights(j) := treat(shifts(l_date_shifts(l_hi_index-1)) as rating_t).rating_info.rating_values(j).ind_value;
-                           l_shifts(j) := treat(shifts(l_date_shifts(l_hi_index-1)) as rating_t).rating_info.rating_values(j).dep_value;
-                        end loop;
-                        if l_results(i).value - l_shifts(1) <= l_heights(1) then
-                           l_lo_value := l_shifts(1);
-                        elsif l_results(i).value - l_shifts(l_shifts.count) >= l_heights(l_heights.count) then
-                           l_lo_value := l_shifts(l_shifts.count);
-                        else
-                           for j in 2..l_shifts.count loop
-                              if l_results(i).value - l_shifts(j) <= l_heights(j) then
-                                 declare
-                                 k    pls_integer   := case j = l_shifts.count when true then j-1 else j end;
-                                 s0   binary_double := l_shifts(k);
-                                 s1   binary_double := l_shifts(k+1);
-                                 h0   binary_double := l_heights(k);
-                                 h1   binary_double := l_heights(k+1);
-                                 hs   binary_double := l_results(i).value;
-                                 dsdh binary_double := (s1-s0)/(h1-h0);
-                                 begin
-                                    l_lo_value := hs-(hs-s0+h0*dsdh)/(1+dsdh);
-                                 end;
-                                 exit;
-                              end if;
-                           end loop;
-                        end if;
+                        l_lo_value := get_shift_from_unshifted(
+                           l_results(i).value,
+                           treat(shifts(l_date_shifts(l_hi_index-1)) as rating_t));
                      end if;
                   end if;
                   if l_ratio = 0. then
