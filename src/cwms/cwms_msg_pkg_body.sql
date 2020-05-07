@@ -2277,7 +2277,7 @@ begin
    else
       l_prop_id := l_prop_id||'.session='||sys_context('USERENV', 'SESSIONID');
    end if;
-   dbms_output.put_line(l_prop_id);
+--   dbms_output.put_line(l_prop_id);
    return l_prop_id;
 end get_queueing_pause_prop_key;
 
