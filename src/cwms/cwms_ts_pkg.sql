@@ -2515,6 +2515,68 @@ AS
       RETURN VARCHAR2;
 
    /**
+    * Retrieves whether a quality code is marked as protected
+    *
+    * @param p_quality_code The quality code
+    *
+    * @return Whether the quality code is marked as protected
+    */
+   FUNCTION quality_is_protected (p_quality_code IN NUMBER)
+      RETURN BOOLEAN
+      RESULT_CACHE;
+
+   /**
+    * Retrieves whether the quality code of a time series value is marked as protected
+    *
+    * @param p_value The time series value
+    *
+    * @return Whether the quality code is marked as protected
+    */
+   FUNCTION quality_is_protected (p_value IN tsv_type)
+      RETURN BOOLEAN;
+
+   /**
+    * Retrieves whether the quality code of a time series value is marked as protected
+    *
+    * @param p_value The time series value
+    *
+    * @return Whether the quality code is marked as protected
+    */
+   FUNCTION quality_is_protected (p_value IN ztsv_type)
+      RETURN BOOLEAN;
+
+   /**
+    * Retrieves whether a quality code is marked as protected
+    *
+    * @param p_quality_code The quality code
+    *
+    * @return Whether the quality code is marked as protected  as text ('T'/'F')
+    */
+   FUNCTION quality_is_protected_text (p_quality_code IN NUMBER)
+      RETURN VARCHAR2
+      RESULT_CACHE;
+
+   /**
+    * Retrieves whether the quality code of a time series value is marked as protected
+    *
+    * @param p_value The time series value
+    *
+    * @return Whether the quality code is marked as protected as text ('T'/'F')
+    */
+   FUNCTION quality_is_protected_text (p_value IN tsv_type)
+      RETURN VARCHAR2;
+
+   /**
+    * Retrieves whether the quality code of a time series value is marked as protected
+    *
+    * @param p_value The time series value
+    *
+    * @return Whether the quality code is marked as protected  as text ('T'/'F')
+    */
+   FUNCTION quality_is_protected_text (p_value IN ztsv_type)
+      return varchar2;
+
+   /**
     * Retrieves a text description for a quality code
     *
     * @param p_quality_code The quality code
