@@ -24,6 +24,7 @@ DECLARE
       'av_cwms_media',
       'av_cwms_ts_id',
       'av_cwms_ts_id2',
+      'av_cwms_user',              -- created in at_schema_2
       'av_dataexchange_job',
       'av_display_units',
       'av_document',
