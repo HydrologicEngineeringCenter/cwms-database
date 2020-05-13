@@ -12,7 +12,19 @@ VERSIONS:
    1.4   12Jul2012   MDP   Added API Usage Note to main page
    1.5   23May2014   MDP   Added web links
    1.6   12Sep2014   MDP   Fixed deprecation handling
-   1.6.1 15Dec2015   MDP   Added dump of offending text on unexpected tag 
+   1.6.1 15Dec2015   MDP   Added dump of offending text on unexpected tag
+   1.7   20Apr2020   MDP   Fixed deprecation handling (again)
+                           Added inclusing of CWMS_POOLS document
+                           Changed from importing java and referencing java.util.regex.Pattern to "from java.util.regex import Pattern" for Jython 2.7 issue
+                           Changed database access to use DBAPI so it can be executed from CWMS client common\exe directory
+                           Added -f <office> command line option to support DBAPI access
+                           Added -k <key_file>  command line option to allow batch file to know if script completed successfully
+                           Changed from urllib to urllib2
+                           Enhanced exception output some exceptions
+                           Changed from expecting user to be CWMS_20
+                           Added immedate test to see if user has necessary privileges and error text if not
+                           Ignore empty sections in JDoc._parse() method
+   1.71  13May2020   MDP   Fixed getting view columns using non-CWMS_20 user
 
 JAVADOCS:
    Standard javadoc syntax applies as shown below, but the list of tags is a
@@ -56,12 +68,12 @@ JAVADOCS:
     * automatically documented.
     *
     * @member membername This tag is the same as @field
-    * 
+    *
     * @return This tag describes the item returned from the function (not used
     * for procedures). Like other tags, the brief description only is included
     * in the summary section. Do not specify the data type returned in this
     * section because it will be automatically documented
-    * 
+    *
     * @exception exceptionname This tag describes an exception that is raised
     * by the function or procedure Like other tags, the brief description only
     * is included in the summary section.
@@ -82,7 +94,7 @@ JAVADOCS:
     *      </ul>
     *  </li>
     *  <li>To reference a web link use "@see http://..." or "@see https://..."
-    *  </li> 
+    *  </li>
     * </ul>
     * The anchor text for web link will be its title if it has one - otherwise
     * the anchor text will be the link URL.
@@ -229,7 +241,8 @@ EMBEDDED LINKS:
           <a href="view_av_tsv_dqu.html">
 '''
 
-import getopt, htmlentitydefs, java, oracle, os, shutil, string, StringIO, sys, time, traceback, urllib
+from java.util.regex import Pattern
+import DBAPI, getopt, htmlentitydefs, os, shutil, string, StringIO, sys, time, traceback, urllib2
 
 #---------------------#
 # regular expressions #
@@ -255,7 +268,7 @@ re_datatype_sized   = '('+re_datatype+re_size+'?)'
 re_param_usage      = r'(in\s+out(\s+nocopy)?|out(\s+nocopy)?|in)'
 re_param_dflt       = r'default\s+(([^,)]+))'
 re_param_decl       = re_identifier+r'(\s+'+re_param_usage+r')?\s+'+re_datatype+r'(\s+'+re_param_dflt+r')?\s*'
-re_return_type      = r'(return\s+('+re_datatype+r')(\s+(result_cache|pipelined))?)'
+re_return_type      = r'(return\s+('+re_datatype+r')(\s+(result_cache(\s+relies_on\s+\(.+?\))?|pipelined|deterministic))?)'
 re_procedure        = r'(\s*procedure\s+'+re_identifier+r'(\s*\([^;]+?\))?\s*;)'
 re_function         = r'(\s*function\s+'+re_identifier+r'(\s*\([^;]+?\))?\s*'+re_return_type+r'\s*;)'
 re_routine          = '('+re_procedure+'|'+re_function+')'
@@ -425,13 +438,15 @@ def usage(msg=None) :
    blurb = '''
       %s: Program for generating HTML-formatted documentation for the CWMS database API.
 
-      Usage: %s -d database -u db_user -p db_pass -o out_dir -e ext_dir
+      Usage: %s -d database -u db_user -p db_pass -f office -o out_dir -e ext_dir -k key_file
 
       Where: database = database connection string as host:port:sid
              db_user  = the database user (this user's schema will be documented)
              db_pass  = the password for the database user
+             office   = the default office for the user
              out_dir  = the directory to output the html files in
              ext_dir  = the directory containing external files to include (pdfs, etc...)
+             key_file = a file name to create if it doesn't exist and then delete when the process finishes successfully
 
    ''' % (program_name, program_name)
    if msg :
@@ -466,7 +481,6 @@ def output3(itemtype) :
    Outputs the first part of log messages about retrieving items
    '''
    output('Retrieving %s%s' % (itemtype, '.' * (15-len(itemtype))), timestamp=True, newline=False)
-
 
 def alias(item) :
    '''
@@ -534,12 +548,12 @@ def untokenize(text, replacements) :
          template = '!%s%%d%s!' % (squiggle, squiggle)
          for j in range(len(replacements[i])) :
             text = text.replace(template % j, replacements[i][j])
-   return text                                                                               
+   return text
 
 def get_web_title(url) :
    global web_titles
    if not web_titles.has_key(url) :
-      conn = urllib.urlopen(url)
+      conn = urllib2.urlopen(url)
       data = conn.read()
       conn.close()
       matcher = get_pattern(r'<title>(.+)</title>', 'md').matcher(data)
@@ -548,21 +562,24 @@ def get_web_title(url) :
       else :
          web_titles[url] = url
    return web_titles[url]
-	   
+
 def format(item, useSynonym=None) :
    '''
    Format text according to the format_type setting, optionally using an alias
    '''
    if item.startswith('http://') or item.startswith('https://') :
-      formatted = get_web_title(item)
-   else :                   
+      try :
+         formatted = get_web_title(item)
+      except :
+         raise Exception("Unable to retrieve URL %s" % item)
+   else :
       tokenized, replacements = tokenize(item)
       if useSynonym is None : useSynonym = use_synonyms
       if useSynonym : tokenized = alias(tokenized)
       tokenized = format_funcs[format_type](tokenized)
       formatted = untokenize(tokenized, replacements)
    chars = map(None, formatted)
-   for i in range(len(chars)) : 
+   for i in range(len(chars)) :
       cp = ord(chars[i])
       if htmlentitydefs.codepoint2name.has_key(cp) :
          chars[i] = '&%s;' % htmlentitydefs.codepoint2name[cp]
@@ -572,19 +589,19 @@ def format(item, useSynonym=None) :
 def get_pattern(expr, flags=None) :
    '''
    Returns a compiled version of the regular expression, caching results for reuse
-   '''                                                                                                  
+   '''
    global compiled_regexs
    pattern_flags = 0
    if flags is not None :
       for c in flags :
-         if   c == 'i' : pattern_flags |= java.util.regex.Pattern.CASE_INSENSITIVE
-         elif c == 'm' : pattern_flags |= java.util.regex.Pattern.MULTILINE
-         elif c == 'd' : pattern_flags |= java.util.regex.Pattern.DOTALL
+         if   c == 'i' : pattern_flags |= Pattern.CASE_INSENSITIVE
+         elif c == 'm' : pattern_flags |= Pattern.MULTILINE
+         elif c == 'd' : pattern_flags |= Pattern.DOTALL
    key = (expr, pattern_flags)
    if compiled_regexs.has_key(key) :
       pattern = compiled_regexs[key]
    else :
-      pattern = java.util.regex.Pattern.compile(expr, pattern_flags)
+      pattern = Pattern.compile(expr, pattern_flags)
       compiled_regexs[key] = pattern
    return pattern
 
@@ -649,7 +666,7 @@ def make_reference_elem(text, local_names=None) :
    if len(parts) == 2 :
       ref_type, ref_arg = parts
    else :
-      ref_type, ref_arg = parts[0], None                                                 
+      ref_type, ref_arg = parts[0], None
    if ref_type == 'type' :
       parts = ref_arg.split('.', 1)
       if local_names and len(parts) == 1 and parts[0] in local_names :
@@ -729,7 +746,11 @@ def add_routine(summary_table, details_div, routine_name, routine_type, return_t
    #-----------------------#
    # build routine summary #
    #-----------------------#
-   jdoc = JDoc(replace_synonyms(jdoc_text))
+   try :
+      jdoc = JDoc(replace_synonyms(jdoc_text))
+   except :
+      sys.stderr.write("Problem replacing synonyms:\n%s\n" % jdoc_text)
+      raise
    if jdoc.is_deprecated() :
       dep = ' deprecated'
    else :
@@ -855,7 +876,7 @@ def get_type_text(type_name) :
    '''
    lines = []
    stmt = conn.createStatement()
-   rs = stmt.executeQuery("select text from user_source where name = '%s' and type = 'TYPE' order by line" % type_name)
+   rs = stmt.executeQuery("select text from all_source where name = '%s' and type = 'TYPE' and owner='CWMS_20' order by line" % type_name)
    while rs.next() :
       lines.append(rs.getString(1))
    rs.close()
@@ -867,7 +888,7 @@ def get_base_type_fields(base_type_name) :
    Retrieve information about a base type
    '''
    fields=[]
-   if base_type_name != 'OBJECT' :
+   if base_type_name and base_type_name != 'OBJECT' :
       text = get_type_text(base_type_name)
       jdoc_comment2_pattern = get_pattern(re_jdoc_comment2, 'imd')
       obj_type_pattern = get_pattern(re_obj_type, 'imd')
@@ -881,7 +902,9 @@ def get_base_type_fields(base_type_name) :
          jdoc_text = replace_synonyms(jdoc_text)
          jdoc = JDoc(jdoc_text)
          jdoc._params_name = 'Fields'
-      assert obj_type_matcher.find()
+      if not obj_type_matcher.find() :
+         sys.stderr.write("\nCould not match >>%s<< in >>%s<< for base type >>%s<<\n" % (re_obj_type, text, base_type_name))
+         raise
       base_type = obj_type_matcher.group(5).upper().split()[1]
       fields = get_base_type_fields(base_type)
       type_text  = obj_type_matcher.group(7)
@@ -949,7 +972,7 @@ class JDoc :
          lines[i] = at_pattern.matcher(lines[i].strip()).replaceAll(tag_token+'@')
       # re-split text around javadoc tags
       sections = space[ACTUAL].join(lines).strip().split(tag_token)
-      for section in sections :
+      for section in [s for s in sections if s] :
          # re-constitue any <pre></pre> blocks
          section = section.replace(space[REPLACEMENT], space[ACTUAL]).replace(tab[REPLACEMENT], tab[ACTUAL]).replace(newline[REPLACEMENT], newline[ACTUAL])
          if section[0] == '@' :
@@ -976,7 +999,7 @@ class JDoc :
                self._exceptions.append(section)
             elif tag == '@see' :
                self._see_also.append(section)
-            else : 
+            else :
                sys.stderr.write("\n%s\n" % text)
                raise ValueError('Unexpected tag: %s' % tag)
          else :
@@ -1376,8 +1399,10 @@ option_info = {
    'd' : [None, False, 'Database'],
    'u' : [None, False, 'User name'],
    'p' : [None, False, 'Password'],
+   'f' : [None, False, 'Office'],
    'o' : [None, False, 'Output directory'],
-   'e' : [None, False, 'External file directory']
+   'e' : [None, False, 'External file directory'],
+   'k' : [None, False, 'Key file']
 }
 option_chars = option_info.keys()
 opts, args = getopt.gnu_getopt(sys.argv[1:], ':'.join(option_chars+['']))
@@ -1398,22 +1423,53 @@ for opt in option_chars :
    if not option_info[opt][1] : error_message += "%s not specified\n" % option_info[opt][2]
 if error_message : usage(error_message)
 if args : usage('Unexpected argument specified: %s' % args[0])
-conn_str = option_info['d'][VALUE]
-username = option_info['u'][VALUE]
-password = option_info['p'][VALUE]
-output_dir = option_info['o'][VALUE]
+conn_str          = option_info['d'][VALUE]
+username          = option_info['u'][VALUE]
+password          = option_info['p'][VALUE]
+office            = option_info['f'][VALUE]
+output_dir        = option_info['o'][VALUE]
 external_docs_dir = option_info['e'][VALUE]
+key_file          = option_info['k'][VALUE]
 
-if not os.path.exists(output_dir) : os.makedirs(output_dir)
+if not os.path.exists(key_file) :
+   with open(key_file, 'w') as f : f.write(time.ctime())
+
+if not os.path.exists(output_dir) :
+   os.makedirs(output_dir)
 #---------------------#
 # connect to database #
 #---------------------#
 db_url     = 'jdbc:oracle:thin:@%s' % conn_str
 stmt   = None
 rs     = None
-driver = java.sql.DriverManager.registerDriver(oracle.jdbc.driver.OracleDriver());
-conn   = java.sql.DriverManager.getConnection(db_url, username, password);
+conn = DBAPI.open(conn_str, username, password, office).getConnection()
 conn.setAutoCommit(False)
+#-----------------------------#
+# verify necessary privileges #
+#-----------------------------#
+can_select = {
+	"dba_synonyms"    : False,
+	"dba_objects"     : False,
+	"all_tab_columns" : False,
+	"cwms_20.at_clob" : False,
+}
+
+for tablename in can_select.keys() :
+	try :
+	   stmt = conn.prepareStatement("select count(*) from %s" % tablename)
+	   rs = stmt.executeQuery()
+	   rs.close()
+	   can_select[tablename] = True
+	except :
+	   pass
+
+for tablename in can_select.keys() :
+	if not can_select[tablename] :
+		sys.stderr.write("\nUser %s doesn't have select privilege on table %s" % (username.upper(), tablename.upper()))
+if not all(can_select.values()) :
+   sys.stderr.write("\nPlease either grant privilege(s) to user %s or use another user with privilege(s)\n" % username.upper())
+   exit()
+
 try :
    if use_synonyms :
       #-------------------------#
@@ -1443,8 +1499,9 @@ try :
    raw_type_names = {}
    stmt = conn.prepareStatement('''
       select type_name
-        from user_types
-       where type_name not like 'SYS\_%' escape '\\' '''.strip())
+        from all_types
+       where type_name not like 'SYS\_%' escape '\\'
+         and owner = 'CWMS_20' '''.strip())
    rs = stmt.executeQuery()
    while rs.next() :
       type_name = rs.getString(1)
@@ -1462,8 +1519,9 @@ try :
    raw_view_names = {}
    stmt = conn.prepareStatement('''
       select view_name
-        from user_views
-       where view_name not like 'AQ%' '''.strip())
+        from all_views
+       where view_name not like 'AQ%'
+         and owner = 'CWMS_20' '''.strip())
    rs = stmt.executeQuery()
    while rs.next() :
       viewName = rs.getString(1)
@@ -1474,8 +1532,9 @@ try :
    stmt.close()
    stmt = conn.prepareStatement('''
       select table_name
-        from user_snapshots
-       where table_name not like '%_SEC_%' '''.strip())
+        from all_snapshots
+       where table_name not like '%_SEC_%'
+         and owner = 'CWMS_20' '''.strip())
    rs = stmt.executeQuery()
    while rs.next() :
       view_name = rs.getString(1)
@@ -1491,9 +1550,10 @@ try :
    package_names = []
    stmt = conn.prepareStatement('''
       select object_name
-        from user_objects
+        from all_objects
        where object_type = 'PACKAGE'
-         and object_name not like '%_SEC_%' '''.strip())
+         and object_name not like '%_SEC_%'
+         and owner = 'CWMS_20' '''.strip())
    rs = stmt.executeQuery()
    while rs.next() :
       package_names.append(rs.getString(1))
@@ -1505,9 +1565,10 @@ try :
    #----------------------#
    stmt = conn.prepareStatement('''
       select text
-        from user_source
+        from all_source
        where name = :1
          and type = 'PACKAGE'
+         and owner = 'CWMS_20'
     order by line'''.strip())
    jdoc_pkg_pattern     = get_pattern(re_jdoc_pkg, 'imd')
    jdoc_type_pattern    = get_pattern(re_pkg_jdoc_type, 'imd')
@@ -1813,7 +1874,7 @@ try :
                HtmlElem('', [
                   HtmlElem('br'),
                   HtmlElem('span', attrs=[('class', 'param-name')], content=[
-                     HtmlElem('a', attrs=[('name', anchor)], content=format(const_name))]),                                                    
+                     HtmlElem('a', attrs=[('name', anchor)], content=format(const_name))]),
                   const_elem,
                   HtmlElem('span', attrs=[('class', 'keyword')], content=' := '),
                   HtmlElem('span', attrs=[('class', 'param-value')], content=mark_parentheses(format(const_val, False))),
@@ -1833,7 +1894,7 @@ try :
             HtmlElem('table', attrs=[('class', 'summary')], content=[
                HtmlElem('tr', [HtmlElem('th', attrs=[('colspan', '2')], content='Variables Details')])])])
          for var_name, var_type, var_size, var_val, jdoc_text in vars :
-            anchor = var_name                                                                        
+            anchor = var_name
             jdoc = JDoc(jdoc_text);
             if var_size :
                var_elem = HtmlElem('', [
@@ -1900,9 +1961,10 @@ try :
    #-------------------#
    stmt = conn.prepareStatement('''
       select text
-        from user_source
+        from all_source
        where name = :1
          and type = 'TYPE'
+         and owner = 'CWMS_20'
     order by line'''.strip())
    jdoc_type_pattern = get_pattern(re_jdoc_type, 'imd')
    jdoc_comment2_pattern = get_pattern(re_jdoc_comment2, 'imd')
@@ -2221,13 +2283,15 @@ try :
                         ||c.data_scale
                         ||')')),
                     c.data_type) data_type
-        from cols c,
-             obj o
-       where c.table_name = o.object_name
-        and o.object_type = :1
-        and c.table_name = :2
+        from all_tab_columns c,
+             dba_objects o
+       where c.owner = 'CWMS_20'
+         and o.owner = c.owner
+         and c.table_name = o.object_name
+         and o.object_type = :1
+         and c.table_name = :2
    order by c.column_id'''.strip())
-   clob_stmt = conn.prepareStatement('select value from at_clob where office_code = 53 and id = :1')
+   clob_stmt = conn.prepareStatement('select value from cwms_20.at_clob where office_code = 53 and id = :1')
    for view_name, is_materialized in sorted(fmt_view_names.keys()) :
       #----------------------------------------#
       # get the javadoc from the AT_CLOB table #
@@ -2424,6 +2488,8 @@ try :
       output('Copying %s to %s' % (external_file, output_dir), True, True)
       try    : shutil.copy(external_file, output_dir)
       except : pass
+
+   if os.path.exists(key_file) : os.remove(key_file)
 finally :
    if traceback.extract_stack() : traceback.format_exc()
    for resource in (rs, stmt, conn) :
