@@ -40,7 +40,7 @@ create type SHEF_SPEC_TYPE
  */
 AS
    OBJECT (
-      cwms_ts_id VARCHAR2 (132),
+      cwms_ts_id VARCHAR2 (191),
       shef_location_id VARCHAR2 (8),
       shef_pe_code VARCHAR2 (2),
       shef_tse_code VARCHAR2 (3),
