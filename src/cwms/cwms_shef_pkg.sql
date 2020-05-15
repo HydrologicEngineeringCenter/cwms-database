@@ -280,7 +280,7 @@ AS
    RECORD
    (
       ts_code               NUMBER,
-      cwms_ts_id            VARCHAR2 (183  BYTE),
+      cwms_ts_id            VARCHAR2 (191  BYTE),
       db_office_id          VARCHAR2 (16   BYTE),
       data_stream_id        VARCHAR2 (16   BYTE),
       stream_db_office_id   VARCHAR2 (16   BYTE),
