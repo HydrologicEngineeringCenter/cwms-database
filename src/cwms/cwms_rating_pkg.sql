@@ -46,7 +46,7 @@ separator2 constant varchar2(1) := ';';
 separator3 constant varchar2(1) := ',';
 -- not documented
 function get_rating_method_code(
-   p_rating_method_id in varchar2) 
+   p_rating_method_id in varchar2)
    return number result_cache;
 /**
  * Stores rating templates to the database.
@@ -188,7 +188,7 @@ procedure store_templates(
 procedure cat_template_ids(
    p_cat_cursor       out sys_refcursor,
    p_template_id_mask in  varchar2 default '*',
-   p_office_id_mask   in  varchar2 default null);      
+   p_office_id_mask   in  varchar2 default null);
 /**
  * Catalogs stored rating templates that match specified parameters.  Matching is
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
@@ -257,7 +257,7 @@ procedure cat_template_ids(
 function cat_template_ids_f(
    p_template_id_mask in varchar2 default '*',
    p_office_id_mask   in varchar2 default null)
-   return sys_refcursor;      
+   return sys_refcursor;
 /**
  * Retrieve rating templates matching input parameters. Matching is
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
@@ -295,7 +295,7 @@ function cat_template_ids_f(
 procedure retrieve_templates_obj(
    p_templates        out rating_template_tab_t,
    p_template_id_mask in  varchar2 default '*',
-   p_office_id_mask   in  varchar2 default null);      
+   p_office_id_mask   in  varchar2 default null);
 /**
  * Retrieve rating templates matching input parameters. Matching is
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
@@ -333,7 +333,7 @@ procedure retrieve_templates_obj(
 function retrieve_templates_obj_f(
    p_template_id_mask in varchar2 default '*',
    p_office_id_mask   in varchar2 default null)
-   return rating_template_tab_t;      
+   return rating_template_tab_t;
 /**
  * Retrieve rating templates matching input parameters. Matching is
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
@@ -370,7 +370,7 @@ function retrieve_templates_obj_f(
 procedure retrieve_templates_xml(
    p_templates        out clob,
    p_template_id_mask in  varchar2 default '*',
-   p_office_id_mask   in  varchar2 default null);      
+   p_office_id_mask   in  varchar2 default null);
 /**
  * Retrieve rating templates matching input parameters. Matching is
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
@@ -465,7 +465,7 @@ function retrieve_templates_xml_f(
  */
 procedure delete_templates(
    p_template_id_mask in varchar2 default '*',
-   p_delete_action    in varchar2 default cwms_util.delete_key,      
+   p_delete_action    in varchar2 default cwms_util.delete_key,
    p_office_id_mask   in varchar2 default null);
 /**
  * Retrieves the "opening" parameter for the specified gate rating template. Gate ratings
@@ -746,7 +746,7 @@ procedure cat_spec_ids(
 function cat_spec_ids_f(
    p_spec_id_mask   in  varchar2 default '*',
    p_office_id_mask in  varchar2 default null)
-   return sys_refcursor;      
+   return sys_refcursor;
 /**
  * Retrieves rating specifications that match specified parameters.  Matching is
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
@@ -782,7 +782,7 @@ function cat_spec_ids_f(
 procedure retrieve_specs_obj(
    p_specs          out rating_spec_tab_t,
    p_spec_id_mask   in  varchar2 default '*',
-   p_office_id_mask in  varchar2 default null);      
+   p_office_id_mask in  varchar2 default null);
 /**
  * Retrieves rating specifications that match specified parameters.  Matching is
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
@@ -818,7 +818,7 @@ procedure retrieve_specs_obj(
 function retrieve_specs_obj_f(
    p_spec_id_mask   in varchar2 default '*',
    p_office_id_mask in varchar2 default null)
-   return rating_spec_tab_t;      
+   return rating_spec_tab_t;
 /**
  * Retrieves rating specifications that match specified parameters.  Matching is
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
@@ -854,7 +854,7 @@ function retrieve_specs_obj_f(
 procedure retrieve_specs_xml(
    p_specs          out clob,
    p_spec_id_mask   in  varchar2 default '*',
-   p_office_id_mask in  varchar2 default null);      
+   p_office_id_mask in  varchar2 default null);
 /**
  * Retrieves rating specifications that match specified parameters.  Matching is
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
@@ -891,12 +891,12 @@ function retrieve_specs_xml_f(
    p_spec_id_mask   in varchar2 default '*',
    p_office_id_mask in varchar2 default null)
    return clob;
-   
+
 --------------------------------------------------------------------------------
 -- DELETE_SPECS
 --
 -- p_spec_id_mask
---    wildcard pattern to match for rating specification id 
+--    wildcard pattern to match for rating specification id
 --       use '*' and '?' instead of '%' and '_'
 --       null input defaults to '*'
 --
@@ -910,7 +910,7 @@ function retrieve_specs_xml_f(
 --       deletes the specs and the ratings that reference them
 --
 -- p_office_id_mask
---    wildcard pattern to match for rating spec id 
+--    wildcard pattern to match for rating spec id
 --       use '*' and '?' instead of '%' and '_'
 --       null input defaults to current user's office id
 --
@@ -971,7 +971,7 @@ function retrieve_specs_xml_f(
  */
 procedure delete_specs(
    p_spec_id_mask   in varchar2 default '*',
-   p_delete_action  in varchar2 default cwms_util.delete_key,      
+   p_delete_action  in varchar2 default cwms_util.delete_key,
    p_office_id_mask in varchar2 default null);
 /**
  * Retrieves the rating template portion of a rating specification
@@ -982,7 +982,7 @@ procedure delete_specs(
  */
 function get_template(
    p_spec_id in varchar2)
-   return varchar2;   
+   return varchar2;
 /**
  * Stores ratings to the database.
  *
@@ -1014,7 +1014,7 @@ function get_template(
  *     <td class="descr">If this rating differs from the existing one only by the existence of a new shift, only the new shift is stored</td>
  *   </tr>
  * </table>
- *  
+ *
  * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the ratings
  * already exists
  */
@@ -1053,7 +1053,7 @@ procedure store_ratings(
  *     <td class="descr">If this rating differs from the existing one only by the existence of a new shift, only the new shift is stored</td>
  *   </tr>
  * </table>
- *  
+ *
  * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the ratings
  * already exists
  */
@@ -1092,7 +1092,7 @@ procedure store_ratings(
  *     <td class="descr">If this rating differs from the existing one only by the existence of a new shift, only the new shift is stored</td>
  *   </tr>
  * </table>
- *  
+ *
  * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the ratings
  * already exists
  */
@@ -1130,14 +1130,14 @@ procedure store_ratings(
  *     <td class="descr">If this rating differs from the existing one only by the existence of a new shift, only the new shift is stored</td>
  *   </tr>
  * </table>
- *  
+ *
  * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the ratings
  * already exists
  */
 procedure store_ratings(
    p_ratings        in rating_tab_t,
    p_fail_if_exists in varchar2,
-   p_replace_base   in varchar2 default 'F');   
+   p_replace_base   in varchar2 default 'F');
 /**
  * Catalogs stored ratings that match specified parameters.  Matching is
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
@@ -2280,7 +2280,7 @@ procedure retrieve_eff_ratings_xml(
  *
  * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
  * wildcard characters as shown above instead of sql-style wildcard characters for pattern
- * matching. If the first character is '-' (hyphen), no rating values will be included in the output, 
+ * matching. If the first character is '-' (hyphen), no rating values will be included in the output,
  * and the remaining characters are interpreted as the specification pattern to match.
  *
  * @param p_effective_date_start The start time of the effective date time window. If specified
@@ -2333,7 +2333,7 @@ procedure retrieve_ratings_xml2(
  *
  * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
  * wildcard characters as shown above instead of sql-style wildcard characters for pattern
- * matching. If the first character is '-' (hyphen), no rating values will be included in the output, 
+ * matching. If the first character is '-' (hyphen), no rating values will be included in the output,
  * and the remaining characters are interpreted as the specification pattern to match.
  *
  * @param p_start_date The start time of the time window that the returned ratings will be effective in. If specified
@@ -2386,7 +2386,7 @@ procedure retrieve_eff_ratings_xml2(
  *
  * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
  * wildcard characters as shown above instead of sql-style wildcard characters for pattern
- * matching. If the first character is '-' (hyphen), no rating values will be included in the output, 
+ * matching. If the first character is '-' (hyphen), no rating values will be included in the output,
  * and the remaining characters are interpreted as the specification pattern to match.
  *
  * @param p_effective_date_start The start time of the effective date time window. If specified
@@ -2439,7 +2439,7 @@ procedure retrieve_ratings_xml3(
  *
  * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
  * wildcard characters as shown above instead of sql-style wildcard characters for pattern
- * matching. If the first character is '-' (hyphen), no rating values will be included in the output, 
+ * matching. If the first character is '-' (hyphen), no rating values will be included in the output,
  * and the remaining characters are interpreted as the specification pattern to match.
  *
  * @param p_start_date The start time of the time window that the returned ratings will be effective in. If specified
@@ -2780,8 +2780,8 @@ function retrieve_eff_ratings_xml3_f(
    p_time_zone            in  varchar2 default null,
    p_office_id_mask       in  varchar2 default null)
    return clob;
-   
--- not documented   
+
+-- not documented
 function retrieve_ratings_xml_data(
    p_effective_tw         in varchar2,
    p_spec_id_mask         in varchar2 default '*',
@@ -2790,12 +2790,12 @@ function retrieve_ratings_xml_data(
    p_time_zone            in varchar2 default null,
    p_retrieve_templates   in boolean  default true,
    p_retrieve_specs       in boolean  default true,
-   p_retrieve_ratings     in boolean  default true, 
+   p_retrieve_ratings     in boolean  default true,
    p_recurse              in boolean  default true,
-   p_include_points       in varchar2 default 'T', 
+   p_include_points       in varchar2 default 'T',
    p_office_id_mask       in varchar2 default null)
    return clob;
-   
+
 /**
  * Deletes ratings that match specified parameters from the database.  Matching is
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
@@ -2872,14 +2872,14 @@ procedure delete_ratings(
  *     <td class="descr">If this rating differs from the existing one only by the existence of a new shift, only the new shift is stored</td>
  *   </tr>
  * </table>
- *  
+ *
  * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the templates,
  * specifications, or ratings already exists
  */
 procedure store_ratings_xml(
    p_xml            in xmltype,
    p_fail_if_exists in varchar2,
-   p_replace_base   in varchar2 default 'F');  
+   p_replace_base   in varchar2 default 'F');
 /**
  * Stores rating templates, rating specifications, and ratings to the database from a single XML instance.
  *
@@ -2907,14 +2907,14 @@ procedure store_ratings_xml(
  *     <td class="descr">If this rating differs from the existing one only by the existence of a new shift, only the new shift is stored</td>
  *   </tr>
  * </table>
- *  
+ *
  * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the templates,
  * specifications, or ratings already exists
  */
 procedure store_ratings_xml(
    p_xml            in varchar2,
    p_fail_if_exists in varchar2,
-   p_replace_base   in varchar2 default 'F');  
+   p_replace_base   in varchar2 default 'F');
 /**
  * Stores rating templates, rating specifications, and ratings to the database from a single XML instance.
  *
@@ -2942,18 +2942,18 @@ procedure store_ratings_xml(
  *     <td class="descr">If this rating differs from the existing one only by the existence of a new shift, only the new shift is stored</td>
  *   </tr>
  * </table>
- *  
+ *
  * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the templates,
  * specifications, or ratings already exists
  */
 procedure store_ratings_xml(
    p_xml            in clob,
    p_fail_if_exists in varchar2,
-   p_replace_base   in varchar2 default 'F');  
+   p_replace_base   in varchar2 default 'F');
 /**
  * Stores rating templates, rating specifications, and ratings to the database from a single XML instance.
  *
- * @param p_errors The list of errors encountered in storing the templates, specifications, or ratings. Sets of are separated by a 
+ * @param p_errors The list of errors encountered in storing the templates, specifications, or ratings. Sets of are separated by a
  * blank line. Each error set includes:
  * <ul>
  * <li> A line describing the operation</li>
@@ -2989,7 +2989,7 @@ procedure store_ratings_xml(
  *     <td class="descr">If this rating differs from the existing one only by the existence of a new shift, only the new shift is stored</td>
  *   </tr>
  * </table>
- *  
+ *
  * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the templates,
  * specifications, or ratings already exists
  */
@@ -2997,11 +2997,11 @@ procedure store_ratings_xml(
    p_errors         out nocopy clob,
    p_xml            in  xmltype,
    p_fail_if_exists in  varchar2,
-   p_replace_base   in  varchar2 default 'F');  
+   p_replace_base   in  varchar2 default 'F');
 /**
  * Stores rating templates, rating specifications, and ratings to the database from a single XML instance.
  *
- * @param p_errors The list of errors encountered in storing the templates, specifications, or ratings. Sets of are separated by a 
+ * @param p_errors The list of errors encountered in storing the templates, specifications, or ratings. Sets of are separated by a
  * blank line. Each error set includes:
  * <ul>
  * <li> A line describing the operation</li>
@@ -3037,7 +3037,7 @@ procedure store_ratings_xml(
  *     <td class="descr">If this rating differs from the existing one only by the existence of a new shift, only the new shift is stored</td>
  *   </tr>
  * </table>
- *  
+ *
  * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the templates,
  * specifications, or ratings already exists
  */
@@ -3045,11 +3045,11 @@ procedure store_ratings_xml(
    p_errors         out nocopy clob,
    p_xml            in  varchar2,
    p_fail_if_exists in  varchar2,
-   p_replace_base   in  varchar2 default 'F');  
+   p_replace_base   in  varchar2 default 'F');
 /**
  * Stores rating templates, rating specifications, and ratings to the database from a single XML instance.
  *
- * @param p_errors The list of errors encountered in storing the templates, specifications, or ratings. Sets of are separated by a 
+ * @param p_errors The list of errors encountered in storing the templates, specifications, or ratings. Sets of are separated by a
  * blank line. Each error set includes:
  * <ul>
  * <li> A line describing the operation</li>
@@ -3085,7 +3085,7 @@ procedure store_ratings_xml(
  *     <td class="descr">If this rating differs from the existing one only by the existence of a new shift, only the new shift is stored</td>
  *   </tr>
  * </table>
- *  
+ *
  * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the templates,
  * specifications, or ratings already exists
  */
@@ -3093,7 +3093,7 @@ procedure store_ratings_xml(
    p_errors         out nocopy clob,
    p_xml            in  clob,
    p_fail_if_exists in  varchar2,
-   p_replace_base   in  varchar2 default 'F');  
+   p_replace_base   in  varchar2 default 'F');
 /**
  * Rates input values with ratings stored in the database.
  *
@@ -3116,7 +3116,7 @@ procedure rate(
    p_value_times in  date_table_type default null,
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
-   p_office_id   in  varchar2 default null);   
+   p_office_id   in  varchar2 default null);
 /**
  * Rates input values with ratings stored in the database. Restricted to ratings with a single independent parameter
  *
@@ -3139,7 +3139,7 @@ procedure rate(
    p_value_times in  date_table_type default null,
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
-   p_office_id   in  varchar2 default null);   
+   p_office_id   in  varchar2 default null);
 /**
  * Rates a single input value with a rating stored in the database. Restricted to ratings with a single independent parameter
  *
@@ -3162,7 +3162,7 @@ procedure rate(
    p_value_time  in  date default null,
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
-   p_office_id   in  varchar2 default null);   
+   p_office_id   in  varchar2 default null);
 /**
  * Rates a single input value with a rating stored in the database.
  *
@@ -3185,7 +3185,7 @@ procedure rate_one(
    p_value_time  in  date default null,
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
-   p_office_id   in  varchar2 default null);   
+   p_office_id   in  varchar2 default null);
 /**
  * Rates a time series with a rating stored in the database. Restricted to ratings with a single independent parameter
  *
@@ -3206,7 +3206,7 @@ procedure rate(
    p_round       in  varchar2 default 'F',
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
-   p_office_id   in  varchar2 default null);   
+   p_office_id   in  varchar2 default null);
 /**
  * Rates a time series with a rating stored in the database. Restricted to ratings with a single independent parameter
  *
@@ -3227,7 +3227,7 @@ procedure rate(
    p_round       in  varchar2 default 'F',
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
-   p_office_id   in  varchar2 default null);   
+   p_office_id   in  varchar2 default null);
 /**
  * Rates a single time series value with a rating stored in the database. Restricted to ratings with a single independent parameter
  *
@@ -3248,7 +3248,7 @@ procedure rate(
    p_round       in  varchar2 default 'F',
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
-   p_office_id   in  varchar2 default null);   
+   p_office_id   in  varchar2 default null);
 /**
  * Rates a single time series value with a rating stored in the database. Restricted to ratings with a single independent parameter
  *
@@ -3293,7 +3293,7 @@ function rate_f(
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
-   return double_tab_t;   
+   return double_tab_t;
 /**
  * Rates input values with ratings stored in the database. Restricted to ratings with a single independent parameter
  *
@@ -3317,7 +3317,7 @@ function rate_f(
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
-   return double_tab_t;   
+   return double_tab_t;
 /**
  * Rates a single input value with a rating stored in the database. Restricted to ratings with a single independent parameter
  *
@@ -3341,7 +3341,7 @@ function rate_f(
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
-   return binary_double;   
+   return binary_double;
 /**
  * Rates a single input value with a rating stored in the database.
  *
@@ -3365,7 +3365,7 @@ function rate_one_f(
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
-   return binary_double;   
+   return binary_double;
 /**
  * Rates a time series with a rating stored in the database. Restricted to ratings with a single independent parameter
  *
@@ -3387,7 +3387,7 @@ function rate_f(
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
-   return tsv_array;   
+   return tsv_array;
 /**
  * Rates a time series with a rating stored in the database. Restricted to ratings with a single independent parameter
  *
@@ -3409,7 +3409,7 @@ function rate_f(
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
-   return ztsv_array;   
+   return ztsv_array;
 /**
  * Rates a single time series value with a rating stored in the database. Restricted to ratings with a single independent parameter
  *
@@ -3431,7 +3431,7 @@ function rate_f(
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
-   return tsv_type;   
+   return tsv_type;
 /**
  * Rates a single time series value with a rating stored in the database. Restricted to ratings with a single independent parameter
  *
@@ -3453,7 +3453,7 @@ function rate_f(
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
-   return ztsv_type;   
+   return ztsv_type;
 /**
  * Reverse rates input values with ratings stored in the database. Restricted to ratings with a single independent parameter
  *
@@ -3476,7 +3476,7 @@ procedure reverse_rate(
    p_value_times in  date_table_type default null,
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
-   p_office_id   in  varchar2 default null);   
+   p_office_id   in  varchar2 default null);
 /**
  * Reverse rates an input value with ratings stored in the database. Restricted to ratings with a single independent parameter
  *
@@ -3499,7 +3499,7 @@ procedure reverse_rate(
    p_value_time  in  date default null,
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
-   p_office_id   in  varchar2 default null);   
+   p_office_id   in  varchar2 default null);
 /**
  * Reverse rates a time series with ratings stored in the database. Restricted to ratings with a single independent parameter
  *
@@ -3520,7 +3520,7 @@ procedure reverse_rate(
    p_round       in  varchar2 default 'F',
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
-   p_office_id   in  varchar2 default null);   
+   p_office_id   in  varchar2 default null);
 /**
  * Reverse rates a time series with ratings stored in the database. Restricted to ratings with a single independent parameter
  *
@@ -3541,7 +3541,7 @@ procedure reverse_rate(
    p_round       in  varchar2 default 'F',
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
-   p_office_id   in  varchar2 default null);   
+   p_office_id   in  varchar2 default null);
 /**
  * Reverse rates a single time series value with ratings stored in the database. Restricted to ratings with a single independent parameter
  *
@@ -3562,7 +3562,7 @@ procedure reverse_rate(
    p_round       in  varchar2 default 'F',
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
-   p_office_id   in  varchar2 default null);   
+   p_office_id   in  varchar2 default null);
 /**
  * Reverse rates a single time series value with ratings stored in the database. Restricted to ratings with a single independent parameter
  *
@@ -3583,7 +3583,7 @@ procedure reverse_rate(
    p_round       in  varchar2 default 'F',
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
-   p_office_id   in  varchar2 default null);   
+   p_office_id   in  varchar2 default null);
 /**
  * Reverse rates input values with ratings stored in the database. Restricted to ratings with a single independent parameter
  *
@@ -3607,7 +3607,7 @@ function reverse_rate_f(
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
-   return double_tab_t;   
+   return double_tab_t;
 /**
  * Reverse rates an input value with ratings stored in the database. Restricted to ratings with a single independent parameter
  *
@@ -3631,7 +3631,7 @@ function reverse_rate_f(
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
-   return binary_double;   
+   return binary_double;
 /**
  * Reverse rates a time series with ratings stored in the database. Restricted to ratings with a single independent parameter
  *
@@ -3653,7 +3653,7 @@ function reverse_rate_f(
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
-   return tsv_array;   
+   return tsv_array;
 /**
  * Reverse rates a time series with ratings stored in the database. Restricted to ratings with a single independent parameter
  *
@@ -3675,7 +3675,7 @@ function reverse_rate_f(
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
-   return ztsv_array;   
+   return ztsv_array;
 /**
  * Reverse rates a single time series value with ratings stored in the database. Restricted to ratings with a single independent parameter
  *
@@ -3697,7 +3697,7 @@ function reverse_rate_f(
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
-   return tsv_type;   
+   return tsv_type;
 /**
  * Reverse rates a single time series value with ratings stored in the database. Restricted to ratings with a single independent parameter
  *
@@ -3719,7 +3719,7 @@ function reverse_rate_f(
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
-   return ztsv_type;   
+   return ztsv_type;
 /**
  * Rates one or more input time series stored in the database with ratings stored in
  * the database to generate a rated time series, which is returned
@@ -3994,7 +3994,7 @@ procedure reverse_rate(
 procedure round_independent(
    p_independent in out nocopy double_tab_tab_t,
    p_rating_id   in            varchar2,
-   p_office_id   in            varchar2 default null);   
+   p_office_id   in            varchar2 default null);
 /**
  * Rounds independent values according e to the rounding specifications contained in
  * the rating specification. Restricted to ratings with a single independent parameter
@@ -4006,7 +4006,7 @@ procedure round_independent(
 procedure round_independent(
    p_independent in out nocopy double_tab_t,
    p_rating_id   in            varchar2,
-   p_office_id   in            varchar2 default null);   
+   p_office_id   in            varchar2 default null);
 /**
  * Rounds independent time series values according e to the rounding specifications contained in
  * the rating specification. Restricted to ratings with a single independent parameter
@@ -4018,7 +4018,7 @@ procedure round_independent(
 procedure round_independent(
    p_independent in out nocopy tsv_array,
    p_rating_id   in            varchar2,
-   p_office_id   in            varchar2 default null);   
+   p_office_id   in            varchar2 default null);
 /**
  * Rounds independent time series values according e to the rounding specifications contained in
  * the rating specification. Restricted to ratings with a single independent parameter
@@ -4030,7 +4030,7 @@ procedure round_independent(
 procedure round_independent(
    p_independent in out nocopy ztsv_array,
    p_rating_id   in            varchar2,
-   p_office_id   in            varchar2 default null);   
+   p_office_id   in            varchar2 default null);
 /**
  * Rounds a single independent value set according e to the rounding specifications contained in
  * the rating specification. Restricted to ratings with a single independent parameter
@@ -4054,7 +4054,7 @@ procedure round_one_independent(
 procedure round_independent(
    p_independent in out nocopy binary_double,
    p_rating_id   in            varchar2,
-   p_office_id   in            varchar2 default null);   
+   p_office_id   in            varchar2 default null);
 /**
  * Rounds a single independent time series value according e to the rounding specifications contained in
  * the rating specification. Restricted to ratings with a single independent parameter
@@ -4066,7 +4066,7 @@ procedure round_independent(
 procedure round_independent(
    p_independent in out nocopy tsv_type,
    p_rating_id   in            varchar2,
-   p_office_id   in            varchar2 default null);   
+   p_office_id   in            varchar2 default null);
 /**
  * Rounds a single independent time series value according e to the rounding specifications contained in
  * the rating specification. Restricted to ratings with a single independent parameter
@@ -4078,7 +4078,7 @@ procedure round_independent(
 procedure round_independent(
    p_independent in out nocopy ztsv_type,
    p_rating_id   in            varchar2,
-   p_office_id   in            varchar2 default null);   
+   p_office_id   in            varchar2 default null);
 /**
  * Gets the min and max of each independent and dependent parameter for the specified rating
  *
@@ -4139,7 +4139,7 @@ function get_min_opening(
    p_rating_time in  date     default null,
    p_time_zone   in  varchar2 default 'UTC',
    p_office_id   in  varchar2 default null)
-   return binary_double;   
+   return binary_double;
 /**
  * Retrieves the minimum value of the "opening" parmeter for the specified gate rating.
  * Gate ratings have multiple independent parameters (pool elevation, gate opening, and possibly
@@ -4162,44 +4162,44 @@ function get_min_opening2(
    p_rating_time in  date     default null,
    p_time_zone   in  varchar2 default 'UTC',
    p_office_id   in  varchar2 default null)
-   return double_tab_t;   
+   return double_tab_t;
 /**
  * Retrieves the database units string for a rating specification, rating template, or parameters identifier
  *
- * @param p_id The rating specification, rating template, or parameters identifier to get the database units for 
+ * @param p_id The rating specification, rating template, or parameters identifier to get the database units for
  *
- * @return the database units string for the specified identifier 
- */                         
+ * @return the database units string for the specified identifier
+ */
 function get_database_units(
    p_id in varchar2)
    return varchar2;
 /**
  * Retrieves the number of independent parameters for a rating specification, rating template, or parameters identifier
  *
- * @param p_id The rating specification, rating template, or parameters identifier to get the number of independent parameters for 
+ * @param p_id The rating specification, rating template, or parameters identifier to get the number of independent parameters for
  *
- * @return the number of independent parameters for the specified identifier 
- */                         
+ * @return the number of independent parameters for the specified identifier
+ */
 function get_ind_parameter_count(
    p_id in varchar2)
    return integer;
 /**
  * Retrieves the independent parameters for a rating specification, rating template, or parameters identifier
  *
- * @param p_id The rating specification, rating template, or parameters identifier to get the independent parameters for 
+ * @param p_id The rating specification, rating template, or parameters identifier to get the independent parameters for
  *
- * @return the independent parameters for the specified identifier 
- */                         
+ * @return the independent parameters for the specified identifier
+ */
 function get_ind_parameters(
    p_id in varchar2)
    return varchar2;
 /**
  * Retrieves the independent parameter at a specified position for a rating specification, rating template, or parameters identifier
  *
- * @param p_id The rating specification, rating template, or parameters identifier to get the independent parameter for 
+ * @param p_id The rating specification, rating template, or parameters identifier to get the independent parameter for
  *
- * @return the independent parameter at the specified position for the identifier 
- */                         
+ * @return the independent parameter at the specified position for the identifier
+ */
 function get_ind_parameter(
    p_id       in varchar2,
    p_position in integer)
@@ -4207,10 +4207,10 @@ function get_ind_parameter(
 /**
  * Retrieves the dependent parameter for a rating specification, rating template, or parameters identifier
  *
- * @param p_id The rating specification, rating template, or parameters identifier to get the dependent parameter for 
+ * @param p_id The rating specification, rating template, or parameters identifier to get the dependent parameter for
  *
- * @return the dependent parameter for the specified identifier 
- */                         
+ * @return the dependent parameter for the specified identifier
+ */
 function get_dep_parameter(
    p_id in varchar2)
    return varchar2;
@@ -4219,11 +4219,82 @@ function get_dep_parameter(
  *
  * @param p_rating_template_id The rating template to analyze for elevation positions
  *
- * @return A table of positions in the template parameters that are elevation parameters. Null if no parameters are elevation parameters. A positive position indicates the independent parameter in that position is an elevation.  -1 indicates the dependent parameter is an elevation. 
+ * @return A table of positions in the template parameters that are elevation parameters. Null if no parameters are elevation parameters. A positive position indicates the independent parameter in that position is an elevation.  -1 indicates the dependent parameter is an elevation.
  */
 function get_elevation_positions(
    p_rating_template_id in varchar2)
    return number_tab_t;
+
+procedure get_spec_flags(
+   p_active_flag           out varchar,
+   p_auto_update_flag      out varchar,
+   p_auto_activate_flag    out varchar,
+   p_auto_migrate_ext_flag out varchar,
+   p_rating_spec           in  varchar,
+   p_office_id             in  varchar2 default null);
+
+function is_spec_active(
+   p_rating_spec in varchar,
+   p_office_id   in varchar2 default null)
+   return varchar2;
+
+function is_auto_update(
+   p_rating_spec in varchar,
+   p_office_id   in varchar2 default null)
+   return varchar2;
+
+function is_auto_activate(
+   p_rating_spec in varchar,
+   p_office_id   in varchar2 default null)
+   return varchar2;
+
+function is_auto_migrate_ext(
+   p_rating_spec in varchar,
+   p_office_id   in varchar2 default null)
+   return varchar2;
+
+procedure set_spec_flags(
+   p_rating_spec           in varchar,
+   p_active_flag           in varchar,
+   p_auto_update_flag      in varchar,
+   p_auto_activate_flag    in varchar,
+   p_auto_migrate_ext_flag in varchar,
+   p_office_id             in varchar2 default null);
+
+procedure set_spec_active(
+   p_rating_spec in varchar,
+   p_flag        in varchar,
+   p_office_id   in varchar2 default null);
+
+procedure set_auto_update(
+   p_rating_spec in varchar,
+   p_flag        in varchar,
+   p_office_id   in varchar2 default null);
+
+procedure set_auto_activate(
+   p_rating_spec in varchar,
+   p_flag        in varchar,
+   p_office_id   in varchar2 default null);
+
+procedure set_auto_migrate_ext(
+   p_rating_spec in varchar,
+   p_flag        in varchar,
+   p_office_id   in varchar2 default null);
+
+function is_rating_active(
+   p_rating_spec    in varchar2,
+   p_effective_date in date,
+   p_time_zone      in varchar2,
+   p_office_id      in varchar2 default null)
+   return varchar2;
+
+procedure set_rating_active(
+   p_rating_spec    in varchar2,
+   p_effective_date in date,
+   p_time_zone      in varchar2,
+   p_active_flag    in varchar2,
+   p_office_id      in varchar2 default null);
+
 /**
  * Retreives ratings in a number of formats for a combination time window, timezone, formats, and vertical datums
  *
@@ -4240,37 +4311,37 @@ function get_elevation_positions(
  *                         <li>a combination of 1 and 2 (multiple name positions with one or more positions matching possibly more than one rating)</li></ol>
  *                         If unspecified or NULL, a listing of rating specifications will be returned.
  * @param p_format         The format to retrieve the ratings in. Valid formats are <ul><li>TAB</li><li>CSV</li><li>XML</li><li>JSON</li></ul>
- *                         If the format is unspecified or NULL, the TAB format will be used. 
+ *                         If the format is unspecified or NULL, the TAB format will be used.
  * @param p_units          The units to return the units in.  Valid units are <ul><li>NATIVE</li><li>EN</li><li>SI</li></ul> If the p_names variable (q.v.) has more
- *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_units variable may also have multiple positions separated by the 
- *                         <b>'|',</b> charcter. If the p_units variable has fewer positions than the p_name variable, the last unit position is used for all 
+ *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_units variable may also have multiple positions separated by the
+ *                         <b>'|',</b> charcter. If the p_units variable has fewer positions than the p_name variable, the last unit position is used for all
  *                         remaning names. If the units are unspecified or NULL, the NATIVE units will be used for all ratings.
  * @param p_datums         The vertical datums to return the units in.  Valid datums are <ul><li>NATIVE</li><li>NGVD29</li><li>NAVD88</li></ul> If the p_names variable (q.v.) has more
- *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_datums variable may also have multiple positions separated by the 
- *                         <b>'|',</b> charcter. If the p_datums variable has fewer positions than the p_name variable, the last datum position is used for all 
+ *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_datums variable may also have multiple positions separated by the
+ *                         <b>'|',</b> charcter. If the p_datums variable has fewer positions than the p_name variable, the last datum position is used for all
  *                         remaning names. If the datums are unspecified or NULL, the NATIVE veritcal datum will be used for all ratings.
  * @param p_start          The start of the time window to retrieve ratings for.  No ratings with effective dates earlier this time will be retrieved.
- *                         If unspecified or NULL, no restriction will be used for the start of the time window.       
+ *                         If unspecified or NULL, no restriction will be used for the start of the time window.
  * @param p_end            The end of the time window to retrieve ratings for.  No ratings with effective dates later this time will be retrieved.
  *                         If unspecified or NULL, no restriction will be used for the end of the time window.
  * @param p_timezone       The time zone to retrieve the ratings in. The p_start and p_end parameters - if used - are also interpreted according to this time zone.
- *                         If unspecified or NULL, the UTC time zone is used. 
+ *                         If unspecified or NULL, the UTC time zone is used.
  * @param p_office_id      The office to retrieve ratings for.  If unspecified or NULL, ratings for all offices in the database that match the other criteria will be retrieved.
- */         
+ */
 procedure retrieve_ratings(
    p_results        out clob,
    p_date_time      out date,
    p_query_time     out integer,
-   p_format_time    out integer, 
+   p_format_time    out integer,
    p_template_count out integer,
    p_spec_count     out integer,
-   p_rating_count   out integer,  
-   p_names          in  varchar2 default null,            
+   p_rating_count   out integer,
+   p_names          in  varchar2 default null,
    p_format         in  varchar2 default null,
-   p_units          in  varchar2 default null,   
+   p_units          in  varchar2 default null,
    p_datums         in  varchar2 default null,
    p_start          in  varchar2 default null,
-   p_end            in  varchar2 default null, 
+   p_end            in  varchar2 default null,
    p_timezone       in  varchar2 default null,
    p_office_id      in  varchar2 default null);
 /**
@@ -4282,39 +4353,39 @@ procedure retrieve_ratings(
  *                         <li>a combination of 1 and 2 (multiple name positions with one or more positions matching possibly more than one rating)</li></ol>
  *                         If unspecified or NULL, a listing of rating specifications will be returned.
  * @param p_format         The format to retrieve the ratings in. Valid formats are <ul><li>TAB</li><li>CSV</li><li>XML</li><li>JSON</li></ul>
- *                         If the format is unspecified or NULL, the TAB format will be used. 
+ *                         If the format is unspecified or NULL, the TAB format will be used.
  * @param p_units          The units to return the units in.  Valid units are <ul><li>NATIVE</li><li>EN</li><li>SI</li></ul> If the p_names variable (q.v.) has more
- *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_units variable may also have multiple positions separated by the 
- *                         <b>'|',</b> charcter. If the p_units variable has fewer positions than the p_name variable, the last unit position is used for all 
+ *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_units variable may also have multiple positions separated by the
+ *                         <b>'|',</b> charcter. If the p_units variable has fewer positions than the p_name variable, the last unit position is used for all
  *                         remaning names. If the units are unspecified or NULL, the NATIVE units will be used for all ratings.
  * @param p_datums         The vertical datums to return the units in.  Valid datums are <ul><li>NATIVE</li><li>NGVD29</li><li>NAVD88</li></ul> If the p_names variable (q.v.) has more
- *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_datums variable may also have multiple positions separated by the 
- *                         <b>'|',</b> charcter. If the p_datums variable has fewer positions than the p_name variable, the last datum position is used for all 
+ *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_datums variable may also have multiple positions separated by the
+ *                         <b>'|',</b> charcter. If the p_datums variable has fewer positions than the p_name variable, the last datum position is used for all
  *                         remaning names. If the datums are unspecified or NULL, the NATIVE veritcal datum will be used for all ratings.
  * @param p_start          The start of the time window to retrieve ratings for.  No ratings with effective dates earlier this time will be retrieved.
- *                         If unspecified or NULL, no restriction will be used for the start of the time window.       
+ *                         If unspecified or NULL, no restriction will be used for the start of the time window.
  * @param p_end            The end of the time window to retrieve ratings for.  No ratings with effective dates later this time will be retrieved.
  *                         If unspecified or NULL, no restriction will be used for the end of the time window.
  * @param p_timezone       The time zone to retrieve the ratings in. The p_start and p_end parameters - if used - are also interpreted according to this time zone.
- *                         If unspecified or NULL, the UTC time zone is used. 
+ *                         If unspecified or NULL, the UTC time zone is used.
  * @param p_office_id      The office to retrieve ratings for.  If unspecified or NULL, ratings for all offices in the database that match the other criteria will be retrieved.
- *                         
+ *
  * @return                 The ratings, in the specified time zones, formats, and vertical datums
- */         
-         
+ */
+
 function retrieve_ratings_f(
-   p_names       in  varchar2,            
+   p_names       in  varchar2,
    p_format      in  varchar2,
-   p_units       in  varchar2 default null,   
+   p_units       in  varchar2 default null,
    p_datums      in  varchar2 default null,
    p_start       in  varchar2 default null,
-   p_end         in  varchar2 default null, 
+   p_end         in  varchar2 default null,
    p_timezone    in  varchar2 default null,
    p_office_id   in  varchar2 default null)
    return clob;
-      
+
 end;
-   
-   
-/                                                       
+
+
+/
 show errors;
