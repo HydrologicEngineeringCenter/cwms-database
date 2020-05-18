@@ -114,6 +114,415 @@ auto_new_rating_interval_prop constant varchar2(28) := 'new_rating_retrieve_inte
  * @see get_auto_upd_rating_interval
  */
 auto_upd_rating_interval_prop constant varchar2(28) := 'upd_rating_retrieve_interval';
+
+/**
+ * Default rating template version for BASE ratings retrieved from the USGS if no other value is set via the property
+ *
+ * @since CWMS database schema 18.1.6
+ *
+ * @see constant base_rating_templ_ver_prop
+ * @see set_base_rating_templ_version
+ * @see get_base_rating_templ_version
+ */
+default_base_rating_templ_ver constant varchar2(9) := 'USGS-BASE';
+
+/**
+ * Default rating specification version for BASE ratings retrieved from the USGS if no other value is set via the property
+ *
+ * @since CWMS database schema 18.1.6
+ *
+ * @see constant base_rating_spec_ver_prop
+ * @see set_base_rating_spec_version
+ * @see get_base_rating_spec_version
+ */
+default_base_rating_spec_ver constant varchar2(4)  := 'USGS';
+
+/**
+ * Default rating template version for EXSA ratings retrieved from the USGS if no other value is set via the property
+ *
+ * @since CWMS database schema 18.1.6
+ *
+ * @see constant exsa_rating_templ_ver_prop
+ * @see set_exsa_rating_templ_version
+ * @see get_exsa_rating_templ_version
+ */
+default_exsa_rating_templ_ver constant varchar2(9) := 'USGS-EXSA';
+
+/**
+ * Default rating specification version for EXSA ratings retrieved from the USGS if no other value is set via the property
+ *
+ * @since CWMS database schema 18.1.6
+ *
+ * @see constant exsa_rating_spec_ver_prop
+ * @see set_exsa_rating_spec_version
+ * @see get_exsa_rating_spec_version
+ */
+default_exsa_rating_spec_ver constant varchar2(4)  := 'USGS';
+
+/**
+ * Default rating template version for CORR ratings retrieved from the USGS if no other value is set via the property
+ *
+ * @since CWMS database schema 18.1.6
+ *
+ * @see constant corr_rating_templ_ver_prop
+ * @see set_corr_rating_templ_version
+ * @see get_corr_rating_templ_version
+ */
+default_corr_rating_templ_ver constant varchar2(9) := 'USGS-CORR';
+
+/**
+ * Default rating specification version for CORR ratings retrieved from the USGS if no other value is set via the property
+ *
+ * @since CWMS database schema 18.1.6
+ *
+ * @see constant corr_rating_spec_ver_prop
+ * @see set_corr_rating_spec_version
+ * @see get_corr_rating_spec_version
+ */
+default_corr_rating_spec_ver constant varchar2(4)  := 'USGS';
+
+/**
+ * Default rating template version for USGS Production ratings (virtual or transitional ratings generated from ratings retrieved fromthe USGS)
+ *
+ * @since CWMS database schema 18.1.6
+ *
+ * @see constant prod_rating_templ_ver_prop
+ * @see set_prod_rating_templ_version
+ * @see get_prod_rating_templ_version
+ */
+default_prod_rating_templ_ver constant varchar2(15) := 'USGS-Production';
+
+/**
+ * Default rating specification version for USGS Production ratings (virtual or transitional ratings generated from ratings retrieved fromthe USGS)
+ *
+ * @since CWMS database schema 18.1.6
+ *
+ * @see constant prod_rating_spec_ver_prop
+ * @see set_prod_rating_spec_version
+ * @see get_prod_rating_spec_version
+ */
+default_prod_rating_spec_ver constant varchar2(4)  := 'USGS';
+
+/**
+ * CWMS Properties ID for the rating template version for BASE ratings retrieved from the USGS
+ * May be managed using CWMS_PROPERTIES package or by routines in this package.
+ *
+ * @see package cwms_properties
+ * @see set_base_rating_templ_version
+ * @see get_base_rating_templ_version
+ */
+base_rating_templ_ver_prop constant varchar2(28) := 'base_rating_template_version';
+
+/**
+ * CWMS Properties ID for the rating specification version for BASE ratings retrieved from the USGS
+ * May be managed using CWMS_PROPERTIES package or by routines in this package.
+ *
+ * @see package cwms_properties
+ * @see set_base_rating_spec_version
+ * @see get_base_rating_spec_version
+ */
+base_rating_spec_ver_prop constant varchar2(24) := 'base_rating_spec_version';
+
+/**
+ * CWMS Properties ID for the rating template version for EXSA ratings retrieved from the USGS
+ * May be managed using CWMS_PROPERTIES package or by routines in this package.
+ *
+ * @see package cwms_properties
+ * @see set_exsa_rating_templ_version
+ * @see get_exsa_rating_templ_version
+ */
+exsa_rating_templ_ver_prop constant varchar2(28) := 'exsa_rating_template_version';
+
+/**
+ * CWMS Properties ID for the rating specification version for EXSA ratings retrieved from the USGS
+ * May be managed using CWMS_PROPERTIES package or by routines in this package.
+ *
+ * @see package cwms_properties
+ * @see set_exsa_rating_spec_version
+ * @see get_exsa_rating_spec_version
+ */
+exsa_rating_spec_ver_prop constant varchar2(24) := 'exsa_rating_spec_version';
+
+/**
+ * CWMS Properties ID for the rating template version for CORR ratings retrieved from the USGS
+ * May be managed using CWMS_PROPERTIES package or by routines in this package.
+ *
+ * @see package cwms_properties
+ * @see set_corr_rating_templ_version
+ * @see get_corr_rating_templ_version
+ */
+corr_rating_templ_ver_prop constant varchar2(28) := 'corr_rating_template_version';
+
+/**
+ * CWMS Properties ID for the rating specification version for CORR ratings retrieved from the USGS
+ * May be managed using CWMS_PROPERTIES package or by routines in this package.
+ *
+ * @see package cwms_properties
+ * @see set_corr_rating_spec_version
+ * @see get_corr_rating_spec_version
+ */
+corr_rating_spec_ver_prop constant varchar2(24) := 'corr_rating_spec_version';
+
+/**
+ * CWMS Properties ID for the rating template version for USGS Production ratings (virtual or transitional ratings generated from ratings retrieved fromthe USGS)
+ * May be managed using CWMS_PROPERTIES package or by routines in this package.
+ *
+ * @see package cwms_properties
+ * @see set_prod_rating_templ_version
+ * @see get_prod_rating_templ_version
+ */
+prod_rating_templ_ver_prop constant varchar2(28) := 'prod_rating_template_version';
+
+/**
+ * CWMS Properties ID for the rating specification version for USGS Production ratings (virtual or transitional ratings generated from ratings retrieved fromthe USGS)
+ * May be managed using CWMS_PROPERTIES package or by routines in this package.
+ *
+ * @see package cwms_properties
+ * @see set_prod_rating_spec_version
+ * @see get_prod_rating_spec_version
+ */
+prod_rating_spec_ver_prop constant varchar2(24) := 'prod_rating_spec_version';
+
+/**
+ * Retrieves the rating specification version for BASE ratings retrieved from the USGS.
+ * This will be the value set in the property, or the default value if no value is set in the property.
+ *
+ * @return The rating specification version for BASE ratings retrieved from the USGS.
+ *
+ * @since CWMS database schema 18.1.6
+ * @see constant base_rating_spec_ver_prop
+ * @see constant default_base_rating_spec_ver
+ * @see set_base_rating_spec_version
+ */
+function get_base_rating_spec_version(
+	p_office_id in varchar2 default null)
+	return varchar2;
+
+/**
+ * Sets the rating specification version for BASE ratings retrieved from the USGS.
+ *
+ * @param p_version_text The new rating specification version for BASE ratings retrieved from the USGS.
+ * @param p_office_id    The office to set the property for.
+ *                       If unspecified or NULL, the current session's default office will be used.
+ *
+ * @since CWMS database schema 18.1.6
+ * @see constant base_rating_spec_ver_prop
+ * @see get_base_rating_spec_version
+ */
+procedure set_base_rating_spec_version(
+	p_version_text in varchar2,
+	p_office_id    in varchar2 default null);
+
+/**
+ * Retrieves the rating template version for BASE ratings retrieved from the USGS.
+ * This will be the value set in the property, or the default value if no value is set in the property.
+ *
+ * @return The rating template version for BASE ratings retrieved from the USGS.
+ *
+ * @since CWMS database schema 18.1.6
+ * @see constant base_rating_templ_ver_prop
+ * @see constant default_base_rating_templ_ver
+ * @see set_base_rating_templ_version
+ */
+function get_base_rating_templ_version(
+	p_office_id in varchar2 default null)
+	return varchar2;
+
+/**
+ * Sets the rating template version for BASE ratings retrieved from the USGS.
+ *
+ * @param p_version_text The new rating template version for BASE ratings retrieved from the USGS.
+ * @param p_office_id    The office to set the property for.
+ *                       If unspecified or NULL, the current session's default office will be used.
+ *
+ * @since CWMS database schema 18.1.6
+ * @see constant base_rating_templ_ver_prop
+ * @see get_base_rating_templ_version
+ */
+procedure set_base_rating_templ_version(
+	p_version_text in varchar2,
+	p_office_id    in varchar2 default null);
+
+/**
+ * Retrieves the rating specification version for EXSA ratings retrieved from the USGS.
+ * This will be the value set in the property, or the default value if no value is set in the property.
+ *
+ * @return The rating specification version for EXSA ratings retrieved from the USGS.
+ *
+ * @since CWMS dataexsa schema 18.1.6
+ * @see constant exsa_rating_spec_ver_prop
+ * @see constant default_exsa_rating_spec_ver
+ * @see set_exsa_rating_spec_version
+ */
+function get_exsa_rating_spec_version(
+	p_office_id in varchar2 default null)
+	return varchar2;
+
+/**
+ * Sets the rating specification version for EXSA ratings retrieved from the USGS.
+ *
+ * @param p_version_text The new rating specification version for EXSA ratings retrieved from the USGS.
+ * @param p_office_id    The office to set the property for.
+ *                       If unspecified or NULL, the current session's default office will be used.
+ *
+ * @since CWMS dataexsa schema 18.1.6
+ * @see constant exsa_rating_spec_ver_prop
+ * @see get_exsa_rating_spec_version
+ */
+procedure set_exsa_rating_spec_version(
+	p_version_text in varchar2,
+	p_office_id    in varchar2 default null);
+
+/**
+ * Retrieves the rating template version for EXSA ratings retrieved from the USGS.
+ * This will be the value set in the property, or the default value if no value is set in the property.
+ *
+ * @return The rating template version for EXSA ratings retrieved from the USGS.
+ *
+ * @since CWMS dataexsa schema 18.1.6
+ * @see constant exsa_rating_templ_ver_prop
+ * @see constant default_exsa_rating_templ_ver
+ * @see set_exsa_rating_templ_version
+ */
+function get_exsa_rating_templ_version(
+	p_office_id in varchar2 default null)
+	return varchar2;
+
+/**
+ * Sets the rating template version for EXSA ratings retrieved from the USGS.
+ *
+ * @param p_version_text The new rating template version for EXSA ratings retrieved from the USGS.
+ * @param p_office_id    The office to set the property for.
+ *                       If unspecified or NULL, the current session's default office will be used.
+ *
+ * @since CWMS dataexsa schema 18.1.6
+ * @see constant exsa_rating_templ_ver_prop
+ * @see get_exsa_rating_templ_version
+ */
+procedure set_exsa_rating_templ_version(
+	p_version_text in varchar2,
+	p_office_id    in varchar2 default null);
+
+/**
+ * Retrieves the rating specification version for CORR ratings retrieved from the USGS.
+ * This will be the value set in the property, or the default value if no value is set in the property.
+ *
+ * @return The rating specification version for CORR ratings retrieved from the USGS.
+ *
+ * @since CWMS datacorr schema 18.1.6
+ * @see constant corr_rating_spec_ver_prop
+ * @see constant default_corr_rating_spec_ver
+ * @see set_corr_rating_spec_version
+ */
+function get_corr_rating_spec_version(
+	p_office_id in varchar2 default null)
+	return varchar2;
+
+/**
+ * Sets the rating specification version for CORR ratings retrieved from the USGS.
+ *
+ * @param p_version_text The new rating specification version for CORR ratings retrieved from the USGS.
+ * @param p_office_id    The office to set the property for.
+ *                       If unspecified or NULL, the current session's default office will be used.
+ *
+ * @since CWMS datacorr schema 18.1.6
+ * @see constant corr_rating_spec_ver_prop
+ * @see get_corr_rating_spec_version
+ */
+procedure set_corr_rating_spec_version(
+	p_version_text in varchar2,
+	p_office_id    in varchar2 default null);
+
+/**
+ * Retrieves the rating template version for CORR ratings retrieved from the USGS.
+ * This will be the value set in the property, or the default value if no value is set in the property.
+ *
+ * @return The rating template version for CORR ratings retrieved from the USGS.
+ *
+ * @since CWMS datacorr schema 18.1.6
+ * @see constant corr_rating_templ_ver_prop
+ * @see constant default_corr_rating_templ_ver
+ * @see set_corr_rating_templ_version
+ */
+function get_corr_rating_templ_version(
+	p_office_id in varchar2 default null)
+	return varchar2;
+
+/**
+ * Sets the rating template version for CORR ratings retrieved from the USGS.
+ *
+ * @param p_version_text The new rating template version for CORR ratings retrieved from the USGS.
+ * @param p_office_id    The office to set the property for.
+ *                       If unspecified or NULL, the current session's default office will be used.
+ *
+ * @since CWMS datacorr schema 18.1.6
+ * @see constant corr_rating_templ_ver_prop
+ * @see get_corr_rating_templ_version
+ */
+procedure set_corr_rating_templ_version(
+	p_version_text in varchar2,
+	p_office_id    in varchar2 default null);
+
+/**
+ * Retrieves the rating specification version for USGS Production ratings (virtual or transitional ratings generated from ratings retrieved fromthe USGS).
+ * This will be the value set in the property, or the default value if no value is set in the property.
+ *
+ * @return The rating specification version for PROD ratings retrieved from the USGS.
+ *
+ * @since CWMS database schema 18.1.6
+ * @see constant prod_rating_spec_ver_prop
+ * @see constant default_prod_rating_spec_ver
+ * @see set_prod_rating_spec_version
+ */
+function get_prod_rating_spec_version(
+	p_office_id in varchar2 default null)
+	return varchar2;
+
+/**
+ * Sets the rating specification version for PROD ratings retrieved from the USGS.
+ *
+ * @param p_version_text The new rating specification version for USGS Production ratings (virtual or transitional ratings generated from ratings retrieved fromthe USGS).
+ * @param p_office_id    The office to set the property for.
+ *                       If unspecified or NULL, the current session's default office will be used.
+ *
+ * @since CWMS database schema 18.1.6
+ * @see constant prod_rating_spec_ver_prop
+ * @see get_prod_rating_spec_version
+ */
+procedure set_prod_rating_spec_version(
+	p_version_text in varchar2,
+	p_office_id    in varchar2 default null);
+
+/**
+ * Retrieves the rating template version for USGS Production ratings (virtual or transitional ratings generated from ratings retrieved fromthe USGS).
+ * This will be the value set in the property, or the default value if no value is set in the property.
+ *
+ * @return The rating template version for PROD ratings retrieved from the USGS.
+ *
+ * @since CWMS database schema 18.1.6
+ * @see constant prod_rating_templ_ver_prop
+ * @see constant default_prod_rating_templ_ver
+ * @see set_prod_rating_templ_version
+ */
+function get_prod_rating_templ_version(
+	p_office_id in varchar2 default null)
+	return varchar2;
+
+/**
+ * Sets the rating template version for USGS Production ratings (virtual or transitional ratings generated from ratings retrieved fromthe USGS).
+ *
+ * @param p_version_text The new rating template version for PROD ratings retrieved from the USGS.
+ * @param p_office_id    The office to set the property for.
+ *                       If unspecified or NULL, the current session's default office will be used.
+ *
+ * @since CWMS database schema 18.1.6
+ * @see constant prod_rating_templ_ver_prop
+ * @see get_prod_rating_templ_version
+ */
+procedure set_prod_rating_templ_version(
+	p_version_text in varchar2,
+	p_office_id    in varchar2 default null);
+
 /**
  * Sets the text filter used to determine locations for which to retrieve instantaneous value time series data from USGS NWIS.
  *
