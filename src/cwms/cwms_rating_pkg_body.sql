@@ -6493,6 +6493,342 @@ begin
       return l_elev_positions;
 end get_elevation_positions;
 
+function get_rating_template_code(
+   p_rating_template in varchar,
+   p_office_id       in varchar2 default null)
+   return integer
+is
+   l_office_code   integer;
+   l_template_code integer;
+   l_parts         str_tab_t;
+begin
+   l_parts := cwms_util.split_text(p_rating_template, '.');
+   if l_parts.count != 2 then
+      cwms_err.raise('INVALID_ITEM', p_rating_template, 'CWMS rating template');
+   end if;
+   l_office_code := cwms_util.get_db_office_code(p_office_id);
+   begin
+      select template_code
+        into l_template_code
+        from at_rating_template
+       where office_code = l_office_code
+         and upper(parameters_id) = upper(l_parts(1))
+         and upper(version) = upper(l_parts(2));
+   exception
+      when no_data_found then
+         cwms_err.raise(
+            'ITEM_DOES_NOT_EXIST', 
+            'CWMS rating template', 
+            cwms_util.get_db_office_id(p_office_id)||'/'||l_parts(2)||'.'||l_parts(3));
+   end;
+end get_rating_template_code;
+   
+procedure get_spec_flags(
+   p_active_flag           out varchar,
+   p_auto_update_flag      out varchar,
+   p_auto_activate_flag    out varchar,
+   p_auto_migrate_ext_flag out varchar,
+   p_rating_spec           in  varchar,
+   p_office_id             in  varchar2 default null)
+is
+begin
+      select active_flag,
+             auto_update_flag,
+             auto_activate_flag,
+             auto_migrate_ext_flag
+        into p_active_flag,
+             p_auto_update_flag,
+             p_auto_activate_flag,
+             p_auto_migrate_ext_flag
+        from at_rating_spec
+       where rating_spec_code = rating_spec_t.get_rating_spec_code(p_rating_spec, p_office_id); 
+end get_spec_flags;
+
+function is_spec_active(
+   p_rating_spec in varchar,
+   p_office_id   in varchar2 default null)
+   return varchar2
+is
+   l_active_flag           varchar2(1);
+   l_auto_update_flag      varchar2(1);
+   l_auto_activate_flag    varchar2(1);
+   l_auto_migrate_ext_flag varchar2(1);
+begin
+   get_spec_flags(
+      l_active_flag,
+      l_auto_update_flag,
+      l_auto_activate_flag,
+      l_auto_migrate_ext_flag,
+      p_rating_spec,
+      p_office_id);
+      
+   return l_active_flag;      
+end is_spec_active;
+
+function is_auto_update(
+   p_rating_spec in varchar,
+   p_office_id   in varchar2 default null)
+   return varchar2
+is
+   l_active_flag           varchar2(1);
+   l_auto_update_flag      varchar2(1);
+   l_auto_activate_flag    varchar2(1);
+   l_auto_migrate_ext_flag varchar2(1);
+begin
+   get_spec_flags(
+      l_active_flag,
+      l_auto_update_flag,
+      l_auto_activate_flag,
+      l_auto_migrate_ext_flag,
+      p_rating_spec,
+      p_office_id);
+      
+   return l_auto_update_flag;      
+end is_auto_update;
+
+function is_auto_activate(
+   p_rating_spec in varchar,
+   p_office_id   in varchar2 default null)
+   return varchar2
+is
+   l_active_flag           varchar2(1);
+   l_auto_update_flag      varchar2(1);
+   l_auto_activate_flag    varchar2(1);
+   l_auto_migrate_ext_flag varchar2(1);
+begin
+   get_spec_flags(
+      l_active_flag,
+      l_auto_update_flag,
+      l_auto_activate_flag,
+      l_auto_migrate_ext_flag,
+      p_rating_spec,
+      p_office_id);
+      
+   return l_auto_activate_flag;      
+end is_auto_activate;
+
+function is_auto_migrate_ext(
+   p_rating_spec in varchar,
+   p_office_id   in varchar2 default null)
+   return varchar2
+is
+   l_active_flag           varchar2(1);
+   l_auto_update_flag      varchar2(1);
+   l_auto_activate_flag    varchar2(1);
+   l_auto_migrate_ext_flag varchar2(1);
+begin
+   get_spec_flags(
+      l_active_flag,
+      l_auto_update_flag,
+      l_auto_activate_flag,
+      l_auto_migrate_ext_flag,
+      p_rating_spec,
+      p_office_id);
+      
+   return l_auto_migrate_ext_flag;      
+end is_auto_migrate_ext;
+
+   
+procedure set_spec_flags(
+   p_rating_spec           in varchar,
+   p_active_flag           in varchar,
+   p_auto_update_flag      in varchar,
+   p_auto_activate_flag    in varchar,
+   p_auto_migrate_ext_flag in varchar,
+   p_office_id             in varchar2 default null)
+is
+   l_rating_spec_code integer;
+begin
+   l_rating_spec_code := rating_spec_t.get_rating_spec_code(p_rating_spec, p_office_id);
+   update at_rating_spec
+      set active_flag = p_active_flag,
+          auto_update_flag = p_auto_update_flag,
+          auto_activate_flag = p_auto_activate_flag,
+          auto_migrate_ext_flag = p_auto_migrate_ext_flag
+    where rating_spec_code = l_rating_spec_code; 
+end set_spec_flags;
+
+procedure set_spec_active(
+   p_rating_spec in varchar,
+   p_flag        in varchar,
+   p_office_id   in varchar2 default null)
+is
+   l_active_flag           varchar2(1);
+   l_auto_update_flag      varchar2(1);
+   l_auto_activate_flag    varchar2(1);
+   l_auto_migrate_ext_flag varchar2(1);
+begin
+   get_spec_flags(
+      l_active_flag,
+      l_auto_update_flag,
+      l_auto_activate_flag,
+      l_auto_migrate_ext_flag,
+      p_rating_spec,
+      p_office_id);
+      
+   if l_active_flag != upper(p_flag) then
+      l_active_flag := upper(p_flag);
+      set_spec_flags(
+         p_rating_spec,
+         l_active_flag,
+         l_auto_update_flag,
+         l_auto_activate_flag,
+         l_auto_migrate_ext_flag,
+         p_office_id);
+   end if;
+end set_spec_active;
+
+procedure set_auto_update(
+   p_rating_spec in varchar,
+   p_flag        in varchar,
+   p_office_id   in varchar2 default null)
+is
+   l_active_flag           varchar2(1);
+   l_auto_update_flag      varchar2(1);
+   l_auto_activate_flag    varchar2(1);
+   l_auto_migrate_ext_flag varchar2(1);
+begin
+   get_spec_flags(
+      l_active_flag,
+      l_auto_update_flag,
+      l_auto_activate_flag,
+      l_auto_migrate_ext_flag,
+      p_rating_spec,
+      p_office_id);
+      
+   if l_auto_update_flag != upper(p_flag) then
+      l_auto_update_flag := upper(p_flag);
+      set_spec_flags(
+         p_rating_spec,
+         l_active_flag,
+         l_auto_update_flag,
+         l_auto_activate_flag,
+         l_auto_migrate_ext_flag,
+         p_office_id);
+   end if;
+end set_auto_update;
+
+procedure set_auto_activate(
+   p_rating_spec in varchar,
+   p_flag        in varchar,
+   p_office_id   in varchar2 default null)
+is
+   l_active_flag           varchar2(1);
+   l_auto_update_flag      varchar2(1);
+   l_auto_activate_flag    varchar2(1);
+   l_auto_migrate_ext_flag varchar2(1);
+begin
+   get_spec_flags(
+      l_active_flag,
+      l_auto_update_flag,
+      l_auto_activate_flag,
+      l_auto_migrate_ext_flag,
+      p_rating_spec,
+      p_office_id);
+      
+   if l_auto_activate_flag != upper(p_flag) then
+      l_auto_activate_flag := upper(p_flag);
+      set_spec_flags(
+         p_rating_spec,
+         l_active_flag,
+         l_auto_update_flag,
+         l_auto_activate_flag,
+         l_auto_migrate_ext_flag,
+         p_office_id);
+   end if;
+end set_auto_activate;
+
+procedure set_auto_migrate_ext(
+   p_rating_spec in varchar,
+   p_flag        in varchar,
+   p_office_id   in varchar2 default null)
+is
+   l_active_flag           varchar2(1);
+   l_auto_update_flag      varchar2(1);
+   l_auto_activate_flag    varchar2(1);
+   l_auto_migrate_ext_flag varchar2(1);
+begin
+   get_spec_flags(
+      l_active_flag,
+      l_auto_update_flag,
+      l_auto_activate_flag,
+      l_auto_migrate_ext_flag,
+      p_rating_spec,
+      p_office_id);
+      
+   if l_auto_migrate_ext_flag != upper(p_flag) then
+      l_auto_migrate_ext_flag := upper(p_flag);
+      set_spec_flags(
+         p_rating_spec,
+         l_active_flag,
+         l_auto_update_flag,
+         l_auto_activate_flag,
+         l_auto_migrate_ext_flag,
+         p_office_id);
+   end if;
+end set_auto_migrate_ext;
+   
+function is_rating_active(
+   p_rating_spec    in varchar2,
+   p_effective_date in date,
+   p_time_zone      in varchar2,
+   p_office_id      in varchar2 default null)
+   return varchar2
+is
+   l_active_flag varchar2(1);
+   l_time_zone   varchar2(28);
+begin
+   l_time_zone := nvl(p_time_zone, cwms_loc.get_local_timezone(cwms_util.split_text(p_rating_spec, 1, '.'), p_office_id));
+   select active_flag
+     into l_active_flag
+     from at_rating
+    where rating_spec_code = rating_spec_t.get_rating_spec_code(p_rating_spec, p_office_id)
+      and effective_date = cwms_util.change_timezone(p_effective_date, l_time_zone);
+      
+   return l_active_flag;
+exception
+   when no_data_found then
+      cwms_err.raise(
+         'ITEM_DOES_NOT_EXIST',
+         'CWMS rating',
+         '"'
+         ||cwms_util.get_db_office_id(p_office_id)
+         ||'/'
+         ||p_rating_spec
+         ||'@'
+         ||to_char(p_effective_date, 'yyyy-mm-dd hh24:mi')
+         ||l_time_zone
+         ||'"');
+end is_rating_active;
+   
+procedure set_rating_active(
+   p_rating_spec    in varchar2,
+   p_effective_date in date,
+   p_time_zone      in varchar2,
+   p_active_flag    in varchar2,
+   p_office_id      in varchar2 default null)
+is
+   l_time_zone   varchar2(28);
+begin
+   l_time_zone := nvl(p_time_zone, cwms_loc.get_local_timezone(cwms_util.split_text(p_rating_spec, 1, '.'), p_office_id));
+   update at_rating
+      set active_flag = upper(p_active_flag)
+    where rating_spec_code = rating_spec_t.get_rating_spec_code(p_rating_spec, p_office_id)
+      and effective_date = cwms_util.change_timezone(p_effective_date, l_time_zone);
+exception
+   when no_data_found then
+      cwms_err.raise(
+         'ITEM_DOES_NOT_EXIST',
+         'CWMS rating',
+         '"'
+         ||cwms_util.get_db_office_id(p_office_id)
+         ||'/'
+         ||p_rating_spec
+         ||'@'
+         ||to_char(p_effective_date, 'yyyy-mm-dd hh24:mi')
+         ||l_time_zone
+         ||'"');
+end set_rating_active;
 
 procedure retrieve_ratings(
    p_results        out clob,
