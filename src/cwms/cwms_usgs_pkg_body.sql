@@ -1694,6 +1694,206 @@ begin
 
 end stop_auto_stream_meas_job;
 
+function get_base_rating_spec_version(
+	p_office_id in varchar2 default null)
+	return varchar2
+is
+begin
+   return cwms_properties.get_property(
+      'USGS',
+      base_rating_spec_ver_prop,
+      default_base_rating_spec_ver,
+      p_office_id);
+end get_base_rating_spec_version;
+
+procedure set_base_rating_spec_version(
+	p_version_text in varchar2,
+	p_office_id    in varchar2 default null)
+is
+begin
+   cwms_properties.set_property(
+      'USGS',
+      base_rating_spec_ver_prop,
+      p_version_text,
+      'Rating specification version for BASE ratings retrieved from the USGS',
+      p_office_id);
+end set_base_rating_spec_version;
+
+function get_base_rating_templ_version(
+	p_office_id in varchar2 default null)
+	return varchar2
+is
+begin
+   return cwms_properties.get_property(
+      'USGS',
+      base_rating_templ_ver_prop,
+      default_base_rating_templ_ver,
+      p_office_id);
+end get_base_rating_templ_version;
+
+procedure set_base_rating_templ_version(
+	p_version_text in varchar2,
+	p_office_id    in varchar2 default null)
+is
+begin
+   cwms_properties.set_property(
+      'USGS',
+      base_rating_templ_ver_prop,
+      p_version_text,
+      'Rating template version for BASE ratings retrieved from the USGS',
+      p_office_id);
+end set_base_rating_templ_version;
+
+function get_exsa_rating_spec_version(
+	p_office_id in varchar2 default null)
+	return varchar2
+is
+begin
+   return cwms_properties.get_property(
+      'USGS',
+      exsa_rating_spec_ver_prop,
+      default_exsa_rating_spec_ver,
+      p_office_id);
+end get_exsa_rating_spec_version;
+
+procedure set_exsa_rating_spec_version(
+	p_version_text in varchar2,
+	p_office_id    in varchar2 default null)
+is
+begin
+   cwms_properties.set_property(
+      'USGS',
+      exsa_rating_spec_ver_prop,
+      p_version_text,
+      'Rating specification version for EXSA ratings retrieved from the USGS',
+      p_office_id);
+end set_exsa_rating_spec_version;
+
+function get_exsa_rating_templ_version(
+	p_office_id in varchar2 default null)
+	return varchar2
+is
+begin
+   return cwms_properties.get_property(
+      'USGS',
+      exsa_rating_templ_ver_prop,
+      default_exsa_rating_templ_ver,
+      p_office_id);
+end get_exsa_rating_templ_version;
+
+procedure set_exsa_rating_templ_version(
+	p_version_text in varchar2,
+	p_office_id    in varchar2 default null)
+is
+begin
+   cwms_properties.set_property(
+      'USGS',
+      exsa_rating_templ_ver_prop,
+      p_version_text,
+      'Rating template version for EXSA ratings retrieved from the USGS',
+      p_office_id);
+end set_exsa_rating_templ_version;
+
+function get_corr_rating_spec_version(
+	p_office_id in varchar2 default null)
+	return varchar2
+is
+begin
+   return cwms_properties.get_property(
+      'USGS',
+      corr_rating_spec_ver_prop,
+      default_corr_rating_spec_ver,
+      p_office_id);
+end get_corr_rating_spec_version;
+
+procedure set_corr_rating_spec_version(
+	p_version_text in varchar2,
+	p_office_id    in varchar2 default null)
+is
+begin
+   cwms_properties.set_property(
+      'USGS',
+      corr_rating_spec_ver_prop,
+      p_version_text,
+      'Rating specification version for CORR ratings retrieved from the USGS',
+      p_office_id);
+end set_corr_rating_spec_version;
+
+function get_corr_rating_templ_version(
+	p_office_id in varchar2 default null)
+	return varchar2
+is
+begin
+   return cwms_properties.get_property(
+      'USGS',
+      corr_rating_templ_ver_prop,
+      default_corr_rating_templ_ver,
+      p_office_id);
+end get_corr_rating_templ_version;
+
+procedure set_corr_rating_templ_version(
+	p_version_text in varchar2,
+	p_office_id    in varchar2 default null)
+is
+begin
+   cwms_properties.set_property(
+      'USGS',
+      corr_rating_templ_ver_prop,
+      p_version_text,
+      'Rating template version for CORR ratings retrieved from the USGS',
+      p_office_id);
+end set_corr_rating_templ_version;
+
+function get_prod_rating_spec_version(
+	p_office_id in varchar2 default null)
+	return varchar2
+is
+begin
+   return cwms_properties.get_property(
+      'USGS',
+      prod_rating_spec_ver_prop,
+      default_prod_rating_spec_ver,
+      p_office_id);
+end get_prod_rating_spec_version;
+
+procedure set_prod_rating_spec_version(
+	p_version_text in varchar2,
+	p_office_id    in varchar2 default null)
+is
+begin
+   cwms_properties.set_property(
+      'USGS',
+      prod_rating_spec_ver_prop,
+      p_version_text,
+      'Rating specification version for USGS Production ratings (virtual or transitional ratings generated from ratings retrieved fromthe USGS)',
+      p_office_id);
+end set_prod_rating_spec_version;
+
+function get_prod_rating_templ_version(
+	p_office_id in varchar2 default null)
+	return varchar2
+is
+begin
+   return cwms_properties.get_property(
+      'USGS',
+      prod_rating_templ_ver_prop,
+      default_prod_rating_templ_ver,
+      p_office_id);
+end get_prod_rating_templ_version;
+
+procedure set_prod_rating_templ_version(
+	p_version_text in varchar2,
+	p_office_id    in varchar2 default null)
+is
+begin
+   cwms_properties.set_property(
+      'USGS',
+      prod_rating_templ_ver_prop,
+      p_version_text,
+      'Rating template version for USGS Production ratings (virtual or transitional ratings generated from ratings retrieved fromthe USGS)',
+      p_office_id);
+end set_prod_rating_templ_version;
+
 function get_auto_update_ratings(
    p_office_id in varchar2 default null)
    return number_tab_t
@@ -1707,10 +1907,10 @@ begin
      from at_rating_template rt,
           at_rating_spec rs
     where rt.office_code = l_office_code
-      and rt.version in ('USGS-BASE', 'USGS-EXSA', 'USGS-CORR')
+      and rt.version in (get_base_rating_templ_version(p_office_id), get_exsa_rating_templ_version(p_office_id), get_corr_rating_templ_version(p_office_id))
       and rt.parameters_id not in ('Stage;Stage-Shift', 'Stage;Stage-Offset')
       and rs.template_code = rt.template_code
-      and rs.version = 'USGS'
+      and rs.version  in (get_base_rating_spec_version(p_office_id), get_exsa_rating_spec_version(p_office_id), get_corr_rating_spec_version(p_office_id))
       and rs.active_flag = 'T'
       and rs.auto_update_flag = 'T' ;
    return l_rating_specs;
@@ -2005,7 +2205,7 @@ begin
       writeln_clob(l_xml, '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://www.hec.usace.army.mil/xmlschema/cwms/Ratings.xsd">');
       writeln_clob(l_xml, tab||'<rating-template office-id="'||p_office_id||'">');
       writeln_clob(l_xml, tab||tab||'<parameters-id>Stage;Stage-Corrected</parameters-id>');
-      writeln_clob(l_xml, tab||tab||'<version>USGS-CORR</version>');
+      writeln_clob(l_xml, tab||tab||'<version>'||get_corr_rating_templ_version(p_office_id)||'</version>');
       writeln_clob(l_xml, tab||tab||'<ind-parameter-specs>');
       writeln_clob(l_xml, tab||tab||tab||'<ind-parameter-spec position="1">');
       writeln_clob(l_xml, tab||tab||tab||tab||'<parameter>Stage</parameter>');
@@ -2018,10 +2218,10 @@ begin
       writeln_clob(l_xml, tab||tab||'<description>Stream Actual Stage Rating</description>');
       writeln_clob(l_xml, tab||'</rating-template>');
       writeln_clob(l_xml, tab||'<rating-spec office-id="'||p_office_id||'">');
-      writeln_clob(l_xml, tab||tab||'<rating-spec-id>'||l_location_id||'.Stage;Stage-Corrected.USGS-CORR.USGS</rating-spec-id>');
-      writeln_clob(l_xml, tab||tab||'<template-id>Stage;Stage-Corrected.USGS-CORR</template-id>');
+      writeln_clob(l_xml, tab||tab||'<rating-spec-id>'||l_location_id||'.Stage;Stage-Corrected.'||get_corr_rating_templ_version(p_office_id)||'.'||get_corr_rating_spec_version(p_office_id)||'</rating-spec-id>');
+      writeln_clob(l_xml, tab||tab||'<template-id>Stage;Stage-Corrected.'||get_corr_rating_templ_version(p_office_id)||'</template-id>');
       writeln_clob(l_xml, tab||tab||'<location-id>'||l_location_id||'</location-id>');
-      writeln_clob(l_xml, tab||tab||'<version>USGS</version>');
+      writeln_clob(l_xml, tab||tab||'<version>'||get_corr_rating_spec_version(p_office_id)||'</version>');
       writeln_clob(l_xml, tab||tab||'<source-agency>USGS</source-agency>');
       writeln_clob(l_xml, tab||tab||'<in-range-method>LINEAR</in-range-method>');
       writeln_clob(l_xml, tab||tab||'<out-range-low-method>NEAREST</out-range-low-method>');
@@ -2037,7 +2237,7 @@ begin
       writeln_clob(l_xml, tab||tab||'<description>'||nvl(l_station_name, l_location_id)||' Actual Stage USGS Rating</description>');
       writeln_clob(l_xml, tab||'</rating-spec>');
       writeln_clob(l_xml, tab||'<simple-rating office-id="'||p_office_id||'">');
-      writeln_clob(l_xml, tab||tab||'<rating-spec-id>'||l_location_id||'.Stage;Stage-Corrected.USGS-CORR.USGS</rating-spec-id>');
+      writeln_clob(l_xml, tab||tab||'<rating-spec-id>'||l_location_id||'.Stage;Stage-Corrected.'||get_corr_rating_templ_version(p_office_id)||'.'||get_corr_rating_spec_version(p_office_id)||'</rating-spec-id>');
       writeln_clob(l_xml, tab||tab||'<units-id>ft;ft</units-id>');
       writeln_clob(l_xml, tab||tab||'<effective-date>'||to_char(trunc(l_effective_dates(l_effective_dates.count), 'mi'), 'yyyy-mm-dd"T"hh24:mi:ss"Z"')||'</effective-date>');
       writeln_clob(l_xml, tab||tab||'<create-date/>');
@@ -2382,7 +2582,7 @@ begin
       writeln_clob(l_xml, '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://www.hec.usace.army.mil/xmlschema/cwms/Ratings.xsd">');
       writeln_clob(l_xml, tab||'<rating-template office-id="'||p_office_id||'">');
       writeln_clob(l_xml, tab||tab||'<parameters-id>Stage;Flow</parameters-id>');
-      writeln_clob(l_xml, tab||tab||'<version>USGS-BASE</version>');
+      writeln_clob(l_xml, tab||tab||'<version>'||get_base_rating_templ_version(p_office_id)||'</version>');
       writeln_clob(l_xml, tab||tab||'<ind-parameter-specs>');
       writeln_clob(l_xml, tab||tab||tab||'<ind-parameter-spec position="1">');
       writeln_clob(l_xml, tab||tab||tab||tab||'<parameter>Stage</parameter>');
@@ -2395,10 +2595,10 @@ begin
       writeln_clob(l_xml, tab||tab||'<description>Stream Rating (Base + Shifts and Offsets)</description>');
       writeln_clob(l_xml, tab||'</rating-template>');
       writeln_clob(l_xml, tab||'<rating-spec office-id="'||p_office_id||'">');
-      writeln_clob(l_xml, tab||tab||'<rating-spec-id>'||l_location_id||'.Stage;Flow.USGS-BASE.USGS</rating-spec-id>');
-      writeln_clob(l_xml, tab||tab||'<template-id>Stage;Flow.USGS-BASE</template-id>');
+      writeln_clob(l_xml, tab||tab||'<rating-spec-id>'||l_location_id||'.Stage;Flow.'||get_base_rating_templ_version(p_office_id)||'.'||get_base_rating_spec_version(p_office_id)||'</rating-spec-id>');
+      writeln_clob(l_xml, tab||tab||'<template-id>Stage;Flow.'||get_base_rating_templ_version(p_office_id)||'</template-id>');
       writeln_clob(l_xml, tab||tab||'<location-id>'||l_location_id||'</location-id>');
-      writeln_clob(l_xml, tab||tab||'<version>USGS</version>');
+      writeln_clob(l_xml, tab||tab||'<version>'||get_base_rating_spec_version(p_office_id)||'</version>');
       writeln_clob(l_xml, tab||tab||'<source-agency>USGS</source-agency>');
       writeln_clob(l_xml, tab||tab||'<in-range-method>LINEAR</in-range-method>');
       writeln_clob(l_xml, tab||tab||'<out-range-low-method>NEAREST</out-range-low-method>');
@@ -2414,7 +2614,7 @@ begin
       writeln_clob(l_xml, tab||tab||'<description>'||nvl(l_station_name, l_location_id)||' USGS Stream Rating (Base + Shifts and Offsets)</description>');
       writeln_clob(l_xml, tab||'</rating-spec>');
       writeln_clob(l_xml, tab||'<usgs-stream-rating office-id="'||p_office_id||'">');
-      writeln_clob(l_xml, tab||tab||'<rating-spec-id>'||l_location_id||'.Stage;Flow.USGS-BASE.USGS</rating-spec-id>');
+      writeln_clob(l_xml, tab||tab||'<rating-spec-id>'||l_location_id||'.Stage;Flow.'||get_base_rating_templ_version(p_office_id)||'.'||get_base_rating_spec_version(p_office_id)||'</rating-spec-id>');
       writeln_clob(l_xml, tab||tab||'<units-id>ft;cfs</units-id>');
       writeln_clob(l_xml, tab||tab||'<effective-date>'||to_char(trunc(l_effective_date, 'mi'), 'yyyy-mm-dd"T"hh24:mi:ss"Z"')||'</effective-date>');
       writeln_clob(l_xml, tab||tab||'<create-date/>');
@@ -2679,7 +2879,7 @@ begin
       writeln_clob(l_xml, '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://www.hec.usace.army.mil/xmlschema/cwms/Ratings.xsd">');
       writeln_clob(l_xml, tab||'<rating-template office-id="'||p_office_id||'">');
       writeln_clob(l_xml, tab||tab||'<parameters-id>Stage;Flow</parameters-id>');
-      writeln_clob(l_xml, tab||tab||'<version>USGS-EXSA</version>');
+      writeln_clob(l_xml, tab||tab||'<version>'||get_exsa_rating_templ_version(p_office_id)||'</version>');
       writeln_clob(l_xml, tab||tab||'<ind-parameter-specs>');
       writeln_clob(l_xml, tab||tab||tab||'<ind-parameter-spec position="1">');
       writeln_clob(l_xml, tab||tab||tab||tab||'<parameter>Stage</parameter>');
@@ -2692,10 +2892,10 @@ begin
       writeln_clob(l_xml, tab||tab||'<description>Expanded, Shift-Adjusted Stream Rating</description>');
       writeln_clob(l_xml, tab||'</rating-template>');
       writeln_clob(l_xml, tab||'<rating-spec office-id="'||p_office_id||'">');
-      writeln_clob(l_xml, tab||tab||'<rating-spec-id>'||l_location_id||'.Stage;Flow.USGS-EXSA.USGS</rating-spec-id>');
-      writeln_clob(l_xml, tab||tab||'<template-id>Stage;Flow.USGS-EXSA</template-id>');
+      writeln_clob(l_xml, tab||tab||'<rating-spec-id>'||l_location_id||'.Stage;Flow.'||get_exsa_rating_templ_version(p_office_id)||'.'||get_exsa_rating_spec_version(p_office_id)||'</rating-spec-id>');
+      writeln_clob(l_xml, tab||tab||'<template-id>Stage;Flow.'||get_exsa_rating_templ_version(p_office_id)||'</template-id>');
       writeln_clob(l_xml, tab||tab||'<location-id>'||l_location_id||'</location-id>');
-      writeln_clob(l_xml, tab||tab||'<version>USGS</version>');
+      writeln_clob(l_xml, tab||tab||'<version>'||get_exsa_rating_spec_version(p_office_id)||'</version>');
       writeln_clob(l_xml, tab||tab||'<source-agency>USGS</source-agency>');
       writeln_clob(l_xml, tab||tab||'<in-range-method>LINEAR</in-range-method>');
       writeln_clob(l_xml, tab||tab||'<out-range-low-method>NEAREST</out-range-low-method>');
@@ -2711,7 +2911,7 @@ begin
       writeln_clob(l_xml, tab||tab||'<description>'||nvl(l_station_name, l_location_id)||' Expanded, Shift-Adjusted USGS Stream Rating</description>');
       writeln_clob(l_xml, tab||'</rating-spec>');
       writeln_clob(l_xml, tab||'<simple-rating office-id="'||p_office_id||'">');
-      writeln_clob(l_xml, tab||tab||'<rating-spec-id>'||l_location_id||'.Stage;Flow.USGS-EXSA.USGS</rating-spec-id>');
+      writeln_clob(l_xml, tab||tab||'<rating-spec-id>'||l_location_id||'.Stage;Flow.'||get_exsa_rating_templ_version(p_office_id)||'.'||get_exsa_rating_spec_version(p_office_id)||'</rating-spec-id>');
       writeln_clob(l_xml, tab||tab||'<units-id>ft;cfs</units-id>');
       writeln_clob(l_xml, tab||tab||'<effective-date>'||to_char(trunc(l_effective_date, 'mi'), 'yyyy-mm-dd"T"hh24:mi:ss"Z"')||'</effective-date>');
       writeln_clob(l_xml, tab||tab||'<create-date/>');
@@ -3294,9 +3494,11 @@ begin
          ||cwms_loc.get_location_id(rec.location_code)
          ||'.'
          ||rec.parameters_id
-         ||'.USGS-'
-         ||upper(rec.rating_type)
-         ||'.USGS');
+         ||case upper(rec.rating_type)
+           when 'BASE' then get_base_rating_templ_version(l_office_id)||'.'||get_base_rating_spec_version(l_office_id)
+           when 'EXSA' then get_exsa_rating_templ_version(l_office_id)||'.'||get_exsa_rating_spec_version(l_office_id)
+           when 'CORR' then get_corr_rating_templ_version(l_office_id)||'.'||get_corr_rating_spec_version(l_office_id)
+           end);
       --------------------------------------------------------------------
       -- compare it to the previous rating retrieved from the same site --
       --------------------------------------------------------------------
@@ -3312,9 +3514,11 @@ begin
             ||cwms_loc.get_location_id(rec.location_code)
             ||'.'
             ||rec.parameters_id
-            ||'.USGS-'
-            ||upper(rec.rating_type)
-            ||'.USGS');
+            ||case upper(rec.rating_type)
+              when 'BASE' then get_base_rating_templ_version(l_office_id)||'.'||get_base_rating_spec_version(l_office_id)
+              when 'EXSA' then get_exsa_rating_templ_version(l_office_id)||'.'||get_exsa_rating_spec_version(l_office_id)
+              when 'CORR' then get_corr_rating_templ_version(l_office_id)||'.'||get_corr_rating_spec_version(l_office_id)
+              end);
          process_and_store_rating_text(rec.rating_type, l_rating_text, l_rating_exsa, l_office_id);
          l_update_count := l_update_count + 1;
       end if;
@@ -3392,247 +3596,179 @@ begin
 
    l_location_id := cwms_loc.get_location_id(p_location_id, p_office_id);
 
-   l_base_specs := cwms_rating.retrieve_specs_obj_f(l_location_id||'.Stage;Flow.USGS-BASE.USGS', p_office_id);
+   l_base_specs := cwms_rating.retrieve_specs_obj_f(l_location_id||'.Stage;Flow.'||get_base_rating_templ_version(p_office_id)||'.'||get_base_rating_spec_version(p_office_id)||'', p_office_id);
    if l_base_specs.count = 0 then
-      l_exsa_specs := cwms_rating.retrieve_specs_obj_f(l_location_id||'.Stage;Flow.USGS-EXSA.USGS', p_office_id);
+      l_exsa_specs := cwms_rating.retrieve_specs_obj_f(l_location_id||'.Stage;Flow.'||get_exsa_rating_templ_version(p_office_id)||'.'||get_exsa_rating_spec_version(p_office_id)||'', p_office_id);
    end if;
-   if l_base_specs.count = 1 or l_exsa_specs.count = 1 then
-      l_corr_specs := cwms_rating.retrieve_specs_obj_f(l_location_id||'.Stage;Stage-Correction.USGS-CORR.USGS', p_office_id);
+   if l_base_specs.count = 1 then
+      l_ratings1 := cwms_rating.retrieve_ratings_obj_f(l_location_id||'.Stage;Flow.'||get_base_rating_templ_version(p_office_id)||'.'||get_base_rating_spec_version(p_office_id)||'', null, null, null, p_office_id);
+      l_ratings1(l_ratings1.count).convert_to_database_time;
+      l_corr_specs := cwms_rating.retrieve_specs_obj_f(l_location_id||'.Stage;Stage-Correction.'||get_corr_rating_templ_version(p_office_id)||'.'||get_corr_rating_spec_version(p_office_id)||'', p_office_id);
       if l_corr_specs.count = 1 then
-         if l_base_specs.count = 1 then
-            --------------------------------
-            -- corr + base virtual rating --
-            --------------------------------
-            l_ratings1 := cwms_rating.retrieve_ratings_obj_f(l_location_id||'.Stage;Flow.USGS-BASE.USGS', null, null, null, p_office_id);
-            l_ratings1(l_ratings1.count).convert_to_database_time;
-            l_ratings2 := cwms_rating.retrieve_ratings_obj_f(l_location_id||'.Stage;Stage-Correction.USGS-CORR.USGS', null, null, null, p_office_id);
-            l_ratings2(l_ratings2.count).convert_to_database_time;
-            l_effective_date := greatest(l_ratings1(l_ratings1.count).effective_date, l_ratings2(l_ratings2.count).effective_date);
-            l_lines.delete;
-            append(l_lines, '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
-            append(l_lines, '  <rating-template office-id="'||p_office_id||'">');
-            append(l_lines, '    <parameters-id>Stage;Flow</parameters-id>');
-            append(l_lines, '    <version>USGS-Production</version>');
-            append(l_lines, '    <ind-parameter-specs>');
-            append(l_lines, '      <ind-parameter-spec position="1">');
-            append(l_lines, '        <parameter>Stage</parameter>');
-            append(l_lines, '        <in-range-method>LINEAR</in-range-method>');
-            append(l_lines, '        <out-range-low-method>NULL</out-range-low-method>');
-            append(l_lines, '        <out-range-high-method>NULL</out-range-high-method>');
-            append(l_lines, '      </ind-parameter-spec>');
-            append(l_lines, '    </ind-parameter-specs>');
-            append(l_lines, '    <dep-parameter>Flow</dep-parameter>');
-            append(l_lines, '    <description>Production Stage;Flow rating using USGS ratings</description>');
-            append(l_lines, '  </rating-template>');
-            append(l_lines, '  <rating-spec office-id="'||p_office_id||'">');
-            append(l_lines, '    <rating-spec-id>'||l_location_id||'.Stage;Flow.USGS-Production.USGS</rating-spec-id>');
-            append(l_lines, '    <template-id>Stage;Flow.USGS-Production</template-id>');
-            append(l_lines, '    <location-id>'||l_location_id||'</location-id>');
-            append(l_lines, '    <version>USGS</version>');
-            append(l_lines, '    <in-range-method>LINEAR</in-range-method>');
-            append(l_lines, '    <out-range-low-method>NULL</out-range-low-method>');
-            append(l_lines, '    <out-range-high-method>PREVIOUS</out-range-high-method>');
-            append(l_lines, '    <active>true</active>');
-            append(l_lines, '    <auto-update>true</auto-update>');
-            append(l_lines, '    <auto-activate>true</auto-activate>');
-            append(l_lines, '    <auto-migrate-extension>false</auto-migrate-extension>');
-            append(l_lines, '    <ind-rounding-specs>');
-            append(l_lines, '      <ind-rounding-spec position="1">'||l_base_specs(1).ind_rounding_specs(1)||'</ind-rounding-spec>');
-            append(l_lines, '    </ind-rounding-specs>');
-            append(l_lines, '    <dep-rounding-spec>'||l_base_specs(1).dep_rounding_spec||'</dep-rounding-spec>');
-            append(l_lines, '    <description>'||l_location_id||' Production Stage;Flow rating using USGS ratings</description>');
-            append(l_lines, '  </rating-spec>');
-            append(l_lines, '  <virtual-rating office-id="'||p_office_id||'">');
-            append(l_lines, '    <rating-spec-id>'||l_location_id||'.Stage;Flow.USGS-Production.USGS</rating-spec-id>');
-            append(l_lines, '    <effective-date>'||cwms_util.get_xml_time(l_effective_date, 'UTC')||'</effective-date>');
-            append(l_lines, '    <active>true</active>');
-            append(l_lines, '    <connections>R2I1=I1,R2I2=R1D,R3I1=R2D</connections>');
-            append(l_lines, '    <source-ratings>');
-            append(l_lines, '      <source-rating position="1">');
-            append(l_lines, '        <rating-spec-id>'||l_location_id||'.Stage;Stage-Correction.USGS-CORR.USGS {ft;ft}</rating-spec-id>');
-            append(l_lines, '      </source-rating>');
-            append(l_lines, '      <source-rating position="2">');
-            append(l_lines, '        <rating-spec-id>I1 + I2 {ft,ft;ft}</rating-spec-id>');
-            append(l_lines, '      </source-rating>');
-            append(l_lines, '      <source-rating position="3">');
-            append(l_lines, '        <rating-spec-id>'||l_location_id||'.Stage;Flow.USGS-BASE.USGS {ft;cfs}</rating-spec-id>');
-            append(l_lines, '      </source-rating>');
-            append(l_lines, '    </source-ratings>');
-            append(l_lines, '  </virtual-rating>');
-            append(l_lines, '</ratings>');
-         else
-            --------------------------------
-            -- corr + exsa virtual rating --
-            --------------------------------
-            l_ratings1 := cwms_rating.retrieve_ratings_obj_f(l_location_id||'.Stage;Flow.USGS-EXSA.USGS', null, null, null, p_office_id);
-            l_ratings1(l_ratings1.count).convert_to_database_time;
-            l_ratings2 := cwms_rating.retrieve_ratings_obj_f(l_location_id||'.Stage;Stage-Correction.USGS-CORR.USGS', null, null, null, p_office_id);
-            l_ratings2(l_ratings2.count).convert_to_database_time;
-            l_effective_date := greatest(l_ratings1(l_ratings1.count).effective_date, l_ratings2(l_ratings2.count).effective_date);
-            l_lines.delete;
-            append(l_lines, '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
-            append(l_lines, '  <rating-template office-id="'||p_office_id||'">');
-            append(l_lines, '    <parameters-id>Stage;Flow</parameters-id>');
-            append(l_lines, '    <version>USGS-Production</version>');
-            append(l_lines, '    <ind-parameter-specs>');
-            append(l_lines, '      <ind-parameter-spec position="1">');
-            append(l_lines, '        <parameter>Stage</parameter>');
-            append(l_lines, '        <in-range-method>LINEAR</in-range-method>');
-            append(l_lines, '        <out-range-low-method>NULL</out-range-low-method>');
-            append(l_lines, '        <out-range-high-method>NULL</out-range-high-method>');
-            append(l_lines, '      </ind-parameter-spec>');
-            append(l_lines, '    </ind-parameter-specs>');
-            append(l_lines, '    <dep-parameter>Flow</dep-parameter>');
-            append(l_lines, '    <description>Production Stage;Flow rating using USGS ratings</description>');
-            append(l_lines, '  </rating-template>');
-            append(l_lines, '  <rating-spec office-id="'||p_office_id||'">');
-            append(l_lines, '    <rating-spec-id>'||l_location_id||'.Stage;Flow.USGS-Production.USGS</rating-spec-id>');
-            append(l_lines, '    <template-id>Stage;Flow.USGS-Production</template-id>');
-            append(l_lines, '    <location-id>'||l_location_id||'</location-id>');
-            append(l_lines, '    <version>USGS</version>');
-            append(l_lines, '    <in-range-method>LINEAR</in-range-method>');
-            append(l_lines, '    <out-range-low-method>NULL</out-range-low-method>');
-            append(l_lines, '    <out-range-high-method>PREVIOUS</out-range-high-method>');
-            append(l_lines, '    <active>true</active>');
-            append(l_lines, '    <auto-update>true</auto-update>');
-            append(l_lines, '    <auto-activate>true</auto-activate>');
-            append(l_lines, '    <auto-migrate-extension>false</auto-migrate-extension>');
-            append(l_lines, '    <ind-rounding-specs>');
-            append(l_lines, '      <ind-rounding-spec position="1">'||l_exsa_specs(1).ind_rounding_specs(1)||'</ind-rounding-spec>');
-            append(l_lines, '    </ind-rounding-specs>');
-            append(l_lines, '    <dep-rounding-spec>'||l_exsa_specs(1).dep_rounding_spec||'</dep-rounding-spec>');
-            append(l_lines, '    <description>'||l_location_id||' Production Stage;Flow rating using USGS ratings</description>');
-            append(l_lines, '  </rating-spec>');
-            append(l_lines, '  <virtual-rating office-id="'||p_office_id||'">');
-            append(l_lines, '    <rating-spec-id>'||l_location_id||'.Stage;Flow.USGS-Production.USGS</rating-spec-id>');
-            append(l_lines, '    <effective-date>'||cwms_util.get_xml_time(l_effective_date, 'UTC')||'</effective-date>');
-            append(l_lines, '    <active>true</active>');
-            append(l_lines, '    <connections>R2I1=I1,R2I2=R1D,R3I1=R2D</connections>');
-            append(l_lines, '    <source-ratings>');
-            append(l_lines, '      <source-rating position="1">');
-            append(l_lines, '        <rating-spec-id>'||l_location_id||'.Stage;Stage-Correction.USGS-CORR.USGS {ft;ft}</rating-spec-id>');
-            append(l_lines, '      </source-rating>');
-            append(l_lines, '      <source-rating position="2">');
-            append(l_lines, '        <rating-spec-id>I1 + I2 {ft,ft;ft}</rating-spec-id>');
-            append(l_lines, '      </source-rating>');
-            append(l_lines, '      <source-rating position="3">');
-            append(l_lines, '        <rating-spec-id>'||l_location_id||'.Stage;Flow.USGS-EXSA.USGS {ft;cfs}</rating-spec-id>');
-            append(l_lines, '      </source-rating>');
-            append(l_lines, '    </source-ratings>');
-            append(l_lines, '  </virtual-rating>');
-            append(l_lines, '</ratings>');
-         end if;
+         --------------------------------
+         -- corr + base virtual rating --
+         --------------------------------
+         l_ratings2 := cwms_rating.retrieve_ratings_obj_f(l_location_id||'.Stage;Stage-Correction.'||get_corr_rating_templ_version(p_office_id)||'.'||get_corr_rating_spec_version(p_office_id)||'', null, null, null, p_office_id);
+         l_ratings2(l_ratings2.count).convert_to_database_time;
+         l_effective_date := greatest(l_ratings1(l_ratings1.count).effective_date, l_ratings2(l_ratings2.count).effective_date);
+         append(l_lines, '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
+         append(l_lines, '  <rating-template office-id="'||p_office_id||'">');
+         append(l_lines, '    <parameters-id>Stage;Flow</parameters-id>');
+         append(l_lines, '    <version>'||get_prod_rating_templ_version(p_office_id)||'</version>');
+         append(l_lines, '    <ind-parameter-specs>');
+         append(l_lines, '      <ind-parameter-spec position="1">');
+         append(l_lines, '        <parameter>Stage</parameter>');
+         append(l_lines, '        <in-range-method>LINEAR</in-range-method>');
+         append(l_lines, '        <out-range-low-method>NULL</out-range-low-method>');
+         append(l_lines, '        <out-range-high-method>NULL</out-range-high-method>');
+         append(l_lines, '      </ind-parameter-spec>');
+         append(l_lines, '    </ind-parameter-specs>');
+         append(l_lines, '    <dep-parameter>Flow</dep-parameter>');
+         append(l_lines, '    <description>Production Stage;Flow rating using USGS ratings</description>');
+         append(l_lines, '  </rating-template>');
+         append(l_lines, '  <rating-spec office-id="'||p_office_id||'">');
+         append(l_lines, '    <rating-spec-id>'||l_location_id||'.Stage;Flow.'||get_prod_rating_templ_version(p_office_id)||'.'||get_prod_rating_spec_version(p_office_id)||'</rating-spec-id>');
+         append(l_lines, '    <template-id>Stage;Flow.'||get_prod_rating_templ_version(p_office_id)||'</template-id>');
+         append(l_lines, '    <location-id>'||l_location_id||'</location-id>');
+         append(l_lines, '    <version>'||get_prod_rating_spec_version(p_office_id)||'</version>');
+         append(l_lines, '    <in-range-method>LINEAR</in-range-method>');
+         append(l_lines, '    <out-range-low-method>NULL</out-range-low-method>');
+         append(l_lines, '    <out-range-high-method>PREVIOUS</out-range-high-method>');
+         append(l_lines, '    <active>true</active>');
+         append(l_lines, '    <auto-update>true</auto-update>');
+         append(l_lines, '    <auto-activate>true</auto-activate>');
+         append(l_lines, '    <auto-migrate-extension>false</auto-migrate-extension>');
+         append(l_lines, '    <ind-rounding-specs>');
+         append(l_lines, '      <ind-rounding-spec position="1">'||l_base_specs(1).ind_rounding_specs(1)||'</ind-rounding-spec>');
+         append(l_lines, '    </ind-rounding-specs>');
+         append(l_lines, '    <dep-rounding-spec>'||l_base_specs(1).dep_rounding_spec||'</dep-rounding-spec>');
+         append(l_lines, '    <description>'||l_location_id||' Production Stage;Flow rating using USGS ratings</description>');
+         append(l_lines, '  </rating-spec>');
+         append(l_lines, '  <virtual-rating office-id="'||p_office_id||'">');
+         append(l_lines, '    <rating-spec-id>'||l_location_id||'.Stage;Flow.'||get_prod_rating_templ_version(p_office_id)||'.'||get_prod_rating_spec_version(p_office_id)||'</rating-spec-id>');
+         append(l_lines, '    <effective-date>'||cwms_util.get_xml_time(l_effective_date, 'UTC')||'</effective-date>');
+         append(l_lines, '    <active>true</active>');
+         append(l_lines, '    <connections>R2I1=I1,R2I2=R1D,R3I1=R2D</connections>');
+         append(l_lines, '    <source-ratings>');
+         append(l_lines, '      <source-rating position="1">');
+         append(l_lines, '        <rating-spec-id>'||l_location_id||'.Stage;Stage-Correction.'||get_corr_rating_templ_version(p_office_id)||'.'||get_corr_rating_spec_version(p_office_id)||' {ft;ft}</rating-spec-id>');
+         append(l_lines, '      </source-rating>');
+         append(l_lines, '      <source-rating position="2">');
+         append(l_lines, '        <rating-spec-id>I1 + I2 {ft,ft;ft}</rating-spec-id>');
+         append(l_lines, '      </source-rating>');
+         append(l_lines, '      <source-rating position="3">');
+         append(l_lines, '        <rating-spec-id>'||l_location_id||'.Stage;Flow.'||get_base_rating_templ_version(p_office_id)||'.'||get_base_rating_spec_version(p_office_id)||' {ft;cfs}</rating-spec-id>');
+         append(l_lines, '      </source-rating>');
+         append(l_lines, '    </source-ratings>');
+         append(l_lines, '  </virtual-rating>');
+         append(l_lines, '</ratings>');
       else
-         if l_base_specs.count = 1 then
-            ------------------------------
-            -- base transitional rating --
-            ------------------------------
-            l_ratings1 := cwms_rating.retrieve_ratings_obj_f(l_location_id||'.Stage;Flow.USGS-BASE.USGS', null, null, null, p_office_id);
-            l_ratings1(l_ratings1.count).convert_to_database_time;
-            l_effective_date := l_ratings1(l_ratings1.count).effective_date;
-            l_lines.delete;
-            append(l_lines, '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
-            append(l_lines, '  <rating-template office-id="'||p_office_id||'">');
-            append(l_lines, '    <parameters-id>Stage;Flow</parameters-id>');
-            append(l_lines, '    <version>USGS-Production</version>');
-            append(l_lines, '    <ind-parameter-specs>');
-            append(l_lines, '      <ind-parameter-spec position="1">');
-            append(l_lines, '        <parameter>Stage</parameter>');
-            append(l_lines, '        <in-range-method>LINEAR</in-range-method>');
-            append(l_lines, '        <out-range-low-method>NULL</out-range-low-method>');
-            append(l_lines, '        <out-range-high-method>NULL</out-range-high-method>');
-            append(l_lines, '      </ind-parameter-spec>');
-            append(l_lines, '    </ind-parameter-specs>');
-            append(l_lines, '    <dep-parameter>Flow</dep-parameter>');
-            append(l_lines, '    <description>Production Stage;Flow rating using USGS ratings</description>');
-            append(l_lines, '  </rating-template>');
-            append(l_lines, '  <rating-spec office-id="'||p_office_id||'">');
-            append(l_lines, '    <rating-spec-id>'||l_location_id||'.Stage;Flow.USGS-Production.USGS</rating-spec-id>');
-            append(l_lines, '    <template-id>Stage;Flow.USGS-Production</template-id>');
-            append(l_lines, '    <location-id>'||l_location_id||'</location-id>');
-            append(l_lines, '    <version>USGS</version>');
-            append(l_lines, '    <in-range-method>LINEAR</in-range-method>');
-            append(l_lines, '    <out-range-low-method>NULL</out-range-low-method>');
-            append(l_lines, '    <out-range-high-method>PREVIOUS</out-range-high-method>');
-            append(l_lines, '    <active>true</active>');
-            append(l_lines, '    <auto-update>true</auto-update>');
-            append(l_lines, '    <auto-activate>true</auto-activate>');
-            append(l_lines, '    <auto-migrate-extension>false</auto-migrate-extension>');
-            append(l_lines, '    <ind-rounding-specs>');
-            append(l_lines, '      <ind-rounding-spec position="1">'||l_base_specs(1).ind_rounding_specs(1)||'</ind-rounding-spec>');
-            append(l_lines, '    </ind-rounding-specs>');
-            append(l_lines, '    <dep-rounding-spec>'||l_base_specs(1).dep_rounding_spec||'</dep-rounding-spec>');
-            append(l_lines, '    <description>'||l_location_id||' Production Stage;Flow rating using USGS ratings</description>');
-            append(l_lines, '  </rating-spec>');
-            append(l_lines, '  <transitional-rating office-id="'||p_office_id||'">');
-            append(l_lines, '    <rating-spec-id>'||l_location_id||'.Stage;Flow.USGS-Production.USGS</rating-spec-id>');
-            append(l_lines, '    <units-id>ft;cfs</units-id>');
-            append(l_lines, '    <effective-date>'||cwms_util.get_xml_time(l_effective_date, 'UTC')||'</effective-date>');
-            append(l_lines, '    <active>true</active>');
-            append(l_lines, '    <select>');
-            append(l_lines, '      <default>R1</default>');
-            append(l_lines, '    </select>');
-            append(l_lines, '    <source-ratings>');
-            append(l_lines, '      <rating-spec-id position="1">'||l_location_id||'.Stage;Flow.USGS-BASE.USGS</rating-spec-id>');
-            append(l_lines, '    </source-ratings>');
-            append(l_lines, '  </transitional-rating>');
-            append(l_lines, '</ratings>');
-         else
-            ------------------------------
-            -- exsa transitional rating --
-            ------------------------------
-            l_ratings1 := cwms_rating.retrieve_ratings_obj_f(l_location_id||'.Stage;Flow.USGS-EXSA.USGS', null, null, null, p_office_id);
-            l_ratings1(l_ratings1.count).convert_to_database_time;
-            l_effective_date := l_ratings1(l_ratings1.count).effective_date;
-            l_lines.delete;
-            append(l_lines, '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
-            append(l_lines, '  <rating-template office-id="'||p_office_id||'">');
-            append(l_lines, '    <parameters-id>Stage;Flow</parameters-id>');
-            append(l_lines, '    <version>USGS-Production</version>');
-            append(l_lines, '    <ind-parameter-specs>');
-            append(l_lines, '      <ind-parameter-spec position="1">');
-            append(l_lines, '        <parameter>Stage</parameter>');
-            append(l_lines, '        <in-range-method>LINEAR</in-range-method>');
-            append(l_lines, '        <out-range-low-method>NULL</out-range-low-method>');
-            append(l_lines, '        <out-range-high-method>NULL</out-range-high-method>');
-            append(l_lines, '      </ind-parameter-spec>');
-            append(l_lines, '    </ind-parameter-specs>');
-            append(l_lines, '    <dep-parameter>Flow</dep-parameter>');
-            append(l_lines, '    <description>Production Stage;Flow rating using USGS ratings</description>');
-            append(l_lines, '  </rating-template>');
-            append(l_lines, '  <rating-spec office-id="'||p_office_id||'">');
-            append(l_lines, '    <rating-spec-id>'||l_location_id||'.Stage;Flow.USGS-Production.USGS</rating-spec-id>');
-            append(l_lines, '    <template-id>Stage;Flow.USGS-Production</template-id>');
-            append(l_lines, '    <location-id>'||l_location_id||'</location-id>');
-            append(l_lines, '    <version>USGS</version>');
-            append(l_lines, '    <in-range-method>LINEAR</in-range-method>');
-            append(l_lines, '    <out-range-low-method>NULL</out-range-low-method>');
-            append(l_lines, '    <out-range-high-method>PREVIOUS</out-range-high-method>');
-            append(l_lines, '    <active>true</active>');
-            append(l_lines, '    <auto-update>true</auto-update>');
-            append(l_lines, '    <auto-activate>true</auto-activate>');
-            append(l_lines, '    <auto-migrate-extension>false</auto-migrate-extension>');
-            append(l_lines, '    <ind-rounding-specs>');
-            append(l_lines, '      <ind-rounding-spec position="1">'||l_exsa_specs(1).ind_rounding_specs(1)||'</ind-rounding-spec>');
-            append(l_lines, '    </ind-rounding-specs>');
-            append(l_lines, '    <dep-rounding-spec>'||l_exsa_specs(1).dep_rounding_spec||'</dep-rounding-spec>');
-            append(l_lines, '    <description>'||l_location_id||' Production Stage;Flow rating using USGS ratings</description>');
-            append(l_lines, '  </rating-spec>');
-            append(l_lines, '  <transitional-rating office-id="'||p_office_id||'">');
-            append(l_lines, '    <rating-spec-id>'||l_location_id||'.Stage;Flow.USGS-Production.USGS</rating-spec-id>');
-            append(l_lines, '    <units-id>ft;cfs</units-id>');
-            append(l_lines, '    <effective-date>'||cwms_util.get_xml_time(l_effective_date, 'UTC')||'</effective-date>');
-            append(l_lines, '    <active>true</active>');
-            append(l_lines, '    <select>');
-            append(l_lines, '      <default>R1</default>');
-            append(l_lines, '    </select>');
-            append(l_lines, '    <source-ratings>');
-            append(l_lines, '      <rating-spec-id position="1">'||l_location_id||'.Stage;Flow.USGS-EXSA.USGS</rating-spec-id>');
-            append(l_lines, '    </source-ratings>');
-            append(l_lines, '  </transitional-rating>');
-            append(l_lines, '</ratings>');
-         end if;
+         ------------------------------
+         -- base transitional rating --
+         ------------------------------
+         l_effective_date := l_ratings1(l_ratings1.count).effective_date;
+         append(l_lines, '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
+         append(l_lines, '  <rating-template office-id="'||p_office_id||'">');
+         append(l_lines, '    <parameters-id>Stage;Flow</parameters-id>');
+         append(l_lines, '    <version>'||get_prod_rating_templ_version(p_office_id)||'</version>');
+         append(l_lines, '    <ind-parameter-specs>');
+         append(l_lines, '      <ind-parameter-spec position="1">');
+         append(l_lines, '        <parameter>Stage</parameter>');
+         append(l_lines, '        <in-range-method>LINEAR</in-range-method>');
+         append(l_lines, '        <out-range-low-method>NULL</out-range-low-method>');
+         append(l_lines, '        <out-range-high-method>NULL</out-range-high-method>');
+         append(l_lines, '      </ind-parameter-spec>');
+         append(l_lines, '    </ind-parameter-specs>');
+         append(l_lines, '    <dep-parameter>Flow</dep-parameter>');
+         append(l_lines, '    <description>Production Stage;Flow rating using USGS ratings</description>');
+         append(l_lines, '  </rating-template>');
+         append(l_lines, '  <rating-spec office-id="'||p_office_id||'">');
+         append(l_lines, '    <rating-spec-id>'||l_location_id||'.Stage;Flow.'||get_prod_rating_templ_version(p_office_id)||'.'||get_prod_rating_spec_version(p_office_id)||'</rating-spec-id>');
+         append(l_lines, '    <template-id>Stage;Flow.'||get_prod_rating_templ_version(p_office_id)||'</template-id>');
+         append(l_lines, '    <location-id>'||l_location_id||'</location-id>');
+         append(l_lines, '    <version>'||get_prod_rating_spec_version(p_office_id)||'</version>');
+         append(l_lines, '    <in-range-method>LINEAR</in-range-method>');
+         append(l_lines, '    <out-range-low-method>NULL</out-range-low-method>');
+         append(l_lines, '    <out-range-high-method>PREVIOUS</out-range-high-method>');
+         append(l_lines, '    <active>true</active>');
+         append(l_lines, '    <auto-update>true</auto-update>');
+         append(l_lines, '    <auto-activate>true</auto-activate>');
+         append(l_lines, '    <auto-migrate-extension>false</auto-migrate-extension>');
+         append(l_lines, '    <ind-rounding-specs>');
+         append(l_lines, '      <ind-rounding-spec position="1">'||l_base_specs(1).ind_rounding_specs(1)||'</ind-rounding-spec>');
+         append(l_lines, '    </ind-rounding-specs>');
+         append(l_lines, '    <dep-rounding-spec>'||l_base_specs(1).dep_rounding_spec||'</dep-rounding-spec>');
+         append(l_lines, '    <description>'||l_location_id||' Production Stage;Flow rating using USGS ratings</description>');
+         append(l_lines, '  </rating-spec>');
+         append(l_lines, '  <transitional-rating office-id="'||p_office_id||'">');
+         append(l_lines, '    <rating-spec-id>'||l_location_id||'.Stage;Flow.'||get_prod_rating_templ_version(p_office_id)||'.'||get_prod_rating_spec_version(p_office_id)||'</rating-spec-id>');
+         append(l_lines, '    <units-id>ft;cfs</units-id>');
+         append(l_lines, '    <effective-date>'||cwms_util.get_xml_time(l_effective_date, 'UTC')||'</effective-date>');
+         append(l_lines, '    <active>true</active>');
+         append(l_lines, '    <select>');
+         append(l_lines, '      <default>R1</default>');
+         append(l_lines, '    </select>');
+         append(l_lines, '    <source-ratings>');
+         append(l_lines, '      <rating-spec-id position="1">'||l_location_id||'.Stage;Flow.'||get_base_rating_templ_version(p_office_id)||'.'||get_base_rating_spec_version(p_office_id)||'</rating-spec-id>');
+         append(l_lines, '    </source-ratings>');
+         append(l_lines, '  </transitional-rating>');
+         append(l_lines, '</ratings>');
       end if;
+   elsif l_exsa_specs.count = 1 then
+      ------------------------------
+      -- exsa transitional rating --
+      ------------------------------
+      l_ratings1 := cwms_rating.retrieve_ratings_obj_f(l_location_id||'.Stage;Flow.'||get_exsa_rating_templ_version(p_office_id)||'.'||get_exsa_rating_spec_version(p_office_id)||'', null, null, null, p_office_id);
+      l_ratings1(l_ratings1.count).convert_to_database_time;
+      l_effective_date := l_ratings1(l_ratings1.count).effective_date;
+      append(l_lines, '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
+      append(l_lines, '  <rating-template office-id="'||p_office_id||'">');
+      append(l_lines, '    <parameters-id>Stage;Flow</parameters-id>');
+      append(l_lines, '    <version>'||get_prod_rating_templ_version(p_office_id)||'</version>');
+      append(l_lines, '    <ind-parameter-specs>');
+      append(l_lines, '      <ind-parameter-spec position="1">');
+      append(l_lines, '        <parameter>Stage</parameter>');
+      append(l_lines, '        <in-range-method>LINEAR</in-range-method>');
+      append(l_lines, '        <out-range-low-method>NULL</out-range-low-method>');
+      append(l_lines, '        <out-range-high-method>NULL</out-range-high-method>');
+      append(l_lines, '      </ind-parameter-spec>');
+      append(l_lines, '    </ind-parameter-specs>');
+      append(l_lines, '    <dep-parameter>Flow</dep-parameter>');
+      append(l_lines, '    <description>Production Stage;Flow rating using USGS ratings</description>');
+      append(l_lines, '  </rating-template>');
+      append(l_lines, '  <rating-spec office-id="'||p_office_id||'">');
+      append(l_lines, '    <rating-spec-id>'||l_location_id||'.Stage;Flow.'||get_prod_rating_templ_version(p_office_id)||'.'||get_prod_rating_spec_version(p_office_id)||'</rating-spec-id>');
+      append(l_lines, '    <template-id>Stage;Flow.'||get_prod_rating_templ_version(p_office_id)||'</template-id>');
+      append(l_lines, '    <location-id>'||l_location_id||'</location-id>');
+      append(l_lines, '    <version>'||get_prod_rating_spec_version(p_office_id)||'</version>');
+      append(l_lines, '    <in-range-method>LINEAR</in-range-method>');
+      append(l_lines, '    <out-range-low-method>NULL</out-range-low-method>');
+      append(l_lines, '    <out-range-high-method>PREVIOUS</out-range-high-method>');
+      append(l_lines, '    <active>true</active>');
+      append(l_lines, '    <auto-update>true</auto-update>');
+      append(l_lines, '    <auto-activate>true</auto-activate>');
+      append(l_lines, '    <auto-migrate-extension>false</auto-migrate-extension>');
+      append(l_lines, '    <ind-rounding-specs>');
+      append(l_lines, '      <ind-rounding-spec position="1">'||l_exsa_specs(1).ind_rounding_specs(1)||'</ind-rounding-spec>');
+      append(l_lines, '    </ind-rounding-specs>');
+      append(l_lines, '    <dep-rounding-spec>'||l_exsa_specs(1).dep_rounding_spec||'</dep-rounding-spec>');
+      append(l_lines, '    <description>'||l_location_id||' Production Stage;Flow rating using USGS ratings</description>');
+      append(l_lines, '  </rating-spec>');
+      append(l_lines, '  <transitional-rating office-id="'||p_office_id||'">');
+      append(l_lines, '    <rating-spec-id>'||l_location_id||'.Stage;Flow.'||get_prod_rating_templ_version(p_office_id)||'.'||get_prod_rating_spec_version(p_office_id)||'</rating-spec-id>');
+      append(l_lines, '    <units-id>ft;cfs</units-id>');
+      append(l_lines, '    <effective-date>'||cwms_util.get_xml_time(l_effective_date, 'UTC')||'</effective-date>');
+      append(l_lines, '    <active>true</active>');
+      append(l_lines, '    <select>');
+      append(l_lines, '      <default>R1</default>');
+      append(l_lines, '    </select>');
+      append(l_lines, '    <source-ratings>');
+      append(l_lines, '      <rating-spec-id position="1">'||l_location_id||'.Stage;Flow.'||get_exsa_rating_templ_version(p_office_id)||'.'||get_exsa_rating_spec_version(p_office_id)||'</rating-spec-id>');
+      append(l_lines, '    </source-ratings>');
+      append(l_lines, '  </transitional-rating>');
+      append(l_lines, '</ratings>');
+   end if;
+   if l_lines.count > 0 then
       cwms_rating.store_ratings_xml(cwms_util.join_text(l_lines, chr(10)), 'F', 'F');
    end if;
 end generate_production_ratings;
@@ -3668,7 +3804,7 @@ begin
     -- get any BASE ratings that don't exist --
     -------------------------------------------
     for i in 1..l_locations.count loop
-       l_ratings := cwms_rating.retrieve_ratings_obj_f(l_locations(i)||'.Stage;Flow.USGS-BASE.USGS', null, null, null, l_office_id);
+       l_ratings := cwms_rating.retrieve_ratings_obj_f(l_locations(i)||'.Stage;Flow.'||get_base_rating_templ_version(l_office_id)||'.'||get_base_rating_spec_version(l_office_id)||'', null, null, null, l_office_id);
        if l_ratings.count = 0 then
          l_locations_str := l_locations_str||','||l_locations(i);
          if length(l_locations_str) > 32000 then
@@ -3685,7 +3821,7 @@ begin
     -- get any CORR ratings that don't exist --
     -------------------------------------------
     for i in 1..l_locations.count loop
-       l_ratings := cwms_rating.retrieve_ratings_obj_f(l_locations(i)||'.Stage;Stage-Correction.USGS-CORR.USGS', null, null, null, l_office_id);
+       l_ratings := cwms_rating.retrieve_ratings_obj_f(l_locations(i)||'.Stage;Stage-Correction.'||get_corr_rating_templ_version(l_office_id)||'.'||get_corr_rating_spec_version(l_office_id)||'', null, null, null, l_office_id);
        if l_ratings.count = 0 then
          l_locations_str := l_locations_str||','||l_locations(i);
          if length(l_locations_str) > 32000 then
