@@ -6760,7 +6760,7 @@ AS
                           || SYS_CONTEXT ('CWMS_ENV',
                                           'SESSION_OFFICE_ID')
                           || '''); cwms_ts.update_ts_extents('''
-                          || l_ts_code
+                          || p_ts_code
                           || '''); end;';
                   ELSE
                       l_plsql_block :=
@@ -6768,7 +6768,7 @@ AS
                           || SYS_CONTEXT ('CWMS_ENV',
                                           'SESSION_OFFICE_ID')
                           || '''); cwms_ts.update_ts_extents('''
-                          || l_ts_code
+                          || p_ts_code
                           || ''',to_date('''
                           || TO_CHAR (p_version_date_utc,
                                       'YYYY-MM-DD HH24:MI:SS')
