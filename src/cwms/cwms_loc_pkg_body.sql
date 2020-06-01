@@ -2772,6 +2772,42 @@ AS
 
          delete from at_turbine
                where turbine_location_code in (select * from table (l_location_codes));
+         -----------
+         -- pools --
+         -----------
+         declare
+            l_office_ids    str_tab_t;
+            l_project_ids   str_tab_t;
+            l_pool_names    str_tab_t;
+            l_bottom_levels str_tab_t;
+            l_top_levels    str_tab_t;
+         begin
+            for i in 1..l_location_ids.count loop
+               cwms_pool.cat_pools(
+                  p_cat_cursor        => l_cursor,
+                  p_project_id_mask   => l_location_ids(i),
+                  p_pool_name_mask    => '*',
+                  p_bottom_level_mask => '*',          
+                  p_top_level_mask    => '*',
+                  p_include_explicit  => 'T',
+                  p_include_implicit  => 'F',
+                  p_office_id_mask    => p_db_office_id);
+               fetch l_cursor
+                bulk collect
+                into l_office_ids,
+                     l_project_ids,
+                     l_pool_names,
+                     l_bottom_levels,
+                     l_top_levels;
+               close l_cursor;
+               for j in 1..l_office_ids.count loop
+                  cwms_pool.delete_pool(
+                     p_project_id => l_project_ids(j),
+                     p_pool_name  => l_pool_names(j),
+                     p_office_id  => l_office_ids(j));
+               end loop;
+            end loop;
+         end;
          --------------
          -- projects --
          --------------
