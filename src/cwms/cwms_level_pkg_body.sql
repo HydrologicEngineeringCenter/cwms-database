@@ -5726,10 +5726,10 @@ begin
    ----------------------
    -- delete any pools --
    ----------------------
-   if l_pool_codes is not null then
-      delete
-        from at_pool
-       where pool_code in (select column_value from table(l_pool_codes));
+   if l_delete_pools then
+      for i in 1..l_pool_codes.count loop
+         cwms_pool.delete_pool(l_pool_codes(i));
+      end loop;
    end if;
    -------------------------------
    -- delete the location level --
