@@ -193,6 +193,61 @@ procedure store_pool(
    p_create_pool_name in varchar2 default 'F',
    p_office_id        in varchar2 default null);
 /**
+ * Stores pool information for a project.
+ *
+ * @param p_project_id       The name of the project to store the pool information for
+ * @param p_pool_name        The name of the pool
+ * @param p_bottom_level_id  The name of the location that defines the bottom of the pool. The location portion of the location level name may be omitted (i.e., it may start witht the parameter portion) 
+ * @param p_top_level_id     The name of the location that defines the top of the pool. The location portion of the location level name may be omitted (i.e., it may start witht the parameter portion)
+ * @param p_attribute        A numeric value associated with the pool, normally used for sorting pools withing a project
+ * @param p_description      The description of the pool
+ * @param p_clob_text        Text associated with the pool, normally structured text formatted in XML or JSON 
+ * @param p_fail_if_exists   A flag (T/F) specifying whether to raise an exception if the pool already exists for the project. If F and the pool exists, its top and bottom levels will be updated.
+ * @param p_create_pool_name A flag (T/F) specifying whether to create the pool name if it doesn't already exist. 
+ * @param p_office_id        The name of the office that owns the pool. If NULL or not specified, the session user's office will be used
+ *
+ */
+procedure store_pool2(
+   p_project_id       in varchar2,
+   p_pool_name        in varchar2,
+   p_bottom_level_id  in varchar2,
+   p_top_level_id     in varchar2,
+   p_attribute        in number   default null,
+   p_description      in varchar2 default null,
+   p_clob_text        in clob     default null,
+   p_fail_if_exists   in varchar2 default 'T',
+   p_create_pool_name in varchar2 default 'F',
+   p_office_id        in varchar2 default null);
+/**
+ * Stores pool information for a project.
+ *
+ * @param p_project_id       The name of the project to store the pool information for
+ * @param p_pool_name        The name of the pool
+ * @param p_bottom_level_id  The name of the location that defines the bottom of the pool. The location portion of the location level name may be omitted (i.e., it may start witht the parameter portion) 
+ * @param p_top_level_id     The name of the location that defines the top of the pool. The location portion of the location level name may be omitted (i.e., it may start witht the parameter portion)
+ * @param p_attribute        A numeric value associated with the pool, normally used for sorting pools withing a project
+ * @param p_description      The description of the pool
+ * @param p_clob_text        Text associated with the pool, normally structured text formatted in XML or JSON 
+ * @param p_fail_if_exists   A flag (T/F) specifying whether to raise an exception if the pool already exists for the project. If F and the pool exists, its top and bottom levels will be updated.
+ * @param p_create_pool_name A flag (T/F) specifying whether to create the pool name if it doesn't already exist. 
+ * @param p_office_id        The name of the office that owns the pool. If NULL or not specified, the session user's office will be used
+ *
+ * @return The unique numeric code of the p_clob_text value in the AT_CLOB table. 
+ *
+ */
+function store_pool2_f(
+   p_project_id       in varchar2,
+   p_pool_name        in varchar2,
+   p_bottom_level_id  in varchar2,
+   p_top_level_id     in varchar2,
+   p_attribute        in number   default null,
+   p_description      in varchar2 default null,
+   p_clob_text        in clob     default null,
+   p_fail_if_exists   in varchar2 default 'T',
+   p_create_pool_name in varchar2 default 'F',
+   p_office_id        in varchar2 default null)
+   return integer;
+/**
  * Retrieves pool information for a project.
  *
  * @param p_bottom_level_id  The name of the location that defines the bottom of the pool. The location portion of the location level name may be omitted (i.e., it may start witht the parameter portion) 
@@ -224,7 +279,29 @@ function retrieve_pool_f(
    p_office_id  in  varchar2 default null)
    return str_tab_t;
 /**
- * Deletess pool information for a project.
+ * Retrieves pool information for a project.
+ *
+ * @param p_bottom_level_id  The name of the location that defines the bottom of the pool. The location portion of the location level name may be omitted (i.e., it may start witht the parameter portion) 
+ * @param p_top_level_id     The name of the location that defines the top of the pool. The location portion of the location level name may be omitted (i.e., it may start witht the parameter portion)
+ * @param p_attribute        A numeric value associated with the pool, normally used for sorting pools withing a project
+ * @param p_description      The description of the pool
+ * @param p_clob_text        Text associated with the pool, normally structured text formatted in XML or JSON 
+ * @param p_project_id       The name of the project to retrieve the pool information for
+ * @param p_pool_name        The name of the pool
+ * @param p_office_id        The name of the office that owns the pool. If NULL or not specified, the session user's office will be used
+ *
+ */
+procedure retrieve_pool2(
+   p_bottom_level_id  out varchar2,
+   p_top_level_id     out varchar2,
+   p_attribute        out number,
+   p_description      out varchar2,
+   p_clob_text        out clob,
+   p_project_id       in  varchar2,
+   p_pool_name        in  varchar2,
+   p_office_id        in  varchar2 default null);
+/**
+ * Deletes pool information for a project.
  *
  * @param p_project_id The name of the project to delete the pool information for
  * @param p_pool_name  The name of the pool
@@ -235,6 +312,14 @@ procedure delete_pool(
    p_project_id in varchar2,
    p_pool_name  in varchar2,
    p_office_id  in varchar2 default null);
+/**
+ * Deletess pool information for a project.
+ *
+ * @param p_pool_code The unique numeric code of the pool to delete
+ *
+ */
+procedure delete_pool(
+   p_pool_code in integer);
 /**
  * Catalogs pools in the database.
  * Matching is accomplished with glob-style wildcards, as shown below, instead
@@ -294,6 +379,30 @@ procedure delete_pool(
  *                                <td class="descr">top_level_id</td>
  *                                <td class="descr">varchar2(256)</td>
  *                                <td class="descr">The pool name</td>
+ *                              </tr>
+ *                              <tr>
+ *                                <td class="descr-center">6</td>
+ *                                <td class="descr">attribute</td>
+ *                                <td class="descr">number</td>
+ *                                <td class="descr">The numeric attribute associated with the pool, normally used for sorting within a project</td>
+ *                              </tr>
+ *                              <tr>
+ *                                <td class="descr-center">7</td>
+ *                                <td class="descr">description</td>
+ *                                <td class="descr">varchar2(128)</td>
+ *                                <td class="descr">The text description of the pool</td>
+ *                              </tr>
+ *                              <tr>
+ *                                <td class="descr-center">8</td>
+ *                                <td class="descr">clob_code</td>
+ *                                <td class="descr">integer</td>
+ *                                <td class="descr">The unique numeric code of the clob_text field in the at_clob table</td>
+ *                              </tr>
+ *                              <tr>
+ *                                <td class="descr-center">9</td>
+ *                                <td class="descr">clob_text</td>
+ *                                <td class="descr">clob</td>
+ *                                <td class="descr">The text of the CLOB associated with the pool, normally structured as XML or JSON</td>
  *                              </tr>
  *                            </table>
  * @param p_pool_name_mask    The pool name pattern to match (case_insensitive).
@@ -416,6 +525,30 @@ procedure cat_pools(
  *             <td class="descr">top_level_id</td>
  *             <td class="descr">varchar2(256)</td>
  *             <td class="descr">The pool name</td>
+ *           </tr>
+ *           <tr>
+ *             <td class="descr-center">6</td>
+ *             <td class="descr">attribute</td>
+ *             <td class="descr">number</td>
+ *             <td class="descr">The numeric attribute associated with the pool, normally used for sorting within a project</td>
+ *           </tr>
+ *           <tr>
+ *             <td class="descr-center">7</td>
+ *             <td class="descr">description</td>
+ *             <td class="descr">varchar2(128)</td>
+ *             <td class="descr">The text description of the pool</td>
+ *           </tr>
+ *           <tr>
+ *             <td class="descr-center">8</td>
+ *             <td class="descr">clob_code</td>
+ *             <td class="descr">integer</td>
+ *             <td class="descr">The unique numeric code of the clob_text field in the at_clob table</td>
+ *           </tr>
+ *           <tr>
+ *             <td class="descr-center">9</td>
+ *             <td class="descr">clob_text</td>
+ *             <td class="descr">clob</td>
+ *             <td class="descr">The text of the CLOB associated with the pool, normally structured as XML or JSON</td>
  *           </tr>
  *         </table>
  */

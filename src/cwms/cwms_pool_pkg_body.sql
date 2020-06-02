@@ -205,12 +205,12 @@ begin
          ||cwms_util.user_office_id);
    end if;
    if p_delete_action in (cwms_util.delete_data, cwms_util.delete_all) then
-      ----------------------------
-      -- delete associated data --
-      ----------------------------
-      delete 
-        from at_pool 
-       where pool_name_code = l_rec.pool_name_code;
+      -----------------------------
+      -- delete associated pools --
+      -----------------------------
+      for rec in (select pool_code from at_pool where pool_name_code = l_rec.pool_name_code) loop
+         delete_pool(rec.pool_code);
+      end loop;
    end if;
    if p_delete_action in (cwms_util.delete_key, cwms_util.delete_all) then
       -----------------------
@@ -281,6 +281,65 @@ procedure store_pool(
    p_fail_if_exists   in varchar2 default 'T',
    p_create_pool_name in varchar2 default 'F',
    p_office_id        in varchar2 default null)
+is
+   l_clob_code integer;
+begin
+   l_clob_code := store_pool2_f(
+      p_project_id,
+      p_pool_name,
+      p_bottom_level_id,
+      p_top_level_id,
+      null,
+      null,
+      null,
+      p_fail_if_exists,
+      p_create_pool_name,
+      p_office_id);
+end store_pool;
+--------------------------------------------------------------------------------
+-- procedure store_pool2
+--------------------------------------------------------------------------------
+procedure store_pool2(
+   p_project_id       in varchar2,
+   p_pool_name        in varchar2,
+   p_bottom_level_id  in varchar2,
+   p_top_level_id     in varchar2,
+   p_attribute        in number   default null,
+   p_description      in varchar2 default null,
+   p_clob_text        in clob     default null,
+   p_fail_if_exists   in varchar2 default 'T',
+   p_create_pool_name in varchar2 default 'F',
+   p_office_id        in varchar2 default null)
+is
+   l_clob_code integer;
+begin
+   l_clob_code := store_pool2_f(
+      p_project_id,
+      p_pool_name,
+      p_bottom_level_id,
+      p_top_level_id,
+      p_attribute,
+      p_description,
+      p_clob_text,
+      p_fail_if_exists,
+      p_create_pool_name,
+      p_office_id);
+end store_pool2;
+--------------------------------------------------------------------------------
+-- function store_pool2_f
+--------------------------------------------------------------------------------
+function store_pool2_f(
+   p_project_id       in varchar2,
+   p_pool_name        in varchar2,
+   p_bottom_level_id  in varchar2,
+   p_top_level_id     in varchar2,
+   p_attribute        in number   default null,
+   p_description      in varchar2 default null,
+   p_clob_text        in clob     default null,
+   p_fail_if_exists   in varchar2 default 'T',
+   p_create_pool_name in varchar2 default 'F',
+   p_office_id        in varchar2 default null)
+   return integer 
 is
    l_project          project_obj_t;
    l_location_id      varchar2(57);
@@ -484,6 +543,16 @@ begin
    l_rec.project_code   := l_location_code;
    l_rec.bottom_level   := l_bottom_level_id;
    l_rec.top_level      := l_top_level_id;
+   l_rec.attribute      := p_attribute;
+   l_rec.description    := p_description;
+   if p_clob_text is not null and dbms_lob.getlength(p_clob_text) > 0 then
+      l_rec.clob_code := cwms_text.store_text(
+         p_text           => p_clob_text,
+         p_id             => '/POOL/'||upper(p_project_id)||'/'||upper(p_pool_name),
+         p_description    => p_description,
+         p_fail_if_exists => 'F',
+         p_office_id      => cwms_util.get_db_office_id_from_code(l_office_code));
+   end if;
    ---------------------------------
    -- insert or update the record --
    ---------------------------------
@@ -493,13 +562,62 @@ begin
       l_rec.pool_code := cwms_seq.nextval;
       insert into at_pool values l_rec;
    end if;
-end store_pool;
+   return l_rec.clob_code;
+end store_pool2_f;
 --------------------------------------------------------------------------------
 -- procedure retrieve_pool
 --------------------------------------------------------------------------------
 procedure retrieve_pool(
    p_bottom_level_id  out varchar2,
    p_top_level_id     out varchar2,
+   p_project_id       in  varchar2,
+   p_pool_name        in  varchar2,
+   p_office_id        in  varchar2 default null)
+is
+   l_attribute   number;
+   l_description varchar2(128);
+   l_clob_text   clob;
+begin
+   retrieve_pool2(
+      p_bottom_level_id,
+      p_top_level_id,
+      l_attribute,
+      l_description,
+      l_clob_text,
+      p_project_id,
+      p_pool_name,
+      p_office_id);
+end retrieve_pool;
+--------------------------------------------------------------------------------
+-- function retrieve_pool_f
+--------------------------------------------------------------------------------
+function retrieve_pool_f(
+   p_project_id in  varchar2,
+   p_pool_name  in  varchar2,
+   p_office_id  in  varchar2 default null)
+   return str_tab_t
+is
+   l_bottom_level varchar2(256);
+   l_top_level    varchar2(256);
+begin
+   retrieve_pool(
+      l_bottom_level,
+      l_top_level,
+      p_project_id,
+      p_pool_name,
+      p_office_id);
+      
+   return str_tab_t(l_bottom_level, l_top_level);      
+end retrieve_pool_f;
+--------------------------------------------------------------------------------
+-- procedure retrieve_pool2
+--------------------------------------------------------------------------------
+procedure retrieve_pool2(
+   p_bottom_level_id  out varchar2,
+   p_top_level_id     out varchar2,
+   p_attribute        out number,
+   p_description      out varchar2,
+   p_clob_text        out clob,
    p_project_id       in  varchar2,
    p_pool_name        in  varchar2,
    p_office_id        in  varchar2 default null)
@@ -616,28 +734,64 @@ begin
    end;
    p_bottom_level_id := l_rec.bottom_level;
    p_top_level_id    := l_rec.top_level;
-end retrieve_pool;
+   p_attribute       := l_rec.attribute;
+   p_description     := l_rec.description;
+   if l_rec.clob_code is not null then
+      select value into p_clob_text from at_clob where clob_code = l_rec.clob_code;
+   end if;
+end retrieve_pool2;
 --------------------------------------------------------------------------------
--- function retrieve_pool_f
+-- procedure delete_pool
 --------------------------------------------------------------------------------
-function retrieve_pool_f(
-   p_project_id in  varchar2,
-   p_pool_name  in  varchar2,
-   p_office_id  in  varchar2 default null)
-   return str_tab_t
+procedure delete_pool(
+   p_pool_code in integer)
 is
-   l_bottom_level varchar2(256);
-   l_top_level    varchar2(256);
+   l_rec       at_pool%rowtype;
+   l_office_id varchar2(16);
 begin
-   retrieve_pool(
-      l_bottom_level,
-      l_top_level,
-      p_project_id,
-      p_pool_name,
-      p_office_id);
+   begin   
+      select *
+        into l_rec
+        from at_pool
+       where pool_code = p_pool_code;
+   exception
+      when no_data_found then
+         ---------------
+         -- error out --
+         ---------------
+         cwms_err.raise(
+            'ITEM_DOES_NOT_EXIST', 
+            'Pool',
+            p_pool_code);
+   end;
+   select o.office_id
+     into l_office_id
+     from at_physical_location pl,
+          at_base_location bl,
+          cwms_office o
+    where pl.location_code = l_rec.project_code
+      and bl.base_location_code = pl.base_location_code
+      and o.office_code = bl.db_office_code;
       
-   return str_tab_t(l_bottom_level, l_top_level);      
-end retrieve_pool_f;
+   if cwms_util.user_office_id not in (l_office_id, 'CWMS', 'SYS') then
+      -----------------------------
+      -- insufficient privileges --
+      -----------------------------
+      cwms_err.raise(
+         'ERROR',
+         'Cannot delete '
+         ||l_office_id
+         ||'-owned pool while office is '
+         ||cwms_util.user_office_id);
+   end if;
+   ------------------------------------
+   -- delete the record and children --
+   ------------------------------------
+   delete from at_pool where pool_code = l_rec.pool_code; 
+   if l_rec.clob_code is not null then
+      delete from at_clob where clob_code = l_rec.clob_code;
+   end if;
+end delete_pool;
 --------------------------------------------------------------------------------
 -- procedure delete_pool
 --------------------------------------------------------------------------------
@@ -646,7 +800,7 @@ procedure delete_pool(
    p_pool_name  in varchar2,
    p_office_id  in varchar2 default null)
 is
-   l_rec         at_pool%rowtype;
+   l_pool_code   integer;
    l_office_code integer;
    l_office_id   varchar2(16);
 begin
@@ -662,8 +816,8 @@ begin
       cwms_err.raise('NULL_ARGUMENT', 'P_POOL_NAME');
    end if;
    begin   
-      select *
-        into l_rec
+      select pool_code
+        into l_pool_code
         from at_pool
        where pool_name_code = (select pool_name_code from at_pool_name where upper(pool_name) = upper(p_pool_name))
          and project_code = cwms_loc.get_location_code(l_office_code, p_project_id);
@@ -681,21 +835,10 @@ begin
             ||' : '
             ||p_pool_name);
    end;
-   if l_office_code != cwms_util.user_office_code and cwms_util.user_office_code != cwms_util.db_office_code_all then
-      -----------------------------
-      -- insufficient privileges --
-      -----------------------------
-      cwms_err.raise(
-         'ERROR',
-         'Cannot delete '
-         ||l_office_id
-         ||'-owned pool while office is '
-         ||cwms_util.user_office_id);
-   end if;
    -----------------------
    -- delete the record --
    -----------------------
-   delete from at_pool where pool_code = l_rec.pool_code; 
+   delete_pool(l_pool_code);
 end delete_pool;
 --------------------------------------------------------------------------------
 -- procedure cat_pools
@@ -728,31 +871,74 @@ begin
          -- explicit and implicit pools --
          ---------------------------------
          open p_cat_cursor for
-            select * 
+            select *
               from (--------------------
                     -- explicit pools --
                     --------------------
-                     select o.office_id,
-                            bl.base_location_id
-                            ||substr('.', 1, length(pl.sub_location_id))
-                            ||pl.sub_location_id as project_id,
-                            pn.pool_name,
-                            po.bottom_level,
-                            po.top_level
-                       from at_pool po,
-                            at_pool_name pn,
-                            at_physical_location pl,
-                            at_base_location bl,
-                            cwms_office o
-                      where pn.pool_name_code = po.pool_name_code
-                        and pl.location_code = po.project_code
-                        and bl.base_location_code = pl.base_location_code
-                        and o.office_code = bl.db_office_code
-                        and upper(po.bottom_level) like l_bottom_level_mask escape '\'
-                        and upper(po.top_level) like l_top_level_mask escape '\'
-                        and o.office_id like l_office_id_mask escape '\'
-                        and upper(pn.pool_name) like l_pool_name_mask escape '\'
-                        and upper(bl.base_location_id||substr('.', 1, length(pl.sub_location_id))||pl.sub_location_id) like l_project_id_mask escape '\'
+                     select office_id,
+                            base_location_id
+                            ||substr('.', 1, length(sub_location_id))
+                            ||sub_location_id as project_id,
+                            pool_name, 
+                            base_location_id
+                            ||substr('.', 1, length(sub_location_id))
+                            ||sub_location_id
+                            ||'.'
+                            ||bottom_level as bottom_level,
+                            base_location_id
+                            ||substr('.', 1, length(sub_location_id))
+                            ||sub_location_id
+                            ||'.'
+                            ||top_level as top_level,
+                            attribute,
+                            description,
+                            clob_code,
+                            clob_text
+                       from (select o.office_id,
+                                    bl.base_location_id,
+                                    pl.sub_location_id,
+                                    pl.location_code,
+                                    pn.pool_name,
+                                    po.bottom_level,
+                                    po.top_level,
+                                    po.attribute,
+                                    po.description,
+                                    null as clob_code,
+                                    null as clob_text
+                               from at_pool po,
+                                    at_pool_name pn,
+                                    at_physical_location pl,
+                                    at_base_location bl,
+                                    cwms_office o
+                              where pn.pool_name_code = po.pool_name_code
+                                and pl.location_code = po.project_code
+                                and bl.base_location_code = pl.base_location_code
+                                and o.office_code = bl.db_office_code
+                                and po.clob_code is null
+                             union all                    
+                             select o.office_id,
+                                    bl.base_location_id,
+                                    pl.sub_location_id,
+                                    pl.location_code,
+                                    pn.pool_name,
+                                    po.bottom_level,
+                                    po.top_level,
+                                    po.attribute,
+                                    po.description,
+                                    cl.clob_code,
+                                    cl.value as clob_text
+                               from at_pool po,
+                                    at_pool_name pn,
+                                    at_physical_location pl,
+                                    at_base_location bl,
+                                    at_clob cl,
+                                    cwms_office o
+                              where pn.pool_name_code = po.pool_name_code
+                                and pl.location_code = po.project_code
+                                and bl.base_location_code = pl.base_location_code
+                                and o.office_code = bl.db_office_code
+                                and cl.clob_code = po.clob_code
+                            )
                     union all
                     --------------------
                     -- implicit pools --
@@ -761,13 +947,20 @@ begin
                            project_id,
                            pool_name,
                            replace(top_level, 'Top of ', 'Bottom of ') as bottom_level,
-                           top_level
+                           top_level,
+                           null as attribute,
+                           null as description,
+                           null as clob_code,
+                           null as clob_text
                       from (select o.office_id,
                                    bl.base_location_id
                                    ||substr('.', 1, length(pl.sub_location_id))
                                    ||pl.sub_location_id as project_id,
-                                   trim(substr(specified_level_id, 8)) as pool_name,
-                                   bp.base_parameter_id
+                                   trim(substr(sp.specified_level_id, 8)) as pool_name,
+                                   bl.base_location_id
+                                   ||substr('.', 1, length(pl.sub_location_id))
+                                   ||pl.sub_location_id
+                                   ||'.'||bp.base_parameter_id
                                    ||'.'||pt.parameter_type_id
                                    ||'.'||d.duration_id
                                    ||'.'||sp.specified_level_id as top_level,
@@ -781,7 +974,8 @@ begin
                                    cwms_base_parameter bp,
                                    cwms_parameter_type pt,
                                    cwms_duration d,
-                                   at_specified_level sp
+                                   at_specified_level sp,
+                                   at_pool_name pn
                              where pr.project_location_code = ll.location_code
                                and pl.location_code = pr.project_location_code
                                and bl.base_location_code = pl.base_location_code
@@ -797,15 +991,14 @@ begin
                                and sp.specified_level_code = ll.specified_level_code
                                and instr(sp.specified_level_id, 'Top of ') = 1
                                and attribute_value is null
-                               and o.office_id like l_office_id_mask escape '\'
-                               and upper(bp.base_parameter_id||'.'||pt.parameter_type_id||'.'||d.duration_id||'.'||sp.specified_level_id) like l_top_level_mask escape '\'
-                               and upper(trim(substr(specified_level_id, 8))) like l_pool_name_mask escape '\'
-                               and upper(bl.base_location_id||substr('.', 1, length(pl.sub_location_id))||pl.sub_location_id) like l_project_id_mask escape '\'
-                               and exists (select pool_name
-                                             from at_pool_name
-                                            where upper(pool_name) = upper(trim(substr(specified_level_id, 8)))
-                                              and office_code in (o.office_code, 53)
-                                          )
+                               and upper(pn.pool_name) = upper(trim(substr(sp.specified_level_id, 8)))
+                               and pn.office_code in (o.office_code, 53)
+                               and not exists (select project_code,
+                                                      pool_name_code
+                                                 from at_pool
+                                                where project_code = pr.project_location_code
+                                                  and pool_name_code = pn.pool_name_code
+                                              )
                                and exists (select ll2.location_code,
                                                   ll2.parameter_code,
                                                   ll2.parameter_type_code,
@@ -822,114 +1015,164 @@ begin
                                               and sp2.specified_level_id = replace(sp.specified_level_id, 'Top of ', 'Bottom of ')
                                           )
                              group by o.office_id,
+                                   o.office_code, 
                                    bl.base_location_id||substr('.', 1, length(pl.sub_location_id))||pl.sub_location_id,
+                                   pl.location_code,
                                    trim(substr(specified_level_id, 8)),
-                                   bp.base_parameter_id||'.'||pt.parameter_type_id||'.'||d.duration_id||'.'||sp.specified_level_id                     
-                           )
-                   )          
-             order by 1, 2, 3;       
+                                   pn.pool_name_code,
+                                   bl.base_location_id||substr('.', 1, length(pl.sub_location_id))||pl.sub_location_id||'.'||bp.base_parameter_id||'.'||pt.parameter_type_id||'.'||d.duration_id||'.'||sp.specified_level_id
+                         )
+                   )
+             order by 1, 2, 6, 3;
       else
          -------------------------
          -- explicit pools only --
          -------------------------
          open p_cat_cursor for
-            select o.office_id,
-                   bl.base_location_id
-                   ||substr('.', 1, length(pl.sub_location_id))
-                   ||pl.sub_location_id as project_id,
-                   pn.pool_name,
-                   po.bottom_level,
-                   po.top_level
-              from at_pool po,
-                   at_pool_name pn,
-                   at_physical_location pl,
-                   at_base_location bl,
-                   cwms_office o
-             where pn.pool_name_code = po.pool_name_code
-               and pl.location_code = po.project_code
-               and bl.base_location_code = pl.base_location_code
-               and o.office_code = bl.db_office_code
-               and upper(po.bottom_level) like l_bottom_level_mask escape '\'
-               and upper(po.top_level) like l_top_level_mask escape '\'
-               and o.office_id like l_office_id_mask escape '\'
-               and upper(pn.pool_name) like l_pool_name_mask escape '\'
-               and upper(bl.base_location_id||substr('.', 1, length(pl.sub_location_id))||pl.sub_location_id) like l_project_id_mask escape '\'
-             order by 1, 2, 3;       
+            select office_id,
+                   base_location_id
+                   ||substr('.', 1, length(sub_location_id))
+                   ||sub_location_id as project_id,
+                   pool_name, 
+                   base_location_id
+                   ||substr('.', 1, length(sub_location_id))
+                   ||sub_location_id
+                   ||'.'
+                   ||bottom_level as bottom_level,
+                   base_location_id
+                   ||substr('.', 1, length(sub_location_id))
+                   ||sub_location_id
+                   ||'.'
+                   ||top_level as top_level,
+                   attribute,
+                   description,
+                   clob_code,
+                   clob_text
+              from (select o.office_id,
+                           bl.base_location_id,
+                           pl.sub_location_id,
+                           pl.location_code,
+                           pn.pool_name,
+                           po.bottom_level,
+                           po.top_level,
+                           po.attribute,
+                           po.description,
+                           null as clob_code,
+                           null as clob_text
+                      from at_pool po,
+                           at_pool_name pn,
+                           at_physical_location pl,
+                           at_base_location bl,
+                           cwms_office o
+                     where pn.pool_name_code = po.pool_name_code
+                       and pl.location_code = po.project_code
+                       and bl.base_location_code = pl.base_location_code
+                       and o.office_code = bl.db_office_code
+                       and po.clob_code is null
+                    union all                    
+                    select o.office_id,
+                           bl.base_location_id,
+                           pl.sub_location_id,
+                           pl.location_code,
+                           pn.pool_name,
+                           po.bottom_level,
+                           po.top_level,
+                           po.attribute,
+                           po.description,
+                           cl.clob_code,
+                           cl.value as clob_text
+                      from at_pool po,
+                           at_pool_name pn,
+                           at_physical_location pl,
+                           at_base_location bl,
+                           at_clob cl,
+                           cwms_office o
+                     where pn.pool_name_code = po.pool_name_code
+                       and pl.location_code = po.project_code
+                       and bl.base_location_code = pl.base_location_code
+                       and o.office_code = bl.db_office_code
+                       and cl.clob_code = po.clob_code
+                   )
+            order by 1, 2, 6, 3;       
       end if;
    elsif cwms_util.is_true(p_include_implicit) then
       -------------------------
       -- implicit pools only --
       -------------------------
       open p_cat_cursor for
-         select office_id,
-               project_id,
-               pool_name,
-               replace(top_level, 'Top of ', 'Bottom of ') as bottom_level,
-               top_level
-          from (select o.office_id,
-                       bl.base_location_id
-                       ||substr('.', 1, length(pl.sub_location_id))
-                       ||pl.sub_location_id as project_id,
-                       trim(substr(specified_level_id, 8)) as pool_name,
-                       bp.base_parameter_id
-                       ||'.'||pt.parameter_type_id
-                       ||'.'||d.duration_id
-                       ||'.'||sp.specified_level_id as top_level,
-                       max(ll.location_level_date) -- instead of select distinct
-                  from at_location_level ll,
-                       at_project pr,
-                       at_physical_location pl,
-                       at_base_location bl,
-                       cwms_office o,
-                       at_parameter p,
-                       cwms_base_parameter bp,
-                       cwms_parameter_type pt,
-                       cwms_duration d,
-                       at_specified_level sp
-                 where pr.project_location_code = ll.location_code
-                   and pl.location_code = pr.project_location_code
-                   and bl.base_location_code = pl.base_location_code
-                   and o.office_code = bl.db_office_code
-                   and p.parameter_code = ll.parameter_code
-                   and p.sub_parameter_id is null
-                   and bp.base_parameter_code = p.base_parameter_code
-                   and bp.base_parameter_id = 'Elev'
-                   and pt.parameter_type_code = ll.parameter_type_code
-                   and pt.parameter_type_id = 'Inst'
-                   and d.duration_code = ll.duration_code
-                   and d.duration_id = '0'
-                   and sp.specified_level_code = ll.specified_level_code
-                   and instr(sp.specified_level_id, 'Top of ') = 1
-                   and attribute_value is null
-                   and o.office_id like l_office_id_mask escape '\'
-                   and upper(bp.base_parameter_id||'.'||pt.parameter_type_id||'.'||d.duration_id||'.'||sp.specified_level_id) like l_top_level_mask escape '\'
-                   and upper(trim(substr(specified_level_id, 8))) like l_pool_name_mask escape '\'
-                   and upper(bl.base_location_id||substr('.', 1, length(pl.sub_location_id))||pl.sub_location_id) like l_project_id_mask escape '\'
-                   and exists (select pool_name
-                                 from at_pool_name
-                                where upper(pool_name) = upper(trim(substr(specified_level_id, 8)))
-                                  and office_code in (o.office_code, 53)
-                              )
-                   and exists (select ll2.location_code,
-                                      ll2.parameter_code,
-                                      ll2.parameter_type_code,
-                                      ll2.duration_code,
-                                      sp2.specified_level_code
-                                 from at_location_level ll2,
-                                      at_specified_level sp2
-                                where ll2.location_code = ll.location_code
-                                  and ll2.parameter_code = ll.parameter_code
-                                  and ll2.parameter_type_code = ll.parameter_type_code
-                                  and ll2.duration_code = ll.duration_code
-                                  and ll2.attribute_value is null
-                                  and sp2.specified_level_code = ll2.specified_level_code
-                                  and sp2.specified_level_id = replace(sp.specified_level_id, 'Top of ', 'Bottom of ')
-                              )
-                 group by o.office_id,
-                       bl.base_location_id||substr('.', 1, length(pl.sub_location_id))||pl.sub_location_id,
-                       trim(substr(specified_level_id, 8)),
-                       bp.base_parameter_id||'.'||pt.parameter_type_id||'.'||d.duration_id||'.'||sp.specified_level_id                     
-               )
+          select o.office_id,
+                 bl.base_location_id
+                 ||substr('.', 1, length(pl.sub_location_id))
+                 ||pl.sub_location_id as project_id,
+                 trim(substr(sp.specified_level_id, 8)) as pool_name,
+                 bl.base_location_id
+                 ||substr('.', 1, length(pl.sub_location_id))
+                 ||pl.sub_location_id
+                 ||'.'||bp.base_parameter_id
+                 ||'.'||pt.parameter_type_id
+                 ||'.'||d.duration_id
+                 ||'.'||sp.specified_level_id as top_level,
+                 null as attribute,
+                 null as description,
+                 null as clob_code,
+                 null as clob_text,
+                 max(ll.location_level_date) -- instead of select distinct
+            from at_location_level ll,
+                 at_project pr,
+                 at_physical_location pl,
+                 at_base_location bl,
+                 cwms_office o,
+                 at_parameter p,
+                 cwms_base_parameter bp,
+                 cwms_parameter_type pt,
+                 cwms_duration d,
+                 at_specified_level sp,
+                 at_pool_name pn
+           where pr.project_location_code = ll.location_code
+             and pl.location_code = pr.project_location_code
+             and bl.base_location_code = pl.base_location_code
+             and o.office_code = bl.db_office_code
+             and p.parameter_code = ll.parameter_code
+             and p.sub_parameter_id is null
+             and bp.base_parameter_code = p.base_parameter_code
+             and bp.base_parameter_id = 'Elev'
+             and pt.parameter_type_code = ll.parameter_type_code
+             and pt.parameter_type_id = 'Inst'
+             and d.duration_code = ll.duration_code
+             and d.duration_id = '0'
+             and sp.specified_level_code = ll.specified_level_code
+             and instr(sp.specified_level_id, 'Top of ') = 1
+             and attribute_value is null
+             and upper(pn.pool_name) = upper(trim(substr(sp.specified_level_id, 8)))
+             and pn.office_code in (o.office_code, 53)
+             and not exists (select project_code,
+                                    pool_name_code
+                               from at_pool
+                              where project_code = pr.project_location_code
+                                and pool_name_code = pn.pool_name_code
+                            )
+             and exists (select ll2.location_code,
+                                ll2.parameter_code,
+                                ll2.parameter_type_code,
+                                ll2.duration_code,
+                                sp2.specified_level_code
+                           from at_location_level ll2,
+                                at_specified_level sp2
+                          where ll2.location_code = ll.location_code
+                            and ll2.parameter_code = ll.parameter_code
+                            and ll2.parameter_type_code = ll.parameter_type_code
+                            and ll2.duration_code = ll.duration_code
+                            and ll2.attribute_value is null
+                            and sp2.specified_level_code = ll2.specified_level_code
+                            and sp2.specified_level_id = replace(sp.specified_level_id, 'Top of ', 'Bottom of ')
+                        )
+           group by o.office_id,
+                 o.office_code, 
+                 bl.base_location_id||substr('.', 1, length(pl.sub_location_id))||pl.sub_location_id,
+                 pl.location_code,
+                 trim(substr(specified_level_id, 8)),
+                 pn.pool_name_code,
+                 bl.base_location_id||substr('.', 1, length(pl.sub_location_id))||pl.sub_location_id||'.'||bp.base_parameter_id||'.'||pt.parameter_type_id||'.'||d.duration_id||'.'||sp.specified_level_id
          order by 1, 2, 3;
    else
       -----------------------------------
