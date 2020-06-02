@@ -512,6 +512,12 @@ begin
    -- delete the child records if specified --
    -------------------------------------------
    if l_delete_action1 in (cwms_util.delete_data, cwms_util.delete_all) then
+      -----------
+      -- pools --
+      -----------
+      for rec in (select pool_code from at_pool where project_code = l_project_code) loop
+         cwms_pool.delete_pool(rec.pool_code);
+      end loop;
       -----------------
       -- embankments --
       -----------------
