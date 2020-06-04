@@ -811,7 +811,7 @@ as
       if l_exists then
           update at_stream_reach
          set row                      = l_rec
-           where stream_location_code = l_rec.stream_location_code;
+           where stream_reach_location_code = l_rec.stream_reach_location_code;
       else
           insert into at_stream_reach values l_rec;
       end if;
