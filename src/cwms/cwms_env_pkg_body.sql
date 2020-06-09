@@ -78,6 +78,7 @@ AS
     FROM AT_SEC_SESSION
     WHERE session_key = p_session_key;
     set_cwms_env('CWMS_USER',l_userid);
+    set_cwms_env('CWMS_SESSION_KEY',p_session_key);
     set_session_privileges;
    END set_session_user;
 

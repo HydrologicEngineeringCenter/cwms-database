@@ -3965,6 +3965,7 @@ AS
             l_updated                           := true;
          end if;
          if l_updated then
+            l_rec.last_update := p_ts_extents_rec.last_update;
             update at_ts_extents
                set row = l_rec
              where ts_code = l_rec.ts_code
@@ -5711,16 +5712,34 @@ AS
                   begin
                     IF (l_version_date IS NULL)
                             THEN
-                                l_plsql_block :=
-                                       'begin cwms_env.set_session_office_id('''
+                                l_plsql_block := 'begin ';
+				IF(SYS_CONTEXT('CWMS_ENV','CWMS_SESSION_KEY') IS NOT NULL)
+                                THEN
+                                  l_plsql_block := l_plsql_block || 
+                                       'cwms_env.set_session_user('''
+                                    || SYS_CONTEXT ('CWMS_ENV',
+                                                    'CWMS_SESSION_KEY')
+                                    || ''');';
+                                 END IF;
+                                 l_plsql_block := l_plsql_block ||
+                                        'cwms_env.set_session_office_id('''
                                     || SYS_CONTEXT ('CWMS_ENV',
                                                     'SESSION_OFFICE_ID')
                                     || '''); cwms_ts.update_ts_extents('''
                                     || l_ts_code
                                     || '''); end;';
                             ELSE
-                                l_plsql_block :=
-                                       'begin cwms_env.set_session_office_id('''
+                                l_plsql_block := 'begin ';
+				IF(SYS_CONTEXT('CWMS_ENV','CWMS_SESSION_KEY') IS NOT NULL)
+                                THEN
+                                  l_plsql_block := l_plsql_block || 
+                                       'cwms_env.set_session_user('''
+                                    || SYS_CONTEXT ('CWMS_ENV',
+                                                    'CWMS_SESSION_KEY')
+                                    || ''');';
+                                 END IF;
+                                 l_plsql_block := l_plsql_block ||
+                                        'cwms_env.set_session_office_id('''
                                     || SYS_CONTEXT ('CWMS_ENV',
                                                     'SESSION_OFFICE_ID')
                                     || '''); cwms_ts.update_ts_extents('''
