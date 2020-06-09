@@ -277,6 +277,13 @@ AS
                                p_email      IN VARCHAR2);
   PROCEDURE remove_session_key(p_session_key VARCHAR2);
   PROCEDURE clean_session_keys;
+   /**
+    * Returns upass user id and session for a given edipi number 
+    *
+    * @param p_edipi  EDIPI number of the upass user 
+    * @param p_user   UPASS id of the user with given EDIPI number
+    * @param p_session_key Session key the can be used to authenticate the user 
+    */
   PROCEDURE get_user_credentials (p_edipi      IN     NUMBER,
                                    p_user          OUT VARCHAR2,
                                    p_session_key      OUT VARCHAR2);
