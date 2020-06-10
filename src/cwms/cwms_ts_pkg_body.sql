@@ -5715,7 +5715,7 @@ AS
                                 l_plsql_block := 'begin ';
 				IF(SYS_CONTEXT('CWMS_ENV','CWMS_SESSION_KEY') IS NOT NULL)
                                 THEN
-                                  l_plsql_block := l_plsql_block || 
+                                  l_plsql_block := l_plsql_block ||
                                        'cwms_env.set_session_user('''
                                     || SYS_CONTEXT ('CWMS_ENV',
                                                     'CWMS_SESSION_KEY')
@@ -5732,7 +5732,7 @@ AS
                                 l_plsql_block := 'begin ';
 				IF(SYS_CONTEXT('CWMS_ENV','CWMS_SESSION_KEY') IS NOT NULL)
                                 THEN
-                                  l_plsql_block := l_plsql_block || 
+                                  l_plsql_block := l_plsql_block ||
                                        'cwms_env.set_session_user('''
                                     || SYS_CONTEXT ('CWMS_ENV',
                                                     'CWMS_SESSION_KEY')
@@ -6774,16 +6774,34 @@ AS
          begin
            IF (p_version_date_utc IS NULL)
                   THEN
-                      l_plsql_block :=
-                             'begin cwms_env.set_session_office_id('''
+                       l_plsql_block := 'begin ';
+   IF(SYS_CONTEXT('CWMS_ENV','CWMS_SESSION_KEY') IS NOT NULL)
+                       THEN
+                         l_plsql_block := l_plsql_block ||
+                              'cwms_env.set_session_user('''
+                           || SYS_CONTEXT ('CWMS_ENV',
+                                           'CWMS_SESSION_KEY')
+                           || ''');';
+                        END IF;
+                        l_plsql_block := l_plsql_block ||
+                               'cwms_env.set_session_office_id('''
                           || SYS_CONTEXT ('CWMS_ENV',
                                           'SESSION_OFFICE_ID')
                           || '''); cwms_ts.update_ts_extents('''
                           || p_ts_code
                           || '''); end;';
                   ELSE
-                      l_plsql_block :=
-                             'begin cwms_env.set_session_office_id('''
+                                l_plsql_block := 'begin ';
+   IF(SYS_CONTEXT('CWMS_ENV','CWMS_SESSION_KEY') IS NOT NULL)
+                       THEN
+                         l_plsql_block := l_plsql_block ||
+                              'cwms_env.set_session_user('''
+                           || SYS_CONTEXT ('CWMS_ENV',
+                                           'CWMS_SESSION_KEY')
+                           || ''');';
+                        END IF;
+                        l_plsql_block := l_plsql_block ||
+                               'cwms_env.set_session_office_id('''
                           || SYS_CONTEXT ('CWMS_ENV',
                                           'SESSION_OFFICE_ID')
                           || '''); cwms_ts.update_ts_extents('''
