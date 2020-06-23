@@ -82,3 +82,7 @@ AS
                 parameter_code, historic_flag
       FROM    at_cwms_ts_id
 /
+
+grant select on av_cwms_ts_id to cwms_user;
+
+create or replace public synonym cwms_v_ts_id for av_cwms_ts_id;

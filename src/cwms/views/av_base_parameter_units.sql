@@ -42,3 +42,8 @@ AS
      FROM cwms_base_parameter a JOIN av_unit b USING (abstract_param_code)
     WHERE unit_id IN (SELECT from_unit_id FROM cwms_unit_conversion)
 /
+
+grant select on av_base_parameter_units to cwms_user;
+
+create or replace public synonym cwms_v_base_parameter_units for av_base_parameter_units;
+

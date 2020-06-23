@@ -120,3 +120,8 @@ as
 /
 show errors;
 
+grant select on av_loc_lvl_attribute to cwms_user;
+
+create or replace public synonym cwms_v_loc_lvl_attribute for av_loc_lvl_attribute;
+
+

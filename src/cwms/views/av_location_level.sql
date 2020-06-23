@@ -572,4 +572,6 @@ select q1.office_id,
               q1.attribute_value,
               q1.interval_origin + q1.calendar_offset_ + q1.time_offset_;
 
+grant select on av_location_level to cwms_user;
+
 create or replace public synonym cwms_v_location_level for av_location_level;

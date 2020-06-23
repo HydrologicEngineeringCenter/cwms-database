@@ -11,10 +11,10 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_STD_TEXT', null,
  */
 ');
 create or replace force view av_std_text (
-   office_id, 
-   std_text_id, 
+   office_id,
+   std_text_id,
    long_text)
-as 
+as
 select a.office_id,
        a.std_text_id,
        b.value as long_text
@@ -28,8 +28,10 @@ select a.office_id,
        left outer join
        (select clob_code,
                value
-          from at_clob     
+          from at_clob
        ) b on b.clob_code = a.clob_code
 /
+
+grant select on av_std_text to cwms_user;
 
 create or replace public synonym cwms_v_std_text for av_std_text;

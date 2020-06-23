@@ -28,16 +28,16 @@ create or replace force view av_pool(
    office_code,
    project_id,
    project_location_code,
-   pool_name, 
+   pool_name,
    pool_name_code,
    definition_type,
-   bottom_level, 
+   bottom_level,
    top_level,
    attribute,
    description,
    clob_code,
    clob_text)
-as 
+as
 select office_id,
        office_code,
        project_id,
@@ -61,7 +61,7 @@ select office_id,
                 ||substr('.', 1, length(sub_location_id))
                 ||sub_location_id as project_id,
                 location_code as project_location_code,
-                pool_name, 
+                pool_name,
                 pool_name_code,
                 base_location_id
                 ||substr('.', 1, length(sub_location_id))
@@ -100,7 +100,7 @@ select office_id,
                     and bl.base_location_code = pl.base_location_code
                     and o.office_code = bl.db_office_code
                     and po.clob_code is null
-                 union all                    
+                 union all
                  select o.office_id,
                         o.office_code,
                         bl.base_location_id,
@@ -209,7 +209,7 @@ select office_id,
                                   and sp2.specified_level_id = replace(sp.specified_level_id, 'Top of ', 'Bottom of ')
                               )
                  group by o.office_id,
-                       o.office_code, 
+                       o.office_code,
                        bl.base_location_id||substr('.', 1, length(pl.sub_location_id))||pl.sub_location_id,
                        pl.location_code,
                        trim(substr(specified_level_id, 8)),
@@ -217,5 +217,7 @@ select office_id,
                        bl.base_location_id||substr('.', 1, length(pl.sub_location_id))||pl.sub_location_id||'.'||bp.base_parameter_id||'.'||pt.parameter_type_id||'.'||d.duration_id||'.'||sp.specified_level_id
              )
        );
-  
-create or replace public synonym cwms_v_pool for av_pool;  
+
+grant select on av_pool to cwms_user;
+
+create or replace public synonym cwms_v_pool for av_pool;
