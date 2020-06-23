@@ -426,5 +426,5 @@ as
 
 grant select on av_loc2 to cwms_user;
 
-create or replace public synonym cwms_v_loc_lvl_source for av_loc2;
+create or replace public synonym cwms_v_loc2 for av_loc2;
 
