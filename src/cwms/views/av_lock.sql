@@ -75,3 +75,7 @@ as
       and loc2.unit_system = 'EN'
 /
 
+grant select on av_lock to cwms_user;
+
+create or replace public synonym cwms_v_lock for av_lock;
+

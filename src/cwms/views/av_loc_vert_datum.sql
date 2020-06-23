@@ -1,6 +1,6 @@
 whenever sqlerror continue
 delete from at_clob where id = '/VIEWDOCS/AV_LOC_VERT_DATUM';
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_VERT_DATUM', null,'  
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_VERT_DATUM', null,'
 /**
  * Displays information on vertical datum offsets
  *
@@ -9,34 +9,34 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_VERT_DATUM',
  * @field location_code           The unique numeric code that identifies the location
  * @field office_id               Office that owns the location
  * @field location_id             The location identifier
- * @field native_datum            The native datum of the location (the datum of the location''s elevation values in the database) 
- * @field local_datum_name        The name of the local datum, if any 
+ * @field native_datum            The native datum of the location (the datum of the location''s elevation values in the database)
+ * @field local_datum_name        The name of the local datum, if any
  * @field ngvd29_offset_si        The SI unit offset from the native dattum to NGVD-29
- * @field ngvd29_offset_en        The English unit offset from the native dattum to NGVD-29 
- * @field ngvd29_offset_estimated A flag (T/F) specifying whether offset from the native dattum to NGVD-29 is estimated 
+ * @field ngvd29_offset_en        The English unit offset from the native dattum to NGVD-29
+ * @field ngvd29_offset_estimated A flag (T/F) specifying whether offset from the native dattum to NGVD-29 is estimated
  * @field navd88_offset_si        The SI unit offset from the native dattum to NAVD-88
- * @field navd88_offset_en        The English unit offset from the native dattum to NAVD-88                     
+ * @field navd88_offset_en        The English unit offset from the native dattum to NAVD-88
  * @field navd88_offset_estimated A flag (T/F) specifying whether offset from the native dattum to NAVD-88 is estimated
- * @field si_unit                 The unit of the SI unit offset (''m'') 
+ * @field si_unit                 The unit of the SI unit offset (''m'')
  * @field en_unit                 The unit of the English unit offset (''ft'')
  */
 ');
 whenever sqlerror exit
 create or replace force view av_loc_vert_datum (
-   location_code, 
-   office_id, 
-   location_id, 
-   native_datum, 
-   local_datum_name, 
-   ngvd29_offset_si, 
-   ngvd29_offset_en, 
-   ngvd29_offset_estimated, 
-   navd88_offset_si, 
-   navd88_offset_en,                                                                                                
-   navd88_offset_estimated, 
-   si_unit, 
-   en_unit) 
-as 
+   location_code,
+   office_id,
+   location_id,
+   native_datum,
+   local_datum_name,
+   ngvd29_offset_si,
+   ngvd29_offset_en,
+   ngvd29_offset_estimated,
+   navd88_offset_si,
+   navd88_offset_en,
+   navd88_offset_estimated,
+   si_unit,
+   en_unit)
+as
 select q1.location_code,
        q2.office_id,
        q2.location_id,
@@ -64,7 +64,7 @@ select q1.location_code,
                case native_datum
                   when 'NGVD-29' then 'F'
                   else case ngvd29_offset_estimated
-                          when 'true'  then 'T'                   
+                          when 'true'  then 'T'
                           when 'false' then 'F'
                           else ngvd29_offset_estimated
                        end
@@ -95,7 +95,7 @@ select q1.location_code,
                        left outer join
                        (select location_code,
                                local_datum_name
-                          from at_vert_datum_local 
+                          from at_vert_datum_local
                        ) q12 on q12.location_code = q11.location_code
                       )
               )
@@ -105,10 +105,12 @@ select q1.location_code,
                location_code,
                location_id,
                db_office_id as office_id
-          from av_loc2     
+          from av_loc2
        ) q2 on q2.location_code = q1.location_code,
        cwms_unit_conversion uc
  where uc.from_unit_id = 'm'
    and uc.to_unit_id = 'ft';
+
+grant select on av_loc_vert_datum to cwms_user;
 
 create or replace public synonym cwms_v_loc_vert_datum for av_loc_vert_datum;

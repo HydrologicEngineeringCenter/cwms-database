@@ -16,10 +16,10 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_UNAUTH_SCHED_ENT
  * @field job_creator     Creator of the scheduled job
  * @field job_style       ''REGULAR'' or ''LIGHTWEIGHT''
  * @field job_type        ''PLSQL_BLOCK'', ''STORED_PROCEDURE'', ''EXECUTABLE'', or ''CHAIN''
- * @field job_priority    Priority of job 
+ * @field job_priority    Priority of job
  * @field schedule_type   ''IMMEDIATE'', ''ONCE'', ''CALENDAR'', ''EVENT'', ''NAMED'', ''WINDOW'', ''WINDOW_GROUP''
  * @field repeat_interval How often the job runs
- * @field comments        Comments on the job   
+ * @field comments        Comments on the job
  * @field job_action      What actually gets executed
  */
 ');
@@ -52,12 +52,14 @@ select o.office_id,
 	    e.schedule_type,
 	    e.repeat_interval,
 	    e.comments,
-	    e.job_action 
+	    e.job_action
   from cwms_unauth_sched_entries e,
        cwms_office o
  where o.eroc =  case
                  when 0 = (select count(*) from cwms_office where eroc = substr(e.database_name, 1, 2)) then 'X0'
                  else substr(e.database_name, 1, 2)
-                 end;          
+                 end;
 
-create or replace public synonym cwms_v_unauth_sched_entries for av_unauth_sched_entries;  
+grant select on av_unauth_sched_entries to cwms_user;
+
+create or replace public synonym cwms_v_unauth_sched_entries for av_unauth_sched_entries;

@@ -190,4 +190,7 @@ as
           ) bb on aa.db_office_id = bb.office_id;
 /
 
-show errors;
+grant select on av_loc to cwms_user;
+
+create or replace public synonym cwms_v_loc for av_loc;
+

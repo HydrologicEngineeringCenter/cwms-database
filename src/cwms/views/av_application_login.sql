@@ -20,15 +20,15 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_APPLICATION_LOGI
 ');
 whenever sqlerror exit
 create or replace force view av_application_login(
-   uuid, 
-   office_id, 
-   user_name, 
-   app_name, 
-   host_name, 
-   login_time, 
+   uuid,
+   office_id,
+   user_name,
+   app_name,
+   host_name,
+   login_time,
    logout_time,
    login_duration,
-   normal_logout, 
+   normal_logout,
    login_server
 )
 as
@@ -44,7 +44,7 @@ select al.uuid,
        end,
        case
        when al.logout_time = 0 then null
-       else cwms_util.to_timestamp(al.logout_time) - cwms_util.to_timestamp(al.login_time) 
+       else cwms_util.to_timestamp(al.logout_time) - cwms_util.to_timestamp(al.login_time)
        end,
        al.normal_logout,
        al.login_server
@@ -52,4 +52,6 @@ select al.uuid,
        cwms_office co
  where co.office_code = al.office_code;
 
-create or replace public synonym cwms_v_application_login for av_application_login; 
+grant select on av_application_login to cwms_user;
+
+create or replace public synonym cwms_v_application_login for av_application_login;

@@ -149,3 +149,6 @@ CREATE OR REPLACE FORCE VIEW "CWMS_20"."AV_A2W_TS_CODES_BY_LOC2" ("TS_CODE", "LO
    AND a2w.location_code = l.location_code
    AND l.unit_System = 'EN';
 /
+grant select on av_a2w_ts_codes_by_loc2 to cwms_user;
+
+create or replace public synonym cwms_v_a2w_ts_codes_by_loc2 for av_a2w_ts_codes_by_loc2;

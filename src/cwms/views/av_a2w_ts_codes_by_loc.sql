@@ -60,22 +60,22 @@ create or replace force view av_a2w_ts_codes_by_loc
    ts_code_rule_curve_elev,
    TS_CODE_POWER_GEN      ,
    TS_CODE_TEMP_AIR       ,
-   TS_CODE_TEMP_WATER     ,      
-   TS_CODE_DO             ,  
+   TS_CODE_TEMP_WATER     ,
+   TS_CODE_DO             ,
    ts_code_PH             ,
    ts_code_cond           ,
    ts_code_opening        ,
    ts_code_Wind_dir       ,
    ts_code_wind_speed     ,
-   ts_code_volt	          ,    
-   ts_code_pct_flood      ,   
-   ts_code_pct_con        ,  
+   ts_code_volt	          ,
+   ts_code_pct_flood      ,
+   ts_code_pct_con        ,
    RATING_CODE_ELEV_STOR  ,
    RATING_CODE_ELEV_AREA  ,
    RATING_CODE_OUTLET_FLOW,
    opening_Source_Obj     ,
    ts_code_irrad          ,
-   ts_code_evap		  
+   ts_code_evap
 )
 as
    select l.location_id            ,
@@ -116,7 +116,10 @@ as
           a2w.ts_code_irrad           ,
           a2w.ts_code_evap
      from at_a2w_ts_codes_by_loc a2w
-        , av_loc l 
+        , av_loc l
     where a2w.location_code = l.location_code
       AND l.unit_system = 'SI'
 /
+grant select on av_a2w_ts_codes_by_loc to cwms_user;
+
+create or replace public synonym cwms_v_a2w_ts_codes_by_loc for av_a2w_ts_codes_by_loc;

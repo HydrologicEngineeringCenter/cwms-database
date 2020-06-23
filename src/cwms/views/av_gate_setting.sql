@@ -47,13 +47,13 @@ select gs.gate_change_code,
              '9999999999')
        end as gate_opening_en,
        cwms_rating.get_opening_unit(
-          cwms_rating.get_template(lg.shared_loc_alias_id), 
+          cwms_rating.get_template(lg.shared_loc_alias_id),
           'EN') as opening_unit_en,
        cwms_rounding.round_dd_f(
-          gs.gate_opening, 
+          gs.gate_opening,
           '9999999999') as gate_opening_si,
        cwms_rating.get_opening_unit(
-          cwms_rating.get_template(lg.shared_loc_alias_id), 
+          cwms_rating.get_template(lg.shared_loc_alias_id),
           'SI') as opening_unit_si
   from at_gate_setting gs,
        at_physical_location pl,
@@ -68,5 +68,9 @@ select gs.gate_change_code,
    and lga.location_code = gs.outlet_location_code
    and lg.loc_group_code = lga.loc_group_code
    and lc.loc_category_code = lg.loc_category_code
-   and upper(lc.loc_category_id) = 'RATING'        
+   and upper(lc.loc_category_id) = 'RATING'
 /
+
+grant select on av_gate_setting to cwms_user;
+
+create or replace public synonym cwms_v_pool for av_gate_setting;

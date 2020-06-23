@@ -38,11 +38,11 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_CWMS_TS_ID2', nu
  * @field base_location_code  Unique numeric code that identifies the base location of the time series
  * @field location_code       Unique numeric code that identifies the full location of the time series
  * @field parameter_code      Unique numeric code that identifies the parameter for the time series
- * @field aliased_item        Null if the cwms_ts_id is not an alias, ''LOCATION'' if the entire location is aliased, ''BASE LOCATION'' if only the base location is alaised, or ''TIME SERIES'' if the entire cwms_time_series_id is aliased.  
- * @field loc_alias_category  The location category for the location alias if aliased_item is ''LOCATION'' or ''BASE LOCATION''  
- * @field loc_alias_group     The location group for the location alias if aliased_item is ''LOCATION'' or ''BASE LOCATION''              
- * @field ts_alias_category   The time series category for the time series alias if aliased_item is ''TIME SERIES''  
- * @field ts_alias_group      The time series group for the time series alias if aliased_item is ''TIME SERIES''              
+ * @field aliased_item        Null if the cwms_ts_id is not an alias, ''LOCATION'' if the entire location is aliased, ''BASE LOCATION'' if only the base location is alaised, or ''TIME SERIES'' if the entire cwms_time_series_id is aliased.
+ * @field loc_alias_category  The location category for the location alias if aliased_item is ''LOCATION'' or ''BASE LOCATION''
+ * @field loc_alias_group     The location group for the location alias if aliased_item is ''LOCATION'' or ''BASE LOCATION''
+ * @field ts_alias_category   The time series category for the time series alias if aliased_item is ''TIME SERIES''
+ * @field ts_alias_group      The time series group for the time series alias if aliased_item is ''TIME SERIES''
  * @field historic_flag       Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code>) specifying whether the time series is part of the hitoric record
 */
 ');
@@ -116,7 +116,7 @@ AS
           null as ts_alias_group,
           historic_flag
      from at_cwms_ts_id
-   union all  
+   union all
    select ts.db_office_id,
           lga.loc_alias_id || substr(ts.cwms_ts_id, instr(ts.cwms_ts_id, '.')) as cwms_ts_id,
           ts.unit_id,
@@ -156,8 +156,8 @@ AS
     where lga.loc_alias_id is not null
       and ts.location_code = lga.location_code
       and lg.loc_group_code = lga.loc_group_code
-      and lc.loc_category_code = lg.loc_category_code        
-   union all  
+      and lc.loc_category_code = lg.loc_category_code
+   union all
    select ts.db_office_id,
           lga.loc_alias_id || substr(ts.cwms_ts_id, instr(ts.cwms_ts_id, '-')) as cwms_ts_id,
           ts.unit_id,
@@ -197,9 +197,9 @@ AS
     where lga.loc_alias_id is not null
       and ts.base_location_code = lga.location_code
       and lg.loc_group_code = lga.loc_group_code
-      and lc.loc_category_code = lg.loc_category_code        
-      and ts.sub_location_id is not null       
-   union all  
+      and lc.loc_category_code = lg.loc_category_code
+      and ts.sub_location_id is not null
+   union all
    select ts.db_office_id,
           tsga.ts_alias_id as cwms_ts_id,
           ts.unit_id,
@@ -239,5 +239,9 @@ AS
     where tsga.ts_alias_id is not null
       and ts.ts_code = tsga.ts_code
       and tsg.ts_group_code = tsga.ts_group_code
-      and tsc.ts_category_code = tsg.ts_category_code       
+      and tsc.ts_category_code = tsg.ts_category_code
 /
+
+grant select on av_cwms_ts_id2 to cwms_user;
+
+create or replace public synonym cwms_v_ts_id2 for av_cwms_ts_id2;

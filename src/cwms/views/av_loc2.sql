@@ -424,4 +424,7 @@ as
           ) q5 on q5.location_code = q1.base_location_code
 /
 
-show errors;
+grant select on av_loc2 to cwms_user;
+
+create or replace public synonym cwms_v_loc_lvl_source for av_loc2;
+

@@ -38,4 +38,6 @@ as
    order by 2, 3;
 /
 
+grant select on av_text_filter to cwms_user;
+
 create or replace public synonym cwms_v_text_filter for av_text_filter;

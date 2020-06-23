@@ -119,3 +119,7 @@ AS
                     USING (duration_code)
      WHERE    s.delete_date IS NULL
 /
+
+grant select on zav_cwms_ts_id to cwms_user;
+
+create or replace public synonym cwms_v_zts_id for zav_cwms_ts_id;

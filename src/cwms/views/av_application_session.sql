@@ -19,11 +19,11 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_APPLICATION_SESS
 ');
 whenever sqlerror exit
 create or replace force view av_application_session(
-   uuid, 
-   office_id, 
-   user_name, 
-   app_name, 
-   host_name, 
+   uuid,
+   office_id,
+   user_name,
+   app_name,
+   host_name,
    login_time,
    session_id,
    login_server
@@ -44,4 +44,6 @@ select l.uuid,
    and s.uuid = l.uuid
    and s.session_id in (select column_value from table(cwms_util.current_session_ids));
 
-create or replace public synonym cwms_v_application_session for av_application_session; 
+grant select on av_application_session to cwms_user;
+
+create or replace public synonym cwms_v_application_session for av_application_session;

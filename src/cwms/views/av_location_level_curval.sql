@@ -216,4 +216,6 @@ select q1.office_id,
            and q2.parameter_type_code = q1.attribute_parameter_type_code
            and q2.duration_code = q1.attribute_duration_code;
 
+grant select on av_location_level_curval to cwms_user;
+
 create or replace public synonym cwms_v_location_level_curval for av_location_level_curval;
