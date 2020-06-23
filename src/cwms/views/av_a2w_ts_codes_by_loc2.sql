@@ -154,5 +154,7 @@ begin
 exception
 	when others then null;
 end;
+/
+
 
 create or replace public synonym cwms_v_a2w_ts_codes_by_loc2 for av_a2w_ts_codes_by_loc2;

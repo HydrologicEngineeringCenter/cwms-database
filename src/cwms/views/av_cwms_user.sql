@@ -67,4 +67,6 @@ begin
 exception
 	when others then null;
 end;
+/
+
 create or replace public synonym cwms_v_user for av_cwms_user;

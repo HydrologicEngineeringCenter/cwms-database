@@ -221,5 +221,7 @@ begin
 exception
 	when others then null;
 end;
+/
+
 
 create or replace public synonym cwms_v_location_level_curval for av_location_level_curval;

@@ -43,5 +43,7 @@ begin
 exception
 	when others then null;
 end;
+/
+
 
 create or replace public synonym cwms_v_text_filter for av_text_filter;

@@ -62,5 +62,7 @@ begin
 exception
 	when others then null;
 end;
+/
+
 create or replace public synonym cwms_v_forecast_spec for av_forecast_spec;
 

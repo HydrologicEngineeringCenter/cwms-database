@@ -57,5 +57,7 @@ begin
 exception
 	when others then null;
 end;
+/
+
 
 create or replace public synonym cwms_v_application_login for av_application_login;

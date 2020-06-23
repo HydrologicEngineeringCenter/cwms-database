@@ -429,6 +429,8 @@ begin
 exception
 	when others then null;
 end;
+/
+
 
 create or replace public synonym cwms_v_loc2 for av_loc2;
 

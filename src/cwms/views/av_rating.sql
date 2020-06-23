@@ -100,6 +100,8 @@ begin
 exception
 	when others then null;
 end;
+/
+
 
 create or replace public synonym cwms_v_rating for av_rating;
 
