@@ -67,7 +67,11 @@ select ts_code,
           from at_vert_datum_local
        ) q2 on q2.location_code = q1.location_code;
 
-grant select on av_tsv_elev to cwms_user;
+begin
+	execute immediate 'grant select on av_tsv_elev to cwms_user';
+exception
+	when others then null;
+end;
 
 create or replace public synonym cwms_v_tsv_elev for av_tsv_elev;
 

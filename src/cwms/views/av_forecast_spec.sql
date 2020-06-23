@@ -24,19 +24,19 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_FORECAST_SPEC', 
 ');
 
 create or replace force view av_forecast_spec (
-   office_id, 
-   target_location_id,                                              
-   forecast_id, 
-   source_agency, 
-   source_office, 
-   forecast_type,                  
-   source_location_id,                          
-   max_age, 
+   office_id,
+   target_location_id,
+   forecast_id,
+   source_agency,
+   source_office,
+   forecast_type,
+   source_location_id,
+   max_age,
    office_code,
    forecast_spec_code,
    target_location_code,
    source_location_code
-)  as 
+)  as
 select o.office_id,
       cwms_loc.get_location_id(fs.target_location_code) as target_location_id,
       fs.forecast_id,
@@ -56,7 +56,11 @@ select o.office_id,
 where pl.location_code = fs.target_location_code
   and bl.base_location_code = pl.location_code
   and o.office_code = bl.db_office_code;
-  
-grant select on av_forecast_spec to cwms_user;           
+
+begin
+	execute immediate 'grant select on av_forecast_spec to cwms_user';
+exception
+	when others then null;
+end;
 create or replace public synonym cwms_v_forecast_spec for av_forecast_spec;
 

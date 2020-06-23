@@ -424,7 +424,11 @@ as
           ) q5 on q5.location_code = q1.base_location_code
 /
 
-grant select on av_loc2 to cwms_user;
+begin
+	execute immediate 'grant select on av_loc2 to cwms_user';
+exception
+	when others then null;
+end;
 
 create or replace public synonym cwms_v_loc2 for av_loc2;
 

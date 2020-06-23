@@ -32,7 +32,11 @@ FROM
   FROM   at_tsv_count
   GROUP BY trunc(from_tz(data_entry_date,'UTC') at LOCAL));
 
-grant select on av_tsv_count_day to cwms_user;
+begin
+	execute immediate 'grant select on av_tsv_count_day to cwms_user';
+exception
+	when others then null;
+end;
 
 create or replace public synonym cwms_v_tsv_count_day for av_tsv_count_day;
 

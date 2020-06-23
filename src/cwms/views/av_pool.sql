@@ -218,6 +218,10 @@ select office_id,
              )
        );
 
-grant select on av_pool to cwms_user;
+begin
+	execute immediate 'grant select on av_pool to cwms_user';
+exception
+	when others then null;
+end;
 
 create or replace public synonym cwms_v_pool for av_pool;

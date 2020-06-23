@@ -312,7 +312,11 @@ select q2.office_id,
        join
        av_cwms_ts_id2 v2 on v2.ts_code = q2.ts_code and v2.ts_alias_group is not null;
 
-grant select on av_ts_text to cwms_user;
+begin
+	execute immediate 'grant select on av_ts_text to cwms_user';
+exception
+	when others then null;
+end;
 
 create or replace public synonym cwms_v_ts_text for av_ts_text;
 

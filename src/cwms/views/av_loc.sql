@@ -190,7 +190,11 @@ as
           ) bb on aa.db_office_id = bb.office_id;
 /
 
-grant select on av_loc to cwms_user;
+begin
+	execute immediate 'grant select on av_loc to cwms_user';
+exception
+	when others then null;
+end;
 
 create or replace public synonym cwms_v_loc for av_loc;
 

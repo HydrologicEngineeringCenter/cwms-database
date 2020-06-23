@@ -28,7 +28,11 @@ select o.office_id,
        cwms_office o
  where o.office_code = pn.office_code;
 
-grant select on av_pool_name to cwms_user;
+begin
+	execute immediate 'grant select on av_pool_name to cwms_user';
+exception
+	when others then null;
+end;
 
 create or replace public synonym cwms_v_pool_name for av_pool_name;
 

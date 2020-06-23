@@ -44,6 +44,10 @@ select l.uuid,
    and s.uuid = l.uuid
    and s.session_id in (select column_value from table(cwms_util.current_session_ids));
 
-grant select on av_application_session to cwms_user;
+begin
+	execute immediate 'grant select on av_application_session to cwms_user';
+exception
+	when others then null;
+end;
 
 create or replace public synonym cwms_v_application_session for av_application_session;

@@ -83,6 +83,10 @@ AS
       FROM    at_cwms_ts_id
 /
 
-grant select on av_cwms_ts_id to cwms_user;
+begin
+	execute immediate 'grant select on av_cwms_ts_id to cwms_user';
+exception
+	when others then null;
+end;
 
 create or replace public synonym cwms_v_ts_id for av_cwms_ts_id;
