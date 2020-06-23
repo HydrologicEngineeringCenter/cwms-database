@@ -73,4 +73,4 @@ select gs.gate_change_code,
 
 grant select on av_gate_setting to cwms_user;
 
-create or replace public synonym cwms_v_pool for av_gate_setting;
+create or replace public synonym cwms_v_gate_setting for av_gate_setting;
