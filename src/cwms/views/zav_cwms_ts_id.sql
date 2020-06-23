@@ -125,5 +125,7 @@ begin
 exception
 	when others then null;
 end;
+/
+
 
 create or replace public synonym cwms_v_zts_id for zav_cwms_ts_id;

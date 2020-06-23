@@ -48,6 +48,8 @@ begin
 exception
 	when others then null;
 end;
+/
+
 
 create or replace public synonym cwms_v_base_parameter_units for av_base_parameter_units;
 

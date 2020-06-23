@@ -317,6 +317,8 @@ begin
 exception
 	when others then null;
 end;
+/
+
 
 create or replace public synonym cwms_v_ts_text for av_ts_text;
 

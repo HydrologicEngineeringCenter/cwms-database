@@ -37,5 +37,7 @@ begin
 exception
 	when others then null;
 end;
+/
+
 
 create or replace public synonym cwms_v_std_text for av_std_text;

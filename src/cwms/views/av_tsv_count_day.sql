@@ -37,6 +37,8 @@ begin
 exception
 	when others then null;
 end;
+/
+
 
 create or replace public synonym cwms_v_tsv_count_day for av_tsv_count_day;
 

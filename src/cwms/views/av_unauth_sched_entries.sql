@@ -65,5 +65,7 @@ begin
 exception
 	when others then null;
 end;
+/
+
 
 create or replace public synonym cwms_v_unauth_sched_entries for av_unauth_sched_entries;

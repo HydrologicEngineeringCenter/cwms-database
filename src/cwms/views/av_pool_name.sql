@@ -33,6 +33,8 @@ begin
 exception
 	when others then null;
 end;
+/
+
 
 create or replace public synonym cwms_v_pool_name for av_pool_name;
 

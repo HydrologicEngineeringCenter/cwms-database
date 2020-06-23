@@ -49,5 +49,7 @@ begin
 exception
 	when others then null;
 end;
+/
+
 
 create or replace public synonym cwms_v_application_session for av_application_session;

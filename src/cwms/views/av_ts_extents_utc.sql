@@ -141,5 +141,7 @@ begin
 exception
 	when others then null;
 end;
+/
+
 
 create or replace public synonym cwms_v_ts_extents_utc for av_ts_extents_utc;

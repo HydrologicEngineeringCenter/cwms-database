@@ -247,5 +247,7 @@ begin
 exception
 	when others then null;
 end;
+/
+
 
 create or replace public synonym cwms_v_ts_id2 for av_cwms_ts_id2;
