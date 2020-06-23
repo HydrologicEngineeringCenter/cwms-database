@@ -136,6 +136,10 @@ select tsx.ts_code,
        at_cwms_ts_id tid
  where tid.ts_code = tsx.ts_code;
 
-grant select on av_ts_extents_utc to cwms_user;
+begin
+	execute immediate 'grant select on av_ts_extents_utc to cwms_user';
+exception
+	when others then null;
+end;
 
 create or replace public synonym cwms_v_ts_extents_utc for av_ts_extents_utc;

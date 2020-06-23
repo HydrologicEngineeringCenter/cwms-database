@@ -1,4 +1,4 @@
-delete from at_clob where office_code = 53 and id = '/VIEWDOCS/AV_CWMS_USER'; 
+delete from at_clob where office_code = 53 and id = '/VIEWDOCS/AV_CWMS_USER';
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_CWMS_USER', null,
 '
 /**
@@ -62,5 +62,9 @@ select user_id,
           from at_sec_cwms_users
        );
 
-grant select on av_cwms_user to cwms_user;
+begin
+	execute immediate 'grant select on av_cwms_user to cwms_user';
+exception
+	when others then null;
+end;
 create or replace public synonym cwms_v_user for av_cwms_user;

@@ -242,6 +242,10 @@ AS
       and tsc.ts_category_code = tsg.ts_category_code
 /
 
-grant select on av_cwms_ts_id2 to cwms_user;
+begin
+	execute immediate 'grant select on av_cwms_ts_id2 to cwms_user';
+exception
+	when others then null;
+end;
 
 create or replace public synonym cwms_v_ts_id2 for av_cwms_ts_id2;

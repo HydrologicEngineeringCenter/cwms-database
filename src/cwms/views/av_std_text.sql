@@ -32,6 +32,10 @@ select a.office_id,
        ) b on b.clob_code = a.clob_code
 /
 
-grant select on av_std_text to cwms_user;
+begin
+	execute immediate 'grant select on av_std_text to cwms_user';
+exception
+	when others then null;
+end;
 
 create or replace public synonym cwms_v_std_text for av_std_text;

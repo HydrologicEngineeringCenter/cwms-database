@@ -29,7 +29,11 @@ create or replace force view av_ts_msg_archive (cwms_ts_id,
        		at_cwms_ts_id  c
  		WHERE c.ts_code = m.TS_CODE;
 
-grant select on av_ts_msg_archive to cwms_user;
+begin
+	execute immediate 'grant select on av_ts_msg_archive to cwms_user';
+exception
+	when others then null;
+end;
 
 create or replace public synonym cwms_v_ts_msg_archive for av_ts_msg_archive;
 

@@ -120,6 +120,10 @@ as
     where a2w.location_code = l.location_code
       AND l.unit_system = 'SI'
 /
-grant select on av_a2w_ts_codes_by_loc to cwms_user;
+begin
+	execute immediate 'grant select on av_a2w_ts_codes_by_loc to cwms_user';
+exception
+	when others then null;
+end;
 
 create or replace public synonym cwms_v_a2w_ts_codes_by_loc for av_a2w_ts_codes_by_loc;

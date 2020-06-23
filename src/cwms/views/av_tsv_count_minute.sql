@@ -26,7 +26,11 @@ as
 	  inserts+updates+deletes total
      from (select data_entry_date,inserts,updates,deletes from at_tsv_count) ;
 
-grant select on av_tsv_count_minute to cwms_user;
+begin
+	execute immediate 'grant select on av_tsv_count_minute to cwms_user';
+exception
+	when others then null;
+end;
 
 create or replace public synonym cwms_v_tsv_count_minute for av_tsv_count_minute;
 

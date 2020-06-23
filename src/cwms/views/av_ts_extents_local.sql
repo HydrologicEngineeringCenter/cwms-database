@@ -140,7 +140,11 @@ select tsx.ts_code,
    and pl.location_code = tid.location_code
    and tz.time_zone_code = pl.time_zone_code;
 
-grant select on av_ts_extents_local to cwms_user;
+begin
+	execute immediate 'grant select on av_ts_extents_local to cwms_user';
+exception
+	when others then null;
+end;
 
 create or replace public synonym cwms_v_ts_extents_local for av_ts_extents_local;
 

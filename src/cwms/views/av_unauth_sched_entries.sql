@@ -60,6 +60,10 @@ select o.office_id,
                  else substr(e.database_name, 1, 2)
                  end;
 
-grant select on av_unauth_sched_entries to cwms_user;
+begin
+	execute immediate 'grant select on av_unauth_sched_entries to cwms_user';
+exception
+	when others then null;
+end;
 
 create or replace public synonym cwms_v_unauth_sched_entries for av_unauth_sched_entries;

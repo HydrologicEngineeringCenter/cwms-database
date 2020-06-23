@@ -162,7 +162,11 @@ select q1.office_id,
            and d.duration_code = lls.attr_duration_code
         ) q2 on q2.loc_lvl_source_code = q1.loc_lvl_source_code;
 
-grant select on av_loc_lvl_source to cwms_user;
+begin
+	execute immediate 'grant select on av_loc_lvl_source to cwms_user';
+exception
+	when others then null;
+end;
 
 create or replace public synonym cwms_v_loc_lvl_source for av_loc_lvl_source;
 

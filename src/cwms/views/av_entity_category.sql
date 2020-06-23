@@ -20,7 +20,11 @@ select category_id,
        description
   from cwms_entity_category;
 
-grant select on av_entity_category to cwms_user;
+begin
+	execute immediate 'grant select on av_entity_category to cwms_user';
+exception
+	when others then null;
+end;
 
 create or replace public synonym cwms_v_entity_category for av_entity_category;
 

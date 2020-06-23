@@ -71,6 +71,10 @@ select gs.gate_change_code,
    and upper(lc.loc_category_id) = 'RATING'
 /
 
-grant select on av_gate_setting to cwms_user;
+begin
+	execute immediate 'grant select on av_gate_setting to cwms_user';
+exception
+	when others then null;
+end;
 
 create or replace public synonym cwms_v_gate_setting for av_gate_setting;

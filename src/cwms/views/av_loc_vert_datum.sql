@@ -111,6 +111,10 @@ select q1.location_code,
  where uc.from_unit_id = 'm'
    and uc.to_unit_id = 'ft';
 
-grant select on av_loc_vert_datum to cwms_user;
+begin
+	execute immediate 'grant select on av_loc_vert_datum to cwms_user';
+exception
+	when others then null;
+end;
 
 create or replace public synonym cwms_v_loc_vert_datum for av_loc_vert_datum;

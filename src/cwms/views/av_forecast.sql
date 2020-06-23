@@ -14,7 +14,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_FORECAST', null,
  * @param utc_forecast_time   The forecast target time in UTC
  * @param local_forecast_time The forecast target time in local time zone of the target location
  * @param utc_issue_time      The forecast issue time in UTC
- * @param local_issue_time    The forecast issue time in local time zone of the target location             
+ * @param local_issue_time    The forecast issue time in local time zone of the target location
  * @param local_time_zone     The local time zone of the target location
  * @param valid               A flag (T/F/NULL) specifying whether the forecast is still in its valid time frame
  * @param has_text            A flag (T/F) specifying whether the forecast contains text
@@ -26,22 +26,22 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_FORECAST', null,
 ');
 
 create or replace force view av_forecast (
-   office_id, 
-   location_id, 
-   forecast_id, 
-   utc_forecast_time, 
-   local_forecast_time, 
-   utc_issue_time, 
-   local_issue_time,                  
-   local_time_zone, 
-   valid, 
-   has_text, 
+   office_id,
+   location_id,
+   forecast_id,
+   utc_forecast_time,
+   local_forecast_time,
+   utc_issue_time,
+   local_issue_time,
+   local_time_zone,
+   valid,
+   has_text,
    has_time_series,
    office_code,
    forecast_spec_code,
    location_code
-)  as 
-select distinct 
+)  as
+select distinct
        nvl(q1.office_id, q2.office_id) as office_id,
        cwms_loc.get_location_id(nvl(q1.target_location_code, q2.target_location_code)) as location_id,
        nvl(q1.forecast_id, q2.forecast_id) as forecast_id,
@@ -116,7 +116,11 @@ select distinct
        ) q2 on q2.forecast_spec_code = q1.forecast_spec_code
            and q2.utc_forecast_date  = q1.utc_forecast_date
            and q2.utc_issue_date     = q1.utc_issue_date;
-  
-grant select on av_forecast to cwms_user;           
+
+begin
+	execute immediate 'grant select on av_forecast to cwms_user';
+exception
+	when others then null;
+end;
 create or replace public synonym cwms_v_forecast for av_forecast;
 

@@ -52,6 +52,10 @@ select al.uuid,
        cwms_office co
  where co.office_code = al.office_code;
 
-grant select on av_application_login to cwms_user;
+begin
+	execute immediate 'grant select on av_application_login to cwms_user';
+exception
+	when others then null;
+end;
 
 create or replace public synonym cwms_v_application_login for av_application_login;
