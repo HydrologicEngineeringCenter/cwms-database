@@ -149,7 +149,7 @@ f.close()
 # by buildSqlScripts.py                              #
 #----------------------------------------------------#
 print("Loading control files")
-loaderCmdTemplate = "sqlldr %s/%s@%s control=%s"
+loaderCmdTemplate = "sqlldr %s/\"%s\"@%s control=%s"
 for loaderFilename in glob.glob('*.ctl') + glob.glob('data/*.ctl') :
 	#-------------------------------#
 	# fixup pathnames for clob data #
@@ -330,7 +330,7 @@ f.close()
 #------------------------------------------------------#
 # run the script to populate VERTCON tables from clobs #
 #------------------------------------------------------#
-cmd = "sqlplus %s/%s@%s @%s" % (cwms_schema, cwms_passwd, inst, vertconScriptFileName)
+cmd = "sqlplus %s/\"%s\"@%s @%s" % (cwms_schema, cwms_passwd, inst, vertconScriptFileName)
 print("Executing %s" % vertconScriptFileName)
 ec = os.system(cmd)
 if ec :
