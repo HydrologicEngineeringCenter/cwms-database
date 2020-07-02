@@ -2,6 +2,7 @@
 import os, sys, traceback, zipfile
 
 filenames = set()
+missing_filenames = set()
 
 def usage(message = None) :
 	'''
@@ -71,12 +72,16 @@ def addfilenames(filename) :
 	# add this file and any scripts it contains #
 	#-------------------------------------------#
 	print(os.path.abspath(filename))
-	filenames.add(os.path.abspath(filename))
-	with open(filename) as f :
-		lines = f.read().strip().split("\n")
-	for line in lines :
-		if line.strip().startswith("@") :
-			addfilenames(line)
+	if not os.path.exists(filename) :
+		print("No such file: %s" % filename)
+		missing_filenames.add(os.path.abspath(filename))
+	else :
+		filenames.add(os.path.abspath(filename))
+		with open(filename) as f :
+			lines = f.read().strip().split("\n")
+		for line in lines :
+			if line.strip().startswith("@") :
+				addfilenames(line)
 	#--------------------------------------#
 	# finally, cd back to the previous dir #
 	#--------------------------------------#
@@ -101,6 +106,12 @@ if not os.path.isfile(scriptfilename) :
 startdir = os.getcwd()
 addfilenames(scriptfilename)
 
+if missing_filenames :
+	print("\nCouldn't find the following reqruied files:")
+	for filename in sorted(missing_filenames) :
+		print("\t%s" % filename)
+	print("\nScript %s not bundled\n" % scriptfilename)
+	exit()
 #------------------------------------------------------#
 # determine the longest common path to all the scripts #
 #------------------------------------------------------#
