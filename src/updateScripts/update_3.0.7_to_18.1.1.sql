@@ -1027,7 +1027,7 @@ whenever sqlerror continue;
 @@../cwms/views/av_entity_category
 @@../cwms/views/av_loc_vert_datum
 whenever sqlerror continue;
-insert into at_clob values(cwms_seq.nextval, 53, '/VIEWDOCS/AV_VERT_DATUM_OFFSET', null, '	
+insert into at_clob values(cwms_seq.nextval, 53, '/VIEWDOCS/AV_VERT_DATUM_OFFSET', null, '
 /**
  * Displays information on vertical datum offsets
  *
@@ -1094,11 +1094,11 @@ select systimestamp from dual;
 set define on
 @@../cwms/create_sec_triggers
 prompt ################################################################################
-prompt 'REBUILD MV_SEC_TS_PRIVILEGES'
-select systimestamp from dual;
- -- I don't know why the following line is necessary - but it is
-@@./18_1_1/rebuild_mv_sec_ts_privileges
-prompt ################################################################################
+-- prompt 'REBUILD MV_SEC_TS_PRIVILEGES'
+-- select systimestamp from dual;
+--  -- I don't know why the following line is necessary - but it is
+-- @@./18_1_1/rebuild_mv_sec_ts_privileges
+-- prompt ################################################################################
 prompt 'CORRECT BAD WORDING IN TRIGGERS'
 select systimestamp from dual;
 begin
