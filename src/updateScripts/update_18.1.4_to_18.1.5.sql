@@ -60,6 +60,22 @@ prompt UPDATING OBJECTS
 ------------
 -- TABLES --
 ------------
+create or replace TRIGGER ST_SEC_SERVICE_USER BEFORE DELETE OR INSERT OR UPDATE
+              ON AT_SEC_SERVICE_USER REFERENCING NEW AS NEW OLD AS OLD
+
+             DECLARE
+
+             l_priv   VARCHAR2 (16);
+             BEGIN
+             SELECT SYS_CONTEXT ('CWMS_ENV', 'CWMS_PRIVILEGE') INTO l_priv FROM DUAL;
+             IF ((l_priv is NULL OR l_priv <> 'CAN_WRITE') AND user NOT IN ('SYS', 'CWMS_20'))
+             THEN
+
+               CWMS_20.CWMS_ERR.RAISE('NO_WRITE_PRIVILEGE');
+
+             END IF;
+           END;
+/
 --------------
 -- PACKAGES --
 --------------
