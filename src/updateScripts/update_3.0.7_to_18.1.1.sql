@@ -514,10 +514,10 @@ commit;
 -- Updated User Group
 update at_sec_user_groups set user_group_desc = 'Users who will be allowed to review (i.e., read only) an office''s CCP computations.' where db_office_code = 53 and user_group_code = -3;
 -- Updated Nations
-update cwms_nation set nation_id = 'Ã…LAND ISLANDS'    where nation_code = 'AX';
-update cwms_nation set nation_id = 'SAINT BARTHÃ‰LEMY' where nation_code = 'BL';
-update cwms_nation set nation_id = 'CÃ”TE D''IVOIRE'   where nation_code = 'CI';
-update cwms_nation set nation_id = 'RÃ‰UNION'          where nation_code = 'RE';
+update cwms_nation set nation_id = 'ÅLAND ISLANDS'    where nation_code = 'AX';
+update cwms_nation set nation_id = 'SAINT BARTHÉLEMY' where nation_code = 'BL';
+update cwms_nation set nation_id = 'CÔTE D''IVOIRE'   where nation_code = 'CI';
+update cwms_nation set nation_id = 'RÉUNION'          where nation_code = 'RE';
 -- Updated Gage Types
 update cwms_gage_type set description = 'Internet TX-only' where gage_type_code = 5;
 update cwms_gage_type set description = 'Internet TX+INQ'  where gage_type_code = 6;
@@ -1022,7 +1022,10 @@ delete from at_clob where id = '/VIEWDOCS/AV_RATING';
 @@../cwms/views/av_rating
 @@./18_1_1/dqu_views
 create or replace public synonym CWMS_V_A2W_TS_CODES_BY_LOC for AV_A2W_TS_CODES_BY_LOC;
+delete from at_clob where id = '/VIEWDOCS/AV_BASE_PARM_DISPLAY_UNITS';
 whenever sqlerror continue;
+@@../cwms/views/av_db_change_log
+@@../cwms/views/av_usgs_parameter
 @@../cwms/views/av_location_level_curval
 @@../cwms/views/av_entity_category
 @@../cwms/views/av_loc_vert_datum
