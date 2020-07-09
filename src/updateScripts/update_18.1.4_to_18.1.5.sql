@@ -121,22 +121,22 @@ select owner||'.'||substr(name, 1, 30) as name,
  where attribute = 'ERROR'
    and owner in ('&cwms_schema', '&cwms_dba_schema')
  order by owner, type, name, sequence;
---prompt ################################################################################
---prompt 'RESTORE CCP PRIVILEGES'
---select systimestamp from dual;
---whenever sqlerror continue;
---declare
---  l_count NUMBER;
---begin
---   select count(*) into l_count from dba_users where username='CCP';
---   if(l_count>0)
---   then
---     for rec in (select object_name from user_objects where object_type in ('PACKAGE', 'TYPE')) loop
---        execute immediate 'grant execute on '||rec.object_name||' to ccp';
---     end loop;
---   end if;
---end;
---/
+prompt ################################################################################
+prompt 'RESTORE CCP PRIVILEGES'
+select systimestamp from dual;
+whenever sqlerror continue;
+declare
+  l_count NUMBER;
+begin
+   select count(*) into l_count from dba_users where username='CCP';
+   if(l_count>0)
+   then
+     for rec in (select object_name from user_objects where object_type in ('PACKAGE', 'TYPE')) loop
+        execute immediate 'grant execute on '||rec.object_name||' to ccp';
+     end loop;
+   end if;
+end;
+/
 whenever sqlerror exit;
 prompt ################################################################################
 prompt UPDATING DB_CHANGE_LOG
