@@ -105,6 +105,23 @@ if not os.path.isfile(scriptfilename) :
 #---------------------------#
 startdir = os.getcwd()
 addfilenames(scriptfilename)
+if scriptfilename == "update_3.0.7_to_18.1.1.sql" :
+	extrafilenames = [
+		"18_1_1/load_data.py",
+		"18_1_1/load_data.py",
+		"18_1_1/CWMS_NID_DATA_TABLE.ctl",
+		"18_1_1/CWMS_NID2_DATA_TABLE.ctl",
+		"18_1_1/radar_xslt_clobs.ctl",
+		"../data/Ratings_v1_to_RADAR_xml.xsl",
+		"../data/Ratings_v1_to_RADAR_json.xsl",
+		"../data/Ratings_v1_to_RADAR_tab.xsl"
+	]
+	for fn in extrafilenames :
+		if os.path.exists(fn) :
+			filenames.add(os.path.abspath(fn))
+		else :
+			missing_filenames.add(fn)
+
 
 if missing_filenames :
 	print("\nCouldn't find the following reqruied files:")
