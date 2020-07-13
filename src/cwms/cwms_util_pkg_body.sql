@@ -1736,6 +1736,188 @@ as
       RETURN l_tab;
    END parse_string_recordset;
 
+   -------------------------------------------------------------------------------
+   -- function parse_delimited_text(...)
+   --
+   function parse_delimited_text(
+      p_text             in clob,
+      p_field_delimiter  in varchar2 default ',',
+      p_keep_quotes      in varchar2 default 'F',
+      p_escape_char      in varchar2 default null,
+      p_record_delimiter in varchar2 default chr(10))
+      return str_tab_tab_t
+   is
+      l_parsed      str_tab_tab_t := str_tab_tab_t();
+      l_char        char(1);
+      l_quote_char  char(1);
+      l_fdelim_len  pls_integer;
+      l_rdelim_len  pls_integer;
+      l_text_len    integer;
+      i             pls_integer; -- record index
+      j             pls_integer; -- field index in record
+      k             integer;     -- character index in text
+      l_keep_quotes boolean := cwms_util.is_true(p_keep_quotes);
+   begin
+      if p_text is null then
+         l_text_len := 0;
+      else
+         l_text_len := dbms_lob.getlength(p_text);
+         l_parsed.extend;
+         i := 1;
+         l_parsed(i) := str_tab_t();
+         l_parsed(i).extend;
+         j := 1;
+         l_fdelim_len := length(p_field_delimiter);
+         l_rdelim_len := length(p_record_delimiter);
+      end if;
+      k := 1;
+      while k <= l_text_len loop
+         l_char := substr(p_text, k, 1);
+         case
+         when l_char in ('''', '"') then
+            ---------------------
+            -- quote character --
+            ---------------------
+            if l_quote_char is null then
+               ----------------
+               -- open quote --
+               ----------------
+               l_quote_char := l_char;
+               if l_keep_quotes then
+                  l_parsed(i)(j) := l_parsed(i)(j) || l_char;
+               end if;
+            elsif l_char = l_quote_char then
+               -----------------
+               -- close quote --
+               -----------------
+               l_quote_char := null;
+               if l_keep_quotes then
+                  l_parsed(i)(j) := l_parsed(i)(j) || l_char;
+               end if;
+            else
+               -----------------------
+               -- quoted quote char --
+               -----------------------
+               l_parsed(i)(j) := l_parsed(i)(j) || l_char;
+            end if;
+            k := k + 1;
+         when p_escape_char is not null and substr(p_text, k, 1) = p_escape_char then
+            ----------------------
+            -- escape character --
+            ----------------------
+            if k < l_text_len then
+               ----------------------------------------------------
+               -- silently ignore if text ends with escape char --
+               ----------------------------------------------------
+               l_parsed(i)(j) := l_parsed(i)(j) || substr(p_text, k+1, 1);
+            end if;   
+            k := k + 2;
+         when substr(p_text, k, l_fdelim_len) = p_field_delimiter then
+            ---------------------
+            -- field delimiter --
+            ---------------------
+            if l_quote_char is null then
+               ----------------------------
+               -- normal field delimiter --
+               ----------------------------
+               l_parsed(i).extend;
+               j := l_parsed(i).count;
+               k := k + l_fdelim_len;
+            else
+               ----------------------------
+               -- quoted field delimiter --
+               ----------------------------
+               l_parsed(i)(j) := l_parsed(i)(j) || l_char;
+               k := k + 1;
+            end if;
+         when substr(p_text, k, l_rdelim_len) = p_record_delimiter then
+            ----------------------
+            -- record delimiter --
+            ----------------------
+            if l_quote_char is null then
+               -----------------------------
+               -- normal record delimiter --
+               -----------------------------
+               l_parsed.extend;
+               i := l_parsed.count;
+               l_parsed(i) := str_tab_t();
+               l_parsed(i).extend;
+               j := 1;
+               k := k + l_rdelim_len;
+            else
+               -----------------------------
+               -- quoted record delimiter --
+               -----------------------------
+               l_parsed(i)(j) := l_parsed(i)(j) || l_char;
+               k := k + 1;
+            end if;
+         else
+            ----------------------
+            -- normal character --
+            ----------------------
+            l_parsed(i)(j) := l_parsed(i)(j) || l_char;
+            k := k + 1;
+         end case;
+      end loop;
+      return l_parsed;
+   end parse_delimited_text;
+
+   -------------------------------------------------------------------------------
+   -- function parse_fixed_width_text(...)
+   --
+   function parse_fixed_width_text(
+      p_text             in clob,
+      p_field_columns    in number_tab_tab_t,
+      p_trim             in varchar2 default 'F',
+      p_record_delimiter in varchar2 default chr(10))
+      return str_tab_tab_t
+   is
+      l_parsed str_tab_tab_t := str_tab_tab_t();
+      l_trim   boolean := cwms_util.is_true(p_trim);
+      l_lines  str_tab_t;
+      l_length pls_integer;
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      if p_field_columns is null then
+         cwms_err.raise ('NULL_ARGUMENT', 'P_FIELD_COLUMNS');
+      end if;
+      for i in 1..p_field_columns.count loop
+         if p_field_columns(i)(1) < 1 then
+            cwms_err.raise(
+               'ERROR',
+               'Starting column ('||p_field_columns(i)(1)||') '
+               ||'must be greater than 0 for field '||i);
+         end if;
+         if p_field_columns(i)(2) < p_field_columns(i)(1) then
+            cwms_err.raise(
+               'ERROR',
+               'Ending column ('||p_field_columns(i)(2)||') '
+               ||'must not be less that beginning column ('||p_field_columns(i)(1)||') '
+               ||'for field '||i);
+         end if;
+      end loop;
+      l_lines := cwms_util.split_text(p_text, p_record_delimiter);
+      if l_lines is not null then
+         for i in 1..l_lines.count loop
+            l_length := length(l_lines(i));
+            l_parsed.extend;
+            l_parsed(i) := str_tab_t();
+            l_parsed(i).extend(p_field_columns.count);
+            for j in 1..p_field_columns.count loop
+               if p_field_columns(j)(1) <= l_length then
+                  l_parsed(i)(j) := substr(l_lines(i), p_field_columns(j)(1), p_field_columns(j)(2) - p_field_columns(j)(1) + 1);
+                  if l_trim then
+                     l_parsed(i)(j) := trim(l_parsed(i)(j));
+                  end if;
+               end if;
+            end loop;
+         end loop;
+      end if;
+      return l_parsed;
+   end parse_fixed_width_text;
+
    --------------------------------------------------------------------
    -- Return UTC timestamp for specified ISO 8601 string
    --

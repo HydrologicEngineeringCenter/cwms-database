@@ -393,6 +393,55 @@ AS
     */
    FUNCTION parse_string_recordset (p_string IN VARCHAR2)
       RETURN str_tab_tab_t;
+   /**
+    * Parses a delimited text value into a table of tables of strings.
+    *
+    * @param p_text             The delimited text to parse.<p>
+    *                           If the field delimiter or record delimiter occurs in a field value, the delimiter can be escaped by preceding it with an
+    *                           escape character, or the delimiter (or entire field) may bet quoted with single or double quotes.<p>
+    *                           If the single or double quote character occurs in a field value, the quote character can be escaped by preceding it with an
+    *                           escape character, or the delimiter (or entire field) may bet quoted with the other quote character.<p>
+    *                           If both the single and double quote characters occurs in a field value, the escape character must be used for at least
+    *                           one of the quote characters. The other quote character may be escaped or the it (or entire field) may be quoted
+    *                           with the escaped quote character.
+    * @param p_field_delimiter  The field delimiter. Can be longer than 1 character. If not specified, the comma character is used.
+    * @param p_keep_quotes      A flag (T/F) specifying whether to retain the quote characters of quoted fields. If not specified, quote characters are not retained.
+    * @param p_escape_char      An optional 1-character string that can be used to allow inclusion of delimiters and quote characters in field values
+    *                           by immediately preceding the delimiter or quote character in the text. There is no special meaning assigned to the character
+    *                           following the escape character as there is programming languages such as C, Java, and Python (e.g., '\t' will be interpreted
+    *                           as the character 't' if the escapce character is '\', and not as the tab character (character 9).
+    * @param p_record_delimiter The record delimiter. Can be longer than 1 character. If not specified the newline character (character 10) will be used.
+    *
+    * @return A table of tables of strings. Each record in the text becomes one
+    *         outer row (table of fields) in the retured table, with fields within that
+    *         record becoming rows of the inner table.
+    */
+   function parse_delimited_text(
+      p_text             in clob,
+      p_field_delimiter  in varchar2 default ',',
+      p_keep_quotes      in varchar2 default 'F',
+      p_escape_char      in varchar2 default null,
+      p_record_delimiter in varchar2 default chr(10))
+      return str_tab_tab_t;
+   /**
+    * Parses a text value of fixed with fields into a table of table of strings.
+    *
+    * @param p_text             The text to parse
+    * @param p_field_columns    The start and end columns of each field. The inner tables each contain the start and end columns (1-based) for each field.
+    * @param p_trim             A flag (T/F) specifying whether to trim whitespace from the beginning and end of each field
+    * @param p_record_delimiter The record delimiter. If not specified the newline character will be used.
+    *
+    * @return A table of tables of strings. Each record in the text becomes one
+    *         outer row (table of fields) in the retured table, with fields within that
+    *         record becoming rows of the inner table.
+    */
+   function parse_fixed_width_text(
+      p_text             in clob,
+      p_field_columns    in number_tab_tab_t,
+      p_trim             in varchar2 default 'F',
+      p_record_delimiter in varchar2 default chr(10))
+      return str_tab_tab_t;
+
    TYPE ts_list
    IS
       TABLE OF VARCHAR2 (200)
@@ -2948,7 +2997,7 @@ AS
    /**
     * @return the host address or name for identifying this database. If the host address is detected to be ::1 or localhost, then the host name will be returned
     */
-   function get_db_host 
+   function get_db_host
       return varchar2;
 END cwms_util;
 /
