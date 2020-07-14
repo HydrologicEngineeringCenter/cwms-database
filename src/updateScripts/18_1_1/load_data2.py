@@ -14,11 +14,9 @@ crsr.execute("create table CWMS_NID2 as select * from CWMS_NID where 1=0")
 conn.close()
 t1 = datetime.datetime.now()
 print("Loading new data for CWMS_NID2")
-if pwd.find("^") != -1 :
-	pwd2 = '"%s"' % pwd
-else :
-	pwd2 = pwd
-os.system("sqlldr %s/%s@%s:%s/%s control=CWMS_NID2_DATA_TABLE.ctl" % (usr, pwd2, host, port, sid))
+cmd = 'echo %s/"%s"@%s:%s/%s | sqlldr control=CWMS_NID2_DATA_TABLE.ctl' % (usr, pwd, host, port, sid)
+# print(cmd)
+os.system(cmd)
 logfile = "%s_NID2_data.log" % sid
 try    : os.remove(logfile)
 except : pass
