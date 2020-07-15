@@ -45,7 +45,7 @@ end;
 whenever sqlerror exit;
 column db_name new_value db_name
 select :db_name as db_name from dual;
-define logfile=update_&db_name._18.1.3_to_18.1.4.log
+define logfile=update_&db_name._18.1.4_to_18.1.5.log
 prompt log file = &logfile
 spool &logfile append;
 -------------------
