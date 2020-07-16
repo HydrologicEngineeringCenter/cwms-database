@@ -266,7 +266,7 @@ re_package_doc      = '('+re_jdoc_comment+r'\s*[ai]s\s+)'
 re_datatype         = '('+re_complex_type+'|'+re_compound_id+')'
 re_datatype_sized   = '('+re_datatype+re_size+'?)'
 re_param_usage      = r'(in\s+out(\s+nocopy)?|out(\s+nocopy)?|in)'
-re_param_dflt       = r'default\s+(([^,)]+))'
+re_param_dflt       = r"default\s+(('.+?'|chr\s*\(\d+\)|[^'c][^,)]+))"
 re_param_decl       = re_identifier+r'(\s+'+re_param_usage+r')?\s+'+re_datatype+r'(\s+'+re_param_dflt+r')?\s*'
 re_return_type      = r'(return\s+('+re_datatype+r')(\s+(result_cache(\s+relies_on\s+\(.+?\))?|pipelined|deterministic))?)'
 re_procedure        = r'(\s*procedure\s+'+re_identifier+r'(\s*\([^;]+?\))?\s*;)'
@@ -716,20 +716,34 @@ def parse_params(params_text, jdoc_text) :
       tokenized, replacements = tokenize(params_text)
       params_text = params_text.replace('\n', ' ')
       params_text = params_text[params_text.find('(')+1:params_text.rfind(')')].strip()
-      lines = map(string.strip, params_text.split(','))
+      #-----------------------------------------#
+      # don't split on quoted comma characters! #
+      #-----------------------------------------#
+      sio = StringIO.StringIO()
+      in_quote = False
+      for c in params_text :
+         if c == "," : sio.write(c if in_quote else chr(0))
+         else        : sio.write(c)
+         if c == "'" : in_quote = not in_quote
+      lines = map(string.strip, sio.getvalue().split(chr(0)))
+      sio.close()
       for line in lines :
-         if not line : continue
-         param_matcher = get_pattern(re_param_decl, 'i').matcher(line)
-         param_matcher.find()
-         param_name  = param_matcher.group(1)
-         param_usage = param_matcher.group(2)
-         param_type  = param_matcher.group(6)
-         param_dflt  = param_matcher.group(18)
-         if not param_usage : param_usage = 'in'
-         params.append((param_name.strip().lower(), param_usage.strip().lower(), param_type.strip().lower(), param_dflt))
-         matcher = get_pattern(r'(\W)%s(\W)' % param_name, 'i').matcher(jdoc_text)
-         formatted_name = format(param_name, False)
-         if matcher.find() : jdoc_text = matcher.replaceAll('$1%s$2' % formatted_name)
+         try :
+            if not line : continue
+            param_matcher = get_pattern(re_param_decl, 'i').matcher(line)
+            param_matcher.find()
+            param_name  = param_matcher.group(1)
+            param_usage = param_matcher.group(2)
+            param_type  = param_matcher.group(6)
+            param_dflt  = param_matcher.group(18)
+            if not param_usage : param_usage = 'in'
+            params.append((param_name.strip().lower(), param_usage.strip().lower(), param_type.strip().lower(), param_dflt))
+            matcher = get_pattern(r'(\W)%s(\W)' % param_name, 'i').matcher(jdoc_text)
+            formatted_name = format(param_name, False)
+            if matcher.find() : jdoc_text = matcher.replaceAll('$1%s$2' % formatted_name)
+         except :
+            print('\nERROR processing line:\n\t"%s"\n in:\n%s' % (line, jdoc_text))
+            raise
    return params, jdoc_text
 
 
@@ -1553,10 +1567,12 @@ try :
         from all_objects
        where object_type = 'PACKAGE'
          and object_name not like '%_SEC_%'
-         and owner = 'CWMS_20' '''.strip())
+         and owner = 'CWMS_20'
+       order by 1'''.strip())
    rs = stmt.executeQuery()
    while rs.next() :
-      package_names.append(rs.getString(1))
+      package_name = rs.getString(1)
+      package_names.append(package_name)
    rs.close()
    stmt.close()
    output2('%d' % len(package_names))
@@ -1576,7 +1592,6 @@ try :
    jdoc_var_pattern     = get_pattern(re_pkg_jdoc_var, 'imd')
    jdoc_routine_pattern = get_pattern(re_pkg_jdoc_routine, 'imd')
    for package_name in sorted(package_names) :
-      # if package_name == 'CWMS_USGS' : continue
       output1('package', package_name)
       lines = []
       stmt.setString(1, package_name)
