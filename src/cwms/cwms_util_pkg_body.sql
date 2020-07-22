@@ -295,6 +295,33 @@ as
       RETURN l_base_param_code;
    END get_base_param_code;
 
+   function get_parameter_code (
+      p_param_id  in varchar2,
+      p_office_id in varchar2 default null)
+      return number
+   is
+      l_office_code    integer;
+      l_parameter_code integer;
+   begin
+      l_office_code := get_db_office_code(p_office_id);
+      begin
+         select ap.parameter_code
+           into l_parameter_code
+           from cwms_base_parameter cbp,
+                at_parameter ap
+          where cbp.base_parameter_id = get_base_id(p_param_id)
+            and ap.base_parameter_code = cbp.base_parameter_code
+            and nvl(ap.sub_parameter_id, '-') = nvl(get_sub_id(p_param_id), '-');
+      exception
+         when no_data_found then
+         cwms_err.raise(
+            'ERROR',
+            'Parameter "'||p_param_id||'" does not exist for office '||get_db_office_id(p_office_id));
+      end;      
+      return l_parameter_code;
+   end get_parameter_code;   
+      
+
    FUNCTION get_sub_id (p_full_id IN VARCHAR2)
       RETURN VARCHAR2
       RESULT_CACHE

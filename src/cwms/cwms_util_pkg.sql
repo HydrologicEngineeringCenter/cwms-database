@@ -649,6 +649,19 @@ AS
       p_is_full_id IN VARCHAR2 DEFAULT 'F')
       return number result_cache;
    /**
+    * Retrieves the parameter code of a full parameter identifier
+    *
+    * @param p_param_id the identifier for which to return the base parameter code
+    * @param p_office_id the office identifier for which to find the code. If
+    *        <code><big>NULL</big></code> the calling user's office is used
+    *
+    * @return the base parameter code
+    */
+   FUNCTION get_parameter_code (
+      p_param_id  in varchar2,
+      p_office_id in varchar2 default null)
+      return number;
+   /**
     * Retrieves the interval minutes of a time series
     *
     * @param p_cwms_ts_code the code of the time series as presented in TS_CODE
