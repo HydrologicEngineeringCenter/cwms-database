@@ -9797,6 +9797,7 @@ def main() :
        constraint @TABLE_pk  primary key (configuration_code),
        constraint @TABLE_fk1 foreign key (parent_code) references @TABLE (configuration_code),
        constraint @TABLE_fk2 foreign key (category_id) references cwms_config_category (category_id),
+       constraint @TABLE_fk3 foreign key (office_code) references cwms_office (office_code),
        constraint @TABLE_ck1 check (trim(configuration_id) = configuration_id),
        constraint @TABLE_ck2 check (trim(configuration_name) = configuration_name)
     ) organization index
