@@ -1,0 +1,93 @@
+<project name="wcdba oracle overrides">
+
+	<!-- properties for oracle cc build . -->
+
+	
+
+	<!-- the oracle hostport to install to. -->
+
+	<property name="oracle.cwms.hostport" value="HOST_AND_PORT"/>
+
+	
+
+	<!-- the oracle instance to install to. -->
+
+ 	<property name="oracle.cwms.instance" value="HOST_AND_PORT/SERVICE_NAME"/>
+
+
+
+ 	
+
+ 	<!-- the oracle user to install to the oracle instance. -->
+
+ 	<property name="oracle.cwms.user" value="cwms_20"/>
+
+
+
+	<!-- the office that owns the cwms database instance. -->
+
+	<property name="office.primary.id" value="OFFICE_ID"/> 
+
+	<property name="office.primary.code" value="OFFICE_CODE"/> 
+
+
+
+	<!-- the offices that also use this cwms database instance. -->
+
+	<!-- secondary is optional and the value can be 0 to many offices separated by a space. -->
+
+	<property name="office.secondary.id" value=""/> 
+
+
+
+	<!-- Existing CWMS instances at current office (used to determine CWMS_SEQ offset) -->
+
+ 	<property name="cwms.existing.instances" value="0"/>
+
+
+
+	<property name="oracle.sys.password" value="SYS_PASSWORD"/>
+
+	<property name="oracle.cwms.password" value="PASSWORD"/>
+
+
+
+	<!-- the password for the ${office.primary.code}cwmsdbi account -->
+
+	<property name="oracle.cwmspd.password" value="PASSWORD"/>
+
+	<property name="oracle.cwmsdbi.password" value="PASSWORD"/>
+
+
+
+	<!-- the password for the ${office.primary.code}hectest account -->
+
+	<property name="oracle.hectest.password" value="PASSWORD"/>
+
+	
+
+	<!-- flag to create the test account -->
+
+	<property name="test.account.create" value="TEST_ACCOUNT_FLAG"/>
+
+
+
+	<!-- flags to control output of auto kill and auto build -->
+
+	<property name="autobuild.echo" value="ON"/>
+
+	<property name="autokill.echo" value="ON"/>
+
+
+
+	<!-- flags to force the kill script to ignore errors. -->
+
+	<property name="autokill.force" value="-force"/>
+	<property name="build.restrict" value=""/>
+	
+
+	<!-- end of properties for oracle cc build. -->
+
+</project>
+
+
