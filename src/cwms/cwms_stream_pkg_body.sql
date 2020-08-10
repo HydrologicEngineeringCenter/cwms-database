@@ -737,7 +737,7 @@ as
       for rec in (select *
             from at_stream_reach
                    where configuration_code = l_configuration_code
-                     and stream_reach_location_code != nvl(l_rec.stream_reach_location_code, -1)
+                      and stream_location_code = l_stream_code
                  )
       loop
          select stream_location_code,
