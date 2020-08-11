@@ -144,7 +144,7 @@ as
       -------------------------
       -- get the description --
       -------------------------
-      self.description := get_text(l_xml, '/usgs-stream-rating/description');
+      self.description := substr(get_text(l_xml, '/usgs-stream-rating/description'), 1, 256);
       --------------------
       -- for each shift --
       --------------------
@@ -460,7 +460,7 @@ as
          exception
             when no_data_found then null;
          end;
-   
+
          begin
             select r.rating_code
               into l_offsets_code
@@ -471,7 +471,7 @@ as
                and rs.rating_spec_code = r.rating_spec_code
                and rt.template_code = rs.template_code
                and rt.parameters_id = 'Stage;Stage-Offset';
-   
+
             self.offsets := rating_t(l_offsets_code);
             self.offsets.effective_date := self.effective_date;
             self.offsets.create_date    := self.create_date;
@@ -1153,7 +1153,7 @@ as
                else
                   cwms_util.append(l_text, '<create-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(l_temp.create_date, 'UTC', l_tzone), l_tzone)||'</create-date>');
                end if;
-            end if;   
+            end if;
             cwms_util.append(l_text,
                '<active>'
                ||bool_text(cwms_util.is_true(l_temp.active_flag))

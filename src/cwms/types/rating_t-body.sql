@@ -24,7 +24,7 @@ as
       self.current_units  := 'N';
       self.current_time   := 'D';
       return;
-   end;      
+   end;
 
    constructor function rating_t(
       p_rating_spec_id  varchar2,
@@ -260,7 +260,7 @@ as
                ||self.rating_spec_id);
          end if;
       end if;
-      self.description := get_text(l_xml, '/*/description');
+      self.description := substr(get_text(l_xml, '/*/description'), 1, 256);
       if l_is_virtual then
          --------------------
          -- virtual rating --
@@ -1178,7 +1178,7 @@ as
                   where regexp_like(column_value, '-?ARG\d', 'i')
                 )
           order by 1;
-      
+
          for i in 1..l_parts.count loop
             if length(l_parts(i)) > 5 or instr(upper(l_parts(i)), 'ARG') != 1 then
                cwms_err.raise(
@@ -1856,7 +1856,7 @@ as
                         x number;
                      begin
                         x := to_number(l_tokens(i));
-                     exception 
+                     exception
                         when others then cwms_err.raise('INVALID_ITEM', l_tokens(i), 'math expression token');
                      end;
                   end case;
