@@ -81,16 +81,16 @@ BEGIN
          and o.office_code         = bl.db_office_code
          and o.office_code         = l_db_office_code
          and tz.time_zone_code = nvl(
-                  pl.time_zone_code, 
-                  (  select time_zone_code 
-                       from cwms_time_zone 
+                  pl.time_zone_code,
+                  (  select time_zone_code
+                       from cwms_time_zone
                       where time_zone_name = 'UTC'
                   ))
     order by bl.base_location_id,
              pl.sub_location_id;
 
     open p_basin_cat for select null from dual;
-    
+
 END cat_project;
 
 
@@ -146,7 +146,7 @@ begin
    --
    -- populate the location objects
    --
-   for rec in 
+   for rec in
       (  select l.location_code,
                 l.base_location_id,
                 l.sub_location_id,
@@ -192,7 +192,7 @@ begin
                          pl.published_longitude,
                          pl.office_code,
                          pl.nation_code,
-                         pl.nearest_city                
+                         pl.nearest_city
                     from at_physical_location pl,
                          at_base_location     bl
                    where bl.base_location_code = pl.base_location_code
@@ -213,7 +213,7 @@ begin
                 left outer join cwms_location_kind lk on lk.location_kind_code = l.location_kind
                 left outer join cwms_office        o  on o.office_code = l.office_code
                 left outer join cwms_nation        n  on n.nation_code = l.nation_code
-      )   
+      )
    loop
       l_temp_location_ref := new location_ref_t (
             rec.base_location_id,
@@ -254,7 +254,7 @@ begin
    --
    -- create the project object
    --
-   
+
    p_project := new project_obj_t(               -- TYPE project_obj_t AS OBJECT (
       l_project_location,                        --    project_location               cat_location2_obj_t,
       l_pumpback_location,                       --    pump_back_location           cat_location2_obj_t,
@@ -298,23 +298,23 @@ BEGIN
    end if;
    if p_project.cost_units_id is not null then
       l_currency_unit := cwms_util.get_unit_id(p_project.cost_units_id);
-      if l_currency_unit is null then 
+      if l_currency_unit is null then
          cwms_err.raise('INVALID_ITEM', p_project.cost_units_id, 'CWMS unit id');
-      end if;   
+      end if;
    end if;
    begin
       select unit_id
         into l_currency_unit
         from cwms_unit
-       where abstract_param_code = (select abstract_param_code 
+       where abstract_param_code = (select abstract_param_code
                                       from cwms_abstract_parameter
                                      where abstract_param_id = 'Currency'
                                    )
          and unit_id = nvl(l_currency_unit, '$');
-   exception                                
+   exception
       when no_data_found then
          cwms_err.raise('INVALID_ITEM', p_project.cost_units_id, 'currency unit id');
-   end;      
+   end;
    --
    -- get the location codes
    --
@@ -336,7 +336,7 @@ BEGIN
    if p_project.near_gage_location is not null then
       l_near_gage_location_code := cwms_loc.store_location_f(p_project.near_gage_location,'F');
    end if;
-   
+
    --
    -- determine whether the project exists
    --
@@ -382,7 +382,7 @@ BEGIN
         into at_project
       values l_rec;
    end if;
-   ---------------------------      
+   ---------------------------
    -- set the location kind --
    ---------------------------
    cwms_loc.update_location_kind(l_project_location_code, 'PROJECT', 'A');
@@ -411,7 +411,7 @@ begin
       p_project_id    => p_project_id,
       p_delete_action => p_delete_action,
       p_office_id     => p_db_office_id);
-end delete_project;   
+end delete_project;
 --------------------------------------------------------------------------------
 -- procedure delete_project2
 --------------------------------------------------------------------------------
@@ -720,7 +720,7 @@ END rename_basin_group;
       p_loc_group_id    IN VARCHAR2,
     -- delete_key will fail if there are assigned locations.
     -- delete_all will delete all location assignments, then delete the group.
-    p_delete_action IN VARCHAR2 DEFAULT cwms_util.delete_key, 
+    p_delete_action IN VARCHAR2 DEFAULT cwms_util.delete_key,
     -- defaults to the connected user's office if null
       p_db_office_id    IN VARCHAR2 DEFAULT NULL
   )
@@ -745,7 +745,7 @@ AS
 BEGIN
   NULL;
 END assign_basin_group2;
-   
+
       PROCEDURE assign_basin_groups2 (
      -- the basin location group id
       p_loc_group_id      IN   VARCHAR2,
@@ -758,13 +758,13 @@ AS
 BEGIN
   NULL;
 END assign_basin_groups2;
-   
+
    PROCEDURE unassign_basin_group (
       -- the basin location group id
       p_loc_group_id      IN   VARCHAR2,
-      -- the location id to remove. 
+      -- the location id to remove.
       p_location_id       IN   VARCHAR2,
-      -- if unassign is T then all assigned locs are removed from group. 
+      -- if unassign is T then all assigned locs are removed from group.
       -- p_location_id needs to be set to null when the arg is T.
       p_unassign_all      IN   VARCHAR2 DEFAULT 'F',
       -- defaults to the connected user's office if null
@@ -774,7 +774,7 @@ AS
 BEGIN
   NULL;
 END unassign_basin_group;
-   
+
    PROCEDURE unassign_basin_groups (
       -- the basin location group id.
       p_loc_group_id      IN   VARCHAR2,
@@ -797,7 +797,7 @@ function publish_status_update(
    p_source_id      in varchar2 default null,
    p_time_series_id in varchar2 default null,
    p_start_time     in integer  default null,
-   p_end_time       in integer  default null,     
+   p_end_time       in integer  default null,
    p_office_id      in varchar2 default null)
    return integer
 is
@@ -808,11 +808,11 @@ is
 begin
    ------------------------------
    -- publish the state change --
-   ------------------------------   
+   ------------------------------
    l_office_id := cwms_util.get_db_office_id(p_office_id);
    l_queue_name  := l_office_id||'_'||'STATUS';
    l_text_msg := '
-      <cwms_message type="Status">                                
+      <cwms_message type="Status">
          <property name="office"         type="String"> $office                  </property>
          <property name="project"        type="String"> $project                 </property>
          <property name="application"    type="String"> $application             </property>
@@ -820,28 +820,28 @@ begin
    if p_source_id is not null then
       l_text_msg := l_text_msg || '
          <property name="source_id"      type="String"> '|| p_source_id ||'      </property>';
-   end if;      
+   end if;
    if p_time_series_id is not null then
       l_text_msg := l_text_msg || '
          <property name="time_series_id" type="String"> '|| p_time_series_id ||' </property>';
-   end if;      
+   end if;
    if p_start_time is not null then
       l_text_msg := l_text_msg || '
          <property name="start_time"     type="long">   '|| p_start_time ||'     </property>';
-   end if;      
+   end if;
    if p_end_time is not null then
       l_text_msg := l_text_msg || '
          <property name="end_time"       type="long">   '|| p_end_time ||'       </property>';
-   end if;      
+   end if;
    l_text_msg := l_text_msg || '
       </cwms_message>';
    l_text_msg := replace(l_text_msg, '$office',      l_office_id);
-   l_text_msg := replace(l_text_msg, '$project',     p_project_id);
-   l_text_msg := replace(l_text_msg, '$application', lower(p_application_id));
-   l_text_msg := replace(l_text_msg, '$user',        cwms_util.get_user_id);    
+   l_text_msg := replace(l_text_msg, '$project',     dbms_xmlgen.convert(p_project_id));
+   l_text_msg := replace(l_text_msg, '$application', dbms_xmlgen.convert(lower(p_application_id)));
+   l_text_msg := replace(l_text_msg, '$user',        cwms_util.get_user_id);
    l_id := cwms_msg.publish_message(l_text_msg, l_queue_name, true);
    return cwms_util.to_millis(systimestamp at time zone 'UTC');
-end publish_status_update;         
+end publish_status_update;
 
 function request_lock(
    p_project_id      in varchar2,
@@ -853,10 +853,10 @@ function request_lock(
 is
    revocation_denied exception;
    already_locked    exception;
-   pragma            exception_init(revocation_denied, -20998);  
-   pragma            exception_init(already_locked,    -00001);  
+   pragma            exception_init(revocation_denied, -20998);
+   pragma            exception_init(already_locked,    -00001);
    pragma            autonomous_transaction;
-   
+
    l_lock_id         varchar2(40);
    l_do_lock         boolean := true;
    l_username        varchar2(30);
@@ -877,13 +877,13 @@ begin
    end if;
    if p_revoke_timeout is null then
       cwms_err.raise('NULL_ARGUMENT', 'p_revoke_timeout');
-   end if;                                             
+   end if;
    -----------------
    -- do the work --
    -----------------
    if is_locked(p_project_id, p_application_id, p_office_id) = 'T' then
       if p_revoke_existing in ('T', 't') then
-         begin 
+         begin
             revoke_lock(
                p_project_id,
                p_application_id,
@@ -908,7 +908,7 @@ begin
              l_machine
         from v$session
        where audsid = userenv('sessionid');
-        
+
       begin
          insert
            into at_project_lock
@@ -929,26 +929,26 @@ begin
                   l_osuser,
                   l_program,
                   l_machine
-                );      
+                );
       exception
          when already_locked then
-            ---------------------------------------------- 
+            ----------------------------------------------
             -- encountered a race condition and another --
             -- lock attempt beat us to the punch        --
-            ---------------------------------------------- 
+            ----------------------------------------------
             l_already_locked := true;
       end;
       if l_already_locked then
          l_lock_id := null;
       else
-         commit;   
+         commit;
          ------------------------------
          -- publish the state change --
-         ------------------------------   
+         ------------------------------
          l_office_id := cwms_util.get_db_office_id(p_office_id);
          l_queue_name  := l_office_id||'_'||'STATUS';
          l_text_msg := '
-            <cwms_message type="State">                                
+            <cwms_message type="State">
                <property name="new state"   type="String"> locked        </property>
                <property name="old state"   type="String"> unlocked      </property>
                <property name="action"      type="String"> lock acquired </property>
@@ -958,11 +958,11 @@ begin
                <property name="user"        type="String"> $user         </property>
             </cwms_message>';
          l_text_msg := replace(l_text_msg, '$office',      l_office_id);
-         l_text_msg := replace(l_text_msg, '$project',     p_project_id);
-         l_text_msg := replace(l_text_msg, '$application', lower(p_application_id));
+         l_text_msg := replace(l_text_msg, '$project',     dbms_xmlgen.convert(p_project_id));
+         l_text_msg := replace(l_text_msg, '$application', dbms_xmlgen.convert(lower(p_application_id)));
          l_text_msg := replace(l_text_msg, '$user',        cwms_util.get_user_id);
          l_id := cwms_msg.publish_message(l_text_msg, l_queue_name, true);
-      end if; 
+      end if;
    end if;
    return l_lock_id;
 end request_lock;
@@ -974,7 +974,7 @@ is
    l_text_msg   varchar2(32767);
    l_lock_rec   at_project_lock%rowtype;
    l_office_id  varchar2(16);
-   l_project_id varchar2(16); 
+   l_project_id varchar2(16);
    l_id         integer;
    l_queue_name varchar2(61);
 begin
@@ -995,10 +995,10 @@ begin
    exception
       when no_data_found then
          cwms_err.raise('INVALID_ITEM', p_lock_id, 'CWMS Project lock identifier');
-   end;   
+   end;
    delete
      from at_project_lock
-    where lock_id = p_lock_id;   
+    where lock_id = p_lock_id;
    commit;
    ------------------------------
    -- publish the state change --
@@ -1006,13 +1006,13 @@ begin
    select o.office_id,
           cwms_loc.get_location_id(l_lock_rec.project_code)
      into l_office_id,
-          l_project_id             
+          l_project_id
      from at_physical_location pl,
           at_base_location bl,
           cwms_office o
     where pl.location_code = l_lock_rec.project_code
       and bl.base_location_code = pl.base_location_code
-      and o.office_code = bl.db_office_code;  
+      and o.office_code = bl.db_office_code;
    l_queue_name  := l_office_id||'_'||'STATUS';
    l_text_msg := '
       <cwms_message type="State">
@@ -1025,8 +1025,8 @@ begin
          <property name="user"        type="String"> $user         </property>
       </cwms_message>';
    l_text_msg := replace(l_text_msg, '$office',      l_office_id);
-   l_text_msg := replace(l_text_msg, '$project',     l_project_id);
-   l_text_msg := replace(l_text_msg, '$application', l_lock_rec.application_id);
+   l_text_msg := replace(l_text_msg, '$project',     dbms_xmlgen.convert(l_project_id));
+   l_text_msg := replace(l_text_msg, '$application', dbms_xmlgen.convert(l_lock_rec.application_id));
    l_text_msg := replace(l_text_msg, '$user',        cwms_util.get_user_id);
    l_id := cwms_msg.publish_message(l_text_msg, l_queue_name, true);
 end release_lock;
@@ -1041,7 +1041,7 @@ function has_revoker_rights (
 is
    l_application_id     varchar2(64) := lower(p_application_id);
    l_user_id            varchar2(30) := lower(nvl(p_user_id, cwms_util.get_user_id));
-   l_office_code        number(10)   := nvl(p_office_code, cwms_util.get_db_office_code(p_office_id)); 
+   l_office_code        number(10)   := nvl(p_office_code, cwms_util.get_db_office_code(p_office_id));
    l_project_id         varchar2(57) := lower(cwms_loc.get_location_id(p_project_id, l_office_code));
    l_project_list       varchar2(256);
    l_parts              str_tab_t;
@@ -1050,7 +1050,7 @@ begin
    ------------------------------------
    -- compare against the ALLOW list --
    ------------------------------------
-   begin  
+   begin
       select lower(project_list)
         into l_project_list
         from at_prj_lck_revoker_rights
@@ -1058,14 +1058,14 @@ begin
          and office_code = l_office_code
          and application_id = lower(l_application_id)
          and allow_flag = 'T';
-         
+
       l_parts := cwms_util.split_text(l_project_list, ',');
       for i in 1..l_parts.count loop
          if l_project_id like cwms_util.normalize_wildcards(trim(l_parts(i))) escape '\' then
             l_has_revoker_rights := 'T';
             exit;
          end if;
-      end loop;         
+      end loop;
    exception
       when no_data_found then null;
    end;
@@ -1073,7 +1073,7 @@ begin
    -- compare against the DISALLOW list --
    ---------------------------------------
    if l_has_revoker_rights = 'T' then
-      begin  
+      begin
          select lower(project_list)
            into l_project_list
            from at_prj_lck_revoker_rights
@@ -1081,21 +1081,21 @@ begin
             and office_code = l_office_code
             and application_id = lower(l_application_id)
             and allow_flag = 'F';
-            
+
          l_parts := cwms_util.split_text(l_project_list, ',');
          for i in 1..l_parts.count loop
             if l_project_id like cwms_util.normalize_wildcards(trim(l_parts(i))) escape '\' then
                l_has_revoker_rights := 'F';
                exit;
             end if;
-         end loop;         
+         end loop;
       exception
          when no_data_found then null;
       end;
    end if;
-   
+
    return l_has_revoker_rights;
-end has_revoker_rights;   
+end has_revoker_rights;
 
 procedure revoke_lock(
    p_project_id      in varchar2,
@@ -1103,7 +1103,7 @@ procedure revoke_lock(
    p_revoke_timeout  in integer  default 30,
    p_office_id       in varchar2 default null)
 is
-   no_messages    exception; 
+   no_messages    exception;
    pragma         exception_init(no_messages, -25228);
    pragma         autonomous_transaction;
    l_office_id    varchar2(16);
@@ -1112,14 +1112,14 @@ is
    l_start_time   date;
    l_end_time     date;
    l_queue_name   varchar2(61);
-   l_subscriber   varchar2(30) := dbms_random.string('l', 16); 
+   l_subscriber   varchar2(30) := dbms_random.string('l', 16);
    l_dequeue_opts dbms_aq.dequeue_options_t;
    l_msg_props    dbms_aq.message_properties_t;
    l_msg          sys.aq$_jms_map_message;
-   l_msgid        raw(16); 
-   l_denied       boolean := false; 
+   l_msgid        raw(16);
+   l_denied       boolean := false;
    l_released     boolean := false;
-   
+
    function get_string(
       p_message   in out nocopy sys.aq$_jms_map_message,
       p_msgid     in integer,
@@ -1129,7 +1129,7 @@ is
    is
       l_clob clob;
       l_text varchar2(32767);
-   begin    
+   begin
       begin
          p_message.get_string(p_msgid, p_item_name, l_clob);
          if l_clob is not null then
@@ -1152,10 +1152,10 @@ begin
    end if;
    if cwms_project.is_locked(p_project_id, p_application_id, p_office_id) = 'T' then
       if has_revoker_rights(
-         p_project_id     => p_project_id, 
-         p_application_id => p_application_id, 
+         p_project_id     => p_project_id,
+         p_application_id => p_application_id,
          p_office_id      => p_office_id) = 'F'
-      then   
+      then
          cwms_err.raise(
             'ERROR',
             'User '
@@ -1185,15 +1185,15 @@ begin
          <property name="force_time"  type="long">  $deadline     </property>
       </cwms_message>';
    l_text_msg := replace(l_text_msg, '$office',      l_office_id);
-   l_text_msg := replace(l_text_msg, '$project',     p_project_id);
-   l_text_msg := replace(l_text_msg, '$application', lower(p_application_id));
-   l_text_msg := replace(l_text_msg, '$user',        cwms_util.get_user_id); 
+   l_text_msg := replace(l_text_msg, '$project',     dbms_xmlgen.convert(p_project_id));
+   l_text_msg := replace(l_text_msg, '$application', dbms_xmlgen.convert(lower(p_application_id)));
+   l_text_msg := replace(l_text_msg, '$user',        cwms_util.get_user_id);
    l_text_msg := replace(l_text_msg, '$deadline',    to_char(cwms_util.to_millis(l_end_time)));
    l_id := cwms_msg.publish_message(l_text_msg, l_queue_name, true);
-   -------------------------------------------------------------         
+   -------------------------------------------------------------
    -- wait for project to be unlocked or for a denial message --
    -------------------------------------------------------------
-   l_queue_name := ' CWMS_20.'||l_queue_name;         
+   l_queue_name := ' CWMS_20.'||l_queue_name;
    dbms_aqadm.add_subscriber(
       queue_name => l_queue_name,
       subscriber => sys.aq$_agent(l_subscriber, null, null));
@@ -1202,8 +1202,8 @@ begin
    l_dequeue_opts.visibility    := dbms_aq.immediate;
    l_dequeue_opts.wait          := dbms_aq.no_wait;
    loop
-      loop 
-         l_msg := null; 
+      loop
+         l_msg := null;
          begin
             dbms_aq.dequeue(
                queue_name         => l_queue_name,
@@ -1214,7 +1214,7 @@ begin
          exception
             when no_messages then null;
          end;
-         exit when l_msg is null; 
+         exit when l_msg is null;
          l_id := l_msg.prepare(-1);
          if upper(get_string(l_msg, l_id, 'type',        32)) = 'ACKNOWLEDGEREQUEST'   and
             upper(get_string(l_msg, l_id, 'response',    32)) = 'REQUEST DENIED'       and
@@ -1230,16 +1230,16 @@ begin
       l_released := is_locked(p_project_id, p_application_id, l_office_id) = 'F';
       exit when l_denied or l_released or cast(systimestamp at time zone 'UTC' as date) >= l_end_time;
       dbms_lock.sleep(1);
-   end loop;  
+   end loop;
    dbms_aqadm.remove_subscriber(
       queue_name => l_queue_name,
       subscriber => sys.aq$_agent(l_subscriber, null, null));
-   l_queue_name := substr(l_queue_name, instr(l_queue_name, '.') + 1);       
-   --------------------------------------------------------      
+   l_queue_name := substr(l_queue_name, instr(l_queue_name, '.') + 1);
+   --------------------------------------------------------
    -- finally, revoke the lock if not denied or released --
-   --------------------------------------------------------      
+   --------------------------------------------------------
    if l_denied then
-      cwms_err.raise('ERROR', 'Revocation denied.');        
+      cwms_err.raise('ERROR', 'Revocation denied.');
    else
       if not l_released then
          begin
@@ -1259,15 +1259,15 @@ begin
                   <property name="user"        type="String"> $user         </property>
                </cwms_message>';
             l_text_msg := replace(l_text_msg, '$office',      l_office_id);
-            l_text_msg := replace(l_text_msg, '$project',     p_project_id);
-            l_text_msg := replace(l_text_msg, '$application', lower(p_application_id));
+            l_text_msg := replace(l_text_msg, '$project',     dbms_xmlgen.convert(p_project_id));
+            l_text_msg := replace(l_text_msg, '$application', dbms_xmlgen.convert(lower(p_application_id)));
             l_text_msg := replace(l_text_msg, '$user',        cwms_util.get_user_id);
             l_id := cwms_msg.publish_message(l_text_msg, l_queue_name, true);
          exception
             when no_data_found then null; -- other user unlocked after our last check
-         end;         
+         end;
       end if;
-   end if;      
+   end if;
 end revoke_lock;
 
 procedure deny_lock_revocation(
@@ -1276,7 +1276,7 @@ is
    l_lock_rec at_project_lock%rowtype;
    l_msg        varchar2(32767);
    l_office_id  varchar2(16);
-   l_project_id varchar2(16); 
+   l_project_id varchar2(16);
    l_id         integer;
 begin
    -------------------
@@ -1285,9 +1285,9 @@ begin
    if p_lock_id is null then
       cwms_err.raise('NULL_ARGUMENT', 'p_lock_id');
    end if;
-   ----------------- 
+   -----------------
    -- do the work --
-   ----------------- 
+   -----------------
    begin
       select *
         into l_lock_rec
@@ -1300,14 +1300,14 @@ begin
    select o.office_id,
           cwms_loc.get_location_id(l_lock_rec.project_code)
      into l_office_id,
-          l_project_id             
+          l_project_id
      from at_physical_location pl,
           at_base_location bl,
           cwms_office o
     where pl.location_code = l_lock_rec.project_code
       and bl.base_location_code = pl.base_location_code
-      and o.office_code = bl.db_office_code;  
-   
+      and o.office_code = bl.db_office_code;
+
    l_msg := '
       <cwms_message type="AcknowledgeRequest">
          <property name="action"      type="String">unlock project</property>
@@ -1318,13 +1318,13 @@ begin
          <property name="user"        type="String">$user         </property>
       </cwms_message>';
    l_msg := replace(l_msg, '$office',      l_office_id);
-   l_msg := replace(l_msg, '$project',     l_project_id);
-   l_msg := replace(l_msg, '$application', l_lock_rec.application_id);
+   l_msg := replace(l_msg, '$project',     dbms_xmlgen.convert(l_project_id));
+   l_msg := replace(l_msg, '$application', dbms_xmlgen.convert(l_lock_rec.application_id));
    l_msg := replace(l_msg, '$user',        l_lock_rec.os_user);
-   l_id := cwms_msg.publish_message(l_msg, l_office_id||'_'||'STATUS', true);         
-         
+   l_id := cwms_msg.publish_message(l_msg, l_office_id||'_'||'STATUS', true);
+
 end deny_lock_revocation;
-         
+
 function is_locked(
    p_project_id      in varchar2,
    p_application_id  in varchar2,
@@ -1342,20 +1342,20 @@ begin
    if p_application_id is null then
       cwms_err.raise('NULL_ARGUMENT', 'p_application_id');
    end if;
-   -----------------    
+   -----------------
    -- do the work --
-   -----------------    
+   -----------------
    select count(*)
      into l_count
      from at_project_lock
     where project_code = cwms_loc.get_location_code(p_office_id, p_project_id)
       and application_id = lower(p_application_id);
-      
-   return case l_count when 0 then 'F' else 'T' end;      
-end is_locked; 
-      
+
+   return case l_count when 0 then 'F' else 'T' end;
+end is_locked;
+
 procedure cat_locks(
-   p_cursor              out sys_refcursor, 
+   p_cursor              out sys_refcursor,
    p_project_id_mask     in  varchar2 default '*',
    p_application_id_mask in  varchar2 default '*',
    p_time_zone           in  varchar2 default 'UTC',
@@ -1367,8 +1367,8 @@ begin
       p_application_id_mask,
       p_time_zone,
       p_office_id_mask);
-end cat_locks;   
-      
+end cat_locks;
+
 function cat_locks_f(
    p_project_id_mask     in varchar2 default '*',
    p_application_id_mask in varchar2 default '*',
@@ -1383,9 +1383,9 @@ begin
    open l_cursor for
       select o.office_id,
              cwms_loc.get_location_id(lck.project_code) as project_id,
-             lck.application_id,          
+             lck.application_id,
              cwms_util.get_xml_time(
-                cwms_util.change_timezone(lck.acquire_time, 'UTC', p_time_zone), 
+                cwms_util.change_timezone(lck.acquire_time, 'UTC', p_time_zone),
                 p_time_zone) as acquire_time,
              lck.session_user,
              lck.os_user,
@@ -1396,11 +1396,11 @@ begin
              at_base_location bl,
              cwms_office o
        where lower(cwms_loc.get_location_id(lck.project_code)) like cwms_util.normalize_wildcards(lower(p_project_id_mask)) escape '\'
-         and lck.application_id like cwms_util.normalize_wildcards(lower(p_application_id_mask))  escape '\' 
-         and o.office_id like cwms_util.normalize_wildcards(upper(l_office_id_mask))  escape '\'  
+         and lck.application_id like cwms_util.normalize_wildcards(lower(p_application_id_mask))  escape '\'
+         and o.office_id like cwms_util.normalize_wildcards(upper(l_office_id_mask))  escape '\'
          and pl.location_code = lck.project_code
          and bl.base_location_code = pl.base_location_code
-         and o.office_code = bl.db_office_code;  
+         and o.office_code = bl.db_office_code;
    return l_cursor;
 end cat_locks_f;
 
@@ -1426,17 +1426,17 @@ begin
       cwms_err.raise('NULL_ARGUMENT', 'p_user_id');
    else
       l_user_id := lower(p_user_id);
-      for rec in (select lower(grantee) as cwms_user 
-                    from dba_role_privs 
+      for rec in (select lower(grantee) as cwms_user
+                    from dba_role_privs
                    where granted_role = 'CWMS_USER'
-                 ) 
+                 )
       loop
          l_cwms_users(rec.cwms_user) := true;
       end loop;
       if not l_cwms_users.exists(l_user_id) then
          cwms_err.raise('ERROR', 'User '||p_user_id||' is not a CWMS user.');
       end if;
-   end if; 
+   end if;
    if p_project_ids is null then
       cwms_err.raise('NULL_ARGUMENT', 'p_project_ids');
    end if;
@@ -1454,12 +1454,12 @@ begin
    l_allow          := upper(p_allow);
    l_application_id := lower(p_application_id);
    l_office_code    := cwms_util.get_db_office_code(p_office_id);
-   
+
    if p_project_ids = '*' and l_allow = 'F' then
       begin
-         delete 
-           from at_prj_lck_revoker_rights 
-          where user_id = l_user_id 
+         delete
+           from at_prj_lck_revoker_rights
+          where user_id = l_user_id
             and office_code = l_office_code
             and application_id = l_application_id;
       exception
@@ -1469,12 +1469,12 @@ begin
      select count(*)
        into l_count
        from at_prj_lck_revoker_rights
-      where user_id        = l_user_id 
-        and office_code    = l_office_code 
-        and application_id = l_application_id  
+      where user_id        = l_user_id
+        and office_code    = l_office_code
+        and application_id = l_application_id
         and allow_flag     = l_allow;
       if l_count = 0 then
-        insert 
+        insert
           into at_prj_lck_revoker_rights
                (user_id,
                 office_code,
@@ -1487,32 +1487,32 @@ begin
                 l_application_id,
                 l_allow,
                 p_project_ids
-               );               
+               );
       else
          update at_prj_lck_revoker_rights
             set project_list   = p_project_ids
-          where user_id        = l_user_id 
-            and office_code    = l_office_code 
-            and application_id = l_application_id  
+          where user_id        = l_user_id
+            and office_code    = l_office_code
+            and application_id = l_application_id
             and allow_flag     = l_allow;
       end if;
    end if;
 end update_lock_revoker_rights;
-      
+
 procedure cat_lock_revoker_rights(
-   p_cursor              out sys_refcursor,      
+   p_cursor              out sys_refcursor,
    p_project_id_mask     in  varchar2 default '*',
    p_application_id_mask in  varchar2 default '*',
    p_office_id_mask      in  varchar2 default null)
 is
 begin
-   p_cursor := cat_lock_revoker_rights_f(      
+   p_cursor := cat_lock_revoker_rights_f(
       p_project_id_mask,
       p_application_id_mask,
-      p_office_id_mask); 
-end cat_lock_revoker_rights;   
-      
-function cat_lock_revoker_rights_f(      
+      p_office_id_mask);
+end cat_lock_revoker_rights;
+
+function cat_lock_revoker_rights_f(
    p_project_id_mask     in varchar2 default '*',
    p_application_id_mask in varchar2 default '*',
    p_office_id_mask      in varchar2 default null)
@@ -1537,9 +1537,9 @@ begin
              cwms_office o
        where lower(bl.base_location_id
              ||substr('-', 1, length(pl.sub_location_id))
-             ||pl.sub_location_id) like l_project_id_mask escape '\' 
+             ||pl.sub_location_id) like l_project_id_mask escape '\'
          and r.application_id like l_application_id_mask escape '\'
-         and o.office_id like l_office_id_mask escape '\' 
+         and o.office_id like l_office_id_mask escape '\'
          and r.allow_flag = 'T'
          and pl.location_code = p.project_location_code
          and bl.base_location_code = pl.base_location_code
@@ -1548,10 +1548,10 @@ begin
          and cwms_project.has_revoker_rights(
                 p_project_id     => bl.base_location_id
                                     ||substr('-', 1, length(pl.sub_location_id))
-                                    ||pl.sub_location_id, 
-                p_application_id => r.application_id, 
-                p_user_id        => r.user_id, 
-                p_office_code    => r.office_code) = 'T';             
+                                    ||pl.sub_location_id,
+                p_application_id => r.application_id,
+                p_user_id        => r.user_id,
+                p_office_code    => r.office_code) = 'T';
    return l_cursor;
 end cat_lock_revoker_rights_f;
 
@@ -1577,25 +1577,25 @@ begin
         from at_project_purpose
        where project_location_code = p_project_code
          and project_purpose_code  = p_purpose_code;
-         
-      l_exists := true;          
+
+      l_exists := true;
    exception
-      when no_data_found then l_exists := false;      
+      when no_data_found then l_exists := false;
    end;
-   if l_exists then 
+   if l_exists then
       if l_fail_if_exists then
          select purpose_display_value
            into l_purpose
            from av_project_purposes
           where purpose_code = p_purpose_code;
-          
+
          select db_office_id,
                 location_id
            into l_office_id,
                 l_project_id
            from av_loc
           where location_code = p_project_code;
-                             
+
          if l_fail_if_exists then
             cwms_err.raise(
                'ERROR',
@@ -1618,7 +1618,7 @@ begin
       update at_project_purpose
          set row = l_rec
        where project_location_code = l_rec.project_location_code
-         and project_purpose_code  = l_rec.project_purpose_code;   
+         and project_purpose_code  = l_rec.project_purpose_code;
    else
       --------------------
       -- insert purpose --
@@ -1629,10 +1629,10 @@ begin
       l_rec.additional_notes := trim(p_notes);
       insert
         into at_project_purpose
-      values l_rec;  
+      values l_rec;
    end if;
 end store_project_purpose;
-   
+
 procedure store_project_purpose(
    p_project_id            in varchar2,
    p_purpose_display_value in varchar2,
@@ -1648,13 +1648,13 @@ is
 begin
    l_office_code  := cwms_util.get_office_code(p_office_id);
    l_project_code := cwms_loc.get_location_code(l_office_code, p_project_id);
-   
+
    select purpose_code
      into l_purpose_code
      from at_project_purposes
     where upper(purpose_display_value) = upper(trim(p_purpose_display_value))
       and db_office_code in (l_office_code, cwms_util.db_office_code_all);
-      
+
    store_project_purpose(
       l_project_code,
       l_purpose_code,
@@ -1663,18 +1663,18 @@ begin
       p_fail_if_exists,
       p_ignore_nulls);
 end store_project_purpose;
-   
-procedure delete_project_purpose(         
+
+procedure delete_project_purpose(
    p_project_code in integer,
    p_purpose_code in integer)
 is
 begin
-   delete 
-     from at_project_purpose 
+   delete
+     from at_project_purpose
     where project_location_code = p_project_code
       and project_purpose_code = p_purpose_code;
 end delete_project_purpose;
-   
+
 procedure delete_project_purpose(
    p_project_id            in varchar2,
    p_purpose_display_value in varchar2,
@@ -1686,20 +1686,20 @@ is
 begin
    l_office_code  := cwms_util.get_office_code(p_office_id);
    l_project_code := cwms_loc.get_location_code(l_office_code, p_project_id);
-   
+
    select purpose_code
      into l_purpose_code
      from at_project_purposes
     where upper(purpose_display_value) = upper(trim(p_purpose_display_value))
       and db_office_code in (l_office_code, cwms_util.db_office_code_all);
-       
-   delete 
-     from at_project_purpose 
+
+   delete
+     from at_project_purpose
     where project_location_code = l_project_code
       and project_purpose_code = l_purpose_code;
 end delete_project_purpose;
 
 END CWMS_PROJECT;
- 
+
 /
 show errors;
