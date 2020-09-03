@@ -955,7 +955,7 @@ as
       p_time_zone      in varchar2 default null,
       p_office_id      in varchar2 default null)
    is
-      l_rating_code number(10);
+      l_rating_code number(14);
    begin
       l_rating_code := rating_t.get_rating_code(
          p_rating_spec_id,
@@ -971,7 +971,7 @@ as
       p_include_points in varchar2 default 'T')
    is
       type text_hash_t is table of boolean index by varchar(32767);
-      l_code        number(10);
+      l_code        number(14);
       l_count       pls_integer;
       l_idx         pls_integer;
       l_parts       str_tab_t;
@@ -2335,7 +2335,7 @@ as
    member procedure store(
       p_fail_if_exists in varchar2)
    is
-      l_rating_code number(10);
+      l_rating_code number(14);
    begin
       self.store(l_rating_code, p_fail_if_exists);
    end;

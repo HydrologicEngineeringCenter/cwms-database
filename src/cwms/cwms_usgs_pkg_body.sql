@@ -1409,8 +1409,8 @@ is
    l_lines      str_tab_t;
    l_count      pls_integer;
    l_meas       streamflow_meas_t;
-   l_loc_code   number(10);
-   l_group_code number(10);
+   l_loc_code   number(14);
+   l_group_code number(14);
 begin
    l_start_time := nvl(p_start_time, '1800-01-01');
    l_end_time   := nvl(p_end_time, to_char(sysdate, 'yyyy-mm-dd'));
@@ -3539,7 +3539,7 @@ is
    l_lines          str_tab_t := str_tab_t();
    l_effective_date date;
    l_office_id      varchar2(16);
-   l_office_code    number(10);
+   l_office_code    number(14);
 
    procedure append(
       p_table in out nocopy str_tab_t,
@@ -3777,7 +3777,7 @@ procedure retrieve_available_ratings2(
    p_office_id in varchar2 default null)
 is
    l_office_id     varchar2(16);
-   l_office_code   number(10);
+   l_office_code   number(14);
    l_locations     str_tab_t;
    l_locations_str varchar2(32767);
    l_ratings       rating_tab_t;

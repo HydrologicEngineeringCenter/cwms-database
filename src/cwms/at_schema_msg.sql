@@ -7,7 +7,7 @@ SET define on
 create table at_ts_msg_archive_1
 (
    msg_id          varchar2(32)  not null,
-   ts_code         number(10)    not null,
+   ts_code         number(14)    not null,
    message_time    timestamp(6)  not null,
    first_data_time date          not null,
    last_data_time  date          not null
@@ -83,7 +83,7 @@ commit;
 create table at_ts_msg_archive_2
 (
    msg_id          varchar2(32)  not null,
-   ts_code         number(10)    not null,
+   ts_code         number(14)    not null,
    message_time    timestamp(6)  not null,
    first_data_time date          not null,
    last_data_time  date          not null
@@ -158,7 +158,7 @@ commit;
 create table at_log_message
 (
    msg_id               varchar2(32)                not null,
-   office_code          number(10)                  not null,
+   office_code          number(14)                  not null,
    log_timestamp_utc    timestamp                   not null,
    msg_level            number(2)                   not null,
    component            varchar2(64)                not null,
