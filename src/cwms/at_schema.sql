@@ -217,11 +217,11 @@ COMMIT;
 
 CREATE TABLE AT_PHYSICAL_LOCATION
 (
-  LOCATION_CODE       NUMBER(10)                NOT NULL,
-  BASE_LOCATION_CODE  NUMBER(10)                NOT NULL,
+  LOCATION_CODE       NUMBER(14)                NOT NULL,
+  BASE_LOCATION_CODE  NUMBER(14)                NOT NULL,
   SUB_LOCATION_ID     VARCHAR2(32),
-  TIME_ZONE_CODE      NUMBER(10),
-  COUNTY_CODE         NUMBER(10),
+  TIME_ZONE_CODE      NUMBER(14),
+  COUNTY_CODE         NUMBER(14),
   LOCATION_TYPE       VARCHAR2(32),
   ELEVATION           NUMBER,
   VERTICAL_DATUM      VARCHAR2(16),
@@ -232,11 +232,11 @@ CREATE TABLE AT_PHYSICAL_LOCATION
   LONG_NAME           VARCHAR2(80),
   DESCRIPTION         VARCHAR2(1024),
   ACTIVE_FLAG         VARCHAR2(1)               NOT NULL,
-  LOCATION_KIND       NUMBER(10)                NOT NULL,
+  LOCATION_KIND       NUMBER(14)                NOT NULL,
   MAP_LABEL           VARCHAR2(50),
   PUBLISHED_LATITUDE  NUMBER,
   PUBLISHED_LONGITUDE NUMBER,
-  OFFICE_CODE         NUMBER(10),
+  OFFICE_CODE         NUMBER(14),
   NATION_CODE         VARCHAR2(2),
   NEAREST_CITY        VARCHAR2(50),
   CONSTRAINT AT_PHYSICAL_LOCATION_PK  PRIMARY KEY (LOCATION_CODE) USING INDEX
@@ -324,7 +324,7 @@ COMMIT;
 ---------------------------------------------------------------------------
 CREATE TABLE AT_GEOGRAPHIC_LOCATION
 (
-  LOCATION_CODE NUMBER(10)          NOT NULL,
+  LOCATION_CODE NUMBER(14)          NOT NULL,
   GEOGRAPHIC_ID VARCHAR2(32)        DEFAULT 'LOCATION',
   POINT         MDSYS.SDO_GEOMETRY,
   MULTI_POINT   MDSYS.SDO_GEOMETRY,
@@ -420,7 +420,7 @@ CREATE INDEX AT_GEOGRAPHIC_LOCATION_PG_IDX
 
 CREATE TABLE AT_LOCATION_URL
 (
-   LOCATION_CODE NUMBER(10),
+   LOCATION_CODE NUMBER(14),
    URL_ID        VARCHAR2(32),
    URL_ADDRESS   VARCHAR2(1024),
    URL_TITLE     VARCHAR2(256),
@@ -477,12 +477,12 @@ NOPARALLEL
 
 CREATE TABLE AT_STREAM
 (
-  STREAM_LOCATION_CODE      NUMBER(10)    NOT NULL,
+  STREAM_LOCATION_CODE      NUMBER(14)    NOT NULL,
   ZERO_STATION              VARCHAR2(2),
-  DIVERTING_STREAM_CODE     NUMBER(10),
+  DIVERTING_STREAM_CODE     NUMBER(14),
   DIVERSION_STATION         BINARY_DOUBLE,
   DIVERSION_BANK            VARCHAR2(1),
-  RECEIVING_STREAM_CODE     NUMBER(10),
+  RECEIVING_STREAM_CODE     NUMBER(14),
   CONFLUENCE_STATION        BINARY_DOUBLE,
   CONFLUENCE_BANK           VARCHAR2(1),
   STREAM_LENGTH             BINARY_DOUBLE,
@@ -532,8 +532,8 @@ ALTER TABLE AT_STREAM ADD CONSTRAINT AT_STREAM_CK3 CHECK (CONFLUENCE_BANK IS NUL
 
 CREATE TABLE AT_STREAM_LOCATION
 (
-  LOCATION_CODE           NUMBER(10)   NOT NULL,
-  STREAM_LOCATION_CODE    NUMBER(10),
+  LOCATION_CODE           NUMBER(14)   NOT NULL,
+  STREAM_LOCATION_CODE    NUMBER(14),
   STATION                 NUMBER,
   PUBLISHED_STATION       NUMBER,
   NAVIGATION_STATION      NUMBER,
@@ -579,11 +579,11 @@ ALTER TABLE AT_STREAM_LOCATION ADD CONSTRAINT AT_STREAM_LOCATION_FK2 FOREIGN KEY
 ALTER TABLE AT_STREAM_LOCATION ADD CONSTRAINT AT_STREAM_LOCATION_CK1 CHECK (BANK IS NULL OR BANK = 'R' OR BANK = 'L');
 
 CREATE TABLE AT_STREAM_REACH (
-   STREAM_REACH_LOCATION_CODE NUMBER(10)   NOT NULL,
-   STREAM_LOCATION_CODE       NUMBER(10)   NOT NULL,
-   UPSTREAM_LOCATION_CODE     NUMBER(10)   NOT NULL,
-   DOWNSTREAM_LOCATION_CODE   NUMBER(10)   NOT NULL,
-   CONFIGURATION_CODE         NUMBER(10)   NOT NULL,
+   STREAM_REACH_LOCATION_CODE NUMBER(14)   NOT NULL,
+   STREAM_LOCATION_CODE       NUMBER(14)   NOT NULL,
+   UPSTREAM_LOCATION_CODE     NUMBER(14)   NOT NULL,
+   DOWNSTREAM_LOCATION_CODE   NUMBER(14)   NOT NULL,
+   CONFIGURATION_CODE         NUMBER(14)   NOT NULL,
    COMMENTS                   VARCHAR2(256),
    CONSTRAINT AT_STREAM_REACH_PK  PRIMARY KEY (STREAM_REACH_LOCATION_CODE),
    CONSTRAINT AT_STREAM_REACH_FK1 FOREIGN KEY (STREAM_REACH_LOCATION_CODE) REFERENCES AT_PHYSICAL_LOCATION (LOCATION_CODE),
@@ -617,11 +617,11 @@ CREATE UNIQUE INDEX AT_STREAM_REACH_U2 ON AT_STREAM_REACH (
 
 CREATE TABLE AT_BASIN
 (
-  BASIN_LOCATION_CODE        NUMBER(10)    NOT NULL,
+  BASIN_LOCATION_CODE        NUMBER(14)    NOT NULL,
   TOTAL_DRAINAGE_AREA        BINARY_DOUBLE,
   CONTRIBUTING_DRAINAGE_AREA BINARY_DOUBLE,
-  PRIMARY_STREAM_CODE        NUMBER(10),
-  PARENT_BASIN_CODE          NUMBER(10),
+  PRIMARY_STREAM_CODE        NUMBER(14),
+  PARENT_BASIN_CODE          NUMBER(14),
   SORT_ORDER                 BINARY_DOUBLE,
   CONSTRAINT AT_BASIN_PK  PRIMARY KEY (BASIN_LOCATION_CODE) USING INDEX
 )
@@ -659,9 +659,9 @@ ALTER TABLE AT_BASIN ADD CONSTRAINT AT_BASIN_FK3 FOREIGN KEY (PARENT_BASIN_CODE)
 
 CREATE TABLE AT_GAGE
 (
-  GAGE_CODE                NUMBER(10)    NOT NULL,
-  GAGE_TYPE_CODE           NUMBER(10)    NOT NULL,
-  GAGE_LOCATION_CODE       NUMBER(10)    NOT NULL,
+  GAGE_CODE                NUMBER(14)    NOT NULL,
+  GAGE_TYPE_CODE           NUMBER(14)    NOT NULL,
+  GAGE_LOCATION_CODE       NUMBER(14)    NOT NULL,
   GAGE_ID                  VARCHAR2(32)  NOT NULL,
   DISCONTINUED             VARCHAR2(1)   NOT NULL,
   OUT_OF_SERVICE           VARCHAR2(1)   NOT NULL,
@@ -671,7 +671,7 @@ CREATE TABLE AT_GAGE
   PHONE_NUMBER             VARCHAR2(16),
   INTERNET_ADDRESS         VARCHAR2(32),
   OTHER_ACCESS_ID          VARCHAR2(32),
-  ASSOCIATED_LOCATION_CODE NUMBER(10),
+  ASSOCIATED_LOCATION_CODE NUMBER(14),
   COMMENTS                 VARCHAR2(256),
   CONSTRAINT AT_GAGE_PK  PRIMARY KEY (GAGE_CODE) USING INDEX
 )
@@ -736,10 +736,10 @@ NOPARALLEL
 
 CREATE TABLE AT_GAGE_SENSOR
 (
-  GAGE_CODE          NUMBER(10)    NOT NULL,
+  GAGE_CODE          NUMBER(14)    NOT NULL,
   SENSOR_ID          VARCHAR2(32)  NOT NULL,
-  PARAMETER_CODE     NUMBER(10)    NOT NULL,
-  UNIT_CODE          NUMBER(10),
+  PARAMETER_CODE     NUMBER(14)    NOT NULL,
+  UNIT_CODE          NUMBER(14),
   VALID_RANGE_MIN    BINARY_DOUBLE,
   VALID_RANGE_MAX    BINARY_DOUBLE,
   ZERO_READING_VALUE BINARY_DOUBLE,
@@ -808,7 +808,7 @@ NOPARALLEL
 
 CREATE TABLE AT_GOES
 (
-   GAGE_CODE                NUMBER(10)  NOT NULL,
+   GAGE_CODE                NUMBER(14)  NOT NULL,
    GOES_SATELLITE           VARCHAR2(1) NOT NULL,
    SELFTIMED_CHANNEL        NUMBER(4),
    SELFTIMED_DATA_RATE      NUMBER(6),
@@ -859,9 +859,9 @@ ALTER TABLE AT_GOES ADD CONSTRAINT AT_GOES_FK1 FOREIGN KEY (GAGE_CODE) REFERENCE
 
 CREATE TABLE AT_DISPLAY_SCALE
 (
-   LOCATION_CODE  NUMBER(10) NOT NULL,
-   PARAMETER_CODE NUMBER(10) NOT NULL,
-   UNIT_CODE      NUMBER(10) NOT NULL,
+   LOCATION_CODE  NUMBER(14) NOT NULL,
+   PARAMETER_CODE NUMBER(14) NOT NULL,
+   UNIT_CODE      NUMBER(14) NOT NULL,
    SCALE_MAX      NUMBER,
    SCALE_MIN      NUMBER,
    CONSTRAINT AT_DISPLAY_SCALE_PK  PRIMARY KEY (LOCATION_CODE, PARAMETER_CODE, UNIT_CODE) USING INDEX
@@ -1131,7 +1131,7 @@ CREATE TABLE at_loc_group_assignment
   loc_attribute   NUMBER,
   loc_alias_id    VARCHAR2(256 BYTE),
   loc_ref_code    NUMBER,
-  office_code     NUMBER(10) NOT NULL
+  office_code     NUMBER(14) NOT NULL
 )
 TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
@@ -1243,16 +1243,16 @@ CREATE TABLE at_cwms_ts_spec
   ts_code              NUMBER                   NOT NULL,
   location_code        NUMBER                   NOT NULL,
   parameter_code       NUMBER                   NOT NULL,
-  parameter_type_code  NUMBER(10)               NOT NULL,
-  interval_code        NUMBER(10)               NOT NULL,
-  duration_code        NUMBER(10)               NOT NULL,
+  parameter_type_code  NUMBER(14)               NOT NULL,
+  interval_code        NUMBER(14)               NOT NULL,
+  duration_code        NUMBER(14)               NOT NULL,
   VERSION              VARCHAR2(32 BYTE)        NOT NULL,
   description          VARCHAR2(80 BYTE),
   interval_utc_offset  NUMBER                   NOT NULL,
   interval_forward     NUMBER,
   interval_backward    NUMBER,
   interval_offset_id   VARCHAR2(16 BYTE),
-  time_zone_code       NUMBER(10),
+  time_zone_code       NUMBER(14),
   version_flag         VARCHAR2(1 BYTE),
   migrate_ver_flag     VARCHAR2(1 BYTE),
   active_flag          VARCHAR2(1 BYTE),
@@ -1400,8 +1400,8 @@ ALTER TABLE at_cwms_ts_spec ADD (
 
 CREATE TABLE AT_SPECIFIED_LEVEL
 (
-   SPECIFIED_LEVEL_CODE NUMBER(10)    NOT NULL,
-   OFFICE_CODE          NUMBER(10)    NOT NULL,
+   SPECIFIED_LEVEL_CODE NUMBER(14)    NOT NULL,
+   OFFICE_CODE          NUMBER(14)    NOT NULL,
    SPECIFIED_LEVEL_ID   VARCHAR2(256) NOT NULL,
    DESCRIPTION          VARCHAR2(256),
    CONSTRAINT AT_SPECIFIED_LEVEL_PK  PRIMARY KEY (SPECIFIED_LEVEL_CODE)
@@ -1483,25 +1483,25 @@ INSERT INTO at_specified_level VALUES(26, 53, 'Streambed',                      
 
 CREATE TABLE AT_LOCATION_LEVEL
 (
-   LOCATION_LEVEL_CODE           NUMBER(10) NOT NULL,
-   LOCATION_CODE                 NUMBER(10) NOT NULL,
-   SPECIFIED_LEVEL_CODE          NUMBER(10) NOT NULL,
-   PARAMETER_CODE                NUMBER(10) NOT NULL,
-   PARAMETER_TYPE_CODE           NUMBER(10) NOT NULL,
-   DURATION_CODE                 NUMBER(10) NOT NULL,
+   LOCATION_LEVEL_CODE           NUMBER(14) NOT NULL,
+   LOCATION_CODE                 NUMBER(14) NOT NULL,
+   SPECIFIED_LEVEL_CODE          NUMBER(14) NOT NULL,
+   PARAMETER_CODE                NUMBER(14) NOT NULL,
+   PARAMETER_TYPE_CODE           NUMBER(14) NOT NULL,
+   DURATION_CODE                 NUMBER(14) NOT NULL,
    LOCATION_LEVEL_DATE           DATE NOT NULL,
    LOCATION_LEVEL_VALUE          NUMBER,
    LOCATION_LEVEL_COMMENT        VARCHAR2(256),
    ATTRIBUTE_VALUE               NUMBER,
-   ATTRIBUTE_PARAMETER_CODE      NUMBER(10),
-   ATTRIBUTE_PARAMETER_TYPE_CODE NUMBER(10),
-   ATTRIBUTE_DURATION_CODE       NUMBER(10),
+   ATTRIBUTE_PARAMETER_CODE      NUMBER(14),
+   ATTRIBUTE_PARAMETER_TYPE_CODE NUMBER(14),
+   ATTRIBUTE_DURATION_CODE       NUMBER(14),
    ATTRIBUTE_COMMENT             VARCHAR2(256),
    INTERVAL_ORIGIN               DATE,
    CALENDAR_INTERVAL             INTERVAL YEAR(2) TO MONTH,
    TIME_INTERVAL                 INTERVAL DAY(3) TO SECOND(0),
    INTERPOLATE                   VARCHAR2(1) DEFAULT 'T',
-   TS_CODE                       NUMBER(10),
+   TS_CODE                       NUMBER(14),
    EXPIRATION_DATE               DATE,
    CONSTRAINT AT_LOCATION_LEVEL_PK  PRIMARY KEY (LOCATION_LEVEL_CODE) USING INDEX TABLESPACE CWMS_20AT_DATA
 )
@@ -1600,7 +1600,7 @@ NOPARALLEL
 
 CREATE TABLE AT_SEASONAL_LOCATION_LEVEL
 (
-   LOCATION_LEVEL_CODE NUMBER(10) NOT NULL,
+   LOCATION_LEVEL_CODE NUMBER(14) NOT NULL,
    CALENDAR_OFFSET     INTERVAL YEAR(2) TO MONTH,
    TIME_OFFSET         INTERVAL DAY(3) TO SECOND(0),
    VALUE               NUMBER,
@@ -1637,17 +1637,17 @@ ALTER TABLE AT_SEASONAL_LOCATION_LEVEL ADD CONSTRAINT AT_SEASONAL_LOCATION_LEVEL
 
 CREATE TABLE AT_LOC_LVL_INDICATOR
 (
-   LEVEL_INDICATOR_CODE          NUMBER(10) NOT NULL,
-   LOCATION_CODE                 NUMBER(10) NOT NULL,
-   SPECIFIED_LEVEL_CODE          NUMBER(10) NOT NULL,
-   PARAMETER_CODE                NUMBER(10) NOT NULL,
-   PARAMETER_TYPE_CODE           NUMBER(10) NOT NULL,
-   DURATION_CODE                 NUMBER(10) NOT NULL,
+   LEVEL_INDICATOR_CODE          NUMBER(14) NOT NULL,
+   LOCATION_CODE                 NUMBER(14) NOT NULL,
+   SPECIFIED_LEVEL_CODE          NUMBER(14) NOT NULL,
+   PARAMETER_CODE                NUMBER(14) NOT NULL,
+   PARAMETER_TYPE_CODE           NUMBER(14) NOT NULL,
+   DURATION_CODE                 NUMBER(14) NOT NULL,
    ATTR_VALUE                    NUMBER,
-   ATTR_PARAMETER_CODE           NUMBER(10),
-   ATTR_PARAMETER_TYPE_CODE      NUMBER(10),
-   ATTR_DURATION_CODE            NUMBER(10),
-   REF_SPECIFIED_LEVEL_CODE      NUMBER(10),
+   ATTR_PARAMETER_CODE           NUMBER(14),
+   ATTR_PARAMETER_TYPE_CODE      NUMBER(14),
+   ATTR_DURATION_CODE            NUMBER(14),
+   REF_SPECIFIED_LEVEL_CODE      NUMBER(14),
    REF_ATTR_VALUE                NUMBER,
    LEVEL_INDICATOR_ID            VARCHAR2(32) NOT NULL,
    MINIMUM_DURATION              INTERVAL DAY(3) TO SECOND(0),
@@ -1725,19 +1725,19 @@ ALTER TABLE AT_LOC_LVL_INDICATOR ADD CONSTRAINT AT_LOC_LVL_INDICATOR_CK6 CHECK (
 
 CREATE TABLE AT_LOC_LVL_INDICATOR_COND
 (
-   LEVEL_INDICATOR_CODE       NUMBER(10)                   NOT NULL,
+   LEVEL_INDICATOR_CODE       NUMBER(14)                   NOT NULL,
    LEVEL_INDICATOR_VALUE      NUMBER(1)                    NOT NULL,
    EXPRESSION                 VARCHAR(64)                  NOT NULL,
    COMPARISON_OPERATOR_1      VARCHAR2(2)                  NOT NULL,
    COMPARISON_VALUE_1         BINARY_DOUBLE                NOT NULL,
-   COMPARISON_UNIT            NUMBER(10)                   DEFAULT NULL,
+   COMPARISON_UNIT            NUMBER(14)                   DEFAULT NULL,
    CONNECTOR                  VARCHAR2(3)                  DEFAULT NULL,
    COMPARISON_OPERATOR_2      VARCHAR2(2)                  DEFAULT NULL,
    COMPARISON_VALUE_2         BINARY_DOUBLE                DEFAULT NULL,
    RATE_EXPRESSION            VARCHAR(64)                  DEFAULT NULL,
    RATE_COMPARISON_OPERATOR_1 VARCHAR2(2)                  DEFAULT NULL,
    RATE_COMPARISON_VALUE_1    BINARY_DOUBLE                DEFAULT NULL,
-   RATE_COMPARISON_UNIT       NUMBER(10)                   DEFAULT NULL,
+   RATE_COMPARISON_UNIT       NUMBER(14)                   DEFAULT NULL,
    RATE_CONNECTOR             VARCHAR2(3)                  DEFAULT NULL,
    RATE_COMPARISON_OPERATOR_2 VARCHAR2(2)                  DEFAULT NULL,
    RATE_COMPARISON_VALUE_2    BINARY_DOUBLE                DEFAULT NULL,
@@ -2016,7 +2016,7 @@ CREATE TABLE at_ts_group_assignment
   ts_attribute   NUMBER,
   ts_alias_id    VARCHAR2(256 BYTE),
   ts_ref_code    NUMBER,
-  office_code    NUMBER(10) NOT NULL
+  office_code    NUMBER(14) NOT NULL
 )
 TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
@@ -2483,7 +2483,7 @@ CREATE TABLE at_unit_alias
 (
   alias_id        VARCHAR2(32 BYTE)             NOT NULL,
   db_office_code  NUMBER                  NOT NULL,
-  unit_code       NUMBER(10)                    NOT NULL
+  unit_code       NUMBER(14)                    NOT NULL
 )
 TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
@@ -2686,7 +2686,7 @@ ALTER TABLE at_office_settings ADD (
 --
 CREATE TABLE at_properties
     (
-        office_code    NUMBER(10),
+        office_code    NUMBER(14),
         prop_category  VARCHAR2(256) NOT NULL,
         prop_id        VARCHAR2(256) NOT NULL,
         prop_value     VARCHAR2(256),
@@ -2874,8 +2874,8 @@ COMMIT ;
 --
 CREATE TABLE at_clob
 (
-  CLOB_CODE    NUMBER(10) NOT NULL,
-  OFFICE_CODE  NUMBER(10) NOT NULL,
+  CLOB_CODE    NUMBER(14) NOT NULL,
+  OFFICE_CODE  NUMBER(14) NOT NULL,
   ID           VARCHAR2(256 BYTE) NOT NULL,
   description  VARCHAR2(256 BYTE),
   VALUE        CLOB,
@@ -2942,13 +2942,13 @@ COMMIT ;
 
 CREATE TABLE AT_FORECAST_SPEC
 (
-   FORECAST_SPEC_CODE   NUMBER(10)   NOT NULL,
-   TARGET_LOCATION_CODE NUMBER(10)   NOT NULL,
+   FORECAST_SPEC_CODE   NUMBER(14)   NOT NULL,
+   TARGET_LOCATION_CODE NUMBER(14)   NOT NULL,
    FORECAST_ID          VARCHAR2(32) NOT NULL,
    SOURCE_AGENCY        VARCHAR2(16) NOT NULL,
    SOURCE_OFFICE        VARCHAR2(16) NOT NULL,
    FORECAST_TYPE        VARCHAR2(5),
-   SOURCE_LOCATION_CODE NUMBER(10),
+   SOURCE_LOCATION_CODE NUMBER(14),
    MAX_AGE              NUMBER(4),
    CONSTRAINT AT_FORECAST_SPEC_PK  PRIMARY KEY (FORECAST_SPEC_CODE) USING INDEX,
    CONSTRAINT AT_FORECAST_SPEC_U1  UNIQUE (TARGET_LOCATION_CODE, FORECAST_ID)
@@ -2992,8 +2992,8 @@ ALTER TABLE AT_FORECAST_SPEC ADD CONSTRAINT AT_FORECAST_SPEC_FK2 FOREIGN KEY (SO
 
 CREATE TABLE AT_FORECAST_TS
 (
-   FORECAST_SPEC_CODE NUMBER(10) NOT NULL,
-   TS_CODE            NUMBER(10) NOT NULL,
+   FORECAST_SPEC_CODE NUMBER(14) NOT NULL,
+   TS_CODE            NUMBER(14) NOT NULL,
    FORECAST_DATE      DATE NOT NULL,
    ISSUE_DATE         DATE NOT NULL,
    VERSION_DATE       DATE NOT NULL,
@@ -3014,10 +3014,10 @@ ALTER TABLE AT_FORECAST_TS ADD CONSTRAINT AT_FORECAST_TS_FK2 FOREIGN KEY (TS_COD
 
 CREATE TABLE AT_FORECAST_TEXT
 (
-   FORECAST_SPEC_CODE NUMBER(10) NOT NULL,
+   FORECAST_SPEC_CODE NUMBER(14) NOT NULL,
    FORECAST_DATE      DATE NOT NULL,
    ISSUE_DATE         DATE NOT NULL,
-   CLOB_CODE          NUMBER(10) NOT NULL,
+   CLOB_CODE          NUMBER(14) NOT NULL,
    CONSTRAINT AT_FORECAST_TEXT_PK  PRIMARY KEY (FORECAST_SPEC_CODE, FORECAST_DATE, ISSUE_DATE)
 )
 TABLESPACE CWMS_20AT_DATA
@@ -3034,7 +3034,7 @@ ALTER TABLE AT_FORECAST_TEXT ADD CONSTRAINT AT_FORECAST_TEXT_FK2 FOREIGN KEY (CL
 
 CREATE TABLE AT_TS_DELETED_TIMES (
    DELETED_TIME NUMBER(14) NOT NULL,
-   TS_CODE      NUMBER(10) NOT NULL,
+   TS_CODE      NUMBER(14) NOT NULL,
    VERSION_DATE DATE       NOT NULL,
    DATE_TIME    DATE       NOT NULL,
    CONSTRAINT AT_TS_DELETED_TIMES_PK PRIMARY KEY (DELETED_TIME, TS_CODE, VERSION_DATE, DATE_TIME)
@@ -3101,7 +3101,7 @@ comment on column cwms_media_type.media_type_id      is 'The internet media type
 comment on column cwms_media_type.media_type_clob_tf is 'Flag (T/F) specifying whether media type documents is stored as CLOBs';
 --
 create table at_file_extension(
-   office_code     number(10)   not null,
+   office_code     number(14)   not null,
    file_ext        varchar2(16) not null,
    media_type_code number(4)    not null,
    constraint at_file_extension_pk  primary key(office_code, file_ext),
@@ -3115,8 +3115,8 @@ comment on column at_file_extension.file_ext        is 'The file extension (with
 comment on column at_file_extension.media_type_code is 'References the related media type for the file extension';
 --
 create table at_blob(
-   blob_code       number(10)    not null,
-   office_code     number(10)    not null,
+   blob_code       number(14)    not null,
+   office_code     number(14)    not null,
    id              varchar2(256) not null,
    description     varchar2(256),
    media_type_code number(4)     not null,
@@ -3136,10 +3136,10 @@ comment on column at_blob.media_type_code is 'References media type of the binar
 comment on column at_blob.value           is 'The binary data';
 --
 create table at_std_text(
-   std_text_code number(10)   not null,
-   office_code   number(10)   not null,
+   std_text_code number(14)   not null,
+   office_code   number(14)   not null,
    std_text_id   varchar2(16) not null,
-   clob_code     number(10),
+   clob_code     number(14),
    constraint at_std_text_pk  primary key(std_text_code),
    constraint at_std_text_ck1 check(std_text_id = upper(std_text_id)),
    constraint at_std_text_fk1 foreign key(clob_code) references at_clob(clob_code)
@@ -3154,10 +3154,10 @@ comment on column at_std_text.clob_code     is 'Reference to the descriptive tex
 create unique index at_std_text_u1 on at_std_text(office_code, upper(std_text_id)) tablespace cwms_20at_data;
 --
 create table at_tsv_std_text(
-   ts_code         number(10)   not null,
+   ts_code         number(14)   not null,
    date_time       date         not null,
    version_date    date         not null,
-   std_text_code   number(10)   not null,
+   std_text_code   number(14)   not null,
    data_entry_date timestamp(6) not null,
    attribute       number,
    constraint at_tsv_std_text_pk  primary key(ts_code, date_time, version_date, std_text_code),
@@ -3179,10 +3179,10 @@ comment on column at_tsv_std_text.data_entry_date is 'The date/time the referenc
 comment on column at_tsv_std_text.attribute       is 'Attribute that can be used for sorting or other puropses';
 --
 create table at_tsv_text(
-   ts_code         number(10)   not null,
+   ts_code         number(14)   not null,
    date_time       date         not null,
    version_date    date         not null,
-   clob_code       number(10)   not null,
+   clob_code       number(14)   not null,
    data_entry_date timestamp(6) not null,
    attribute       number,
    constraint at_tsv_text_pk  primary key(ts_code, date_time, version_date, clob_code),
@@ -3201,10 +3201,10 @@ comment on column at_tsv_text.data_entry_date is 'The date/time the reference wa
 comment on column at_tsv_text.attribute       is 'Attribute that can be used for sorting or other puropses';
 --
 create table at_tsv_binary(
-   ts_code         number(10)   not null,
+   ts_code         number(14)   not null,
    date_time       date         not null,
    version_date    date         not null,
-   blob_code       number(10)   not null,
+   blob_code       number(14)   not null,
    data_entry_date timestamp(6) not null,
    attribute       number,
    constraint at_tsv_binary_pk  primary key(ts_code, date_time, version_date, blob_code),
@@ -5679,7 +5679,7 @@ COMMIT ;
 SET define on
 
 create table at_vert_datum_offset (
-   location_code       number(10)    not null,
+   location_code       number(14)    not null,
    vertical_datum_id_1 varchar2(16)  not null,
    vertical_datum_id_2 varchar2(16)  not null,
    effective_date      date          default date '1000-01-01',
@@ -5702,7 +5702,7 @@ comment on column at_vert_datum_offset.offset              is 'Value added to in
 comment on column at_vert_datum_offset.description         is 'Description or comment';
 
 create table at_vert_datum_local (
-   location_code    number(10),
+   location_code    number(14),
    local_datum_name varchar2(16) not null,
    constraint at_vert_datum_local_pk  primary key (location_code) using index,
    constraint at_vert_datum_local_fk1 foreign key (location_code) references at_physical_location(location_code)
@@ -6065,12 +6065,12 @@ insert
 commit;
 
 create table at_streamflow_meas (
-   location_code  number(10),
+   location_code  number(14),
    meas_number    varchar2(8),
    date_time      date,
    used           varchar2(1),
    party          varchar2(12),
-   agency_code    number(10),
+   agency_code    number(14),
    gage_height    binary_double,
    flow           binary_double,
    cur_rating_num varchar2(4),
@@ -6120,8 +6120,8 @@ commit;
 ---
 
 create table at_gate_group (
-   loc_group_code   number(10),
-   gate_type_code   number(10) not null,
+   loc_group_code   number(14),
+   gate_type_code   number(14) not null,
    can_be_submerged varchar2(1) not null,
    always_submerged varchar2(1) not null,
    description      varchar(128),
@@ -6190,8 +6190,8 @@ commit;
 ---
 
 create table at_entity_location (
-   location_code number(10),
-   entity_code   number(10) not null,
+   location_code number(14),
+   entity_code   number(14) not null,
    comments      varchar2(128),
    constraint at_entity_location_pk  primary key (location_code) using index,
    constraint at_entity_location_fk1 foreign key (location_code) references at_physical_location (location_code),
@@ -6205,7 +6205,7 @@ commit;
 ---
 
 create table at_pump (
-   pump_location_code number(10),
+   pump_location_code number(14),
    description        varchar2(128),
    constraint at_pump_pk  primary key (pump_location_code) using index,
    constraint at_pump_pk1 foreign key (pump_location_code) references at_stream_location (location_code)

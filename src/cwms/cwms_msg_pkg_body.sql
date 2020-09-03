@@ -370,7 +370,7 @@ is
    l_now         integer;
    l_now_ts      timestamp;
    l_msg_id      varchar2(32);
-   l_office_code number(10);
+   l_office_code number(14);
    l_message     varchar2(4000);
    l_document    xmltype;
    l_nodes       xmltype;

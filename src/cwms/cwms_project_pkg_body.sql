@@ -12,7 +12,7 @@ function get_project_code(
    p_project_id in varchar2)
    return number
 is
-   l_location_code number(10);
+   l_location_code number(14);
 begin
    begin
       l_location_code := cwms_loc.get_location_code(p_office_id, p_project_id);
@@ -424,7 +424,7 @@ procedure delete_project2(
    p_delete_assoc_locs_action in varchar2 default cwms_util.delete_key,
    p_office_id                in varchar2 default null)
 is
-   l_project_code       number(10);
+   l_project_code       number(14);
    l_delete_location    boolean;
    l_delete_assoc_locs  boolean;
    l_delete_action1     varchar2(16);
@@ -1041,7 +1041,7 @@ function has_revoker_rights (
 is
    l_application_id     varchar2(64) := lower(p_application_id);
    l_user_id            varchar2(30) := lower(nvl(p_user_id, cwms_util.get_user_id));
-   l_office_code        number(10)   := nvl(p_office_code, cwms_util.get_db_office_code(p_office_id));
+   l_office_code        number(14)   := nvl(p_office_code, cwms_util.get_db_office_code(p_office_id));
    l_project_id         varchar2(57) := lower(cwms_loc.get_location_id(p_project_id, l_office_code));
    l_project_list       varchar2(256);
    l_parts              str_tab_t;
@@ -1416,7 +1416,7 @@ is
    l_user_id        varchar2(30);
    l_allow          varchar2(1);
    l_application_id varchar2(64);
-   l_office_code    number(10);
+   l_office_code    number(14);
    l_count          pls_integer;
 begin
    -------------------

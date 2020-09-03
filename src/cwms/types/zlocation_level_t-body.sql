@@ -7,7 +7,7 @@ as
       l_rec               at_location_level%rowtype;
       l_seasonal_values   seasonal_loc_lvl_tab_t := new seasonal_loc_lvl_tab_t();
       l_indicators        loc_lvl_indicator_tab_t := new loc_lvl_indicator_tab_t();
-      l_parameter_code    number(10);
+      l_parameter_code    number(14);
       l_vert_datum_offset binary_double;
    begin
       -------------------------
@@ -211,7 +211,7 @@ as
       l_rec               at_location_level%rowtype;
       l_exists            boolean;
       l_ind_codes         number_tab_t;
-      l_parameter_code    number(10);
+      l_parameter_code    number(14);
       l_vert_datum_offset binary_double;
    begin
       ------------------------------

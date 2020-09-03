@@ -480,7 +480,7 @@ function log_message_server_message(
  *          <tr>
  *            <td class="descr-center">2</td>
  *            <td class="descr">office_code</td>
- *            <td class="descr">number(10,0)</td>
+ *            <td class="descr">number(14,0)</td>
  *            <td class="descr">Office code of the logging office</td>
  *          </tr>
  *          <tr>
@@ -1046,7 +1046,7 @@ procedure retrieve_log_messages(
  *          <tr>
  *            <td class="descr-center">2</td>
  *            <td class="descr">office_code</td>
- *            <td class="descr">number(10,0)</td>
+ *            <td class="descr">number(14,0)</td>
  *            <td class="descr">Office code of the logging office</td>
  *          </tr>
  *          <tr>

@@ -3207,7 +3207,7 @@ AS
 													  := loc_lvl_ind_cond_tab_t ();
 		l_indicator 						  loc_lvl_indicator_t;
 		l_office_id 						  VARCHAR2 (16) := 'CPC';
-		l_unit_code 						  NUMBER (10);
+		l_unit_code 						  NUMBER (14);
 		l_location_id						  VARCHAR2 (57);
 		l_parameter_id 					  VARCHAR2 (49);
 		l_parameter_type_id				  VARCHAR2 (16);
@@ -4814,7 +4814,7 @@ AS
 		l_conditions			  loc_lvl_ind_cond_tab_t := loc_lvl_ind_cond_tab_t ();
 		l_indicator 			  loc_lvl_indicator_t;
 		l_office_id 			  VARCHAR2 (16) := 'CPC';
-		l_unit_code 			  NUMBER (10);
+		l_unit_code 			  NUMBER (14);
 		l_location_id			  VARCHAR2 (57);
 		l_parameter_id 		  VARCHAR2 (49);
 		l_parameter_type_id	  VARCHAR2 (16);

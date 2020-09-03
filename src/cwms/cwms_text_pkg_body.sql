@@ -34,7 +34,7 @@ as
    function get_media_type_code(p_type_or_ext in varchar2, p_office_code in number)
       return number
    is
-      l_media_type_code   number(10);
+      l_media_type_code   number(14);
    begin
       if p_type_or_ext is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TYPE_OR_EXT');
@@ -365,7 +365,7 @@ as
       l_rec             at_blob%rowtype;
       l_description     at_blob.description%type;
       l_media_type      cwms_media_type.media_type_id%type;
-      l_office_code     number(10) := cwms_util.get_office_code(p_office_id);
+      l_office_code     number(14) := cwms_util.get_office_code(p_office_id);
       l_file_extensions str_tab_t := str_tab_t();
    begin
       begin
@@ -503,8 +503,8 @@ as
       p_office_id in varchar2 default null) -- office id, defaults current user's office
    is
       l_existing_text   clob;
-      l_code            number(10);
-      l_office_code     number(10);
+      l_code            number(14);
+      l_office_code     number(14);
    begin
       begin
          l_code := cwms_text.get_text_code(p_id, p_office_id);
@@ -540,8 +540,8 @@ as
       p_office_id in varchar2 default null) -- office id, defaults current user's office
    is
       l_existing_text   clob;
-      l_code            number(10);
-      l_office_code     number(10);
+      l_code            number(14);
+      l_office_code     number(14);
    begin
       begin
          l_code := cwms_text.get_text_code(p_id, p_office_id);
@@ -852,8 +852,8 @@ as
       p_fail_if_exists in varchar2 default 'T',
       p_office_id      in varchar2 default null)
    is
-      l_office_code      number(10);
-      l_clob_code        number(10);
+      l_office_code      number(14);
+      l_clob_code        number(14);
       l_office_id        varchar2(16);
       l_std_text_id      varchar2(16);
       l_clob             clob;
@@ -1011,8 +1011,8 @@ as
       return clob
    is
       l_std_text      clob;
-      l_office_code   number(10);
-      l_clob_code     number(10);
+      l_office_code   number(14);
+      l_clob_code     number(14);
       l_office_id     varchar2(16);
    begin
       -------------------
@@ -1060,8 +1060,8 @@ as
       p_delete_action in varchar2 default cwms_util.delete_key,
       p_office_id     in varchar2 default null)
    is
-      l_office_code   number(10);
-      l_std_text_code number(10);
+      l_office_code   number(14);
+      l_std_text_code number(14);
       l_delete_key    boolean := false;
       l_delete_data   boolean := false;
    begin
@@ -1386,8 +1386,8 @@ as
       ts_id_not_found      exception;
       pragma exception_init(ts_id_not_found, -20001);
       l_tsid               varchar2(191);
-      l_ts_code            number(10);
-      l_std_text_code      number(10);
+      l_ts_code            number(14);
+      l_std_text_code      number(14);
       l_start_time_utc     date;
       l_end_time_utc       date := sysdate;
       l_version_date_utc   date;
@@ -1399,7 +1399,7 @@ as
       l_is_versioned       boolean;
       l_is_regular         boolean;
       l_office_id          varchar2(16);
-      l_office_code        number(10);
+      l_office_code        number(14);
       l_version_id         varchar2(32);
       l_cursor             sys_refcursor;
       l_store_date         timestamp := cast(systimestamp at time zone 'UTC' as timestamp);
@@ -1616,9 +1616,9 @@ as
       ts_id_not_found      exception;
       pragma exception_init(ts_id_not_found, -20001);
       l_tsid               varchar2(191);
-      l_ts_code            number(10);
+      l_ts_code            number(14);
       l_std_text_id        varchar2(16);
-      l_std_text_code      number(10);
+      l_std_text_code      number(14);
       l_times_utc          date_table_type := date_table_type();
       l_version_date_utc   date;
       l_time_zone          varchar2(28);
@@ -1626,7 +1626,7 @@ as
       l_max_version        boolean;
       l_is_versioned       boolean;
       l_office_id          varchar2(16);
-      l_office_code        number(10);
+      l_office_code        number(14);
    begin
       cwms_util.check_office_permission(p_office_id);
       -------------------
@@ -1771,7 +1771,7 @@ as
       l_end_time_utc         date;
       l_version_date_utc     date;
       l_time_zone            varchar2(28);
-      l_ts_code              number(10);
+      l_ts_code              number(14);
       l_cursor               sys_refcursor;
       l_date_time_versions   date2_tab_t;
    begin
@@ -1909,8 +1909,8 @@ as
       l_version_date_utc   date;
       l_time_zone          varchar2(28);
       l_max_version        boolean;
-      l_office_code        number(10);
-      l_ts_code            number(10);
+      l_office_code        number(14);
+      l_ts_code            number(14);
       l_times_utc          date2_tab_t;
       l_count              pls_integer;
    begin
@@ -2017,7 +2017,7 @@ as
       l_end_time_utc         date;
       l_version_date_utc     date;
       l_time_zone            varchar2(28);
-      l_ts_code              number(10);
+      l_ts_code              number(14);
       l_date_time_versions   date2_tab_t := date2_tab_t();
    begin
       -------------------
@@ -2338,8 +2338,8 @@ as
       ts_id_not_found      exception;
       pragma exception_init(ts_id_not_found, -20001);
       l_tsid               varchar2(191);
-      l_ts_code            number(10);
-      l_clob_code          number(10);
+      l_ts_code            number(14);
+      l_clob_code          number(14);
       l_start_time_utc     date;
       l_end_time_utc       date := sysdate;
       l_version_date_utc   date;
@@ -2351,7 +2351,7 @@ as
       l_is_versioned       boolean;
       l_is_regular         boolean;
       l_office_id          varchar2(16);
-      l_office_code        number(10);
+      l_office_code        number(14);
       l_version_id         varchar2(32);
       l_cursor             sys_refcursor;
       l_store_date         timestamp := cast(systimestamp at time zone 'UTC' as timestamp);
@@ -2568,8 +2568,8 @@ as
       ts_id_not_found      exception;
       pragma exception_init(ts_id_not_found, -20001);
       l_tsid               varchar2(191);
-      l_ts_code            number(10);
-      l_clob_code          number(10);
+      l_ts_code            number(14);
+      l_clob_code          number(14);
       l_times_utc          date_table_type := date_table_type();
       l_version_date_utc   date;
       l_time_zone          varchar2(28);
@@ -2577,7 +2577,7 @@ as
       l_max_version        boolean;
       l_is_versioned       boolean;
       l_office_id          varchar2(16);
-      l_office_code        number(10);
+      l_office_code        number(14);
    begin
       cwms_util.check_office_permission(p_office_id);
       -------------------
@@ -2686,8 +2686,8 @@ as
       ts_id_not_found      exception;
       pragma exception_init(ts_id_not_found, -20001);
       l_tsid               varchar2(191);
-      l_ts_code            number(10);
-      l_clob_code          number(10);
+      l_ts_code            number(14);
+      l_clob_code          number(14);
       l_start_time_utc     date;
       l_end_time_utc       date := sysdate;
       l_version_date_utc   date;
@@ -2699,7 +2699,7 @@ as
       l_is_versioned       boolean;
       l_is_regular         boolean;
       l_office_id          varchar2(16);
-      l_office_code        number(10);
+      l_office_code        number(14);
       l_version_id         varchar2(32);
       l_cursor             sys_refcursor;
       l_store_date         timestamp := cast(systimestamp at time zone 'UTC' as timestamp);
@@ -2911,8 +2911,8 @@ as
       ts_id_not_found      exception;
       pragma exception_init(ts_id_not_found, -20001);
       l_tsid               varchar2(191);
-      l_ts_code            number(10);
-      l_clob_code          number(10);
+      l_ts_code            number(14);
+      l_clob_code          number(14);
       l_times_utc          date_table_type := date_table_type();
       l_version_date_utc   date;
       l_time_zone          varchar2(28);
@@ -2920,7 +2920,7 @@ as
       l_max_version        boolean;
       l_is_versioned       boolean;
       l_office_id          varchar2(16);
-      l_office_code        number(10);
+      l_office_code        number(14);
    begin
       -------------------
       -- sanity checks --
@@ -3054,7 +3054,7 @@ as
       l_end_time_utc         date;
       l_version_date_utc     date;
       l_time_zone            varchar2(28);
-      l_ts_code              number(10);
+      l_ts_code              number(14);
       l_cursor               sys_refcursor;
       l_date_time_versions   date2_tab_t;
    begin
@@ -3157,8 +3157,8 @@ as
       l_version_date_utc   date;
       l_time_zone          varchar2(28);
       l_max_version        boolean;
-      l_office_code        number(10);
-      l_ts_code            number(10);
+      l_office_code        number(14);
+      l_ts_code            number(14);
       l_times_utc          date2_tab_t;
       l_count              pls_integer;
    begin
@@ -3265,7 +3265,7 @@ as
       l_end_time_utc         date;
       l_version_date_utc     date;
       l_time_zone            varchar2(28);
-      l_ts_code              number(10);
+      l_ts_code              number(14);
       l_date_time_versions   date2_tab_t := date2_tab_t();
    begin
       cwms_util.check_office_permission(p_office_id);
@@ -3336,8 +3336,8 @@ as
       p_delete_action in varchar2 default cwms_util.delete_key,
       p_office_id     in varchar2)
    is
-      l_office_code     number(10);
-      l_clob_code       number(10);
+      l_office_code     number(14);
+      l_clob_code       number(14);
       l_delete_action   varchar2(22);
    begin
       -------------------
@@ -3628,9 +3628,9 @@ as
       ts_id_not_found      exception;
       pragma exception_init(ts_id_not_found, -20001);
       l_tsid               varchar2(191);
-      l_ts_code            number(10);
-      l_blob_code          number(10);
-      l_media_type_code    number(10);
+      l_ts_code            number(14);
+      l_blob_code          number(14);
+      l_media_type_code    number(14);
       l_start_time_utc     date;
       l_end_time_utc       date := sysdate;
       l_version_date_utc   date;
@@ -3642,7 +3642,7 @@ as
       l_is_versioned       boolean;
       l_is_regular         boolean;
       l_office_id          varchar2(16);
-      l_office_code        number(10);
+      l_office_code        number(14);
       l_version_id         varchar2(32);
       l_cursor             sys_refcursor;
       l_store_date         timestamp := cast(systimestamp at time zone 'UTC' as timestamp);
@@ -3867,9 +3867,9 @@ as
       ts_id_not_found      exception;
       pragma exception_init(ts_id_not_found, -20001);
       l_tsid               varchar2(191);
-      l_ts_code            number(10);
-      l_blob_code          number(10);
-      l_media_type_code    number(10);
+      l_ts_code            number(14);
+      l_blob_code          number(14);
+      l_media_type_code    number(14);
       l_times_utc          date_table_type := date_table_type();
       l_version_date_utc   date;
       l_time_zone          varchar2(28);
@@ -3877,7 +3877,7 @@ as
       l_max_version        boolean;
       l_is_versioned       boolean;
       l_office_id          varchar2(16);
-      l_office_code        number(10);
+      l_office_code        number(14);
    begin
       -------------------
       -- sanity checks --
@@ -3992,8 +3992,8 @@ as
       ts_id_not_found      exception;
       pragma exception_init(ts_id_not_found, -20001);
       l_tsid               varchar2(191);
-      l_ts_code            number(10);
-      l_blob_code          number(10);
+      l_ts_code            number(14);
+      l_blob_code          number(14);
       l_start_time_utc     date;
       l_end_time_utc       date := sysdate;
       l_version_date_utc   date;
@@ -4005,7 +4005,7 @@ as
       l_is_versioned       boolean;
       l_is_regular         boolean;
       l_office_id          varchar2(16);
-      l_office_code        number(10);
+      l_office_code        number(14);
       l_version_id         varchar2(32);
       l_cursor             sys_refcursor;
       l_store_date         timestamp := cast(systimestamp at time zone 'UTC' as timestamp);
@@ -4217,8 +4217,8 @@ as
       ts_id_not_found      exception;
       pragma exception_init(ts_id_not_found, -20001);
       l_tsid               varchar2(191);
-      l_ts_code            number(10);
-      l_blob_code          number(10);
+      l_ts_code            number(14);
+      l_blob_code          number(14);
       l_times_utc          date_table_type := date_table_type();
       l_version_date_utc   date;
       l_time_zone          varchar2(28);
@@ -4226,7 +4226,7 @@ as
       l_max_version        boolean;
       l_is_versioned       boolean;
       l_office_id          varchar2(16);
-      l_office_code        number(10);
+      l_office_code        number(14);
    begin
       -------------------
       -- sanity checks --
@@ -4363,8 +4363,8 @@ as
       l_end_time_utc         date;
       l_version_date_utc     date;
       l_time_zone            varchar2(28);
-      l_ts_code              number(10);
-      l_office_code          number(10);
+      l_ts_code              number(14);
+      l_office_code          number(14);
       l_cursor               sys_refcursor;
       l_date_time_versions   date2_tab_t;
    begin
@@ -4523,8 +4523,8 @@ as
       l_version_date_utc   date;
       l_time_zone          varchar2(28);
       l_max_version        boolean;
-      l_office_code        number(10);
-      l_ts_code            number(10);
+      l_office_code        number(14);
+      l_ts_code            number(14);
       l_times_utc          date2_tab_t;
       l_count              pls_integer;
    begin
@@ -4644,8 +4644,8 @@ as
       l_end_time_utc         date;
       l_version_date_utc     date;
       l_time_zone            varchar2(28);
-      l_ts_code              number(10);
-      l_office_code          number(10);
+      l_ts_code              number(14);
+      l_office_code          number(14);
       l_date_time_versions   date2_tab_t := date2_tab_t();
    begin
       -------------------
@@ -4731,8 +4731,8 @@ as
       p_delete_action in varchar2 default cwms_util.delete_key,
       p_office_id     in varchar2 default null)
    is
-      l_office_code     number(10);
-      l_blob_code       number(10);
+      l_office_code     number(14);
+      l_blob_code       number(14);
       l_delete_action   varchar2(22);
    begin
       -------------------
@@ -4787,8 +4787,8 @@ as
       p_office_id      in varchar2 default null)
    is
       l_file_extension    varchar2(16);
-      l_office_code       number(10);
-      l_media_type_code   number(10);
+      l_office_code       number(14);
+      l_media_type_code   number(14);
       l_rec               at_file_extension%rowtype;
       l_exists            boolean;
    begin
@@ -4874,7 +4874,7 @@ as
       p_office_id      in varchar2 default null)
    is
       l_file_extension   varchar2(16);
-      l_office_code      number(10);
+      l_office_code      number(14);
       l_rec              at_file_extension%rowtype;
    begin
       -------------------

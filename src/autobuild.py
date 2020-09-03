@@ -182,7 +182,7 @@ declare
    l_max_lon       binary_double;
    l_max_lat       binary_double;
    l_vals          number_tab_t := number_tab_t(); 
-   l_data_set_code number(10);
+   l_data_set_code number(14);
    l_idx           pls_integer;
    
    procedure get_line(p_line out varchar2) is

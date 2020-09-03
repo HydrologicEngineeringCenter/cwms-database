@@ -1,6 +1,6 @@
 CREATE TABLE CWMS_COUNTY_SP
 (
-   county_code    NUMBER (10),
+   county_code    NUMBER (14),
    OBJECTID     NUMBER NOT NULL ENABLE,
    STATE        VARCHAR2 (2 BYTE),
    COUNTY       VARCHAR2 (50 BYTE),

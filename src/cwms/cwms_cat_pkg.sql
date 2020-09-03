@@ -25,7 +25,7 @@ IS
    TYPE cat_ts_cwms_20_rec_t IS RECORD (
       office_id             VARCHAR2 (16),
       cwms_ts_id            VARCHAR2(191),
-      interval_utc_offset   NUMBER (10),
+      interval_utc_offset   NUMBER (14),
       user_privileges       NUMBER,
       inactive              NUMBER,
       lrts_timezone         VARCHAR2 (28)
@@ -37,7 +37,7 @@ IS
       db_office_id          VARCHAR2 (16),
       base_location_id      VARCHAR2 (24),
       cwms_ts_id            VARCHAR2(191),
-      interval_utc_offset   NUMBER (10),
+      interval_utc_offset   NUMBER (14),
       lrts_timezone         VARCHAR2 (28),
       active_flag           VARCHAR2 (1),
       user_privileges       NUMBER
@@ -519,7 +519,7 @@ IS
 --    ------------------- ------------- ----------------------------
 --    office_id           varchar2(16)  Name of owning office
 --    cwms_ts_id          varchar2(191) Time series identifier
---    interval_utc_offset number(10)    Offset into the UTC interval
+--    interval_utc_offset number(14)    Offset into the UTC interval
 --    lrts_timezone*      varchar2(28)  Name of LRTS time zone or null
 --
 -- *The lrts_timezone column is returned only for cat_ts_cwms_20
@@ -3512,7 +3512,7 @@ IS
     *   <tr>
     *     <td class="descr-center">1</td>
     *     <td class="descr"><em>prefix</em>_code</td>
-    *     <td class="descr">number(10)</td>
+    *     <td class="descr">number(14)</td>
     *     <td class="descr">The primary key of the table</td>
     *   </tr>
     *   <tr>
@@ -3617,7 +3617,7 @@ IS
     *   <tr>
     *     <td class="descr-center">1</td>
     *     <td class="descr"><em>prefix</em>_code</td>
-    *     <td class="descr">number(10)</td>
+    *     <td class="descr">number(14)</td>
     *     <td class="descr">The primary key of the tabe.</td>
     *   </tr>
     *   <tr>
@@ -3723,7 +3723,7 @@ IS
     *   <tr>
     *     <td class="descr-center">1</td>
     *     <td class="descr"><em>prefix</em>_code</td>
-    *     <td class="descr">number(10)</td>
+    *     <td class="descr">number(14)</td>
     *     <td class="descr">The primary key of the tabe.</td>
     *   </tr>
     *   <tr>

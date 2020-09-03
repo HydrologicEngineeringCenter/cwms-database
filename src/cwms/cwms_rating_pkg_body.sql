@@ -5,7 +5,7 @@ function get_rating_method_code(
    p_rating_method_id in varchar2)
    return number result_cache
 is
-   l_code number(10);
+   l_code number(14);
 begin
    select rating_method_code
      into l_code
@@ -459,7 +459,7 @@ procedure delete_templates(
    p_office_id_mask   in varchar2 default null)
 is
    l_templates     rating_template_tab_t;
-   l_template_code number(10);
+   l_template_code number(14);
 begin
    l_templates := retrieve_templates_obj_f(
       p_template_id_mask,
@@ -890,7 +890,7 @@ procedure delete_specs(
    p_office_id_mask in varchar2 default null)
 is
    l_specs     rating_spec_tab_t;
-   l_spec_code number(10);
+   l_spec_code number(14);
 begin
    l_specs := retrieve_specs_obj_f(
       p_spec_id_mask,
@@ -6127,9 +6127,9 @@ is
    l_native_units    boolean;
    l_office_id       varchar2(16);
    l_rating_time_utc date;
-   l_rating_code     number(10);
+   l_rating_code     number(14);
    l_effective_date  date;
-   l_db_unit_code    number(10);
+   l_db_unit_code    number(14);
 begin
    -----------
    -- setup --
@@ -6462,7 +6462,7 @@ function get_elevation_positions(
    return number_tab_t
 
 is
-   l_elev_code      number(10);
+   l_elev_code      number(14);
    l_params         str_tab_t;
    l_elev_positions number_tab_t;
 begin

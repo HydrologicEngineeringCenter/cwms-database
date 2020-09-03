@@ -320,9 +320,9 @@ procedure delete_scale_limits(
    p_office_id      in varchar2 default null)
 is
    l_office_id      varchar2(16);
-   l_location_code  number(10);
-   l_parameter_code number(10);
-   l_unit_code      number(10);
+   l_location_code  number(14);
+   l_parameter_code number(14);
+   l_unit_code      number(14);
 begin
    -------------------
    -- sanity checks --
@@ -600,7 +600,7 @@ procedure store_user_unit(
 is
    l_user_id     varchar2(30);
    l_office_id   varchar2(16);
-   l_base_param  number(10);
+   l_base_param  number(14);
    l_property_id varchar2(256);
    l_unit_id     varchar2(256);
    l_comment     varchar2(256);
@@ -746,7 +746,7 @@ is
    l_property_id varchar2(256);
    l_comment     varchar2(256);
    l_unit_id     varchar2(16);
-   l_base_param  number(10);
+   l_base_param  number(14);
 begin
    -------------------
    -- sanity checks --

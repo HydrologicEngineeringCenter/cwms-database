@@ -143,7 +143,7 @@ is
    l_base_parameter_id  varchar2(16);
    l_sub_parameter_id   varchar2(32) := null;
    l_office_id          varchar2(16) := nvl(p_office_id, cwms_util.user_office_id);
-   l_office_code        number(10)   := cwms_util.get_office_code(l_office_id);
+   l_office_code        number(14)   := cwms_util.get_office_code(l_office_id);
    l_factor             binary_double;
    l_offset             binary_double;
    l_attribute_value    number := null;
@@ -451,17 +451,17 @@ function get_location_level_code(
    p_office_id               in  varchar2)
    return number
 is
-   l_location_level_code       number(10);
-   l_spec_level_code           number(10);
-   l_location_code             number(10);
-   l_parameter_code            number(10);
-   l_parameter_type_code       number(10);
-   l_duration_code             number(10);
+   l_location_level_code       number(14);
+   l_spec_level_code           number(14);
+   l_location_code             number(14);
+   l_parameter_code            number(14);
+   l_parameter_type_code       number(14);
+   l_duration_code             number(14);
    l_effective_date            date;
    l_expiration_date           date;
-   l_attribute_parameter_code  number(10);
-   l_attribute_param_type_code number(10);
-   l_attribute_duration_code   number(10);
+   l_attribute_parameter_code  number(14);
+   l_attribute_param_type_code number(14);
+   l_attribute_duration_code   number(14);
 begin
    get_location_level_codes(
       l_location_level_code,
@@ -982,7 +982,7 @@ is
    l_office_code      number;
    l_cwms_office_code number;
    l_fail_if_exists   boolean := cwms_util.return_true_or_false(p_fail_if_exists);
-   l_level_code       number(10) := null;
+   l_level_code       number(14) := null;
    l_rec              at_specified_level%rowtype;
 begin
    -------------------
@@ -1065,7 +1065,7 @@ procedure store_specified_level(
    p_fail_if_exists in varchar2 default 'T',
    p_office_id      in varchar2 default null)
 is
-   l_specified_level_code number(10);
+   l_specified_level_code number(14);
 begin
    create_specified_level_out(
       l_specified_level_code,
@@ -1099,8 +1099,8 @@ procedure get_specified_level_code(
    p_fail_if_not_found in  varchar2 default 'T',
    p_office_id         in  varchar2 default null)
 is
-   l_office_code       number(10);
-   l_cwms_office_code  number(10);
+   l_office_code       number(14);
+   l_cwms_office_code  number(14);
    l_fail_if_not_found boolean;
 begin
    -------------------
@@ -1152,7 +1152,7 @@ function get_specified_level_code(
    p_office_id         in  varchar2 default null)
    return number
 is
-   l_level_code number(10);
+   l_level_code number(14);
 begin
    get_specified_level_code(
       l_level_code,
@@ -1205,7 +1205,7 @@ procedure rename_specified_level(
    p_new_level_id in varchar2,
    p_office_id    in varchar2 default null)
 is
-   l_office_code  number(10) := cwms_util.get_db_office_code(p_office_id);
+   l_office_code  number(14) := cwms_util.get_db_office_code(p_office_id);
    l_old_level_id at_specified_level.specified_level_id%type;
 begin
    begin
@@ -1351,19 +1351,19 @@ procedure create_location_level(
    p_seasonal_values         in  seasonal_value_tab_t default null,
    p_office_id               in  varchar2 default null)
 is
-   l_location_level_code       number(10) := null;
+   l_location_level_code       number(14) := null;
    l_office_code               number;
    l_fail_if_exists            boolean;
-   l_spec_level_code           number(10);
+   l_spec_level_code           number(14);
    l_interval_origin           date;
-   l_location_code             number(10);
-   l_location_tz_code          number(10);
+   l_location_code             number(14);
+   l_location_tz_code          number(14);
    l_parts                     str_tab_t;
    l_base_parameter_id         varchar2(16);
    l_sub_parameter_id          varchar2(32);
-   l_parameter_code            number(10);
-   l_parameter_type_code       number(10);
-   l_duration_code             number(10);
+   l_parameter_code            number(14);
+   l_parameter_type_code       number(14);
+   l_duration_code             number(14);
    l_level_factor              binary_double;
    l_level_offset              binary_double;
    l_attr_factor               binary_double;
@@ -1374,12 +1374,12 @@ is
    l_timezone_id               varchar2(28);
    l_effective_date_out        date;
    l_expiration_date_out       date;
-   l_attribute_parameter_code  number(10);
-   l_attribute_param_type_code number(10);
-   l_attribute_duration_code   number(10);
+   l_attribute_parameter_code  number(14);
+   l_attribute_param_type_code number(14);
+   l_attribute_duration_code   number(14);
    l_calendar_interval         yminterval_unconstrained;
    l_time_interval             dsinterval_unconstrained;
-   l_ts_code                   number(10);
+   l_ts_code                   number(14);
    l_count                     pls_integer;
    l_interpolate               varchar2(1);
    l_level_param_is_elev       boolean;
@@ -1750,7 +1750,7 @@ procedure store_location_level(
    p_fail_if_exists          in  varchar2 default 'T',
    p_office_id               in  varchar2 default null)
 is
-   l_location_level_code     number(10);
+   l_location_level_code     number(14);
    l_location_id             varchar2(57);
    l_parameter_id            varchar2(49);
    l_parameter_type_id       varchar2(16);
@@ -1824,7 +1824,7 @@ procedure store_location_level3(
    p_fail_if_exists          in  varchar2 default 'T',
    p_office_id               in  varchar2 default null)
 is
-   l_location_level_code     number(10);
+   l_location_level_code     number(14);
    l_location_id             varchar2(57);
    l_parameter_id            varchar2(49);
    l_parameter_type_id       varchar2(16);
@@ -1900,7 +1900,7 @@ procedure store_location_level4(
    p_fail_if_exists          in  varchar2 default 'T',
    p_office_id               in  varchar2 default null)
 is
-   l_location_level_code     number(10);
+   l_location_level_code     number(14);
    l_location_id             varchar2(57);
    l_parameter_id            varchar2(49);
    l_parameter_type_id       varchar2(16);
@@ -2118,25 +2118,25 @@ procedure retrieve_location_level4(
    p_office_id               in  varchar2 default null)
 is
    l_rec                       at_location_level%rowtype;
-   l_spec_level_code           number(10);
-   l_location_level_code       number(10);
+   l_spec_level_code           number(14);
+   l_location_level_code       number(14);
    l_interval_origin           date;
-   l_location_code             number(10);
+   l_location_code             number(14);
    l_parts                     str_tab_t;
    l_base_parameter_id         varchar2(16);
    l_sub_parameter_id          varchar2(32);
-   l_parameter_code            number(10);
-   l_parameter_type_code       number(10);
-   l_duration_code             number(10);
+   l_parameter_code            number(14);
+   l_parameter_type_code       number(14);
+   l_duration_code             number(14);
    l_factor                    binary_double;
    l_offset                    binary_double;
    l_date                      date;
    l_match_date                boolean := cwms_util.return_true_or_false(p_match_date);
    l_office_code               number := cwms_util.get_office_code(p_office_id);
    l_office_id                 varchar2(16);
-   l_attribute_parameter_code  number(10);
-   l_attribute_param_type_code number(10);
-   l_attribute_duration_code   number(10);
+   l_attribute_parameter_code  number(14);
+   l_attribute_param_type_code number(14);
+   l_attribute_duration_code   number(14);
 begin
    ----------------------------
    -- get the specified date --
@@ -2712,16 +2712,16 @@ is
    l_encoded_dates             encoded_date_t;
    l_rec                       at_location_level%rowtype;
    l_level_values              ztsv_array;
-   l_spec_level_code           number(10);
-   l_location_level_code       number(10);
+   l_spec_level_code           number(14);
+   l_location_level_code       number(14);
    l_start_time                date;
    l_end_time                  date;
    l_start_time_utc            date := p_start_time_utc;
    l_end_time_utc              date;
-   l_location_code             number(10);
-   l_parameter_code            number(10);
-   l_parameter_type_code       number(10);
-   l_duration_code             number(10);
+   l_location_code             number(14);
+   l_parameter_code            number(14);
+   l_parameter_type_code       number(14);
+   l_duration_code             number(14);
    l_effective_date            date;
    l_expiration_date           date;
    l_factor                    binary_double;
@@ -2735,9 +2735,9 @@ is
    l_value_prev                number;
    l_value_next                number;
    l_attribute_value           number := null;
-   l_attribute_parameter_code  number(10);
-   l_attribute_param_type_code number(10);
-   l_attribute_duration_code   number(10);
+   l_attribute_parameter_code  number(14);
+   l_attribute_param_type_code number(14);
+   l_attribute_duration_code   number(14);
    l_attribute_factor          binary_double := null;
    l_attribute_offset          binary_double := null;
    l_unit                      varchar2(16);
@@ -4102,7 +4102,7 @@ function retrieve_location_level_value(
    p_office_id               in  varchar2 default null)
    return number
 is
-   l_location_level_value number(10);
+   l_location_level_value number(14);
 begin
    retrieve_location_level_value(
       l_location_level_value,
@@ -5141,19 +5141,19 @@ procedure rename_location_level(
    p_new_location_level_id in  varchar2,
    p_office_id             in  varchar2 default null)
 is
-   l_office_code              number(10) := cwms_util.get_db_office_code(p_office_id);
+   l_office_code              number(14) := cwms_util.get_db_office_code(p_office_id);
    l_old_parts                str_tab_t;
    l_new_parts                str_tab_t;
-   l_old_location_code        number(10);
-   l_old_parameter_code       number(10);
-   l_old_parameter_type_code  number(10);
-   l_old_duration_code        number(10);
-   l_old_specified_level_code number(10);
-   l_new_location_code        number(10);
-   l_new_parameter_code       number(10);
-   l_new_parameter_type_code  number(10);
-   l_new_duration_code        number(10);
-   l_new_specified_level_code number(10);
+   l_old_location_code        number(14);
+   l_old_parameter_code       number(14);
+   l_old_parameter_type_code  number(14);
+   l_old_duration_code        number(14);
+   l_old_specified_level_code number(14);
+   l_new_location_code        number(14);
+   l_new_parameter_code       number(14);
+   l_new_parameter_type_code  number(14);
+   l_new_duration_code        number(14);
+   l_new_specified_level_code number(14);
 begin
    -------------------
    -- sanity checks --
@@ -5404,7 +5404,7 @@ procedure delete_location_level3(
    p_delete_pools            in  varchar2 default 'F',
    p_office_id               in  varchar2 default null)
 is
-   l_location_level_code       number(10);
+   l_location_level_code       number(14);
    l_location_id               varchar2(57);
    l_parameter_id              varchar2(49);
    l_parameter_type_id         varchar2(16);
@@ -5476,13 +5476,13 @@ procedure delete_location_level3(
    p_delete_pools        in  varchar2 default 'F',
    p_delete_indicators   in  varchar2 default 'F')
 is
-   l_location_code             number(10);
-   l_parameter_type_code       number(10);
-   l_duration_code             number(10);
-   l_specified_level_code      number(10);
-   l_attribute_parameter_code  number(10);
-   l_attribute_param_type_code number(10);
-   l_attribute_duration_code   number(10);
+   l_location_code             number(14);
+   l_parameter_type_code       number(14);
+   l_duration_code             number(14);
+   l_specified_level_code      number(14);
+   l_attribute_parameter_code  number(14);
+   l_attribute_param_type_code number(14);
+   l_attribute_duration_code   number(14);
    l_attribute_value           number;
    l_cascade                   boolean := cwms_util.return_true_or_false(p_cascade);
    l_delete_indicators         boolean := cwms_util.return_true_or_false(p_delete_indicators);
@@ -5492,7 +5492,7 @@ is
    l_indicator_count           pls_integer;
    l_pool_codes                number_tab_t;
    l_pool_level_id             varchar2(256);
-   l_parameter_code            number(10);
+   l_parameter_code            number(14);
 begin
    ----------------------------------------------------
    -- check for seasonal records and p_cascase = 'F' --
@@ -6763,19 +6763,19 @@ function get_loc_lvl_indicator_code(
    p_office_id              in  varchar2 default null)
    return number
 is
-   l_location_code            number(10);
-   l_parameter_code           number(10);
-   l_parameter_type_code      number(10);
-   l_duration_code            number(10);
-   l_specified_level_code     number(10);
-   l_level_indicator_code     number(10);
-   l_attr_parameter_code      number(10);
-   l_attr_parameter_type_code number(10);
-   l_attr_duration_code       number(10);
-   l_ref_specified_level_code number(10);
-   l_office_code              number(10) := cwms_util.get_office_code(upper(p_office_id));
-   l_cwms_office_code         number(10) := cwms_util.get_office_code('CWMS');
-   l_loc_lvl_indicator_code   number(10);
+   l_location_code            number(14);
+   l_parameter_code           number(14);
+   l_parameter_type_code      number(14);
+   l_duration_code            number(14);
+   l_specified_level_code     number(14);
+   l_level_indicator_code     number(14);
+   l_attr_parameter_code      number(14);
+   l_attr_parameter_type_code number(14);
+   l_attr_duration_code       number(14);
+   l_ref_specified_level_code number(14);
+   l_office_code              number(14) := cwms_util.get_office_code(upper(p_office_id));
+   l_cwms_office_code         number(14) := cwms_util.get_office_code('CWMS');
+   l_loc_lvl_indicator_code   number(14);
    l_factor                   number := 1.;
    l_offset                   number := 0.;
    l_has_attribute            boolean;
@@ -7010,7 +7010,7 @@ is
    l_attr_parameter_id      varchar2(49);
    l_attr_param_type_id     varchar2(16);
    l_attr_duration_id       varchar2(16);
-   l_loc_lvl_indicator_code number(10);
+   l_loc_lvl_indicator_code number(14);
 begin
    cwms_level.parse_loc_lvl_indicator_id(
       l_location_id,
@@ -7114,8 +7114,8 @@ is
    l_ignore_nulls_on_update boolean := cwms_util.return_true_or_false(p_ignore_nulls_on_update);
    l_exists                 boolean := true;
    l_rec                    at_loc_lvl_indicator_cond%rowtype;
-   l_unit_code              number(10);
-   l_na_unit_code           number(10);
+   l_unit_code              number(14);
+   l_na_unit_code           number(14);
    l_from_unit_id           varchar2(16);
    l_to_unit_id             varchar2(16);
 begin
@@ -7310,9 +7310,9 @@ procedure store_loc_lvl_indicator_cond(
    p_ignore_nulls_on_update      in varchar2 default 'T',
    p_office_id                   in varchar2 default null)
 is
-   l_unit_code               number(10);
-   l_rate_unit_code          number(10);
-   l_loc_lvl_indicator_code  number(10);
+   l_unit_code               number(14);
+   l_rate_unit_code          number(14);
+   l_loc_lvl_indicator_code  number(14);
    l_rate_interval           interval day(3) to second(0);
 begin
    if p_comparison_unit_id is not null then
@@ -7386,7 +7386,7 @@ is
    l_ignore_nulls_on_update boolean := cwms_util.return_true_or_false(p_ignore_nulls_on_update);
    l_exists                 boolean := true;
    l_rec                    at_loc_lvl_indicator%rowtype;
-   l_parameter_code         number(10);
+   l_parameter_code         number(14);
    l_vert_datum_offset      binary_double;
 begin
    begin
@@ -7986,7 +7986,7 @@ is
    l_attr_parameter_type_id_mask varchar2(16);
    l_attr_duration_id_mask       varchar2(16);
    l_office_id_mask              varchar2(16) := cwms_util.normalize_wildcards(nvl(p_office_id_mask, cwms_util.user_office_id));
-   l_cwms_office_code            number(10)   := cwms_util.get_office_code('CWMS');
+   l_cwms_office_code            number(14)   := cwms_util.get_office_code('CWMS');
 begin
    cwms_level.parse_location_level_id(
       l_location_id_mask,
@@ -8447,7 +8447,7 @@ procedure retrieve_loc_lvl_indicator(
    p_ref_attr_value         in  number   default null,
    p_office_id              in  varchar2 default null)
 is
-   l_loc_lvl_indicator_code number(10);
+   l_loc_lvl_indicator_code number(14);
    l_level_factor           number := 1.;
    l_level_offset           number := 0.;
    l_location_id            varchar2(57);
@@ -8707,7 +8707,7 @@ function retrieve_loc_lvl_indicator(
    p_office_id              in  varchar2 default null)
    return loc_lvl_indicator_t
 is
-   l_loc_lvl_indicator_code number(10);
+   l_loc_lvl_indicator_code number(14);
    l_row_id                 urowid;
    l_obj                    loc_lvl_indicator_t;
 begin
@@ -8744,7 +8744,7 @@ procedure delete_loc_lvl_indicator(
    p_ref_attr_value         in  number   default null,
    p_office_id              in  varchar2 default null)
 is
-   l_loc_lvl_indicator_code number(10);
+   l_loc_lvl_indicator_code number(14);
 begin
    l_loc_lvl_indicator_code := get_loc_lvl_indicator_code(
       p_loc_lvl_indicator_id,
@@ -8779,7 +8779,7 @@ procedure rename_loc_lvl_indicator(
    p_ref_attr_value         in  number   default null,
    p_office_id              in  varchar2 default null)
 is
-   l_level_indicator_code number(10);
+   l_level_indicator_code number(14);
 begin
    l_level_indicator_code := cwms_level.get_loc_lvl_indicator_code(
       p_loc_lvl_indicator_id,
@@ -8978,7 +8978,7 @@ is
    l_version_id             varchar2(32);
    l_indicator_codes_crsr   sys_refcursor;
    l_ts_crsr                sys_refcursor;
-   l_indicator_code         number(10);
+   l_indicator_code         number(14);
    l_rowid                  rowid;
    l_loc_lvl_objs           loc_lvl_indicator_tab_t := new loc_lvl_indicator_tab_t();
    l_ts_units               varchar2(16);
@@ -9175,7 +9175,7 @@ is
    l_version_id             varchar2(32);
    l_indicator_codes_crsr   sys_refcursor;
    l_ts_crsr                sys_refcursor;
-   l_indicator_code         number(10);
+   l_indicator_code         number(14);
    l_rowid                  rowid;
    l_loc_lvl_objs           loc_lvl_indicator_tab_t := new loc_lvl_indicator_tab_t();
    l_ts_units               varchar2(16);

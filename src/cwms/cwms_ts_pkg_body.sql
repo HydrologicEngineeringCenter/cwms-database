@@ -667,7 +667,7 @@ AS
    FUNCTION get_base_parameter_code (p_cwms_ts_code IN NUMBER)
       RETURN NUMBER
    IS
-      l_base_parameter_code   NUMBER (10) := NULL;
+      l_base_parameter_code   NUMBER (14) := NULL;
    BEGIN
       SELECT base_parameter_code
         INTO l_base_parameter_code
@@ -4533,7 +4533,7 @@ AS
       --
       l_units               VARCHAR2 (16);
       l_base_parameter_id   VARCHAR2 (16);
-      l_base_parameter_code NUMBER(10);
+      l_base_parameter_code NUMBER(14);
       l_base_unit_id        VARCHAR2 (16);
       --
       l_first_time          DATE;
@@ -8467,7 +8467,7 @@ end retrieve_existing_item_counts;
       p_ignore_null        IN VARCHAR2 DEFAULT 'T',
       p_db_office_id       IN VARCHAR2 DEFAULT NULL)
    IS
-      l_code   NUMBER (10);
+      l_code   NUMBER (14);
    BEGIN
       l_code :=
          store_ts_category_f (p_ts_category_id,
@@ -8743,7 +8743,7 @@ end retrieve_existing_item_counts;
                              p_shared_ts_ref_id   IN VARCHAR2 DEFAULT NULL,
                              p_db_office_id       IN VARCHAR2 DEFAULT NULL)
    IS
-      l_code   NUMBER (10);
+      l_code   NUMBER (14);
    BEGIN
       l_code :=
          store_ts_group_f (p_ts_category_id,
@@ -8766,7 +8766,7 @@ end retrieve_existing_item_counts;
                               p_db_office_id       IN VARCHAR2 DEFAULT NULL)
       RETURN NUMBER
    IS
-      l_office_code      NUMBER (10);
+      l_office_code      NUMBER (14);
       l_fail_if_exists   BOOLEAN;
       l_exists           BOOLEAN;
       l_ignore_nulls     BOOLEAN;
@@ -8880,7 +8880,7 @@ end retrieve_existing_item_counts;
                               p_ts_group_id_new   IN VARCHAR2,
                               p_db_office_id      IN VARCHAR2 DEFAULT NULL)
    IS
-      l_office_code   NUMBER (10);
+      l_office_code   NUMBER (14);
       l_rec           at_ts_group%ROWTYPE;
    BEGIN
       -------------------
@@ -8941,7 +8941,7 @@ end retrieve_existing_item_counts;
                               p_ts_group_id      IN VARCHAR2,
                               p_db_office_id     IN VARCHAR2 DEFAULT NULL)
    IS
-      l_office_code   NUMBER (10);
+      l_office_code   NUMBER (14);
       l_rec           at_ts_group%ROWTYPE;
    BEGIN
       -------------------
@@ -9019,10 +9019,10 @@ end retrieve_existing_item_counts;
       p_ref_ts_id        in varchar2 default null,
       p_db_office_id     in varchar2 default null)
    is
-      l_office_code     number(10);
-      l_ts_group_code   number(10);
-      l_ts_code         number(10);
-      l_ts_ref_code     number(10);
+      l_office_code     number(14);
+      l_ts_group_code   number(14);
+      l_ts_code         number(14);
+      l_ts_ref_code     number(14);
       l_rec             at_ts_group_assignment%rowtype;
       l_exists          boolean;
    begin
@@ -9103,9 +9103,9 @@ end retrieve_existing_item_counts;
                                 p_unassign_all     IN VARCHAR2 DEFAULT 'F',
                                 p_db_office_id     IN VARCHAR2 DEFAULT NULL)
    IS
-      l_office_code     NUMBER (10);
-      l_ts_group_code   NUMBER (10);
-      l_ts_code         NUMBER (10);
+      l_office_code     NUMBER (14);
+      l_ts_group_code   NUMBER (14);
+      l_ts_code         NUMBER (14);
       l_exists          BOOLEAN;
    BEGIN
       -------------------
@@ -9203,8 +9203,8 @@ end retrieve_existing_item_counts;
       p_office_id     in varchar2 default null)
       return varchar2
    is
-      l_office_code number(10);
-      l_ts_code     number(10);
+      l_office_code number(14);
+      l_ts_code     number(14);
       l_ts_id       varchar2(191);
       l_parts       str_tab_t;
       l_location_id varchar2(57);
@@ -9282,7 +9282,7 @@ end retrieve_existing_item_counts;
    IS
       ts_id_not_found   EXCEPTION;
       PRAGMA EXCEPTION_INIT (ts_id_not_found, -20001);
-      l_ts_code         NUMBER (10);
+      l_ts_code         NUMBER (14);
       l_ts_id           VARCHAR2(191);
    BEGIN
       BEGIN
@@ -10467,7 +10467,7 @@ end retrieve_existing_item_counts;
       l_time_zone      varchar2 (28);
       l_min_date       date;
       l_max_date       date;
-      l_ts_code        number (10);
+      l_ts_code        number (14);
       l_parts          str_tab_t;
       l_location_id    varchar2 (57);
       l_parameter_id   varchar2 (49);
@@ -10603,7 +10603,7 @@ end retrieve_existing_item_counts;
       l_time_zone        varchar2 (28);
       l_min_date         date;
       l_max_date         date;
-      l_ts_code          number (10);
+      l_ts_code          number (14);
       l_parts            str_tab_t;
       l_location_id      varchar2 (57);
       l_parameter_id     varchar2 (49);
@@ -10794,7 +10794,7 @@ end retrieve_existing_item_counts;
       l_max_value       BINARY_DOUBLE;
       l_min_date        DATE;
       l_max_date        DATE;
-      l_ts_code         NUMBER (10);
+      l_ts_code         NUMBER (14);
       l_parts           str_tab_t;
       l_location_id     VARCHAR2 (57);
       l_parameter_id    VARCHAR2 (49);
