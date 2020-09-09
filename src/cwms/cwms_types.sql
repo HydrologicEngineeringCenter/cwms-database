@@ -178,6 +178,13 @@ end;
 @@cwms/types/ts_extents_t-body
 @@cwms/types/ts_extents_tab_t
 @@cwms/types/clob_tab_t
+@@cwms/types/pvq_t
+@@cwms/types/pvq_tab_t
+@@cwms/types/ts_prof_data_rec_t
+@@cwms/types/ts_prof_data_tab_t
+@@cwms/types/ts_prof_data_t
+@@cwms/types/ts_profile_t
+
 -- HOST pwd
 @@rowcps_types
 @@cwms_types_rating

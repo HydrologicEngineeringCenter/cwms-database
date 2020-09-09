@@ -2883,6 +2883,24 @@ AS
                   rec.office_id);
             end loop;
          end loop;
+         --------------------------
+         -- time series profiles --
+         --------------------------
+         delete
+           from at_ts_profile_parser_param
+          where location_code in (select * from table (l_location_codes));
+         delete
+           from at_ts_profile_parser
+          where location_code in (select * from table (l_location_codes));
+         delete
+           from at_ts_profile_instance
+          where location_code in (select * from table (l_location_codes));
+         delete
+           from at_ts_profile_param
+          where location_code in (select * from table (l_location_codes));
+         delete
+           from at_ts_profile
+          where location_code in (select * from table (l_location_codes));
          ----------------------------------
          -- A2W time series associations -- NOTE: Not foreign keyed
          ----------------------------------

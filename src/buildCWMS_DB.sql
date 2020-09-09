@@ -86,6 +86,12 @@ alter session set current_schema = &cwms_schema;
 --
 @@cwms/at_schema_2
 @@cwms/at_schema_tsv_dqu
+-- views that depend on av_tsv and av_tsv_dqu
+@@cwms/views/av_ts_profile_inst_tsv
+@@cwms/views/av_ts_profile_inst_tsv2
+@@cwms/views/av_ts_profile_inst_elev
+@@cwms/views/av_ts_profile_inst_sp
+
 --
 -- Create dbi and pd user accounts...
 ---

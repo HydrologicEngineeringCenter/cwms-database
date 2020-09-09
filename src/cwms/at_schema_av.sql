@@ -96,6 +96,16 @@ DECLARE
       'av_ts_association',
       'av_ts_extents_local',
       'av_ts_extents_utc',
+      'av_ts_msg_archive',
+      'av_ts_profile',             -- created in at_schema_2
+      'av_ts_profile_parser',      -- created in at_schema_2
+      'av_ts_profile_parser_param',-- created in at_schema_2
+      'av_ts_profile_inst',        -- created in at_schema_2
+      'av_ts_profile_inst_ts',     -- created in at_schema_2
+      'av_ts_profile_inst_tsv',    -- created in buildCWMS_DB
+      'av_ts_profile_inst_tsv2',   -- created in buildCWMS_DB
+      'av_ts_profile_inst_elev',   -- created in buildCWMS_DB
+      'av_ts_profile_inst_sp',     -- created in buildCWMS_DB
       'av_ts_txt',
       'av_turbine',
       'av_turbine_change',

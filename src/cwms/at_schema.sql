@@ -6253,4 +6253,10 @@ create index at_queue_subscriber_name_idx1 on at_queue_subscriber_name (queue_na
 @@./cwms/tables/at_app_log_file
 @@./cwms/tables/at_app_log_entry
 @@./cwms/tables/at_app_log_ingest_control
+@@./cwms/tables/at_ts_profile
+@@./cwms/tables/at_ts_profile_param
+@@./cwms/tables/at_ts_profile_instance
+@@./cwms/tables/at_ts_profile_parser
+@@./cwms/tables/at_ts_profile_parser_param
+
 
