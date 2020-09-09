@@ -153,6 +153,9 @@
 @@cwms_crypt_pkg
 @@cwms_crypt_pkg_body
 
+@@cwms_ts_profile_pkg
+@@cwms_ts_profile_pkg_body
+
 @@cwms/functions/str2tbl.sql
 
 @@cwms/procedures/download_file
