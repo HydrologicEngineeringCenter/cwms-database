@@ -61,12 +61,19 @@ prompt UPDATING OBJECTS
 -- TABLES --
 ------------
 @@./18_1_6/update_at_configuration
+@@./18_1_6/update_at_cwms_ts_id
 @@./18_1_6/update_at_pool
+@../cwms/tables/at_ts_profile
+@../cwms/tables/at_ts_profile_param
+@../cwms/tables/at_ts_profile_instance
+@../cwms/tables/at_ts_profile_parser
+@../cwms/tables/at_ts_profile_parser_param
 --------------
 -- PACKAGES --
 --------------
 @../cwms/cwms_env_pkg_body
 @../cwms/cwms_level_pkg_body
+@../cwms/cwms_loc_pkg_body
 @../cwms/cwms_lookup_pkg_body
 @../cwms/cwms_msg_pkg_body
 @../cwms/cwms_pool_pkg
@@ -80,6 +87,8 @@ prompt UPDATING OBJECTS
 @../cwms/cwms_stream_pkg_body
 @../cwms/cwms_ts_pkg
 @../cwms/cwms_ts_pkg_body
+@../cwms/cwms_ts_profile_pkg
+@../cwms/cwms_ts_profile_pkg_body
 @../cwms/cwms_usgs_pkg
 @../cwms/cwms_usgs_pkg_body
 @../cwms/cwms_util_pkg
@@ -87,13 +96,30 @@ prompt UPDATING OBJECTS
 -----------
 -- TYPES --
 -----------
+drop type shef_spec_type force;
 @../cwms/types/shef_spec_type
+@../cwms/types/rating_t-body
 @../cwms/types/stream_rating_t-body
+@../cwms/types/pvq_t
+@../cwms/types/pvq_tab_t
+@../cwms/types/ts_prof_data_rec_t
+@../cwms/types/ts_prof_data_tab_t
+@../cwms/types/ts_prof_data_t
+@../cwms/types/ts_profile_t
 -----------
 -- VIEWS --
 -----------
 @../cwms/views/av_cwms_user
 @../cwms/views/av_pool
+@../cwms/views/av_ts_profile
+@../cwms/views/av_ts_profile_parser
+@../cwms/views/av_ts_profile_parser_param
+@../cwms/views/av_ts_profile_inst
+@../cwms/views/av_ts_profile_inst_ts
+@../cwms/views/av_ts_profile_inst_tsv
+@../cwms/views/av_ts_profile_inst_tsv2
+@../cwms/views/av_ts_profile_inst_elev
+@../cwms/views/av_ts_profile_inst_sp
 prompt ################################################################################
 prompt INVALID OBJECTS...
 select systimestamp from dual;
