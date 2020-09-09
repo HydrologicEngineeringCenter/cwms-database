@@ -1380,6 +1380,35 @@ AS
       p_version_date    IN DATE DEFAULT cwms_util.non_versioned,
       p_office_id       IN VARCHAR2 DEFAULT NULL);
 
+   /* (not documented in API docs)
+    * Stores time series data to the database
+    *
+    * @see constant cwms_util.non_versioned
+    * @see constant cwms_util.replace_all
+    * @see constant cwms_util.do_not_replace
+    * @see constant cwms_util.replace_missing_values_only
+    * @see constant cwms_util.replace_with_non_missing
+    * @see constant cwms_util.delete_insert
+    *
+    * @param p_cwms_ts_id       The time series identifier
+    * @param p_units            The unit of the data values
+    * @param p_timeseries_data  The time series data
+    * @param p_allow_sub_minute A flag ('T' or 'F') specifying whether to allow storage of multiple values in the same minute
+    * @param p_store_rule       The store rule to use
+    * @param p_override_prot    A flag ('T' or 'F') specifying whether to override the protection flag on any existing data value
+    * @param p_version_date     The version date of the data
+    * @param p_office_id        The office owning the time series. If not specified or NULL, the session user's default office is used
+    */
+   PROCEDURE store_ts_2 (
+      p_cwms_ts_id        IN VARCHAR2,
+      p_units             IN VARCHAR2,
+      p_timeseries_data   in tsv_array,
+      p_allow_sub_minute  IN VARCHAR2,
+      p_store_rule        IN VARCHAR2,
+      p_override_prot     IN VARCHAR2 DEFAULT 'F',
+      p_version_date      IN DATE DEFAULT cwms_util.non_versioned,
+      p_office_id         in varchar2 default null);
+
    /**
     * Stores time series data for multiple time series to the database, allowing multiple version dates
     *
