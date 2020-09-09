@@ -317,10 +317,59 @@ as
          cwms_err.raise(
             'ERROR',
             'Parameter "'||p_param_id||'" does not exist for office '||get_db_office_id(p_office_id));
-      end;      
+      end;
       return l_parameter_code;
-   end get_parameter_code;   
-      
+   end get_parameter_code;
+
+   function create_parameter_code(
+      p_param_id       in varchar2,
+      p_fail_if_exists in varchar2 default 'F',
+      p_office_id      in varchar2 default null)
+      return number
+   is
+      l_parameter_code      integer;
+      l_base_parameter_code integer;
+      l_parameter_parts    str_tab_t;
+   begin
+      begin
+         l_parameter_code := get_parameter_code(p_param_id, p_office_id);
+         if return_true_or_false(p_fail_if_exists) then
+            cwms_err.raise('ITEM_ALREADY_EXISTS', 'Parameter', p_param_id);
+         end if;
+      exception
+         when others then
+            if regexp_instr(sqlerrm, 'Parameter ".+?" does not exist', 1, 1, 0, 'm') = 0 then
+               raise;
+            end if;
+            ------------------------------
+            -- create the new parameter --
+            ------------------------------
+            l_parameter_parts := split_text(trim(p_param_id), '-', 1);
+            if l_parameter_parts.count = 1 then
+               cwms_err.raise('ERROR', 'Cannot create a new base parameter');
+            end if;
+            begin
+               select base_parameter_code
+                 into l_base_parameter_code
+                 from cwms_base_parameter
+                where upper(base_parameter_id) = upper(trim(l_parameter_parts(1)));
+            exception
+               when no_data_found then
+                  cwms_err.raise('ERROR', 'INVALID_ITEM', l_parameter_parts(1), 'base parameter');
+            end;
+            insert
+              into at_parameter
+            values (cwms_seq.nextval,
+                    get_db_office_code(p_office_id),
+                    l_base_parameter_code,
+                    l_parameter_parts(2),
+                    null
+                   )
+            return parameter_code
+              into l_parameter_code;
+      end;
+      return l_parameter_code;
+   end create_parameter_code;
 
    FUNCTION get_sub_id (p_full_id IN VARCHAR2)
       RETURN VARCHAR2
@@ -1837,7 +1886,7 @@ as
                -- silently ignore if text ends with escape char --
                ----------------------------------------------------
                l_parsed(i)(j) := l_parsed(i)(j) || substr(p_text, k+1, 1);
-            end if;   
+            end if;
             k := k + 2;
          when substr(p_text, k, l_fdelim_len) = p_field_delimiter then
             ---------------------
@@ -2408,8 +2457,8 @@ as
                    AND db_office_code IN (l_db_office_code, 53)
                    AND abstract_param_code =
                           (SELECT abstract_param_code
-                             FROM cwms_abstract_parameter
-                            WHERE abstract_param_id =
+                             from cwms_abstract_parameter
+                            WHERE UPPER (abstract_param_id) =
                                      UPPER (TRIM (p_abstract_param_id)));
          EXCEPTION
             WHEN NO_DATA_FOUND
