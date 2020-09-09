@@ -662,6 +662,19 @@ AS
       p_office_id in varchar2 default null)
       return number;
    /**
+    * Creates a parameter (maybe) and returns the parameter code
+    *
+    * @param p_param_id       The text identifier parameter of the parameter to create and/or retrieve the code for
+    * @param p_fail_if_exists A flag (T/F) specifying whether to fail if the parameter already exists.
+    *                         If F, then the code of the existing parameter is returned
+    * @param p_office_id      The office to create/retrieve the parameter code for. If unspecified or NULL the current session's default office is used.
+    */
+   FUNCTION create_parameter_code(
+      p_param_id       in varchar2,
+      p_fail_if_exists in varchar2 default 'F',
+      p_office_id      in varchar2 default null)
+      return number;
+   /**
     * Retrieves the interval minutes of a time series
     *
     * @param p_cwms_ts_code the code of the time series as presented in TS_CODE
