@@ -4494,21 +4494,42 @@ AS
                 p_office_id);
    END store_ts;                                                    -- v1.4 --
 
+   -------------------------------------------------------------------------------
+   -- PROCEDURE STORE_TS
    --
+   procedure store_ts (
+      p_cwms_ts_id        in varchar2,
+      p_units             in varchar2,
+      p_timeseries_data   in tsv_array,
+      p_store_rule        in varchar2,
+      p_override_prot     in varchar2 default 'F',
+      p_version_date      in date default cwms_util.non_versioned,
+      p_office_id         in varchar2 default null)
+   is
+   begin
+      store_ts_2 (
+         p_cwms_ts_id        => p_cwms_ts_id,
+         p_units             => p_units,
+         p_timeseries_data   => p_timeseries_data,
+         p_allow_sub_minute  => 'F',
+         p_store_rule        => p_store_rule,
+         p_override_prot     => p_override_prot,
+         p_version_date      => p_version_date,
+         p_office_id         => p_office_id);
+   end store_ts;
+
+   -------------------------------------------------------------------------------
+   -- PROCEDURE STORE_TS_2
    --
-   --*******************************************************************   --
-   --*******************************************************************   --
-   --
-   -- STORE_TS -
-   --
-   PROCEDURE store_ts (
+   PROCEDURE STORE_TS_2 (
       p_cwms_ts_id        IN VARCHAR2,
       p_units             IN VARCHAR2,
-      p_timeseries_data   IN tsv_array,
+      p_timeseries_data   in tsv_array,
+      p_allow_sub_minute  IN VARCHAR2,
       p_store_rule        IN VARCHAR2,
       p_override_prot     IN VARCHAR2 DEFAULT 'F',
       p_version_date      IN DATE DEFAULT cwms_util.non_versioned,
-      p_office_id         IN VARCHAR2 DEFAULT NULL)
+      p_office_id         in varchar2 default null)
    IS
       TS_ID_NOT_FOUND       EXCEPTION;
       PRAGMA EXCEPTION_INIT (ts_id_not_found, -20001);
@@ -4528,6 +4549,7 @@ AS
       mindate               DATE;
       maxdate               DATE;
       l_sql_txt             VARCHAR2 (10000);
+      l_allow_sub_minute    boolean;
       l_override_prot       BOOLEAN;
       l_version_date        DATE;
       --
@@ -4560,6 +4582,7 @@ AS
       l_delete_times        date_table_type;
       l_remaining_times     date_table_type;
       l_quality_codes       str_tab_t;
+      l_truncate_interval   varchar2(2);
    --
       function bitor (num1 in integer, num2 in integer)
          return integer
@@ -4604,11 +4627,12 @@ AS
 
       l_location_code := cwms_loc.get_location_code(l_office_code, cwms_Util.split_text(l_cwms_ts_id, 1, '.', 1));
 
---    l_version_date := trunc(NVL(p_version_date, cwms_util.non_versioned), 'mi');
       l_version_date := NVL(p_version_date, cwms_util.non_versioned); -- allow seconds on version date
       if l_version_date = cwms_util.all_version_dates then
          cwms_err.raise('ERROR', 'Cannot use CWMS_UTIL.ALL_VERSION_DATES for storing data.');
       end if;
+
+      l_allow_sub_minute := cwms_util.return_true_or_false(p_allow_sub_minute);
 
       IF NVL (p_override_prot, 'F') = 'F'
       THEN
@@ -4745,13 +4769,23 @@ AS
          dbms_application_info.set_action ('Returning due to no data passed null filter');
          return;      -- have already created ts_code if it didn't exist
       end if;
-
-      DBMS_APPLICATION_INFO.set_action (
-         'Truncate incoming times to minute and verify validity');
-      ---------------------------------------------------------
-      -- get the times as date types truncated to the minute --
-      ---------------------------------------------------------
-      select trunc(cast(date_time at time zone 'UTC' as date), 'mi')
+      --------------------------------------------------------------------------
+      -- truncate times to appropriate interval and verify no duplicate times --
+      --------------------------------------------------------------------------
+      if l_allow_sub_minute then
+         for i in 1..l_timeseries_data.count loop
+            l_timeseries_data(i).date_time := from_tz(
+               cast(cast(l_timeseries_data(i).date_time as date) as timestamp),
+               extract(timezone_region from l_timeseries_data(i).date_time));
+         end loop;
+      else
+         for i in 1..l_timeseries_data.count loop
+            l_timeseries_data(i).date_time := from_tz(
+               cast(trunc(l_timeseries_data(i).date_time, 'mi') as timestamp),
+               extract(timezone_region from l_timeseries_data(i).date_time));
+         end loop;
+      end if;
+      select cast(date_time at time zone 'UTC' as date)
         bulk collect into l_date_times
         from table(l_timeseries_data)
        order by date_time;
@@ -4762,7 +4796,10 @@ AS
                 from table(l_date_times));
 
       if l_min_interval = 0 then
-         cwms_err.raise('ERROR', 'Incoming data has multiple values for same minute.');
+         cwms_err.raise(
+            'ERROR',
+            'Incoming data has multiple values for same '
+            ||case when l_allow_sub_minute then 'second.' else 'minute.' end);
       end if;
 
       IF l_interval_value > 0
@@ -4835,7 +4872,7 @@ AS
                  from cwms_time_zone
                 where time_zone_code = l_tz_code;
 
-               select cwms_util.change_timezone(trunc(cast(date_time at time zone 'UTC' as date), 'mi'), 'UTC', l_loc_tz)
+               select cwms_util.change_timezone(cast(date_time at time zone 'UTC' as date), 'UTC', l_loc_tz)
                  bulk collect
                  into l_date_times
                  from table(l_timeseries_data);
@@ -4935,8 +4972,8 @@ AS
       -- at_tsv tables need to be accessed during the store.
       --
 
-      SELECT MIN (trunc(CAST ( (t.date_time AT TIME ZONE 'UTC') AS DATE), 'mi')),
-             MAX (trunc(CAST ( (t.date_time AT TIME ZONE 'UTC') AS DATE), 'mi'))
+      SELECT MIN (CAST ((t.date_time AT TIME ZONE 'UTC') AS DATE)),
+             MAX (CAST ((t.date_time AT TIME ZONE 'UTC') AS DATE))
         INTO mindate, maxdate
         FROM TABLE (CAST (l_timeseries_data AS tsv_array)) t;
 
@@ -4990,7 +5027,7 @@ AS
                loop
                   execute immediate
                      'merge into '||x.table_name||' t1
-                           using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date), ''mi'') date_time,
+                           using (select cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date) date_time,
                                          (t.value * c.factor + c.offset) - :l_value_offset value,
                                          cwms_ts.clean_quality_code(t.quality_code) quality_code
                                     from table(cast(:l_timeseries_data as tsv_array)) t,
@@ -5055,7 +5092,7 @@ AS
                loop
                   execute immediate
                      'merge into '||x.table_name||' t1
-                           using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date), ''mi'') date_time,
+                           using (select cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date) date_time,
                                          (t.value * c.factor + c.offset)  - :l_value_offset value,
                                          cwms_ts.clean_quality_code(t.quality_code) quality_code
                                     from table(cast(:l_timeseries_data as tsv_array)) t,
@@ -5127,7 +5164,7 @@ AS
                loop
                   execute immediate
                      'merge into '||x.table_name||' t1
-                           using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date), ''mi'') date_time,
+                           using (select cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date) date_time,
                                          (t.value * c.factor + c.offset) - :l_value_offset value,
                                          cwms_ts.clean_quality_code(t.quality_code) quality_code
                                     from table(cast(:l_timeseries_data as tsv_array)) t,
@@ -5203,7 +5240,7 @@ AS
                      -------------------------------
                      l_sql_txt :=
                            'merge into '||x.table_name||' t1
-                                 using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date), ''mi'') date_time,
+                                 using (select cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date) date_time,
                                                (t.value * c.factor + c.offset) - :l_value_offset value,
                                                cwms_ts.clean_quality_code(t.quality_code) quality_code
                                           from table(cast(:l_timeseries_data as tsv_array)) t,
@@ -5257,7 +5294,7 @@ AS
                      -------------------------
                      l_sql_txt :=
                            'merge into '||x.table_name||' t1
-                                 using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date), ''mi'') date_time,
+                                 using (select cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date) date_time,
                                                (t.value * c.factor + c.offset) - :l_value_offset value,
                                                cwms_ts.clean_quality_code(t.quality_code) quality_code
                                           from table(cast(:l_timeseries_data as tsv_array)) t,
@@ -5329,7 +5366,7 @@ AS
                loop
                   execute immediate
                      'merge into '||x.table_name||' t1
-                           using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date), ''mi'') date_time,
+                           using (select cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date) date_time,
                                          (t.value * c.factor + c.offset) - :l_value_offset value,
                                          cwms_ts.clean_quality_code(t.quality_code) quality_code
                                     from table(cast(:l_timeseries_data as tsv_array)) t,
@@ -5413,7 +5450,7 @@ AS
                loop
                   execute immediate
                      'merge into '||x.table_name||' t1
-                           using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date), ''mi'') date_time,
+                           using (select cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date) date_time,
                                          (t.value * c.factor + c.offset) - :l_value_offset value,
                                          cwms_ts.clean_quality_code(t.quality_code) quality_code
                                     from table(cast(:l_timeseries_data as tsv_array)) t,
@@ -5943,7 +5980,7 @@ AS
                ||l_timeseries_data(l_timeseries_data.count).quality_code);
          end if;
          cwms_err.raise ('ERROR', dbms_utility.format_error_backtrace);
-   end store_ts;
+   end store_ts_2;
 
    --
    --*******************************************************************   --
@@ -12737,7 +12774,7 @@ end retrieve_existing_item_counts;
                               when j = l_segments(i).first_index then '['
                               else ',['
                               end
-                              ||regexp_replace(cwms_rounding.round_dt_f(l_values_by_code(l_code_str)(j).value, '7777777777'), '^\.', '0.', 1, 1)
+                              ||regexp_replace(cwms_rounding.round_dt_f(l_values_by_code(l_code_str)(j).value, '7777777777'), '(^|[^0-9])\.', '\10.')
                               ||','
                               ||l_values_by_code(l_code_str)(j).quality_code
                               ||']');
