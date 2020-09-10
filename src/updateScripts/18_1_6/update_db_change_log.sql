@@ -23,7 +23,7 @@ begin
            18,
            1,
            6,
-           to_date ('19DEC2019', 'DDMONYYYY'),
+           to_date ('04SEP2020', 'DDMONYYYY'),
            'CWMS Database Release 18.1.6',
            'Bug fixes for 18.1.5'
           );
