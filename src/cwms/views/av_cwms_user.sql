@@ -27,9 +27,9 @@ create or replace view av_cwms_user (
    office_id)
 as
 select user_id,
-       first_name,
-       last_name,
-       full_name,
+       trim(first_name) as first_name,
+       trim(last_name) as last_name,
+       regexp_replace(full_name, ' +', ' ') as full_name,
        case
        when length(phone) >= 10 then
           case
