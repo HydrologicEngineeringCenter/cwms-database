@@ -12,7 +12,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TS_PROFILE_INST_
  * @field ts_code             The numeric code of the time series for the parameter in the profile
  * @field office_id           The office that owns the location of the profile
  * @field location_id         The location of the time series profile
- * @field key_parameter       The key parameter of the time series profile
+ * @field key_parameter_id    The key parameter of the time series profile
  * @field version_id          The version identifier of the instance and associated data
  * @field first_date_time     The date/time (UTC) of the first value of the instance data
  * @field last_date_time      The date/time (UTC) of the last value of the instance data
@@ -39,7 +39,7 @@ create or replace view av_ts_profile_inst_tsv2 (
    ts_code,
    office_id,
    location_id,
-   key_parameter,
+   key_parameter_id,
    version_id,
    first_date_time,
    last_date_time,
@@ -62,7 +62,7 @@ select tpi.location_code,
        tsid.ts_code,
        vl.db_office_id as office_id,
        vl.location_id as location_id,
-       cwms_util.get_parameter_id(tpi.key_parameter_code) as key_parameter,
+       cwms_util.get_parameter_id(tpi.key_parameter_code) as key_parameter_id,
        tpi.version_id,
        tpi.first_date_time,
        tpi.last_date_time,

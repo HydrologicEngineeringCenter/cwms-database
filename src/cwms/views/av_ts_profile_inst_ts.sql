@@ -12,7 +12,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TS_PROFILE_INST_
  * @field ts_code             The numeric code of the time series for the parameter in the profile
  * @field office_id           The office that owns the location of the profile
  * @field location_id         The location of the time series profile
- * @field key_parameter       The key parameter of the time series profile
+ * @field key_parameter_id    The key parameter of the time series profile
  * @field version_id          The version identifier of the instance and associated data
  * @field position            The position of the profile parameter in the profile definition
  * @field parameter_id        The parameter included in the profile definition
@@ -31,7 +31,7 @@ create or replace view av_ts_profile_inst_ts (
    ts_code,
    office_id,
    location_id,
-   key_parameter,
+   key_parameter_id,
    version_id,
    position,
    parameter_id,
@@ -52,7 +52,7 @@ select ii.location_code,
        tsid.ts_code,
        vl.db_office_id as office_id,
        vl.location_id as location_id,
-       cwms_util.get_parameter_id(ii.key_parameter_code) as key_parameter,
+       cwms_util.get_parameter_id(ii.key_parameter_code) as key_parameter_id,
        ii.version_id,
        tpp.position,
        cwms_util.get_parameter_id(tpp.parameter_code) as parameter_id,
