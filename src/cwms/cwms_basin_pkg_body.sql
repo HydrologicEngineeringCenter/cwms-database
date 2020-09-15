@@ -7,7 +7,7 @@ function get_basin_code(
    p_basin_id  in varchar2)
    return number
 is
-   l_basin_code number(10);
+   l_basin_code number(14);
    l_office_id  varchar2(16);
 begin
    if p_basin_id is null then
@@ -242,7 +242,7 @@ procedure delete_basin2(
    p_delete_location_action in varchar2 default cwms_util.delete_key,
    p_office_id              in varchar2 default null)
 is
-   l_basin_code       number(10);
+   l_basin_code       number(14);
    l_delete_location  boolean;
    l_delete_action1   varchar2(16);
    l_delete_action2   varchar2(16);
@@ -347,7 +347,7 @@ procedure rename_basin(
    p_new_basin_id in varchar2,
    p_office_id    in varchar2 default null)
 is
-   l_basin_code number(10);
+   l_basin_code number(14);
 begin
    -------------------
    -- sanity checks --

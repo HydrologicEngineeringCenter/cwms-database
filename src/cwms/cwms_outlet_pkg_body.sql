@@ -8,7 +8,7 @@ as
          p_outlet_id in varchar2)
       return number
    is
-      l_outlet_code number(10) ;
+      l_outlet_code number(14) ;
       l_office_id   varchar2(16) ;
    begin
       if p_outlet_id is null then
@@ -127,7 +127,7 @@ as
          p_outlet_location_code in number)
       return number
    is
-      l_office_code number(10) ;
+      l_office_code number(14) ;
    begin
        select bl.db_office_code
          into l_office_code
@@ -147,7 +147,7 @@ as
       l_ind_params str_tab_t;
       l_param       varchar2(16) ;
       l_alias       varchar2(256) ; -- shared alias id is rating spec
-      l_office_code number(10) := get_office_from_outlet(p_outlet_location_code) ;
+      l_office_code number(14) := get_office_from_outlet(p_outlet_location_code) ;
    begin
       ------------------------------------------
       -- get the rating spec for the location --
@@ -267,7 +267,7 @@ as
       l_category_rec at_loc_category%rowtype;
       l_group_rec at_loc_group%rowtype;
       l_assignment_rec at_loc_group_assignment%rowtype;
-      l_office_code number(10) ;
+      l_office_code number(14) ;
    begin
       --------------------------------------------
       -- retrieve or create the rating category --
@@ -420,7 +420,7 @@ as
 is
    table of at_outlet%rowtype;
    l_recs outlet_recs_t;
-   l_project_code number(10) ;
+   l_project_code number(14) ;
 begin
    -------------------
    -- sanity checks --
@@ -635,10 +635,10 @@ procedure delete_outlet2(
       p_delete_location_action in varchar2 default cwms_util.delete_key,
       p_office_id              in varchar2 default null)
 is
-   l_outlet_code     number(10) ;
-   l_delete_location boolean;
-   l_delete_action1  varchar2(16) ;
-   l_delete_action2  varchar2(16) ;
+   l_outlet_code       number(14) ;
+   l_delete_location   boolean;
+   l_delete_action1    varchar2(16) ;
+   l_delete_action2    varchar2(16) ;
    l_gate_change_codes number_tab_t;
    l_count pls_integer;
    l_location_kind_id  cwms_location_kind.location_kind_id%type;
@@ -763,8 +763,8 @@ procedure store_gate_changes(
       p_override_protection  in varchar2 default 'F')
 is
    type db_units_by_opening_units_t is table of varchar2(16) index by varchar2(16); 
-   l_proj_loc_code   number(10);                  
-   l_office_code     number(10);                  
+   l_proj_loc_code   number(14);                  
+   l_office_code     number(14);                  
    l_office_id       varchar2(16);                
    l_change_date     date;                        
    l_start_time      date;                        
@@ -1103,7 +1103,7 @@ is
    l_start_time    date;
    l_end_time      date;
    l_project       project_obj_t;
-   l_proj_loc_code number(10);
+   l_proj_loc_code number(14);
    l_gate_changes  gate_change_db_tab_t;
    l_gate_settings gate_setting_db_tab_t;
    l_elev_unit     varchar2(16);
@@ -1299,7 +1299,7 @@ is
    l_time_zone     varchar2(28) ;
    l_start_time    date;
    l_end_time      date;
-   l_proj_loc_code number(10) ;
+   l_proj_loc_code number(14) ;
    l_project project_obj_t;
    l_gate_change_codes number_tab_t;
    l_protected_flags str_tab_t;
@@ -1393,7 +1393,7 @@ is
    l_time_zone     varchar2(28) ;
    l_start_time    date;
    l_end_time      date;
-   l_proj_loc_code number(10) ;
+   l_proj_loc_code number(14) ;
    l_project project_obj_t;
    l_gate_change_codes number_tab_t;
 begin

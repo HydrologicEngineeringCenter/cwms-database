@@ -9,7 +9,7 @@ function get_gage_code(
    p_gage_id     in varchar2)
    return number
 is
-   l_location_code number(10);
+   l_location_code number(14);
 begin
    -------------------
    -- sanity checks --
@@ -277,7 +277,7 @@ procedure delete_gage(
    p_delete_action in varchar2 default cwms_util.delete_key,
    p_office_id     in varchar2 default null)
 is
-   l_gage_code number(10);
+   l_gage_code number(14);
 begin
    -------------------
    -- sanity checks --
@@ -587,8 +587,8 @@ is
    l_fail_if_exists  boolean;
    l_ignore_nulls    boolean;
    l_exists          boolean;
-   l_param_unit_code number(10);
-   l_value_unit_code number(10);
+   l_param_unit_code number(14);
+   l_value_unit_code number(14);
 begin
    -------------------
    -- sanity checks --
@@ -748,8 +748,8 @@ procedure retrieve_gage_sensor(
    p_office_id        in  varchar2 default null)
 is
    l_rec             at_gage_sensor%rowtype;
-   l_param_unit_code number(10);
-   l_value_unit_code number(10);
+   l_param_unit_code number(14);
+   l_value_unit_code number(14);
 begin
    -------------------
    -- sanity checks --

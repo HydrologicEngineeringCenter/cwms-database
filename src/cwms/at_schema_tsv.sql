@@ -25,12 +25,12 @@ DECLARE
             := '
       CREATE TABLE AT_TSV$name
       (
-        TS_CODE          NUMBER(10)                   NOT NULL,
+        TS_CODE          NUMBER(14)                   NOT NULL,
         DATE_TIME        DATE                         NOT NULL,
         VERSION_DATE     DATE                         NOT NULL,
         DATA_ENTRY_DATE  TIMESTAMP(6)                 NOT NULL,
         VALUE            BINARY_DOUBLE,
-        QUALITY_CODE     NUMBER(10), 
+        QUALITY_CODE     NUMBER(14), 
         DEST_FLAG          NUMBER(1),
         CONSTRAINT AT_TSV$name_PK
        PRIMARY KEY

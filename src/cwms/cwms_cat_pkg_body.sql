@@ -1405,7 +1405,7 @@ END cat_ts_id;
       p_db_office_id in  varchar2 default null
    )
    is
-      l_office_code number(10);
+      l_office_code number(14);
    begin
       l_office_code := cwms_util.get_db_office_code(p_db_office_id);
       -----------------------------
@@ -1440,7 +1440,7 @@ END cat_ts_id;
    )
    is
       l_abbreviated boolean;
-      l_office_code number(10);
+      l_office_code number(14);
    begin
       l_office_code := cwms_util.get_db_office_code(p_db_office_id);
       l_abbreviated := cwms_util.is_true(p_abbreviated);
@@ -1595,7 +1595,7 @@ END cat_ts_id;
       p_db_office_id in  varchar2 default null
    )
    is
-      l_office_code number(10);
+      l_office_code number(14);
    begin
       l_office_code := cwms_util.get_db_office_code(p_db_office_id);
       open p_cwms_cat for
@@ -3669,7 +3669,7 @@ END cat_ts_id;
                            p_prop_id         IN     VARCHAR2 DEFAULT NULL
                           )
    IS
-      l_office_code      NUMBER (10) := NULL;
+      l_office_code      NUMBER (14) := NULL;
       l_office_id       VARCHAR2 (16);
       l_prop_category   VARCHAR2 (256);
       l_prop_id         VARCHAR2 (256);

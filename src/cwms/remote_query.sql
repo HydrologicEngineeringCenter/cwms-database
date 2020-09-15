@@ -38,8 +38,8 @@ alter table remote_tsid_masks add constraint remote_tsis_masks_pk primary key (d
 create table remote_tsids
 (
    dblink              varchar2(31),
-   ts_code             number(10),
-   interval_utc_offset number(10),
+   ts_code             number(14),
+   interval_utc_offset number(14),
    ts_id               varchar2(193) not null
 );
 alter table remote_tsids add constraint remote_tsids_pk primary key (dblink, ts_code) using index;
