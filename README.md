@@ -1,8 +1,8 @@
-= CWMS Database
+# CWMS Database
 
 This repository contains the information necessary to both create a CWMS database from scratching as well as upgrade existing database.
 
-== Contributing
+## Contributing
 
 clone the repository with 
 
@@ -22,7 +22,7 @@ In the future we will enforce coding style standards and test coverage.
 
 If you do not have write access you may be able to fork it in bitbucket and submit a PR from the fork. If that doesn't work contact one of the Reviewers for access.
 
-== Reviewers
+## Reviewers
 
 Mike Neilson
 Mike Perryman
