@@ -188,7 +188,7 @@ as
    
    member procedure validate_obj
    is
-      l_code  number(14);
+      l_code  number(10);
       l_parts str_tab_t;
       l_base_id varchar2(16);
       l_sub_id  varchar2(32);
@@ -495,7 +495,7 @@ as
       p_office_code   in number)
    return number result_cache
    is
-      l_template_code number(14);
+      l_template_code number(10);
    begin
       select template_code
         into l_template_code

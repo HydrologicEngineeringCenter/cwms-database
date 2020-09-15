@@ -224,12 +224,12 @@ is
    l_rec             rec_t;  
    l_office_id       varchar2(16);  
    l_ts_id           varchar2(191);
-   l_ts_code         number(14);
+   l_ts_code         number(10);
    l_min_duration    integer; -- minutes
    l_duration        integer; -- minutes
    l_indicator       cwms_t_loc_lvl_indicator;
    l_indicator_id    varchar2(431);
-   l_indicator_code  number(14);
+   l_indicator_code  number(10);
    l_ref_spec_lvl_id varchar2(256);      
    l_parts           cwms_t_str_tab; 
    l_unit_system     varchar2(2);

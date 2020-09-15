@@ -145,6 +145,14 @@ AS
                                  p_db_office_code   IN NUMBER)
       RETURN NUMBER;
 
+   PROCEDURE add_user_to_group (p_username         IN VARCHAR2,
+                                p_user_group_id    IN VARCHAR2,
+                                p_db_office_code   IN NUMBER);
+
+   PROCEDURE add_user_to_group (p_username        IN VARCHAR2,
+                                p_user_group_id   IN VARCHAR2,
+                                p_db_office_id    IN VARCHAR2 DEFAULT NULL);
+
     /*
     * Adds a read-only user to all offices in a database. Mainly meant for National CWMS Database
 
@@ -154,26 +162,16 @@ AS
 
    PROCEDURE add_read_only_user_all_offices (p_username IN VARCHAR2);
 
-   PROCEDURE add_user_to_group (p_username         IN VARCHAR2,
-                                p_user_group_id    IN VARCHAR2,
-                                p_db_office_code   IN NUMBER);
-
-   PROCEDURE add_user_to_group (p_username        IN VARCHAR2,
-                                p_user_group_id   IN VARCHAR2,
-                                p_db_office_id    IN VARCHAR2 DEFAULT NULL);
-
    PROCEDURE create_logon_trigger (p_username IN VARCHAR2);
    PROCEDURE create_user (p_username             IN VARCHAR2,
                           p_password             IN VARCHAR2,
                           p_user_group_id_list   IN char_32_array_type,
                           p_db_office_id         IN VARCHAR2 DEFAULT NULL);
-	PRAGMA DEPRECATE (create_user, 'This method is no longer supported through client-side API. All Oracle account administration is done by the Oracle DBA.');
 
 
    PROCEDURE create_cwms_service_user;
 
    PROCEDURE delete_user (p_username IN VARCHAR2);
-   PRAGMA DEPRECATE (delete_user, 'This method is no longer supported through client-side API. All Oracle account administration is done by the Oracle DBA.');
 
    PROCEDURE lock_user (p_username       IN VARCHAR2,
                         p_db_office_id   IN VARCHAR2 DEFAULT NULL);
@@ -277,9 +275,8 @@ AS
                                p_office     IN VARCHAR2,
                                p_phone      IN VARCHAR2,
                                p_email      IN VARCHAR2);
-   PRAGMA DEPRECATE (update_user_data, 'This method is no longer supported through client-side API. All Oracle account administration is done by the Oracle DBA.');
-
   PROCEDURE remove_session_key(p_session_key VARCHAR2);
+  PROCEDURE clean_session_keys;
    /**
     * Returns upass user id and session for a given edipi number 
     *
@@ -290,7 +287,6 @@ AS
   PROCEDURE get_user_credentials (p_edipi      IN     NUMBER,
                                    p_user          OUT VARCHAR2,
                                    p_session_key      OUT VARCHAR2);
-  PROCEDURE clean_session_keys;
    /**
     * Returns service user name (used for CAC authentication),password
     *

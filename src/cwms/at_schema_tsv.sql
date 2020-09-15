@@ -13,8 +13,8 @@ DECLARE
     l_end_date                  VARCHAR2 (10);
 
     l_archive_start_year   NUMBER := 1700;
-    l_first_annual_year      NUMBER := 2010;
-    l_last_annual_year      NUMBER := 2025;
+    l_first_annual_year      NUMBER := 2002;
+    l_last_annual_year      NUMBER := 2020;
     l_infinity_end_year      NUMBER := 2200;
 
 
@@ -25,12 +25,12 @@ DECLARE
             := '
       CREATE TABLE AT_TSV$name
       (
-        TS_CODE          NUMBER(14)                   NOT NULL,
+        TS_CODE          NUMBER(10)                   NOT NULL,
         DATE_TIME        DATE                         NOT NULL,
         VERSION_DATE     DATE                         NOT NULL,
         DATA_ENTRY_DATE  TIMESTAMP(6)                 NOT NULL,
         VALUE            BINARY_DOUBLE,
-        QUALITY_CODE     NUMBER(14), 
+        QUALITY_CODE     NUMBER(10), 
         DEST_FLAG          NUMBER(1),
         CONSTRAINT AT_TSV$name_PK
        PRIMARY KEY
@@ -134,7 +134,7 @@ CREATE TABLE AT_TSV_COUNT
   INSERTS          NUMBER(6) CONSTRAINT AT_TSVC_INSERTS_NN NOT NULL,
   UPDATES          NUMBER(6) CONSTRAINT AT_TSVC_UPDATES_NN NOT NULL,
   DELETES          NUMBER(6) CONSTRAINT AT_TSVC_DELETES_NN NOT NULL,
-  SELECTS          NUMBER(6), 
+  SELECTS          NUMBER(6),
   CONSTRAINT AT_TSV_COUNT_PK
   PRIMARY KEY
   (DATA_ENTRY_DATE)

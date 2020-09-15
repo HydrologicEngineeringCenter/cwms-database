@@ -149,7 +149,7 @@ f.close()
 # by buildSqlScripts.py                              #
 #----------------------------------------------------#
 print("Loading control files")
-loaderCmdTemplate = "sqlldr %s/\"%s\"@%s control=%s"
+loaderCmdTemplate = "sqlldr %s/%s@%s control=%s"
 for loaderFilename in glob.glob('*.ctl') + glob.glob('data/*.ctl') :
 	#-------------------------------#
 	# fixup pathnames for clob data #
@@ -182,7 +182,7 @@ declare
    l_max_lon       binary_double;
    l_max_lat       binary_double;
    l_vals          number_tab_t := number_tab_t(); 
-   l_data_set_code number(14);
+   l_data_set_code number(10);
    l_idx           pls_integer;
    
    procedure get_line(p_line out varchar2) is
@@ -330,7 +330,7 @@ f.close()
 #------------------------------------------------------#
 # run the script to populate VERTCON tables from clobs #
 #------------------------------------------------------#
-cmd = "sqlplus %s/\"%s\"@%s @%s" % (cwms_schema, cwms_passwd, inst, vertconScriptFileName)
+cmd = "sqlplus %s/%s@%s @%s" % (cwms_schema, cwms_passwd, inst, vertconScriptFileName)
 print("Executing %s" % vertconScriptFileName)
 ec = os.system(cmd)
 if ec :

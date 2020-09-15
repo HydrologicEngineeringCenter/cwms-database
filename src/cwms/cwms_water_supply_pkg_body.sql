@@ -439,7 +439,7 @@ IS
    l_ignore_nulls   boolean;
    l_rec            at_water_user_contract%rowtype;
    l_ref            water_user_contract_ref_t;
-   l_water_user_code NUMBER(14);
+   l_water_user_code NUMBER(10);
 
    PROCEDURE populate_contract(
       p_rec IN out nocopy at_water_user_contract%rowtype,
@@ -447,9 +447,9 @@ IS
    IS
       l_factor              binary_double;
       l_offset              BINARY_DOUBLE;
-      l_contract_type_code  NUMBER(14);
-      l_storage_unit_code   number(14);
-      l_water_user_code     number(14);
+      l_contract_type_code  NUMBER(10);
+      l_storage_unit_code   number(10);
+      l_water_user_code     number(10);
       l_stream_location_rec at_stream_location%rowtype;
    BEGIN
       ----------------------------------
@@ -992,12 +992,12 @@ PROCEDURE retrieve_accounting_set(
     p_transfer_type IN VARCHAR2 DEFAULT NULL
   )
 is
-    l_contract_code          NUMBER(14);
-    l_project_location_code  number(14);
+    l_contract_code          NUMBER(10);
+    l_project_location_code  number(10);
 
-    l_pump_out_code number(14);
-    l_pump_out_below_code number(14);
-    l_pump_in_code number(14);
+    l_pump_out_code number(10);
+    l_pump_out_below_code number(10);
+    l_pump_in_code number(10);
 
     l_pump_out_set wat_usr_contract_acct_tab_t;
     l_pump_out_below_set wat_usr_contract_acct_tab_t;
@@ -1135,13 +1135,13 @@ PROCEDURE retrieve_pump_accounting(
   )
   IS
     l_pump_loc_ref    location_ref_t;
-    l_unit_code              number(14);
+    l_unit_code              number(10);
     l_adjusted_start_time    DATE;
     l_adjusted_end_time      DATE;
     l_start_time_inclusive   boolean;
     l_end_time_inclusive     boolean;
     l_time_zone              VARCHAR2(28) := nvl(p_time_zone, 'UTC');
-    l_time_zone_code         number(14);
+    l_time_zone_code         number(10);
     l_orderby_mod     NUMBER(1);
 
 BEGIN
@@ -1298,8 +1298,8 @@ IS
 
     l_contract_name at_water_user_contract.contract_name%TYPE;
     l_entity_name at_water_user.entity_name%TYPE;
-    l_project_loc_code NUMBER(14);
-    l_contract_code NUMBER(14);
+    l_project_loc_code NUMBER(10);
+    l_contract_code NUMBER(10);
 
     l_factor         BINARY_DOUBLE;
     l_offset         BINARY_DOUBLE;

@@ -8,7 +8,7 @@ as
          p_stream_id in varchar2)
       return number
    is
-      l_location_code number(14) ;
+      l_location_code number(10) ;
    begin
       begin
          l_location_code := cwms_loc.get_location_code(p_office_id, p_stream_id) ;
@@ -45,10 +45,10 @@ as
       l_fail_if_exists        boolean := cwms_util.is_true(p_fail_if_exists) ;
       l_ignore_nulls          boolean := cwms_util.is_true(p_ignore_nulls) ;
       l_exists                boolean;
-      l_base_location_code    number(14) ;
-      l_location_code         number(14) ;
-      l_diverting_stream_code number(14) ;
-      l_receiving_stream_code number(14) ;
+      l_base_location_code    number(10) ;
+      l_location_code         number(10) ;
+      l_diverting_stream_code number(10) ;
+      l_receiving_stream_code number(10) ;
       l_office_id             varchar2(16) := nvl(upper(p_office_id), cwms_util.user_office_id) ;
       l_station_unit          varchar2(16) := cwms_util.get_unit_id(p_station_unit, l_office_id) ;
       l_rec at_stream%rowtype;
@@ -283,7 +283,7 @@ as
          p_delete_location_action in varchar2 default cwms_util.delete_key,
          p_office_id              in varchar2 default null)
    is
-      l_stream_code      number(14) ;
+      l_stream_code      number(10) ;
       l_delete_location  boolean;
       l_delete_action1   varchar2(16) ;
       l_delete_action2   varchar2(16) ;
@@ -530,21 +530,21 @@ as
 -- procedure store_stream_reach
 --------------------------------------------------------------------------------
    procedure store_stream_reach(
-         p_reach_id            in varchar2,
-         p_stream_id           in varchar2,
-         p_fail_if_exists      in varchar2,
-         p_ignore_nulls        in varchar2,
+         p_reach_id           in varchar2,
+         p_stream_id          in varchar2,
+         p_fail_if_exists     in varchar2,
+         p_ignore_nulls       in varchar2,
          p_upstream_location   in varchar2,
          p_downstream_location in varchar2,
-         p_configuration_id    in varchar2 default null,
-         p_comments            in varchar2 default null,
-         p_office_id           in varchar2 default null)
+         p_configuration_id   in varchar2 default null,
+         p_comments           in varchar2 default null,
+         p_office_id          in varchar2 default null)
    is
       l_fail_if_exists          boolean := cwms_util.is_true(p_fail_if_exists) ;
       l_ignore_nulls            boolean := cwms_util.is_true(p_ignore_nulls) ;
       l_exists                  boolean;
       l_office_id               varchar2(16) := nvl(upper(p_office_id), cwms_util.user_office_id) ;
-      l_configuration_code      number(14);
+      l_configuration_code      number(10);
       l_rec                     at_stream_reach%rowtype;
       l_stream_code             integer;
       l_us_stream_code          integer;
@@ -696,7 +696,7 @@ as
                l_us_stream_location_station := 1e38; 
             else 
                l_us_stream_location_station := 0;
-            end if;
+         end if;
          end if;
          if l_ds_stream_code != l_stream_code then
             select *
@@ -735,7 +735,7 @@ as
             'Specified upstream station is downstream of specified downstream station');
       end if;
       for rec in (select *
-                    from at_stream_reach
+            from at_stream_reach
                    where configuration_code = l_configuration_code
                       and stream_location_code = l_stream_code
                  )
@@ -777,7 +777,7 @@ as
                ||' downstream location '
                ||cwms_loc.get_location_id(rec.downstream_location_code)
                ||' does not have a stream station');
-         end if;
+      end if;
          if l_ds_stream_location_station2 between l_ds_stream_location_station and l_us_stream_location_station and 
             l_ds_stream_location_station2 not in (l_ds_stream_location_station, l_us_stream_location_station)
          then
@@ -1203,8 +1203,8 @@ as
       l_station_unit         varchar2(16) := cwms_util.get_unit_id(p_station_unit, l_office_id) ;
       l_stage_unit           varchar2(16) := cwms_util.get_unit_id(p_stage_unit, l_office_id) ;
       l_area_unit            varchar2(16) := cwms_util.get_unit_id(p_area_unit, l_office_id) ;
-      l_location_code        number(14) ;
-      l_stream_location_code number(14) ;
+      l_location_code        number(10) ;
+      l_stream_location_code number(10) ;
    begin
       -------------------
       -- sanity checks --
@@ -1274,7 +1274,7 @@ as
          p_delete_location_action in varchar2 default cwms_util.delete_key,
          p_office_id              in varchar2 default null)
    is
-      l_location_code    number(14);
+      l_location_code    number(10);
       l_delete_location  boolean;
       l_delete_action1   varchar2(16);
       l_delete_action2   varchar2(16);
@@ -1505,7 +1505,7 @@ as
       l_stream_codes number_tab_t;
       l_station_1 binary_double;
       l_station_2 binary_double;
-      l_stream_code number(14) ;
+      l_stream_code number(10) ;
    begin
       -------------------
       -- sanity checks --
@@ -1793,7 +1793,7 @@ as
          p_office_id        in varchar2 default null)
    is
       l_office_id   varchar2(16) ;
-      l_stream_code number(14) ;
+      l_stream_code number(10) ;
       l_location_codes number_tab_t := number_tab_t() ;
    begin
       -------------------
@@ -1853,7 +1853,7 @@ as
          p_office_id        in varchar2 default null)
    is
       l_office_id   varchar2(16) ;
-      l_stream_code number(14) ;
+      l_stream_code number(10) ;
       l_location_codes number_tab_t := number_tab_t() ;
    begin
       -------------------
@@ -1911,8 +1911,8 @@ as
          p_office_id        in varchar2 default null)
    is
       l_station binary_double;
-      l_stream_code   number(14) ;
-      l_location_code number(14) ;
+      l_stream_code   number(10) ;
+      l_location_code number(10) ;
       l_office_id     varchar2(16) ;
    begin
       -------------------
@@ -1968,8 +1968,8 @@ as
          p_office_id        in varchar2 default null)
    is
       l_station binary_double;
-      l_stream_code   number(14) ;
-      l_location_code number(14) ;
+      l_stream_code   number(10) ;
+      l_location_code number(10) ;
       l_office_id     varchar2(16) ;
    begin
       -------------------

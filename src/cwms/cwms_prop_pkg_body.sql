@@ -45,7 +45,7 @@ AS
 									  p_property_info   IN		property_info_tab_t
 									 )
 	IS
-		l_office_code						NUMBER (14) := NULL;
+		l_office_code						NUMBER (10) := NULL;
 		l_office_id 						VARCHAR2 (16);
 		l_prop_category					VARCHAR2 (256);
 		l_prop_id							VARCHAR2 (256);
@@ -109,7 +109,7 @@ AS
 	FUNCTION set_properties (p_property_info IN property_info2_tab_t)
 		RETURN BINARY_INTEGER
 	IS
-		l_office_code						NUMBER (14) := NULL;
+		l_office_code						NUMBER (10) := NULL;
 		l_office_id 						VARCHAR2 (16);
 		l_prop_category					VARCHAR2 (256);
 		l_prop_id							VARCHAR2 (256);

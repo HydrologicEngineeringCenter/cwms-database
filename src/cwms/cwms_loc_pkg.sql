@@ -2450,12 +2450,12 @@ AS
       p_include_this_kind  in varchar2 default 'F',
       p_include_all_levels in varchar2 default 'T')
       return number_tab_t;
-
+            
    function get_location_ids(
       p_location_code in integer,
       p_exclude       in varchar2 default null)
       return varchar2;
-            
+
    /**
     * Retrieves type of information that may be stored for a specified location kind
     *

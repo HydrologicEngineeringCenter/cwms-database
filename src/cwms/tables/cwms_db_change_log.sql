@@ -43,9 +43,9 @@ insert
       51,
       'LOCAL',
       'CWMS',
-      99,
+      18,
       1,
-      0,
+      1,
       date '2018-08-15');
 commit;
 whenever sqlerror continue

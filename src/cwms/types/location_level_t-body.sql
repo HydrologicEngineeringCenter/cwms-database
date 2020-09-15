@@ -108,19 +108,19 @@ as
    member function zlocation_level
       return zlocation_level_t
    is
-      l_office_code                   number(14);
-      l_cwms_office_code              number(14) := cwms_util.get_office_code('CWMS');
-      l_location_level_code           number(14);
-      l_location_code                 number(14);
-      l_specified_level_code          number(14);
-      l_parameter_code                number(14);
-      l_parameter_type_code           number(14);
-      l_duration_code                 number(14);
+      l_office_code                   number(10);
+      l_cwms_office_code              number(10) := cwms_util.get_office_code('CWMS');
+      l_location_level_code           number(10);
+      l_location_code                 number(10);
+      l_specified_level_code          number(10);
+      l_parameter_code                number(10);
+      l_parameter_type_code           number(10);
+      l_duration_code                 number(10);
       l_location_level_value          number;
       l_attribute_value               number;
-      l_attribute_parameter_code      number(14);
-      l_attribute_param_type_code     number(14);
-      l_attribute_duration_code       number(14);
+      l_attribute_parameter_code      number(10);
+      l_attribute_param_type_code     number(10);
+      l_attribute_duration_code       number(10);
       l_calendar_interval             interval year(2) to month;
       l_time_interval                 interval day(3) to second(0);
       l_seasonal_level_values         seasonal_loc_lvl_tab_t;

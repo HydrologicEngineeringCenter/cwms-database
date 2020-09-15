@@ -60,8 +60,8 @@ as
    is
       l_rec                  at_rating_value%rowtype;
       l_note_rec             at_rating_value_note%rowtype;
-      l_office_code          number(14) := cwms_util.get_office_code(p_office_id);
-      l_rating_code          number(14);
+      l_office_code          number(10) := cwms_util.get_office_code(p_office_id);
+      l_rating_code          number(10);
       l_rating_ind_parameter rating_ind_parameter_t;
       l_parameter_position   number(1);
       l_other_ind            double_tab_t;

@@ -19,7 +19,7 @@ as
       p_office_id      in varchar2 default null)
    return self as result
    is
-      l_rating_code number(14);
+      l_rating_code number(10);
    begin
       l_rating_code := rating_t.get_rating_code(
          p_rating_id,
@@ -439,7 +439,7 @@ as
       p_rating_code    in number,
       p_include_points in varchar2 default 'T')
    is
-      l_offsets_code       number(14);
+      l_offsets_code       number(10);
       l_shift_rating_codes number_tab_t;
    begin
       if cwms_util.is_true(p_include_points) then
@@ -827,8 +827,8 @@ as
    is
       item_already_exists exception;
       pragma exception_init(item_already_exists, -20020);
-      l_rating_code      number(14);
-      l_ref_rating_code  number(14);
+      l_rating_code      number(10);
+      l_ref_rating_code  number(10);
       l_template         rating_template_t;
       l_parts            str_tab_t;
       l_location_id      varchar2(57);

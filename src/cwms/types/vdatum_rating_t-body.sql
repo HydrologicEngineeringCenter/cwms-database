@@ -19,7 +19,7 @@ as
       self.elev_positions := p_elev_positions;
       return;
    end;
-          
+   
       constructor function vdatum_rating_t(
       p_other in vdatum_rating_t
    ) return self as result
@@ -92,13 +92,13 @@ as
       l_parts       str_tab_t;  
       l_unit_id     varchar2(16);
       l_vdatum_info varchar2(32767);
-   begin                            
-      l_clone := self;
+   begin
+         l_clone := self;
       l_vert_datum := upper(trim(p_vert_datum));
       if l_vert_datum = 'NATIVE' then
          l_clone.to_native_datum;
          l_clone.current_datum := l_clone.native_datum;
-      else
+      else 
          l_clone.to_vertical_datum(l_vert_datum);
          l_clone.current_datum := l_vert_datum;
       end if;
@@ -108,10 +108,10 @@ as
          when p_units is null or p_units = 'NATIVE' then
             l_parts       := cwms_util.split_text(replace(l_clone.native_units, ';', ','), ',');
             if l_clone.elev_positions(1) = -1 then
-               l_unit_id := l_parts(l_parts.count);
-            else
+            l_unit_id := l_parts(l_parts.count);
+         else
                l_unit_id := l_parts(l_clone.elev_positions(1));
-            end if;
+         end if; 
          when p_units in ('EN', 'SI') then
             l_unit_id := cwms_util.get_default_units('Elev', p_units);
          else    
@@ -126,10 +126,10 @@ as
       -- handle the vertical datum --
       -------------------------------     
       l_vdatum_info := cwms_loc.get_vertical_datum_info_f(l_location_id, l_unit_id, l_clone.office_id); 
-      l_vdatum_info := regexp_replace(l_vdatum_info, '\s+office="\w+"', null); 
-      l_vdatum_info := regexp_replace(l_vdatum_info, '<location>.+</location>', null); 
-      l_vdatum_info := regexp_replace(l_vdatum_info, '(>)\s+(\S)', '\1\2'); 
-      l_vdatum_info := regexp_replace(l_vdatum_info, '(\S)\s+(<)', '\1\2'); 
+         l_vdatum_info := regexp_replace(l_vdatum_info, '\s+office="\w+"', null); 
+         l_vdatum_info := regexp_replace(l_vdatum_info, '<location>.+</location>', null); 
+         l_vdatum_info := regexp_replace(l_vdatum_info, '(>)\s+(\S)', '\1\2'); 
+         l_vdatum_info := regexp_replace(l_vdatum_info, '(\S)\s+(<)', '\1\2'); 
       l_clob := replace(l_clob, '</rating-spec-id>', '</rating-spec-id>'||l_vdatum_info);  
       l_clob := replace(l_clob, '<units-id>', '<units-id vertical-datum="'||l_clone.current_datum||'">');         
       return l_clob;

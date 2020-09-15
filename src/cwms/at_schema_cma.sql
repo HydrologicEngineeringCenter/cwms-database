@@ -33,7 +33,7 @@ DECLARE
                                'av_county_sp',
                                'av_lock',
                                'av_specified_level_order',
-                               'av_state_sp',
+                               'av_state_sp',                                                  
                                'av_station_usgs',
                                'av_station_nws',
                                'av_time_zone_sp',
@@ -186,5 +186,6 @@ prompt create view av_office_sp
 --
 prompt Inserting rows into at_specified_level_order
 @@cwms/tables/at_specified_level_order_INSERT.sql
+
 
 

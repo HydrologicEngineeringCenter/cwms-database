@@ -3,7 +3,7 @@ CREATE TYPE cat_dss_file_obj_t
 AS OBJECT (
    office_id         VARCHAR2 (16),
    dss_filemgr_url   VARCHAR2 (32),
-   dss_file_name     NUMBER (14)
+   dss_file_name     NUMBER (10)
 );
 /
 

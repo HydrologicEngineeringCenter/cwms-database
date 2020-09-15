@@ -818,7 +818,7 @@ as
       p_other_ind             in  double_tab_t,
       p_fail_if_exists        in  varchar2)
    is
-      l_rating_ind_param_code number(14);
+      l_rating_ind_param_code number(10);
    begin
       self.store(
          l_rating_ind_param_code,
@@ -1349,7 +1349,7 @@ as
       p_rating_code in number)
    return number
    is
-      l_rating_in_parameter_code number(14);
+      l_rating_in_parameter_code number(10);
    begin
       -------------------------------------------------------------
       -- we should have only a single record with combination of --

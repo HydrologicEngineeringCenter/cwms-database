@@ -316,7 +316,7 @@ as
       p_version     in varchar2,
       p_office_id   in varchar2 default null)
    is 
-      l_rating_spec_code number(14);
+      l_rating_spec_code number(10);
    begin
       l_rating_spec_code := rating_spec_t.get_rating_spec_code(
          p_location_id,
@@ -331,7 +331,7 @@ as
    is
       LOCATION_ID_NOT_FOUND exception; 
       pragma exception_init (LOCATION_ID_NOT_FOUND, -20025);
-      l_code     number(14);
+      l_code     number(10);
       l_template rating_template_t; 
       l_invalid  boolean;
       
@@ -400,7 +400,7 @@ as
       exception
          when LOCATION_ID_NOT_FOUND then           
             declare
-               l_base_code number(14);
+               l_base_code number(10);
             begin
                cwms_loc.create_location_raw (
                   l_base_code, -- out param (not used here)
@@ -730,8 +730,8 @@ as
    return number
    is
       l_office_id        varchar2(16) := nvl(p_office_id, cwms_util.user_office_id);
-      l_office_code      number(14) := cwms_util.get_office_code(l_office_id);
-      l_rating_spec_code number(14);
+      l_office_code      number(10) := cwms_util.get_office_code(l_office_id);
+      l_rating_spec_code number(10);
       l_parts            str_tab_t;
    begin
       l_parts := cwms_util.split_text(p_template_id, cwms_rating.separator1);

@@ -11,7 +11,7 @@ as
       p_rowid in urowid)
       return self as result
    is
-      l_parameter_code    number(14);
+      l_parameter_code    number(10);
       l_vert_datum_offset binary_double;
    begin
       conditions := new loc_lvl_ind_cond_tab_t();

@@ -178,8 +178,8 @@ as
                ||self.office_id
                ||'/'
                ||self.rating_spec_id);
-      end if;
-      self.effective_date := get_date(l_text);
+         end if;
+         self.effective_date := get_date(l_text);
       l_text := get_text(l_xml, '/*/transition-start-date');
       if l_text is not null then
          self.transition_date := get_date(l_text);
@@ -700,15 +700,15 @@ as
                end if;
             end loop;
          end loop;
-         self.effective_date  := rec.effective_date;
+         self.effective_date := rec.effective_date;
          self.transition_date := rec.transition_date;
-         self.create_date     := rec.create_date;
-         self.active_flag     := rec.active_flag;
-         self.formula         := rec.formula;
-         self.native_units    := rec.native_units;
-         self.description     := rec.description;
-         self.current_units   := 'D';
-         self.current_time    := 'D';
+         self.create_date    := rec.create_date;
+         self.active_flag    := rec.active_flag;
+         self.formula        := rec.formula;
+         self.native_units   := rec.native_units;
+         self.description    := rec.description;
+         self.current_units  := 'D';
+         self.current_time   := 'D';
          if self.formula is null and cwms_util.is_true(p_include_points) then
             self.rating_info  := rating_ind_parameter_t(p_rating_code);
          end if;
@@ -955,7 +955,7 @@ as
       p_time_zone      in varchar2 default null,
       p_office_id      in varchar2 default null)
    is
-      l_rating_code number(14);
+      l_rating_code number(10);
    begin
       l_rating_code := rating_t.get_rating_code(
          p_rating_spec_id,
@@ -971,7 +971,7 @@ as
       p_include_points in varchar2 default 'T')
    is
       type text_hash_t is table of boolean index by varchar(32767);
-      l_code        number(14);
+      l_code        number(10);
       l_count       pls_integer;
       l_idx         pls_integer;
       l_parts       str_tab_t;
@@ -1977,9 +1977,9 @@ as
                if l_local_timezone is null then
                   cwms_err.raise('ERROR', 'Location '||l_location_id||' does not have a time zone set');
                end if;
-               if self.effective_date is not null then
-                     self.effective_date := cwms_util.change_timezone(self.effective_date, l_local_timezone, 'UTC');
-               end if;
+         if self.effective_date is not null then
+               self.effective_date := cwms_util.change_timezone(self.effective_date, l_local_timezone, 'UTC');
+         end if;
                if self.transition_date is not null then
                      self.transition_date := cwms_util.change_timezone(self.transition_date, l_local_timezone, 'UTC');
                end if;
@@ -2004,9 +2004,9 @@ as
                if l_local_timezone is null then
                   cwms_err.raise('ERROR', 'Location '||l_location_id||' does not have a time zone set');
                end if;
-               if self.effective_date is not null then
-                     self.effective_date := cwms_util.change_timezone(self.effective_date, 'UTC', l_local_timezone);
-               end if;
+         if self.effective_date is not null then
+               self.effective_date := cwms_util.change_timezone(self.effective_date, 'UTC', l_local_timezone);
+         end if;
                if self.transition_date is not null then
                      self.transition_date := cwms_util.change_timezone(self.transition_date, 'UTC', l_local_timezone);
                end if;
@@ -2132,10 +2132,10 @@ as
          exception
             when no_data_found then l_exists := false;
          end;
-         l_vrating_rec.effective_date  := self.effective_date;
+         l_vrating_rec.effective_date := self.effective_date;
          l_vrating_rec.transition_date := self.transition_date;
-         l_vrating_rec.create_date     := nvl(self.create_date, sysdate);
-         l_vrating_rec.active_flag     := self.active_flag;
+         l_vrating_rec.create_date    := nvl(self.create_date, sysdate);
+         l_vrating_rec.active_flag    := self.active_flag;
          l_vrating_rec.connections := self.connections;
          l_vrating_rec.description := self.description;
          if l_exists then
@@ -2240,12 +2240,12 @@ as
             when no_data_found then l_exists := false;
          end;
 
-         l_trating_rec.effective_date  := self.effective_date;
+         l_trating_rec.effective_date := self.effective_date;
          l_trating_rec.transition_date := self.transition_date;
-         l_trating_rec.create_date     := nvl(self.create_date, sysdate);
-         l_trating_rec.active_flag     := self.active_flag;
-         l_trating_rec.native_units    := self.native_units;
-         l_trating_rec.description     := self.description;
+         l_trating_rec.create_date    := nvl(self.create_date, sysdate);
+         l_trating_rec.active_flag    := self.active_flag;
+         l_trating_rec.native_units   := self.native_units;
+         l_trating_rec.description    := self.description;
 
          if l_exists then
             update at_transitional_rating
@@ -2335,7 +2335,7 @@ as
    member procedure store(
       p_fail_if_exists in varchar2)
    is
-      l_rating_code number(14);
+      l_rating_code number(10);
    begin
       self.store(l_rating_code, p_fail_if_exists);
    end;
@@ -2422,8 +2422,8 @@ as
       if l_clone.create_date is null then
          cwms_util.append(l_text, '<create-date/>');
       else
-         cwms_util.append(l_text, '<create-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(l_clone.create_date, 'UTC', l_tzone), l_tzone)||'</create-date>');
-      end if;
+            cwms_util.append(l_text, '<create-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(l_clone.create_date, 'UTC', l_tzone), l_tzone)||'</create-date>');
+         end if;
       cwms_util.append(l_text, '<active>'||bool_text(cwms_util.is_true(l_clone.active_flag))||'</active>');
       if l_clone.description is null then
          cwms_util.append(l_text, '<description/>');

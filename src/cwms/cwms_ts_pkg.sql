@@ -2769,7 +2769,7 @@ AS
       p_version_date_utc   IN DATE DEFAULT cwms_util.non_versioned)
       RETURN DATE;
 
- /**
+/**
     * Retrieves the latest time series data date in the database for a time series but returns NULL if no records exist in the at_tsv_xxxx table
     *
     * @see constant cwms_util.non_versioned

@@ -38,7 +38,7 @@ under stream_rating_t
    constructor function vdatum_stream_rating_t(
       p_rating         in stream_rating_t,
       p_current_datum  in varchar2
-   ) return self as result,   
+   ) return self as result,
    /**
     * Copy constructor
     */

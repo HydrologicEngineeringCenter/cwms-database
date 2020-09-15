@@ -45,7 +45,7 @@ CREATE OR REPLACE package body cwms_xchg as
       p_office_id   in varchar2 default null)
       return number
    is
-      l_xchg_set_code number(14);
+      l_xchg_set_code number(10);
    begin
       select xchg_set_code
         into l_xchg_set_code
@@ -93,7 +93,7 @@ CREATE OR REPLACE package body cwms_xchg as
       p_dss_parameter_type_id in varchar2)
       return number
    is
-      l_dss_parameter_type_code number(14);
+      l_dss_parameter_type_code number(10);
    begin
       select dss_parameter_type_code
         into l_dss_parameter_type_code
@@ -264,7 +264,7 @@ CREATE OR REPLACE package body cwms_xchg as
       p_new_xchg_set_id   in   varchar2,
       p_office_id             in   varchar2 default null)
    is
-      l_xchg_set_code number(14);
+      l_xchg_set_code number(10);
       already_exists exception;
       pragma exception_init (already_exists, -00001);
    begin
@@ -288,7 +288,7 @@ CREATE OR REPLACE package body cwms_xchg as
       p_new_xchg_set_id   in   varchar2,
       p_office_id         in   varchar2 default null)
    is
-      l_xchg_set_code number(14) := get_xchg_set_code(p_old_xchg_set_id, p_office_id);
+      l_xchg_set_code number(10) := get_xchg_set_code(p_old_xchg_set_id, p_office_id);
       l_table_row at_xchg_set%rowtype;
       already_exists exception;
       pragma exception_init(already_exists, -00001);
@@ -1010,7 +1010,7 @@ CREATE OR REPLACE package body cwms_xchg as
       l_xchg_set_text      varchar2(32767);
       l_xchg_set_1         dataexchange_set_t;
       l_xchg_set_2         dataexchange_set_t;
-      l_xchg_set_code      number(14) := null;
+      l_xchg_set_code      number(10) := null;
       l_datastore_id       varchar2(32);
       l_set_id             varchar2(32);
       l_start_time         varchar2(32);
@@ -1617,7 +1617,7 @@ CREATE OR REPLACE package body cwms_xchg as
    is
       pragma autonomous_transaction;
       l_codes       number_tab_t;
-      l_office_code number(14);
+      l_office_code number(10);
    begin
       begin
          l_office_code := cwms_util.get_office_code(p_office_id);

@@ -275,7 +275,7 @@ as
       RETURN NUMBER
       RESULT_CACHE
    IS
-      l_base_param_code   NUMBER (14);
+      l_base_param_code   NUMBER (10);
       l_base_param_id     VARCHAR2 (16);
    BEGIN
       CASE cwms_util.is_true (p_is_full_id)
@@ -559,7 +559,7 @@ as
    FUNCTION user_office_code
       RETURN NUMBER
    IS
-      l_office_code   NUMBER (14) := 0;
+      l_office_code   NUMBER (10) := 0;
       l_office_id     VARCHAR2 (16) := user_office_id;
       BEGIN
       SELECT office_code
@@ -1307,7 +1307,7 @@ as
    FUNCTION get_time_zone_code (p_time_zone_name IN VARCHAR2)
       RETURN NUMBER result_cache relies_on (cwms_time_zone)
    IS
-      l_time_zone_code   NUMBER (14);
+      l_time_zone_code   NUMBER (10);
    BEGIN
       SELECT time_zone_code
         INTO l_time_zone_code
@@ -1347,7 +1347,7 @@ as
    FUNCTION get_tz_usage_code (p_tz_usage_id IN VARCHAR2)
       RETURN NUMBER
    IS
-      l_tz_usage_code   NUMBER (14);
+      l_tz_usage_code   NUMBER (10);
    BEGIN
       SELECT tz_usage_code
         INTO l_tz_usage_code
@@ -2236,7 +2236,7 @@ as
    IS
       l_unit_id_in    VARCHAR2 (16) := parse_unit(p_unit_or_alias);
       l_unit_id_out   VARCHAR2 (16);
-      l_office_code   NUMBER (14) := get_db_office_code (p_office_id);
+      l_office_code   NUMBER (10) := get_db_office_code (p_office_id);
    BEGIN
       BEGIN
          SELECT unit_id
@@ -2837,7 +2837,7 @@ as
    FUNCTION get_db_unit_code (p_parameter_id IN VARCHAR2)
       RETURN NUMBER
    IS
-      l_unit_code   NUMBER (14);
+      l_unit_code   NUMBER (10);
    BEGIN
       SELECT unit_code
         INTO l_unit_code
@@ -2850,7 +2850,7 @@ as
    FUNCTION get_db_unit_code (p_parameter_code IN NUMBER)
       RETURN NUMBER
    IS
-      l_unit_code   NUMBER (14);
+      l_unit_code   NUMBER (10);
    BEGIN
       SELECT bp.unit_code
         INTO l_unit_code
@@ -6468,7 +6468,7 @@ as
    function get_db_host
       return varchar2
    is
-      --According to RFC 1035 the length of a FQDN is limited to 255 characters   
+      --According to RFC 1035 the length of a FQDN is limited to 255 characters
       l_hostaddress varchar2(255);
    begin
       l_hostaddress := SYS.UTL_INADDR.GET_HOST_ADDRESS;
@@ -6477,7 +6477,7 @@ as
       end if;
       return l_hostaddress;
    end;
-   
+
 END cwms_util;
 /
 

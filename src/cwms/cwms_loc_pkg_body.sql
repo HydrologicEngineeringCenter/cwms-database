@@ -495,7 +495,7 @@ AS
       l_location_kind_code     NUMBER := 1; -- SITE
       l_bounding_office_code    NUMBER := NULL;
       l_nation_code             VARCHAR2 (2);
-      l_cwms_office_code       NUMBER (14)
+      l_cwms_office_code       NUMBER (10)
                                   := cwms_util.get_office_code ('CWMS');
    BEGIN
       IF p_bounding_office_id IS NOT NULL
@@ -908,11 +908,11 @@ AS
       l_state_initial          cwms_state.state_initial%TYPE;
       l_county_name             cwms_county.county_name%TYPE;
       l_ignorenulls             BOOLEAN := cwms_util.is_true (p_ignorenulls);
-      l_office_code             NUMBER (14)
+      l_office_code             NUMBER (10)
          := cwms_util.get_office_code (p_db_office_id);
-      l_cwms_office_code       NUMBER (14)
+      l_cwms_office_code       NUMBER (10)
                                   := cwms_util.get_office_code ('CWMS');
-      l_old_time_zone_code      number(14);
+      l_old_time_zone_code      number(10);
    BEGIN
       --.
       -- dbms_output.put_line('Bienvenue a update_loc');
@@ -1353,7 +1353,7 @@ AS
       l_state_initial      cwms_state.state_initial%TYPE;
       l_county_name         cwms_county.county_name%TYPE;
       l_ignorenulls         BOOLEAN := cwms_util.is_true (p_ignorenulls);
-      l_old_time_zone_code      number(14);
+      l_old_time_zone_code      number(10);
    BEGIN
       --.
       -- dbms_output.put_line('Bienvenue a update_loc');
@@ -3976,7 +3976,7 @@ AS
                               )
    IS
       l_rec              at_loc_group%ROWTYPE;
-      l_office_code       NUMBER (14)
+      l_office_code       NUMBER (10)
                             := cwms_util.get_db_office_code (p_db_office_id);
       l_fail_if_exists    BOOLEAN := cwms_util.is_true (p_fail_if_exists);
       l_ignore_nulls     BOOLEAN := cwms_util.is_true (p_ignore_nulls);
@@ -4921,7 +4921,7 @@ end unassign_loc_groups;
                                p_db_office_id      IN VARCHAR2 DEFAULT NULL
                               )
    IS
-      l_loc_group_code    NUMBER (14);
+      l_loc_group_code    NUMBER (10);
       l_db_office_code    NUMBER := cwms_util.get_office_code (p_db_office_id);
    BEGIN
       IF l_db_office_code = cwms_util.db_office_code_all
@@ -4951,7 +4951,7 @@ end unassign_loc_groups;
                                p_db_office_id      IN VARCHAR2 DEFAULT NULL
                               )
    IS
-      l_loc_group_code    NUMBER (14);
+      l_loc_group_code    NUMBER (10);
       l_db_office_code    NUMBER := cwms_util.get_office_code (p_db_office_id);
    BEGIN
       delete_loc_group (p_loc_category_id   => p_loc_category_id,
@@ -4966,7 +4966,7 @@ end unassign_loc_groups;
                              p_db_office_id       IN VARCHAR2 DEFAULT NULL
                             )
    IS
-      l_loc_category_code    NUMBER (14);
+      l_loc_category_code    NUMBER (10);
       l_db_office_code       NUMBER;
    BEGIN
       ---------------------------
@@ -5623,8 +5623,8 @@ end unassign_loc_groups;
       p_office_id     in varchar2 default null)
       return varchar2
    is
-      l_office_code   number(14);
-      l_location_code number(14);
+      l_office_code   number(10);
+      l_location_code number(10);
       l_office_id     varchar2(16);
       l_location_id   varchar2(57);
       l_parts         str_tab_t;
@@ -5693,7 +5693,7 @@ end unassign_loc_groups;
       p_office_id   in varchar2 default null)
       return number
    is
-      l_location_code number(14);
+      l_location_code number(10);
       l_location_id   varchar2(256);
       l_office_id     varchar2(16);
    begin
@@ -5724,11 +5724,11 @@ end unassign_loc_groups;
       location_id_not_found exception;
       pragma exception_init(location_id_not_found, -20025);
       l_location_id    varchar2(57);
-      l_location_code  number(14);
+      l_location_code  number(10);
       l_office_id      varchar2(16);
-      l_count          pls_integer;
+      l_count           pls_integer;
       l_multiple_ids   boolean := false;
-      l_property_id    varchar2(256);
+      l_property_id     varchar2(256);
    begin
       l_office_id := cwms_util.get_db_office_id(p_office_id);
 
@@ -6517,7 +6517,7 @@ end unassign_loc_groups;
       return urowid
    is
       l_rowid urowid;
-      l_location_code number(14);
+      l_location_code number(10);
       l_vertical_datum_id_1 varchar2(16);
       l_vertical_datum_id_2 varchar2(16);
       l_effective_date_utc  date;
@@ -7337,7 +7337,7 @@ end unassign_loc_groups;
       p_unit                in  varchar2 default null,
       p_office_id           in  varchar2 default null)
    is
-      l_location_code  number(14);
+      l_location_code  number(10);
       l_timezone       varchar2(28);
       l_offset         binary_double;
       l_effective_date date;
@@ -7409,7 +7409,7 @@ end unassign_loc_groups;
       p_unit                in  varchar2 default null,
       p_office_id           in  varchar2 default null)
    is
-      l_location_code  number(14);
+      l_location_code  number(10);
       l_timezone       varchar2(28);
       l_offsets        ztsv_array;
    begin
@@ -7481,7 +7481,7 @@ end unassign_loc_groups;
       p_location_code  in  number)
    is
       l_vertical_datum     varchar2(16);
-      l_base_location_code number(14);
+      l_base_location_code number(10);
    begin
       select base_location_code,
              vertical_datum

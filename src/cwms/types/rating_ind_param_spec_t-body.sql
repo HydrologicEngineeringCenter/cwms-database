@@ -100,7 +100,7 @@ as
    
    member procedure validate_obj
    is
-      l_code number(14);
+      l_code number(10);
    begin
       ------------------------
       -- parameter position --

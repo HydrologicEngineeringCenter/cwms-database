@@ -7,7 +7,7 @@ function get_turbine_code(
    p_turbine_id in varchar2)
    return number
 is
-   l_turbine_code number(14);
+   l_turbine_code number(10);
    l_office_id       varchar2(16);
 begin
    if p_turbine_id is null then
@@ -210,7 +210,7 @@ procedure retrieve_turbines(
 is
    type turbine_recs_t is table of at_turbine%rowtype;
    l_recs          turbine_recs_t;
-   l_project_code  number(14);
+   l_project_code  number(10);
 begin
    -------------------
    -- sanity checks --
@@ -424,7 +424,7 @@ procedure delete_turbine2(
    p_delete_location_action in varchar2 default cwms_util.delete_key,
    p_office_id              in varchar2 default null)
 is
-   l_turbine_code         number(14);
+   l_turbine_code         number(10);
    l_delete_location      boolean;
    l_delete_action1       varchar2(16);
    l_delete_action2       varchar2(16);
@@ -532,8 +532,8 @@ procedure store_turbine_changes(
    p_end_time_inclusive   in varchar2 default 'T',
    p_override_protection  in varchar2 default 'F')
 is
-   l_proj_loc_code    number(14);
-   l_office_code      number(14);
+   l_proj_loc_code    number(10);
+   l_office_code      number(10);
    l_office_id        varchar2(16);
    l_change_date      date;
    l_start_time       date;
@@ -873,7 +873,7 @@ is
    l_old_discharge         binary_double;
    l_old_q_override        binary_double;
    l_proj_base_location_id varchar2(24);
-   l_proj_loc_code         number(14);
+   l_proj_loc_code         number(10);
    l_proj_sub_location_id  varchar2(32);
    l_project               project_obj_t;
    l_protected             varchar2(1);
@@ -1235,7 +1235,7 @@ is
    l_time_zone         varchar2(28);
    l_start_time        date;
    l_end_time          date;
-   l_proj_loc_code     number(14);
+   l_proj_loc_code     number(10);
    l_project           project_obj_t;
    l_turbine_change_codes number_tab_t;
    l_protected_flags   str_tab_t;
@@ -1332,7 +1332,7 @@ is
    l_time_zone         varchar2(28);
    l_start_time        date;
    l_end_time          date;
-   l_proj_loc_code     number(14);
+   l_proj_loc_code     number(10);
    l_project           project_obj_t;
    l_turbine_change_codes number_tab_t;
 begin

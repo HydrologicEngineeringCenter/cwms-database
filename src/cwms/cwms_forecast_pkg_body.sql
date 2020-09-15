@@ -10,7 +10,7 @@ function get_forecast_spec_code(
    return number
 is
    l_office_id          varchar2(16);
-   l_forecast_spec_code number(14);
+   l_forecast_spec_code number(10);
 begin
    -------------------
    -- sanity checks --
@@ -258,7 +258,7 @@ procedure rename_spec(
    p_new_forecast_id in varchar2,
    p_office_id       in varchar2 default null) -- null = user's office id
 is
-   l_forecast_spec_code number(14);
+   l_forecast_spec_code number(10);
 begin
    -------------------
    -- sanity checks --
@@ -426,8 +426,8 @@ procedure store_ts(
    p_office_id       in varchar2 default null) -- null = user's office id
 is
    ts_id_not_found       exception; pragma exception_init(ts_id_not_found, -20001);
-   l_forecast_spec_code  number(14);
-   l_ts_code             number(14);
+   l_forecast_spec_code  number(10);
+   l_ts_code             number(10);
    l_fail_if_exists      boolean;
    l_exists              boolean;
    l_timeseries_data     tsv_array;
@@ -716,8 +716,8 @@ procedure delete_ts(
    p_time_zone     in varchar2 default null, -- null = location time zone
    p_office_id     in varchar2 default null) -- null = user's office id
 is
-   l_forecast_spec_code number(14);
-   l_ts_code            number(14);
+   l_forecast_spec_code number(10);
+   l_ts_code            number(10);
    l_time_zone          varchar2(28);
    l_forecast_time      date;
    l_issue_time         date; 
@@ -873,7 +873,7 @@ procedure store_text(
    p_fail_if_exists  in varchar2,
    p_office_id       in varchar2 default null) -- null = user's office id
 is
-   l_forecast_spec_code  number(14);
+   l_forecast_spec_code  number(10);
    l_fail_if_exists      boolean;
    l_exists              boolean;
    l_forecast_time       date;
@@ -992,8 +992,8 @@ procedure retrieve_text(
    p_time_zone       in  varchar2 default null, -- null = location time zone
    p_office_id       in  varchar2 default null) -- null = user's office id
 is
-   l_forecast_spec_code  number(14);
-   l_clob_code           number(14);
+   l_forecast_spec_code  number(10);
+   l_clob_code           number(10);
    l_forecast_time       date;
    l_issue_time          date;
    l_time_zone           varchar2(28);
@@ -1070,8 +1070,8 @@ procedure delete_text(
    p_time_zone       in varchar2 default null, -- null = location time zone
    p_office_id       in varchar2 default null) -- null = user's office id
 is
-   l_forecast_spec_code  number(14);
-   l_clob_code           number(14);
+   l_forecast_spec_code  number(10);
+   l_clob_code           number(10);
    l_forecast_time       date;
    l_issue_time          date;
    l_time_zone           varchar2(28);
@@ -1204,7 +1204,7 @@ procedure delete_spec(
    p_delete_action  in varchar2 default cwms_util.delete_key,
    p_office_id      in varchar2 default null) -- null = user's office id
 is
-   l_forecast_spec_code number(14);
+   l_forecast_spec_code number(10);
 begin
    -------------------
    -- sanity checks --
@@ -1359,7 +1359,7 @@ is
       date_time    date,
       value        binary_double,
       quality_code integer);        
-   l_forecast_spec_code number(14);
+   l_forecast_spec_code number(10);
    l_unit_system        varchar2(2);
    l_time_zone          varchar2(28);
    l_forecast_time      date;

@@ -3,11 +3,11 @@
 ------------------------
 create table at_rating_template
 (
-   template_code        number(14),
-   office_code          number(14),
+   template_code        number(10),
+   office_code          number(10),
    parameters_id        varchar(256),
    version              varchar2(32),
-   dep_parameter_code   number(14),
+   dep_parameter_code   number(10),
    description          varchar2(256),
    constraint at_rating_template_pk  primary key (template_code),
    constraint at_rating_template_fk1 foreign key (office_code) references cwms_office(office_code),
@@ -33,13 +33,13 @@ commit;
 ------------------------------
 create table at_rating_ind_param_spec
 (
-   ind_param_spec_code          number(14),
-   template_code                number(14) not null,
+   ind_param_spec_code          number(10),
+   template_code                number(10) not null,
    parameter_position           number(1)  not null,
-   parameter_code               number(14) not null,
-   in_range_rating_method       number(14) not null,
-   out_range_low_rating_method  number(14) not null,
-   out_range_high_rating_method number(14) not null,
+   parameter_code               number(10) not null,
+   in_range_rating_method       number(10) not null,
+   out_range_low_rating_method  number(10) not null,
+   out_range_high_rating_method number(10) not null,
    constraint at_rating_ind_param_spec_pk  primary key (ind_param_spec_code),
    constraint at_rating_ind_param_spec_u1  unique (template_code, parameter_position) using index,
    constraint at_rating_ind_param_spec_fk1 foreign key (template_code) references at_rating_template(template_code),
@@ -66,14 +66,14 @@ commit;
 --------------------
 create table at_rating_spec
 (
-   rating_spec_code             number(14),
-   template_code                number(14),
-   location_code                number(14),
+   rating_spec_code             number(10),
+   template_code                number(10),
+   location_code                number(10),
    version                      varchar2(32),
-   source_agency_code           number(14),
-   in_range_rating_method       number(14)   not null,
-   out_range_low_rating_method  number(14)   not null,
-   out_range_high_rating_method number(14)   not null,
+   source_agency_code           number(10),
+   in_range_rating_method       number(10)   not null,
+   out_range_low_rating_method  number(10)   not null,
+   out_range_high_rating_method number(10)   not null,
    active_flag                  varchar2(1)  not null,
    auto_update_flag             varchar2(1)  not null,
    auto_activate_flag           varchar2(1)  not null,
@@ -119,7 +119,7 @@ commit;
 ----------------------------
 create table at_rating_ind_rounding
 (
-   rating_spec_code   number(14),
+   rating_spec_code   number(10),
    parameter_position number(1),
    rounding_spec      varchar2(10),
    constraint at_rating_ind_rounding_pk  primary key (rating_spec_code, parameter_position),
@@ -140,10 +140,10 @@ commit;
 ---------------
 create table at_rating
 (
-   rating_code      number(14),
-   rating_spec_code number(14),
+   rating_code      number(10),
+   rating_spec_code number(10),
    effective_date   date        not null,
-   ref_rating_code  number(14),
+   ref_rating_code  number(10),
    transition_date  date,
    create_date      date        not null,
    active_flag      varchar2(1) not null,
@@ -179,9 +179,9 @@ commit;
 -----------------------------
 create table at_rating_ind_parameter
 (
-   rating_ind_param_code number(14),
-   rating_code           number(14) not null,
-   ind_param_spec_code   number(14) not null,
+   rating_ind_param_code number(10),
+   rating_code           number(10) not null,
+   ind_param_spec_code   number(10) not null,
    constraint at_rating_ind_parameter_pk  primary key (rating_ind_param_code),
    constraint at_rating_ind_parameter_fk1 foreign key (rating_code) references at_rating (rating_code),
    constraint at_rating_ind_parameter_fk2 foreign key (ind_param_spec_code) references at_rating_ind_param_spec (ind_param_spec_code)
@@ -200,8 +200,8 @@ commit;
 --------------------------
 create table at_rating_value_note
 (
-   note_code   number(14),
-   office_code number(14),
+   note_code   number(10),
+   office_code number(10),
    note_id     varchar2(16)  not null,
    description varchar2(256),
    constraint at_rating_value_note_pk  primary key (note_code),
@@ -229,12 +229,12 @@ commit;
 ---------------------
 create table at_rating_value
 (
-    rating_ind_param_code     number(14),
+    rating_ind_param_code     number(10),
     other_ind_hash            varchar2(40),
     ind_value                 binary_double,
     dep_value                 binary_double,
-    dep_rating_ind_param_code number(14),
-    note_code                 number(14),
+    dep_rating_ind_param_code number(10),
+    note_code                 number(10),
     constraint at_rating_value_pk  primary key (rating_ind_param_code, other_ind_hash, ind_value),
     constraint at_rating_value_ck1 check (dep_value is null or dep_rating_ind_param_code is null),
     constraint at_rating_value_ck2 check (dep_value is not null or dep_rating_ind_param_code is not null),
@@ -261,12 +261,12 @@ commit;
 -------------------------------
 create table at_rating_extension_value
 (
-    rating_ind_param_code     number(14),
+    rating_ind_param_code     number(10),
     other_ind_hash            varchar2(40),
     ind_value                 binary_double,
     dep_value                 binary_double,
-    dep_rating_ind_param_code number(14),
-    note_code                 number(14),
+    dep_rating_ind_param_code number(10),
+    note_code                 number(10),
     constraint at_rating_extension_value_pk  primary key (rating_ind_param_code, other_ind_hash, ind_value),
     constraint at_rating_extension_value_ck1 check (dep_value is null or dep_rating_ind_param_code is null),
     constraint at_rating_extension_value_ck2 check (dep_value is not null or dep_rating_ind_param_code is not null),
@@ -312,8 +312,8 @@ commit;
 -- AT_VIRTUAL_RATING --
 -----------------------
 create table at_virtual_rating (
-   virtual_rating_code number(14)   not null,
-   rating_spec_code    number(14)   not null,
+   virtual_rating_code number(10)   not null,
+   rating_spec_code    number(10)   not null,
    effective_date      date         not null,
    transition_date     date,
    create_date         date         not null,
@@ -347,10 +347,10 @@ commit;
 -- AT_VIRTUAL_RATING_ELEMENT --
 -------------------------------
 create table at_virtual_rating_element (
-   virtual_rating_element_code number(14),
-   virtual_rating_code         number(14),
+   virtual_rating_element_code number(10),
+   virtual_rating_code         number(10),
    position                    integer,
-   rating_spec_code            number(14),
+   rating_spec_code            number(10),
    rating_expression           varchar2(80),
    constraint at_virtual_rating_element_pk  primary key (virtual_rating_element_code),
    constraint at_virtual_rating_element_fk1 foreign key (virtual_rating_code) references at_virtual_rating (virtual_rating_code),
@@ -374,9 +374,9 @@ commit;
 -- AT_VIRTUAL_RATING_UNIT --
 ----------------------------
 create table at_virtual_rating_unit (
-   virtual_rating_element_code number(14),
+   virtual_rating_element_code number(10),
    position                    integer,
-   unit_code                   number(14) not null,
+   unit_code                   number(10) not null,
    constraint at_virtual_rating_unit_pk  primary key (virtual_rating_element_code, position),
    constraint at_virtual_rating_unit_fk1 foreign key (virtual_rating_element_code) references at_virtual_rating_element (virtual_rating_element_code),
    constraint at_virtual_rating_unit_fk2 foreign key (unit_code) references cwms_unit (unit_code)
@@ -395,8 +395,8 @@ commit;
 -- AT_TRANSITIONAL_RATING --
 ----------------------------
 create table at_transitional_rating(
-   transitional_rating_code number(14)    not null,
-   rating_spec_code         number(14)    not null,
+   transitional_rating_code number(10)    not null,
+   rating_spec_code         number(10)    not null,
    effective_date           date          not null,
    transition_date          date,
    create_date              date          not null,
@@ -429,9 +429,9 @@ commit;
 --------------------------------
 create table at_transitional_rating_src
 (
-  transitional_rating_code     number(14) not null,
+  transitional_rating_code     number(10) not null,
   position                     integer    not null,
-  rating_spec_code             number(14) not null,
+  rating_spec_code             number(10) not null,
   constraint at_trans_rating_src_pk  primary key (transitional_rating_code, position),
   constraint at_trans_rating_src_ck1 check (position > 0),
   constraint at_trans_rating_src_fk1 foreign key(transitional_rating_code) references at_transitional_rating(transitional_rating_code),
@@ -451,7 +451,7 @@ commit;
 --------------------------------
 create table at_transitional_rating_sel
 (
-  transitional_rating_code     number(14) not null,
+  transitional_rating_code     number(10) not null,
   position                     integer    not null,
   expression                   varchar2(256) not null,
   condition                    varchar2(1024),
@@ -491,11 +491,11 @@ commit;
 -- AT_OVERFLOW --
 -----------------
 create table at_overflow (
-   overflow_location_code number(14),
+   overflow_location_code number(10),
    crest_elevation        binary_double,
    length_or_diameter     binary_double,
    is_circular            varchar2(1),
-   rating_spec_code       number(14),
+   rating_spec_code       number(10),
    description            varchar2(128),
    constraint at_overflow_pk  primary key (overflow_location_code),
    constraint at_overflow_fk1 foreign key (overflow_location_code) references at_outlet (outlet_location_code),

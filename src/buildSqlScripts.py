@@ -6136,12 +6136,12 @@ def main() :
     -- ##
     CREATE TABLE @TABLE
        (
-           OFFICE_CODE           NUMBER(14)   NOT NULL,
+           OFFICE_CODE           NUMBER(10)   NOT NULL,
            OFFICE_ID             VARCHAR2(16) NOT NULL,
            PUBLIC_NAME           VARCHAR2(32) NULL,
            LONG_NAME             VARCHAR2(80) NULL,
-           REPORT_TO_OFFICE_CODE NUMBER(14)   NOT NULL,
-           DB_HOST_OFFICE_CODE   NUMBER(14)   NOT NULL,
+           REPORT_TO_OFFICE_CODE NUMBER(10)   NOT NULL,
+           DB_HOST_OFFICE_CODE   NUMBER(10)   NOT NULL,
            EROC                  VARCHAR2(2)  NOT NULL,
            OFFICE_TYPE           VARCHAR2(8)  NOT NULL
        )
@@ -6211,7 +6211,7 @@ def main() :
     -- ##
     CREATE TABLE @TABLE
        (
-           SUBCWMS_CODE    NUMBER(14)   NOT NULL,
+           SUBCWMS_CODE    NUMBER(10)   NOT NULL,
            SUBCWMS_ID      VARCHAR2(32) NOT NULL,
            DESCRIPTION     VARCHAR2(80)
        )
@@ -6355,7 +6355,7 @@ def main() :
     -- ##
     CREATE TABLE @TABLE
        (
-           STATE_CODE    NUMBER(14)  NOT NULL,
+           STATE_CODE    NUMBER(10)  NOT NULL,
            STATE_INITIAL VARCHAR2(2) NOT NULL,
            NAME          VARCHAR2(40)
        )
@@ -6403,9 +6403,9 @@ def main() :
     -- ##
     CREATE TABLE @TABLE
        (
-           COUNTY_CODE NUMBER(14)   NOT NULL,
+           COUNTY_CODE NUMBER(10)   NOT NULL,
            COUNTY_ID   VARCHAR2(3)  NOT NULL,
-           STATE_CODE  NUMBER(14)   NOT NULL,
+           STATE_CODE  NUMBER(10)   NOT NULL,
            COUNTY_NAME VARCHAR2(40)
        )
            PCTFREE 10
@@ -6462,9 +6462,9 @@ def main() :
     -- ##
     CREATE TABLE @TABLE
        (
-           INTERVAL_OFFSET_CODE    NUMBER(14)   NOT NULL,
+           INTERVAL_OFFSET_CODE    NUMBER(10)   NOT NULL,
            INTERVAL_OFFSET_ID      VARCHAR2(16) NOT NULL,
-           INTERVAL_OFFSET_VALUE   NUMBER(14)   NOT NULL,
+           INTERVAL_OFFSET_VALUE   NUMBER(10)   NOT NULL,
            DESCRIPTION             VARCHAR2(80)
        )
            PCTFREE 10
@@ -6686,9 +6686,9 @@ def main() :
     -- ##
     CREATE TABLE @TABLE
        (
-           INTERVAL_CODE  NUMBER(14)   NOT NULL,
+           INTERVAL_CODE  NUMBER(10)   NOT NULL,
            INTERVAL_ID    VARCHAR2(16) NOT NULL,
-           INTERVAL       NUMBER(14)   NOT NULL,
+           INTERVAL       NUMBER(10)   NOT NULL,
            DESCRIPTION    VARCHAR2(80)
        )
            PCTFREE 10
@@ -6730,9 +6730,9 @@ def main() :
     -- ##
     CREATE TABLE @TABLE
        (
-           DURATION_CODE NUMBER(14)   NOT NULL,
+           DURATION_CODE NUMBER(10)   NOT NULL,
            DURATION_ID   VARCHAR2(16) NOT NULL,
-           DURATION      NUMBER(14)   NOT NULL,
+           DURATION      NUMBER(10)   NOT NULL,
            DESCRIPTION   VARCHAR2(80)
        )
            PCTFREE 10
@@ -6816,7 +6816,7 @@ def main() :
     -- ##
     CREATE TABLE @TABLE
        (
-           ABSTRACT_PARAM_CODE NUMBER(14)         NOT NULL,
+           ABSTRACT_PARAM_CODE NUMBER(10)         NOT NULL,
            ABSTRACT_PARAM_ID   VARCHAR2(32 BYTE)  NOT NULL
        )
            PCTFREE 10
@@ -6891,9 +6891,9 @@ def main() :
     -- ##
     CREATE TABLE @TABLE
        (
-           UNIT_CODE           NUMBER(14)         NOT NULL,
+           UNIT_CODE           NUMBER(10)         NOT NULL,
            UNIT_ID             VARCHAR2(16 BYTE)  NOT NULL,
-           ABSTRACT_PARAM_CODE NUMBER(14)         NOT NULL,
+           ABSTRACT_PARAM_CODE NUMBER(10)         NOT NULL,
            UNIT_SYSTEM         VARCHAR2(2 BYTE),
            LONG_NAME           VARCHAR2(80 BYTE),
            DESCRIPTION         VARCHAR2(80 BYTE)
@@ -6970,7 +6970,7 @@ def main() :
     -- ##
     CREATE TABLE @TABLE
        (
-           UNIT_CODE      NUMBER(14) NOT NULL
+           UNIT_CODE      NUMBER(10) NOT NULL
        )
            PCTFREE 10
            PCTUSED 40
@@ -7020,7 +7020,7 @@ def main() :
     -- ##
     CREATE TABLE @TABLE
       (
-           PARAMETER_TYPE_CODE  NUMBER(14)   NOT NULL,
+           PARAMETER_TYPE_CODE  NUMBER(10)   NOT NULL,
            PARAMETER_TYPE_ID    VARCHAR2(16) NOT NULL,
            DESCRIPTION          VARCHAR2(80) NULL
       )
@@ -7099,12 +7099,12 @@ def main() :
     -- ##
     CREATE TABLE @TABLE
        (
-           BASE_PARAMETER_CODE      NUMBER(14)         NOT NULL,
+           BASE_PARAMETER_CODE      NUMBER(10)         NOT NULL,
            BASE_PARAMETER_ID        VARCHAR2(16 BYTE)  NOT NULL,
-           ABSTRACT_PARAM_CODE      NUMBER(14)         NOT NULL,
-           UNIT_CODE                NUMBER(14)         NOT NULL,
-           DISPLAY_UNIT_CODE_SI     NUMBER(14)         NOT NULL,
-           DISPLAY_UNIT_CODE_EN     NUMBER(14)         NOT NULL,
+           ABSTRACT_PARAM_CODE      NUMBER(10)         NOT NULL,
+           UNIT_CODE                NUMBER(10)         NOT NULL,
+           DISPLAY_UNIT_CODE_SI     NUMBER(10)         NOT NULL,
+           DISPLAY_UNIT_CODE_EN     NUMBER(10)         NOT NULL,
            LONG_NAME                VARCHAR2(80 BYTE),
            DESCRIPTION              VARCHAR2(160 BYTE)
        )
@@ -7477,7 +7477,7 @@ def main() :
     -- ##
     CREATE TABLE @TABLE
        (
-           RATING_METHOD_CODE NUMBER(14),
+           RATING_METHOD_CODE NUMBER(10),
            RATING_METHOD_ID   VARCHAR2(32),
            DESCRIPTION        VARCHAR2(256),
            CONSTRAINT @TABLE_PK PRIMARY KEY(RATING_METHOD_CODE)
@@ -7527,9 +7527,9 @@ def main() :
     -- ##
     CREATE TABLE @TABLE
       (
-           DSS_PARAMETER_TYPE_CODE NUMBER(14)   NOT NULL,
+           DSS_PARAMETER_TYPE_CODE NUMBER(10)   NOT NULL,
            DSS_PARAMETER_TYPE_ID   VARCHAR2(8)  NOT NULL,
-           PARAMETER_TYPE_CODE     NUMBER(14)   NOT NULL,
+           PARAMETER_TYPE_CODE     NUMBER(10)   NOT NULL,
            DESCRIPTION             VARCHAR2(40) NULL
       )
            PCTFREE 10
@@ -7694,9 +7694,9 @@ def main() :
     (
       FROM_UNIT_ID        VARCHAR2(16 BYTE)       NOT NULL,
       TO_UNIT_ID          VARCHAR2(16 BYTE)       NOT NULL,
-      ABSTRACT_PARAM_CODE NUMBER(14)              NOT NULL,
-      FROM_UNIT_CODE      NUMBER(14)              NOT NULL,
-      TO_UNIT_CODE        NUMBER(14)              NOT NULL,
+      ABSTRACT_PARAM_CODE NUMBER(10)              NOT NULL,
+      FROM_UNIT_CODE      NUMBER(10)              NOT NULL,
+      TO_UNIT_CODE        NUMBER(10)              NOT NULL,
       FACTOR              BINARY_DOUBLE,
       OFFSET              BINARY_DOUBLE,
       FUNCTION            VARCHAR2(64),
@@ -7929,7 +7929,7 @@ def main() :
     -- ##
     CREATE TABLE @TABLE
        (
-           TIME_ZONE_CODE NUMBER(14)             NOT NULL,
+           TIME_ZONE_CODE NUMBER(10)             NOT NULL,
            TIME_ZONE_NAME VARCHAR2(28)           NOT NULL,
            UTC_OFFSET    INTERVAL DAY TO SECOND NOT NULL,
            DST_OFFSET    INTERVAL DAY TO SECOND NOT NULL
@@ -8056,7 +8056,7 @@ def main() :
     -- ##
     CREATE TABLE @TABLE
        (
-           TZ_USAGE_CODE NUMBER(14)   NOT NULL,
+           TZ_USAGE_CODE NUMBER(10)   NOT NULL,
            TZ_USAGE_ID   VARCHAR2(8)  NOT NULL,
            DESCRIPTION   VARCHAR2(80)
        )
@@ -8495,7 +8495,7 @@ def main() :
     -- ##
     CREATE TABLE @TABLE
        (
-           QUALITY_CODE   NUMBER(14)    NOT NULL,
+           QUALITY_CODE   NUMBER(10)    NOT NULL,
            SCREENED_ID    VARCHAR2(16)  NOT NULL,
            VALIDITY_ID    VARCHAR2(16)  NOT NULL,
            RANGE_ID       VARCHAR2(16)  NOT NULL,
@@ -8873,7 +8873,7 @@ def main() :
     -- ##
     CREATE TABLE @TABLE
     (
-       METHOD_CODE NUMBER(14)    NOT NULL,
+       METHOD_CODE NUMBER(10)    NOT NULL,
        METHOD_ID   VARCHAR2(32)  NOT NULL,
        DESCRIPTION VARCHAR2(256)
     )
@@ -8928,11 +8928,11 @@ def main() :
     -- ##
     CREATE TABLE @TABLE
     (
-       GAGE_TYPE_CODE      NUMBER(14)    NOT NULL,
+       GAGE_TYPE_CODE      NUMBER(10)    NOT NULL,
        GAGE_TYPE_ID        VARCHAR2(32)  NOT NULL,
        MANUALLY_READ       VARCHAR2(1)   NOT NULL,
-       INQUIRY_METHOD      NUMBER(14),
-       TRANSMIT_METHOD     NUMBER(14),
+       INQUIRY_METHOD      NUMBER(10),
+       TRANSMIT_METHOD     NUMBER(10),
        DESCRIPTION         VARCHAR2(256)
     )
     tablespace @DATASPACE
@@ -9144,8 +9144,8 @@ def main() :
     -- ## @TABLE
     -- ##
     CREATE TABLE @TABLE (
-       DATASET_CODE NUMBER(14)    NOT NULL,
-       OFFICE_CODE  NUMBER(14)    NOT NULL,
+       DATASET_CODE NUMBER(10)    NOT NULL,
+       OFFICE_CODE  NUMBER(10)    NOT NULL,
        DATASET_ID   VARCHAR2(32)  NOT NULL,
        MIN_LAT      BINARY_DOUBLE NOT NULL,
        MAX_LAT      BINARY_DOUBLE NOT NULL,
@@ -9201,7 +9201,7 @@ def main() :
     -- ## @TABLE
     -- ##
     CREATE TABLE @TABLE (
-       DATASET_CODE NUMBER(14),
+       DATASET_CODE NUMBER(10),
        TABLE_ROW    INTEGER,
        TABLE_COL    INTEGER,
        TABLE_VAL    BINARY_DOUBLE
@@ -9303,8 +9303,8 @@ def main() :
     -- ##
     create table @TABLE
     (
-      location_kind_code    number(14)         not null,
-      parent_location_kind  number(14),
+      location_kind_code    number(10)         not null,
+      parent_location_kind  number(10),
       location_kind_id      varchar2(32 byte)  not null,
       representative_point  varchar2(32 byte)  not null,
       description           varchar2(256 byte)
@@ -9570,9 +9570,9 @@ def main() :
     -- ## @TABLE
     -- ##
     create table @TABLE (
-       entity_code number(14),
-       parent_code number(14),
-       office_code number(14)    not null,
+       entity_code number(10),
+       parent_code number(10),
+       office_code number(10)    not null,
        category_id varchar2(3),
        entity_id   varchar2(32)  not null,
        entity_name varchar2(128) not null,
@@ -9788,9 +9788,9 @@ def main() :
     -- ## @TABLE
     -- ##
     create table @TABLE (
-       configuration_code number(14),
-       parent_code        number(14),
-       office_code        number(14)    not null,
+       configuration_code number(10),
+       parent_code        number(10),
+       office_code        number(10)    not null,
        category_id        varchar2(16),
        configuration_id   varchar2(32)  not null,
        configuration_name varchar2(128) not null,
@@ -9842,7 +9842,7 @@ def main() :
     gateTypeCreationTemplate = \
     '''
     create table @TABLE (
-       gate_type_code number(14),
+       gate_type_code number(10),
        gate_type_id   varchar2(32) not null,
        description    varchar2(128),
        constraint @TABLE_pk  primary key (gate_type_code) using index,

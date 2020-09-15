@@ -480,7 +480,7 @@ function log_message_server_message(
  *          <tr>
  *            <td class="descr-center">2</td>
  *            <td class="descr">office_code</td>
- *            <td class="descr">number(14,0)</td>
+ *            <td class="descr">number(10,0)</td>
  *            <td class="descr">Office code of the logging office</td>
  *          </tr>
  *          <tr>
@@ -1046,7 +1046,7 @@ procedure retrieve_log_messages(
  *          <tr>
  *            <td class="descr-center">2</td>
  *            <td class="descr">office_code</td>
- *            <td class="descr">number(14,0)</td>
+ *            <td class="descr">number(10,0)</td>
  *            <td class="descr">Office code of the logging office</td>
  *          </tr>
  *          <tr>
@@ -1508,7 +1508,7 @@ procedure update_queue_subscriber(
    p_fail_on_wrong_host    in varchar2 default 'T',
    p_office_id             in varchar2 default null);   
 -- not documented   
-function get_call_stack return str_tab_tab_t;   
+function get_call_stack return str_tab_tab_t;
 /**
  * Creates or rebuilds the AV_QUEUE_MESSAGES view, (re)assigns then CWMS_V_QUEUE_MESSAGES public synonym, and store current view documentation for API docs.
  */

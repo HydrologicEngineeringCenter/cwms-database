@@ -236,7 +236,7 @@ as
       end if;
       if p_comparison_unit is not null then
          declare
-            l_code number(14);
+            l_code number(10);
          begin
             select unit_code
               into l_code
@@ -252,7 +252,7 @@ as
       end if;
       if p_rate_comparison_unit is not null then
          declare
-            l_code number(14);
+            l_code number(10);
          begin
             select unit_code
               into l_code

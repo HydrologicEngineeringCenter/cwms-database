@@ -55,7 +55,7 @@ as
       p_create_if_necessary in varchar2 default 'F')
    return number
    is
-      l_location_code number(14);
+      l_location_code number(10);
    begin
       if cwms_util.is_true(p_create_if_necessary) then
          declare
@@ -98,7 +98,7 @@ as
    member function get_office_code
    return number
    is
-      l_office_code number(14);
+      l_office_code number(10);
    begin
       select office_code
         into l_office_code
