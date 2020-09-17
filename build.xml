@@ -173,7 +173,12 @@
             <redirector inputstring="set serveroutput on&#10;@tests.sql;"/>
         </exec>
         <echo message="    Running tests" />
-        <exec executable="sqlplus">
+        <exec executable="utplsql">
+            <arg value="run"/>
+            <arg value="-f"/><arg value="UT_COVERAGE_HTML_REPORTER"/><arg value="-o"/><arg value="build/coverage.html" />
+            <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="build/coverage.xml" />
+            <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests.xml" />
+            <arg value="-d"/>
 			<arg value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance}" />
             <redirector inputstring="set serverout on&#10; exec ut.run();"/>
         </exec>
