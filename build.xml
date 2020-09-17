@@ -164,7 +164,18 @@
 			<arg value="@install_headless_with_trigger.sql" />
 		</exec>
 		<echo message="    Runnings tests"/>
-
+        <exec executable="sqlplus">
+			<arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba" />
+            <redirector inputstring="GRANT INHERIT PRIVILEGES ON USER sys TO ut3;"/>
+        </exec>
+        <exec dir="src/test" executable="sqlplus">
+			<arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba" />
+            <redirector inputstring="@tests.sql;"/>
+        </exec>
+        <exec executable="sqlplus">
+			<arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba" />
+            <redirector inputstring="exec ut.run('test_aaa');"/>
+        </exec>
 		<echo message="    Removing test framework"/>
 		<exec dir="build/deps/utPLSQL/source" executable="sqlplus">
 			<arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba" />
