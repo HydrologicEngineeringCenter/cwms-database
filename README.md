@@ -36,6 +36,39 @@ In the future we will enforce coding style standards and test coverage.
 
 If you do not have write access you may be able to fork it in bitbucket and submit a PR from the fork. If that doesn't work contact one of the Reviewers for access.
 
+
+## build and testing
+
+### build
+
+copy the wcdba_overrides.xml or teamcity_overrides.xml to build/localoverrides.xml and alter the settings internally to match the test database you have either setup or had provided.
+
+to build the database run the following:
+
+   ant -Dbuilduser.overrides=build/local_overrides.xml clean build
+
+*clean* will remove any existing schemas with the CWMS_20 name.
+
+*build* will initialize the database.
+
+
+### test
+
+You must have utplsql from github.com/utPLSQL/utPLSQL-cli on your path. 
+If you get the error that the oci version doesn't match while trying to run the tests remove all of the oracle jar from the utPLSQL-cli installation path *lib* directory and copy the ojdbc8.jar from your instantclient folder. (This issue has previously been reported to the utPLSQL team and should eventually be fixed.)
+
+to run the tests 
+
+   ant -Dbuilduser.overrides=build/local_overrides.xml test
+
+The test framework will be installed and the tests will be run. The following files will be created:
+
+- build/tests.log Information about how the test framework installation ran
+- build/tests.xml Junit xml format for various reporting tools
+- build/coverage.html Code coverage in a pretty HTML format.
+- build/coverage.xml Code coverage in a format that TeamCity and others can pick up. the Cobertura format.
+
+
 ## Reviewers
 
 Mike Neilson
