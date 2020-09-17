@@ -33,4 +33,5 @@ src/qualityLoader.log
 src/radar_xslt_clobs.log
 **/*.pyc
 src/vertcon_clobs.log
+build
 
