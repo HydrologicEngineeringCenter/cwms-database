@@ -1,5 +1,6 @@
 create or replace package test_aaa as
     -- %suite(CWMS Authentication and Authorization functions )
+
     -- %test(Simple login of CAC user works)
     procedure simple_login_works;
 end;
