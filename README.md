@@ -43,6 +43,8 @@ If you do not have write access you may be able to fork it in bitbucket and subm
 
 copy the wcdba_overrides.xml or teamcity_overrides.xml to build/localoverrides.xml and alter the settings internally to match the test database you have either setup or had provided.
 
+It it assumed that apex (20.1 at time of read) and previusly been installed in the database; failure to be this condition will cause the build to fail.
+
 to build the database run the following:
 
    ant -Dbuilduser.overrides=build/local_overrides.xml clean build
@@ -66,7 +68,14 @@ The test framework will be installed and the tests will be run. The following fi
 - build/tests.log Information about how the test framework installation ran
 - build/tests.xml Junit xml format for various reporting tools
 - build/coverage.html Code coverage in a pretty HTML format.
-- build/coverage.xml Code coverage in a format that TeamCity and others can pick up. the Cobertura format.
+- build/coverage.xml Code coverage in a format that TeamCity and others can pick up. It is the Cobertura format.
+
+### Modifying the build
+
+For simple modifications provide a pull request with the build code modified as normal.
+
+If you want to create a new build configuration you will first need to submit a pull request with the code with the build steps commented out but otherwise generating the new configuration. 
+Once everyone agrees on this new step we will merge it into master, which will cause teamcity to generate and link the new configuration, and you will need to continue further on a new branch so that TeamCity can actually run the steps. This is a current limitation of TeamCity. 
 
 
 ## Reviewers
