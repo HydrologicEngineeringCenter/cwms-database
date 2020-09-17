@@ -145,9 +145,32 @@
 	<target name="test">
 		<echo message="running tests." />
 		<echo message="   Installing test framework into database" />
-		<exec dir="${UTPLSQL_SRC}/source" executable="sqlplus" >
+		<if>
+			<available file="build/deps/utPLSQL.zip"/>
+				<then>
+					<echo message="already have utPLSQL.zip"/>
+				</then>
+				<else>
+					<get dest="build/deps">
+						<url url="https://github.com/utPLSQL/utPLSQL/releases/download/v3.1.10/utPLSQL.zip"/>
+					</get>
+				</else>
+		</if>
+		<exec dir="build/deps" executable="unzip">
+			<arg value="utPLSQL.zip"/>
+		</exec>
+		<exec dir="build/deps/utPLSQL/source" executable="sqlplus" >
 			<arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba" />
 			<arg value="@install_headless_with_trigger.sql" />
+		</exec>
+		<echo message="    Runnings tests"/>
+
+		<echo message="    Removing test framework"/>
+		<exec dir="build/deps/utPLSQL/source" executable="sqlplus">
+			<arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba" />
+			<redirector inputstring="drop user ut3 cascade;">
+				
+			</redirector>
 		</exec>
 
 	</target>
