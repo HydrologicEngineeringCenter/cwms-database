@@ -139,8 +139,19 @@
 			</else>
 		</if>
 
-    </target>
-	
+	</target>
+		
+
+	<target name="test">
+		<echo message="running tests." />
+		<echo message="   Installing test framework into database" />
+		<exec dir="${UTPLSQL_SRC}/source" executable="sqlplus" >
+			<arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba" />
+			<arg value="@install_headless_with_trigger.sql" />
+		</exec>
+
+	</target>
+
 	<target name="tail-test">
 		<concat>
 			<filelist dir="${root}" files="auto-build-output.txt"/>
