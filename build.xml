@@ -172,7 +172,8 @@
 		<echo message="    loading test code" />
         <exec dir="src/test" executable="sqlplus">
 			<arg value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance}" />
-            <redirector inputstring="set serveroutput on&#10;@tests.sql;"/>
+            <arg value="@tests.sql"/>
+			<arg value="${office.primary.id}"/>
         </exec>		
 	</target>
 

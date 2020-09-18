@@ -14,10 +14,10 @@ create or replace package body test_aaa as
 
     procedure setup_users is
     begin
-        cwms_sec.create_user('basic_user','bu_pw', char_32_array_type('CWMS Users'), 'SPK');
+        cwms_sec.create_user('basic_user','bu_pw', char_32_array_type('CWMS Users'), '&office_id');
         cwms_sec.update_edipi('basic_user',1000000000);
 
-        cwms_sec.create_user('user_admin','us_pw', char_32_array_type('CWMS Users', 'CWMS User Admins'), 'SPK');
+        cwms_sec.create_user('user_admin','us_pw', char_32_array_type('CWMS Users', 'CWMS User Admins'), '&office_id');
         cwms_sec.update_edipi('user_admin',2000000000);
     end;
 
