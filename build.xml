@@ -50,29 +50,16 @@
 
 	<!-- flags to force the kill script to ignore errors. -->
 	<property name="autokill.force" value="-force"/>
-	
-	<!-- Perforce properties -->
-	<!-- Fail perforce operations on error -->
-	<property name="perforce.failOnError" value="true"/>
-	<!-- If the perforce.disabled property is defined to anything perforce
-		 operations will not occur. To enable perforce comment out the 
-		 'perforce.disabled' property. To disable, remove the comments.
-	-->
-	<!-- property name="perforce.disabled" value="true"/ -->
-	<!-- The perforce depot name for this project -->
-	<property name="perforce.depot" value="//wcdba/dev/oracle/dev/..."/>
+		
 
 	<!-- Initialize the project for building. -->
 	<target name="init">
 		<!-- Create the time stamp -->
 		<tstamp/>
+		<!-- TODO: consider pulling this from TeamCity -->
 		<property name="wcdba.build" value="WCDBA:Build:${DSTAMP}:${TSTAMP}"/>
-		<condition property="perforce.enabled">
-			<not>
-				<isset property="perforce.disabled"/>
-			</not>
-		</condition>
-		<echo message="perforce.enabled = ${perforce.enabled}"/>
+		
+		
 		<mkdir dir="${build.dir}/deps"/> <!-- create the directory for output -->
 	</target>
 	
