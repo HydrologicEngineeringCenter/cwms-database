@@ -150,6 +150,11 @@ object Build : BuildType({
             antArguments = "-Dbuilduser.overrides=output/overrides.xml"
             dockerImage = "cwms_db_dev:latest"
         }
+        ant {
+            targets = "test"
+            antArguments = "-Dbuilduser.overrides=output/overrides.xml"
+            dockerImage ="cwms_db_dev:latest"
+        }
         script {
             name = "Create Basic Users"
             scriptContent = """
