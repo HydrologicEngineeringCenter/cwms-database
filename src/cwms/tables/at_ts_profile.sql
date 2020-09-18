@@ -1,7 +1,7 @@
 create table at_ts_profile(
-   location_code        number(10,0) not null,
-   key_parameter_code   number(10,0) not null,
-   reference_ts_code    number(10,0),
+   location_code        number(14,0) not null,
+   key_parameter_code   number(14,0) not null,
+   reference_ts_code    number(14,0),
    description          varchar2(256),
    constraint at_ts_profile_pk  primary key (location_code, key_parameter_code) using index,
    constraint at_ts_profile_fk1 foreign key (location_code) references at_physical_location (location_code),
