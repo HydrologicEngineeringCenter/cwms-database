@@ -1,7 +1,12 @@
-<project name="wcdba-oracle-v2.1" default="all">
+<project name="cwms_database_schema" default="all">
 	<description>
 		"Build file for the oracle side of the WCDBA project."
 	</description>
+
+	<property name="version.major" value="18"/>
+	<property name="version.minor" value="1" />
+	<property name="version.patch" value="SNAPSHOT"/>
+	<property name="version" value="${version.major}.${version.minor}.${version.patch}"/>
 
 	<!-- read in the environment for use in properties -->
 	<property environment="env"/>
