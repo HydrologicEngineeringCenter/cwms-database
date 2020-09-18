@@ -47,7 +47,7 @@ object Build : BuildType({
         output/build-sql-script-error.txt => buildinfo/
         output/overrides.xml => buildinfo/
         src/buildCWMS_DB.log => buildinfo/
-        build/coverage.zip => coverage.zip
+        build/coverage.zip => /
     """.trimIndent()
 
     params {
