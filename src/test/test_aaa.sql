@@ -1,5 +1,6 @@
 create or replace package test_aaa as
     -- %suite(CWMS Authentication and Authorization functions )
+    --%rollback(manual)
 
     -- %test(Simple login of CAC user works)
     procedure simple_login_works;
@@ -9,13 +10,14 @@ create or replace package test_aaa as
 
     -- %test(Duplicate EDIPI provides useful message)
     -- %throws(-20255)
+    -- %aftertest(test_aaa.remove_duplicate_user)
     procedure duplicate_edipi_provides_useful_message;
 
     -- %beforeall
     procedure setup_users;
 
 
-    --%aftertest(test_aaa.duplicate_edipi_provides_useful_message)
+    
     procedure remove_duplicate_user;
 end;
 /
