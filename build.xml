@@ -17,6 +17,7 @@
 	<property name="lib"  location="${root}/lib"/>
 	<property name="test"  location="${root}/test"/>
 	<property name="build.dir" location="${root}/build"/>
+	<property name="coverage.dir" location="${build.dir}/coverage"/>
 
 	<!-- Load in the ant-contrib jar to use the foreach external task -->	
 	<taskdef resource="net/sf/antcontrib/antcontrib.properties">
@@ -61,7 +62,10 @@
 		
 		
 		<mkdir dir="${build.dir}/deps"/> <!-- create the directory for output -->
+		<mkdir dir="${coverage.dir}"/>
 	</target>
+
+
 	
 	<!-- Executes python scripts to build the CWMS schema. -->
 	<target name="build" description="Executes python scripts to build the CWMS schema" depends="init">		
@@ -169,8 +173,11 @@
 	</target>
 
 	<target name="test" depends="setup-tests,tests-install" description="run all tests." >		
-		<antcall target="test-as_pd_user"/>
+		<antcall target="test-as_pd_user"/>		
 		<!-- we will then merge all of the test output and code coverage-->
+
+		<!-- create coverage zip for TeamCity-->
+		<zip destfile="${build.dir}/coverage.zip" basedir="${coverage.dir}" includes="**"/>
 	</target>
 
 
@@ -185,8 +192,8 @@
         <exec executable="utplsql" resultproperty="utreturn">
             <arg value="run"/>
 			<arg value="-p=cwms_20"/>		
-            <arg value="-f"/><arg value="UT_COVERAGE_HTML_REPORTER"/><arg value="-o"/><arg value="build/coverage.html" />
-            <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="build/coverage.xml" />
+            <arg value="-f"/><arg value="UT_COVERAGE_HTML_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/index.html" />
+            <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/coverage.xml" />
             <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests.xml" />
 			<arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
             <arg value="-d"/>
