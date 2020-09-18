@@ -2861,6 +2861,12 @@ AS
 
 
             COMMIT;
+         ELSIF (L_COUNT > 1)
+         THEN
+            raise_application_error (
+                -20255,
+                'The edipi ' || p_edipi || ' is defined for more than one user, you must delete one of the user accounts.',
+                TRUE);
          END IF;
       END;
    END get_user_credentials;

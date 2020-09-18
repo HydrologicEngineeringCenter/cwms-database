@@ -7,6 +7,10 @@ create or replace package test_aaa as
     -- %test(Login with no EDIPI fails)
     procedure login_without_edipi_fails;
 
+    -- %test(Duplicate EDIPI provides useful message)
+    -- %throws(-20255)
+    procedure duplicate_edipi_provides_useful_message;
+
     procedure setup_users;
 end;
 /
@@ -49,6 +53,17 @@ create or replace package body test_aaa as
 
         ut.expect( username ).to_be_null();
         ut.expect( session_key ).to_be_null();
+    end;
+
+    procedure duplicate_edipi_provides_useful_message is
+        username varchar2(400);
+        session_key varchar2(400);
+    begin
+        setup_users;
+        cwms_sec.create_user('basic_user2','bu_pw', char_32_array_type('CWMS Users'), '&office_id');
+        cwms_sec.update_edipi('basic_user2',1000000000);
+
+        cwms_sec.get_user_credentials(1000000000,username,session_key);
     end;
 
 end;
