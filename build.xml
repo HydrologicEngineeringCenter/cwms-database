@@ -162,6 +162,10 @@
             <arg value="@tests.sql"/>
 			<arg value="${office.primary.id}"/>
         </exec>		
+		<exec dir="src/test" executable="sqlplus">
+			<arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba"/>
+			<arg value="@test_grants.sql"/>
+		</exec>
 	</target>
 
 	<target name="test" depends="setup-tests,tests-install" description="run all tests." >		
