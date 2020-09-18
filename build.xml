@@ -151,12 +151,12 @@
         </get>
         <unzip src="build/deps/utPLSQL.zip" dest="build/deps/" />
 		<echo message="   Installing test framework into database" />
-		<exec dir="build/deps/utPLSQL/source" executable="sqlplus" output="build/tests.log" append="true">
+		<exec dir="build/deps/utPLSQL/source" executable="sqlplus" output="${build.dir}/tests.log" append="true">
 			<arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba" />
 			<arg value="@install_headless_with_trigger.sql" />
 		</exec>
 		<echo message="     Tweaking privileges for UT3 user"/>
-        <exec executable="sqlplus" output="build/tests.log" append="true">
+        <exec executable="sqlplus" output="${build.dir}/tests.log" append="true">
 			<arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba" />
             <redirector inputstring="GRANT INHERIT PRIVILEGES ON USER sys TO ut3;"/>
         </exec>
