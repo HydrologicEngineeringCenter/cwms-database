@@ -11,7 +11,12 @@ create or replace package test_aaa as
     -- %throws(-20255)
     procedure duplicate_edipi_provides_useful_message;
 
+    -- %beforeall
     procedure setup_users;
+
+
+    --%aftertest(test_aaa.duplicate_edipi_provides_useful_message)
+    procedure remove_duplicate_user;
 end;
 /
 
@@ -29,13 +34,17 @@ create or replace package body test_aaa as
         cwms_sec.create_user('No_EDIPI', 'noe_pw', char_32_array_type('CWMS Users'),'&office_id');
     end;
 
-
+   
+    procedure remove_duplicate_user is
+    begin  
+        -- At present only the schema user can delete user accounts, so we'll just tweek the EDIPI install
+        cwms_sec.update_edipi('basic_user2',1000100001);
+    end;
 
     procedure simple_login_works is    
         username varchar2(400);
         session_key varchar2(400);
-    begin
-        setup_users;
+    begin        
 
         cwms_sec.get_user_credentials(1000000000,username,session_key);
 
@@ -46,8 +55,7 @@ create or replace package body test_aaa as
     procedure login_without_edipi_fails is
         username varchar2(400);
         session_key varchar2(400);
-    begin
-        setup_users;
+    begin        
 
         cwms_sec.get_user_credentials(1000000001,username,session_key);
 
@@ -58,8 +66,7 @@ create or replace package body test_aaa as
     procedure duplicate_edipi_provides_useful_message is
         username varchar2(400);
         session_key varchar2(400);
-    begin
-        setup_users;
+    begin        
         cwms_sec.create_user('basic_user2','bu_pw', char_32_array_type('CWMS Users'), '&office_id');
         cwms_sec.update_edipi('basic_user2',1000000000);
 
