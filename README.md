@@ -87,6 +87,7 @@ There will be a running update script in master that will be update_<last releas
 1. We intend to setup in testing automated updates.
   a. This will involve running all tests again so it will wait for some of the build server expansion; but keep it in mind.
 
+When a release is determined to be made we'll decide on the number we'll create a long running release branch and update the relevant portions of the scripts to match. At that point the only code changes that should be made to that branch are "hot fixes." The working named update script should be immediately merged into master leaving the branch active (bit bucket is set to prevent all release/ branches from being delete so if you forget to uncheck the delete branch button the interface will stop you.)
 
 
 ## Reviewers
