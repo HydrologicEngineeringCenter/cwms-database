@@ -1,6 +1,6 @@
 create table at_ts_profile_instance(
-   location_code        number(10,0) not null,
-   key_parameter_code   number(10,0) not null,
+   location_code        number(14,0) not null,
+   key_parameter_code   number(14,0) not null,
    version_id           varchar2(32) not null,
    first_date_time      date not null,
    last_date_time       date not null,

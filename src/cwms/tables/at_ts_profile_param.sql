@@ -1,8 +1,8 @@
 create table at_ts_profile_param(
-   location_code        number(10,0) not null,
-   key_parameter_code   number(10,0) not null,
+   location_code        number(14,0) not null,
+   key_parameter_code   number(14,0) not null,
    position             number(3,0)  not null,
-   parameter_code       number(10,0) not null,
+   parameter_code       number(14,0) not null,
    constraint at_ts_profile_param_pk  primary key (location_code, key_parameter_code, position),
    constraint at_ts_profile_param_fk1 foreign key (location_code, key_parameter_code) references at_ts_profile (location_code, key_parameter_code),
    constraint at_ts_profile_param_fk2 foreign key (parameter_code) references at_parameter (parameter_code)

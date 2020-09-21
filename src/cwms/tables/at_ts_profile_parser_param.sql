@@ -1,8 +1,8 @@
 create table at_ts_profile_parser_param(
-   location_code       number(10,0) not null,
-   key_parameter_code  number(10,0) not null,
-   parameter_code      number(10,0) not null,
-   parameter_unit      number(10,0) not null,
+   location_code       number(14,0) not null,
+   key_parameter_code  number(14,0) not null,
+   parameter_code      number(14,0) not null,
+   parameter_unit      number(14,0) not null,
    parameter_field     number(3,0),
    parameter_col_start number(3,0),
    parameter_col_end   number(3,0),
