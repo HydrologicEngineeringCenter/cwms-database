@@ -78,6 +78,17 @@ If you want to create a new build configuration you will first need to submit a 
 Once everyone agrees on this new step we will merge it into master, which will cause teamcity to generate and link the new configuration, and you will need to continue further on a new branch so that TeamCity can actually run the steps. This is a current limitation of TeamCity. 
 
 
+### Update scripts and Releases
+
+There will be a running update script in master that will be update_<last release>_current. If you make any changes include those updates within this script.
+
+1. This will help simplify the release process for whoever decides the release.
+1. It will put the part of the burden of verifying a feature made it to user on the original developer.
+1. We intend to setup in testing automated updates.
+  a. This will involve running all tests again so it will wait for some of the build server expansion; but keep it in mind.
+
+
+
 ## Reviewers
 
 Mike Neilson
