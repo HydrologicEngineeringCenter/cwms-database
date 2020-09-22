@@ -4,6 +4,7 @@ auto-kill-error.txt
 auto-kill-output.txt
 build-sql-script-error.txt
 build-sql-script-output.txt
+local_wcdba_overrides.xml
 src/CWMS_AGG_DISTRICT_DATA_TABLE.log
 src/CWMS_CITIES_SP_DATA_TABLE.log
 src/CWMS_COUNTY_SP_DATA_TABLE.log
@@ -33,4 +34,4 @@ src/qualityLoader.log
 src/radar_xslt_clobs.log
 **/*.pyc
 src/vertcon_clobs.log
-
+src/updateScripts/*.log
