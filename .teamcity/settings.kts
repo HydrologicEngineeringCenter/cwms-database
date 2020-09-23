@@ -75,7 +75,7 @@ object Build : BuildType({
                 if [[ ${'$'}CWMS_PDB =~ ^[0-9]+${'$'} ]]; then
                 	echo "prefixing pull request number with text."
                     export CWMS_PDB="PULLREQUEST_${'$'}{CWMS_PDB}"
-                elif [[ ${'$}CWMS_PDB =~ ^[0-9] ]]; then
+                elif [[ ${'$'}CWMS_PDB =~ ^[0-9] ]]; then
                     # while not a pull request, it still needs an alpha prefix.
                     echo "prefixing with letter"
                     export CWMS_PDB="z_${'$'}{CWMS_PDB}"
