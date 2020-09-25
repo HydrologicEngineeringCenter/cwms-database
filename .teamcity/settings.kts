@@ -75,7 +75,11 @@ object Build : BuildType({
                 export CWMS_PDB=`echo %teamcity.build.branch% | sed -e "s@/refs/heads/@@g" | sed "s@/@_@g" | sed "s@\.@_@g"`
                 if [[ ${'$'}CWMS_PDB =~ ^[0-9]+${'$'} ]]; then
                 	echo "prefixing pull request number with text."
-                	export CWMS_PDB="PULLREQUEST_${'$'}{CWMS_PDB}"
+                    export CWMS_PDB="PULLREQUEST_${'$'}{CWMS_PDB}"
+                elif [[ ${'$'}CWMS_PDB =~ ^[0-9] ]]; then
+                    # while not a pull request, it still needs an alpha prefix.
+                    echo "prefixing with letter"
+                    export CWMS_PDB="z_${'$'}{CWMS_PDB}"
                 fi
                 cat <<EOF
                 ##teamcity[setParameter name='env.CWMS_PDB' value='${'$'}CWMS_PDB']
