@@ -35,3 +35,5 @@ src/radar_xslt_clobs.log
 **/*.pyc
 src/vertcon_clobs.log
 src/updateScripts/*.log
+build
+.teamcity/target

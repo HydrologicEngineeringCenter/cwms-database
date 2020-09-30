@@ -1,7 +1,12 @@
-<project name="wcdba-oracle-v2.1" default="all">
+<project name="cwms_database_schema" default="all">
 	<description>
 		"Build file for the oracle side of the WCDBA project."
 	</description>
+
+	<property name="version.major" value="18"/>
+	<property name="version.minor" value="1" />
+	<property name="version.patch" value="SNAPSHOT"/>
+	<property name="version" value="${version.major}.${version.minor}.${version.patch}"/>
 
 	<!-- read in the environment for use in properties -->
 	<property environment="env"/>
@@ -11,6 +16,8 @@
 	<property name="src" location="${root}/src"/>
 	<property name="lib"  location="${root}/lib"/>
 	<property name="test"  location="${root}/test"/>
+	<property name="build.dir" location="${root}/build"/>
+	<property name="coverage.dir" location="${build.dir}/coverage"/>
 
 	<!-- Load in the ant-contrib jar to use the foreach external task -->	
 	<taskdef resource="net/sf/antcontrib/antcontrib.properties">
@@ -44,33 +51,24 @@
 
 	<!-- flags to force the kill script to ignore errors. -->
 	<property name="autokill.force" value="-force"/>
-	
-	<!-- Perforce properties -->
-	<!-- Fail perforce operations on error -->
-	<property name="perforce.failOnError" value="true"/>
-	<!-- If the perforce.disabled property is defined to anything perforce
-		 operations will not occur. To enable perforce comment out the 
-		 'perforce.disabled' property. To disable, remove the comments.
-	-->
-	<!-- property name="perforce.disabled" value="true"/ -->
-	<!-- The perforce depot name for this project -->
-	<property name="perforce.depot" value="//wcdba/dev/oracle/dev/..."/>
+		
 
 	<!-- Initialize the project for building. -->
 	<target name="init">
 		<!-- Create the time stamp -->
 		<tstamp/>
+		<!-- TODO: consider pulling this from TeamCity -->
 		<property name="wcdba.build" value="WCDBA:Build:${DSTAMP}:${TSTAMP}"/>
-		<condition property="perforce.enabled">
-			<not>
-				<isset property="perforce.disabled"/>
-			</not>
-		</condition>
-		<echo message="perforce.enabled = ${perforce.enabled}"/>
+		
+		
+		<mkdir dir="${build.dir}/deps"/> <!-- create the directory for output -->
+		<mkdir dir="${coverage.dir}"/>
 	</target>
+
+
 	
 	<!-- Executes python scripts to build the CWMS schema. -->
-	<target name="build" description="Executes python scripts to build the CWMS schema">		
+	<target name="build" description="Executes python scripts to build the CWMS schema" depends="init">		
 		
 		<echo message="Build sql scripts..."/>
 		
@@ -139,8 +137,97 @@
 			</else>
 		</if>
 
+	</target>
+		
+
+	<target name="setup-tests" depends="init" description="Install the test framework into the oracle database">
+		<echo message="setting up test framework tests." />
+        <get dest="build/deps">
+            <url url="https://github.com/utPLSQL/utPLSQL/releases/download/v3.1.10/utPLSQL.zip"/>
+        </get>
+        <unzip src="build/deps/utPLSQL.zip" dest="build/deps/" />
+		<echo message="   Installing test framework into database" />
+		<exec dir="build/deps/utPLSQL/source" executable="sqlplus" output="${build.dir}/tests.log" append="true">
+			<arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba" />
+			<arg value="@install_headless_with_trigger.sql" />
+		</exec>
+		<echo message="     Tweaking privileges for UT3 user"/>
+        <exec executable="sqlplus" output="${build.dir}/tests.log" append="true">
+			<arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba" />
+            <redirector inputstring="GRANT INHERIT PRIVILEGES ON USER sys TO ut3;"/>
+        </exec>
+		
+	</target>
+
+	<target name="tests-install" description="Install all of the test code and set the right grants" depends="init">
+		<echo message="    loading test code" />
+        <exec dir="src/test" executable="sqlplus">
+			<arg value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance}" />
+            <arg value="@tests.sql"/>
+			<arg value="${office.primary.id}"/>
+        </exec>		
+		<exec dir="src/test" executable="sqlplus">
+			<arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba"/>
+			<arg value="@test_grants.sql"/>
+		</exec>
+	</target>
+
+	<target name="test" depends="setup-tests,tests-install" description="run all tests." >		
+		<antcall target="test-as_pd_user"/>		
+		<!-- we will then merge all of the test output and code coverage-->
+
+		<!-- create coverage zip for TeamCity-->
+		<zip destfile="${build.dir}/coverage.zip" basedir="${coverage.dir}" includes="**"/>
+	</target>
+
+
+    <target name="test-as_pd_user" description="run tests that require connecting with a PD user">   
+        <if>
+            <available file="build/tests.log"/>
+            <then></then>
+            <else><antcall target="setup-tests"/></else>
+        </if>
+        
+        <echo message="    Running tests" />
+        <exec executable="utplsql" resultproperty="utreturn">
+            <arg value="run"/>
+			<arg value="-p=cwms_20"/>		
+            <arg value="-f"/><arg value="UT_COVERAGE_HTML_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/index.html" />
+            <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/coverage.xml" />
+            <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests.xml" />
+			<arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
+            <arg value="-d"/>
+			<arg value="pd_user/pd_pw@${oracle.cwms.instance}" />
+            
+        </exec>
+
+		<fail>
+			<condition>
+				<not>
+					<equals arg1="0" arg2="${utreturn}"/>
+				</not>
+			</condition>
+		</fail>
+
     </target>
-	
+
+
+    <target name="destroy-tests">
+		<echo message="    Removing test framework"/>
+		<exec dir="build/deps/utPLSQL/source" executable="sqlplus">
+			<arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba" />
+			<redirector inputstring="drop user ut3 cascade;">
+				
+			</redirector>
+		</exec>
+        <delete file="build/test.log"/>
+
+    </target>
+
+
+
+
+
 	<target name="tail-test">
 		<concat>
 			<filelist dir="${root}" files="auto-build-output.txt"/>

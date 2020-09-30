@@ -47,6 +47,7 @@ object Build : BuildType({
         output/build-sql-script-error.txt => buildinfo/
         output/overrides.xml => buildinfo/
         src/buildCWMS_DB.log => buildinfo/
+        build/coverage.zip => /
     """.trimIndent()
 
     params {
@@ -154,6 +155,12 @@ object Build : BuildType({
             antArguments = "-Dbuilduser.overrides=output/overrides.xml"
             dockerImage = "cwms_db_dev:latest"
         }
+        ant {
+            targets = "test"
+            antArguments = "-Dbuilduser.overrides=output/overrides.xml"
+            dockerImage ="cwms_db_dev:latest"
+        }
+
         script {
             name = "Create Basic Users"
             scriptContent = """
@@ -206,6 +213,11 @@ object Build : BuildType({
                 userName = "builduser"
                 password = "credentialsJSON:0c6a7d80-71bc-4c22-931e-1f6999bcc0f1"
             }
+        }
+        feature {
+            type = "xml-report-plugin"
+            param("xmlReportParsing.reportType", "junit")
+            param("xmlReportParsing.reportDirs", "build/tests.xml")
         }
     }
 
