@@ -3835,6 +3835,9 @@ as
       -- parse the infix into tokens --
       ---------------------------------
       l_infix_tokens := cwms_util.split_text(regexp_replace(normalize_algebraic(trim(p_algebraic_expr)),'([()])',' \1 '));
+      if l_infix_tokens(1) is null then -- happens when algebraic begins with an opening parenthesis 
+         l_infix_tokens := sub_table(l_infix_tokens, 2);
+      end if;
       -------------------------------------
       -- process the tokens into postfix --
       -------------------------------------
