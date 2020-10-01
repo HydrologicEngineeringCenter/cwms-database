@@ -86,63 +86,64 @@ cwmsSequences = [
 # populate the table, if appropriate.                                          #
 #------------------------------------------------------------------------------#
 tableInfo = [
-    {"ID" : "states",             "TABLE" : "CWMS_STATE",                 "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "counties",           "TABLE" : "CWMS_COUNTY",                "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "cwmsOffice",         "TABLE" : "CWMS_OFFICE",                "SCHEMA" : "CWMS", "USERACCESS" : True},
-#   {"ID" : "subLocation",        "TABLE" : "CWMS_SUBCWMS",               "SCHEMA" : "CWMS", "USERACCESS" : False},
-    {"ID" : "intervalOffset",     "TABLE" : "CWMS_INTERVAL_OFFSET",       "SCHEMA" : "CWMS", "USERACCESS" : False},
-#   {"ID" : "validValues",        "TABLE" : "CWMS_VALID_VALUES",          "SCHEMA" : "CWMS", "USERACCESS" : False},
-#   {"ID" : "errorMessage",       "TABLE" : "CWMS_ERROR_MSG",             "SCHEMA" : "CWMS", "USERACCESS" : False},
-    {"ID" : "errorMessageNew",    "TABLE" : "CWMS_ERROR",                 "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "timezone",           "TABLE" : "CWMS_TIME_ZONE",             "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "timezoneAlias",      "TABLE" : "CWMS_TIME_ZONE_ALIAS",       "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "tzUsage",            "TABLE" : "CWMS_TZ_USAGE",              "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "interval",           "TABLE" : "CWMS_INTERVAL",              "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "duration",           "TABLE" : "CWMS_DURATION",              "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "shefDuration",       "TABLE" : "CWMS_SHEF_DURATION",         "SCHEMA" : "CWMS", "USERACCESS" : True},
-#   {"ID" : "catalog",            "TABLE" : "CWMS_META_CATALOG",          "SCHEMA" : "CWMS", "USERACCESS" : False},
-    {"ID" : "abstractParam",      "TABLE" : "CWMS_ABSTRACT_PARAMETER",    "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "unit",               "TABLE" : "CWMS_UNIT",                  "SCHEMA" : "CWMS", "USERACCESS" : True},
-#   {"ID" : "cwmsUnit",           "TABLE" : "CWMS_DB_UNIT",               "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "conversion",         "TABLE" : "CWMS_UNIT_CONVERSION",       "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "parameterType",      "TABLE" : "CWMS_PARAMETER_TYPE",        "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "parameter",          "TABLE" : "CWMS_BASE_PARAMETER",        "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "subParameter",       "TABLE" : "AT_PARAMETER",               "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "displayUnits",       "TABLE" : "AT_DISLAY_UNITS",            "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "qScreened",          "TABLE" : "CWMS_DATA_Q_SCREENED",       "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "qValidity",          "TABLE" : "CWMS_DATA_Q_VALIDITY",       "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "qRange",             "TABLE" : "CWMS_DATA_Q_RANGE",          "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "qChanged",           "TABLE" : "CWMS_DATA_Q_CHANGED",        "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "qReplCause",         "TABLE" : "CWMS_DATA_Q_REPL_CAUSE",     "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "qReplMethod",        "TABLE" : "CWMS_DATA_Q_REPL_METHOD",    "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "qTestFailed",        "TABLE" : "CWMS_DATA_Q_TEST_FAILED",    "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "qProtection",        "TABLE" : "CWMS_DATA_Q_PROTECTION",     "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "quality",            "TABLE" : "CWMS_DATA_QUALITY",          "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "ratingMethod",       "TABLE" : "CWMS_RATING_METHOD",         "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "dssParameterType",   "TABLE" : "CWMS_DSS_PARAMETER_TYPE",    "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "dssXchgDirection",   "TABLE" : "CWMS_DSS_XCHG_DIRECTION",    "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "logMessageTypes",    "TABLE" : "CWMS_LOG_MESSAGE_TYPES",     "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "logMessagePropTypes","TABLE" : "CWMS_LOG_MESSAGE_PROP_TYPES","SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "interpolateUnits"   ,"TABLE" : "CWMS_INTERPOLATE_UNITS",     "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "gageMethod",         "TABLE" : "CWMS_GAGE_METHOD",           "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "gageType",           "TABLE" : "CWMS_GAGE_TYPE",             "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "nation",             "TABLE" : "CWMS_NATION",                "SCHEMA" : "CWMS", "USERACCESS" : True},
-#   {"ID" : "streamType",         "TABLE" : "CWMS_STREAM_TYPE",           "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "vertconHeader",      "TABLE" : "CWMS_VERTCON_HEADER",        "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "vertconData",        "TABLE" : "CWMS_VERTCON_DATA",          "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "verticalDatum",      "TABLE" : "CWMS_VERTICAL_DATUM",        "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "storeRule",          "TABLE" : "CWMS_STORE_RULE",            "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "locationKind",       "TABLE" : "CWMS_LOCATION_KIND",         "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "usgsTimeZone",       "TABLE" : "CWMS_USGS_TIME_ZONE",        "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "usgsFlowAdj",        "TABLE" : "CWMS_USGS_FLOW_ADJ",         "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "usgsRatingCtrlCond", "TABLE" : "CWMS_USGS_RATING_CTRL_COND", "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "usgsMeasQual",       "TABLE" : "CWMS_USGS_MEAS_QUAL",        "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "usgsParameter",      "TABLE" : "CWMS_USGS_PARAMETER",        "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "entityCategory",     "TABLE" : "CWMS_ENTITY_CATEGORY",       "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "entity",             "TABLE" : "AT_ENTITY",                  "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "configCategory",     "TABLE" : "CWMS_CONFIG_CATEGORY",       "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "configuration",      "TABLE" : "AT_CONFIGURATION",           "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "gateType",           "TABLE" : "CWMS_GATE_TYPE",             "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "states",                 "TABLE" : "CWMS_STATE",                     "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "counties",               "TABLE" : "CWMS_COUNTY",                    "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "cwmsOffice",             "TABLE" : "CWMS_OFFICE",                    "SCHEMA" : "CWMS", "USERACCESS" : True},
+#   {"ID" : "subLocation",            "TABLE" : "CWMS_SUBCWMS",                   "SCHEMA" : "CWMS", "USERACCESS" : False},
+    {"ID" : "intervalOffset",         "TABLE" : "CWMS_INTERVAL_OFFSET",           "SCHEMA" : "CWMS", "USERACCESS" : False},
+#   {"ID" : "validValues",            "TABLE" : "CWMS_VALID_VALUES",              "SCHEMA" : "CWMS", "USERACCESS" : False},
+#   {"ID" : "errorMessage",           "TABLE" : "CWMS_ERROR_MSG",                 "SCHEMA" : "CWMS", "USERACCESS" : False},
+    {"ID" : "errorMessageNew",        "TABLE" : "CWMS_ERROR",                     "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "timezone",               "TABLE" : "CWMS_TIME_ZONE",                 "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "timezoneAlias",          "TABLE" : "CWMS_TIME_ZONE_ALIAS",           "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "tzUsage",                "TABLE" : "CWMS_TZ_USAGE",                  "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "interval",               "TABLE" : "CWMS_INTERVAL",                  "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "duration",               "TABLE" : "CWMS_DURATION",                  "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "shefDuration",           "TABLE" : "CWMS_SHEF_DURATION",             "SCHEMA" : "CWMS", "USERACCESS" : True},
+#   {"ID" : "catalog",                "TABLE" : "CWMS_META_CATALOG",              "SCHEMA" : "CWMS", "USERACCESS" : False},
+    {"ID" : "abstractParam",          "TABLE" : "CWMS_ABSTRACT_PARAMETER",        "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "unit",                   "TABLE" : "CWMS_UNIT",                      "SCHEMA" : "CWMS", "USERACCESS" : True},
+#   {"ID" : "cwmsUnit",               "TABLE" : "CWMS_DB_UNIT",                   "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "conversion",             "TABLE" : "CWMS_UNIT_CONVERSION",           "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "parameterType",          "TABLE" : "CWMS_PARAMETER_TYPE",            "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "parameter",              "TABLE" : "CWMS_BASE_PARAMETER",            "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "subParameter",           "TABLE" : "AT_PARAMETER",                   "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "displayUnits",           "TABLE" : "AT_DISLAY_UNITS",                "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "qScreened",              "TABLE" : "CWMS_DATA_Q_SCREENED",           "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "qValidity",              "TABLE" : "CWMS_DATA_Q_VALIDITY",           "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "qRange",                 "TABLE" : "CWMS_DATA_Q_RANGE",              "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "qChanged",               "TABLE" : "CWMS_DATA_Q_CHANGED",            "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "qReplCause",             "TABLE" : "CWMS_DATA_Q_REPL_CAUSE",         "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "qReplMethod",            "TABLE" : "CWMS_DATA_Q_REPL_METHOD",        "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "qTestFailed",            "TABLE" : "CWMS_DATA_Q_TEST_FAILED",        "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "qProtection",            "TABLE" : "CWMS_DATA_Q_PROTECTION",         "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "quality",                "TABLE" : "CWMS_DATA_QUALITY",              "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "ratingMethod",           "TABLE" : "CWMS_RATING_METHOD",             "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "dssParameterType",       "TABLE" : "CWMS_DSS_PARAMETER_TYPE",        "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "dssXchgDirection",       "TABLE" : "CWMS_DSS_XCHG_DIRECTION",        "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "logMessageTypes",        "TABLE" : "CWMS_LOG_MESSAGE_TYPES",         "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "logMessagePropTypes",    "TABLE" : "CWMS_LOG_MESSAGE_PROP_TYPES",    "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "interpolateUnits"   ,    "TABLE" : "CWMS_INTERPOLATE_UNITS",         "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "gageMethod",             "TABLE" : "CWMS_GAGE_METHOD",               "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "gageType",               "TABLE" : "CWMS_GAGE_TYPE",                 "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "nation",                 "TABLE" : "CWMS_NATION",                    "SCHEMA" : "CWMS", "USERACCESS" : True},
+#   {"ID" : "streamType",             "TABLE" : "CWMS_STREAM_TYPE",               "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "vertconHeader",          "TABLE" : "CWMS_VERTCON_HEADER",            "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "vertconData",            "TABLE" : "CWMS_VERTCON_DATA",              "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "verticalDatum",          "TABLE" : "CWMS_VERTICAL_DATUM",            "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "storeRule",              "TABLE" : "CWMS_STORE_RULE",                "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "locationKind",           "TABLE" : "CWMS_LOCATION_KIND",             "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "usgsTimeZone",           "TABLE" : "CWMS_USGS_TIME_ZONE",            "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "usgsFlowAdj",            "TABLE" : "CWMS_USGS_FLOW_ADJ",             "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "usgsRatingCtrlCond",     "TABLE" : "CWMS_USGS_RATING_CTRL_COND",     "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "usgsMeasQual",           "TABLE" : "CWMS_USGS_MEAS_QUAL",            "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "usgsParameter",          "TABLE" : "CWMS_USGS_PARAMETER",            "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "entityCategory",         "TABLE" : "CWMS_ENTITY_CATEGORY",           "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "entity",                 "TABLE" : "AT_ENTITY",                      "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "configCategory",         "TABLE" : "CWMS_CONFIG_CATEGORY",           "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "configuration",          "TABLE" : "AT_CONFIGURATION",               "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "gateType",               "TABLE" : "CWMS_GATE_TYPE",                 "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "vlocLvlConstituentType", "TABLE" : "CWMS_VLOC_LVL_CONSTITUENT_TYPE", "SCHEMA" : "CWMS", "USERACCESS" : True},
 ]
 
 tables = []
@@ -9876,6 +9877,27 @@ def main() :
     insert into @TABLE values(13, 'VERTICAL SLIDE', 'Flat gate that slides vertically in tracks (with or without rollers) for control');
     insert into @TABLE values(14, 'WICKET',         'A group of small connected hinged gates (wickets) that overlap when closed and rotate together to open');
     COMMIT;
+    '''
+    sys.stderr.write("Building vlocLvlConstituentTypeCreationTemplate\n")
+    vlocLvlConstituentTypeCreationTemplate = \
+    '''
+    create table @TABLE (
+       constituent_type varchar2(16) primary key,
+       constraint cwms_vloc_lvl_const_type_ck check (constituent_type in ('LOCATION_LEVEL','RATING','TIME_SERIES','FORMULA'))
+    );
+    comment on table @TABLE is 'Holds valid constiuent types for virtual location levels';
+    comment on column @TABLE.constituent_type is 'The valid constituent types';
+    commit;
+    '''
+
+    sys.stderr.write("Building vlocLvlConstituentTypeLoadTemplate\n")
+    vlocLvlConstituentTypeLoadTemplate = \
+    '''
+    insert into @TABLE values ('LOCATION_LEVEL');
+    insert into @TABLE values ('RATING');
+    insert into @TABLE values ('TIME_SERIES');
+    insert into @TABLE values ('FORMULA');
+    commit;
     '''
 
     #==
