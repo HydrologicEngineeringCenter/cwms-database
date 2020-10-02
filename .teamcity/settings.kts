@@ -30,8 +30,8 @@ To debug in IntelliJ Idea, open the 'Maven Projects' tool window (View
 
 version = "2020.1"
 
-project( CWMSDatbase )
-object CWMSDatbase : Project ({
+project {
+
 	params {
         param("teamcity.ui.settings.readOnly", "true")
     }
@@ -40,7 +40,7 @@ object CWMSDatbase : Project ({
         buildType(Deploy)
     }.buildTypes().forEach { buildType(it) }
     
-})
+}
 
 object Build : BuildType({
     name = "Build (create in oracle)"
