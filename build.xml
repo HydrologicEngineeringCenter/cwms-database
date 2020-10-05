@@ -493,5 +493,57 @@
     <target name="rebuild-schema-with-export" depends="exportSchema,export,clean,build,import,createUsers" description="export AT tables,drop existing CWMS schema then build a new CWMS schema, import AT data, recreate user accounts">
     </target>
 
+	<target name="clean-output-files">
+		<delete file="auto-build-error.txt"/>
+		<delete file="auto-build-output.txt"/>
+		<delete file="auto-kill-error.txt"/>
+		<delete file="auto-kill-output.txt"/>
+		<delete file="build-sql-script-error.txt"/>
+		<delete file="build-sql-script-output.txt"/>
+		<delete file="local_wcdba_overrides.xml"/>
+		<delete file="src/CWMS_AGG_DISTRICT_DATA_TABLE.log"/>
+		<delete file="src/CWMS_CITIES_SP_DATA_TABLE.log"/>
+		<delete file="src/CWMS_COUNTY_SP_DATA_TABLE.log"/>
+		<delete file="src/CWMS_NATION_SP_DATA_TABLE.log"/>
+		<delete file="src/CWMS_NID_DATA_TABLE.log"/>
+		<delete file="src/CWMS_OFFICES_GEOLOC_DATA_TABLE.log"/>
+		<delete file="src/CWMS_STATE_SP_DATA_TABLE.log"/>
+		<delete file="src/CWMS_STATION_NWS_DATA_TABLE.log"/>
+		<delete file="src/CWMS_STATION_USGS_DATA_TABLE.log"/>
+		<delete file="src/CWMS_TIME_ZONE_SP_DATA_TABLE.log"/>
+		<delete file="src/CWMS_USACE_DAM_DATA_TABLE.log"/>
+		<delete file="src/autobuild.sql"/>
+		<delete file="src/autokill.sql"/>
+		<delete file="src/buildCWMS_DB.log"/>
+		<delete file="src/cwms/defines.sql"/>
+		<delete file="src/data/radar_xslt_clobs.ctl"/>
+		<delete file="src/data/unit_alias_data.sql"/>
+		<delete file="src/dropCwms.sql"/>
+		<delete file="src/killCWMS_DB.log"/>
+		<delete file="src/mathComputations.pyc"/>
+		<delete file="src/py_BuildCwms.sql"/>
+		<delete file="src/py_ErocUsers.sql"/>
+		<delete file="src/py_Queues.sql"/>
+		<delete file="src/py_prompt.sql"/>
+		<delete file="src/qualityLoader.ctl"/>
+		<delete file="src/qualityLoader.log"/>
+		<delete file="src/radar_xslt_clobs.log"/>
+		<delete>
+			<fileset dir="." includes="**/*.pyc"/>
+		</delete>
+		<delete file="src/vertcon_clobs.log"/>
+		<delete>
+			<fileset dir="src/updateScripts" includes="*.log"/>
+		</delete>
+	</target>
+
+
+	<target name="bundle" depends="clean-output-files">
+
+	</target>
+	<target name="deploy">
+	</target>
+
+
 </project>
 

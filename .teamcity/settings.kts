@@ -243,13 +243,13 @@ object Deploy : BuildType({
         root(DslContext.settingsRoot)
     }
 
-    //steps {
-    //    ant {
-    //        name = "Build Bundle"
-    //        mode = antFile {}
-    //        targets = "bundle,deploy"
-    //    }
-    //}
+    steps {
+        ant {
+            name = "Build Bundle"
+            mode = antFile {}
+            targets = "bundle,deploy"
+        }
+    }
 
     requirements {
         contains("docker.server.osType", "linux")
