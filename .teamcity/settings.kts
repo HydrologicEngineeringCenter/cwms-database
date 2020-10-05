@@ -31,10 +31,15 @@ To debug in IntelliJ Idea, open the 'Maven Projects' tool window (View
 version = "2020.1"
 
 project {
+
 	params {
         param("teamcity.ui.settings.readOnly", "true")
     }
-    buildType(Build)
+    sequential {
+        buildType(Build)
+        buildType(Deploy)
+    }.buildTypes().forEach { buildType(it) }
+    
 }
 
 object Build : BuildType({
@@ -224,4 +229,31 @@ object Build : BuildType({
     requirements {
         contains("docker.server.osType", "linux")
     }
+})
+
+
+object Deploy : BuildType({
+    name = "Deploy to Nexus"
+
+    artifactRules = """
+
+    """.trimIndent()
+
+    vcs {
+        root(DslContext.settingsRoot)
+    }
+
+    //steps {
+    //    ant {
+    //        name = "Build Bundle"
+    //        mode = antFile {}
+    //        targets = "bundle,deploy"
+    //    }
+    //}
+
+    requirements {
+        contains("docker.server.osType", "linux")
+    }
+    
+
 })
