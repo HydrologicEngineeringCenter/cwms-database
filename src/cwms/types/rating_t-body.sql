@@ -88,7 +88,7 @@ as
    return self as result
    is
       l_xml                  xmltype;
-      l_text                 varchar2(64);
+      l_text                 varchar2(1024);
       l_elev_positions       number_tab_t;
       l_datum                varchar2(16);
       l_is_virtual           boolean;
