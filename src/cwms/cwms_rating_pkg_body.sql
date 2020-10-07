@@ -2873,6 +2873,14 @@ is
    l_msg_txt  varchar2(4000);
    l_prev_txt varchar2(4000);
    l_first    boolean := true;
+   l_call_stack str_tab_t;
+
+   function is_error(p_msg_txt in varchar2) return boolean
+   is
+   begin
+      return instr(p_msg_txt, 'ERROR:') > 0
+          or (instr(p_msg_txt, 'ORA-') > 0 and instr(p_msg_txt, 'ITEM_ALREADY_EXISTS') = 0);
+   end;
 begin
    ------------------
    -- sanity check --
@@ -2941,11 +2949,18 @@ begin
    loop
       fetch l_crsr into l_id, l_ts, l_msg_txt;
       exit when l_crsr%notfound;
-      if instr(l_msg_txt, 'ERROR:') > 0 then
+      if is_error(l_msg_txt) then
+         select prop_text
+           bulk collect
+           into l_call_stack
+           from at_log_message_properties
+          where msg_id = l_id
+            and prop_name like 'call stack[%'
+          order by prop_name;
          if p_errors is null then
             dbms_lob.createtemporary(p_errors, true);
          end if;
-         if instr(l_prev_txt, 'ERROR:') = 0 then
+         if not is_error(l_prev_txt) then
             if l_first then
                cwms_util.append(p_errors, l_prev_txt||chr(10));
                l_first := false;
@@ -2954,6 +2969,9 @@ begin
             end if;
          end if;
          cwms_util.append(p_errors, l_msg_txt||chr(10));
+         for i in 1..l_call_stack.count loop
+            cwms_util.append(p_errors, '   '||l_call_stack(i)||chr(10));
+         end loop;
       end if;
       l_prev_txt := l_msg_txt;
    end loop;
