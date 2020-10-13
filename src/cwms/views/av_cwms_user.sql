@@ -13,7 +13,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_CWMS_USER', null
  * @field phone         The user''s telephone number
  * @field email         The user''s email address
  * @field office_symbol The full office symbol for the user
- * @field office_id     The CWMS office identifier for the user=
+ * @field office_id     The CWMS office identifier for the user
  */
 ');
 create or replace view av_cwms_user (
