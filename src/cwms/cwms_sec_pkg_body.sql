@@ -2932,7 +2932,8 @@ AS
     END cat_locked_users_tab;
 
    FUNCTION get_users_tab(p_db_office_id IN VARCHAR2 DEFAULT NULL) 
-      RETURN cat_user_tab_t      
+      RETURN cat_user_tab_t  
+      PIPELINED    
    AS
       query_cursor sys_refcursor;
       output_row cat_user_rec_t;

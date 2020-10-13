@@ -145,7 +145,8 @@ AS
       PIPELINED;
 
    FUNCTION get_users_tab(p_db_office_id IN VARCHAR2 DEFAULT NULL) 
-      RETURN cat_user_tab_t;  
+      RETURN cat_user_tab_t
+      PIPELINED;  
 
    PROCEDURE get_user_office_data (p_office_id          OUT VARCHAR2,
                                    p_office_long_name   OUT VARCHAR2);
