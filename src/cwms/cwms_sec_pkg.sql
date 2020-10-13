@@ -24,6 +24,18 @@ AS
       login_time TIMESTAMP
    );
    TYPE cat_invalid_login_tab_t IS TABLE OF cat_invalid_login_rec_t;
+  
+   TYPE cat_user_rec_t IS RECORD(
+      username VARCHAR2(31),
+      fullname VARCHAR2(96),
+      phone    VARCHAR2(24),
+      office   VARCHAR2(16),
+      org      VARCHAR2(16),
+      email    VARCHAR2(128),
+      locked   BOOLEAN ,
+      edipi    NUMBER
+   );
+   TYPE cat_user_tab_t IS TABLE OF cat_user_rec_t;
    
    TYPE cat_locked_users_rec_t IS RECORD
    (
@@ -129,8 +141,11 @@ AS
    FUNCTION get_user_priv_groups_tab (
       p_username       IN VARCHAR2 DEFAULT NULL,
       p_db_office_id   IN VARCHAR2 DEFAULT NULL)
-      RETURN cat_priv_groups_tab_t
+      RETURN cat_priv_groups_tab_t      
       PIPELINED;
+
+   FUNCTION get_users_tab(p_db_office_id IN VARCHAR2 DEFAULT NULL) 
+      RETURN cat_user_tab_t;  
 
    PROCEDURE get_user_office_data (p_office_id          OUT VARCHAR2,
                                    p_office_long_name   OUT VARCHAR2);

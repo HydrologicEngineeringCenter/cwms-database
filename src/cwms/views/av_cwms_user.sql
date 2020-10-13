@@ -24,8 +24,7 @@ create or replace view av_cwms_user (
    phone,
    email,
    office_symbol,
-   office_id,
-   edipi)
+   office_id)
 as
 select user_id,
        trim(first_name) as first_name,
@@ -51,7 +50,7 @@ select user_id,
        end as phone,
        email,
        office_symbol,
-       office_id,       
+       office_id       
   from (select upper(userid) as user_id,
                initcap(substr(fullname, 1, instr(fullname, ' ') - 1)) as first_name,
                initcap(substr(fullname, instr(fullname, ' ', -1) + 1)) as last_name,
@@ -59,7 +58,7 @@ select user_id,
                regexp_replace(phone, '\D', null) as phone,
                lower(email) as email,
                upper(office) as office_symbol,
-               upper(org) as office_id,               
+               upper(org) as office_id               
           from at_sec_cwms_users
        );
 

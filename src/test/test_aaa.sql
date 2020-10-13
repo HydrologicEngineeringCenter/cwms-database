@@ -13,6 +13,9 @@ create or replace package test_aaa as
     -- %aftertest(test_aaa.remove_duplicate_user)
     procedure duplicate_edipi_provides_useful_message;
 
+    -- %test(Can retrieve all users)
+    procedure can_retrieve_all_users;
+
     -- %beforeall
     procedure setup_users;
 
@@ -73,6 +76,15 @@ create or replace package body test_aaa as
         cwms_sec.update_edipi('basic_user2',1000000000);
 
         cwms_sec.get_user_credentials(1000000000,username,session_key);
+    end;
+
+
+    procedure can_retrieve_all_users is
+        l_cursor sys_refcursor;
+    begin
+      open l_cursor for select * from table( cwms_sec.get_users_tab );
+      ut.expect( l_cusor ).not_to_be_empty();
+      
     end;
 
 end;

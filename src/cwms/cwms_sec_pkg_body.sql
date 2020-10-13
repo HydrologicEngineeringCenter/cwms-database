@@ -2930,6 +2930,34 @@ AS
 
         RETURN;
     END cat_locked_users_tab;
+
+   FUNCTION get_users_tab(p_db_office_id IN VARCHAR2 DEFAULT NULL) 
+      RETURN cat_user_tab_t      
+   AS
+      query_cursor sys_refcursor;
+      output_row cat_user_rec_t;
+   BEGIN
+      OPEN query_cursor FOR
+	      SELECT userid,
+                fullname,
+                phone,
+                office,
+                org,
+                email,
+                'F',
+                edipi
+         FROM cwms_20.at_sec_cwms_users 
+         ORDER BY username;
+
+      LOOP
+         FETCH query_cursor INTO output_row;
+
+         EXIT WHEN query_cursor%NOTFOUND;
+         PIPE ROW (output_row);
+      END LOOP;
+      RETURN;
+   END get_users_tab;
+
 END cwms_sec;
 /
 show errors
