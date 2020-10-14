@@ -2936,8 +2936,10 @@ AS
       PIPELINED    
    AS
       query_cursor sys_refcursor;
-      output_row cat_user_rec_t;
-   BEGIN
+      output_row cat_user_rec_t;      
+      office_code number := cwms_util.get_db_office_code(p_db_office_id);
+   BEGIN      
+      confirm_user_admin_priv(office_code);
       OPEN query_cursor FOR
 	      SELECT userid,
                 fullname,
@@ -2945,10 +2947,17 @@ AS
                 office,
                 org,
                 email,
-                'F',
+                (select 
+                     is_locked 
+                 from 
+                     at_sec_locked_users 
+                 where 
+                  db_office_code=office_code 
+                 and
+                  UPPER(username) = UPPER(userid)) as is_locked,
                 edipi
          FROM cwms_20.at_sec_cwms_users 
-         ORDER BY username;
+         ORDER BY userid;
 
       LOOP
          FETCH query_cursor INTO output_row;

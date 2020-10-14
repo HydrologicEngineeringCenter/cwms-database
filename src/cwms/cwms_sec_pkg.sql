@@ -32,7 +32,7 @@ AS
       office   VARCHAR2(16),
       org      VARCHAR2(16),
       email    VARCHAR2(128),
-      locked   BOOLEAN ,
+      locked   char(1) ,
       edipi    NUMBER
    );
    TYPE cat_user_tab_t IS TABLE OF cat_user_rec_t;
