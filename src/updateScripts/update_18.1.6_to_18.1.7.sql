@@ -490,6 +490,8 @@ ALTER TABLE AT_RATING_EXTENSION_VALUE MODIFY(NOTE_CODE NUMBER(14));
 @../cwms/cwms_util_pkg_body
 @../cwms/cwms_water_supply_pkg_body
 @../cwms/cwms_xchg_pkg_body
+@../cwms/cwms_sec_pkg
+@../cwms_cwms_sec_pkg_body
 
 -----------
 -- TYPES --
