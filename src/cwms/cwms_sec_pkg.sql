@@ -143,7 +143,11 @@ AS
       p_db_office_id   IN VARCHAR2 DEFAULT NULL)
       RETURN cat_priv_groups_tab_t      
       PIPELINED;
-
+   /*
+   * retrieve user information including edipi
+   *
+   * @param p_db_office_id Office ID for which we want the lock status. Defaults to the connected users office.
+   */
    FUNCTION get_users_tab(p_db_office_id IN VARCHAR2 DEFAULT NULL) 
       RETURN cat_user_tab_t
       PIPELINED;  
