@@ -419,7 +419,7 @@ begin
    cwms_util.append(
       l_text,
       '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
-      ||'xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
+      ||'xsi:noNamespaceSchemaLocation="https://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
    for i in 1..l_templates.count loop
       cwms_util.append(l_text, l_templates(i).to_clob);
    end loop;
@@ -851,7 +851,7 @@ begin
    cwms_util.append(
       l_text,
       '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
-      ||'xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
+      ||'xsi:noNamespaceSchemaLocation="https://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
    for i in 1..l_specs.count loop
       cwms_util.append(l_text, l_specs(i).to_clob);
    end loop;
@@ -2449,7 +2449,7 @@ begin
    dbms_lob.createtemporary(l_ratings, true);
    dbms_lob.open(l_ratings, dbms_lob.lob_readwrite);
    cwms_util.append(l_ratings, '<?xml version="1.0" encoding="utf-8"?>');
-   cwms_util.append(l_ratings, '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
+   cwms_util.append(l_ratings, '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
    if p_retrieve_templates then
       l_xml_tab := cwms_util.get_xml_nodes(l_template_xml,  '/ratings/rating-template');
       for i in 1..l_xml_tab.count loop
@@ -6535,12 +6535,12 @@ begin
    exception
       when no_data_found then
          cwms_err.raise(
-            'ITEM_DOES_NOT_EXIST', 
-            'CWMS rating template', 
+            'ITEM_DOES_NOT_EXIST',
+            'CWMS rating template',
             cwms_util.get_db_office_id(p_office_id)||'/'||l_parts(2)||'.'||l_parts(3));
    end;
 end get_rating_template_code;
-   
+
 procedure get_spec_flags(
    p_active_flag           out varchar,
    p_auto_update_flag      out varchar,
@@ -6559,7 +6559,7 @@ begin
              p_auto_activate_flag,
              p_auto_migrate_ext_flag
         from at_rating_spec
-       where rating_spec_code = rating_spec_t.get_rating_spec_code(p_rating_spec, p_office_id); 
+       where rating_spec_code = rating_spec_t.get_rating_spec_code(p_rating_spec, p_office_id);
 end get_spec_flags;
 
 function is_spec_active(
@@ -6579,8 +6579,8 @@ begin
       l_auto_migrate_ext_flag,
       p_rating_spec,
       p_office_id);
-      
-   return l_active_flag;      
+
+   return l_active_flag;
 end is_spec_active;
 
 function is_auto_update(
@@ -6600,8 +6600,8 @@ begin
       l_auto_migrate_ext_flag,
       p_rating_spec,
       p_office_id);
-      
-   return l_auto_update_flag;      
+
+   return l_auto_update_flag;
 end is_auto_update;
 
 function is_auto_activate(
@@ -6621,8 +6621,8 @@ begin
       l_auto_migrate_ext_flag,
       p_rating_spec,
       p_office_id);
-      
-   return l_auto_activate_flag;      
+
+   return l_auto_activate_flag;
 end is_auto_activate;
 
 function is_auto_migrate_ext(
@@ -6642,11 +6642,11 @@ begin
       l_auto_migrate_ext_flag,
       p_rating_spec,
       p_office_id);
-      
-   return l_auto_migrate_ext_flag;      
+
+   return l_auto_migrate_ext_flag;
 end is_auto_migrate_ext;
 
-   
+
 procedure set_spec_flags(
    p_rating_spec           in varchar,
    p_active_flag           in varchar,
@@ -6663,7 +6663,7 @@ begin
           auto_update_flag = p_auto_update_flag,
           auto_activate_flag = p_auto_activate_flag,
           auto_migrate_ext_flag = p_auto_migrate_ext_flag
-    where rating_spec_code = l_rating_spec_code; 
+    where rating_spec_code = l_rating_spec_code;
 end set_spec_flags;
 
 procedure set_spec_active(
@@ -6683,7 +6683,7 @@ begin
       l_auto_migrate_ext_flag,
       p_rating_spec,
       p_office_id);
-      
+
    if l_active_flag != upper(p_flag) then
       l_active_flag := upper(p_flag);
       set_spec_flags(
@@ -6713,7 +6713,7 @@ begin
       l_auto_migrate_ext_flag,
       p_rating_spec,
       p_office_id);
-      
+
    if l_auto_update_flag != upper(p_flag) then
       l_auto_update_flag := upper(p_flag);
       set_spec_flags(
@@ -6743,7 +6743,7 @@ begin
       l_auto_migrate_ext_flag,
       p_rating_spec,
       p_office_id);
-      
+
    if l_auto_activate_flag != upper(p_flag) then
       l_auto_activate_flag := upper(p_flag);
       set_spec_flags(
@@ -6773,7 +6773,7 @@ begin
       l_auto_migrate_ext_flag,
       p_rating_spec,
       p_office_id);
-      
+
    if l_auto_migrate_ext_flag != upper(p_flag) then
       l_auto_migrate_ext_flag := upper(p_flag);
       set_spec_flags(
@@ -6785,7 +6785,7 @@ begin
          p_office_id);
    end if;
 end set_auto_migrate_ext;
-   
+
 function is_rating_active(
    p_rating_spec    in varchar2,
    p_effective_date in date,
@@ -6802,7 +6802,7 @@ begin
      from at_rating
     where rating_spec_code = rating_spec_t.get_rating_spec_code(p_rating_spec, p_office_id)
       and effective_date = cwms_util.change_timezone(p_effective_date, l_time_zone);
-      
+
    return l_active_flag;
 exception
    when no_data_found then
@@ -6818,7 +6818,7 @@ exception
          ||l_time_zone
          ||'"');
 end is_rating_active;
-   
+
 procedure set_rating_active(
    p_rating_spec    in varchar2,
    p_effective_date in date,
