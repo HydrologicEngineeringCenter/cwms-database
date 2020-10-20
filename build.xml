@@ -5,7 +5,7 @@
 
 	<property name="version.major" value="18"/>
 	<property name="version.minor" value="1" />
-	<property name="version.patch" value="SNAPSHOT"/>
+	<property name="version.patch" value="7-SNAPSHOT"/>
 	<property name="version" value="${version.major}.${version.minor}.${version.patch}"/>
 
 	<!-- read in the environment for use in properties -->
