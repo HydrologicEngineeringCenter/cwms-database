@@ -43,7 +43,7 @@ If you do not have write access you may be able to fork it in bitbucket and subm
 
 copy the wcdba_overrides.xml or teamcity_overrides.xml to build/localoverrides.xml and alter the settings internally to match the test database you have either setup or had provided.
 
-It it assumed that apex (20.1 at time of read) and previusly been installed in the database; failure to be this condition will cause the build to fail.
+It it assumed that apex (20.1 at time of writing) has previusly been installed in the database; failure to meet this condition will cause the build to ail.
 
 to build the database run the following:
 

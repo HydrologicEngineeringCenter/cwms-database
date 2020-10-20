@@ -25,7 +25,7 @@ begin
            7,
            to_date ('04SEP2020', 'DDMONYYYY'),
            'CWMS Database Release 18.1.7',
-           'PKI column changes; Add yearly tables'
+           'PKI column changes; Add yearly tables; get_user_tab function added;'
           );
    commit;
 end;
