@@ -1,6 +1,6 @@
 <project name="cwms_database_schema" default="all">
 	<description>
-		"Build file for the oracle side of the WCDBA project."
+		Build, Deployment, and Installation file for the CWMS Database
 	</description>
 
 	<property name="version.major" value="18"/>
