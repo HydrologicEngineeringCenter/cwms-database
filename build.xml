@@ -539,9 +539,12 @@
 
 
 	<target name="bundle" depends="clean-output-files">
-
+		<zip destfile="${build.dir}/cwms_db_${version}.zip"
+			 basedir="."
+			 excludes="${test}/**,${build.dir}/**,.teamcity/**/,.gitignore,v3.0/**"
+		/>
 	</target>
-	<target name="deploy">
+	<target name="deploy" depends="bundle">
 	</target>
 
 
