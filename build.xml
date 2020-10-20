@@ -537,11 +537,12 @@
 		</delete>
 	</target>
 
-
+	<!-- TODO: figured out why ${build.dir}/** isn't working -->
 	<target name="bundle" depends="clean-output-files">
+		<echo message="${build.dir}" />
 		<zip destfile="${build.dir}/cwms_db_${version}.zip"
 			 basedir="."
-			 excludes="${test}/**,${build.dir}/**,.teamcity/**/,.gitignore,v3.0/**"
+			 excludes="${test}/**,${build.dir}/**,.teamcity/**/,.gitignore,v3.0/**,build/**"
 		/>
 	</target>
 	<target name="deploy" depends="bundle">
