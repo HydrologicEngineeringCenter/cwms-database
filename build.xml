@@ -1,12 +1,16 @@
-<project name="cwms_database_schema" default="all">
+<project name="cwms_database_schema" default="all" xmlns:resolver="antlib:org.apache.maven.resolver.ant">
+	<taskdef uri="antlib:org.apache.maven.resolver.ant" resource="org/apache/maven/resolver/ant/antlib.xml"
+    classpath="lib/maven-resolver-ant-tasks-1.2.1-uber.jar" />	
+	
 	<description>
 		Build, Deployment, and Installation file for the CWMS Database
 	</description>
 
-	<property name="version.major" value="18"/>
-	<property name="version.minor" value="1" />
-	<property name="version.patch" value="7-SNAPSHOT"/>
-	<property name="version" value="${version.major}.${version.minor}.${version.patch}"/>
+	
+	
+
+	<resolver:pom id="pom" file="pom.xml" />
+	
 
 	<!-- read in the environment for use in properties -->
 	<property environment="env"/>
@@ -18,6 +22,16 @@
 	<property name="test"  location="${root}/test"/>
 	<property name="build.dir" location="${root}/build"/>
 	<property name="coverage.dir" location="${build.dir}/coverage"/>
+
+
+	<resolver:localrepo dir="${build.dir}/repo"/>
+	<resolver:remoterepo id="hec-nexus-snapshots" url="https://www.hec.usace.army.mil/nexus/repository/cwms-snapshots" type="default" releases="false" snapshots="true" />
+	<resolver:remoterepo id="hec-nexus-releases" url="https://www.hec.usace.army.mil/nexus/repository/cwms-releases" type="default" releases="true" snapshots="false" />
+
+	<resolver:remoterepos id="resolver.repositories">
+		<resolver:remoterepo refid="nexus-snapshots" />
+		<resolver:remoterepo refid="nexus-release" />
+	</resolver:remoterepos>
 
 	<!-- Load in the ant-contrib jar to use the foreach external task -->	
 	<taskdef resource="net/sf/antcontrib/antcontrib.properties">
@@ -540,14 +554,25 @@
 	<!-- TODO: figured out why ${build.dir}/** isn't working -->
 	<target name="bundle" depends="clean-output-files">
 		<echo message="${build.dir}" />
-		<zip destfile="${build.dir}/cwms_db_${version}.zip"
+		<zip destfile="${build.dir}/cwms_db_${pom.version}.zip"
 			 basedir="."
 			 excludes="${test}/**,${build.dir}/**,.teamcity/**/,.gitignore,v3.0/**,build/**"
 		/>
+		<resolver:artifacts id="output">
+			<resolver:artifact file="${build.dir}/cwms_db_${pom.version}.zip" type="zip" id="bundle" pomref="pom"/>
+		</resolver:artifacts>
 	</target>
+	<target name="install" depends="bundle">
+		<resolver:install artifactsref="output" />
+	</target> 
 	<target name="deploy" depends="bundle">
+		<resolver:deploy artifactsref="output">
+			<remoteRepo id="dist" url="https://www.hec.usace.army.mil/nexus/repository/cwms-snapshots"/>
+		</resolver:deploy>
 	</target>
+	
 
+	
 
 </project>
 
