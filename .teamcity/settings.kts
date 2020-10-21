@@ -5,6 +5,7 @@ import jetbrains.buildServer.configs.kotlin.v2019_2.buildSteps.script
 import jetbrains.buildServer.configs.kotlin.v2019_2.failureConditions.BuildFailureOnMetric
 import jetbrains.buildServer.configs.kotlin.v2019_2.failureConditions.failOnMetricChange
 import jetbrains.buildServer.configs.kotlin.v2019_2.triggers.vcs
+import jetbrains.buildServer.configs.kotlin.v2019_2.triggers.finishBuildTrigger
 
 /*
 The settings script is an entry point for defining a TeamCity
@@ -243,13 +244,27 @@ object Deploy : BuildType({
         root(DslContext.settingsRoot)
     }
 
-    //steps {
-    //    ant {
-    //        name = "Build Bundle"
-    //        mode = antFile {}
-    //        targets = "bundle,deploy"
-    //    }
-    //}
+    steps {
+        ant {
+            name = "Build Bundle"
+            mode = antFile {}
+            targets = "deploy"
+        }
+    }
+
+    triggers {
+        finishBuildTrigger {
+            buildType = "${Build.id}"
+            successfulOnly = true
+            branchFilter = """
+                +:refs/heads/master
+                +:refs/heads/release/*
+                +:refs/tags/*
+            """.trimIndent()
+
+        }
+
+    } 
 
     requirements {
         contains("docker.server.osType", "linux")
