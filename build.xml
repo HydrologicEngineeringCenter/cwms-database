@@ -567,7 +567,7 @@
 	</target> 
 	<target name="deploy" depends="bundle">
 		<resolver:deploy artifactsref="output">
-			<remoteRepo id="dist" url="https://www.hec.usace.army.mil/nexus/repository/cwms-snapshots"/>
+			<remoteRepo refid="hec-nexus-snapshots"/>
 		</resolver:deploy>
 	</target>
 	
