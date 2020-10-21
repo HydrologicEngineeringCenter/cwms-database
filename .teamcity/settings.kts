@@ -247,9 +247,23 @@ object Deploy : BuildType({
         ant {
             name = "Build Bundle"
             mode = antFile {}
-            targets = "bundle,deploy"
+            targets = "deploy"
         }
     }
+
+    triggers {
+        finishBuildTrigger {
+            buildType = "${Build.id}"
+            successfulOnly = true
+            branchFilter = """
+                +:refs/heads/master
+                +:refs/heads/release/*
+                +:refs/tags/*
+            """.trimIndent()
+
+        }
+
+    } 
 
     requirements {
         contains("docker.server.osType", "linux")
