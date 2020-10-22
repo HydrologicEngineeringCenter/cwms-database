@@ -240,9 +240,12 @@ EMBEDDED LINKS:
       Example:
           <a href="view_av_tsv_dqu.html">
 '''
-
 from java.util.regex import Pattern
-import DBAPI, getopt, htmlentitydefs, os, shutil, string, StringIO, sys, time, traceback, urllib2
+import getopt, htmlentitydefs, os, shutil, string, StringIO, sys, time, traceback, urllib2
+from java.sql import *
+from java.sql import DriverManager
+from java.lang import Class
+Class.forName ("oracle.jdbc.OracleDriver");
 
 #---------------------#
 # regular expressions #
@@ -1453,10 +1456,14 @@ if not os.path.exists(output_dir) :
 #---------------------#
 # connect to database #
 #---------------------#
-db_url     = 'jdbc:oracle:thin:@%s' % conn_str
+db_url     = 'jdbc:oracle:thin:@%s' % (conn_str)
 stmt   = None
 rs     = None
-conn = DBAPI.open(conn_str, username, password, office).getConnection()
+print("connecting to " + db_url + " as " + username+ " with pw " + password)
+conn=DriverManager.getConnection(db_url,username,password); 
+set_office_stmt = conn.prepareCall("call cwms_env.set_session_office(?)")
+set_office_stmt.setString(1,office)
+set_office_stmt.execute()
 conn.setAutoCommit(False)
 #-----------------------------#
 # verify necessary privileges #
