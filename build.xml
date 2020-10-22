@@ -23,10 +23,10 @@
 	<property name="build.dir" location="${root}/build"/>
 	<property name="coverage.dir" location="${build.dir}/coverage"/>
 
-
-	<resolver:localrepo dir="${build.dir}/repo"/>
-	<resolver:remoterepo id="hec-nexus-snapshots" url="https://www.hec.usace.army.mil/nexus/repository/cwms-snapshots" type="default" releases="false" snapshots="true" />
-	<resolver:remoterepo id="hec-nexus-releases" url="https://www.hec.usace.army.mil/nexus/repository/cwms-releases" type="default" releases="true" snapshots="false" />
+    <resolver:localrepo dir="${build.dir}/repo"/>
+    <resolver:authentication id="auth" username="${env.UPLOAD_USERNAME}" password="${env.UPLOAD_PASSWORD}" />
+	<resolver:remoterepo id="hec-nexus-snapshots" url="https://www.hec.usace.army.mil/nexus/repository/cwms-snapshots" type="default" releases="false" snapshots="true" authref="auth"/>
+	<resolver:remoterepo id="hec-nexus-releases" url="https://www.hec.usace.army.mil/nexus/repository/cwms-releases" type="default" releases="true" snapshots="false" authref="auth"/>
 
 	<resolver:remoterepos id="resolver.repositories">
 		<resolver:remoterepo refid="nexus-snapshots" />
