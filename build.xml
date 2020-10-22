@@ -568,6 +568,11 @@
             <files refid="deps" dir="${build.dir}/deps" layout="{artifactId}.{extension}"/>  
             <resolver:properties prefix="dep." classpath="runtime"/>
         </resolver:resolve>
+        <exec executable="sqlplus">
+            <arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba"/>
+            <arg value="@docs/doc_grants.sql"/>
+            <arg value="${office.primary.code}hectest"/>
+        </exec>
         <java
             fork="true"
             classname="org.python.util.jython"
@@ -577,15 +582,19 @@
             </classpath>
             <arg value="cwmsdb_documentor.py" />
             <arg value="-d"/><arg value="${oracle.cwms.instance}"/>
-            <arg value="-u"/><arg value="${oracle.cwms.user}"/>
+            <arg value="-u"/><arg value="${office.primary.code}hectest"/>
             <arg value="-p"/><arg value="${oracle.cwms.password}"/>
             <arg value="-f"/><arg value="${office.primary.id}"/>
             <arg value="-o"/><arg value="${build.dir}/docs"/>
             <arg value="-e"/><arg value="${root}"/>
             <arg value="-k"/><arg value="${build.dir}/doc_key"/>
         </java>
+        <zip destfile="${build.dir}/docs.zip"
+             basedir="${build.dir}/docs/" 
+            />
 		<resolver:artifacts id="output">
-			<resolver:artifact file="${build.dir}/cwms_db_${pom.version}.zip" type="zip" id="bundle" pomref="pom"/>
+            <resolver:artifact file="${build.dir}/cwms_db_${pom.version}.zip" type="zip" id="bundle" pomref="pom"/>
+            <resolver:artifact file="${build.dir}/docs.zip" type="zip" id="docs" pomref="pom" classifier="docs"/>
 		</resolver:artifacts>
 	</target>
 	<target name="install" depends="bundle">

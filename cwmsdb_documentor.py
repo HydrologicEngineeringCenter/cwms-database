@@ -245,6 +245,7 @@ import getopt, htmlentitydefs, os, shutil, string, StringIO, sys, time, tracebac
 from java.sql import *
 from java.sql import DriverManager
 from java.lang import Class
+from java.util import Properties
 Class.forName ("oracle.jdbc.OracleDriver");
 
 #---------------------#
@@ -1460,8 +1461,13 @@ db_url     = 'jdbc:oracle:thin:@%s' % (conn_str)
 stmt   = None
 rs     = None
 print("connecting to " + db_url + " as " + username+ " with pw " + password)
-conn=DriverManager.getConnection(db_url,username,password); 
-set_office_stmt = conn.prepareCall("call cwms_env.set_session_office(?)")
+
+info = Properties()
+info.put("user",username)
+info.put("password",password)
+info.put("oracle.net.disableOob","true")
+conn=DriverManager.getConnection(db_url,info); 
+set_office_stmt = conn.prepareCall("call cwms_env.set_session_office_id(?)")
 set_office_stmt.setString(1,office)
 set_office_stmt.execute()
 conn.setAutoCommit(False)
