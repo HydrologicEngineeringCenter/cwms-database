@@ -249,6 +249,7 @@ object Deploy : BuildType({
             name = "Build Bundle"
             mode = antFile {}
             targets = "deploy"
+            antArguments = "-Dbuilduser.overrides=output/overrides.xml"
         }
     }
 
