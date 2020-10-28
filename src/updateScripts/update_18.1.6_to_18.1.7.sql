@@ -60,6 +60,16 @@ prompt UPDATING OBJECTS
 ------------
 -- TABLES --
 ------------
+prompt ################################################################################
+prompt Creating AT_TSV_2021 table
+@@./18_1_7/create_at_tsv_2021
+prompt ################################################################################
+prompt Move rows from INF table to AT_TSV_2021 
+@@./18_1_7/move_rows_to_2021
+
+prompt ################################################################################
+prompt Updating primary key sizes
+
 DROP INDEX AT_CLOB_IDX1; 
 ALTER TABLE AT_CLOB MODIFY(CLOB_CODE NUMBER(14));
 ALTER TABLE AT_CLOB MODIFY(OFFICE_CODE NUMBER(14));
