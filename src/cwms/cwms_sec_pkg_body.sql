@@ -2947,16 +2947,11 @@ AS
                 office,
                 org,
                 email,
-                (select 
-                     is_locked 
-                 from 
-                     at_sec_locked_users 
-                 where 
-                  db_office_code=office_code 
-                 and
-                  UPPER(username) = UPPER(userid)) as is_locked,
+                is_locked,
                 edipi
-         FROM cwms_20.at_sec_cwms_users 
+         FROM cwms_20.at_sec_cwms_users users
+         JOIN cwms_20.at_sec_locked_users lcktable on UPPER(users.userid) = UPPER(lcktable.username)
+         WHERE db_office_code = office_code
          ORDER BY userid;
 
       LOOP
