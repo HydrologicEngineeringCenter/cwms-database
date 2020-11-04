@@ -169,6 +169,14 @@
 				<unzip src="build/deps/utPLSQL.zip" dest="build/deps/" />
 			</else>			
 		</if>        
+                <!-- Due to STIG V-53973 certain grants are removed from PUBLIC schema. They need to be restored to individual schemas-->
+		<echo message="     Additional grants for UT3 user"/>
+        	<echo file="build/deps/utPLSQL/source/create_utplsql_owner.sql" append="true">
+          		grant execute on dbms_lob to &amp;ut3_user;
+	  		grant execute on dbms_random to &amp;ut3_user;
+	  		grant execute on dbms_obfuscation_toolkit to &amp;ut3_user;
+	  		grant execute on dbms_sql to &amp;ut3_user;
+        	</echo>
 		<echo message="   Installing test framework into database" />
 		<exec dir="build/deps/utPLSQL/source" executable="sqlplus" output="${build.dir}/tests.log" append="true">
 			<arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba" />
