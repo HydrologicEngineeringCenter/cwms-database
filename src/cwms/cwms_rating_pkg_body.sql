@@ -2864,22 +2864,29 @@ procedure store_ratings_xml(
    p_fail_if_exists in  varchar2,
    p_replace_base   in  varchar2 default 'F')
 is
-   l_xml      xmltype;
-   l_node     xmltype;
-   l_rating   rating_t;
-   l_id       varchar2(32);
-   l_crsr     sys_refcursor;
-   l_ts       timestamp(6);
-   l_msg_txt  varchar2(4000);
-   l_prev_txt varchar2(4000);
-   l_first    boolean := true;
-   l_call_stack str_tab_t;
+   l_xml             xmltype;
+   l_node            xmltype;
+   l_rating          rating_t;
+   l_id              varchar2(32);
+   l_crsr            sys_refcursor;
+   l_ts              timestamp(6);
+   l_msg_txt         varchar2(4000);
+   l_prev_txt        varchar2(4000);
+   l_first           boolean := true;
+   l_call_stack      str_tab_t;
+   l_fail_if_exists  varchar2(1);
+   l_error_if_exists boolean;
 
-   function is_error(p_msg_txt in varchar2) return boolean
+   function is_error(p_msg_txt in varchar2, p_error_if_exists in boolean) return boolean
    is
    begin
+      if p_error_if_exists  then
+         return instr(p_msg_txt, 'ERROR:') > 0
+             or instr(p_msg_txt, 'ORA-') > 0;
+      else
       return instr(p_msg_txt, 'ERROR:') > 0
           or (instr(p_msg_txt, 'ORA-') > 0 and instr(p_msg_txt, 'ITEM_ALREADY_EXISTS') = 0);
+      end if;
    end;
 begin
    ------------------
@@ -2888,6 +2895,12 @@ begin
    l_xml := cwms_util.get_xml_node(p_xml, '/ratings');
    if l_xml is null then
       cwms_err.raise('ERROR', 'XML does not have <ratings> root element');
+   end if;
+   l_fail_if_exists  := substr(p_fail_if_exists, 1, 1);
+   if length(p_fail_if_exists) > 1 then
+      l_error_if_exists := cwms_util.return_true_or_false(substr(p_fail_if_exists, 2));
+   else
+      l_error_if_exists := false;
    end if;
    --------------------------------
    -- log about process starting --
@@ -2902,7 +2915,7 @@ begin
       l_node := cwms_util.get_xml_node(l_xml, '/ratings/rating-template['||i||']');
       exit when l_node is null;
       begin
-         store_templates(l_node, p_fail_if_exists);
+         store_templates(l_node, l_fail_if_exists);
       exception
          when others then cwms_msg.log_db_message(cwms_msg.msg_level_normal, sqlerrm);
       end;
@@ -2915,7 +2928,7 @@ begin
       l_node := cwms_util.get_xml_node(l_xml, '/ratings/rating-spec['||i||']');
       exit when l_node is null;
       begin
-         store_specs(l_node, p_fail_if_exists);
+         store_specs(l_node, l_fail_if_exists);
       exception
          when others then cwms_msg.log_db_message(cwms_msg.msg_level_normal, sqlerrm);
       end;
@@ -2928,7 +2941,7 @@ begin
       l_node := cwms_util.get_xml_node(l_xml, '(/ratings/rating|/ratings/simple-rating|/ratings/virtual-rating|/ratings/transitional-rating|/ratings/usgs-stream-rating)['||i||']');
       exit when l_node is null;
       begin
-         store_ratings(l_node, p_fail_if_exists, p_replace_base);
+         store_ratings(l_node, l_fail_if_exists, p_replace_base);
       exception
          when others then cwms_msg.log_db_message(cwms_msg.msg_level_normal, sqlerrm);
       end;
@@ -2949,7 +2962,7 @@ begin
    loop
       fetch l_crsr into l_id, l_ts, l_msg_txt;
       exit when l_crsr%notfound;
-      if is_error(l_msg_txt) then
+      if is_error(l_msg_txt, l_error_if_exists) then
          select prop_text
            bulk collect
            into l_call_stack
@@ -2960,7 +2973,7 @@ begin
          if p_errors is null then
             dbms_lob.createtemporary(p_errors, true);
          end if;
-         if not is_error(l_prev_txt) then
+         if not is_error(l_prev_txt, l_error_if_exists) then
             if l_first then
                cwms_util.append(p_errors, l_prev_txt||chr(10));
                l_first := false;
