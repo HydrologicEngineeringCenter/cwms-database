@@ -5,7 +5,7 @@ create table at_vloc_lvl_constituent (
    constituent_name            varchar2(404) not null,
    constituent_attribute_id    varchar2(92),
    constituent_attribute_value number,
-   constraint at_vloc_lvl_constituent_pk  primary key (location_level_code) using index,
+   constraint at_vloc_lvl_constituent_pk  primary key (location_level_code, constituent_abbr) using index,
    constraint at_vloc_lvl_constituent_fk1 foreign key (constituent_type) references cwms_vloc_lvl_constituent_type (constituent_type),
    constraint at_vloc_lvl_constituent_ck1 check (upper(constituent_abbr) = constituent_abbr)
 );
@@ -36,7 +36,7 @@ begin
       end if;
    when 'RATING' then
       l_parts := cwms_util.split_text(:new.constituent_name, '.');
-      if l_parts.count != 4 or instr(l_parts(1), ';') = 0 then
+      if l_parts.count != 4 or instr(l_parts(2), ';') = 0 then
          cwms_err.raise('ERROR', 'Constituent name is not a valid rating specification');
       end if;
    when 'TIME_SERIES' then
