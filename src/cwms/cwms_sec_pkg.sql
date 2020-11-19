@@ -302,7 +302,7 @@ AS
     *
     * @param p_edipi  EDIPI number of the upass user 
     * @param p_user   UPASS id of the user with given EDIPI number
-    * @param p_session_key Session key the can be used to authenticate the user 
+    * @param p_session_key Session key that can be used to authenticate the user 
     */
   PROCEDURE get_user_credentials (p_edipi      IN     NUMBER,
                                    p_user          OUT VARCHAR2,
