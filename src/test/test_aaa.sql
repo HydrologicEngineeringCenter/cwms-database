@@ -19,7 +19,8 @@ create or replace package test_aaa as
     -- %beforeall
     procedure setup_users;
 
-
+    -- %test(Can cycle from PD user to non PD user and back)
+    procedure can_cycle_pd_non_pd_and_back;
     
     procedure remove_duplicate_user;
 end;
@@ -95,6 +96,36 @@ create or replace package body test_aaa as
         ut.expect( test_row.username ).not_to_equal('OTHER_DIST');
       end loop;
       close l_cursor;
+    end;
+
+
+    procedure can_cycle_pd_non_pd_and_back is
+        pd_session_key varchar2(255);
+        non_pd_session_key varchar2(255);        
+        non_pd_user varchar2(255);
+        env_user varchar2(255);
+        orig_id varchar(255);
+    begin
+        orig_id := cwms_util.get_user_id;
+        dbms_output.put_line( orig_id );
+        cwms_sec.create_session(pd_session_key);
+        dbms_output.put_line(pd_session_key);
+        ut.expect(pd_session_key).to_be_not_null();
+        
+        cwms_sec.get_user_credentials(1000000000,non_pd_user,non_pd_session_key);
+        ut.expect( non_pd_session_key).to_be_not_null();
+
+        cwms_env.set_session_user(non_pd_session_key);
+        env_user := cwms_util.get_user_id;
+        ut.expect(env_user).to_equal(non_pd_user);
+
+        cwms_env.set_session_user(pd_session_key);
+        env_user := cwms_util.get_user_id;
+        ut.expect(env_user).to_equal(orig_id);
+                                              
+        cwms_sec.get_user_credentials(1000000000,non_pd_user,non_pd_session_key);
+        ut.expect( non_pd_session_key).to_be_not_null();
+      
     end;
 
 end;

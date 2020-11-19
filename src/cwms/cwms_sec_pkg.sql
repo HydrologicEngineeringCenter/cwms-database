@@ -308,6 +308,13 @@ AS
                                    p_user          OUT VARCHAR2,
                                    p_session_key      OUT VARCHAR2);
    /**
+      returns a session key for the currently logged in user
+
+      @param p_session_key Session key that can be used to authenticate the user
+   */
+   PROCEDURE create_session( p_session_key OUT VARCHAR2);
+
+   /**
     * Returns service user name (used for CAC authentication),password
     *
     * @param p_username  Name of the service user

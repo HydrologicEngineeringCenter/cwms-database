@@ -2871,6 +2871,21 @@ AS
       END;
    END get_user_credentials;
 
+   PROCEDURE create_session( p_session_key OUT VARCHAR2)
+   IS
+      l_user varchar(255);
+      l_session_key varchar(255);
+   BEGIN
+      p_session_key := NULL;
+      l_user := cwms_util.get_user_id;
+      confirm_pd_user(l_user);
+      begin
+        l_session_key := RAWTOHEX(DBMS_CRYPTO.RANDOMBYTES(8));        
+        insert into at_sec_session(userid,session_key,timeout) values(l_user,l_session_key,SYSTIMESTAMP+1);
+        p_session_key := l_session_key;
+      end;
+   END create_session;
+
     FUNCTION cat_invalid_login_tab (p_username IN VARCHAR2,maxrows NUMBER default 3)
         RETURN cat_invalid_login_tab_t
         PIPELINED
