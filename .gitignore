@@ -37,3 +37,5 @@ src/vertcon_clobs.log
 src/updateScripts/*.log
 build
 .teamcity/target
+.project
+.settings
