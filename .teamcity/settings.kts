@@ -250,6 +250,7 @@ object Deploy : BuildType({
             mode = antFile {}
             targets = "deploy"
             antArguments = "-Dbuilduser.overrides=output/overrides.xml"
+            dockerImage ="cwms_db_dev:latest"
         }
     }
 
