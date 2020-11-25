@@ -1494,10 +1494,19 @@ begin
       end if;
    end if;
    if l_abbreviated then
+      if instr(l_query, ') q1') > 0 then
+         l_query := 'select msg_id, log_timestamp, msg_text from'
+         ||chr(10)
+         ||'(select msg_id, cwms_util.change_timezone(log_timestamp_utc, ''UTC'','''
+         ||nvl(p_time_zone, 'UTC')
+         ||''') as log_timestamp, msg_text from at_log_message where msg_id in ('||replace(l_query, ') q1', '))) q1');
+      else
       l_query := 'select msg_id, cwms_util.change_timezone(log_timestamp_utc, ''UTC'','''
       ||nvl(p_time_zone, 'UTC')
       ||''') as log_timestamp, msg_text from at_log_message where msg_id in ('||l_query||')';
+      end if;
    else
+      if instr(l_query, ') q1') > 0 then
       l_query := 'select msg_id, office_code, cwms_util.change_timezone(log_timestamp_utc, ''UTC'','''
       ||nvl(p_time_zone, 'UTC')
       ||''') as log_timestamp, msg_level, component, instance, host, port, cwms_util.change_timezone(report_timestamp_utc, ''UTC'','''
@@ -1505,8 +1514,21 @@ begin
       ||''') as report_timestamp, session_username,'
       ||' session_process, session_program, session_machine, msg_type, msg_text, cursor (select prop_name as name, prop_type as type, nvl(prop_text, prop_value)'
       ||'  as value from at_log_message_properties where msg_id = a.msg_id order by prop_name) as properties from at_log_message a where msg_id in ('
+         ||replace(l_query, ') q1', '))) q1');
+      else
+         l_query := 'select msg_id, office_code, log_timestamp, msg_level, component, instance, host, port, report_timestamp,'
+         ||'session_username, session_program, session_machine, msg_type, msg_text, properties from'
+         ||chr(10)
+         ||'(select msg_id, office_code, cwms_util.change_timezone(log_timestamp_utc, ''UTC'','''
+         ||nvl(p_time_zone, 'UTC')
+         ||''') as log_timestamp, msg_level, component, instance, host, port, cwms_util.change_timezone(report_timestamp_utc, ''UTC'','''
+         ||nvl(p_time_zone, 'UTC')
+         ||''') as report_timestamp, session_username,'
+         ||' session_process, session_program, session_machine, msg_type, msg_text, cursor (select prop_name as name, prop_type as type, nvl(prop_text, prop_value)'
+         ||'  as value from at_log_message_properties where msg_id = a.msg_id order by prop_name) as properties from at_log_message a where msg_id in ('
       ||l_query
       ||')';
+   end if;
    end if;
    l_query := l_query
    ||chr(10)
@@ -1516,6 +1538,7 @@ begin
      else ' desc'
      end;
 --   dbms_output.put_line(l_query);
+   log_db_message(7, 'QUERY = '||l_query);
    open p_log_crsr for l_query;
 end retrieve_log_messages;
 

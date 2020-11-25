@@ -10654,6 +10654,9 @@ begin
                --------------
                -- XML Data --
                --------------
+               if l_lvlids.count = 0 then
+                  cwms_util.append(l_data, '<?xml version="1.0" encoding="windows-1252"?><location-levels>');
+               end if;
                for j in 1..l_lvlids.count loop
                   if l_level_values(j) is not null then
                      l_count := l_count + 1;
@@ -10767,6 +10770,9 @@ begin
                ---------------
                -- JSON Data --
                ---------------
+               if l_lvlids.count = 0 then
+                  cwms_util.append(l_data, '{"location-levels":{"location-levels":[');
+               end if;
                for j in 1..l_lvlids.count loop
                   if l_level_values(j) is not null then
                      l_count := l_count + 1;

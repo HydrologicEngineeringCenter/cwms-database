@@ -24,6 +24,18 @@ AS
       login_time TIMESTAMP
    );
    TYPE cat_invalid_login_tab_t IS TABLE OF cat_invalid_login_rec_t;
+  
+   TYPE cat_user_rec_t IS RECORD(
+      username VARCHAR2(31),
+      fullname VARCHAR2(96),
+      phone    VARCHAR2(24),
+      office   VARCHAR2(16),
+      org      VARCHAR2(16),
+      email    VARCHAR2(128),
+      locked   char(1) ,
+      edipi    NUMBER
+   );
+   TYPE cat_user_tab_t IS TABLE OF cat_user_rec_t;
    
    TYPE cat_locked_users_rec_t IS RECORD
    (
@@ -129,8 +141,16 @@ AS
    FUNCTION get_user_priv_groups_tab (
       p_username       IN VARCHAR2 DEFAULT NULL,
       p_db_office_id   IN VARCHAR2 DEFAULT NULL)
-      RETURN cat_priv_groups_tab_t
+      RETURN cat_priv_groups_tab_t      
       PIPELINED;
+   /*
+   * retrieve user information including edipi
+   *
+   * @param p_db_office_id Office ID for which we want the lock status. Defaults to the connected users office.
+   */
+   FUNCTION get_users_tab(p_db_office_id IN VARCHAR2 DEFAULT NULL) 
+      RETURN cat_user_tab_t
+      PIPELINED;  
 
    PROCEDURE get_user_office_data (p_office_id          OUT VARCHAR2,
                                    p_office_long_name   OUT VARCHAR2);
@@ -282,11 +302,18 @@ AS
     *
     * @param p_edipi  EDIPI number of the upass user 
     * @param p_user   UPASS id of the user with given EDIPI number
-    * @param p_session_key Session key the can be used to authenticate the user 
+    * @param p_session_key Session key that can be used to authenticate the user 
     */
   PROCEDURE get_user_credentials (p_edipi      IN     NUMBER,
                                    p_user          OUT VARCHAR2,
                                    p_session_key      OUT VARCHAR2);
+   /**
+      returns a session key for the currently logged in user
+
+      @param p_session_key Session key that can be used to authenticate the user
+   */
+   PROCEDURE create_session( p_session_key OUT VARCHAR2);
+
    /**
     * Returns service user name (used for CAC authentication),password
     *

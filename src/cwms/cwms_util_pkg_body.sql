@@ -5409,31 +5409,24 @@ as
       if p_column is null then
          cwms_err.raise('NULL_ARGUMENT', 'p_column');
       end if;
-      select count(*) into l_count from table(p_table) where column_value is null;
-      if l_count != 0 then
-         cwms_err.raise(
-            'ERROR',
-            'Table has one or more null rows');
-      end if;
-      l_count := p_table(1).count;
-      if not p_column between 1 and l_count then
-         cwms_err.raise(
-            'ERROR',
-            'Specified column ('
-            ||p_column
-            ||') is not valid for a table of width '
-            ||l_count);
-      end if;
-      select value_in_column
-        bulk collect
-        into l_results
-        from (select t2.column_value as value_in_column,
-                     rownum as r
-                from table(p_table) t1,
-                     table(t1.column_value) t2
-               where t2.column_value in (select column_value from table(t1.column_value))
-             )
-             where mod(r, l_count) = mod(p_column, l_count);
+      ------------------------
+      -- extract the column --
+      ------------------------
+      l_results := double_tab_t();
+      l_results.extend(p_table.count);
+      l_count := 0;
+      for i in 1..p_table.count loop
+         if p_table(i).count >= p_column then
+            l_results(i) := p_table(i)(p_column);
+            l_count := l_count + 1;
+         end if;   
+      end loop;
+      if l_count = 0 then
+         ---------------------------------------------------------
+         -- revert to null if no rows have the specified column --
+         ---------------------------------------------------------
+         l_results := null;
+      end if;   
       return l_results;
    end get_column;
 
@@ -5471,31 +5464,24 @@ as
       if p_column is null then
          cwms_err.raise('NULL_ARGUMENT', 'p_column');
       end if;
-      select count(*) into l_count from table(p_table) where column_value is null;
-      if l_count != 0 then
-         cwms_err.raise(
-            'ERROR',
-            'Table has one or more null rows');
-      end if;
-      l_count := p_table(1).count;
-      if not p_column between 1 and l_count then
-         cwms_err.raise(
-            'ERROR',
-            'Specified column ('
-            ||p_column
-            ||') is not valid for a table of width '
-            ||l_count);
-      end if;
-      select value_in_column
-        bulk collect
-        into l_results
-        from (select t2.column_value as value_in_column,
-                     rownum as r
-                from table(p_table) t1,
-                     table(t1.column_value) t2
-               where t2.column_value in (select column_value from table(t1.column_value))
-             )
-             where mod(r, l_count) = mod(p_column, l_count);
+      ------------------------
+      -- extract the column --
+      ------------------------
+      l_results := str_tab_t();
+      l_results.extend(p_table.count);
+      l_count := 0;
+      for i in 1..p_table.count loop
+         if p_table(i).count >= p_column then
+            l_results(i) := p_table(i)(p_column);
+            l_count := l_count + 1;
+         end if;   
+      end loop;
+      if l_count = 0 then
+         ---------------------------------------------------------
+         -- revert to null if no rows have the specified column --
+         ---------------------------------------------------------
+         l_results := null;
+      end if;   
       return l_results;
    end get_column;
 

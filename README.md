@@ -43,7 +43,7 @@ If you do not have write access you may be able to fork it in bitbucket and subm
 
 copy the wcdba_overrides.xml or teamcity_overrides.xml to build/localoverrides.xml and alter the settings internally to match the test database you have either setup or had provided.
 
-It it assumed that apex (20.1 at time of read) and previusly been installed in the database; failure to be this condition will cause the build to fail.
+It it assumed that apex (20.1 at time of writing) has previusly been installed in the database; failure to meet this condition will cause the build to ail.
 
 to build the database run the following:
 
@@ -89,6 +89,27 @@ There will be a running update script in master that will be update_<last releas
 
 When a release is determined to be made we'll decide on the number we'll create a long running release branch and update the relevant portions of the scripts to match. At that point the only code changes that should be made to that branch are "hot fixes." The working named update script should be immediately merged into master leaving the branch active (bit bucket is set to prevent all release/ branches from being delete so if you forget to uncheck the delete branch button the interface will stop you.)
 
+#### Versioning
+
+There is a pom.xml file in the root directory that contains the currentversion. The version follows the following format:
+
+    XX.YY.ZZ[-SNAPSHOT] 
+
+XX-Year/major
+YY-minor
+ZZ[-SNAPSHOT] - patch
+
+if you need the version anywhere in thebuild.xml fileuse `${pom.version}` to extract.
+
+SNAPSHOT will be appened to major versions while changes are merged in to master.
+
+If minor is increased,reset the patch numberto 0.
+
+Year/major is for major changes,which due to the nature of how we change the database over time often just ends up being a year
+
+minor - new features that don't break anything
+
+patch - bug fixes to existing code
 
 ## Reviewers
 

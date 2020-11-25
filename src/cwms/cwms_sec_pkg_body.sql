@@ -2871,6 +2871,21 @@ AS
       END;
    END get_user_credentials;
 
+   PROCEDURE create_session( p_session_key OUT VARCHAR2)
+   IS
+      l_user varchar(255);
+      l_session_key varchar(255);
+   BEGIN
+      p_session_key := NULL;
+      l_user := cwms_util.get_user_id;
+      confirm_pd_user(l_user);
+      begin
+        l_session_key := RAWTOHEX(DBMS_CRYPTO.RANDOMBYTES(8));        
+        insert into at_sec_session(userid,session_key,timeout) values(l_user,l_session_key,SYSTIMESTAMP+1);
+        p_session_key := l_session_key;
+      end;
+   END create_session;
+
     FUNCTION cat_invalid_login_tab (p_username IN VARCHAR2,maxrows NUMBER default 3)
         RETURN cat_invalid_login_tab_t
         PIPELINED
@@ -2930,6 +2945,39 @@ AS
 
         RETURN;
     END cat_locked_users_tab;
+
+   FUNCTION get_users_tab(p_db_office_id IN VARCHAR2 DEFAULT NULL) 
+      RETURN cat_user_tab_t  
+      PIPELINED    
+   AS
+      query_cursor sys_refcursor;
+      output_row cat_user_rec_t;      
+      office_code number := cwms_util.get_db_office_code(p_db_office_id);
+   BEGIN      
+      confirm_user_admin_priv(office_code);
+      OPEN query_cursor FOR
+	      SELECT userid,
+                fullname,
+                phone,
+                office,
+                org,
+                email,
+                is_locked,
+                edipi
+         FROM cwms_20.at_sec_cwms_users users
+         JOIN cwms_20.at_sec_locked_users lcktable on UPPER(users.userid) = UPPER(lcktable.username)
+         WHERE db_office_code = office_code
+         ORDER BY userid;
+
+      LOOP
+         FETCH query_cursor INTO output_row;
+
+         EXIT WHEN query_cursor%NOTFOUND;
+         PIPE ROW (output_row);
+      END LOOP;
+      RETURN;
+   END get_users_tab;
+
 END cwms_sec;
 /
 show errors

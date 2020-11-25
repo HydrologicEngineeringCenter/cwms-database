@@ -5681,8 +5681,8 @@ AS
                      l_store_date,
                      z_timeseries_data,
                      l_remaining_times,
-                     from_tz(cast(x.start_date as timestamp),'0:00'),
-                     from_tz(cast(x.end_date as timestamp),'0:00');
+                     x.start_date ,
+                     x.end_date ;
 
                   l_count := l_count + sql%rowcount;
                end loop;

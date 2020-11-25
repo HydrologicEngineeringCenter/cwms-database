@@ -2969,8 +2969,11 @@ procedure store_ratings_xml(
  * the <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.xsd">CWMS Ratings XML Schema</a>.
  *  The specific format is <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.htm#element_ratings">documented here</a>.
  *
- * @param p_fail_if_exists A flag ('T' or 'F') that specifies if the procedure should
- * fail if one of the templates, specifications, or ratings already exists.
+ * @param p_fail_if_exists A one or two character flag ('T', 'TT', 'TF' or 'F') that controls how the procedure handles existing items (templates,
+ *                         specifications, or ratings). The first character (required) controls overwriting existing items. If 'T', no existing items
+ *                         will be overwritten. If 'F', existing items will be overwritten. The second character (optional), is meaningful only if
+ *                         the first character is 'T', and specifies whether ITEM_ALREADY_EXISTS errors will be included in the p_errors list. If
+ *                         'T', ITEM_ALREADY_EXISTS errors will be included; if 'F' or unspecified, they will not be included.
  *
  * @param p_replace_base A flag('T' or 'F') that specifies whether any existing USGS-style stream rating
  * should be completely replaced even if the base ratings are the same. This flag has no effect on other types of ratings
@@ -3017,8 +3020,11 @@ procedure store_ratings_xml(
  * the <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.xsd">CWMS Ratings XML Schema</a>.
  *  The specific format is <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.htm#element_ratings">documented here</a>.
  *
- * @param p_fail_if_exists A flag ('T' or 'F') that specifies if the procedure should
- * fail if one of the templates, specifications, or ratings already exists.
+ * @param p_fail_if_exists A one or two character flag ('T', 'TT', 'TF' or 'F') that controls how the procedure handles existing items (templates,
+ *                         specifications, or ratings). The first character (required) controls overwriting existing items. If 'T', no existing items
+ *                         will be overwritten. If 'F', existing items will be overwritten. The second character (optional), is meaningful only if
+ *                         the first character is 'T', and specifies whether ITEM_ALREADY_EXISTS errors will be included in the p_errors list. If
+ *                         'T', ITEM_ALREADY_EXISTS errors will be included; if 'F' or unspecified, they will not be included.
  *
  * @param p_replace_base A flag('T' or 'F') that specifies whether any existing USGS-style stream rating
  * should be completely replaced even if the base ratings are the same. This flag has no effect on other types of ratings
@@ -3065,8 +3071,11 @@ procedure store_ratings_xml(
  * the <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.xsd">CWMS Ratings XML Schema</a>.
  *  The specific format is <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.htm#element_ratings">documented here</a>.
  *
- * @param p_fail_if_exists A flag ('T' or 'F') that specifies if the procedure should
- * fail if one of the templates, specifications, or ratings already exists.
+ * @param p_fail_if_exists A one or two character flag ('T', 'TT', 'TF' or 'F') that controls how the procedure handles existing items (templates,
+ *                         specifications, or ratings). The first character (required) controls overwriting existing items. If 'T', no existing items
+ *                         will be overwritten. If 'F', existing items will be overwritten. The second character (optional), is meaningful only if
+ *                         the first character is 'T', and specifies whether ITEM_ALREADY_EXISTS errors will be included in the p_errors list. If
+ *                         'T', ITEM_ALREADY_EXISTS errors will be included; if 'F' or unspecified, they will not be included.
  *
  * @param p_replace_base A flag('T' or 'F') that specifies whether any existing USGS-style stream rating
  * should be completely replaced even if the base ratings are the same. This flag has no effect on other types of ratings

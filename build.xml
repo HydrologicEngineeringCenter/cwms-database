@@ -1,12 +1,16 @@
-<project name="cwms_database_schema" default="all">
+<project name="cwms_database_schema" default="all" xmlns:resolver="antlib:org.apache.maven.resolver.ant">
+	<taskdef uri="antlib:org.apache.maven.resolver.ant" resource="org/apache/maven/resolver/ant/antlib.xml"
+    classpath="lib/maven-resolver-ant-tasks-1.2.1-uber.jar" />	
+	
 	<description>
-		"Build file for the oracle side of the WCDBA project."
+		Build, Deployment, and Installation file for the CWMS Database
 	</description>
 
-	<property name="version.major" value="18"/>
-	<property name="version.minor" value="1" />
-	<property name="version.patch" value="SNAPSHOT"/>
-	<property name="version" value="${version.major}.${version.minor}.${version.patch}"/>
+	
+	
+
+	<resolver:pom id="pom" file="pom.xml" />
+	
 
 	<!-- read in the environment for use in properties -->
 	<property environment="env"/>
@@ -18,6 +22,17 @@
 	<property name="test"  location="${root}/test"/>
 	<property name="build.dir" location="${root}/build"/>
 	<property name="coverage.dir" location="${build.dir}/coverage"/>
+
+    <resolver:localrepo dir="${build.dir}/repo"/>
+    <resolver:authentication id="auth" username="${env.UPLOAD_USERNAME}" password="${env.UPLOAD_PASSWORD}" />
+	<resolver:remoterepo id="hec-nexus-snapshots" url="https://www.hec.usace.army.mil/nexus/repository/cwms-snapshots" type="default" releases="false" snapshots="true" authref="auth"/>
+	<resolver:remoterepo id="hec-nexus-releases" url="https://www.hec.usace.army.mil/nexus/repository/cwms-releases" type="default" releases="true" snapshots="false" authref="auth"/>
+
+    <resolver:remoterepos id="resolver.repositories">
+        <resolver:remoterepo refid="central" />
+		<resolver:remoterepo refid="hec-nexus-snapshots" />
+		<resolver:remoterepo refid="hec-nexus-releases" />
+	</resolver:remoterepos>
 
 	<!-- Load in the ant-contrib jar to use the foreach external task -->	
 	<taskdef resource="net/sf/antcontrib/antcontrib.properties">
@@ -142,10 +157,26 @@
 
 	<target name="setup-tests" depends="init" description="Install the test framework into the oracle database">
 		<echo message="setting up test framework tests." />
-        <get dest="build/deps">
-            <url url="https://github.com/utPLSQL/utPLSQL/releases/download/v3.1.10/utPLSQL.zip"/>
-        </get>
-        <unzip src="build/deps/utPLSQL.zip" dest="build/deps/" />
+		<if>			
+			<available file="build/deps/utPLSQL.zip"/>
+			<then>
+				<!-- have already downloaded -->			
+			</then>
+			<else>
+				<get dest="build/deps">
+					<url url="https://github.com/utPLSQL/utPLSQL/releases/download/v3.1.10/utPLSQL.zip"/>
+				</get>
+				<unzip src="build/deps/utPLSQL.zip" dest="build/deps/" />
+			</else>			
+		</if>        
+                <!-- Due to STIG V-53973 certain grants are removed from PUBLIC schema. They need to be restored to individual schemas-->
+		<echo message="     Additional grants for UT3 user"/>
+        	<echo file="build/deps/utPLSQL/source/create_utplsql_owner.sql" append="true">
+          		grant execute on dbms_lob to &amp;ut3_user;
+	  		grant execute on dbms_random to &amp;ut3_user;
+	  		grant execute on dbms_obfuscation_toolkit to &amp;ut3_user;
+	  		grant execute on dbms_sql to &amp;ut3_user;
+        	</echo>
 		<echo message="   Installing test framework into database" />
 		<exec dir="build/deps/utPLSQL/source" executable="sqlplus" output="${build.dir}/tests.log" append="true">
 			<arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba" />
@@ -484,6 +515,107 @@
     </target>
     <target name="rebuild-schema-with-export" depends="exportSchema,export,clean,build,import,createUsers" description="export AT tables,drop existing CWMS schema then build a new CWMS schema, import AT data, recreate user accounts">
     </target>
+
+	<target name="clean-output-files">
+		<delete file="auto-build-error.txt"/>
+		<delete file="auto-build-output.txt"/>
+		<delete file="auto-kill-error.txt"/>
+		<delete file="auto-kill-output.txt"/>
+		<delete file="build-sql-script-error.txt"/>
+		<delete file="build-sql-script-output.txt"/>
+		<delete file="local_wcdba_overrides.xml"/>
+		<delete file="src/CWMS_AGG_DISTRICT_DATA_TABLE.log"/>
+		<delete file="src/CWMS_CITIES_SP_DATA_TABLE.log"/>
+		<delete file="src/CWMS_COUNTY_SP_DATA_TABLE.log"/>
+		<delete file="src/CWMS_NATION_SP_DATA_TABLE.log"/>
+		<delete file="src/CWMS_NID_DATA_TABLE.log"/>
+		<delete file="src/CWMS_OFFICES_GEOLOC_DATA_TABLE.log"/>
+		<delete file="src/CWMS_STATE_SP_DATA_TABLE.log"/>
+		<delete file="src/CWMS_STATION_NWS_DATA_TABLE.log"/>
+		<delete file="src/CWMS_STATION_USGS_DATA_TABLE.log"/>
+		<delete file="src/CWMS_TIME_ZONE_SP_DATA_TABLE.log"/>
+		<delete file="src/CWMS_USACE_DAM_DATA_TABLE.log"/>
+		<delete file="src/autobuild.sql"/>
+		<delete file="src/autokill.sql"/>
+		<delete file="src/buildCWMS_DB.log"/>
+		<delete file="src/cwms/defines.sql"/>
+		<delete file="src/data/radar_xslt_clobs.ctl"/>
+		<delete file="src/data/unit_alias_data.sql"/>
+		<delete file="src/dropCwms.sql"/>
+		<delete file="src/killCWMS_DB.log"/>
+		<delete file="src/mathComputations.pyc"/>
+		<delete file="src/py_BuildCwms.sql"/>
+		<delete file="src/py_ErocUsers.sql"/>
+		<delete file="src/py_Queues.sql"/>
+		<delete file="src/py_prompt.sql"/>
+		<delete file="src/qualityLoader.ctl"/>
+		<delete file="src/qualityLoader.log"/>
+		<delete file="src/radar_xslt_clobs.log"/>
+		<delete>
+			<fileset dir="." includes="**/*.pyc"/>
+		</delete>
+		<delete file="src/vertcon_clobs.log"/>
+		<delete>
+			<fileset dir="src/updateScripts" includes="*.log"/>
+		</delete>
+	</target>
+
+	<!-- TODO: figured out why ${build.dir}/** isn't working -->
+	<target name="bundle" depends="clean-output-files">
+		<echo message="${build.dir}" />
+		<zip destfile="${build.dir}/cwms_db_${pom.version}.zip"
+			 basedir="."
+			 excludes="${test}/**,${build.dir}/**,.teamcity/**/,.gitignore,v3.0/**,build/**"
+             />
+        <resolver:resolve>
+            <resolver:dependencies>
+                <resolver:dependency coords="org.python:jython-standalone:2.7.2" />
+                <resolver:dependency coords="com.oracle.ojdbc:ojdbc8:19.3.0.0" />
+            </resolver:dependencies>
+            <path refid="cp.runtime" scopes="compile,runtime,test"/>
+            <files refid="deps" dir="${build.dir}/deps" layout="{artifactId}.{extension}"/>  
+            <resolver:properties prefix="dep." classpath="runtime"/>
+        </resolver:resolve>
+        <exec executable="sqlplus">
+            <arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba"/>
+            <arg value="@docs/doc_grants.sql"/>
+            <arg value="${office.primary.code}hectest"/>
+        </exec>
+        <java
+            fork="true"
+            classname="org.python.util.jython"
+            >
+            <classpath>
+                <fileset dir="${build.dir}/deps"/>
+            </classpath>
+            <arg value="cwmsdb_documentor.py" />
+            <arg value="-d"/><arg value="${oracle.cwms.instance}"/>
+            <arg value="-u"/><arg value="${office.primary.code}hectest"/>
+            <arg value="-p"/><arg value="${oracle.cwms.password}"/>
+            <arg value="-f"/><arg value="${office.primary.id}"/>
+            <arg value="-o"/><arg value="${build.dir}/docs"/>
+            <arg value="-e"/><arg value="${root}"/>
+            <arg value="-k"/><arg value="${build.dir}/doc_key"/>
+        </java>
+        <zip destfile="${build.dir}/docs.zip"
+             basedir="${build.dir}/docs/" 
+            />
+		<resolver:artifacts id="output">
+            <resolver:artifact file="${build.dir}/cwms_db_${pom.version}.zip" type="zip" id="bundle" pomref="pom"/>
+            <resolver:artifact file="${build.dir}/docs.zip" type="zip" id="docs" pomref="pom" classifier="docs"/>
+		</resolver:artifacts>
+	</target>
+	<target name="install" depends="bundle">
+		<resolver:install artifactsref="output" />
+	</target> 
+	<target name="deploy" depends="bundle">
+		<resolver:deploy artifactsref="output">
+			<remoteRepo refid="hec-nexus-snapshots"/>
+		</resolver:deploy>
+	</target>
+	
+
+	
 
 </project>
 
