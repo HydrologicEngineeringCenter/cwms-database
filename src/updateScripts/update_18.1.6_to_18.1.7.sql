@@ -61,16 +61,21 @@ prompt UPDATING OBJECTS
 -- TABLES --
 ------------
 prompt ################################################################################
+prompt Creating virtual location level tables
+@../cwms/tables/at_virtual_location_level.sql
+@../cwms/tables/at_vloc_lvl_constituent.sql
+prompt ################################################################################
 prompt Creating AT_TSV_2021 table
 @@./18_1_7/create_at_tsv_2021
+@@./18_1_7/update_at_ts_table_properties.sql
 prompt ################################################################################
-prompt Move rows from INF table to AT_TSV_2021 
+prompt Move rows from INF table to AT_TSV_2021
 @@./18_1_7/move_rows_to_2021
 
 prompt ################################################################################
 prompt Updating primary key sizes
 
-DROP INDEX AT_CLOB_IDX1; 
+DROP INDEX AT_CLOB_IDX1;
 ALTER TABLE AT_CLOB MODIFY(CLOB_CODE NUMBER(14));
 ALTER TABLE AT_CLOB MODIFY(OFFICE_CODE NUMBER(14));
 CREATE UNIQUE INDEX AT_CLOB_IDX1 ON AT_CLOB(OFFICE_CODE,UPPER("ID")) TABLESPACE CWMS_20AT_DATA;
@@ -501,7 +506,7 @@ ALTER TABLE AT_RATING_EXTENSION_VALUE MODIFY(NOTE_CODE NUMBER(14));
 @../cwms/cwms_water_supply_pkg_body
 @../cwms/cwms_xchg_pkg_body
 @../cwms/cwms_sec_pkg
-@../cwms_cwms_sec_pkg_body
+@../cwms/cwms_sec_pkg_body
 
 -----------
 -- TYPES --
