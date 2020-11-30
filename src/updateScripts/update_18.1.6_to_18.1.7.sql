@@ -62,6 +62,7 @@ prompt UPDATING OBJECTS
 ------------
 prompt ################################################################################
 prompt Creating virtual location level tables
+@@./18_1_7/create_CWMS_VLOC_LVL_CONSTITUENT_TYPE
 @../cwms/tables/at_virtual_location_level.sql
 @../cwms/tables/at_vloc_lvl_constituent.sql
 prompt ################################################################################
