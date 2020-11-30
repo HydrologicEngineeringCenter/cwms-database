@@ -5,11 +5,11 @@ DECLARE
 BEGIN
    FOR c IN (SELECT table_name
                FROM user_tables
-              WHERE table_name LIKE 'AT_%' AND TEMPORARY = 'N' AND table_name <> 'AT_PROPERTIES')
+              WHERE table_name LIKE 'AT_%' AND TEMPORARY = 'N' AND table_name not in ( 'AT_PROPERTIES','AT_LOG_MESSAGE','AT_LOG_MESSAGE_PROPERTIES'))
    LOOP
       l_trig := replace(c.table_name,'AT_','ST_');
       if(c.table_name = 'AT_SEC_USERS' OR c.table_name='AT_SEC_LOCKED_USERS' OR c.table_name='AT_SEC_USER_OFFICE' OR
-	c.table_name = 'AT_LOG_MESSAGE' or c.table_name='AT_LOG_MESSAGE_PROPERTIES' or c.table_name = 'AT_SEC_CWMS_USERS')
+	 c.table_name = 'AT_SEC_CWMS_USERS')
       THEN
 	l_upass := ' AND user <>  UPPER(CWMS_PROPERTIES.GET_PROPERTY(''CWMSDB'',''sec.upass.id'',''UPASSADM'',''CWMS''))';
       ELSE
