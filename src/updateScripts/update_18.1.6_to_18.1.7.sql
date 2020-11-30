@@ -72,6 +72,15 @@ prompt Creating AT_TSV_2021 table
 prompt ################################################################################
 prompt Move rows from INF table to AT_TSV_2021
 @@./18_1_7/move_rows_to_2021
+prompt ################################################################################
+prompt update ST triggers
+@@./18_1_7/update_st_triggers
+prompt ################################################################################
+prompt create at_tsv view
+exec cwms_util.create_view
+prompt ################################################################################
+prompt update cwms_error table 
+@@./18_1_7/update_cwms_error
 
 prompt ################################################################################
 prompt Updating primary key sizes
@@ -497,6 +506,7 @@ ALTER TABLE AT_RATING_EXTENSION_VALUE MODIFY(NOTE_CODE NUMBER(14));
 @../cwms/cwms_outlet_pkg_body
 @../cwms/cwms_project_pkg_body
 @../cwms/cwms_prop_pkg_body
+@../cwms/cwms_rating_pkg
 @../cwms/cwms_rating_pkg_body
 @../cwms/cwms_stream_pkg_body
 @../cwms/cwms_text_pkg_body
