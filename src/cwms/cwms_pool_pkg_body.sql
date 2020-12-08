@@ -1105,6 +1105,13 @@ begin
                  ||substr('.', 1, length(pl.sub_location_id))
                  ||pl.sub_location_id as project_id,
                  trim(substr(sp.specified_level_id, 8)) as pool_name,
+                 replace(bl.base_location_id
+                             ||substr('.', 1, length(pl.sub_location_id))
+                             ||pl.sub_location_id
+                             ||'.'||bp.base_parameter_id
+                             ||'.'||pt.parameter_type_id
+                             ||'.'||d.duration_id
+                             ||'.'||sp.specified_level_id, 'Top of ', 'Bottom of ') as bottom_level,
                  bl.base_location_id
                  ||substr('.', 1, length(pl.sub_location_id))
                  ||pl.sub_location_id
