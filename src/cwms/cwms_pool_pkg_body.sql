@@ -249,7 +249,7 @@ begin
              p.pool_name
         from at_pool_name p,
              cwms_office o
-       where p.pool_name like l_pool_name_mask escape '\'
+       where upper(p.pool_name) like l_pool_name_mask escape '\'
          and o.office_code = p.office_code
          and regexp_like(o.office_id, l_office_id_regex);
 end cat_pool_names;
