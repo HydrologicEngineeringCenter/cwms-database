@@ -4569,7 +4569,7 @@ AS
       l_date_times          date_table_type;
       l_min_interval        number;
       l_count               number;
-      l_value_offset        binary_double := 0;
+      l_value_offset        binary_double;
    --
       l_tz_code             integer;
       l_loc_tz              varchar2(28);
@@ -4928,6 +4928,8 @@ AS
       l_units := cwms_util.get_valid_unit_id (l_units, l_base_parameter_id);
       if l_value_offset is not null and l_units != 'm' then
          l_value_offset := cwms_util.convert_units(l_value_offset, l_units, 'm');
+      else
+             l_value_offset := 0;
       end if;
 
       DBMS_APPLICATION_INFO.set_action ('check for unit conversion factors');
