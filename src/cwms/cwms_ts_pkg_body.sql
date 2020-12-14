@@ -4929,7 +4929,7 @@ AS
       if l_value_offset is not null and l_units != 'm' then
          l_value_offset := cwms_util.convert_units(l_value_offset, l_units, 'm');
       else
-             l_value_offset := 0;
+         l_value_offset := 0;
       end if;
 
       DBMS_APPLICATION_INFO.set_action ('check for unit conversion factors');
