@@ -876,8 +876,8 @@ begin
       select office_id,
              project_id,
              pool_name,
-             bottom_level_id,
-             top_level_id,
+             bottom_level,
+             top_level,
              attribute,
              description,
              q1.clob_code,
@@ -885,8 +885,8 @@ begin
         from (select o.office_id,
                      bl.base_location_id||substr(''.'', 1, length(pl.sub_location_id))||pl.sub_location_id as project_id,
                      pn.pool_name,
-                     po.bottom_level as bottom_level_id,
-                     po.top_level as top_level_id,
+                     po.bottom_level as bottom_level,
+                     po.top_level as top_level,
                      po.attribute,
                      po.description,
                      po.clob_code
@@ -913,8 +913,8 @@ begin
       select o.office_id,
              bl.base_location_id||substr(''.'', 1, length(pl.sub_location_id))||pl.sub_location_id as project_id,
              trim(replace(specified_level_id, ''Bottom of '', null)) as pool_name,
-             specified_level_id as bottom_level_id,
-             replace(specified_level_id, ''Bottom of '', ''Top of '') as top_level_id,
+             specified_level_id as bottom_level,
+             replace(specified_level_id, ''Bottom of '', ''Top of '') as top_level,
              null as attribute,
              null as description,
              null as clob_code,
@@ -946,8 +946,8 @@ begin
          select office_id,
                 project_id,
                 pool_name,
-                bottom_level_id,
-                top_level_id,
+                bottom_level,
+                top_level,
                 attribute,
                 description,
                 clob_code,
@@ -975,8 +975,8 @@ begin
             ||chr(10)||'where upper(office_id) like upper(:office_id_mask) escape ''\'''
             ||chr(10)||'  and upper(project_id) like upper(:project_id_mask) escape ''\'''
             ||chr(10)||'  and upper(pool_name) like upper(:pool_name_mask) escape ''\'''
-            ||chr(10)||'  and upper(bottom_level_id) like upper(:bottom_level_mask) escape ''\'''
-            ||chr(10)||'  and upper(top_level_id) like upper(:top_level_mask) escape ''\'''
+            ||chr(10)||'  and upper(bottom_level) like upper(:bottom_level_mask) escape ''\'''
+            ||chr(10)||'  and upper(top_level) like upper(:top_level_mask) escape ''\'''
             ||chr(10)||'order by 1, 2, 6, 3';
 
         open p_cat_cursor for l_query using l_office_id_mask, l_project_id_mask, l_pool_name_mask, l_bottom_level_mask, l_top_level_mask;
