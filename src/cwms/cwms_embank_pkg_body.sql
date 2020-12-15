@@ -720,7 +720,7 @@ begin
       when no_data_found then
          l_exists := false;         
    end;
-   if l_exists and cwms_util.get_db_office_id != l_rec.db_office_code then
+   if l_exists and cwms_util.get_db_office_code != l_rec.db_office_code then
        cwms_err.raise(
          'ERROR'
          ||'Office '
@@ -762,7 +762,7 @@ begin
    -----------------------------
    -- see if we can delete it --
    -----------------------------
-   if cwms_util.get_db_office_id != l_rec.db_office_code then
+   if cwms_util.get_db_office_code != l_rec.db_office_code then
        cwms_err.raise(
          'ERROR'
          ||'Office '
@@ -873,7 +873,7 @@ begin
       when no_data_found then
          l_exists := false;         
    end;
-   if l_exists and cwms_util.get_db_office_id != l_rec.db_office_code then
+   if l_exists and cwms_util.get_db_office_code != l_rec.db_office_code then
        cwms_err.raise(
          'ERROR'
          ||'Office '
@@ -915,7 +915,7 @@ begin
    -----------------------------
    -- see if we can delete it --
    -----------------------------
-   if cwms_util.get_db_office_id != l_rec.db_office_code then
+   if cwms_util.get_db_office_code != l_rec.db_office_code then
        cwms_err.raise(
          'ERROR'
          ||'Office '
