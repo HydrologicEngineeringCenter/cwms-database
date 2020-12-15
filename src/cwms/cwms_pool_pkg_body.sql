@@ -557,7 +557,7 @@ begin
    -- insert or update the record --
    ---------------------------------
    if l_exists then
-      update at_pool set row = l_rec;
+      update at_pool set row = l_rec where pool_code = l_rec.pool_code;
    else
       l_rec.pool_code := cwms_seq.nextval;
       insert into at_pool values l_rec;
@@ -844,40 +844,40 @@ end delete_pool;
 -- procedure cat_pools
 --------------------------------------------------------------------------------
 procedure cat_pools(
-    p_cat_cursor        out sys_refcursor,
-    p_project_id_mask   in  varchar2 default '*',
-    p_pool_name_mask    in  varchar2 default '*',
-    p_bottom_level_mask in  varchar2 default '*',
-    p_top_level_mask    in  varchar2 default '*',
-    p_include_explicit  in  varchar2 default 'T',
-    p_include_implicit  in  varchar2 default 'T',
-    p_office_id_mask    in  varchar2 default null)
-    is
-    l_include_explicit  boolean;
-    l_include_implicit  boolean;
-    l_project_id_mask   varchar2(57);
-    l_pool_name_mask    varchar2(32);
-    l_bottom_level_mask varchar2(256);
-    l_top_level_mask    varchar2(256);
-    l_office_id_mask    varchar2(16);
-    l_implicit_query    varchar2(32767);
-    l_explicit_query    varchar2(32767);
-    l_query             varchar2(32767);
+   p_cat_cursor        out sys_refcursor,
+   p_project_id_mask   in  varchar2 default '*',
+   p_pool_name_mask    in  varchar2 default '*',
+   p_bottom_level_mask in  varchar2 default '*',
+   p_top_level_mask    in  varchar2 default '*',
+   p_include_explicit  in  varchar2 default 'T',
+   p_include_implicit  in  varchar2 default 'T',
+   p_office_id_mask    in  varchar2 default null)
+is
+   l_include_explicit  boolean;
+   l_include_implicit  boolean;
+   l_project_id_mask   varchar2(57);
+   l_pool_name_mask    varchar2(32);
+   l_bottom_level_mask varchar2(256);
+   l_top_level_mask    varchar2(256);
+   l_office_id_mask    varchar2(16);
+   l_implicit_query    varchar2(32767);
+   l_explicit_query    varchar2(32767);
+   l_query             varchar2(32767);
 begin
-    l_project_id_mask   := cwms_util.normalize_wildcards(upper(nvl(p_project_id_mask, '*')));
-    l_pool_name_mask    := cwms_util.normalize_wildcards(upper(nvl(p_pool_name_mask, '*')));
-    l_bottom_level_mask := cwms_util.normalize_wildcards(upper(nvl(p_bottom_level_mask, '*')));
-    l_top_level_mask    := cwms_util.normalize_wildcards(upper(nvl(p_top_level_mask, '*')));
-    l_office_id_mask    := cwms_util.normalize_wildcards(upper(nvl(p_office_id_mask, cwms_util.user_office_id)));
-    l_include_explicit  := cwms_util.return_true_or_false(p_include_explicit);
-    l_include_implicit  := cwms_util.return_true_or_false(p_include_implicit);
+   l_project_id_mask   := cwms_util.normalize_wildcards(upper(nvl(p_project_id_mask, '*')));
+   l_pool_name_mask    := cwms_util.normalize_wildcards(upper(nvl(p_pool_name_mask, '*')));
+   l_bottom_level_mask := cwms_util.normalize_wildcards(upper(nvl(p_bottom_level_mask, '*')));
+   l_top_level_mask    := cwms_util.normalize_wildcards(upper(nvl(p_top_level_mask, '*')));
+   l_office_id_mask    := cwms_util.normalize_wildcards(upper(nvl(p_office_id_mask, cwms_util.user_office_id)));
+   l_include_explicit  := cwms_util.return_true_or_false(p_include_explicit);
+   l_include_implicit  := cwms_util.return_true_or_false(p_include_implicit);
 
-    l_explicit_query := '
+   l_explicit_query := '
       select office_id,
              project_id,
              pool_name,
-             bottom_level,
-             top_level,
+             bottom_level_id,
+             top_level_id,
              attribute,
              description,
              q1.clob_code,
@@ -885,8 +885,8 @@ begin
         from (select o.office_id,
                      bl.base_location_id||substr(''.'', 1, length(pl.sub_location_id))||pl.sub_location_id as project_id,
                      pn.pool_name,
-                     po.bottom_level as bottom_level,
-                     po.top_level as top_level,
+                     po.bottom_level as bottom_level_id,
+                     po.top_level as top_level_id,
                      po.attribute,
                      po.description,
                      po.clob_code
@@ -909,12 +909,12 @@ begin
              ) q2 on q2.clob_code = q1.clob_code
    ';
 
-    l_implicit_query := '
+   l_implicit_query := '
       select o.office_id,
              bl.base_location_id||substr(''.'', 1, length(pl.sub_location_id))||pl.sub_location_id as project_id,
              trim(replace(specified_level_id, ''Bottom of '', null)) as pool_name,
-             specified_level_id as bottom_level,
-             replace(specified_level_id, ''Bottom of '', ''Top of '') as top_level,
+             specified_level_id as bottom_level_id,
+             replace(specified_level_id, ''Bottom of '', ''Top of '') as top_level_id,
              null as attribute,
              null as description,
              null as clob_code,
@@ -939,53 +939,61 @@ begin
                       where office_code = sl.office_code
                         and specified_level_id = replace(sl.specified_level_id, ''Bottom of'', ''Top of'')
                     )
+         and not exists (select project_code,
+                                bottom_level,
+                                top_level
+                           from at_pool
+                          where project_code = pr.project_location_code
+                            and upper(bottom_level) = upper(''Elev.Inst.0.''||sl.specified_level_id)
+                            and upper(top_level)    = upper(''Elev.Inst.0.''||replace(sl.specified_level_id, ''Bottom of '', ''Top of ''))
+                        )
    ';
 
-    if l_include_explicit or l_include_implicit then
-        l_query := '
+   if l_include_explicit or l_include_implicit then
+      l_query := '
          select office_id,
                 project_id,
                 pool_name,
-                bottom_level,
-                top_level,
+                bottom_level_id,
+                top_level_id,
                 attribute,
                 description,
                 clob_code,
                 clob_text
            from (';
-        if l_include_explicit then
-            if l_include_implicit then
-                ---------------------------
-                -- explicit and implicit --
-                ---------------------------
-                l_query := l_query||l_explicit_query||chr(10)||'union all'||chr(10)||l_implicit_query;
-            else
-                -------------------
-                -- explicit only --
-                -------------------
-                l_query := l_query||l_explicit_query;
-            end if;
-        elsif l_include_implicit then
-            -------------------
-            -- implicit only --
-            -------------------
-            l_query := l_query||l_implicit_query;
-        end if;
-        l_query := l_query||')'
-            ||chr(10)||'where upper(office_id) like upper(:office_id_mask) escape ''\'''
-            ||chr(10)||'  and upper(project_id) like upper(:project_id_mask) escape ''\'''
-            ||chr(10)||'  and upper(pool_name) like upper(:pool_name_mask) escape ''\'''
-            ||chr(10)||'  and upper(bottom_level) like upper(:bottom_level_mask) escape ''\'''
-            ||chr(10)||'  and upper(top_level) like upper(:top_level_mask) escape ''\'''
-            ||chr(10)||'order by 1, 2, 6, 3';
+      if l_include_explicit then
+         if l_include_implicit then
+         ---------------------------
+         -- explicit and implicit --
+         ---------------------------
+            l_query := l_query||l_explicit_query||chr(10)||'union all'||chr(10)||l_implicit_query;
+         else
+         -------------------
+         -- explicit only --
+         -------------------
+            l_query := l_query||l_explicit_query;
+         end if;
+      elsif l_include_implicit then
+         -------------------
+         -- implicit only --
+         -------------------
+         l_query := l_query||l_implicit_query;
+      end if;
+      l_query := l_query||')'
+      ||chr(10)||'where upper(office_id) like upper(:office_id_mask) escape ''\'''
+      ||chr(10)||'  and upper(project_id) like upper(:project_id_mask) escape ''\'''
+      ||chr(10)||'  and upper(pool_name) like upper(:pool_name_mask) escape ''\'''
+      ||chr(10)||'  and upper(bottom_level_id) like upper(:bottom_level_mask) escape ''\'''
+      ||chr(10)||'  and upper(top_level_id) like upper(:top_level_mask) escape ''\'''
+      ||chr(10)||'order by 1, 2, 6, 3';
 
-        open p_cat_cursor for l_query using l_office_id_mask, l_project_id_mask, l_pool_name_mask, l_bottom_level_mask, l_top_level_mask;
-    else
-        -----------------------------------
-        -- neither implicit nor explicit --
-        -----------------------------------
-        open p_cat_cursor for select null from dual where 1 = 2;
-    end if;
+      open p_cat_cursor for l_query using l_office_id_mask, l_project_id_mask, l_pool_name_mask, l_bottom_level_mask, l_top_level_mask;
+   else
+      -----------------------------------
+      -- neither implicit nor explicit --
+      -----------------------------------
+      open p_cat_cursor for select null from dual where 1 = 2;
+   end if;
 end cat_pools;
 --------------------------------------------------------------------------------
 -- function cat_pools_f
