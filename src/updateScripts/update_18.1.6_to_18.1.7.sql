@@ -504,6 +504,7 @@ ALTER TABLE AT_RATING_EXTENSION_VALUE MODIFY(NOTE_CODE NUMBER(14));
 @../cwms/cwms_msg_pkg
 @../cwms/cwms_msg_pkg_body
 @../cwms/cwms_outlet_pkg_body
+@../cwms/cwms_pool_pkg_body
 @../cwms/cwms_project_pkg_body
 @../cwms/cwms_prop_pkg_body
 @../cwms/cwms_rating_pkg
