@@ -590,6 +590,7 @@ GRANT EXECUTE ON CWMS_20.CAT_DSS_FILE_OBJ_T TO CWMS_USER;
 -----------
 -- VIEWS --
 -----------
+@../cwms/views/av_pool
 
 @18_1_7/at_comp_outlet_conn_tr1.sql
 
