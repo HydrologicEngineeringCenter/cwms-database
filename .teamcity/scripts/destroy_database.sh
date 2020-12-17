@@ -1,0 +1,5 @@
+#/bin/bash
+sqlplus sys/${'$'}SYS_PASSWORD@${'$'}HOST_AND_PORT/${'$'}ContainerDB as SYSDBA <<EOF
+    ALTER PLUGGABLE DATABASE ${'$'}CWMS_PDB CLOSE;
+    DROP PLUGGABLE DATABASE ${'$'}CWMS_PDB INCLUDING DATAFILES;      
+EOF
