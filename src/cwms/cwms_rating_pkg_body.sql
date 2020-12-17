@@ -729,7 +729,7 @@ procedure retrieve_specs_obj(
    p_spec_id_mask   in  varchar2 default '*',
    p_office_id_mask in  varchar2 default null)
 is
-   type codes_t is table of boolean index by varchar2(10);
+   type codes_t is table of boolean index by varchar2(14);
    l_codes                 codes_t;
    l_parts                 str_tab_t;
    l_location_id_mask      varchar2(57);
