@@ -6,6 +6,8 @@ import jetbrains.buildServer.configs.kotlin.v2019_2.failureConditions.BuildFailu
 import jetbrains.buildServer.configs.kotlin.v2019_2.failureConditions.failOnMetricChange
 import jetbrains.buildServer.configs.kotlin.v2019_2.triggers.vcs
 import jetbrains.buildServer.configs.kotlin.v2019_2.triggers.finishBuildTrigger
+import java.io.BufferedReader;
+import java.io.File;
 
 /*
 The settings script is an entry point for defining a TeamCity
@@ -43,6 +45,14 @@ project {
     
 }
 
+object Helpers {
+    fun readScript( path: String ): String {
+        val bufferedReader: BufferedReader = File(path).bufferedReader()
+        return bufferedReader.use { it.readText() }.trimIndent()
+    }
+}
+
+
 object Build : BuildType({
     name = "Build (create in oracle)"
 
@@ -71,70 +81,17 @@ object Build : BuildType({
     steps {
         script {
             name = "Generate Overrides file and Parameters"
-            scriptContent = """
-                if [ -d output ]; then
-                	rm -rf output
-                fi
-                mkdir output
-                export PW=`tr -cd '[:alnum:]' < /dev/urandom | fold -w25 | head -n1`
-                
-                export CWMS_PDB=`echo %teamcity.build.branch% | sed -e "s@/refs/heads/@@g" | sed "s@/@_@g" | sed "s@\.@_@g"`
-                if [[ ${'$'}CWMS_PDB =~ ^[0-9]+${'$'} ]]; then
-                	echo "prefixing pull request number with text."
-                    export CWMS_PDB="PULLREQUEST_${'$'}{CWMS_PDB}"
-                elif [[ ${'$'}CWMS_PDB =~ ^[0-9] ]]; then
-                    # while not a pull request, it still needs an alpha prefix.
-                    echo "prefixing with letter"
-                    export CWMS_PDB="z_${'$'}{CWMS_PDB}"
-                fi
-                cat <<EOF
-                ##teamcity[setParameter name='env.CWMS_PDB' value='${'$'}CWMS_PDB']
-                
-                EOF
-                
-                echo "=${'$'}CWMS_PDB="
-                
-                sed -e "s/SYS_PASSWORD/${'$'}SYS_PASSWORD/g" \
-                    -e "s/PASSWORD/${'$'}PW/g" \
-                    -e "s/HOST_AND_PORT/${'$'}HOST_AND_PORT/g" \
-                    -e "s/SERVICE_NAME/${'$'}CWMS_PDB/g" \
-                    -e "s/OFFICE_ID/${'$'}OFFICE_ID/g" \
-                    -e "s/OFFICE_CODE/${'$'}OFFICE_CODE/g" \
-                    -e "s/TEST_ACCOUNT_FLAG/-testaccount/g" teamcity_overrides.xml > output/overrides.xml
-                cat <<EOF
-                ##teamcity[setParameter name='env.CWMS_PASSWORD' value='${'$'}PW']
-                
-                EOF
-                
-                echo "${'$'}CWMS_PDB" > output/database.info
-                echo "${'$'}PW" >> output/database.info
-                exit 0
-            """.trimIndent()
+            scriptContent = Helpers.readScript("scripts/setup_parameters.sh");
         }
         script {
-            name = "Destroy Database"
+            name = "Destroy Database In case of prevous failure"
             executionMode = BuildStep.ExecutionMode.ALWAYS
-            scriptContent = """
-                sqlplus sys/${'$'}SYS_PASSWORD@${'$'}HOST_AND_PORT/${'$'}ContainerDB as SYSDBA <<EOF
-                	ALTER PLUGGABLE DATABASE ${'$'}CWMS_PDB CLOSE;
-                	DROP PLUGGABLE DATABASE ${'$'}CWMS_PDB INCLUDING DATAFILES;      
-                EOF
-            """.trimIndent()
+            scriptContent = Helpers.readScript("scripts/destroy_database.sh");
             dockerImage = "cwms_db_dev:latest"
         }
         script {
             name = "Create PDB"
-            scriptContent = """
-                sqlplus sys/${'$'}SYS_PASSWORD@${'$'}HOST_AND_PORT/${'$'}ContainerDB as SYSDBA <<EOF | grep "ORA-65012: Pluggable database REFS_HEADS_MASTER already exists"
-                alter session set PDB_FILE_NAME_CONVERT='/opt/oracle/oradata/ROOTDB/CWMSBASE/','/opt/oracle/oradata/ROOTDB/${'$'}{CWMS_PDB}/';
-                CREATE PLUGGABLE DATABASE ${'$'}CWMS_PDB from CWMSBASE;
-                ALTER PLUGGABLE DATABASE ${'$'}CWMS_PDB OPEN READ WRITE;
-                EOF
-                if [ ${'$'}? -eq 0 ]; then
-                	echo "Database wasn't correctly destroyed" 1>&2
-                    exit 1
-                fi
-            """.trimIndent()
+            scriptContent = Helpers.readScript("scripts/create_database.sh")
             dockerImage = "cwms_db_dev:latest"
         }
         script {
@@ -166,33 +123,12 @@ object Build : BuildType({
             antArguments = "-Dbuilduser.overrides=output/overrides.xml"
             dockerImage ="cwms_db_dev:latest"
         }
-
         script {
-            name = "Create Basic Users"
-            scriptContent = """
-                sqlplus cwms_20/${'$'}CWMS_PASSWORD@${'$'}HOST_AND_PORT/${'$'}CWMS_PDB << EOF
-                  --execute cwms_sec.create_cwmsdbi_db_user( 'q0cwpa64', '${'$'}CWMS_PASSWORD', '${'$'}OFFICE_ID');
-                  execute cwms_sec.create_user('basic_user','${'$'}CWMS_PASSWORD', char_32_array_type('CWMS Users'), '${'$'}OFFICE_ID');
-                  execute cwms_sec.update_edipi('basic_user',1000000000);
-                  
-                  execute cwms_sec.create_user('user_admin','${'$'}CWMS_PASSWORD', char_32_array_type('CWMS Users', 'CWMS User Admins'), '${'$'}OFFICE_ID');
-                  execute cwms_sec.update_edipi('user_admin',2000000000);
-                  
-                  execute cwms_sec.create_user('pd_user','${'$'}CWMS_PASSWORD', char_32_array_type('CWMS Users', 'CWMS PD Users','CWMS User Admins'), '${'$'}OFFICE_ID');
-                  execute cwms_sec.update_edipi('pd_user',3000000000);
-                EOF
-                
-                if [ ${'$'}? -ne 0 ]; then
-                  echo "Failed to create CWMS Users."
-                  exit 1
-                fi
-                
-                echo "BASIC_USER:1000000000:All Users,CWMS Users" > output/users.txt
-                echo "USER_ADMIN:2000000000:All Users,CWMS Users,CWMS User Admins" >> output/users.txt
-                echo "PD_USER:3000000000:All Users,CWMS Users,CWMS PD Users,CWMS User Admins" >> output/users.txt
-            """.trimIndent()
+            name = "Destroy Database Since we are done"
+            executionMode = BuildStep.ExecutionMode.ALWAYS
+            scriptContent = Helpers.readScript("scripts/destroy_database.sh");
             dockerImage = "cwms_db_dev:latest"
-        }
+        }        
     }
 
     triggers {
@@ -245,6 +181,15 @@ object Deploy : BuildType({
     }
 
     steps {
+        script {
+            name = "Generate Overrides file and Parameters"
+            scriptContent = Helpers.readScript("scripts/setup_parameters.sh");
+        }        
+        script {
+            name = "Create PDB"
+            scriptContent = Helpers.readScript("scripts/create_database.sh")
+            dockerImage = "cwms_db_dev:latest"
+        }
         ant {
             name = "Build Bundle"
             mode = antFile {}
@@ -252,6 +197,12 @@ object Deploy : BuildType({
             antArguments = "-Dbuilduser.overrides=output/overrides.xml"
             dockerImage ="cwms_db_dev:latest"
         }
+        script {
+            name = "Destroy Database Since we are done"
+            executionMode = BuildStep.ExecutionMode.ALWAYS
+            scriptContent = Helpers.readScript("scripts/destroy_database.sh");
+            dockerImage = "cwms_db_dev:latest"
+        }        
     }
 
     triggers {
