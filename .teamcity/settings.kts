@@ -86,7 +86,7 @@ object Build : BuildType({
         script {
             name = "Destroy Database In case of prevous failure"
             executionMode = BuildStep.ExecutionMode.ALWAYS
-            scriptContent = Helpers.readScript("scripts/destory_database.sh");
+            scriptContent = Helpers.readScript("scripts/destroy_database.sh");
             dockerImage = "cwms_db_dev:latest"
         }
         script {
@@ -126,7 +126,7 @@ object Build : BuildType({
         script {
             name = "Destroy Database Since we are done"
             executionMode = BuildStep.ExecutionMode.ALWAYS
-            scriptContent = Helpers.readScript("scripts/destory_database.sh");
+            scriptContent = Helpers.readScript("scripts/destroy_database.sh");
             dockerImage = "cwms_db_dev:latest"
         }        
     }
@@ -200,7 +200,7 @@ object Deploy : BuildType({
         script {
             name = "Destroy Database Since we are done"
             executionMode = BuildStep.ExecutionMode.ALWAYS
-            scriptContent = Helpers.readScript("scripts/destory_database.sh");
+            scriptContent = Helpers.readScript("scripts/destroy_database.sh");
             dockerImage = "cwms_db_dev:latest"
         }        
     }
