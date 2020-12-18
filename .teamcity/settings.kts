@@ -45,10 +45,13 @@ project {
     
 }
 
-fun readScript( path: String ): String {
-    val bufferedReader: BufferedReader = File(path).bufferedReader()
-    return bufferedReader.use { it.readText() }.trimIndent()
+object Helpers {
+    fun readScript( path: String ): String {
+        val bufferedReader: BufferedReader = File(path).bufferedReader()
+        return bufferedReader.use { it.readText() }.trimIndent()
+    }
 }
+
 
 object Build : BuildType({
     name = "Build (create in oracle)"
@@ -78,17 +81,17 @@ object Build : BuildType({
     steps {
         script {
             name = "Generate Overrides file and Parameters"
-            scriptContent = readScript("scripts/setup_parameters.sh");
+            scriptContent = Helpers.readScript("scripts/setup_parameters.sh");
         }
         script {
             name = "Destroy Database In case of prevous failure"
             executionMode = BuildStep.ExecutionMode.ALWAYS
-            scriptContent = readScript("scripts/destory_database.sh");
+            scriptContent = Helpers.readScript("scripts/destory_database.sh");
             dockerImage = "cwms_db_dev:latest"
         }
         script {
             name = "Create PDB"
-            scriptContent = readScript("scripts/create_database.sh")
+            scriptContent = Helpers.readScript("scripts/create_database.sh")
             dockerImage = "cwms_db_dev:latest"
         }
         script {
@@ -123,7 +126,7 @@ object Build : BuildType({
         script {
             name = "Destroy Database Since we are done"
             executionMode = BuildStep.ExecutionMode.ALWAYS
-            scriptContent = readScript("scripts/destory_database.sh");
+            scriptContent = Helpers.readScript("scripts/destory_database.sh");
             dockerImage = "cwms_db_dev:latest"
         }        
     }
@@ -180,11 +183,11 @@ object Deploy : BuildType({
     steps {
         script {
             name = "Generate Overrides file and Parameters"
-            scriptContent = readScript("scripts/setup_parameters.sh");
+            scriptContent = Helpers.readScript("scripts/setup_parameters.sh");
         }        
         script {
             name = "Create PDB"
-            scriptContent = readScript("scripts/create_database.sh")
+            scriptContent = Helpers.readScript("scripts/create_database.sh")
             dockerImage = "cwms_db_dev:latest"
         }
         ant {
@@ -197,20 +200,9 @@ object Deploy : BuildType({
         script {
             name = "Destroy Database Since we are done"
             executionMode = BuildStep.ExecutionMode.ALWAYS
-            scriptContent = readScript("scripts/destory_database.sh");
+            scriptContent = Helpers.readScript("scripts/destory_database.sh");
             dockerImage = "cwms_db_dev:latest"
-        }
-        script {
-            name = "Destroy Database"
-            executionMode = BuildStep.ExecutionMode.ALWAYS
-            scriptContent = """
-                sqlplus sys/${'$'}SYS_PASSWORD@${'$'}HOST_AND_PORT/${'$'}ContainerDB as SYSDBA <<EOF
-                	ALTER PLUGGABLE DATABASE ${'$'}CWMS_PDB CLOSE;
-                	DROP PLUGGABLE DATABASE ${'$'}CWMS_PDB INCLUDING DATAFILES;      
-                EOF
-            """.trimIndent()
-            dockerImage = "cwms_db_dev:latest"
-        }
+        }        
     }
 
     triggers {
