@@ -30,7 +30,7 @@ sed -e "s/SYS_PASSWORD/$SYS_PASSWORD/g" \
     -e "s/TEST_ACCOUNT_FLAG/-testaccount/g" teamcity_overrides.xml > output/overrides.xml
 cat <<EOF
 ##teamcity[setParameter name='env.CWMS_PASSWORD' value='$PW']
-##teamcity[setParameter name='env.PATH' value='/opt/instantclient_19_6:$PATH']
+##teamcity[setParameter name='env.PATH' value='/usr/local/buildtools/instantclient_19_9:$PATH']
 
 EOF
 
