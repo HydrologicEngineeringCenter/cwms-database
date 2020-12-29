@@ -5,7 +5,7 @@ fi
 mkdir output
 export PW=`tr -cd '[:alnum:]' < /dev/urandom | fold -w25 | head -n1`
 
-export CWMS_PDB=`echo %teamcity.build.branch% | sed -e "s@/refs/heads/@@g" | sed "s@/@_@g" | sed "s@\.@_@g"`
+export CWMS_PDB=`echo %teamcity.build.branch% | sed -e "s@/refs/heads/@@g" | sed "s@/@_@g" | sed "s@\.@_@g" | sed "s@-@_@g" | sed "s@#@_@g"`
 if [[ $CWMS_PDB =~ ^[0-9]+$ ]]; then
     echo "prefixing pull request number with text."
     export CWMS_PDB="PULLREQUEST_${CWMS_PDB}"
