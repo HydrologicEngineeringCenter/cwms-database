@@ -99,7 +99,7 @@
 			</else>
 		</if>
 		
-		<exec dir="${src}" executable="python" output="build-sql-script-output.txt" error="build-sql-script-error.txt" resultproperty="build-sql-script-result">
+		<exec dir="${src}" executable="python2" output="build-sql-script-output.txt" error="build-sql-script-error.txt" resultproperty="build-sql-script-result">
 			<arg line="${buildSqlScript-arg-line}"/>
 		</exec>
 		
@@ -124,7 +124,7 @@
 		<property name="autobuild-arg-line" value="autobuild.py echo=${autobuild.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} cwms_schema=${oracle.cwms.user} cwms_passwd=${oracle.cwms.password} dbi_passwd=${oracle.cwmsdbi.password} pd_office=${office.primary.id} pd_passwd=${oracle.cwmspd.password} test_passwd=${oracle.hectest.password} ${build.restricted}"/>
 		<echo message="${autobuild-arg-line}"/>
 		
-		<exec dir="${src}" executable="python" output="auto-build-output.txt" error="auto-build-error.txt" resultproperty="auto-build-result">
+		<exec dir="${src}" executable="python2" output="auto-build-output.txt" error="auto-build-error.txt" resultproperty="auto-build-result">
 			<arg line="${autobuild-arg-line}"/>
 		</exec>
 		
@@ -278,7 +278,7 @@
 		<property name="autokill-arg-line" value="autokill.py echo=${autokill.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} cwms_schema=${oracle.cwms.user} ${autokill.force} ${build.restricted}"/>
 		<echo message="${autokill-arg-line}"/>
 		
-		<exec dir="${src}" executable="python" output="auto-kill-output.txt" error="auto-kill-error.txt" resultproperty="auto-kill-result">
+		<exec dir="${src}" executable="python2" output="auto-kill-output.txt" error="auto-kill-error.txt" resultproperty="auto-kill-result">
 			<arg line="${autokill-arg-line}"/>
 		</exec>	
 		
@@ -411,7 +411,7 @@
                 <property name="autoexportschema-arg-line" value="autoexportschema.py echo=${autoexport.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} cwms_dir=${oracle.cwms.dir}  ccp_passwd=${oracle.ccp.password} ${autoexportschema.force}"/>
                 <echo message="${autoexportschema-arg-line}"/>
 
-                <exec dir="${src}" executable="python" output="auto-export-schema-output.txt" error="auto-export-schema-error.txt" resultproperty="auto-export-schema-result" failonerror="true">
+                <exec dir="${src}" executable="python2" output="auto-export-schema-output.txt" error="auto-export-schema-error.txt" resultproperty="auto-export-schema-result" failonerror="true">
                         <arg line="${autoexportschema-arg-line}"/>
                 </exec>
 
@@ -438,7 +438,7 @@
                 <property name="autoexport-arg-line" value="python autoexport.py echo=${autoexport.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} cwms_dir=${oracle.cwms.dir}  ccp_passwd=${oracle.ccp.password} ${autoexport.force} ${build.restricted}"/>
                 <echo message="${autoexport-arg-line}"/>
 
-                <exec dir="${src}" executable="python" output="auto-export-output.txt" error="auto-export-error.txt" resultproperty="auto-export-result" failonerror="true">
+                <exec dir="${src}" executable="python2" output="auto-export-output.txt" error="auto-export-error.txt" resultproperty="auto-export-result" failonerror="true">
                         <arg line="${autoexport-arg-line}"/>
                 </exec>
 
@@ -465,7 +465,7 @@
                 <property name="autoimport-arg-line" value="autoimport.py echo=${autoimport.echo} inst=${oracle.cwms.instance} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} sys_passwd=${oracle.sys.password} cwms_dir=${oracle.cwms.dir} ccp_passwd=${oracle.ccp.password} ${autoimport.force} ${build.restricted}"/>
                 <echo message="${autoimport-arg-line}"/>
 
-                <exec dir="${src}" executable="python" output="auto-import-output.txt" error="auto-import-error.txt" resultproperty="auto-import-result" failonerror="true">
+                <exec dir="${src}" executable="python2" output="auto-import-output.txt" error="auto-import-error.txt" resultproperty="auto-import-result" failonerror="true">
                         <arg line="${autoimport-arg-line}"/>
                 </exec>
 
@@ -492,7 +492,7 @@
                 <property name="autocreateusers-arg-line" value="autoCreateCWMSUsers.py echo=${autocreateusers.echo} inst=${oracle.cwms.instance} dbi_passwd=${oracle.dbi.password} pd_passwd=${oracle.pd.password} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} sys_passwd=${oracle.sys.password} ${autocreateusers.force}"/>
                 <echo message="${autocreateusers-arg-line}"/>
 
-                <exec dir="${src}" executable="python" output="auto-createusers-output.txt" error="auto-createusers-error.txt" resultproperty="auto-createusers-result" failonerror="true">
+                <exec dir="${src}" executable="python2" output="auto-createusers-output.txt" error="auto-createusers-error.txt" resultproperty="auto-createusers-result" failonerror="true">
                         <arg line="${autocreateusers-arg-line}"/>
                 </exec>
 
