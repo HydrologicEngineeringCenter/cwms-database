@@ -116,8 +116,7 @@ object Build : BuildType({
         }
         ant {
             targets = "test"
-            antArguments = "-Dbuilduser.overrides=output/overrides.xml"
-            dockerImage ="cwms_db_dev:latest"
+            antArguments = "-Dbuilduser.overrides=output/overrides.xml"            
         }
         script {
             name = "Destroy Database Since we are done"
