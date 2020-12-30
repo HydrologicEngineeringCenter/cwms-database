@@ -90,16 +90,16 @@
 		<if>
 			<equals arg1="${office.secondary.id}" arg2="" />
 			<then>
-				<property name="buildSqlScript-arg-line" value="/c python buildSqlScripts.py ${oracle.cwms.user} ${cwms.existing.instances} ${office.primary.id} ${test.account.create} ${seq.start}"/>
+				<property name="buildSqlScript-arg-line" value="python buildSqlScripts.py ${oracle.cwms.user} ${cwms.existing.instances} ${office.primary.id} ${test.account.create} ${seq.start}"/>
 				<echo message="${buildSqlScript-arg-line}"/>
 			</then>
 			<else>
-				<property name="buildSqlScript-arg-line" value="/c python buildSqlScripts.py ${oracle.cwms.user} ${cwms.existing.instances} ${office.primary.id} ${office.secondary.id} ${test.account.create} ${seq.start}"/>
+				<property name="buildSqlScript-arg-line" value="buildSqlScripts.py ${oracle.cwms.user} ${cwms.existing.instances} ${office.primary.id} ${office.secondary.id} ${test.account.create} ${seq.start}"/>
 				<echo message="${buildSqlScript-arg-line}"/>
 			</else>
 		</if>
 		
-		<exec dir="${src}" executable="cmd" output="build-sql-script-output.txt" error="build-sql-script-error.txt" resultproperty="build-sql-script-result">
+		<exec dir="${src}" executable="python" output="build-sql-script-output.txt" error="build-sql-script-error.txt" resultproperty="build-sql-script-result">
 			<arg line="${buildSqlScript-arg-line}"/>
 		</exec>
 		
@@ -121,10 +121,10 @@
 		
 		<echo message="Creating new CWMS Schema..."/>
 
-		<property name="autobuild-arg-line" value="/c python autobuild.py echo=${autobuild.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} cwms_schema=${oracle.cwms.user} cwms_passwd=${oracle.cwms.password} dbi_passwd=${oracle.cwmsdbi.password} pd_office=${office.primary.id} pd_passwd=${oracle.cwmspd.password} test_passwd=${oracle.hectest.password} ${build.restricted}"/>
+		<property name="autobuild-arg-line" value="autobuild.py echo=${autobuild.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} cwms_schema=${oracle.cwms.user} cwms_passwd=${oracle.cwms.password} dbi_passwd=${oracle.cwmsdbi.password} pd_office=${office.primary.id} pd_passwd=${oracle.cwmspd.password} test_passwd=${oracle.hectest.password} ${build.restricted}"/>
 		<echo message="${autobuild-arg-line}"/>
 		
-		<exec dir="${src}" executable="cmd" output="auto-build-output.txt" error="auto-build-error.txt" resultproperty="auto-build-result">
+		<exec dir="${src}" executable="python" output="auto-build-output.txt" error="auto-build-error.txt" resultproperty="auto-build-result">
 			<arg line="${autobuild-arg-line}"/>
 		</exec>
 		
@@ -275,10 +275,10 @@
 		
 		<echo message="dropping existing CWMS Schema..."/>
 		
-		<property name="autokill-arg-line" value="/c python autokill.py echo=${autokill.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} cwms_schema=${oracle.cwms.user} ${autokill.force} ${build.restricted}"/>
+		<property name="autokill-arg-line" value="autokill.py echo=${autokill.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} cwms_schema=${oracle.cwms.user} ${autokill.force} ${build.restricted}"/>
 		<echo message="${autokill-arg-line}"/>
 		
-		<exec dir="${src}" executable="cmd" output="auto-kill-output.txt" error="auto-kill-error.txt" resultproperty="auto-kill-result">
+		<exec dir="${src}" executable="python" output="auto-kill-output.txt" error="auto-kill-error.txt" resultproperty="auto-kill-result">
 			<arg line="${autokill-arg-line}"/>
 		</exec>	
 		
@@ -408,10 +408,10 @@
 
                 <echo message="Exporting CWMS schema ..."/>
 
-                <property name="autoexportschema-arg-line" value="/c python autoexportschema.py echo=${autoexport.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} cwms_dir=${oracle.cwms.dir}  ccp_passwd=${oracle.ccp.password} ${autoexportschema.force}"/>
+                <property name="autoexportschema-arg-line" value="autoexportschema.py echo=${autoexport.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} cwms_dir=${oracle.cwms.dir}  ccp_passwd=${oracle.ccp.password} ${autoexportschema.force}"/>
                 <echo message="${autoexportschema-arg-line}"/>
 
-                <exec dir="${src}" executable="cmd" output="auto-export-schema-output.txt" error="auto-export-schema-error.txt" resultproperty="auto-export-schema-result" failonerror="true">
+                <exec dir="${src}" executable="python" output="auto-export-schema-output.txt" error="auto-export-schema-error.txt" resultproperty="auto-export-schema-result" failonerror="true">
                         <arg line="${autoexportschema-arg-line}"/>
                 </exec>
 
@@ -435,10 +435,10 @@
 
                 <echo message="Exporting CWMS tables ..."/>
 
-                <property name="autoexport-arg-line" value="/c python autoexport.py echo=${autoexport.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} cwms_dir=${oracle.cwms.dir}  ccp_passwd=${oracle.ccp.password} ${autoexport.force} ${build.restricted}"/>
+                <property name="autoexport-arg-line" value="python autoexport.py echo=${autoexport.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} cwms_dir=${oracle.cwms.dir}  ccp_passwd=${oracle.ccp.password} ${autoexport.force} ${build.restricted}"/>
                 <echo message="${autoexport-arg-line}"/>
 
-                <exec dir="${src}" executable="cmd" output="auto-export-output.txt" error="auto-export-error.txt" resultproperty="auto-export-result" failonerror="true">
+                <exec dir="${src}" executable="python" output="auto-export-output.txt" error="auto-export-error.txt" resultproperty="auto-export-result" failonerror="true">
                         <arg line="${autoexport-arg-line}"/>
                 </exec>
 
@@ -462,10 +462,10 @@
 
                 <echo message="Importing  CWMS tables ..."/>
 
-                <property name="autoimport-arg-line" value="/c python autoimport.py echo=${autoimport.echo} inst=${oracle.cwms.instance} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} sys_passwd=${oracle.sys.password} cwms_dir=${oracle.cwms.dir} ccp_passwd=${oracle.ccp.password} ${autoimport.force} ${build.restricted}"/>
+                <property name="autoimport-arg-line" value="autoimport.py echo=${autoimport.echo} inst=${oracle.cwms.instance} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} sys_passwd=${oracle.sys.password} cwms_dir=${oracle.cwms.dir} ccp_passwd=${oracle.ccp.password} ${autoimport.force} ${build.restricted}"/>
                 <echo message="${autoimport-arg-line}"/>
 
-                <exec dir="${src}" executable="cmd" output="auto-import-output.txt" error="auto-import-error.txt" resultproperty="auto-import-result" failonerror="true">
+                <exec dir="${src}" executable="python" output="auto-import-output.txt" error="auto-import-error.txt" resultproperty="auto-import-result" failonerror="true">
                         <arg line="${autoimport-arg-line}"/>
                 </exec>
 
@@ -489,10 +489,10 @@
 
                 <echo message="Recreate  CWMS users ..."/>
 
-                <property name="autocreateusers-arg-line" value="/c python autoCreateCWMSUsers.py echo=${autocreateusers.echo} inst=${oracle.cwms.instance} dbi_passwd=${oracle.dbi.password} pd_passwd=${oracle.pd.password} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} sys_passwd=${oracle.sys.password} ${autocreateusers.force}"/>
+                <property name="autocreateusers-arg-line" value="autoCreateCWMSUsers.py echo=${autocreateusers.echo} inst=${oracle.cwms.instance} dbi_passwd=${oracle.dbi.password} pd_passwd=${oracle.pd.password} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} sys_passwd=${oracle.sys.password} ${autocreateusers.force}"/>
                 <echo message="${autocreateusers-arg-line}"/>
 
-                <exec dir="${src}" executable="cmd" output="auto-createusers-output.txt" error="auto-createusers-error.txt" resultproperty="auto-createusers-result" failonerror="true">
+                <exec dir="${src}" executable="python" output="auto-createusers-output.txt" error="auto-createusers-error.txt" resultproperty="auto-createusers-result" failonerror="true">
                         <arg line="${autocreateusers-arg-line}"/>
                 </exec>
 
