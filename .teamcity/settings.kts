@@ -31,7 +31,7 @@ To debug in IntelliJ Idea, open the 'Maven Projects' tool window (View
 'Debug' option is available in the context menu for the task.
 */
 
-version = "2020.1"
+version = "2020.2"
 
 project {
 
@@ -86,13 +86,11 @@ object Build : BuildType({
         script {
             name = "Destroy Database In case of prevous failure"
             executionMode = BuildStep.ExecutionMode.ALWAYS
-            scriptContent = Helpers.readScript("scripts/destroy_database.sh");
-            dockerImage = "cwms_db_dev:latest"
+            scriptContent = Helpers.readScript("scripts/destroy_database.sh");            
         }
         script {
             name = "Create PDB"
-            scriptContent = Helpers.readScript("scripts/create_database.sh")
-            dockerImage = "cwms_db_dev:latest"
+            scriptContent = Helpers.readScript("scripts/create_database.sh")            
         }
         script {
             name = "Create Tablespaces"
@@ -107,27 +105,23 @@ object Build : BuildType({
                 CREATE TABLESPACE "CWMS_AQ" DATAFILE '&data_file_prefix.cwms_aq.tblspc' SIZE 2m AUTOEXTEND ON NEXT 20m;
                 CREATE TABLESPACE "CWMS_AQ_EX" DATAFILE '&data_file_prefix.cwms_aq_ex.tblspc' SIZE 2m AUTOEXTEND ON NEXT 20m;
                 EOF
-            """.trimIndent()
-            dockerImage = "cwms_db_dev:latest"
+            """.trimIndent()            
         }
         ant {
             name = "Install CWMS Database"
             mode = antFile {
             }
             targets = "clean,build"
-            antArguments = "-Dbuilduser.overrides=output/overrides.xml"
-            dockerImage = "cwms_db_dev:latest"
+            antArguments = "-Dbuilduser.overrides=output/overrides.xml"            
         }
         ant {
             targets = "test"
-            antArguments = "-Dbuilduser.overrides=output/overrides.xml"
-            dockerImage ="cwms_db_dev:latest"
+            antArguments = "-Dbuilduser.overrides=output/overrides.xml"            
         }
         script {
             name = "Destroy Database Since we are done"
             executionMode = BuildStep.ExecutionMode.ALWAYS
-            scriptContent = Helpers.readScript("scripts/destroy_database.sh");
-            dockerImage = "cwms_db_dev:latest"
+            scriptContent = Helpers.readScript("scripts/destroy_database.sh");            
         }        
     }
 
@@ -187,21 +181,18 @@ object Deploy : BuildType({
         }        
         script {
             name = "Create PDB"
-            scriptContent = Helpers.readScript("scripts/create_database.sh")
-            dockerImage = "cwms_db_dev:latest"
+            scriptContent = Helpers.readScript("scripts/create_database.sh")            
         }
         ant {
             name = "Build Bundle"
             mode = antFile {}
             targets = "deploy"
-            antArguments = "-Dbuilduser.overrides=output/overrides.xml"
-            dockerImage ="cwms_db_dev:latest"
+            antArguments = "-Dbuilduser.overrides=output/overrides.xml"            
         }
         script {
             name = "Destroy Database Since we are done"
             executionMode = BuildStep.ExecutionMode.ALWAYS
-            scriptContent = Helpers.readScript("scripts/destroy_database.sh");
-            dockerImage = "cwms_db_dev:latest"
+            scriptContent = Helpers.readScript("scripts/destroy_database.sh");            
         }        
     }
 
