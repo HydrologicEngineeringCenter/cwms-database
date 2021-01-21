@@ -191,6 +191,7 @@ AS
 
    PROCEDURE create_cwms_service_user;
 
+   PROCEDURE delete_user_from_all_offices (p_username IN VARCHAR2);
    PROCEDURE delete_user (p_username IN VARCHAR2);
 
    PROCEDURE lock_user (p_username       IN VARCHAR2,

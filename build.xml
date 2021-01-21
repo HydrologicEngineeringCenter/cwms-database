@@ -205,12 +205,43 @@
 
 	<target name="test" depends="setup-tests,tests-install" description="run all tests." >		
 		<antcall target="test-as_pd_user"/>		
+		<antcall target="test-as_ro_user"/>		
 		<!-- we will then merge all of the test output and code coverage-->
 
 		<!-- create coverage zip for TeamCity-->
 		<zip destfile="${build.dir}/coverage.zip" basedir="${coverage.dir}" includes="**"/>
 	</target>
 
+
+    <target name="test-as_ro_user" description="run tests that require connecting with a RO user">   
+        <if>
+            <available file="build/tests.log"/>
+            <then></then>
+            <else><antcall target="setup-tests"/></else>
+        </if>
+        
+        <echo message="    Running tests" />
+        <exec executable="utplsql" resultproperty="utreturn">
+            <arg value="run"/>
+			<arg value="-p=cwms_20.test_ro"/>		
+            <arg value="-f"/><arg value="UT_COVERAGE_HTML_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/index.html" />
+            <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/coverage.xml" />
+            <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests.xml" />
+			<arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
+            <arg value="-d"/>
+			<arg value="ro_user/ro_pw@${oracle.cwms.instance}" />
+            
+        </exec>
+
+		<fail>
+			<condition>
+				<not>
+					<equals arg1="0" arg2="${utreturn}"/>
+				</not>
+			</condition>
+		</fail>
+
+    </target>
 
     <target name="test-as_pd_user" description="run tests that require connecting with a PD user">   
         <if>
@@ -222,7 +253,7 @@
         <echo message="    Running tests" />
         <exec executable="utplsql" resultproperty="utreturn">
             <arg value="run"/>
-			<arg value="-p=cwms_20"/>		
+			<arg value="-p=cwms_20.test_aaa"/>		
             <arg value="-f"/><arg value="UT_COVERAGE_HTML_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/index.html" />
             <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/coverage.xml" />
             <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests.xml" />
