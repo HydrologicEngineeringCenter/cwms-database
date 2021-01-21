@@ -4,3 +4,7 @@
 GRANT EXECUTE ON cwms_20.test_aaa to pd_user;
 GRANT EXECUTE any procedure to pd_user;
 GRANT CREATE any procedure to pd_user;
+
+GRANT EXECUTE ON cwms_20.test_aaa to ro_user;
+GRANT EXECUTE any procedure to ro_user;
+GRANT CREATE any procedure to ro_user;
