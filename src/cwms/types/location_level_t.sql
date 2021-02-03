@@ -1,3 +1,4 @@
+-- drop type location_level_t force;
 create or replace type location_level_t
 /**
  * Holds a location level.  A location level combines a location, parameter, parameter type,
@@ -34,6 +35,11 @@ create or replace type location_level_t
  * @member tsid                        The time series identifier representing the location level if it is a time series (not constant value or recurring pattern)
  * @member expiration_date             The date/time at which this level expires
  * @member indicators                  The location level indicators associated with this location level
+ * @member constituents                The constituents table if this is a virtual location level, one constituent per row. Each row has 3, 5, or 6 values. The first 3 values
+ *                                     are the constituent abbreviation, type, and name, respectively. The next values are used only for location level constituents that have
+ *                                     attributes, and are the constituent level attribute id, attribute value, and attribute value unit, respectively. If there are only five
+ *                                     values, the attribute value is in database storage units for the attribute parameter.
+ * @member connections                 The constituents connections string if this is a virtual location level
  */
 is object (
    office_id                   varchar2(16),
@@ -60,6 +66,8 @@ is object (
    expiration_date             date,
    seasonal_values             seasonal_value_tab_t,
    indicators                  loc_lvl_indicator_tab_t,
+   constituents                str_tab_tab_t,
+   connections                 varchar2(256),
    -- not documented
    constructor function location_level_t(
       p_obj zlocation_level_t)
@@ -70,6 +78,21 @@ is object (
    -- not documented
    member function zlocation_level
       return zlocation_level_t,
+   /**
+    * Returns the full location level identifier
+    */
+   member function location_level_id
+      return varchar2,
+   /**
+    * Returns the full attribute identifier, if any
+    */
+   member function attribute_id
+      return varchar2,
+   /**
+    * Returns whether this is a virtual location_level
+    */
+   member function is_virtual
+      return boolean,
    /**
     * Stores the location level to the database
     */

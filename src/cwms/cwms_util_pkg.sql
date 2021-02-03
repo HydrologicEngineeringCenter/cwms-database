@@ -222,8 +222,8 @@ AS
     * Contains names of all functions that can be used with expression evaluation.
     */
    expression_functions str_tab_t := str_tab_t(
-      'ABS','ACOS','ASIN','ATAN','CEIL','COS','EXP','FLOOR',
-      'INV','LN','LOG','NEG','ROUND','SIGN','SIN','SQRT','TAN','TRUNC');
+      'ABS','ACOS','ASIN','ATAN','CEIL', 'COS', 'EXP','FLOOR','INV','LN', 
+      'MAX','MIN', 'LOG', 'NEG', 'ROUND','SIGN','SIN','SQRT', 'TAN','TRUNC');
    /**
     * Contains all valid logical comparision operators
     */

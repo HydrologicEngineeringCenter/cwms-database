@@ -4230,6 +4230,14 @@ as
             l_val2 := pop;
             l_val1 := pop;
             push(power(l_val1, l_val2));
+         when p_rpn_tokens(i) = 'MIN'  then
+            l_val2 := pop;
+            l_val1 := pop;
+            push(least(l_val1, l_val2));
+         when p_rpn_tokens(i) = 'MAX'  then
+            l_val2 := pop;
+            l_val1 := pop;
+            push(greatest(l_val1, l_val2));
          ---------------
          -- constants --
          ---------------

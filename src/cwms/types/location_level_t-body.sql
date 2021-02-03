@@ -45,7 +45,7 @@ as
 
       self.level_date := p_obj.location_level_date;
       self.level_value := p_obj.location_level_value;
-      self.level_units_id := cwms_util.get_default_units(parameter_id);
+      self.level_units_id := cwms_util.get_unit_id2(cwms_util.get_db_unit_code(parameter_id));
 
       if p_obj.attribute_parameter_code is not null then
          select bp.base_parameter_id
@@ -67,7 +67,7 @@ as
            from cwms_duration
           where duration_code = p_obj.attribute_duration_code;
          attribute_value := p_obj.attribute_value;
-         level_units_id := cwms_util.get_default_units(attribute_parameter_id);
+         attribute_units_id := cwms_util.get_unit_id2(cwms_util.get_db_unit_code(attribute_parameter_id));
 
          attribute_comment := p_obj.attribute_comment;
       end if;
@@ -91,7 +91,10 @@ as
                p_obj.seasonal_level_values(i).level_value);
          end loop;
       end if;
-      self.indicators := p_obj.indicators;
+      self.indicators   := p_obj.indicators;
+      self.constituents := p_obj.constituents;
+      self.connections  := p_obj.connections;
+      
       return;
    end location_level_t;
 
@@ -103,7 +106,7 @@ as
       -- all members are null --
       --------------------------
       return;
-   end;               
+   end;
 
    member function zlocation_level
       return zlocation_level_t
@@ -171,7 +174,7 @@ as
         into l_location_level_value
         from cwms_unit_conversion cuc
        where from_unit_id = self.level_units_id
-         and to_unit_id = cwms_util.get_default_units(self.parameter_id);
+         and to_unit_id = cwms_util.get_unit_id2(cwms_util.get_db_unit_code(self.parameter_id));
 
       if self.attribute_parameter_id is not null then
          select p.parameter_code
@@ -197,7 +200,7 @@ as
            into l_attribute_value
            from cwms_unit_conversion cuc
           where from_unit_id = attribute_units_id
-            and to_unit_id = cwms_util.get_default_units(self.attribute_parameter_id);
+            and to_unit_id = cwms_util.get_unit_id2(cwms_util.get_db_unit_code(self.attribute_parameter_id));
       end if;
 
       l_calendar_interval := cwms_util.months_to_yminterval(self.interval_months);
@@ -257,9 +260,41 @@ as
          end,
          self.expiration_date,
          l_seasonal_level_values,
-         self.indicators);
+         self.indicators,
+         self.constituents,
+         self.connections);
       return l_obj;
    end zlocation_level;
+
+   member function location_level_id
+      return varchar2
+   is
+   begin
+      return self.location_id
+             ||'.'||self.parameter_id
+             ||'.'||self.parameter_type_id
+             ||'.'||self.duration_id
+             ||'.'||self.specified_level_id;
+   end location_level_id;
+   
+   member function attribute_id
+      return varchar2
+   is
+      l_attribute_id varchar2(83);
+   begin
+      if self.attribute_parameter_id is not null then
+         l_attribute_id := self.attribute_parameter_id
+                           ||'.'||self.attribute_parameter_type_id
+                           ||'.'||self.duration_id;
+      end if;
+      return l_attribute_id;
+   end attribute_id;
+   
+   member function is_virtual
+      return boolean is
+   begin
+      return self.constituents is not null;
+   end is_virtual;
 
    member procedure store
    is
