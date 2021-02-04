@@ -882,15 +882,15 @@ function retrieve_location_level(
  * </table>
  *
  * @param p_location_levels            The location levels matching the specified parameters, in XML format
- * @param p_location_level_id_mask     The location level identifiers to match, using glob-style wildcards
- * @param p_attribute_id_mask          The location level attribute identifiers to match, using glob-style wildcards. If NULL, only levels without attributes will be matched.
- * @param p_start_time                 The earilest time to match levels for. If NULL, no earliest time constraint is used
- * @param p_end_time                   The latest time match levels for. If NULL, no latest time constraint is used.
- * @param p_timezone_id                The time zone of p_start_time and p_end_time, and also of effective and expiration times in the output
- * @param p_unit_system                The unit system ('SI' or 'EN') to output the information in
+ * @param p_location_level_id_mask     The location level identifiers to match, using glob-style wildcards. If not specified, '*' is used.
+ * @param p_attribute_id_mask          The location level attribute identifiers to match, using glob-style wildcards. If not specified, '*' is used. If NULL, only levels without attributes are matched.
+ * @param p_start_time                 The earilest time to match levels for. If not specified or NULL, no earliest time constraint is used
+ * @param p_end_time                   The latest time match levels for. If not specified or NULL, no latest time constraint is used.
+ * @param p_timezone_id                The time zone of p_start_time and p_end_time, and also of effective and expiration times in the output. If not specified, 'UTC' is used.
+ * @param p_unit_system                The unit system ('SI' or 'EN') to output the information in. If not specified, 'SI' is used.
  * @param p_attribute_value            The value of the location level attribute, if any
  * @param p_attribute_unit             The unit of p_attribute_value, if any
- * @param p_level_type                 One or two characters that specify which types of location levels to include. If not specified, 'VN' will be used.
+ * @param p_level_type                 One or two characters that specify which types of location levels to include. If not specified, 'VN' is used.
  * <ul>
  *   <li><b>N</b> include non-virtual (normal) location levels only
  *   <li><b>V</b> include virtual location levels only (but see p_include_constituent_levels below)
@@ -903,12 +903,12 @@ function retrieve_location_level(
  */
 procedure retrieve_location_levels_xml(
    p_location_levels            out nocopy clob,
-   p_location_level_id_mask     in  varchar2,
-   p_attribute_id_mask          in  varchar2,
-   p_start_time                 in  date,
-   p_end_time                   in  date,
-   p_timezone_id                in  varchar2,
-   p_unit_system                in  varchar2,
+   p_location_level_id_mask     in  varchar2 default '*',
+   p_attribute_id_mask          in  varchar2 default '*',
+   p_start_time                 in  date     default null,
+   p_end_time                   in  date     default null,
+   p_timezone_id                in  varchar2 default 'UTC',
+   p_unit_system                in  varchar2 default 'SI',
    p_attribute_value            in  number   default null,
    p_attribute_unit             in  varchar2 default null,
    p_level_type                 in  varchar2 default 'VN',
@@ -934,15 +934,15 @@ procedure retrieve_location_levels_xml(
  *   </tr>
  * </table>
  *
- * @param p_location_level_id_mask     The location level identifiers to match, using glob-style wildcards
- * @param p_attribute_id_mask          The location level attribute identifiers to match, using glob-style wildcards. If NULL, only levels without attributes will be matched.
- * @param p_start_time                 The earilest time to match levels for. If NULL, no earliest time constraint is used
- * @param p_end_time                   The latest time match levels for. If NULL, no latest time constraint is used.
- * @param p_timezone_id                The time zone of p_start_time and p_end_time, and also of effective and expiration times in the output
- * @param p_unit_system                The unit system ('SI' or 'EN') to output the information in
+ * @param p_location_level_id_mask     The location level identifiers to match, using glob-style wildcards. If not specified, '*' is used.
+ * @param p_attribute_id_mask          The location level attribute identifiers to match, using glob-style wildcards. If not specified, '*' is used. If NULL, only levels without attributes are matched.
+ * @param p_start_time                 The earilest time to match levels for. If not specified or NULL, no earliest time constraint is used
+ * @param p_end_time                   The latest time match levels for. If not specified or NULL, no latest time constraint is used.
+ * @param p_timezone_id                The time zone of p_start_time and p_end_time, and also of effective and expiration times in the output. If not specified, 'UTC' is used.
+ * @param p_unit_system                The unit system ('SI' or 'EN') to output the information in. If not specified, 'SI' is used.
  * @param p_attribute_value            The value of the location level attribute, if any
  * @param p_attribute_unit             The unit of p_attribute_value, if any
- * @param p_level_type                 One or two characters that specify which types of location levels to include. If not specified, 'VN' will be used.
+ * @param p_level_type                 One or two characters that specify which types of location levels to include. If not specified, 'VN' is used.
  * <ul>
  *   <li><b>N</b> include non-virtual (normal) location levels only
  *   <li><b>V</b> include virtual location levels only (but see p_include_constituent_levels below)
@@ -955,12 +955,12 @@ procedure retrieve_location_levels_xml(
  * @return The location levels matching the specified parameters, in XML format
  */
 function retrieve_location_levels_xml_f(
-   p_location_level_id_mask     in varchar2,
-   p_attribute_id_mask          in varchar2,
-   p_start_time                 in date,
-   p_end_time                   in date,
-   p_timezone_id                in varchar2,
-   p_unit_system                in varchar2,
+   p_location_level_id_mask     in varchar2 default '*',
+   p_attribute_id_mask          in varchar2 default '*',
+   p_start_time                 in date     default null,
+   p_end_time                   in date     default null,
+   p_timezone_id                in varchar2 default 'UTC',
+   p_unit_system                in varchar2 default 'SI',
    p_attribute_value            in number   default null,
    p_attribute_unit             in varchar2 default null,
    p_level_type                 in varchar2 default 'VN',
