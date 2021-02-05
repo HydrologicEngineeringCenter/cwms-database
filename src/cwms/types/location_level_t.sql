@@ -18,6 +18,7 @@ create or replace type location_level_t
  * @member duration_id                 The duration component of the location level
  * @member specified_level_id          The specified level component of the location level
  * @member level_date                  The effective date of the location level
+ * @member timezone_id                 The time zone of the level_date member
  * @member level_value                 The value of the location level if it is a constant value (not recurring pattern or time series)
  * @member level_units_id              The unit used for the constant or varying location level value
  * @member level_comment               A comment about the location level
@@ -49,6 +50,7 @@ is object (
    duration_id                 varchar2(16),
    specified_level_id          varchar2(256),
    level_date                  date,
+   timezone_id                 varchar2(28),
    level_value                 number,
    level_units_id              varchar2(16),
    level_comment               varchar2(256),
@@ -89,7 +91,35 @@ is object (
    member function attribute_id
       return varchar2,
    /**
-    * Returns whether this is a virtual location_level
+    * Converts the location level to the specified time zone. Sets the timzone_id member and converts level_date, expiration_date and interval_origin members
+    *
+    * @param p_timezone_id The time zone to convert to
+    */
+   member procedure set_timezone(
+      p_timezone_id in varchar2),
+   /**
+    * Converts the location level to use the specified unit for values. Sets the level_units_id member and converts level_value and seasonal_values members
+    *
+    * @param p_level_unit The unit to convert the level values to.
+    */
+   member procedure set_level_unit(
+      p_level_unit in varchar2),
+   /**
+    * Converts the location level to use the specified attribute unit. Sets the attribute_units_id member and converts attribute_value member
+    *
+    * @param p_attribute_unit The unit to convert the attribute value to.
+    */
+   member procedure set_attribute_unit(
+      p_attribute_unit in varchar2),
+   /**
+    * Sets the level and attribute units to the default units for the specified unit system
+    *
+    * @param p_unit_system The unit system to set. Must be ''EN'' or ''SI''
+    */
+   member procedure set_unit_system(
+      p_unit_system in varchar2),
+   /**
+    * Returns whether this is a virtual location level
     */
    member function is_virtual
       return boolean,

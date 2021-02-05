@@ -3182,7 +3182,7 @@ as
          if l_days > 0 then
             l_duration := l_duration || l_days || 'D';
          end if;
-         if l_hours + l_minutes > 0 then
+         if l_hours + l_minutes > 0 or l_days = 0 then
             l_duration := l_duration || 'T';
          end if;
          if l_hours > 0 then
@@ -3835,7 +3835,7 @@ as
       -- parse the infix into tokens --
       ---------------------------------
       l_infix_tokens := cwms_util.split_text(regexp_replace(normalize_algebraic(trim(p_algebraic_expr)),'([()])',' \1 '));
-      if l_infix_tokens(1) is null then -- happens when algebraic begins with an opening parenthesis 
+      if l_infix_tokens(1) is null then -- happens when algebraic begins with an opening parenthesis
          l_infix_tokens := sub_table(l_infix_tokens, 2);
       end if;
       -------------------------------------
@@ -5427,14 +5427,14 @@ as
          if p_table(i).count >= p_column then
             l_results(i) := p_table(i)(p_column);
             l_count := l_count + 1;
-         end if;   
+         end if;
       end loop;
       if l_count = 0 then
          ---------------------------------------------------------
          -- revert to null if no rows have the specified column --
          ---------------------------------------------------------
          l_results := null;
-      end if;   
+      end if;
       return l_results;
    end get_column;
 
@@ -5482,14 +5482,14 @@ as
          if p_table(i).count >= p_column then
             l_results(i) := p_table(i)(p_column);
             l_count := l_count + 1;
-         end if;   
+         end if;
       end loop;
       if l_count = 0 then
          ---------------------------------------------------------
          -- revert to null if no rows have the specified column --
          ---------------------------------------------------------
          l_results := null;
-      end if;   
+      end if;
       return l_results;
    end get_column;
 
