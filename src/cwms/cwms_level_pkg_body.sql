@@ -168,7 +168,6 @@ begin
       when others then cwms_err.raise('ERROR', 'Bad specified_level_id: '||l_parts(5));
    end;
 
-
    l_location_level_id := cwms_util.join_text(l_parts, '.');
 
    if p_attribute_id is not null then
@@ -219,6 +218,16 @@ begin
       ||chr(9)||upper(p_level_type);
 end get_normalized_loc_lvl_str;
 --------------------------------------------------------------------------------
+-- PRIVATE FUNCTION get_hash
+--------------------------------------------------------------------------------
+function get_hash(
+   p_text in varchar2)
+   return varchar2
+is
+begin
+   return rawtohex(dbms_crypto.hash(utl_raw.cast_to_raw(p_text), dbms_crypto.hash_sh1));
+end get_hash;
+--------------------------------------------------------------------------------
 -- PRIVATE FUNCTION get_loc_lvl_hash
 --------------------------------------------------------------------------------
 function get_loc_lvl_hash(
@@ -243,7 +252,7 @@ begin
       p_timezone_id       =>  p_timezone_id,
       p_office_id         =>  p_office_id);
 
-   return substr(rawtohex(dbms_crypto.hash(utl_raw.cast_to_raw(p_context||l_loc_lvl_str), dbms_crypto.hash_sh1)), 1, 30);
+   return substr(get_hash(p_context||l_loc_lvl_str), 1, 30);
 end get_loc_lvl_hash;
 --------------------------------------------------------------------------------
 -- PRIVATE PROCEDURE validate_specified_level_input
@@ -7954,7 +7963,7 @@ end store_loc_lvl_indicator_cond;
 --------------------------------------------------------------------------------
 -- PROCEDURE store_loc_lvl_indicator_cond
 --
--- Creates or updates a Location Level Indicator Condition in the database
+-- Creates or updates a Location Level Indicator Condition in the da6tabase
 --
 -- p_rate_interval is specified as 'ddd hh:mm:ss'
 --------------------------------------------------------------------------------
@@ -14993,6 +15002,173 @@ begin
    null;
 end store_location_levels_xml;
 
+procedure get_auxiliary_codes(
+   p_source_code       out integer,
+   p_label_codes       out number_tab_t,
+   p_indicator_codes   out number_tab_t,
+   p_location_level_id in  varchar2,
+   p_attribute_id      in  varchar2 default null,
+   p_attribute_value   in  number   default null,
+   p_attribute_unit    in  varchar2 default null,
+   p_office_id         in  varchar2 default null)
+is
+   l_parts                str_tab_t;
+   l_office_code          integer;
+   l_location_code        integer;
+   l_parameter_code       integer;
+   l_parameter_type_code  integer;
+   l_duration_code        integer;
+   l_spec_level_code      integer;
+   l_attr_parameter_code  integer;
+   l_attr_param_type_code integer;
+   l_attr_duration_code   integer;
+   l_attr_value           number;
+   l_office_id            varchar2(16);
+   l_location_id          varchar2(57);
+   l_parameter_id         varchar2(49);
+   l_parameter_type_id    varchar2(16);
+   l_duration_id          varchar2(16);
+   l_spec_level_id        varchar2(256);
+   l_attr_parameter_id    varchar2(49);
+   l_attr_param_type_id   varchar2(16);
+   l_attr_duration_id     varchar2(16);
+begin
+   cwms_level.parse_location_level_id(
+      p_location_id        => l_location_id,
+      p_parameter_id       => l_parameter_id,
+      p_parameter_type_id  => l_parameter_type_id,
+      p_duration_id        => l_duration_id,
+      p_specified_level_id => l_spec_level_id,
+      p_location_level_id  => p_location_level_id);
+
+   cwms_level.parse_attribute_id(
+      p_parameter_id       => l_attr_parameter_id,
+      p_parameter_type_id  => l_attr_param_type_id,
+      p_duration_id        => l_attr_duration_id,
+      p_attribute_id       => p_attribute_id);
+
+   l_office_code := cwms_util.get_db_office_code(p_office_id);
+
+   select office_id
+     into l_office_id
+     from cwms_office
+    where office_code = l_office_code;
+
+   l_parts := cwms_util.split_text(upper(l_location_id), '-', 1);
+   if l_parts.count = 1 then
+      l_parts.extend;
+   end if;
+
+   select location_code
+     into l_location_code
+     from at_physical_location pl,
+          at_base_location bl
+    where bl.db_office_code = l_office_code
+      and upper(bl.base_location_id) = l_parts(1)
+      and pl.base_location_code = bl.base_location_code
+      and upper(nvl(pl.sub_location_id, '-')) = nvl(l_parts(2), '-');
+
+   select p.parameter_code
+     into l_parameter_code
+     from at_parameter p,
+          cwms_base_parameter bp
+    where bp.base_parameter_code = p.base_parameter_code
+      and upper(bp.base_parameter_id||substr('-', 1, length(p.sub_parameter_id))||p.sub_parameter_id) = upper(l_parameter_id)
+      and p.db_office_code in (l_office_code, cwms_util.db_office_code_all);
+
+   select parameter_type_code
+     into l_parameter_type_code
+     from cwms_parameter_type
+    where upper(parameter_type_id) = upper(l_parameter_type_id);
+
+   select duration_code
+     into l_duration_code
+     from cwms_duration
+    where upper(duration_id) = upper(l_duration_id);
+
+   select specified_level_code
+     into l_spec_level_code
+     from at_specified_level
+    where upper(specified_level_id) = upper(l_spec_level_id)
+      and office_code in (l_office_code, cwms_util.db_office_code_all);
+
+   if p_attribute_id is not null then
+   select p.parameter_code
+     into l_attr_parameter_code
+     from at_parameter p,
+          cwms_base_parameter bp
+    where bp.base_parameter_code = p.base_parameter_code
+      and upper(bp.base_parameter_id||substr('-', 1, length(p.sub_parameter_id))||p.sub_parameter_id) = upper(l_attr_parameter_id)
+      and p.db_office_code in (l_office_code, cwms_util.db_office_code_all);
+
+      select parameter_type_code
+        into l_attr_param_type_code
+        from cwms_parameter_type
+       where upper(parameter_type_id) = upper(l_attr_param_type_id);
+
+      select duration_code
+        into l_attr_duration_code
+        from cwms_duration
+       where upper(duration_id) = upper(l_attr_duration_id);
+
+      l_attr_value := cwms_util.convert_units(p_attribute_value, p_attribute_unit, get_attribute_db_unit_id(p_attribute_id));
+   end if;
+
+   begin
+      select source_entity
+        into p_source_code
+        from at_loc_lvl_source
+       where location_code = l_location_code
+         and specified_level_code = l_spec_level_code
+         and parameter_code = l_parameter_code
+         and parameter_type_code = l_parameter_type_code
+         and duration_code = l_duration_code
+         and nvl(attr_parameter_code, 0) = nvl(l_attr_parameter_code, 0)
+         and nvl(attr_parameter_type_code, 0) = nvl(l_attr_param_type_code, 0)
+         and nvl(attr_duration_code, 0) = nvl(l_attr_duration_code, 0)
+         and nvl(round(attr_value, 9), 1e38) = nvl(round(l_attr_value, 9), 1e38);
+   exception
+      when no_data_found then null;
+   end;
+
+   begin
+      select loc_lvl_label_code
+        bulk collect
+        into p_label_codes
+        from at_loc_lvl_label
+       where location_code = l_location_code
+         and specified_level_code = l_spec_level_code
+         and parameter_code = l_parameter_code
+         and parameter_type_code = l_parameter_type_code
+         and duration_code = l_duration_code
+         and nvl(attr_parameter_code, 0) = nvl(l_attr_parameter_code, 0)
+         and nvl(attr_parameter_type_code, 0) = nvl(l_attr_param_type_code, 0)
+         and nvl(attr_duration_code, 0) = nvl(l_attr_duration_code, 0)
+         and nvl(round(attr_value, 9), 1e38) = nvl(round(l_attr_value, 9), 1e38);
+   exception
+      when no_data_found then null;
+   end;
+
+   begin
+      select level_indicator_code
+        bulk collect
+        into p_indicator_codes
+        from at_loc_lvl_indicator
+       where location_code = l_location_code
+         and specified_level_code = l_spec_level_code
+         and parameter_code = l_parameter_code
+         and parameter_type_code = l_parameter_type_code
+         and duration_code = l_duration_code
+         and nvl(attr_parameter_code, 0) = nvl(l_attr_parameter_code, 0)
+         and nvl(attr_parameter_type_code, 0) = nvl(l_attr_param_type_code, 0)
+         and nvl(attr_duration_code, 0) = nvl(l_attr_duration_code, 0)
+         and nvl(round(attr_value, 9), 1e38) = nvl(round(l_attr_value, 9), 1e38);
+   exception
+      when no_data_found then null;
+   end;
+
+end get_auxiliary_codes;
+
 procedure retrieve_location_levels_xml(
    p_location_levels            out nocopy clob,
    p_location_level_id_mask     in  varchar2 default '*',
@@ -15038,6 +15214,8 @@ function retrieve_location_levels_xml_f(
 is
    type loc_lvl_tab_t is table of location_level_t;
    l_xml                  clob;
+   l_levels               clob;
+   l_auxiliary            clob;
    l_loc_lvl_objs         loc_lvl_tab_t;
    l_crsr                 sys_refcursor;
    l_office_ids           str_tab_t;
@@ -15064,6 +15242,19 @@ is
    l_loc_lvl_str          varchar2(32767);
    l_normalized_str       varchar2(32767);
    l_parts                str_tab_t;
+   l_source_code          integer;
+   l_label_codes          number_tab_t;
+   l_indicator_codes      number_tab_t;
+   l_sources              bool_by_str_t;
+   l_labels               bool_by_str_t;
+   l_entity_code          integer;
+   l_category_id          varchar2(16);
+   l_entity_id            varchar2(32);
+   l_entity_name          varchar2(128);
+   l_configuration_code   integer;
+   l_configuration_id     varchar2(32);
+   l_configuration_name   varchar2(128);
+   l_label                varchar2(32);
 begin
    -------------------
    -- sanity checks --
@@ -15174,6 +15365,8 @@ begin
    -- build the xml clob from matching levels --
    ---------------------------------------------
    dbms_lob.createtemporary(l_xml, true);
+   dbms_lob.createtemporary(l_levels, true);
+   dbms_lob.createtemporary(l_auxiliary, true);
    cwms_util.append(
       l_xml,
       '<location-levels xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://www.hec.usace.army.mil/xmlSchema/cwms/location-levels.xsd">');
@@ -15198,90 +15391,110 @@ begin
             --------------------------------
             -- output this location level --
             --------------------------------
-            cwms_util.append(l_xml, '<location-level><location-level-id>'||l_loc_lvl_objs(i).location_level_id||'</location-level-id>');
+            cwms_util.append(l_levels, '<location-level><location-level-id>'||l_loc_lvl_objs(i).location_level_id||'</location-level-id>');
             if l_loc_lvl_objs(i).attribute_id is not null then
-               cwms_util.append(l_xml, '<location-level-attribute>');
-               cwms_util.append(l_xml, '<attribute-id>'||l_loc_lvl_objs(i).attribute_id||'</attribute-id>');
+               cwms_util.append(l_levels, '<location-level-attribute>');
+               cwms_util.append(l_levels, '<attribute-id>'||l_loc_lvl_objs(i).attribute_id||'</attribute-id>');
                if l_loc_lvl_objs(i).attribute_comment is not null then
-                  cwms_util.append(l_xml, '<comment>'||l_loc_lvl_objs(i).attribute_comment||'</comment>');
+                  cwms_util.append(l_levels, '<comment>'||l_loc_lvl_objs(i).attribute_comment||'</comment>');
                end if;
-               cwms_util.append(l_xml, '<value unit="'||l_loc_lvl_objs(i).attribute_units_id||'">'||round(l_attribute_values(i), 9)||'</value>');
-               cwms_util.append(l_xml, '</location-level-attribute>');
+               cwms_util.append(l_levels, '<value unit="'||l_loc_lvl_objs(i).attribute_units_id||'">'||round(l_attribute_values(i), 9)||'</value>');
+               cwms_util.append(l_levels, '</location-level-attribute>');
             end if;
-            cwms_util.append(l_xml, '<effective-date>'||cwms_util.get_xml_time(l_loc_lvl_objs(i).level_date, l_timezone_id)||'</effective-date>');
+
+            get_auxiliary_codes(
+               p_source_code       => l_source_code,
+               p_label_codes       => l_label_codes,
+               p_indicator_codes   => l_indicator_codes,
+               p_location_level_id => l_loc_lvl_objs(i).location_level_id,
+               p_attribute_id      => l_loc_lvl_objs(i).attribute_id,
+               p_attribute_value   => l_loc_lvl_objs(i).attribute_value,
+               p_attribute_unit    => l_loc_lvl_objs(i).attribute_units_id,
+               p_office_id         => l_office_id);
+            if l_source_code is not null then
+               cwms_util.append(l_levels, '<source key="'||l_source_code||'"/>');
+            end if;
+            for j in 1..l_label_codes.count loop
+               cwms_util.append(l_levels, '<label key="'||l_label_codes(j)||'"/>');
+            end loop;
+            for j in 1..l_indicator_codes.count loop
+               cwms_util.append(l_levels, '<indicator key="'||l_indicator_codes(j)||'"/>');
+            end loop;
+
+            cwms_util.append(l_levels, '<effective-date>'||cwms_util.get_xml_time(l_loc_lvl_objs(i).level_date, l_timezone_id)||'</effective-date>');
             if l_loc_lvl_objs(i).expiration_date is not null then
-               cwms_util.append(l_xml, '<expiration-date>'||cwms_util.get_xml_time(l_loc_lvl_objs(i).expiration_date, l_timezone_id)||'</expiration-date>');
+               cwms_util.append(l_levels, '<expiration-date>'||cwms_util.get_xml_time(l_loc_lvl_objs(i).expiration_date, l_timezone_id)||'</expiration-date>');
             end if;
             if l_loc_lvl_objs(i).level_comment is not null then
-               cwms_util.append(l_xml, '<level-comment>'||l_loc_lvl_objs(i).level_comment||'</level-comment>');
+               cwms_util.append(l_levels, '<level-comment>'||l_loc_lvl_objs(i).level_comment||'</level-comment>');
             end if;
             case
             when l_loc_lvl_objs(i).level_value is not null then
                --------------------
                -- constant value --
                --------------------
-               cwms_util.append(l_xml, '<constant unit="'||l_loc_lvl_objs(i).level_units_id||'">'||round(l_loc_lvl_objs(i).level_value, 9)||'</constant>');
+               cwms_util.append(l_levels, '<constant unit="'||l_loc_lvl_objs(i).level_units_id||'">'||round(l_loc_lvl_objs(i).level_value, 9)||'</constant>');
             when l_loc_lvl_objs(i).seasonal_values is not null then
                -----------------------------
                -- regularly-varying value --
                -----------------------------
-               cwms_util.append(l_xml, '<regularly-varying>');
-               cwms_util.append(l_xml, '<interval-origin>'||cwms_util.get_xml_time(l_loc_lvl_objs(i).interval_origin, l_timezone_id)||'</interval-origin>');
-               cwms_util.append(l_xml, '<interval-duration>');
+               cwms_util.append(l_levels, '<regularly-varying>');
+               cwms_util.append(l_levels, '<interval-origin>'||cwms_util.get_xml_time(l_loc_lvl_objs(i).interval_origin, l_timezone_id)||'</interval-origin>');
+               cwms_util.append(l_levels, '<interval-duration>');
                if l_loc_lvl_objs(i).interval_months is null then
-                  cwms_util.append(l_xml, cwms_util.minutes_to_duration(l_loc_lvl_objs(i).interval_minutes));
+                  cwms_util.append(l_levels, cwms_util.minutes_to_duration(l_loc_lvl_objs(i).interval_minutes));
                else
                   if l_loc_lvl_objs(i).interval_months < 12 then
-                     cwms_util.append(l_xml, 'P'||l_loc_lvl_objs(i).interval_months||'M');
+                     cwms_util.append(l_levels, 'P'||l_loc_lvl_objs(i).interval_months||'M');
                   else
-                     cwms_util.append(l_xml, 'P'||trunc(l_loc_lvl_objs(i).interval_months/12)||'Y');
+                     cwms_util.append(l_levels, 'P'||trunc(l_loc_lvl_objs(i).interval_months/12)||'Y');
                      if mod(l_loc_lvl_objs(i).interval_months, 12) != 0 then
-                        cwms_util.append(l_xml, mod(l_loc_lvl_objs(i).interval_months, 12)||'M');
+                        cwms_util.append(l_levels, mod(l_loc_lvl_objs(i).interval_months, 12)||'M');
                      end if;
                   end if;
                end if;
-               cwms_util.append(l_xml, '</interval-duration>');
+               cwms_util.append(l_levels, '</interval-duration>');
                for j in 1..l_loc_lvl_objs(i).seasonal_values.count loop
-                  cwms_util.append(l_xml, '<seasonal-value><interval-offset>');
+                  cwms_util.append(l_levels, '<seasonal-value><interval-offset>');
                   if l_loc_lvl_objs(i).seasonal_values(j).offset_months > 0 then
                      if l_loc_lvl_objs(i).seasonal_values(j).offset_months < 12 then
-                        cwms_util.append(l_xml, 'P'||l_loc_lvl_objs(i).seasonal_values(j).offset_months||'M');
+                        cwms_util.append(l_levels, 'P'||l_loc_lvl_objs(i).seasonal_values(j).offset_months||'M');
                      else
-                        cwms_util.append(l_xml, 'P'||trunc(l_loc_lvl_objs(i).seasonal_values(j).offset_months/12)||'Y');
+                        cwms_util.append(l_levels, 'P'||trunc(l_loc_lvl_objs(i).seasonal_values(j).offset_months/12)||'Y');
                         if mod(l_loc_lvl_objs(i).seasonal_values(j).offset_months, 12) != 0 then
-                           cwms_util.append(l_xml, mod(l_loc_lvl_objs(i).seasonal_values(j).offset_months, 12)||'M');
+                           cwms_util.append(l_levels, mod(l_loc_lvl_objs(i).seasonal_values(j).offset_months, 12)||'M');
                         end if;
                      end if;
                      if l_loc_lvl_objs(i).seasonal_values(j).offset_minutes > 0 then
-                        cwms_util.append(l_xml, substr(cwms_util.minutes_to_duration(l_loc_lvl_objs(i).seasonal_values(j).offset_minutes), 2));
+                        cwms_util.append(l_levels, substr(cwms_util.minutes_to_duration(l_loc_lvl_objs(i).seasonal_values(j).offset_minutes), 2));
                      end if;
                   else
-                     cwms_util.append(l_xml, cwms_util.minutes_to_duration(l_loc_lvl_objs(i).seasonal_values(j).offset_minutes));
+                     cwms_util.append(l_levels, cwms_util.minutes_to_duration(l_loc_lvl_objs(i).seasonal_values(j).offset_minutes));
                   end if;
-                  cwms_util.append(l_xml, '</interval-offset>');
-                  cwms_util.append(l_xml, '<level-value unit="'||l_loc_lvl_objs(i).level_units_id||'">'||round(l_loc_lvl_objs(i).seasonal_values(j).value, 9)||'</level-value>');
-                  cwms_util.append(l_xml, '</seasonal-value>');
+                  cwms_util.append(l_levels, '</interval-offset>');
+                  cwms_util.append(l_levels, '<level-value unit="'||l_loc_lvl_objs(i).level_units_id||'">'||round(l_loc_lvl_objs(i).seasonal_values(j).value, 9)||'</level-value>');
+                  cwms_util.append(l_levels, '</seasonal-value>');
                end loop;
-               cwms_util.append(l_xml, '</regularly-varying>');
+               cwms_util.append(l_levels, '</regularly-varying>');
             when l_loc_lvl_objs(i).tsid is not null then
                -------------------------------
                -- irregularly-varying value --
                -------------------------------
-               cwms_util.append(l_xml, '<irregularly-varying>'||l_loc_lvl_objs(i).tsid||'</irregularly-varying>');
+               cwms_util.append(l_levels, '<irregularly-varying>'||l_loc_lvl_objs(i).tsid||'</irregularly-varying>');
             when l_loc_lvl_objs(i).is_virtual then
                -------------------
                -- virtual value --
                -------------------
-               cwms_util.append(l_xml, '<virtual>');
-               cwms_util.append(l_xml, '<connections>'||l_loc_lvl_objs(i).connections||'</connections>');
+               cwms_util.append(l_levels, '<virtual>');
+               cwms_util.append(l_levels, '<connections>'||l_loc_lvl_objs(i).connections||'</connections>');
                for j in 1..l_loc_lvl_objs(i).constituents.count loop
-                  cwms_util.append(l_xml, '<constituent>');
-                  cwms_util.append(l_xml, '<abbreviation>'||l_loc_lvl_objs(i).constituents(j)(1)||'</abbreviation>');
-                  cwms_util.append(l_xml, '<constituent-type>'||l_loc_lvl_objs(i).constituents(j)(2)||'</constituent-type>');
-                  cwms_util.append(l_xml, '<constituent-name>'||l_loc_lvl_objs(i).constituents(j)(3)||'</constituent-name>');
+                  cwms_util.append(l_levels, '<constituent>');
+                  cwms_util.append(l_levels, '<abbreviation>'||l_loc_lvl_objs(i).constituents(j)(1)||'</abbreviation>');
+                  cwms_util.append(l_levels, '<constituent-type>'||l_loc_lvl_objs(i).constituents(j)(2)||'</constituent-type>');
+                  cwms_util.append(l_levels, '<constituent-name>'||l_loc_lvl_objs(i).constituents(j)(3)||'</constituent-name>');
                   if l_loc_lvl_objs(i).constituents(j).count > 3 then
-                     cwms_util.append(l_xml, '<constituent-attribute>');
-                     cwms_util.append(l_xml, '<attribute-id>'||l_loc_lvl_objs(i).constituents(j)(4)||'</attribute-id>');
+                     cwms_util.append(l_levels, '<constituent-attribute>');
+                     cwms_util.append(l_levels, '<attribute-id>'||l_loc_lvl_objs(i).constituents(j)(4)||'</attribute-id>');
                      l_attribute_parameter := cwms_util.split_text(l_loc_lvl_objs(i).constituents(j)(4), 1, '.');
                      l_attribute_unit := cwms_util.get_default_units(l_attribute_parameter, l_unit_system);
                      l_attribute_value := round(
@@ -15290,10 +15503,10 @@ begin
                            nvl(l_loc_lvl_objs(i).constituents(j)(6), get_attribute_db_unit_id(l_loc_lvl_objs(i).constituents(j)(4))),
                            l_attribute_unit),
                         9);
-                     cwms_util.append(l_xml, '<value unit="'||l_attribute_unit||'">'||l_attribute_value||'</value>');
-                     cwms_util.append(l_xml, '</constituent-attribute>');
+                     cwms_util.append(l_levels, '<value unit="'||l_attribute_unit||'">'||l_attribute_value||'</value>');
+                     cwms_util.append(l_levels, '</constituent-attribute>');
                   end if;
-                  cwms_util.append(l_xml, '</constituent>');
+                  cwms_util.append(l_levels, '</constituent>');
                   if l_include_constituents and l_loc_lvl_objs(i).constituents(j)(2) = 'LOCATION_LEVEL' then
                      if l_loc_lvl_objs(i).constituents(j).count > 3 then
                         l_loc_lvl_str := get_loc_lvl_str(
@@ -15317,9 +15530,9 @@ begin
                      l_constituent_levels(l_loc_lvl_str) := true;
                   end if;
                end loop;
-               cwms_util.append(l_xml, '</virtual>');
+               cwms_util.append(l_levels, '</virtual>');
             end case;
-            cwms_util.append(l_xml, '</location-level>');
+            cwms_util.append(l_levels, '</location-level>');
          end if;
          if i = l_loc_lvl_objs.count then
             ----------------------------------------------------------------
@@ -15360,14 +15573,67 @@ begin
    l_normalized_str := l_processed_levels.first;
    loop
       exit when l_normalized_str is null;
-      dbms_output.put_line(l_normalized_str);
+      l_parts := cwms_util.split_text(l_normalized_str, chr(9));
+      get_auxiliary_codes(
+         p_source_code       => l_source_code,
+         p_label_codes       => l_label_codes,
+         p_indicator_codes   => l_indicator_codes,
+         p_location_level_id => l_parts(2),
+         p_attribute_id      => l_parts(3),
+         p_attribute_value   => l_parts(4),
+         p_attribute_unit    => get_attribute_db_unit_id(l_parts(3)),
+         p_office_id         => l_parts(1));
+      if l_source_code is not null then
+         if not l_sources.exists(l_source_code) then
+            select entity_code,
+                   category_id,
+                   entity_id,
+                   entity_name
+              into l_entity_code,
+                   l_category_id,
+                   l_entity_id,
+                   l_entity_name
+              from at_entity
+             where entity_code = l_source_code;
+            cwms_util.append(l_auxiliary, '<source key="'||l_entity_code||'">');
+            cwms_util.append(l_auxiliary, '<entity category="'||l_category_id||'" id="'||l_entity_id||'">'||l_entity_name||'</entity>');
+            cwms_util.append(l_auxiliary, '</source>');
+            l_sources(l_source_code) := true;
+         end if;
+      end if;
+      for i in 1..l_label_codes.count loop
+         if not l_labels.exists(l_label_codes(i)) then
+            select c.configuration_code,
+                   c.category_id,
+                   c.configuration_id,
+                   c.configuration_name,
+                   l.label
+              into l_configuration_code,
+                   l_category_id,
+                   l_configuration_id,
+                   l_configuration_name,
+                   l_label
+              from at_loc_lvl_label l,
+                   at_configuration c
+             where l.loc_lvl_label_code = l_label_codes(i)
+               and c.configuration_code = l.configuration_code;
+            cwms_util.append(l_auxiliary, '<label key="'||l_label_codes(i)||'">');
+            cwms_util.append(l_auxiliary, '<configuration category="'||l_category_id||'" id="'||l_configuration_id||'">'||l_configuration_name||'</configuration>');
+            cwms_util.append(l_auxiliary, '<text>'||l_label||'</text>');
+            cwms_util.append(l_auxiliary, '</label>');
+            l_labels(l_label_codes(i)) := true;
+         end if;
+      end loop;
       l_normalized_str := l_processed_levels.next(l_normalized_str);
    end loop;
+   cwms_util.append(l_xml, l_auxiliary);
+   cwms_util.append(l_xml, l_levels);
    cwms_util.append(l_xml, '</location-levels>');
    select xmlserialize(content xmltype(l_xml) indent) into l_xml from dual;
+   dbms_lob.freetemporary(l_auxiliary);
+   dbms_lob.freetemporary(l_levels);
    return l_xml;
 end retrieve_location_levels_xml_f;
-
 
 
 
