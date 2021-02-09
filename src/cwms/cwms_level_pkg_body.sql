@@ -2534,8 +2534,94 @@ procedure store_location_levels_xml(
    p_fail_if_exists in  varchar2 default 'T',
    p_fail_on_error  in  varchar2 default 'F')
 is
+   l_xml            xmltype;
+   l_level_node     xmltype;
+   l_auxiliary_node xmltype;
+   l_value_node     xmltype;
+   l_node           xmltype;
+   l_fail_if_exists boolean;
+   l_fail_on_error  boolean;
+   l_id             varchar2(32);
+   l_auxiliary_key  varchar2(14);
+
+   function is_error(p_msg_txt in varchar2, p_error_if_exists in boolean) return boolean
+   is
+   begin
+      if p_error_if_exists  then
+         return instr(p_msg_txt, 'ERROR:') > 0
+             or instr(p_msg_txt, 'ORA-') > 0;
+      else
+      return instr(p_msg_txt, 'ERROR:') > 0
+          or (instr(p_msg_txt, 'ORA-') > 0 and instr(p_msg_txt, 'ITEM_ALREADY_EXISTS') = 0);
+      end if;
+   end;
 begin
-   null;
+   l_xml := xmltype(p_xml);
+   l_fail_if_exists := cwms_util.return_true_or_false(p_fail_if_exists);
+   l_fail_on_error  := cwms_util.return_true_or_false(p_fail_on_error);
+   l_xml := cwms_util.get_xml_node(l_xml, '/location-levels');
+   if l_xml is null then
+      cwms_err.raise('ERROR', 'XML does not have <location-levels> root element');
+   end if;
+   --------------------------------
+   -- log about process starting --
+   --------------------------------
+   l_id := cwms_msg.get_msg_id;
+   set_package_log_property_text(l_id);
+   cwms_msg.log_db_message(cwms_msg.msg_level_verbose, 'Processing location levels XML');
+   -------------------------------------------
+   -- loop through the location level nodes --
+   -------------------------------------------
+   for i in 1..999999 loop
+      dbms_output.put_line(i);
+      l_level_node := cwms_util.get_xml_node(l_xml, '/location-levels/location-level['||i||']');
+      exit when l_level_node is null;
+      begin
+         dbms_output.put_line(cwms_util.get_xml_text(l_level_node, '//location-level-id'));
+         l_node := cwms_util.get_xml_node(l_level_node, '//location-level-attribute');
+         if l_node is not null then
+            dbms_output.put_line(
+               cwms_util.get_xml_text(l_node, '//attribute-id')
+               ||' = '
+               ||cwms_util.get_xml_number(l_node, '//value')
+               ||' '
+               ||cwms_util.get_xml_text(l_node, '//value/@unit')
+            );
+         end if;
+         dbms_output.put_line(cwms_util.get_xml_text(l_level_node, '//effective-date'));
+         l_node := cwms_util.get_xml_node(l_level_node, '//expiration-date');
+         if l_node is not null then
+            dbms_output.put_line(cwms_util.get_xml_text(l_node, '.'));
+         end if;
+         l_value_node := cwms_util.get_xml_node(l_level_node, '(//constant|//regularly-varying|//irregularly-varying|//virtual)');
+         case l_value_node.getrootelement
+         when 'constant' then
+            --------------------
+            -- constant value --
+            --------------------
+            dbms_output.put_line('CONSTANT');
+         when 'regularly-varying' then
+            -----------------------------
+            -- regularly-varying value --
+            -----------------------------
+            dbms_output.put_line('REGULARLY-VARYING');
+         when 'irregularly-varying' then
+            -------------------------------
+            -- irregularly-varying value --
+            -------------------------------
+            dbms_output.put_line('IRREGULARLY-VARYING');
+         when 'virtual' then
+            -------------------
+            -- virtual value --
+            -------------------
+            dbms_output.put_line('VIRTUAL');
+         else cwms_err.raise('ERROR', 'No value element found');
+         end case;
+      exception
+         when others then cwms_msg.log_db_message(cwms_msg.msg_level_normal, sqlerrm);
+      end;
+   end loop;
+
 end store_location_levels_xml;
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level4
