@@ -174,6 +174,10 @@ object Deploy : BuildType({
         root(DslContext.settingsRoot)
     }
 
+    params {        
+        password("env.SYS_PASSWORD", "credentialsJSON:e335ba71-db80-4491-8ea3-a9ca51bfa6d7")
+    }
+
     steps {
         script {
             name = "Generate Overrides file and Parameters"
