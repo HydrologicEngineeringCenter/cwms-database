@@ -5384,18 +5384,18 @@ AS
                                    where cwms_util.is_nan(t.value) = ''F''
                                      and (t.value is not null
                                           or (:l_interval_value <= 0
-                                              and cwms_ts.quality_is_missing_text(t.quality_code) = ''T''
+                                              and cwms_ts.quality_is_missing_text(cwms_ts.clean_quality_code(t.quality_code)) = ''T''
                                              )
-                                          or cwms_ts.quality_is_protected_text(t.quality_code) = ''T''
+                                          or cwms_ts.quality_is_protected_text(cwms_ts.clean_quality_code(t.quality_code)) = ''T''
                                          )
-                                     and (cwms_ts.quality_is_missing_text(t.quality_code) = ''F''
+                                     and (cwms_ts.quality_is_missing_text(cwms_ts.clean_quality_code(t.quality_code)) = ''F''
                                           or :l_interval_value <= 0
-                                          or cwms_ts.quality_is_protected_text(t.quality_code) = ''T''
+                                          or cwms_ts.quality_is_protected_text(cwms_ts.clean_quality_code(t.quality_code)) = ''T''
                                          )
                                      and s.ts_code = :l_ts_code
                                      and s.parameter_code = ap.parameter_code
                                      and ap.base_parameter_code = p.base_parameter_code
-                                     and q.quality_code = t.quality_code
+                                     and q.quality_code = cwms_ts.clean_quality_code(t.quality_code)
                                      and p.unit_code = c.to_unit_code
                                      and c.from_unit_code = u.unit_code
                                      and u.unit_id = :l_units
@@ -5468,18 +5468,18 @@ AS
                                    where cwms_util.is_nan(t.value) = ''F''
                                      and (t.value is not null
                                           or (:l_interval_value <= 0
-                                              and cwms_ts.quality_is_missing_text(t.quality_code) = ''T''
+                                              and cwms_ts.quality_is_missing_text(cwms_ts.clean_quality_code(t.quality_code)) = ''T''
                                              )
-                                          or cwms_ts.quality_is_protected_text(t.quality_code) = ''T''
+                                          or cwms_ts.quality_is_protected_text(cwms_ts.clean_quality_code(t.quality_code)) = ''T''
                                          )
-                                     and (cwms_ts.quality_is_missing_text(t.quality_code) = ''F''
+                                     and (cwms_ts.quality_is_missing_text(cwms_ts.clean_quality_code(t.quality_code)) = ''F''
                                           or :l_interval_value <= 0
-                                          or cwms_ts.quality_is_protected_text(t.quality_code) = ''T''
+                                          or cwms_ts.quality_is_protected_text(cwms_ts.clean_quality_code(t.quality_code)) = ''T''
                                          )
                                      and s.ts_code = :l_ts_code
                                      and s.parameter_code = ap.parameter_code
                                      and ap.base_parameter_code = p.base_parameter_code
-                                     and q.quality_code = t.quality_code
+                                     and q.quality_code = cwms_ts.clean_quality_code(t.quality_code)
                                      and p.unit_code = c.to_unit_code
                                      and c.from_unit_code = u.unit_code
                                      and u.unit_id = :l_units
