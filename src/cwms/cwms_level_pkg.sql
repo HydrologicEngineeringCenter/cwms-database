@@ -897,8 +897,12 @@ function retrieve_location_level(
  *   <li><b>NV</b> include both non-virtual and virtual location levels
  *   <li><b>VN</b> include both non-virtual and virtual location levels
  * </ul>
- * @param p_include_constituent_levels A flag ('T' or 'F') that specifies whether locaiton level constituents of virtual location levels will be included in the output.
+ * @param p_include_levels             A flag ('T' or 'F') that specifies whether actual location levels will be included in the output.
+ * @param p_include_constituent_levels A flag ('T' or 'F') that specifies whether information for location level constituents of virtual location levels will be included in the output.
  *                                     If 'T', non-virtual constituent location levels will be included even if p_level_type is 'V'. If unspecified, 'F' is used.
+ * @param p_include_level_sources      A flag ('T' or 'F') that specifies whether location level sources will be included in the output.
+ * @param p_include_level_labels       A flag ('T' or 'F') that specifies whether location level labels will be included in the output.
+ * @param p_retrieve_level_indicators  A flag ('T' or 'F') that specifies whether location level indicators will be included in the output.
  * @param p_office_id                  The office to output the location levels for. If unspecified or NULL, the session user's default office is used.
  */
 procedure retrieve_location_levels_xml(
@@ -912,7 +916,11 @@ procedure retrieve_location_levels_xml(
    p_attribute_value            in  number   default null,
    p_attribute_unit             in  varchar2 default null,
    p_level_type                 in  varchar2 default 'VN',
+   p_include_levels             in  varchar2 default 'T',
    p_include_constituent_levels in  varchar2 default 'F',
+   p_include_level_sources      in  varchar2 default 'F',
+   p_include_level_labels       in  varchar2 default 'F',
+   p_include_level_indicators   in  varchar2 default 'F',
    p_office_id                  in  varchar2 default null);
 /**
  * Retrieves location levels matching input specifications in XML format. Matching is
@@ -949,8 +957,12 @@ procedure retrieve_location_levels_xml(
  *   <li><b>NV</b> include both non-virtual and virtual location levels
  *   <li><b>VN</b> include both non-virtual and virtual location levels
  * </ul>
- * @param p_include_constituent_levels A flag ('T' or 'F') that specifies whether locaiton level constituents of virtual location levels will be included in the output.
+ * @param p_include_levels             A flag ('T' or 'F') that specifies whether actual location levels will be included in the output.
+ * @param p_include_constituent_levels A flag ('T' or 'F') that specifies whether information for location level constituents of virtual location levels will be included in the output.
  *                                     If 'T', non-virtual constituent location levels will be included even if p_level_type is 'V'. If unspecified, 'F' is used.
+ * @param p_include_level_sources      A flag ('T' or 'F') that specifies whether location level sources will be included in the output.
+ * @param p_include_level_labels       A flag ('T' or 'F') that specifies whether location level labels will be included in the output.
+ * @param p_retrieve_level_indicators  A flag ('T' or 'F') that specifies whether location level indicators will be included in the output.
  * @param p_office_id                  The office to output the location levels for. If unspecified or NULL, the session user's default office is used.
  * @return The location levels matching the specified parameters, in XML format
  */
@@ -964,7 +976,11 @@ function retrieve_location_levels_xml_f(
    p_attribute_value            in number   default null,
    p_attribute_unit             in varchar2 default null,
    p_level_type                 in varchar2 default 'VN',
+   p_include_levels             in varchar2 default 'T',
    p_include_constituent_levels in varchar2 default 'F',
+   p_include_level_sources      in varchar2 default 'F',
+   p_include_level_labels       in varchar2 default 'F',
+   p_include_level_indicators   in varchar2 default 'F',
    p_office_id                  in varchar2 default null)
    return clob;
 --

@@ -1,5 +1,12 @@
 create or replace type body loc_lvl_indicator_t
 as
+   constructor function loc_lvl_indicator_t
+      return self as result
+   is
+   begin
+      return;
+   end loc_lvl_indicator_t;
+   
    constructor function loc_lvl_indicator_t(
       p_obj in zloc_lvl_indicator_t)
       return self as result
