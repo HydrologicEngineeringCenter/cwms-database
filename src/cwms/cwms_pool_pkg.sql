@@ -343,68 +343,68 @@ procedure delete_pool(
  * @param p_cat_cursor        The cursor containing the pools that match the specified parameters.
  *                            The cursor will contain the following columns:
  *                            <p>
- *                            <table class="descr">
- *                              <tr>
- *                                <th class="descr">Column No.</th>
- *                                <th class="descr">Column Name</th>
- *                                <th class="descr">Data Type</th>
- *                                <th class="descr">Contents</th>
- *                              </tr>
- *                              <tr>
- *                                <td class="descr-center">1</td>
- *                                <td class="descr">office_id</td>
- *                                <td class="descr">varchar2(16)</td>
- *                                <td class="descr">The office that owns the pool name</td>
- *                              </tr>
- *                              <tr>
- *                                <td class="descr-center">2</td>
- *                                <td class="descr">project_id</td>
- *                                <td class="descr">varchar2(191)</td>
- *                                <td class="descr">The pool name</td>
- *                              </tr>
- *                              <tr>
- *                                <td class="descr-center">3</td>
- *                                <td class="descr">pool_name</td>
- *                                <td class="descr">varchar2(32)</td>
- *                                <td class="descr">The pool name</td>
- *                              </tr>
- *                              <tr>
- *                                <td class="descr-center">4</td>
- *                                <td class="descr">bottom_level_id</td>
- *                                <td class="descr">varchar2(256)</td>
- *                                <td class="descr">The pool name</td>
- *                              </tr>
- *                              <tr>
- *                                <td class="descr-center">5</td>
- *                                <td class="descr">top_level_id</td>
- *                                <td class="descr">varchar2(256)</td>
- *                                <td class="descr">The pool name</td>
- *                              </tr>
- *                              <tr>
- *                                <td class="descr-center">6</td>
- *                                <td class="descr">attribute</td>
- *                                <td class="descr">number</td>
- *                                <td class="descr">The numeric attribute associated with the pool, normally used for sorting within a project</td>
- *                              </tr>
- *                              <tr>
- *                                <td class="descr-center">7</td>
- *                                <td class="descr">description</td>
- *                                <td class="descr">varchar2(128)</td>
- *                                <td class="descr">The text description of the pool</td>
- *                              </tr>
- *                              <tr>
- *                                <td class="descr-center">8</td>
- *                                <td class="descr">clob_code</td>
- *                                <td class="descr">integer</td>
- *                                <td class="descr">The unique numeric code of the clob_text field in the at_clob table</td>
- *                              </tr>
- *                              <tr>
- *                                <td class="descr-center">9</td>
- *                                <td class="descr">clob_text</td>
- *                                <td class="descr">clob</td>
- *                                <td class="descr">The text of the CLOB associated with the pool, normally structured as XML or JSON</td>
- *                              </tr>
- *                            </table>
+*                             <table class="descr">
+*                               <tr>
+*                                 <th class="descr">Column No.</th>
+*                                 <th class="descr">Column Name</th>
+*                                 <th class="descr">Data Type</th>
+*                                 <th class="descr">Contents</th>
+*                               </tr>
+*                               <tr>
+*                                 <td class="descr-center">1</td>
+*                                 <td class="descr">office_id</td>
+*                                 <td class="descr">varchar2(16)</td>
+*                                 <td class="descr">The office that owns the pool's project</td>
+*                               </tr>
+*                               <tr>
+*                                 <td class="descr-center">2</td>
+*                                 <td class="descr">project_id</td>
+*                                 <td class="descr">varchar2(191)</td>
+*                                 <td class="descr">The identifier of the pool's project</td>
+*                               </tr>
+*                               <tr>
+*                                 <td class="descr-center">3</td>
+*                                 <td class="descr">pool_name</td>
+*                                 <td class="descr">varchar2(32)</td>
+*                                 <td class="descr">The pool name</td>
+*                               </tr>
+*                               <tr>
+*                                 <td class="descr-center">4</td>
+*                                 <td class="descr">bottom_level</td>
+*                                 <td class="descr">varchar2(256)</td>
+*                                 <td class="descr">The identifier of the location level that defines the bottom of the pool/td>
+*                               </tr>
+*                               <tr>
+*                                 <td class="descr-center">5</td>
+*                                 <td class="descr">top_level</td>
+*                                 <td class="descr">varchar2(256)</td>
+*                                 <td class="descr">The identifier of the location level that defines the top of the pool</td>
+*                               </tr>
+*                               <tr>
+*                                 <td class="descr-center">6</td>
+*                                 <td class="descr">attribute</td>
+*                                 <td class="descr">number</td>
+*                                 <td class="descr">The numeric attribute associated with the pool, normally used for sorting within a project</td>
+*                               </tr>
+*                               <tr>
+*                                 <td class="descr-center">7</td>
+*                                 <td class="descr">description</td>
+*                                 <td class="descr">varchar2(128)</td>
+*                                 <td class="descr">The text description of the pool</td>
+*                               </tr>
+*                               <tr>
+*                                 <td class="descr-center">8</td>
+*                                 <td class="descr">clob_code</td>
+*                                 <td class="descr">integer</td>
+*                                 <td class="descr">The unique numeric code of the clob_text field in the at_clob table</td>
+*                               </tr>
+*                               <tr>
+*                                 <td class="descr-center">9</td>
+*                                 <td class="descr">clob_text</td>
+*                                 <td class="descr">clob</td>
+*                                 <td class="descr">The text of the CLOB associated with the pool, normally structured as XML or JSON</td>
+*                               </tr>
+*                             </table>
  * @param p_pool_name_mask    The pool name pattern to match (case_insensitive).
  *                            Defaults to '*' if NULL or not specified.
  *                            Use glob-style wildcard characters as shown above instead of sql-style wildcard characters for pattern matching.
@@ -500,13 +500,13 @@ procedure cat_pools(
  *             <td class="descr-center">1</td>
  *             <td class="descr">office_id</td>
  *             <td class="descr">varchar2(16)</td>
- *             <td class="descr">The office that owns the pool name</td>
+ *             <td class="descr">The office that owns the pool's project</td>
  *           </tr>
  *           <tr>
  *             <td class="descr-center">2</td>
  *             <td class="descr">project_id</td>
  *             <td class="descr">varchar2(191)</td>
- *             <td class="descr">The pool name</td>
+ *             <td class="descr">The identifier of the pool's project</td>
  *           </tr>
  *           <tr>
  *             <td class="descr-center">3</td>
@@ -516,15 +516,15 @@ procedure cat_pools(
  *           </tr>
  *           <tr>
  *             <td class="descr-center">4</td>
- *             <td class="descr">bottom_level_id</td>
+ *             <td class="descr">bottom_level</td>
  *             <td class="descr">varchar2(256)</td>
- *             <td class="descr">The pool name</td>
+ *             <td class="descr">The identifier of the location level that defines the bottom of the pool/td>
  *           </tr>
  *           <tr>
  *             <td class="descr-center">5</td>
- *             <td class="descr">top_level_id</td>
+ *             <td class="descr">top_level</td>
  *             <td class="descr">varchar2(256)</td>
- *             <td class="descr">The pool name</td>
+ *             <td class="descr">The identifier of the location level that defines the top of the pool</td>
  *           </tr>
  *           <tr>
  *             <td class="descr-center">6</td>

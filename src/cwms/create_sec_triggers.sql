@@ -5,7 +5,7 @@ DECLARE
 BEGIN
    FOR c IN (SELECT table_name
                FROM user_tables
-              WHERE table_name LIKE 'AT_%' AND TEMPORARY = 'N' AND table_name not in ( 'AT_PROPERTIES','AT_LOG_MESSAGE','AT_LOG_MESSAGE_PROPERTIES'))
+              WHERE table_name LIKE 'AT_%' AND TEMPORARY = 'N' AND table_name not in ( 'AT_PROPERTIES','AT_LOG_MESSAGE','AT_LOG_MESSAGE_PROPERTIES','AT_APPLICATION_LOGIN','AT_APPLICATION_SESSION'))
    LOOP
       l_trig := replace(c.table_name,'AT_','ST_');
       if(c.table_name = 'AT_SEC_USERS' OR c.table_name='AT_SEC_LOCKED_USERS' OR c.table_name='AT_SEC_USER_OFFICE' OR

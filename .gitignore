@@ -39,3 +39,4 @@ build
 .teamcity/target
 .project
 .settings
+**/.classpath

@@ -1162,6 +1162,52 @@ AS
         CWMS_DBA.CWMS_USER_ADMIN.CREATE_CWMS_SERVICE_ACCOUNT(cac_service_user, cwms_crypt.decrypt(generate_dod_password));
     end if;
    END create_cwms_service_user;
+    /*
+
+        From cwmsdb.CwmsSecJdbc
+          deleteUser(String username)
+
+        This procedure will delete the p_username from current session office id 
+
+        Exceptions are thrown if:
+            - If the user running this procedure is not CWMS admin user
+
+    */
+
+    PROCEDURE delete_user (p_username IN VARCHAR2)
+    IS
+        l_username         VARCHAR2 (31);
+        l_db_office_id     VARCHAR2 (16) := cwms_util.get_db_office_id (NULL);
+        l_db_office_code   NUMBER
+            := cwms_util.get_db_office_code (l_db_office_id);
+    BEGIN
+        l_username := UPPER (TRIM (p_username));
+
+        IF (is_user_admin)
+        THEN
+            DELETE FROM
+                at_sec_users
+                  WHERE     username = l_username
+                        AND db_office_code = l_db_office_code;
+
+
+            DELETE FROM
+                at_sec_locked_users
+                  WHERE     username = l_username
+                        AND db_office_code = l_db_office_code;
+
+            DELETE FROM
+                at_sec_user_office
+                  WHERE     username = l_username
+                        AND db_office_code = l_db_office_code;
+
+            COMMIT;
+        ELSE
+            cwms_err.raise (
+                'ERROR',
+                'Permission Denied. Your account needs "CWMS DBA" or "CWMS User Admin" privileges to use the cwms_sec package.');
+        END IF;
+    END delete_user;
 
     ----------------------------------------------------------------------------
     -- delete_user
@@ -1169,7 +1215,7 @@ AS
     /*
 
         From cwmsdb.CwmsSecJdbc
-          deleteUser(String username)
+          deleteUser_from_all_offices(String username)
 
         This procedure will delete the p_username from all offices
 
@@ -1178,7 +1224,7 @@ AS
 
     */
 
-    PROCEDURE delete_user (p_username IN VARCHAR2)
+    PROCEDURE delete_user_from_all_offices (p_username IN VARCHAR2)
     IS
         l_username   VARCHAR2 (31);
         l_count      NUMBER := 0;
@@ -1196,7 +1242,7 @@ AS
               WHERE username = l_username;
 
         COMMIT;
-    END delete_user;
+    END delete_user_from_all_offices;
 
    ----------------------------------------------------------------------------
    -- lock_user

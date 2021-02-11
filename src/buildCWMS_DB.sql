@@ -161,7 +161,6 @@ begin
    end if;
 end;
 /
-
 -- update CWMS_DB_CHANGE_LOG
 alter session set current_schema = &cwms_schema;
 whenever sqlerror continue
@@ -333,6 +332,19 @@ set define on
 @@cwms/create_service_user_policy
 @@cwms/at_tsv_count_trig
 @@cwms/at_dd_flag_trig
+-------------------------------------------------
+-- rebuild any disabled function-based indexes --
+-------------------------------------------------
+declare
+   index_ddl clob;
+begin
+   for rec in (select index_name from all_indexes where owner = '&cwms_schema' and funcidx_status = 'DISABLED') loop
+      index_ddl := dbms_metadata.get_ddl('INDEX', rec.index_name, '&cwms_schema');
+      execute immediate 'drop index &cwms_schema..'||rec.index_name;
+      execute immediate index_ddl;
+   end loop;
+end;
+/
 --
 -- all done
 --

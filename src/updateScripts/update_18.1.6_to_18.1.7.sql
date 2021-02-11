@@ -504,6 +504,7 @@ ALTER TABLE AT_RATING_EXTENSION_VALUE MODIFY(NOTE_CODE NUMBER(14));
 @../cwms/cwms_msg_pkg
 @../cwms/cwms_msg_pkg_body
 @../cwms/cwms_outlet_pkg_body
+@../cwms/cwms_pool_pkg_body
 @../cwms/cwms_project_pkg_body
 @../cwms/cwms_prop_pkg_body
 @../cwms/cwms_rating_pkg
@@ -590,6 +591,7 @@ GRANT EXECUTE ON CWMS_20.CAT_DSS_FILE_OBJ_T TO CWMS_USER;
 -----------
 -- VIEWS --
 -----------
+@../cwms/views/av_pool
 
 @18_1_7/at_comp_outlet_conn_tr1.sql
 
