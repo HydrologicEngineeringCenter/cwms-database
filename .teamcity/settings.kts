@@ -2,6 +2,7 @@ import jetbrains.buildServer.configs.kotlin.v2019_2.*
 import jetbrains.buildServer.configs.kotlin.v2019_2.buildFeatures.commitStatusPublisher
 import jetbrains.buildServer.configs.kotlin.v2019_2.buildSteps.ant
 import jetbrains.buildServer.configs.kotlin.v2019_2.buildSteps.script
+import jetbrains.buildServer.configs.kotlin.v2019_2.buildSteps.exec
 import jetbrains.buildServer.configs.kotlin.v2019_2.failureConditions.BuildFailureOnMetric
 import jetbrains.buildServer.configs.kotlin.v2019_2.failureConditions.failOnMetricChange
 import jetbrains.buildServer.configs.kotlin.v2019_2.triggers.vcs
@@ -175,9 +176,13 @@ object Deploy : BuildType({
     }
 
     steps {
+        exec {
+            path = "echo"
+            arguments = """"##teamcity[setParameter name='env.IS_DEPLOY' value='1']"""
+        }
         script {
             name = "Generate Overrides file and Parameters"
-            scriptContent = Helpers.readScript("scripts/setup_parameters.sh deploy");
+            scriptContent = Helpers.readScript("scripts/setup_parameters.sh");
         }        
         script {
             name = "Create PDB"

@@ -15,7 +15,7 @@ elif [[ $CWMS_PDB =~ ^[0-9] ]]; then
     export CWMS_PDB="z_${CWMS_PDB}"
 fi
 
-if [ ! -z "$1" ]; then
+if [ "$IS_DEPLOY" == "1" ]; then
     # this is a deployment, modifiy the PDB name to include the version identified so 
     # additional merges to master can happen independently.
     version=`mvn -q -Dexec.executable=echo -Dexec.args='\${project.version}' --non-recursive exec:exec`
