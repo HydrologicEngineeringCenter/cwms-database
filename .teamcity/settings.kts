@@ -177,11 +177,18 @@ object Deploy : BuildType({
     steps {
         script {
             name = "Generate Overrides file and Parameters"
-            scriptContent = Helpers.readScript("scripts/setup_parameters.sh");
+            scriptContent = Helpers.readScript("scripts/setup_parameters.sh deploy");
         }        
         script {
             name = "Create PDB"
             scriptContent = Helpers.readScript("scripts/create_database.sh")            
+        }
+        ant {
+            name = "Install CWMS Database"
+            mode = antFile {
+            }
+            targets = "clean,build"
+            antArguments = "-Dbuilduser.overrides=output/overrides.xml"            
         }
         ant {
             name = "Build Bundle"
