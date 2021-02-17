@@ -5384,13 +5384,13 @@ AS
                                    where cwms_util.is_nan(t.value) = ''F''
                                      and (t.value is not null
                                           or (:l_interval_value <= 0
-                                              and cwms_ts.quality_is_missing_text(cwms_ts.clean_quality_code(t.quality_code)) = ''T''
+                                              and cwms_ts.quality_is_missing_text(t.quality_code) = ''T''
                                              )
-                                          or cwms_ts.quality_is_protected_text(cwms_ts.clean_quality_code(t.quality_code)) = ''T''
+                                          or cwms_ts.quality_is_protected_text(t.quality_code) = ''T''
                                          )
-                                     and (cwms_ts.quality_is_missing_text(cwms_ts.clean_quality_code(t.quality_code)) = ''F''
+                                     and (cwms_ts.quality_is_missing_text(t.quality_code) = ''F''
                                           or :l_interval_value <= 0
-                                          or cwms_ts.quality_is_protected_text(cwms_ts.clean_quality_code(t.quality_code)) = ''T''
+                                          or cwms_ts.quality_is_protected_text(t.quality_code) = ''T''
                                          )
                                      and s.ts_code = :l_ts_code
                                      and s.parameter_code = ap.parameter_code
@@ -5468,13 +5468,13 @@ AS
                                    where cwms_util.is_nan(t.value) = ''F''
                                      and (t.value is not null
                                           or (:l_interval_value <= 0
-                                              and cwms_ts.quality_is_missing_text(cwms_ts.clean_quality_code(t.quality_code)) = ''T''
+                                              and cwms_ts.quality_is_missing_text(t.quality_code) = ''T''
                                              )
-                                          or cwms_ts.quality_is_protected_text(cwms_ts.clean_quality_code(t.quality_code)) = ''T''
+                                          or cwms_ts.quality_is_protected_text(t.quality_code) = ''T''
                                          )
-                                     and (cwms_ts.quality_is_missing_text(cwms_ts.clean_quality_code(t.quality_code)) = ''F''
+                                     and (cwms_ts.quality_is_missing_text(t.quality_code) = ''F''
                                           or :l_interval_value <= 0
-                                          or cwms_ts.quality_is_protected_text(cwms_ts.clean_quality_code(t.quality_code)) = ''T''
+                                          or cwms_ts.quality_is_protected_text(t.quality_code)) = ''T''
                                          )
                                      and s.ts_code = :l_ts_code
                                      and s.parameter_code = ap.parameter_code
@@ -9363,20 +9363,21 @@ end retrieve_existing_item_counts;
       RETURN VARCHAR2
       result_cache
    IS
-      l_validity   VARCHAR2 (16);
+      l_validity     VARCHAR2 (16);
+      l_quality_code integer := clean_quality_code(p_quality_code);
    BEGIN
       SELECT validity_id
         INTO l_validity
         FROM cwms_data_quality
-       WHERE quality_code = p_quality_code + case
-                                                when p_quality_code < 0 then 4294967296
+       WHERE quality_code = l_quality_code + case
+                                                when l_quality_code < 0 then 4294967296
                                                 else  0
                                              end;
       RETURN l_validity;
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
-         cwms_err.raise('INVALID_ITEM', p_quality_code, 'CWMS quality value');
+         cwms_err.raise('INVALID_ITEM', l_quality_code, 'CWMS quality value');
    END get_quality_validity;
 
    FUNCTION get_quality_validity (p_value IN tsv_type)
@@ -9586,12 +9587,13 @@ end retrieve_existing_item_counts;
       RETURN BOOLEAN
       result_cache
    is
+      l_quality_code  integer := clean_quality_code(p_quality_code);
       l_protection_id varchar2(16);
    BEGIN
       select protection_id
         into l_protection_id
         from cwms_data_quality
-       where quality_code = p_quality_code;
+       where quality_code = l_quality_code;
 
       return l_protection_id = 'PROTECTED';
    END quality_is_protected;
@@ -9639,14 +9641,15 @@ end retrieve_existing_item_counts;
       RETURN VARCHAR2
       result_cache
    IS
+      l_quality_code  integer := clean_quality_code(p_quality_code);
       l_description   VARCHAR2 (4000);
       l_rec           cwms_data_quality%ROWTYPE;
    BEGIN
       SELECT *
         INTO l_rec
         FROM cwms_data_quality
-       WHERE quality_code = p_quality_code + case
-                                                when p_quality_code < 0 then 4294967296
+       WHERE quality_code = l_quality_code + case
+                                                when l_quality_code < 0 then 4294967296
                                                 else  0
                                              end;
 
@@ -9692,7 +9695,7 @@ end retrieve_existing_item_counts;
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
-         cwms_err.raise('INVALID_ITEM', p_quality_code, 'CWMS quality value');
+         cwms_err.raise('INVALID_ITEM', l_quality_code, 'CWMS quality value');
    END get_quality_description;
 
    FUNCTION get_ts_interval (p_ts_code IN NUMBER)
