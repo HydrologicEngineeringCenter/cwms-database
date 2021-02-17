@@ -14,6 +14,14 @@ elif [[ $CWMS_PDB =~ ^[0-9] ]]; then
     echo "prefixing with letter"
     export CWMS_PDB="z_${CWMS_PDB}"
 fi
+
+if [ "$IS_DEPLOY" == "1" ]; then
+    # this is a deployment, modifiy the PDB name to include the version identified so 
+    # additional merges to master can happen independently.
+    version=`mvn -q -Dexec.executable=echo -Dexec.args='\${project.version}' --non-recursive exec:exec`
+    CWMS_PDB="{$CWMS_PDB}_$version"
+fi
+
 cat <<EOF
 ##teamcity[setParameter name='env.CWMS_PDB' value='$CWMS_PDB']
 
