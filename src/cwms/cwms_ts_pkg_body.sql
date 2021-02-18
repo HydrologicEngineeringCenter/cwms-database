@@ -5474,7 +5474,7 @@ AS
                                          )
                                      and (cwms_ts.quality_is_missing_text(t.quality_code) = ''F''
                                           or :l_interval_value <= 0
-                                          or cwms_ts.quality_is_protected_text(t.quality_code)) = ''T''
+                                          or cwms_ts.quality_is_protected_text(t.quality_code) = ''T''
                                          )
                                      and s.ts_code = :l_ts_code
                                      and s.parameter_code = ap.parameter_code
