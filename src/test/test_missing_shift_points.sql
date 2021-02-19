@@ -1,4 +1,4 @@
-create or replace package missing_shift_points as
+create or replace package test_missing_shift_points as
 
 --%suite(Test handling of usgs style stream ratings with shifts with missing points)
 --%rollback(manual)
@@ -111,10 +111,10 @@ c_rating_xml constant clob := '
      </usgs-stream-rating>
    </ratings>';
 
-end missing_shift_points;
+end test_missing_shift_points;
 /
 
-create or replace package body missing_shift_points as
+create or replace package body test_missing_shift_points as
 
 procedure teardown
 is
@@ -174,5 +174,5 @@ begin
    l_rating_xml := cwms_rating.retrieve_ratings_xml3_f(c_rating_spec, null, null, null, c_office_id);
 end run_test;
 
-end missing_shift_points;
+end test_missing_shift_points;
 /
