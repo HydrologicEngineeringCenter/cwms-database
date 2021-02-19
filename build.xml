@@ -157,18 +157,19 @@
 
 	<target name="setup-tests" depends="init" description="Install the test framework into the oracle database">
 		<echo message="setting up test framework tests." />
-		<if>			
-			<available file="build/deps/utPLSQL.zip"/>
+		
+		<get dest="build/deps" verbose="true" ignoreerrors="false" skipexisting="true">
+			<url url="https://github.com/utPLSQL/utPLSQL/releases/download/v3.1.10/utPLSQL.zip"/>
+		</get>
+		<if>
+			<not><available file="build/deps/utPLSQL.zip"/></not>
 			<then>
-				<!-- have already downloaded -->			
+				<echo message="Failed to download test framework"/>
+				<fail/>
 			</then>
-			<else>
-				<get dest="build/deps">
-					<url url="https://github.com/utPLSQL/utPLSQL/releases/download/v3.1.10/utPLSQL.zip"/>
-				</get>
-				<unzip src="build/deps/utPLSQL.zip" dest="build/deps/" />
-			</else>			
-		</if>        
+		</if>
+		<unzip src="build/deps/utPLSQL.zip" dest="build/deps/" />
+
                 <!-- Due to STIG V-53973 certain grants are removed from PUBLIC schema. They need to be restored to individual schemas-->
 		<echo message="     Additional grants for UT3 user"/>
         	<echo file="build/deps/utPLSQL/source/create_utplsql_owner.sql" append="true">
@@ -649,4 +650,3 @@
 	
 
 </project>
-
