@@ -10,7 +10,7 @@ create or replace package test_lrts_updates as
 procedure tz_in_at_cwms_ts_spec;
 --%test(LRTS time zone in AT_CWMS_TS_ID table)
 procedure tz_in_at_cwms_ts_id;
---X %test(LRTS time zone in cwms_cat.cat_ts_id)
+--%test(LRTS time zone in cwms_cat.cat_ts_id)
 procedure tz_in_catalog;
 procedure setup;
 procedure teardown;
