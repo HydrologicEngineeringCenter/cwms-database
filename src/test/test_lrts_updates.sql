@@ -1,13 +1,16 @@
 create or replace package test_lrts_updates as
+
 --%suite(Test schema for full LRTS compatibility)
+
 --%rollback(manual)
 --%beforeall(setup)
---%afterall(teardown)
---%test(LRTS time zone in AT_CWMS_TS_ID table)
-procedure tz_in_at_cwms_ts_id;
+--X %afterall(teardown)
+
 --%test(LRTS time zone in AT_CWMS_TS_SPEC table)
 procedure tz_in_at_cwms_ts_spec;
---%test(LRTS time zone in cwms_cat.cat_ts_id)
+--%test(LRTS time zone in AT_CWMS_TS_ID table)
+procedure tz_in_at_cwms_ts_id;
+--X %test(LRTS time zone in cwms_cat.cat_ts_id)
 procedure tz_in_catalog;
 procedure setup;
 procedure teardown;
@@ -43,6 +46,7 @@ begin
          when exc_location_id_not_found then null;
       end;
    end loop;
+   commit;
 end teardown;
 --------------------------------------------------------------------------------
 -- procedure setup
@@ -52,7 +56,7 @@ is
    l_ts_values_utc   cwms_t_ztsv_array := cwms_t_ztsv_array();
    l_empty_ts_values cwms_t_ztsv_array := cwms_t_ztsv_array();
 begin
-   cwms_err.raise('ERROR', 'This setup() routine needs to assign user privileges to time series');
+--   cwms_err.raise('ERROR', 'This setup() routine needs to assign user privileges to time series');
    ------------------------------
    -- start with a clean slate --
    ------------------------------
@@ -144,26 +148,8 @@ begin
          p_version_date    => cwms_util.non_versioned,
          p_office_id       => c_office_id);
    end loop;
+   commit;
 end setup;
---------------------------------------------------------------------------------
--- procedure tz_in_at_cwms_ts_id
---------------------------------------------------------------------------------
-procedure tz_in_at_cwms_ts_id
-is
-   l_time_zone_id varchar2(28);
-begin
-   for i in 1..c_location_ids.count loop
-      execute immediate '
-      select time_zone_id
-        from at_cwms_ts_id
-       where db_office_id = :c_office_id
-         and cwms_ts_id = :v_ts_ids'
-        into l_time_zone_id
-       using c_office_id,
-             v_ts_ids(i);
-      ut.expect(l_time_zone_id).to_equal(v_timezone_ids(i));
-   end loop;
-end tz_in_at_cwms_ts_id;
 --------------------------------------------------------------------------------
 -- procedure tz_in_at_cwms_ts_spec
 --------------------------------------------------------------------------------
@@ -183,6 +169,31 @@ begin
       ut.expect(l_time_zone_code).to_equal(v_timezone_codes(i));
    end loop;
 end tz_in_at_cwms_ts_spec;
+--------------------------------------------------------------------------------
+-- procedure tz_in_at_cwms_ts_id
+--------------------------------------------------------------------------------
+procedure tz_in_at_cwms_ts_id
+is
+   l_time_zone_id varchar2(28);
+   exc_invalid_identifier exception;
+   pragma exception_init (exc_invalid_identifier, -904);
+begin
+   for i in 1..c_location_ids.count loop
+      begin
+         execute immediate '
+         select lrts_time_zone
+           from at_cwms_ts_id
+          where db_office_id = :c_office_id
+            and cwms_ts_id = :v_ts_ids'
+           into l_time_zone_id
+          using c_office_id,
+                v_ts_ids(i);
+      exception
+         when exc_invalid_identifier then null;
+      end;   
+      ut.expect(l_time_zone_id).to_equal(v_timezone_ids(i));
+   end loop;
+end tz_in_at_cwms_ts_id;
 --------------------------------------------------------------------------------
 -- procedure tz_in_catalog
 --------------------------------------------------------------------------------

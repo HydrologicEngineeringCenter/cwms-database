@@ -7,7 +7,7 @@ AS
       RETURN INTEGER
    IS
       l_max_open_cursors   INTEGER;
-   BEGIN
+   begin
       SELECT VALUE
         INTO l_max_open_cursors
         FROM v$parameter
@@ -25,7 +25,7 @@ AS
       RETURN NUMBER
    IS
       l_ts_code   NUMBER := NULL;
-   BEGIN
+   begin
       RETURN get_ts_code (
                 p_cwms_ts_id       => p_cwms_ts_id,
                 p_db_office_code   => cwms_util.get_db_office_code (
@@ -62,7 +62,7 @@ AS
       RETURN VARCHAR2
    IS
       l_cwms_ts_id   VARCHAR2(191);
-   BEGIN
+   begin
       BEGIN
          SELECT cwms_ts_id
            INTO l_cwms_ts_id
@@ -1457,6 +1457,7 @@ AS
       l_parameter_type_id     VARCHAR2 (50);
       l_parameter_type_code   NUMBER;
       l_interval              NUMBER;
+      l_lrts_interval         integer;
       l_interval_id           VARCHAR2 (50);
       l_interval_code         NUMBER;
       l_duration_id           VARCHAR2 (50);
@@ -1474,6 +1475,7 @@ AS
       l_can_create            BOOLEAN := TRUE;
       l_cwms_ts_id            varchar2(191);
       l_parts                 str_tab_t;
+      l_lrts_tz_code          integer;
    BEGIN
       IF p_office_id IS NULL
       THEN
@@ -1570,39 +1572,36 @@ AS
       DBMS_APPLICATION_INFO.set_action (
          'check code lookups, scalar subquery');
 
-      SELECT (SELECT base_parameter_code
-                FROM cwms_base_parameter p
-               WHERE UPPER (p.base_parameter_id) =
-                        UPPER (l_base_parameter_id))
-                p,
-             (SELECT duration_code
-                FROM cwms_duration d
-               WHERE UPPER (d.duration_id) = UPPER (l_duration_id))
-                d,
-             (SELECT duration
-                FROM cwms_duration d
-               WHERE UPPER (d.duration_id) = UPPER (l_duration_id))
-                dd,
-             (SELECT parameter_type_code
-                FROM cwms_parameter_type p
-               WHERE UPPER (p.parameter_type_id) =
-                        UPPER (l_parameter_type_id))
-                pt,
-             (SELECT interval_code
-                FROM cwms_interval i
-               WHERE UPPER (i.interval_id) = UPPER (l_interval_id))
-                i,
-             (SELECT INTERVAL
-                FROM cwms_interval ii
-               WHERE UPPER (ii.interval_id) = UPPER (l_interval_id))
-                ii
-        INTO l_base_parameter_code,
-             l_duration_code,
-	     l_duration,
-             l_parameter_type_code,
-             l_interval_code,
-             l_interval
-        FROM DUAL;
+      select base_parameter_code
+        into l_base_parameter_code
+        from cwms_base_parameter p
+       where upper(p.base_parameter_id) = upper(l_base_parameter_id);
+
+       select parameter_type_code
+         into l_parameter_type_code
+         from cwms_parameter_type
+        where upper(parameter_type_id) = upper(l_parameter_type_id);
+
+       select interval_code,
+              interval
+         into l_interval_code,
+              l_interval
+         from cwms_interval
+        where upper(interval_id) = upper(l_interval_id);
+
+        if substr(l_interval_id, 1, 1) = '~' then
+          select interval
+            into l_lrts_interval
+            from cwms_interval
+           where upper(interval_id) = upper(substr(l_interval_id, 2));
+        end if;
+
+       select duration_code,
+              duration
+         into l_duration_code,
+              l_duration
+         from cwms_duration
+        where upper(duration_id) = upper(l_duration_id);
 
       IF    l_base_parameter_code IS NULL
          OR l_duration_code IS NULL
@@ -1744,9 +1743,39 @@ AS
                IF l_interval = 0
                THEN
                   l_utc_offset := cwms_util.utc_offset_irregular;
+                  if l_lrts_interval is null then
+                     ---------------------------------
+                     -- irregular or pseudo-regular --
+                     ---------------------------------
+                     if nvl(p_utc_offset, cwms_util.utc_offset_irregular) != cwms_util.utc_offset_irregular then
+                        cwms_err.raise('ERROR', 'INVALID_UTC_OFFSET', p_utc_offset, l_interval_id);
+                     end if;
+                  else
+                     --------------------------
+                     -- local regular (LRTS) --
+                     --------------------------
+                     if p_utc_offset not in (cwms_util.utc_offset_irregular, cwms_util.utc_offset_undefined) then
+                        l_utc_offset := -abs(p_utc_offset);
+                        if -l_utc_offset > l_lrts_interval then
+                           cwms_err.raise('ERROR', 'INVALID_UTC_OFFSET', p_utc_offset, l_interval_id);
+                        end if;
+                     end if;
+                     select time_zone_code
+                       into l_lrts_tz_code
+                       from at_physical_location
+                      where location_code = l_location_code;
+                     if l_lrts_tz_code is null and l_sub_location_id is not null then
+                        select time_zone_code
+                          into l_lrts_tz_code
+                          from at_physical_location
+                         where location_code = cwms_loc.get_location_code(l_office_id, l_base_location_id);
+                     end if;
+                     if l_lrts_tz_code is null then
+                        cwms_err.raise('ERROR', 'Cannot create Local-Regular Time Series for a location with a NULL time zone');
+                     end if;
+                  end if;
                ELSE
                   l_utc_offset := cwms_util.utc_offset_undefined;
-
                   IF p_utc_offset IS NOT NULL
                   THEN
                      IF p_utc_offset = cwms_util.utc_offset_undefined
@@ -1827,6 +1856,7 @@ AS
                                               interval_utc_offset,
                                               interval_forward,
                                               interval_backward,
+                                              time_zone_code,
                                               version_flag,
                                               active_flag)
                     VALUES (
@@ -1840,6 +1870,7 @@ AS
                               l_utc_offset,
                               p_interval_forward,
                               p_interval_backward,
+                              l_lrts_tz_code,
                               UPPER (p_versioned),
                               UPPER (p_active_flag))
                  RETURNING ts_code

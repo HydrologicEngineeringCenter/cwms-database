@@ -15,6 +15,7 @@
 --   AT_PHYSICAL_LOCATION (Table)
 --
 
+-- delete from at_clob where id = '/VIEWDOCS/ZAV_CWMS_TS_ID';
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/ZAV_CWMS_TS_ID', null,
 '
 /**
@@ -49,6 +50,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/ZAV_CWMS_TS_ID', nu
  * @field interval_utc_offset  Data time as an offset into each interval. Intervals are based on UTC
  * @field version_flag         Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code>) specifying whether the time series is versioned
  * @field historic_flag        Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code>) specifying whether the time series is part of historic record
+ * @field lrts_time_zone       The (location''s) time zone if the time series is a local-regular time series (LRTS)
 */
 ');
 CREATE OR REPLACE FORCE VIEW zav_cwms_ts_id
@@ -79,7 +81,8 @@ CREATE OR REPLACE FORCE VIEW zav_cwms_ts_id
     interval,
     interval_utc_offset,
     version_flag,
-    historic_flag
+    historic_flag,
+    lrts_time_zone
 )
 AS
     SELECT    abl.db_office_code, base_location_code,
@@ -95,7 +98,7 @@ AS
                 base_parameter_id, ap.sub_parameter_id,
                 base_parameter_id || SUBSTR ('-', 1, LENGTH (ap.sub_parameter_id)) || ap.sub_parameter_id parameter_id,
                 parameter_type_id, interval_id, duration_id, version version_id,
-                i.interval, s.interval_utc_offset, s.version_flag, s.historic_flag
+                i.interval, s.interval_utc_offset, s.version_flag, s.historic_flag, z.time_zone_name
       FROM    at_cwms_ts_spec s
                 JOIN at_physical_location l
                     USING (location_code)
@@ -117,6 +120,7 @@ AS
                     USING (interval_code)
                 JOIN cwms_duration d
                     USING (duration_code)
+                LEFT OUTER JOIN cwms_time_zone z ON z.time_zone_code = s.time_zone_code
      WHERE    s.delete_date IS NULL
 /
 
