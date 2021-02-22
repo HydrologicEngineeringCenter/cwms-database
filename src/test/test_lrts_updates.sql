@@ -233,3 +233,5 @@ begin
 end tz_in_catalog;
 end test_lrts_updates;
 /
+
+grant execute on test_lrts_updates to cwms_user;

@@ -1,16 +1,16 @@
 <project name="cwms_database_schema" default="all" xmlns:resolver="antlib:org.apache.maven.resolver.ant">
 	<taskdef uri="antlib:org.apache.maven.resolver.ant" resource="org/apache/maven/resolver/ant/antlib.xml"
-    classpath="lib/maven-resolver-ant-tasks-1.2.1-uber.jar" />	
-	
+    classpath="lib/maven-resolver-ant-tasks-1.2.1-uber.jar" />
+
 	<description>
 		Build, Deployment, and Installation file for the CWMS Database
 	</description>
 
-	
-	
+
+
 
 	<resolver:pom id="pom" file="pom.xml" />
-	
+
 
 	<!-- read in the environment for use in properties -->
 	<property environment="env"/>
@@ -34,18 +34,18 @@
 		<resolver:remoterepo refid="hec-nexus-releases" />
 	</resolver:remoterepos>
 
-	<!-- Load in the ant-contrib jar to use the foreach external task -->	
+	<!-- Load in the ant-contrib jar to use the foreach external task -->
 	<taskdef resource="net/sf/antcontrib/antcontrib.properties">
 		<classpath>
 			<pathelement location="${root}/lib/ant-contrib.jar"/>
 		</classpath>
-	</taskdef>	
+	</taskdef>
 
 	<import optional="true" file="${root}/${env.USERNAME}.xml"/>
 	<import optional="true" file="${builduser.overrides}"/>
-	
+
 	<property name="output.lines" value="1000"/>
-	
+
 	<!-- whether or not this build is a debug build -->
 	<property name="debug"  value="true"/>
 
@@ -66,7 +66,7 @@
 
 	<!-- flags to force the kill script to ignore errors. -->
 	<property name="autokill.force" value="-force"/>
-		
+
 
 	<!-- Initialize the project for building. -->
 	<target name="init">
@@ -74,19 +74,19 @@
 		<tstamp/>
 		<!-- TODO: consider pulling this from TeamCity -->
 		<property name="wcdba.build" value="WCDBA:Build:${DSTAMP}:${TSTAMP}"/>
-		
-		
+
+
 		<mkdir dir="${build.dir}/deps"/> <!-- create the directory for output -->
 		<mkdir dir="${coverage.dir}"/>
 	</target>
 
 
-	
+
 	<!-- Executes python scripts to build the CWMS schema. -->
-	<target name="build" description="Executes python scripts to build the CWMS schema" depends="init">		
-		
+	<target name="build" description="Executes python scripts to build the CWMS schema" depends="init">
+
 		<echo message="Build sql scripts..."/>
-		
+
 		<if>
 			<equals arg1="${office.secondary.id}" arg2="" />
 			<then>
@@ -98,11 +98,11 @@
 				<echo message="${buildSqlScript-arg-line}"/>
 			</else>
 		</if>
-		
+
 		<exec dir="${src}" executable="python2" output="build-sql-script-output.txt" error="build-sql-script-error.txt" resultproperty="build-sql-script-result">
 			<arg line="${buildSqlScript-arg-line}"/>
 		</exec>
-		
+
 		<if>
 			<equals arg1="${build-sql-script-result}" arg2="0" />
 			<then>
@@ -111,23 +111,23 @@
 			<else>
 				<concat>
 					<filelist dir="${root}" files="build-sql-script-output.txt,build-sql-script-error.txt"/>
-				</concat>				
+				</concat>
 				<echo message="${build-sql-script-result}"/>
 				<fail/>
 			</else>
 		</if>
-		
+
 		<echo message="Finished building sql scripts"/>
-		
+
 		<echo message="Creating new CWMS Schema..."/>
 
 		<property name="autobuild-arg-line" value="autobuild.py echo=${autobuild.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} cwms_schema=${oracle.cwms.user} cwms_passwd=${oracle.cwms.password} dbi_passwd=${oracle.cwmsdbi.password} pd_office=${office.primary.id} pd_passwd=${oracle.cwmspd.password} test_passwd=${oracle.hectest.password} ${build.restricted}"/>
 		<echo message="${autobuild-arg-line}"/>
-		
+
 		<exec dir="${src}" executable="python2" output="auto-build-output.txt" error="auto-build-error.txt" resultproperty="auto-build-result">
 			<arg line="${autobuild-arg-line}"/>
 		</exec>
-		
+
 		<if>
 			<equals arg1="${auto-build-result}" arg2="0" />
 			<then>
@@ -141,7 +141,7 @@
 						<filterreader classname="org.apache.tools.ant.filters.TailFilter">
 							<param name="lines" value="${output.lines}"/>
 						</filterreader>
-					</filterchain>			
+					</filterchain>
 				</concat>
 				<!-- concat all of std error -->
 				<concat>
@@ -153,22 +153,22 @@
 		</if>
 
 	</target>
-		
+
 
 	<target name="setup-tests" depends="init" description="Install the test framework into the oracle database">
 		<echo message="setting up test framework tests." />
-		<if>			
+		<if>
 			<available file="build/deps/utPLSQL.zip"/>
 			<then>
-				<!-- have already downloaded -->			
+				<!-- have already downloaded -->
 			</then>
 			<else>
 				<get dest="build/deps">
 					<url url="https://github.com/utPLSQL/utPLSQL/releases/download/v3.1.10/utPLSQL.zip"/>
 				</get>
 				<unzip src="build/deps/utPLSQL.zip" dest="build/deps/" />
-			</else>			
-		</if>        
+			</else>
+		</if>
                 <!-- Due to STIG V-53973 certain grants are removed from PUBLIC schema. They need to be restored to individual schemas-->
 		<echo message="     Additional grants for UT3 user"/>
         	<echo file="build/deps/utPLSQL/source/create_utplsql_owner.sql" append="true">
@@ -187,7 +187,7 @@
 			<arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba" />
             <redirector inputstring="GRANT INHERIT PRIVILEGES ON USER sys TO ut3;"/>
         </exec>
-		
+
 	</target>
 
 	<target name="tests-install" description="Install all of the test code and set the right grants" depends="init">
@@ -196,16 +196,16 @@
 			<arg value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance}" />
             <arg value="@tests.sql"/>
 			<arg value="${office.primary.id}"/>
-        </exec>		
+        </exec>
 		<exec dir="src/test" executable="sqlplus">
 			<arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba"/>
 			<arg value="@test_grants.sql"/>
 		</exec>
 	</target>
 
-	<target name="test" depends="setup-tests,tests-install" description="run all tests." >		
-		<antcall target="test-as_pd_user"/>		
-		<antcall target="test-as_ro_user"/>		
+	<target name="test" depends="setup-tests,tests-install" description="run all tests." >
+		<antcall target="test-as_pd_user"/>
+		<antcall target="test-as_ro_user"/>
 		<!-- we will then merge all of the test output and code coverage-->
 
 		<!-- create coverage zip for TeamCity-->
@@ -213,24 +213,24 @@
 	</target>
 
 
-    <target name="test-as_ro_user" description="run tests that require connecting with a RO user">   
+    <target name="test-as_ro_user" description="run tests that require connecting with a RO user">
         <if>
             <available file="build/tests.log"/>
             <then></then>
             <else><antcall target="setup-tests"/></else>
         </if>
-        
+
         <echo message="    Running tests" />
         <exec executable="utplsql" resultproperty="utreturn">
             <arg value="run"/>
-			<arg value="-p=cwms_20.test_ro"/>		
+			<arg value="-p=cwms_20.test_ro"/>
             <arg value="-f"/><arg value="UT_COVERAGE_HTML_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/index.html" />
             <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/coverage.xml" />
-            <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests-readonly.xml" />
+            <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests.xml" />
 			<arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
             <arg value="-d"/>
 			<arg value="ro_user/ro_pw@${oracle.cwms.instance}" />
-            
+
         </exec>
 
 		<fail>
@@ -243,24 +243,24 @@
 
     </target>
 
-    <target name="test-as_pd_user" description="run tests that require connecting with a PD user">   
+    <target name="test-as_pd_user" description="run tests that require connecting with a PD user">
         <if>
             <available file="build/tests.log"/>
             <then></then>
             <else><antcall target="setup-tests"/></else>
         </if>
-        
+
         <echo message="    Running tests" />
         <exec executable="utplsql" resultproperty="utreturn">
             <arg value="run"/>
-			<arg value="-p=cwms_20.test_aaa,cwms_20.test_lrts_updates"/>		
+			<arg value="-p=cwms_20.test_aaa,cwms_20.test_missing_shift_points,cwms_20.test_lrts_updates"/>
             <arg value="-f"/><arg value="UT_COVERAGE_HTML_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/index.html" />
             <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/coverage.xml" />
-            <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests-pd.xml" />
+            <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests.xml" />
 			<arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
             <arg value="-d"/>
 			<arg value="pd_user/pd_pw@${oracle.cwms.instance}" />
-            
+
         </exec>
 
 		<fail>
@@ -279,7 +279,7 @@
 		<exec dir="build/deps/utPLSQL/source" executable="sqlplus">
 			<arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba" />
 			<redirector inputstring="drop user ut3 cascade;">
-				
+
 			</redirector>
 		</exec>
         <delete file="build/test.log"/>
@@ -297,22 +297,22 @@
 				<filterreader classname="org.apache.tools.ant.filters.TailFilter">
 					<param name="lines" value="${output.lines}"/>
 				</filterreader>
-			</filterchain>			
+			</filterchain>
 		</concat>
 	</target>
-	
+
 	<!-- Executes python script to drop the CWMS schema. -->
 	<target name="clean" description="Executes python script to drop the CWMS schema">
-		
+
 		<echo message="dropping existing CWMS Schema..."/>
-		
+
 		<property name="autokill-arg-line" value="autokill.py echo=${autokill.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} cwms_schema=${oracle.cwms.user} ${autokill.force} ${build.restricted}"/>
 		<echo message="${autokill-arg-line}"/>
-		
+
 		<exec dir="${src}" executable="python2" output="auto-kill-output.txt" error="auto-kill-error.txt" resultproperty="auto-kill-result">
 			<arg line="${autokill-arg-line}"/>
-		</exec>	
-		
+		</exec>
+
 		<if>
 			<equals arg1="${auto-kill-result}" arg2="0" />
 			<then>
@@ -321,26 +321,26 @@
 			<else>
 				<concat>
 					<filelist dir="${root}" files="auto-kill-output.txt,auto-kill-error.txt"/>
-				</concat>				
+				</concat>
 				<echo message="${auto-kill-result}"/>
 				<fail/>
 			</else>
 		</if>
-	
+
     </target>
-	
+
 	<!-- Loads rowcps schema. -->
 	<target name="load-rowcps-schema" description="Loads rowcps schema">
-		
+
 		<echo message="Loading rowcps Schema..."/>
-		
+
 		<property name="rowcpsLoad-arg-line" value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} @rowcps_schema"/>
 		<echo message="${rowcpsLoad-arg-line}"/>
-		
+
 		<exec dir="${src}/rowcps" executable="sqlplus" output="rowcps-load-output.txt" error="rowcps-load-error.txt" resultproperty="rowcps-load-result">
 			<arg line="${rowcpsLoad-arg-line}"/>
-		</exec>	
-		
+		</exec>
+
 		<if>
 			<equals arg1="${rowcps-load-result}" arg2="0" />
 			<then>
@@ -349,24 +349,24 @@
 			<else>
 				<concat>
 					<filelist dir="${root}" files="rowcps-load-output.txt,rowcps-load-error.txt"/>
-				</concat>				
+				</concat>
 				<echo message="${rowcps-load-result}"/>
 				<fail/>
 			</else>
 		</if>
-	
+
 	</target>
-	
+
 	<target name = "load-rowcps-api">
 		<echo message="Loading rowcps Types..."/>
-		
+
 		<property name="rowcpsLoadTypes-arg-line" value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} @rowcps_types"/>
 		<echo message="${rowcpsLoadTypes-arg-line}"/>
-		
+
 		<exec dir="${src}/rowcps" executable="sqlplus" output="rowcps-types-load-output.txt" error="rowcps-types-load-error.txt" resultproperty="rowcps-types-load-result">
 			<arg line="${rowcpsLoadTypes-arg-line}"/>
-		</exec>	
-		
+		</exec>
+
 		<if>
 			<equals arg1="${rowcps-types-load-result}" arg2="0" />
 			<then>
@@ -375,21 +375,21 @@
 			<else>
 				<concat>
 					<filelist dir="${root}" files="rowcps-types-load-output.txt,rowcps-types-load-error.txt"/>
-				</concat>				
+				</concat>
 				<echo message="${rowcps-types-load-result}"/>
 				<fail/>
 			</else>
 		</if>
-		
+
 		<echo message="Loading CWMS project Package..."/>
-		
+
 		<property name="rowcpsLoadCWMSProjectPkg-arg-line" value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} @cwms_project_pkg"/>
 		<echo message="${rowcpsLoadCWMSProjectPkg-arg-line}"/>
-		
+
 		<exec dir="${src}/rowcps" executable="sqlplus" output="rowcps-load-CWMS-Project-Pkg-output.txt" error="rowcps-load-CWMS-Project-Pkg-error.txt" resultproperty="rowcps-load-CWMS-Project-Pkg-result">
 			<arg line="${rowcpsLoadCWMSProjectPkg-arg-line}"/>
-		</exec>	
-		
+		</exec>
+
 		<if>
 			<equals arg1="${rowcps-load-CWMS-Project-Pkg-result}" arg2="0" />
 			<then>
@@ -398,21 +398,21 @@
 			<else>
 				<concat>
 					<filelist dir="${root}" files="rowcps-load-CWMS-Project-Pkg-output.txt,rowcps-load-CWMS-Project-Pkg-error.txt"/>
-				</concat>				
+				</concat>
 				<echo message="${rowcps-load-CWMS-Project-Pkg-result}"/>
 				<fail/>
 			</else>
 		</if>
-		
+
 		<echo message="Loading CWMS project Package Body..."/>
-		
+
 		<property name="rowcpsLoadCWMSProjectPkgBody-arg-line" value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} @cwms_project_pkg_body"/>
 		<echo message="${rowcpsLoadCWMSProjectPkgBody-arg-line}"/>
-		
+
 		<exec dir="${src}/rowcps" executable="sqlplus" output="rowcps-load-CWMS-Project-Pkg-body-output.txt" error="rowcps-load-CWMS-Project-Pkg-body-error.txt" resultproperty="rowcps-load-CWMS-Project-Pkg-body-result">
 			<arg line="${rowcpsLoadCWMSProjectPkgBody-arg-line}"/>
-		</exec>	
-		
+		</exec>
+
 		<if>
 			<equals arg1="${rowcps-load-CWMS-Project-Pkg-body-result}" arg2="0" />
 			<then>
@@ -421,17 +421,17 @@
 			<else>
 				<concat>
 					<filelist dir="${root}" files="rowcps-load-CWMS-Project-Pkg-body-output.txt,rowcps-load-CWMS-Project-Pkg-body-error.txt"/>
-				</concat>				
+				</concat>
 				<echo message="${rowcps-load-CWMS-Project-Pkg-body-result}"/>
 				<fail/>
 			</else>
 		</if>
     </target>
-	
+
 	<!-- Drop existing CWMS schema then build a new CWMS schema. -->
 	<target name="all-schema" depends="clean,build" description="drop existing CWMS schema then build a new CWMS schema">
     </target>
-	
+
     <target name="all" depends="all-schema" description="does a clean build">
     </target>
 
@@ -604,7 +604,7 @@
                 <resolver:dependency coords="com.oracle.ojdbc:ojdbc8:19.3.0.0" />
             </resolver:dependencies>
             <path refid="cp.runtime" scopes="compile,runtime,test"/>
-            <files refid="deps" dir="${build.dir}/deps" layout="{artifactId}.{extension}"/>  
+            <files refid="deps" dir="${build.dir}/deps" layout="{artifactId}.{extension}"/>
             <resolver:properties prefix="dep." classpath="runtime"/>
         </resolver:resolve>
         <exec executable="sqlplus">
@@ -629,7 +629,7 @@
             <arg value="-k"/><arg value="${build.dir}/doc_key"/>
         </java>
         <zip destfile="${build.dir}/docs.zip"
-             basedir="${build.dir}/docs/" 
+             basedir="${build.dir}/docs/"
             />
 		<resolver:artifacts id="output">
             <resolver:artifact file="${build.dir}/cwms_db_${pom.version}.zip" type="zip" id="bundle" pomref="pom"/>
@@ -638,14 +638,14 @@
 	</target>
 	<target name="install" depends="bundle">
 		<resolver:install artifactsref="output" />
-	</target> 
+	</target>
 	<target name="deploy" depends="bundle">
 		<resolver:deploy artifactsref="output">
 			<remoteRepo refid="hec-nexus-snapshots"/>
 		</resolver:deploy>
 	</target>
-	
 
-	
+
+
 
 </project>

@@ -114,12 +114,17 @@ comment on column at_cwms_ts_id.lrts_time_zone        is 'The time zone of the l
 -----------
 delete from at_clob where id = '/VIEWDOCS/ZAV_CWMS_TS_ID';
 @../cwms/views/zav_cwms_ts_id
+-------------------
+-- PACKAGE SPECS --
+-------------------
+@../cwms/cwms_cat_pkg
 --------------------
 -- PACKAGE BODIES --
 --------------------
 prompt update package bodies
 @../cwms/cwms_ts_pkg_body
 @../cwms/cwms_ts_id_pkg_body
+@../cwms/cwms_cat_pkg_body
 prompt ################################################################################
 prompt INVALID OBJECTS...
 select systimestamp from dual;

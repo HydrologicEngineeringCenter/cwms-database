@@ -644,7 +644,7 @@ IS
     *     <td class="descr-center">7</td>
     *     <td class="descr">user_privileges</td>
     *     <td class="descr">number</td>
-    *     <td class="descr">No longer used, but kept for backward compatibility. Will always be NULL</td>
+    *     <td class="descr">The session user's privileges for the time series</td>
     *   </tr>
     * </table>
     * @param p_ts_subselect_string  The time series identifier pattern to match. Use glob-style wildcards characters as shown above.

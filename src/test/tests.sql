@@ -9,6 +9,7 @@ exec cwms_sec.create_cwmsdbi_db_user('hqcwmsdbi','junk','HQ');
 exec cwms_sec.create_user('OTHER_DIST','other', char_32_array_type('CWMS Users'),'HQ');
 @test_aaa.sql;
 @test_ro.sql;
+@test_missing_shift_points.sql
 @test_lrts_updates.sql;
 
 show errors;
