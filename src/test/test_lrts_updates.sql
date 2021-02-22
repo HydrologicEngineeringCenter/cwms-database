@@ -14,7 +14,7 @@ procedure tz_in_at_cwms_ts_id;
 procedure tz_in_catalog;
 procedure setup;
 procedure teardown;
-c_office_id     constant varchar2(3)       := 'SWT';
+c_office_id     constant varchar2(3)       := '&office_id';
 c_location_ids  constant cwms_t_str_tab    := cwms_t_str_tab('TestLoc1', 'TestLoc1-WithSub', 'TestLoc2');
 c_timezone_ids  constant cwms_t_str_tab    := cwms_t_str_tab('US/Central', null, 'CST');
 c_intvl_offsets constant cwms_t_number_tab := cwms_t_number_tab(0, -10, -20);
