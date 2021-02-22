@@ -92,9 +92,24 @@ begin
       -------------------------------
       -- finally the record itself --
       -------------------------------
+      for k in 1..2 loop
+         begin
       delete
         from at_rating
        where rating_code = p_rating_code;
+            exit;
+         exception
+            when others then
+               if k = 1 then
+                  ----------------------------------------------------------------------------
+                  -- won't have been deleted if shifts or offsets existed but had no values --
+                  ----------------------------------------------------------------------------
+                  delete from at_rating_ind_parameter where rating_code = p_rating_code;
+               else
+                  cwms_err.raise('ERROR', 'Deleting rating code '||p_rating_code||chr(10)||dbms_utility.format_error_backtrace);
+               end if;
+         end;
+      end loop;
    end loop;
    --------------------------
    -- transitional ratings --
