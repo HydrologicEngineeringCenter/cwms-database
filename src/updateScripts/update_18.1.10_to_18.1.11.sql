@@ -114,10 +114,16 @@ comment on column at_cwms_ts_id.lrts_time_zone        is 'The time zone of the l
 -----------
 delete from at_clob where id = '/VIEWDOCS/ZAV_CWMS_TS_ID';
 @../cwms/views/zav_cwms_ts_id
+----------------
+-- TYPE SPECS --
+----------------
+@../cwms/types/nested_ts2_type
+@../cwms/types/nested_ts2_table
 -------------------
 -- PACKAGE SPECS --
 -------------------
 @../cwms/cwms_cat_pkg
+@../cwms/cwms_ts_pkg
 --------------------
 -- PACKAGE BODIES --
 --------------------

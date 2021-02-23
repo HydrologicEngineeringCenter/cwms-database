@@ -4,7 +4,7 @@ create or replace package test_lrts_updates as
 
 --%rollback(manual)
 --%beforeall(setup)
---X %afterall(teardown)
+--%afterall(teardown)
 
 --%test(LRTS time zone in AT_CWMS_TS_SPEC table)
 procedure tz_in_at_cwms_ts_spec;
@@ -12,6 +12,21 @@ procedure tz_in_at_cwms_ts_spec;
 procedure tz_in_at_cwms_ts_id;
 --%test(LRTS time zone in cwms_cat.cat_ts_id)
 procedure tz_in_catalog;
+--%test(RETRIEVE_TS_OUT overload)
+procedure retrieve_ts_out;
+--%test(RETRIEVE_TS [1.4] overload)
+procedure retrieve_ts_old;
+--%test(RETRIEVE_TS_2 [1.4] overload)
+procedure retrieve_ts_2_old;
+--%test(RETRIEVE_TS [2.0] overload)
+procedure retrieve_ts;
+--%test(RETRIEVE_TS_MULTI2)
+procedure retrieve_ts_multi2;
+--%test(ZRETRIEVE_TS overload)
+procedure zretrieve_ts;
+--%test(ZRETRIEVE_TS_JAVA overload)
+procedure zretrieve_ts_java;
+
 procedure setup;
 procedure teardown;
 c_office_id     constant varchar2(3)       := '&office_id';
@@ -231,6 +246,63 @@ begin
       ut.expect(l_lrts_timezone).to_equal(v_timezone_ids(i));
    end loop;
 end tz_in_catalog;
+--------------------------------------------------------------------------------
+-- procedure retrieve_ts_out
+--------------------------------------------------------------------------------
+procedure retrieve_ts_out
+is
+begin
+   null;
+end retrieve_ts_out;
+--------------------------------------------------------------------------------
+-- procedure retrieve_ts_old
+--------------------------------------------------------------------------------
+procedure retrieve_ts_old
+is
+begin
+   null;
+end retrieve_ts_old;   
+--------------------------------------------------------------------------------
+-- procedure retrieve_ts_2_old
+--------------------------------------------------------------------------------
+procedure retrieve_ts_2_old
+is
+begin
+   null;
+end retrieve_ts_2_old;   
+--------------------------------------------------------------------------------
+-- procedure retrieve_ts
+--------------------------------------------------------------------------------
+procedure retrieve_ts
+is
+begin
+   null;
+end retrieve_ts;   
+--------------------------------------------------------------------------------
+-- procedure retrieve_ts_multi2
+--------------------------------------------------------------------------------
+procedure retrieve_ts_multi2
+is
+begin
+   null;
+end retrieve_ts_multi2;   
+--------------------------------------------------------------------------------
+-- procedure zretrieve_ts
+--------------------------------------------------------------------------------
+procedure zretrieve_ts
+is
+begin
+   null;
+end zretrieve_ts;   
+--------------------------------------------------------------------------------
+-- procedure zretrieve_ts_java
+--------------------------------------------------------------------------------
+procedure zretrieve_ts_java
+is
+begin
+   null;
+end zretrieve_ts_java;   
+
 end test_lrts_updates;
 /
 

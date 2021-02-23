@@ -2143,6 +2143,7 @@ AS
    FUNCTION build_retrieve_ts_query (
       p_cwms_ts_id_out       OUT VARCHAR2,
       p_units_out            OUT VARCHAR2,
+      p_lrts_time_zone       OUT VARCHAR2,
       p_cwms_ts_id        IN     VARCHAR2,
       p_units             IN     VARCHAR2,
       p_start_time        IN     DATE,
@@ -2267,12 +2268,14 @@ AS
                 interval,
                 interval_utc_offset,
                 base_parameter_id,
-                location_code
+                location_code,
+                lrts_time_zone
            into l_ts_code,
                 l_interval,
                 l_utc_offset,
                 l_base_parameter_id,
-                l_location_code
+                l_location_code,
+                p_lrts_time_zone
            from at_cwms_ts_id
           where upper(db_office_id) = upper(l_office_id)
             and upper(cwms_ts_id) = upper(p_cwms_ts_id_out);
@@ -2284,12 +2287,14 @@ AS
                       interval,
                       interval_utc_offset,
                       base_parameter_id,
-                      location_code
+                      location_code,
+                      lrts_time_zone
                  into l_ts_code,
                       l_interval,
                       l_utc_offset,
                       l_base_parameter_id,
-                      l_location_code
+                      l_location_code,
+                      p_lrts_time_zone
                  from at_cwms_ts_id
                 where upper(db_office_id) = upper(l_office_id)
                   and upper(cwms_ts_id) = upper(p_cwms_ts_id_out);
@@ -3045,6 +3050,7 @@ AS
       p_at_tsv_rc            OUT SYS_REFCURSOR,
       p_cwms_ts_id_out       OUT VARCHAR2,
       p_units_out            OUT VARCHAR2,
+      p_lrts_time_zone       OUT VARCHAR2,
       p_cwms_ts_id        IN     VARCHAR2,
       p_units             IN     VARCHAR2,
       p_start_time        IN     DATE,
@@ -3058,8 +3064,8 @@ AS
       p_version_date      IN     DATE DEFAULT NULL,
       p_max_version       IN     VARCHAR2 DEFAULT 'T',
       p_office_id         IN     VARCHAR2 DEFAULT NULL)
-   IS
-      l_query_str   VARCHAR2 (4000);
+   is
+      l_query_str VARCHAR2 (4000);
 
       PROCEDURE set_action (text IN VARCHAR2)
       IS
@@ -3077,6 +3083,7 @@ AS
       p_at_tsv_rc :=
          build_retrieve_ts_query (p_cwms_ts_id_out,
                                   p_units_out,
+                                  p_lrts_time_zone,
                                   p_cwms_ts_id,
                                   p_units,
                                   p_start_time,
@@ -3093,6 +3100,54 @@ AS
                                   p_office_id);
 
       DBMS_APPLICATION_INFO.set_module (NULL, NULL);
+   END retrieve_ts_out;
+
+   --*******************************************************************   --
+
+   --
+   --*******************************************************************   --
+   --*******************************************************************   --
+   --
+   -- RETREIVE_TS_OUT - v2.0 -
+   --
+   PROCEDURE retrieve_ts_out (
+      p_at_tsv_rc            OUT SYS_REFCURSOR,
+      p_cwms_ts_id_out       OUT VARCHAR2,
+      p_units_out            OUT VARCHAR2,
+      p_cwms_ts_id        IN     VARCHAR2,
+      p_units             IN     VARCHAR2,
+      p_start_time        IN     DATE,
+      p_end_time          IN     DATE,
+      p_time_zone         IN     VARCHAR2 DEFAULT 'UTC',
+      p_trim              IN     VARCHAR2 DEFAULT 'F',
+      p_start_inclusive   IN     VARCHAR2 DEFAULT 'T',
+      p_end_inclusive     IN     VARCHAR2 DEFAULT 'T',
+      p_previous          IN     VARCHAR2 DEFAULT 'F',
+      p_next              IN     VARCHAR2 DEFAULT 'F',
+      p_version_date      IN     DATE DEFAULT NULL,
+      p_max_version       IN     VARCHAR2 DEFAULT 'T',
+      p_office_id         IN     VARCHAR2 DEFAULT NULL)
+   is
+      l_lrts_time_zone varchar2(28);
+   BEGIN
+      retrieve_ts_out (
+         p_at_tsv_rc        => p_at_tsv_rc,
+         p_cwms_ts_id_out   => p_cwms_ts_id_out,
+         p_units_out        => p_units_out,
+         p_lrts_time_zone   => l_lrts_time_zone,
+         p_cwms_ts_id       => p_cwms_ts_id,
+         p_units            => p_units,
+         p_start_time       => p_start_time,
+         p_end_time         => p_end_time,
+         p_time_zone        => p_time_zone,
+         p_trim             => p_trim,
+         p_start_inclusive  => p_start_inclusive,
+         p_end_inclusive    => p_end_inclusive,
+         p_previous         => p_previous,
+         p_next             => p_next,
+         p_version_date     => p_version_date,
+         p_max_version      => p_max_version,
+         p_office_id        => p_office_id);
    END retrieve_ts_out;
 
    --*******************************************************************   --
@@ -3155,18 +3210,19 @@ AS
    -- RETREIVE_TS - v1.4 -
    --
    PROCEDURE retrieve_ts (
-      p_at_tsv_rc     IN OUT SYS_REFCURSOR,
-      p_units         IN     VARCHAR2,
-      p_officeid      IN     VARCHAR2,
-      p_cwms_ts_id    IN     VARCHAR2,
-      p_start_time    IN     DATE,
-      p_end_time      IN     DATE,
-      p_timezone      IN     VARCHAR2 DEFAULT 'GMT',
-      p_trim          IN     NUMBER DEFAULT cwms_util.false_num,
-      p_inclusive     IN     NUMBER DEFAULT NULL,
-      p_versiondate   IN     DATE DEFAULT NULL,
-      p_max_version   IN     NUMBER DEFAULT cwms_util.true_num)
-   IS
+      p_at_tsv_rc      IN OUT SYS_REFCURSOR,
+      p_lrts_time_zone OUT    VARCHAR2,
+      p_units          IN     VARCHAR2,
+      p_officeid       IN     VARCHAR2,
+      p_cwms_ts_id     IN     VARCHAR2,
+      p_start_time     IN     DATE,
+      p_end_time       IN     DATE,
+      p_timezone       IN     VARCHAR2 DEFAULT 'GMT',
+      p_trim           IN     NUMBER DEFAULT cwms_util.false_num,
+      p_inclusive      IN     NUMBER DEFAULT NULL,
+      p_versiondate    IN     DATE DEFAULT NULL,
+      p_max_version    IN     NUMBER DEFAULT cwms_util.true_num)
+   is
       l_trim          VARCHAR2 (1);
       l_max_version   VARCHAR2 (1);
       l_query_str     VARCHAR2 (4000);
@@ -3215,6 +3271,7 @@ AS
       p_at_tsv_rc :=
          build_retrieve_ts_query (l_tsid,                  -- p_cwms_ts_id_out
                                   l_unit,                       -- p_units_out
+                                  p_lrts_time_zone,        -- p_lrts_time_zone
                                   p_cwms_ts_id,                -- p_cwms_ts_id
                                   p_units,                          -- p_units
                                   p_start_time,                -- p_start_time
@@ -3239,6 +3296,78 @@ AS
 
       DBMS_APPLICATION_INFO.set_module (NULL, NULL);
    END retrieve_ts;
+
+   --
+   --*******************************************************************   --
+   --*******************************************************************   --
+   --
+   -- RETREIVE_TS - v1.4 -
+   --
+   PROCEDURE retrieve_ts (
+      p_at_tsv_rc      IN OUT SYS_REFCURSOR,
+      p_units          IN     VARCHAR2,
+      p_officeid       IN     VARCHAR2,
+      p_cwms_ts_id     IN     VARCHAR2,
+      p_start_time     IN     DATE,
+      p_end_time       IN     DATE,
+      p_timezone       IN     VARCHAR2 DEFAULT 'GMT',
+      p_trim           IN     NUMBER DEFAULT cwms_util.false_num,
+      p_inclusive      IN     NUMBER DEFAULT NULL,
+      p_versiondate    IN     DATE DEFAULT NULL,
+      p_max_version    IN     NUMBER DEFAULT cwms_util.true_num)
+   is
+      l_lrts_time_zone varchar2(28);
+   BEGIN
+      retrieve_ts (
+         p_at_tsv_rc      => p_at_tsv_rc,
+         p_lrts_time_zone => l_lrts_time_zone,
+         p_units          => p_units,
+         p_officeid       => p_officeid,
+         p_cwms_ts_id     => p_cwms_ts_id,
+         p_start_time     => p_start_time,
+         p_end_time       => p_end_time,
+         p_timezone       => p_timezone,
+         p_trim           => p_trim,
+         p_inclusive      => p_inclusive,
+         p_versiondate    => p_versiondate,
+         p_max_version    => p_max_version);
+   END retrieve_ts;
+
+   --
+   --*******************************************************************   --
+   --*******************************************************************   --
+   --
+   -- RETREIVE_TS_2 - v1.4 -
+   --
+   PROCEDURE retrieve_ts_2 (
+      p_at_tsv_rc        OUT SYS_REFCURSOR,
+      p_lrts_time_zone   OUT VARCHAR2,
+      p_units         IN     VARCHAR2,
+      p_officeid      IN     VARCHAR2,
+      p_cwms_ts_id    IN     VARCHAR2,
+      p_start_time    IN     DATE,
+      p_end_time      IN     DATE,
+      p_timezone      IN     VARCHAR2 DEFAULT 'GMT',
+      p_trim          IN     NUMBER DEFAULT cwms_util.false_num,
+      p_inclusive     IN     NUMBER DEFAULT NULL,
+      p_versiondate   IN     DATE DEFAULT NULL,
+      p_max_version   IN     NUMBER DEFAULT cwms_util.true_num)
+   IS
+      l_at_tsv_rc   SYS_REFCURSOR;
+   BEGIN
+      retrieve_ts (p_at_tsv_rc,
+                   p_lrts_time_zone,
+                   p_units,
+                   p_officeid,
+                   p_cwms_ts_id,
+                   p_start_time,
+                   p_end_time,
+                   p_timezone,
+                   p_trim,
+                   p_inclusive,
+                   p_versiondate,
+                   p_max_version);
+   END retrieve_ts_2;
 
    --
    --*******************************************************************   --
@@ -3273,6 +3402,52 @@ AS
                    p_versiondate,
                    p_max_version);
    END retrieve_ts_2;
+
+   --
+   --*******************************************************************   --
+   --*******************************************************************   --
+   --
+   -- RETREIVE_TS - v2.0 -
+   --
+   PROCEDURE retrieve_ts (p_at_tsv_rc            OUT SYS_REFCURSOR,
+                          p_lrts_time_zone       OUT VARCHAR2,
+                          p_cwms_ts_id        IN     VARCHAR2,
+                          p_units             IN     VARCHAR2,
+                          p_start_time        IN     DATE,
+                          p_end_time          IN     DATE,
+                          p_time_zone         IN     VARCHAR2 DEFAULT 'UTC',
+                          p_trim              IN     VARCHAR2 DEFAULT 'F',
+                          p_start_inclusive   IN     VARCHAR2 DEFAULT 'T',
+                          p_end_inclusive     IN     VARCHAR2 DEFAULT 'T',
+                          p_previous          IN     VARCHAR2 DEFAULT 'F',
+                          p_next              IN     VARCHAR2 DEFAULT 'F',
+                          p_version_date      IN     DATE DEFAULT NULL,
+                          p_max_version       IN     VARCHAR2 DEFAULT 'T',
+                          p_office_id         IN     VARCHAR2 DEFAULT NULL)
+   IS
+      l_cwms_ts_id_out   VARCHAR2(191);
+      l_units_out        VARCHAR2 (16);
+      l_at_tsv_rc        SYS_REFCURSOR;
+   BEGIN
+      retrieve_ts_out (l_at_tsv_rc,
+                       l_cwms_ts_id_out,
+                       l_units_out,
+                       p_lrts_time_zone,
+                       p_cwms_ts_id,
+                       p_units,
+                       p_start_time,
+                       p_end_time,
+                       p_time_zone,
+                       p_trim,
+                       p_start_inclusive,
+                       p_end_inclusive,
+                       p_previous,
+                       p_next,
+                       p_version_date,
+                       p_max_version,
+                       p_office_id);
+      p_at_tsv_rc := l_at_tsv_rc;
+   END retrieve_ts;
 
    --
    --*******************************************************************   --
@@ -3453,6 +3628,145 @@ AS
 
       DBMS_APPLICATION_INFO.set_module (NULL, NULL);
    END retrieve_ts_multi;
+
+   --
+   --*******************************************************************   --
+   --*******************************************************************   --
+   --
+   -- RETREIVE_TS_MULTI2
+   --
+   PROCEDURE retrieve_ts_multi2 (
+      p_at_tsv_rc            OUT SYS_REFCURSOR,
+      p_timeseries_info   IN     timeseries_req_array,
+      p_time_zone         IN     VARCHAR2 DEFAULT 'UTC',
+      p_trim              IN     VARCHAR2 DEFAULT 'F',
+      p_start_inclusive   IN     VARCHAR2 DEFAULT 'T',
+      p_end_inclusive     IN     VARCHAR2 DEFAULT 'T',
+      p_previous          IN     VARCHAR2 DEFAULT 'F',
+      p_next              IN     VARCHAR2 DEFAULT 'F',
+      p_version_date      IN     DATE DEFAULT NULL,
+      p_max_version       IN     VARCHAR2 DEFAULT 'T',
+      p_office_id         IN     VARCHAR2 DEFAULT NULL)
+   IS
+      TYPE date_tab_t IS TABLE OF DATE;
+
+      TYPE val_tab_t IS TABLE OF BINARY_DOUBLE;
+
+      TYPE qual_tab_t IS TABLE OF NUMBER;
+
+      TS_ID_NOT_FOUND       EXCEPTION;
+      LOCATION_ID_NOT_FOUND EXCEPTION;
+      PRAGMA EXCEPTION_INIT (TS_ID_NOT_FOUND, -20001);
+      PRAGMA EXCEPTION_INIT (LOCATION_ID_NOT_FOUND, -20025);
+      date_tab          date_tab_t := date_tab_t ();
+      val_tab           val_tab_t := val_tab_t ();
+      qual_tab          qual_tab_t := qual_tab_t ();
+      i                 INTEGER;
+      j                 PLS_INTEGER;
+      t                 nested_ts2_table := nested_ts2_table ();
+      rec               SYS_REFCURSOR;
+      l_time_zone       VARCHAR2 (28) := NVL (p_time_zone, 'UTC');
+      must_exist        BOOLEAN;
+      tsid              VARCHAR2(191);
+   BEGIN
+      DBMS_APPLICATION_INFO.set_module ('cwms_ts.retrieve_ts_multi',
+                                        'Preparation loop');
+
+      --
+      -- This routine actually iterates all the results in order to pack them into
+      -- a collection that can be queried to generate the nested cursors.
+      --
+      -- I used this setup becuase I was not able to get the complex query used in
+      --  retrieve_ts_out to work as a cursor expression.
+      --
+      -- MDP
+      -- 01 May 2008
+      --
+      FOR i IN 1 .. p_timeseries_info.COUNT
+      LOOP
+         tsid := p_timeseries_info (i).tsid;
+
+         IF SUBSTR (tsid, 1, 1) = '?'
+         THEN
+            tsid := SUBSTR (tsid, 2);
+            must_exist := FALSE;
+         ELSE
+            must_exist := TRUE;
+         END IF;
+
+         t.EXTEND;
+         t (i) :=
+            nested_ts2_type (i,
+                            tsid,
+                            p_timeseries_info (i).unit,
+                            null,
+                            p_timeseries_info (i).start_time,
+                            p_timeseries_info (i).end_time,
+                            tsv_array ());
+
+         BEGIN
+            retrieve_ts_out (rec,
+                             t (i).tsid,
+                             t (i).units,
+                             t (i).lrts_time_zone,
+                             t (i).tsid,
+                             p_timeseries_info (i).unit,
+                             p_timeseries_info (i).start_time,
+                             p_timeseries_info (i).end_time,
+                             p_time_zone,
+                             p_trim,
+                             p_start_inclusive,
+                             p_end_inclusive,
+                             p_previous,
+                             p_next,
+                             p_version_date,
+                             p_max_version,
+                             p_office_id);
+
+            date_tab.delete;
+            val_tab.delete;
+            qual_tab.delete;
+
+            FETCH rec
+            BULK COLLECT INTO date_tab, val_tab, qual_tab;
+
+            t (i).data.EXTEND (rec%ROWCOUNT);
+            close rec;
+            FOR j IN 1 .. t(i).data.count
+            LOOP
+               t (i).data (j) :=
+                  tsv_type (
+                     FROM_TZ (CAST (date_tab (j) AS TIMESTAMP), 'UTC'),
+                     val_tab (j),
+                     qual_tab (j));
+            END LOOP;
+         EXCEPTION
+            WHEN TS_ID_NOT_FOUND OR LOCATION_ID_NOT_FOUND
+            THEN
+               IF NOT must_exist
+               THEN
+                  NULL;
+               END IF;
+         END;
+      END LOOP;
+
+      OPEN p_at_tsv_rc FOR
+           SELECT sequence,
+                  tsid,
+                  units,
+                  lrts_time_zone,
+                  start_time,
+                  end_time,
+                  l_time_zone "TIME_ZONE",
+                  CURSOR (  SELECT date_time, VALUE, quality_code
+                              FROM TABLE (t1.data)
+                          ORDER BY date_time ASC)
+                     "DATA"
+             FROM TABLE (t) t1
+         ORDER BY sequence ASC;
+
+      DBMS_APPLICATION_INFO.set_module (NULL, NULL);
+   END retrieve_ts_multi2;
 
    -------------------------------------------------------------------------------
    -- function QUALITY_SCORE
@@ -7519,7 +7833,35 @@ AS
         FROM DUAL;
    END parse_ts;
 
-
+   PROCEDURE zretrieve_ts (p_at_tsv_rc      IN OUT SYS_REFCURSOR,
+                           p_lrts_time_zone    OUT VARCHAR2,
+                           p_units          IN     VARCHAR2,
+                           p_cwms_ts_id     IN     VARCHAR2,
+                           p_start_time     IN     DATE,
+                           p_end_time       IN     DATE,
+                           p_trim           IN     VARCHAR2 DEFAULT 'F',
+                           p_inclusive      IN     NUMBER DEFAULT NULL,
+                           p_version_date   IN     DATE DEFAULT NULL,
+                           p_max_version    IN     VARCHAR2 DEFAULT 'T',
+                           p_db_office_id   IN     VARCHAR2 DEFAULT NULL)
+   IS
+   BEGIN
+      retrieve_ts (p_at_tsv_rc         => p_at_tsv_rc,
+                   p_lrts_time_zone    => p_lrts_time_zone,
+                   p_cwms_ts_id        => p_cwms_ts_id,
+                   p_units             => p_units,
+                   p_start_time        => p_start_time,
+                   p_end_time          => p_end_time,
+                   p_time_zone         => 'UTC',
+                   p_trim              => p_trim,
+                   p_start_inclusive   => p_inclusive,
+                   p_end_inclusive     => p_inclusive,
+                   p_previous          => 'F',
+                   p_next              => 'F',
+                   p_version_date      => p_version_date,
+                   p_max_version       => p_max_version,
+                   p_office_id         => p_db_office_id);
+   END zretrieve_ts;
 
    PROCEDURE zretrieve_ts (p_at_tsv_rc      IN OUT SYS_REFCURSOR,
                            p_units          IN     VARCHAR2,
@@ -7554,6 +7896,7 @@ AS
       p_at_tsv_rc             OUT SYS_REFCURSOR,
       p_units_out             OUT VARCHAR2,
       p_cwms_ts_id_out        OUT VARCHAR2,
+      p_lrts_time_zone        OUT VARCHAR2,
       p_units_in           IN     VARCHAR2,
       p_cwms_ts_id_in      IN     VARCHAR2,
       p_start_time         IN     DATE,
@@ -7579,6 +7922,7 @@ AS
       retrieve_ts_out (p_at_tsv_rc,
                        p_cwms_ts_id_out,
                        p_units_out,
+                       p_lrts_time_zone,
                        p_cwms_ts_id_in,
                        p_units_in,
                        p_start_time,
@@ -7592,6 +7936,40 @@ AS
                        p_version_date,
                        p_max_version,
                        p_db_office_id);
+   END zretrieve_ts_java;
+
+   PROCEDURE zretrieve_ts_java (
+      p_transaction_time      OUT DATE,
+      p_at_tsv_rc             OUT SYS_REFCURSOR,
+      p_units_out             OUT VARCHAR2,
+      p_cwms_ts_id_out        OUT VARCHAR2,
+      p_units_in           IN     VARCHAR2,
+      p_cwms_ts_id_in      IN     VARCHAR2,
+      p_start_time         IN     DATE,
+      p_end_time           IN     DATE,
+      p_trim               IN     VARCHAR2 DEFAULT 'F',
+      p_inclusive          IN     NUMBER DEFAULT NULL,
+      p_version_date       IN     DATE DEFAULT NULL,
+      p_max_version        IN     VARCHAR2 DEFAULT 'T',
+      p_db_office_id       IN     VARCHAR2 DEFAULT NULL)
+   IS
+      l_lrts_time_zone varchar2(28);
+   BEGIN
+      zretrieve_ts_java (
+            p_transaction_time  => p_transaction_time,
+            p_at_tsv_rc         => p_at_tsv_rc,
+            p_units_out         => p_units_out,
+            p_cwms_ts_id_out    => p_cwms_ts_id_out,
+            p_lrts_time_zone    => l_lrts_time_zone,
+            p_units_in          => p_units_in,
+            p_cwms_ts_id_in     => p_cwms_ts_id_in,
+            p_start_time        => p_start_time,
+            p_end_time          => p_end_time,
+            p_trim              => p_trim,
+            p_inclusive         => p_inclusive,
+            p_version_date      => p_version_date,
+            p_max_version       => p_max_version,
+            p_db_office_id      => p_db_office_id);
    END zretrieve_ts_java;
 
    PROCEDURE retrieve_existing_times(
