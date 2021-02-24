@@ -804,7 +804,7 @@ AS
     * </table>
     * @param p_cwms_ts_id_out  The case-corrected version of the time series identifier
     * @param p_units_out       The unit of the retrieved data values
-    * @param p_lrts_time_zone  The location time zone if the time series is a local-regular time series (LRTS), otherwise NULL
+    * @param p_time_zone_id    The location time zone if the time series is a local-regular time series (LRTS), otherwise NULL
     * @param p_cwms_ts_id      The time series identifier to retrieve data for
     * @param p_units           The unit to retrieve the data values in
     * @param p_start_time      The start time of the time window
@@ -832,7 +832,7 @@ AS
       p_at_tsv_rc            OUT SYS_REFCURSOR,
       p_cwms_ts_id_out       OUT VARCHAR2,
       p_units_out            OUT VARCHAR2,
-      p_lrts_time_zone       OUT VARCHAR2,
+      p_time_zone_id         OUT VARCHAR2,
       p_cwms_ts_id        IN     VARCHAR2,
       p_units             IN     VARCHAR2,
       p_start_time        IN     DATE,
@@ -1028,7 +1028,7 @@ AS
     *     <td class="descr">The quality code for the data value</td>
     *   </tr>
     * </table>
-    * @param p_lrts_time_zone  The location time zone if the time series is a local-regular time series (LRTS), otherwise NULL
+    * @param p_time_zone_id    The location time zone if the time series is a local-regular time series (LRTS), otherwise NULL
     * @param p_units           The unit to retrieve the data values in
     * @param p_officeid        The office that owns the time series
     * @param p_cwms_ts_id      The time series identifier to retrieve data for
@@ -1051,7 +1051,7 @@ AS
     */
    PROCEDURE retrieve_ts (
       p_at_tsv_rc      IN OUT SYS_REFCURSOR,
-      p_lrts_time_zone    OUT VARCHAR2,
+      p_time_zone_id      OUT VARCHAR2,
       p_units          IN     VARCHAR2,
       p_officeid       IN     VARCHAR2,
       p_cwms_ts_id     IN     VARCHAR2,
@@ -1131,7 +1131,7 @@ AS
    -- not documented, same as retrieve_ts
    PROCEDURE retrieve_ts_2 (
       p_at_tsv_rc         OUT SYS_REFCURSOR,
-      p_lrts_time_zone    OUT VARCHAR2,
+      p_time_zone_id      OUT VARCHAR2,
       p_units          IN     VARCHAR2,
       p_officeid       IN     VARCHAR2,
       p_cwms_ts_id     IN     VARCHAR2,
@@ -1189,7 +1189,7 @@ AS
     *     <td class="descr">The quality code for the data value</td>
     *   </tr>
     * </table>
-    * @param p_lrts_time_zone  The location time zone if the time series is a local-regular time series (LRTS), otherwise NULL
+    * @param p_time_zone_id    The location time zone if the time series is a local-regular time series (LRTS), otherwise NULL
     * @param p_cwms_ts_id      The time series identifier to retrieve data for
     * @param p_units           The unit to retrieve the data values in
     * @param p_start_time      The start time of the time window
@@ -1214,7 +1214,7 @@ AS
     * @param p_office_id       The office that owns the time series
     */
    PROCEDURE retrieve_ts (p_at_tsv_rc            OUT SYS_REFCURSOR,
-                          p_lrts_time_zone       OUT VARCHAR2,
+                          p_time_zone_id         OUT VARCHAR2,
                           p_cwms_ts_id        IN     VARCHAR2,
                           p_units             IN     VARCHAR2,
                           p_start_time        IN     DATE,
@@ -1792,7 +1792,7 @@ AS
 
    -- not documented
    PROCEDURE zretrieve_ts (p_at_tsv_rc      IN OUT SYS_REFCURSOR,
-                           p_lrts_time_zone    OUT VARCHAR2,
+                           p_time_zone_id      OUT VARCHAR2,
                            p_units          IN     VARCHAR2,
                            p_cwms_ts_id     IN     VARCHAR2,
                            p_start_time     IN     DATE,
@@ -1900,7 +1900,7 @@ AS
     * </table>
     * @param p_units_out       The unit of the retrieved data values
     * @param p_cwms_ts_id_out  The case-corrected version of the time series identifier
-    * @param p_lrts_time_zone  The location time zone if the time series is a local-regular time series (LRTS), otherwise NULL
+    * @param p_time_zone_id    The location time zone if the time series is a local-regular time series (LRTS), otherwise NULL
     * @param p_units_in        The unit to retrieve the data values in
     * @param p_cwms_ts_id_in   The time series identifier to retrieve data for
     * @param p_start_time      The start time of the time window
@@ -1916,7 +1916,7 @@ AS
       p_at_tsv_rc             OUT SYS_REFCURSOR,
       p_units_out             OUT VARCHAR2,
       p_cwms_ts_id_out        OUT VARCHAR2,
-      p_lrts_time_zone        OUT VARCHAR2,
+      p_time_zone_id          OUT VARCHAR2,
       p_units_in           IN     VARCHAR2,
       p_cwms_ts_id_in      IN     VARCHAR2,
       p_start_time         IN     DATE,

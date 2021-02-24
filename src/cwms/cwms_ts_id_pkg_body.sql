@@ -74,10 +74,14 @@ AS
 						ON (co.office_code = abl.db_office_code)
 		 WHERE	location_code = p_cwms_ts_id.location_code;
 
-      select time_zone_name
-        into p_cwms_ts_id.lrts_time_zone
-        from cwms_time_zone
-       where time_zone_code = p_cwms_ts_spec.time_zone_code;
+		begin
+         select time_zone_name
+           into p_cwms_ts_id.time_zone_id
+           from cwms_time_zone
+          where time_zone_code = p_cwms_ts_spec.time_zone_code;
+		exception
+		   when no_data_found then null;
+      end;
 		--
 		p_cwms_ts_id.location_id :=
 				p_cwms_ts_id.base_location_id
@@ -184,10 +188,14 @@ AS
 				  FROM	cwms_duration cd
 				 WHERE	duration_code = p_cwms_ts_spec.duration_code;
 
-				select time_zone_name
-				  into p_cwms_ts_id.lrts_time_zone
-				  from cwms_time_zone
-				 where time_zone_code = p_cwms_ts_spec.time_zone_code;
+            begin
+               select time_zone_name
+                 into p_cwms_ts_id.time_zone_id
+                 from cwms_time_zone
+                where time_zone_code = p_cwms_ts_spec.time_zone_code;
+            exception
+               when no_data_found then null;
+            end;
 
 		END;
         --
@@ -282,7 +290,7 @@ AS
 						interval_utc_offset = p_cwms_ts_id.interval_utc_offset,
 						version_flag = p_cwms_ts_id.version_flag,
 						historic_flag = p_cwms_ts_id.historic_flag,
-						lrts_time_zone = p_cwms_ts_id.lrts_time_zone
+						time_zone_id = p_cwms_ts_id.time_zone_id
 			 WHERE	ts_code = p_cwms_ts_id.ts_code;
 		END IF;
 	END merge_into_at_cwms_ts_id;
@@ -410,10 +418,14 @@ AS
 				  FROM	at_physical_location apl
 				 WHERE	location_code = p_cwms_ts_id.location_code;
 
-				select time_zone_name
-				  into p_cwms_ts_id.lrts_time_zone
-				  from cwms_time_zone
-				 where time_zone_code = p_cwms_ts_spec.time_zone_code;
+            begin
+               select time_zone_name
+                 into p_cwms_ts_id.time_zone_id
+                 from cwms_time_zone
+                where time_zone_code = p_cwms_ts_spec.time_zone_code;
+            exception
+               when no_data_found then null;
+            end;
 		END;
 
 		--
@@ -540,10 +552,14 @@ AS
 				  FROM	cwms_duration cd
 				 WHERE	duration_code = p_cwms_ts_spec.duration_code;
 
-				select time_zone_name
-				  into p_cwms_ts_id.lrts_time_zone
-				  from cwms_time_zone
-				 where time_zone_code = p_cwms_ts_spec.time_zone_code;
+            begin
+               select time_zone_name
+                 into p_cwms_ts_id.time_zone_id
+                 from cwms_time_zone
+                where time_zone_code = p_cwms_ts_spec.time_zone_code;
+            exception
+               when no_data_found then null;
+            end;
 				--
 				SELECT	co.office_id, abl.base_location_id, apl.sub_location_id,
 							NVL (apl.active_flag, 'T'), abl.db_office_code,

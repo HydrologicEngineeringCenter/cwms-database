@@ -983,11 +983,11 @@ AS
       END IF;
 
       --
-      IF     l_ts_interval = 0
-         AND l_interval_utc_offset_new != cwms_util.utc_offset_irregular
-      THEN
-         l_interval_utc_offset_new := -l_interval_utc_offset_new;
-      END IF;
+--      IF     l_ts_interval = 0
+--         AND l_interval_utc_offset_new != cwms_util.utc_offset_irregular
+--      THEN
+--         l_interval_utc_offset_new := -l_interval_utc_offset_new;
+--      END IF;
 
       --
       UPDATE at_cwms_ts_spec a
@@ -1457,13 +1457,14 @@ AS
       l_parameter_type_id     VARCHAR2 (50);
       l_parameter_type_code   NUMBER;
       l_interval              NUMBER;
-      l_lrts_interval         integer;
       l_interval_id           VARCHAR2 (50);
       l_interval_code         NUMBER;
       l_duration_id           VARCHAR2 (50);
       l_duration              NUMBER;
       l_duration_code         NUMBER;
       l_version               VARCHAR2 (50);
+      l_lrts_interval         NUMBER;
+      l_time_zone_code        NUMBER;
       l_office_code           NUMBER;
       l_location_code         NUMBER;
       l_ret                   NUMBER;
@@ -1475,7 +1476,6 @@ AS
       l_can_create            BOOLEAN := TRUE;
       l_cwms_ts_id            varchar2(191);
       l_parts                 str_tab_t;
-      l_lrts_tz_code          integer;
    BEGIN
       IF p_office_id IS NULL
       THEN
@@ -1743,52 +1743,38 @@ AS
                IF l_interval = 0
                THEN
                   l_utc_offset := cwms_util.utc_offset_irregular;
-                  if l_lrts_interval is null then
-                     ---------------------------------
-                     -- irregular or pseudo-regular --
-                     ---------------------------------
-                     if nvl(p_utc_offset, cwms_util.utc_offset_irregular) != cwms_util.utc_offset_irregular then
-                        cwms_err.raise('ERROR', 'INVALID_UTC_OFFSET', p_utc_offset, l_interval_id);
-                     end if;
-                  else
-                     --------------------------
-                     -- local regular (LRTS) --
-                     --------------------------
-                     if p_utc_offset not in (cwms_util.utc_offset_irregular, cwms_util.utc_offset_undefined) then
-                        l_utc_offset := -abs(p_utc_offset);
-                        if -l_utc_offset > l_lrts_interval then
-                           cwms_err.raise('ERROR', 'INVALID_UTC_OFFSET', p_utc_offset, l_interval_id);
-                        end if;
-                     end if;
-                     select time_zone_code
-                       into l_lrts_tz_code
-                       from at_physical_location
-                      where location_code = l_location_code;
-                     if l_lrts_tz_code is null and l_sub_location_id is not null then
-                        select time_zone_code
-                          into l_lrts_tz_code
-                          from at_physical_location
-                         where location_code = cwms_loc.get_location_code(l_office_id, l_base_location_id);
-                     end if;
-                     if l_lrts_tz_code is null then
-                        cwms_err.raise('ERROR', 'Cannot create Local-Regular Time Series for a location with a NULL time zone');
-                     end if;
-                  end if;
                ELSE
                   l_utc_offset := cwms_util.utc_offset_undefined;
+
                   IF p_utc_offset IS NOT NULL
                   THEN
-                     IF p_utc_offset = cwms_util.utc_offset_undefined
+                     IF l_lrts_interval IS NULL
                      THEN
-                        NULL;
-                     ELSIF p_utc_offset >= 0 AND p_utc_offset < l_interval
-                     THEN
-                        l_utc_offset := p_utc_offset;
+                        IF p_utc_offset = cwms_util.utc_offset_undefined
+                        THEN
+                           NULL;
+                        ELSIF p_utc_offset >= 0 AND p_utc_offset < l_interval
+                        THEN
+                           l_utc_offset := p_utc_offset;
+                        ELSE
+                           COMMIT;
+                           cwms_err.RAISE ('INVALID_UTC_OFFSET',
+                                           p_utc_offset,
+                                           l_interval_id);
+                        END IF;
                      ELSE
-                        COMMIT;
-                        cwms_err.RAISE ('INVALID_UTC_OFFSET',
-                                        p_utc_offset,
-                                        l_interval_id);
+                        IF p_utc_offset in(cwms_util.utc_offset_undefined, cwms_util.utc_offset_irregular)
+                        THEN
+                           l_utc_offset := cwms_util.utc_offset_irregular;
+                        ELSIF p_utc_offset <= 0 AND -p_utc_offset < l_interval
+                        THEN
+                           l_utc_offset := p_utc_offset;
+                        ELSE
+                           COMMIT;
+                           cwms_err.RAISE ('INVALID_UTC_OFFSET',
+                                           p_utc_offset,
+                                           l_interval_id);
+                        END IF;
                      END IF;
                   END IF;
                END IF;
@@ -1846,6 +1832,20 @@ AS
                                   'Versioned flag must be ''T'' or ''F''');
                END IF;
 
+               select time_zone_code
+                 into l_time_zone_code
+                 from at_physical_location
+                where location_code = l_location_code;
+               if l_time_zone_code is null and l_sub_location_id is not null then
+                  select time_zone_code
+                    into l_time_zone_code
+                    from at_physical_location
+                   where location_code = cwms_loc.get_location_code(l_office_id, l_base_location_id);
+               end if;
+               if l_time_zone_code is null and nvl(l_lrts_interval, 0) > 0 then
+                  cwms_err.raise('ERROR', 'Cannot create Local-Regular Time Series for a location with a NULL time zone');
+               end if;
+
                INSERT INTO at_cwms_ts_spec t (ts_code,
                                               location_code,
                                               parameter_code,
@@ -1870,7 +1870,7 @@ AS
                               l_utc_offset,
                               p_interval_forward,
                               p_interval_backward,
-                              l_lrts_tz_code,
+                              l_time_zone_code,
                               UPPER (p_versioned),
                               UPPER (p_active_flag))
                  RETURNING ts_code
@@ -2143,7 +2143,7 @@ AS
    FUNCTION build_retrieve_ts_query (
       p_cwms_ts_id_out       OUT VARCHAR2,
       p_units_out            OUT VARCHAR2,
-      p_lrts_time_zone       OUT VARCHAR2,
+      p_time_zone_id         OUT VARCHAR2,
       p_cwms_ts_id        IN     VARCHAR2,
       p_units             IN     VARCHAR2,
       p_start_time        IN     DATE,
@@ -2269,13 +2269,13 @@ AS
                 interval_utc_offset,
                 base_parameter_id,
                 location_code,
-                lrts_time_zone
+                time_zone_id
            into l_ts_code,
                 l_interval,
                 l_utc_offset,
                 l_base_parameter_id,
                 l_location_code,
-                p_lrts_time_zone
+                p_time_zone_id
            from at_cwms_ts_id
           where upper(db_office_id) = upper(l_office_id)
             and upper(cwms_ts_id) = upper(p_cwms_ts_id_out);
@@ -2288,13 +2288,13 @@ AS
                       interval_utc_offset,
                       base_parameter_id,
                       location_code,
-                      lrts_time_zone
+                      time_zone_id
                  into l_ts_code,
                       l_interval,
                       l_utc_offset,
                       l_base_parameter_id,
                       l_location_code,
-                      p_lrts_time_zone
+                      p_time_zone_id
                  from at_cwms_ts_id
                 where upper(db_office_id) = upper(l_office_id)
                   and upper(cwms_ts_id) = upper(p_cwms_ts_id_out);
@@ -3050,7 +3050,7 @@ AS
       p_at_tsv_rc            OUT SYS_REFCURSOR,
       p_cwms_ts_id_out       OUT VARCHAR2,
       p_units_out            OUT VARCHAR2,
-      p_lrts_time_zone       OUT VARCHAR2,
+      p_time_zone_id         OUT VARCHAR2,
       p_cwms_ts_id        IN     VARCHAR2,
       p_units             IN     VARCHAR2,
       p_start_time        IN     DATE,
@@ -3083,7 +3083,7 @@ AS
       p_at_tsv_rc :=
          build_retrieve_ts_query (p_cwms_ts_id_out,
                                   p_units_out,
-                                  p_lrts_time_zone,
+                                  p_time_zone_id  ,
                                   p_cwms_ts_id,
                                   p_units,
                                   p_start_time,
@@ -3134,7 +3134,7 @@ AS
          p_at_tsv_rc        => p_at_tsv_rc,
          p_cwms_ts_id_out   => p_cwms_ts_id_out,
          p_units_out        => p_units_out,
-         p_lrts_time_zone   => l_lrts_time_zone,
+         p_time_zone_id     => l_lrts_time_zone,
          p_cwms_ts_id       => p_cwms_ts_id,
          p_units            => p_units,
          p_start_time       => p_start_time,
@@ -3211,7 +3211,7 @@ AS
    --
    PROCEDURE retrieve_ts (
       p_at_tsv_rc      IN OUT SYS_REFCURSOR,
-      p_lrts_time_zone OUT    VARCHAR2,
+      p_time_zone_id   OUT    VARCHAR2,
       p_units          IN     VARCHAR2,
       p_officeid       IN     VARCHAR2,
       p_cwms_ts_id     IN     VARCHAR2,
@@ -3271,7 +3271,7 @@ AS
       p_at_tsv_rc :=
          build_retrieve_ts_query (l_tsid,                  -- p_cwms_ts_id_out
                                   l_unit,                       -- p_units_out
-                                  p_lrts_time_zone,        -- p_lrts_time_zone
+                                  p_time_zone_id  ,        -- p_time_zone_id
                                   p_cwms_ts_id,                -- p_cwms_ts_id
                                   p_units,                          -- p_units
                                   p_start_time,                -- p_start_time
@@ -3320,7 +3320,7 @@ AS
    BEGIN
       retrieve_ts (
          p_at_tsv_rc      => p_at_tsv_rc,
-         p_lrts_time_zone => l_lrts_time_zone,
+         p_time_zone_id   => l_lrts_time_zone,
          p_units          => p_units,
          p_officeid       => p_officeid,
          p_cwms_ts_id     => p_cwms_ts_id,
@@ -3341,7 +3341,7 @@ AS
    --
    PROCEDURE retrieve_ts_2 (
       p_at_tsv_rc        OUT SYS_REFCURSOR,
-      p_lrts_time_zone   OUT VARCHAR2,
+      p_time_zone_id     OUT VARCHAR2,
       p_units         IN     VARCHAR2,
       p_officeid      IN     VARCHAR2,
       p_cwms_ts_id    IN     VARCHAR2,
@@ -3356,7 +3356,7 @@ AS
       l_at_tsv_rc   SYS_REFCURSOR;
    BEGIN
       retrieve_ts (p_at_tsv_rc,
-                   p_lrts_time_zone,
+                   p_time_zone_id  ,
                    p_units,
                    p_officeid,
                    p_cwms_ts_id,
@@ -3410,7 +3410,7 @@ AS
    -- RETREIVE_TS - v2.0 -
    --
    PROCEDURE retrieve_ts (p_at_tsv_rc            OUT SYS_REFCURSOR,
-                          p_lrts_time_zone       OUT VARCHAR2,
+                          p_time_zone_id         OUT VARCHAR2,
                           p_cwms_ts_id        IN     VARCHAR2,
                           p_units             IN     VARCHAR2,
                           p_start_time        IN     DATE,
@@ -3432,7 +3432,7 @@ AS
       retrieve_ts_out (l_at_tsv_rc,
                        l_cwms_ts_id_out,
                        l_units_out,
-                       p_lrts_time_zone,
+                       p_time_zone_id  ,
                        p_cwms_ts_id,
                        p_units,
                        p_start_time,
@@ -7834,7 +7834,7 @@ AS
    END parse_ts;
 
    PROCEDURE zretrieve_ts (p_at_tsv_rc      IN OUT SYS_REFCURSOR,
-                           p_lrts_time_zone    OUT VARCHAR2,
+                           p_time_zone_id      OUT VARCHAR2,
                            p_units          IN     VARCHAR2,
                            p_cwms_ts_id     IN     VARCHAR2,
                            p_start_time     IN     DATE,
@@ -7847,7 +7847,7 @@ AS
    IS
    BEGIN
       retrieve_ts (p_at_tsv_rc         => p_at_tsv_rc,
-                   p_lrts_time_zone    => p_lrts_time_zone,
+                   p_time_zone_id      => p_time_zone_id  ,
                    p_cwms_ts_id        => p_cwms_ts_id,
                    p_units             => p_units,
                    p_start_time        => p_start_time,
@@ -7896,7 +7896,7 @@ AS
       p_at_tsv_rc             OUT SYS_REFCURSOR,
       p_units_out             OUT VARCHAR2,
       p_cwms_ts_id_out        OUT VARCHAR2,
-      p_lrts_time_zone        OUT VARCHAR2,
+      p_time_zone_id          OUT VARCHAR2,
       p_units_in           IN     VARCHAR2,
       p_cwms_ts_id_in      IN     VARCHAR2,
       p_start_time         IN     DATE,
@@ -7922,7 +7922,7 @@ AS
       retrieve_ts_out (p_at_tsv_rc,
                        p_cwms_ts_id_out,
                        p_units_out,
-                       p_lrts_time_zone,
+                       p_time_zone_id  ,
                        p_cwms_ts_id_in,
                        p_units_in,
                        p_start_time,
@@ -7960,7 +7960,7 @@ AS
             p_at_tsv_rc         => p_at_tsv_rc,
             p_units_out         => p_units_out,
             p_cwms_ts_id_out    => p_cwms_ts_id_out,
-            p_lrts_time_zone    => l_lrts_time_zone,
+            p_time_zone_id      => l_lrts_time_zone,
             p_units_in          => p_units_in,
             p_cwms_ts_id_in     => p_cwms_ts_id_in,
             p_start_time        => p_start_time,
