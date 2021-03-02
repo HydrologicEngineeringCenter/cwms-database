@@ -3565,12 +3565,14 @@ AS
                             p_timeseries_info (i).unit,
                             p_timeseries_info (i).start_time,
                             p_timeseries_info (i).end_time,
-                            tsv_array ());
+                            tsv_array (),
+                            null);
 
          BEGIN
             retrieve_ts_out (rec,
                              t (i).tsid,
                              t (i).units,
+                             t (i).location_time_zone,
                              t (i).tsid,
                              p_timeseries_info (i).unit,
                              p_timeseries_info (i).start_time,
@@ -3602,6 +3604,8 @@ AS
                      val_tab (j),
                      qual_tab (j));
             END LOOP;
+            t(i).start_time := t(i).data(1).date_time;
+            t(i).end_time := t(i).data(t(i).data.count).date_time;
          EXCEPTION
             WHEN TS_ID_NOT_FOUND OR LOCATION_ID_NOT_FOUND
             THEN
@@ -3622,151 +3626,13 @@ AS
                   CURSOR (  SELECT date_time, VALUE, quality_code
                               FROM TABLE (t1.data)
                           ORDER BY date_time ASC)
-                     "DATA"
+                     "DATA",
+                  location_time_zone
              FROM TABLE (t) t1
          ORDER BY sequence ASC;
 
       DBMS_APPLICATION_INFO.set_module (NULL, NULL);
    END retrieve_ts_multi;
-
-   --
-   --*******************************************************************   --
-   --*******************************************************************   --
-   --
-   -- RETREIVE_TS_MULTI2
-   --
-   PROCEDURE retrieve_ts_multi2 (
-      p_at_tsv_rc            OUT SYS_REFCURSOR,
-      p_timeseries_info   IN     timeseries_req_array,
-      p_time_zone         IN     VARCHAR2 DEFAULT 'UTC',
-      p_trim              IN     VARCHAR2 DEFAULT 'F',
-      p_start_inclusive   IN     VARCHAR2 DEFAULT 'T',
-      p_end_inclusive     IN     VARCHAR2 DEFAULT 'T',
-      p_previous          IN     VARCHAR2 DEFAULT 'F',
-      p_next              IN     VARCHAR2 DEFAULT 'F',
-      p_version_date      IN     DATE DEFAULT NULL,
-      p_max_version       IN     VARCHAR2 DEFAULT 'T',
-      p_office_id         IN     VARCHAR2 DEFAULT NULL)
-   IS
-      TYPE date_tab_t IS TABLE OF DATE;
-
-      TYPE val_tab_t IS TABLE OF BINARY_DOUBLE;
-
-      TYPE qual_tab_t IS TABLE OF NUMBER;
-
-      TS_ID_NOT_FOUND       EXCEPTION;
-      LOCATION_ID_NOT_FOUND EXCEPTION;
-      PRAGMA EXCEPTION_INIT (TS_ID_NOT_FOUND, -20001);
-      PRAGMA EXCEPTION_INIT (LOCATION_ID_NOT_FOUND, -20025);
-      date_tab          date_tab_t := date_tab_t ();
-      val_tab           val_tab_t := val_tab_t ();
-      qual_tab          qual_tab_t := qual_tab_t ();
-      i                 INTEGER;
-      j                 PLS_INTEGER;
-      t                 nested_ts2_table := nested_ts2_table ();
-      rec               SYS_REFCURSOR;
-      l_time_zone       VARCHAR2 (28) := NVL (p_time_zone, 'UTC');
-      must_exist        BOOLEAN;
-      tsid              VARCHAR2(191);
-   BEGIN
-      DBMS_APPLICATION_INFO.set_module ('cwms_ts.retrieve_ts_multi',
-                                        'Preparation loop');
-
-      --
-      -- This routine actually iterates all the results in order to pack them into
-      -- a collection that can be queried to generate the nested cursors.
-      --
-      -- I used this setup becuase I was not able to get the complex query used in
-      --  retrieve_ts_out to work as a cursor expression.
-      --
-      -- MDP
-      -- 01 May 2008
-      --
-      FOR i IN 1 .. p_timeseries_info.COUNT
-      LOOP
-         tsid := p_timeseries_info (i).tsid;
-
-         IF SUBSTR (tsid, 1, 1) = '?'
-         THEN
-            tsid := SUBSTR (tsid, 2);
-            must_exist := FALSE;
-         ELSE
-            must_exist := TRUE;
-         END IF;
-
-         t.EXTEND;
-         t (i) :=
-            nested_ts2_type (i,
-                            tsid,
-                            p_timeseries_info (i).unit,
-                            null,
-                            p_timeseries_info (i).start_time,
-                            p_timeseries_info (i).end_time,
-                            tsv_array ());
-
-         BEGIN
-            retrieve_ts_out (rec,
-                             t (i).tsid,
-                             t (i).units,
-                             t (i).lrts_time_zone,
-                             t (i).tsid,
-                             p_timeseries_info (i).unit,
-                             p_timeseries_info (i).start_time,
-                             p_timeseries_info (i).end_time,
-                             p_time_zone,
-                             p_trim,
-                             p_start_inclusive,
-                             p_end_inclusive,
-                             p_previous,
-                             p_next,
-                             p_version_date,
-                             p_max_version,
-                             p_office_id);
-
-            date_tab.delete;
-            val_tab.delete;
-            qual_tab.delete;
-
-            FETCH rec
-            BULK COLLECT INTO date_tab, val_tab, qual_tab;
-
-            t (i).data.EXTEND (rec%ROWCOUNT);
-            close rec;
-            FOR j IN 1 .. t(i).data.count
-            LOOP
-               t (i).data (j) :=
-                  tsv_type (
-                     FROM_TZ (CAST (date_tab (j) AS TIMESTAMP), 'UTC'),
-                     val_tab (j),
-                     qual_tab (j));
-            END LOOP;
-         EXCEPTION
-            WHEN TS_ID_NOT_FOUND OR LOCATION_ID_NOT_FOUND
-            THEN
-               IF NOT must_exist
-               THEN
-                  NULL;
-               END IF;
-         END;
-      END LOOP;
-
-      OPEN p_at_tsv_rc FOR
-           SELECT sequence,
-                  tsid,
-                  units,
-                  lrts_time_zone,
-                  start_time,
-                  end_time,
-                  l_time_zone "TIME_ZONE",
-                  CURSOR (  SELECT date_time, VALUE, quality_code
-                              FROM TABLE (t1.data)
-                          ORDER BY date_time ASC)
-                     "DATA"
-             FROM TABLE (t) t1
-         ORDER BY sequence ASC;
-
-      DBMS_APPLICATION_INFO.set_module (NULL, NULL);
-   END retrieve_ts_multi2;
 
    -------------------------------------------------------------------------------
    -- function QUALITY_SCORE
