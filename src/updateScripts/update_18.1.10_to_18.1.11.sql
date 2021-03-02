@@ -114,11 +114,15 @@ comment on column at_cwms_ts_id.time_zone_id          is 'The time zone of the l
 -----------
 delete from at_clob where id = '/VIEWDOCS/ZAV_CWMS_TS_ID';
 @../cwms/views/zav_cwms_ts_id
+delete from at_clob where id = '/VIEWDOCS/AV_CWMS_TS_ID';
+@../cwms/views/av_cwms_ts_id
+delete from at_clob where id = '/VIEWDOCS/AV_CWMS_TS_ID2';
+@../cwms/views/av_cwms_ts_id2
 ----------------
 -- TYPE SPECS --
 ----------------
-@../cwms/types/nested_ts2_type
-@../cwms/types/nested_ts2_table
+drop type nested_ts_type force;
+@../cwms/types/nested_ts_type
 -------------------
 -- PACKAGE SPECS --
 -------------------

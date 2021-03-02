@@ -1,4 +1,4 @@
-create or replace package test_missing_shift_points as
+create or replace package test_missing_shift_points as
 
 --%suite(Test handling of usgs style stream ratings with shifts with missing points)
 --%rollback(manual)
@@ -11,7 +11,7 @@ procedure setup;
 procedure teardown;
 
 
-c_office_id   constant varchar2(3)  := '&office_id';
+c_office_id   constant varchar2(3)  := 'SWT';
 c_rating_spec constant varchar2(37) := 'TULA.Stage;Flow.Logarithmic.USGS-NWIS';
 c_rating_xml constant clob := '
    <ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">
@@ -176,5 +176,3 @@ end run_test;
 
 end test_missing_shift_points;
 /
-grant execute on test_missing_shift_points to cwms_user;
-

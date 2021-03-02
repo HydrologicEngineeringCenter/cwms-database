@@ -1044,10 +1044,10 @@ AS
     *         as a valid time series. This results in the absence of time discontinuities in the dataset, but at the expense of inserting a manufactured
     *         0200 hour in the Spring (with null values and "missing" quality codes) for regular time series and not returing earliest 0100 hour (the
     *         one corresponding to Daylight Savings) in the Autum.</li></ul>
-    * @param p_trim            A flag ('T' or 'F') that specifies whether to trim missing values from the beginning and end of the retrieved values
-    * @param p_inclusive       A flag ('T' or 'F') that specifies whether the start and end time are included in the time window
+    * @param p_trim            A flag (0 or 1) that specifies whether to trim missing values from the beginning and end of the retrieved values
+    * @param p_inclusive       A flag (0 or 1) that specifies whether the start and end time are included in the time window
     * @param p_versiondate     The version date of the data to retrieve. If not specified or NULL, the version date is determined by p_max_version
-    * @param p_max_version     A flag ('T' or 'F') that specifies whether to retrieve the maximum ('T') or minimum ('F') version date if p_versiondate is NULL
+    * @param p_max_version     A flag (0 or 1) that specifies whether to retrieve the maximum ('T') or minimum ('F') version date if p_versiondate is NULL
     */
    PROCEDURE retrieve_ts (
       p_at_tsv_rc      IN OUT SYS_REFCURSOR,
@@ -1110,10 +1110,10 @@ AS
     *         as a valid time series. This results in the absence of time discontinuities in the dataset, but at the expense of inserting a manufactured
     *         0200 hour in the Spring (with null values and "missing" quality codes) for regular time series and not returing earliest 0100 hour (the
     *         one corresponding to Daylight Savings) in the Autum.</li></ul>
-    * @param p_trim            A flag ('T' or 'F') that specifies whether to trim missing values from the beginning and end of the retrieved values
-    * @param p_inclusive       A flag ('T' or 'F') that specifies whether the start and end time are included in the time window
+    * @param p_trim            A flag (0 or 1) that specifies whether to trim missing values from the beginning and end of the retrieved values
+    * @param p_inclusive       A flag (0 or 1) that specifies whether the start and end time are included in the time window
     * @param p_versiondate     The version date of the data to retrieve. If not specified or NULL, the version date is determined by p_max_version
-    * @param p_max_version     A flag ('T' or 'F') that specifies whether to retrieve the maximum ('T') or minimum ('F') version date if p_versiondate is NULL
+    * @param p_max_version     A flag (0 or 1) that specifies whether to retrieve the maximum ('T') or minimum ('F') version date if p_versiondate is NULL
     */
    PROCEDURE retrieve_ts (
       p_at_tsv_rc     IN OUT SYS_REFCURSOR,
@@ -1378,6 +1378,12 @@ AS
     *        <td class="descr">number</td>
     *        <td class="descr">The quality code for the data value</td>
     *      </tr>
+    *   <tr>
+    *     <td class="descr-center">8</td>
+    *     <td class="descr">location_time_zone</td>
+    *     <td class="descr">varchar2(28)</td>
+    *     <td class="descr">The time zone of the location of the time series for this record</td>
+    *   </tr>
     *    </table>
     *     </td>
     *   </tr>
@@ -1412,8 +1418,8 @@ AS
       p_previous          IN     VARCHAR2 DEFAULT 'F',
       p_next              IN     VARCHAR2 DEFAULT 'F',
       p_version_date      IN     DATE DEFAULT NULL,
-      p_max_version       IN     VARCHAR2 DEFAULT 'T',
-      p_office_id         IN     VARCHAR2 DEFAULT NULL);
+      p_max_version       in     varchar2 default 'T',
+      p_office_id         in     varchar2 default null);
    /*
     * Ranks a quality code on a scale of 0 - 3
     * <p>

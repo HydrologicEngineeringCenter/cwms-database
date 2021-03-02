@@ -50,7 +50,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/ZAV_CWMS_TS_ID', nu
  * @field interval_utc_offset  Data time as an offset into each interval. Intervals are based on UTC
  * @field version_flag         Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code>) specifying whether the time series is versioned
  * @field historic_flag        Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code>) specifying whether the time series is part of historic record
- * @field lrts_time_zone       The (location''s) time zone if the time series is a local-regular time series (LRTS)
+ * @field time_zone_id         The (location''s) time zone if the time series is a local-regular time series (LRTS)
 */
 ');
 CREATE OR REPLACE FORCE VIEW zav_cwms_ts_id
@@ -82,7 +82,7 @@ CREATE OR REPLACE FORCE VIEW zav_cwms_ts_id
     interval_utc_offset,
     version_flag,
     historic_flag,
-    lrts_time_zone
+    time_zone_id
 )
 AS
     SELECT    abl.db_office_code, base_location_code,
