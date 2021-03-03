@@ -330,11 +330,11 @@
 	
     </target>
 
-	<target name="java_resources">
-		<mkdir dir="${build.dir}/resources"/>
-		<exec dir="${src}" executable="python2" output="${build.dir}/resources/db_parameter_units.def" error="${build.dir}/resoursces.log">
+	<target name="java-resources">
+		<mkdir dir="${build.dir}/resources/cwms/data"/>
+		<exec dir="${src}" executable="python2" output="${build.dir}/resources/cwms/data/unitCoversion.def" error="${build.dir}/resoursces.log">
 			<arg line="unitConversions.py"/>
-		</exec>
+		</exec>		
 	</target>
 	
 	<!-- Loads rowcps schema. -->
@@ -600,7 +600,7 @@
 	</target>
 
 	<!-- TODO: figured out why ${build.dir}/** isn't working -->
-	<target name="bundle" depends="clean-output-files">
+	<target name="bundle" depends="clean-output-files,java-resources">
 		<echo message="${build.dir}" />
 		<zip destfile="${build.dir}/cwms_db_${pom.version}.zip"
 			 basedir="."
@@ -620,7 +620,7 @@
             <arg value="@docs/doc_grants.sql"/>
             <arg value="${office.primary.code}hectest"/>
         </exec>
-        <java
+        <!--<java
             fork="true"
             classname="org.python.util.jython"
             >
@@ -635,17 +635,18 @@
             <arg value="-o"/><arg value="${build.dir}/docs"/>
             <arg value="-e"/><arg value="${root}"/>
             <arg value="-k"/><arg value="${build.dir}/doc_key"/>
-        </java>
+        </java>-->
         <zip destfile="${build.dir}/docs.zip"
              basedir="${build.dir}/docs/" 
             />
-		<zip destfile="${build.dir}/resources.zip"
+		<jar destfile="${build.dir}/resources.jar"
 			 basedir="${build.dir}/resources"
+			 includes="**"
 		/>
 		<resolver:artifacts id="output">
             <resolver:artifact file="${build.dir}/cwms_db_${pom.version}.zip" type="zip" id="bundle" pomref="pom"/>
             <resolver:artifact file="${build.dir}/docs.zip" type="zip" id="docs" pomref="pom" classifier="docs"/>
-			<resolver:artifact file="${build.dir}/resources.zip" type="zip" id="resources" pomref="pom" classifier="resources"/>
+			<resolver:artifact file="${build.dir}/resources.jar" type="jar" id="resources" pomref="pom" classifier="resources"/>
 		</resolver:artifacts>
 	</target>
 	<target name="install" depends="bundle">
