@@ -639,9 +639,13 @@
         <zip destfile="${build.dir}/docs.zip"
              basedir="${build.dir}/docs/" 
             />
+		<zip destfile="${build.dir}/resources.zip"
+			 basedir="${build.dir}/resources"
+		/>
 		<resolver:artifacts id="output">
             <resolver:artifact file="${build.dir}/cwms_db_${pom.version}.zip" type="zip" id="bundle" pomref="pom"/>
             <resolver:artifact file="${build.dir}/docs.zip" type="zip" id="docs" pomref="pom" classifier="docs"/>
+			<resolver:artifact file="${build.dir}/resources.zip" type="zip" id="resources" pomref="pom" classifier="resources"/>
 		</resolver:artifacts>
 	</target>
 	<target name="install" depends="bundle">
