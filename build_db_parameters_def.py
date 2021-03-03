@@ -64,29 +64,5 @@ f.close()
 f = open(outputFile, "r")
 newFileData = f.read()
 f.close()
-#------------------------------------------#
-# add the resource file if it didn't exist #
-#------------------------------------------#
-if not exists :
-	if (len(argv) == 4):
-		cmd = "p4 -c %s add %s" % (p4WorkspaceName, outputFile)
-	else:
-		cmd = "p4 add %s" % outputFile
-	print("%s : %s" % (progName, cmd))
-	subprocess.call(cmd)	
-#------------------------------------#
-# submit or revert the resource file #
-#------------------------------------#
-if newFileData == oldFileData :
-	if (len(argv) == 4):
-		cmd = "p4 -c %s revert %s" % (p4WorkspaceName, outputFile)
-	else:
-		cmd = "p4 revert %s" % outputFile
-else :
-	if (len(argv) == 4):
-		cmd = "p4 -c %s submit -d auto_update %s" % (p4WorkspaceName, outputFile)
-	else:
-		cmd = "p4 submit -d auto_update %s" % outputFile
-print("%s : %s" % (progName, cmd))
-subprocess.call(cmd)
+
 
