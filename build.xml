@@ -329,6 +329,13 @@
 		</if>
 	
     </target>
+
+	<target name="java_resources">
+		<mkdir dir="${build.dir}/resources"/>
+		<exec dir="${src}" executable="python2" output="${build.dir}/resources/db_parameter_units.def" error="${build.dir}/resoursces.log">
+			<arg line="unitConversions.py"/>
+		</exec>
+	</target>
 	
 	<!-- Loads rowcps schema. -->
 	<target name="load-rowcps-schema" description="Loads rowcps schema">
