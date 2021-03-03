@@ -332,9 +332,12 @@
 
 	<target name="java-resources">
 		<mkdir dir="${build.dir}/resources/cwms/data"/>
-		<exec dir="${src}" executable="python2" output="${build.dir}/resources/cwms/data/unitCoversion.def" error="${build.dir}/resoursces.log">
+		<exec dir="${src}" executable="python2" output="${build.dir}/resources/cwms/data/unitCoversion.def" error="${build.dir}/resources.log">
 			<arg line="unitConversions.py"/>
 		</exec>		
+		<exec dir="${src}" executable="python2" output="${build.dir}/resoursces.log" error="${build.dir}/resources.log">
+			<arg line="build_db_parameters_def.py ${build.dir}/resources/cwms/data/db_parameter_units.def"/>
+		</exec>
 	</target>
 	
 	<!-- Loads rowcps schema. -->
@@ -597,6 +600,7 @@
 		<delete>
 			<fileset dir="src/updateScripts" includes="*.log"/>
 		</delete>
+		<delete dir="${build.dir}"/>
 	</target>
 
 	<!-- TODO: figured out why ${build.dir}/** isn't working -->
@@ -620,7 +624,7 @@
             <arg value="@docs/doc_grants.sql"/>
             <arg value="${office.primary.code}hectest"/>
         </exec>
-        <!--<java
+        <java
             fork="true"
             classname="org.python.util.jython"
             >
@@ -635,7 +639,7 @@
             <arg value="-o"/><arg value="${build.dir}/docs"/>
             <arg value="-e"/><arg value="${root}"/>
             <arg value="-k"/><arg value="${build.dir}/doc_key"/>
-        </java>-->
+        </java>
         <zip destfile="${build.dir}/docs.zip"
              basedir="${build.dir}/docs/" 
             />
