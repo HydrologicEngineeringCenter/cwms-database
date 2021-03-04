@@ -333,7 +333,7 @@
 
 	<target name="java-resources">
 		<mkdir dir="${build.dir}/resources/cwms/data"/>
-		<exec dir="${src}" executable="python2" output="${build.dir}/resources/cwms/data/unitCoversion.def" error="${build.dir}/resources.log">
+		<exec dir="${src}" executable="python2" output="${build.dir}/resources/cwms/data/unitConversions.def" error="${build.dir}/resources.log">
 			<arg line="unitConversions.py"/>
 		</exec>		
 		<exec dir="${src}" executable="python2" output="${build.dir}/resoursces.log" error="${build.dir}/resources.log">
@@ -659,7 +659,7 @@
 	</target> 
 	<target name="deploy" depends="bundle">
 		<resolver:deploy artifactsref="output">
-			<remoteRepo refid="hec-nexus-snapshots"/>
+			<remoteRepo refid="hec-nexus-releases"/>
 		</resolver:deploy>
 	</target>
 	
