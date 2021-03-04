@@ -1049,7 +1049,8 @@ begin
 
          close l_crsr;
 
-         ut.expect(l_transaction_time).to_be_between(l_end_time, l_start_time);
+         ut.expect(l_transaction_time).to_be_greater_or_equal(l_start_time);
+         ut.expect(l_transaction_time).to_be_less_or_equal(l_end_time);
          ut.expect(l_units_out).to_equal(c_ts_unit);
          ut.expect(l_cwms_ts_id_out).to_equal(l_cwms_ts_id_in);
          ut.expect(l_time_zone_id_out).to_equal(l_time_zone_id_in);

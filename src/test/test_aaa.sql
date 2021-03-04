@@ -11,7 +11,7 @@ create or replace package test_aaa as
     -- %test(Duplicate EDIPI provides useful message)
     -- %throws(-20255)
     -- %aftertest(test_aaa.remove_duplicate_user)
-    procedure duplicate_edipi_provides_useful_message;
+    procedure dup_edipi_provides_useful_msg;
 
     -- %test(Can retrieve all users)
     procedure can_retrieve_all_users;
@@ -71,7 +71,7 @@ create or replace package body test_aaa as
         ut.expect( session_key ).to_be_null();
     end;
 
-    procedure duplicate_edipi_provides_useful_message is
+    procedure dup_edipi_provides_useful_msg is
         username varchar2(400);
         session_key varchar2(400);
     begin        
