@@ -205,6 +205,7 @@
 	</target>
 
 	<target name="test" depends="setup-tests,tests-install" description="run all tests." >		
+		<mkdir dir="${coverage.dir}" />
 		<antcall target="test-as_pd_user"/>		
 		<antcall target="test-as_ro_user"/>		
 		<!-- we will then merge all of the test output and code coverage-->
@@ -226,8 +227,8 @@
             <arg value="run"/>
 			<arg value="-p=cwms_20.test_ro"/>		
             <arg value="-f"/><arg value="UT_COVERAGE_HTML_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/index.html" />
-            <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/coverage.xml" />
-            <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests.xml" />
+            <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/coverage_ro.xml" />
+            <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_ro.xml" />
 			<arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
             <arg value="-d"/>
 			<arg value="ro_user/ro_pw@${oracle.cwms.instance}" />
@@ -256,8 +257,8 @@
             <arg value="run"/>
 			<arg value="-p=cwms_20.test_aaa"/>		
             <arg value="-f"/><arg value="UT_COVERAGE_HTML_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/index.html" />
-            <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/coverage.xml" />
-            <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests.xml" />
+            <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/coverage_pd.xml" />
+            <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_pd.xml" />
 			<arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
             <arg value="-d"/>
 			<arg value="pd_user/pd_pw@${oracle.cwms.instance}" />
@@ -329,6 +330,16 @@
 		</if>
 	
     </target>
+
+	<target name="java-resources">
+		<mkdir dir="${build.dir}/resources/cwms/data"/>
+		<exec dir="${src}" executable="python2" output="${build.dir}/resources/cwms/data/unitCoversion.def" error="${build.dir}/resources.log">
+			<arg line="unitConversions.py"/>
+		</exec>		
+		<exec dir="${src}" executable="python2" output="${build.dir}/resoursces.log" error="${build.dir}/resources.log">
+			<arg line="build_db_parameters_def.py ${build.dir}/resources/cwms/data/db_parameter_units.def"/>
+		</exec>
+	</target>
 	
 	<!-- Loads rowcps schema. -->
 	<target name="load-rowcps-schema" description="Loads rowcps schema">
@@ -590,10 +601,11 @@
 		<delete>
 			<fileset dir="src/updateScripts" includes="*.log"/>
 		</delete>
+		<delete dir="${build.dir}"/>
 	</target>
 
 	<!-- TODO: figured out why ${build.dir}/** isn't working -->
-	<target name="bundle" depends="clean-output-files">
+	<target name="bundle" depends="clean-output-files,java-resources">
 		<echo message="${build.dir}" />
 		<zip destfile="${build.dir}/cwms_db_${pom.version}.zip"
 			 basedir="."
@@ -632,9 +644,14 @@
         <zip destfile="${build.dir}/docs.zip"
              basedir="${build.dir}/docs/" 
             />
+		<jar destfile="${build.dir}/resources.jar"
+			 basedir="${build.dir}/resources"
+			 includes="**"
+		/>
 		<resolver:artifacts id="output">
             <resolver:artifact file="${build.dir}/cwms_db_${pom.version}.zip" type="zip" id="bundle" pomref="pom"/>
             <resolver:artifact file="${build.dir}/docs.zip" type="zip" id="docs" pomref="pom" classifier="docs"/>
+			<resolver:artifact file="${build.dir}/resources.jar" type="jar" id="resources" pomref="pom" classifier="resources"/>
 		</resolver:artifacts>
 	</target>
 	<target name="install" depends="bundle">

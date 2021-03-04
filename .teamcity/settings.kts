@@ -65,6 +65,7 @@ object Build : BuildType({
         output/overrides.xml => buildinfo/
         src/buildCWMS_DB.log => buildinfo/
         build/coverage.zip => /
+        build/resources => resources.zip
     """.trimIndent()
 
     params {
