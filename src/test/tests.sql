@@ -11,5 +11,6 @@ exec cwms_sec.create_user('OTHER_DIST','other', char_32_array_type('CWMS Users')
 @test_ro.sql;
 @test_missing_shift_points.sql
 @test_lrts_updates.sql;
+@test_probability_parameter.sql;
 
 show errors;
