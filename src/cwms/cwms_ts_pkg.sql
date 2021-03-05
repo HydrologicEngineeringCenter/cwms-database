@@ -1516,6 +1516,8 @@ AS
     * @param p_store_rule       The store rule to use
     * @param p_override_prot    A flag ('T' or 'F') specifying whether to override the protection flag on any existing data value
     * @param p_versiondate      The version date of the data
+    * @param p_create_as_lrts   A flag ('T' or 'F') specifying whether to create the time series as a local-regular time series if it doesn't already exit.
+    *                           This applies only to non-existing time series with intervals that start with '~'. Otherwise the parameter is ignored.
     */
    PROCEDURE store_ts (
       p_office_id         IN VARCHAR2,
@@ -1524,7 +1526,8 @@ AS
       p_timeseries_data   IN tsv_array,
       p_store_rule        IN VARCHAR2,
       p_override_prot     IN NUMBER DEFAULT cwms_util.false_num,
-      p_versiondate       IN DATE DEFAULT cwms_util.non_versioned);
+      p_versiondate       IN DATE DEFAULT cwms_util.non_versioned,
+      p_create_as_lrts    in varchar2 default 'F');
 
    /**
     * Stores time series data to the database
@@ -1543,6 +1546,8 @@ AS
     * @param p_override_prot    A flag ('T' or 'F') specifying whether to override the protection flag on any existing data value
     * @param p_version_date     The version date of the data
     * @param p_office_id        The office owning the time series. If not specified or NULL, the session user's default office is used
+    * @param p_create_as_lrts   A flag ('T' or 'F') specifying whether to create the time series as a local-regular time series if it doesn't already exit.
+    *                           This applies only to non-existing time series with intervals that start with '~'. Otherwise the parameter is ignored.
     */
    PROCEDURE store_ts (
       p_cwms_ts_id        IN VARCHAR2,
@@ -1551,7 +1556,8 @@ AS
       p_store_rule        IN VARCHAR2,
       p_override_prot     IN VARCHAR2 DEFAULT 'F',
       p_version_date      IN DATE DEFAULT cwms_util.non_versioned,
-      p_office_id         IN VARCHAR2 DEFAULT NULL);
+      p_office_id         IN VARCHAR2 DEFAULT NULL,
+      p_create_as_lrts    in varchar2 default 'F');
 
    /**
     * Stores time series data to the database using parameter types compatible with cx_Oracle Pyton package
@@ -1574,6 +1580,8 @@ AS
     * @param p_override_prot    A flag ('T' or 'F') specifying whether to override the protection flag on any existing data value
     * @param p_version_date     The version date of the data
     * @param p_office_id        The office owning the time series. If not specified or NULL, the session user's default office is used
+    * @param p_create_as_lrts   A flag ('T' or 'F') specifying whether to create the time series as a local-regular time series if it doesn't already exit.
+    *                           This applies only to non-existing time series with intervals that start with '~'. Otherwise the parameter is ignored.
     */
    PROCEDURE store_ts (
       p_cwms_ts_id      IN VARCHAR2,
@@ -1584,7 +1592,8 @@ AS
       p_store_rule      IN VARCHAR2,
       p_override_prot   IN VARCHAR2 DEFAULT 'F',
       p_version_date    IN DATE DEFAULT cwms_util.non_versioned,
-      p_office_id       IN VARCHAR2 DEFAULT NULL);
+      p_office_id       IN VARCHAR2 DEFAULT NULL,
+      p_create_as_lrts  in varchar2 default 'F');
 
    /**
     * Stores time series data to the database using simple parameter types
@@ -1605,6 +1614,8 @@ AS
     * @param p_override_prot    A flag ('T' or 'F') specifying whether to override the protection flag on any existing data value
     * @param p_version_date     The version date of the data
     * @param p_office_id        The office owning the time series. If not specified or NULL, the session user's default office is used
+    * @param p_create_as_lrts   A flag ('T' or 'F') specifying whether to create the time series as a local-regular time series if it doesn't already exit.
+    *                           This applies only to non-existing time series with intervals that start with '~'. Otherwise the parameter is ignored.
     */
    PROCEDURE store_ts (
       p_cwms_ts_id      IN VARCHAR2,
@@ -1615,7 +1626,8 @@ AS
       p_store_rule      IN VARCHAR2,
       p_override_prot   IN VARCHAR2 DEFAULT 'F',
       p_version_date    IN DATE DEFAULT cwms_util.non_versioned,
-      p_office_id       IN VARCHAR2 DEFAULT NULL);
+      p_office_id       IN VARCHAR2 DEFAULT NULL,
+      p_create_as_lrts  in varchar2 default 'F');
 
    /* (not documented in API docs)
     * Stores time series data to the database
@@ -1635,6 +1647,8 @@ AS
     * @param p_override_prot    A flag ('T' or 'F') specifying whether to override the protection flag on any existing data value
     * @param p_version_date     The version date of the data
     * @param p_office_id        The office owning the time series. If not specified or NULL, the session user's default office is used
+    * @param p_create_as_lrts   A flag ('T' or 'F') specifying whether to create the time series as a local-regular time series if it doesn't already exit.
+    *                           This applies only to non-existing time series with intervals that start with '~'. Otherwise the parameter is ignored.
     */
    PROCEDURE store_ts_2 (
       p_cwms_ts_id        IN VARCHAR2,
@@ -1644,7 +1658,8 @@ AS
       p_store_rule        IN VARCHAR2,
       p_override_prot     IN VARCHAR2 DEFAULT 'F',
       p_version_date      IN DATE DEFAULT cwms_util.non_versioned,
-      p_office_id         in varchar2 default null);
+      p_office_id         in varchar2 default null,
+      p_create_as_lrts    in varchar2 default 'F');
 
    /**
     * Stores time series data for multiple time series to the database, allowing multiple version dates
@@ -1838,6 +1853,8 @@ AS
     * @param p_override_prot    A flag ('T' or 'F') specifying whether to override the protection flag on any existing data value
     * @param p_version_date     The version date of the data
     * @param p_office_id        The office owning the time series. If not specified or NULL, the session user's default office is used
+    * @param p_create_as_lrts   A flag ('T' or 'F') specifying whether to create the time series as a local-regular time series if it doesn't already exit.
+    *                           This applies only to non-existing time series with intervals that start with '~'. Otherwise the parameter is ignored.
     */
    PROCEDURE zstore_ts (
       p_cwms_ts_id        IN VARCHAR2,
@@ -1846,7 +1863,8 @@ AS
       p_store_rule        IN VARCHAR2,
       p_override_prot     IN VARCHAR2 DEFAULT 'F',
       p_version_date      IN DATE DEFAULT cwms_util.non_versioned,
-      p_office_id         IN VARCHAR2 DEFAULT NULL);
+      p_office_id         IN VARCHAR2 DEFAULT NULL,
+      p_create_as_lrts    in varchar2 default 'F');
 
    /**
     * Stores time series data for multiple time series to the database

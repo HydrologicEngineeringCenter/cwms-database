@@ -870,7 +870,7 @@ AS
                     FROM cwms_interval
                    WHERE interval_id = substr(l_interval_id, 2);
 
-                  IF p_interval_utc_offset >= l_irregular_interval
+                  IF abs(p_interval_utc_offset) >= l_irregular_interval
                   THEN
                      cwms_err.RAISE ('INVALID_UTC_OFFSET',
                                      p_interval_utc_offset,
@@ -898,8 +898,10 @@ AS
                      cwms_err.RAISE ('CANNOT_CHANGE_OFFSET',
                                      get_ts_id (p_ts_code));
                   END IF;
+                  l_interval_utc_offset_new := -abs(p_interval_utc_offset);
+               ELSE
+                  l_interval_utc_offset_new := cwms_util.utc_offset_irregular;
                END IF;
-               l_interval_utc_offset_new := p_interval_utc_offset;
             ELSE
                --
                -- straight irregular
@@ -1743,6 +1745,14 @@ AS
                IF l_interval = 0
                THEN
                   l_utc_offset := cwms_util.utc_offset_irregular;
+                  if l_lrts_interval is not null and p_utc_offset is not null then
+                     if p_utc_offset not in (cwms_util.utc_offset_undefined, cwms_util.utc_offset_irregular) then
+                        if abs(p_utc_offset) >= l_lrts_interval then
+                           cwms_err.raise('INVALID_UTC_OFFSET', p_utc_offset, l_interval_id);
+                        end if;
+                        l_utc_offset := -abs(p_utc_offset);
+                     end if;
+                  end if;
                ELSE
                   l_utc_offset := cwms_util.utc_offset_undefined;
 
@@ -4675,7 +4685,8 @@ AS
       p_timeseries_data   IN tsv_array,
       p_store_rule        IN VARCHAR2,
       p_override_prot     IN NUMBER DEFAULT cwms_util.false_num,
-      p_versiondate       IN DATE DEFAULT cwms_util.non_versioned)
+      p_versiondate       IN DATE DEFAULT cwms_util.non_versioned,
+      p_create_as_lrts    in varchar2 default 'F')
    --^ 1.4 ^^^^ 1.4 ^^^^ 1.4 ^^^^ 1.4 ^^^^ 1.4 ^^^^ 1.4 ^^^^^^^ -
    IS
       l_override_prot   VARCHAR2 (1);
@@ -4702,7 +4713,8 @@ AS
                 p_store_rule,
                 l_override_prot,
                 p_versiondate,
-                p_office_id);
+                p_office_id,
+                p_create_as_lrts);
    END store_ts;                                                    -- v1.4 --
 
    -------------------------------------------------------------------------------
@@ -4715,7 +4727,8 @@ AS
       p_store_rule        in varchar2,
       p_override_prot     in varchar2 default 'F',
       p_version_date      in date default cwms_util.non_versioned,
-      p_office_id         in varchar2 default null)
+      p_office_id         in varchar2 default null,
+      p_create_as_lrts    in varchar2 default 'F')
    is
    begin
       store_ts_2 (
@@ -4726,7 +4739,8 @@ AS
          p_store_rule        => p_store_rule,
          p_override_prot     => p_override_prot,
          p_version_date      => p_version_date,
-         p_office_id         => p_office_id);
+         p_office_id         => p_office_id,
+         p_create_as_lrts    => p_create_as_lrts);
    end store_ts;
 
    -------------------------------------------------------------------------------
@@ -4740,7 +4754,8 @@ AS
       p_store_rule        IN VARCHAR2,
       p_override_prot     IN VARCHAR2 DEFAULT 'F',
       p_version_date      IN DATE DEFAULT cwms_util.non_versioned,
-      p_office_id         in varchar2 default null)
+      p_office_id         in varchar2 default null,
+      p_create_as_lrts    in varchar2 default 'F')
    IS
       TS_ID_NOT_FOUND       EXCEPTION;
       PRAGMA EXCEPTION_INIT (ts_id_not_found, -20001);
@@ -4899,13 +4914,39 @@ AS
             the case a new TS_CODE will be created for the Time Series
             Descriptor.
             */
+            if substr(cwms_util.split_text(p_cwms_ts_id, 4, '.'), 1, 1) = '~' and cwms_util.return_true_or_false(p_create_as_lrts) then
+               ------------------------------------------------
+               -- create as local-regular time series (LRTS) --
+               ------------------------------------------------
+               select tz.time_zone_name
+                 into l_loc_tz
+                 from cwms_time_zone tz,
+                      at_physical_location pl
+                where pl.location_code = l_location_code
+                  and tz.time_zone_code = pl.time_zone_code;
+
+               select interval
+                 into l_irr_interval
+                 from cwms_interval
+                where interval_id = substr(cwms_util.split_text(p_cwms_ts_id, 4, '.'), 2);
+               l_first_time := cast(p_timeseries_data(1).date_time at time zone nvl(l_loc_tz, 'UTC') as date);
+               l_utc_offset := (l_first_time - get_time_on_before_interval(
+                  p_datetime    => l_first_time,
+                  p_ts_offset   => 0,
+                  p_ts_interval => l_irr_interval)) * 1440;
+            else
+               ---------------------------------------------------------
+               -- create normal regular, irregular, or pseudo-regular --
+               ---------------------------------------------------------
+               l_utc_offset := cwms_util.UTC_OFFSET_UNDEFINED;
+            end if;
             create_ts_code (p_ts_code        => l_ts_code,
                             p_office_id      => l_office_id,
                             p_cwms_ts_id     => l_cwms_ts_id,
                             p_fail_if_exists => 'F', -- in case of race condition will return ts_code generated by other thread
-                            p_utc_offset     => cwms_util.UTC_OFFSET_UNDEFINED);
+                            p_utc_offset     => l_utc_offset);
 
-            existing_utc_offset := cwms_util.UTC_OFFSET_UNDEFINED;
+            existing_utc_offset := l_utc_offset;
       END;                                               -- END - Find TS_CODE
 
       IF l_ts_code IS NULL
@@ -5062,7 +5103,7 @@ AS
          if existing_utc_offset in (cwms_util.utc_offset_irregular, cwms_util.utc_offset_undefined) then
             null;
          else
-            l_irr_offset := -existing_utc_offset;
+            l_irr_offset := abs(existing_utc_offset);
             select ci.interval
               into l_irr_interval
               from cwms_interval ci,
@@ -6213,7 +6254,8 @@ AS
       p_store_rule      IN VARCHAR2,
       p_override_prot   IN VARCHAR2 DEFAULT 'F',
       p_version_date    IN DATE DEFAULT cwms_util.non_versioned,
-      p_office_id       IN VARCHAR2 DEFAULT NULL)
+      p_office_id       IN VARCHAR2 DEFAULT NULL,
+      p_create_as_lrts  in varchar2 default 'F')
    IS
       l_timeseries_data   tsv_array := tsv_array ();
       i                   BINARY_INTEGER;
@@ -6245,7 +6287,8 @@ AS
                 p_store_rule,
                 p_override_prot,
                 p_version_date,
-                p_office_id);
+                p_office_id,
+                p_create_as_lrts);
    END store_ts;
 
    --
@@ -6263,7 +6306,8 @@ AS
       p_store_rule      IN VARCHAR2,
       p_override_prot   IN VARCHAR2 DEFAULT 'F',
       p_version_date    IN DATE DEFAULT cwms_util.non_versioned,
-      p_office_id       IN VARCHAR2 DEFAULT NULL)
+      p_office_id       IN VARCHAR2 DEFAULT NULL,
+      p_create_as_lrts  in varchar2 default 'F')
    IS
       l_timeseries_data   tsv_array := tsv_array ();
       i                   BINARY_INTEGER;
@@ -6295,7 +6339,8 @@ AS
                 p_store_rule,
                 p_override_prot,
                 p_version_date,
-                p_office_id);
+                p_office_id,
+                p_create_as_lrts);
    END store_ts;
 
    --
@@ -8609,7 +8654,8 @@ end retrieve_existing_item_counts;
       p_store_rule        IN VARCHAR2,
       p_override_prot     IN VARCHAR2 DEFAULT 'F',
       p_version_date      IN DATE DEFAULT cwms_util.non_versioned,
-      p_office_id         IN VARCHAR2 DEFAULT NULL)
+      p_office_id         IN VARCHAR2 DEFAULT NULL,
+      p_create_as_lrts    in varchar2 default 'F')
    IS
       l_timeseries_data   tsv_array := tsv_array ();
    BEGIN
@@ -8636,7 +8682,8 @@ end retrieve_existing_item_counts;
                         p_store_rule,
                         p_override_prot,
                         p_version_date,
-                        p_office_id);
+                        p_office_id,
+                        p_create_as_lrts);
    END zstore_ts;
 
 
