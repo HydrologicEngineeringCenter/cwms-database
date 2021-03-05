@@ -4918,13 +4918,7 @@ AS
                ------------------------------------------------
                -- create as local-regular time series (LRTS) --
                ------------------------------------------------
-               select tz.time_zone_name
-                 into l_loc_tz
-                 from cwms_time_zone tz,
-                      at_physical_location pl
-                where pl.location_code = l_location_code
-                  and tz.time_zone_code = pl.time_zone_code;
-
+               l_loc_tz := cwms_loc.get_local_timezone(l_location_code);
                select interval
                  into l_irr_interval
                  from cwms_interval
@@ -4947,6 +4941,8 @@ AS
                             p_utc_offset     => l_utc_offset);
 
             existing_utc_offset := l_utc_offset;
+         WHEN OTHERS THEN
+            cwms_err.raise('ERROR', dbms_utility.format_error_backtrace);
       END;                                               -- END - Find TS_CODE
 
       IF l_ts_code IS NULL
@@ -5113,16 +5109,8 @@ AS
             ------------------------------------------------------------
             -- filter out data not on interval offset (from local tz) --
             ------------------------------------------------------------
-            select time_zone_code
-              into l_tz_code
-              from at_physical_location
-             where location_code = l_location_code;
-
-            if l_tz_code > 0 then
-               select time_zone_name
-                 into l_loc_tz
-                 from cwms_time_zone
-                where time_zone_code = l_tz_code;
+            l_loc_tz := cwms_loc.get_local_timezone(l_location_code);
+            if l_loc_tz is not null then
 
                select cwms_util.change_timezone(cast(date_time at time zone 'UTC' as date), 'UTC', l_loc_tz)
                  bulk collect
@@ -6354,7 +6342,8 @@ AS
       p_store_rule         in varchar2,
       p_override_prot      in varchar2 default 'F',
       p_version_dates      in date_table_type default null,
-      p_office_id          in varchar2 default null)
+      p_office_id          in varchar2 default null,
+      p_create_as_lrts     in str_tab_t default null)
    is
       l_err_msg        varchar2 (722)  := null;
       l_all_err_msgs   varchar2 (2048) := null;
@@ -6364,6 +6353,7 @@ AS
       l_num_ts_ids     pls_integer := 0;
       l_num_errors     pls_integer := 0;
       l_excep_errors   pls_integer := 0;
+      l_create_as_lrts varchar2(1);
    begin
 
       if p_timeseries_array is not null then
@@ -6389,13 +6379,15 @@ AS
                'calling store_ts');
 
             begin
+               l_create_as_lrts := case when p_create_as_lrts is null then 'F' else p_create_as_lrts(i) end;
                store_ts (p_timeseries_array(i).tsid,
                          p_timeseries_array(i).unit,
                          p_timeseries_array(i).data,
                          p_store_rule,
                          p_override_prot,
                          l_version_dates(i),
-                         p_office_id);
+                         p_office_id,
+                         l_create_as_lrts);
             exception
                when others then
                   l_num_errors := l_num_errors + 1;
@@ -6447,22 +6439,28 @@ AS
       p_store_rule         in varchar2,
       p_override_prot      in varchar2 default 'F',
       p_version_date       in date default cwms_util.non_versioned,
-      p_office_id          in varchar2 default null)
+      p_office_id          in varchar2 default null,
+      p_create_as_lrts     in varchar2 default 'F')
    is
-      l_version_dates date_table_type;
+      l_version_dates  date_table_type;
+      l_create_as_lrts str_tab_t;
    begin
       if p_timeseries_array is not null then
-         l_version_dates := date_table_type();
+         l_version_dates  := date_table_type();
+         l_create_as_lrts := str_tab_t();
          l_version_dates.extend(p_timeseries_array.count);
+         l_create_as_lrts.extend(p_timeseries_array.count);
          for i in 1..p_timeseries_array.count loop
-            l_version_dates(i) := p_version_date;
+            l_version_dates(i)  := p_version_date;
+            l_create_as_lrts(i) := p_create_as_lrts;
          end loop;
          store_ts_multi(
             p_timeseries_array,
             p_store_rule,
             p_override_prot,
             l_version_dates,
-            p_office_id);
+            p_office_id,
+            l_create_as_lrts);
       end if;
    end store_ts_multi;
 
@@ -8692,7 +8690,8 @@ end retrieve_existing_item_counts;
       p_store_rule         IN VARCHAR2,
       p_override_prot      IN VARCHAR2 DEFAULT 'F',
       p_version_date       IN DATE DEFAULT cwms_util.non_versioned,
-      p_office_id          IN VARCHAR2 DEFAULT NULL)
+      p_office_id          IN VARCHAR2 DEFAULT NULL,
+      p_create_as_lrts     IN VARCHAR2 DEFAULT 'F')
    IS
       l_timeseries     ztimeseries_type;
       l_err_msg        VARCHAR2 (722) := NULL;
@@ -8720,7 +8719,8 @@ end retrieve_existing_item_counts;
                                p_store_rule,
                                p_override_prot,
                                p_version_date,
-                               p_office_id);
+                               p_office_id,
+                               p_create_as_lrts);
          EXCEPTION
             WHEN OTHERS
             THEN
@@ -8760,6 +8760,88 @@ end retrieve_existing_item_counts;
 
       DBMS_APPLICATION_INFO.set_module (NULL, NULL);
    END zstore_ts_multi;
+
+   PROCEDURE zstore_ts_multi (
+      p_timeseries_array   IN ztimeseries_array,
+      p_store_rule         IN VARCHAR2,
+      p_override_prot      IN VARCHAR2 DEFAULT 'F',
+      p_version_dates      IN DATE_TABLE_TYPE DEFAULT NULL,
+      p_office_id          IN VARCHAR2 DEFAULT NULL,
+      p_create_as_lrts     IN STR_TAB_T DEFAULT NULL)
+   IS
+      l_timeseries     ztimeseries_type;
+      l_err_msg        VARCHAR2 (722) := NULL;
+      l_all_err_msgs   VARCHAR2 (2048) := NULL;
+      l_len            NUMBER := 0;
+      l_total_len      NUMBER := 0;
+      l_num_ts_ids     NUMBER := 0;
+      l_num_errors     NUMBER := 0;
+      l_excep_errors   NUMBER := 0;
+      l_version_date   date;
+      l_create_as_lrts varchar2(1);
+   BEGIN
+      DBMS_APPLICATION_INFO.set_module ('cwms_ts.zstore_ts_multi',
+                                        'selecting time series from input');
+
+      FOR l_timeseries IN (SELECT * FROM TABLE (p_timeseries_array))
+      LOOP
+         DBMS_APPLICATION_INFO.set_module ('cwms_ts_store.zstore_ts_multi',
+                                           'calling zstore_ts');
+
+         BEGIN
+            l_num_ts_ids := l_num_ts_ids + 1;
+
+            l_version_date := case when p_version_dates is null then cwms_util.non_versioned else p_version_dates(l_num_ts_ids) end;
+            l_create_as_lrts := case when p_create_as_lrts is null then 'F' else p_create_as_lrts(l_num_ts_ids) end;
+
+            cwms_ts.zstore_ts (l_timeseries.tsid,
+                               l_timeseries.unit,
+                               l_timeseries.data,
+                               p_store_rule,
+                               p_override_prot,
+                               l_version_date,
+                               p_office_id,
+                               l_create_as_lrts);
+         EXCEPTION
+            WHEN OTHERS
+            THEN
+               l_num_errors := l_num_errors + 1;
+
+               l_err_msg :=
+                     'STORE_ERROR ***'
+                  || l_timeseries.tsid
+                  || '*** '
+                  || SQLCODE
+                  || ': '
+                  || SQLERRM;
+
+               IF   NVL (LENGTH (l_all_err_msgs), 0)
+                  + NVL (LENGTH (l_err_msg), 0) <= 1930
+               THEN
+                  l_excep_errors := l_excep_errors + 1;
+                  l_all_err_msgs := l_all_err_msgs || ' ' || l_err_msg;
+               END IF;
+         END;
+      END LOOP;
+
+      IF l_all_err_msgs IS NOT NULL
+      THEN
+         l_all_err_msgs :=
+               'STORE ERRORS: zstore_ts_multi processed '
+            || l_num_ts_ids
+            || ' ts_ids of which '
+            || l_num_errors
+            || ' had STORE ERRORS. '
+            || l_excep_errors
+            || ' of those errors are: '
+            || l_all_err_msgs;
+
+         raise_application_error (-20999, l_all_err_msgs);
+      END IF;
+
+      DBMS_APPLICATION_INFO.set_module (NULL, NULL);
+   END zstore_ts_multi;
+
 
    PROCEDURE validate_ts_queue_name (p_queue_name IN VARCHAR)
    IS

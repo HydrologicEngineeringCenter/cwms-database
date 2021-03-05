@@ -3,65 +3,45 @@ create or replace package test_lrts_updates as
 --%suite(Test schema for full LRTS compatibility)
 
 --%rollback(manual)
---# %beforeall(setup)
---# %afterall(teardown)
+--%afterall(teardown)
 
 --%test(CREATE_TS_CODE with zero offset without time zone)
---%disabled
 procedure create_ts_code_no_tz1;
 --%test(CREATE_TS_CODE with non-zero offset without time zone)
---%disabled
 procedure create_ts_code_no_tz2;
 --%test(CREATE_TS_CODE with with negative offset)
---%disabled
 procedure create_lrts_ts_code_neg_offset;
 --%test(CREATE_TS_CODE with with positive offset)
---%disabled
 procedure create_lrts_ts_code_pos_offset;
 --%test(UPDATE_TS_CODE with with negative offset)
---%disabled
 procedure update_lrts_ts_code_neg_offset;
 --%test(UPDATE_TS_CODE with with positive offset)
---%disabled
 procedure update_lrts_ts_code_pos_offset;
 --%test(Time zone in AT_CWMS_TS_SPEC table)
---%disabled
 procedure tz_in_at_cwms_ts_spec;
 --%test(Time zone in AT_CWMS_TS_ID table)
---%disabled
 procedure tz_in_at_cwms_ts_id;
 --%test(Time zone in AV_CWMS_TS_ID view)
---%disabled
 procedure tz_in_av_cwms_ts_id;
 --%test(Time zone in AV_CWMS_TS_ID2 view)
---%disabled
 procedure tz_in_av_cwms_ts_id2;
 --%test(Time zone in ZAV_CWMS_TS_ID view)
---%disabled
 procedure tz_in_zav_cwms_ts_id;
 --%test(Time zone in cwms_cat.cat_ts_id)
---%disabled
 procedure tz_in_catalog;
 --%test(RETRIEVE_TS_OUT overload)
---%disabled
 procedure retrieve_ts_out;
 --%test(RETRIEVE_TS [1.4] overload)
---%disabled
 procedure retrieve_ts_old;
 --%test(RETRIEVE_TS_2 [1.4] overload)
---%disabled
 procedure retrieve_ts_2_old;
 --%test(RETRIEVE_TS [2.0] overload)
---%disabled
 procedure retrieve_ts;
 --%test(ZRETRIEVE_TS overload)
---%disabled
 procedure zretrieve_ts;
 --%test(ZRETRIEVE_TS_JAVA overload)
---%disabled
 procedure zretrieve_ts_java;
 --%test(RETRIEVE_TS_MULTI)
---%disabled
 procedure retrieve_ts_multi;
 --%test(STORE_TS [2.0])
 procedure store_ts;
@@ -73,6 +53,10 @@ procedure store_ts_oracle;
 procedure store_ts_jython;
 --%test(ZSTORE_TS)
 procedure zstore_ts;
+--%test (STORE_TS_MULTI)
+procedure store_ts_multi;
+--%test (ZSTORE_TS_MULTI)
+procedure zstore_ts_multi;
 
 procedure setup(p_options in varchar2 default null);
 procedure teardown;
@@ -1990,6 +1974,252 @@ begin
     ut.expect(l_count).to_equal(l_ts_values.count / 2);
     ut.expect(l_offset).to_equal(-c_intvl_offsets(2));
 end zstore_ts;
+--------------------------------------------------------------------------------
+-- procedure store_ts_multi
+--------------------------------------------------------------------------------
+procedure store_ts_multi
+is
+   l_ts_array timeseries_array := timeseries_array();
+   l_ts_code  integer;
+   l_count    integer;
+   l_offset   integer;
+begin
+   setup('INIT,STORE_LOCATIONS');
+   l_ts_array.extend(2);
+   for i in 1..2 loop
+      l_ts_array(i) := timeseries_type(
+         tsid => replace(v_ts_ids(i), '<intvl>', '~1Hour'),
+         unit => c_ts_unit,
+         data => tsv_array());
+      l_ts_array(i).data.extend(c_value_count);
+      for j in 1..c_value_count loop
+         l_ts_array(i).data(j) := tsv_type(
+            date_time    => cast(c_ts_values_utc(2)(j).date_time as timestamp) at time zone 'US/Central',
+            value        => c_ts_values_utc(2)(j).value,
+            quality_code => c_ts_values_utc(2)(j).quality_code);
+         if mod(j, 2) = 0 then
+            l_ts_array(i).data(j).date_time := l_ts_array(i).data(j).date_time + to_dsinterval('0 0:10:0');
+         end if;
+      end loop;
+   end loop;
+   ------------------------------------------------------------------------------------
+   -- first store each as as pseudo-regular by using previous common-value signature --
+   ------------------------------------------------------------------------------------
+   cwms_ts.store_ts_multi(
+      p_timeseries_array => l_ts_array,
+      p_store_rule       => cwms_util.replace_all,
+      p_override_prot    => 'F',
+      p_version_date     => cwms_util.non_versioned,
+      p_office_id        => c_office_id);
+
+   for i in 1..2 loop
+      l_ts_code := cwms_ts.get_ts_code(l_ts_array(i).tsid, c_office_id);
+
+      select count(*)
+        into l_count
+        from av_tsv_dqu
+       where ts_code = l_ts_code
+         and unit_id = c_ts_unit;
+
+      select interval_utc_offset
+        into l_offset
+        from at_cwms_ts_spec
+       where ts_code = l_ts_code;
+
+       ut.expect(l_count).to_equal(l_ts_array(i).data.count);
+       ut.expect(l_offset).to_equal(cwms_util.utc_offset_irregular);
+   end loop;
+   ---------------------------------------------------------------------------
+   -- next store each as data as local-regular using common-value signature --
+   ---------------------------------------------------------------------------
+   for i in 1..2 loop
+      cwms_ts.delete_ts(l_ts_array(i).tsid, cwms_util.delete_all, c_office_id);
+   end loop;
+   cwms_ts.store_ts_multi(
+      p_timeseries_array => l_ts_array,
+      p_store_rule       => cwms_util.replace_all,
+      p_override_prot    => 'F',
+      p_version_date     => cwms_util.non_versioned,
+      p_office_id        => c_office_id,
+      p_create_as_lrts   => 'T');
+
+   for i in 1..2 loop
+      l_ts_code := cwms_ts.get_ts_code(l_ts_array(i).tsid, c_office_id);
+
+      select count(*)
+        into l_count
+        from av_tsv_dqu
+       where ts_code = l_ts_code
+         and unit_id = c_ts_unit;
+
+      select interval_utc_offset
+        into l_offset
+        from at_cwms_ts_spec
+       where ts_code = l_ts_code;
+
+       ut.expect(l_count).to_equal(l_ts_array(i).data.count / 2);
+       ut.expect(l_offset).to_equal(-c_intvl_offsets(2));
+   end loop;
+   -------------------------------------------------------------------------------
+   -- finally store one as PRTS and one as LRTS using separate-values signature --
+   -------------------------------------------------------------------------------
+   for i in 1..2 loop
+      cwms_ts.delete_ts(l_ts_array(i).tsid, cwms_util.delete_all, c_office_id);
+   end loop;
+   cwms_ts.store_ts_multi(
+      p_timeseries_array => l_ts_array,
+      p_store_rule       => cwms_util.replace_all,
+      p_override_prot    => 'F',
+      p_version_dates    => date_table_type(cwms_util.non_versioned, cwms_util.non_versioned),
+      p_office_id        => c_office_id,
+      p_create_as_lrts   => str_tab_t('T', 'F'));
+
+   for i in 1..2 loop
+      l_ts_code := cwms_ts.get_ts_code(l_ts_array(i).tsid, c_office_id);
+
+      select count(*)
+        into l_count
+        from av_tsv_dqu
+       where ts_code = l_ts_code
+         and unit_id = c_ts_unit;
+
+      select interval_utc_offset
+        into l_offset
+        from at_cwms_ts_spec
+       where ts_code = l_ts_code;
+
+       if i = 1 then
+          ut.expect(l_count).to_equal(l_ts_array(i).data.count / 2);
+          ut.expect(l_offset).to_equal(-c_intvl_offsets(2));
+       else
+          ut.expect(l_count).to_equal(l_ts_array(i).data.count);
+          ut.expect(l_offset).to_equal(cwms_util.utc_offset_irregular);
+       end if;
+   end loop;
+end store_ts_multi;
+--------------------------------------------------------------------------------
+-- procedure zstore_ts_multi
+--------------------------------------------------------------------------------
+procedure zstore_ts_multi
+is
+   l_ts_array ztimeseries_array := ztimeseries_array();
+   l_ts_code  integer;
+   l_count    integer;
+   l_offset   integer;
+begin
+   setup('INIT,STORE_LOCATIONS');
+   l_ts_array.extend(2);
+   for i in 1..2 loop
+      l_ts_array(i) := ztimeseries_type(
+         tsid => replace(v_ts_ids(i), '<intvl>', '~1Hour'),
+         unit => c_ts_unit,
+         data => ztsv_array());
+      l_ts_array(i).data.extend(c_value_count);
+      for j in 1..c_value_count loop
+         l_ts_array(i).data(j) := ztsv_type(
+            date_time    => cwms_util.change_timezone(c_ts_values_utc(2)(j).date_time, 'UTC', 'US/Central'),
+            value        => c_ts_values_utc(2)(j).value,
+            quality_code => c_ts_values_utc(2)(j).quality_code);
+         if mod(j, 2) = 0 then
+            l_ts_array(i).data(j).date_time := l_ts_array(i).data(j).date_time + 10 / 1440;
+         end if;
+      end loop;
+   end loop;
+   ------------------------------------------------------------------------------------
+   -- first store each as as pseudo-regular by using previous common-value signature --
+   ------------------------------------------------------------------------------------
+   cwms_ts.zstore_ts_multi(
+      p_timeseries_array => l_ts_array,
+      p_store_rule       => cwms_util.replace_all,
+      p_override_prot    => 'F',
+      p_version_date     => cwms_util.non_versioned,
+      p_office_id        => c_office_id);
+
+   for i in 1..2 loop
+      l_ts_code := cwms_ts.get_ts_code(l_ts_array(i).tsid, c_office_id);
+
+      select count(*)
+        into l_count
+        from av_tsv_dqu
+       where ts_code = l_ts_code
+         and unit_id = c_ts_unit;
+
+      select interval_utc_offset
+        into l_offset
+        from at_cwms_ts_spec
+       where ts_code = l_ts_code;
+
+       ut.expect(l_count).to_equal(l_ts_array(i).data.count);
+       ut.expect(l_offset).to_equal(cwms_util.utc_offset_irregular);
+   end loop;
+   ---------------------------------------------------------------------------
+   -- next store each as data as local-regular using common-value signature --
+   ---------------------------------------------------------------------------
+   for i in 1..2 loop
+      cwms_ts.delete_ts(l_ts_array(i).tsid, cwms_util.delete_all, c_office_id);
+   end loop;
+   cwms_ts.zstore_ts_multi(
+      p_timeseries_array => l_ts_array,
+      p_store_rule       => cwms_util.replace_all,
+      p_override_prot    => 'F',
+      p_version_date     => cwms_util.non_versioned,
+      p_office_id        => c_office_id,
+      p_create_as_lrts   => 'T');
+
+   for i in 1..2 loop
+      l_ts_code := cwms_ts.get_ts_code(l_ts_array(i).tsid, c_office_id);
+
+      select count(*)
+        into l_count
+        from av_tsv_dqu
+       where ts_code = l_ts_code
+         and unit_id = c_ts_unit;
+
+      select interval_utc_offset
+        into l_offset
+        from at_cwms_ts_spec
+       where ts_code = l_ts_code;
+
+       ut.expect(l_count).to_equal(l_ts_array(i).data.count / 2);
+       ut.expect(l_offset).to_equal(-c_intvl_offsets(2));
+   end loop;
+   -------------------------------------------------------------------------------
+   -- finally store one as PRTS and one as LRTS using separate-values signature --
+   -------------------------------------------------------------------------------
+   for i in 1..2 loop
+      cwms_ts.delete_ts(l_ts_array(i).tsid, cwms_util.delete_all, c_office_id);
+   end loop;
+   cwms_ts.zstore_ts_multi(
+      p_timeseries_array => l_ts_array,
+      p_store_rule       => cwms_util.replace_all,
+      p_override_prot    => 'F',
+      p_version_dates    => date_table_type(cwms_util.non_versioned, cwms_util.non_versioned),
+      p_office_id        => c_office_id,
+      p_create_as_lrts   => str_tab_t('T', 'F'));
+
+   for i in 1..2 loop
+      l_ts_code := cwms_ts.get_ts_code(l_ts_array(i).tsid, c_office_id);
+
+      select count(*)
+        into l_count
+        from av_tsv_dqu
+       where ts_code = l_ts_code
+         and unit_id = c_ts_unit;
+
+      select interval_utc_offset
+        into l_offset
+        from at_cwms_ts_spec
+       where ts_code = l_ts_code;
+
+       if i = 1 then
+          ut.expect(l_count).to_equal(l_ts_array(i).data.count / 2);
+          ut.expect(l_offset).to_equal(-c_intvl_offsets(2));
+       else
+          ut.expect(l_count).to_equal(l_ts_array(i).data.count);
+          ut.expect(l_offset).to_equal(cwms_util.utc_offset_irregular);
+       end if;
+   end loop;
+end zstore_ts_multi;
 
 end test_lrts_updates;
 /

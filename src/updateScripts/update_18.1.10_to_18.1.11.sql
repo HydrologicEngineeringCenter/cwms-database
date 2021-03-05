@@ -118,16 +118,16 @@ delete from at_clob where id = '/VIEWDOCS/AV_CWMS_TS_ID';
 @../cwms/views/av_cwms_ts_id
 delete from at_clob where id = '/VIEWDOCS/AV_CWMS_TS_ID2';
 @../cwms/views/av_cwms_ts_id2
-----------------
--- TYPE SPECS --
-----------------
-drop type nested_ts_type force;
-@../cwms/types/nested_ts_type
 -------------------
 -- PACKAGE SPECS --
 -------------------
 @../cwms/cwms_cat_pkg
 @../cwms/cwms_ts_pkg
+----------------
+-- TYPE SPECS --
+----------------
+drop type nested_ts_type force;
+@../cwms/types/nested_ts_type
 --------------------
 -- PACKAGE BODIES --
 --------------------
