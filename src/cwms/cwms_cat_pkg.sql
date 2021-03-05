@@ -626,7 +626,7 @@ IS
     *     <td class="descr-center">4</td>
     *     <td class="descr">interval_utc_offset</td>
     *     <td class="descr">number</td>
-    *     <td class="descr">The offset into the UTC interval for regular time series</td>
+    *     <td class="descr">The offset into the UTC interval for regular time series, or into the local timezone interval for local-regular time series</td>
     *   </tr>
     *   <tr>
     *     <td class="descr-center">5</td>

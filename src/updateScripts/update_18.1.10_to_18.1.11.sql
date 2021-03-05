@@ -72,14 +72,14 @@ comment on column at_cwms_ts_spec.description         is 'Additional information
 comment on column at_cwms_ts_spec.interval_utc_offset is 'Offset in minutes into regular interval for values. Interval is UTC for regular ts, but is local for LRTS';
 comment on column at_cwms_ts_spec.interval_forward    is 'Number of minutes the value can be later than the expected interval+offset and still be considered on time';
 comment on column at_cwms_ts_spec.interval_backward   is 'Number of minutes the value can be behind earlier than the expected interval+offset and still be considered on time';
-comment on column at_cwms_ts_spec.time_zone_code      is 'Local time zone for LRTS';
+comment on column at_cwms_ts_spec.time_zone_code      is 'Location''s time zone';
 comment on column at_cwms_ts_spec.version_flag        is 'Default is NULL, indicating versioning is off. If set to "Y" then versioning is on';
 comment on column at_cwms_ts_spec.migrate_ver_flag    is 'Default is NULL, indicating versioned data is not migrated to historic tables.  If set to "Y", versioned data is archived.';
 comment on column at_cwms_ts_spec.active_flag         is 'T or F';
 comment on column at_cwms_ts_spec.delete_date         is 'Is the date that this ts_id was marked for deletion.';
 comment on column at_cwms_ts_spec.historic_flag       is 'T or F specifying whether this time series is part of the historic record';
 --
-alter table at_cwms_ts_id add lrts_time_zone varchar2(28);
+alter table at_cwms_ts_id add time_zone_id varchar2(28);
 comment on table  at_cwms_ts_id                       is 'Holds useful information about time series identfiers';
 comment on column at_cwms_ts_id.db_office_code        is 'Primary key in CWMS_OFFICE for the office that owns the time series';
 comment on column at_cwms_ts_id.base_location_code    is 'Primary key in AT_BASE_LOCATION for the base location of the time series';
@@ -107,23 +107,27 @@ comment on column at_cwms_ts_id.version_id            is 'The identifier of the 
 comment on column at_cwms_ts_id.interval              is 'The interval of the time series in minutes';
 comment on column at_cwms_ts_id.interval_utc_offset   is 'The offset in minutes into the interval for time series values';
 comment on column at_cwms_ts_id.version_flag          is 'A flag (''T''/''F'') that specifies whether the time series is versioned';
-comment on column at_cwms_ts_id.historic_flag         is 'A flag (''T''/''F'') that specifies whether the time series is part of the historical record';,
-comment on column at_cwms_ts_id.lrts_time_zone        is 'The time zone of the location of the time series (local regular time series [LRTS] only)';
+comment on column at_cwms_ts_id.historic_flag         is 'A flag (''T''/''F'') that specifies whether the time series is part of the historical record';
+comment on column at_cwms_ts_id.time_zone_id          is 'The time zone of the location of the time series';
 -----------
 -- VIEWS --
 -----------
 delete from at_clob where id = '/VIEWDOCS/ZAV_CWMS_TS_ID';
 @../cwms/views/zav_cwms_ts_id
-----------------
--- TYPE SPECS --
-----------------
-@../cwms/types/nested_ts2_type
-@../cwms/types/nested_ts2_table
+delete from at_clob where id = '/VIEWDOCS/AV_CWMS_TS_ID';
+@../cwms/views/av_cwms_ts_id
+delete from at_clob where id = '/VIEWDOCS/AV_CWMS_TS_ID2';
+@../cwms/views/av_cwms_ts_id2
 -------------------
 -- PACKAGE SPECS --
 -------------------
 @../cwms/cwms_cat_pkg
 @../cwms/cwms_ts_pkg
+----------------
+-- TYPE SPECS --
+----------------
+drop type nested_ts_type force;
+@../cwms/types/nested_ts_type
 --------------------
 -- PACKAGE BODIES --
 --------------------

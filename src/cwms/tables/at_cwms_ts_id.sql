@@ -30,7 +30,7 @@ CREATE TABLE AT_CWMS_TS_ID
   INTERVAL_UTC_OFFSET   NUMBER                  NOT NULL,
   VERSION_FLAG          VARCHAR2(1 BYTE),
   HISTORIC_FLAG         VARCHAR2(1 BYTE)        DEFAULT 'F',
-  LRTS_TIME_ZONE        VARCHAR2(28 BYTE)
+  TIME_ZONE_ID          VARCHAR2(28 BYTE)
 )
 TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
@@ -80,7 +80,7 @@ comment on column at_cwms_ts_id.interval              is 'The interval of the ti
 comment on column at_cwms_ts_id.interval_utc_offset   is 'The offset in minutes into the interval for time series values';
 comment on column at_cwms_ts_id.version_flag          is 'A flag (''T''/''F'') that specifies whether the time series is versioned';
 comment on column at_cwms_ts_id.historic_flag         is 'A flag (''T''/''F'') that specifies whether the time series is part of the historical record';
-comment on column at_cwms_ts_id.lrts_time_zone        is 'The time zone of the location of the time series (local regular time series [LRTS] only)';
+comment on column at_cwms_ts_id.time_zone_id          is 'The time zone of the location of the time series';
 
 
 --
