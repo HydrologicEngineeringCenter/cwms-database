@@ -74,9 +74,9 @@ insert
 values (48,
         'Probability',
         (select abstract_param_code from cwms_abstract_parameter where abstract_param_id='None'),
-        (select u.unit_code from cwms_unit where unit_id='n/a'),
-        (select u.unit_code from cwms_unit where unit_id='n/a'),
-        (select u.unit_code from cwms_unit where unit_id='n/a'),
+        (select unit_code from cwms_unit where unit_id='n/a'),
+        (select unit_code from cwms_unit where unit_id='n/a'),
+        (select unit_code from cwms_unit where unit_id='n/a'),
         'Probability',
         'Expected fraction of all events for a specific event'
        );
