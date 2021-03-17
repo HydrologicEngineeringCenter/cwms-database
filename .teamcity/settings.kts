@@ -155,7 +155,7 @@ object Build : BuildType({
         feature {
             type = "xml-report-plugin"
             param("xmlReportParsing.reportType", "junit")
-            param("xmlReportParsing.reportDirs", "build/tests.xml")
+            param("xmlReportParsing.reportDirs", "build/tests*.xml")
         }
     }
 

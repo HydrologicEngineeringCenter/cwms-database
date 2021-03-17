@@ -1,4 +1,5 @@
-import os, subprocess, sys
+import os, subprocess, sys,datetime
+from subprocess import check_output
 moduleName = "buildSqlScripts"
 argv = sys.argv
 outFile  = None
@@ -37,7 +38,17 @@ maxSiLen = max([len(param[1]) for param in params])
 format = "%%-%ds : %%-%ds : %%s\n" % (maxIdLen, maxSiLen)
 print("%s : Writing resource file %s" % (progName, outFile))
 f = open(outFile, "w")
-f.write("\n=PARAMETER/UNIT\n")
+date_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
+git_branch = check_output(["git","branch","--show-current"]).strip()
+teamcity_build_info = "(manual run)"
+try:
+	build_number = os.environ["BUILD_NUMBER"]
+	build = os.environ["TEAMCITY_BUILDCONF_NAME"]
+	teamcity_build_info = "(Build %s, #%s)" % (build,build_number)
+except:
+	pass # we aren't in TEAMCITY so these don't exist
+f.write("// Generated from cwms_database:" + git_branch + " " + teamcity_build_info + " on " + date_str + "\n" )
+f.write("=PARAMETER/UNIT\n")
 f.write("#position=100\n\n")
 for param_id, si_unit, en_unit in params :
 	f.write(format % (param_id, si_unit, en_unit))
