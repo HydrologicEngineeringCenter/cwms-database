@@ -66,6 +66,8 @@ object Build : BuildType({
         src/buildCWMS_DB.log => buildinfo/
         build/coverage.zip => /
         build/resources => resources.zip
+        build/resources.jar =>
+        build/docs.zip =>
     """.trimIndent()
 
     params {
@@ -119,6 +121,10 @@ object Build : BuildType({
         ant {
             targets = "test"
             antArguments = "-Dbuilduser.overrides=output/overrides.xml"            
+        }
+        ant {
+            targets = "bundle"
+            antArguments = "-Dbuilduser.overrides=output/overrides.xml"
         }
         script {
             name = "Destroy Database Since we are done"
