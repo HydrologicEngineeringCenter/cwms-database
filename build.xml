@@ -620,13 +620,14 @@
             <files refid="deps" dir="${build.dir}/deps" layout="{artifactId}.{extension}"/>  
             <resolver:properties prefix="dep." classpath="runtime"/>
         </resolver:resolve>
-        <exec executable="sqlplus">
+        <exec executable="sqlplus" failonerror="true">
             <arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba"/>
             <arg value="@docs/doc_grants.sql"/>
             <arg value="${office.primary.code}hectest"/>
         </exec>
         <java
             fork="true"
+			failonerror="true"
             classname="org.python.util.jython"
             >
             <classpath>
