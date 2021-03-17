@@ -1,6 +1,6 @@
 from decimal import *
 from mathComputations import Computation
-import re, string, StringIO, traceback, datetime
+import re, string, StringIO, traceback, datetime, os
 from subprocess import check_output
 
 getcontext().prec = 16 # floating point precision to use
@@ -1759,7 +1759,14 @@ def get_java_resource_format() :
 	buf = StringIO.StringIO()
 	date_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
 	git_branch = check_output(["git","branch","--show-current"]).strip()
-	buf.write("// Generated from cwms_database:" + git_branch + " on " + date_str + "\n" )
+	teamcity_build_info = "(manual run)"
+	try:
+		build_number = os.environ["BUILD_NUMBER"]
+		build = os.environ["TEAMCITY_BUILDCONF_NAME"]
+		teamcity_build_info = "(Build %s, #%s)" % (build,build_number)
+	except:
+		pass # we aren't in TEAMCITY so these don't exist
+	buf.write("// Generated from cwms_database:" + git_branch + " " + teamcity_build_info + " on " + date_str + "\n" )
 	buf.write("// UNIT DEFINITIONS\n")
 	buf.write("//  UnitSystem;UnitName;UnitAliases...;...;\n")
 	for d in [d for d in units_by_param] :
