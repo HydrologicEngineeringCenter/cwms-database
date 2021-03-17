@@ -605,7 +605,7 @@
 	</target>
 
 	<!-- TODO: figured out why ${build.dir}/** isn't working -->
-	<target name="bundle" depends="clean-output-files,java-resources">
+	<target name="bundle" depends="java-resources">
 		<echo message="${build.dir}" />
 		<zip destfile="${build.dir}/cwms_db_${pom.version}.zip"
 			 basedir="."
