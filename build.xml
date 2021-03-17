@@ -333,10 +333,10 @@
 
 	<target name="java-resources">
 		<mkdir dir="${build.dir}/resources/cwms/data"/>
-		<exec dir="${src}" executable="python2" output="${build.dir}/resources/cwms/data/unitCoversion.def" error="${build.dir}/resources.log">
+		<exec dir="${src}" executable="python2" failonerror="true" output="${build.dir}/resources/cwms/data/unitConversions.def" error="${build.dir}/resources.log">
 			<arg line="unitConversions.py"/>
-		</exec>
-		<exec dir="${src}" executable="python2" output="${build.dir}/resoursces.log" error="${build.dir}/resources.log">
+		</exec>		
+		<exec dir="${src}" executable="python2" failonerror="true" output="${build.dir}/resoursces.log" error="${build.dir}/resources.log">
 			<arg line="build_db_parameters_def.py ${build.dir}/resources/cwms/data/db_parameter_units.def"/>
 		</exec>
 	</target>
@@ -605,7 +605,7 @@
 	</target>
 
 	<!-- TODO: figured out why ${build.dir}/** isn't working -->
-	<target name="bundle" depends="clean-output-files,java-resources">
+	<target name="bundle" depends="java-resources">
 		<echo message="${build.dir}" />
 		<zip destfile="${build.dir}/cwms_db_${pom.version}.zip"
 			 basedir="."
@@ -620,13 +620,14 @@
             <files refid="deps" dir="${build.dir}/deps" layout="{artifactId}.{extension}"/>
             <resolver:properties prefix="dep." classpath="runtime"/>
         </resolver:resolve>
-        <exec executable="sqlplus">
+        <exec executable="sqlplus" failonerror="true">
             <arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba"/>
             <arg value="@docs/doc_grants.sql"/>
             <arg value="${office.primary.code}hectest"/>
         </exec>
         <java
             fork="true"
+			failonerror="true"
             classname="org.python.util.jython"
             >
             <classpath>
@@ -659,7 +660,7 @@
 	</target>
 	<target name="deploy" depends="bundle">
 		<resolver:deploy artifactsref="output">
-			<remoteRepo refid="hec-nexus-snapshots"/>
+			<remoteRepo refid="hec-nexus-releases"/>
 		</resolver:deploy>
 	</target>
 
