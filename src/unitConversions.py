@@ -1,6 +1,7 @@
 from decimal import *
 from mathComputations import Computation
 import re, string, StringIO, traceback, datetime
+from subprocess import check_output
 
 getcontext().prec = 16 # floating point precision to use
 
@@ -1757,10 +1758,8 @@ def convert(value, from_unit, to_unit) :
 def get_java_resource_format() :
 	buf = StringIO.StringIO()
 	date_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
-	p4_header = "$Header$"
-	p4_header = p4_header.replace("$","")
-	p4_header = p4_header.replace("Header","")
-	buf.write("// Generated from" + p4_header + " on " + date_str + "\n" )
+	git_branch = check_output(["git","branch","--show-current"]).strip()
+	buf.write("// Generated from cwms_database:" + git_branch + " on " + date_str + "\n" )
 	buf.write("// UNIT DEFINITIONS\n")
 	buf.write("//  UnitSystem;UnitName;UnitAliases...;...;\n")
 	for d in [d for d in units_by_param] :
