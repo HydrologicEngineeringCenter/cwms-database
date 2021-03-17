@@ -4,14 +4,14 @@ create or replace package test_missing_shift_points as
 --%rollback(manual)
 --%beforeall(setup)
 --%afterall(teardown)
-   
+
 --%test(Retrieve usgs-stream-rating object that no shift points)
 procedure run_test;
 procedure setup;
 procedure teardown;
 
 
-c_office_id   constant varchar2(3)  := 'SWT';
+c_office_id   constant varchar2(3)  := '&office_id';
 c_rating_spec constant varchar2(37) := 'TULA.Stage;Flow.Logarithmic.USGS-NWIS';
 c_rating_xml constant clob := '
    <ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">
@@ -126,7 +126,7 @@ begin
       p_spec_id_mask   => c_rating_spec,
       p_delete_action  => cwms_util.delete_all,
       p_office_id_mask => c_office_id);
-   commit;   
+   commit;
 end teardown;
 
 procedure setup
@@ -154,7 +154,7 @@ begin
      from av_rating_spec
     where rating_id = c_rating_spec
       and office_id = c_office_id;
-      
+
    for rec1 in (select rating_code from at_rating where rating_spec_code = l_rating_spec_code) loop
       for rec2 in (select rating_code from at_rating where ref_rating_code = rec1.rating_code) loop
          select rating_id into l_rating_spec from av_rating where rating_code = rec2.rating_code;

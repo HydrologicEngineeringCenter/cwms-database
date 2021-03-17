@@ -74,6 +74,14 @@ AS
 						ON (co.office_code = abl.db_office_code)
 		 WHERE	location_code = p_cwms_ts_id.location_code;
 
+		begin
+         select time_zone_name
+           into p_cwms_ts_id.time_zone_id
+           from cwms_time_zone
+          where time_zone_code = p_cwms_ts_spec.time_zone_code;
+		exception
+		   when no_data_found then null;
+      end;
 		--
 		p_cwms_ts_id.location_id :=
 				p_cwms_ts_id.base_location_id
@@ -137,13 +145,10 @@ AS
 				p_cwms_ts_id.location_code := p_cwms_ts_spec.location_code;
 				p_cwms_ts_id.parameter_code := p_cwms_ts_spec.parameter_code;
 				p_cwms_ts_id.version_id := p_cwms_ts_spec.version;
-				p_cwms_ts_id.interval_utc_offset :=
-					p_cwms_ts_spec.interval_utc_offset;
+				p_cwms_ts_id.interval_utc_offset := p_cwms_ts_spec.interval_utc_offset;
 				p_cwms_ts_id.ts_active_flag := p_cwms_ts_spec.active_flag;
 				p_cwms_ts_id.version_flag := p_cwms_ts_spec.version_flag;
 				p_cwms_ts_id.historic_flag := p_cwms_ts_spec.historic_flag;
-
-
 
 				SELECT	cbp.base_parameter_id, ap.sub_parameter_id, u.unit_id,
 							cap.abstract_param_id
@@ -182,6 +187,15 @@ AS
 				  INTO	p_cwms_ts_id.duration_id
 				  FROM	cwms_duration cd
 				 WHERE	duration_code = p_cwms_ts_spec.duration_code;
+
+            begin
+               select time_zone_name
+                 into p_cwms_ts_id.time_zone_id
+                 from cwms_time_zone
+                where time_zone_code = p_cwms_ts_spec.time_zone_code;
+            exception
+               when no_data_found then null;
+            end;
 
 		END;
         --
@@ -275,7 +289,8 @@ AS
 						interval = p_cwms_ts_id.interval,
 						interval_utc_offset = p_cwms_ts_id.interval_utc_offset,
 						version_flag = p_cwms_ts_id.version_flag,
-						historic_flag = p_cwms_ts_id.historic_flag
+						historic_flag = p_cwms_ts_id.historic_flag,
+						time_zone_id = p_cwms_ts_id.time_zone_id
 			 WHERE	ts_code = p_cwms_ts_id.ts_code;
 		END IF;
 	END merge_into_at_cwms_ts_id;
@@ -402,6 +417,15 @@ AS
 							p_cwms_ts_id.loc_active_flag
 				  FROM	at_physical_location apl
 				 WHERE	location_code = p_cwms_ts_id.location_code;
+
+            begin
+               select time_zone_name
+                 into p_cwms_ts_id.time_zone_id
+                 from cwms_time_zone
+                where time_zone_code = p_cwms_ts_spec.time_zone_code;
+            exception
+               when no_data_found then null;
+            end;
 		END;
 
 		--
@@ -528,6 +552,14 @@ AS
 				  FROM	cwms_duration cd
 				 WHERE	duration_code = p_cwms_ts_spec.duration_code;
 
+            begin
+               select time_zone_name
+                 into p_cwms_ts_id.time_zone_id
+                 from cwms_time_zone
+                where time_zone_code = p_cwms_ts_spec.time_zone_code;
+            exception
+               when no_data_found then null;
+            end;
 				--
 				SELECT	co.office_id, abl.base_location_id, apl.sub_location_id,
 							NVL (apl.active_flag, 'T'), abl.db_office_code,
@@ -544,6 +576,7 @@ AS
 							JOIN cwms_office co
 								ON (co.office_code = abl.db_office_code)
 				 WHERE	location_code = p_cwms_ts_id.location_code;
+
 
 				--
 				p_cwms_ts_id.location_id :=

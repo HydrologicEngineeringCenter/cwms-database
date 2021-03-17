@@ -43,7 +43,7 @@ project {
         buildType(Build)
         buildType(Deploy)
     }.buildTypes().forEach { buildType(it) }
-    
+
 }
 
 object Helpers {
@@ -90,11 +90,11 @@ object Build : BuildType({
         script {
             name = "Destroy Database In case of prevous failure"
             executionMode = BuildStep.ExecutionMode.ALWAYS
-            scriptContent = Helpers.readScript("scripts/destroy_database.sh");            
+            scriptContent = Helpers.readScript("scripts/destroy_database.sh");
         }
         script {
             name = "Create PDB"
-            scriptContent = Helpers.readScript("scripts/create_database.sh")            
+            scriptContent = Helpers.readScript("scripts/create_database.sh")
         }
         script {
             name = "Create Tablespaces"
@@ -109,19 +109,19 @@ object Build : BuildType({
                 CREATE TABLESPACE "CWMS_AQ" DATAFILE '&data_file_prefix.cwms_aq.tblspc' SIZE 2m AUTOEXTEND ON NEXT 20m;
                 CREATE TABLESPACE "CWMS_AQ_EX" DATAFILE '&data_file_prefix.cwms_aq_ex.tblspc' SIZE 2m AUTOEXTEND ON NEXT 20m;
                 EOF
-            """.trimIndent()            
+            """.trimIndent()
         }
         ant {
             name = "Install CWMS Database"
             mode = antFile {
             }
             targets = "clean,build"
-            antArguments = "-Dbuilduser.overrides=output/overrides.xml"            
+            antArguments = "-Dbuilduser.overrides=output/overrides.xml"
         }
         ant {
             name = "Run Tests"
             targets = "test"
-            antArguments = "-Dbuilduser.overrides=output/overrides.xml"            
+            antArguments = "-Dbuilduser.overrides=output/overrides.xml"
         }
         ant {
             name = "Run Generate Test Bundle (will include generated artifacts)"
@@ -131,8 +131,8 @@ object Build : BuildType({
         script {
             name = "Destroy Database Since we are done"
             executionMode = BuildStep.ExecutionMode.ALWAYS
-            scriptContent = Helpers.readScript("scripts/destroy_database.sh");            
-        }        
+            scriptContent = Helpers.readScript("scripts/destroy_database.sh");
+        }
     }
 
     triggers {
@@ -184,7 +184,7 @@ object Deploy : BuildType({
         root(DslContext.settingsRoot)
     }
 
-    params {        
+    params {
         password("env.SYS_PASSWORD", "credentialsJSON:e335ba71-db80-4491-8ea3-a9ca51bfa6d7")
     }
 
@@ -196,17 +196,17 @@ object Deploy : BuildType({
         script {
             name = "Generate Overrides file and Parameters"
             scriptContent = Helpers.readScript("scripts/setup_parameters.sh");
-        }        
+        }
         script {
             name = "Create PDB"
-            scriptContent = Helpers.readScript("scripts/create_database.sh")            
+            scriptContent = Helpers.readScript("scripts/create_database.sh")
         }
         ant {
             name = "Install CWMS Database"
             mode = antFile {
             }
             targets = "clean,build"
-            antArguments = "-Dbuilduser.overrides=output/overrides.xml"            
+            antArguments = "-Dbuilduser.overrides=output/overrides.xml"
         }
         ant {
             name = "Cleanup Generated Files"
@@ -217,13 +217,13 @@ object Deploy : BuildType({
             name = "Build Bundle"
             mode = antFile {}
             targets = "deploy"
-            antArguments = "-Dbuilduser.overrides=output/overrides.xml"            
+            antArguments = "-Dbuilduser.overrides=output/overrides.xml"
         }
         script {
             name = "Destroy Database Since we are done"
             executionMode = BuildStep.ExecutionMode.ALWAYS
-            scriptContent = Helpers.readScript("scripts/destroy_database.sh");            
-        }        
+            scriptContent = Helpers.readScript("scripts/destroy_database.sh");
+        }
     }
 
     triggers {
@@ -238,11 +238,11 @@ object Deploy : BuildType({
 
         }
 
-    } 
+    }
 
     requirements {
         contains("docker.server.osType", "linux")
     }
-    
+
 
 })
