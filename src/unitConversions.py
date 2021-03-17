@@ -1846,4 +1846,4 @@ if __name__ == "__main__" :
 # 				else :
 # 					print("1 %s = %s (%s) %s " % (from_unit, factor, convert(1, from_unit, to_unit), to_unit))
 
-	print get_java_resource_format()
+	print( get_java_resource_format() )
