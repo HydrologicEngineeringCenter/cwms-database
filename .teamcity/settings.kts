@@ -66,6 +66,8 @@ object Build : BuildType({
         src/buildCWMS_DB.log => buildinfo/
         build/coverage.zip => /
         build/resources => resources.zip
+        build/resources.jar =>
+        build/docs.zip =>
     """.trimIndent()
 
     params {
@@ -117,8 +119,14 @@ object Build : BuildType({
             antArguments = "-Dbuilduser.overrides=output/overrides.xml"            
         }
         ant {
+            name = "Run Tests"
             targets = "test"
             antArguments = "-Dbuilduser.overrides=output/overrides.xml"            
+        }
+        ant {
+            name = "Run Generate Test Bundle (will include generated artifacts)"
+            targets = "bundle"
+            antArguments = "-Dbuilduser.overrides=output/overrides.xml"
         }
         script {
             name = "Destroy Database Since we are done"
@@ -198,6 +206,11 @@ object Deploy : BuildType({
             mode = antFile {
             }
             targets = "clean,build"
+            antArguments = "-Dbuilduser.overrides=output/overrides.xml"            
+        }
+        ant {
+            name = "Cleanup Generated Files"
+            targets = "clean-output-files"
             antArguments = "-Dbuilduser.overrides=output/overrides.xml"            
         }
         ant {
