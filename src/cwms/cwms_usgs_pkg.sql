@@ -759,8 +759,8 @@ function get_ts_id(
  * @return The time series data in the requested format as a CLOB
  *
  * @see https://waterservices.usgs.gov/rest/IV-Service.html
- * @see http://en.wikipedia.org/wiki/JSON
- * @see http://his.cuahsi.org/wofws.html
+ * @see https://en.wikipedia.org/wiki/JSON
+ * @see https://his.cuahsi.org/wofws.html
  * @see http://www.waterml2.org/
  */
 function get_ts_data(
@@ -816,10 +816,10 @@ function get_ts_data(
  * @param p_office_id  The office to retrieve the data for. If NULL or not specified, the session user's default office is used
  * @return The time series data in the requested format as a CLOB
  *
- * @see http://en.wikipedia.org/wiki/ISO_8601#Combined_date_and_time_representations
+ * @see https://en.wikipedia.org/wiki/ISO_8601#Combined_date_and_time_representations
  * @see https://waterservices.usgs.gov/rest/IV-Service.html
- * @see http://en.wikipedia.org/wiki/JSON
- * @see http://his.cuahsi.org/wofws.html
+ * @see https://en.wikipedia.org/wiki/JSON
+ * @see https://his.cuahsi.org/wofws.html
  * @see http://www.waterml2.org/
  */
 function get_ts_data(
