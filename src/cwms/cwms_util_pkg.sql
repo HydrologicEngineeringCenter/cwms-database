@@ -266,7 +266,8 @@ AS
      *   separator.
      *
      * @return The nth delimited string in the input string or <code><big>NULL</big></code>
-     *   if no such string exists.
+     *   if no such string exists. If p_max_split is non-NULL and p_return_index > p_max_split+1,
+     *   the function returns NULL.
      */
    function split_text (p_text        in varchar2,
                 p_return_index in integer ,
@@ -300,7 +301,7 @@ AS
                         p_separator   IN VARCHAR2 DEFAULT NULL ,
                         p_max_split   IN INTEGER DEFAULT NULL
                        )
-      RETURN str_tab_t result_cache;
+      RETURN str_tab_t;
    /**
      * Splits string into a table of strings using the specified delimiter.
      * If no delmiter is specified, the string is split around whitespace.
@@ -327,7 +328,7 @@ AS
                         p_separator   IN VARCHAR2 DEFAULT NULL ,
                         p_max_split   IN INTEGER DEFAULT NULL
                        )
-      RETURN str_tab_t;
+      return str_tab_t;
    function split_text_regexp(
       p_text               in varchar2,
       p_separator          in varchar2,

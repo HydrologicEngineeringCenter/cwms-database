@@ -1429,6 +1429,69 @@ as
          RAISE;
    END create_view;
 
+   --------------------------------------------------------------------------------
+   -- function split_text_ex
+   --
+   function split_text_ex(
+      p_text               in clob,
+      p_delimiter          in varchar2,
+      p_is_regex           in varchar2,
+      p_regex_flags        in varchar2 default null,
+      p_include_delimiters in varchar2 default 'F',
+      p_return_index       in integer  default null,
+      p_max_split          in integer  default null)
+      return str_tab_t
+   is
+      l_results            str_tab_t;
+      l_start_pos          integer;
+      l_end_pos            integer;
+      l_delimiter_len      integer;
+      l_split_count        integer;
+      l_is_regex           boolean;
+      l_include_delimiters boolean;
+      l_value              varchar2(32767);
+   begin
+      l_results            := str_tab_t();
+      l_is_regex           := return_true_or_false(p_is_regex);
+      l_include_delimiters := return_true_or_false(p_include_delimiters);
+      l_start_pos          := 1;
+      l_split_count        := 0;
+      if not l_is_regex then
+         l_delimiter_len := length(p_delimiter);
+      end if;   
+      loop
+         if l_is_regex then
+            l_end_pos       := regexp_instr(p_text, p_delimiter, l_start_pos, 1, 0, p_regex_flags);
+            l_delimiter_len := regexp_instr(p_text, p_delimiter, l_start_pos, 1, 1, p_regex_flags) - l_end_pos + 1;
+         else
+            l_end_pos := instr(p_text, p_delimiter, l_start_pos);
+         end if;
+         exit when l_end_pos < l_start_pos;
+         l_value := substr(p_text, l_start_pos, l_end_pos-l_start_pos);
+         l_split_count := l_split_count + 1;
+         if p_return_index is null then
+            l_results.extend;
+            l_results(l_results.count) := l_value;
+         else   
+            if p_return_index = l_split_count then
+               l_results.extend;
+               l_results(1) := l_value;
+               exit;
+            elsif l_include_delimiters then   
+               l_results.extend;
+               l_results(l_results.count) := substr(p_text, l_end_pos, l_delimiter_len);
+            end if;   
+         end if;
+         exit when l_split_count = p_max_split;
+         l_start_pos := l_end_pos + l_delimiter_len;
+      end loop;
+      if p_return_index is null then
+         l_results.extend;
+         l_results(l_results.count) := substr(p_text, l_start_pos);
+      end if;  
+      return l_results;
+   end split_text_ex;
+   
    -------------------------------------------------------------------------------
    -- function split_text(...) overload to return a single element of the split
    --
@@ -1440,95 +1503,21 @@ as
       RETURN VARCHAR2
    IS
       l_str_tab        str_tab_t;
-      l_return_index   INTEGER;
+      l_return_index   integer;
    BEGIN
-      -- default index is first.
-      IF p_return_index IS NULL
-      THEN
-         l_return_index := 1;
-      ELSE
-         l_return_index := p_return_index;
-      END IF;
-
-      --split the text.
-      l_str_tab := split_text (p_text, p_separator, p_max_split);
-
-      --error handle indexes.
-      IF l_return_index <= 0 OR l_return_index > l_str_tab.COUNT
-      THEN
-         RETURN NULL;
-      END IF;
-
-      --grab element.
-      RETURN l_str_tab (p_return_index);
-   END split_text;
-
-   -------------------------------------------------------------------------------
-   -- function split_text(...)
-   --
-   --
-   FUNCTION split_text (p_text        IN VARCHAR2,
-                        p_separator   IN VARCHAR2 DEFAULT NULL,
-                        p_max_split   IN INTEGER DEFAULT NULL)
-      RETURN str_tab_t
-      RESULT_CACHE
-   IS
-      l_str_tab        str_tab_t := str_tab_t ();
-      l_str            VARCHAR2 (32767);
-      l_field          VARCHAR2 (32767);
-      l_pos            PLS_INTEGER;
-      l_sep            VARCHAR2 (32767);
-      l_sep_len        PLS_INTEGER;
-      l_split_count    PLS_INTEGER := 0;
-      l_count_splits   BOOLEAN;
-   BEGIN
-      IF p_text IS NOT NULL
-      THEN
-         l_count_splits := p_max_split IS NOT NULL;
-
-         IF p_separator IS NULL
-         THEN
-            l_str := REGEXP_REPLACE (p_text, '\s+', ' ');
-            l_sep := ' ';
-         ELSE
-            l_str := p_text;
-            l_sep := p_separator;
-         END IF;
-
-         l_sep_len := LENGTH (l_sep);
-
-         LOOP
-            l_pos := INSTR (l_str, l_sep);
-
-            IF l_count_splits AND l_split_count = p_max_split
-            THEN
-               l_pos := 0;
-            END IF;
-
-            IF l_pos = 0
-            THEN
-               l_field := l_str;
-               l_str := NULL;
-            ELSE
-               l_split_count := l_split_count + 1;
-               l_field := SUBSTR (l_str, 1, l_pos - 1);
-               l_str := SUBSTR (l_str, l_pos + l_sep_len);
-            END IF;
-
-            l_str_tab.EXTEND;
-            l_str_tab (l_str_tab.LAST) := l_field;
-            EXIT WHEN l_pos = 0;
-
-            IF l_str IS NULL
-            THEN
-               l_str_tab.EXTEND;
-               l_str_tab (l_str_tab.LAST) := l_str;
-               EXIT;
-            END IF;
-         END LOOP;
-      END IF;
-
-      RETURN l_str_tab;
+      l_str_tab := split_text_ex(
+         p_text               => p_text,
+         p_delimiter          => p_separator,
+         p_is_regex           => 'F',
+         p_regex_flags        => null,
+         p_include_delimiters => 'F',
+         p_return_index       => p_return_index,
+         p_max_split          => p_max_split);
+         
+      return case l_str_tab.count
+             when 0 then null
+             else l_str_tab(1)
+             end;
    END split_text;
 
    -------------------------------------------------------------------------------
@@ -1540,65 +1529,58 @@ as
                         p_max_split   IN INTEGER DEFAULT NULL)
       RETURN str_tab_t
    IS
-      l_clob                CLOB := p_text;
-      l_rows                str_tab_t := str_tab_t ();
-      l_new_rows            str_tab_t;
-      l_buf                 VARCHAR2 (32767) := '';
-      l_chunk               VARCHAR2 (4000);
-      l_clob_offset         BINARY_INTEGER := 1;
-      l_buf_offset          BINARY_INTEGER := 1;
-      l_amount              BINARY_INTEGER;
-      l_clob_len            BINARY_INTEGER;
-      l_last                BINARY_INTEGER;
-      l_done_reading        BOOLEAN;
-      chunk_size   CONSTANT BINARY_INTEGER := 4000;
-   BEGIN
-      IF p_text IS NULL
-      THEN
-         RETURN NULL;
-      END IF;
-
-      l_clob_len := DBMS_LOB.getlength (l_clob);
-      l_amount := LEAST (chunk_size, l_clob_len);
-      DBMS_LOB.open (l_clob, DBMS_LOB.lob_readonly);
-
-      IF l_amount > 0
-      THEN
-         LOOP
-            DBMS_LOB.read (l_clob,
-                           l_amount,
-                           l_clob_offset,
-                           l_chunk);
-            l_clob_offset := l_clob_offset + l_amount;
-            l_done_reading := l_clob_offset > l_clob_len;
-            l_buf := l_buf || l_chunk;
-
-            IF INSTR (l_buf, p_separator) > 0 OR l_done_reading
-            THEN
-               l_new_rows := split_text (l_buf, p_separator);
-
-               FOR i IN 1 .. l_new_rows.COUNT - 1
-               LOOP
-                  l_rows.EXTEND;
-                  l_rows (l_rows.LAST) := l_new_rows (i);
-               END LOOP;
-
-               l_buf := l_new_rows (l_new_rows.COUNT);
-
-               IF l_done_reading
-               THEN
-                  l_rows.EXTEND;
-                  l_rows (l_rows.LAST) := l_buf;
-               END IF;
-            END IF;
-
-            EXIT WHEN l_done_reading;
-         END LOOP;
-      END IF;
-
-      DBMS_LOB.close (l_clob);
-      RETURN l_rows;
+   begin
+      if p_separator is null then
+         return split_text_ex(
+            p_text               => regexp_replace(p_text, '\s+', ' '),
+            p_delimiter          => ' ',
+            p_is_regex           => 'F',
+            p_regex_flags        => null,
+            p_include_delimiters => 'F',
+            p_return_index       => null,
+            p_max_split          => p_max_split);
+      else
+         return split_text_ex(
+            p_text               => p_text,
+            p_delimiter          => p_separator,
+            p_is_regex           => 'F',
+            p_regex_flags        => null,
+            p_include_delimiters => 'F',
+            p_return_index       => null,
+            p_max_split          => p_max_split);
+      end if;
    END split_text;
+
+   -------------------------------------------------------------------------------
+   -- function split_text(...)
+   --
+   --
+   FUNCTION split_text (p_text        IN VARCHAR2,
+                        p_separator   IN VARCHAR2 DEFAULT NULL,
+                        p_max_split   IN INTEGER DEFAULT NULL)
+      RETURN str_tab_t
+   IS
+   begin
+      if p_separator is null then
+         return split_text_ex(
+            p_text               => regexp_replace(p_text, '\s+', ' '),
+            p_delimiter          => ' ',
+            p_is_regex           => 'F',
+            p_regex_flags        => null,
+            p_include_delimiters => 'F',
+            p_return_index       => null,
+            p_max_split          => p_max_split);
+      else
+         return split_text_ex(
+            p_text               => p_text,
+            p_delimiter          => p_separator,
+            p_is_regex           => 'F',
+            p_regex_flags        => null,
+            p_include_delimiters => 'F',
+            p_return_index       => null,
+            p_max_split          => p_max_split);
+         end if;      
+   end split_text;
 
    function split_text_regexp(
       p_text               in varchar2,
@@ -1608,31 +1590,15 @@ as
       p_max_split          in integer default null)
       return str_tab_t
    is
-      l_rows               str_tab_t := str_tab_t();
-      l_start_pos          pls_integer;      -- start position of separator
-      l_end_pos            pls_integer := 1; -- end position of separator plus 1
-      l_len                pls_integer := length(p_text);
-      l_include_separators boolean := is_true(p_include_separators);
    begin
-      loop
-         exit when l_end_pos > l_len;
-         l_start_pos := regexp_instr(p_text, p_separator, l_end_pos, 1, 0, p_match_parameter);
-         if l_start_pos = 0 then
-            l_rows.extend;
-            l_rows(l_rows.count) := substr(p_text, l_end_pos);
-            exit;
-         end if;
-         if l_start_pos > l_end_pos then
-            l_rows.extend;
-            l_rows(l_rows.count) := substr(p_text, l_end_pos, l_start_pos-l_end_pos+1);
-         end if;
-         l_end_pos := regexp_instr(p_text, p_separator, l_start_pos, 1, 1, p_match_parameter);
-         if l_include_separators then
-            l_rows.extend;
-            l_rows(l_rows.count) := substr(p_text, l_start_pos, l_end_pos-l_start_pos);
-         end if;
-      end loop;
-      return l_rows;
+      return split_text_ex(
+         p_text               => p_text,
+         p_delimiter          => p_separator,
+         p_is_regex           => 'T',
+         p_regex_flags        => null,
+         p_include_delimiters => p_include_separators,
+         p_return_index       => null,
+         p_max_split          => p_max_split);
    end split_text_regexp;
 
    -------------------------------------------------------------------------------
