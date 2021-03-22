@@ -1,6 +1,6 @@
 create or replace package test_split_text as
 
---%suite(Test schema for presence of Probability Base Parameter)
+--%suite(Test new [22-Mar-2021] cwms_util.split_text code)
 
 --%beforeall(setup)
 --%rollback(manual)
