@@ -276,6 +276,40 @@ AS
                        )
       RETURN VARCHAR2;
    /**
+     * Retrieves the nth delimited string.
+     * <br>
+     * Sequential delimiters in the source string result in null fields in the table,
+     * except that if no delimiter is supplied, sequential whitespace characters are
+     * treated as a single delimiter.
+     * <br>
+     * If no string can be found to satisfy the input parameters, the function return
+     * <code><big>NULL</big></code>.
+     *
+     * @param p_text The text to be split.
+     *
+     * @param p_return_index Specifies 'n' (which delimited string to return).
+     *
+     * @param p_separator The separator string on which to split the text. If not
+     *   specified or specified as <code><big>NULL</big></code>, the input text will be split
+     *   on all whitespace occurrences.
+     *
+     * @param p_max_split Specifies the maximum number of splits to perform.  The
+     *   maximum number of items returned will be one greater than this number. If
+     *   not specified or specified as <code><big>NULL</big></code>, no maximum will be imposed
+     *   and the input text will be split on every occurrence of the specified
+     *   separator.
+     *
+     * @return The nth delimited string in the input string or <code><big>NULL</big></code>
+     *   if no such string exists. If p_max_split is non-NULL and p_return_index > p_max_split+1,
+     *   the function returns NULL.
+     */
+   function split_text (p_text         in clob,
+                        p_return_index in integer ,
+                        p_separator    in varchar2 default null ,
+                        p_max_split    in integer default null
+                       )
+      return varchar2;
+   /**
      * Splits string into a table of strings using the specified delimiter.
      * If no delmiter is specified, the string is split around whitespace.
      * <br>
@@ -331,6 +365,13 @@ AS
       return str_tab_t;
    function split_text_regexp(
       p_text               in varchar2,
+      p_separator          in varchar2,
+      p_include_separators in varchar2 default 'F',
+      p_match_parameter    in varchar2 default 'c',
+      p_max_split          in integer default null)
+      return str_tab_t;
+   function split_text_regexp(
+      p_text               in clob,
       p_separator          in varchar2,
       p_include_separators in varchar2 default 'F',
       p_match_parameter    in varchar2 default 'c',
