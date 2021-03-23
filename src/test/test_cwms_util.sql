@@ -1,24 +1,35 @@
-create or replace package test_split_text as
+create or replace package test_cwms_util as
 
---%suite(Test new [22-Mar-2021] cwms_util.split_text code)
+--%suite(Test cwms_util package code)
 
 --%beforeall(setup)
+--%afterall(teardown)
 --%rollback(manual)
 
---%test(Test normal split all, with default delimiter)
-procedure test_no_regex_split_all_default_delimiter;
+--%test(Test split_text {/no regex/split all/default delimiter})
+procedure split_text_no_regex_split_all_default_delimiter;
 procedure setup;
+procedure teardown;
+--------------------------
+-- split_text test data --
+--------------------------
 test_data_varchar varchar2(32767);
 test_data_clob    clob;
 len_data_varchar  integer;
 len_data_clob     integer;
-end test_split_text;
+end test_cwms_util;
 /
-create or replace package body test_split_text as
+create or replace package body test_cwms_util as
+--------------------------------------------------------------------------------
+-- procedure setup
+--------------------------------------------------------------------------------
 procedure setup
 is
    l_line varchar(128);
 begin
+   --------------------------------------------------
+   -- initialize the data for the split_text tests --
+   --------------------------------------------------
    test_data_varchar := null;
    test_data_clob    := null;
    len_data_varchar  := 1;
@@ -38,8 +49,18 @@ begin
    dbms_output.put_line(len_data_varchar);
    dbms_output.put_line(len_data_clob);
 end setup;
-
-procedure test_no_regex_split_all_default_delimiter
+--------------------------------------------------------------------------------
+-- procedure teardown
+--------------------------------------------------------------------------------
+procedure teardown
+is
+begin
+   null;
+end teardown;
+--------------------------------------------------------------------------------
+-- procedure split_text_no_regex_split_all_default_delimiter
+--------------------------------------------------------------------------------
+procedure split_text_no_regex_split_all_default_delimiter
 is
    l_parts          str_tab_t;
    l_expected_count integer;
@@ -71,10 +92,10 @@ begin
       ut.expect(l_parts((l_idx - 1) * 3 + 3)).to_equal('line_'||l_idx||'_tab');
       ut.expect(l_parts((l_idx - 1) * 3 + 4)).to_equal('line_'||l_idx||'_newline');
    end loop;
-end test_no_regex_split_all_default_delimiter;
+end split_text_no_regex_split_all_default_delimiter;
 
 
-end test_split_text;
+end test_cwms_util;
 /
 
-grant execute on test_split_text to cwms_user;
+grant execute on test_cwms_util to cwms_user;
