@@ -6,7 +6,7 @@
 
   <groupId>mil.army.usace.hec</groupId>
   <artifactId>cwms-database-schema</artifactId>
-  <version>18.1.12</version>
+  <version>18.1.13</version>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
