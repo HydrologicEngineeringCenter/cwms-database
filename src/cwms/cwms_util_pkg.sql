@@ -363,6 +363,21 @@ AS
                         p_max_split   IN INTEGER DEFAULT NULL
                        )
       return str_tab_t;
+   /**
+     * Splits VARCHAR2 text into a table of strings based on a regular expression delimiter
+     *
+     * @param p_text               The text to split
+     * @param p_separator          The regular expression delimiter
+     * @param p_include_separators A flag ('T'/'F') that specifies whether to include the delimiters in the returned table. If not specified, no delimiters will be included.
+     * @param p_match_parameter    A string that specifies how to use the regular expression. See documentation for the Oracle function REGEXP_COUNT for more information.
+     *                             If not specified, 'c' (case sensitive, text is treated as a sinle line, period does not match newline characters, whitespace characters in the regular expression are significant) is used.
+     * @param p_max_split          The maximum number of splits to perform. The number of rows in the resulting table will be one more than this number (one more than twice this number if p_include_separators is 'T'),
+     *                             and the last row in the table will include all of the text beyond the 'nth' delimiter where 'n' is the same as p_max_split.
+     *                             If specified, and greater than the number of time that p_text can be split otherwise, the returned table will have zero rows.
+     *                             If not specified, no maximum number of splits is used.
+     *
+     * @return The table of strings resulting in splitting p_text using the specified parameters.
+     */
    function split_text_regexp(
       p_text               in varchar2,
       p_separator          in varchar2,
@@ -370,12 +385,53 @@ AS
       p_match_parameter    in varchar2 default 'c',
       p_max_split          in integer default null)
       return str_tab_t;
+   /**
+     * Splits CLOB text into a table of strings based on a regular expression delimiter
+     *
+     * @param p_text               The text to split
+     * @param p_separator          The regular expression delimiter
+     * @param p_include_separators A flag ('T'/'F') that specifies whether to include the delimiters in the returned table. If not specified, no delimiters will be included.
+     * @param p_match_parameter    A string that specifies how to use the regular expression. See documentation for the Oracle function REGEXP_COUNT for more information.
+     *                             If not specified, 'c' (case sensitive, text is treated as a sinle line, period does not match newline characters, whitespace characters in the regular expression are significant) is used.
+     * @param p_max_split          The maximum number of splits to perform. The number of rows in the resulting table will be one more than this number (one more than twice this number if p_include_separators is 'T'),
+     *                             and the last row in the table will include all of the text beyond the 'nth' delimiter where 'n' is the same as p_max_split.
+     *                             If specified, and greater than the number of time that p_text can be split otherwise, the returned table will have zero rows.
+     *                             If not specified, no maximum number of splits is used.
+     *
+     * @return The table of strings resulting in splitting p_text using the specified parameters.
+     */
    function split_text_regexp(
       p_text               in clob,
       p_separator          in varchar2,
       p_include_separators in varchar2 default 'F',
       p_match_parameter    in varchar2 default 'c',
       p_max_split          in integer default null)
+      return str_tab_t;
+   /**
+     * Splits text into a table of strings based on a delimiter
+     *
+     * @param p_text               The text to split
+     * @param p_delimiter          The delimiter to use for splitting the text
+     * @param p_is_regex           A flag ('T'/'F') that specifies whether to use the delimiter as a regular expression ('T') or a text literal ('F')
+     * @param p_regex_flags        A string that specifies how to use the regular expression if p_is_regex is 'T'. See documentation for the Oracle function REGEXP_COUNT for more information.
+     *                             If not specified, the Oracle default (case sensitive, text is treated as a sinle line, period does not match newline characters, whitespace characters in the regular expression are significant) is used.
+     * @param p_include_delimiters A flag ('T'/'F') that specifies whether to include the delimiters in the returned table. If not specified, no delimiters will be included.
+     * @param p_return_index       If specifed and not NULL, only the 'nth' delimited string is retuned in the only row in the table. If not specified or NULL, the table will include all delimited strings (subject to p_max_split).
+     * @param p_max_split          The maximum number of splits to perform. The number of rows in the resulting table will be one more than this number (one more than twice this number if p_include_delimiters is 'T'),
+     *                             and the last row in the table will include all of the text beyond the 'nth' delimiter where 'n' is the same as p_max_split.
+     *                             If specified, and greater than the number of time that p_text can be split otherwise, the returned table will have zero rows.
+     *                             If not specified, no maximum number of splits is used.
+     *
+     * @return The table of strings resulting in splitting p_text using the specified parameters.
+     */
+   function split_text_ex(
+      p_text               in clob,
+      p_delimiter          in varchar2,
+      p_is_regex           in varchar2,
+      p_regex_flags        in varchar2 default null,
+      p_include_delimiters in varchar2 default 'F',
+      p_return_index       in integer  default null,
+      p_max_split          in integer  default null)
       return str_tab_t;
    /**
      * Joins a table of strings into a single string using the specified delimiter.

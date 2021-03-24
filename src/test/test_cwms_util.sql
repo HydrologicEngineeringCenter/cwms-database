@@ -26,6 +26,8 @@ procedure split_text_regex_split_all_include_delimiters;
 procedure split_text_regex_max_split_no_include_delimiters;
 --%test(Test split_text {/regex/max split/include delimiters})
 procedure split_text_regex_max_split_include_delimiters;
+--%test(Test split_text {/regex/get index})
+procedure split_text_regex_get_index;
 procedure setup;
 procedure teardown;
 --------------------------
@@ -82,6 +84,14 @@ is
    l_expected_count integer;
    l_idx            integer;
 begin
+   -------------------------------------------
+   -- make sure we pass the trivial example --
+   -------------------------------------------
+   l_parts := cwms_util.split_text('1 2 3 4 5 6 7 8 9 10');
+   ut.expect(l_parts.count).to_equal(10);
+   for i in 1..l_parts.count loop
+      ut.expect(to_number(l_parts(i))).to_equal(i);
+   end loop;
    ----------------------------
    -- first the varchar data --
    ----------------------------
@@ -412,26 +422,54 @@ begin
       l_len := l_len + case when l_parts(i) is null then 0 else length(l_parts(i)) end;
    end loop;
    ut.expect(length(l_parts(l_parts.count))).to_be_greater_than(l_len);
---   ------------------------
---   -- next the clob data --
---   ------------------------
---   l_parts := cwms_util.split_text_regexp(test_data_clob, '\s+', 'T', 'c', l_max_split);
---   ut.expect(l_parts.count).to_equal(2*l_max_split+1);
---   for i in 1..3 loop
---      l_idx := trunc(dbms_random.value(2, l_max_split/3));
---      ut.expect(l_parts((l_idx - 1) * 6 + 3)).to_equal('line_'||l_idx||'_space');
---      ut.expect(l_parts((l_idx - 1) * 6 + 4)).to_equal(' ');
---      ut.expect(l_parts((l_idx - 1) * 6 + 5)).to_equal('line_'||l_idx||'_tab');
---      ut.expect(l_parts((l_idx - 1) * 6 + 6)).to_equal(chr(9));
---      ut.expect(l_parts((l_idx - 1) * 6 + 7)).to_equal('line_'||l_idx||'_newline');
---      ut.expect(l_parts((l_idx - 1) * 6 + 8)).to_equal(chr(10)||chr(10));
---   end loop;
---   l_len := 0;
---   for i in 1..2*l_max_split loop
---      l_len := l_len + case when l_parts(i) is null then 0 else length(l_parts(i)) end;
---   end loop;
---   ut.expect(length(l_parts(2*l_max_split+1))).to_be_greater_than(l_len);
+   ------------------------
+   -- next the clob data --
+   ------------------------
+   l_parts := cwms_util.split_text_regexp(test_data_clob, '\s+', 'T', 'c', l_max_split);
+   ut.expect(l_parts.count).to_equal(2*l_max_split+1);
+   for i in 1..3 loop
+      l_idx := trunc(dbms_random.value(2, l_max_split/3));
+      ut.expect(l_parts((l_idx - 1) * 6 + 3)).to_equal('line_'||l_idx||'_space');
+      ut.expect(l_parts((l_idx - 1) * 6 + 4)).to_equal(' ');
+      ut.expect(l_parts((l_idx - 1) * 6 + 5)).to_equal('line_'||l_idx||'_tab');
+      ut.expect(l_parts((l_idx - 1) * 6 + 6)).to_equal(chr(9));
+      ut.expect(l_parts((l_idx - 1) * 6 + 7)).to_equal('line_'||l_idx||'_newline');
+      ut.expect(l_parts((l_idx - 1) * 6 + 8)).to_equal(chr(10)||chr(10));
+   end loop;
+   l_len := 0;
+   for i in 1..2*l_max_split loop
+      l_len := l_len + case when l_parts(i) is null then 0 else length(l_parts(i)) end;
+   end loop;
+   ut.expect(length(l_parts(2*l_max_split+1))).to_be_greater_than(l_len);
 end split_text_regex_max_split_include_delimiters;
+--------------------------------------------------------------------------------
+-- procedure split_text_regex_get_index
+--------------------------------------------------------------------------------
+procedure split_text_regex_get_index
+is
+   l_idx integer;
+begin
+   ----------------------------
+   -- first the varchar data --
+   ----------------------------
+   for i in 1..3 loop
+      l_idx := trunc(dbms_random.value(2, len_data_varchar/2));
+      ut.expect(cwms_util.split_text_ex(test_data_varchar, '\s+', 'T', 'c', 'F', (l_idx - 1) * 3 + 2, null)(1)).to_equal('line_'||l_idx||'_space');
+      ut.expect(cwms_util.split_text_ex(test_data_varchar, '\s+', 'T', 'c', 'F', (l_idx - 1) * 3 + 3, null)(1)).to_equal('line_'||l_idx||'_tab');
+      ut.expect(cwms_util.split_text_ex(test_data_varchar, '\s+', 'T', 'c', 'F', (l_idx - 1) * 3 + 4, null)(1)).to_equal('line_'||l_idx||'_newline');
+   end loop;
+   ut.expect(cwms_util.split_text_ex(test_data_varchar, '\s+', 'T', 'c', 'F', len_data_varchar*2).count).to_equal(0);
+   ------------------------
+   -- next the clob data --
+   ------------------------
+   for i in 1..3 loop
+      l_idx := trunc(dbms_random.value(2, len_data_clob/2));
+      ut.expect(cwms_util.split_text_ex(test_data_clob, '\s+', 'T', 'c', 'F', (l_idx - 1) * 3 + 2, null)(1)).to_equal('line_'||l_idx||'_space');
+      ut.expect(cwms_util.split_text_ex(test_data_clob, '\s+', 'T', 'c', 'F', (l_idx - 1) * 3 + 3, null)(1)).to_equal('line_'||l_idx||'_tab');
+      ut.expect(cwms_util.split_text_ex(test_data_clob, '\s+', 'T', 'c', 'F', (l_idx - 1) * 3 + 4, null)(1)).to_equal('line_'||l_idx||'_newline');
+   end loop;
+   ut.expect(cwms_util.split_text_ex(test_data_clob, '\s+', 'T', 'c', 'F', len_data_varchar*2).count).to_equal(0);
+end split_text_regex_get_index;
 
 
 end test_cwms_util;

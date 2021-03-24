@@ -1442,27 +1442,31 @@ as
       p_max_split          in integer  default null)
       return str_tab_t
    is
-      l_results             str_tab_t;
-      l_value_start_pos     integer;
-      l_delimiter_start_pos integer;
-      l_delimiter_end_pos   integer;
-      l_delimiter_len       integer;
-      l_split_count         integer;
-      l_is_regex            boolean;
-      l_include_delimiters  boolean;
-      l_value               varchar2(32767);
-      l_length              integer;
+      l_results               str_tab_t;
+      l_value_start_pos       integer;
+      l_delimiter_start_pos   integer;
+      l_delimiter_end_pos     integer;
+      l_delimiter_len         integer;
+      l_split_count           integer;
+      l_is_regex              boolean;
+      l_include_delimiters    boolean;
+      l_value                 varchar2(32767);
+      l_length                integer;
+      l_ends_with_delimiteter boolean := false;
    begin
       l_length             := dbms_lob.getlength(p_text);
       l_results            := str_tab_t();
       l_is_regex           := return_true_or_false(p_is_regex);
-      l_include_delimiters := return_true_or_false(p_include_delimiters);
+      l_include_delimiters := case when p_return_index is null then return_true_or_false(p_include_delimiters) else false end;
       l_value_start_pos    := 1;
       l_split_count        := 0;
       if not l_is_regex then
          l_delimiter_len := length(p_delimiter);
       end if;
       loop
+         -------------------------------
+         -- locate the next delimiter --
+         -------------------------------
          if l_is_regex then
             l_delimiter_start_pos := regexp_instr(p_text, p_delimiter, l_value_start_pos, 1, 0, p_regex_flags);
             l_delimiter_end_pos   := regexp_instr(p_text, p_delimiter, l_value_start_pos, 1, 1, p_regex_flags) - 1;
@@ -1470,40 +1474,44 @@ as
          else
             l_delimiter_start_pos := instr(p_text, p_delimiter, l_value_start_pos);
          end if;
-         exit when l_delimiter_start_pos < l_value_start_pos;
+         exit when l_delimiter_start_pos = 0;
          l_value := substr(p_text, l_value_start_pos, l_delimiter_start_pos-l_value_start_pos);
          l_split_count := l_split_count + 1;
          if p_return_index is null then
+            ----------------------
+            -- grow the results --
+            ----------------------
             l_results.extend;
             l_results(l_results.count) := l_value;
-            if l_include_delimiters and (p_max_split is null or l_split_count < p_max_split) then
+            if l_include_delimiters and (p_max_split is null or l_split_count <= p_max_split) then
                l_results.extend;
                l_results(l_results.count) := substr(p_text, l_delimiter_start_pos, l_delimiter_len);
             end if;   
          elsif p_return_index = l_split_count then
+            -----------------------------------
+            -- return the value at the index --
+            -----------------------------------
             l_results.extend;
             l_results(1) := l_value;
             exit;
          end if;
-         if l_split_count = p_max_split then
-            l_results.extend;
-            l_results(l_results.count) := substr(p_text, l_value_start_pos);
-            exit;
-         end if;
          l_value_start_pos := l_delimiter_start_pos + l_delimiter_len;
-         if l_value_start_pos > l_length then
-            l_results.extend; -- add a null value for the delimiter
+         exit when l_split_count = p_max_split and l_value_start_pos <= l_length;
+         if p_return_index is null and l_delimiter_start_pos + l_delimiter_len > l_length then
+            ----------------------------------------------------
+            -- text ends with delimiter, so append null value --
+            ----------------------------------------------------
+            l_results.extend;
             exit;
          end if;
       end loop;
-      if p_return_index = l_split_count then -- false if p_return index is null
-         null;
-      elsif l_split_count = p_max_split then -- false if p_max_split is null
-         null;
-      elsif l_value_start_pos <= l_length then
-            l_results.extend;
-            l_results(l_results.count) := substr(p_text, l_value_start_pos);
-      end if;      
+      if l_value_start_pos <= l_length then
+         --------------------------------------------
+         -- append everything after the last split --
+         --------------------------------------------
+         l_results.extend;
+         l_results(l_results.count) := substr(p_text, l_value_start_pos);
+      end if;
       return l_results;
    end split_text_ex;
 
