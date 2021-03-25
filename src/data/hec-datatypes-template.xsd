@@ -93,7 +93,6 @@
     <!ENTITY cwms-base-id "[^.-]{1,16}">
     <!ENTITY cwms-sub-location "[^.]{1,40}">
     <!ENTITY cwms-sub-parameter "[^.]{1,32}">
-    <!ENTITY cwms-unit "`select unit_id from av_unit order by upper(unit_id)`">
     <!ENTITY cwms-unit ".{1,32}">
     <!ENTITY cwms-unit-values "`select unit_id from av_unit order by upper(unit_id)`">
     <!ENTITY cwms-gridtype "(HRAP|SHG)">
