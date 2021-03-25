@@ -6599,7 +6599,13 @@ as
          loop
             l_action := regexp_substr(l_value, '`select.*?`');
             exit when l_action is null;
-            execute immediate substr(l_action, 2, length(l_action)-2) bulk collect into l_action_results;
+            begin
+               execute immediate substr(l_action, 2, length(l_action)-2) bulk collect into l_action_results;
+            exception
+               when others then
+                  dbms_output.put_line('ERROR executing "'||substr(l_action, 2, length(l_action)-2)||'")');
+                  raise;
+            end;
             case l_action_results.count
             when 0 then l_value := replace(l_value, l_action, null);
             when 1 then l_value := replace(l_value, l_action, l_action_results(1));
