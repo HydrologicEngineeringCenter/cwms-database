@@ -6565,6 +6565,7 @@ as
       end anycase;
 
    begin
+      dbms_output.enable(2000000);
       select version
         into l_schema_version
         from av_db_change_log v
@@ -6583,6 +6584,7 @@ as
       -- process the entities in the DTD --
       -------------------------------------
       for rec in (select trim(column_value) as line from table(split_text(l_dtd, chr(10))) where instr(column_value, '<!ENTITY ') > 0) loop
+         dbms_output.put_Line(rec.line);
          l_name  := regexp_substr(rec.line, '<!ENTITY\s+(\S+)\s*"([^"]+)"\s*>', 1, 1, 'n', 1);
          l_value := regexp_substr(rec.line, '<!ENTITY\s+(\S+)\s*"([^"]+)"\s*>', 1, 1, 'n', 2);
          --------------------------------
@@ -6603,7 +6605,7 @@ as
                execute immediate substr(l_action, 2, length(l_action)-2) bulk collect into l_action_results;
             exception
                when others then
-                  cwms_err.raise('ERROR', 'Cannot execute '||l_action);
+                  cwms_err.raise('ERROR', sqlcode||chr(10)||sqlerrm||chr(10)||'Processing {'||rec.line||'}');
             end;
             case l_action_results.count
             when 0 then l_value := replace(l_value, l_action, null);
