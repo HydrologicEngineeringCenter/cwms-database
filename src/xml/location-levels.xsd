@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace = "http://www.hec.usace.army.mil/xmlSchema/cwms/location-levels"
+           xmlns:ll = "http://www.hec.usace.army.mil/xmlSchema/cwms/location-levels"
+	       xmlns:dt="http://www.hec.usace.army.mil/xmlSchema/cwms/hec-datatypes"
+           elementFormDefault="unqualified" xmlns:Q1="http://www.hec.usace.army.mil/xmlSchema/cwms/location_levels" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:Q2="http://www.w3.org/2001/XMLSchema" xmlns:Q3="http://www.w3.org/2001/XMLSchema" xmlns:Q4="http://www.w3.org/2001/XMLSchema" xmlns:Q5="http://www.w3.org/2001/XMLSchema" xmlns:Q6="http://www.w3.org/2001/XMLSchema" xmlns:Q7="http://www.w3.org/2001/XMLSchema" xmlns:Q8="http://www.w3.org/2001/XMLSchema" xmlns:Q9="http://www.w3.org/2001/XMLSchema" xmlns:Q10="http://www.w3.org/2001/XMLSchema" xmlns:Q11="http://www.w3.org/2001/XMLSchema" xmlns:Q12="http://www.w3.org/2001/XMLSchema" xmlns:Q13="http://www.w3.org/2001/XMLSchema" xmlns:Q14="http://www.w3.org/2001/XMLSchema" xmlns:Q15="http://www.w3.org/2001/XMLSchema" xmlns:Q16="http://www.w3.org/2001/XMLSchema" xmlns:Q17="http://www.w3.org/2001/XMLSchema" xmlns:Q18="http://www.w3.org/2001/XMLSchema" xmlns:Q19="http://www.w3.org/2001/XMLSchema" xmlns:Q20="http://www.w3.org/2001/XMLSchema" xmlns:Q21="http://www.hec.usace.army.mil/xmlSchema/cwms/hec-datatypes">
+           
+    <xs:import schemaLocation="hec-datatypes.xsd" namespace="http://www.hec.usace.army.mil/xmlSchema/cwms/hec-datatypes"/>
+
+    <xs:complexType name="double-wth-unit-type">
+    	<xs:simpleContent>
+    		<xs:extension base="xs:double">
+    			<xs:attribute name="unit" type="dt:cwms-unit-type" use="required"/>
+    		</xs:extension>
+    	</xs:simpleContent>
+    </xs:complexType>
+
+    <xs:complexType name="attribute-type">
+	    <xs:annotation>
+			<xs:documentation>
+				Holds a location level attribute 
+			</xs:documentation>
+	    </xs:annotation>
+		<xs:sequence>
+			<xs:element name="attribute-id" type="dt:cwms-location-level-attr-id-type"/>
+			<xs:element name="value" type="ll:double-wth-unit-type"/>
+		</xs:sequence>
+	</xs:complexType>
+
+    <xs:complexType name="attribute-with-comment-type">
+	    <xs:annotation>
+			<xs:documentation>
+				Holds a location level attribute with an optional comment
+			</xs:documentation>
+	    </xs:annotation>
+		<xs:sequence>
+			<xs:element name="attribute-id" type="dt:cwms-location-level-attr-id-type"/>
+			<xs:element name="comment" type="dt:text256-type" minOccurs="0"/>
+			<xs:element name="value" type="ll:double-wth-unit-type"/>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="seasonal-value-type">
+	    <xs:annotation>
+			<xs:documentation>
+				Holds a single seasonal value 
+			</xs:documentation>
+	    </xs:annotation>
+		<xs:sequence>
+			<xs:element name="interval-offset" type="xs:duration"/>
+			<xs:element name="level-value" type="ll:double-wth-unit-type"/>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="regularly-varying-type">
+	    <xs:annotation>
+			<xs:documentation>
+				Holds regularly-varying (seasonal) values 
+			</xs:documentation>
+	    </xs:annotation>
+		<xs:sequence>
+			<xs:element name="interval-origin" type="xs:dateTime"/>
+			<xs:element name="interval-duration" type="xs:duration"/>
+			<xs:element name="seasonal-value" type="ll:seasonal-value-type" minOccurs="1" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:simpleType name="virtual-consituent-type-type">
+	    <xs:annotation>
+			<xs:documentation>
+				Holds the constituent type for a virtual location level constituent 
+			</xs:documentation>
+	    </xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="LOCATION_LEVEL"/>
+			<xs:enumeration value="TIME_SERIES"/>
+			<xs:enumeration value="RATING"/>
+			<xs:enumeration value="FORMULA"/>
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:simpleType name="virtual-constituent-abbr-type">
+	    <xs:annotation>
+			<xs:documentation>
+				Holds the abbreviation for a virtual location level constituent 
+			</xs:documentation>
+	    </xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:minLength value="2"></xs:minLength>
+			<xs:maxLength value="4"></xs:maxLength>
+			<xs:pattern
+				value="([Ll]|[Tt]|[Rr]|[Ff])\w+">
+			</xs:pattern>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:complexType name="virtual-constituent-type">
+	    <xs:annotation>
+			<xs:documentation>
+				Holds virtual location level "value" definition 
+			</xs:documentation>
+	    </xs:annotation>
+		<xs:sequence>
+			<xs:element name="abbreviation" type="ll:virtual-constituent-abbr-type"/>
+			<xs:element name="constituent-type" type="ll:virtual-consituent-type-type"/>
+			<xs:element name="constituent-name" type="dt:cwms-virt-loc-level-constituent-name-type"/>
+			<xs:element name="constituent-attribute" type="ll:attribute-type" minOccurs="0"/>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="virtual-type">
+	    <xs:annotation>
+			<xs:documentation>
+				Holds virtual location level "value" definition 
+			</xs:documentation>
+	    </xs:annotation>
+		<xs:sequence>
+			<xs:element name="connections" type="xs:string"></xs:element>
+			<xs:element name="constituent" type="ll:virtual-constituent-type" minOccurs="2" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="source-entity-type">
+	    <xs:annotation>
+			<xs:documentation>
+				Holds location level label source entity 
+			</xs:documentation>
+	    </xs:annotation>
+    	<xs:simpleContent>
+    		<xs:extension base="dt:id32-type">
+    			<xs:attribute name="id" type="dt:id16-type" use="required"/>
+    		</xs:extension>
+    	</xs:simpleContent>
+	</xs:complexType>
+	
+	<xs:complexType name="level-label-type">
+	    <xs:annotation>
+			<xs:documentation>
+				Holds location level label for a specified configuration 
+			</xs:documentation>
+	    </xs:annotation>
+    	<xs:simpleContent>
+    		<xs:extension base="dt:text49-type">
+    			<xs:attribute name="context" type="xs:string" use="required"/>
+    		</xs:extension>
+    	</xs:simpleContent>
+	</xs:complexType>
+	
+	<xs:complexType name="level-labels-type">
+	    <xs:annotation>
+			<xs:documentation>
+				Holds one or more location level labels 
+			</xs:documentation>
+	    </xs:annotation>
+	    <xs:sequence>
+	    	<xs:element name="label" type="ll:level-label-type" maxOccurs="unbounded"/>
+	    </xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="location-level-type">
+	    <xs:annotation>
+			<xs:documentation>
+				Holds a single instance of any type of location level
+			</xs:documentation>
+	    </xs:annotation>
+		<xs:sequence>
+			<xs:element name="location-level-id" type="dt:cwms-location-level-id-type"/>
+    		<xs:element name="location-level-attribute" type="ll:attribute-with-comment-type" minOccurs="0"/>
+			<xs:element name="effective-date" type="xs:dateTime"/>
+			<xs:element name="expiration-date" type="xs:dateTime" minOccurs="0"/>
+			<xs:element name="level-comment" type="dt:text256-type" minOccurs="0"/>
+			<xs:element name="source-entity" type="ll:source-entity-type" minOccurs="0"/>
+			<xs:element name="labels" type="ll:level-labels-type" minOccurs="0"/>
+			<xs:choice>
+				<xs:element name="constant" type="ll:double-wth-unit-type"/>
+				<xs:element name="regularly-varying" type="ll:regularly-varying-type"/>
+				<xs:element name="irregularly-varying" type="dt:cwms-tsid-type"/>
+				<xs:element name="virtual" type="ll:virtual-type"/>
+			</xs:choice>
+		</xs:sequence>
+		<xs:attribute name="office" type="dt:office-name-type" use="required"/>
+	</xs:complexType>
+	
+	<xs:complexType name="location-levels-type">
+	    <xs:annotation>
+			<xs:documentation>
+				The document type for location levels - zero or more location level elements
+			</xs:documentation>
+	    </xs:annotation>
+		<xs:sequence minOccurs="0" maxOccurs="unbounded">
+			<xs:element name="location-level" type="ll:location-level-type"/>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:element name="location-levels" type="ll:location-levels-type"/>
+
+</xs:schema>

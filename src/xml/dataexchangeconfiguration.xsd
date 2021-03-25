@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://www.hec.usace.army.mil/xmlSchema/cwms/dataexchangeconfiguration"
+           xmlns:dt="http://www.hec.usace.army.mil/xmlSchema/cwms/hec-datatypes"
+           xmlns:dx="http://www.hec.usace.army.mil/xmlSchema/cwms/dataexchangeconfiguration"
+           elementFormDefault="unqualified">
+    <!--
+        Import the data type schema
+    -->
+	<xs:import namespace="http://www.hec.usace.army.mil/xmlSchema/cwms/hec-datatypes"
+          schemaLocation="hec-datatypes.xsd"/>
+    <!--
+        Data store
+    -->
+    <xs:element name="datastore">
+        <xs:complexType>
+            <xs:choice>
+                <xs:element name="dssfile" type="dt:dssfile-type"/>
+                <xs:element name="dssfilemanager" type="dt:dssfilemanager-type"/>
+                <xs:element name="oracle" type="dt:oracle-type"/>
+            </xs:choice>
+        </xs:complexType>
+    </xs:element>
+    <!--
+        Data store reference
+    -->
+    <xs:element name="datastore-ref">
+        <xs:complexType>
+            <xs:attribute name="id" type="dt:text80-type" use="required"/>
+        </xs:complexType>
+    </xs:element>
+    <!--
+        DSS time series
+    -->
+    <xs:element name="dss-timeseries">
+        <xs:complexType>
+            <xs:simpleContent>
+                <xs:extension base="dt:dss-ts-pathname-type">
+                    <xs:attribute name="datastore-id" use="required" type="dt:text80-type"/>
+                    <xs:attribute name="type"         use="required" type="dt:dss-parameter-type"/>
+                    <xs:attribute name="units"        use="required" type="dt:dss-units-type"/>
+                    <xs:attribute name="timezone"     use="optional" type="dt:time-zone-name-type"  default="UTC"/>
+                    <xs:attribute name="tz-usage"     use="optional" type="dt:time-zone-usage-type" default="Standard"/>
+                </xs:extension>
+            </xs:simpleContent>
+        </xs:complexType>
+    </xs:element>
+    <!--
+        CWMS time series
+    -->
+    <xs:element name="cwms-timeseries">
+        <xs:complexType>
+            <xs:simpleContent>
+                <xs:extension base="dt:cwms-tsid-type">
+                    <xs:attribute name="office-id" use="optional" type="dt:id16-type"/>
+                    <xs:attribute name="datastore-id" use="required" type="dt:text80-type"/>
+                </xs:extension>
+            </xs:simpleContent>
+        </xs:complexType>
+    </xs:element>
+    <!--
+        Time series mapping
+    -->
+    <xs:element name="ts-mapping">
+        <xs:complexType>
+            <xs:choice minOccurs="2" maxOccurs="2">
+                <xs:element ref="dss-timeseries"/>
+                <xs:element ref="cwms-timeseries"/>
+            </xs:choice>
+        </xs:complexType>
+        <!--
+            Unique datastore keys within a mapping
+        -->
+        <xs:key name="mapping-datastore-key">
+            <xs:selector xpath="dss-timeseries|cwms-timeseries"/>
+            <xs:field xpath="@datastore-id"/>
+        </xs:key>
+    </xs:element>
+    <!--
+        Time series mapping set
+    -->
+    <xs:element name="ts-mapping-set">
+        <xs:complexType>
+            <xs:sequence minOccurs="0" maxOccurs="unbounded">
+                <xs:element ref="ts-mapping"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <!--
+        Data exchange set element
+    -->
+    <xs:element name="dataexchange-set">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="description"       minOccurs="0" maxOccurs="1" type="xs:string"/>
+                <xs:element ref="datastore-ref"      minOccurs="2" maxOccurs="2"/>
+                <xs:element name="last-update-time"  minOccurs="0" maxOccurs="1" type="xs:dateTime"/>
+                <xs:element ref="timewindow"         minOccurs="0" maxOccurs="1"/>
+                <xs:element ref="max-interpolate"    minOccurs="0" maxOccurs="1"/>
+                <xs:element name="override-timezone" minOccurs="0" maxOccurs="1" type="dt:time-zone-name-type"/>
+                <xs:element ref="ts-mapping-set"     minOccurs="0" maxOccurs="1"/>
+            </xs:sequence>
+            <xs:attribute name="id" type="dt:text80-type" use="required"/>
+            <xs:attribute name="office-id" use="optional" type="dt:id16-type"/>
+            <xs:attribute name="realtime-source-id" type="dt:id16-type" use="optional"/>
+        </xs:complexType>
+        <!--
+            Unique datastores within exchange set
+        -->
+        <xs:key name="set-datastore-key">
+            <xs:selector xpath="datastore-ref"/>
+            <xs:field xpath="@id"/>
+        </xs:key>
+        <!--
+            dataexchange-set/@realtime-source-id (if present) must refer
+            to one of the exchange set datastores
+        -->
+        <xs:keyref name="set-sourceid-keyref" refer="set-datastore-key">
+            <xs:selector xpath="."/>
+            <xs:field xpath="@realtime-source-id"/>
+        </xs:keyref>
+        <!--
+            Each time series in any included mappings must refer
+            to one of the exchange set datastores
+        -->
+        <xs:keyref name="set-mapping-datastore-keyref" refer="set-datastore-key">
+            <xs:selector xpath="ts-mapping-set/ts-mapping/dss-timeseries|ts-mapping-set/ts-mapping/cwms-timeseries"/>
+            <xs:field xpath="@datastore-id"/>
+        </xs:keyref>
+    </xs:element>
+    <!--
+        Data exchange configuration element
+    -->
+	<xs:element name="dataexchange-configuration">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="office"          minOccurs="0" maxOccurs="unbounded" type="dt:office-type"/>
+                <xs:element ref="datastore"        minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element ref="dataexchange-set" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+        <!--
+            Unique offices in configuration (although none are required here)
+        -->
+        <xs:unique name="office-key">
+            <xs:selector xpath="office"/>
+            <xs:field xpath="@id"/>
+        </xs:unique>
+        <!--
+            Unique datastores in configuration
+        -->
+		<xs:key name="datastore-key">
+			<xs:selector xpath="datastore/*"/>
+			<xs:field xpath="@id"/>
+		</xs:key>
+        <!--
+            Unique exchange sets in configuration
+        -->
+		<xs:key name="set-key">
+			<xs:selector xpath="dataexchange-set"/>
+            <xs:field xpath="@office-id"/>
+			<xs:field xpath="@id"/>
+		</xs:key>
+        <!--
+            Exchange set datastore references valid datastores
+        -->
+		<xs:keyref name="set-datastore-keyref" refer="datastore-key">
+			<xs:selector xpath="dataexchange-set/datastore-ref"/>
+			<xs:field xpath="@id"/>
+		</xs:keyref>
+	</xs:element>
+    <!--
+        CWMS data exchange configuration element
+
+        If no dataexchange-sets, still needs the office and Oracle datastore
+    -->
+    <xs:element name="cwms-dataexchange-configuration">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="office"          minOccurs="1" maxOccurs="unbounded" type="dt:office-type"/>
+                <xs:element ref="datastore"        minOccurs="1" maxOccurs="unbounded"/>
+                <xs:element ref="dataexchange-set" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+        <!--
+            Unique offices in configuration
+        -->
+        <xs:key name="cwms-office-key">
+            <xs:selector xpath="office"/>
+            <xs:field xpath="@id"/>
+        </xs:key>
+        <!--
+            Exchange set office references valid office
+        -->
+        <xs:keyref name="cwms-set-office-ref" refer="cwms-office-key">
+            <xs:selector xpath="dataexchange-set"/>
+            <xs:field xpath="@office-id"/>
+        </xs:keyref>
+        <!--
+            DSS file manager office references valid office
+        -->
+        <xs:keyref name="cwms-filemgr-office-ref" refer="cwms-office-key">
+            <xs:selector xpath="datastore/dssfilemanager"/>
+            <xs:field xpath="@office-id"/>
+        </xs:keyref>
+        <!--
+            Oracle office references valid office
+        -->
+        <xs:keyref name="cwms-oracle-office-ref" refer="cwms-office-key">
+            <xs:selector xpath="datastore/oracle"/>
+            <xs:field xpath="@office-id"/>
+        </xs:keyref>
+        <!--
+            Unique datastores in configuration
+        -->
+        <xs:key name="cwms-datastore-key">
+            <xs:selector xpath="datastore/*"/>
+            <xs:field xpath="@id"/>
+        </xs:key>
+        <!--
+            Unique dss filemanagers for each office
+        -->
+        <xs:key name="cwms-dssfilemgr-key">
+            <xs:selector xpath="datastore/dssfilemanager"/>
+            <xs:field xpath="@office-id"/>
+            <xs:field xpath="@id"/>
+        </xs:key>
+        <!--
+            Unique exchange sets in configuration
+        -->
+		<xs:key name="cwms-set-key">
+			<xs:selector xpath="dataexchange-set"/>
+            <xs:field xpath="@office-id"/>
+			<xs:field xpath="@id"/>
+		</xs:key>
+        <!--
+            Exchange set datastore references to valid datastores
+        -->
+        <xs:keyref name="cwms-datastore-keyref" refer="cwms-datastore-key">
+            <xs:selector xpath="dataexchange-set/datastore-ref"/>
+            <xs:field xpath="@id"/>
+        </xs:keyref>
+        <!--
+            Unique datastore references in dataexchange set
+        -->
+        <xs:key name="cwms-dataset-datastore-key">
+            <xs:selector xpath="dataexchange-set"/>
+            <xs:field xpath="@id"/>
+            <xs:field xpath="datastore-ref/@id"/>
+        </xs:key>
+        <!--
+            DSS timeseries references a valid dss filemanager for that office
+        -->
+        <xs:keyref name="cwms-dataset-datastore-keyref" refer="cwms-dataset-datastore-key">
+            <xs:selector xpath="dataexchange-set"/>
+            <xs:field xpath="@id"/>
+            <xs:field xpath="ts-mapping-set/ts-mapping/*/@datastore-id"/>
+        </xs:keyref>
+        <!--
+            DSS timeseries references a valid dss filemanager for that office
+        -->
+        <xs:keyref name="cwms-dssfilemgr-keyref" refer="cwms-dssfilemgr-key">
+            <xs:selector xpath="dataexchange-set"/>
+            <xs:field xpath="@office-id"/>
+            <xs:field xpath="ts-mapping-set/ts-mapping/dss-timeseries/@datastore-id"/>
+        </xs:keyref>
+	</xs:element>
+    <!--
+        Timewindow element
+    -->
+	<xs:element name="timewindow">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="starttime"/>
+				<xs:element ref="endtime"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+    <xs:element name="starttime" type="dt:starttimespec"/>
+    <xs:element name="endtime" type="dt:endtimespec"/>
+    <xs:element name="max-interpolate" type="dt:interpolate-type"/>
+</xs:schema>
+
+
+
+
+

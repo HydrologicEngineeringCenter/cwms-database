@@ -1,0 +1,1135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE xs:schema [
+    <!--
+ 	This file must be processed by the function CWMS_UTIL.MAKE_HEC_DATATYPES_XSD before use. The
+ 	output of the function should be stored to the file "hec-datatypes.xsd" for use in other CWMS
+ 	XML schema files.
+
+        The following replacements are supported in the DTD section of this file:
+
+           * `select ...` will peform the specified query and insert the results at the query location
+              NULL or scalar results simply are inserted as-is
+              STR_TAB_T results are inserted as (<first>|<next>...)
+              No other result types are suppported
+
+           * `anycase(...)` will transform all alphabetic characters in the argument to upper/lower classes
+              e.g., `anycase((a1|bc2))` yields ([Aa]1|[Bb][Cc]2)
+              `anycase(`select ...`)` is allowed
+
+        The following replacements are suppoted in the non-DTD section of this file:
+
+           * `schema_version` is replaced by the current schema version
+
+           * `date_time` is replaced with the current date, time, and time zone
+    -->
+
+    <!--
+        General purpose
+    -->
+    <!ENTITY float "[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?">
+    <!--
+        Date/Time
+
+        iso-time-pattern is defined because standard dateTime type is a simple type
+        that cannot be extended.
+    -->
+    <!ENTITY iso-time-pattern "-?\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}([.]\d+)?)?([-+]\d{2}:\d{2}|Z)?">
+    <!--
+        DNS names ("labels") can include a-z, A-Z, 0-9, and "-", but cannot start or end with "-",
+        must contain one non-numeric character, and can be no longer than 63 characters.
+    -->
+    <!ENTITY alpha- "[a-zA-Z-]">
+    <!ENTITY alnum "[a-zA-Z0-9]">
+    <!ENTITY alnum- "[a-zA-Z0-9-]">
+    <!ENTITY hex "[a-fA-F0-9]">
+    <!ENTITY dns-hostname "(&alnum;&alnum-;*&alpha-;&alnum-;*&alnum;[.])*&alnum;&alnum-;*&alpha-;&alnum-;*&alnum;">
+    <!--
+        IP V4 host addresses = ddd.ddd.ddd.ddd
+    -->
+    <!ENTITY ipv4-host "(\d{1,3}[.]){3}\d{1,3}">
+    <!--
+        IP V6 host addresses = xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx, with at most one sequence of
+        all zeros compressed to ::, which can appear at the beginning, middle, or end
+    -->
+    <!ENTITY ipv6-host1 "(&hex;{1,4}:){7}&hex;{1,4}">
+    <!ENTITY ipv6-host2 "(&hex;{1,4}:){1,7}:">
+    <!ENTITY ipv6-host3 ":(:&hex;{1,4}){1,7}">
+    <!ENTITY ipv6-host4 "(&hex;{1,4}:){1,6}(:&hex;{1,4}){1}">
+    <!ENTITY ipv6-host5 "(&hex;{1,4}:){1,5}(:&hex;{1,4}){1,2}">
+    <!ENTITY ipv6-host6 "(&hex;{1,4}:){1,4}(:&hex;{1,4}){1,3}">
+    <!ENTITY ipv6-host7 "(&hex;{1,4}:){1,3}(:&hex;{1,4}){1,4}">
+    <!ENTITY ipv6-host8 "(&hex;{1,4}:){1,2}(:&hex;{1,4}){1,5}">
+    <!ENTITY ipv6-host9 "(&hex;{1,4}:){1}(:&hex;{1,4}){1,6}">
+    <!--
+        File names
+    -->
+    <!ENTITY file-pn-char "[^/\\]">
+    <!ENTITY file-param "[$][a-zA-Z0-9_]+">
+    <!ENTITY file-pn-part "(&file-pn-char;+|&file-param;)">
+    <!ENTITY file-drive "[a-zA-Z]:">
+    <!ENTITY file-unc "(//|\\\\)&file-pn-part;">
+    <!ENTITY file-root-dir "(&file-drive;|&file-unc;)?[/\\]">
+    <!ENTITY file-pathname "&file-root-dir;?&file-pn-part;([/\\]&file-pn-part;)*">
+    <!--
+        HEC-DSS pathnames
+    -->
+    <!ENTITY dss-pn-char "[^/]">
+    <!ENTITY dss-pn-part "&dss-pn-char;{0,64}">
+    <!ENTITY dss-pn-reqd-part "&dss-pn-char;{1,64}">
+    <!ENTITY dss-pn-date-part "\d{2}(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC|)\d{4}">
+    <!ENTITY dss-pn-datetime-part "&dss-pn-date-part;:([01]\d|2[0-4])[0-5]\d">
+    <!ENTITY dss-pn-intvl-part "(~?(([123456]|1[025]|[23]0)MIN|([123468]|12)HOUR|1(DAY|WEEK|MON|YEAR)|(SEMI-|TRI-)MONTH)|IR-(DAY|MONTH|YEAR|DECADE|CENTURY))">
+    <!ENTITY dss-pn-pd-params-part "&dss-pn-char;*[^/-]+-[^/-]+&dss-pn-char;*">
+    <!ENTITY dss-pn-cwmsrating-params-part "[^/,;]+(,[^/,;]+)*;[^/,;]+">
+    <!ENTITY dss-pn-rating-params-part "(&dss-pn-pd-params-part;|&dss-pn-cwmsrating-params-part;)">
+    <!ENTITY dss-pn "/(&dss-pn-part;/){6}">
+    <!ENTITY dss-ts-pn "/&dss-pn-part;(/&dss-pn-reqd-part;){2}/(&dss-pn-date-part;)?/&dss-pn-intvl-part;/&dss-pn-part;/">
+    <!ENTITY dss-rating-pn "/&dss-pn-part;/&dss-pn-reqd-part;/&dss-pn-rating-params-part;(/&dss-pn-part;){3}/">
+    <!ENTITY dss-grid-pn "(/&dss-pn-reqd-part;){3}(/(&dss-pn-datetime-part;)?){2}/&file-pn-char;{1,64}/">
+    <!ENTITY dss-location-level-pn "/&dss-pn-part;(/&dss-pn-reqd-part;){4}/&dss-pn-part;/">
+    <!--
+        CWMS identifiers and other CWMS-related stuff
+    -->
+    <!ENTITY cwms-base-id "[^.-]{1,16}">
+    <!ENTITY cwms-sub-location "[^.]{1,40}">
+    <!ENTITY cwms-sub-parameter "[^.]{1,32}">
+    <!ENTITY cwms-unit "`select unit_id from av_unit order by upper(unit_id)`">
+    <!ENTITY cwms-gridtype "(HRAP|SHG)">
+    <!ENTITY cwms-location "&cwms-base-id;(-&cwms-sub-location;)?">
+    <!ENTITY cwms-base-param "`select base_parameter_id from cwms_base_parameter order by upper(base_parameter_id)`">
+    <!ENTITY cwms-parameter "&cwms-base-param;(-&cwms-sub-parameter;)?">
+    <!ENTITY cwms-paramtype "`select parameter_type_id from cwms_parameter_type`">
+    <!ENTITY cwms-nonzero-period "`select interval_id from cwms_interval where substr(interval_id, 1, 1) not in ('0', '~')`">
+    <!ENTITY cwms-interval "`select interval_id from cwms_interval`">
+    <!ENTITY cwms-duration "`select duration_id from cwms_duration`">
+    <!ENTITY cwms-version "[^.]{1,32}">
+    <!ENTITY cwms-ts-id "&cwms-location;\.&cwms-parameter;\.&cwms-paramtype;\.&cwms-interval;\.&cwms-duration;\.&cwms-version;">
+    <!ENTITY cwms-grid-id "&cwms-location;\.&cwms-gridtype;\.&cwms-parameter;\.&cwms-paramtype;\.&cwms-interval;\.&cwms-duration;\.&cwms-version;">
+    <!ENTITY cwms-math-argument "`anycase(arg)`\d+">
+    <!ENTITY cwms-math-operator "`select column_value from table(cwms_util.get_expression_operators)`">
+    <!ENTITY cwms-math-constant "`anycase(`select column_value from table(cwms_util.get_expression_constants)`)`">
+    <!ENTITY cwms-math-function "`anycase(`select column_value from table(cwms_util.get_expression_functions)`)`">
+    <!ENTITY cwms-math-other "&cwms-math-operator;|&cwms-math-constant;|&cwms-math-function;|&float;|[() ]">
+    <!ENTITY cwms-math-expression "(&cwms-math-argument;|&cwms-math-other;)(&cwms-math-argument;|&cwms-math-other;)*">
+    <!ENTITY cwms-math-expression-with-units "&cwms-math-expression;\s*\{\s*&cwms-unit;(\s*,\s*&cwms-unit;)*\s*;\s*&cwms-unit;\s*\}">
+    <!ENTITY cwms-rating-argument "([Ii]\d+)">
+    <!ENTITY cwms-rating-expression "(&cwms-rating-argument;|&cwms-math-other;)(&cwms-rating-argument;|&cwms-math-other;)*">
+    <!ENTITY cwms-rating-parameters "&cwms-parameter;(,&cwms-parameter;)*;&cwms-parameter;">
+    <!ENTITY cwms-rating-units "\{\s*&cwms-unit;(\s*,\s*&cwms-unit;)*\s*;\s*&cwms-unit;\s*\}">
+    <!ENTITY cwms-rating-template "&cwms-rating-parameters;\.&cwms-version;">
+    <!ENTITY cwms-rating-spec "&cwms-location;\.&cwms-rating-template;\.&cwms-version;">
+    <!ENTITY cwms-rating-id "&cwms-rating-spec;">
+    <!ENTITY cwms-rating-spec-with-units "&cwms-rating-spec;\s*\{\s*&cwms-rating-units;\s*\}">
+    <!ENTITY cwms-rating-expression-with-units "&cwms-rating-expression;\s*\{\s*&cwms-rating-units;\s*\}">
+    <!ENTITY cwms-specified-level-id "[^.]{1,256}">
+    <!ENTITY cwms-location-level-id "&cwms-location;\.&cwms-parameter;\.&cwms-paramtype;\.&cwms-duration;\.&cwms-specified-level-id;">
+    <!ENTITY cwms-location-level-attr-id "&cwms-parameter;\.&cwms-paramtype;\.&cwms-duration;">
+    <!ENTITY cwms-virt-loc-level-constituent-name "(&cwms-location-level-id;|&cwms-ts-id;|&cwms-rating-spec;|&cwms-math-expression-with-units;)">
+]>
+<!--
+	This file was generated from CWMS Databse Schema Version `schema_version` at `date_time`.
+
+	To modify this file, edit the file named "hec-datatypes-template.xsd" used in building the database.
+-->
+<xs:schema xmlns:xs = "http://www.w3.org/2001/XMLSchema"
+           targetNamespace = "http://www.hec.usace.army.mil/xmlSchema/cwms/hec-datatypes"
+           xmlns = "http://www.hec.usace.army.mil/xmlSchema/cwms/hec-datatypes"
+           elementFormDefault = "unqualified">
+
+    <!--
+        #==============#
+        # SIMPLE TYPES #
+        #==============#
+    -->
+
+    <!--
+        Empty type to be able to union in to allow optionally empty elements
+    -->
+  <xs:simpleType name="empty">
+    <xs:restriction base="xs:string">
+      <xs:length value="0"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="empty" type="empty" -->
+    <!--
+        Optionally empty double (allows element tag without data)
+    -->
+  <xs:simpleType name="opt-double">
+    <xs:union memberTypes="xs:double empty"/>
+  </xs:simpleType>
+  <!-- xs:element name="opt-double" type="opt-double" -->
+    <!--
+        Start of time window
+    -->
+  <xs:simpleType name="starttimespec">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\s*(&iso-time-pattern;|$(lookback|start|forecast|simulation)-time)\s*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="starttimespec" type="starttimespec" -->
+  <!--
+        End of time window
+    -->
+  <xs:simpleType name="endtimespec">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\s*(&iso-time-pattern;|$(start|forecast|simulation|end)-time)\s*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="endtimespec" type="endtimespec" -->
+  <!--
+        Internet host address = IP (V4 or V6) address or DNS name
+    -->
+  <xs:simpleType name="inet-host-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="&ipv4-host;|&ipv6-host1;|&ipv6-host2;|&ipv6-host3;|&ipv6-host4;|&ipv6-host5;|&ipv6-host6;|&ipv6-host7;|&ipv6-host8;|&ipv6-host9;|&dns-hostname;"/>
+      <xs:maxLength value="255"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="inet-host" type="inet-host-type" -->
+  <!--
+        Internet port address = 1 - 65535
+    -->
+  <xs:simpleType name="inet-port-type">
+    <xs:restriction base="xs:decimal">
+      <xs:minInclusive value="1"/>
+      <xs:maxInclusive value="65535"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="inet-port" type="inet-port-type" -->
+  <!--
+        16-character id
+    -->
+  <xs:simpleType name="id16-type">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="16"/>
+      <xs:whiteSpace value="collapse"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="id16" type="id16-type" -->
+  <!--
+        32-character id
+    -->
+  <xs:simpleType name="id32-type">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="32"/>
+      <xs:whiteSpace value="collapse"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="id32" type="id32-type" -->
+  <!--
+        40-character text
+    -->
+  <xs:simpleType name="text40-type">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="40"/>
+      <xs:whiteSpace value="collapse"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="text40" type="text40-type" -->
+  <!--
+        49-character text
+    -->
+  <xs:simpleType name="text49-type">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="49"/>
+      <xs:whiteSpace value="collapse"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="text49" type="text49-type" -->
+  <!--
+        80-character text
+    -->
+  <xs:simpleType name="text80-type">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="80"/>
+      <xs:whiteSpace value="collapse"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="text80" type="text80-type" -->
+  <!--
+        256-character text
+    -->
+  <xs:simpleType name="text256-type">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="256"/>
+      <xs:whiteSpace value="collapse"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="text256" type="text256-type" -->
+  <!--
+        512-character text
+    -->
+  <xs:simpleType name="text512-type">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="512"/>
+      <xs:whiteSpace value="collapse"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="text512" type="text512-type" -->
+  <!--
+        office name
+    -->
+  <xs:simpleType name="office-name-type">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="80"/>
+      <xs:whiteSpace value="collapse"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="office-name" type="office-name-type" -->
+  <!--
+        time zone name
+    -->
+  <xs:simpleType name="time-zone-name-type">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="28"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="time-zone-name" type="time-zone-name-type" -->
+  <!--
+        time zone usage
+    -->
+  <xs:simpleType name="time-zone-usage-type">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Standard"/>
+      <xs:enumeration value="Daylight"/>
+      <xs:enumeration value="Local"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="time-zone-usage" type="time-zone-usage-type" -->
+  <!--
+        file pathname
+    -->
+  <xs:simpleType name="file-pathname-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="&file-pathname;"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="file-pathname" type="file-pathname-type" -->
+  <!--
+        hec-dss pathname
+    -->
+  <xs:simpleType name="dss-pathname-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\s*&dss-pn;\s*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="dss-pathname" type="dss-pathname-type" -->
+  <!--
+        hec-dss time-series pathname
+    -->
+  <xs:simpleType name="dss-ts-pathname-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\s*&dss-ts-pn;\s*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="dss-ts-pathname" type="dss-ts-pathname-type" -->
+  <!--
+        hec-dss rating pathname
+    -->
+  <xs:simpleType name="dss-rating-pathname-type">
+    <xs:annotation>
+      <xs:documentation>
+        Normal paired-data pathname = //location/ind_param-dep_param/date//version/
+        Normal CWMS rating pathname = /office/location/ind_param(,ind_param)*;dep_param//template_ver/spec_ver/
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\s*&dss-rating-pn;\s*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="dss-rating-pathname" type="dss-rating-pathname-type" -->
+  <!--
+        hec-dss grid pathname
+    -->
+  <xs:simpleType name="dss-grid-pathname-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\s*&dss-grid-pn;\s*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="dss-grid-pathname" type="dss-grid-pathname-type" -->
+  <!--
+        hec-dss location level pathname
+    -->
+  <xs:simpleType name="dss-location-level-pathname-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\s*&dss-location-level-pn;\s*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="dss-location-level-pathname" type="dss-location-level-pathname-type" -->
+  <!--
+        hec-dss units
+    -->
+  <xs:simpleType name="dss-units-type">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="16"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="dss-units" type="dss-units-type" -->
+  <!--
+        hec-dss timeseries data types
+    -->
+  <xs:simpleType name="dss-parameter-type">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="INST-VAL"/>
+      <xs:enumeration value="INST-CUM"/>
+      <xs:enumeration value="PER-CUM"/>
+      <xs:enumeration value="PER-AVER"/>
+      <xs:enumeration value="PER-MIN"/>
+      <xs:enumeration value="PER-MAX"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="dss-parameter" type="dss-parameter-type" -->
+  <!--
+        horizontal datum type
+    -->
+  <xs:simpleType name="horizontal-datum-type">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="NAD-27"/>
+      <xs:enumeration value="WGS-84/NAD-83"/>
+      <xs:enumeration value="OTHER"/>
+      <xs:enumeration value="UNKNOWN"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="horizontal-datum" type="horizontal-datum-type" -->
+  <!--
+        vertical datum type
+    -->
+  <xs:simpleType name="vertical-datum-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="NGVD[ -]?29|NAVD[ -]?88|OTHER|UNKNOWN"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="vertical-datum" type="vertical-datum-type" -->
+  <!--
+        latitude (decimal)
+    -->
+  <xs:simpleType name="latitude-decimal-type">
+    <xs:restriction base="xs:decimal">
+      <xs:minInclusive value="-90.0"/>
+      <xs:maxInclusive value="90.0"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="latitude-decimal" type="latitude-decimal-type" -->
+  <!--
+        latitude (integer)
+    -->
+  <xs:simpleType name="latitude-integer-type">
+    <xs:restriction base="xs:integer">
+      <xs:minInclusive value="-90"/>
+      <xs:maxInclusive value="90"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="latitude-integer" type="latitude-integer-type" -->
+  <!--
+        longitude (decimal)
+    -->
+  <xs:simpleType name="longitude-decimal-type">
+    <xs:restriction base="xs:decimal">
+      <xs:minInclusive value="-180.0"/>
+      <xs:maxInclusive value="180.0"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="longitude-decimal" type="longitude-decimal-type" -->
+  <!--
+        longitude (integer)
+    -->
+  <xs:simpleType name="longitude-integer-type">
+    <xs:restriction base="xs:integer">
+      <xs:minInclusive value="-180"/>
+      <xs:maxInclusive value="180"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="longitude-integer" type="longitude-integer-type" -->
+  <!--
+        dms/hms integer
+    -->
+  <xs:simpleType name="dms-integer-type">
+    <xs:restriction base="xs:nonNegativeInteger">
+      <xs:minInclusive value="0"/>
+      <xs:maxInclusive value="59"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="dms-integer" type="dms-integer-type" -->
+  <!--
+        dms/hms float
+    -->
+  <xs:simpleType name="dms-float-type">
+    <xs:restriction base="xs:decimal">
+      <xs:minInclusive value="0."/>
+      <xs:maxExclusive value="60."/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="dms-float" type="dms-float-type" -->
+  <!--
+        day-of-year
+    -->
+  <xs:simpleType name="day-of-year-type">
+    <xs:restriction base="xs:integer">
+      <xs:minInclusive value="1"/>
+      <xs:maxInclusive value="365"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="day-of-year" type="day-of-year-type" -->
+  <!--
+        cwms unit
+    -->
+  <xs:simpleType name="cwms-unit-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="&cwms-unit;"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="cwms-unit" type="cwms-unit-type" -->
+  <!--
+        cwms grid type
+    -->
+  <xs:simpleType name="cwms-gridtype-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="&cwms-gridtype;"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="cwms-gridtype" type="cwms-gridtype-type" -->
+  <!--
+        cwms location
+    -->
+  <xs:simpleType name="cwms-location-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="&cwms-location;"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="cwms-location" type="cwms-location-type" -->
+  <!--
+        cwms base parameter
+    -->
+  <xs:simpleType name="cwms-base-parameter-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="&cwms-base-param;"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="cwms-base-parameter" type="cwms-base-parameter-type" -->
+  <!--
+        cwms parameter
+    -->
+  <xs:simpleType name="cwms-parameter-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="&cwms-parameter;"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="cwms-parameter" type="cwms-parameter-type" -->
+  <!--
+        cwms parameter type
+    -->
+  <xs:simpleType name="cwms-paramtype-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="&cwms-paramtype;"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="cwms-paramtype" type="cwms-paramtype-type" -->
+  <!--
+        cwms interval
+    -->
+  <xs:simpleType name="cwms-interval-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="&cwms-interval;"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="cwms-interval" type="cwms-interval-type" -->
+  <!--
+        cwms duration
+    -->
+  <xs:simpleType name="cwms-duration-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="&cwms-duration;"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="cwms-duration" type="cwms-duration-type" -->
+  <!--
+        cwms time series id
+    -->
+  <xs:simpleType name="cwms-tsid-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\s*&cwms-ts-id;\s*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="cwms-tsid" type="cwms-tsid-type" -->
+  <!--
+        cwms math expression (formula)
+    -->
+  <xs:simpleType name="cwms-math-expression">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\s*&cwms-math-expression;\s*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="cwms-math-expression" type="cwms-math-expression" -->
+  <!--
+        cwms math expression (formula) with units
+    -->
+  <xs:simpleType name="cwms-math-expression-with-units">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\s*&cwms-math-expression-with-units;\s*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="cwms-math-expression-with-units" type="cwms-math-expression-with-units" -->
+  <!--
+        cwms rating parameters
+    -->
+  <xs:simpleType name="cwms-rating-parameters-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\s*&cwms-rating-parameters;\s*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="cwms-rating-parameters" type="cwms-rating-parameters-type" -->
+  <!--
+        cwms rating units
+    -->
+  <xs:simpleType name="cwms-rating-units-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\s*&cwms-rating-units;\s*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="cwms-rating-units" type="cwms-rating-units-type" -->
+  <!--
+        cwms rating template
+    -->
+  <xs:simpleType name="cwms-rating-template-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\s*&cwms-rating-template;\s*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="cwms-rating-template" type="cwms-rating-template-type" -->
+  <!--
+        cwms rating spec
+    -->
+  <xs:simpleType name="cwms-rating-spec-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\s*&cwms-rating-spec;\s*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="cwms-rating-spec" type="cwms-rating-spec-type" -->
+  <!--
+        cwms rating id
+    -->
+  <xs:simpleType name="cwms-rating-id-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\s*&cwms-rating-id;\s*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="cwms-rating-id" type="cwms-rating-id-type" -->
+  <!--
+        cwms rating formula
+    -->
+  <xs:simpleType name="cwms-rating-formula-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\s*&cwms-rating-expression;\s*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="cwms-rating-formula" type="cwms-rating-formula-type" -->
+  <!--
+        cwms rating spec with units (for virtual ratings)
+    -->
+  <xs:simpleType name="cwms-rating-spec-with-units-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\s*&cwms-rating-spec-with-units;\s*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="cwms-rating-spec-with-units" type="cwms-rating-spec-with-units-type" -->
+  <!--
+        cwms rating expression with units (for virtual ratings)
+    -->
+  <xs:simpleType name="cwms-rating-expression-with-units-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\s*&cwms-rating-expression-with-units;\s*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="cwms-rating-expression-with-units" type="cwms-rating-expression-with-units-type" -->
+  <!--
+        cwms grid id
+    -->
+  <xs:simpleType name="cwms-grid-id-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\s*&cwms-grid-id;\s*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="cwms-grid-id" type="cwms-grid-id-type" -->
+  <!--
+        cwms location level
+    -->
+  <xs:simpleType name="cwms-location-level-id-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\s*&cwms-location-level-id;\s*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="cwms-location-level-id" type="cwms-location-level-id-type" -->
+  <!--
+        cwms location level attribute
+    -->
+  <xs:simpleType name="cwms-location-level-attr-id-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\s*&cwms-location-level-attr-id;\s*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="cwms-location-level-attr-id" type="cwms-location-level-attr-id-type" -->
+  <!--
+        cwms specified level
+    -->
+  <xs:simpleType name="cwms-specified-level-id-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\s*&cwms-specified-level-id;\s*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="cwms-specified-level-id" type="cwms-specified-level-id-type" -->
+  <!--
+        cwms virtual location level constituent name
+    -->
+  <xs:simpleType name="cwms-virt-loc-level-constituent-name-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\s*&cwms-virt-loc-level-constituent-name;\s*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="cwms-virt-loc-level-constituent-name" type="cwms-virt-loc-level-constituent-name-type" -->
+  <!--
+        Oracle SID
+    -->
+  <xs:simpleType name="oracle-sid-type">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="64"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="oracle-sid" type="oracle-sid-type" -->
+  <!--
+        time series store rules
+    -->
+  <xs:simpleType name="oracle-ts-store-rule-type">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="replace-with-non-missing">
+      <xs:annotation>
+        <xs:documentation>
+          Insert values at new times and replace any values at existing times, unless the incoming values are specified as missing
+        </xs:documentation>
+      </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="replace-all">
+      <xs:annotation>
+        <xs:documentation>
+          Insert values at new times and replace any values at existing times, even if incoming values are specified as missing
+        </xs:documentation>
+      </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="replace-missing-values-only">
+      <xs:annotation>
+        <xs:documentation>
+          Insert values at new times but do not replace any values at existing times unless the existing values are specified as missing
+        </xs:documentation>
+      </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="do-not-replace">
+      <xs:annotation>
+        <xs:documentation>
+          Insert values at new times but do not replace any values at existing times
+        </xs:documentation>
+      </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="delete-insert">
+      <xs:annotation>
+        <xs:documentation>
+          Delete all existing values in time window of incoming data and then insert incoming data
+        </xs:documentation>
+      </xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="oracle-ts-store-rule" type="oracle-ts-store-rule-type" -->
+
+  <xs:simpleType name="dss-regular-ts-store-rule-type">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="0-replace-all">
+      <xs:annotation>
+        <xs:documentation>
+          Overwrite every value in the existing data
+        </xs:documentation>
+      </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="1-replace-missing-values-only">
+      <xs:annotation>
+        <xs:documentation>
+          Don’t overwrite non-missing values in the existing data
+        </xs:documentation>
+      </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="2-replace-all-create">
+      <xs:annotation>
+        <xs:documentation>
+          replace-all + if new data has entire records of missing data, create empty records in existing data
+        </xs:documentation>
+      </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="3-replace-all-delete">
+      <xs:annotation>
+        <xs:documentation>
+          replace-all + if new data has entire records of missing data, delete records from existing data
+        </xs:documentation>
+      </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="4-replace-with-non-missing">
+      <xs:annotation>
+        <xs:documentation>
+          Overwrite every value in the existing data only if replacement is non-missing
+        </xs:documentation>
+      </xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="dss-regular-ts-store-rule" type="dss-regular-ts-store-rule-type" -->
+
+  <xs:simpleType name="dss-irregular-ts-store-rule-type">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="0-delete-insert">
+      <xs:annotation>
+        <xs:documentation>
+          Result for time window will be combination of existing and specified data
+        </xs:documentation>
+      </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="1-merge">
+      <xs:annotation>
+        <xs:documentation>
+          Result for time window will be specified data only
+        </xs:documentation>
+      </xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- xs:element name="dss-irregular-ts-store-rule" type="dss-irregular-ts-store-rule-type" -->
+  <!--
+        #===============#
+        # COMPLEX TYPES #
+        #===============#
+    -->
+
+    <!--
+        Interpolation
+    -->
+  <xs:complexType name = "interpolate-type">
+    <xs:simpleContent>
+      <xs:extension base = "xs:nonNegativeInteger">
+        <xs:attribute name = "units" use = "required">
+          <xs:simpleType>
+            <xs:restriction base = "id16-type">
+              <xs:enumeration value = "minutes"/>
+              <xs:enumeration value = "intervals"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <!--
+        Office
+    -->
+  <xs:complexType name="office-type">
+    <xs:sequence>
+      <xs:element name="name" type="office-name-type"/>
+      <xs:element maxOccurs="1" minOccurs="0" name="description" type="xs:string"/>
+    </xs:sequence>
+    <xs:attribute name="id" type="id16-type" use="optional"/>
+  </xs:complexType>
+  <!-- xs:element name="office" type="office-type" -->
+  <!--
+        id (16 chars) with description
+    -->
+  <xs:complexType name="id16-with-description-type">
+    <xs:sequence>
+      <xs:element name="name" type="id16-type"/>
+      <xs:element minOccurs="0" name="description" type="text256-type"/>
+    </xs:sequence>
+  </xs:complexType>
+  <!-- xs:element name="id16-with-description" type="id16-with-description-type" -->
+  <!--
+        annual schedule for id16-type (with units)
+    -->
+  <xs:complexType name="id16-annual-values-type">
+    <xs:sequence>
+      <xs:element name="name" type="id16-type"/>
+      <xs:sequence maxOccurs="365">
+        <xs:element name="value">
+          <xs:complexType>
+            <xs:simpleContent>
+              <xs:extension base="xs:decimal">
+                <xs:attribute name="units" type="id16-type" use="required"/>
+              </xs:extension>
+            </xs:simpleContent>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="day-of-year" type="day-of-year-type"/>
+      </xs:sequence>
+    </xs:sequence>
+  </xs:complexType>
+  <!-- xs:element name="id16-annual-values" type="id16-annual-values-type" -->
+  <!--
+        annual schedule for id16-type (without units)
+    -->
+  <xs:complexType name="id16-annual-values-no-units-type">
+    <xs:sequence>
+      <xs:element name="name" type="id16-type"/>
+      <xs:sequence maxOccurs="365">
+        <xs:element name="value" type="xs:decimal"/>
+        <xs:element name="day-of-year" type="day-of-year-type"/>
+      </xs:sequence>
+    </xs:sequence>
+  </xs:complexType>
+  <!-- xs:element name="id16-annual-values-no-units" type="id16-annual-values-no-units-type" -->
+  <!--
+        latitude DMS
+    -->
+  <xs:complexType name="latitude-dms-type">
+    <xs:sequence>
+      <xs:element name="degrees" type="latitude-integer-type"/>
+      <xs:element name="minutes" type="dms-integer-type"/>
+      <xs:element name="seconds" type="dms-float-type"/>
+    </xs:sequence>
+  </xs:complexType>
+  <!-- xs:element name="latitude-dms" type="latitude-dms-type" -->
+  <!--
+        longitude DMS
+    -->
+  <xs:complexType name="longitude-dms-type">
+    <xs:sequence>
+      <xs:element name="degrees" type="longitude-integer-type"/>
+      <xs:element name="minutes" type="dms-integer-type"/>
+      <xs:element name="seconds" type="dms-float-type"/>
+    </xs:sequence>
+  </xs:complexType>
+  <!-- xs:element name="longitude-dms" type="longitude-dms-type" -->
+  <!--
+        physical location
+    -->
+  <xs:complexType name="geographic-location-type">
+    <xs:sequence>
+      <xs:element name="name" type="cwms-location-type"/>
+      <xs:element name="active" type="xs:boolean"/>
+      <xs:sequence minOccurs="0">
+        <xs:choice>
+          <xs:element name="latitude" type="latitude-decimal-type"/>
+          <xs:element name="latitude-dms" type="latitude-dms-type"/>
+        </xs:choice>
+        <xs:choice>
+          <xs:element name="longitude" type="longitude-decimal-type"/>
+          <xs:element name="longitude-dms" type="longitude-dms-type"/>
+        </xs:choice>
+        <xs:element name="horizontal-datum" type="horizontal-datum-type"/>
+      </xs:sequence>
+      <xs:sequence minOccurs="0">
+        <xs:element name="elevation">
+          <xs:complexType>
+            <xs:simpleContent>
+              <xs:extension base="xs:decimal">
+                <xs:attribute name="units" type="id16-type" use="required"/>
+              </xs:extension>
+            </xs:simpleContent>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="vertical-datum" type="vertical-datum-type"/>
+      </xs:sequence>
+      <xs:element minOccurs="0" name="county" type="text40-type"/>
+      <xs:element minOccurs="0" name="time-zone" type="time-zone-name-type"/>
+      <xs:element minOccurs="0" name="public-name" type="id32-type"/>
+      <xs:element minOccurs="0" name="long-name" type="text80-type"/>
+      <xs:element minOccurs="0" name="description" type="text512-type"/>
+    </xs:sequence>
+  </xs:complexType>
+  <!-- xs:element name="geographic-location" type="geographic-location-type" -->
+  <!--
+        stream
+    -->
+  <xs:complexType name="stream-type">
+    <xs:sequence>
+      <xs:element name="name" type="id16-type"/>
+      <xs:element minOccurs="0" name="description" type="text256-type"/>
+      <xs:sequence minOccurs="0">
+        <xs:element name="mainstem" type="id16-type"/>
+        <xs:element name="confluence-station">
+          <xs:complexType>
+            <xs:simpleContent>
+              <xs:extension base="xs:decimal">
+                <xs:attribute name="units" type="id16-type" use="required"/>
+              </xs:extension>
+            </xs:simpleContent>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:sequence>
+  </xs:complexType>
+  <!-- xs:element name="stream" type="stream-type" -->
+  <!--
+        stream location
+    -->
+  <xs:complexType name="stream-location-type">
+    <xs:sequence>
+      <xs:element name="location" type="cwms-location-type"/>
+      <xs:element name="stream" type="id16-type"/>
+      <xs:element name="station">
+        <xs:complexType>
+          <xs:simpleContent>
+            <xs:extension base="xs:decimal">
+              <xs:attribute name="units" type="id16-type" use="required"/>
+            </xs:extension>
+          </xs:simpleContent>
+        </xs:complexType>
+      </xs:element>
+      <xs:element minOccurs="0" name="drainage-area">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element minOccurs="0" name="total" type="xs:decimal"/>
+            <xs:element minOccurs="0" name="contributing" type="xs:decimal"/>
+            <xs:element minOccurs="0" name="unregulated" type="xs:decimal"/>
+            <xs:element minOccurs="0" name="ungaged" type="xs:decimal"/>
+          </xs:sequence>
+          <xs:attribute name="units" type="id16-type" use="required"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <!-- xs:element name="stream-location" type="stream-location-type" -->
+  <!--
+        File type
+    -->
+  <xs:complexType name="file-type">
+    <xs:sequence>
+      <xs:element name="filepath" type="file-pathname-type"/>
+      <xs:element name="description" type="xs:string" maxOccurs="1" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="owner"       type="xs:string" use="optional"/>
+    <xs:attribute name="group"       type="xs:string" use="optional"/>
+    <xs:attribute name="permissions" type="xs:string" use="optional"/>
+  </xs:complexType>
+  <!-- xs:element name="file" type="file-type" -->
+  <!--
+        File manager
+    -->
+  <xs:complexType name="filemanager-type">
+    <xs:sequence>
+      <xs:element name="host" type="inet-host-type"/>
+      <xs:element name="port" type="inet-port-type"/>
+      <xs:element maxOccurs="1" minOccurs="0" name="description" type="xs:string"/>
+    </xs:sequence>
+  </xs:complexType>
+  <!-- xs:element name="filemanager" type="filemanager-type" -->
+  <!--
+        Local DSS file type
+    -->
+  <xs:complexType name="dssfile-type">
+    <xs:sequence>
+      <xs:element name="filepath" type="file-pathname-type"/>
+      <xs:element name="description" type="xs:string" maxOccurs="1" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="id" type="text80-type" use="optional"/>
+    <xs:attribute name="office-id" type="id16-type" use="optional"/>
+  </xs:complexType>
+  <!-- xs:element name="dssfile" type="dssfile-type" -->
+  <!--
+        DSS file manager
+    -->
+  <xs:complexType name="dssfilemanager-type">
+    <xs:sequence>
+      <xs:element name="host" type="inet-host-type"/>
+      <xs:element name="port" type="inet-port-type"/>
+      <xs:element name="filepath" type="file-pathname-type"/>
+      <xs:element name="description" type="xs:string" maxOccurs="1" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="id" type="text80-type" use="optional"/>
+    <xs:attribute name="office-id" type="id16-type" use="optional"/>
+  </xs:complexType>
+  <!-- xs:element name="dssfilemanager" type="dssfilemanager-type" -->
+  <!--
+        Oracle database
+    -->
+  <xs:complexType name="oracle-type">
+    <xs:sequence>
+      <xs:element name="host" type="inet-host-type"/>
+      <xs:element maxOccurs="1" minOccurs="0" name="port" type="inet-port-type"/>
+      <xs:element name="sid" type="oracle-sid-type"/>
+      <xs:element maxOccurs="1" minOccurs="0" name="description" type="xs:string"/>
+    </xs:sequence>
+    <xs:attribute name="id" type="text80-type" use="optional"/>
+  </xs:complexType>
+  <!-- xs:element name="oracle" type="oracle-type" -->
+  <!--
+        DSS local grid file set
+    -->
+  <xs:complexType name="dss-local-gridfiles-type">
+    <xs:sequence>
+      <xs:element name="directory" type="file-pathname-type"/>
+      <xs:element name="parameter" type="xs:string"/>
+      <xs:element name="param-type" type="dss-parameter-type"/>
+      <xs:element name="duration"  type="xs:positiveInteger"/>
+      <xs:element maxOccurs="1" minOccurs="0" name="description" type="xs:string"/>
+    </xs:sequence>
+    <xs:attribute name="id" type="text80-type" use="optional"/>
+    <xs:attribute name="office-id" type="id16-type" use="optional"/>
+  </xs:complexType>
+  <!-- xs:element name="dss-local-gridfiles" type="dss-local-gridfiles-type" -->
+  <!--
+        DSS remote grid file set
+    -->
+  <xs:complexType name="dss-remote-gridfiles-type">
+    <xs:sequence>
+      <xs:element name="host" type="inet-host-type"/>
+      <xs:element name="port" type="inet-port-type"/>
+      <xs:element name="directory" type="file-pathname-type"/>
+      <xs:element name="parameter" type="xs:string"/>
+      <xs:element name="param-type" type="dss-parameter-type"/>
+      <xs:element name="duration"  type="xs:positiveInteger"/>
+      <xs:element maxOccurs="1" minOccurs="0" name="description" type="xs:string"/>
+    </xs:sequence>
+    <xs:attribute name="id" type="text80-type" use="optional"/>
+    <xs:attribute name="office-id" type="id16-type" use="optional"/>
+  </xs:complexType>
+  <!-- xs:element name="dss-remote-gridfiles" type="dss-remote-gridfiles-type" -->
+  <!--
+        Email
+    -->
+  <xs:complexType name="email-type">
+    <xs:sequence>
+      <xs:element name="host"        type="inet-host-type"/>
+      <xs:element name="port"        type="inet-port-type" minOccurs="0"/>
+      <xs:element name="user"        type="xs:string" minOccurs="0"/>
+      <xs:element name="pass"        type="xs:string" minOccurs="0"/>
+      <xs:element name="description" type="xs:string" minOccurs="0"/>
+      <xs:element name="from"        type="xs:string"/>
+      <xs:element name="to"          type="xs:string" maxOccurs="unbounded"/>
+      <xs:element name="cc"          type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="bcc"         type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="subject"     type="xs:string"/>
+      <xs:element name="body"        type="xs:string"/>
+      <xs:element name="attachment"  type="file-type" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="office-id" use="optional" type="id16-type"/>
+    <xs:attribute name="datastore-id" use="required" type="text80-type"/>
+  </xs:complexType>
+  <!-- xs:element name="email" type="email-type" -->
+  <!--
+        vertical datum offset
+    -->
+  <xs:complexType name="vertical-datum-offset-type">
+    <xs:sequence>
+      <xs:element name="to-datum" type="vertical-datum-type"/>
+      <xs:element name="value"    type="xs:double"/>
+    </xs:sequence>
+    <xs:attribute name="estimate" type="xs:boolean"/>
+  </xs:complexType>
+  <!-- xs:element name="vertical-datum-offset" type="vertical-datum-offset-type" -->
+  <!--
+        vertical datum info
+    -->
+  <xs:complexType name="vertical-datum-info-type">
+    <xs:sequence>
+      <xs:element name="location"         type="cwms-location-type" minOccurs="0"/> <!-- should be used only with "office" attribute -->
+      <xs:element name="native-datum"     type="vertical-datum-type"/>
+      <xs:element name="local-datum-name" type="id16-type" minOccurs="0"/>
+      <xs:element name="elevation"        type="opt-double" minOccurs="0"/>
+      <xs:element name="offset"           type="vertical-datum-offset-type" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="office" type="id16-type" use="optional"/> <!-- should be used only wth <location> element -->
+    <xs:attribute name="unit"   type="id16-type"/>
+  </xs:complexType>
+  <!-- xs:element name="vertical-datum-info" type="vertical-datum-info-type" -->
+</xs:schema>
