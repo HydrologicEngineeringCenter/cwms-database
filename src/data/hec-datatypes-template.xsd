@@ -94,6 +94,8 @@
     <!ENTITY cwms-sub-location "[^.]{1,40}">
     <!ENTITY cwms-sub-parameter "[^.]{1,32}">
     <!ENTITY cwms-unit "`select unit_id from av_unit order by upper(unit_id)`">
+    <!ENTITY cwms-unit ".{1,32}">
+    <!ENTITY cwms-unit-values "`select unit_id from av_unit order by upper(unit_id)`">
     <!ENTITY cwms-gridtype "(HRAP|SHG)">
     <!ENTITY cwms-location "&cwms-base-id;(-&cwms-sub-location;)?">
     <!ENTITY cwms-base-param "`select base_parameter_id from cwms_base_parameter order by upper(base_parameter_id)`">
@@ -475,7 +477,7 @@
     -->
   <xs:simpleType name="cwms-unit-type">
     <xs:restriction base="xs:string">
-      <xs:pattern value="&cwms-unit;"/>
+      <xs:pattern value="&cwms-unit-values;"/>
     </xs:restriction>
   </xs:simpleType>
   <!-- xs:element name="cwms-unit" type="cwms-unit-type" -->
