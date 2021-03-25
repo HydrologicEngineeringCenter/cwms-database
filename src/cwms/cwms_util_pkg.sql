@@ -214,19 +214,19 @@ AS
     * Contains names of all constants that can be used with expression evaluation.
     */
    expression_constants str_tab_t := str_tab_t('E','PI');
-   function get_expression_constants;
+   function get_expression_constants return str_tab_t;
    /**
     * Contains all mathematical operators that can be used with expression evaluation.
     */
    expression_operators str_tab_t := str_tab_t('+','-','*','/','//','%','^');
-   function get_expression_operators;
+   function get_expression_operators return str_tab_t;
    /**
     * Contains names of all functions that can be used with expression evaluation.
     */
    expression_functions str_tab_t := str_tab_t(
       'ABS','ACOS','ASIN','ATAN','CEIL','COS','EXP','FLOOR',
       'INV','LN','LOG','NEG','ROUND','SIGN','SIN','SQRT','TAN','TRUNC');
-   function get_expression_functions;
+   function get_expression_functions return str_tab_t;
    /**
     * Contains all valid logical comparision operators
     */
