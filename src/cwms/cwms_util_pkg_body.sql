@@ -6601,11 +6601,18 @@ as
          loop
             l_action := regexp_substr(l_value, '`select.*?`');
             exit when l_action is null;
+            l_action := substr(l_action, 2, length(l_action)-2);
             begin
-               execute immediate substr(l_action, 2, length(l_action)-2) bulk collect into l_action_results;
+               execute immediate l_action bulk collect into l_action_results;
             exception
                when others then
-                  cwms_err.raise('ERROR', sqlcode||chr(10)||sqlerrm||chr(10)||'Processing {'||rec.line||'}');
+                  cwms_err.raise(
+                     'ERROR',
+                     'Error code  =  '||sqlcode  ||chr(10)||
+                     'Error msg   =  '||sqlerrm  ||chr(10)||
+                     'File line   =  '||rec.line ||chr(10)||
+                     'Entity name =  '||l_name   ||chr(10)||
+                     'Query text  = "'||l_action||'"');
             end;
             case l_action_results.count
             when 0 then l_value := replace(l_value, l_action, null);
