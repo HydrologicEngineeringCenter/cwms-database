@@ -6585,13 +6585,13 @@ as
       -------------------------------------
       for rec in (select trim(column_value) as line from table(split_text(l_dtd, chr(10))) where instr(column_value, '<!ENTITY ') > 0) loop
          dbms_output.put_Line(rec.line);
-         l_name  := regexp_substr(rec.line, '<!ENTITY\s+(\S+)\s*"([^"]+)"\s*>', 1, 1, 'n', 1);
-         l_value := regexp_substr(rec.line, '<!ENTITY\s+(\S+)\s*"([^"]+)"\s*>', 1, 1, 'n', 2);
+         l_name  := regexp_substr(rec.line, '<!ENTITY\s+(\S+)\s*"([^"]+)"\s*>', 1, 1, 'c', 1);
+         l_value := regexp_substr(rec.line, '<!ENTITY\s+(\S+)\s*"([^"]+)"\s*>', 1, 1, 'c', 2);
          --------------------------------
          -- first replace any entities --
          --------------------------------
          loop
-            l_name2 := regexp_substr(l_value, '&.+?;');
+            l_name2 := regexp_substr(l_value, '&[^;]+;');
             exit when l_name2 is null;
             l_value := replace(l_value, l_name2, l_entities(l_name2));
          end loop;
@@ -6599,20 +6599,20 @@ as
          -- next perform any queries --
          ------------------------------
          loop
-            l_action := regexp_substr(l_value, '`select.*?`');
+            l_action := regexp_substr(l_value, '`(select\s.[^`]+)`', 1, 1, 'c', 1);
             exit when l_action is null;
-            l_action := substr(l_action, 2, length(l_action)-2);
             begin
                execute immediate l_action bulk collect into l_action_results;
             exception
                when others then
                   cwms_err.raise(
-                     'ERROR',
-                     'Error code  =  '||sqlcode  ||chr(10)||
-                     'Error msg   =  '||sqlerrm  ||chr(10)||
-                     'File line   =  '||rec.line ||chr(10)||
-                     'Entity name =  '||l_name   ||chr(10)||
-                     'Query text  = "'||l_action||'"');
+                     chr(10)||'ERROR',
+                     chr(10)||'Error code  =  '||sqlcode ||
+                     chr(10)||'Error msg   =  '||sqlerrm ||
+                     chr(10)||'File line   =  '||rec.line||
+                     chr(10)||'Entity name =  '||l_name  ||
+                     chr(10)||'Value       =  '||l_value ||
+                     chr(10)||'Query text  = "'||l_action||'"');
             end;
             case l_action_results.count
             when 0 then l_value := replace(l_value, l_action, null);
