@@ -3133,5 +3133,5 @@ AS
       return clob;
 END cwms_util;
 /
-
+set escape off
 SHOW ERRORS;

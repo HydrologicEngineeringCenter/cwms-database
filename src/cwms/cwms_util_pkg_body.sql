@@ -6565,7 +6565,6 @@ as
       end anycase;
 
    begin
-      dbms_output.enable(2000000);
       select version
         into l_schema_version
         from av_db_change_log v
@@ -6584,7 +6583,6 @@ as
       -- process the entities in the DTD --
       -------------------------------------
       for rec in (select trim(column_value) as line from table(split_text(l_dtd, chr(10))) where instr(column_value, '<!ENTITY ') > 0) loop
-         dbms_output.put_Line(rec.line);
          l_name  := regexp_substr(rec.line, '<!ENTITY\s+(\S+)\s*"([^"]+)"\s*>', 1, 1, 'c', 1);
          l_value := regexp_substr(rec.line, '<!ENTITY\s+(\S+)\s*"([^"]+)"\s*>', 1, 1, 'c', 2);
          --------------------------------
