@@ -612,6 +612,15 @@
             <arg value="clean"/>
         </exec>
 	    <echo message="==> Building the hec-datatypes.xsd file from the database"/>
+        <resolver:resolve>
+            <resolver:dependencies>
+                <resolver:dependency coords="org.python:jython-standalone:2.7.2" />
+                <resolver:dependency coords="com.oracle.ojdbc:ojdbc8:19.3.0.0" />
+            </resolver:dependencies>
+            <path refid="cp.runtime" scopes="compile,runtime,test"/>
+            <files refid="deps" dir="${build.dir}/deps" layout="{artifactId}.{extension}"/>
+            <resolver:properties prefix="dep." classpath="runtime"/>
+        </resolver:resolve>
         <java
             fork="true"
 			failonerror="true"
