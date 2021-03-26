@@ -10,7 +10,7 @@ $(zipfile) : index.html \
 	zip $@ $?
 
 %.svg : %.xsd
-	python make_diagram.py $<
+	python2 make_diagram.py $<
 
 clean :
 	rm $(zipfile) *.svg hec-datatypes.xsd *.log *.out
