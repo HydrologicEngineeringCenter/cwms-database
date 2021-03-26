@@ -6540,7 +6540,7 @@ as
       l_name2          varchar2(128);
       l_value          varchar2(32767);
       l_entities       entities_t;
-      l_action         varchar2(512);
+      l_action         varchar2(32767);
       l_action_results str_tab_t;
       l_lines          str_tab_t;
       l_line           varchar2(32767);
