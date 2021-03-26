@@ -604,8 +604,46 @@
 		<delete dir="${build.dir}"/>
 	</target>
 
+	<target name="xml-schemas">
+	    <property name="xml_schema_zipflie" location="${build.dir}/xmlSchema.zip"/>
+	    <echo message="==> Cleaning the xml directory"/>
+        <exec executable="make" dir="${src}/xml" failonerror="false">
+            <arg value="zipfile=${xml_schema_zipflie}"/>
+            <arg value="clean"/>
+        </exec>
+	    <echo message="==> Building the hec-datatypes.xsd file from the database"/>
+        <resolver:resolve>
+            <resolver:dependencies>
+                <resolver:dependency coords="org.python:jython-standalone:2.7.2" />
+                <resolver:dependency coords="com.oracle.ojdbc:ojdbc8:19.3.0.0" />
+            </resolver:dependencies>
+            <path refid="cp.runtime" scopes="compile,runtime,test"/>
+            <files refid="deps" dir="${build.dir}/deps" layout="{artifactId}.{extension}"/>
+            <resolver:properties prefix="dep." classpath="runtime"/>
+        </resolver:resolve>
+        <java
+            fork="true"
+			failonerror="true"
+            classname="org.python.util.jython"
+            >
+            <classpath>
+                <fileset dir="${build.dir}/deps"/>
+            </classpath>
+            <arg value="get_hec-datatypes.py" />
+            <arg value="-d"/><arg value="${oracle.cwms.instance}"/>
+            <arg value="-u"/><arg value="${office.primary.code}hectest"/>
+            <arg value="-p"/><arg value="${oracle.cwms.password}"/>
+            <arg value="-f"/><arg value="${office.primary.id}"/>
+            <arg value="-o"/><arg value="${src}/xml"/>
+        </java>
+	    <echo message="==> Making the .svg files and the .zip file"/>
+        <exec executable="make" dir="${src}/xml" failonerror="true">
+            <arg value="zipfile=${xml_schema_zipflie}"/>
+        </exec>
+	</target>
+
 	<!-- TODO: figured out why ${build.dir}/** isn't working -->
-	<target name="bundle" depends="java-resources">
+	<target name="bundle" depends="java-resources,xml-schemas">
 		<echo message="${build.dir}" />
 		<zip destfile="${build.dir}/cwms_db_${pom.version}.zip"
 			 basedir="."
@@ -653,6 +691,7 @@
             <resolver:artifact file="${build.dir}/cwms_db_${pom.version}.zip" type="zip" id="bundle" pomref="pom"/>
             <resolver:artifact file="${build.dir}/docs.zip" type="zip" id="docs" pomref="pom" classifier="docs"/>
 			<resolver:artifact file="${build.dir}/resources.jar" type="jar" id="resources" pomref="pom" classifier="resources"/>
+            <resolver:artifact file="${xml_schema_zipfile}" type="zip" id="xml_schemas" pomref="pom" classifier="xml_schema_docs"/>
 		</resolver:artifacts>
 	</target>
 	<target name="install" depends="bundle">

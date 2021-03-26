@@ -575,7 +575,7 @@ def format(item, useSynonym=None) :
       try :
          formatted = get_web_title(item)
       except :
-         raise Exception("Unable to retrieve URL %s" % item)
+         formatted = item
    else :
       tokenized, replacements = tokenize(item)
       if useSynonym is None : useSynonym = use_synonyms
