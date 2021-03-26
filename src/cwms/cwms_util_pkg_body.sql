@@ -6613,9 +6613,9 @@ as
                      chr(10)||'Query text  = "'||l_action||'"');
             end;
             case l_action_results.count
-            when 0 then l_value := replace(l_value, l_action, null);
-            when 1 then l_value := replace(l_value, l_action, l_action_results(1));
-            else l_value := replace(l_value, l_action, '('||cwms_util.join_text(l_action_results, '|')||')');
+            when 0 then l_value := replace(l_value, '`'||l_action||'`', null);
+            when 1 then l_value := replace(l_value, '`'||l_action||'`', l_action_results(1));
+            else l_value := replace(l_value, '`'||l_action||'`', '('||cwms_util.join_text(l_action_results, '|')||')');
             end case;
          end loop;
          ----------------------------------------------------------
