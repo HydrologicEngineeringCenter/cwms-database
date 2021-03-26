@@ -6641,11 +6641,12 @@ as
             l_line := replace(l_line, l_name, l_entities(l_name));                  
          end loop;
          loop
-            l_action := regexp_substr(l_line, '`.+?`');
+            l_action := regexp_substr(l_line, '`[^`]+`');
             exit when l_action is null;
             case l_action
             when '`schema_version`' then l_line := replace(l_line, l_action, l_schema_version);
             when '`date_time`'      then l_line := replace(l_line, l_action, cwms_util.get_xml_time(sysdate, dbtimezone));
+            else cwms_err.raise('ERROR', 'Unexpected action "'||l_action||'" in line "'||l_line||'"');
             end case;
          end loop;
          append(l_xsd, l_line||chr(10));
