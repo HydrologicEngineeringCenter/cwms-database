@@ -1467,6 +1467,9 @@ as
       if not l_is_regex then
          l_delimiter_len := length(p_delimiter);
       end if;
+      if p_text is null or length(p_text) < 1 then
+         return l_results;
+      end if;   
       loop
          -------------------------------
          -- locate the next delimiter --

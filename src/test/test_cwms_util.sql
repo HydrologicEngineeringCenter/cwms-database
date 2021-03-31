@@ -87,10 +87,21 @@ is
    l_parts          str_tab_t;
    l_expected_count integer;
    l_idx            integer;
+   l_clob           clob;
 begin
-   -------------------------------------------
-   -- make sure we pass the trivial example --
-   -------------------------------------------
+   --------------------------------------------
+   -- make sure we pass the trivial examples --
+   --------------------------------------------
+   l_parts := cwms_util.split_text('---', '.');
+   ut.expect(l_parts.count).to_equal(1);
+   ut.expect(l_parts(1)).to_equal('---');
+   l_parts := cwms_util.split_text('', '.');
+   ut.expect(l_parts.count).to_equal(0);
+   l_parts := cwms_util.split_text(l_clob, '.');
+   ut.expect(l_parts.count).to_equal(0);
+   dbms_lob.createtemporary(l_clob, true);
+   l_parts := cwms_util.split_text(l_clob, '.');
+   ut.expect(l_parts.count).to_equal(0);
    l_parts := cwms_util.split_text('1 2 3 4 5 6 7 8 9 10');
    ut.expect(l_parts.count).to_equal(10);
    for i in 1..l_parts.count loop
