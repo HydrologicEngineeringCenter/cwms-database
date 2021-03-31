@@ -37,7 +37,7 @@ begin
          cwms_loc.delete_location(
             p_location_id   => rec.loc_name,
             p_delete_action => cwms_util.delete_all,
-            p_db_office_id  => 'SWT');
+            p_db_office_id  => '&office_id');
          exception
             when exc_location_id_not_found then null;
          end;
@@ -67,7 +67,7 @@ begin
    ----------------------------------------------------
    -- create the location and get the location codes --
    ----------------------------------------------------
-   l_office_id    := 'SWT';
+   l_office_id    := '&office_id';
    l_location_id1 := 'TestLoc1';
    l_location_id2 := 'TestLoc2';
 
@@ -128,7 +128,7 @@ begin
    ----------------------------------------------------
    -- create the location and get the location codes --
    ----------------------------------------------------
-   l_office_id    := 'SWT';
+   l_office_id    := '&office_id';
    l_location_id1 := 'TestLoc1';
    l_location_id2 := 'TestLoc2-WithSub1';
 
@@ -173,7 +173,7 @@ begin
    ----------------------------------------------------
    -- create the location and get the location codes --
    ----------------------------------------------------
-   l_office_id    := 'SWT';
+   l_office_id    := '&office_id';
    l_location_id1 := 'TestLoc1-WithSub1';
    l_location_id2 := 'TestLoc2';
 
@@ -219,7 +219,7 @@ begin
    ----------------------------------------------------
    -- create the location and get the location codes --
    ----------------------------------------------------
-   l_office_id    := 'SWT';
+   l_office_id    := '&office_id';
    l_location_id1 := 'TestLoc1-WithSub1';
    l_location_id2 := 'TestLoc2-WithSub1';
 
@@ -305,7 +305,7 @@ begin
    ----------------------------------------------------
    -- create the location and get the location codes --
    ----------------------------------------------------
-   l_office_id    := 'SWT';
+   l_office_id    := '&office_id';
    l_location_id1 := 'TestLoc1-WithSub1';
    l_location_id2 := 'TestLoc1-WithSub2';
 
@@ -373,7 +373,7 @@ begin
    ----------------------------------------------------
    -- create the location and get the location codes --
    ----------------------------------------------------
-   l_office_id    := 'SWT';
+   l_office_id    := '&office_id';
    l_location_id1 := 'TestLoc1-WithSub1';
    l_location_id2 := 'TestLoc2-WithSub2';
 
