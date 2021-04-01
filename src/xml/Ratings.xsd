@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
            targetNamespace="http://www.hec.usace.army.mil/xmlSchema/cwms/ratings"
+           xmlns:rt="http://www.hec.usace.army.mil/xmlSchema/cwms/ratings"
            xmlns:dt="http://www.hec.usace.army.mil/xmlSchema/cwms/hec-datatypes"
            elementFormDefault="unqualified">
   <!--
@@ -43,7 +44,7 @@
 
   <xs:complexType name="ind-rounding-spec-type">
     <xs:simpleContent>
-      <xs:extension base="rounding-spec-type">
+      <xs:extension base="rt:rounding-spec-type">
         <xs:attribute name="position" type="xs:positiveInteger" use="required"/>
       </xs:extension>
     </xs:simpleContent>
@@ -51,7 +52,7 @@
 
   <xs:complexType name="ind-rounding-specs-type">
     <xs:sequence maxOccurs="unbounded">
-      <xs:element name="ind-rounding-spec" type="ind-rounding-spec-type"/>
+      <xs:element name="ind-rounding-spec" type="rt:ind-rounding-spec-type"/>
     </xs:sequence>
   </xs:complexType>
 
@@ -101,21 +102,21 @@
 
   <xs:complexType name="point-type">
     <xs:sequence>
-      <xs:element name="ind" type="double"/>
-      <xs:element name="dep" type="double"/>
-      <xs:element name="note" type="note-type" minOccurs="0"/>
+      <xs:element name="ind" type="xs:double"/>
+      <xs:element name="dep" type="xs:double"/>
+      <xs:element name="note" type="rt:note-type" minOccurs="0"/>
     </xs:sequence>
   </xs:complexType>
 
   <xs:complexType name="other-ind-type">
     <xs:attribute name="position" type="xs:positiveInteger" use="required"/>
-    <xs:attribute name="value" type="double" use="required"/>
+    <xs:attribute name="value" type="xs:double" use="required"/>
   </xs:complexType>
 
   <xs:complexType name="points-type">
     <xs:sequence>
-      <xs:element name="other-ind" type="other-ind-type" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="point" type="point-type" maxOccurs="unbounded"/>
+      <xs:element name="other-ind" type="rt:other-ind-type" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="point" type="rt:point-type" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
 
@@ -124,16 +125,16 @@
   <xs:complexType name="ind-parameter-spec-type">
      <xs:sequence>
       <xs:element name="parameter" type="dt:cwms-parameter-type"/>
-      <xs:element name="in-range-method" type="rating-method-type"/>
-      <xs:element name="out-range-low-method" type="rating-method-type"/>
-      <xs:element name="out-range-high-method" type="rating-method-type"/>
+      <xs:element name="in-range-method" type="rt:rating-method-type"/>
+      <xs:element name="out-range-low-method" type="rt:rating-method-type"/>
+      <xs:element name="out-range-high-method" type="rt:rating-method-type"/>
     </xs:sequence>
     <xs:attribute name="position" type="xs:positiveInteger" use="required"/>
   </xs:complexType>
 
   <xs:complexType name="ind-parameter-specs-type">
     <xs:sequence>
-      <xs:element name="ind-parameter-spec" type="ind-parameter-spec-type" maxOccurs="unbounded"/>
+      <xs:element name="ind-parameter-spec" type="rt:ind-parameter-spec-type" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
 
@@ -156,7 +157,7 @@
 
   <xs:complexType name="source-ratings-or-expressions-type">
     <xs:sequence maxOccurs="unbounded">
-      <xs:element name="source-rating" type="source-rating-or-expression-type"/>
+      <xs:element name="source-rating" type="rt:source-rating-or-expression-type"/>
     </xs:sequence>
   </xs:complexType>
 
@@ -171,7 +172,7 @@
 
   <xs:complexType name="positional-expression-type">
     <xs:simpleContent>
-      <xs:extension base="expression-type">
+      <xs:extension base="rt:expression-type">
         <xs:attribute name="position" type="xs:positiveInteger" use="required"/>
       </xs:extension>
     </xs:simpleContent>
@@ -179,8 +180,8 @@
 
   <xs:complexType name="logical-operation-type">
     <xs:sequence>
-      <xs:element name="when" type="expression-type"/>
-      <xs:element name="then" type="expression-type"/>
+      <xs:element name="when" type="rt:expression-type"/>
+      <xs:element name="then" type="rt:expression-type"/>
     </xs:sequence>
     <xs:attribute name="position" type="xs:positiveInteger" use="required"/>
   </xs:complexType>
@@ -188,9 +189,9 @@
   <xs:complexType name="selection-type">
     <xs:sequence>
       <xs:sequence minOccurs="0" maxOccurs="unbounded">
-        <xs:element name="case" type="logical-operation-type"/>
+        <xs:element name="case" type="rt:logical-operation-type"/>
       </xs:sequence>
-      <xs:element name="default" type="expression-type"/>
+      <xs:element name="default" type="rt:expression-type"/>
     </xs:sequence>
   </xs:complexType>
 
@@ -204,7 +205,7 @@
 
   <xs:complexType name="source-ratings-type">
     <xs:sequence>
-      <xs:element name="rating-spec-id" type="source-rating-type" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="rating-spec-id" type="rt:source-rating-type" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
 
@@ -219,12 +220,12 @@
     <xs:complexType>
       <xs:sequence>
         <xs:element name="parameters-id" type="dt:cwms-rating-parameters-type"/>
-        <xs:element name="version" type="text32-type"/>
-        <xs:element name="ind-parameter-specs" type="ind-parameter-specs-type"/>
+        <xs:element name="version" type="rt:text32-type"/>
+        <xs:element name="ind-parameter-specs" type="rt:ind-parameter-specs-type"/>
         <xs:element name="dep-parameter" type="dt:cwms-parameter-type"/>
-        <xs:element name="description" type="text256-type" minOccurs="0"/>
+        <xs:element name="description" type="rt:text256-type" minOccurs="0"/>
       </xs:sequence>
-      <xs:attribute name="office-id" type="text16-type" use="required"/>
+      <xs:attribute name="office-id" type="rt:text16-type" use="required"/>
     </xs:complexType>
   </xs:element>
 
@@ -242,20 +243,20 @@
         <xs:element name="rating-spec-id" type="dt:cwms-rating-spec-type"/>
         <xs:element name="template-id" type="dt:cwms-rating-template-type"/>
         <xs:element name="location-id" type="dt:cwms-location-type"/>
-        <xs:element name="version" type="text32-type"/>
-        <xs:element name="source-agency" type="text32-type" minOccurs="0"/>
-        <xs:element name="in-range-method" type="rating-method-type"/>
-        <xs:element name="out-range-low-method" type="rating-method-type"/>
-        <xs:element name="out-range-high-method" type="rating-method-type"/>
-        <xs:element name="active" type="boolean"/>
-        <xs:element name="auto-update" type="boolean"/>
-        <xs:element name="auto-activate" type="boolean"/>
-        <xs:element name="auto-migrate-extension" type="boolean"/>
-        <xs:element name="ind-rounding-specs" type="ind-rounding-specs-type" maxOccurs="unbounded"/>
-        <xs:element name="dep-rounding-spec" type="rounding-spec-type"/>
-        <xs:element name="description" type="text256-type" minOccurs="0"/>
+        <xs:element name="version" type="rt:text32-type"/>
+        <xs:element name="source-agency" type="rt:text32-type" minOccurs="0"/>
+        <xs:element name="in-range-method" type="rt:rating-method-type"/>
+        <xs:element name="out-range-low-method" type="rt:rating-method-type"/>
+        <xs:element name="out-range-high-method" type="rt:rating-method-type"/>
+        <xs:element name="active" type="xs:boolean"/>
+        <xs:element name="auto-update" type="xs:boolean"/>
+        <xs:element name="auto-activate" type="xs:boolean"/>
+        <xs:element name="auto-migrate-extension" type="xs:boolean"/>
+        <xs:element name="ind-rounding-specs" type="rt:ind-rounding-specs-type" maxOccurs="unbounded"/>
+        <xs:element name="dep-rounding-spec" type="rt:rounding-spec-type"/>
+        <xs:element name="description" type="rt:text256-type" minOccurs="0"/>
       </xs:sequence>
-      <xs:attribute name="office-id" type="text16-type" use="required"/>
+      <xs:attribute name="office-id" type="rt:text16-type" use="required"/>
     </xs:complexType>
   </xs:element>
 
@@ -275,26 +276,26 @@
       		type="dt:vertical-datum-info-type" minOccurs="0" />
       	<!-- Only if includes elev data -->
       	<xs:element name="units-id" type="dt:cwms-rating-units-type" />
-      	<xs:element name="effective-date" type="dateTime" />
-      	<xs:element name="transition-start-date" type="dateTime" minOccurs="0"/>
-      	<xs:element name="create-date" type="dateTime" minOccurs="0" />
-      	<xs:element name="active" type="boolean" />
-      	<xs:element name="description" type="text256-type"
+      	<xs:element name="effective-date" type="xs:dateTime" />
+      	<xs:element name="transition-start-date" type="xs:dateTime" minOccurs="0"/>
+      	<xs:element name="create-date" type="xs:dateTime" minOccurs="0" />
+      	<xs:element name="active" type="xs:boolean" />
+      	<xs:element name="description" type="rt:text256-type"
       		minOccurs="0" />
       	<xs:choice>
       		<xs:element name="formula"
       			type="dt:cwms-rating-formula-type" />
       		<xs:sequence>
-      			<xs:element name="rating-points" type="points-type" maxOccurs="unbounded" />
-      			<xs:element name="extension-points" type="points-type" minOccurs="0" maxOccurs="unbounded" />
+      			<xs:element name="rating-points" type="rt:points-type" maxOccurs="unbounded" />
+      			<xs:element name="extension-points" type="rt:points-type" minOccurs="0" maxOccurs="unbounded" />
       		</xs:sequence>
       	</xs:choice>
       </xs:sequence>
-      <xs:attribute name="office-id" type="text16-type" use="required"/>
+      <xs:attribute name="office-id" type="rt:text16-type" use="required"/>
     </xs:complexType>
   </xs:element>
 
-  <xs:element name="rating" substitutionGroup="simple-rating">
+  <xs:element name="rating" substitutionGroup="rt:simple-rating">
     <xs:annotation>
       <xs:documentation>
         An alias for simple-rating.
@@ -314,15 +315,15 @@
     <xs:complexType>
       <xs:sequence>
         <xs:element name="rating-spec-id" type="dt:cwms-rating-spec-type"/>
-        <xs:element name="effective-date" type="dateTime"/>
-      	<xs:element name="transition-start-date" type="dateTime" minOccurs="0"/>
-        <xs:element name="create-date" type="dateTime" minOccurs="0"/>
-        <xs:element name="active" type="boolean"/>
-        <xs:element name="description" type="text256-type" minOccurs="0"/>
-        <xs:element name="connections" type="connections-type"/>
-        <xs:element name="source-ratings" type="source-ratings-or-expressions-type"/>
+        <xs:element name="effective-date" type="xs:dateTime"/>
+      	<xs:element name="transition-start-date" type="xs:dateTime" minOccurs="0"/>
+        <xs:element name="create-date" type="xs:dateTime" minOccurs="0"/>
+        <xs:element name="active" type="xs:boolean"/>
+        <xs:element name="description" type="rt:text256-type" minOccurs="0"/>
+        <xs:element name="connections" type="rt:connections-type"/>
+        <xs:element name="source-ratings" type="rt:source-ratings-or-expressions-type"/>
       </xs:sequence>
-      <xs:attribute name="office-id" type="text16-type" use="required"/>
+      <xs:attribute name="office-id" type="rt:text16-type" use="required"/>
     </xs:complexType>
   </xs:element>
 
@@ -339,15 +340,15 @@
       <xs:sequence>
         <xs:element name="rating-spec-id" type="dt:cwms-rating-spec-type"/>
         <xs:element name="units-id" type="dt:cwms-rating-units-type"/>
-        <xs:element name="effective-date" type="dateTime"/>
-      	<xs:element name="transition-start-date" type="dateTime" minOccurs="0"/>
-        <xs:element name="create-date" type="dateTime" minOccurs="0"/>
-        <xs:element name="active" type="boolean"/>
-        <xs:element name="description" type="text256-type" minOccurs="0"/>
-        <xs:element name="select" type="selection-type"/>
-        <xs:element name="source-ratings" type="source-ratings-type"/>
+        <xs:element name="effective-date" type="xs:dateTime"/>
+      	<xs:element name="transition-start-date" type="xs:dateTime" minOccurs="0"/>
+        <xs:element name="create-date" type="xs:dateTime" minOccurs="0"/>
+        <xs:element name="active" type="xs:boolean"/>
+        <xs:element name="description" type="rt:text256-type" minOccurs="0"/>
+        <xs:element name="select" type="rt:selection-type"/>
+        <xs:element name="source-ratings" type="rt:source-ratings-type"/>
       </xs:sequence>
-      <xs:attribute name="office-id" type="text16-type" use="required"/>
+      <xs:attribute name="office-id" type="rt:text16-type" use="required"/>
     </xs:complexType>
   </xs:element>
 
@@ -365,23 +366,23 @@
         <xs:element name="rating-spec-id" type="dt:cwms-rating-spec-type"/>
         <xs:element name="vertical-datum-info" type="dt:vertical-datum-info-type" minOccurs="0"/> <!-- Only if includes elev data -->
         <xs:element name="units-id" type="dt:cwms-rating-units-type"/>
-        <xs:element name="effective-date" type="dateTime"/>
-        <xs:element name="transition-start-date" type="dateTime" minOccurs="0"/>
-        <xs:element name="create-date" type="dateTime" minOccurs="0"/>
-        <xs:element name="active" type="boolean"/>
-        <xs:element name="description" type="text256-type" minOccurs="0"/>
+        <xs:element name="effective-date" type="xs:dateTime"/>
+        <xs:element name="transition-start-date" type="xs:dateTime" minOccurs="0"/>
+        <xs:element name="create-date" type="xs:dateTime" minOccurs="0"/>
+        <xs:element name="active" type="xs:boolean"/>
+        <xs:element name="description" type="rt:text256-type" minOccurs="0"/>
         <xs:sequence>
           <xs:element name="height-shifts" minOccurs="0" maxOccurs="unbounded">
             <xs:complexType>
               <xs:sequence>
-              	<xs:element name="effective-date" type="dateTime" />
-              	<xs:element name="transition-start-date" type="dateTime" minOccurs="0"/>
-              	<xs:element name="create-date" type="dateTime"
+              	<xs:element name="effective-date" type="xs:dateTime" />
+              	<xs:element name="transition-start-date" type="xs:dateTime" minOccurs="0"/>
+              	<xs:element name="create-date" type="xs:dateTime"
               		minOccurs="0" />
-              	<xs:element name="active" type="boolean" />
-              	<xs:element name="description" type="text256-type"
+              	<xs:element name="active" type="xs:boolean" />
+              	<xs:element name="description" type="rt:text256-type"
               		minOccurs="0" />
-              	<xs:element name="point" type="point-type"
+              	<xs:element name="point" type="rt:point-type"
               		maxOccurs="unbounded" />
               </xs:sequence>
             </xs:complexType>
@@ -389,17 +390,17 @@
           <xs:element name="height-offsets" minOccurs="0">
             <xs:complexType>
               <xs:sequence>
-                <xs:element name="point" type="point-type" maxOccurs="unbounded"/>
+                <xs:element name="point" type="rt:point-type" maxOccurs="unbounded"/>
               </xs:sequence>
             </xs:complexType>
           </xs:element>
       		<xs:sequence>
-      			<xs:element name="rating-points" type="points-type" maxOccurs="unbounded" />
-      			<xs:element name="extension-points" type="points-type" minOccurs="0" maxOccurs="unbounded" />
+      			<xs:element name="rating-points" type="rt:points-type" maxOccurs="unbounded" />
+      			<xs:element name="extension-points" type="rt:points-type" minOccurs="0" maxOccurs="unbounded" />
       		</xs:sequence>
         </xs:sequence>
       </xs:sequence>
-      <xs:attribute name="office-id" type="text16-type" use="required"/>
+      <xs:attribute name="office-id" type="rt:text16-type" use="required"/>
     </xs:complexType>
   </xs:element>
 
@@ -413,13 +414,13 @@
     </xs:annotation>
     <xs:complexType>
       <xs:sequence>
-        <xs:element ref="rating-template" minOccurs="0" maxOccurs="unbounded"/>
-        <xs:element ref="rating-spec" minOccurs="0" maxOccurs="unbounded"/>
+        <xs:element ref="rt:rating-template" minOccurs="0" maxOccurs="unbounded"/>
+        <xs:element ref="rt:rating-spec" minOccurs="0" maxOccurs="unbounded"/>
         <xs:choice minOccurs="0" maxOccurs="unbounded">
-          <xs:element ref="simple-rating"/>
-          <xs:element ref="usgs-stream-rating"/>
-          <xs:element ref="virtual-rating"/>
-          <xs:element ref="transitional-rating"/>
+          <xs:element ref="rt:simple-rating"/>
+          <xs:element ref="rt:usgs-stream-rating"/>
+          <xs:element ref="rt:virtual-rating"/>
+          <xs:element ref="rt:transitional-rating"/>
         </xs:choice>
       </xs:sequence>
     </xs:complexType>

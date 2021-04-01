@@ -3126,11 +3126,6 @@ AS
     */
    function get_db_host
       return varchar2;
-   /**
-    * @return the hec-datatypes.xsd schema document populated from current database information
-    */
-   function get_hec_datatypes_xsd
-      return clob;
 END cwms_util;
 /
 set escape off

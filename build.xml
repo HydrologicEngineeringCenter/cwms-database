@@ -611,6 +611,10 @@
             <arg value="zipfile=${xml_schema_zipflie}"/>
             <arg value="clean"/>
         </exec>
+	    <echo message="==> Loading the hec-datatypes template CLOB"/>
+        <exec executable="sqlldr" dir="${src}/xml" failonerror="true">
+            <arg value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} control=hec-datatypes_xml_schema.ctl"/>
+        </exec>
 	    <echo message="==> Building the hec-datatypes.xsd file from the database"/>
         <resolver:resolve>
             <resolver:dependencies>
@@ -631,9 +635,8 @@
             </classpath>
             <arg value="get_hec-datatypes.py" />
             <arg value="-d"/><arg value="${oracle.cwms.instance}"/>
-            <arg value="-u"/><arg value="${office.primary.code}hectest"/>
+            <arg value="-u"/><arg value="${oracle.cwms.user}"/>
             <arg value="-p"/><arg value="${oracle.cwms.password}"/>
-            <arg value="-f"/><arg value="${office.primary.id}"/>
             <arg value="-o"/><arg value="${src}/xml"/>
         </java>
 	    <echo message="==> Making the .svg files and the .zip file"/>
