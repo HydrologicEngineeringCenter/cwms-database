@@ -1378,13 +1378,13 @@ AS
     *        <td class="descr">number</td>
     *        <td class="descr">The quality code for the data value</td>
     *      </tr>
+    *    </table>
     *   <tr>
     *     <td class="descr-center">8</td>
     *     <td class="descr">location_time_zone</td>
     *     <td class="descr">varchar2(28)</td>
     *     <td class="descr">The time zone of the location of the time series for this record</td>
     *   </tr>
-    *    </table>
     *     </td>
     *   </tr>
     * </table>
