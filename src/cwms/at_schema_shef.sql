@@ -48,7 +48,7 @@ END;
 @@cwms/tables/at_shef_spec_mapping_update.sql
 @@cwms/tables/at_data_feed_id.sql
 @@cwms/tables/at_shef_crit_file_rec.sql
-@@cwms/tables/at_shef_crit_file.sql
+-- @@cwms/tables/at_shef_crit_file.sql
 @@cwms/tables/at_shef_ignore.sql
 @@cwms/tables/at_shef_decode.sql
 @@cwms/tables/at_shef_decode_spec.sql
