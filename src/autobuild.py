@@ -88,7 +88,7 @@ f.close()
 #---------------------------------------------#
 cmd = "sqlplus /nolog @%s" % auto_sqlfilename
 print(cmd)
-ec = subprocess.call(cmd)
+ec = subprocess.call(cmd, shell=True)
 print("\nSQL*Plus exited with code %s\n" % ec)
 if ec != 0 :
 	sys.exit(-1)
