@@ -3,7 +3,8 @@ set time on
 set define on
 set concat on
 set linesize 1024
-whenever sqlerror exit sql.sqlcode
+whenever sqlerror exit -1
+whenever oserror exit -1
 
 --
 -- prompt for info
@@ -85,6 +86,7 @@ alter session set current_schema = &cwms_schema;
 -- structure that can't be built without the CWMS API,
 --
 @@cwms/at_schema_2
+whenever sqlerror exit -1
 @@cwms/at_schema_tsv_dqu
 -- views that depend on av_tsv and av_tsv_dqu
 @@cwms/views/av_ts_profile_inst_tsv
@@ -145,6 +147,7 @@ prompt Database errors...
   where owner = '&cwms_schema'
   order by 1,2,3,4;
 
+whenever sqlerror exit -1
 declare
    obj_count integer;
 begin
@@ -165,7 +168,7 @@ end;
 alter session set current_schema = &cwms_schema;
 whenever sqlerror continue
 select cwms_util.get_db_name from dual;
-whenever sqlerror exit
+whenever sqlerror exit -1
 begin
    update cwms_db_change_log
       set database_id = cwms_util.get_db_name

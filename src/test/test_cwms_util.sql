@@ -29,9 +29,6 @@ procedure split_text_regex_max_split_include_delimiters;
 --%test(Test split_text {/regex/get index})
 procedure split_text_regex_get_index;
 
---%test(Test building the hec-datatypes.xsd content)
-procedure get_hec_datatypes_xsd;
-
 procedure setup;
 procedure teardown;
 --------------------------
@@ -485,16 +482,6 @@ begin
    end loop;
    ut.expect(cwms_util.split_text_ex(test_data_clob, '\s+', 'T', 'c', 'F', len_data_varchar*2).count).to_equal(0);
 end split_text_regex_get_index;
---------------------------------------------------------------------------------
--- procedure get_hec_datatypes
---------------------------------------------------------------------------------
-procedure get_hec_datatypes_xsd
-is
-   l_xml  xmltype;
-begin
-   -- the only test is that this doesn't raise an exception
-   l_xml := xmltype(cwms_util.get_hec_datatypes_xsd);
-end get_hec_datatypes_xsd;
 
 end test_cwms_util;
 /

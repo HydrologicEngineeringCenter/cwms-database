@@ -1,11 +1,12 @@
 import glob, os, re, subprocess, sys
 
 def make_diagram(filename) :
-	print("Processing %s" % filename)
 	with open(filename, "r") as f : content = f.read()
 	m = re.search(r'targetNamespace\s*=\s*"(.+?)"', content)
 	schema_name = m.group(1).split("/")[-1].strip()
-	rc = subprocess.call("java -jar xsdvi.jar %s >%s.out 2>&1" % (filename, filename), shell=True)
+	cmd = "java -jar xsdvi.jar %s >%s.out 2>&1" % (filename, filename)
+	print(cmd)
+	rc = subprocess.call(cmd, shell=True)
 	with open("xsdvi.log", "r") as f : logdata = f.read()
 	with open("%s.log" % filename, "w") as f : f.write(logdata)
 	os.unlink("xsdvi.log")

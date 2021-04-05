@@ -5,6 +5,134 @@ import getopt, os, re, sys, traceback
 reload(sys)
 sys.setdefaultencoding('UTF8')
 
+plsql_function_name = "get_hec_datatypes_xsd"
+plsql_function_code = r'''
+   create or replace function %s
+      return clob
+   is
+      type entities_t is table of varchar2(32767) index by varchar2(128);
+      l_xsd            clob;
+      l_template       clob;
+      l_dtd            clob;
+      l_name           varchar2(128);
+      l_name2          varchar2(128);
+      l_value          varchar2(32767);
+      l_entities       entities_t;
+      l_action         varchar2(32767);
+      l_action_results str_tab_t;
+      l_lines          str_tab_t;
+      l_line           varchar2(32767);
+      l_schema_version varchar2(16);
+
+      function anycase(p_str in varchar2) return varchar2
+      is
+         l_results varchar2(32767);
+         l_upper   varchar2(1);
+         l_lower   varchar2(1);
+      begin
+         for i in 1..length(p_str) loop
+            l_upper := upper(substr(p_str, i, 1));
+            l_lower := lower(substr(p_str, i, 1));
+            if l_upper = l_lower then
+               l_results := l_results||l_upper;
+            else
+               l_results := l_results||'['||l_upper||l_lower||']';
+            end if;
+         end loop;
+         return l_results;
+      end anycase;
+
+   begin
+      select version
+        into l_schema_version
+        from av_db_change_log v
+       where database_id = cwms_util.get_db_name
+         and apply_date = (select max(apply_date) from av_db_change_log where database_id = v.database_id);
+      ---------------------------------------------
+      -- get the template from the AT_CLOB table --
+      ---------------------------------------------
+      select value into l_template from at_clob where id = '/XSD/HEC-DATATYPES-TEMPLATE.XSD';
+      ---------------------------------------------------------
+      -- separate the template into DTD and non-DTD portions --
+      ---------------------------------------------------------
+      l_dtd   := regexp_substr(l_template, '<!DOCTYPE\s+\S+\s*\[.+?\]>\s*', 1, 1, 'n');
+      l_template  := replace(l_template, l_dtd, null);
+      -------------------------------------
+      -- process the entities in the DTD --
+      -------------------------------------
+      for rec in (select trim(column_value) as line from table(cwms_util.split_text(l_dtd, chr(10))) where instr(column_value, '<!ENTITY ') > 0) loop
+         l_name  := regexp_substr(rec.line, '<!ENTITY\s+(\S+)\s*"([^"]+)"\s*>', 1, 1, 'c', 1);
+         l_value := regexp_substr(rec.line, '<!ENTITY\s+(\S+)\s*"([^"]+)"\s*>', 1, 1, 'c', 2);
+         --------------------------------
+         -- first replace any entities --
+         --------------------------------
+         loop
+            l_name2 := regexp_substr(l_value, '&[^;]+;');
+            exit when l_name2 is null;
+            l_value := replace(l_value, l_name2, l_entities(l_name2));
+         end loop;
+         ------------------------------
+         -- next perform any queries --
+         ------------------------------
+         loop
+            l_action := regexp_substr(l_value, '`(select\s.[^`]+)`', 1, 1, 'c', 1);
+            exit when l_action is null;
+            begin
+               execute immediate l_action bulk collect into l_action_results;
+            exception
+               when others then
+                  cwms_err.raise(
+                     chr(10)||'ERROR',
+                     chr(10)||'Error code  =  '||sqlcode ||
+                     chr(10)||'Error msg   =  '||sqlerrm ||
+                     chr(10)||'File line   =  '||rec.line||
+                     chr(10)||'Entity name =  '||l_name  ||
+                     chr(10)||'Value       =  '||l_value ||
+                     chr(10)||'Query text  = "'||l_action||'"');
+            end;
+            case l_action_results.count
+            when 0 then l_value := replace(l_value, '`'||l_action||'`', null);
+            when 1 then l_value := replace(l_value, '`'||l_action||'`', regexp_replace(l_action_results(1), '([+*])', '\\\1'));
+            else l_value := replace(l_value, '`'||l_action||'`', '('||regexp_replace(cwms_util.join_text(l_action_results, '|'), '([+*])', '\\\1')||')');
+            end case;
+         end loop;
+         ----------------------------------------------------------
+         -- finally perform any case-insensitive transformations --
+         ----------------------------------------------------------
+         loop
+            l_action := regexp_substr(l_value, '`anycase\(.+\)`');
+            exit when l_action is null;
+            l_value := replace(l_value, l_action, anycase(substr(l_action, 10, length(l_action)-11)));
+         end loop;
+         l_entities('&'||l_name||';') := l_value;
+      end loop;
+      -----------------------------------------------
+      -- apply the entities to the non-DTD portion --
+      -----------------------------------------------
+      dbms_lob.createtemporary(l_xsd, true);
+      l_lines := cwms_util.split_text(l_template, chr(10));
+      for rec in (select column_value from table(l_lines)) loop
+         l_line := rec.column_value;
+         loop
+            l_name := regexp_substr(l_line, '&[^;]+;');
+            exit when l_name is null;
+            l_line := replace(l_line, l_name, l_entities(l_name));
+         end loop;
+         loop
+            l_action := regexp_substr(l_line, '`[^`]+`');
+            exit when l_action is null;
+            case l_action
+            when '`schema_version`' then l_line := replace(l_line, l_action, l_schema_version);
+            when '`date_time`'      then l_line := replace(l_line, l_action, cwms_util.get_xml_time(sysdate, dbtimezone));
+            else cwms_err.raise('ERROR', 'Unexpected action "'||l_action||'" in line "'||l_line||'"');
+            end case;
+         end loop;
+         cwms_util.append(l_xsd, l_line||chr(10));
+      end loop;
+      return l_xsd;
+   end %s;
+''' % (plsql_function_name, plsql_function_name)
+
 def usage(msg=None) :
    '''
    Spews a usage blurb to stderr and exits
@@ -33,7 +161,6 @@ option_info = {
    'd' : [None, False, 'Database'],
    'u' : [None, False, 'User name'],
    'p' : [None, False, 'Password'],
-   'f' : [None, False, 'Office'],
    'o' : [None, False, 'Output directory']
 }
 option_chars = option_info.keys()
@@ -58,7 +185,6 @@ if args : usage('Unexpected argument specified: %s' % args[0])
 conn_str   = option_info['d'][VALUE]
 username   = option_info['u'][VALUE]
 password   = option_info['p'][VALUE]
-office     = option_info['f'][VALUE]
 output_dir = option_info['o'][VALUE]
 
 if not os.path.exists(output_dir) or not os.path.isdir(output_dir) :
@@ -78,19 +204,33 @@ info.put("oracle.net.disableOob","true")
 conn = None
 try :
    conn=DriverManager.getConnection(db_url,info);
-   set_office_stmt = conn.prepareCall("call cwms_env.set_session_office_id(?)")
-   set_office_stmt.setString(1,office)
-   set_office_stmt.execute()
    conn.setAutoCommit(False)
+   #---------------------#
+   # create the function #
+   #---------------------#
+   stmt = conn.prepareStatement(plsql_function_code)
+   stmt.execute()
    #--------------#
    # get the file #
    #--------------#
-   stmt = conn.prepareStatement('select cwms_util.get_hec_datatypes_xsd from dual');
+   stmt = conn.prepareStatement('select %s from dual' % plsql_function_name);
    rs = stmt.executeQuery()
    rs.next()
    clob = rs.getClob(1)
    data = clob.getSubString(1, clob.length())
    data = "\n".join(data.split("\r\n"))
+   #---------------------------------------#
+   # drop the function and delete the clob #
+   #---------------------------------------#
+   stmt = conn.prepareStatement("drop function %s" % plsql_function_name)
+   stmt.execute()
+   stmt = conn.prepareStatement("delete from at_clob where id = '/XSD/HEC-DATATYPES-TEMPLATE.XSD'")
+   stmt.execute()
+   #----------------------------------------------------------------#
+   # search for invalid regex patterns that eclipse first turned up #
+   #----------------------------------------------------------------#
+   if re.search("(^|[(|])[+*]", data) is not None :
+   	   raise Exception("hec-datatypes.xsd contains invalid regex patterns")
    outfile = os.path.join(output_dir, "hec-datatypes.xsd")
    with open(outfile, 'w') as f :
       f.write(data)
