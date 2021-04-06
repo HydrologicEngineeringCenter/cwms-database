@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">
   <rating-template office-id="SWT">
     <parameters-id>%-Opening-Low_Flow_Gates,Elev;Flow-Low_Flow_Gates</parameters-id>
@@ -51,8 +50,8 @@
       </offset>
     </vertical-datum-info>
     <units-id vertical-datum="">%,ft;cfs</units-id>
-    <effective-date>2013-06-11T00:00:00-05:00</effective-date>
-    <create-date>2016-11-02T14:55:00-05:00</create-date>
+    <effective-date>2013-06-11T05:00:00Z</effective-date>
+    <create-date>2016-11-02T19:55:00Z</create-date>
     <active>true</active>
     <description/>
     <rating-points>

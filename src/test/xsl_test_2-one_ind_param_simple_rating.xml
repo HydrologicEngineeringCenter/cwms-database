@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="file:///z:/cwms_database/src/data/Ratings.xsd">
+<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">
   <rating-template office-id="SWT">
     <parameters-id>Elev;Stor</parameters-id>
     <version>Linear</version>
@@ -44,8 +43,8 @@
       </offset>
     </vertical-datum-info>
     <units-id vertical-datum="">ft;ac-ft</units-id>
-    <effective-date>2015-05-21T14:42:00-05:00</effective-date>
-    <create-date>2012-11-06T11:08:00-06:00</create-date>
+    <effective-date>2015-05-21T19:42:00Z</effective-date>
+    <create-date>2012-11-06T17:08:00Z</create-date>
     <active>true</active>
     <description/>
     <rating-points>
