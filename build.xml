@@ -252,6 +252,10 @@
             <else><antcall target="setup-tests"/></else>
         </if>
 
+	<echo message="    Loading test clobs"/>
+        <exec executable="sqlldr" dir="${src}/test" failonerror="true">
+            <arg value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} control=xsl_test_clobs.ctl"/>
+        </exec>
         <echo message="    Running tests" />
         <exec executable="utplsql" resultproperty="utreturn">
             <arg value="run"/>
