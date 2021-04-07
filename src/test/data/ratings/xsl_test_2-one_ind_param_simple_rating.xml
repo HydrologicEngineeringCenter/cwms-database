@@ -1,5 +1,5 @@
 <ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">
-  <rating-template office-id="SWT">
+  <rating-template office-id="XXX">
     <parameters-id>Elev;Stor</parameters-id>
     <version>Linear</version>
     <ind-parameter-specs>
@@ -13,7 +13,7 @@
     <dep-parameter>Stor</dep-parameter>
     <description/>
   </rating-template>
-  <rating-spec office-id="SWT">
+  <rating-spec office-id="XXX">
     <rating-spec-id>HEYB.Elev;Stor.Linear.Production</rating-spec-id>
     <template-id>Elev;Stor.Linear</template-id>
     <location-id>HEYB</location-id>
@@ -32,7 +32,7 @@
     <dep-rounding-spec>4444444444</dep-rounding-spec>
     <description>Heyburn Lake Reservoir Storage Capacity Production Rating</description>
   </rating-spec>
-  <simple-rating office-id="SWT">
+  <simple-rating office-id="XXX">
     <rating-spec-id>HEYB.Elev;Stor.Linear.Production</rating-spec-id>
     <vertical-datum-info unit="ft">
       <native-datum>NGVD-29</native-datum>

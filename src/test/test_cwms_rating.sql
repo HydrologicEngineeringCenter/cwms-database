@@ -54,6 +54,7 @@ is
 begin
    if not inspect_after_test then
       delete from at_clob where id like '/XSLT\_TEST/RESULT\_%' escape '\';
+      delete from at_clob where id like '/XSLT\_TEST/COMPARISON\_%' escape '\';
    end if;   
 end teardown_xslt;
 --------------------------------------------------------------------------------
@@ -88,7 +89,7 @@ begin
    ----------------------------------------------------------------------
    -- make sure we have the number of ratings and transforms we expect --
    ----------------------------------------------------------------------
-   select id bulk collect into l_rating_ids from at_clob where regexp_like(id, '/XSLT_TEST/TEST_\d') order by 1;
+   select id bulk collect into l_rating_ids from at_clob where regexp_like(id, '/XSLT_TEST/RATING_\d') order by 1;
    ut.expect(l_rating_ids.count).to_equal(6);
    select id bulk collect into l_transform_ids from at_clob where id like '/XSLT/%' order by 1;
    ut.expect(l_transform_ids.count).to_equal(3);
@@ -99,11 +100,48 @@ begin
       set value = replace(value, 'office-id="XXX"', 'office-id="&&office_id"')
    where id in (select column_value from table(l_rating_ids));
    commit;
+   --------------------------------------------------------------------
+   -- get the rating specs for the rating clobs and store as ratings --
+   --------------------------------------------------------------------
+   l_rating_specs := str_tab_t();
+   l_rating_specs.extend(l_rating_ids.count);
+   for i in 2..l_rating_ids.count loop -- skip empty rating at position 1
+      l_rating_specs(i) := regexp_substr(cwms_text.retrieve_text(l_rating_ids(i), '&&office_id'), '<rating-spec-id>(.+?)</rating-spec-id>', 1, 1, 'c', 1);
+      cwms_rating.store_ratings_xml(
+         p_errors         => l_errors,
+         p_xml            => cwms_text.retrieve_text(l_rating_ids(i), '&&office_id'),
+         p_fail_if_exists => 'F',
+         p_replace_base   => 'T');
+      commit;   
+      if l_errors is not null then
+         for rec in (select column_value as line from table(cwms_util.split_text(l_errors, chr(10)))) loop
+            dbms_output.put_line('===> '||rec.line);
+         end loop;
+         cwms_err.raise('ERROR', substr(l_errors, 1, 4000));
+      end if;
+   end loop;
+   ---------------------------------------------------
+   -- re-store rating clobs withtout source ratings --
+   ---------------------------------------------------
+   for i in 1..l_rating_ids.count loop
+      if i = 1 then
+         l_rating := cwms_text.retrieve_text('/XSLT_TEST/RATING_1', '&&office_id');
+      else
+         l_rating := cwms_rating.retrieve_ratings_xml2_f(l_rating_specs(i), null, null, null, '&&office_id');
+         l_rating := regexp_replace(l_rating, '<\?xml.+?\?>\s*', null);
+      end if;
+      l_clob_code := cwms_text.store_text(
+         p_text           => l_rating,
+         p_id             => '/XSLT_TEST/TEST_'||i,
+         p_description    => null,
+         p_fail_if_exists => 'F',
+         p_office_id      => '&&office_id');
+   end loop;
    ----------------------------------
    -- test the raw XSLT operations --
    ----------------------------------
    for i in 1..l_rating_ids.count loop
-      l_rating := cwms_text.retrieve_text(l_rating_ids(i), '&&office_id');
+      l_rating := cwms_text.retrieve_text(replace(l_rating_ids(i), '/RATING_', '/TEST_'), '&&office_id');
       for j in 1..l_transform_ids.count loop
          l_transform_type := cwms_util.split_text(l_transform_ids(j), 5, '_');
          l_transform := cwms_text.retrieve_text(l_transform_ids(j), '&&office_id');
@@ -138,24 +176,6 @@ begin
       end loop;
    end loop;
    commit;
-   -------------------------------------------------------------------------
-   -- get the rating specs for the test rating clobs and store as ratings --
-   -------------------------------------------------------------------------
-   l_rating_specs := str_tab_t();
-   l_rating_specs.extend(l_rating_ids.count);
-   for i in 1..l_rating_ids.count loop
-      l_rating_specs(i) := regexp_substr(cwms_text.retrieve_text(l_rating_ids(i), '&&office_id'), '<rating-spec-id>(.+?)</rating-spec-id>', 1, 1, 'c', 1);
-      cwms_rating.store_ratings_xml(
-         p_errors         => l_errors,
-         p_xml            => cwms_text.retrieve_text(l_rating_ids(i), '&&office_id'),
-         p_fail_if_exists => 'F',
-         p_replace_base   => 'T');
-      if l_errors is not null then
-         for rec in (select column_value as line from table(cwms_util.split_text(l_errors, chr(10)))) loop
-            dbms_output.put_line('===> '||rec.line);
-         end loop;
-      end if;
-   end loop;
    -------------------------------------------------
    -- compare RADAR outputs with raw XSLT outputs --
    -------------------------------------------------

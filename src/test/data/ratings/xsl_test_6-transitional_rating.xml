@@ -1,5 +1,5 @@
 <ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">
-  <rating-template office-id="SWT">
+  <rating-template office-id="XXX">
     <parameters-id>Stage,Speed-Water Index;Flow</parameters-id>
     <version>Transitional</version>
     <ind-parameter-specs>
@@ -19,7 +19,69 @@
     <dep-parameter>Flow</dep-parameter>
     <description/>
   </rating-template>
-  <rating-spec office-id="SWT">
+  <rating-template office-id="XXX">
+    <parameters-id>Stage,Speed-Water Index;Flow</parameters-id>
+    <version>Linear</version>
+    <ind-parameter-specs>
+      <ind-parameter-spec position="1">
+        <parameter>Stage</parameter>
+        <in-range-method>LINEAR</in-range-method>
+        <out-range-low-method>NULL</out-range-low-method>
+        <out-range-high-method>NULL</out-range-high-method>
+      </ind-parameter-spec>
+      <ind-parameter-spec position="2">
+        <parameter>Speed-Water Index</parameter>
+        <in-range-method>LINEAR</in-range-method>
+        <out-range-low-method>NULL</out-range-low-method>
+        <out-range-high-method>NULL</out-range-high-method>
+      </ind-parameter-spec>
+    </ind-parameter-specs>
+    <dep-parameter>Flow</dep-parameter>
+    <description/>
+  </rating-template>
+  <rating-template office-id="XXX">
+    <parameters-id>Stage;Flow</parameters-id>
+    <version>EXSA</version>
+    <ind-parameter-specs>
+      <ind-parameter-spec position="1">
+        <parameter>Stage</parameter>
+        <in-range-method>LOGARITHMIC</in-range-method>
+        <out-range-low-method>NEAREST</out-range-low-method>
+        <out-range-high-method>NULL</out-range-high-method>
+      </ind-parameter-spec>
+    </ind-parameter-specs>
+    <dep-parameter>Flow</dep-parameter>
+    <description>Stream Rating (EXSA)</description>
+  </rating-template>
+  <rating-template office-id="XXX">
+    <parameters-id>Stage;Area</parameters-id>
+    <version>Linear</version>
+    <ind-parameter-specs>
+      <ind-parameter-spec position="1">
+        <parameter>Stage</parameter>
+        <in-range-method>LINEAR</in-range-method>
+        <out-range-low-method>NEAREST</out-range-low-method>
+        <out-range-high-method>LINEAR</out-range-high-method>
+      </ind-parameter-spec>
+    </ind-parameter-specs>
+    <dep-parameter>Area</dep-parameter>
+    <description>Cross Sectional Area Rating</description>
+  </rating-template>
+  <rating-template office-id="XXX">
+    <parameters-id>Speed-Water Index;Speed-Water</parameters-id>
+    <version>Standard</version>
+    <ind-parameter-specs>
+      <ind-parameter-spec position="1">
+        <parameter>Speed-Water Index</parameter>
+        <in-range-method>LINEAR</in-range-method>
+        <out-range-low-method>NEAREST</out-range-low-method>
+        <out-range-high-method>LINEAR</out-range-high-method>
+      </ind-parameter-spec>
+    </ind-parameter-specs>
+    <dep-parameter>Speed-Water</dep-parameter>
+    <description>Stream Index Velocity Rating</description>
+  </rating-template>
+  <rating-spec office-id="XXX">
     <rating-spec-id>FSMI.Stage,Speed-Water Index;Flow.Transitional.Production</rating-spec-id>
     <template-id>Stage,Speed-Water Index;Flow.Transitional</template-id>
     <location-id>FSMI</location-id>
@@ -39,11 +101,108 @@
     <dep-rounding-spec>4444444444</dep-rounding-spec>
     <description>Transitional rating for transitioning from stage &amp; velocity based rating to straight stage rating</description>
   </rating-spec>
-  <transitional-rating office-id="SWT">
+  <rating-spec office-id="XXX">
+    <rating-spec-id>FSMI.Stage,Speed-Water Index;Flow.Linear.Dummy</rating-spec-id>
+    <template-id>Stage,Speed-Water Index;Flow.Linear</template-id>
+    <location-id>FSMI</location-id>
+    <version>Dummy</version>
+    <source-agency>USGS</source-agency>
+    <in-range-method>PREVIOUS</in-range-method>
+    <out-range-low-method>NEAREST</out-range-low-method>
+    <out-range-high-method>PREVIOUS</out-range-high-method>
+    <active>true</active>
+    <auto-update>false</auto-update>
+    <auto-activate>false</auto-activate>
+    <auto-migrate-extension>false</auto-migrate-extension>
+    <ind-rounding-specs>
+      <ind-rounding-spec position="1">4444444444</ind-rounding-spec>
+      <ind-rounding-spec position="2">4444444444</ind-rounding-spec>
+    </ind-rounding-specs>
+    <dep-rounding-spec>4444444444</dep-rounding-spec>
+    <description>Virtual rating for using FSMI.Stage;Flow.EXSA.PRODUCTION rating with dummy independent variable of Speed-Water Index</description>
+  </rating-spec>
+  <rating-spec office-id="XXX">
+    <rating-spec-id>FSMI.Stage;Flow.EXSA.PRODUCTION</rating-spec-id>
+    <template-id>Stage;Flow.EXSA</template-id>
+    <location-id>FSMI</location-id>
+    <version>PRODUCTION</version>
+    <source-agency/>
+    <in-range-method>PREVIOUS</in-range-method>
+    <out-range-low-method>NEAREST</out-range-low-method>
+    <out-range-high-method>PREVIOUS</out-range-high-method>
+    <active>true</active>
+    <auto-update>false</auto-update>
+    <auto-activate>false</auto-activate>
+    <auto-migrate-extension>false</auto-migrate-extension>
+    <ind-rounding-specs>
+      <ind-rounding-spec position="1">2223456784</ind-rounding-spec>
+    </ind-rounding-specs>
+    <dep-rounding-spec>2223456784</dep-rounding-spec>
+    <description>FSMI Expanded, Shift-Adjusted PRODUCTION Stream Rating</description>
+  </rating-spec>
+  <rating-spec office-id="XXX">
+    <rating-spec-id>FSMI.Stage,Speed-Water Index;Flow.Linear.Production</rating-spec-id>
+    <template-id>Stage,Speed-Water Index;Flow.Linear</template-id>
+    <location-id>FSMI</location-id>
+    <version>Production</version>
+    <source-agency>USGS</source-agency>
+    <in-range-method>PREVIOUS</in-range-method>
+    <out-range-low-method>NEAREST</out-range-low-method>
+    <out-range-high-method>PREVIOUS</out-range-high-method>
+    <active>true</active>
+    <auto-update>false</auto-update>
+    <auto-activate>false</auto-activate>
+    <auto-migrate-extension>false</auto-migrate-extension>
+    <ind-rounding-specs>
+      <ind-rounding-spec position="1">4444444444</ind-rounding-spec>
+      <ind-rounding-spec position="2">4444444444</ind-rounding-spec>
+    </ind-rounding-specs>
+    <dep-rounding-spec>4444444444</dep-rounding-spec>
+    <description>Virtual rating combining speed-index;speed and stage;xsarea ratings</description>
+  </rating-spec>
+  <rating-spec office-id="XXX">
+    <rating-spec-id>FSMI.Stage;Area.Linear.Production</rating-spec-id>
+    <template-id>Stage;Area.Linear</template-id>
+    <location-id>FSMI</location-id>
+    <version>Production</version>
+    <source-agency/>
+    <in-range-method>PREVIOUS</in-range-method>
+    <out-range-low-method>NEAREST</out-range-low-method>
+    <out-range-high-method>PREVIOUS</out-range-high-method>
+    <active>true</active>
+    <auto-update>false</auto-update>
+    <auto-activate>false</auto-activate>
+    <auto-migrate-extension>false</auto-migrate-extension>
+    <ind-rounding-specs>
+      <ind-rounding-spec position="1">2223456782</ind-rounding-spec>
+    </ind-rounding-specs>
+    <dep-rounding-spec>2223456782</dep-rounding-spec>
+    <description/>
+  </rating-spec>
+  <rating-spec office-id="XXX">
+    <rating-spec-id>FSMI.Speed-Water Index;Speed-Water.Standard.Production</rating-spec-id>
+    <template-id>Speed-Water Index;Speed-Water.Standard</template-id>
+    <location-id>FSMI</location-id>
+    <version>Production</version>
+    <source-agency/>
+    <in-range-method>PREVIOUS</in-range-method>
+    <out-range-low-method>NEAREST</out-range-low-method>
+    <out-range-high-method>PREVIOUS</out-range-high-method>
+    <active>true</active>
+    <auto-update>false</auto-update>
+    <auto-activate>false</auto-activate>
+    <auto-migrate-extension>false</auto-migrate-extension>
+    <ind-rounding-specs>
+      <ind-rounding-spec position="1">2223456782</ind-rounding-spec>
+    </ind-rounding-specs>
+    <dep-rounding-spec>2223456782</dep-rounding-spec>
+    <description/>
+  </rating-spec>
+  <transitional-rating office-id="XXX">
     <rating-spec-id>FSMI.Stage,Speed-Water Index;Flow.Transitional.Production</rating-spec-id>
     <units-id>ft,mph;cfs</units-id>
-    <effective-date>1900-01-01T06:00:00Z</effective-date>
-    <create-date>2017-04-06T18:32:18Z</create-date>
+    <effective-date>1900-01-01T00:00:00-06:00</effective-date>
+    <create-date>2017-04-06T13:32:18-05:00</create-date>
     <active>true</active>
     <description/>
     <select>
@@ -58,5 +217,166 @@
       <rating-spec-id position="2">FSMI.Stage,Speed-Water Index;Flow.Linear.Production</rating-spec-id>
     </source-ratings>
   </transitional-rating>
+  <virtual-rating office-id="XXX">
+    <rating-spec-id>FSMI.Stage,Speed-Water Index;Flow.Linear.Dummy</rating-spec-id>
+    <effective-date>1900-01-01T00:00:00-06:00</effective-date>
+    <create-date>2017-04-06T09:54:25-05:00</create-date>
+    <active>true</active>
+    <description/>
+    <connections>R2I2=R1D</connections>
+    <source-ratings>
+      <source-rating position="1">
+        <rating-spec-id>FSMI.Stage;Flow.EXSA.PRODUCTION {ft;cfs}</rating-spec-id>
+      </source-rating>
+      <source-rating position="2">
+        <rating-expression>I1 * 0 + I2 {mph,cfs;cfs}</rating-expression>
+      </source-rating>
+    </source-ratings>
+  </virtual-rating>
+  <simple-rating office-id="XXX">
+    <rating-spec-id>FSMI.Stage;Flow.EXSA.PRODUCTION</rating-spec-id>
+    <units-id>ft;cfs</units-id>
+    <effective-date>2007-07-11T15:38:00-05:00</effective-date>
+    <create-date>2014-09-10T15:36:00-05:00</create-date>
+    <active>true</active>
+    <description/>
+    <rating-points>
+      <point>
+        <ind>17</ind>
+        <dep>114000</dep>
+      </point>
+      <point>
+        <ind>18.75</ind>
+        <dep>140000</dep>
+      </point>
+      <point>
+        <ind>20.47</ind>
+        <dep>165558</dep>
+      </point>
+      <point>
+        <ind>30</ind>
+        <dep>313800</dep>
+      </point>
+      <point>
+        <ind>30.4</ind>
+        <dep>320500</dep>
+      </point>
+      <point>
+        <ind>30.84</ind>
+        <dep>328800</dep>
+      </point>
+      <point>
+        <ind>31</ind>
+        <dep>332200</dep>
+      </point>
+      <point>
+        <ind>31.29</ind>
+        <dep>339300</dep>
+      </point>
+      <point>
+        <ind>31.4</ind>
+        <dep>342500</dep>
+      </point>
+      <point>
+        <ind>31.62</ind>
+        <dep>349500</dep>
+      </point>
+      <point>
+        <ind>32.26</ind>
+        <dep>372000</dep>
+      </point>
+      <point>
+        <ind>36</ind>
+        <dep>520000</dep>
+      </point>
+    </rating-points>
+  </simple-rating>
+  <virtual-rating office-id="XXX">
+    <rating-spec-id>FSMI.Stage,Speed-Water Index;Flow.Linear.Production</rating-spec-id>
+    <effective-date>1900-01-01T00:00:00-06:00</effective-date>
+    <create-date>2017-04-06T08:49:22-05:00</create-date>
+    <active>true</active>
+    <description/>
+    <connections>R3I1=R2D,R3I2=R1D</connections>
+    <source-ratings>
+      <source-rating position="1">
+        <rating-spec-id>FSMI.Stage;Area.Linear.Production {ft;ft2}</rating-spec-id>
+      </source-rating>
+      <source-rating position="2">
+        <rating-spec-id>FSMI.Speed-Water Index;Speed-Water.Standard.Production {mph;mph}</rating-spec-id>
+      </source-rating>
+      <source-rating position="3">
+        <rating-expression>I1 * I2 {ft/s,ft2;cfs}</rating-expression>
+      </source-rating>
+    </source-ratings>
+  </virtual-rating>
+  <simple-rating office-id="XXX">
+    <rating-spec-id>FSMI.Stage;Area.Linear.Production</rating-spec-id>
+    <units-id>ft;ft2</units-id>
+    <effective-date>2007-02-01T16:17:00-06:00</effective-date>
+    <create-date>2016-08-31T16:17:00-05:00</create-date>
+    <active>true</active>
+    <description/>
+    <rating-points>
+      <point>
+        <ind>10</ind>
+        <dep>16676</dep>
+      </point>
+      <point>
+        <ind>20</ind>
+        <dep>29977</dep>
+      </point>
+      <point>
+        <ind>30</ind>
+        <dep>43278</dep>
+      </point>
+    </rating-points>
+  </simple-rating>
+  <simple-rating office-id="XXX">
+    <rating-spec-id>FSMI.Speed-Water Index;Speed-Water.Standard.Production</rating-spec-id>
+    <units-id>mph;mph</units-id>
+    <effective-date>2007-02-01T09:59:00-06:00</effective-date>
+    <create-date>2016-09-01T09:59:00-05:00</create-date>
+    <active>true</active>
+    <description/>
+    <rating-points>
+      <point>
+        <ind>-.075</ind>
+        <dep>-.034091</dep>
+      </point>
+      <point>
+        <ind>0</ind>
+        <dep>0</dep>
+      </point>
+      <point>
+        <ind>.081818</ind>
+        <dep>.040909</dep>
+      </point>
+      <point>
+        <ind>.293182</ind>
+        <dep>.136364</dep>
+      </point>
+      <point>
+        <ind>1.32955</ind>
+        <dep>.763636</dep>
+      </point>
+      <point>
+        <ind>2.65909</ind>
+        <dep>1.58864</dep>
+      </point>
+      <point>
+        <ind>4.05</ind>
+        <dep>2.42045</dep>
+      </point>
+      <point>
+        <ind>5.12045</ind>
+        <dep>3.61364</dep>
+      </point>
+      <point>
+        <ind>5.48182</ind>
+        <dep>4.09091</dep>
+      </point>
+    </rating-points>
+  </simple-rating>
 </ratings>
 

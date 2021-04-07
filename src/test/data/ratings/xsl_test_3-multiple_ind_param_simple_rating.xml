@@ -1,5 +1,5 @@
 <ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">
-  <rating-template office-id="SWT">
+  <rating-template office-id="XXX">
     <parameters-id>%-Opening-Low_Flow_Gates,Elev;Flow-Low_Flow_Gates</parameters-id>
     <version>Standard</version>
     <ind-parameter-specs>
@@ -19,7 +19,7 @@
     <dep-parameter>Flow-Low_Flow_Gates</dep-parameter>
     <description/>
   </rating-template>
-  <rating-spec office-id="SWT">
+  <rating-spec office-id="XXX">
     <rating-spec-id>HEYB.%-Opening-Low_Flow_Gates,Elev;Flow-Low_Flow_Gates.Standard.Production</rating-spec-id>
     <template-id>%-Opening-Low_Flow_Gates,Elev;Flow-Low_Flow_Gates.Standard</template-id>
     <location-id>HEYB</location-id>
@@ -39,7 +39,7 @@
     <dep-rounding-spec>2222233332</dep-rounding-spec>
     <description/>
   </rating-spec>
-  <simple-rating office-id="SWT">
+  <simple-rating office-id="XXX">
     <rating-spec-id>HEYB.%-Opening-Low_Flow_Gates,Elev;Flow-Low_Flow_Gates.Standard.Production</rating-spec-id>
     <vertical-datum-info unit="ft">
       <native-datum>NGVD-29</native-datum>
