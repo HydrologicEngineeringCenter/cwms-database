@@ -49,17 +49,17 @@
   
   <xsl:template name="trim">
     <xsl:param name="pString"/>
-    <xsl:variable name="trimmed">
+    <xsl:variable name="trimmed1">
       <xsl:call-template name="left-trim">
         <xsl:with-param name="pString" select="$pString"/>
       </xsl:call-template>
     </xsl:variable>
-    <xsl:variable name="trimmed">
+    <xsl:variable name="trimmed2">
       <xsl:call-template name="right-trim">
-        <xsl:with-param name="pString" select="$trimmed"/>
+        <xsl:with-param name="pString" select="$trimmed1"/>
       </xsl:call-template>
     </xsl:variable>
-    <xsl:value-of select="$trimmed"/>
+    <xsl:value-of select="$trimmed2"/>
   </xsl:template>
   
   <xsl:template name="output-rating-parameters">

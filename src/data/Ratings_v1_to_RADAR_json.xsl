@@ -38,17 +38,17 @@
   
   <xsl:template name="trim">
     <xsl:param name="p-string"/>
-    <xsl:variable name="trimmed">
+    <xsl:variable name="trimmed1">
       <xsl:call-template name="left-trim">
         <xsl:with-param name="p-string" select="$p-string"/>
       </xsl:call-template>
     </xsl:variable>
-    <xsl:variable name="trimmed">
+    <xsl:variable name="trimmed2">
       <xsl:call-template name="right-trim">
-        <xsl:with-param name="p-string" select="$trimmed"/>
+        <xsl:with-param name="p-string" select="$trimmed1"/>
       </xsl:call-template>
     </xsl:variable>
-    <xsl:value-of select="$trimmed"/>
+    <xsl:value-of select="$trimmed2"/>
   </xsl:template>
   
   <xsl:template name="replace">
@@ -313,7 +313,6 @@
       <xsl:text>,"extension-values"</xsl:text>      
       <xsl:for-each select="extension-points/point">
         <xsl:text>,[</xsl:text>
-        <xsl:copy-of select="$others"/>
         <xsl:value-of select="format-number(ind, '0.#######')"/>
         <xsl:text>,</xsl:text>
         <xsl:value-of select="format-number(dep, '0.#######')"/>
