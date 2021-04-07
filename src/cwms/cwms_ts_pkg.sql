@@ -771,6 +771,83 @@ AS
       p_office_id           IN     VARCHAR2 DEFAULT NULL);
 
    /**
+    * Retrieves time series data for a specified time series and time window, including LRTS time zone
+    *
+    * @param p_at_tsv_rc       A cursor containing the time series data.  The cursor
+    * contains the following columns, sorted by date_time:
+    * <p>
+    * <table class="descr">
+    *   <tr>
+    *     <th class="descr">Column No.</th>
+    *     <th class="descr">Column Name</th>
+    *     <th class="descr">Data Type</th>
+    *     <th class="descr">Contents</th>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">1</td>
+    *     <td class="descr">date_time</td>
+    *     <td class="descr">date</td>
+    *     <td class="descr">The date/time of the value, in the specified time zone</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">2</td>
+    *     <td class="descr">value</td>
+    *     <td class="descr">binary_double</td>
+    *     <td class="descr">The data value</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">3</td>
+    *     <td class="descr">quality_code</td>
+    *     <td class="descr">number</td>
+    *     <td class="descr">The quality code for the data value</td>
+    *   </tr>
+    * </table>
+    * @param p_cwms_ts_id_out  The case-corrected version of the time series identifier
+    * @param p_units_out       The unit of the retrieved data values
+    * @param p_time_zone_id    The location time zone if the time series is a local-regular time series (LRTS), otherwise NULL
+    * @param p_cwms_ts_id      The time series identifier to retrieve data for
+    * @param p_units           The unit to retrieve the data values in
+    * @param p_start_time      The start time of the time window
+    * @param p_end_time        The end time of the time window
+    * @param p_time_zone       The time zone for the time window and retrieved times. Either a standard (constant offset from UTC) or local (observes Daylight Savings)
+    * time zone can be specified. For local time zones there are two behaviors that can be specified for retrieving data across a (Spring or Autum)
+    * Daylight Savings boundary.
+    * <ul><li>The <strong>default behavior</strong> is to retrieve the data normally and label it according to the local time zone, which will result in time discontinuities
+    *         at the DST boundaries. The Spring discontinuity will result in a missing 0200 hour; the Autum discontinuity will result in a repeated
+    *         0100 hour (with possibly different values).</li>
+    *     <li>The <strong>alternate behavior</strong> - specified by pre-pending <strong><code>!</code></strong> to the time zone (e.g. <code>!US/Pacific</code>) - is to retrieve data that can be used
+    *         as a valid time series. This results in the absence of time discontinuities in the dataset, but at the expense of inserting a manufactured
+    *         0200 hour in the Spring (with null values and "missing" quality codes) for regular time series and not returing earliest 0100 hour (the
+    *         one corresponding to Daylight Savings) in the Autum.</li></ul>
+    * @param p_trim            A flag ('T' or 'F') that specifies whether to trim missing values from the beginning and end of the retrieved values
+    * @param p_start_inclusive A flag ('T' or 'F') that specifies whether the time window begins on ('T') or after ('F') the start time
+    * @param p_end_inclusive   A flag ('T' or 'F') that specifies whether the time window ends on ('T') or before ('F') the end time
+    * @param p_previous        A flag ('T' or 'F') that specifies whether to retrieve the latest value before the start of the time window
+    * @param p_next            A flag ('T' or 'F') that specifies whether to retrieve the earliest value after the end of the time window
+    * @param p_version_date    The version date of the data to retrieve. If not specified or NULL, the version date is determined by p_max_version
+    * @param p_max_version     A flag ('T' or 'F') that specifies whether to retrieve the maximum ('T') or minimum ('F') version date if p_version_date is NULL
+    * @param p_office_id       The office that owns the time series
+    */
+   PROCEDURE retrieve_ts_out (
+      p_at_tsv_rc            OUT SYS_REFCURSOR,
+      p_cwms_ts_id_out       OUT VARCHAR2,
+      p_units_out            OUT VARCHAR2,
+      p_time_zone_id         OUT VARCHAR2,
+      p_cwms_ts_id        IN     VARCHAR2,
+      p_units             IN     VARCHAR2,
+      p_start_time        IN     DATE,
+      p_end_time          IN     DATE,
+      p_time_zone         IN     VARCHAR2 DEFAULT 'UTC',
+      p_trim              IN     VARCHAR2 DEFAULT 'F',
+      p_start_inclusive   IN     VARCHAR2 DEFAULT 'T',
+      p_end_inclusive     IN     VARCHAR2 DEFAULT 'T',
+      p_previous          IN     VARCHAR2 DEFAULT 'F',
+      p_next              IN     VARCHAR2 DEFAULT 'F',
+      p_version_date      IN     DATE DEFAULT NULL,
+      p_max_version       IN     VARCHAR2 DEFAULT 'T',
+      p_office_id         IN     VARCHAR2 DEFAULT NULL);
+
+   /**
     * Retrieves time series data for a specified time series and time window
     *
     * @param p_at_tsv_rc       A cursor containing the time series data.  The cursor
@@ -920,6 +997,73 @@ AS
       PIPELINED;
 
    /**
+    * Retrieves time series data for a specified time series and time window, including LRTS time zone
+    *
+    * @param p_at_tsv_rc       A cursor containing the time series data.  The cursor
+    * contains the following columns, sorted by date_time:
+    * <p>
+    * <table class="descr">
+    *   <tr>
+    *     <th class="descr">Column No.</th>
+    *     <th class="descr">Column Name</th>
+    *     <th class="descr">Data Type</th>
+    *     <th class="descr">Contents</th>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">1</td>
+    *     <td class="descr">date_time</td>
+    *     <td class="descr">timestamp with time zone</td>
+    *     <td class="descr">The date/time of the value</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">2</td>
+    *     <td class="descr">value</td>
+    *     <td class="descr">binary_double</td>
+    *     <td class="descr">The data value</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">3</td>
+    *     <td class="descr">quality_code</td>
+    *     <td class="descr">number</td>
+    *     <td class="descr">The quality code for the data value</td>
+    *   </tr>
+    * </table>
+    * @param p_time_zone_id    The location time zone if the time series is a local-regular time series (LRTS), otherwise NULL
+    * @param p_units           The unit to retrieve the data values in
+    * @param p_officeid        The office that owns the time series
+    * @param p_cwms_ts_id      The time series identifier to retrieve data for
+    * @param p_start_time      The start time of the time window
+    * @param p_end_time        The end time of the time window
+    * @param p_timezone        The time zone for the time window. Either a standard (constant offset from UTC) or local (observes Daylight Savings)
+    * time zone can be specified. For local time zones there are two behaviors that can be specified for retrieving data across a (Spring or Autum)
+    * Daylight Savings boundary.
+    * <ul><li>The <strong>default behavior</strong> is to retrieve the data normally and label it according to the local time zone, which will result in time discontinuities
+    *         at the DST boundaries. The Spring discontinuity will result in a missing 0200 hour; the Autum discontinuity will result in a repeated
+    *         0100 hour (with possibly different values).</li>
+    *     <li>The <strong>alternate behavior</strong> - specified by pre-pending <strong><code>!</code></strong> to the time zone (e.g. <code>!US/Pacific</code>) - is to retrieve data that can be used
+    *         as a valid time series. This results in the absence of time discontinuities in the dataset, but at the expense of inserting a manufactured
+    *         0200 hour in the Spring (with null values and "missing" quality codes) for regular time series and not returing earliest 0100 hour (the
+    *         one corresponding to Daylight Savings) in the Autum.</li></ul>
+    * @param p_trim            A flag (0 or 1) that specifies whether to trim missing values from the beginning and end of the retrieved values
+    * @param p_inclusive       A flag (0 or 1) that specifies whether the start and end time are included in the time window
+    * @param p_versiondate     The version date of the data to retrieve. If not specified or NULL, the version date is determined by p_max_version
+    * @param p_max_version     A flag (0 or 1) that specifies whether to retrieve the maximum ('T') or minimum ('F') version date if p_versiondate is NULL
+    */
+   PROCEDURE retrieve_ts (
+      p_at_tsv_rc      IN OUT SYS_REFCURSOR,
+      p_time_zone_id      OUT VARCHAR2,
+      p_units          IN     VARCHAR2,
+      p_officeid       IN     VARCHAR2,
+      p_cwms_ts_id     IN     VARCHAR2,
+      p_start_time     IN     DATE,
+      p_end_time       IN     DATE,
+      p_timezone       IN     VARCHAR2 DEFAULT 'GMT',
+      p_trim           IN     NUMBER DEFAULT cwms_util.false_num,
+      p_inclusive      IN     NUMBER DEFAULT NULL,
+      p_versiondate    IN     DATE DEFAULT NULL,
+      p_max_version    IN     NUMBER DEFAULT cwms_util.true_num);
+
+   /**
     * Retrieves time series data for a specified time series and time window
     *
     * @param p_at_tsv_rc       A cursor containing the time series data.  The cursor
@@ -966,10 +1110,10 @@ AS
     *         as a valid time series. This results in the absence of time discontinuities in the dataset, but at the expense of inserting a manufactured
     *         0200 hour in the Spring (with null values and "missing" quality codes) for regular time series and not returing earliest 0100 hour (the
     *         one corresponding to Daylight Savings) in the Autum.</li></ul>
-    * @param p_trim            A flag ('T' or 'F') that specifies whether to trim missing values from the beginning and end of the retrieved values
-    * @param p_inclusive       A flag ('T' or 'F') that specifies whether the start and end time are included in the time window
+    * @param p_trim            A flag (0 or 1) that specifies whether to trim missing values from the beginning and end of the retrieved values
+    * @param p_inclusive       A flag (0 or 1) that specifies whether the start and end time are included in the time window
     * @param p_versiondate     The version date of the data to retrieve. If not specified or NULL, the version date is determined by p_max_version
-    * @param p_max_version     A flag ('T' or 'F') that specifies whether to retrieve the maximum ('T') or minimum ('F') version date if p_versiondate is NULL
+    * @param p_max_version     A flag (0 or 1) that specifies whether to retrieve the maximum ('T') or minimum ('F') version date if p_versiondate is NULL
     */
    PROCEDURE retrieve_ts (
       p_at_tsv_rc     IN OUT SYS_REFCURSOR,
@@ -986,6 +1130,21 @@ AS
 
    -- not documented, same as retrieve_ts
    PROCEDURE retrieve_ts_2 (
+      p_at_tsv_rc         OUT SYS_REFCURSOR,
+      p_time_zone_id      OUT VARCHAR2,
+      p_units          IN     VARCHAR2,
+      p_officeid       IN     VARCHAR2,
+      p_cwms_ts_id     IN     VARCHAR2,
+      p_start_time     IN     DATE,
+      p_end_time       IN     DATE,
+      p_timezone       IN     VARCHAR2 DEFAULT 'GMT',
+      p_trim           IN     NUMBER DEFAULT cwms_util.false_num,
+      p_inclusive      IN     NUMBER DEFAULT NULL,
+      p_versiondate    IN     DATE DEFAULT NULL,
+      p_max_version    IN     NUMBER DEFAULT cwms_util.true_num);
+
+   -- not documented, same as retrieve_ts
+   PROCEDURE retrieve_ts_2 (
       p_at_tsv_rc        OUT SYS_REFCURSOR,
       p_units         IN     VARCHAR2,
       p_officeid      IN     VARCHAR2,
@@ -997,6 +1156,78 @@ AS
       p_inclusive     IN     NUMBER DEFAULT NULL,
       p_versiondate   IN     DATE DEFAULT NULL,
       p_max_version   IN     NUMBER DEFAULT cwms_util.true_num);
+
+   /**
+    * Retrieves time series data for a specified time series and time window, including LRTS time zone
+    *
+    * @param p_at_tsv_rc       A cursor containing the time series data.  The cursor
+    * contains the following columns, sorted by date_time:
+    * <p>
+    * <table class="descr">
+    *   <tr>
+    *     <th class="descr">Column No.</th>
+    *     <th class="descr">Column Name</th>
+    *     <th class="descr">Data Type</th>
+    *     <th class="descr">Contents</th>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">1</td>
+    *     <td class="descr">date_time</td>
+    *     <td class="descr">date</td>
+    *     <td class="descr">The date/time of the value, in the specified time zone</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">2</td>
+    *     <td class="descr">value</td>
+    *     <td class="descr">binary_double</td>
+    *     <td class="descr">The data value</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">3</td>
+    *     <td class="descr">quality_code</td>
+    *     <td class="descr">number</td>
+    *     <td class="descr">The quality code for the data value</td>
+    *   </tr>
+    * </table>
+    * @param p_time_zone_id    The location time zone if the time series is a local-regular time series (LRTS), otherwise NULL
+    * @param p_cwms_ts_id      The time series identifier to retrieve data for
+    * @param p_units           The unit to retrieve the data values in
+    * @param p_start_time      The start time of the time window
+    * @param p_end_time        The end time of the time window. Either a standard (constant offset from UTC) or local (observes Daylight Savings)
+    * time zone can be specified. For local time zones there are two behaviors that can be specified for retrieving data across a (Spring or Autum)
+    * Daylight Savings boundary.
+    * <ul><li>The <strong>default behavior</strong> is to retrieve the data normally and label it according to the local time zone, which will result in time discontinuities
+    *         at the DST boundaries. The Spring discontinuity will result in a missing 0200 hour; the Autum discontinuity will result in a repeated
+    *         0100 hour (with possibly different values).</li>
+    *     <li>The <strong>alternate behavior</strong> - specified by pre-pending <strong><code>!</code></strong> to the time zone (e.g. <code>!US/Pacific</code>) - is to retrieve data that can be used
+    *         as a valid time series. This results in the absence of time discontinuities in the dataset, but at the expense of inserting a manufactured
+    *         0200 hour in the Spring (with null values and "missing" quality codes) for regular time series and not returing earliest 0100 hour (the
+    *         one corresponding to Daylight Savings) in the Autum.</li></ul>
+    * @param p_time_zone       The time zone for the time window and retrieved times
+    * @param p_trim            A flag ('T' or 'F') that specifies whether to trim missing values from the beginning and end of the retrieved values
+    * @param p_start_inclusive A flag ('T' or 'F') that specifies whether the time window begins on ('T') or after ('F') the start time
+    * @param p_end_inclusive   A flag ('T' or 'F') that specifies whether the time window ends on ('T') or before ('F') the end time
+    * @param p_previous        A flag ('T' or 'F') that specifies whether to retrieve the latest value before the start of the time window
+    * @param p_next            A flag ('T' or 'F') that specifies whether to retrieve the earliest value after the end of the time window
+    * @param p_version_date    The version date of the data to retrieve. If not specified or NULL, the version date is determined by p_max_version
+    * @param p_max_version     A flag ('T' or 'F') that specifies whether to retrieve the maximum ('T') or minimum ('F') version date if p_version_date is NULL
+    * @param p_office_id       The office that owns the time series
+    */
+   PROCEDURE retrieve_ts (p_at_tsv_rc            OUT SYS_REFCURSOR,
+                          p_time_zone_id         OUT VARCHAR2,
+                          p_cwms_ts_id        IN     VARCHAR2,
+                          p_units             IN     VARCHAR2,
+                          p_start_time        IN     DATE,
+                          p_end_time          IN     DATE,
+                          p_time_zone         IN     VARCHAR2 DEFAULT 'UTC',
+                          p_trim              IN     VARCHAR2 DEFAULT 'F',
+                          p_start_inclusive   IN     VARCHAR2 DEFAULT 'T',
+                          p_end_inclusive     IN     VARCHAR2 DEFAULT 'T',
+                          p_previous          IN     VARCHAR2 DEFAULT 'F',
+                          p_next              IN     VARCHAR2 DEFAULT 'F',
+                          p_version_date      IN     DATE DEFAULT NULL,
+                          p_max_version       IN     VARCHAR2 DEFAULT 'T',
+                          p_office_id         IN     VARCHAR2 DEFAULT NULL);
 
    /**
     * Retrieves time series data for a specified time series and time window
@@ -1148,6 +1379,12 @@ AS
     *        <td class="descr">The quality code for the data value</td>
     *      </tr>
     *    </table>
+    *   <tr>
+    *     <td class="descr-center">8</td>
+    *     <td class="descr">location_time_zone</td>
+    *     <td class="descr">varchar2(28)</td>
+    *     <td class="descr">The time zone of the location of the time series for this record</td>
+    *   </tr>
     *     </td>
     *   </tr>
     * </table>
@@ -1181,8 +1418,8 @@ AS
       p_previous          IN     VARCHAR2 DEFAULT 'F',
       p_next              IN     VARCHAR2 DEFAULT 'F',
       p_version_date      IN     DATE DEFAULT NULL,
-      p_max_version       IN     VARCHAR2 DEFAULT 'T',
-      p_office_id         IN     VARCHAR2 DEFAULT NULL);
+      p_max_version       in     varchar2 default 'T',
+      p_office_id         in     varchar2 default null);
    /*
     * Ranks a quality code on a scale of 0 - 3
     * <p>
@@ -1279,6 +1516,8 @@ AS
     * @param p_store_rule       The store rule to use
     * @param p_override_prot    A flag ('T' or 'F') specifying whether to override the protection flag on any existing data value
     * @param p_versiondate      The version date of the data
+    * @param p_create_as_lrts   A flag ('T' or 'F') specifying whether to create the time series as a local-regular time series if it doesn't already exit.
+    *                           This applies only to non-existing time series with intervals that start with '~'. Otherwise the parameter is ignored.
     */
    PROCEDURE store_ts (
       p_office_id         IN VARCHAR2,
@@ -1287,7 +1526,8 @@ AS
       p_timeseries_data   IN tsv_array,
       p_store_rule        IN VARCHAR2,
       p_override_prot     IN NUMBER DEFAULT cwms_util.false_num,
-      p_versiondate       IN DATE DEFAULT cwms_util.non_versioned);
+      p_versiondate       IN DATE DEFAULT cwms_util.non_versioned,
+      p_create_as_lrts    in varchar2 default 'F');
 
    /**
     * Stores time series data to the database
@@ -1306,6 +1546,8 @@ AS
     * @param p_override_prot    A flag ('T' or 'F') specifying whether to override the protection flag on any existing data value
     * @param p_version_date     The version date of the data
     * @param p_office_id        The office owning the time series. If not specified or NULL, the session user's default office is used
+    * @param p_create_as_lrts   A flag ('T' or 'F') specifying whether to create the time series as a local-regular time series if it doesn't already exit.
+    *                           This applies only to non-existing time series with intervals that start with '~'. Otherwise the parameter is ignored.
     */
    PROCEDURE store_ts (
       p_cwms_ts_id        IN VARCHAR2,
@@ -1314,7 +1556,8 @@ AS
       p_store_rule        IN VARCHAR2,
       p_override_prot     IN VARCHAR2 DEFAULT 'F',
       p_version_date      IN DATE DEFAULT cwms_util.non_versioned,
-      p_office_id         IN VARCHAR2 DEFAULT NULL);
+      p_office_id         IN VARCHAR2 DEFAULT NULL,
+      p_create_as_lrts    in varchar2 default 'F');
 
    /**
     * Stores time series data to the database using parameter types compatible with cx_Oracle Pyton package
@@ -1337,6 +1580,8 @@ AS
     * @param p_override_prot    A flag ('T' or 'F') specifying whether to override the protection flag on any existing data value
     * @param p_version_date     The version date of the data
     * @param p_office_id        The office owning the time series. If not specified or NULL, the session user's default office is used
+    * @param p_create_as_lrts   A flag ('T' or 'F') specifying whether to create the time series as a local-regular time series if it doesn't already exit.
+    *                           This applies only to non-existing time series with intervals that start with '~'. Otherwise the parameter is ignored.
     */
    PROCEDURE store_ts (
       p_cwms_ts_id      IN VARCHAR2,
@@ -1347,7 +1592,8 @@ AS
       p_store_rule      IN VARCHAR2,
       p_override_prot   IN VARCHAR2 DEFAULT 'F',
       p_version_date    IN DATE DEFAULT cwms_util.non_versioned,
-      p_office_id       IN VARCHAR2 DEFAULT NULL);
+      p_office_id       IN VARCHAR2 DEFAULT NULL,
+      p_create_as_lrts  in varchar2 default 'F');
 
    /**
     * Stores time series data to the database using simple parameter types
@@ -1368,6 +1614,8 @@ AS
     * @param p_override_prot    A flag ('T' or 'F') specifying whether to override the protection flag on any existing data value
     * @param p_version_date     The version date of the data
     * @param p_office_id        The office owning the time series. If not specified or NULL, the session user's default office is used
+    * @param p_create_as_lrts   A flag ('T' or 'F') specifying whether to create the time series as a local-regular time series if it doesn't already exit.
+    *                           This applies only to non-existing time series with intervals that start with '~'. Otherwise the parameter is ignored.
     */
    PROCEDURE store_ts (
       p_cwms_ts_id      IN VARCHAR2,
@@ -1378,7 +1626,8 @@ AS
       p_store_rule      IN VARCHAR2,
       p_override_prot   IN VARCHAR2 DEFAULT 'F',
       p_version_date    IN DATE DEFAULT cwms_util.non_versioned,
-      p_office_id       IN VARCHAR2 DEFAULT NULL);
+      p_office_id       IN VARCHAR2 DEFAULT NULL,
+      p_create_as_lrts  in varchar2 default 'F');
 
    /* (not documented in API docs)
     * Stores time series data to the database
@@ -1398,6 +1647,8 @@ AS
     * @param p_override_prot    A flag ('T' or 'F') specifying whether to override the protection flag on any existing data value
     * @param p_version_date     The version date of the data
     * @param p_office_id        The office owning the time series. If not specified or NULL, the session user's default office is used
+    * @param p_create_as_lrts   A flag ('T' or 'F') specifying whether to create the time series as a local-regular time series if it doesn't already exit.
+    *                           This applies only to non-existing time series with intervals that start with '~'. Otherwise the parameter is ignored.
     */
    PROCEDURE store_ts_2 (
       p_cwms_ts_id        IN VARCHAR2,
@@ -1407,7 +1658,8 @@ AS
       p_store_rule        IN VARCHAR2,
       p_override_prot     IN VARCHAR2 DEFAULT 'F',
       p_version_date      IN DATE DEFAULT cwms_util.non_versioned,
-      p_office_id         in varchar2 default null);
+      p_office_id         in varchar2 default null,
+      p_create_as_lrts    in varchar2 default 'F');
 
    /**
     * Stores time series data for multiple time series to the database, allowing multiple version dates
@@ -1422,17 +1674,20 @@ AS
     * @param p_timeseries_array The time series data to store
     * @param p_store_rule       The store rule to use
     * @param p_override_prot    A flag ('T' or 'F') specifying whether to override the protection flag on any existing data value
-    * @param p_version_dates    The version dateS of the data in UTC, one for each time seires. If this parameter is NULL, all time series
+    * @param p_version_dates    The version dates of the data in UTC, one for each time seires. If this parameter is NULL, all time series
     *                           will be stored as non-versioned. If any element is NULL, its corresponding time series will be stored as
     *                           non-versioned.
     * @param p_office_id        The office owning the time series. If not specified or NULL, the session user's default office is used
+    * @param p_create_as_lrts   A table of flags ('T' or 'F'), one for each time series, specifying whether to create the time series as a local-regular time series if it doesn't already exit.
+    *                           This applies only to non-existing time series with intervals that start with '~'. Otherwise the parameter is ignored.
     */
    PROCEDURE store_ts_multi (
       p_timeseries_array   IN timeseries_array,
       p_store_rule         IN VARCHAR2,
       p_override_prot      IN VARCHAR2 DEFAULT 'F',
       p_version_dates      IN DATE_TABLE_TYPE DEFAULT NULL,
-      p_office_id          IN VARCHAR2 DEFAULT NULL);
+      p_office_id          IN VARCHAR2 DEFAULT NULL,
+      p_create_as_lrts     IN STR_TAB_T DEFAULT NULL);
 
    /**
     * Stores time series data for multiple time series to the database
@@ -1449,13 +1704,16 @@ AS
     * @param p_override_prot    A flag ('T' or 'F') specifying whether to override the protection flag on any existing data value
     * @param p_version_date     The version date of the data in UTC
     * @param p_office_id        The office owning the time series. If not specified or NULL, the session user's default office is used
+    * @param p_create_as_lrts   A flag ('T' or 'F') specifying whether to create each time series as a local-regular time series if it doesn't already exit.
+    *                           This applies only to non-existing time series with intervals that start with '~'. Otherwise the parameter is ignored.
     */
    PROCEDURE store_ts_multi (
       p_timeseries_array   IN timeseries_array,
       p_store_rule         IN VARCHAR2,
       p_override_prot      IN VARCHAR2 DEFAULT 'F',
-      p_version_date       IN DATE DEFAULT cwms_util.non_versioned,
-      p_office_id          IN VARCHAR2 DEFAULT NULL);
+      p_version_date       in date default cwms_util.non_versioned,
+      p_office_id          IN VARCHAR2 DEFAULT NULL,
+      p_create_as_lrts     IN VARCHAR2 DEFAULT 'F');
 
    /**
     * Changes processing information for a time series
@@ -1561,6 +1819,19 @@ AS
 
    -- not documented
    PROCEDURE zretrieve_ts (p_at_tsv_rc      IN OUT SYS_REFCURSOR,
+                           p_time_zone_id      OUT VARCHAR2,
+                           p_units          IN     VARCHAR2,
+                           p_cwms_ts_id     IN     VARCHAR2,
+                           p_start_time     IN     DATE,
+                           p_end_time       IN     DATE,
+                           p_trim           IN     VARCHAR2 DEFAULT 'F',
+                           p_inclusive      IN     NUMBER DEFAULT NULL,
+                           p_version_date   IN     DATE DEFAULT NULL,
+                           p_max_version    IN     VARCHAR2 DEFAULT 'T',
+                           p_db_office_id   IN     VARCHAR2 DEFAULT NULL);
+
+   -- not documented
+   PROCEDURE zretrieve_ts (p_at_tsv_rc      IN OUT SYS_REFCURSOR,
                            p_units          IN     VARCHAR2,
                            p_cwms_ts_id     IN     VARCHAR2,
                            p_start_time     IN     DATE,
@@ -1588,6 +1859,8 @@ AS
     * @param p_override_prot    A flag ('T' or 'F') specifying whether to override the protection flag on any existing data value
     * @param p_version_date     The version date of the data
     * @param p_office_id        The office owning the time series. If not specified or NULL, the session user's default office is used
+    * @param p_create_as_lrts   A flag ('T' or 'F') specifying whether to create the time series as a local-regular time series if it doesn't already exit.
+    *                           This applies only to non-existing time series with intervals that start with '~'. Otherwise the parameter is ignored.
     */
    PROCEDURE zstore_ts (
       p_cwms_ts_id        IN VARCHAR2,
@@ -1596,7 +1869,8 @@ AS
       p_store_rule        IN VARCHAR2,
       p_override_prot     IN VARCHAR2 DEFAULT 'F',
       p_version_date      IN DATE DEFAULT cwms_util.non_versioned,
-      p_office_id         IN VARCHAR2 DEFAULT NULL);
+      p_office_id         IN VARCHAR2 DEFAULT NULL,
+      p_create_as_lrts    in varchar2 default 'F');
 
    /**
     * Stores time series data for multiple time series to the database
@@ -1613,13 +1887,106 @@ AS
     * @param p_override_prot    A flag ('T' or 'F') specifying whether to override the protection flag on any existing data value
     * @param p_version_date     The version date of the data
     * @param p_office_id        The office owning the time series. If not specified or NULL, the session user's default office is used
+    * @param p_create_as_lrts   A flag ('T' or 'F') specifying whether to create each time series as a local-regular time series if it doesn't already exit.
+    *                           This applies only to non-existing time series with intervals that start with '~'. Otherwise the parameter is ignored.
     */
    PROCEDURE zstore_ts_multi (
       p_timeseries_array   IN ztimeseries_array,
       p_store_rule         IN VARCHAR2,
       p_override_prot      IN VARCHAR2 DEFAULT 'F',
       p_version_date       IN DATE DEFAULT cwms_util.non_versioned,
-      p_office_id          IN VARCHAR2 DEFAULT NULL);
+      p_office_id          IN VARCHAR2 DEFAULT NULL,
+      p_create_as_lrts     IN VARCHAR2 DEFAULT 'F');
+
+   /**
+    * Stores time series data for multiple time series to the database
+    *
+    * @see constant cwms_util.non_versioned
+    * @see constant cwms_util.replace_all
+    * @see constant cwms_util.do_not_replace
+    * @see constant cwms_util.replace_missing_values_only
+    * @see constant cwms_util.replace_with_non_missing
+    * @see constant cwms_util.delete_insert
+    *
+    * @param p_timeseries_array The time series data to store
+    * @param p_store_rule       The store rule to use
+    * @param p_override_prot    A flag ('T' or 'F') specifying whether to override the protection flag on any existing data value
+    * @param p_version_dates    The version dates of the data in UTC, one for each time seires. If this parameter is NULL, all time series
+    *                           will be stored as non-versioned. If any element is NULL, its corresponding time series will be stored as
+    *                           non-versioned.
+    * @param p_office_id        The office owning the time series. If not specified or NULL, the session user's default office is used
+    * @param p_create_as_lrts   A table of flags ('T' or 'F'), one for each time series, specifying whether to create the time series as a local-regular time series if it doesn't already exit.
+    *                           This applies only to non-existing time series with intervals that start with '~'. Otherwise the parameter is ignored.
+    */
+   PROCEDURE zstore_ts_multi (
+      p_timeseries_array   IN ztimeseries_array,
+      p_store_rule         IN VARCHAR2,
+      p_override_prot      IN VARCHAR2 DEFAULT 'F',
+      p_version_dates      IN DATE_TABLE_TYPE DEFAULT NULL,
+      p_office_id          IN VARCHAR2 DEFAULT NULL,
+      p_create_as_lrts     IN STR_TAB_T DEFAULT NULL);
+
+   /**
+    * Retrieves time series data for a specified time series and time window, including LRTS time zone
+    *
+    * @param p_transaction_time The UTC timestamp of when the routine was called.
+    * @param p_at_tsv_rc       A cursor containing the time series data.  The cursor
+    * contains the following columns, sorted by date_time:
+    * <p>
+    * <table class="descr">
+    *   <tr>
+    *     <th class="descr">Column No.</th>
+    *     <th class="descr">Column Name</th>
+    *     <th class="descr">Data Type</th>
+    *     <th class="descr">Contents</th>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">1</td>
+    *     <td class="descr">date_time</td>
+    *     <td class="descr">date</td>
+    *     <td class="descr">The date/time of the value, in UTC</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">2</td>
+    *     <td class="descr">value</td>
+    *     <td class="descr">binary_double</td>
+    *     <td class="descr">The data value</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">3</td>
+    *     <td class="descr">quality_code</td>
+    *     <td class="descr">number</td>
+    *     <td class="descr">The quality code for the data value</td>
+    *   </tr>
+    * </table>
+    * @param p_units_out       The unit of the retrieved data values
+    * @param p_cwms_ts_id_out  The case-corrected version of the time series identifier
+    * @param p_time_zone_id    The location time zone if the time series is a local-regular time series (LRTS), otherwise NULL
+    * @param p_units_in        The unit to retrieve the data values in
+    * @param p_cwms_ts_id_in   The time series identifier to retrieve data for
+    * @param p_start_time      The start time of the time window
+    * @param p_end_time        The end time of the time window
+    * @param p_trim            A flag ('T' or 'F') that specifies whether to trim missing values from the beginning and end of the retrieved values
+    * @param p_inclusive       A flag ('T' or 'F') that specifies whether the time window includes the start and end times
+    * @param p_version_date    The version date of the data to retrieve. If not specified or NULL, the version date is determined by p_max_version
+    * @param p_max_version     A flag ('T' or 'F') that specifies whether to retrieve the maximum ('T') or minimum ('F') version date if p_version_date is NULL
+    * @param p_office_id       The office that owns the time series
+    */
+   PROCEDURE zretrieve_ts_java (
+      p_transaction_time      OUT DATE,
+      p_at_tsv_rc             OUT SYS_REFCURSOR,
+      p_units_out             OUT VARCHAR2,
+      p_cwms_ts_id_out        OUT VARCHAR2,
+      p_time_zone_id          OUT VARCHAR2,
+      p_units_in           IN     VARCHAR2,
+      p_cwms_ts_id_in      IN     VARCHAR2,
+      p_start_time         IN     DATE,
+      p_end_time           IN     DATE,
+      p_trim               IN     VARCHAR2 DEFAULT 'F',
+      p_inclusive          IN     NUMBER DEFAULT NULL,
+      p_version_date       IN     DATE DEFAULT NULL,
+      p_max_version        IN     VARCHAR2 DEFAULT 'T',
+      p_db_office_id       IN     VARCHAR2 DEFAULT NULL);
 
    /**
     * Retrieves time series data for a specified time series and time window

@@ -2285,6 +2285,21 @@ AS
          END IF;
       END IF;
 
+      --.
+      -- CHECK #3 - If old name is a sub-location, then new.
+      -- name must also be a sub-location...
+      --.
+      IF NOT l_old_loc_is_base_loc AND l_sub_location_id_new IS NULL
+      then
+         cwms_err.raise ('ERROR',
+                         'Unable to rename. An old non-Base Location: "'
+                         ||p_location_id_old
+                         ||'" can not be renamed to a Base Location: "'
+                         ||p_location_id_new
+                         ||'".'
+                        );
+      END IF;
+
       ---------.
       ---------.
       --.

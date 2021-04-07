@@ -1,0 +1,440 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://www.hec.usace.army.mil/xmlSchema/cwms/ratings"
+           xmlns:rt="http://www.hec.usace.army.mil/xmlSchema/cwms/ratings"
+           xmlns:dt="http://www.hec.usace.army.mil/xmlSchema/cwms/hec-datatypes"
+           elementFormDefault="unqualified">
+  <!--
+      Import the data type schema
+  -->
+  <xs:import namespace="http://www.hec.usace.army.mil/xmlSchema/cwms/hec-datatypes"
+             schemaLocation="hec-datatypes.xsd"/>
+
+  <!-- Text Types with Length Restrictions -->
+
+  <xs:simpleType name="text16-type">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="16"/>
+      <xs:whiteSpace value="collapse"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="text32-type">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="32"/>
+      <xs:whiteSpace value="collapse"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="text256-type">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="256"/>
+      <xs:whiteSpace value="collapse"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Rounding Specification Types -->
+
+  <xs:simpleType name="rounding-spec-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value=" ?[0-9]{10} ?"/>
+      <xs:whiteSpace value="collapse"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="ind-rounding-spec-type">
+    <xs:simpleContent>
+      <xs:extension base="rt:rounding-spec-type">
+        <xs:attribute name="position" type="xs:positiveInteger" use="required"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:complexType name="ind-rounding-specs-type">
+    <xs:sequence maxOccurs="unbounded">
+      <xs:element name="ind-rounding-spec" type="rt:ind-rounding-spec-type"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- Local Boolean Type that Allows Surrounding WhiteSpace -->
+
+  <xs:simpleType name="boolean">
+    <xs:restriction base="xs:string">
+      <xs:pattern value=" ?(true|false) ?"/>
+      <xs:whiteSpace value="collapse"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Local Double Type that Allows Surrounding WhiteSpace -->
+
+  <xs:simpleType name="double">
+    <xs:restriction base="xs:string">
+      <xs:pattern value=" ?(-?[0-9]*[.]?[0-9]*([Ee]-?[0-9]+)?|NaN|INF) ?"/>
+      <xs:whiteSpace value="collapse"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Local DateTime Type that Allows Surrounding WhiteSpace -->
+
+  <xs:simpleType name="dateTime">
+    <xs:restriction base="xs:string">
+      <xs:pattern value=" ?-?[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}([.][0-9]+)?(Z|([+]|-)[0-9]{2}:[0-9]{2})? ?"/>
+      <xs:whiteSpace value="collapse"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Rating Method Type -->
+
+  <xs:simpleType name="rating-method-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[Nn][Uu][Ll][Ll]|[Ee][Rr][Rr][Oo][Rr]|[Ll][Ii][Nn][Ee][Aa][Rr]|[Ll][Oo][Gg][Aa][Rr][Ii][Tt][Hh][Mm][Ii][Cc]|[Ll][Ii][Nn]-[Ll][Oo][Gg]|[Ll][Oo][Gg]-[Ll][Ii][Nn]|[Pp][Rr][Ee][Vv][Ii][Oo][Uu][Ss]|[Nn][Ee][Xx][Tt]|[Nn][Ee][Aa][Rr][Ee][Ss][Tt]|[Ll][Oo][Ww][Ee][Rr]|[Hh][Ii][Gg][Hh][Ee][Rr]|[Cc][Ll][Oo][Ss][Ee][Ss][Tt]"/>
+      <xs:whiteSpace value="collapse"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Point Types -->
+
+  <xs:simpleType name="note-type">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="16"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="point-type">
+    <xs:sequence>
+      <xs:element name="ind" type="xs:double"/>
+      <xs:element name="dep" type="xs:double"/>
+      <xs:element name="note" type="rt:note-type" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="other-ind-type">
+    <xs:attribute name="position" type="xs:positiveInteger" use="required"/>
+    <xs:attribute name="value" type="xs:double" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="points-type">
+    <xs:sequence>
+      <xs:element name="other-ind" type="rt:other-ind-type" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="point" type="rt:point-type" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- Parameter Spec Types -->
+
+  <xs:complexType name="ind-parameter-spec-type">
+     <xs:sequence>
+      <xs:element name="parameter" type="dt:cwms-parameter-type"/>
+      <xs:element name="in-range-method" type="rt:rating-method-type"/>
+      <xs:element name="out-range-low-method" type="rt:rating-method-type"/>
+      <xs:element name="out-range-high-method" type="rt:rating-method-type"/>
+    </xs:sequence>
+    <xs:attribute name="position" type="xs:positiveInteger" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="ind-parameter-specs-type">
+    <xs:sequence>
+      <xs:element name="ind-parameter-spec" type="rt:ind-parameter-spec-type" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- Virtual Rating Types -->
+
+  <xs:simpleType name="connections-type">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[Rr]\d([Dd]|[Ii]\d)=([Rr]\d([Dd]|[Ii]\d)|[Ii]\d)(,[Rr]\d([Dd]|[Ii]\d)=([Rr]\d([Dd]|[Ii]\d)|[Ii]\d))*"/>
+      <xs:whiteSpace value="collapse"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="source-rating-or-expression-type">
+    <xs:choice>
+      <xs:element name="rating-spec-id" type="dt:cwms-rating-spec-with-units-type"/>
+      <xs:element name="rating-expression" type="dt:cwms-rating-expression-with-units-type"/>
+    </xs:choice>
+    <xs:attribute name="position" type="xs:positiveInteger" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="source-ratings-or-expressions-type">
+    <xs:sequence maxOccurs="unbounded">
+      <xs:element name="source-rating" type="rt:source-rating-or-expression-type"/>
+    </xs:sequence>
+  </xs:complexType>
+
+ <!-- Transitional Rating Types -->
+
+  <xs:simpleType name="expression-type">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="256"/>
+      <xs:whiteSpace value="collapse"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="positional-expression-type">
+    <xs:simpleContent>
+      <xs:extension base="rt:expression-type">
+        <xs:attribute name="position" type="xs:positiveInteger" use="required"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:complexType name="logical-operation-type">
+    <xs:sequence>
+      <xs:element name="when" type="rt:expression-type"/>
+      <xs:element name="then" type="rt:expression-type"/>
+    </xs:sequence>
+    <xs:attribute name="position" type="xs:positiveInteger" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="selection-type">
+    <xs:sequence>
+      <xs:sequence minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="case" type="rt:logical-operation-type"/>
+      </xs:sequence>
+      <xs:element name="default" type="rt:expression-type"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="source-rating-type">
+    <xs:simpleContent>
+      <xs:extension base="dt:cwms-rating-spec-type">
+        <xs:attribute name="position" type="xs:positiveInteger" use="required"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:complexType name="source-ratings-type">
+    <xs:sequence>
+      <xs:element name="rating-spec-id" type="rt:source-rating-type" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- Rating Template (Top Level) Element -->
+
+  <xs:element name="rating-template">
+    <xs:annotation>
+      <xs:documentation>
+        A named collection of rating parameters and lookup behaviors.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="parameters-id" type="dt:cwms-rating-parameters-type"/>
+        <xs:element name="version" type="rt:text32-type"/>
+        <xs:element name="ind-parameter-specs" type="rt:ind-parameter-specs-type"/>
+        <xs:element name="dep-parameter" type="dt:cwms-parameter-type"/>
+        <xs:element name="description" type="rt:text256-type" minOccurs="0"/>
+      </xs:sequence>
+      <xs:attribute name="office-id" type="rt:text16-type" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Rating Specification (Top Level) Element -->
+
+  <xs:element name="rating-spec">
+    <xs:annotation>
+      <xs:documentation>
+        A named collection of location, rating template, temporal lookup behaviors,
+        update settings, and rounding specifications.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="rating-spec-id" type="dt:cwms-rating-spec-type"/>
+        <xs:element name="template-id" type="dt:cwms-rating-template-type"/>
+        <xs:element name="location-id" type="dt:cwms-location-type"/>
+        <xs:element name="version" type="rt:text32-type"/>
+        <xs:element name="source-agency" type="rt:text32-type" minOccurs="0"/>
+        <xs:element name="in-range-method" type="rt:rating-method-type"/>
+        <xs:element name="out-range-low-method" type="rt:rating-method-type"/>
+        <xs:element name="out-range-high-method" type="rt:rating-method-type"/>
+        <xs:element name="active" type="xs:boolean"/>
+        <xs:element name="auto-update" type="xs:boolean"/>
+        <xs:element name="auto-activate" type="xs:boolean"/>
+        <xs:element name="auto-migrate-extension" type="xs:boolean"/>
+        <xs:element name="ind-rounding-specs" type="rt:ind-rounding-specs-type" maxOccurs="unbounded"/>
+        <xs:element name="dep-rounding-spec" type="rt:rounding-spec-type"/>
+        <xs:element name="description" type="rt:text256-type" minOccurs="0"/>
+      </xs:sequence>
+      <xs:attribute name="office-id" type="rt:text16-type" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Simple Rating (Top Level) Element -->
+
+  <xs:element name="simple-rating">
+    <xs:annotation>
+      <xs:documentation>
+        A dated rating consisting of a single lookup table or a single formula with specified parameter units.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+      	<xs:element name="rating-spec-id"
+      		type="dt:cwms-rating-spec-type" />
+      	<xs:element name="vertical-datum-info"
+      		type="dt:vertical-datum-info-type" minOccurs="0" />
+      	<!-- Only if includes elev data -->
+      	<xs:element name="units-id" type="dt:cwms-rating-units-type" />
+      	<xs:element name="effective-date" type="xs:dateTime" />
+      	<xs:element name="transition-start-date" type="xs:dateTime" minOccurs="0"/>
+      	<xs:element name="create-date" type="xs:dateTime" minOccurs="0" />
+      	<xs:element name="active" type="xs:boolean" />
+      	<xs:element name="description" type="rt:text256-type"
+      		minOccurs="0" />
+      	<xs:choice>
+      		<xs:element name="formula"
+      			type="dt:cwms-rating-formula-type" />
+      		<xs:sequence>
+      			<xs:element name="rating-points" type="rt:points-type" maxOccurs="unbounded" />
+      			<xs:element name="extension-points" type="rt:points-type" minOccurs="0" maxOccurs="unbounded" />
+      		</xs:sequence>
+      	</xs:choice>
+      </xs:sequence>
+      <xs:attribute name="office-id" type="rt:text16-type" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="rating" substitutionGroup="rt:simple-rating">
+    <xs:annotation>
+      <xs:documentation>
+        An alias for simple-rating.
+      </xs:documentation>
+    </xs:annotation>
+</xs:element>
+
+  <!-- Virtual Rating (Top Level) Element -->
+
+  <xs:element name="virtual-rating">
+    <xs:annotation>
+      <xs:documentation>
+        A rating created by connecting inputs and outputs of two or more existing ratings to
+        form a rating with a new parameters-id.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="rating-spec-id" type="dt:cwms-rating-spec-type"/>
+        <xs:element name="effective-date" type="xs:dateTime"/>
+      	<xs:element name="transition-start-date" type="xs:dateTime" minOccurs="0"/>
+        <xs:element name="create-date" type="xs:dateTime" minOccurs="0"/>
+        <xs:element name="active" type="xs:boolean"/>
+        <xs:element name="description" type="rt:text256-type" minOccurs="0"/>
+        <xs:element name="connections" type="rt:connections-type"/>
+        <xs:element name="source-ratings" type="rt:source-ratings-or-expressions-type"/>
+      </xs:sequence>
+      <xs:attribute name="office-id" type="rt:text16-type" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Transistional Rating (Top Level) Element -->
+
+  <xs:element name="transitional-rating">
+    <xs:annotation>
+      <xs:documentation>
+        A rating created by specifying which (or which combination) of existing ratings with
+        identical parameters-ids are used based on values of the input parameters.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="rating-spec-id" type="dt:cwms-rating-spec-type"/>
+        <xs:element name="units-id" type="dt:cwms-rating-units-type"/>
+        <xs:element name="effective-date" type="xs:dateTime"/>
+      	<xs:element name="transition-start-date" type="xs:dateTime" minOccurs="0"/>
+        <xs:element name="create-date" type="xs:dateTime" minOccurs="0"/>
+        <xs:element name="active" type="xs:boolean"/>
+        <xs:element name="description" type="rt:text256-type" minOccurs="0"/>
+        <xs:element name="select" type="rt:selection-type"/>
+        <xs:element name="source-ratings" type="rt:source-ratings-type"/>
+      </xs:sequence>
+      <xs:attribute name="office-id" type="rt:text16-type" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- USGS Stream Rating (Top Level) Element -->
+
+  <xs:element name="usgs-stream-rating">
+    <xs:complexType>
+    <xs:annotation>
+      <xs:documentation>
+        A stage;flow rating that utilizes the USGS-style lookup interpolation
+        using stage shifts and/or logarhithmic interpolation offsets.
+      </xs:documentation>
+    </xs:annotation>
+      <xs:sequence>
+        <xs:element name="rating-spec-id" type="dt:cwms-rating-spec-type"/>
+        <xs:element name="vertical-datum-info" type="dt:vertical-datum-info-type" minOccurs="0"/> <!-- Only if includes elev data -->
+        <xs:element name="units-id" type="dt:cwms-rating-units-type"/>
+        <xs:element name="effective-date" type="xs:dateTime"/>
+        <xs:element name="transition-start-date" type="xs:dateTime" minOccurs="0"/>
+        <xs:element name="create-date" type="xs:dateTime" minOccurs="0"/>
+        <xs:element name="active" type="xs:boolean"/>
+        <xs:element name="description" type="rt:text256-type" minOccurs="0"/>
+        <xs:sequence>
+          <xs:element name="height-shifts" minOccurs="0" maxOccurs="unbounded">
+            <xs:complexType>
+              <xs:sequence>
+              	<xs:element name="effective-date" type="xs:dateTime" />
+              	<xs:element name="transition-start-date" type="xs:dateTime" minOccurs="0"/>
+              	<xs:element name="create-date" type="xs:dateTime"
+              		minOccurs="0" />
+              	<xs:element name="active" type="xs:boolean" />
+              	<xs:element name="description" type="rt:text256-type"
+              		minOccurs="0" />
+              	<xs:element name="point" type="rt:point-type"
+              		maxOccurs="unbounded" />
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="height-offsets" minOccurs="0">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="point" type="rt:point-type" maxOccurs="unbounded"/>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+      		<xs:sequence>
+      			<xs:element name="rating-points" type="rt:points-type" maxOccurs="unbounded" />
+      			<xs:element name="extension-points" type="rt:points-type" minOccurs="0" maxOccurs="unbounded" />
+      		</xs:sequence>
+        </xs:sequence>
+      </xs:sequence>
+      <xs:attribute name="office-id" type="rt:text16-type" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Ratings Document Element -->
+
+  <xs:element name="ratings">
+    <xs:annotation>
+      <xs:documentation>
+        A collection of rating templates, rating specifications, and ratings of various types.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="rt:rating-template" minOccurs="0" maxOccurs="unbounded"/>
+        <xs:element ref="rt:rating-spec" minOccurs="0" maxOccurs="unbounded"/>
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+          <xs:element ref="rt:simple-rating"/>
+          <xs:element ref="rt:usgs-stream-rating"/>
+          <xs:element ref="rt:virtual-rating"/>
+          <xs:element ref="rt:transitional-rating"/>
+        </xs:choice>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>
+
+
+
+
+
+
+
+
+
+
+

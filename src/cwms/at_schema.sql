@@ -1246,7 +1246,7 @@ CREATE TABLE at_cwms_ts_spec
   parameter_type_code  NUMBER(14)               NOT NULL,
   interval_code        NUMBER(14)               NOT NULL,
   duration_code        NUMBER(14)               NOT NULL,
-  VERSION              VARCHAR2(32 BYTE)        NOT NULL,
+  version              VARCHAR2(32 BYTE)        NOT NULL,
   description          VARCHAR2(80 BYTE),
   interval_utc_offset  NUMBER                   NOT NULL,
   interval_forward     NUMBER,
@@ -1281,15 +1281,22 @@ MONITORING
 
 
 COMMENT ON TABLE at_cwms_ts_spec IS 'Defines time series based on CWMS requirements.  This table also serves as time series specification super type.';
-COMMENT ON COLUMN at_cwms_ts_spec.description IS 'Additional information.';
-COMMENT ON COLUMN at_cwms_ts_spec.version_flag IS 'Default is NULL, indicating versioning is off. If set to "Y" then versioning is on';
-COMMENT ON COLUMN at_cwms_ts_spec.migrate_ver_flag IS 'Default is NULL, indicating versioned data is not migrated to historic tables.  If set to "Y", versioned data is archived.';
-COMMENT ON COLUMN at_cwms_ts_spec.active_flag IS 'T or F';
-COMMENT ON COLUMN at_cwms_ts_spec.delete_date IS 'Is the date that this ts_id was marked for deletion.';
 COMMENT ON COLUMN at_cwms_ts_spec.ts_code IS 'Unique record identifier, primarily used for internal database processing. This code is automatically assigned by the system.';
 COMMENT ON COLUMN at_cwms_ts_spec.location_code IS 'Primary key of AT_PHYSICAL_LOCATION table.';
 COMMENT ON COLUMN at_cwms_ts_spec.parameter_code IS 'Primary key of AT_PARAMETER table.  Must already exist in the AT_PARAMETER table.';
 COMMENT ON COLUMN at_cwms_ts_spec.parameter_type_code IS 'Primary key of CWMS_PARAMETER_TYPE table.  Must already exist in the CWMS_PARAMETER_TYPE table.';
+COMMENT ON COLUMN at_cwms_ts_spec.interval_code IS 'Primary key of CWMS_INTERVAL table';
+COMMENT ON COLUMN at_cwms_ts_spec.duration_code IS 'Primary key of CWMS_DURATION table';
+COMMENT ON COLUMN at_cwms_ts_spec.version IS 'User-defined version string';
+COMMENT ON COLUMN at_cwms_ts_spec.description IS 'Additional information.';
+COMMENT ON COLUMN at_cwms_ts_spec.interval_utc_offset IS 'Offset in minutes into regular interval for values. Interval is UTC for regular ts, but is local for LRTS';
+COMMENT ON COLUMN at_cwms_ts_spec.interval_forward IS 'Number of minutes the value can be later than the expected interval+offset and still be considered on time';
+COMMENT ON COLUMN at_cwms_ts_spec.interval_backward IS 'Number of minutes the value can be behind earlier than the expected interval+offset and still be considered on time';
+COMMENT ON COLUMN at_cwms_ts_spec.time_zone_code IS 'Local time zone for LRTS';
+COMMENT ON COLUMN at_cwms_ts_spec.version_flag IS 'Default is NULL, indicating versioning is off. If set to "Y" then versioning is on';
+COMMENT ON COLUMN at_cwms_ts_spec.migrate_ver_flag IS 'Default is NULL, indicating versioned data is not migrated to historic tables.  If set to "Y", versioned data is archived.';
+COMMENT ON COLUMN at_cwms_ts_spec.active_flag IS 'T or F';
+COMMENT ON COLUMN at_cwms_ts_spec.delete_date IS 'Is the date that this ts_id was marked for deletion.';
 COMMENT ON COLUMN at_cwms_ts_spec.historic_flag IS 'T or F specifying whether this time series is part of the historic record';
 
 CREATE UNIQUE INDEX at_cwms_ts_spec_ui ON at_cwms_ts_spec

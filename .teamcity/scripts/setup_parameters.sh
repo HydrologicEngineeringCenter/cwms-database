@@ -5,7 +5,7 @@ fi
 mkdir output
 export PW=`tr -cd '[:alnum:]' < /dev/urandom | fold -w25 | head -n1`
 
-export CWMS_PDB=`echo %teamcity.build.branch% | sed -e "s@/refs/heads/@@g" | sed "s@/@_@g" | sed "s@\.@_@g"`
+export CWMS_PDB=`echo %teamcity.build.branch% | sed -e "s@/refs/heads/@@g" | sed "s@/@_@g" | sed "s@\.@_@g" | sed "s@-@_@g" | sed "s@#@_@g"`
 if [[ $CWMS_PDB =~ ^[0-9]+$ ]]; then
     echo "prefixing pull request number with text."
     export CWMS_PDB="PULLREQUEST_${CWMS_PDB}"
@@ -14,6 +14,14 @@ elif [[ $CWMS_PDB =~ ^[0-9] ]]; then
     echo "prefixing with letter"
     export CWMS_PDB="z_${CWMS_PDB}"
 fi
+
+if [ "$IS_DEPLOY" == "1" ]; then
+    # this is a deployment, modifiy the PDB name to include the version identified so 
+    # additional merges to master can happen independently.
+    version=`mvn -q -Dexec.executable=echo -Dexec.args='\${project.version}' --non-recursive exec:exec`
+    CWMS_PDB="${CWMS_PDB}_$version"
+fi
+
 cat <<EOF
 ##teamcity[setParameter name='env.CWMS_PDB' value='$CWMS_PDB']
 
@@ -30,6 +38,9 @@ sed -e "s/SYS_PASSWORD/$SYS_PASSWORD/g" \
     -e "s/TEST_ACCOUNT_FLAG/-testaccount/g" teamcity_overrides.xml > output/overrides.xml
 cat <<EOF
 ##teamcity[setParameter name='env.CWMS_PASSWORD' value='$PW']
+##teamcity[setParameter name='env.PATH' value='/usr/local/buildtools/instantclient_19_9:$PATH']
+##teamcity[setParameter name='env.LD_LIBRARY_PATH' value='/usr/local/buildtools/instantclient_19_9']
+##teamcity[setParameter name='env.ORACLE_HOME' value='/usr/local/buildtools/instantclient_19_9']
 
 EOF
 

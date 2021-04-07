@@ -1,4 +1,4 @@
-CREATE TYPE nested_ts_table 
+CREATE TYPE nested_ts_table
 -- not documented, used only in body of retrieve_ts_multi
 IS TABLE OF nested_ts_type;
 /

@@ -575,7 +575,7 @@ def format(item, useSynonym=None) :
       try :
          formatted = get_web_title(item)
       except :
-         raise Exception("Unable to retrieve URL %s" % item)
+         formatted = item
    else :
       tokenized, replacements = tokenize(item)
       if useSynonym is None : useSynonym = use_synonyms
@@ -699,7 +699,7 @@ def make_reference_elem(text, local_names=None) :
          target = './pkg_%s.html' % parts[0]
          if len(parts) > 1 :target += '#%s' % parts[1]
    else :
-      if ref_text.startswith('http://') :
+      if ref_text.startswith('http://') or ref_text.startswith('https://') :
          target = text.strip()
       else :
          parts = ref_text.strip().split('.', 1)

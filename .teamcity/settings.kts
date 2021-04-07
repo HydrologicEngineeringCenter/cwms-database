@@ -2,6 +2,7 @@ import jetbrains.buildServer.configs.kotlin.v2019_2.*
 import jetbrains.buildServer.configs.kotlin.v2019_2.buildFeatures.commitStatusPublisher
 import jetbrains.buildServer.configs.kotlin.v2019_2.buildSteps.ant
 import jetbrains.buildServer.configs.kotlin.v2019_2.buildSteps.script
+import jetbrains.buildServer.configs.kotlin.v2019_2.buildSteps.exec
 import jetbrains.buildServer.configs.kotlin.v2019_2.failureConditions.BuildFailureOnMetric
 import jetbrains.buildServer.configs.kotlin.v2019_2.failureConditions.failOnMetricChange
 import jetbrains.buildServer.configs.kotlin.v2019_2.triggers.vcs
@@ -31,7 +32,7 @@ To debug in IntelliJ Idea, open the 'Maven Projects' tool window (View
 'Debug' option is available in the context menu for the task.
 */
 
-version = "2020.1"
+version = "2020.2"
 
 project {
 
@@ -42,7 +43,7 @@ project {
         buildType(Build)
         buildType(Deploy)
     }.buildTypes().forEach { buildType(it) }
-    
+
 }
 
 object Helpers {
@@ -64,6 +65,9 @@ object Build : BuildType({
         output/overrides.xml => buildinfo/
         src/buildCWMS_DB.log => buildinfo/
         build/coverage.zip => /
+        build/resources => resources.zip
+        build/resources.jar =>
+        build/docs.zip =>
     """.trimIndent()
 
     params {
@@ -87,12 +91,10 @@ object Build : BuildType({
             name = "Destroy Database In case of prevous failure"
             executionMode = BuildStep.ExecutionMode.ALWAYS
             scriptContent = Helpers.readScript("scripts/destroy_database.sh");
-            dockerImage = "cwms_db_dev:latest"
         }
         script {
             name = "Create PDB"
             scriptContent = Helpers.readScript("scripts/create_database.sh")
-            dockerImage = "cwms_db_dev:latest"
         }
         script {
             name = "Create Tablespaces"
@@ -108,7 +110,6 @@ object Build : BuildType({
                 CREATE TABLESPACE "CWMS_AQ_EX" DATAFILE '&data_file_prefix.cwms_aq_ex.tblspc' SIZE 2m AUTOEXTEND ON NEXT 20m;
                 EOF
             """.trimIndent()
-            dockerImage = "cwms_db_dev:latest"
         }
         ant {
             name = "Install CWMS Database"
@@ -116,19 +117,22 @@ object Build : BuildType({
             }
             targets = "clean,build"
             antArguments = "-Dbuilduser.overrides=output/overrides.xml"
-            dockerImage = "cwms_db_dev:latest"
         }
         ant {
+            name = "Run Tests"
             targets = "test"
             antArguments = "-Dbuilduser.overrides=output/overrides.xml"
-            dockerImage ="cwms_db_dev:latest"
+        }
+        ant {
+            name = "Run Generate Test Bundle (will include generated artifacts)"
+            targets = "bundle"
+            antArguments = "-Dbuilduser.overrides=output/overrides.xml"
         }
         script {
             name = "Destroy Database Since we are done"
             executionMode = BuildStep.ExecutionMode.ALWAYS
             scriptContent = Helpers.readScript("scripts/destroy_database.sh");
-            dockerImage = "cwms_db_dev:latest"
-        }        
+        }
     }
 
     triggers {
@@ -159,7 +163,7 @@ object Build : BuildType({
         feature {
             type = "xml-report-plugin"
             param("xmlReportParsing.reportType", "junit")
-            param("xmlReportParsing.reportDirs", "build/tests.xml")
+            param("xmlReportParsing.reportDirs", "build/tests*.xml")
         }
     }
 
@@ -180,29 +184,46 @@ object Deploy : BuildType({
         root(DslContext.settingsRoot)
     }
 
+    params {
+        password("env.SYS_PASSWORD", "credentialsJSON:e335ba71-db80-4491-8ea3-a9ca51bfa6d7")
+    }
+
     steps {
+        exec {
+            path = "echo"
+            arguments = """"##teamcity[setParameter name='env.IS_DEPLOY' value='1']"""
+        }
         script {
             name = "Generate Overrides file and Parameters"
             scriptContent = Helpers.readScript("scripts/setup_parameters.sh");
-        }        
+        }
         script {
             name = "Create PDB"
             scriptContent = Helpers.readScript("scripts/create_database.sh")
-            dockerImage = "cwms_db_dev:latest"
+        }
+        ant {
+            name = "Install CWMS Database"
+            mode = antFile {
+            }
+            targets = "clean,build"
+            antArguments = "-Dbuilduser.overrides=output/overrides.xml"
+        }
+        ant {
+            name = "Cleanup Generated Files"
+            targets = "clean-output-files"
+            antArguments = "-Dbuilduser.overrides=output/overrides.xml"            
         }
         ant {
             name = "Build Bundle"
             mode = antFile {}
             targets = "deploy"
             antArguments = "-Dbuilduser.overrides=output/overrides.xml"
-            dockerImage ="cwms_db_dev:latest"
         }
         script {
             name = "Destroy Database Since we are done"
             executionMode = BuildStep.ExecutionMode.ALWAYS
             scriptContent = Helpers.readScript("scripts/destroy_database.sh");
-            dockerImage = "cwms_db_dev:latest"
-        }        
+        }
     }
 
     triggers {
@@ -217,11 +238,11 @@ object Deploy : BuildType({
 
         }
 
-    } 
+    }
 
     requirements {
         contains("docker.server.osType", "linux")
     }
-    
+
 
 })

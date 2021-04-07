@@ -7,7 +7,7 @@ AS
       RETURN INTEGER
    IS
       l_max_open_cursors   INTEGER;
-   BEGIN
+   begin
       SELECT VALUE
         INTO l_max_open_cursors
         FROM v$parameter
@@ -25,7 +25,7 @@ AS
       RETURN NUMBER
    IS
       l_ts_code   NUMBER := NULL;
-   BEGIN
+   begin
       RETURN get_ts_code (
                 p_cwms_ts_id       => p_cwms_ts_id,
                 p_db_office_code   => cwms_util.get_db_office_code (
@@ -62,7 +62,7 @@ AS
       RETURN VARCHAR2
    IS
       l_cwms_ts_id   VARCHAR2(191);
-   BEGIN
+   begin
       BEGIN
          SELECT cwms_ts_id
            INTO l_cwms_ts_id
@@ -870,7 +870,7 @@ AS
                     FROM cwms_interval
                    WHERE interval_id = substr(l_interval_id, 2);
 
-                  IF p_interval_utc_offset >= l_irregular_interval
+                  IF abs(p_interval_utc_offset) >= l_irregular_interval
                   THEN
                      cwms_err.RAISE ('INVALID_UTC_OFFSET',
                                      p_interval_utc_offset,
@@ -898,8 +898,10 @@ AS
                      cwms_err.RAISE ('CANNOT_CHANGE_OFFSET',
                                      get_ts_id (p_ts_code));
                   END IF;
+                  l_interval_utc_offset_new := -abs(p_interval_utc_offset);
+               ELSE
+                  l_interval_utc_offset_new := cwms_util.utc_offset_irregular;
                END IF;
-               l_interval_utc_offset_new := p_interval_utc_offset;
             ELSE
                --
                -- straight irregular
@@ -983,11 +985,11 @@ AS
       END IF;
 
       --
-      IF     l_ts_interval = 0
-         AND l_interval_utc_offset_new != cwms_util.utc_offset_irregular
-      THEN
-         l_interval_utc_offset_new := -l_interval_utc_offset_new;
-      END IF;
+--      IF     l_ts_interval = 0
+--         AND l_interval_utc_offset_new != cwms_util.utc_offset_irregular
+--      THEN
+--         l_interval_utc_offset_new := -l_interval_utc_offset_new;
+--      END IF;
 
       --
       UPDATE at_cwms_ts_spec a
@@ -1463,6 +1465,8 @@ AS
       l_duration              NUMBER;
       l_duration_code         NUMBER;
       l_version               VARCHAR2 (50);
+      l_lrts_interval         NUMBER;
+      l_time_zone_code        NUMBER;
       l_office_code           NUMBER;
       l_location_code         NUMBER;
       l_ret                   NUMBER;
@@ -1570,39 +1574,36 @@ AS
       DBMS_APPLICATION_INFO.set_action (
          'check code lookups, scalar subquery');
 
-      SELECT (SELECT base_parameter_code
-                FROM cwms_base_parameter p
-               WHERE UPPER (p.base_parameter_id) =
-                        UPPER (l_base_parameter_id))
-                p,
-             (SELECT duration_code
-                FROM cwms_duration d
-               WHERE UPPER (d.duration_id) = UPPER (l_duration_id))
-                d,
-             (SELECT duration
-                FROM cwms_duration d
-               WHERE UPPER (d.duration_id) = UPPER (l_duration_id))
-                dd,
-             (SELECT parameter_type_code
-                FROM cwms_parameter_type p
-               WHERE UPPER (p.parameter_type_id) =
-                        UPPER (l_parameter_type_id))
-                pt,
-             (SELECT interval_code
-                FROM cwms_interval i
-               WHERE UPPER (i.interval_id) = UPPER (l_interval_id))
-                i,
-             (SELECT INTERVAL
-                FROM cwms_interval ii
-               WHERE UPPER (ii.interval_id) = UPPER (l_interval_id))
-                ii
-        INTO l_base_parameter_code,
-             l_duration_code,
-	     l_duration,
-             l_parameter_type_code,
-             l_interval_code,
-             l_interval
-        FROM DUAL;
+      select base_parameter_code
+        into l_base_parameter_code
+        from cwms_base_parameter p
+       where upper(p.base_parameter_id) = upper(l_base_parameter_id);
+
+       select parameter_type_code
+         into l_parameter_type_code
+         from cwms_parameter_type
+        where upper(parameter_type_id) = upper(l_parameter_type_id);
+
+       select interval_code,
+              interval
+         into l_interval_code,
+              l_interval
+         from cwms_interval
+        where upper(interval_id) = upper(l_interval_id);
+
+        if substr(l_interval_id, 1, 1) = '~' then
+          select interval
+            into l_lrts_interval
+            from cwms_interval
+           where upper(interval_id) = upper(substr(l_interval_id, 2));
+        end if;
+
+       select duration_code,
+              duration
+         into l_duration_code,
+              l_duration
+         from cwms_duration
+        where upper(duration_id) = upper(l_duration_id);
 
       IF    l_base_parameter_code IS NULL
          OR l_duration_code IS NULL
@@ -1744,22 +1745,46 @@ AS
                IF l_interval = 0
                THEN
                   l_utc_offset := cwms_util.utc_offset_irregular;
+                  if l_lrts_interval is not null and p_utc_offset is not null then
+                     if p_utc_offset not in (cwms_util.utc_offset_undefined, cwms_util.utc_offset_irregular) then
+                        if abs(p_utc_offset) >= l_lrts_interval then
+                           cwms_err.raise('INVALID_UTC_OFFSET', p_utc_offset, l_interval_id);
+                        end if;
+                        l_utc_offset := -abs(p_utc_offset);
+                     end if;
+                  end if;
                ELSE
                   l_utc_offset := cwms_util.utc_offset_undefined;
 
                   IF p_utc_offset IS NOT NULL
                   THEN
-                     IF p_utc_offset = cwms_util.utc_offset_undefined
+                     IF l_lrts_interval IS NULL
                      THEN
-                        NULL;
-                     ELSIF p_utc_offset >= 0 AND p_utc_offset < l_interval
-                     THEN
-                        l_utc_offset := p_utc_offset;
+                        IF p_utc_offset = cwms_util.utc_offset_undefined
+                        THEN
+                           NULL;
+                        ELSIF p_utc_offset >= 0 AND p_utc_offset < l_interval
+                        THEN
+                           l_utc_offset := p_utc_offset;
+                        ELSE
+                           COMMIT;
+                           cwms_err.RAISE ('INVALID_UTC_OFFSET',
+                                           p_utc_offset,
+                                           l_interval_id);
+                        END IF;
                      ELSE
-                        COMMIT;
-                        cwms_err.RAISE ('INVALID_UTC_OFFSET',
-                                        p_utc_offset,
-                                        l_interval_id);
+                        IF p_utc_offset in(cwms_util.utc_offset_undefined, cwms_util.utc_offset_irregular)
+                        THEN
+                           l_utc_offset := cwms_util.utc_offset_irregular;
+                        ELSIF p_utc_offset <= 0 AND -p_utc_offset < l_interval
+                        THEN
+                           l_utc_offset := p_utc_offset;
+                        ELSE
+                           COMMIT;
+                           cwms_err.RAISE ('INVALID_UTC_OFFSET',
+                                           p_utc_offset,
+                                           l_interval_id);
+                        END IF;
                      END IF;
                   END IF;
                END IF;
@@ -1817,6 +1842,20 @@ AS
                                   'Versioned flag must be ''T'' or ''F''');
                END IF;
 
+               select time_zone_code
+                 into l_time_zone_code
+                 from at_physical_location
+                where location_code = l_location_code;
+               if l_time_zone_code is null and l_sub_location_id is not null then
+                  select time_zone_code
+                    into l_time_zone_code
+                    from at_physical_location
+                   where location_code = cwms_loc.get_location_code(l_office_id, l_base_location_id);
+               end if;
+               if l_time_zone_code is null and nvl(l_lrts_interval, 0) > 0 then
+                  cwms_err.raise('ERROR', 'Cannot create Local-Regular Time Series for a location with a NULL time zone');
+               end if;
+
                INSERT INTO at_cwms_ts_spec t (ts_code,
                                               location_code,
                                               parameter_code,
@@ -1827,6 +1866,7 @@ AS
                                               interval_utc_offset,
                                               interval_forward,
                                               interval_backward,
+                                              time_zone_code,
                                               version_flag,
                                               active_flag)
                     VALUES (
@@ -1840,6 +1880,7 @@ AS
                               l_utc_offset,
                               p_interval_forward,
                               p_interval_backward,
+                              l_time_zone_code,
                               UPPER (p_versioned),
                               UPPER (p_active_flag))
                  RETURNING ts_code
@@ -2112,6 +2153,7 @@ AS
    FUNCTION build_retrieve_ts_query (
       p_cwms_ts_id_out       OUT VARCHAR2,
       p_units_out            OUT VARCHAR2,
+      p_time_zone_id         OUT VARCHAR2,
       p_cwms_ts_id        IN     VARCHAR2,
       p_units             IN     VARCHAR2,
       p_start_time        IN     DATE,
@@ -2236,12 +2278,14 @@ AS
                 interval,
                 interval_utc_offset,
                 base_parameter_id,
-                location_code
+                location_code,
+                time_zone_id
            into l_ts_code,
                 l_interval,
                 l_utc_offset,
                 l_base_parameter_id,
-                l_location_code
+                l_location_code,
+                p_time_zone_id
            from at_cwms_ts_id
           where upper(db_office_id) = upper(l_office_id)
             and upper(cwms_ts_id) = upper(p_cwms_ts_id_out);
@@ -2253,12 +2297,14 @@ AS
                       interval,
                       interval_utc_offset,
                       base_parameter_id,
-                      location_code
+                      location_code,
+                      time_zone_id
                  into l_ts_code,
                       l_interval,
                       l_utc_offset,
                       l_base_parameter_id,
-                      l_location_code
+                      l_location_code,
+                      p_time_zone_id
                  from at_cwms_ts_id
                 where upper(db_office_id) = upper(l_office_id)
                   and upper(cwms_ts_id) = upper(p_cwms_ts_id_out);
@@ -3014,6 +3060,7 @@ AS
       p_at_tsv_rc            OUT SYS_REFCURSOR,
       p_cwms_ts_id_out       OUT VARCHAR2,
       p_units_out            OUT VARCHAR2,
+      p_time_zone_id         OUT VARCHAR2,
       p_cwms_ts_id        IN     VARCHAR2,
       p_units             IN     VARCHAR2,
       p_start_time        IN     DATE,
@@ -3027,8 +3074,8 @@ AS
       p_version_date      IN     DATE DEFAULT NULL,
       p_max_version       IN     VARCHAR2 DEFAULT 'T',
       p_office_id         IN     VARCHAR2 DEFAULT NULL)
-   IS
-      l_query_str   VARCHAR2 (4000);
+   is
+      l_query_str VARCHAR2 (4000);
 
       PROCEDURE set_action (text IN VARCHAR2)
       IS
@@ -3046,6 +3093,7 @@ AS
       p_at_tsv_rc :=
          build_retrieve_ts_query (p_cwms_ts_id_out,
                                   p_units_out,
+                                  p_time_zone_id  ,
                                   p_cwms_ts_id,
                                   p_units,
                                   p_start_time,
@@ -3062,6 +3110,54 @@ AS
                                   p_office_id);
 
       DBMS_APPLICATION_INFO.set_module (NULL, NULL);
+   END retrieve_ts_out;
+
+   --*******************************************************************   --
+
+   --
+   --*******************************************************************   --
+   --*******************************************************************   --
+   --
+   -- RETREIVE_TS_OUT - v2.0 -
+   --
+   PROCEDURE retrieve_ts_out (
+      p_at_tsv_rc            OUT SYS_REFCURSOR,
+      p_cwms_ts_id_out       OUT VARCHAR2,
+      p_units_out            OUT VARCHAR2,
+      p_cwms_ts_id        IN     VARCHAR2,
+      p_units             IN     VARCHAR2,
+      p_start_time        IN     DATE,
+      p_end_time          IN     DATE,
+      p_time_zone         IN     VARCHAR2 DEFAULT 'UTC',
+      p_trim              IN     VARCHAR2 DEFAULT 'F',
+      p_start_inclusive   IN     VARCHAR2 DEFAULT 'T',
+      p_end_inclusive     IN     VARCHAR2 DEFAULT 'T',
+      p_previous          IN     VARCHAR2 DEFAULT 'F',
+      p_next              IN     VARCHAR2 DEFAULT 'F',
+      p_version_date      IN     DATE DEFAULT NULL,
+      p_max_version       IN     VARCHAR2 DEFAULT 'T',
+      p_office_id         IN     VARCHAR2 DEFAULT NULL)
+   is
+      l_lrts_time_zone varchar2(28);
+   BEGIN
+      retrieve_ts_out (
+         p_at_tsv_rc        => p_at_tsv_rc,
+         p_cwms_ts_id_out   => p_cwms_ts_id_out,
+         p_units_out        => p_units_out,
+         p_time_zone_id     => l_lrts_time_zone,
+         p_cwms_ts_id       => p_cwms_ts_id,
+         p_units            => p_units,
+         p_start_time       => p_start_time,
+         p_end_time         => p_end_time,
+         p_time_zone        => p_time_zone,
+         p_trim             => p_trim,
+         p_start_inclusive  => p_start_inclusive,
+         p_end_inclusive    => p_end_inclusive,
+         p_previous         => p_previous,
+         p_next             => p_next,
+         p_version_date     => p_version_date,
+         p_max_version      => p_max_version,
+         p_office_id        => p_office_id);
    END retrieve_ts_out;
 
    --*******************************************************************   --
@@ -3124,18 +3220,19 @@ AS
    -- RETREIVE_TS - v1.4 -
    --
    PROCEDURE retrieve_ts (
-      p_at_tsv_rc     IN OUT SYS_REFCURSOR,
-      p_units         IN     VARCHAR2,
-      p_officeid      IN     VARCHAR2,
-      p_cwms_ts_id    IN     VARCHAR2,
-      p_start_time    IN     DATE,
-      p_end_time      IN     DATE,
-      p_timezone      IN     VARCHAR2 DEFAULT 'GMT',
-      p_trim          IN     NUMBER DEFAULT cwms_util.false_num,
-      p_inclusive     IN     NUMBER DEFAULT NULL,
-      p_versiondate   IN     DATE DEFAULT NULL,
-      p_max_version   IN     NUMBER DEFAULT cwms_util.true_num)
-   IS
+      p_at_tsv_rc      IN OUT SYS_REFCURSOR,
+      p_time_zone_id   OUT    VARCHAR2,
+      p_units          IN     VARCHAR2,
+      p_officeid       IN     VARCHAR2,
+      p_cwms_ts_id     IN     VARCHAR2,
+      p_start_time     IN     DATE,
+      p_end_time       IN     DATE,
+      p_timezone       IN     VARCHAR2 DEFAULT 'GMT',
+      p_trim           IN     NUMBER DEFAULT cwms_util.false_num,
+      p_inclusive      IN     NUMBER DEFAULT NULL,
+      p_versiondate    IN     DATE DEFAULT NULL,
+      p_max_version    IN     NUMBER DEFAULT cwms_util.true_num)
+   is
       l_trim          VARCHAR2 (1);
       l_max_version   VARCHAR2 (1);
       l_query_str     VARCHAR2 (4000);
@@ -3184,6 +3281,7 @@ AS
       p_at_tsv_rc :=
          build_retrieve_ts_query (l_tsid,                  -- p_cwms_ts_id_out
                                   l_unit,                       -- p_units_out
+                                  p_time_zone_id  ,        -- p_time_zone_id
                                   p_cwms_ts_id,                -- p_cwms_ts_id
                                   p_units,                          -- p_units
                                   p_start_time,                -- p_start_time
@@ -3208,6 +3306,78 @@ AS
 
       DBMS_APPLICATION_INFO.set_module (NULL, NULL);
    END retrieve_ts;
+
+   --
+   --*******************************************************************   --
+   --*******************************************************************   --
+   --
+   -- RETREIVE_TS - v1.4 -
+   --
+   PROCEDURE retrieve_ts (
+      p_at_tsv_rc      IN OUT SYS_REFCURSOR,
+      p_units          IN     VARCHAR2,
+      p_officeid       IN     VARCHAR2,
+      p_cwms_ts_id     IN     VARCHAR2,
+      p_start_time     IN     DATE,
+      p_end_time       IN     DATE,
+      p_timezone       IN     VARCHAR2 DEFAULT 'GMT',
+      p_trim           IN     NUMBER DEFAULT cwms_util.false_num,
+      p_inclusive      IN     NUMBER DEFAULT NULL,
+      p_versiondate    IN     DATE DEFAULT NULL,
+      p_max_version    IN     NUMBER DEFAULT cwms_util.true_num)
+   is
+      l_lrts_time_zone varchar2(28);
+   BEGIN
+      retrieve_ts (
+         p_at_tsv_rc      => p_at_tsv_rc,
+         p_time_zone_id   => l_lrts_time_zone,
+         p_units          => p_units,
+         p_officeid       => p_officeid,
+         p_cwms_ts_id     => p_cwms_ts_id,
+         p_start_time     => p_start_time,
+         p_end_time       => p_end_time,
+         p_timezone       => p_timezone,
+         p_trim           => p_trim,
+         p_inclusive      => p_inclusive,
+         p_versiondate    => p_versiondate,
+         p_max_version    => p_max_version);
+   END retrieve_ts;
+
+   --
+   --*******************************************************************   --
+   --*******************************************************************   --
+   --
+   -- RETREIVE_TS_2 - v1.4 -
+   --
+   PROCEDURE retrieve_ts_2 (
+      p_at_tsv_rc        OUT SYS_REFCURSOR,
+      p_time_zone_id     OUT VARCHAR2,
+      p_units         IN     VARCHAR2,
+      p_officeid      IN     VARCHAR2,
+      p_cwms_ts_id    IN     VARCHAR2,
+      p_start_time    IN     DATE,
+      p_end_time      IN     DATE,
+      p_timezone      IN     VARCHAR2 DEFAULT 'GMT',
+      p_trim          IN     NUMBER DEFAULT cwms_util.false_num,
+      p_inclusive     IN     NUMBER DEFAULT NULL,
+      p_versiondate   IN     DATE DEFAULT NULL,
+      p_max_version   IN     NUMBER DEFAULT cwms_util.true_num)
+   IS
+      l_at_tsv_rc   SYS_REFCURSOR;
+   BEGIN
+      retrieve_ts (p_at_tsv_rc,
+                   p_time_zone_id  ,
+                   p_units,
+                   p_officeid,
+                   p_cwms_ts_id,
+                   p_start_time,
+                   p_end_time,
+                   p_timezone,
+                   p_trim,
+                   p_inclusive,
+                   p_versiondate,
+                   p_max_version);
+   END retrieve_ts_2;
 
    --
    --*******************************************************************   --
@@ -3242,6 +3412,52 @@ AS
                    p_versiondate,
                    p_max_version);
    END retrieve_ts_2;
+
+   --
+   --*******************************************************************   --
+   --*******************************************************************   --
+   --
+   -- RETREIVE_TS - v2.0 -
+   --
+   PROCEDURE retrieve_ts (p_at_tsv_rc            OUT SYS_REFCURSOR,
+                          p_time_zone_id         OUT VARCHAR2,
+                          p_cwms_ts_id        IN     VARCHAR2,
+                          p_units             IN     VARCHAR2,
+                          p_start_time        IN     DATE,
+                          p_end_time          IN     DATE,
+                          p_time_zone         IN     VARCHAR2 DEFAULT 'UTC',
+                          p_trim              IN     VARCHAR2 DEFAULT 'F',
+                          p_start_inclusive   IN     VARCHAR2 DEFAULT 'T',
+                          p_end_inclusive     IN     VARCHAR2 DEFAULT 'T',
+                          p_previous          IN     VARCHAR2 DEFAULT 'F',
+                          p_next              IN     VARCHAR2 DEFAULT 'F',
+                          p_version_date      IN     DATE DEFAULT NULL,
+                          p_max_version       IN     VARCHAR2 DEFAULT 'T',
+                          p_office_id         IN     VARCHAR2 DEFAULT NULL)
+   IS
+      l_cwms_ts_id_out   VARCHAR2(191);
+      l_units_out        VARCHAR2 (16);
+      l_at_tsv_rc        SYS_REFCURSOR;
+   BEGIN
+      retrieve_ts_out (l_at_tsv_rc,
+                       l_cwms_ts_id_out,
+                       l_units_out,
+                       p_time_zone_id  ,
+                       p_cwms_ts_id,
+                       p_units,
+                       p_start_time,
+                       p_end_time,
+                       p_time_zone,
+                       p_trim,
+                       p_start_inclusive,
+                       p_end_inclusive,
+                       p_previous,
+                       p_next,
+                       p_version_date,
+                       p_max_version,
+                       p_office_id);
+      p_at_tsv_rc := l_at_tsv_rc;
+   END retrieve_ts;
 
    --
    --*******************************************************************   --
@@ -3359,12 +3575,14 @@ AS
                             p_timeseries_info (i).unit,
                             p_timeseries_info (i).start_time,
                             p_timeseries_info (i).end_time,
-                            tsv_array ());
+                            tsv_array (),
+                            null);
 
          BEGIN
             retrieve_ts_out (rec,
                              t (i).tsid,
                              t (i).units,
+                             t (i).location_time_zone,
                              t (i).tsid,
                              p_timeseries_info (i).unit,
                              p_timeseries_info (i).start_time,
@@ -3396,6 +3614,8 @@ AS
                      val_tab (j),
                      qual_tab (j));
             END LOOP;
+            t(i).start_time := t(i).data(1).date_time;
+            t(i).end_time := t(i).data(t(i).data.count).date_time;
          EXCEPTION
             WHEN TS_ID_NOT_FOUND OR LOCATION_ID_NOT_FOUND
             THEN
@@ -3416,7 +3636,8 @@ AS
                   CURSOR (  SELECT date_time, VALUE, quality_code
                               FROM TABLE (t1.data)
                           ORDER BY date_time ASC)
-                     "DATA"
+                     "DATA",
+                  location_time_zone
              FROM TABLE (t) t1
          ORDER BY sequence ASC;
 
@@ -4464,7 +4685,8 @@ AS
       p_timeseries_data   IN tsv_array,
       p_store_rule        IN VARCHAR2,
       p_override_prot     IN NUMBER DEFAULT cwms_util.false_num,
-      p_versiondate       IN DATE DEFAULT cwms_util.non_versioned)
+      p_versiondate       IN DATE DEFAULT cwms_util.non_versioned,
+      p_create_as_lrts    in varchar2 default 'F')
    --^ 1.4 ^^^^ 1.4 ^^^^ 1.4 ^^^^ 1.4 ^^^^ 1.4 ^^^^ 1.4 ^^^^^^^ -
    IS
       l_override_prot   VARCHAR2 (1);
@@ -4491,7 +4713,8 @@ AS
                 p_store_rule,
                 l_override_prot,
                 p_versiondate,
-                p_office_id);
+                p_office_id,
+                p_create_as_lrts);
    END store_ts;                                                    -- v1.4 --
 
    -------------------------------------------------------------------------------
@@ -4504,7 +4727,8 @@ AS
       p_store_rule        in varchar2,
       p_override_prot     in varchar2 default 'F',
       p_version_date      in date default cwms_util.non_versioned,
-      p_office_id         in varchar2 default null)
+      p_office_id         in varchar2 default null,
+      p_create_as_lrts    in varchar2 default 'F')
    is
    begin
       store_ts_2 (
@@ -4515,7 +4739,8 @@ AS
          p_store_rule        => p_store_rule,
          p_override_prot     => p_override_prot,
          p_version_date      => p_version_date,
-         p_office_id         => p_office_id);
+         p_office_id         => p_office_id,
+         p_create_as_lrts    => p_create_as_lrts);
    end store_ts;
 
    -------------------------------------------------------------------------------
@@ -4529,7 +4754,8 @@ AS
       p_store_rule        IN VARCHAR2,
       p_override_prot     IN VARCHAR2 DEFAULT 'F',
       p_version_date      IN DATE DEFAULT cwms_util.non_versioned,
-      p_office_id         in varchar2 default null)
+      p_office_id         in varchar2 default null,
+      p_create_as_lrts    in varchar2 default 'F')
    IS
       TS_ID_NOT_FOUND       EXCEPTION;
       PRAGMA EXCEPTION_INIT (ts_id_not_found, -20001);
@@ -4688,13 +4914,35 @@ AS
             the case a new TS_CODE will be created for the Time Series
             Descriptor.
             */
+            if substr(cwms_util.split_text(p_cwms_ts_id, 4, '.'), 1, 1) = '~' and cwms_util.return_true_or_false(p_create_as_lrts) then
+               ------------------------------------------------
+               -- create as local-regular time series (LRTS) --
+               ------------------------------------------------
+               l_loc_tz := cwms_loc.get_local_timezone(l_location_code);
+               select interval
+                 into l_irr_interval
+                 from cwms_interval
+                where interval_id = substr(cwms_util.split_text(p_cwms_ts_id, 4, '.'), 2);
+               l_first_time := cast(p_timeseries_data(1).date_time at time zone nvl(l_loc_tz, 'UTC') as date);
+               l_utc_offset := (l_first_time - get_time_on_before_interval(
+                  p_datetime    => l_first_time,
+                  p_ts_offset   => 0,
+                  p_ts_interval => l_irr_interval)) * 1440;
+            else
+               ---------------------------------------------------------
+               -- create normal regular, irregular, or pseudo-regular --
+               ---------------------------------------------------------
+               l_utc_offset := cwms_util.UTC_OFFSET_UNDEFINED;
+            end if;
             create_ts_code (p_ts_code        => l_ts_code,
                             p_office_id      => l_office_id,
                             p_cwms_ts_id     => l_cwms_ts_id,
                             p_fail_if_exists => 'F', -- in case of race condition will return ts_code generated by other thread
-                            p_utc_offset     => cwms_util.UTC_OFFSET_UNDEFINED);
+                            p_utc_offset     => l_utc_offset);
 
-            existing_utc_offset := cwms_util.UTC_OFFSET_UNDEFINED;
+            existing_utc_offset := l_utc_offset;
+         WHEN OTHERS THEN
+            cwms_err.raise('ERROR', dbms_utility.format_error_backtrace);
       END;                                               -- END - Find TS_CODE
 
       IF l_ts_code IS NULL
@@ -4851,7 +5099,7 @@ AS
          if existing_utc_offset in (cwms_util.utc_offset_irregular, cwms_util.utc_offset_undefined) then
             null;
          else
-            l_irr_offset := -existing_utc_offset;
+            l_irr_offset := abs(existing_utc_offset);
             select ci.interval
               into l_irr_interval
               from cwms_interval ci,
@@ -4861,16 +5109,8 @@ AS
             ------------------------------------------------------------
             -- filter out data not on interval offset (from local tz) --
             ------------------------------------------------------------
-            select time_zone_code
-              into l_tz_code
-              from at_physical_location
-             where location_code = l_location_code;
-
-            if l_tz_code > 0 then
-               select time_zone_name
-                 into l_loc_tz
-                 from cwms_time_zone
-                where time_zone_code = l_tz_code;
+            l_loc_tz := cwms_loc.get_local_timezone(l_location_code);
+            if l_loc_tz is not null then
 
                select cwms_util.change_timezone(cast(date_time at time zone 'UTC' as date), 'UTC', l_loc_tz)
                  bulk collect
@@ -5395,7 +5635,7 @@ AS
                                      and s.ts_code = :l_ts_code
                                      and s.parameter_code = ap.parameter_code
                                      and ap.base_parameter_code = p.base_parameter_code
-                                     and q.quality_code = t.quality_code
+                                     and q.quality_code = cwms_ts.clean_quality_code(t.quality_code)
                                      and p.unit_code = c.to_unit_code
                                      and c.from_unit_code = u.unit_code
                                      and u.unit_id = :l_units
@@ -5479,7 +5719,7 @@ AS
                                      and s.ts_code = :l_ts_code
                                      and s.parameter_code = ap.parameter_code
                                      and ap.base_parameter_code = p.base_parameter_code
-                                     and q.quality_code = t.quality_code
+                                     and q.quality_code = cwms_ts.clean_quality_code(t.quality_code)
                                      and p.unit_code = c.to_unit_code
                                      and c.from_unit_code = u.unit_code
                                      and u.unit_id = :l_units
@@ -6002,7 +6242,8 @@ AS
       p_store_rule      IN VARCHAR2,
       p_override_prot   IN VARCHAR2 DEFAULT 'F',
       p_version_date    IN DATE DEFAULT cwms_util.non_versioned,
-      p_office_id       IN VARCHAR2 DEFAULT NULL)
+      p_office_id       IN VARCHAR2 DEFAULT NULL,
+      p_create_as_lrts  in varchar2 default 'F')
    IS
       l_timeseries_data   tsv_array := tsv_array ();
       i                   BINARY_INTEGER;
@@ -6034,7 +6275,8 @@ AS
                 p_store_rule,
                 p_override_prot,
                 p_version_date,
-                p_office_id);
+                p_office_id,
+                p_create_as_lrts);
    END store_ts;
 
    --
@@ -6052,7 +6294,8 @@ AS
       p_store_rule      IN VARCHAR2,
       p_override_prot   IN VARCHAR2 DEFAULT 'F',
       p_version_date    IN DATE DEFAULT cwms_util.non_versioned,
-      p_office_id       IN VARCHAR2 DEFAULT NULL)
+      p_office_id       IN VARCHAR2 DEFAULT NULL,
+      p_create_as_lrts  in varchar2 default 'F')
    IS
       l_timeseries_data   tsv_array := tsv_array ();
       i                   BINARY_INTEGER;
@@ -6084,7 +6327,8 @@ AS
                 p_store_rule,
                 p_override_prot,
                 p_version_date,
-                p_office_id);
+                p_office_id,
+                p_create_as_lrts);
    END store_ts;
 
    --
@@ -6098,7 +6342,8 @@ AS
       p_store_rule         in varchar2,
       p_override_prot      in varchar2 default 'F',
       p_version_dates      in date_table_type default null,
-      p_office_id          in varchar2 default null)
+      p_office_id          in varchar2 default null,
+      p_create_as_lrts     in str_tab_t default null)
    is
       l_err_msg        varchar2 (722)  := null;
       l_all_err_msgs   varchar2 (2048) := null;
@@ -6108,6 +6353,7 @@ AS
       l_num_ts_ids     pls_integer := 0;
       l_num_errors     pls_integer := 0;
       l_excep_errors   pls_integer := 0;
+      l_create_as_lrts varchar2(1);
    begin
 
       if p_timeseries_array is not null then
@@ -6133,13 +6379,15 @@ AS
                'calling store_ts');
 
             begin
+               l_create_as_lrts := case when p_create_as_lrts is null then 'F' else p_create_as_lrts(i) end;
                store_ts (p_timeseries_array(i).tsid,
                          p_timeseries_array(i).unit,
                          p_timeseries_array(i).data,
                          p_store_rule,
                          p_override_prot,
                          l_version_dates(i),
-                         p_office_id);
+                         p_office_id,
+                         l_create_as_lrts);
             exception
                when others then
                   l_num_errors := l_num_errors + 1;
@@ -6191,22 +6439,28 @@ AS
       p_store_rule         in varchar2,
       p_override_prot      in varchar2 default 'F',
       p_version_date       in date default cwms_util.non_versioned,
-      p_office_id          in varchar2 default null)
+      p_office_id          in varchar2 default null,
+      p_create_as_lrts     in varchar2 default 'F')
    is
-      l_version_dates date_table_type;
+      l_version_dates  date_table_type;
+      l_create_as_lrts str_tab_t;
    begin
       if p_timeseries_array is not null then
-         l_version_dates := date_table_type();
+         l_version_dates  := date_table_type();
+         l_create_as_lrts := str_tab_t();
          l_version_dates.extend(p_timeseries_array.count);
+         l_create_as_lrts.extend(p_timeseries_array.count);
          for i in 1..p_timeseries_array.count loop
-            l_version_dates(i) := p_version_date;
+            l_version_dates(i)  := p_version_date;
+            l_create_as_lrts(i) := p_create_as_lrts;
          end loop;
          store_ts_multi(
             p_timeseries_array,
             p_store_rule,
             p_override_prot,
             l_version_dates,
-            p_office_id);
+            p_office_id,
+            l_create_as_lrts);
       end if;
    end store_ts_multi;
 
@@ -7488,7 +7742,35 @@ AS
         FROM DUAL;
    END parse_ts;
 
-
+   PROCEDURE zretrieve_ts (p_at_tsv_rc      IN OUT SYS_REFCURSOR,
+                           p_time_zone_id      OUT VARCHAR2,
+                           p_units          IN     VARCHAR2,
+                           p_cwms_ts_id     IN     VARCHAR2,
+                           p_start_time     IN     DATE,
+                           p_end_time       IN     DATE,
+                           p_trim           IN     VARCHAR2 DEFAULT 'F',
+                           p_inclusive      IN     NUMBER DEFAULT NULL,
+                           p_version_date   IN     DATE DEFAULT NULL,
+                           p_max_version    IN     VARCHAR2 DEFAULT 'T',
+                           p_db_office_id   IN     VARCHAR2 DEFAULT NULL)
+   IS
+   BEGIN
+      retrieve_ts (p_at_tsv_rc         => p_at_tsv_rc,
+                   p_time_zone_id      => p_time_zone_id  ,
+                   p_cwms_ts_id        => p_cwms_ts_id,
+                   p_units             => p_units,
+                   p_start_time        => p_start_time,
+                   p_end_time          => p_end_time,
+                   p_time_zone         => 'UTC',
+                   p_trim              => p_trim,
+                   p_start_inclusive   => p_inclusive,
+                   p_end_inclusive     => p_inclusive,
+                   p_previous          => 'F',
+                   p_next              => 'F',
+                   p_version_date      => p_version_date,
+                   p_max_version       => p_max_version,
+                   p_office_id         => p_db_office_id);
+   END zretrieve_ts;
 
    PROCEDURE zretrieve_ts (p_at_tsv_rc      IN OUT SYS_REFCURSOR,
                            p_units          IN     VARCHAR2,
@@ -7523,6 +7805,7 @@ AS
       p_at_tsv_rc             OUT SYS_REFCURSOR,
       p_units_out             OUT VARCHAR2,
       p_cwms_ts_id_out        OUT VARCHAR2,
+      p_time_zone_id          OUT VARCHAR2,
       p_units_in           IN     VARCHAR2,
       p_cwms_ts_id_in      IN     VARCHAR2,
       p_start_time         IN     DATE,
@@ -7548,6 +7831,7 @@ AS
       retrieve_ts_out (p_at_tsv_rc,
                        p_cwms_ts_id_out,
                        p_units_out,
+                       p_time_zone_id  ,
                        p_cwms_ts_id_in,
                        p_units_in,
                        p_start_time,
@@ -7561,6 +7845,40 @@ AS
                        p_version_date,
                        p_max_version,
                        p_db_office_id);
+   END zretrieve_ts_java;
+
+   PROCEDURE zretrieve_ts_java (
+      p_transaction_time      OUT DATE,
+      p_at_tsv_rc             OUT SYS_REFCURSOR,
+      p_units_out             OUT VARCHAR2,
+      p_cwms_ts_id_out        OUT VARCHAR2,
+      p_units_in           IN     VARCHAR2,
+      p_cwms_ts_id_in      IN     VARCHAR2,
+      p_start_time         IN     DATE,
+      p_end_time           IN     DATE,
+      p_trim               IN     VARCHAR2 DEFAULT 'F',
+      p_inclusive          IN     NUMBER DEFAULT NULL,
+      p_version_date       IN     DATE DEFAULT NULL,
+      p_max_version        IN     VARCHAR2 DEFAULT 'T',
+      p_db_office_id       IN     VARCHAR2 DEFAULT NULL)
+   IS
+      l_lrts_time_zone varchar2(28);
+   BEGIN
+      zretrieve_ts_java (
+            p_transaction_time  => p_transaction_time,
+            p_at_tsv_rc         => p_at_tsv_rc,
+            p_units_out         => p_units_out,
+            p_cwms_ts_id_out    => p_cwms_ts_id_out,
+            p_time_zone_id      => l_lrts_time_zone,
+            p_units_in          => p_units_in,
+            p_cwms_ts_id_in     => p_cwms_ts_id_in,
+            p_start_time        => p_start_time,
+            p_end_time          => p_end_time,
+            p_trim              => p_trim,
+            p_inclusive         => p_inclusive,
+            p_version_date      => p_version_date,
+            p_max_version       => p_max_version,
+            p_db_office_id      => p_db_office_id);
    END zretrieve_ts_java;
 
    PROCEDURE retrieve_existing_times(
@@ -8334,7 +8652,8 @@ end retrieve_existing_item_counts;
       p_store_rule        IN VARCHAR2,
       p_override_prot     IN VARCHAR2 DEFAULT 'F',
       p_version_date      IN DATE DEFAULT cwms_util.non_versioned,
-      p_office_id         IN VARCHAR2 DEFAULT NULL)
+      p_office_id         IN VARCHAR2 DEFAULT NULL,
+      p_create_as_lrts    in varchar2 default 'F')
    IS
       l_timeseries_data   tsv_array := tsv_array ();
    BEGIN
@@ -8361,7 +8680,8 @@ end retrieve_existing_item_counts;
                         p_store_rule,
                         p_override_prot,
                         p_version_date,
-                        p_office_id);
+                        p_office_id,
+                        p_create_as_lrts);
    END zstore_ts;
 
 
@@ -8370,7 +8690,8 @@ end retrieve_existing_item_counts;
       p_store_rule         IN VARCHAR2,
       p_override_prot      IN VARCHAR2 DEFAULT 'F',
       p_version_date       IN DATE DEFAULT cwms_util.non_versioned,
-      p_office_id          IN VARCHAR2 DEFAULT NULL)
+      p_office_id          IN VARCHAR2 DEFAULT NULL,
+      p_create_as_lrts     IN VARCHAR2 DEFAULT 'F')
    IS
       l_timeseries     ztimeseries_type;
       l_err_msg        VARCHAR2 (722) := NULL;
@@ -8398,7 +8719,8 @@ end retrieve_existing_item_counts;
                                p_store_rule,
                                p_override_prot,
                                p_version_date,
-                               p_office_id);
+                               p_office_id,
+                               p_create_as_lrts);
          EXCEPTION
             WHEN OTHERS
             THEN
@@ -8438,6 +8760,88 @@ end retrieve_existing_item_counts;
 
       DBMS_APPLICATION_INFO.set_module (NULL, NULL);
    END zstore_ts_multi;
+
+   PROCEDURE zstore_ts_multi (
+      p_timeseries_array   IN ztimeseries_array,
+      p_store_rule         IN VARCHAR2,
+      p_override_prot      IN VARCHAR2 DEFAULT 'F',
+      p_version_dates      IN DATE_TABLE_TYPE DEFAULT NULL,
+      p_office_id          IN VARCHAR2 DEFAULT NULL,
+      p_create_as_lrts     IN STR_TAB_T DEFAULT NULL)
+   IS
+      l_timeseries     ztimeseries_type;
+      l_err_msg        VARCHAR2 (722) := NULL;
+      l_all_err_msgs   VARCHAR2 (2048) := NULL;
+      l_len            NUMBER := 0;
+      l_total_len      NUMBER := 0;
+      l_num_ts_ids     NUMBER := 0;
+      l_num_errors     NUMBER := 0;
+      l_excep_errors   NUMBER := 0;
+      l_version_date   date;
+      l_create_as_lrts varchar2(1);
+   BEGIN
+      DBMS_APPLICATION_INFO.set_module ('cwms_ts.zstore_ts_multi',
+                                        'selecting time series from input');
+
+      FOR l_timeseries IN (SELECT * FROM TABLE (p_timeseries_array))
+      LOOP
+         DBMS_APPLICATION_INFO.set_module ('cwms_ts_store.zstore_ts_multi',
+                                           'calling zstore_ts');
+
+         BEGIN
+            l_num_ts_ids := l_num_ts_ids + 1;
+
+            l_version_date := case when p_version_dates is null then cwms_util.non_versioned else p_version_dates(l_num_ts_ids) end;
+            l_create_as_lrts := case when p_create_as_lrts is null then 'F' else p_create_as_lrts(l_num_ts_ids) end;
+
+            cwms_ts.zstore_ts (l_timeseries.tsid,
+                               l_timeseries.unit,
+                               l_timeseries.data,
+                               p_store_rule,
+                               p_override_prot,
+                               l_version_date,
+                               p_office_id,
+                               l_create_as_lrts);
+         EXCEPTION
+            WHEN OTHERS
+            THEN
+               l_num_errors := l_num_errors + 1;
+
+               l_err_msg :=
+                     'STORE_ERROR ***'
+                  || l_timeseries.tsid
+                  || '*** '
+                  || SQLCODE
+                  || ': '
+                  || SQLERRM;
+
+               IF   NVL (LENGTH (l_all_err_msgs), 0)
+                  + NVL (LENGTH (l_err_msg), 0) <= 1930
+               THEN
+                  l_excep_errors := l_excep_errors + 1;
+                  l_all_err_msgs := l_all_err_msgs || ' ' || l_err_msg;
+               END IF;
+         END;
+      END LOOP;
+
+      IF l_all_err_msgs IS NOT NULL
+      THEN
+         l_all_err_msgs :=
+               'STORE ERRORS: zstore_ts_multi processed '
+            || l_num_ts_ids
+            || ' ts_ids of which '
+            || l_num_errors
+            || ' had STORE ERRORS. '
+            || l_excep_errors
+            || ' of those errors are: '
+            || l_all_err_msgs;
+
+         raise_application_error (-20999, l_all_err_msgs);
+      END IF;
+
+      DBMS_APPLICATION_INFO.set_module (NULL, NULL);
+   END zstore_ts_multi;
+
 
    PROCEDURE validate_ts_queue_name (p_queue_name IN VARCHAR)
    IS
@@ -9363,20 +9767,21 @@ end retrieve_existing_item_counts;
       RETURN VARCHAR2
       result_cache
    IS
-      l_validity   VARCHAR2 (16);
+      l_validity     VARCHAR2 (16);
+      l_quality_code integer := clean_quality_code(p_quality_code);
    BEGIN
       SELECT validity_id
         INTO l_validity
         FROM cwms_data_quality
-       WHERE quality_code = p_quality_code + case
-                                                when p_quality_code < 0 then 4294967296
+       WHERE quality_code = l_quality_code + case
+                                                when l_quality_code < 0 then 4294967296
                                                 else  0
                                              end;
       RETURN l_validity;
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
-         cwms_err.raise('INVALID_ITEM', p_quality_code, 'CWMS quality value');
+         cwms_err.raise('INVALID_ITEM', l_quality_code, 'CWMS quality value');
    END get_quality_validity;
 
    FUNCTION get_quality_validity (p_value IN tsv_type)
@@ -9586,12 +9991,13 @@ end retrieve_existing_item_counts;
       RETURN BOOLEAN
       result_cache
    is
+      l_quality_code  integer := clean_quality_code(p_quality_code);
       l_protection_id varchar2(16);
    BEGIN
       select protection_id
         into l_protection_id
         from cwms_data_quality
-       where quality_code = p_quality_code;
+       where quality_code = l_quality_code;
 
       return l_protection_id = 'PROTECTED';
    END quality_is_protected;
@@ -9639,14 +10045,15 @@ end retrieve_existing_item_counts;
       RETURN VARCHAR2
       result_cache
    IS
+      l_quality_code  integer := clean_quality_code(p_quality_code);
       l_description   VARCHAR2 (4000);
       l_rec           cwms_data_quality%ROWTYPE;
    BEGIN
       SELECT *
         INTO l_rec
         FROM cwms_data_quality
-       WHERE quality_code = p_quality_code + case
-                                                when p_quality_code < 0 then 4294967296
+       WHERE quality_code = l_quality_code + case
+                                                when l_quality_code < 0 then 4294967296
                                                 else  0
                                              end;
 
@@ -9692,7 +10099,7 @@ end retrieve_existing_item_counts;
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
-         cwms_err.raise('INVALID_ITEM', p_quality_code, 'CWMS quality value');
+         cwms_err.raise('INVALID_ITEM', l_quality_code, 'CWMS quality value');
    END get_quality_description;
 
    FUNCTION get_ts_interval (p_ts_code IN NUMBER)

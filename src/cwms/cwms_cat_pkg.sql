@@ -626,28 +626,22 @@ IS
     *     <td class="descr-center">4</td>
     *     <td class="descr">interval_utc_offset</td>
     *     <td class="descr">number</td>
-    *     <td class="descr">The offset into the UTC interval for regular time series</td>
+    *     <td class="descr">The offset into the UTC interval for regular time series, or into the local timezone interval for local-regular time series</td>
     *   </tr>
     *   <tr>
     *     <td class="descr-center">5</td>
-    *     <td class="descr">time_zone_name</td>
-    *     <td class="descr">varchar2(28)</td>
-    *     <td class="descr">The local time zone for the location of the time series</td>
-    *   </tr>
-    *   <tr>
-    *     <td class="descr-center">6</td>
     *     <td class="descr">lrts_timezone</td>
     *     <td class="descr">varchar2(28)</td>
     *     <td class="descr">Not used</td>
     *   </tr>
     *   <tr>
-    *     <td class="descr-center">7</td>
+    *     <td class="descr-center">6</td>
     *     <td class="descr">ts_active_flag</td>
     *     <td class="descr">varchar2(1)</td>
     *     <td class="descr">A flag ('T' or 'F') specifying whether the time series is marked as active</td>
     *   </tr>
     *   <tr>
-    *     <td class="descr-center">8</td>
+    *     <td class="descr-center">7</td>
     *     <td class="descr">user_privileges</td>
     *     <td class="descr">number</td>
     *     <td class="descr">The session user's privileges for the time series</td>
@@ -2187,7 +2181,7 @@ IS
    FUNCTION cat_base_parameter_tab
       RETURN cat_base_param_tab_t PIPELINED;
    /**
-    * Catalogs all value-capable parameters in the CWMS database for a specified office. Parameters <code>Text</code> and <code>Binary</code> are not included in the catalog. 
+    * Catalogs all value-capable parameters in the CWMS database for a specified office. Parameters <code>Text</code> and <code>Binary</code> are not included in the catalog.
     *
     * @param p_cwms_cat The cursor containing the base parameters.  The cursor contains the following columns:
     * <p>
@@ -2259,7 +2253,7 @@ IS
       p_db_office_id   IN       VARCHAR2 DEFAULT NULL
    );
    /**
-    * Catalogs all value-capable parameters in the CWMS database for a specified office. Parameters <code>Text</code> and <code>Binary</code> are not included in the catalog. 
+    * Catalogs all value-capable parameters in the CWMS database for a specified office. Parameters <code>Text</code> and <code>Binary</code> are not included in the catalog.
     *
     * @param p_db_office_id The office to catalog the parameters for. If not specified or NULL, the session user's default office will be used.
     *
@@ -3705,9 +3699,9 @@ IS
       p_lookup_type_tab IN lookup_type_tab_t,
       p_lookup_category IN VARCHAR2,
       p_lookup_prefix   IN VARCHAR2);
-   
+
    /**
-    * Deletes a set of lookup values that conform to a common structure but different names. 
+    * Deletes a set of lookup values that conform to a common structure but different names.
     * The identifying parts within the arg lookup table type are used to determine which row
     * values to delete from the look up table.
     * <p>
@@ -3806,12 +3800,12 @@ IS
     * @param p_lookup_prefix   The column name prefix in the table
     *
     * @see get_lookup_table
-    */   
+    */
    procedure delete_lookups(
       p_lookup_type_tab IN lookup_type_tab_t,
       p_lookup_category IN VARCHAR2,
       p_lookup_prefix   IN VARCHAR2);
-  
+
    /**
     * Catalogs streams in the database that match input parameters. Matching is
     * accomplished with glob-style wildcards, as shown below, instead of sql-style
@@ -4849,7 +4843,7 @@ IS
 
    --
    -- not documented - see AV_LOC_LVL_CUR_MAX_IND
-   --      
+   --
    function cat_loc_lvl_cur_max_ind
       return loc_lvl_cur_max_ind_tab_t
       pipelined;
@@ -4857,7 +4851,7 @@ IS
    procedure retrieve_offices(
       p_offices out clob,
       p_format  in  varchar2);
-            
+
    function retrieve_offices_f(
       p_format in varchar2)
       return clob;
@@ -4865,7 +4859,7 @@ IS
    procedure retrieve_time_zones(
       p_time_zones out clob,
       p_format     in  varchar2);
-            
+
    function retrieve_time_zones_f(
       p_format in varchar2)
       return clob;
@@ -4873,7 +4867,7 @@ IS
    procedure retrieve_units(
       p_units  out clob,
       p_format in  varchar2);
-            
+
    function retrieve_units_f(
       p_format in varchar2)
       return clob;
@@ -4881,7 +4875,7 @@ IS
    procedure retrieve_parameters(
       p_parameters out clob,
       p_format     in  varchar2);
-            
+
    function retrieve_parameters_f(
       p_format in varchar2)
       return clob;

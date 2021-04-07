@@ -92,9 +92,24 @@ begin
       -------------------------------
       -- finally the record itself --
       -------------------------------
+      for k in 1..2 loop
+         begin
       delete
         from at_rating
        where rating_code = p_rating_code;
+            exit;
+         exception
+            when others then
+               if k = 1 then
+                  ----------------------------------------------------------------------------
+                  -- won't have been deleted if shifts or offsets existed but had no values --
+                  ----------------------------------------------------------------------------
+                  delete from at_rating_ind_parameter where rating_code = p_rating_code;
+               else
+                  cwms_err.raise('ERROR', 'Deleting rating code '||p_rating_code||chr(10)||dbms_utility.format_error_backtrace);
+               end if;
+         end;
+      end loop;
    end loop;
    --------------------------
    -- transitional ratings --
@@ -6931,6 +6946,8 @@ is
    l_max_time            interval day (0) to second (3);
    l_max_size_msg        varchar2(17) := 'MAX SIZE EXCEEDED';
    l_max_time_msg        varchar2(17) := 'MAX TIME EXCEEDED';
+   exc_null_object       exception;
+   pragma exception_init(exc_null_object, -30625);
 
    function iso_duration(
       p_intvl in dsinterval_unconstrained)
@@ -7418,7 +7435,6 @@ begin
               from av_rating_spec
              where rating_spec_code in (select * from table(l_codes))
                and upper(rating_id) like l_normalized_names(i) escape '\';
-
             for j in 1..l_ids.count loop
                l_ids_used(l_ids(j)) := true;
             end loop;
@@ -7458,7 +7474,7 @@ begin
             select office_id||'/'||template_id
               bulk collect
               into l_ids
-              from av_rating
+              from av_rating_spec
              where template_code in (select * from table(l_codes))
                and upper(rating_id) like l_normalized_names(i) escape '\';
 
@@ -7524,21 +7540,34 @@ begin
             -- XML data --
             --------------
             select xmlserialize(content l_xml.transform(xmltype(cwms_text.retrieve_text('/XSLT/RATINGS_V1_TO_RADAR_XML', 'CWMS'))) no indent) into l_data from dual;
-            l_data := '<?xml version="1.0" encoding="windows-1252"?>'||l_data;
+            if l_data = '<ratings/>' then
+               l_data := '<ratings></ratings>'; -- give a place for the query info
+            end if;   
          when l_format = 'JSON' then
             ---------------
             -- JSON data --
             ---------------
-            l_data := l_xml.transform(xmltype(cwms_text.retrieve_text('/XSLT/RATINGS_V1_TO_RADAR_JSON', 'CWMS'))).extract('/ratings/text()').getclobval;
-            l_data := replace(l_data, chr(38)||'quot;', '"');
-            l_data := replace(l_data, '{,', '{');
-            l_data := replace(l_data, '[,', '[');
-            l_data := replace(l_data, '""', 'null');
+            begin
+               l_data := l_xml.transform(xmltype(cwms_text.retrieve_text('/XSLT/RATINGS_V1_TO_RADAR_JSON', 'CWMS'))).extract('/ratings/text()').getclobval;
+               l_data := dbms_xmlgen.convert(l_data, dbms_xmlgen.entity_decode);
+               l_data := replace(l_data, '{,', '{');
+               l_data := replace(l_data, '[,', '[');
+               l_data := replace(l_data, '""', 'null');
+            exception
+               when exc_null_object then
+                  l_data := '{"ratings":{"rating-templates":[],"rating-specs":[],"ratings":[]}}';
+            end;
          when l_format in ('TAB', 'CSV') then
             ---------------------
             -- TAB or CSV data --
             ---------------------
-            l_data := l_xml.transform(xmltype(cwms_text.retrieve_text('/XSLT/RATINGS_V1_TO_RADAR_TAB', 'CWMS'))).extract('/ratings/text()').getclobval;
+            begin
+               l_data := l_xml.transform(xmltype(cwms_text.retrieve_text('/XSLT/RATINGS_V1_TO_RADAR_TAB', 'CWMS'))).extract('/ratings/text()').getclobval;
+               l_data := dbms_xmlgen.convert(l_data, dbms_xmlgen.entity_decode);
+            exception
+               when exc_null_object then
+                  l_data := chr(10)||chr(10);
+            end;
             if l_format = 'CSV' then
                l_data := cwms_util.tab_to_csv(l_data);
             end if;

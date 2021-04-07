@@ -457,6 +457,18 @@ as
                and rt.template_code = rs.template_code
                and rt.parameters_id = 'Stage;Stage-Shift'
           order by r.effective_date;
+            -- shouldn't need this. Added for (corrupted?) SWF database
+            declare
+               l_non_null_shifts rating_tab_t := rating_tab_t();
+            begin
+               for i in 1..self.shifts.count loop
+                  if self.shifts(i) is not null then
+                     l_non_null_shifts.extend;
+                     l_non_null_shifts(l_non_null_shifts.count) := self.shifts(i);
+                  end if;
+               end loop;
+               self.shifts := l_non_null_shifts;
+            end;
          exception
             when no_data_found then null;
          end;
@@ -1065,6 +1077,7 @@ as
       l_temp  rating_t;
       l_parts str_tab_t;
       l_units varchar2(64);
+      l_tag_name varchar2(18) := 'usgs-stream-rating';
 
       function bool_text(
          p_state in boolean)
@@ -1109,10 +1122,13 @@ as
          end if;
       end if;
       l_clone.convert_to_native_units;
+      if l_clone.offsets is null and (l_clone.shifts is null or l_clone.shifts.count = 0) then
+         l_tag_name := 'simple-rating';
+      end if;
       dbms_lob.createtemporary(l_text, true);
       dbms_lob.open(l_text, dbms_lob.lob_readwrite);
       cwms_util.append(l_text,
-         '<usgs-stream-rating office-id="'||l_clone.office_id||'">'
+         '<'||l_tag_name||' office-id="'||l_clone.office_id||'">'
          ||'<rating-spec-id>'||l_clone.rating_spec_id||'</rating-spec-id>'
          ||'<units-id>'||l_clone.native_units||'</units-id>'
          ||'<effective-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(l_clone.effective_date, 'UTC', l_tzone), l_tzone)||'</effective-date>');
@@ -1249,7 +1265,7 @@ as
             cwms_util.append(l_text, '</extension-points>');
          end if;
       end if;
-      cwms_util.append(l_text, '</usgs-stream-rating>');
+      cwms_util.append(l_text, '</'||l_tag_name||'>');
       dbms_lob.close(l_text);
       return l_text;
    end;

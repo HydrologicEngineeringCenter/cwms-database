@@ -1,5 +1,5 @@
 #!/bin/env python
-import glob, gzip, os, sys, tarfile
+import glob, gzip, os, sys, subprocess, tarfile
 
 #-----------------------------------------------------#
 # create an automatic version of the buildCWMS_DB.sql #
@@ -88,10 +88,13 @@ f.close()
 #---------------------------------------------#
 cmd = "sqlplus /nolog @%s" % auto_sqlfilename
 print(cmd)
-ec = os.system(cmd)
-#os.remove(auto_sqlfilename)
-if ec :
-	print("\nSQL*Plus exited with code %s\n" % ec)
+ec = subprocess.call(cmd, shell=True)
+print("\nSQL*Plus exited with code %s\n" % ec)
+if ec != 0 :
+	sys.exit(-1)
+with open("buildCWMS_DB.log") as f : log_lines = f.read().strip().split("\n")
+if log_lines[-1].find("PL/SQL procedure successfully completed.") == -1 :
+	for line in log_lines[-20:] : print("==> %s" % line)
 	sys.exit(-1)
 
 #---------------------------------------------------------#
@@ -104,12 +107,12 @@ load data
 	append
 	into table at_clob
 	fields terminated by ','
-	(CLOB_CODE, 
-	 OFFICE_CODE,                         
-	 ID char, 
-	 DESCRIPTION char,                         
+	(CLOB_CODE,
+	 OFFICE_CODE,
+	 ID char,
+	 DESCRIPTION char,
 	 filename FILLER char,
-	 VALUE LOBFILE(filename) TERMINATED BY EOF)                 
+	 VALUE LOBFILE(filename) TERMINATED BY EOF)
 begindata
 -1,53,/VERTCON/VERTASCE.94,VERTCON table for Eastern U.S.,data/vertASCe.94
 -2,53,/VERTCON/VERTASCC.94,VERTCON table for Central U.S.,data/vertASCc.94
@@ -129,12 +132,12 @@ load data
 	append
 	into table at_clob
 	fields terminated by ','
-	(CLOB_CODE "cwms_20.cwms_seq.nextval", 
-	 OFFICE_CODE,                         
-	 ID char, 
-	 DESCRIPTION char,                         
+	(CLOB_CODE "cwms_20.cwms_seq.nextval",
+	 OFFICE_CODE,
+	 ID char,
+	 DESCRIPTION char,
 	 filename FILLER char,
-	 VALUE LOBFILE(filename) TERMINATED BY EOF)                 
+	 VALUE LOBFILE(filename) TERMINATED BY EOF)
 begindata
 -1,53,/XSLT/RATINGS_V1_TO_RADAR_XML,CWMS RADAR Rating Transform to XML,data/Ratings_v1_to_RADAR_xml.xsl
 -1,53,/XSLT/RATINGS_V1_TO_RADAR_JSON,CWMS RADAR Rating Transform to JSON,data/Ratings_v1_to_RADAR_json.xsl
@@ -166,25 +169,25 @@ for loaderFilename in glob.glob('*.ctl') + glob.glob('data/*.ctl') :
 #---------------------------------------------------------#
 vertconScriptText = '''
 declare
-   l_clob          clob; 
+   l_clob          clob;
    l_line          varchar2(32767);
-   l_pos           integer; 
-   l_pos2          integer; 
+   l_pos           integer;
+   l_pos2          integer;
    l_parts         number_tab_t;
-   l_lon_count     integer; 
-   l_lat_count     integer; 
-   l_z_count       integer; 
-   l_min_lon       binary_double; 
-   l_delta_lon     binary_double; 
+   l_lon_count     integer;
+   l_lat_count     integer;
+   l_z_count       integer;
+   l_min_lon       binary_double;
+   l_delta_lon     binary_double;
    l_min_lat       binary_double;
-   l_delta_lat     binary_double; 
+   l_delta_lat     binary_double;
    l_margin        binary_double;
    l_max_lon       binary_double;
    l_max_lat       binary_double;
-   l_vals          number_tab_t := number_tab_t(); 
+   l_vals          number_tab_t := number_tab_t();
    l_data_set_code number(14);
    l_idx           pls_integer;
-   
+
    procedure get_line(p_line out varchar2) is
       l_amount integer;
       l_buf    varchar2(32767);
@@ -199,25 +202,25 @@ declare
       dbms_lob.read(l_clob, l_amount, l_pos, l_buf);
       l_pos := l_pos + l_amount;
       p_line := trim(trailing chr(13) from trim(trailing chr(10) from l_buf));
-   end;  
+   end;
 begin
    --------------------------------------
    -- for each vertcon ascii data file --
    --------------------------------------
-   for rec in (select id from at_clob where clob_code < 0) loop          
+   for rec in (select id from at_clob where clob_code < 0) loop
       l_vals.delete;
       select value
         into l_clob
         from at_clob
        where id = upper(rec.id);
       dbms_lob.open(l_clob, dbms_lob.lob_readonly);
-      l_pos := 1;       
+      l_pos := 1;
       begin
          ---------------------
          -- read the header --
          ---------------------
-         get_line(l_line); 
-         get_line(l_line); 
+         get_line(l_line);
+         get_line(l_line);
          select column_value
            bulk collect
            into l_parts
@@ -244,12 +247,12 @@ begin
          <<read_vals>>
          while true loop
             begin
-               get_line(l_line);   
+               get_line(l_line);
                select column_value
                  bulk collect
                  into l_parts
                  from table(cwms_util.split_text(trim(l_line)));
-               for j in 1..l_parts.count loop 
+               for j in 1..l_parts.count loop
                   l_vals(l_idx+j) := l_parts(j);
                end loop;
                l_idx := l_idx + l_parts.count;
@@ -258,7 +261,7 @@ begin
             end;
          end loop;
       exception
-         when others then 
+         when others then
             dbms_lob.close(l_clob);
             raise;
       end;
@@ -288,13 +291,13 @@ begin
                l_max_lon,
                l_margin,
                l_delta_lat,
-               l_delta_lon 
+               l_delta_lon
              )
    returning dataset_code
-        into l_data_set_code;               
-      -------------------------      
+        into l_data_set_code;
+      -------------------------
       -- load the table data --
-      -------------------------      
+      -------------------------
       for j in 1..l_lat_count loop
          for k in 1..l_lon_count loop
             insert
@@ -310,14 +313,14 @@ begin
                      l_vals((j-1)*l_lon_count+k)
                    );
          end loop;
-      end loop;      
+      end loop;
    end loop;
-   
+
    delete
      from at_clob
     where clob_code < 0;
-    
-   commit;    
+
+   commit;
 end;
 /
 exit
@@ -344,4 +347,4 @@ for filename in (vertconScriptFileName, vertconControlFileName) :
 	if os.path.exists(filename) :
 	   try    : os.remove(filename)
 	   except : pass
-	   
+
