@@ -1823,12 +1823,6 @@ is
    l_attr_vert_datum_offset    binary_double;
 begin
    l_fail_if_exists := cwms_util.return_true_or_false(p_fail_if_exists);
-   if p_interval_months is not null then
-      l_calendar_interval := cwms_util.months_to_yminterval(p_interval_months);
-   end if;
-   if p_interval_minutes is not null then
-      l_time_interval := cwms_util.minutes_to_dsinterval(p_interval_minutes);
-   end if;
    -------------------
    -- sanity checks --
    -------------------
@@ -1860,17 +1854,22 @@ begin
          || 'in CREATE_LOCATION_LEVEL');
    end if;
    if p_seasonal_values is not null then
-      if l_calendar_interval is null and l_time_interval is null then
-         cwms_err.raise(
-            'ERROR',
-            'seasonal values require either months interval or minutes interval '
-            || 'in CREATE_LOCATION_LEVEL');
-      elsif l_calendar_interval is not null and l_time_interval is not null then
+      case 
+      when nvl(p_interval_months, 0) > 0 and nvl(p_interval_minutes, 0) > 0 then
          cwms_err.raise(
             'ERROR',
             'seasonal values cannot have months interval and minutes interval '
             || 'in CREATE_LOCATION_LEVEL');
-      end if;
+      when nvl(p_interval_months, 0) = 0 and nvl(p_interval_minutes, 0) = 0 then
+         cwms_err.raise(
+            'ERROR',
+            'seasonal values require either months interval or minutes interval '
+            || 'in CREATE_LOCATION_LEVEL');
+      when nvl(p_interval_months, 0) > 0 then
+         l_calendar_interval := cwms_util.months_to_yminterval(p_interval_months);
+      when nvl(p_interval_minutes, 0) > 0 then
+         l_time_interval := cwms_util.minutes_to_dsinterval(p_interval_minutes);
+      end case;
    end if;
    if p_level_value is null then
       l_interpolate := p_interpolate;
@@ -2666,13 +2665,13 @@ begin
             dbms_output.put_line('expiration date = '||l_expiration_date);
          end if;
          l_value_node := get_xml_node(l_top_node, '(/*/constant|/*/regularly-varying|/*/irregularly-varying|/*/virtual)');
-         l_level_unit := get_xml_text(l_value_node, '/*/@unit');
          case l_value_node.getrootelement
          when 'constant' then
             --------------------
             -- constant value --
             --------------------
             dbms_output.put_line('CONSTANT');
+            l_level_unit := get_xml_text(l_value_node, '/*/@unit');
             l_level_value := get_xml_number(l_value_node, '.');
             store_location_level4(
                p_location_level_id => l_location_level_id,
@@ -2703,7 +2702,12 @@ begin
             cwms_util.duration_to_interval(l_yminterval, l_dsinterval, get_xml_text(l_value_node, '/*/interval-duration'));
             l_interval_months  := cwms_util.yminterval_to_months(l_yminterval);
             l_interval_minutes := cwms_util.dsinterval_to_minutes(l_dsinterval);
+            dbms_output.put_line(l_yminterval);
+            dbms_output.put_line(l_dsinterval);
+            dbms_output.put_line(l_interval_months);
+            dbms_output.put_line(l_interval_minutes);
             l_seasonal_values  := seasonal_value_tab_t();
+            l_level_unit := get_xml_text(l_value_node, '/*/seasonal-value[1]/level-value/@unit');
             for j in 1..999999 loop
                l_node := get_xml_node(l_value_node, '/*/seasonal-value['||j||']');
                exit when l_node is null;
@@ -2743,7 +2747,7 @@ begin
             store_location_level4(
                p_location_level_id => l_location_level_id,
                p_level_value       => null,
-               p_level_units       => l_level_unit,
+               p_level_units       => null,
                p_level_comment     => l_level_comment,
                p_effective_date    => l_effective_date,
                p_timezone_id       => 'UTC',

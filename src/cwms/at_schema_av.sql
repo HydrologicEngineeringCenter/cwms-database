@@ -55,6 +55,7 @@ DECLARE
       'av_loc_ts_id_count',
       'av_location_level',
       'av_location_level_curval',
+      'av_location_level2',
       'av_log_message',            -- created in at_schema_2
       'av_nation',
       'av_office',
@@ -116,6 +117,8 @@ DECLARE
       'av_usgs_parameter_all',
       'av_usgs_rating',
       'av_vert_datum_offset',
+      'av_vloc_lvl_constituent',
+      'av_virtual_location_level',
       'av_virtual_rating',
       'av_water_user_contract',    -- created in at_schema_2
       'av_water_user_contract2'    -- created in at_schema_2
@@ -185,6 +188,7 @@ END;
 @@cwms/views/av_location_kind
 @@cwms/views/av_location_level
 @@cwms/views/av_location_level_curval
+@@cwms/views/av_location_level2
 @@cwms/views/av_location_type
 @@cwms/views/av_nation
 @@cwms/views/av_office
@@ -240,6 +244,8 @@ END;
 @@cwms/views/av_usgs_parameter_all
 @@cwms/views/av_usgs_rating
 @@cwms/views/av_vert_datum_offset
+@@cwms/views/av_vloc_lvl_constituent
+@@cwms/views/av_virtual_location_level
 @@cwms/views/av_virtual_rating
 @@cwms/views/zav_cwms_ts_id
 @@cwms/views/zv_current_crit_file_code
