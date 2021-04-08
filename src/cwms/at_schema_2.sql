@@ -42,6 +42,5 @@ create unique index at_loc_lvl_indicator_u1 on at_loc_lvl_indicator (
 @@cwms/views/av_location_level2
 @@cwms/views/av_virtual_location_level
 @@cwms/views/av_vloc_lvl_constituent
-
 ---------------------------------------------------------
 COMMIT;
