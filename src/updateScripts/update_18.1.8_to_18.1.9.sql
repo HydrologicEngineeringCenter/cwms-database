@@ -69,8 +69,6 @@ grant select on av_ts_extents_utc to cwms_user;
 grant execute on cwms_ts_profile to cwms_user;
 grant execute on shef_spec_type to cwms_user;
 
--- Recreate ST triggers
-@@./18_1_9/update_triggers.sql
 -- Recreate VPD policy
 @../cwms/create_service_user_policy.sql
 
