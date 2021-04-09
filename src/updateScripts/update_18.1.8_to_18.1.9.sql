@@ -61,12 +61,7 @@ prompt UPDATING OBJECTS
 -- PACKAGES --
 --------------
 prompt update packages
-@../cwms/cwms_embank_pkg_body
-@../cwms/cwms_pool_pkg_body
-@../cwms/cwms_rating_pkg_body
 @../cwms/cwms_ts_pkg_body
-@../cwms/cwms_sec_pkg
-@../cwms/cwms_sec_pkg_body
 
 -- Missing grants
 prompt Apply missing grants
