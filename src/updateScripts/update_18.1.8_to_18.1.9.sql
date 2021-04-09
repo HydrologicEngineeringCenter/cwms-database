@@ -122,7 +122,7 @@ whenever sqlerror exit;
 prompt ################################################################################
 prompt UPDATING DB_CHANGE_LOG
 select systimestamp from dual;
-@@./18_1_9/update_db_change_log
+@@./18_1_9/update_db_change_log.sql
 select substr(version, 1, 10) as version,
        to_char(version_date, 'yyyy-mm-dd hh24:mi') as version_date,
        to_char(apply_date, 'yyyy-mm-dd hh24:mi') as apply_date
