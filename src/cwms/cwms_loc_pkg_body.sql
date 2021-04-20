@@ -8980,10 +8980,10 @@ end unassign_loc_groups;
        where sdo_contains(
          ad.shape,
          sdo_geometry(
-            2003,
+            2001,
             8265 ,
             null,
-            mdsys.sdo_elem_info_array(1,1003,1),
+            mdsys.sdo_elem_info_array(1,1,1),
             mdsys.sdo_ordinate_array(p_lon, p_lat))) = 'TRUE';
       return case
              when l_codes.count = 1 then l_codes(1)
@@ -9066,10 +9066,10 @@ end unassign_loc_groups;
     where sdo_contains(
       c.shape,
       sdo_geometry(
-         2003,
+         2001,
          8265 ,
          null,
-         mdsys.sdo_elem_info_array(1,1003,1),
+         mdsys.sdo_elem_info_array(1,1,1),
          mdsys.sdo_ordinate_array(p_lon, p_lat))) = 'TRUE';
       return case
              when l_codes.count = 1 then l_codes(1)
