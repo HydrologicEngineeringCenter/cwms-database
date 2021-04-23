@@ -1560,7 +1560,7 @@ AS
       p_create_as_lrts    in varchar2 default 'F');
 
    /**
-    * Stores time series data to the database using parameter types compatible with cx_Oracle Pyton package
+    * Stores time series data to the database using parameter types compatible with cx_Oracle Python package
     *
     * @see constant cwms_util.non_versioned
     * @see constant cwms_util.replace_all
