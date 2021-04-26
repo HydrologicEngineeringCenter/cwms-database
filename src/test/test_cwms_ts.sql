@@ -32,7 +32,7 @@ AS
                 cwms_loc.delete_location (
                     p_location_id     => rec.loc_name,
                     p_delete_action   => cwms_util.delete_all,
-                    p_db_office_id    => 'NAB');
+                    p_db_office_id    => '&office_id');
             EXCEPTION
                 WHEN exc_location_id_not_found
                 THEN
@@ -64,9 +64,9 @@ AS
         l_cwms_ts_id := l_base_location_id || '.Stage.Inst.0.0.raw';
         cwms_loc.store_location (p_location_id    => l_base_location_id,
                                  p_active         => 'F',
-                                 p_db_office_id   => 'NAB');
+                                 p_db_office_id   => '&office_id');
         COMMIT;
-        cwms_ts.create_ts ('NAB', l_cwms_ts_id);
+        cwms_ts.create_ts ('&office_id', l_cwms_ts_id);
         COMMIT;
 
           SELECT bas_loc_active_flag,
@@ -88,7 +88,7 @@ AS
         ut.expect (l_net_ts_active).to_equal ('F');
         cwms_loc.store_location (p_location_id    => l_base_location_id,
                                  p_active         => 'T',
-                                 p_db_office_id   => 'NAB');
+                                 p_db_office_id   => '&office_id');
         COMMIT;
 
 
@@ -111,7 +111,7 @@ AS
         ut.expect (l_net_ts_active).to_equal ('T');
         CWMS_TS.UPDATE_TS_ID (p_cwms_ts_id       => l_cwms_ts_id,
                               p_ts_active_flag   => 'F',
-                              p_db_office_id     => 'NAB');
+                              p_db_office_id     => '&office_id');
         COMMIT;
 
           SELECT bas_loc_active_flag,

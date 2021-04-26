@@ -475,7 +475,7 @@ end test_rename_loc_sub_to_different_base_with_different_sub;
 
         cwms_loc.store_location (
             p_location_id        => l_location_id,
-            p_db_office_id       => 'NAB',
+            p_db_office_id       => '&office_id',
             p_active             => 'F',
             p_longitude          => -122.6375,
             p_latitude           => 43.9708333,
@@ -521,7 +521,7 @@ end test_rename_loc_sub_to_different_base_with_different_sub;
 
         cwms_loc.store_location (p_location_id    => l_location_id,
                                  p_active         => 'T',
-                                 p_db_office_id   => 'NAB');
+                                 p_db_office_id   => '&office_id');
         COMMIT;
 
           SELECT base_loc_active_flag, loc_active_flag, active_flag
@@ -535,7 +535,7 @@ end test_rename_loc_sub_to_different_base_with_different_sub;
         ut.expect (l_active).to_equal ('T');
         cwms_loc.store_location (p_location_id    => l_base_location_id,
                                  p_active         => 'T',
-                                 p_db_office_id   => 'NAB');
+                                 p_db_office_id   => '&office_id');
         COMMIT;
 
           SELECT base_loc_active_flag, loc_active_flag, active_flag
@@ -552,7 +552,7 @@ end test_rename_loc_sub_to_different_base_with_different_sub;
         COMMIT;
         cwms_loc.store_location (p_location_id    => l_base_location_id,
                                  p_active         => 'T',
-                                 p_db_office_id   => 'NAB');
+                                 p_db_office_id   => '&office_id');
         COMMIT;
 
           SELECT base_loc_active_flag, loc_active_flag, active_flag
