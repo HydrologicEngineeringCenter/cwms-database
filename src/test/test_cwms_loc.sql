@@ -18,6 +18,8 @@ procedure test_rename_loc_sub_to_different_base_with_same_sub;
 procedure test_rename_loc_sub_to_same_base_with_different_sub;
 --%test(Test rename sub-location to a different base location and a different sub-location)
 procedure test_rename_loc_sub_to_different_base_with_different_sub;
+--%test(Test store_location_with_multiple_attributes_and_active_flags)
+procedure test_store_location_with_multiple_attributes_and_actvie_flags;
 
 procedure setup_rename;
 procedure teardown_all;
@@ -441,6 +443,128 @@ begin
 
 end test_rename_loc_sub_to_different_base_with_different_sub;
 
+    --------------------------------------------------------------------------------
+    -- procedure test_store_location_with_multiple_attributes_and_actvie_flags
+    --------------------------------------------------------------------------------
+
+    PROCEDURE test_store_location_with_multiple_attributes_and_actvie_flags
+    IS
+        l_location_id          av_loc.location_id%TYPE;
+        l_base_loc_active      AV_LOC.BASE_LOC_ACTIVE_FLAG%TYPE;
+        l_loc_active           AV_LOC.LOC_ACTIVE_FLAG%TYPE;
+        l_active               AV_LOC.LOC_ACTIVE_FLAG%TYPE;
+        l_bounding_office_id   AV_LOC.BOUNDING_OFFICE_ID%TYPE;
+        l_nearest_city         AV_LOC.NEAREST_CITY%TYPE;
+        l_county               AV_LOC.COUNTY_NAME%TYPE;
+        l_state_initial        AV_LOC.STATE_INITIAL%TYPE;
+        l_country              AV_LOC.NATION_ID%TYPE;
+        l_location_kind_id     AV_LOC.LOCATION_KIND_ID%TYPE;
+        l_base_location_id     AV_LOC.BASE_LOCATION_ID%TYPE;
+    BEGIN
+        --------------------------------
+        -- cleanup any previous tests --
+        --------------------------------
+        setup_rename;
+        ----------------------------------------------------
+        -- create the location and get the location codes --
+        ----------------------------------------------------
+
+        l_location_id := 'TestLoc1-WithSub1';
+        l_base_location_id := 'TestLoc1';
+
+
+        cwms_loc.store_location (
+            p_location_id        => l_location_id,
+            p_db_office_id       => '&office_id',
+            p_active             => 'F',
+            p_longitude          => -122.6375,
+            p_latitude           => 43.9708333,
+            p_horizontal_datum   => 'WGS84',
+            p_vertical_datum     => 'NGVD29',
+            p_public_name        => 'Fall Creek near Lowell',
+            p_long_name          => 'FCLO',
+            p_time_zone_id       => 'US/Pacific');
+        COMMIT;
+
+
+
+          SELECT base_loc_active_flag,
+                 loc_active_flag,
+                 active_flag,
+                 bounding_office_id,
+                 nearest_city,
+                 county_name,
+                 state_initial,
+                 nation_id,
+                 location_kind_id
+            INTO l_base_loc_active,
+                 l_loc_active,
+                 l_active,
+                 l_bounding_office_id,
+                 l_nearest_city,
+                 l_county,
+                 l_state_initial,
+                 l_country,
+                 l_location_kind_id
+            FROM av_loc
+           WHERE location_id = l_location_id AND unit_system = 'EN'
+        ORDER BY 1;
+
+        ut.expect (l_base_loc_active).to_equal ('F');
+        ut.expect (l_loc_active).to_equal ('F');
+        ut.expect (l_active).to_equal ('F');
+        ut.expect (l_bounding_office_id).to_equal ('NWP');
+        ut.expect (l_nearest_city).to_equal ('Springfield');
+        ut.expect (l_county).to_equal ('Lane');
+        ut.expect (l_country).to_equal ('UNITED STATES');
+        ut.expect (l_location_kind_id).to_equal ('SITE');
+
+        cwms_loc.store_location (p_location_id    => l_location_id,
+                                 p_active         => 'T',
+                                 p_db_office_id   => '&office_id');
+        COMMIT;
+
+          SELECT base_loc_active_flag, loc_active_flag, active_flag
+            INTO l_base_loc_active, l_loc_active, l_active
+            FROM av_loc
+           WHERE location_id = l_location_id AND unit_system = 'EN'
+        ORDER BY 1;
+
+        ut.expect (l_base_loc_active).to_equal ('F');
+        ut.expect (l_loc_active).to_equal ('T');
+        ut.expect (l_active).to_equal ('T');
+        cwms_loc.store_location (p_location_id    => l_base_location_id,
+                                 p_active         => 'T',
+                                 p_db_office_id   => '&office_id');
+        COMMIT;
+
+          SELECT base_loc_active_flag, loc_active_flag, active_flag
+            INTO l_base_loc_active, l_loc_active, l_active
+            FROM av_loc
+           WHERE location_id = l_location_id AND unit_system = 'EN'
+        ORDER BY 1;
+
+        ut.expect (l_base_loc_active).to_equal ('T');
+        ut.expect (l_loc_active).to_equal ('T');
+        ut.expect (l_active).to_equal ('T');
+        cwms_loc.store_location (p_location_id   => l_location_id,
+                                 p_active        => 'F');
+        COMMIT;
+        cwms_loc.store_location (p_location_id    => l_base_location_id,
+                                 p_active         => 'T',
+                                 p_db_office_id   => '&office_id');
+        COMMIT;
+
+          SELECT base_loc_active_flag, loc_active_flag, active_flag
+            INTO l_base_loc_active, l_loc_active, l_active
+            FROM av_loc
+           WHERE location_id = l_location_id AND unit_system = 'EN'
+        ORDER BY 1;
+
+        ut.expect (l_base_loc_active).to_equal ('T');
+        ut.expect (l_loc_active).to_equal ('F');
+        ut.expect (l_active).to_equal ('F');
+    END test_store_location_with_multiple_attributes_and_actvie_flags;
 end test_cwms_loc;
 /
 
