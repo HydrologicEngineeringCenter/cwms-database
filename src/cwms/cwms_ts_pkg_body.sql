@@ -3604,18 +3604,21 @@ AS
             FETCH rec
             BULK COLLECT INTO date_tab, val_tab, qual_tab;
 
-            t (i).data.EXTEND (rec%ROWCOUNT);
-            close rec;
-            FOR j IN 1 .. t(i).data.count
-            LOOP
-               t (i).data (j) :=
-                  tsv_type (
-                     FROM_TZ (CAST (date_tab (j) AS TIMESTAMP), 'UTC'),
-                     val_tab (j),
-                     qual_tab (j));
-            END LOOP;
-            t(i).start_time := t(i).data(1).date_time;
-            t(i).end_time := t(i).data(t(i).data.count).date_time;
+            IF rec%ROWCOUNT > 1
+            THEN
+                t (i).data.EXTEND (rec%ROWCOUNT);
+                close rec;
+                FOR j IN 1 .. t(i).data.count
+                LOOP
+                   t (i).data (j) :=
+                      tsv_type (
+                         FROM_TZ (CAST (date_tab (j) AS TIMESTAMP), 'UTC'),
+                         val_tab (j),
+                         qual_tab (j));
+                END LOOP;
+                t(i).start_time := t(i).data(1).date_time;
+                t(i).end_time := t(i).data(t(i).data.count).date_time;
+            END IF;
          EXCEPTION
             WHEN TS_ID_NOT_FOUND OR LOCATION_ID_NOT_FOUND
             THEN
