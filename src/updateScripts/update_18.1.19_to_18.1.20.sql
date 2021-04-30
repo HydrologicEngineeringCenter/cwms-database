@@ -45,7 +45,7 @@ end;
 whenever sqlerror exit;
 column db_name new_value db_name
 select :db_name as db_name from dual;
-define logfile=update_&db_name._18.1.18_to_18.1.19.log
+define logfile=update_&db_name._18.1.19_to_18.1.20.log
 prompt log file = &logfile
 spool &logfile append;
 -------------------
@@ -54,7 +54,7 @@ spool &logfile append;
 prompt ################################################################################
 prompt VERIFYING EXPECTED VERSION
 select systimestamp from dual;
-@@./18_1_19/verify_db_version
+@@./18_1_20/verify_db_version
 prompt ################################################################################
 prompt UPDATING OBJECTS
 @../cwms/cwms_ts_pkg_body.sql
@@ -108,7 +108,7 @@ whenever sqlerror exit;
 prompt ################################################################################
 prompt UPDATING DB_CHANGE_LOG
 select systimestamp from dual;
-@@./18_1_19/update_db_change_log
+@@./18_1_20/update_db_change_log
 select substr(version, 1, 10) as version,
        to_char(version_date, 'yyyy-mm-dd hh24:mi') as version_date,
        to_char(apply_date, 'yyyy-mm-dd hh24:mi') as apply_date
