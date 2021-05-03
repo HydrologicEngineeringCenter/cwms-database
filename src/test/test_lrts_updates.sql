@@ -57,18 +57,34 @@ procedure zstore_ts;
 procedure store_ts_multi;
 --%test (ZSTORE_TS_MULTI)
 procedure zstore_ts_multi;
+--%test(SET_TSID_TIME_ZONE removed)
+--%throws(-00900)
+procedure set_tsid_time_zone;
+--%test(SET_TS_TIME_ZONE removed)
+--%throws(-00900)
+procedure set_ts_time_zone;
+--%test(CREATE_TS_TZ removed)
+--%throws(-00900)
+procedure create_ts_tz;
+--%test(CREATE_TS_CODE_TZ removed)
+--%throws(-00900)
+procedure create_ts_code_tz;
+--%test(GET_TSID_TIME_ZONE)
+procedure get_tsid_time_zone;
+--%test(GET_TS_TIME_ZONE)
+procedure get_ts_time_zone;
 
 procedure setup(p_options in varchar2 default null);
 procedure teardown;
-c_office_id     constant varchar2(3)  := '&office_id';
+c_office_id     constant varchar2(3)  := '&&office_id';
 c_location_ids  constant str_tab_t    := str_tab_t('TestLoc1', 'TestLoc1-WithSub', 'TestLoc2');
 c_timezone_ids  constant str_tab_t    := str_tab_t('US/Central', null, 'CST');
 c_intvl_offsets constant number_tab_t := number_tab_t(0, 10, 20);
 c_ts_id_part    constant varchar2(25) := '.Code.Inst.<intvl>.0.Test';
 c_intervals     constant str_tab_t    := str_tab_t('0', '~1Hour', '1Hour');
 c_ts_unit       constant varchar2(3)  := 'n/a';
-c_start_time    constant date          := date '2020-01-01';
-c_value_count   constant pls_integer   := 24;
+c_start_time    constant date         := date '2020-01-01';
+c_value_count   constant pls_integer  := 6;
 end test_lrts_updates;
 /
 create or replace package body test_lrts_updates as
@@ -2220,6 +2236,67 @@ begin
        end if;
    end loop;
 end zstore_ts_multi;
+-------------------------------
+-- procedure set_tsid_time_zone
+-------------------------------
+procedure set_tsid_time_zone
+is
+begin
+   setup('INIT');
+   execute immediate 'cwms_ts.set_tsid_time_zone('':1'', ''UTC'', ''&&office_id'')'
+     using v_ts_ids(1);
+end set_tsid_time_zone;
+-----------------------------
+-- procedure set_ts_time_zone
+-----------------------------
+procedure set_ts_time_zone
+is
+begin
+   execute immediate 'cwms_ts.set_ts_time_zone(0, ''UTC'')';
+end set_ts_time_zone;
+----------------------------
+-- procedure create_ts_tz --
+----------------------------
+procedure create_ts_tz
+is
+begin
+   setup('INIT');
+   execute immediate 'cwms_ts.create_ts_tz('':1'', p_time_zone_name=>''UTC'', p_office_id=>''&&office_id'')'
+     using v_ts_ids(1);
+end create_ts_tz;
+------------------------------
+-- procedure create_ts_code_tz
+------------------------------
+procedure create_ts_code_tz
+is
+   l_ts_code at_cwms_ts_spec.ts_code%type;
+begin
+   setup('INIT');
+   execute immediate 'cwms_ts.create_ts_tz(:1, '':2'', p_time_zone_name=>''UTC'', p_office_id=>''&&office_id'')'
+     using l_ts_code, v_ts_ids(1);
+end create_ts_code_tz;
+-------------------------------
+-- procedure get_tsid_time_zone
+-------------------------------
+procedure get_tsid_time_zone
+is
+   l_timezone cwms_time_zone.time_zone_name%type;
+begin
+   setup();
+   l_timezone := cwms_ts.get_tsid_time_zone(replace(v_ts_ids(1), '<intvl>', c_intervals(1)), '&&office_id');
+   ut.expect(l_timezone).to_equal(v_timezone_ids(1));
+end get_tsid_time_zone;
+-----------------------------
+-- procedure get_ts_time_zone
+-----------------------------
+procedure get_ts_time_zone
+is
+   l_timezone cwms_time_zone.time_zone_name%type;
+begin
+   setup();
+   l_timezone := cwms_ts.get_ts_time_zone(cwms_ts.get_ts_code(replace(v_ts_ids(1), '<intvl>', c_intervals(1)), '&&office_id'));
+   ut.expect(l_timezone).to_equal(v_timezone_ids(1));
+end get_ts_time_zone;
 
 end test_lrts_updates;
 /

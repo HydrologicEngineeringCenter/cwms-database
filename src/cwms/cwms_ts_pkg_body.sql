@@ -1031,124 +1031,6 @@ AS
    --*******************************************************************   --
    --*******************************************************************   --
    --
-   -- SET_TS_TIME_ZONE -
-   --
-   PROCEDURE set_ts_time_zone (p_ts_code          IN NUMBER,
-                               p_time_zone_name   IN VARCHAR2)
-   IS
-      l_time_zone_name   VARCHAR2 (28) := NVL (p_time_zone_name, 'UTC');
-      l_time_zone_code   NUMBER;
-      l_interval_val     NUMBER;
-      l_tz_offset        NUMBER;
-      l_office_id        VARCHAR2 (16);
-      l_tsid             VARCHAR2 (193);
-      l_query            VARCHAR2 (32767);
-   BEGIN
-      IF p_time_zone_name IS NULL
-      THEN
-         l_time_zone_code := NULL;
-      ELSE
-         BEGIN
-            SELECT time_zone_code
-              INTO l_time_zone_code
-              FROM mv_time_zone
-             WHERE UPPER (time_zone_name) = UPPER (p_time_zone_name);
-         EXCEPTION
-            WHEN NO_DATA_FOUND
-            THEN
-               cwms_err.raise ('INVALID_ITEM',
-                               p_time_zone_name,
-                               'time zone name');
-         END;
-      END IF;
-
-      SELECT interval
-        INTO l_interval_val
-        FROM at_cwms_ts_spec ts, cwms_interval i
-       WHERE ts.ts_code = p_ts_code AND i.interval_code = ts.interval_code;
-
-      IF l_interval_val > 60
-      THEN
-         BEGIN
-            l_query := REPLACE (
-               'select distinct mod(round((cast((cast(date_time as timestamp) at time zone ''$tz'') as date)
-                                   - trunc(cast((cast(date_time as timestamp) at time zone ''$tz'') as date)))
-                                   * 1440, 0), :a)
-                  from (select distinct date_time
-                          from av_tsv_dqu
-                         where ts_code = :b
-                       )',
-                       '$tz',
-                       l_time_zone_name);
-
-            cwms_util.check_dynamic_sql(l_query);
-
-            EXECUTE IMMEDIATE l_query
-               INTO l_tz_offset
-               USING l_interval_val, p_ts_code;
-         EXCEPTION
-            WHEN NO_DATA_FOUND
-            THEN
-               NULL;
-            WHEN TOO_MANY_ROWS
-            THEN
-               SELECT cwms_ts_id, db_office_id
-                 INTO l_tsid, l_office_id
-                 FROM at_cwms_ts_id
-                WHERE ts_code = p_ts_code;
-
-               cwms_err.raise (
-                  'ERROR',
-                     'Cannot set '
-                  || l_office_id
-                  || '.'
-                  || l_tsid
-                  || ' to time zone '
-                  || NVL (p_time_zone_name, 'NULL')
-                  || '.  Existing data does not conform to time zone.');
-         END;
-      END IF;
-
-      UPDATE at_cwms_ts_spec
-         SET time_zone_code = l_time_zone_code
-       WHERE ts_code = p_ts_code;
-   END set_ts_time_zone;
-
-   --
-   --*******************************************************************   --
-   --*******************************************************************   --
-   --
-   -- set_tsid_time_zone -
-   --
-   PROCEDURE set_tsid_time_zone (p_ts_id            IN VARCHAR2,
-                                 p_time_zone_name   IN VARCHAR2,
-                                 p_office_id        IN VARCHAR2 DEFAULT NULL)
-   IS
-      l_ts_code     NUMBER;
-      l_office_id   VARCHAR2 (16)
-                       := NVL (p_office_id, cwms_util.user_office_id);
-   BEGIN
-      BEGIN
-         SELECT ts_code
-           INTO l_ts_code
-           FROM at_cwms_ts_id
-          WHERE     UPPER (cwms_ts_id) = UPPER (p_ts_id)
-                AND UPPER (db_office_id) = UPPER (l_office_id);
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            cwms_err.raise ('INVALID_ITEM',
-                            p_ts_id,
-                            'CWMS Timeseries Identifier');
-      END;
-
-      set_ts_time_zone (l_ts_code, p_time_zone_name);
-   END set_tsid_time_zone;
-
-   --
-   --*******************************************************************   --
-   --*******************************************************************   --
-   --
    -- get_ts_time_zone -
    --
    FUNCTION get_ts_time_zone (p_ts_code IN NUMBER)
@@ -1192,25 +1074,15 @@ AS
       BEGIN
          SELECT ts_code
            INTO l_ts_code
-           FROM at_cwms_ts_id
-          WHERE     UPPER (cwms_ts_id) = UPPER (p_ts_id)
+           from at_cwms_ts_id
+          WHERE     UPPER (cwms_ts_id) = UPPER (get_ts_id(p_ts_id, l_office_id))
                 AND UPPER (db_office_id) = UPPER (l_office_id);
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            BEGIN
-               SELECT ts_code
-                 INTO l_ts_code
-                 FROM at_cwms_ts_id
-                WHERE     UPPER (cwms_ts_id) = UPPER (p_ts_id)
-                      AND UPPER (db_office_id) = UPPER (l_office_id);
-            EXCEPTION
-               WHEN NO_DATA_FOUND
-               THEN
-                  cwms_err.raise ('INVALID_ITEM',
-                                  p_ts_id,
-                                  'CWMS Timeseries Identifier');
-            END;
+            cwms_err.raise ('INVALID_ITEM',
+                            p_ts_id,
+                            'CWMS Timeseries Identifier');
       END;
 
       RETURN get_ts_time_zone (l_ts_code);
@@ -1399,36 +1271,6 @@ AS
                       p_active_flag         => p_active_flag,
                       p_office_id           => p_office_id);
    END create_ts;
-
-   --
-   --*******************************************************************   --
-   --*******************************************************************   --
-   --
-   -- CREATE_TS_TZ -
-   --
-   PROCEDURE create_ts_tz (p_cwms_ts_id          IN VARCHAR2,
-                           p_utc_offset          IN NUMBER DEFAULT NULL,
-                           p_interval_forward    IN NUMBER DEFAULT NULL,
-                           p_interval_backward   IN NUMBER DEFAULT NULL,
-                           p_versioned           IN VARCHAR2 DEFAULT 'F',
-                           p_active_flag         IN VARCHAR2 DEFAULT 'T',
-                           p_time_zone_name      IN VARCHAR2 DEFAULT 'UTC',
-                           p_office_id           IN VARCHAR2 DEFAULT NULL)
-   IS
-      l_ts_code   NUMBER;
-   BEGIN
-      create_ts_code (l_ts_code,
-                      p_cwms_ts_id,
-                      p_utc_offset,
-                      p_interval_forward,
-                      p_interval_backward,
-                      p_versioned,
-                      p_active_flag,
-                      'F',
-                      p_office_id);
-
-      set_ts_time_zone (l_ts_code, p_time_zone_name);
-   END create_ts_tz;
 
    --
    --*******************************************************************   --
@@ -1923,40 +1765,6 @@ AS
 
       DBMS_APPLICATION_INFO.set_module (NULL, NULL);
    END create_ts_code;
-
-   --
-   --*******************************************************************   --
-   --*******************************************************************   --
-   --
-   -- CREATE_TS_CODE_TZ - v2.0 -
-   --
-   PROCEDURE create_ts_code_tz (
-      p_ts_code                OUT NUMBER,
-      p_cwms_ts_id          IN     VARCHAR2,
-      p_utc_offset          IN     NUMBER DEFAULT NULL,
-      p_interval_forward    IN     NUMBER DEFAULT NULL,
-      p_interval_backward   IN     NUMBER DEFAULT NULL,
-      p_versioned           IN     VARCHAR2 DEFAULT 'F',
-      p_active_flag         IN     VARCHAR2 DEFAULT 'T',
-      p_fail_if_exists      IN     VARCHAR2 DEFAULT 'T',
-      p_time_zone_name      IN     VARCHAR2 DEFAULT 'UTC',
-      p_office_id           IN     VARCHAR2 DEFAULT NULL)
-   IS
-      l_ts_code   NUMBER;
-   BEGIN
-      create_ts_code (l_ts_code,
-                      p_cwms_ts_id,
-                      p_utc_offset,
-                      p_interval_forward,
-                      p_interval_backward,
-                      p_versioned,
-                      p_active_flag,
-                      p_fail_if_exists,
-                      p_office_id);
-
-      set_ts_time_zone (l_ts_code, p_time_zone_name);
-      p_ts_code := l_ts_code;
-   END create_ts_code_tz;
 
    --*******************************************************************   --
    --*******************************************************************   --
