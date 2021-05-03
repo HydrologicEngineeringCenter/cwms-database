@@ -1066,26 +1066,22 @@ AS
    FUNCTION get_tsid_time_zone (p_ts_id       IN VARCHAR2,
                                 p_office_id   IN VARCHAR2 DEFAULT NULL)
       RETURN VARCHAR2
-   IS
-      l_ts_code     NUMBER;
-      l_office_id   VARCHAR2 (16)
-                       := NVL (p_office_id, cwms_util.user_office_id);
-   BEGIN
-      BEGIN
-         SELECT ts_code
-           INTO l_ts_code
-           from at_cwms_ts_id
-          WHERE     UPPER (cwms_ts_id) = UPPER (get_ts_id(p_ts_id, l_office_id))
-                AND UPPER (db_office_id) = UPPER (l_office_id);
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            cwms_err.raise ('INVALID_ITEM',
-                            p_ts_id,
-                            'CWMS Timeseries Identifier');
-      END;
+   is
+      l_time_zone_id cwms_time_zone.time_zone_name%type;
+   begin
+      select time_zone_id
+        into l_time_zone_id
+        from at_cwms_ts_id
+       where upper(cwms_ts_id) = upper(get_ts_id(p_ts_id, p_office_id))
+         and db_office_id = cwms_util.get_db_office_id(p_office_id);
 
-      RETURN get_ts_time_zone (l_ts_code);
+      return l_time_zone_id;
+   exception
+      when no_data_found then
+            cwms_err.raise (
+               'INVALID_ITEM',
+               p_ts_id,
+               'CWMS Timeseries Identifier');
    END get_tsid_time_zone;
 
 
