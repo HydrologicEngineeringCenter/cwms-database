@@ -152,7 +152,17 @@
 			</else>
 		</if>
 
+		<echo message="Populating CWMS_DB_CHANGE_LOG with current version"/>
+		<exec dir="${root}" executable="python2" output="populate_cwms_db_change_log.sql">
+			<arg value="extract_version_update_info.py"/>
+		</exec>
+		<exec dir="${root}" executable="sqlplus">
+			<arg value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance}" />
+			<arg value="@populate_cwms_db_change_log"/>
+		</exec>
+
 	</target>
+
 
 
 	<target name="setup-tests" depends="init" description="Install the test framework into the oracle database">
