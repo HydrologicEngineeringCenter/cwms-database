@@ -1690,8 +1690,11 @@ AS
                     from at_physical_location
                    where location_code = cwms_loc.get_location_code(l_office_id, l_base_location_id);
                end if;
-               if l_time_zone_code is null and nvl(l_lrts_interval, 0) > 0 then
-                  cwms_err.raise('ERROR', 'Cannot create Local-Regular Time Series for a location with a NULL time zone');
+               if l_time_zone_code is null then
+                  select time_zone_code
+                    into l_time_zone_code
+                    from cwms_time_zone
+                   where time_zone_name = 'UTC'; 
                end if;
 
                INSERT INTO at_cwms_ts_spec t (ts_code,

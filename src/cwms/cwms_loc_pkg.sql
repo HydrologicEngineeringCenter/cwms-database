@@ -34,7 +34,7 @@ AS
     */
    v_package_log_prop_text varchar2(30);
    function package_log_property_text return varchar2;
-   
+
    /**
     * Sets text value of package logging property
     *
@@ -42,7 +42,7 @@ AS
     */
    procedure set_package_log_property_text(
       p_text in varchar2 default null);
-   
+
     TYPE cat_loc_kind_rec_t
       IS RECORD (location_kind_id cwms_location_kind.location_kind_id%TYPE);
 
@@ -775,6 +775,15 @@ AS
 		p_alias_cursor 				OUT SYS_REFCURSOR,
 		p_db_office_id 			IN 	 VARCHAR2 DEFAULT NULL
 	);
+   /**
+    * Retreives the time zone code of a location
+    *
+    * @param p_location_code The unique numeric code that identifies the location
+    *
+    * @return The local time zone code for the specified location
+    */
+	FUNCTION get_local_timezone_code (p_location_code IN NUMBER)
+		RETURN cwms_time_zone.time_zone_code%type;
    /**
     * Retreives the time zone of a location
     *
@@ -1572,7 +1581,7 @@ AS
       p_location_id in varchar2,
       p_office_id   in varchar2 default null)
       return varchar2;
-         
+
    function check_location_kind_code(
       p_location_code in number)
       return integer;
@@ -1734,14 +1743,14 @@ AS
     * @param p_vertical_datum_id_2 The second vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
     * @param p_datetime_utc        The date of applicability of the offset. The offset returned will be the one having the latest effective date on or before this parameter. If not specified, the current time is used.
     */
-   procedure get_vertical_datum_offset(   
-      p_offset              out binary_double, 
+   procedure get_vertical_datum_offset(
+      p_offset              out binary_double,
       p_effective_date      out date,
       p_estimate            out varchar2,
       p_location_code       in  number,
-      p_vertical_datum_id_1 in  varchar2,   
+      p_vertical_datum_id_1 in  varchar2,
       p_vertical_datum_id_2 in  varchar2,
-      p_datetime_utc        in  date default sysdate); 
+      p_datetime_utc        in  date default sysdate);
    /**
     * Retrieves a collection vertical datum offset values in meters and effective dates in UTC from the database for a location and time window
     *
@@ -1752,7 +1761,7 @@ AS
     * @param p_vertical_datum_id_2 The second vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
     * @param p_start_time_utc      The beginning of the time window. The earliest effective date retrieved will be in effect on this date.
     * @param p_end_time_utc        The end of the time window.  The latest effective date retrieved will be in effect on this date.
-    * 
+    *
     * @return The datum offsets values and effective dates. For each item the date_time field contains the effective_date in UTC and the value field contains the datum offset in meters.  The quality field is not used.
     *
     * @see type ztsv_array
@@ -1763,7 +1772,7 @@ AS
       p_vertical_datum_id_2 in varchar2,
       p_start_time_utc      in date,
       p_end_time_utc        in date)
-      return ztsv_array;        
+      return ztsv_array;
    /**
     * Retrieves a collection vertical datum offset values in meters and effective dates in UTC from the database for a location and time window
     *
@@ -1775,16 +1784,16 @@ AS
     * @param p_vertical_datum_id_2 The second vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
     * @param p_start_time_utc      The beginning of the time window. The earliest effective date retrieved will be in effect on this date.
     * @param p_end_time_utc        The end of the time window.  The latest effective date retrieved will be in effect on this date.
-    * 
+    *
     * @see type ztsv_array
     */
-   procedure get_vertical_datum_offsets(  
+   procedure get_vertical_datum_offsets(
       p_offsets             out ztsv_array,
       p_location_code       in  number,
       p_vertical_datum_id_1 in  varchar2,
       p_vertical_datum_id_2 in  varchar2,
       p_start_time_utc      in  date,
-      p_end_time_utc        in  date);        
+      p_end_time_utc        in  date);
    /**
     * Retrieves a vertical datum offset value in a specified unit from the database for a location
     *
@@ -1796,16 +1805,16 @@ AS
     * @param p_datetime_utc        The date of applicability of the offset. The offset returned will be the one having the latest effective date on or before this parameter.
     *                              If not specified, the current date and time will be used.
     * @param p_unit                The unit to retrieve the offset in.  If not specified or NULL, the offset will be returned in meters.
-    * 
+    *
     * @return The offset in the specified unit that must be ADDED to an elevation WRT to the first vertical datum to generate an elevation WRT to the second veritcal datum
     */
    function get_vertical_datum_offset(
       p_location_code       in number,
-      p_vertical_datum_id_1 in varchar2,   
-      p_vertical_datum_id_2 in varchar2, 
+      p_vertical_datum_id_1 in varchar2,
+      p_vertical_datum_id_2 in varchar2,
       p_datetime_utc        in date     default sysdate,
       p_unit                in varchar2 default null)
-      return binary_double;   
+      return binary_double;
    /**
     * Retrieves a vertical datum offset value in a specified unit from the database for a location
     *
@@ -1819,18 +1828,18 @@ AS
     * @param p_time_zone           The time zone of p_datetime (if specified). If not specified or NULL, the location's location time zone is used.
     * @param p_unit                The unit to retrieve the offset in.  If not specified or NULL, the offset will be returned in meters.
     * @param p_office_id           The office that owns the location.
-    * 
+    *
     * @return The offset in the specified unit that must be ADDED to an elevation WRT to the first vertical datum to generate an elevation WRT to the second veritcal datum
     */
    function get_vertical_datum_offset(
       p_location_id         in varchar,
-      p_vertical_datum_id_1 in varchar2,   
-      p_vertical_datum_id_2 in varchar2, 
+      p_vertical_datum_id_1 in varchar2,
+      p_vertical_datum_id_2 in varchar2,
       p_datetime            in date     default null,
       p_time_zone           in varchar2 default null,
       p_unit                in varchar2 default null,
       p_office_id           in varchar2 default null)
-      return binary_double;   
+      return binary_double;
    /**
     * Retrieves a vertical datum offset value in a specified unit and effective date in a specified time zone from the database for a location
     *
@@ -1850,16 +1859,16 @@ AS
     * @param p_office_id           The office that owns the location.
     */
    procedure get_vertical_datum_offset(
-      p_offset              out binary_double,  
+      p_offset              out binary_double,
       p_effective_date      out date,
       p_estimate            out varchar2,
       p_location_id         in  varchar,
-      p_vertical_datum_id_1 in  varchar2,   
+      p_vertical_datum_id_1 in  varchar2,
       p_vertical_datum_id_2 in  varchar2,
       p_datetime            in  date     default null,
       p_time_zone           in  varchar2 default null,
       p_unit                in  varchar2 default null,
-      p_office_id           in  varchar2 default null);   
+      p_office_id           in  varchar2 default null);
    /**
     * Retrieves a collection vertical datum offset values in a specified unit and effective dates in a specified time zone from the database for a location and time window
     *
@@ -1873,7 +1882,7 @@ AS
     * @param p_time_zone           The time zone of time window. If not specified or NULL, the location's location time zone is used.
     * @param p_unit                The unit to retrieve the offsets in.  If not specified or NULL, the offsets will be returned in meters.
     * @param p_office_id           The office that owns the location.
-    * 
+    *
     * @return The datum offset values and effective dates. For each item the date_time field contains the effective_date in the specified time zone and the value field contains the datum offset in the specified unit. The quality field is not used.
     *
     * @see type ztsv_array
@@ -1887,7 +1896,7 @@ AS
       p_time_zone           in varchar2 default null,
       p_unit                in varchar2 default null,
       p_office_id           in varchar2 default null)
-      return ztsv_array;        
+      return ztsv_array;
    /**
     * Retrieves a collection vertical datum offset values in a specified unit and effective dates in a specified time zone from the database for a location and time window
     *
@@ -1902,7 +1911,7 @@ AS
     * @param p_time_zone           The time zone of time window. If not specified or NULL, the location's location time zone is used.
     * @param p_unit                The unit to retrieve the offsets in.  If not specified or NULL, the offsets will be returned in meters.
     * @param p_office_id           The office that owns the location.
-    * 
+    *
     * @see type ztsv_array
     */
    procedure get_vertical_datum_offsets(
@@ -1915,7 +1924,7 @@ AS
       p_time_zone           in  varchar2 default null,
       p_unit                in  varchar2 default null,
       p_office_id           in  varchar2 default null);
-   
+
    /**
     * Sets the default vertical datum for the current session. The default vertical datum is the datum in which all queried elevations
     * are reported and in which all specified elevations are intepreted. If the default vertical datum is NULL, all queried elevations are
@@ -1930,7 +1939,7 @@ AS
     */
    procedure set_default_vertical_datum(
       p_vertical_datum in varchar2);
-      
+
    /**
     * Retrieves the default vertical datum for the current session. The default vertical datum is the datum in which all queried elevations
     * are reported and in which all specified elevations are intepreted. If the default vertical datum is NULL, all queried elevations are
@@ -1945,7 +1954,7 @@ AS
     */
    procedure get_default_vertical_datum(
       p_vertical_datum out varchar2);
-      
+
    /**
     * Retrieves the default vertical datum for the current session. The default vertical datum is the datum in which all queried elevations
     * are reported and in which all specified elevations are intepreted. If the default vertical datum is NULL, all queried elevations are
@@ -2030,7 +2039,7 @@ AS
     * @param p_location_id The text identifier for the location
     * @param p_unit_spec   The unit specifier that may have a vertical datum encoded to override the default vertical datum for the session.
     * @param p_office_id   The office that owns the location. If not specified or NULL, the current session user's default office is used.
-    * @return the elevation offsetin the specified unit  that must be ADDED to an elevation WRT the specified location's identified datum to generate an elavation WRT to the effective vertical datum. 
+    * @return the elevation offsetin the specified unit  that must be ADDED to an elevation WRT the specified location's identified datum to generate an elavation WRT to the effective vertical datum.
     * @see cwms_util.parse_unit
     */
    function get_vertical_datum_offset(
@@ -2038,19 +2047,19 @@ AS
       p_unit          in varchar2,
       p_office_id     in varchar2 default null)
       return binary_double;
-      
+
    function is_vert_datum_offset_estimated(
       p_location_code in integer,
       p_from_datum    in varchar2,
       p_to_datum      in varchar2)
-      return varchar2;      
-      
+      return varchar2;
+
    function is_vert_datum_offset_estimated(
       p_location_id in varchar2,
       p_from_datum  in varchar2,
       p_to_datum    in varchar2,
       p_office_id   in varchar2 default null)
-      return varchar2;      
+      return varchar2;
    /**
     * Retrieves a XML string containing the elevation, native datum, and elevation offsets to other datums for the specified location
     *
@@ -2114,7 +2123,7 @@ AS
     * @param p_unit            The unit to return the elevation and elevation offsets in
     * @param p_office_id       The office that owns the location. If not specified or NULL, the session user's default office is used. If p_location_id
     *                          is a recordset, this parameter may be, but is not required to be, a recordset. If this parameter is not a recordset then
-    *                          the one (specified or implied) office applies to all locations.  If this parameter is a recordset, it must have the same 
+    *                          the one (specified or implied) office applies to all locations.  If this parameter is a recordset, it must have the same
     *                          number of records as p_location_id. Each record may have a single office, which applies to every location on the same record
     *                          in p_location_id, or it may have one field for each field in the same record of p_location_id.
     * @see cwms_util.parse_string_recordset
@@ -2148,7 +2157,7 @@ AS
     * @param p_unit            The unit to return the elevation and elevation offsets in
     * @param p_office_id       The office that owns the location. If not specified or NULL, the session user's default office is used. If p_location_id
     *                          is a recordset, this parameter may be, but is not required to be, a recordset. If this parameter is not a recordset then
-    *                          the one (specified or implied) office applies to all locations.  If this parameter is a recordset, it must have the same 
+    *                          the one (specified or implied) office applies to all locations.  If this parameter is a recordset, it must have the same
     *                          number of records as p_location_id. Each record may have a single office, which applies to every location on the same record
     *                          in p_location_id, or it may have one field for each field in the same record of p_location_id.
     *
@@ -2198,7 +2207,7 @@ AS
       p_location_id in varchar2,
       p_unit        in varchar2,
       p_office_id   in varchar2 default null)
-      return varchar2;                       
+      return varchar2;
    /**
     * Sets vertical datum info for one or more locations
     *
@@ -2232,12 +2241,12 @@ AS
     *   &lt;/vertical-datum-info&gt;
     * &lt;/vertical-datum-info-set&gt;</big></pre>
     * This procedure will not update a location's existing native vertical datum nor its existing elevation and will fail if either are specified and do not match the current values in the database.
-    * However, If either of these items are not set in the database they will be initialized from the XML values.  
+    * However, If either of these items are not set in the database they will be initialized from the XML values.
     * @param p_fail_if_exists  A flag ('T'/'F') specifying whether the procedure should fail if any of the specified vertical datum info (except native datum and elevation) already exists
     */
    procedure set_vertical_datum_info(
       p_vert_datum_info in varchar2,
-      p_fail_if_exists  in varchar2);     
+      p_fail_if_exists  in varchar2);
    /**
     * Sets vertical datum information for a specified location
     *
@@ -2245,7 +2254,7 @@ AS
     *
     * @param p_location_code   The unique number identifying the location
     * @param p_vert_datum_info An single location XML snippet as described in get_vertical_datum_info (root element = <code><big>&lt;vertical-datum-info&gt;</big></code>).
-    *                          The <code><big>office</big></code> attribute and <code><big>&lt;location&gt;</big></code> child element are not required. If they exist, they must match the 
+    *                          The <code><big>office</big></code> attribute and <code><big>&lt;location&gt;</big></code> child element are not required. If they exist, they must match the
     *                          location specified in p_location_code
     * <pre><big>&lt;vertical-datum-info unit="ft"&gt;
     *   &lt;native-datum&gt;LOCAL&lt;/native-datum&gt;
@@ -2260,7 +2269,7 @@ AS
     *   &lt;/offset&gt;
     * &lt;/vertical-datum-info&gt;</big></pre>
     * This procedure will not update a location's existing native vertical datum nor its existing elevation and will fail if either are specified and do not match the current values in the database.
-    * However, If either of these items are not set in the database they will be initialized from the XML values.  
+    * However, If either of these items are not set in the database they will be initialized from the XML values.
     * @param p_fail_if_exists  A flag ('T'/'F') specifying whether the procedure should fail if any of the specified vertical datum info (except native datum and elevation) already exists
     *
     * @see get_vertical_datum_info
@@ -2268,7 +2277,7 @@ AS
    procedure set_vertical_datum_info(
       p_location_code   in number,
       p_vert_datum_info in varchar2,
-      p_fail_if_exists  in varchar2);     
+      p_fail_if_exists  in varchar2);
    /**
     * Sets vertical datum information for a specified location
     *
@@ -2276,7 +2285,7 @@ AS
     *
     * @param p_location_id   The text name of the location
     * @param p_vert_datum_info A single location XML snippet as described in get_vertical_datum_info (root element = <code><big>&lt;vertical-datum-info&gt;</big></code>).
-    *                          The <code><big>office</big></code> attribute and <code><big>&lt;location&gt;</big></code> child element are not required. If they exist, they must match the 
+    *                          The <code><big>office</big></code> attribute and <code><big>&lt;location&gt;</big></code> child element are not required. If they exist, they must match the
     *                          location specified in p_location_id and p_office_id
     * <pre><big>&lt;vertical-datum-info unit="ft"&gt;
     *   &lt;native-datum&gt;LOCAL&lt;/native-datum&gt;
@@ -2291,7 +2300,7 @@ AS
     *   &lt;/offset&gt;
     * &lt;/vertical-datum-info&gt;</big></pre>
     * This procedure will not update a location's existing native vertical datum nor its existing elevation and will fail if either are specified and do not match the current values in the database.
-    * However, If either of these items are not set in the database they will be initialized from the XML values.  
+    * However, If either of these items are not set in the database they will be initialized from the XML values.
     * @param p_fail_if_exists  A flag ('T'/'F') specifying whether the procedure should fail if any of the specified vertical datum info (except native datum and elevation) already exists
     * @param p_office_id       The office that owns the location.  If unspecified or NULL, the session user's default location will be used.
     *
@@ -2300,8 +2309,8 @@ AS
    procedure set_vertical_datum_info(
       p_location_id     in varchar2,
       p_vert_datum_info in varchar2,
-      p_fail_if_exists  in varchar2,     
-      p_office_id       in varchar2 default null);     
+      p_fail_if_exists  in varchar2,
+      p_office_id       in varchar2 default null);
    /**
     * Retrieves the name of the local vertical datum for the specified location
     *
@@ -2405,52 +2414,52 @@ AS
     *
     * @param p_location_kind_id  The location_kind to retrieve the ancestor list for
     * @param p_include_this_kind A flag ('T'/'F') specifying whether to include the specified location kind at the bottom of the list
-    *                                                                                                                                
-    * @return A top-down ordered list of the ancestors of the specified location kind 
-    */   
+    *
+    * @return A top-down ordered list of the ancestors of the specified location kind
+    */
    function get_location_kind_ancestors(
       p_location_kind_id  in varchar2,
       p_include_this_kind in varchar2 default 'F')
-      return str_tab_t;      
+      return str_tab_t;
    /**
     * Retrieves anscestors of the specified location kind in top-down order
     *
     * @param p_location_kind_code  The location_kind to retrieve the ancestor list for
     * @param p_include_this_kind   A flag ('T'/'F') specifying whether to include the specified location kind at the bottom of the list
-    *                                                                                                                                
-    * @return A top-down ordered list of the ancestors of the specified location kind 
-    */   
+    *
+    * @return A top-down ordered list of the ancestors of the specified location kind
+    */
    function get_location_kind_ancestors(
       p_location_kind_code in integer,
       p_include_this_kind  in varchar2 default 'F')
-      return number_tab_t;      
+      return number_tab_t;
    /**
     * Retrieves descendants of the specified location kind
     *
     * @param p_location_kind_id   The location_kind to retrieve the descendents list for
     * @param p_include_this_kind  A flag ('T'/'F') specifying whether to include the specified location kind in the list
-    * @param p_include_all_levels A flag ('T'/'F') specifying whether to include all generations of descendants ('T') or just children 
+    * @param p_include_all_levels A flag ('T'/'F') specifying whether to include all generations of descendants ('T') or just children
     *
-    */   
+    */
    function get_location_kind_descendants(
       p_location_kind_id   in varchar2,
       p_include_this_kind  in varchar2 default 'F',
       p_include_all_levels in varchar2 default 'T')
-      return str_tab_t;      
+      return str_tab_t;
    /**
     * Retrieves descendants of the specified location kind
     *
     * @param p_location_kind_code The location_kind to retrieve the descendents list for
     * @param p_include_this_kind  A flag ('T'/'F') specifying whether to include the specified location kind in the list
-    * @param p_include_all_levels A flag ('T'/'F') specifying whether to include all generations of descendants ('T') or just children 
+    * @param p_include_all_levels A flag ('T'/'F') specifying whether to include all generations of descendants ('T') or just children
     *
-    */   
+    */
    function get_location_kind_descendants(
       p_location_kind_code in integer,
       p_include_this_kind  in varchar2 default 'F',
       p_include_all_levels in varchar2 default 'T')
       return number_tab_t;
-            
+
    function get_location_ids(
       p_location_code in integer,
       p_exclude       in varchar2 default null)
@@ -2509,7 +2518,7 @@ AS
       p_location_kind_id in varchar2,
       p_add_delete       in varchar2);
 
-   /**                                
+   /**
  * Generates a single column SYS_REFCURSOR that contains the LOCATION_KIND_IDs
  * that this p_location_id can be changed to.
  *
@@ -2537,7 +2546,7 @@ AS
       RETURN cat_loc_kind_tab_t
       PIPELINED;
 /**
- * Checks if this p_location_id's LOCATION_KIND_ID can be change/reverted to 
+ * Checks if this p_location_id's LOCATION_KIND_ID can be change/reverted to
  * a more primitive LOCATION_KIND. If it can, the function returns the
  * KIND that it can be reverted back to.
  *
@@ -2753,26 +2762,26 @@ AS
     *                         <li>a combination of 1 and 2 (multiple name positions with one or more positions matching possibly more than one location)</li></ol>
     *                         If unspecified or NULL, a listing of locations in the database will be returned.
     * @param p_format         The format to retrieve the locations in. Valid formats are <ul><li>TAB</li><li>CSV</li><li>XML</li><li>JSON</li></ul>
-    *                         If the format is unspecified or NULL, the TAB format will be used. 
+    *                         If the format is unspecified or NULL, the TAB format will be used.
     * @param p_units          The units to return the units in.  Valid units are <ul><li>EN</li><li>SI</li></ul> If the p_names variable (q.v.) has more
-    *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_units variable may also have multiple positions separated by the 
-    *                         <b>'|',</b> charcter. If the p_units variable has fewer positions than the p_name variable, the last unit position is used for all 
+    *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_units variable may also have multiple positions separated by the
+    *                         <b>'|',</b> charcter. If the p_units variable has fewer positions than the p_name variable, the last unit position is used for all
     *                         remaning names. If the units are unspecified or NULL, EN units will be used for all locations.
     * @param p_datums         The vertical datums to return the units in.  Valid datums are <ul><li>NATIVE</li><li>NGVD29</li><li>NAVD88</li></ul> If the p_names variable (q.v.) has more
-    *                         than onename position, (i.e., has one or more <b>'|',</b> charcters), the p_datums variable may also have multiple positions separated by the 
-    *                         <b>'|',</b> charcter. If the p_datums variable has fewer positions than the p_name variable, the last datum position is used for all 
+    *                         than onename position, (i.e., has one or more <b>'|',</b> charcters), the p_datums variable may also have multiple positions separated by the
+    *                         <b>'|',</b> charcter. If the p_datums variable has fewer positions than the p_name variable, the last datum position is used for all
     *                         remaning names. If the datums are unspecified or NULL, the NATIVE veritcal datum will be used for all locations.
     * @param p_office_id      The office to retrieve locations for.  If unspecified or NULL, locations for all offices in the database that match the other criteria will be retrieved.
-    */         
+    */
    procedure retrieve_locations(
       p_results        out clob,
       p_date_time      out date,
       p_query_time     out integer,
-      p_format_time    out integer, 
-      p_location_count out integer,  
-      p_names          in  varchar2 default null,            
+      p_format_time    out integer,
+      p_location_count out integer,
+      p_names          in  varchar2 default null,
       p_format         in  varchar2 default null,
-      p_units          in  varchar2 default null,   
+      p_units          in  varchar2 default null,
       p_datums         in  varchar2 default null,
       p_office_id      in  varchar2 default null);
    /**
@@ -2784,23 +2793,23 @@ AS
     *                         <li>a combination of 1 and 2 (multiple name positions with one or more positions matching possibly more than one location)</li></ol>
     *                         If unspecified or NULL, a listing of locations in the database will be returned.
     * @param p_format         The format to retrieve the locations in. Valid formats are <ul><li>TAB</li><li>CSV</li><li>XML</li><li>JSON</li></ul>
-    *                         If the format is unspecified or NULL, the TAB format will be used. 
+    *                         If the format is unspecified or NULL, the TAB format will be used.
     * @param p_units          The units to return the units in.  Valid units are <ul><li>EN</li><li>SI</li></ul> If the p_names variable (q.v.) has more
-    *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_units variable may also have multiple positions separated by the 
-    *                         <b>'|',</b> charcter. If the p_units variable has fewer positions than the p_name variable, the last unit position is used for all 
+    *                         than one name position, (i.e., has one or more <b>'|',</b> charcters), the p_units variable may also have multiple positions separated by the
+    *                         <b>'|',</b> charcter. If the p_units variable has fewer positions than the p_name variable, the last unit position is used for all
     *                         remaning names. If the units are unspecified or NULL, EN units will be used for all locations.
     * @param p_datums         The vertical datums to return the units in.  Valid datums are <ul><li>NATIVE</li><li>NGVD29</li><li>NAVD88</li></ul> If the p_names variable (q.v.) has more
-    *                         than onename position, (i.e., has one or more <b>'|',</b> charcters), the p_datums variable may also have multiple positions separated by the 
-    *                         <b>'|',</b> charcter. If the p_datums variable has fewer positions than the p_name variable, the last datum position is used for all 
+    *                         than onename position, (i.e., has one or more <b>'|',</b> charcters), the p_datums variable may also have multiple positions separated by the
+    *                         <b>'|',</b> charcter. If the p_datums variable has fewer positions than the p_name variable, the last datum position is used for all
     *                         remaning names. If the datums are unspecified or NULL, the NATIVE veritcal datum will be used for all locations.
     * @param p_office_id      The office to retrieve locations for.  If unspecified or NULL, locations for all offices in the database that match the other criteria will be retrieved.
     *
     * @return The locations, in the specified time zones, formats, and vertical datums
-    */         
+    */
    function retrieve_locations_f(
-      p_names       in  varchar2 default null,            
+      p_names       in  varchar2 default null,
       p_format      in  varchar2 default null,
-      p_units       in  varchar2 default null,   
+      p_units       in  varchar2 default null,
       p_datums      in  varchar2 default null,
       p_office_id   in  varchar2 default null)
       return clob;

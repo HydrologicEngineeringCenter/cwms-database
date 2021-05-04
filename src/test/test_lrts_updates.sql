@@ -78,7 +78,7 @@ procedure setup(p_options in varchar2 default null);
 procedure teardown;
 c_office_id     constant varchar2(3)  := '&&office_id';
 c_location_ids  constant str_tab_t    := str_tab_t('TestLoc1', 'TestLoc1-WithSub', 'TestLoc2');
-c_timezone_ids  constant str_tab_t    := str_tab_t('US/Central', null, 'CST');
+c_timezone_ids  constant str_tab_t    := str_tab_t('US/Central', null, 'CST'); -- make sure tz(2) is null
 c_intvl_offsets constant number_tab_t := number_tab_t(0, 10, 20);
 c_ts_id_part    constant varchar2(25) := '.Code.Inst.<intvl>.0.Test';
 c_intervals     constant str_tab_t    := str_tab_t('0', '~1Hour', '1Hour');
@@ -296,8 +296,8 @@ begin
 
    cwms_ts.create_ts_code (
       p_ts_code           => l_ts_code,
-      p_cwms_ts_id        => replace(v_ts_ids(1), '<intvl>', '0'), -- zero interval should be okay
-      p_utc_offset        => -10,                                  -- offset will be ignored
+      p_cwms_ts_id        => replace(v_ts_ids(1), '<intvl>', '0'),
+      p_utc_offset        => -10, -- offset will be ignored
       p_interval_forward  => null,
       p_interval_backward => null,
       p_versioned         => 'F',
@@ -341,27 +341,16 @@ begin
       p_ignorenulls				=> 'T',
       p_db_office_id 			=> c_office_id);
 
-   begin
-      cwms_ts.create_ts_code (
-         p_ts_code           => l_ts_code,
-         p_cwms_ts_id        => replace(v_ts_ids(1), '<intvl>', '~1Hour'), -- ~1Hour interval should raise exception
-         p_utc_offset        => -10,
-         p_interval_forward  => null,
-         p_interval_backward => null,
-         p_versioned         => 'F',
-         p_active_flag       => 'T',
-         p_fail_if_exists    => 'T',
-         p_office_id         => c_office_id);
-      cwms_err.raise('ERROR', 'Expected exception not raised');
-   exception
-      when others then
-         if instr(sqlerrm, 'Cannot create Local-Regular Time Series for a location with a NULL time zone') > 0 then
-            null;
-         else
-            setup;
-            raise;
-         end if;
-   end;
+   cwms_ts.create_ts_code (
+      p_ts_code           => l_ts_code,
+      p_cwms_ts_id        => replace(v_ts_ids(1), '<intvl>', '~1Hour'),
+      p_utc_offset        => -10,
+      p_interval_forward  => null,
+      p_interval_backward => null,
+      p_versioned         => 'F',
+      p_active_flag       => 'T',
+      p_fail_if_exists    => 'T',
+      p_office_id         => c_office_id);
 end create_ts_code_no_tz2;
 --------------------------------------------------------------------------------
 -- procedure create_lrts_ts_code_neg_offset
@@ -606,22 +595,65 @@ end update_lrts_ts_code_pos_offset;
 --------------------------------------------------------------------------------
 procedure tz_in_at_cwms_ts_spec
 is
-   l_time_zone_code integer;
-   l_cwms_ts_id     av_cwms_ts_id.cwms_ts_id%type;
+   l_time_zone_code  integer;
+   l_cwms_ts_id      av_cwms_ts_id.cwms_ts_id%type;
+   l_timezone_ids    str_tab_t;
+   l_timezone_codes  number_tab_t;
 begin
    setup;
-   for i in 1..c_location_ids.count loop
-      for j in 1..c_intervals.count loop
-         l_cwms_ts_id := replace(v_ts_ids(i), '<intvl>', c_intervals(j));
-         select time_zone_code
-           into l_time_zone_code
-           from at_cwms_ts_spec
-          where ts_code = (select ts_code
-                             from at_cwms_ts_id
-                            where db_office_id = c_office_id
-                              and cwms_ts_id = l_cwms_ts_id
-                          );
-         ut.expect(l_time_zone_code).to_equal(v_timezone_codes(i));
+   for pass in 1..3 loop
+      case
+      when pass = 1 then
+         -----------------------------------
+         -- test with original time zones --
+         -----------------------------------
+         l_timezone_ids := v_timezone_ids;
+      when pass = 2 then
+         -----------------------------------------------------------
+         -- test with updated time zones (sub-location tz = null) --
+         -----------------------------------------------------------
+         l_timezone_ids    := c_timezone_ids;
+         l_timezone_ids(1) := 'PST8PDT';
+         l_timezone_ids(2) := null;
+         for i in 1..2 loop
+            cwms_loc.store_location(
+               p_location_id  => c_location_ids(i),
+               p_time_zone_id => l_timezone_ids(i),
+               p_db_office_id => c_office_id);
+            commit;
+         end loop;
+      else
+         ----------------------------------------------------------------------------------
+         -- test with updated time zones (sub-location tz differs from base-location tz) --
+         ----------------------------------------------------------------------------------
+         l_timezone_ids    := c_timezone_ids;
+         l_timezone_ids(1) := 'MST7MDT';
+         l_timezone_ids(2) := 'EST5EDT';
+         for i in 1..2 loop
+            cwms_loc.store_location(
+               p_location_id  => c_location_ids(i),
+               p_time_zone_id => l_timezone_ids(i),
+               p_db_office_id => c_office_id);
+            commit;
+         end loop;
+      end case;
+      l_timezone_codes  := number_tab_t();
+      for i in 1..c_location_ids.count loop
+         l_timezone_codes.extend;
+         l_timezone_codes(i) := cwms_util.get_time_zone_code(case when l_timezone_ids(i) is null then l_timezone_ids(i-1) else l_timezone_ids(i) end);
+         l_timezone_ids(i)   := cwms_util.get_time_zone_name(case when l_timezone_ids(i) is null then l_timezone_ids(i-1) else l_timezone_ids(i) end);
+         for j in 1..c_intervals.count loop
+            l_cwms_ts_id := replace(v_ts_ids(i), '<intvl>', c_intervals(j));
+            select time_zone_code
+              into l_time_zone_code
+              from at_cwms_ts_spec
+             where ts_code = (select ts_code
+                                from at_cwms_ts_id
+                               where db_office_id = c_office_id
+                                 and cwms_ts_id = l_cwms_ts_id
+                             );
+            ut.expect(l_time_zone_code).to_equal(l_timezone_codes(i));
+         end loop;
       end loop;
    end loop;
 end tz_in_at_cwms_ts_spec;
@@ -632,26 +664,66 @@ procedure tz_in_at_cwms_ts_id
 is
    l_time_zone_id av_cwms_ts_id.cwms_ts_id%type;
    l_cwms_ts_id   av_cwms_ts_id.cwms_ts_id%type;
+   l_timezone_ids str_tab_t;
    exc_invalid_identifier exception;
    pragma exception_init (exc_invalid_identifier, -904);
 begin
    setup;
-   for i in 1..c_location_ids.count loop
-      for j in 1..c_intervals.count loop
-         l_cwms_ts_id := replace(v_ts_ids(i), '<intvl>', c_intervals(j));
-         begin
-            execute immediate '
-            select time_zone_id
-              from at_cwms_ts_id
-             where db_office_id = :c_office_id
-               and cwms_ts_id = :v_ts_ids'
-              into l_time_zone_id
-             using c_office_id,
-                   l_cwms_ts_id;
-         exception
-            when exc_invalid_identifier then null;
-         end;
-         ut.expect(l_time_zone_id).to_equal(v_timezone_ids(i));
+
+   for pass in 1..3 loop
+      case
+      when pass = 1 then
+         -----------------------------------
+         -- test with original time zones --
+         -----------------------------------
+         l_timezone_ids := v_timezone_ids;
+      when pass = 2 then
+         -----------------------------------------------------------
+         -- test with updated time zones (sub-location tz = null) --
+         -----------------------------------------------------------
+         l_timezone_ids    := c_timezone_ids;
+         l_timezone_ids(1) := 'PST8PDT';
+         l_timezone_ids(2) := null;
+         for i in 1..2 loop
+            cwms_loc.store_location(
+               p_location_id  => c_location_ids(i),
+               p_time_zone_id => l_timezone_ids(i),
+               p_db_office_id => c_office_id);
+            commit;
+         end loop;
+      else
+         ----------------------------------------------------------------------------------
+         -- test with updated time zones (sub-location tz differs from base-location tz) --
+         ----------------------------------------------------------------------------------
+         l_timezone_ids    := c_timezone_ids;
+         l_timezone_ids(1) := 'MST7MDT';
+         l_timezone_ids(2) := 'EST5EDT';
+         for i in 1..2 loop
+            cwms_loc.store_location(
+               p_location_id  => c_location_ids(i),
+               p_time_zone_id => l_timezone_ids(i),
+               p_db_office_id => c_office_id);
+            commit;
+         end loop;
+      end case;
+      for i in 1..c_location_ids.count loop
+         l_timezone_ids(i)   := cwms_util.get_time_zone_name(case when l_timezone_ids(i) is null then l_timezone_ids(i-1) else l_timezone_ids(i) end);
+         for j in 1..c_intervals.count loop
+            l_cwms_ts_id := replace(v_ts_ids(i), '<intvl>', c_intervals(j));
+            begin
+               execute immediate '
+               select time_zone_id
+                 from at_cwms_ts_id
+                where db_office_id = :c_office_id
+                  and cwms_ts_id = :v_ts_id'
+                 into l_time_zone_id
+                using c_office_id,
+                      l_cwms_ts_id;
+            exception
+               when exc_invalid_identifier then null;
+            end;
+            ut.expect(l_time_zone_id).to_equal(l_timezone_ids(i));
+         end loop;
       end loop;
    end loop;
 end tz_in_at_cwms_ts_id;
@@ -662,26 +734,66 @@ procedure tz_in_av_cwms_ts_id
 is
    l_time_zone_id av_cwms_ts_id.cwms_ts_id%type;
    l_cwms_ts_id   av_cwms_ts_id.cwms_ts_id%type;
+   l_timezone_ids str_tab_t;
    exc_invalid_identifier exception;
    pragma exception_init (exc_invalid_identifier, -904);
 begin
    setup;
-   for i in 1..c_location_ids.count loop
-      for j in 1..c_intervals.count loop
-         l_cwms_ts_id := replace(v_ts_ids(i), '<intvl>', c_intervals(j));
-         begin
-            execute immediate '
-            select time_zone_id
-              from av_cwms_ts_id
-             where db_office_id = :c_office_id
-               and cwms_ts_id = :v_ts_ids'
-              into l_time_zone_id
-             using c_office_id,
-                   l_cwms_ts_id;
-         exception
-            when exc_invalid_identifier then null;
-         end;
-         ut.expect(l_time_zone_id).to_equal(v_timezone_ids(i));
+
+   for pass in 1..3 loop
+      case
+      when pass = 1 then
+         -----------------------------------
+         -- test with original time zones --
+         -----------------------------------
+         l_timezone_ids := v_timezone_ids;
+      when pass = 2 then
+         -----------------------------------------------------------
+         -- test with updated time zones (sub-location tz = null) --
+         -----------------------------------------------------------
+         l_timezone_ids    := c_timezone_ids;
+         l_timezone_ids(1) := 'PST8PDT';
+         l_timezone_ids(2) := null;
+         for i in 1..2 loop
+            cwms_loc.store_location(
+               p_location_id  => c_location_ids(i),
+               p_time_zone_id => l_timezone_ids(i),
+               p_db_office_id => c_office_id);
+            commit;
+         end loop;
+      else
+         ----------------------------------------------------------------------------------
+         -- test with updated time zones (sub-location tz differs from base-location tz) --
+         ----------------------------------------------------------------------------------
+         l_timezone_ids    := c_timezone_ids;
+         l_timezone_ids(1) := 'MST7MDT';
+         l_timezone_ids(2) := 'EST5EDT';
+         for i in 1..2 loop
+            cwms_loc.store_location(
+               p_location_id  => c_location_ids(i),
+               p_time_zone_id => l_timezone_ids(i),
+               p_db_office_id => c_office_id);
+            commit;
+         end loop;
+      end case;
+      for i in 1..c_location_ids.count loop
+         l_timezone_ids(i)   := cwms_util.get_time_zone_name(case when l_timezone_ids(i) is null then l_timezone_ids(i-1) else l_timezone_ids(i) end);
+         for j in 1..c_intervals.count loop
+            l_cwms_ts_id := replace(v_ts_ids(i), '<intvl>', c_intervals(j));
+            begin
+               execute immediate '
+               select time_zone_id
+                 from av_cwms_ts_id
+                where db_office_id = :c_office_id
+                  and cwms_ts_id = :v_ts_id'
+                 into l_time_zone_id
+                using c_office_id,
+                      l_cwms_ts_id;
+            exception
+               when exc_invalid_identifier then null;
+            end;
+            ut.expect(l_time_zone_id).to_equal(l_timezone_ids(i));
+         end loop;
       end loop;
    end loop;
 end tz_in_av_cwms_ts_id;
@@ -692,26 +804,66 @@ procedure tz_in_av_cwms_ts_id2
 is
    l_time_zone_id av_cwms_ts_id.cwms_ts_id%type;
    l_cwms_ts_id   av_cwms_ts_id.cwms_ts_id%type;
+   l_timezone_ids str_tab_t;
    exc_invalid_identifier exception;
    pragma exception_init (exc_invalid_identifier, -904);
 begin
    setup;
-   for i in 1..c_location_ids.count loop
-      for j in 1..c_intervals.count loop
-         l_cwms_ts_id := replace(v_ts_ids(i), '<intvl>', c_intervals(j));
-         begin
-            execute immediate '
-            select time_zone_id
-              from av_cwms_ts_id2
-             where db_office_id = :c_office_id
-               and cwms_ts_id = :v_ts_ids'
-              into l_time_zone_id
-             using c_office_id,
-                   l_cwms_ts_id;
-         exception
-            when exc_invalid_identifier then null;
-         end;
-         ut.expect(l_time_zone_id).to_equal(v_timezone_ids(i));
+
+   for pass in 1..3 loop
+      case
+      when pass = 1 then
+         -----------------------------------
+         -- test with original time zones --
+         -----------------------------------
+         l_timezone_ids := v_timezone_ids;
+      when pass = 2 then
+         -----------------------------------------------------------
+         -- test with updated time zones (sub-location tz = null) --
+         -----------------------------------------------------------
+         l_timezone_ids    := c_timezone_ids;
+         l_timezone_ids(1) := 'PST8PDT';
+         l_timezone_ids(2) := null;
+         for i in 1..2 loop
+            cwms_loc.store_location(
+               p_location_id  => c_location_ids(i),
+               p_time_zone_id => l_timezone_ids(i),
+               p_db_office_id => c_office_id);
+            commit;
+         end loop;
+      else
+         ----------------------------------------------------------------------------------
+         -- test with updated time zones (sub-location tz differs from base-location tz) --
+         ----------------------------------------------------------------------------------
+         l_timezone_ids    := c_timezone_ids;
+         l_timezone_ids(1) := 'MST7MDT';
+         l_timezone_ids(2) := 'EST5EDT';
+         for i in 1..2 loop
+            cwms_loc.store_location(
+               p_location_id  => c_location_ids(i),
+               p_time_zone_id => l_timezone_ids(i),
+               p_db_office_id => c_office_id);
+            commit;
+         end loop;
+      end case;
+      for i in 1..c_location_ids.count loop
+         l_timezone_ids(i) := cwms_util.get_time_zone_name(case when l_timezone_ids(i) is null then l_timezone_ids(i-1) else l_timezone_ids(i) end);
+         for j in 1..c_intervals.count loop
+            l_cwms_ts_id := replace(v_ts_ids(i), '<intvl>', c_intervals(j));
+            begin
+               execute immediate '
+               select time_zone_id
+                 from av_cwms_ts_id2
+                where db_office_id = :c_office_id
+                  and cwms_ts_id = :v_ts_id'
+                 into l_time_zone_id
+                using c_office_id,
+                      l_cwms_ts_id;
+            exception
+               when exc_invalid_identifier then null;
+            end;
+            ut.expect(l_time_zone_id).to_equal(l_timezone_ids(i));
+         end loop;
       end loop;
    end loop;
 end tz_in_av_cwms_ts_id2;
@@ -722,29 +874,69 @@ procedure tz_in_zav_cwms_ts_id
 is
    l_time_zone_id av_cwms_ts_id.cwms_ts_id%type;
    l_cwms_ts_id   av_cwms_ts_id.cwms_ts_id%type;
+   l_timezone_ids str_tab_t;
    exc_invalid_identifier exception;
    pragma exception_init (exc_invalid_identifier, -904);
 begin
    setup;
-   for i in 1..c_location_ids.count loop
-      for j in 1..c_intervals.count loop
-         l_cwms_ts_id := replace(v_ts_ids(i), '<intvl>', c_intervals(j));
-         begin
-            execute immediate '
-            select time_zone_id
-              from zav_cwms_ts_id
-             where db_office_id = :c_office_id
-               and cwms_ts_id = :v_ts_ids'
-              into l_time_zone_id
-             using c_office_id,
-                   l_cwms_ts_id;
-         exception
-            when exc_invalid_identifier then null;
-         end;
-         ut.expect(l_time_zone_id).to_equal(v_timezone_ids(i));
+
+   for pass in 1..3 loop
+      case
+      when pass = 1 then
+         -----------------------------------
+         -- test with original time zones --
+         -----------------------------------
+         l_timezone_ids := v_timezone_ids;
+      when pass = 2 then
+         -----------------------------------------------------------
+         -- test with updated time zones (sub-location tz = null) --
+         -----------------------------------------------------------
+         l_timezone_ids    := c_timezone_ids;
+         l_timezone_ids(1) := 'PST8PDT';
+         l_timezone_ids(2) := null;
+         for i in 1..2 loop
+            cwms_loc.store_location(
+               p_location_id  => c_location_ids(i),
+               p_time_zone_id => l_timezone_ids(i),
+               p_db_office_id => c_office_id);
+            commit;
+         end loop;
+      else
+         ----------------------------------------------------------------------------------
+         -- test with updated time zones (sub-location tz differs from base-location tz) --
+         ----------------------------------------------------------------------------------
+         l_timezone_ids    := c_timezone_ids;
+         l_timezone_ids(1) := 'MST7MDT';
+         l_timezone_ids(2) := 'EST5EDT';
+         for i in 1..2 loop
+            cwms_loc.store_location(
+               p_location_id  => c_location_ids(i),
+               p_time_zone_id => l_timezone_ids(i),
+               p_db_office_id => c_office_id);
+            commit;
+         end loop;
+      end case;
+      for i in 1..c_location_ids.count loop
+         l_timezone_ids(i) := cwms_util.get_time_zone_name(case when l_timezone_ids(i) is null then l_timezone_ids(i-1) else l_timezone_ids(i) end);
+         for j in 1..c_intervals.count loop
+            l_cwms_ts_id := replace(v_ts_ids(i), '<intvl>', c_intervals(j));
+            begin
+               execute immediate '
+               select time_zone_id
+                 from zav_cwms_ts_id
+                where db_office_id = :c_office_id
+                  and cwms_ts_id = :v_ts_id'
+                 into l_time_zone_id
+                using c_office_id,
+                      l_cwms_ts_id;
+            exception
+               when exc_invalid_identifier then null;
+            end;
+            ut.expect(l_time_zone_id).to_equal(l_timezone_ids(i));
+         end loop;
       end loop;
    end loop;
-end tz_in_zav_cwms_ts_id;
+end tz_in_zav_cwms_ts_id;   
 --------------------------------------------------------------------------------
 -- procedure tz_in_catalog
 --------------------------------------------------------------------------------
@@ -759,36 +951,75 @@ is
    l_ts_active_flag      varchar2(1);
    l_user_privileges     number;
    l_cwms_ts_id_out      av_cwms_ts_id.cwms_ts_id%type;
+   l_timezone_ids        str_tab_t;
 begin
    setup;
-   for i in 1..c_location_ids.count loop
-      for j in 1..c_intervals.count loop
-         l_cwms_ts_id_in := replace(v_ts_ids(i), '<intvl>', c_intervals(j));
-         cwms_cat.cat_ts_id(
-            p_cwms_cat            => l_crsr,
-            p_ts_subselect_string => l_cwms_ts_id_in,
-            p_loc_category_id     => null,
-            p_loc_group_id        => null,
-            p_ts_category_id      => null,
-            p_ts_group_id         => null,
-            p_db_office_id        => c_office_id);
-         fetch l_crsr
-          into l_db_office_id,
-               l_base_location_id,
-               l_cwms_ts_id_out,
-               l_interval_utc_offset,
-               l_timezone_id,
-               l_ts_active_flag,
-               l_user_privileges;
-         close l_crsr;
-         ut.expect(l_db_office_id).to_equal(c_office_id);
-         ut.expect(l_cwms_ts_id_out).to_equal(l_cwms_ts_id_in);
-         ut.expect(l_interval_utc_offset).to_equal(case
-                                                   when c_intervals(j) = '0' then cwms_util.utc_offset_irregular
-                                                   when substr(c_intervals(j), 1, 1) = '~' then -c_intvl_offsets(i)
-                                                   else c_intvl_offsets(i)
-                                                   end);
-         ut.expect(l_timezone_id).to_equal(v_timezone_ids(i));
+   for pass in 1..3 loop
+      case
+      when pass = 1 then
+         -----------------------------------
+         -- test with original time zones --
+         -----------------------------------
+         l_timezone_ids := v_timezone_ids;
+      when pass = 2 then
+         -----------------------------------------------------------
+         -- test with updated time zones (sub-location tz = null) --
+         -----------------------------------------------------------
+         l_timezone_ids    := c_timezone_ids;
+         l_timezone_ids(1) := 'PST8PDT';
+         l_timezone_ids(2) := null;
+         for i in 1..2 loop
+            cwms_loc.store_location(
+               p_location_id  => c_location_ids(i),
+               p_time_zone_id => l_timezone_ids(i),
+               p_db_office_id => c_office_id);
+            commit;
+         end loop;
+      else
+         ----------------------------------------------------------------------------------
+         -- test with updated time zones (sub-location tz differs from base-location tz) --
+         ----------------------------------------------------------------------------------
+         l_timezone_ids    := c_timezone_ids;
+         l_timezone_ids(1) := 'MST7MDT';
+         l_timezone_ids(2) := 'EST5EDT';
+         for i in 1..2 loop
+            cwms_loc.store_location(
+               p_location_id  => c_location_ids(i),
+               p_time_zone_id => l_timezone_ids(i),
+               p_db_office_id => c_office_id);
+            commit;
+         end loop;
+      end case;
+      for i in 1..c_location_ids.count loop
+         l_timezone_ids(i) := cwms_util.get_time_zone_name(case when l_timezone_ids(i) is null then l_timezone_ids(i-1) else l_timezone_ids(i) end);
+         for j in 1..c_intervals.count loop
+            l_cwms_ts_id_in := replace(v_ts_ids(i), '<intvl>', c_intervals(j));
+            cwms_cat.cat_ts_id(
+               p_cwms_cat            => l_crsr,
+               p_ts_subselect_string => l_cwms_ts_id_in,
+               p_loc_category_id     => null,
+               p_loc_group_id        => null,
+               p_ts_category_id      => null,
+               p_ts_group_id         => null,
+               p_db_office_id        => c_office_id);
+            fetch l_crsr
+             into l_db_office_id,
+                  l_base_location_id,
+                  l_cwms_ts_id_out,
+                  l_interval_utc_offset,
+                  l_timezone_id,
+                  l_ts_active_flag,
+                  l_user_privileges;
+            close l_crsr;
+            ut.expect(l_db_office_id).to_equal(c_office_id);
+            ut.expect(l_cwms_ts_id_out).to_equal(l_cwms_ts_id_in);
+            ut.expect(l_interval_utc_offset).to_equal(case
+                                                      when c_intervals(j) = '0' then cwms_util.utc_offset_irregular
+                                                      when substr(c_intervals(j), 1, 1) = '~' then -c_intvl_offsets(i)
+                                                      else c_intvl_offsets(i)
+                                                      end);
+            ut.expect(l_timezone_id).to_equal(l_timezone_ids(i));
+         end loop;
       end loop;
    end loop;
 end tz_in_catalog;
