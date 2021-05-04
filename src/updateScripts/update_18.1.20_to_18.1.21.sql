@@ -57,8 +57,13 @@ select systimestamp from dual;
 @@./18_1_21/verify_db_version
 prompt ################################################################################
 prompt UPDATING OBJECTS
-@../cwms/cwms_ts_pkg.sql
-@../cwms/cwms_ts_pkg_body.sql
+@./18_1_21/update_at_physical_location_triggers
+@../cwms/cwms_cat_pkg_body
+@../cwms/cwms_loc_pkg
+@../cwms/cwms_loc_pkg_body
+@../cwms/cwms_ts_pkg
+@../cwms/cwms_ts_pkg_body
+@../cwms/cwms_ts_id_pkg_body
 prompt ################################################################################
 prompt INVALID OBJECTS...
 select systimestamp from dual;
@@ -106,6 +111,9 @@ begin
 end;
 /
 whenever sqlerror exit;
+prompt ################################################################################
+prompt UPDATING TIME SERIES TIME ZONES FOR LRTS
+@./18_1_21/update_at_cwms_ts_spec
 prompt ################################################################################
 prompt UPDATING DB_CHANGE_LOG
 select systimestamp from dual;
