@@ -1298,17 +1298,13 @@ IS
 
     OPEN p_cwms_cat FOR
         SELECT      v.db_office_id, v.base_location_id, v.cwms_ts_id,
-                      v.interval_utc_offset, z.time_zone_name lrts_timezone,
+                      v.interval_utc_offset, v.time_zone_id lrts_timezone,
                       v.ts_active_flag, a.user_privileges
              FROM   at_cwms_ts_id v
                       JOIN (SELECT   ts_code, net_privilege_bit user_privileges
                                  FROM   av_sec_ts_privileges
                                 WHERE   username = cwms_util.get_user_id) a
                           USING (ts_code)
-                      JOIN at_cwms_ts_spec s
-                          USING (ts_code)
-                      LEFT OUTER JOIN cwms_time_zone z
-                          USING (time_zone_code)
             WHERE   (l_loc_group_code IS NULL
                         OR v.location_code IN
                                 (SELECT     location_code

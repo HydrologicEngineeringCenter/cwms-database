@@ -584,14 +584,6 @@ AS
                                   p_date_times_utc         IN date_table_type DEFAULT NULL,
                                   p_ts_item_mask           IN INTEGER DEFAULT cwms_util.ts_all);
 
-   -- not documented, for LRTS
-   PROCEDURE set_ts_time_zone (p_ts_code          IN NUMBER,
-                               p_time_zone_name   IN VARCHAR2);
-
-   -- not documented, for LRTS
-   PROCEDURE set_tsid_time_zone (p_ts_id            IN VARCHAR2,
-                                 p_time_zone_name   IN VARCHAR2,
-                                 p_office_id        IN VARCHAR2 DEFAULT NULL);
 
    -- not documented, for LRTS
    FUNCTION get_ts_time_zone (p_ts_code IN NUMBER)
@@ -723,16 +715,6 @@ AS
                         p_active_flag         IN VARCHAR2 DEFAULT 'T',
                         p_office_id           IN VARCHAR2 DEFAULT NULL);
 
-   -- not documented, for LRTS
-   PROCEDURE create_ts_tz (p_cwms_ts_id          IN VARCHAR2,
-                           p_utc_offset          IN NUMBER DEFAULT NULL,
-                           p_interval_forward    IN NUMBER DEFAULT NULL,
-                           p_interval_backward   IN NUMBER DEFAULT NULL,
-                           p_versioned           IN VARCHAR2 DEFAULT 'F',
-                           p_active_flag         IN VARCHAR2 DEFAULT 'T',
-                           p_time_zone_name      IN VARCHAR2 DEFAULT 'UTC',
-                           p_office_id           IN VARCHAR2 DEFAULT NULL);
-
    /**
     * Creates a new time series and returns its unique numeric code
     *
@@ -755,19 +737,6 @@ AS
       p_versioned           IN     VARCHAR2 DEFAULT 'F',
       p_active_flag         IN     VARCHAR2 DEFAULT 'T',
       p_fail_if_exists      IN     VARCHAR2 DEFAULT 'T',
-      p_office_id           IN     VARCHAR2 DEFAULT NULL);
-
-   -- not documented, for LRTS
-   PROCEDURE create_ts_code_tz (
-      p_ts_code                OUT NUMBER,
-      p_cwms_ts_id          IN     VARCHAR2,
-      p_utc_offset          IN     NUMBER DEFAULT NULL,
-      p_interval_forward    IN     NUMBER DEFAULT NULL,
-      p_interval_backward   IN     NUMBER DEFAULT NULL,
-      p_versioned           IN     VARCHAR2 DEFAULT 'F',
-      p_active_flag         IN     VARCHAR2 DEFAULT 'T',
-      p_fail_if_exists      IN     VARCHAR2 DEFAULT 'T',
-      p_time_zone_name      IN     VARCHAR2 DEFAULT 'UTC',
       p_office_id           IN     VARCHAR2 DEFAULT NULL);
 
    /**
