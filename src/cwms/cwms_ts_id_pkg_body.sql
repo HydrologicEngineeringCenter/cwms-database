@@ -80,7 +80,13 @@ AS
            from cwms_time_zone
           where time_zone_code = p_cwms_ts_spec.time_zone_code;
 		exception
-		   when no_data_found then null;
+		   when no_data_found then
+            cwms_err.raise(
+               'ERROR', 
+               'AT_CWMS_TS_SPEC has invalid time zone code of '
+               ||nvl(to_char(p_cwms_ts_spec.time_zone_code), '<NULL>')
+               ||' for time series code '
+               ||p_cwms_ts_spec.ts_code);
       end;
 		--
 		p_cwms_ts_id.location_id :=
@@ -269,6 +275,7 @@ AS
 						base_location_code = p_cwms_ts_id.base_location_code,
 						location_code = p_cwms_ts_id.location_code,
 						loc_active_flag = p_cwms_ts_id.loc_active_flag,
+                                                base_loc_active_flag = p_cwms_ts_id.base_loc_active_flag,
 						parameter_code = p_cwms_ts_id.parameter_code,
 						ts_active_flag = p_cwms_ts_id.ts_active_flag,
 						net_ts_active_flag = p_cwms_ts_id.net_ts_active_flag,

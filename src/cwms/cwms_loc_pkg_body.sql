@@ -3710,23 +3710,31 @@ AS
    END retrieve_location;
 
    --------------------------------------------------------------------------------
+   -- FUNCTION get_local_timezone_code
+   --------------------------------------------------------------------------------
+	function get_local_timezone_code (p_location_code in number)
+		return cwms_time_zone.time_zone_code%type
+   is
+      l_rec at_physical_location%rowtype;
+   begin
+      select * into l_rec from at_physical_location where location_code = p_location_code;
+      if l_rec.time_zone_code is null and l_rec.base_location_code != p_location_code then
+         select * into l_rec from at_physical_location where location_code = l_rec.base_location_code;
+      end if;
+      return l_rec.time_zone_code;
+   end get_local_timezone_code;
+   --------------------------------------------------------------------------------
    -- FUNCTION get_local_timezone
    --------------------------------------------------------------------------------
    function get_local_timezone (p_location_code in number)
       return varchar2
    is
       l_local_tz varchar2 (28);
-      l_rec      at_physical_location%rowtype;
    begin
-      select * into l_rec from at_physical_location where location_code = p_location_code;
-      if l_rec.time_zone_code is null and l_rec.base_location_code != p_location_code then
-         select * into l_rec from at_physical_location where location_code = l_rec.base_location_code;
-      end if;
-
       select time_zone_name
         into l_local_tz
         from cwms_time_zone
-       where time_zone_code = nvl(l_rec.time_zone_code, 0);
+       where time_zone_code = nvl(get_local_timezone_code(p_location_code), 0);
 
       if l_local_tz = 'Unknown or Not Applicable' then
          l_local_tz := 'UTC';
@@ -8980,10 +8988,10 @@ end unassign_loc_groups;
        where sdo_contains(
          ad.shape,
          sdo_geometry(
-            2003,
+            2001,
             8265 ,
             null,
-            mdsys.sdo_elem_info_array(1,1003,1),
+            mdsys.sdo_elem_info_array(1,1,1),
             mdsys.sdo_ordinate_array(p_lon, p_lat))) = 'TRUE';
       return case
              when l_codes.count = 1 then l_codes(1)
@@ -9066,10 +9074,10 @@ end unassign_loc_groups;
     where sdo_contains(
       c.shape,
       sdo_geometry(
-         2003,
+         2001,
          8265 ,
          null,
-         mdsys.sdo_elem_info_array(1,1003,1),
+         mdsys.sdo_elem_info_array(1,1,1),
          mdsys.sdo_ordinate_array(p_lon, p_lat))) = 'TRUE';
       return case
              when l_codes.count = 1 then l_codes(1)

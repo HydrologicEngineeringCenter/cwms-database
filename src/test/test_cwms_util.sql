@@ -28,6 +28,8 @@ procedure split_text_regex_max_split_no_include_delimiters;
 procedure split_text_regex_max_split_include_delimiters;
 --%test(Test split_text {/regex/get index})
 procedure split_text_regex_get_index;
+--%test(Test CWMS_DB_CHANGE_LOG entry)
+procedure test_cwms_db_change_log;
 
 procedure setup;
 procedure teardown;
@@ -482,7 +484,24 @@ begin
    end loop;
    ut.expect(cwms_util.split_text_ex(test_data_clob, '\s+', 'T', 'c', 'F', len_data_varchar*2).count).to_equal(0);
 end split_text_regex_get_index;
-
+---------------------------------------
+-- procedure test_cwms_db_change_log --
+---------------------------------------
+-- not really a part of CWMS_UTIL, but I didn't want to create another test package just for this
+procedure test_cwms_db_change_log
+is
+   l_count      pls_integer;
+   l_apply_date date;
+begin
+   select count(*)
+     into l_count
+     from cwms_db_change_log;
+   ut.expect(l_count).to_be_greater_than(0);
+   select max(apply_date)
+     into l_apply_date
+     from cwms_db_change_log;
+   ut.expect(sysdate - l_apply_date).to_be_less_than(1);
+end test_cwms_db_change_log;
 end test_cwms_util;
 /
 
