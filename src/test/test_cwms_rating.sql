@@ -36,6 +36,7 @@ procedure teardown
 is
 begin
    teardown_xslt2;
+   CWMS_RATING.DELETE_TEMPLATES('*', cwms_util.delete_all, '*');
    commit;
 end teardown;
 --------------------------------------------------------------------------------

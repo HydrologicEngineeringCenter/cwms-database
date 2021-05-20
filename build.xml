@@ -266,6 +266,23 @@
 	<exec executable="sqlldr" dir="${src}/test/data/ratings" failonerror="true">
             <arg value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} control=xsl_test_clobs.ctl"/>
         </exec>
+	<echo message="    Loading base locations"/>
+	<exec executable="sqlldr" dir="${src}/test/data/locs" failonerror="true">
+            <arg value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} control=AT_BASE_LOCATION.ctl"/>
+        </exec>
+	<echo message="    Loading parameters"/>
+	<exec executable="sqlldr" dir="${src}/test/data/locs" failonerror="true">
+            <arg value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} control=AT_PARAMETER.ctl"/>
+        </exec>
+	<echo message="    Loading physical locations"/>
+	<exec executable="sqlldr" dir="${src}/test/data/locs" failonerror="true">
+            <arg value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} control=AT_PHYSICAL_LOCATION.ctl"/>
+        </exec>
+	<echo message="    reset CWMS sequence"/>
+	<exec executable="sqlplus" dir="${src}/test" failonerror="true">
+            <arg value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance}"/>
+            <arg value="@reset_seq"/>
+        </exec>
         <echo message="    Running tests" />
         <exec executable="utplsql" resultproperty="utreturn">
             <arg value="run"/>
