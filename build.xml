@@ -121,7 +121,7 @@
 
 		<echo message="Creating new CWMS Schema..."/>
 
-		<property name="autobuild-arg-line" value="autobuild.py echo=${autobuild.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} cwms_schema=${oracle.cwms.user} cwms_passwd=${oracle.cwms.password} dbi_passwd=${oracle.cwmsdbi.password} pd_office=${office.primary.id} pd_passwd=${oracle.cwmspd.password} test_passwd=${oracle.hectest.password} ${build.restricted}"/>
+		<property name="autobuild-arg-line" value="autobuild.py echo=${autobuild.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} cwms_schema=${oracle.cwms.user} cwms_passwd=${oracle.cwms.password} pd_office=${office.primary.id} pd_passwd=${oracle.cwmspd.password} test_passwd=${oracle.hectest.password} ${build.restricted}"/>
 		<echo message="${autobuild-arg-line}"/>
 
 		<exec dir="${src}" executable="python2" output="auto-build-output.txt" error="auto-build-error.txt" resultproperty="auto-build-result">
@@ -211,6 +211,7 @@
 		<exec dir="src/test" executable="sqlplus">
 			<arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba"/>
 			<arg value="@test_grants.sql"/>
+			<arg value="${office.primary.code}hectest_db"/>
 		</exec>
 	</target>
 
@@ -218,12 +219,43 @@
 		<mkdir dir="${coverage.dir}" />
 		<antcall target="test-as_pd_user"/>
 		<antcall target="test-as_ro_user"/>
+		<antcall target="test-as_dba_user"/>
 		<!-- we will then merge all of the test output and code coverage-->
 
 		<!-- create coverage zip for TeamCity-->
 		<zip destfile="${build.dir}/coverage.zip" basedir="${coverage.dir}" includes="**"/>
 	</target>
 
+
+    <target name="test-as_dba_user" description="run tests that require connecting with a CWMS DBA user">
+        <if>
+            <available file="build/tests.log"/>
+            <then></then>
+            <else><antcall target="setup-tests"/></else>
+        </if>
+
+        <echo message="    Running tests" />
+        <exec executable="utplsql" resultproperty="utreturn">
+            <arg value="run"/>
+			<arg value="-p=cwms_20.test_ro"/>
+            <arg value="-f"/><arg value="UT_COVERAGE_HTML_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/index.html" />
+            <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/coverage_dba.xml" />
+            <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_dba.xml" />
+			<arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
+            <arg value="-d"/>
+			<arg value="${office.primary.code}hectest_db/${oracle.hectest.password}@${oracle.cwms.instance}" />
+
+        </exec>
+
+		<fail>
+			<condition>
+				<not>
+					<equals arg1="0" arg2="${utreturn}"/>
+				</not>
+			</condition>
+		</fail>
+
+    </target>
 
     <target name="test-as_ro_user" description="run tests that require connecting with a RO user">
         <if>
@@ -546,7 +578,7 @@
 
                 <echo message="Recreate  CWMS users ..."/>
 
-                <property name="autocreateusers-arg-line" value="autoCreateCWMSUsers.py echo=${autocreateusers.echo} inst=${oracle.cwms.instance} dbi_passwd=${oracle.dbi.password} pd_passwd=${oracle.pd.password} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} sys_passwd=${oracle.sys.password} ${autocreateusers.force}"/>
+                <property name="autocreateusers-arg-line" value="autoCreateCWMSUsers.py echo=${autocreateusers.echo} inst=${oracle.cwms.instance} pd_passwd=${oracle.pd.password} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} sys_passwd=${oracle.sys.password} ${autocreateusers.force}"/>
                 <echo message="${autocreateusers-arg-line}"/>
 
                 <exec dir="${src}" executable="python2" output="auto-createusers-output.txt" error="auto-createusers-error.txt" resultproperty="auto-createusers-result" failonerror="true">

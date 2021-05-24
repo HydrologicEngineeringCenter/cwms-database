@@ -162,20 +162,6 @@ AS
 
 	END create_cwms_service_account;
 
-	PROCEDURE create_cwmsdbi_db_account (p_username   IN VARCHAR2,
-													 p_password   IN VARCHAR2 DEFAULT NULL
-													)
-	AS
-		l_sql_string						VARCHAR2 (60);
-	BEGIN
-		create_db_account (p_username, p_password);
-
-		l_sql_string := 'GRANT CREATE SESSION TO ' || p_username;
-		DBMS_OUTPUT.put_line (l_sql_string);
-
-                check_dynamic_sql(l_sql_string);
-		EXECUTE IMMEDIATE l_sql_string;
-	END;
 
         PROCEDURE grant_cwms_permissions(p_username IN VARCHAR2)
         AS
@@ -201,9 +187,8 @@ AS
 	END;
 
 	PROCEDURE create_cwms_db_account (p_username 		IN VARCHAR2,
-                                          p_password 		IN VARCHAR2,
-                                          p_dbi_username IN VARCHAR2
-												)
+                                          p_password 		IN VARCHAR2)
+												
 	AS
 		l_sql_string						VARCHAR2 (400);
 	BEGIN
@@ -219,15 +204,6 @@ AS
 		DBMS_OUTPUT.put_line (l_sql_string);
       		check_dynamic_sql(l_sql_string);
 
-		EXECUTE IMMEDIATE l_sql_string;
-		l_sql_string :=
-				'ALTER user '
-			|| p_username
-			|| ' GRANT CONNECT THROUGH '
-			|| p_dbi_username;
-		DBMS_OUTPUT.put_line (l_sql_string);
-
-                check_dynamic_sql(l_sql_string);
 		EXECUTE IMMEDIATE l_sql_string;
 
 	END;
