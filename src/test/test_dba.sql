@@ -1,16 +1,17 @@
-CREATE OR REPLACE PACKAGE &cwms_schema..test_cwms_dba
-AS
-    -- %suite(Test cwms dba user functionality )
+create or replace package test_dba as
+    -- %suite(Test dba user functionality )
     --%rollback(manual)
+
     -- %test(create cwms user)
     PROCEDURE create_cwms_user;
     -- %test(delete cwms user)
     PROCEDURE delete_cwms_user;
-    
-END;
+
+end;
 /
 
-CREATE OR REPLACE PACKAGE BODY &cwms_schema..test_cwms_dba
+
+CREATE OR REPLACE PACKAGE BODY test_dba
 AS
     PROCEDURE create_cwms_user
     IS
@@ -57,5 +58,5 @@ AS
                
         ut.expect (l_count).to_equal(0);
     END;
-END test_cwms_dba;
+END;
 /
