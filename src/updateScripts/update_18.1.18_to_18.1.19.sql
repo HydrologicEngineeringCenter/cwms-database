@@ -58,8 +58,6 @@ select systimestamp from dual;
 prompt ################################################################################
 prompt UPDATING OBJECTS
 @../cwms/cwms_loc_pkg_body.sql
-@@../cwms/cwms_ts_id_pkg_body.sql
-@@../cwms/views/av_loc.sql
 prompt ################################################################################
 prompt INVALID OBJECTS...
 select systimestamp from dual;
