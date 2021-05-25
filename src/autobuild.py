@@ -25,7 +25,6 @@ define inst = %s
 define sys_passwd = %s
 define cwms_schema = %s
 define cwms_passwd = %s
-define dbi_passwd = %s
 define pd_passwd = %s
 define test_passwd = %s
 '''
@@ -39,7 +38,7 @@ define host_office = %s
 '''
 
 restricted = False
-echo, inst, sys_passwd, cwms_schema, cwms_passwd, dbi_passwd, pd_passwd, test_passwd = None, None, None, None, None, None, None, None
+echo, inst, sys_passwd, cwms_schema, cwms_passwd, pd_passwd, test_passwd = None, None, None, None, None, None, None
 for arg in sys.argv[1:] :
 	if arg.find("=") != -1 :
 		name, value = arg.split("=", 1)
@@ -49,14 +48,14 @@ for arg in sys.argv[1:] :
                 restricted = True
 
 
-if not (echo and inst and sys_passwd and cwms_schema and cwms_passwd and dbi_passwd and pd_passwd and test_passwd) :
-	print("\nUsage %s echo=(on|off) inst=<SID> sys_passwd=<pw> cwms_schema=<schema> cwms_passwd=<pw> dbi_passwd=<pw> test_passwd=<pw>\n" % sys.argv[0])
+if not (echo and inst and sys_passwd and cwms_schema and cwms_passwd and pd_passwd and test_passwd) :
+	print("\nUsage %s echo=(on|off) inst=<SID> sys_passwd=<pw> cwms_schema=<schema> cwms_passwd=<pw> test_passwd=<pw>\n" % sys.argv[0])
 	sys.exit(-1)
 
 cwms_schema = cwms_schema.upper()
 inst = inst.upper()
 
-auto_block = auto_block_template % (echo, inst, sys_passwd, cwms_schema, cwms_passwd, dbi_passwd, pd_passwd, test_passwd)
+auto_block = auto_block_template % (echo, inst, sys_passwd, cwms_schema, cwms_passwd, pd_passwd, test_passwd)
 defines_block = defines_block_template % (echo, inst, cwms_schema, pd_office)
 
 f = open(manual_sqlfilename, "r")

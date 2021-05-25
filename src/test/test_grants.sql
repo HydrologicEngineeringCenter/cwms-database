@@ -14,3 +14,7 @@ GRANT CREATE any procedure to pd_user;
 GRANT EXECUTE ON cwms_20.test_aaa to ro_user;
 GRANT EXECUTE any procedure to ro_user;
 GRANT CREATE any procedure to ro_user;
+
+GRANT EXECUTE ON &cwms_schema.test_cwms_dba to &1;
+GRANT EXECUTE any procedure to &1;
+GRANT CREATE any procedure to &1;

@@ -15,9 +15,6 @@ AS
 
 	PROCEDURE unlock_db_account (p_username IN VARCHAR2 DEFAULT NULL );
 
-	PROCEDURE create_cwmsdbi_db_account (p_username   IN VARCHAR2,
-													 p_password   IN VARCHAR2 DEFAULT NULL
-													);
 
     PROCEDURE create_cwms_service_account (p_username 		IN VARCHAR2,
                                           p_password 		IN VARCHAR2                                          
@@ -25,8 +22,7 @@ AS
 												
 	PROCEDURE delete_db_account (p_username IN VARCHAR2 DEFAULT NULL );
 
-    PROCEDURE create_cwms_db_account (p_username         IN VARCHAR2, p_password in varchar2,
-                                                 p_dbi_username    IN VARCHAR2
+    PROCEDURE create_cwms_db_account (p_username         IN VARCHAR2, p_password in varchar2
                                                 );
 
 	PROCEDURE set_user_password (p_username	IN VARCHAR2,

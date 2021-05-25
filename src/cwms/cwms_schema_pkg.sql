@@ -96,7 +96,6 @@ table_names constant object_tab_t := object_tab_t(
    'AT_SCREENING_ID',
    'AT_SEASONAL_LOCATION_LEVEL',
    'AT_SEC_ALLOW',
-   'AT_SEC_DBI_USER',
    'AT_SEC_LOCKED_USERS',
    'AT_SEC_TS_GROUPS',
    'AT_SEC_TS_GROUP_MASKS',
