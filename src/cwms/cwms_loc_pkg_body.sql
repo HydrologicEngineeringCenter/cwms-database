@@ -9067,9 +9067,13 @@ end unassign_loc_groups;
    is
       l_codes      number_tab_t;
    begin
+   -- Make sure county code exists in cwms_county. Need to merger cwms_county and cwms_county_sp into one?
+   select county_code
+   bulk collect
+   into l_codes
+   from cwms_county where
+   county_code in (
    select c.county_code
-     bulk collect
-     into l_codes
      from cwms_county_sp c
     where sdo_contains(
       c.shape,
@@ -9078,7 +9082,7 @@ end unassign_loc_groups;
          8265 ,
          null,
          mdsys.sdo_elem_info_array(1,1,1),
-         mdsys.sdo_ordinate_array(p_lon, p_lat))) = 'TRUE';
+         mdsys.sdo_ordinate_array(p_lon, p_lat))) = 'TRUE');
       return case
              when l_codes.count = 1 then l_codes(1)
              else null
