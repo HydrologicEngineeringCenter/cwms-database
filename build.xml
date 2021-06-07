@@ -207,16 +207,22 @@
 			<arg value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance}" />
             <arg value="@tests.sql"/>
 			<arg value="${office.primary.id}"/>
+			<arg value="${oracle.cwms.user}"/>
         </exec>
 		<exec dir="src/test" executable="sqlplus">
 			<arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba"/>
 			<arg value="@test_grants.sql"/>
+                        <arg value="${office.primary.code}cwmspd"/>
+			<arg value="${office.primary.code}hectest_ro"/>
 			<arg value="${office.primary.code}hectest_db"/>
+			<arg value="${office.primary.code}hectest_pu"/>
+			<arg value="${oracle.cwms.user}"/>
 		</exec>
 	</target>
 
 	<target name="test" depends="setup-tests,tests-install" description="run all tests." >
 		<mkdir dir="${coverage.dir}" />
+		<antcall target="load-test-data"/>
 		<antcall target="test-as_pd_user"/>
 		<antcall target="test-as_ro_user"/>
 		<antcall target="test-as_dba_user"/>
@@ -226,6 +232,36 @@
 		<zip destfile="${build.dir}/coverage.zip" basedir="${coverage.dir}" includes="**"/>
 	</target>
 
+
+    <target name="test-as_pdu_user" description="run tests that require connecting with a CWMS DBA user/PD user">
+        <if>
+            <available file="build/tests.log"/>
+            <then></then>
+            <else><antcall target="setup-tests"/></else>
+        </if>
+
+        <echo message="    Running tests" />
+        <exec executable="utplsql" resultproperty="utreturn">
+            <arg value="run"/>
+			<arg value="-p=${oracle.cwms.user}.test_aaa"/>
+            <arg value="-f"/><arg value="UT_COVERAGE_HTML_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/index.html" />
+            <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/coverage_dba.xml" />
+            <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_pdu.xml" />
+			<arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
+            <arg value="-d"/>
+			<arg value="${office.primary.code}hectest_pu/${oracle.hectest.password}@${oracle.cwms.instance}" />
+
+        </exec>
+
+		<fail>
+			<condition>
+				<not>
+					<equals arg1="0" arg2="${utreturn}"/>
+				</not>
+			</condition>
+		</fail>
+
+    </target>
 
     <target name="test-as_dba_user" description="run tests that require connecting with a CWMS DBA user">
         <if>
@@ -237,7 +273,7 @@
         <echo message="    Running tests" />
         <exec executable="utplsql" resultproperty="utreturn">
             <arg value="run"/>
-			<arg value="-p=cwms_20.test_dba"/>
+			<arg value="-p=${oracle.cwms.user}.test_dba"/>
             <arg value="-f"/><arg value="UT_COVERAGE_HTML_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/index.html" />
             <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/coverage_dba.xml" />
             <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_dba.xml" />
@@ -267,13 +303,13 @@
         <echo message="    Running tests" />
         <exec executable="utplsql" resultproperty="utreturn">
             <arg value="run"/>
-			<arg value="-p=cwms_20.test_ro"/>
+			<arg value="-p=${oracle.cwms.user}.test_ro"/>
             <arg value="-f"/><arg value="UT_COVERAGE_HTML_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/index.html" />
             <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/coverage_ro.xml" />
             <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_ro.xml" />
 			<arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
             <arg value="-d"/>
-			<arg value="ro_user/ro_pw@${oracle.cwms.instance}" />
+			<arg value="${office.primary.code}hectest_ro/${oracle.hectest.password}@${oracle.cwms.instance}" />
 
         </exec>
 
@@ -287,13 +323,7 @@
 
     </target>
 
-    <target name="test-as_pd_user" description="run tests that require connecting with a PD user">
-        <if>
-            <available file="build/tests.log"/>
-            <then></then>
-            <else><antcall target="setup-tests"/></else>
-        </if>
-
+    <target name="load-test-data" description="Load data needed for running tests">
 	<echo message="    Loading test clobs"/>
 	<exec executable="sqlldr" dir="${src}/test/data/ratings" failonerror="true">
             <arg value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} control=xsl_test_clobs.ctl"/>
@@ -315,16 +345,25 @@
             <arg value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance}"/>
             <arg value="@reset_seq"/>
         </exec>
+    </target>
+
+    <target name="test-as_pd_user" description="run tests that require connecting with a PD user">
+        <if>
+            <available file="build/tests.log"/>
+            <then></then>
+            <else><antcall target="setup-tests"/></else>
+        </if>
+
         <echo message="    Running tests" />
         <exec executable="utplsql" resultproperty="utreturn">
             <arg value="run"/>
-			<arg value="-p=cwms_20.test_aaa,cwms_20.test_missing_shift_points,cwms_20.test_lrts_updates,cwms_20.test_probability_parameter,cwms_20.test_cwms_loc,cwms_20.test_cwms_ts,cwms_20.test_cwms_util,cwms_20.test_cwms_rating"/>
+			<arg value="-p=${oracle.cwms.user}.test_missing_shift_points,${oracle.cwms.user}.test_lrts_updates,${oracle.cwms.user}.test_probability_parameter,${oracle.cwms.user}.test_cwms_loc,${oracle.cwms.user}.test_cwms_ts,${oracle.cwms.user}.test_cwms_util,${oracle.cwms.user}.test_cwms_rating"/>
             <arg value="-f"/><arg value="UT_COVERAGE_HTML_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/index.html" />
             <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/coverage_pd.xml" />
             <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_pd.xml" />
 			<arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
             <arg value="-d"/>
-			<arg value="pd_user/pd_pw@${oracle.cwms.instance}" />
+			<arg value="${office.primary.code}cwmspd/${oracle.cwmspd.password}@${oracle.cwms.instance}" />
 
         </exec>
 

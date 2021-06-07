@@ -13,7 +13,7 @@ end;
 /
 
 
-CREATE OR REPLACE PACKAGE BODY CWMS_20.test_ro
+CREATE OR REPLACE PACKAGE BODY &cwms_schema..test_ro
 AS
     PROCEDURE set_application_login_info
     IS
