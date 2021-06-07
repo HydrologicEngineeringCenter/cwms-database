@@ -152,7 +152,9 @@ f.close()
 #----------------------------------------------------#
 print("Loading control files")
 loaderCmdTemplate = "sqlldr %s/%s@%s control=%s"
-for loaderFilename in glob.glob('*.ctl') + glob.glob('data/*.ctl') :
+ctlFiles=glob.glob('*.ctl') + glob.glob('data/*.ctl')
+
+for loaderFilename in sorted(ctlFiles) :
 	#-------------------------------#
 	# fixup pathnames for clob data #
 	#-------------------------------#

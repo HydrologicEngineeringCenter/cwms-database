@@ -130,7 +130,6 @@ object Build : BuildType({
         }
         script {
             name = "Destroy Database Since we are done"
-            enabled = false
             executionMode = BuildStep.ExecutionMode.ALWAYS
             scriptContent = Helpers.readScript("scripts/destroy_database.sh");
         }
