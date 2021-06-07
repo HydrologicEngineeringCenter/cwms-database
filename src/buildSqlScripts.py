@@ -5958,6 +5958,10 @@ def main() :
         group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS User Admins', 'TS ID Creator', 'Viewer Users');
         "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_ua', test_passwd, group_list, '&office_id');
         --
+        -- hectest_pu
+        group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS User Admins', 'CWMS PD Users','TS ID Creator', 'Viewer Users');
+        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_pu', test_passwd, group_list, '&office_id');
+        --
         -- hectest_dx
         group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('Data Exchange Mgr', 'TS ID Creator', 'CWMS Users');
         "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_dx', test_passwd, group_list, '&office_id');

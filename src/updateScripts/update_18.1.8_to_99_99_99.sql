@@ -62,6 +62,8 @@ prompt Insert Probability parameter
 @./99_99_99/insertProbability
 prompt Drop AT_SEC_DB_TABLE
 @./99_99_99/dropAtSecDbiTable
+prompt add yearly tables
+@./99_99_99/add_yearly_tables
 
 ------------
 -- TABLES --
@@ -201,64 +203,31 @@ select owner||'.'||substr(object_name, 1, 30) as invalid_object,
 prompt ################################################################################
 prompt RECOMPILING SCHEMA
 select systimestamp from dual;
---exec sys.utl_recomp.recomp_serial('CWMS_DBA');
---exec sys.utl_recomp.recomp_serial('&cwms_schema');
-BEGIN
-    FOR c
-        IN (SELECT object_name, object_type
-              FROM dba_objects
-             WHERE     owner IN ('CWMS_20', 'CWMS_DBA')
-                   AND object_type IN ('PACKAGE', 'TYPE')
-                   AND status <> 'VALID')
-    LOOP
-        DBMS_OUTPUT.PUT_LINE ('Compiling ' || c.object_name);
-
-        EXECUTE IMMEDIATE
-               'ALTER '
-            || c.object_type
-            || ' '
-            || c.object_name
-            || ' COMPILE '
-            || c.object_type;
-    END LOOP;
-
-    FOR c
-        IN (SELECT object_name, REGEXP_SUBSTR (object_type, '(\S*)') ot
-              FROM dba_objects
-             WHERE     owner IN ('CWMS_20', 'CWMS_DBA')
-                   AND object_type IN ('PACKAGE BODY', 'TYPE BODY')
-                   AND status <> 'VALID')
-    LOOP
-        DBMS_OUTPUT.PUT_LINE ('Compiling ' || c.object_name);
-
-        EXECUTE IMMEDIATE
-            'ALTER ' || c.ot || ' ' || c.object_name || ' COMPILE BODY';
-    END LOOP;
-
-    FOR c
-        IN (SELECT object_name, object_type
-              FROM dba_objects
-             WHERE     owner IN ('CWMS_20', 'CWMS_DBA')
-                   AND object_type IN ('VIEW', 'TRIGGER','PROCEDURE','FUNCTION')
-                   AND status <> 'VALID')
-    LOOP
-        DBMS_OUTPUT.PUT_LINE ('Compiling ' || c.object_name);
-
-        EXECUTE IMMEDIATE
-               'ALTER '
-            || c.object_type
-            || ' '
-            || c.object_name
-            || ' COMPILE';
-    END LOOP;
-END;
-/
+@./util/compile_objects
 prompt UPDATING OBJECTS
 @./99_99_99/update_at_cwms_ts_spec
--- Recreate VPD policy
+prompt recreate db policies
 @../cwms/create_service_user_policy.sql
+prompt create av_view
+exec cwms_util.create_view
+prompt create read only triggers
+@../cwms/create_sec_triggers
+prompt create tsv count triggers
+@../cwms/at_tsv_count_trig
+prompt create tsv trigger for ddf flag 
+@../cwms/at_dd_flag_trig.sql
+prompt RECOMPILING SCHEMA
+select systimestamp from dual;
+@./util/compile_objects
+prompt create procedure to move data
+@./util/move_data_from_inf_to_yearly
+prompt Move INF data to yearly tables
+begin move_data_from_inf_to_yearly; end; 
+/
+prompt drop move data procedure
+drop procedure move_data_from_inf_to_yearly;
 
-prompt ################################################################################
+promp ################################################################################
 prompt REMAINING INVALID OBJECTS...
 select owner||'.'||substr(object_name, 1, 30) as invalid_object,
        object_type

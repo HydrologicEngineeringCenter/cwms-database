@@ -1,7 +1,8 @@
-CREATE OR REPLACE package CWMS_20.test_cwms_loc as
+CREATE OR REPLACE package &cwms_schema..test_cwms_loc as
 
 --%suite(Test cwms_loc package code)
---%afterall(teardown_all)
+--%afterall(teardown)
+--%beforeall (setup)
 --%rollback(manual)
 
 --%test(Test rename base location to a different base location)
@@ -24,11 +25,12 @@ procedure test_store_location_with_multiple_attributes_and_actvie_flags;
 procedure test_av_loc_view;
 
 procedure setup_rename;
-procedure teardown_all;
+procedure setup;
+procedure teardown;
 end test_cwms_loc;
 /
 
-CREATE OR REPLACE PACKAGE BODY CWMS_20.test_cwms_loc
+CREATE OR REPLACE PACKAGE BODY &cwms_schema..test_cwms_loc
 AS
     --------------------------------------------------------------------------------
     -- procedure setup_rename
@@ -46,7 +48,7 @@ AS
                 cwms_loc.delete_location (
                     p_location_id     => rec.loc_name,
                     p_delete_action   => cwms_util.delete_all,
-                    p_db_office_id    => 'NAB');
+                    p_db_office_id    => '&office_id');
             EXCEPTION
                 WHEN exc_location_id_not_found
                 THEN
@@ -59,30 +61,52 @@ AS
     IS
     BEGIN
         EXECUTE IMMEDIATE 'alter trigger at_physical_location_t03 disable';
+        COMMIT;
 
         EXECUTE IMMEDIATE 'delete from at_physical_location where location_code<>0';
+        COMMIT;
 
         EXECUTE IMMEDIATE 'delete from at_base_location where base_location_code<>0';
+        COMMIT;
 
         EXECUTE IMMEDIATE 'delete from at_parameter where db_office_code<>53';
-
-        EXECUTE IMMEDIATE 'drop view av_loc_old';
-        
-        EXECUTE IMMEDIATE 'drop materialized view mv_loc';
-        
-        EXECUTE IMMEDIATE 'drop materialized view mv_loc_old';
-
-        EXECUTE IMMEDIATE 'alter trigger at_physical_location_t03 enable';
-
         COMMIT;
+
+        BEGIN
+        	EXECUTE IMMEDIATE 'drop view av_loc_old';
+        
+        	EXECUTE IMMEDIATE 'drop materialized view mv_loc';
+        
+        	EXECUTE IMMEDIATE 'drop materialized view mv_loc_old';
+
+        EXCEPTION WHEN OTHERS
+        THEN 
+	   NULL;
+        END;
+       	EXECUTE IMMEDIATE 'alter trigger at_physical_location_t03 enable';
+
     END;
 
-    PROCEDURE teardown_all
+    PROCEDURE setup
+    IS
+    BEGIN
+      EXECUTE IMMEDIATE 'drop view av_loc_old';
+        
+      EXECUTE IMMEDIATE 'drop materialized view mv_loc';
+        
+      EXECUTE IMMEDIATE 'drop materialized view mv_loc_old';
+
+    EXCEPTION WHEN OTHERS
+    THEN 
+	   NULL;
+    END setup;
+
+    PROCEDURE teardown
     IS
     BEGIN
         setup_rename;
         cleanup_locs;
-    END teardown_all;
+    END teardown;
 
     --------------------------------------------------------------------------------
     -- procedure test_rename_loc_base_to_different_base
@@ -103,7 +127,7 @@ AS
         ----------------------------------------------------
         -- create the location and get the location codes --
         ----------------------------------------------------
-        l_office_id := 'NAB';
+        l_office_id := '&office_id';
         l_location_id1 := 'TestLoc1';
         l_location_id2 := 'TestLoc2';
 
@@ -158,7 +182,7 @@ AS
         ----------------------------------------------------
         -- create the location and get the location codes --
         ----------------------------------------------------
-        l_office_id := 'NAB';
+        l_office_id := '&office_id';
         l_location_id1 := 'TestLoc1';
         l_location_id2 := 'TestLoc2-WithSub1';
 
@@ -199,7 +223,7 @@ AS
         ----------------------------------------------------
         -- create the location and get the location codes --
         ----------------------------------------------------
-        l_office_id := 'NAB';
+        l_office_id := '&office_id';
         l_location_id1 := 'TestLoc1-WithSub1';
         l_location_id2 := 'TestLoc2';
 
@@ -241,7 +265,7 @@ AS
         ----------------------------------------------------
         -- create the location and get the location codes --
         ----------------------------------------------------
-        l_office_id := 'NAB';
+        l_office_id := '&office_id';
         l_location_id1 := 'TestLoc1-WithSub1';
         l_location_id2 := 'TestLoc2-WithSub1';
 
@@ -320,7 +344,7 @@ AS
         ----------------------------------------------------
         -- create the location and get the location codes --
         ----------------------------------------------------
-        l_office_id := 'NAB';
+        l_office_id := '&office_id';
         l_location_id1 := 'TestLoc1-WithSub1';
         l_location_id2 := 'TestLoc1-WithSub2';
 
@@ -382,7 +406,7 @@ AS
         ----------------------------------------------------
         -- create the location and get the location codes --
         ----------------------------------------------------
-        l_office_id := 'NAB';
+        l_office_id := '&office_id';
         l_location_id1 := 'TestLoc1-WithSub1';
         l_location_id2 := 'TestLoc2-WithSub2';
 
@@ -475,7 +499,7 @@ AS
 
         cwms_loc.store_location (
             p_location_id        => l_location_id,
-            p_db_office_id       => 'NAB',
+            p_db_office_id       => '&office_id',
             p_active             => 'F',
             p_longitude          => -122.6375,
             p_latitude           => 43.9708333,
@@ -521,7 +545,7 @@ AS
 
         cwms_loc.store_location (p_location_id    => l_location_id,
                                  p_active         => 'T',
-                                 p_db_office_id   => 'NAB');
+                                 p_db_office_id   => '&office_id');
         COMMIT;
 
           SELECT base_loc_active_flag, loc_active_flag, active_flag
@@ -535,7 +559,7 @@ AS
         ut.expect (l_active).to_equal ('T');
         cwms_loc.store_location (p_location_id    => l_base_location_id,
                                  p_active         => 'T',
-                                 p_db_office_id   => 'NAB');
+                                 p_db_office_id   => '&office_id');
         COMMIT;
 
           SELECT base_loc_active_flag, loc_active_flag, active_flag
@@ -552,7 +576,7 @@ AS
         COMMIT;
         cwms_loc.store_location (p_location_id    => l_base_location_id,
                                  p_active         => 'T',
-                                 p_db_office_id   => 'NAB');
+                                 p_db_office_id   => '&office_id');
         COMMIT;
 
           SELECT base_loc_active_flag, loc_active_flag, active_flag
@@ -572,6 +596,10 @@ AS
         l_count   NUMBER;
         l_cmd     VARCHAR2 (32000);
     BEGIN
+      -- check for data first
+        select count(*) into l_count from av_loc;
+
+        ut.expect (l_count).to_be_greater_than(10000);
         -- Fix base location issues
         EXECUTE IMMEDIATE 'update at_physical_location set location_code=base_location_code where base_location_code<>location_code and sub_location_id is null';
 
