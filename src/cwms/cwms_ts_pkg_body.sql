@@ -885,7 +885,7 @@ AS
                     FROM (SELECT local_time,
                                  cwms_ts.get_time_on_before_interval(
                                     local_time,
-                                    p_interval_utc_offset,
+                                    abs(p_interval_utc_offset),
                                     l_irregular_interval) as interval_time
                             FROM (SELECT cwms_util.change_timezone(date_time, 'UTC', l_tz) AS local_time
                                     FROM av_tsv WHERE ts_code = p_ts_code
