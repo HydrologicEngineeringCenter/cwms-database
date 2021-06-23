@@ -1744,6 +1744,70 @@ begin
    close l_crsr1;
 end retrieve_ts_multi;
 --------------------------------------------------------------------------------
+-- procedure retrieve_ts_multi_single_value
+--------------------------------------------------------------------------------
+procedure retrieve_ts_multi_single_value
+    is
+    l_crsr1                  sys_refcursor;
+    l_crsr2                  sys_refcursor;
+    l_time_zone              av_cwms_ts_id.cwms_ts_id%type := 'UTC';
+    l_ts_values  tsv_array := tsv_array();
+    l_ts_request             timeseries_req_array := timeseries_req_array();
+    l_cwms_ts_ids            str_tab_t := str_tab_t();
+    l_timezone_ids           str_tab_t := str_tab_t();
+    l_start_times            date_table_type := date_table_type();
+    l_sequence_out           integer;
+    l_date_times             date_table_type;
+    l_values                 double_tab_t;
+    l_quality_codes          number_tab_t;
+begin
+    setup('INIT,STORE_LOCATIONS');
+    l_ts_values.extend;
+    l_ts_values(1) := tsv_type(
+                date_time    => cast(c_ts_values_utc(2)(1).date_time as timestamp) at time zone 'US/Central',
+                value        => c_ts_values_utc(2)(1).value,
+                quality_code => c_ts_values_utc(2)(1).quality_code);
+    l_cwms_ts_ids.extend;
+    l_cwms_ts_ids(l_cwms_ts_ids.count) := replace(v_ts_ids(1), '<intvl>', '~1Hour');
+    l_timezone_ids.extend;
+    l_timezone_ids(l_timezone_ids.count) := cwms_loc.get_local_timezone(c_location_ids(1), c_office_id);
+    l_start_times.extend;
+    l_start_times(l_start_times.count) := cwms_util.change_timezone(c_start_time + c_intvl_offsets(1) / 1440, cwms_loc.get_local_timezone(c_location_ids(1), c_office_id), l_time_zone);
+    l_ts_request.extend;
+    l_ts_request(l_ts_request.count) := timeseries_req_type(
+            l_cwms_ts_ids(l_cwms_ts_ids.count),
+            c_ts_unit,
+            c_start_time - 1,
+            c_start_Time + 2);
+    cwms_ts.retrieve_ts_multi (
+            p_at_tsv_rc       => l_crsr1,
+            p_timeseries_info => l_ts_request,
+            p_time_zone       => l_time_zone,
+            p_trim            => 'T',
+            p_start_inclusive => 'T',
+            p_end_inclusive   => 'T',
+            p_previous        => 'F',
+            p_next            => 'F',
+            p_version_date    => cwms_util.non_versioned,
+            p_max_version     => 'T',
+            p_office_id       =>  c_office_id);
+
+    loop
+        fetch l_crsr1
+            into l_sequence_out,
+            l_crsr2;
+        exit when l_crsr1%notfound;
+        fetch l_crsr2
+            bulk collect
+            into l_date_times,
+            l_values,
+            l_quality_codes;
+        close l_crsr2;
+        ut.expect(l_date_times.count).to_equal(1);
+    end loop;
+    close l_crsr1;
+end retrieve_ts_multi_single_value;
+--------------------------------------------------------------------------------
 -- procedure store_ts
 --------------------------------------------------------------------------------
 procedure store_ts
