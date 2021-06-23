@@ -73,7 +73,9 @@ procedure create_ts_code_tz;
 procedure get_tsid_time_zone;
 --%test(GET_TS_TIME_ZONE)
 procedure get_ts_time_zone;
+--%test(retrieve_ts_multi_single_value - testing bugfix when a single value is retrieved, but an empty cursor is returned)
 procedure retrieve_ts_multi_single_value;
+--%test(update_lrts_ts_code_neg_offset_from_undefined - testing bugfix when an undefined offset isn't correctly updated from a negative offset)
 procedure update_lrts_ts_code_neg_offset_from_undefined;
 
 procedure setup(p_options in varchar2 default null);
