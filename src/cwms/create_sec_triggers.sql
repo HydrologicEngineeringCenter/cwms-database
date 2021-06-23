@@ -28,7 +28,7 @@ BEGIN
     
              l_priv   VARCHAR2 (16);
              BEGIN
-             SELECT SYS_CONTEXT (''CWMS_ENV'', ''CWMS_PRIVILEGE'') INTO l_priv FROM DUAL;
+             l_priv := SYS_CONTEXT (''CWMS_ENV'', ''CWMS_PRIVILEGE''); 
              IF ((l_priv is NULL OR l_priv <> ''CAN_WRITE'') AND user NOT IN (''SYS'', ''&cwms_schema'')'
           || l_upass 
           || ')

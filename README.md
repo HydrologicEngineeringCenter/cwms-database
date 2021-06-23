@@ -80,14 +80,9 @@ Once everyone agrees on this new step we will merge it into master, which will c
 
 ### Update scripts and Releases
 
-There will be a running update script in master that will be update_<last release>_current. If you make any changes, include those updates within this script.
-
-1. This will help simplify the release process for whoever decides the release.
-1. It will put the part of the burden of verifying a feature made it to user on the original developer.
-1. We intend to setup in testing automated updates.
-  a. This will involve running all tests again, so it will wait for some of the build server expansion; but keep it in mind.
-
-When a release is determined to be made we'll decide on the number we'll create a long running release branch and update the relevant portions of the scripts to match. At that point the only code changes that should be made to that branch are "hot fixes." The working named update script should be immediately merged into master leaving the branch active (bit bucket is set to prevent all release/ branches from being deleted so if you forget to uncheck the "delete branch" button the interface will stop you.)
+-  We're not going to bump the version on everything change we'll leave the pom.xml at MAJOR-SNAPSHOT (I think we'll go ahead and push to nexus)
+- We'll keep a running update script: update_18.1.8_to_99_99_99.sql (if you make a change the correct alteration commands should go in there.)
+- When we do a release it will be a PR to a release branch (e.g. v18 or v18.1 or something, still working exactly what out.)
 
 #### Versioning
 

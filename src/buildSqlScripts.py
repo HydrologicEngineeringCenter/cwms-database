@@ -5958,6 +5958,10 @@ def main() :
         group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS User Admins', 'TS ID Creator', 'Viewer Users');
         "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_ua', test_passwd, group_list, '&office_id');
         --
+        -- hectest_pu
+        group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS User Admins', 'CWMS PD Users','TS ID Creator', 'Viewer Users');
+        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_pu', test_passwd, group_list, '&office_id');
+        --
         -- hectest_dx
         group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('Data Exchange Mgr', 'TS ID Creator', 'CWMS Users');
         "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_dx', test_passwd, group_list, '&office_id');
@@ -6003,7 +6007,6 @@ def main() :
     whenever sqlerror continue
 
     drop user &eroc.cwmspd;
-    drop user &eroc.cwmsdbi;
 
     --
     -- notice errors
@@ -6012,18 +6015,14 @@ def main() :
 
     variable pd_passwd varchar2(50)
     exec :pd_passwd := '&pd_passwd';
-    variable dbi_passwd varchar2(50)
-    exec :dbi_passwd := '&dbi_passwd';
 
     clear
 
     DECLARE
         pd_passwd      VARCHAR2 (50) := :pd_passwd;
-        dbi_passwd      VARCHAR2 (50) := :dbi_passwd;
         group_list      "&cwms_schema"."CHAR_32_ARRAY_TYPE" := "&cwms_schema"."CHAR_32_ARRAY_TYPE"('CWMS PD Users');
     BEGIN
 
-        "&cwms_schema"."CWMS_SEC"."CREATE_CWMSDBI_DB_USER"('&eroc.cwmsdbi', dbi_passwd, '&office_id');
         "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.cwmspd', pd_passwd, group_list, '&office_id');
 
         "&cwms_schema"."CWMS_SEC"."ASSIGN_TS_GROUP_USER_GROUP" ('All Rev TS IDs', 'Viewer Users', 'Read', '&office_id');
@@ -6107,7 +6106,6 @@ def main() :
     accept inst        char prompt 'Enter the database SID           : '
     accept sys_passwd  char prompt 'Enter the password for SYS       : '
     accept cwms_passwd char prompt 'Enter the password for &cwms_schema   : '
-    accept dbi_passwd  char prompt 'Enter the password for %scwmsdbi : '
     accept pd_passwd  char prompt 'Enter the password for %scwmspd : '
     '''
 
@@ -6117,7 +6115,7 @@ def main() :
 
     sys.stderr.write("Creating py_prompt.sql\n")
     f = open("py_prompt.sql","w")
-    f.write(prompt_template % (db_office_eroc,db_office_eroc))
+    f.write(prompt_template % (db_office_eroc))
     if test_user_id : f.write(prompt_test_line_template % (test_user_id))
     f.close()
     #==============================================================================

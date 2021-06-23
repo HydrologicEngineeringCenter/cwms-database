@@ -127,6 +127,8 @@ begin
       p_delete_action  => cwms_util.delete_all,
       p_office_id_mask => c_office_id);
    commit;
+   CWMS_RATING.DELETE_TEMPLATES('*', cwms_util.delete_all, '*');
+   commit;
 end teardown;
 
 procedure setup

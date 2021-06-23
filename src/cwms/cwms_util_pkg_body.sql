@@ -1386,7 +1386,7 @@ as
    PROCEDURE create_view
    IS
       l_sel   VARCHAR2 (120);
-      l_sql   VARCHAR2 (4000);
+      l_sql   VARCHAR2 (8000);
 
       CURSOR c1
       IS

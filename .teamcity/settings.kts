@@ -141,7 +141,7 @@ object Build : BuildType({
     }
 
     failureConditions {
-        executionTimeoutMin = 15
+        executionTimeoutMin = 45
         failOnMetricChange {
             metric = BuildFailureOnMetric.MetricType.ARTIFACT_SIZE
             units = BuildFailureOnMetric.MetricUnit.DEFAULT_UNIT
