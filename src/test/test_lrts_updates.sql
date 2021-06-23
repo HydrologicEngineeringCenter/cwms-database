@@ -526,6 +526,82 @@ begin
 
    ut.expect(l_offset_out).to_equal(l_offset_2);
 end update_lrts_ts_code_neg_offset;
+
+--------------------------------------------------------------------------------
+-- procedure update_lrts_ts_code_neg_offset_from_undefined
+--------------------------------------------------------------------------------
+procedure update_lrts_ts_code_neg_offset
+    is
+    l_ts_code    integer;
+    l_offset   integer := -10;
+    l_offset_out integer;
+begin
+    setup('INIT');
+
+    cwms_loc.store_location2(
+            p_location_id				=> c_location_ids(1),
+            p_location_type			=> null,
+            p_elevation 				=> null,
+            p_elev_unit_id 			=> null,
+            p_vertical_datum			=> null,
+            p_latitude					=> null,
+            p_longitude 				=> null,
+            p_horizontal_datum		=> null,
+            p_public_name				=> null,
+            p_long_name 				=> null,
+            p_description				=> null,
+            p_time_zone_id 			=> c_timezone_ids(1),
+            p_county_name				=> null,
+            p_state_initial			=> null,
+            p_active 					=> null,
+            p_location_kind_id		=> null,
+            p_map_label 				=> null,
+            p_published_latitude 	=> null,
+            p_published_longitude	=> null,
+            p_bounding_office_id 	=> null,
+            p_nation_id 				=> null,
+            p_nearest_city 			=> null,
+            p_ignorenulls				=> 'T',
+            p_db_office_id 			=> c_office_id);
+
+    cwms_ts.create_ts_code (
+            p_ts_code           => l_ts_code,
+            p_cwms_ts_id        => replace(v_ts_ids(1), '<intvl>', '~1Hour'),
+            p_utc_offset        => cwms_util.utc_offset_undefined,
+            p_interval_forward  => null,
+            p_interval_backward => null,
+            p_versioned         => 'F',
+            p_active_flag       => 'T',
+            p_fail_if_exists    => 'T',
+            p_office_id         => c_office_id);
+
+    cwms_ts.store_ts(
+
+            p_office_id       => c_office_id,
+            p_cwms_ts_id      => replace(v_ts_ids(1), '<intvl>', '~1Hour'),
+            p_units           => c_ts_unit,
+            p_timeseries_data => c_ts_values_utc(1),
+            p_store_rule      => cwms_util.replace_all,
+            p_override_prot   => 0,
+            p_versiondate     => cwms_util.non_versioned,
+            p_create_as_lrts  => 'F'
+        );
+
+    cwms_ts.update_ts_id (
+            p_ts_code                => l_ts_code,
+            p_interval_utc_offset    => l_offset,
+            p_snap_forward_minutes   => null,
+            p_snap_backward_minutes  => null,
+            p_local_reg_time_zone_id => null,
+            p_ts_active_flag         => null);
+
+    select interval_utc_offset
+    into l_offset_out
+    from at_cwms_ts_spec
+    where ts_code = l_ts_code;
+
+    ut.expect(l_offset_out).to_equal(l_offset);
+end update_lrts_ts_code_neg_offset;
 --------------------------------------------------------------------------------
 -- procedure update_lrts_ts_code_pos_offset
 --------------------------------------------------------------------------------
