@@ -530,7 +530,7 @@ end update_lrts_ts_code_neg_offset;
 --------------------------------------------------------------------------------
 -- procedure update_lrts_ts_code_neg_offset_from_undefined
 --------------------------------------------------------------------------------
-procedure update_lrts_ts_code_neg_offset
+procedure update_lrts_ts_code_neg_offset_from_undefined
     is
     l_ts_code    integer;
     l_offset   integer := -10;
@@ -601,7 +601,7 @@ begin
     where ts_code = l_ts_code;
 
     ut.expect(l_offset_out).to_equal(l_offset);
-end update_lrts_ts_code_neg_offset;
+end update_lrts_ts_code_neg_offset_from_undefined;
 --------------------------------------------------------------------------------
 -- procedure update_lrts_ts_code_pos_offset
 --------------------------------------------------------------------------------
