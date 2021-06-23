@@ -3411,7 +3411,7 @@ AS
             FETCH rec
             BULK COLLECT INTO date_tab, val_tab, qual_tab;
 
-            IF rec%ROWCOUNT > 1
+            IF rec%ROWCOUNT > 0
             THEN
                 t (i).data.EXTEND (rec%ROWCOUNT);
                 close rec;
