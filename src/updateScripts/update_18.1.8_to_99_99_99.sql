@@ -69,6 +69,21 @@ prompt add yearly tables
 -- TABLES --
 ------------
 
+whenever sqlerror continue;
+insert 
+  into at_parameter
+       (parameter_code,
+        db_office_code,
+	     base_parameter_code,
+	     sub_parameter_id,
+	     sub_parameter_desc)
+values (48,
+        53,
+        48,
+        null,
+       'Probability');
+whenever sqlerror exit;
+--
 comment on table  at_cwms_ts_spec                     is 'Defines time series based on CWMS requirements.  This table also serves as time series specification super type.';
 comment on column at_cwms_ts_spec.ts_code             is 'Unique record identifier, primarily used for internal database processing. This code is automatically assigned by the system.';
 comment on column at_cwms_ts_spec.location_code       is 'Primary key of AT_PHYSICAL_LOCATION table.';
