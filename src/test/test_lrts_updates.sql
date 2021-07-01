@@ -73,6 +73,10 @@ procedure create_ts_code_tz;
 procedure get_tsid_time_zone;
 --%test(GET_TS_TIME_ZONE)
 procedure get_ts_time_zone;
+--%test(retrieve_ts_multi_single_value - testing bugfix when a single value is retrieved, but an empty cursor is returned)
+procedure retrieve_ts_multi_single_value;
+--%test(update_lrts_ts_code_neg_offset_from_undefined - testing bugfix when an undefined offset isn't correctly updated from a negative offset)
+procedure update_lrts_ts_code_neg_offset_from_undefined;
 
 procedure setup(p_options in varchar2 default null);
 procedure teardown;
@@ -526,6 +530,93 @@ begin
 
    ut.expect(l_offset_out).to_equal(l_offset_2);
 end update_lrts_ts_code_neg_offset;
+
+--------------------------------------------------------------------------------
+-- procedure update_lrts_ts_code_neg_offset_from_undefined
+--------------------------------------------------------------------------------
+procedure update_lrts_ts_code_neg_offset_from_undefined
+    is
+    l_ts_code    integer;
+    l_offset   integer := -10;
+    l_offset_out integer;
+begin
+    setup('INIT');
+
+    cwms_loc.store_location2(
+            p_location_id				=> c_location_ids(1),
+            p_location_type			=> null,
+            p_elevation 				=> null,
+            p_elev_unit_id 			=> null,
+            p_vertical_datum			=> null,
+            p_latitude					=> null,
+            p_longitude 				=> null,
+            p_horizontal_datum		=> null,
+            p_public_name				=> null,
+            p_long_name 				=> null,
+            p_description				=> null,
+            p_time_zone_id 			=> c_timezone_ids(1),
+            p_county_name				=> null,
+            p_state_initial			=> null,
+            p_active 					=> null,
+            p_location_kind_id		=> null,
+            p_map_label 				=> null,
+            p_published_latitude 	=> null,
+            p_published_longitude	=> null,
+            p_bounding_office_id 	=> null,
+            p_nation_id 				=> null,
+            p_nearest_city 			=> null,
+            p_ignorenulls				=> 'T',
+            p_db_office_id 			=> c_office_id);
+
+    cwms_ts.create_ts_code (
+            p_ts_code           => l_ts_code,
+            p_cwms_ts_id        => replace(v_ts_ids(1), '<intvl>', '~1Hour'),
+            p_utc_offset        => cwms_util.utc_offset_undefined,
+            p_interval_forward  => null,
+            p_interval_backward => null,
+            p_versioned         => 'F',
+            p_active_flag       => 'T',
+            p_fail_if_exists    => 'T',
+            p_office_id         => c_office_id);
+
+    declare
+        l_ts_values tsv_array := tsv_array();
+    begin
+        select tsv_type(
+            from_tz(cast(date_time + abs(l_offset) / 1440 as timestamp), 'UTC'),
+            value,
+            quality_code)
+        bulk collect
+        into l_ts_values
+        from table(c_ts_values_utc(1));
+
+        cwms_ts.store_ts(
+                p_office_id       => c_office_id,
+                p_cwms_ts_id      => replace(v_ts_ids(1), '<intvl>', '~1Hour'),
+                p_units           => c_ts_unit,
+                p_timeseries_data => l_ts_values,
+                p_store_rule      => cwms_util.replace_all,
+                p_override_prot   => 0,
+                p_versiondate     => cwms_util.non_versioned,
+                p_create_as_lrts  => 'F'
+            );
+    end;
+
+    cwms_ts.update_ts_id (
+            p_ts_code                => l_ts_code,
+            p_interval_utc_offset    => l_offset,
+            p_snap_forward_minutes   => null,
+            p_snap_backward_minutes  => null,
+            p_local_reg_time_zone_id => null,
+            p_ts_active_flag         => null);
+
+    select interval_utc_offset
+    into l_offset_out
+    from at_cwms_ts_spec
+    where ts_code = l_ts_code;
+
+    ut.expect(l_offset_out).to_equal(l_offset);
+end update_lrts_ts_code_neg_offset_from_undefined;
 --------------------------------------------------------------------------------
 -- procedure update_lrts_ts_code_pos_offset
 --------------------------------------------------------------------------------
@@ -1667,6 +1758,91 @@ begin
    end loop;
    close l_crsr1;
 end retrieve_ts_multi;
+--------------------------------------------------------------------------------
+-- procedure retrieve_ts_multi_single_value
+--------------------------------------------------------------------------------
+procedure retrieve_ts_multi_single_value
+    is
+    l_crsr1                  sys_refcursor;
+    l_crsr2                  sys_refcursor;
+    l_time_zone              av_cwms_ts_id.cwms_ts_id%type := 'UTC';
+    l_ts_values  tsv_array := tsv_array();
+    l_ts_request             timeseries_req_array := timeseries_req_array();
+    l_cwms_ts_ids            str_tab_t := str_tab_t();
+    l_timezone_ids           str_tab_t := str_tab_t();
+    l_sequence_out           integer;
+    l_cwms_ts_id_out         av_cwms_ts_id.cwms_ts_id%type;
+    l_unit_out               av_cwms_ts_id.unit_id%type;
+    l_location_time_zone_out av_cwms_ts_id.time_zone_id%type;
+    l_start_time_out         date;
+    l_end_time_out           date;
+    l_time_zone_out          av_cwms_ts_id.time_zone_id%type;
+    l_date_times             date_table_type;
+    l_values                 double_tab_t;
+    l_quality_codes          number_tab_t;
+begin
+    setup('INIT,STORE_LOCATIONS');
+    l_ts_values.extend;
+    l_ts_values(1) := tsv_type(
+                date_time    => cast(c_ts_values_utc(2)(1).date_time as timestamp) at time zone 'US/Central',
+                value        => c_ts_values_utc(2)(1).value,
+                quality_code => c_ts_values_utc(2)(1).quality_code);
+    l_cwms_ts_ids.extend;
+    l_cwms_ts_ids(l_cwms_ts_ids.count) := replace(v_ts_ids(1), '<intvl>', '~1Hour');
+    l_timezone_ids.extend;
+    l_timezone_ids(l_timezone_ids.count) := cwms_loc.get_local_timezone(c_location_ids(1), c_office_id);
+
+    cwms_ts.store_ts(
+            p_office_id       => c_office_id,
+            p_cwms_ts_id      => l_cwms_ts_ids(1),
+            p_units           => c_ts_unit,
+            p_timeseries_data => l_ts_values,
+            p_store_rule      => cwms_util.replace_all,
+            p_override_prot   => 0,
+            p_versiondate     => cwms_util.non_versioned,
+            p_create_as_lrts  => 'F'
+        );
+
+    l_ts_request.extend;
+    l_ts_request(l_ts_request.count) := timeseries_req_type(
+            l_cwms_ts_ids(l_cwms_ts_ids.count),
+            c_ts_unit,
+            c_start_time - 1,
+            c_start_Time + 2);
+    cwms_ts.retrieve_ts_multi (
+            p_at_tsv_rc       => l_crsr1,
+            p_timeseries_info => l_ts_request,
+            p_time_zone       => l_time_zone,
+            p_trim            => 'T',
+            p_start_inclusive => 'T',
+            p_end_inclusive   => 'T',
+            p_previous        => 'F',
+            p_next            => 'F',
+            p_version_date    => cwms_util.non_versioned,
+            p_max_version     => 'T',
+            p_office_id       =>  c_office_id);
+
+    loop
+        fetch l_crsr1
+            into l_sequence_out,
+                 l_cwms_ts_id_out,
+                 l_unit_out,
+                 l_start_time_out,
+                 l_end_time_out,
+                 l_time_zone_out,
+                 l_crsr2,
+                 l_location_time_zone_out;
+        exit when l_crsr1%notfound;
+        fetch l_crsr2
+            bulk collect
+            into l_date_times,
+            l_values,
+            l_quality_codes;
+        close l_crsr2;
+        ut.expect(l_date_times.count).to_equal(1);
+    end loop;
+    close l_crsr1;
+end retrieve_ts_multi_single_value;
 --------------------------------------------------------------------------------
 -- procedure store_ts
 --------------------------------------------------------------------------------
