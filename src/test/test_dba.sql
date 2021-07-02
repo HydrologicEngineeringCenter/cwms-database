@@ -1,19 +1,37 @@
 create or replace package test_dba as
     -- %suite(Test dba user functionality )
+    --%afterall(teardown)
     --%rollback(manual)
 
     -- %test(create cwms user)
-    PROCEDURE create_cwms_user;
+    PROCEDURE test_create_cwms_user;
     -- %test(delete cwms user)
-    PROCEDURE delete_cwms_user;
+    PROCEDURE test_delete_cwms_user;
 
+    -- %test (store a property: is allowed for read-only user) 
+    procedure test_store_property;
+
+    -- %test (store sec.upass.id property)
+    procedure test_store_upass_id_property;
+
+    procedure teardown;
 end;
 /
 
 
 CREATE OR REPLACE PACKAGE BODY test_dba
 AS
-    PROCEDURE create_cwms_user
+    PROCEDURE teardown
+    IS
+    BEGIN
+     test_cwms_prop.teardown;
+     test_cwms_msg.teardown;
+     DELETE FROM AT_SEC_USER_OFFICE WHERE lower(USERNAME)=lower('TestUser');
+     DELETE FROM AT_SEC_USERS WHERE lower(USERNAME)=lower('TestUser');
+     DELETE FROM AT_SEC_CWMS_USERS WHERE lower(USERID)=lower('TestUser');
+     COMMIT;
+    END;
+    PROCEDURE test_create_cwms_user
     IS
         l_count   NUMBER;
     BEGIN
@@ -44,7 +62,7 @@ AS
         ut.expect (l_count).to_equal(0);
     END;
 
-    PROCEDURE delete_cwms_user
+    PROCEDURE test_delete_cwms_user
     IS
         l_count   NUMBER;
     BEGIN
@@ -58,5 +76,18 @@ AS
                
         ut.expect (l_count).to_equal(0);
     END;
+    PROCEDURE test_store_property
+    IS
+      l_prop_value VARCHAR2(32);
+    BEGIN
+     test_cwms_prop.test_store_property;
+    END;
+
+    PROCEDURE test_store_upass_id_property
+    IS
+    BEGIN
+     test_cwms_prop.test_store_upass_id_property;
+    END;
+
 END;
 /

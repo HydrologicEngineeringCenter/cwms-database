@@ -5916,8 +5916,11 @@ def main() :
 
     drop user &eroc.hectest;
     drop user &eroc.hectest_ro;
+    drop user %eroc.hectest_up;
     drop user &eroc.hectest_db;
     drop user &eroc.hectest_ua;
+    drop user &eroc.hectest_pu;
+    drop user &eroc.hectest_ru;
     drop user &eroc.hectest_dx;
     drop user &eroc.hectest_da;
     drop user &eroc.hectest_vt;
@@ -5927,6 +5930,11 @@ def main() :
     drop user &eroc.hectest_ccp_r;
     drop user &eroc.hectest_rdl_m;
     drop user &eroc.hectest_rdl_r;
+
+    -- create user for UPASS Admin 
+    create user &eroc.hectest_up identified by "&test_passwd";
+    grant execute on cwms_upass to &eroc.hectest_up;
+    grant connect to &eroc.hectest_up;
 
     --
     -- notice errors

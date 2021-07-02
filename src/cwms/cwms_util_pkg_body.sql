@@ -515,7 +515,7 @@ as
       l_username := get_user_id;
 
       BEGIN
-        SELECT prop_value INTO l_upass_id FROM at_properties where prop_id='sec.upass.id' and prop_category='CWMS' and office_code=53;
+        SELECT prop_value INTO l_upass_id FROM at_properties where prop_id='sec.upass.id' and prop_category='CWMSDB' and office_code=53;
       EXCEPTION WHEN OTHERS
       THEN
         NULL;
@@ -527,7 +527,7 @@ as
 
       IF l_office_id IS NULL
       THEN
-         IF l_username = '&cwms_schema' or l_username = 'NOBODY' or l_username = 'CCP' or l_username = 'SYS' or l_username = l_upass_id
+         IF l_username = '&cwms_schema' or l_username = 'NOBODY' or l_username = 'CCP' or l_username = 'SYS' or upper(l_username) = upper(l_upass_id)
          THEN
             RETURN 'CWMS';
          ELSE

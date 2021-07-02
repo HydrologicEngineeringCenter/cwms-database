@@ -125,6 +125,9 @@ msg_level_detailed constant integer :=  5;
 msg_level_verbose  constant integer :=  7;
 
 msg_timeout_seconds constant integer := 900; -- 15 minutes
+msg_timeout_prop varchar2(32) := 'cwms_msg.msg_timeout_seconds'; -- property to overwrite message timeout 
+max_expired_messages integer := 100; --threshold for removing dead subscribers
+max_tsub_age_days integer := 3; --maximum age for 'TSUB' subscribers. Subscribers olders than these are deleted automatically
 
 -- not documented
 function get_msg_id 

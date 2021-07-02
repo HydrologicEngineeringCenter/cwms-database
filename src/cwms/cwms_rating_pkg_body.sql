@@ -38,14 +38,11 @@ begin
                    rating_ind_param_code,
                    dep_rating_ind_param_code
               from (select distinct
-                           rating_ind_param_code,
-                           dep_rating_ind_param_code
-                      from at_rating_value
-                     where rating_ind_param_code in
-                           (select rating_ind_param_code
-                              from at_rating_ind_parameter
-                             where rating_code  = p_rating_code
-                           )
+                           v.rating_ind_param_code,
+                           v.dep_rating_ind_param_code
+                      from at_rating_value v,at_rating_ind_parameter p
+                       where v.RATING_IND_PARAM_CODE=p.RATING_IND_PARAM_CODE
+                       and p.rating_code  = p_rating_code
                    )
            connect by prior dep_rating_ind_param_code = rating_ind_param_code;
       fetch l_crsr bulk collect into l_ind1, l_dep;

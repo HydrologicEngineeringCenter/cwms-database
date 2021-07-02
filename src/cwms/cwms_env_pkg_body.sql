@@ -87,11 +87,13 @@ AS
       l_office_id   VARCHAR2 (16);
       l_username    VARCHAR2 (32);
       l_canwrite    BOOLEAN;
+      l_canlogin    BOOLEAN;
       l_cnt         NUMBER;
       l_rdl_privilege VARCHAR2(16);
       l_ccp_privilege INTEGER;
    BEGIN
       l_canwrite := FALSE;
+      l_canlogin := FALSE;
       l_cnt := 0;
       l_rdl_privilege := 'NONE';
       l_ccp_privilege := 4;
@@ -120,6 +122,7 @@ AS
 
      FOR C IN (SELECT user_group_id FROM TABLE (cwms_sec.get_assigned_priv_groups_tab) WHERE db_office_id = l_office_id)
       LOOP
+        l_canlogin := TRUE;
         IF((C.user_group_id='CCP Mgr') OR 
             (C.user_group_id='CCP Proc') OR
             (C.user_group_id='CWMS DBA Users') OR
@@ -168,6 +171,9 @@ AS
       IF (l_canwrite)
       THEN
          set_cwms_env ('CWMS_PRIVILEGE', 'CAN_WRITE');
+      ELSIF (l_canlogin)
+      THEN
+         set_cwms_env ('CWMS_PRIVILEGE', 'CAN_LOGIN');
       END IF;
       
       set_cwms_env('RDL_PRIVILEGE',l_rdl_privilege);
