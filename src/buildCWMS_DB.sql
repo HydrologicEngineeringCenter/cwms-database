@@ -112,8 +112,6 @@ ALTER SESSION SET current_schema = sys;
 -- compile all invalid objects
 --
 SET define on
-alter materialized view "&cwms_schema"."MV_SEC_TS_PRIVILEGES" compile
-/
 
 set echo off
 set linesize 132
@@ -322,7 +320,6 @@ begin
    cwms_msg.start_trim_log_job;
    cwms_msg.start_remove_subscribers_job;
    cwms_ts.start_trim_ts_deleted_job;
-   cwms_sec.start_refresh_mv_sec_privs_job;
    cwms_sec.start_clean_session_job;
    cwms_shef.start_update_shef_spec_map_job;
    cwms_ts.start_update_ts_extents_job;
@@ -346,6 +343,14 @@ begin
       execute immediate 'drop index &cwms_schema..'||rec.index_name;
       execute immediate index_ddl;
    end loop;
+end;
+/
+prompt Recompiling all invalid objects...
+begin
+   $if dbms_db_version.version < 12 $then
+      execute immediate 'alter session set plscope_settings=''IDENTIFIERS:ALL''';
+   $end
+   dbms_utility.compile_schema('&cwms_schema');
 end;
 /
 --

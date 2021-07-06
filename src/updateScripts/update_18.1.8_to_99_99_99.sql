@@ -156,6 +156,7 @@ delete from at_clob where id = '/VIEWDOCS/AV_POOL';
 @../cwms/cwms_msg_pkg
 @../cwms/cwms_pool_pkg
 @../cwms/cwms_sec_pkg
+@../cwms/cwms_sec_policy
 @../cwms/cwms_ts_pkg
 @../cwms/cwms_usgs_pkg
 @../cwms/cwms_util_pkg
@@ -180,6 +181,7 @@ prompt update package bodies
 @../cwms/cwms_msg_pkg_body
 @../cwms/cwms_rating_pkg_body
 @../cwms/cwms_sec_pkg_body
+@../cwms/cwms_sec_policy_body
 @../cwms/cwms_ts_pkg_body
 @../cwms/cwms_ts_id_pkg_body
 @../cwms/cwms_util_pkg_body
@@ -244,6 +246,8 @@ begin move_data_from_inf_to_yearly; end;
 /
 prompt drop move data procedure
 drop procedure move_data_from_inf_to_yearly;
+prompt drop mv_sec_ts materialized view
+@./99_99_99/drop_mv_sec_ts_view
 
 promp ################################################################################
 prompt REMAINING INVALID OBJECTS...

@@ -214,9 +214,6 @@ AS
         RETURN cat_locked_users_tab_t
         PIPELINED;
 
-   PROCEDURE refresh_mv_sec_ts_privileges;
-
-   PROCEDURE start_refresh_mv_sec_privs_job;
    PROCEDURE start_clean_session_job;
 
    PROCEDURE store_priv_groups (p_username             IN VARCHAR2,

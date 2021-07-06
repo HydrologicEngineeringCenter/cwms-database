@@ -1531,41 +1531,10 @@ AS
    END cat_at_sec_allow_tab;
 
 
-   PROCEDURE refresh_mv_sec_ts_privileges
-   AS
-      l_status   VARCHAR2 (30);
-   BEGIN
-      SELECT status
-        INTO l_status
-        FROM dba_objects
-       WHERE object_name = 'MV_SEC_TS_PRIVILEGES'
-             AND object_type = 'MATERIALIZED VIEW';
-
-
-      IF l_status != 'VALID'
-      THEN
-         EXECUTE IMMEDIATE
-            'alter materialized view MV_SEC_TS_PRIVILEGES compile';
-
-
-         DBMS_SNAPSHOT.refresh (
-            list                   => '&cwms_schema' || '.MV_SEC_TS_PRIVILEGES',
-            push_deferred_rpc      => TRUE,
-            refresh_after_errors   => FALSE,
-            purge_option           => 1,
-            parallelism            => 0,
-            atomic_refresh         => TRUE,
-            nested                 => FALSE);
-      END IF;
-   END refresh_mv_sec_ts_privileges;
-
       PROCEDURE start_sec_job(p_job_id VARCHAR2,p_run_interval NUMBER,p_action VARCHAR2,p_comment VARCHAR2)
    IS
       l_count          BINARY_INTEGER;
       l_user_id        VARCHAR2 (30);
-      --l_job_id         VARCHAR2 (30) := 'REFRESH_MV_SEC_TS_PRIVS_JOB';
-      --l_run_interval   VARCHAR2 (8) := '5';
-      --l_comment        VARCHAR2 (256);
 
       FUNCTION job_count
          RETURN BINARY_INTEGER
@@ -1621,7 +1590,6 @@ AS
             DBMS_SCHEDULER.create_job (
                job_name          => p_job_id,
                job_type          => 'stored_procedure',
-               --job_action        => 'cwms_sec.refresh_mv_sec_ts_privileges',
                job_action        => p_action,
                start_date        => NULL,
                repeat_interval   => 'freq=minutely; interval='
@@ -1653,12 +1621,6 @@ AS
       END IF;
    END start_sec_job;
 
-   PROCEDURE start_refresh_mv_sec_privs_job
-   IS
-   BEGIN
-    start_sec_job('REFRESH_MV_SEC_TS_PRIVS_JOB',5,'cwms_sec.refresh_mv_sec_ts_privileges','Refreshes mv_sec_ts_privileges when needed.');
-   END start_refresh_mv_sec_privs_job;
-   
    PROCEDURE start_clean_session_job
    IS
    BEGIN
