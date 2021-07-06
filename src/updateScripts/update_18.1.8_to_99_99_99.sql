@@ -153,6 +153,7 @@ delete from at_clob where id = '/VIEWDOCS/AV_POOL';
 -------------------
 @../cwms/cwms_cat_pkg
 @../cwms/cwms_loc_pkg
+@../cwms/cwms_msg_pkg
 @../cwms/cwms_pool_pkg
 @../cwms/cwms_sec_pkg
 @../cwms/cwms_ts_pkg
@@ -174,7 +175,9 @@ drop type nested_ts_type force;
 --------------------
 prompt update package bodies
 @../cwms/cwms_cat_pkg_body
+@../cwms/cwms_env_pkg_body
 @../cwms/cwms_loc_pkg_body
+@../cwms/cwms_msg_pkg_body
 @../cwms/cwms_rating_pkg_body
 @../cwms/cwms_sec_pkg_body
 @../cwms/cwms_ts_pkg_body

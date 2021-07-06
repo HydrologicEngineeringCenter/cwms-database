@@ -1,6 +1,6 @@
 -- this runs as SYS, add any grants need for a test to run here. the EXECUTE and CREATE any are required
 -- for code coverage.
-define cwms_schema = &5
+define cwms_schema = &6
 GRANT EXECUTE ON &cwms_schema..test_missing_shift_points to &1;
 GRANT EXECUTE ON &cwms_schema..test_lrts_updates to &1;
 grant execute on &cwms_schema..test_probability_parameter to &1;
@@ -9,6 +9,8 @@ GRANT EXECUTE ON &cwms_schema..test_cwms_loc to &1;
 GRANT EXECUTE ON &cwms_schema..test_cwms_ts to &1;
 GRANT EXECUTE ON &cwms_schema..test_cwms_rating to &1;
 GRANT EXECUTE ON &cwms_schema..test_clean_all to &1;
+GRANT EXECUTE ON &cwms_schema..test_cwms_prop to &1;
+GRANT EXECUTE ON &cwms_schema..test_cwms_msg to &1;
 --GRANT EXECUTE any procedure to &1;
 --GRANT CREATE any procedure to &1;
 
@@ -20,3 +22,4 @@ GRANT EXECUTE ON &cwms_schema..test_dba to &3;
 GRANT EXECUTE ON &cwms_schema..test_aaa to &4;
 --GRANT EXECUTE any procedure to &1;
 --GRANT CREATE any procedure to &1;
+GRANT EXECUTE ON &cwms_schema..test_up to &5;

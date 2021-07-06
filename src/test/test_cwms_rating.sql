@@ -7,6 +7,8 @@ as
 
 --%test(Ratings XSL Transformations)
 procedure test_ratings_xsl;
+--%test(Test Deleting of ratings)
+procedure test_ratings_delete;
 procedure setup;
 procedure teardown;
 procedure setup_xslt;
@@ -211,6 +213,17 @@ begin
    end loop;
    commit;
 end test_ratings_xsl;
+
+procedure test_ratings_delete
+is
+ l_count NUMBER;
+begin
+ select count(*) into l_count from cwms_v_rating; 
+ ut.expect(l_count).to_be_greater_than(0);
+ CWMS_RATING.DELETE_TEMPLATES('*', cwms_util.delete_all, '*');
+ select count(*) into l_count from cwms_v_rating; 
+ ut.expect(l_count).to_equal(0);
+end;
 
 end test_cwms_rating;
 /
