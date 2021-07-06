@@ -21,6 +21,7 @@ create or replace package test_ro as
     procedure test_store_upass_id_property;
 
     procedure teardown;
+    test_log_message_val VARCHAR2(64) := 'Test Message random';
 end;
 /
 
@@ -30,8 +31,9 @@ AS
     PROCEDURE teardown
     IS
     BEGIN
-      test_cwms_prop.teardown;
-      test_cwms_msg.teardown;
+      delete from at_properties;
+      delete  from at_log_message_properties where msg_id in (select msg_id from at_log_message where msg_text =test_log_message_val);
+      delete  from at_log_message where msg_text =test_log_message_val;
       delete from at_application_session;
       delete from at_application_login;
       commit;
@@ -92,14 +94,20 @@ AS
 
     PROCEDURE test_log_message 
     IS
+     l_prop_value VARCHAR2(32);
     BEGIN
-     test_cwms_msg.test_log_db_message;
+     cwms_properties.set_property ('CWMSDB','TEST_PROP','TEST_VAL','NO COMMENT','&office_id');
+     l_prop_value := cwms_properties.get_property('CWMSDB','TEST_PROP','DEFAULT','&office_id');
+     ut.expect ('TEST_VAL').to_equal(l_prop_value);
     END;
 
     PROCEDURE test_store_upass_id_property 
     IS
+     l_prop_value VARCHAR2(32);
     BEGIN
-     test_cwms_prop.test_store_upass_id_property; 
+      cwms_properties.set_property ('CWMSDB','sec.upass.id','TEST_VAL','NO COMMENT','CWMS');
+      l_prop_value := cwms_properties.get_property('CWMSDB','sec.upass.id','DEFAULT','CWMS');
+      ut.expect ('TEST_VAL').to_equal(l_prop_value);
     END;
 END;
 /

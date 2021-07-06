@@ -32,8 +32,7 @@ AS
     PROCEDURE teardown
     IS
     BEGIN
-      test_cwms_prop.teardown;
-      test_cwms_msg.teardown;
+      delete from at_properties;
       update at_sec_cwms_users set principle_name='' where lower(userid)='&upass_id';
       delete from at_sec_cwms_users where lower(userid)='deleteme';
       commit;

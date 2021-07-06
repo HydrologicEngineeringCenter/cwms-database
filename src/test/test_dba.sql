@@ -8,7 +8,7 @@ create or replace package test_dba as
     -- %test(delete cwms user)
     PROCEDURE test_delete_cwms_user;
 
-    -- %test (store a property: is allowed for read-only user) 
+    -- %test (store a property) 
     procedure test_store_property;
 
     -- %test (store sec.upass.id property)
@@ -24,8 +24,7 @@ AS
     PROCEDURE teardown
     IS
     BEGIN
-     test_cwms_prop.teardown;
-     test_cwms_msg.teardown;
+     delete from at_properties;
      DELETE FROM AT_SEC_USER_OFFICE WHERE lower(USERNAME)=lower('TestUser');
      DELETE FROM AT_SEC_USERS WHERE lower(USERNAME)=lower('TestUser');
      DELETE FROM AT_SEC_CWMS_USERS WHERE lower(USERID)=lower('TestUser');
@@ -80,13 +79,18 @@ AS
     IS
       l_prop_value VARCHAR2(32);
     BEGIN
-     test_cwms_prop.test_store_property;
+      cwms_properties.set_property ('CWMSDB','TEST_PROP','TEST_VAL','NO COMMENT','&office_id');
+      l_prop_value := cwms_properties.get_property('CWMSDB','TEST_PROP','DEFAULT','&office_id');
+      ut.expect ('TEST_VAL').to_equal(l_prop_value);
     END;
 
     PROCEDURE test_store_upass_id_property
     IS
+      l_prop_value VARCHAR2(32);
     BEGIN
-     test_cwms_prop.test_store_upass_id_property;
+     cwms_properties.set_property ('CWMSDB','sec.upass.id','TEST_VAL','NO COMMENT','CWMS');
+     l_prop_value := cwms_properties.get_property('CWMSDB','sec.upass.id','DEFAULT','CWMS');
+     ut.expect ('TEST_VAL').to_equal(l_prop_value);
     END;
 
 END;
