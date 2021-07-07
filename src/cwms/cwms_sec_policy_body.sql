@@ -13,40 +13,6 @@ AS
    ---------  ----------  ---------------  ------------------------------------
    1.0        1/3/2007             1. Created this package body.
 ******************************************************************************/
-   /*FUNCTION read_ts_codes (ns IN VARCHAR2, na IN VARCHAR2)
-      RETURN VARCHAR2
-   IS
-      l_predicate   VARCHAR2 (2000);
-   BEGIN
-      IF SYS_CONTEXT ('USERENV', 'SESSION_USER') = '&cwms_schema'
-      THEN
-         l_predicate := '1=1';
-      ELSE
-         l_predicate :=
-            'ts_code in (select ts_code from mv_sec_ts_privileges where user_id =  SYS_CONTEXT(''USERENV'', ''SESSION_USER'')
-                         and bitand(net_privilege_code, 4) = 4)';
-      END IF;
-
-      RETURN l_predicate;
-   END;
-
-   FUNCTION write_ts_codes (ns IN VARCHAR2, na IN VARCHAR2)
-      RETURN VARCHAR2
-   IS
-      l_predicate   VARCHAR2 (2000);
-   BEGIN
-      IF SYS_CONTEXT ('USERENV', 'SESSION_USER') = '&cwms_schema'
-      THEN
-         l_predicate := '1=1';
-      ELSE
-         l_predicate :=
-            'ts_code in (select ts_code from mv_sec_ts_privileges where user_id =  SYS_CONTEXT(''USERENV'', ''SESSION_USER'')
-                         and bitand(net_privilege_code, 2) = 2)';
-      END IF;
-
-      RETURN l_predicate;
-   END;*/
-   
       FUNCTION da_role_office_codes (ns IN VARCHAR2, na IN VARCHAR2)
       RETURN VARCHAR2
    IS
