@@ -7,7 +7,8 @@ set define on
 prompt
 accept echo_state  char prompt 'Enter ON or OFF for echo       : '
 accept inst        char prompt 'Enter the database instance    : '
-accept sys_passwd  char prompt 'Enter the password for SYS     : '
+accept builduser   char prompt 'Enter builduser    : '
+accept builduser_passwd  char prompt 'Enter the password for builduser     : '
 prompt '***************************************************************'
 prompt '***                                                         ***'
 prompt '*** Warning: This will completely remove all CWMS schema ***'
@@ -22,10 +23,10 @@ accept dummy char noprompt
 set echo &echo_state
 spool killCWMS_DB.log
 --
--- log on as sysdba
+-- log on as builduser
 --
 whenever sqlerror exit sql.sqlcode
-connect sys/&sys_passwd@&inst as sysdba
+connect &builduser/&builduser_passwd@&inst 
 begin dbms_output.enable; end;
 /
 

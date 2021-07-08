@@ -13,9 +13,9 @@ whenever oserror exit -1
 
 spool buildCWMS_DB.log
 --
--- log on as sysdba
+-- log on as builduser
 --
-connect sys/&sys_passwd@&inst as sysdba
+connect builduser/&builduser_passwd@&inst 
 --ALTER SYSTEM ENABLE RESTRICTED SESSION;
 --
 --
@@ -95,10 +95,11 @@ whenever sqlerror exit -1
 @@cwms/views/av_ts_profile_inst_sp
 
 --
--- Create dbi and pd user accounts...
+-- Create pd/test user accounts...
 ---
 set define on
-@@py_ErocUsers
+@@py_admin_ErocUsers
+
 
 --
 -- Create public synonyms and cwms_user roles
@@ -106,7 +107,7 @@ set define on
 -- Filter for streaming data
 @@cwms/mv_ts_code_filter
 
-ALTER SESSION SET current_schema = sys;
+ALTER SESSION SET current_schema = &builduser;
 
 --
 -- compile all invalid objects
@@ -173,7 +174,7 @@ begin
     where database_id = 'LOCAL';
 end;
 /
-alter session set current_schema = sys
+alter session set current_schema = &builduser
 -- Create CWMS_DBXC_ROLE
 
 @@cwms/User-Roles/cwms_dbx_role_et_user
@@ -190,6 +191,12 @@ prompt Connecting as &cwms_schema
 connect &cwms_schema/&cwms_passwd@&inst
 set serveroutput on
 prompt Connected as &cwms_schema
+alter session set ddl_lock_timeout = 100;
+--
+-- Create pd/test user accounts...
+---
+set define on
+@@py_ErocUsers
 
 @@cwms/views/mv_location_level_curval
 @@cwms/tables/at_clob_index.sql

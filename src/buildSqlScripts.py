@@ -5908,7 +5908,7 @@ def main() :
     #------------------------------------------------------------------------------
     office_ids.insert(0, db_office_id)
 
-    test_user_template = '''
+    test_user_admin_template = '''
     --
     -- ignore errors
     --
@@ -5916,7 +5916,7 @@ def main() :
 
     drop user &eroc.hectest;
     drop user &eroc.hectest_ro;
-    drop user %eroc.hectest_up;
+    drop user &eroc.hectest_up;
     drop user &eroc.hectest_db;
     drop user &eroc.hectest_ua;
     drop user &eroc.hectest_pu;
@@ -5935,10 +5935,9 @@ def main() :
     create user &eroc.hectest_up identified by "&test_passwd";
     grant execute on cwms_upass to &eroc.hectest_up;
     grant connect to &eroc.hectest_up;
+    '''
 
-    --
-    -- notice errors
-    --
+    test_user_template = '''
     whenever sqlerror exit sql.sqlcode
 
     variable test_passwd varchar2(50)
@@ -6008,14 +6007,16 @@ def main() :
     /
     '''
 
-    user_template = '''
+    user_delete_template = '''
     --
     -- ignore errors
     --
     whenever sqlerror continue
 
     drop user &eroc.cwmspd;
+    '''
 
+    user_template = '''
     --
     -- notice errors
     --
@@ -6071,6 +6072,17 @@ def main() :
 
     #==============================================================================
 
+    sys.stderr.write("Creating py_admin_ErocUsers.sql\n");
+    f  = open("py_admin_ErocUsers.sql", "w")
+    for dbhost_id in office_ids :
+        for office_id in dbhost_offices[dbhost_id] :
+            eroc = office_erocs[office_id].lower()
+            f.write(user_delete_template.replace("&eroc.", eroc).replace("&office_id", dbhost_id))
+    	    if test_user_id :
+        	f.write(test_user_admin_template.replace("&eroc.", eroc).replace("&office_id", dbhost_id))
+    f.close()
+    #==============================================================================
+
     sys.stderr.write("Creating py_ErocUsers.sql\n");
     f  = open("py_ErocUsers.sql", "w")
     users_created = []
@@ -6081,7 +6093,7 @@ def main() :
                 f.write(user_template.replace("&eroc.", eroc).replace("&office_id", dbhost_id))
                 user_id = eroc+"cwmspd"
                 users_created.append(eroc)
-    	if test_user_id :
+    	    if test_user_id :
         	db_ofc_code = db_office_code[db_office_id]
         	db_ofc_eroc = office_erocs[db_office_id]
         	f.write(test_user_template.replace("&eroc.", eroc).replace("&office_id", dbhost_id))

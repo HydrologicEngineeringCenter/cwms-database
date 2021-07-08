@@ -40,3 +40,10 @@ build
 .project
 .settings
 **/.classpath
+src/CWMS_VERTCON_1HEADER.log
+src/CWMS_VERTCON_2DATA.log
+src/test/data/locs/*.log
+src/test/data/ratings/*.log
+local_wcdba_overrides*.xml
+populate_cwms_db_change_log.sql
+src/py_admin_ErocUsers.sql
