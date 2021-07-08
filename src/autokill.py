@@ -12,7 +12,8 @@ prompt_block = \
 prompt
 accept echo_state  char prompt 'Enter ON or OFF for echo       : '
 accept inst        char prompt 'Enter the database instance    : '
-accept sys_passwd  char prompt 'Enter the password for SYS     : '
+accept builduser   char prompt 'Enter builduser    : '
+accept builduser_passwd  char prompt 'Enter the password for builduser     : '
 prompt '***************************************************************'
 prompt '***                                                         ***'
 prompt '*** Warning: This will completely remove all CWMS schema ***'
@@ -31,13 +32,14 @@ auto_block_template = \
 '''
 define echo = %s
 define inst = %s
-define sys_passwd = %s
+define builduser = %s
+define builduser_passwd = %s
 define cwms_schema = %s
 '''
 
 force = False
 restricted = False
-echo, inst, sys_passwd, cwms_schema = None, None, None, None
+echo, inst, builduser, builduser_passwd, cwms_schema = None, None, None, None, None
 for arg in sys.argv[1:] : 
 	if arg.find("=") != -1 : 
 		name, value = arg.split("=", 1)
@@ -48,9 +50,9 @@ for arg in sys.argv[1:] :
 	elif arg.lower() in ("-restricted", "/restricted") :
                 restricted = True
 		
-if not (echo and inst and sys_passwd and cwms_schema) :
+if not (echo and inst and builduser and builduser_passwd and cwms_schema) :
 	print
-	print "Usage %s echo=(on|off) inst=<SID> sys_passwd=<password> cwms_schema=<schema> [-force]" % sys.argv[0]
+	print "Usage %s echo=(on|off) inst=<SID> builduser=<builduser> builduser_passwd=<password> cwms_schema=<schema> [-force]" % sys.argv[0]
 	print
 	print "The -force option keeps the script from exiting on errors."
 	print
@@ -60,7 +62,7 @@ cwms_schema = cwms_schema.upper()
 inst = inst.upper()
 
 
-auto_block = auto_block_template % (echo, inst, sys_passwd, cwms_schema)
+auto_block = auto_block_template % (echo, inst, builduser, builduser_passwd, cwms_schema)
 
 f = open(manual_sqlfilename, "r")
 sql_script = f.read()

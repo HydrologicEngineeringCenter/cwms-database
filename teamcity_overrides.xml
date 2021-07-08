@@ -18,6 +18,14 @@
 
  	
 
+	<!-- oracle user to build CWMS schema -->
+
+	<property name="oracle.builduser" value="builduser"/>
+
+	<!-- oracle.builduser password -->
+
+	<property name="oracle.builduser.password" value="BUILDUSER_PASS"/>
+
  	<!-- the oracle user to install to the oracle instance. -->
 
  	<property name="oracle.cwms.user" value="cwms_20"/>

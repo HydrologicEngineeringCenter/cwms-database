@@ -91,7 +91,7 @@ grant execute on  sys.dbms_aq_bqview to &cwms_schema;
 grant execute on  sys.dbms_aqadm to &cwms_schema;
 grant execute on  sys.dbms_lock to &cwms_schema;
 grant execute on  sys.dbms_rls to &cwms_schema;
-grant execute on  utl_recomp to &cwms_schema;
+grant execute on  sys.utl_recomp to &cwms_schema;
 grant export full database to &cwms_schema;
 grant import full database to &cwms_schema;
 grant insert any table to &cwms_schema;

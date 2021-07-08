@@ -31,6 +31,7 @@ echo "=$CWMS_PDB="
 
 sed -e "s/SYS_PASSWORD/$SYS_PASSWORD/g" \
     -e "s/PASSWORD/$PW/g" \
+    -e "s/BUILDUSER_PASS/$SYS_PASSWORD/g" \
     -e "s/HOST_AND_PORT/$HOST_AND_PORT/g" \
     -e "s/SERVICE_NAME/$CWMS_PDB/g" \
     -e "s/OFFICE_ID/$OFFICE_ID/g" \
