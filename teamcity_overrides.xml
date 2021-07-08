@@ -24,7 +24,7 @@
 
 	<!-- oracle.builduser password -->
 
-	<property name="oracle.builduser.password" value="BUILDUSER_PASSWORD"/>
+	<property name="oracle.builduser.password" value="BUILDUSER_PASS"/>
 
  	<!-- the oracle user to install to the oracle instance. -->
 
