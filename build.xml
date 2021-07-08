@@ -82,8 +82,18 @@
 
 
 
-	<!-- Executes python scripts to build the CWMS schema. -->
-	<target name="build" description="Executes python scripts to build the CWMS schema" depends="init">
+	<!-- Create CWMS schema build user -->
+	<target name="createbuilduser" description="creates user to build CWMS schema" depends="init">
+                <echo message="Create build user"/>
+                <exec dir="${root}" executable="sqlplus">
+                        <arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba" />
+                        <arg value="@builduser_grants"/>
+                        <arg value="${oracle.builduser}"/>
+                        <arg value="${oracle.builduser.password}"/>
+                </exec>
+	</target>
+
+	<target name="build" description="Executes python scripts to build the CWMS schema" depends="createbuilduser">
 
 		<echo message="Build sql scripts..."/>
 
@@ -119,13 +129,6 @@
 
 		<echo message="Finished building sql scripts"/>
 
-                <echo message="Create build user"/>
-                <exec dir="${root}" executable="sqlplus">
-                        <arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba" />
-                        <arg value="@builduser_grants"/>
-                        <arg value="${oracle.builduser}"/>
-                        <arg value="${oracle.builduser.password}"/>
-                </exec>
 
 		<echo message="Creating new CWMS Schema..."/>
 
@@ -472,7 +475,7 @@
 	</target>
 
 	<!-- Executes python script to drop the CWMS schema. -->
-	<target name="clean" description="Executes python script to drop the CWMS schema">
+	<target name="clean" description="Executes python script to drop the CWMS schema" depends="createbuilduser">
 
 		<echo message="dropping existing CWMS Schema..."/>
 
