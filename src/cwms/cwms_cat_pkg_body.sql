@@ -4477,11 +4477,7 @@ END cat_ts_id;
          when l_format = 'xml' then
             cwms_util.append(
                l_data2,
-               '<query-info><processed-at>'
-               ||utl_inaddr.get_host_name
-               ||':'
-               ||l_name
-               ||'</processed-at><time-of-query>'
+               '<query-info><time-of-query>'
                ||to_char(l_query_time, 'yyyy-mm-dd"T"hh24:mi:ss')
                ||'Z</time-of-query><process-query>'
                ||iso_duration(l_elapsed_query)
@@ -4496,11 +4492,7 @@ END cat_ts_id;
          when l_format = 'json' then
             cwms_util.append(
                l_data2,
-               '{"query-info":{"processed-at":"'
-               ||utl_inaddr.get_host_name
-               ||':'
-               ||l_name
-               ||'","time-of-query":"'
+               '{"query-info":{"time-of-query":"'
                ||to_char(l_query_time, 'yyyy-mm-dd"T"hh24:mi:ss')
                ||'Z","process-query":"'
                ||iso_duration(l_elapsed_query)
@@ -4645,11 +4637,7 @@ END cat_ts_id;
          when l_format = 'xml' then
             cwms_util.append(
                l_data2,
-               '<query-info><processed-at>'
-               ||utl_inaddr.get_host_name
-               ||':'
-               ||l_name
-               ||'</processed-at><time-of-query>'
+               '<query-info><time-of-query>'
                ||to_char(l_query_time, 'yyyy-mm-dd"T"hh24:mi:ss')
                ||'Z</time-of-query><process-query>'
                ||iso_duration(l_elapsed_query)
@@ -4664,11 +4652,7 @@ END cat_ts_id;
          when l_format = 'json' then
             cwms_util.append(
                l_data2,
-               '{"query-info":{"processed-at":"'
-               ||utl_inaddr.get_host_name
-               ||':'
-               ||l_name
-               ||'","time-of-query":"'
+               '{"query-info":"time-of-query":"'
                ||to_char(l_query_time, 'yyyy-mm-dd"T"hh24:mi:ss')
                ||'Z","process-query":"'
                ||iso_duration(l_elapsed_query)
@@ -4889,11 +4873,7 @@ END cat_ts_id;
          when l_format = 'xml' then
             cwms_util.append(
                l_data2,
-               '<query-info><processed-at>'
-               ||utl_inaddr.get_host_name
-               ||':'
-               ||l_name
-               ||'</processed-at><time-of-query>'
+               '<query-info><time-of-query>'
                ||to_char(l_query_time, 'yyyy-mm-dd"T"hh24:mi:ss')
                ||'Z</time-of-query><process-query>'
                ||iso_duration(l_elapsed_query)
@@ -4910,11 +4890,7 @@ END cat_ts_id;
          when l_format = 'json' then
             cwms_util.append(
                l_data2,
-               '{"query-info":{"processed-at":"'
-               ||utl_inaddr.get_host_name
-               ||':'
-               ||l_name
-               ||'","time-of-query":"'
+               '{"query-info":{"time-of-query":"'
                ||to_char(l_query_time, 'yyyy-mm-dd"T"hh24:mi:ss')
                ||'Z","process-query":"'
                ||iso_duration(l_elapsed_query)
@@ -5125,11 +5101,7 @@ END cat_ts_id;
          when l_format = 'xml' then
             cwms_util.append(
                l_data2,
-               '<query-info><processed-at>'
-               ||utl_inaddr.get_host_name
-               ||':'
-               ||l_name
-               ||'</processed-at><time-of-query>'
+               '<query-info><time-of-query>'
                ||to_char(l_query_time, 'yyyy-mm-dd"T"hh24:mi:ss')
                ||'Z</time-of-query> <process-query>'
                ||iso_duration(l_elapsed_query)
@@ -5144,11 +5116,7 @@ END cat_ts_id;
          when l_format = 'json' then
             cwms_util.append(
                l_data2,
-               '{"query-info":{"processed-at":"'
-               ||utl_inaddr.get_host_name
-               ||':'
-               ||l_name
-               ||'","time-of-query":"'
+               '{"query-info":{"time-of-query":"'
                ||to_char(l_query_time, 'yyyy-mm-dd"T"hh24:mi:ss')
                ||'Z","process-query":"'
                ||iso_duration(l_elapsed_query)

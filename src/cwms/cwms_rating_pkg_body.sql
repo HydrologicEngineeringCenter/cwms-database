@@ -7539,7 +7539,7 @@ begin
             select xmlserialize(content l_xml.transform(xmltype(cwms_text.retrieve_text('/XSLT/RATINGS_V1_TO_RADAR_XML', 'CWMS'))) no indent) into l_data from dual;
             if l_data = '<ratings/>' then
                l_data := '<ratings></ratings>'; -- give a place for the query info
-            end if;   
+            end if;
          when l_format = 'JSON' then
             ---------------
             -- JSON data --
@@ -7630,11 +7630,7 @@ begin
    when l_format = 'XML' then
       cwms_util.append(
          l_data2,
-         '<query-info><processed-at>'
-         ||utl_inaddr.get_host_name
-         ||':'
-         ||l_name
-         ||'</processed-at><time-of-query>'
+         '<query-info><time-of-query>'
          ||to_char(l_query_time, 'yyyy-mm-dd"T"hh24:mi:ss')
          ||'Z</time-of-query><process-query>'
          ||iso_duration(l_elapsed_query)
@@ -7688,11 +7684,7 @@ begin
    when l_format = 'JSON' then
       cwms_util.append(
          l_data2,
-         '{"query-info":{"processed-at":"'
-         ||utl_inaddr.get_host_name
-         ||':'
-         ||l_name
-         ||'","time-of-query":"'
+         '{"query-info":{"time-of-query":"'
          ||to_char(l_query_time, 'yyyy-mm-dd"T"hh24:mi:ss')
          ||'Z","process-query":"'
          ||iso_duration(l_elapsed_query)
@@ -7841,5 +7833,3 @@ end set_package_log_property_text;
 end cwms_rating;
 /
 show errors;
-
-
