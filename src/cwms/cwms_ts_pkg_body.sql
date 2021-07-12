@@ -1694,7 +1694,7 @@ AS
                   select time_zone_code
                     into l_time_zone_code
                     from cwms_time_zone
-                   where time_zone_name = 'UTC'; 
+                   where time_zone_name = 'UTC';
                end if;
 
                INSERT INTO at_cwms_ts_spec t (ts_code,
@@ -13265,11 +13265,7 @@ end retrieve_existing_item_counts;
             ---------
             cwms_util.append(
                l_data2,
-               '<query-info><processed-at>'
-               ||utl_inaddr.get_host_name
-               ||':'
-               ||l_name
-               ||'</processed-at><time-of-query>'
+               '<query-info><time-of-query>'
                ||cwms_util.get_xml_time(l_query_time, 'UTC')
                ||'</time-of-query><process-query>'
                ||iso_duration(l_elapsed_query)
@@ -13324,11 +13320,7 @@ end retrieve_existing_item_counts;
             ----------
             cwms_util.append(
                l_data2,
-               '{"query-info":{"processed-at":"'
-               ||utl_inaddr.get_host_name
-               ||':'
-               ||l_name
-               ||'","time-of-query":"'
+               '{"query-info":{"time-of-query":"'
                ||cwms_util.get_xml_time(l_query_time, 'UTC')
                ||'","process-query":"'
                ||iso_duration(l_elapsed_query)
@@ -13572,4 +13564,3 @@ END cwms_ts;                                                --end package body
 
 SHOW ERRORS;
 commit;
-
