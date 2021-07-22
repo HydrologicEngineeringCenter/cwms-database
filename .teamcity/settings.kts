@@ -211,7 +211,7 @@ object Deploy : BuildType({
         ant {
             name = "Cleanup Generated Files"
             targets = "clean-output-files"
-            antArguments = "-Dbuilduser.overrides=output/overrides.xml"            
+            antArguments = "-Dbuilduser.overrides=output/overrides.xml"
         }
         ant {
             name = "Build Bundle"
@@ -231,9 +231,8 @@ object Deploy : BuildType({
             buildType = "${Build.id}"
             successfulOnly = true
             branchFilter = """
-                +:refs/heads/master
-                +:refs/heads/release/*
-                +:refs/tags/*
+                +:<default>
+                +:release/*
             """.trimIndent()
 
         }
