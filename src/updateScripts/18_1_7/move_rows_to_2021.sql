@@ -1,11 +1,47 @@
-declare
-	l_start date;
-	l_end date;
 begin
-	select start_date,end_date into l_start,l_end from at_ts_table_properties where table_name='AT_TSV_2021';
-	insert into at_tsv_2021 (select * from cwms_20.at_tsv_inf_and_beyond where date_time >= l_start and date_time < l_end);
-	delete from at_tsv_2021 where date_time >= l_start and date_time < l_end;
-	commit;
-	dbms_output.put_line('Moved ' || sql%rowcount || ' rows to at_tsv_2021 table from at_tsv_inf_and_beyond');
+    execute immediate 'rename at_tsv_2021 to at_tsv_tmp';
+    execute immediate 'rename at_tsv_inf_and_beyond to at_tsv_2021';
+    execute immediate 'rename at_tsv_tmp to at_tsv_inf_and_beyond';
+    execute immediate 'insert into at_tsv_inf_and_beyond (select * from at_tsv_2021 where date_time >= TO_DATE (''01-JAN-2022'', ''DD-MON-YYYY''))';
+    commit;
+    execute immediate 'delete from at_tsv_2021 where date_time >= TO_DATE (''01-JAN-2022'', ''DD-MON-YYYY'')';
+    commit;
+    
+    -- execute immediate 'create table bk_tsv_inf_and_beyond as select * from at_tsv_inf_and_beyond';
+    -- execute immediate 'create index bk_tsv_inf_and_beyond_idx on bk_tsv_inf_and_beyond(date_time)';
+    -- execute immediate 'truncate table at_tsv_inf_and_beyond';
+    -- execute immediate 'truncate table at_tsv_2021';
+    -- execute immediate 'alter table at_tsv_2021 nologging'; 
+    -- execute immediate 'lock table at_tsv_2021 in exclusive mode'; 
+    -- execute immediate 'insert into at_tsv_2021 (select * from bk_tsv_inf_and_beyond where date_time >= TO_DATE (''01-JAN-2021'', ''DD-MON-YYYY'') and date_time < TO_DATE (''01-JAN-2022'', ''DD-MON-YYYY''))';
+    -- dbms_output.put_line('Moved ' || sql%rowcount || ' rows to at_tsv_2021 table from bk_tsv_inf_and_beyond');
+    -- execute immediate 'insert into at_tsv_inf_and_beyond (select * from bk_tsv_inf_and_beyond where date_time >= TO_DATE (''01-JAN-2022'', ''DD-MON-YYYY''))';
+    -- dbms_output.put_line('Moved ' || sql%rowcount || ' rows to at_tsv_inf_and_beyond table from bk_tsv_inf_and_beyond');
+    -- commit;
+    -- execute immediate 'alter table at_tsv_2021 logging'; 
 end;
 /
+SHOW ERRORS;
+alter table at_tsv_2021 rename constraint AT_TSV_INF_AND_BEYOND_FK1 to AT_TSV_TMP_FK1;
+alter table at_tsv_2021 rename constraint AT_TSV_INF_AND_BEYOND_FK2 to AT_TSV_TMP_FK2;
+alter table at_tsv_2021 rename constraint AT_TSV_INF_AND_BEYOND_PK to AT_TSV_TMP_PK;
+alter trigger ST_TSV_INF_AND_BEYOND rename to ST_TSV_TMP;
+alter trigger AT_TSV_INF_AND_BEYOND_AIUDR rename to AT_TSV_TMP_AIUDR;
+alter trigger AT_TSV_INF_AND_BEYOND_DDF rename to AT_TSV_TMP_DDF;
+alter table at_tsv_inf_and_beyond rename constraint AT_TSV_2021_FK1 to AT_TSV_INF_AND_BEYOND_FK1;
+alter table at_tsv_inf_and_beyond rename constraint AT_TSV_2021_FK2 to AT_TSV_INF_AND_BEYOND_FK2;
+alter table at_tsv_inf_and_beyond rename constraint AT_TSV_2021_PK to AT_TSV_INF_AND_BEYOND_PK;
+alter trigger ST_TSV_2021 rename to ST_TSV_INF_AND_BEYOND;
+alter trigger AT_TSV_2021_AIUDR rename to AT_TSV_INF_AND_BEYOND_AIUDR;
+alter trigger AT_TSV_2021_DDF rename to AT_TSV_INF_AND_BEYOND_DDF;
+alter table at_tsv_2021 rename constraint AT_TSV_TMP_FK1 to AT_TSV_2021_FK1;
+alter table at_tsv_2021 rename constraint AT_TSV_TMP_FK2 to AT_TSV_2021_FK2;
+alter table at_tsv_2021 rename constraint AT_TSV_TMP_PK to AT_TSV_2021_PK;
+alter trigger ST_TSV_TMP rename to ST_TSV_2021;
+alter trigger AT_TSV_TMP_AIUDR rename to AT_TSV_2021_AIUDR;
+alter trigger AT_TSV_TMP_DDF rename to AT_TSV_2021_DDF;
+alter table at_tsv_2021 modify  ts_code NUMBER(14);
+alter table at_tsv_2021 modify  quality_code NUMBER(14);
+alter index  at_tsv_2021_pk rename to at_tsv_tmp;
+alter index at_tsv_inf_and_beyond_pk  rename to at_tsv_2021_pk;
+alter index  at_tsv_tmp rename to at_tsv_inf_and_beyond_pk;
