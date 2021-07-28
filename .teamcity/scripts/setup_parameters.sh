@@ -18,7 +18,7 @@ fi
 if [ "$IS_DEPLOY" == "1" ]; then
     # this is a deployment, modifiy the PDB name to include the version identified so
     # additional merges to master can happen independently.
-    version=`mvn -q -Dexec.executable=echo -Dexec.args='\${project.version}' --non-recursive exec:exec | sed "s@-@_@g"`
+    version=`ant version |tail -1 | sed -e 's@^.*\[echo\]\s*\(.*$\)@\1@' | sed "s@-@_@g"`
     CWMS_PDB="${CWMS_PDB}_$version"
 fi
 
