@@ -11,7 +11,9 @@
 
 	<resolver:pom id="pom" file="pom.xml" />
 
-
+	<target name="version">
+		<echo message="${pom.version}"/>
+	</target>
 	<!-- read in the environment for use in properties -->
 	<property environment="env"/>
 
