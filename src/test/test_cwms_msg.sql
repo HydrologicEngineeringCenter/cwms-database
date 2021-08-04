@@ -33,13 +33,13 @@ AS
         DELETE FROM AT_PROPERTIES
               WHERE prop_id=cwms_msg.msg_timeout_prop;
 
-        BEGIN 
+        BEGIN
          	DBMS_AQADM.remove_subscriber (
                 	'&office_id._TS_STORED',
                 	sys.AQ$_AGENT (test_subscriber_name, '&office_id._TS_STORED', 0));
         EXCEPTION WHEN OTHERS THEN NULL;
         END;
-        BEGIN 
+        BEGIN
         	cwms_loc.delete_location_cascade(test_base_location_id,'&office_id');
         EXCEPTION WHEN OTHERS THEN NULL;
         END;
@@ -56,7 +56,7 @@ AS
         INSERT INTO at_properties
              VALUES (53,
                      'CWMSDB',
-                     cwms_msg.msg_timeout_prop, 
+                     cwms_msg.msg_timeout_prop,
                      '1',
                      'Set message time out to 1 sec');
 
@@ -84,16 +84,16 @@ AS
         DBMS_AQADM.add_subscriber (
             queue_name   => '&office_id._TS_STORED',
             subscriber   => sys.AQ$_AGENT (test_subscriber_name, NULL, NULL));
- 
 
-        test_agent_list(1) := sys.aq$_agent(test_subscriber_name, 'CWMS_20.NAB_TS_STORED',  NULL);
-   
+
+        test_agent_list(1) := sys.aq$_agent(test_subscriber_name, 'CWMS_20.&office_id._TS_STORED',  NULL);
+
         BEGIN
 		DBMS_AQ.LISTEN( agent_list   =>   test_agent_list, wait=> 0, agent        =>   agent);
-        EXCEPTION WHEN OTHERS THEN NULL; 
+        EXCEPTION WHEN OTHERS THEN NULL;
         END;
 
-        select count(*) into l_count from AQ$NAB_TS_STORED_TABLE_S where NAME=test_subscriber_name;
+        select count(*) into l_count from AQ$&office_id._TS_STORED_TABLE_S where NAME=test_subscriber_name;
 
         ut.expect (1).to_equal (l_count);
 
@@ -114,13 +114,13 @@ AS
                               'Delete Insert',
                               'F',
                               cwms_util.non_versioned,
-                              'NAB',
+                              '&office_id.',
                               'F');
         END LOOP;
     DBMS_LOCK.sleep (10);
     CWMS_MSG.REMOVE_DEAD_SUBSCRIBERS;
 
-    select count(*) into l_count from AQ$NAB_TS_STORED_TABLE_S where NAME=test_subscriber_name;
+    select count(*) into l_count from AQ$&office_id._TS_STORED_TABLE_S where NAME=test_subscriber_name;
 
     ut.expect (0).to_equal (l_count);
     END;
@@ -135,7 +135,7 @@ AS
         SELECT COUNT (*)
           INTO l_count
           FROM AV_LOG_MESSAGE
-         WHERE COMPONENT = 'CWMSDB' AND MSG_TEXT = test_log_message; 
+         WHERE COMPONENT = 'CWMSDB' AND MSG_TEXT = test_log_message;
 
         ut.expect (1).to_equal (l_count);
     END;

@@ -23,7 +23,7 @@ AS
 
 
     --------------------------------------------------------------------------------
-    -- procedure delete_all 
+    -- procedure delete_all
     --------------------------------------------------------------------------------
     PROCEDURE  delete_all
     IS
@@ -76,7 +76,7 @@ AS
         l_ts_active          AV_CWMS_TS_ID.TS_ACTIVE_FLAG%TYPE;
         l_net_ts_active      AV_CWMS_TS_ID.NET_TS_ACTIVE_FLAG%TYPE;
     BEGIN
-        l_base_location_id := test_base_location_id; 
+        l_base_location_id := test_base_location_id;
         l_cwms_ts_id := l_base_location_id || '.Stage.Inst.0.0.raw';
         cwms_loc.store_location (p_location_id    => l_base_location_id,
                                  p_active         => 'F',
@@ -160,7 +160,7 @@ AS
         l_cwms_ts_id := test_base_location_id || '.Stage.Inst.1Hour.0.';
         cwms_loc.store_location (p_location_id    => test_base_location_id,
                                  p_active         => 'T',
-                                 p_db_office_id   => 'NAB');
+                                 p_db_office_id   => '&office_id.');
 
 
         FOR c
