@@ -1,4 +1,4 @@
-create or replace package test_versioned_time_series as
+create or replace package &cwms_schema..test_versioned_time_series as
 --%suite(Test schema for versioned time series functionality)
 
 --%beforeall(setup)
