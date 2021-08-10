@@ -11,7 +11,7 @@ procedure store_retrieve_time_series;
 procedure setup;
 procedure teardown;
 
-c_office_id       constant varchar2(16)     := '&&office';
+c_office_id       constant varchar2(16)     := '&&office_id';
 c_location_id     constant varchar2(57)     := 'TestVersionedTS';
 c_ts_id           constant varchar2(183)    := c_location_id||'.Code.Inst.1Hour.0.Test';
 c_units           constant varchar2(16)     := 'n/a';
