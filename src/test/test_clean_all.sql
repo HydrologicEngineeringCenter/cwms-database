@@ -36,6 +36,7 @@ AS
         test_missing_shift_points.teardown; 
         test_ro.teardown;
         test_dba.teardown;
+        test_cwms_pool.teardown;
     END teardown_all;
 
 END test_clean_all;

@@ -910,43 +910,50 @@ begin
    ';
 
     l_implicit_query := '
-      select o.office_id,
-             bl.base_location_id||substr(''.'', 1, length(pl.sub_location_id))||pl.sub_location_id as project_id,
-             trim(replace(specified_level_id, ''Bottom of '', null)) as pool_name,
-             ''.Elev.Inst.0.'' || specified_level_id as bottom_level_id,
-             ''.Elev.Inst.0.'' || replace(specified_level_id, ''Bottom of '', ''Top of '') as top_level_id,
+      select office_id,
+             project_id,
+             pool_name,
+             ''Elev.Inst.0.''||bottom_level_id as bottom_level_id,
+             ''Elev.Inst.0.''||top_level_id as top_level_id,
              null as attribute,
              null as description,
              null as clob_code,
              null as clob_text
-        from at_specified_level sl,
-             at_location_level ll,
-             at_project pr,
-             at_physical_location pl,
-             at_base_location bl,
-             cwms_office o
-       where pr.project_location_code = ll.location_code
-         and pl.location_code = pr.project_location_code
-         and bl.base_location_code = pl.base_location_code
-         and o.office_code = bl.db_office_code
-         and ll.parameter_code = (select base_parameter_code from cwms_base_parameter where base_parameter_id = ''Elev'')
-         and ll.parameter_type_code = (select parameter_type_code from cwms_parameter_type where parameter_type_id = ''Inst'')
-         and ll.duration_code = (select duration_code from cwms_duration where duration_id = ''0'')
-         and sl.specified_level_code = ll.specified_level_code
-         and sl.specified_level_id like ''Bottom of %''
-         and exists (select specified_level_id
-                       from at_specified_level
-                      where office_code = sl.office_code
-                        and specified_level_id = replace(sl.specified_level_id, ''Bottom of'', ''Top of'')
-                    )
-         and not exists (select project_code,
-                                bottom_level,
-                                top_level
-                           from at_pool
-                          where project_code = pr.project_location_code
-                            and upper(bottom_level) = upper(''Elev.Inst.0.''||sl.specified_level_id)
-                            and upper(top_level)    = upper(''Elev.Inst.0.''||replace(sl.specified_level_id, ''Bottom of '', ''Top of ''))
-                        )
+        from (select distinct
+                     o.office_id,
+                     bl.base_location_id||substr(''.'', 1, length(pl.sub_location_id))||pl.sub_location_id as project_id,
+                     trim(replace(specified_level_id, ''Bottom of '', null)) as pool_name,
+                     specified_level_id as bottom_level_id,
+                     replace(specified_level_id, ''Bottom of '', ''Top of '') as top_level_id
+                from at_specified_level sl,
+                     at_location_level ll,
+                     at_project pr,
+                     at_physical_location pl,
+                     at_base_location bl,
+                     cwms_office o
+               where pr.project_location_code = ll.location_code
+                 and pl.location_code = pr.project_location_code
+                 and bl.base_location_code = pl.base_location_code
+                 and o.office_code = bl.db_office_code
+                 and ll.parameter_code = (select base_parameter_code from cwms_base_parameter where base_parameter_id = ''Elev'')
+                 and ll.parameter_type_code = (select parameter_type_code from cwms_parameter_type where parameter_type_id = ''Inst'')
+                 and ll.duration_code = (select duration_code from cwms_duration where duration_id = ''0'')
+                 and sl.specified_level_code = ll.specified_level_code
+                 and sl.specified_level_id like ''Bottom of %''
+                 and exists (select specified_level_id
+                               from at_specified_level
+                              where office_code = sl.office_code
+                                and specified_level_id = replace(sl.specified_level_id, ''Bottom of'', ''Top of'')
+                            )
+                 and not exists (select project_code,
+                                        bottom_level,
+                                        top_level
+                                   from at_pool
+                                  where project_code = pr.project_location_code
+                                    and upper(bottom_level) = upper(''Elev.Inst.0.''||sl.specified_level_id)
+                                    and upper(top_level)    = upper(''Elev.Inst.0.''||replace(sl.specified_level_id, ''Bottom of '', ''Top of ''))
+                                )
+             )
    ';
 
     if l_include_explicit or l_include_implicit then

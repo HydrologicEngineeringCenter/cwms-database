@@ -11,6 +11,7 @@ GRANT EXECUTE ON &cwms_schema..test_cwms_rating to &1;
 GRANT EXECUTE ON &cwms_schema..test_clean_all to &1;
 GRANT EXECUTE ON &cwms_schema..test_cwms_prop to &1;
 GRANT EXECUTE ON &cwms_schema..test_cwms_msg to &1;
+GRANT EXECUTE ON &cwms_schema..test_cwms_pool to &1;
 --GRANT EXECUTE any procedure to &1;
 --GRANT CREATE any procedure to &1;
 
