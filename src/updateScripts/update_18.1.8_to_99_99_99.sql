@@ -185,6 +185,7 @@ prompt update package bodies
 @../cwms/cwms_ts_pkg_body
 @../cwms/cwms_ts_id_pkg_body
 @../cwms/cwms_util_pkg_body
+@../cwms/cwms_pool_pkg_body
 @../cwms_dba/cwms_user_admin_pkg_body
 
 -- Missing grants
