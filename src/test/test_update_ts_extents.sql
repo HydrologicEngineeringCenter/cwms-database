@@ -53,11 +53,15 @@ create or replace package body test_update_ts_extents as
 --------------------------------------------------------------------------------
 procedure teardown
 is
+   EXC_TS_ID_NOT_FOUND exception;
+   pragma exception_init(EXC_TS_ID_NOT_FOUND, -20025);
 begin
    cwms_loc.delete_location(
       p_location_id   => c_location_id,
       p_delete_action => cwms_util.delete_all,
       p_db_office_id  => c_office_id); 
+exception
+   when EXC_TS_ID_NOT_FOUND then null;
 end teardown;
 --------------------------------------------------------------------------------
 -- procedure setup
