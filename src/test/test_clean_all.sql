@@ -37,6 +37,7 @@ AS
         test_ro.teardown;
         test_dba.teardown;
         test_cwms_pool.teardown;
+        test_update_ts_extents.teardown;
     END teardown_all;
 
 END test_clean_all;
