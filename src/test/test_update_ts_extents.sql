@@ -46,6 +46,7 @@ c_base_ts_data    constant cwms_t_ztsv_array := cwms_t_ztsv_array(
 
 end test_update_ts_extents;
 /
+show errors
 create or replace package body test_update_ts_extents as
 --------------------------------------------------------------------------------
 -- procedure teaardown
@@ -426,3 +427,5 @@ end update_ts_extents;
 
 end test_update_ts_extents;
 /
+show errors
+
