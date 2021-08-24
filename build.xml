@@ -778,10 +778,10 @@
 	</target>
 
 	<target name="xml-schemas">
-	    <property name="xml_schema_zipflie" location="${build.dir}/xmlSchema.zip"/>
+	    <property name="xml_schema_zipfile" location="${build.dir}/xmlSchema.zip"/>
 	    <echo message="==> Cleaning the xml directory"/>
         <exec executable="make" dir="${src}/xml" failonerror="false">
-            <arg value="zipfile=${xml_schema_zipflie}"/>
+            <arg value="zipfile=${xml_schema_zipfile}"/>
             <arg value="clean"/>
         </exec>
 	    <echo message="==> Loading the hec-datatypes template CLOB"/>
@@ -814,7 +814,7 @@
         </java>
 	    <echo message="==> Making the .svg files and the .zip file"/>
         <exec executable="make" dir="${src}/xml" failonerror="true">
-            <arg value="zipfile=${xml_schema_zipflie}"/>
+            <arg value="zipfile=${xml_schema_zipfile}"/>
         </exec>
 	</target>
 
