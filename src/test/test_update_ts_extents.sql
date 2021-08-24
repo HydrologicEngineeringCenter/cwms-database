@@ -11,7 +11,7 @@ procedure update_ts_extents;
 procedure setup;
 procedure teardown;
 
-_office_id       constant varchar2(16)      := '&&office_id';
+c_office_id       constant varchar2(16)      := '&&office_id';
 c_location_id     constant varchar2(57)      := 'TestUpdateTS';
 c_ts_id           constant varchar2(183)     := c_location_id||'.Code.Inst.~1Hour.0.Test';
 c_units           constant varchar2(16)      := 'n/a';
