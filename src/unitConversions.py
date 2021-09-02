@@ -1769,7 +1769,7 @@ def get_java_resource_format() :
 		build = os.environ["TEAMCITY_BUILDCONF_NAME"]
 		teamcity_build_info = "(Build %s, #%s)" % (build,build_number)
 	except:
-        pass # we aren't in TEAMCITY so these don't exist
+		pass # we aren't in TEAMCITY so these don't exist
 	buf.write("// Generated from cwms_database:" + git_branch + " " + teamcity_build_info + " on " + date_str + "\n" )
 	buf.write("// UNIT DEFINITIONS\n")
 	buf.write("//  UnitSystem;UnitName;UnitAliases...;...;\n")
