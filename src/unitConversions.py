@@ -1760,16 +1760,15 @@ def convert(value, from_unit, to_unit) :
 
 
 def get_java_resource_format() :
-    buf = StringIO.StringIO()
-    date_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
-    git_branch = teamcity_build_info = "UNKNOWN";
-    try:
-        git_branch = check_output(["git","branch","--show-current"]).strip()
-        teamcity_build_info = "(manual run)"
-        build_number = os.environ["BUILD_NUMBER"]
-        build = os.environ["TEAMCITY_BUILDCONF_NAME"]
-        teamcity_build_info = "(Build %s, #%s)" % (build,build_number)
-    except:
+	buf = StringIO.StringIO()
+	date_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
+	git_branch = check_output(["git","branch","--show-current"]).strip()
+	teamcity_build_info = "(manual run)"
+	try:
+		build_number = os.environ["BUILD_NUMBER"]
+		build = os.environ["TEAMCITY_BUILDCONF_NAME"]
+		teamcity_build_info = "(Build %s, #%s)" % (build,build_number)
+	except:
         pass # we aren't in TEAMCITY so these don't exist
 	buf.write("// Generated from cwms_database:" + git_branch + " " + teamcity_build_info + " on " + date_str + "\n" )
 	buf.write("// UNIT DEFINITIONS\n")
