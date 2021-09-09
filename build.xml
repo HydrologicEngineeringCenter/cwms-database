@@ -36,6 +36,11 @@
 		<resolver:remoterepo refid="hec-nexus-releases" />
 	</resolver:remoterepos>
 
+	<condition property="target_repository" value="hec-nexus-snapshots" else="hec-nexus-releases">
+		<matches pattern="^.*-SNAPSHOT$" string="${pom.version}"/>
+	</condition>
+
+
 	<!-- Load in the ant-contrib jar to use the foreach external task -->
 	<taskdef resource="net/sf/antcontrib/antcontrib.properties">
 		<classpath>
@@ -874,8 +879,9 @@
 		<resolver:install artifactsref="output" />
 	</target>
 	<target name="deploy" depends="bundle">
+		<echo message="Sending to ${target_repository}"/>
 		<resolver:deploy artifactsref="output">
-			<remoteRepo refid="hec-nexus-releases"/>
+			<remoteRepo refid="${target_repository}"/>
 		</resolver:deploy>
 	</target>
 
