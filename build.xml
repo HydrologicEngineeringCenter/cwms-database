@@ -36,8 +36,8 @@
 		<resolver:remoterepo refid="hec-nexus-releases" />
 	</resolver:remoterepos>
 
-	<condition property="target_repository" value="hec-nexus-releases" else="hec-nexus-snapshots">
-		<matches pattern="^.*-SNAPSHOT$" string="${pom.versoin}"/>
+	<condition property="target_repository" value="hec-nexus-snapshots" else="hec-nexus-releases">
+		<matches pattern="^.*-SNAPSHOT$" string="${pom.version}"/>
 	</condition>
 
 
