@@ -4020,19 +4020,19 @@ AS
       p_version_date in date default null)
    is
       type at_ts_extents_tabtype is table of at_ts_extents%rowtype;
-      l_crsr       sys_refcursor;
-      l_ts1        timestamp;
-      l_ts2        timestamp;
+      l_crsr           sys_refcursor;
+      l_ts1            timestamp;
+      l_ts2            timestamp;
       l_ts_start       timestamp;
       l_ts_end         timestamp;
       l_ts_table_start timestamp;
       l_ts_table_end   timestamp;
-      l_elapsed    interval day (0) to second (6);
+      l_elapsed        interval day (0) to second (6);
       l_ts_extents     at_ts_extents_tabtype;
-      l_rec        at_ts_extents%rowtype;
-      l_updated    integer;
+      l_rec            at_ts_extents%rowtype;
+      l_updated        integer;
       l_ts_codes       number_tab_t;
-      l_query      varchar2(32767) := '
+      l_query          varchar2(32767) := '
          select
                 q1.ts_code,
                 q1.version_date as version_time,
@@ -4226,87 +4226,24 @@ AS
       l_ts_start := systimestamp;
       cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'UPDATE_TS_EXTENTS starting with '||nvl(to_char(p_ts_code), 'NULL')||', '||nvl(to_char(p_version_date), 'NULL'));
       if p_ts_code is null then
-         select ts_code bulk collect into l_ts_codes from at_cwms_ts_id;
-      end if;
-      ------------------------------------
-      -- loop across time series tables --
-      ------------------------------------
-      for rec in (select table_name from at_ts_table_properties order by start_date) loop
+         --------------------------
+         -- update NULL ts_codes --
+         --------------------------
+         for rec in (select ts_code from at_cwms_ts_spec minus select distinct ts_code from at_ts_extents) loop
+            update_ts_extents(rec.ts_code, p_version_date);
+         end loop;
+      else
+         -----------------------------
+         -- update specific ts_code --
+         -----------------------------
          l_ts1 := systimestamp;
-         l_ts_table_start := l_ts1;
-         cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'Starting table '||rec.table_name);
-         if p_ts_code is null then
-            -------------------------
-            -- update all ts_codes --
-            -------------------------
-            --
-            -- NOTE: I tried various methods of selecting values from each table, including a single query to get the extents for
-            --       every ts_cod as well as a single query to get extents for no more than 100 ts_codes at a time. Each of these
-            --       seemed to work okay interactively but took *way* too long when running as a job. I wasn't able to account for
-            --       this, but I found that querying each table for a single ts_code at a time performed much faster than the bulk
-            --       queries - at least when running as a job.
-            --
-            -- MDP
-            for i in 1..l_ts_codes.count loop
-               if mod(i, 100) = 1 then
-                  cwms_msg.log_db_message(cwms_msg.msg_level_verbose, 'Starting ts_codes '||i||'..'||least(i+99, l_ts_codes.count)||' in '||rec.table_name);
-               end if;
-               ------------
-               -- select --
-               ------------
-               open l_crsr for replace(l_query, ':table_name', rec.table_name) using l_ts_codes(i), p_version_date;
-         fetch l_crsr bulk collect into l_ts_extents;
-         close l_crsr;
-               if mod(i, 100) = 1 then
-            l_ts2 := systimestamp;
-            l_elapsed := l_ts2 - l_ts1;
-                  cwms_msg.log_db_message(
-                     cwms_msg.msg_level_verbose,
-                     'Selected '
-                     ||l_ts_extents.count
-                     ||' time series extents from ts_codes '
-                     ||i
-                     ||'..'
-                     ||least(i+99, l_ts_codes.count)
-                     ||' from '
-                     ||rec.table_name
-                     ||' in '
-                     ||l_elapsed);
-            l_ts1 := systimestamp;
-                  l_updated := 0;
-         end if;
-               ------------
-               -- update --
-               ------------
-               for j in 1..l_ts_extents.count loop
-                  if update_ts_extents(l_ts_extents(j)) then
-                     l_updated := l_updated + 1;
-                  end if;
-               end loop;
-               if mod(i, 100) = 1 then
-                  l_ts2 := systimestamp;
-                  l_elapsed := l_ts2 - l_ts1;
-                  cwms_msg.log_db_message(
-                     cwms_msg.msg_level_verbose,
-                     'Updated '
-                     ||l_updated
-                     ||' time series extents from ts_codes '
-                     ||i
-                     ||'..'
-                     ||least(i+99, l_ts_codes.count)
-                     ||' from '
-                     ||rec.table_name
-                     ||' in '
-                     ||l_elapsed);
-                  l_ts1 := systimestamp;
-                  commit;
-               end if;
-            end loop;
-            commit;
-         else
-            -----------------------------
-            -- update specific ts_code --
-            -----------------------------
+         delete
+           from at_ts_extents
+          where ts_code = p_ts_code
+            and version_time = nvl(p_version_date, version_time);
+         for rec in (select table_name from at_ts_table_properties order by start_date) loop
+            l_ts_table_start := l_ts1;
+            cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'Starting table '||rec.table_name);
             ------------
             -- select --
             ------------
@@ -4316,49 +4253,25 @@ AS
             ------------
             -- update --
             ------------
-         l_updated := 0;
-         for i in 1..l_ts_extents.count loop
-            if update_ts_extents(l_ts_extents(i)) then
-               l_updated := l_updated + 1;
-            end if;
-            if mod(l_updated, 100) = 0 then
-               commit;
-            end if;
+            l_updated := 0;
+            for i in 1..l_ts_extents.count loop
+               if update_ts_extents(l_ts_extents(i)) then
+                  l_updated := l_updated + 1;
+               end if;
+               if mod(l_updated, 100) = 0 then
+                  commit;
+               end if;
+            end loop;
+            commit;
+            l_ts_table_end := systimestamp;
+            l_elapsed := l_ts_table_end - l_ts_table_start;
+            cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'Finished table '||rec.table_name||' in '||l_elapsed);
          end loop;
-         commit;
-         end if;
-         l_ts_table_end := systimestamp;
-         l_elapsed := l_ts_table_end - l_ts_table_start;
-         cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'Finished table '||rec.table_name||' in '||l_elapsed);
-      end loop;
-      -------------------------
-      -- update null extents --
-      -------------------------
-      if p_ts_code is null and p_version_date is null then
-         l_ts_extents.delete;
-         l_ts_extents.extend;
-         l_ts_extents(1).version_time := cwms_util.non_versioned;
-         l_ts_extents(1).last_update  := systimestamp;
-         l_updated := 0;
-         l_ts1 := systimestamp;
-         l_elapsed := l_ts2 - l_ts1;
-         for rec in (select ts_code from at_cwms_ts_spec minus select distinct ts_code from at_ts_extents) loop
-            l_ts_extents(1).ts_code := rec.ts_code;
-            if update_ts_extents(l_ts_extents(1)) then
-               l_updated := l_updated + 1;
-            end if;
-            if mod(l_updated, 100) = 0 then
-               commit;
-            end if;
-         end loop;
-         commit;
-         if p_ts_code is null then
-            l_ts2 := systimestamp;
-            l_elapsed := l_ts2 - l_ts1;
-            cwms_msg.log_db_message(cwms_msg.msg_level_verbose, 'Updated '||l_updated||' null time series extents in '||l_elapsed);
-         end if;
-         end if;
-      cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'UPDATE_TS_EXTENTS done');
+      end if;
+      ------------------------------------
+      -- loop across time series tables --
+      ------------------------------------
+      cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'UPDATE_TS_EXTENTS done for '||nvl(to_char(p_ts_code), 'NULL')||', '||nvl(to_char(p_version_date), 'NULL'));
    end update_ts_extents;
 
    -- not documented
