@@ -1,3 +1,11 @@
+target
+v3.0
+*.txt
+wcdba_overrides.xml*.md
+docs
+.teamcity
+database_codegen_jooq
+src/test
 auto-build-error.txt
 auto-build-output.txt
 auto-kill-error.txt
@@ -47,7 +55,3 @@ src/test/data/ratings/*.log
 local_wcdba_overrides*.xml
 populate_cwms_db_change_log.sql
 src/py_admin_ErocUsers.sql
-src/xml/*.svg
-src/xml/*.out
-src/xml/*.log
-src/xml/hec-datatypes.xsd
