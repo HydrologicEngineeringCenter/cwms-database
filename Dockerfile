@@ -22,6 +22,12 @@ RUN unzip instantclient-basiclite-linux.x64-19.6.0.0.0dbru.zip && \
     unzip instantclient-sqlplus-linux.x64-19.6.0.0.0dbru.zip && \
     rm *.zip
 
+RUN mkdir /opt/apex
+WORKDIR /opt/apex
+RUN wget https://download.oracle.com/otn_software/apex/apex_21.1_en.zip
+RUN unzip apex_21.1_en.zip && \
+    rm *.zip
+
 RUN mkdir /cwmsdb
 WORKDIR /cwmsdb
 

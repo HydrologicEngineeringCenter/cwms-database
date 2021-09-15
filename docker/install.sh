@@ -15,7 +15,7 @@ then
     echo "Database host and port (-e DB_HOST_PORT=<hostname>:<port number>) must be supplied"
     exit 1
 fi
-
+export SUB_DB_NAME=$DB_NAME
 if [ "$DB_NAME" == "" ]
 then
     echo "Database name must be specified ( -e DB_NAME=<container or pluggable db name> )"
@@ -24,7 +24,7 @@ then
 elif [[ "$DB_NAME" =~ ^\/.* ]]
 then
     echo "Adding escape character"
-    export DB_NAME="\\$DB_NAME"
+    export SUB_DB_NAME="\\$DB_NAME"
 fi
 
 if [ "$SYS_PASSWORD" == "" ]
@@ -43,17 +43,32 @@ fi
 
 echo $DB_NAME
 sed -e "s/HOST_AND_PORT/$DB_HOST_PORT/g" \
-    -e "s/\/SERVICE_NAME/$DB_NAME/g" \
+    -e "s/\/SERVICE_NAME/$SUB_DB_NAME/g" \
     -e "s/BUILDUSER_PASS/$BUILDUSER_PASSWORD/g" \
     -e "s/OFFICE_ID/$OFFICE_ID/g" \
-    -e "s/OFFICE_CODE/Q0/g" \
-    -e "s/TEST_ACCOUNT_FLAG/-NOTESTACCOUNT/g" \
+    -e "s/OFFICE_CODE/L2/g" \
+    -e "s/TEST_ACCOUNT_FLAG/-testaccount/g" \
     -e "s/SYS_PASSWORD/$SYS_PASSWORD/g" \
     -e "s/PASSWORD/$CWMS_PASSWORD/g" /cwmsdb/teamcity_overrides.xml > /overrides.xml
  # TODO: create lookup system for office code
 
 cat /overrides.xml
 
+cd /cwmsdb
+echo "Creating table spaces at sys/$SYS_PASSWORD@$DB_HOST_PORT$DB_NAME as sysdba"
+sqlplus sys/$SYS_PASSWORD@$DB_HOST_PORT$DB_NAME as sysdba @src/windows_tablespaces.sql
+
+
+
+echo "Installing APEX"
+cd /opt/apex/apex
+sqlplus sys/$SYS_PASSWORD@$DB_HOST_PORT$DB_NAME as sysdba <<END
+    create tablespace apex datafile 'apex01.dat' size 100M autoextend on next 1M;
+END
+
+sqlplus sys/$SYS_PASSWORD@$DB_HOST_PORT$DB_NAME as sysdba @apexins.sql APEX APEX TEMP /i/
+
+echo "Installing CWMS Schema"
 cd /cwmsdb
 ant -Dbuilduser.overrides=/overrides.xml clean build
 if [ $? -eq 0 ]; then
