@@ -885,15 +885,17 @@
 		</resolver:deploy>
 	</target>
 
+	<!-- nothing below this line should EVER depend on a passed in overrides file. -->
 	<property name="docker.props.container_name" value="antdb"/>
 	<property name="docker.props.network_name" value="antdbnet"/>
+	<property name="docker.props.image_name" value="cwms_db:latest"/>
 
 	<target name="docker.buildimage">
 		<echo message="Creating baseline docker image"/>
 		<exec dir="${root}" executable="docker"  failonerror="true">
 			<arg value="build"/>
 			<arg value="--tag"/>
-			<arg value="cwmsdb_ant_test:latest"/>
+			<arg value="${docker.props.image_name}"/>
 			<arg value="."/>
 			<redirector output="${root}/build/docker.txt" error="${root}/build/docker" alwayslog="true"/>
 		</exec>
@@ -940,11 +942,8 @@
 			</else>
 		</if>
 	</target>
-<!--
-		docker run \-\-network database_net -d \-\-name testdb -e ORACLE_PDB=$DBNAME -e ORACLE_PWD=$SYS_PASSWORD -p 1522:1521 -e enterprise oracle/database:19.3.0-ee
-		docker run \-\-network database_net -e DB_HOST_PORT="testdb:1521" -e DB_NAME="/$DBNAME" -e SYS_PASSWORD=$SYS_PASSWORD cwms_db_install:latest
-	-->
-	<target name="docker.prepdb" depends="docker.setupparameters,docker.killdb,docker.createnetwork">
+
+	<target name="docker.prepdb" depends="docker.setupparameters,docker.stopdb,docker.createnetwork">
 		<echo message="Creating baseline docker database"/>
 		<loadproperties srcFile="${root}/build/database.props"/>
 		<exec executable="docker" outputproperty="containerList">
@@ -996,21 +995,49 @@
 		</waitfor>
 
 	</target>
+<!--
+		docker run \-\-network database_net -d \-\-name testdb -e ORACLE_PDB=$DBNAME -e ORACLE_PWD=$SYS_PASSWORD -p 1522:1521 -e enterprise oracle/database:19.3.0-ee
+		docker run \-\-network database_net -e DB_HOST_PORT="testdb:1521" -e DB_NAME="/$DBNAME" -e SYS_PASSWORD=$SYS_PASSWORD cwms_db_install:latest
+	-->
+	<target name="docker.install" depends="docker.prepdb, docker.buildimage">
+		<echo message="Using Docker build to install database"/>
+		<exec executable="docker" failonerror="true">
+			<arg value="run"/>
 
+			<arg value="--network"/>
+			<arg value="${docker.props.network_name}"/>
+			<arg value="-e"/>
+			<arg value="DB_HOST_PORT=${database.host_and_port}"/>
+			<arg value="-e"/>
+			<arg value="DB_NAME=/${database.name}"/>
+			<arg value="-e"/>
+			<arg value="SYS_PASSWORD=${database.syspw}"/>
+			<arg value="-e"/>
+			<arg value="CWMS_PASSWORD=${database.cwmspw}"/>
+			<arg value="${docker.props.image_name}"/>
+		</exec>
+	</target>
 
+	<target name="docker.stopdb">
+		<echo message="Stopping database"/>
+		<exec dir="${root}" executable="docker" failonerror="true">
+			<arg value="stop"/>
+			<arg value="${docker.props.container_name}"/>
+		</exec>
+	</target>
 
 	<target name="docker.killdb">
-		<echo message="Removing oracle database instance"/>
-		<exec dir="${root}" executable="docker" failonerror="false">
+		<echo message="Removing oracle database instance" depends="docker.stopdb"/>
+		<exec dir="${root}" executable="docker" failonerror="true">
 			<arg value="rm"/>
-			<arg value="-f"/>
+
 			<arg value="${docker.props.container_name}"/>
 
 		</exec>
 
 	</target>
 
-	<target name="docker.resetdb" depends="docker.killdb">
+	<target name="docker.resetdbprops" depends="docker.killdb">
 		<echo message="Removing generated properties files"/>
 		<delete file="${root}/build/database.props"/>
 	</target>
