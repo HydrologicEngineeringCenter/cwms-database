@@ -178,6 +178,466 @@ AS
       RETURN l_db_unit_id;
    END;
 
+   --------------------------------------------------------------------------------
+   -- function function dst_times
+   --------------------------------------------------------------------------------
+   function dst_times(
+      p_tz_name in varchar2,
+      p_year    in integer)
+      return date_table_type
+   is
+      l_year       integer;
+      l_std_offset number;
+      l_dst_offset number;
+      l_date_str   varchar2(10);
+      l_date_fmt   varchar2(10) := 'yyyy-mm-dd';
+      l_date       date;
+      l_date_hi    date;
+      l_date_lo    date;
+      l_results    date_table_type := date_table_type(null, null);
+   begin
+      l_date_str := p_year||'-01-01';
+      l_date := to_date(l_date_str, l_date_fmt);
+      l_std_offset := cwms_util.change_timezone(l_date, p_tz_name, 'UTC') - l_date;
+      l_date_str := p_year||'-07-01';
+      l_date := to_date(l_date_str, l_date_fmt);
+      l_dst_offset := cwms_util.change_timezone(l_date, p_tz_name, 'UTC') - l_date;
+      if l_std_offset != l_dst_offset then
+         l_date_lo := to_date(p_year||'-01-01', l_date_fmt);
+         l_date_hi := to_date(p_year||'-07-01', l_date_fmt);
+         l_date    := trunc(l_date_lo + (l_date_hi - l_date_lo) / 2, 'HH24');
+         while l_date > l_date_lo loop
+            if cwms_util.change_timezone(l_date, p_tz_name, 'UTC') - l_date = l_std_offset then
+               l_date_lo := l_date;
+            else
+               l_date_hi := l_date;
+            end if;
+         l_date    := trunc(l_date_lo + (l_date_hi - l_date_lo) / 2, 'HH24');
+         end loop;
+         l_results(1) := l_date + 1/24;
+         l_date_lo := to_date(p_year||'-07-01', l_date_fmt);
+         l_date_hi := to_date(p_year||'-12-31', l_date_fmt);
+         l_date    := trunc(l_date_lo + (l_date_hi - l_date_lo) / 2, 'HH24');
+         while l_date > l_date_lo loop
+            if cwms_util.change_timezone(l_date, p_tz_name, 'UTC') - l_date = l_dst_offset then
+               l_date_lo := l_date;
+            else
+               l_date_hi := l_date;
+            end if;
+         l_date    := trunc(l_date_lo + (l_date_hi - l_date_lo) / 2, 'HH24');
+         end loop;
+         l_results(2) := l_date + 2/24;
+      end if;
+      return l_results;
+   end dst_times;
+
+   --------------------------------------------------------------------------------
+   -- function function dst_times
+   --------------------------------------------------------------------------------
+   function dst_times(
+      p_tz_name in varchar2,
+      p_test    in date)
+   return date_table_type
+   is
+   begin
+      return dst_times(p_tz_name, extract(year from p_test));
+   end dst_times;
+
+   --------------------------------------------------------------------------------
+   -- function interval_minutes
+   --------------------------------------------------------------------------------
+   function interval_minutes(
+      p_interval in varchar2)
+      return integer
+   is
+      l_interval integer;
+      l_is_valid varchar2(1);
+   begin
+      begin
+         --------------------
+         -- try as integer --
+         --------------------
+         l_interval := abs(to_number(p_interval));
+         select 'T'
+           into l_is_valid
+           from dual
+          where exists (select interval from cwms_interval where interval = l_interval);
+      exception
+         when no_data_found then
+            cwms_err.raise('ERROR', 'Invalid interval: '||p_interval);
+         when others then
+            begin
+               ------------------------
+               -- try as interval_id --
+               ------------------------
+               select interval
+                 into l_interval
+                 from cwms_interval
+                where upper(interval_id) = upper(p_interval);
+            exception
+               when no_data_found then
+                  cwms_err.raise('ERROR', 'Invalid interval: '||p_interval);
+            end;
+      end;
+      return l_interval;
+   end interval_minutes;
+   --------------------------------------------------------------------------------
+   -- function interval_offset_minutes
+   --------------------------------------------------------------------------------
+   function interval_offset_minutes(
+      p_interval_offset in varchar2)
+      return integer
+   is
+      l_interval_offset    integer;
+      l_offset_unit        varchar2(16);
+   begin
+      begin
+         --------------------
+         -- try as integer --
+         --------------------
+         l_interval_offset := abs(to_number(nvl(p_interval_offset, '0')));
+      exception
+         when others then
+            -----------------
+            -- try as nnUU --
+            -----------------
+            if regexp_like(p_interval_offset, '^-?\d+[a-zA-Z]+$') then
+               l_interval_offset := to_number(regexp_substr(p_interval_offset, '^-?(\d+)', 1, 1, 'i', 1));
+               l_offset_unit := upper(regexp_substr(p_interval_offset, '([a-z]+)$', 1, 1, 'i', 1));
+               case
+               when instr('MINUTES', l_offset_unit) = 1 then null;
+               when instr('HOURS',   l_offset_unit) = 1 then l_interval_offset := l_interval_offset * 60;
+               when instr('DAYS',    l_offset_unit) = 1 then l_interval_offset := l_interval_offset * 1440;
+               else l_interval_offset := null;
+               end case;
+            end if;
+            if l_interval_offset is null then
+               cwms_err.raise('ERROR', 'Invalid interval offset: '||p_interval_offset);
+            end if;
+      end;
+      return l_interval_offset;
+   end interval_offset_minutes;
+
+   --------------------------------------------------------------------------------
+   -- function top_of_interval_utc
+   --------------------------------------------------------------------------------
+   function top_of_interval_utc(
+      p_date_time          in date,
+      p_interval           in varchar2,
+      p_interval_offset    in varchar2,
+      p_next               in varchar2 default 'F')
+      return date
+   is
+      l_interval           integer;
+      l_interval_offset    integer;
+      l_top                date;
+      l_top_millis         integer;
+      l_millis             integer;
+      l_interval_millis    integer;
+      l_offset_millis      integer;
+      l_get_next           boolean := cwms_util.return_true_or_false(p_next);
+      l_datestr            varchar2(16);
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      if p_date_time          is null then cwms_err.raise('NULL_ARGUMENT', 'P_DATE_TIME'      ); end if;
+      if p_interval           is null then cwms_err.raise('NULL_ARGUMENT', 'P_INTERVAL'       ); end if;
+      if p_interval_offset    is null then cwms_err.raise('NULL_ARGUMENT', 'P_INTERVAL_OFFSET'); end if;
+      l_interval        := interval_minutes(p_interval);
+      l_interval_offset := interval_offset_minutes(p_interval_offset);
+      if l_interval_offset >= l_interval then
+         cwms_err.raise('ERROR', 'Interval offset ('||l_interval_offset||') must be less than interval ('||l_interval||')');
+      end if;
+      ---------------------------------------------------------
+      -- first get the top of the interval without an offset --
+      ---------------------------------------------------------
+      case
+      when l_interval = 0 then
+         l_top := p_date_time;
+      when l_interval < 43200 then
+         ----------------------------------------------------------
+         -- minutes, hours, or days - use constant interval math --
+         ----------------------------------------------------------
+         l_millis := cwms_util.to_millis(p_date_time);
+         l_interval_millis := l_interval * 60000;
+         l_offset_millis   := l_interval_offset * 60000;
+         l_top_millis      := l_millis - mod(l_millis, l_interval_millis) + l_offset_millis;
+         if l_top_millis != l_millis then
+            if l_millis < 0 then
+               if not l_get_next then
+                  ----------------------------------------------------------
+                  -- adjust for start of interval for times < epoch start --
+                  ----------------------------------------------------------
+                  l_top_millis := l_top_millis + l_interval_millis;
+               end if;
+            else
+               if l_get_next then
+                  ---------------------------------------------------------
+                  -- adjust for end of interval for times >= epoch start --
+                  ---------------------------------------------------------
+                  l_top_millis := l_top_millis + l_interval_millis;
+               end if;
+            end if;
+         end if;
+         l_top := cwms_util.to_timestamp(l_top_millis);
+      when l_interval = 43200 then
+         ---------------------------------
+         -- 1 month - use calendar math --
+         ---------------------------------
+         l_top := trunc(p_date_time, 'MM') + l_interval_offset / 1440;
+         if l_top != p_date_time and l_get_next then
+            l_top := add_months(l_top, 1);
+         end if;
+      when l_interval = 525600 then
+         --------------------------------
+         -- 1 year - use calendar math --
+         --------------------------------
+         l_top := trunc(p_date_time, 'YY') + l_interval_offset / 1440;
+         if l_top != p_date_time and l_get_next then
+            l_top := add_months(l_top, 12);
+         end if;
+      when l_interval = 5256000 then
+         --------------------------------------------------------------
+         -- 1 decade - use calendar math with some text manipulation --
+         --------------------------------------------------------------
+         l_datestr := to_char(trunc(systimestamp, 'YY'), 'yyyy-mm-dd hh24:mi');            -- truncate to year, convert to string
+         l_datestr := regexp_replace(l_datestr, '^(\d{3})\d', '\1'||0);                    -- replace last year digit with '0'
+         l_top     := to_date(l_datestr, 'yyyy-mm-dd hh24:mi') + l_interval_offset / 1440; -- parse string, add offset
+         if l_top != p_date_time and l_get_next then
+            l_top := add_months(l_top, 120);
+         end if;
+      else
+         -----------------------------------------------------------------------
+         -- shouldn't happen - should be caught in interval_minutes() routine --
+         -----------------------------------------------------------------------
+         cwms_err.raise('ERROR', 'Invalid interval: '||p_interval);
+      end case;
+      return l_top;
+   exception
+      when others then cwms_err.raise('ERROR', dbms_utility.format_error_backtrace);
+   end top_of_interval_utc;
+
+   --------------------------------------------------------------------------------
+   -- function top_of_interval_tz
+   --------------------------------------------------------------------------------
+   function top_of_interval_tz(
+      p_date_time        in date,
+      p_interval         in varchar2,
+      p_interval_offset  in varchar2,
+      p_time_zone        in varchar2,
+      p_offset_time_zone in varchar2,
+      p_next             in varchar2 default 'F')
+      return date
+   is
+      l_date_time        date;
+      l_time_zone        varchar2(28);
+      l_offset_time_zone varchar2(28);
+      l_top              date;
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      if p_date_time        is null then cwms_err.raise('NULL_ARGUMENT', 'P_DATE_TIME'       ); end if;
+      if p_interval         is null then cwms_err.raise('NULL_ARGUMENT', 'P_INTERVAL'        ); end if;
+      if p_interval_offset  is null then cwms_err.raise('NULL_ARGUMENT', 'P_INTERVAL_OFFSET' ); end if;
+      if p_time_zone        is null then cwms_err.raise('NULL_ARGUMENT', 'P_TIME_ZONE'       ); end if;
+      if p_offset_time_zone is null then cwms_err.raise('NULL_ARGUMENT', 'P_OFFSET_TIME_ZONE'); end if;
+      l_time_zone        := cwms_util.get_time_zone_name(p_time_zone);
+      l_offset_time_zone := cwms_util.get_time_zone_name(p_offset_time_zone);
+      ----------------------------------------------
+      -- disallow invalid (due to DST) input time --
+      ----------------------------------------------
+      if cwms_util.change_timezone(p_date_time, l_time_zone, 'UTC') is null then
+         return null;
+      end if;
+
+      l_date_time := cwms_util.change_timezone(p_date_time, l_time_zone, l_offset_time_zone);
+      l_top := top_of_interval_utc(
+         l_date_time,
+         p_interval,
+         p_interval_offset,
+         p_next);
+      l_top := cwms_util.change_timezone(l_top, l_offset_time_zone, l_time_zone);
+      -----------------------------------------------
+      -- disallow invalid (due to DST) output time --
+      -----------------------------------------------
+      if cwms_util.change_timezone(l_top, l_offset_time_zone, 'UTC') is null then
+         return null;
+      end if;
+      -------------------------------------
+      -- next adjust time zone of result --
+      -------------------------------------
+      return l_top;
+   end top_of_interval_tz;
+
+   --------------------------------------------------------------------------------
+   -- function snap_to_interval_offset_utc
+   --------------------------------------------------------------------------------
+   function snap_to_interval_offset_utc(
+      p_date_time         in date,
+      p_interval          in varchar2,
+      p_interval_offset   in varchar2,
+      p_interval_forward  in varchar2 default null,
+      p_interval_backward in varchar2 default null)
+      return date
+   is
+      l_interval          integer;
+      l_interval_offset   integer;
+      l_interval_forward  integer;
+      l_interval_backward integer;
+      l_prev_top          date;
+      l_next_top          date;
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      if p_date_time       is null then cwms_err.raise('NULL_ARGUMENT', 'P_DATE_TIME'      ); end if;
+      if p_interval        is null then cwms_err.raise('NULL_ARGUMENT', 'P_INTERVAL'       ); end if;
+      if p_interval_offset is null then cwms_err.raise('NULL_ARGUMENT', 'P_INTERVAL_OFFSET'); end if;
+      l_interval        := interval_minutes(p_interval);
+      l_interval_offset := interval_offset_minutes(p_interval_offset);
+      if l_interval_offset >= l_interval then
+         cwms_err.raise('ERROR', 'Interval offset ('||l_interval_offset||') must be less than interval ('||l_interval||')');
+      end if;
+      begin
+         l_interval_forward := interval_offset_minutes(p_interval_forward);
+      exception
+         when others then
+            cwms_err.raise('ERROR', 'Invalid interval forward '||p_interval_forward);
+      end;
+      begin
+         l_interval_backward := interval_offset_minutes(p_interval_backward);
+      exception
+         when others then
+            cwms_err.raise('ERROR', 'Invalid interval backward '||p_interval_backward);
+      end;
+      if l_interval_offset + l_interval_forward >= l_interval then
+         cwms_err.raise(
+            'ERROR',
+            'Interval offset ('||l_interval||') + interval forward ('||l_interval_forward||') >= interval length ('||l_interval||')');
+      end if;
+      if l_interval_offset - l_interval_backward <= 0 then
+         cwms_err.raise(
+            'ERROR',
+            'Interval offset ('||l_interval||') - interval backward ('||l_interval_backward||') <= 0');
+      end if;
+      ------------------------------------------------------------------------------
+      -- return top of current interval if p_date_time within its snapping window --
+      ------------------------------------------------------------------------------
+      l_prev_top := top_of_interval_utc(
+         p_date_time       => p_date_time,
+         p_interval        => p_interval,
+         p_interval_offset => p_interval_offset,
+         p_next            => 'F');
+      if p_date_time between l_prev_top - l_interval_backward / 1440 and l_prev_top + l_interval_forward / 1440 then
+         return l_prev_top;
+      end if;
+      ---------------------------------------------------------------------------
+      -- return top of next interval if p_date_time within its snapping window --
+      ---------------------------------------------------------------------------
+      l_next_top := top_of_interval_utc(
+         p_date_time       => p_date_time,
+         p_interval        => p_interval,
+         p_interval_offset => p_interval_offset,
+         p_next            => 'T');
+      if p_date_time between l_next_top - l_interval_backward / 1440 and l_next_top + l_interval_forward / 1440 then
+         return l_next_top;
+      end if;
+      -------------------------------------------------
+      -- not in either snapping window - return null --
+      -------------------------------------------------
+      return null;
+   end snap_to_interval_offset_utc;
+
+   --------------------------------------------------------------------------------
+   -- function snap_to_interval_offset_tz
+   --------------------------------------------------------------------------------
+   function snap_to_interval_offset_tz(
+      p_date_time         in date,
+      p_interval          in varchar2,
+      p_interval_offset   in varchar2,
+      p_time_zone         in varchar2,
+      p_offset_time_zone  in varchar2,
+      p_interval_forward  in varchar2 default null,
+      p_interval_backward in varchar2 default null)
+      return date
+   is
+      l_interval          integer;
+      l_interval_offset   integer;
+      l_interval_forward  integer;
+      l_interval_backward integer;
+      l_prev_top          date;
+      l_next_top          date;
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      if p_date_time        is null then cwms_err.raise('NULL_ARGUMENT', 'P_DATE_TIME'       ); end if;
+      if p_interval         is null then cwms_err.raise('NULL_ARGUMENT', 'P_INTERVAL'        ); end if;
+      if p_interval_offset  is null then cwms_err.raise('NULL_ARGUMENT', 'P_INTERVAL_OFFSET' ); end if;
+      if p_time_zone        is null then cwms_err.raise('NULL_ARGUMENT', 'P_TIME_ZONE'       ); end if;
+      if p_offset_time_zone is null then cwms_err.raise('NULL_ARGUMENT', 'P_OFFSET_TIME_ZONE'); end if;
+      l_interval        := interval_minutes(p_interval);
+      l_interval_offset := interval_offset_minutes(p_interval_offset);
+      if l_interval_offset >= l_interval then
+         cwms_err.raise('ERROR', 'Interval offset ('||l_interval_offset||') must be less than interval ('||l_interval||')');
+      end if;
+      begin
+         l_interval_forward := interval_offset_minutes(p_interval_forward);
+      exception
+         when others then
+            cwms_err.raise('ERROR', 'Invalid interval forward '||p_interval_forward);
+      end;
+      begin
+         l_interval_backward := interval_offset_minutes(p_interval_backward);
+      exception
+         when others then
+            cwms_err.raise('ERROR', 'Invalid interval backward '||p_interval_backward);
+      end;
+      if l_interval_offset + l_interval_forward >= l_interval then
+         cwms_err.raise(
+            'ERROR',
+            'Interval offset ('||l_interval_offset||') + interval forward ('||l_interval_forward||') >= interval length ('||l_interval||')');
+      end if;
+      if l_interval_offset - l_interval_backward < 0 then
+         cwms_err.raise(
+            'ERROR',
+            'Interval offset ('||l_interval_offset||') - interval backward ('||l_interval_backward||') < 0');
+      end if;
+      ------------------------------------------------------------------------------
+      -- return top of current interval if p_date_time within its snapping window --
+      ------------------------------------------------------------------------------
+      l_prev_top := top_of_interval_tz(
+         p_date_time        => p_date_time,
+         p_interval         => l_interval,
+         p_interval_offset  => l_interval_offset,
+         p_time_zone        => p_time_zone,
+         p_offset_time_zone => p_offset_time_zone,
+         p_next             => 'F');
+      if p_date_time between l_prev_top - l_interval_backward / 1440 and l_prev_top + l_interval_forward  / 1440 then
+         return l_prev_top;
+      end if;
+      ---------------------------------------------------------------------------
+      -- return top of next interval if p_date_time within its snapping window --
+      ---------------------------------------------------------------------------
+      l_next_top := top_of_interval_tz(
+         p_date_time        => p_date_time,
+         p_interval         => p_interval,
+         p_interval_offset  => p_interval_offset,
+         p_time_zone        => p_time_zone,
+         p_offset_time_zone => p_offset_time_zone,
+         p_next             => 'T');
+      if p_date_time between l_next_top - l_interval_backward / 1440 and l_next_top + l_interval_forward  / 1440 then
+         return l_next_top;
+      end if;
+      -------------------------------------------------
+      -- not in either snapping window - return null --
+      -------------------------------------------------
+      return null;
+   end snap_to_interval_offset_tz;
+
+
    --
    --*******************************************************************   --
    --*******************************************************************   --
@@ -203,101 +663,12 @@ AS
                                                                  )
       RETURN DATE
    IS
-      l_datetime_tmp          DATE;
-      l_normalized_datetime   DATE;
-      l_tmp                   NUMBER;
-      l_delta                 BINARY_INTEGER;
-      l_multiplier            BINARY_INTEGER;
-      l_mod                   BINARY_INTEGER;
-      l_ts_interval           BINARY_INTEGER := TRUNC (p_ts_interval, 0);
    BEGIN
-      DBMS_APPLICATION_INFO.set_module (
-         'create_ts',
-         'Function get_Time_On_After_Interval');
-
-      -- Basic checks - interval cannot be zero - irregular...
-      IF l_ts_interval <= 0
-      THEN
-         cwms_err.RAISE ('ERROR', 'Interval must be > zero.');
-      END IF;
-
-      -- Basic checks - offset cannot ve >= to interval...
-      IF p_ts_offset >= l_ts_interval
-      THEN
-         cwms_err.RAISE ('ERROR', 'Offset cannot be >= to the Interval');
-      END IF;
-
-      --
-      l_normalized_datetime :=
-         TRUNC (p_datetime, 'MI') - (p_ts_offset / min_in_dy);
-
-      IF p_ts_interval = 1
-      THEN
-         NULL;                                             -- nothing to do...
-      ELSIF l_ts_interval < min_in_wk             -- intervals less than a week...
-      THEN
-         l_delta := (l_normalized_datetime - cwms_util.l_epoch) * min_in_dy;
-         l_mod := MOD (l_delta, l_ts_interval);
-
-         IF l_mod <= 0
-         THEN
-            l_normalized_datetime :=
-               l_normalized_datetime - (l_mod / min_in_dy);
-         ELSE
-            l_normalized_datetime :=
-               l_normalized_datetime + (l_ts_interval - l_mod) / min_in_dy;
-         END IF;
-      ELSIF l_ts_interval = min_in_wk                        -- weekly interval...
-      THEN
-         l_delta :=
-            (l_normalized_datetime - cwms_util.l_epoch_wk_dy_1) * min_in_dy;
-         l_mod := MOD (l_delta, l_ts_interval);
-
-         IF l_mod <= 0
-         THEN
-            l_normalized_datetime :=
-               l_normalized_datetime - (l_mod / min_in_dy);
-         ELSE
-            l_normalized_datetime :=
-               l_normalized_datetime + (l_ts_interval - l_mod) / min_in_dy;
-         END IF;
-      ELSIF l_ts_interval = min_in_mo                       -- monthly interval...
-      THEN
-         l_datetime_tmp := TRUNC (l_normalized_datetime, 'Month');
-
-         IF l_datetime_tmp != l_normalized_datetime
-         THEN
-            l_normalized_datetime := ADD_MONTHS (l_datetime_tmp, 1);
-         END IF;
-      ELSIF l_ts_interval = min_in_yr                       -- yearly interval...
-      THEN
-         l_datetime_tmp := TRUNC (l_normalized_datetime, 'YEAR');
-
-         IF l_datetime_tmp != l_normalized_datetime
-         THEN
-            l_normalized_datetime := ADD_MONTHS (l_datetime_tmp, 12);
-         END IF;
-      ELSIF l_ts_interval = min_in_dc                     -- decadal interval...
-      THEN
-         l_mod :=
-            MOD (TO_NUMBER (TO_CHAR (l_normalized_datetime, 'YYYY')), 10);
-         l_datetime_tmp :=
-            ADD_MONTHS (TRUNC (l_normalized_datetime, 'YEAR'),
-                        - (l_mod * 12));
-
-         IF l_datetime_tmp != l_normalized_datetime
-         THEN
-            l_normalized_datetime := ADD_MONTHS (l_datetime_tmp, 120);
-         END IF;
-      ELSE
-         cwms_err.RAISE (
-            'ERROR',
-               l_ts_interval
-            || ' minutes is not a valid/supported CWMS interval');
-      END IF;
-
-      RETURN l_normalized_datetime + (p_ts_offset / min_in_dy);
-      DBMS_APPLICATION_INFO.set_module (NULL, NULL);
+      return top_of_interval_utc(
+         p_date_time       => p_datetime,
+         p_interval        => p_ts_interval,
+         p_interval_offset => nvl(p_ts_offset, 0),
+         p_next            => 'T');
    END get_time_on_after_interval;
 
    --
@@ -308,86 +679,12 @@ AS
                                          p_ts_interval   IN NUMBER)
       RETURN DATE
    IS
-      l_datetime_tmp          DATE;
-      l_normalized_datetime   DATE;
-      l_tmp                   NUMBER;
-      l_delta                 BINARY_INTEGER;
-      l_multiplier            BINARY_INTEGER;
-      l_mod                   BINARY_INTEGER;
-      l_ts_interval           BINARY_INTEGER := TRUNC (p_ts_interval, 0);
    BEGIN
-      DBMS_APPLICATION_INFO.set_module (
-         'create_ts',
-         'Function get_Time_On_Before_Interval');
-
-      -- Basic checks - interval cannot be zero - irregular...
-      IF l_ts_interval <= 0
-      THEN
-         cwms_err.RAISE ('ERROR', 'Interval must be > zero.');
-      END IF;
-
-      -- Basic checks - offset cannot ve >= to interval...
-      IF p_ts_offset >= l_ts_interval
-      THEN
-         cwms_err.RAISE ('ERROR', 'Offset cannot be >= to the Interval');
-      END IF;
-
-      --
-      l_normalized_datetime :=
-         TRUNC (p_datetime, 'MI') - (p_ts_offset / min_in_dy);
-
-      IF p_ts_interval = 1
-      THEN
-         NULL;                                             -- nothing to do...
-      ELSIF l_ts_interval < min_in_wk             -- intervals less than a week...
-      THEN
-         l_delta := (l_normalized_datetime - cwms_util.l_epoch) * min_in_dy;
-         l_mod := MOD (l_delta, l_ts_interval);
-
-         IF l_mod < 0
-         THEN
-            l_normalized_datetime :=
-               l_normalized_datetime - (l_ts_interval + l_mod) / min_in_dy;
-         ELSE
-            l_normalized_datetime :=
-               l_normalized_datetime - (l_mod / min_in_dy);
-         END IF;
-      ELSIF l_ts_interval = min_in_wk                        -- weekly interval...
-      THEN
-         l_delta :=
-            (l_normalized_datetime - cwms_util.l_epoch_wk_dy_1) * min_in_dy;
-         l_mod := MOD (l_delta, l_ts_interval);
-
-         IF l_mod < 0
-         THEN
-            l_normalized_datetime :=
-               l_normalized_datetime - (l_ts_interval + l_mod) / min_in_dy;
-         ELSE
-            l_normalized_datetime :=
-               l_normalized_datetime - (l_mod / min_in_dy);
-         END IF;
-      ELSIF l_ts_interval = min_in_mo                       -- monthly interval...
-      THEN
-         l_normalized_datetime := TRUNC (l_normalized_datetime, 'Month');
-      ELSIF l_ts_interval = min_in_yr                       -- yearly interval...
-      THEN
-         l_normalized_datetime := TRUNC (l_normalized_datetime, 'YEAR');
-      ELSIF l_ts_interval = min_in_dc                     -- decadal interval...
-      THEN
-         l_mod :=
-            MOD (TO_NUMBER (TO_CHAR (l_normalized_datetime, 'YYYY')), 10);
-         l_normalized_datetime :=
-            ADD_MONTHS (TRUNC (l_normalized_datetime, 'YEAR'),
-                        - (l_mod * 12));
-      ELSE
-         cwms_err.RAISE (
-            'ERROR',
-               l_ts_interval
-            || ' minutes is not a valid/supported CWMS interval');
-      END IF;
-
-      RETURN l_normalized_datetime + (p_ts_offset / min_in_dy);
-      DBMS_APPLICATION_INFO.set_module (NULL, NULL);
+      return top_of_interval_utc(
+         p_date_time       => p_datetime,
+         p_interval        => p_ts_interval,
+         p_interval_offset => nvl(p_ts_offset, 0),
+         p_next            => 'F');
    END get_time_on_before_interval;
 
 
@@ -1582,16 +1879,55 @@ AS
             THEN
                IF l_interval = 0
                THEN
+                  ---------------------------------------------------------------------
+                  -- irregular (ITS), pseudo-regular (PRTS), or local regular (LRTS) --
+                  ---------------------------------------------------------------------
                   l_utc_offset := cwms_util.utc_offset_irregular;
                   if l_lrts_interval is not null and p_utc_offset is not null then
+                     ----------
+                     -- LRTS --
+                     ----------
                      if p_utc_offset not in (cwms_util.utc_offset_undefined, cwms_util.utc_offset_irregular) then
+                        -----------------------------
+                        -- set the interval offset --
+                        -----------------------------
                         if abs(p_utc_offset) >= l_lrts_interval then
                            cwms_err.raise('INVALID_UTC_OFFSET', p_utc_offset, l_interval_id);
                         end if;
                         l_utc_offset := -abs(p_utc_offset);
+                        ----------------------------------
+                        -- validate the snapping window --
+                        ----------------------------------
+                        if p_interval_forward < 0 or p_interval_forward >= l_lrts_interval then
+                           commit; -- release lock
+                           cwms_err.raise (
+                              'ERROR',
+                              'Interval forward ('||p_interval_forward||') must be >= 0 and < interval ('||l_lrts_interval||')');
+                        end if;
+                        if p_interval_backward < 0 or p_interval_backward >= l_lrts_interval then
+                           commit; -- release lock
+                           cwms_err.raise (
+                              'ERROR',
+                              'Interval backward ('||p_interval_backward||') must be >= 0 and < interval ('||l_lrts_interval||')');
+                        end if;
+                        if p_interval_forward + p_interval_backward >= l_lrts_interval then
+                           commit; -- release lock
+                           cwms_err.raise (
+                              'ERROR',
+                              'Interval backward ('||p_interval_backward ||') plus interval forward ('|| p_interval_forward
+                              ||') must be < interval ('||l_lrts_interval||')');
+                        end if;
                      end if;
+                  else
+                     -----------------
+                     -- ITS or PRTS --
+                     -----------------
+                     null;
                   end if;
                ELSE
+                  -------------------
+                  -- regular (RTS) --
+                  -------------------
                   l_utc_offset := cwms_util.utc_offset_undefined;
 
                   IF p_utc_offset IS NOT NULL
@@ -1625,46 +1961,46 @@ AS
                         END IF;
                      END IF;
                   END IF;
+                  IF p_interval_forward < 0 OR p_interval_forward >= l_interval
+                  THEN
+                     COMMIT;
+                     cwms_err.raise (
+                        'ERROR',
+                           'Interval forward ('
+                        || p_interval_forward
+                        || ') must be >= 0 and < interval ('
+                        || l_interval
+                        || ')');
+                  END IF;
+
+                  IF    p_interval_backward < 0
+                     OR p_interval_backward >= l_interval
+                  THEN
+                     COMMIT;
+                     cwms_err.raise (
+                        'ERROR',
+                           'Interval backward ('
+                        || p_interval_backward
+                        || ') must be >= 0 and < interval ('
+                        || l_interval
+                        || ')');
+                  END IF;
+
+                  IF p_interval_forward + p_interval_backward >= l_interval
+                  THEN
+                     COMMIT;
+                     cwms_err.raise (
+                        'ERROR',
+                           'Interval backward ('
+                        || p_interval_backward
+                        || ') plus interval forward ('
+                        || p_interval_forward
+                        || ') must be < interval ('
+                        || l_interval
+                        || ')');
+                  END IF;
                END IF;
 
-               IF p_interval_forward < 0 OR p_interval_forward >= l_interval
-               THEN
-                  COMMIT;
-                  cwms_err.raise (
-                     'ERROR',
-                        'Interval forward ('
-                     || p_interval_forward
-                     || ') must be >= 0 and < interval ('
-                     || l_interval
-                     || ')');
-               END IF;
-
-               IF    p_interval_backward < 0
-                  OR p_interval_backward >= l_interval
-               THEN
-                  COMMIT;
-                  cwms_err.raise (
-                     'ERROR',
-                        'Interval backward ('
-                     || p_interval_backward
-                     || ') must be >= 0 and < interval ('
-                     || l_interval
-                     || ')');
-               END IF;
-
-               IF p_interval_forward + p_interval_backward >= l_interval
-               THEN
-                  COMMIT;
-                  cwms_err.raise (
-                     'ERROR',
-                        'Interval backward ('
-                     || p_interval_backward
-                     || ') plus interval forward ('
-                     || p_interval_forward
-                     || ') must be < interval ('
-                     || l_interval
-                     || ')');
-               END IF;
 
                IF UPPER (p_active_flag) NOT IN ('T', 'F')
                THEN
@@ -1923,32 +2259,33 @@ AS
       --
       p_start_time := l_start_time;
       p_end_time := l_end_time;
-
-      IF p_interval = 0
-      THEN
-         --
-         -- These parameters are used to generate a regular time series from which
-         -- to fill in the times of missing values.  In the case of irregular time
-         -- series, set them so that they will not generate a time series at all.
-         --
-         p_reg_start_time := NULL;
-         p_reg_end_time := NULL;
-      ELSE
-         IF p_offset = cwms_util.utc_offset_undefined
+      if l_start_time is not null then
+         IF p_interval = 0
          THEN
-            p_reg_start_time :=
-               get_time_on_after_interval (l_start_time, NULL, p_interval);
-            p_reg_end_time :=
-               get_time_on_before_interval (l_end_time, NULL, p_interval);
+            --
+            -- These parameters are used to generate a regular time series from which
+            -- to fill in the times of missing values.  In the case of irregular time
+            -- series, set them so that they will not generate a time series at all.
+            --
+            p_reg_start_time := NULL;
+            p_reg_end_time := NULL;
          ELSE
-            p_reg_start_time :=
-               get_time_on_after_interval (l_start_time,
-                                           p_offset,
-                                           p_interval);
-            p_reg_end_time :=
-               get_time_on_before_interval (l_end_time, p_offset, p_interval);
+            IF p_offset = cwms_util.utc_offset_undefined
+            THEN
+               p_reg_start_time :=
+                  get_time_on_after_interval (l_start_time, NULL, p_interval);
+               p_reg_end_time :=
+                  get_time_on_before_interval (l_end_time, NULL, p_interval);
+            ELSE
+               p_reg_start_time :=
+                  get_time_on_after_interval (l_start_time,
+                                              p_offset,
+                                              p_interval);
+               p_reg_end_time :=
+                  get_time_on_before_interval (l_end_time, p_offset, p_interval);
+            END IF;
          END IF;
-      END IF;
+      end if;
    END setup_retrieve;
 
    --
@@ -2139,7 +2476,6 @@ AS
                       l_previous,
                       l_next,
                       l_trim);
-      --
       -- change interval from minutes to days
       --
       l_interval := l_interval / 1440;
@@ -4524,6 +4860,10 @@ AS
       l_loc_tz              varchar2(28);
       l_irr_interval        integer;
       l_irr_offset          integer;
+      l_interval_forward    number;
+      l_interval_backward   number;
+      l_date_time           date;
+      l_is_lrts             boolean := false;
       l_filtered_ts_data    tsv_array;
       l_filter_duplicates   varchar2(1);
       l_ts_extents_rec      at_ts_extents%rowtype;
@@ -4628,6 +4968,19 @@ AS
            INTO existing_utc_offset
            FROM at_cwms_ts_spec
           WHERE ts_code = l_ts_code;
+
+         l_is_lrts := (existing_utc_offset < 0 and existing_utc_offset != cwms_util.UTC_OFFSET_IRREGULAR)
+                      or (substr(cwms_util.split_text(p_cwms_ts_id, 4, '.'), 1, 1) = '~' and cwms_util.return_true_or_false(p_create_as_lrts));
+         if l_is_lrts then
+            l_irr_offset := existing_utc_offset;
+            l_loc_tz := cwms_loc.get_local_timezone(l_location_code);
+            select ci.interval
+              into l_irr_interval
+              from cwms_interval ci,
+                   at_cwms_ts_id ts
+             where ts.ts_code = l_ts_code
+               and ci.interval_id = substr(ts.interval_id, 2);
+         end if;
       EXCEPTION
          WHEN TS_ID_NOT_FOUND
          THEN
@@ -4637,32 +4990,38 @@ AS
             the case a new TS_CODE will be created for the Time Series
             Descriptor.
             */
-            if substr(cwms_util.split_text(p_cwms_ts_id, 4, '.'), 1, 1) = '~' and cwms_util.return_true_or_false(p_create_as_lrts) then
+            l_is_lrts := substr(cwms_util.split_text(p_cwms_ts_id, 4, '.'), 1, 1) = '~' and cwms_util.return_true_or_false(p_create_as_lrts);
+            if l_is_lrts then
                ------------------------------------------------
                -- create as local-regular time series (LRTS) --
                ------------------------------------------------
                l_loc_tz := cwms_loc.get_local_timezone(l_location_code);
+               if l_loc_tz is null then
+                  cwms_err.raise('ERROR', 'Cannot store local regular time series (LRTS) to location without a local time zone');
+               end if;
                select interval
                  into l_irr_interval
                  from cwms_interval
                 where interval_id = substr(cwms_util.split_text(p_cwms_ts_id, 4, '.'), 2);
-               l_first_time := cast(p_timeseries_data(1).date_time at time zone nvl(l_loc_tz, 'UTC') as date);
-               l_utc_offset := (l_first_time - get_time_on_before_interval(
+               l_first_time := cast(p_timeseries_data(1).date_time at time zone l_loc_tz as date);
+               l_irr_offset := (l_first_time - get_time_on_before_interval(
                   p_datetime    => l_first_time,
                   p_ts_offset   => 0,
                   p_ts_interval => l_irr_interval)) * 1440;
+               l_utc_offset := l_irr_offset;
             else
                ---------------------------------------------------------
                -- create normal regular, irregular, or pseudo-regular --
                ---------------------------------------------------------
-               l_utc_offset := cwms_util.UTC_OFFSET_UNDEFINED;
+               l_utc_offset := case when l_interval_value = 0 then cwms_util.UTC_OFFSET_IRREGULAR else cwms_util.UTC_OFFSET_UNDEFINED end;
             end if;
-            create_ts_code (p_ts_code        => l_ts_code,
-                            p_office_id      => l_office_id,
-                            p_cwms_ts_id     => l_cwms_ts_id,
-                            p_fail_if_exists => 'F', -- in case of race condition will return ts_code generated by other thread
-                            p_utc_offset     => l_utc_offset);
-
+            create_ts_code (p_ts_code           => l_ts_code,
+                            p_office_id         => l_office_id,
+                            p_cwms_ts_id        => l_cwms_ts_id,
+                            p_fail_if_exists    => 'F', -- in case of race condition will return ts_code generated by other thread
+                            p_utc_offset        => l_utc_offset,
+                            p_interval_forward  => case when l_is_lrts then 0 else null end,
+                            p_interval_backward => case when l_is_lrts then 0 else null end);
             existing_utc_offset := l_utc_offset;
          WHEN OTHERS THEN
             cwms_err.raise('ERROR', dbms_utility.format_error_backtrace);
@@ -4740,9 +5099,9 @@ AS
          dbms_application_info.set_action ('Returning due to no data passed null filter');
          return;      -- have already created ts_code if it didn't exist
       end if;
-      --------------------------------------------------------------------------
-      -- truncate times to appropriate interval and verify no duplicate times --
-      --------------------------------------------------------------------------
+      --------------------------------------------
+      -- truncate times to appropriate interval --
+      --------------------------------------------
       if l_allow_sub_minute then
          for i in 1..l_timeseries_data.count loop
             l_timeseries_data(i).date_time := from_tz(
@@ -4756,6 +5115,9 @@ AS
                extract(timezone_region from l_timeseries_data(i).date_time));
          end loop;
       end if;
+      -------------------------------
+      -- verify no duplicate times --
+      -------------------------------
       select cast(date_time at time zone 'UTC' as date)
         bulk collect into l_date_times
         from table(l_timeseries_data)
@@ -4778,13 +5140,60 @@ AS
          DBMS_APPLICATION_INFO.set_action (
             'Incoming data set has a regular interval, confirm data set matches interval_id');
 
+         select interval_forward,
+                interval_backward
+           into l_interval_forward,
+                l_interval_backward
+           from at_cwms_ts_spec
+          where ts_code = l_ts_code;
+         if l_interval_forward is not null or l_interval_backward is not null then
+            -----------------------------------
+            -- snap times to interval offset --
+            -----------------------------------
+            select cast(multiset(select tsv_type(
+                                           from_tz(
+                                              cast(
+                                                 snap_to_interval_offset_tz(
+                                                    date_time,
+                                                    l_interval_value,
+                                                    nvl(l_utc_offset, existing_utc_offset),
+                                                    extract(timezone_region from date_time),
+                                                    'UTC',
+                                                    nvl(l_interval_forward, 0),
+                                                    nvl(l_interval_backward, 0))
+                                                 as timestamp),
+                                              extract(timezone_region from date_time)),
+                                           value,
+                                           quality_code
+                                        )
+                                   from table(l_timeseries_data)
+                                ) as tsv_array
+                       )
+              into l_timeseries_data -- times outside snapping window will be set to null
+              from dual;
+            ------------------------------------
+            -- filter out times not on offset --
+            ------------------------------------
+            select cast(multiset(select tsv_type(date_time, value, quality_code)
+                                   from table(l_timeseries_data)
+                                  where date_time is not null
+                                  order by date_time
+                                ) as tsv_array
+                       )
+              into l_timeseries_data
+              from dual;
+         end if;
+         if l_timeseries_data.count = 0 then
+            dbms_application_info.set_action ('Returning due to no in snapping window');
+            return;
+         end if;
          -----------------------------
          -- test for irregular data --
          -----------------------------
          begin
-            select distinct get_utc_interval_offset(column_value, l_interval_value)
+            select distinct get_utc_interval_offset(date_time at time zone 'UTC', l_interval_value)
               into l_utc_offset
-              from table(l_date_times);
+              from table(l_timeseries_data);
          exception
             when too_many_rows then
                raise_application_error (
@@ -4804,7 +5213,7 @@ AS
             -----------------------------
             -- test for invalid offset --
             -----------------------------
-            if get_utc_interval_offset(l_date_times(1), l_interval_value) != existing_utc_offset then
+            if get_utc_interval_offset(l_timeseries_data(1).date_time at time zone 'UTC', l_interval_value) != existing_utc_offset then
                raise_application_error (
                   -20101,
                   'Incoming Data Set''s UTC_OFFSET: '
@@ -4822,52 +5231,56 @@ AS
          if existing_utc_offset in (cwms_util.utc_offset_irregular, cwms_util.utc_offset_undefined) then
             null;
          else
-            l_irr_offset := abs(existing_utc_offset);
-            select ci.interval
-              into l_irr_interval
-              from cwms_interval ci,
-                   at_cwms_ts_id ts
-             where ts.ts_code = l_ts_code
-               and ci.interval_id = substr(ts.interval_id, 2);
-            ------------------------------------------------------------
-            -- filter out data not on interval offset (from local tz) --
-            ------------------------------------------------------------
-            l_loc_tz := cwms_loc.get_local_timezone(l_location_code);
-            if l_loc_tz is not null then
-
-               select cwms_util.change_timezone(cast(date_time at time zone 'UTC' as date), 'UTC', l_loc_tz)
-                 bulk collect
-                 into l_date_times
-                 from table(l_timeseries_data);
-
-               l_count := 0;
-               l_filtered_ts_data := tsv_array();
-               l_filtered_ts_data.extend(l_timeseries_data.count);
-               for i in 1..l_timeseries_data.count loop
-                  if get_time_on_before_interval(
-                        l_date_times(i),
-                        l_irr_offset,
-                        l_irr_interval) = l_date_times(i)
-                  then
-                     l_filtered_ts_data(i-l_count) := l_timeseries_data(i);
-                  else
-                     l_count := l_count + 1;
-                  end if;
-               end loop;
-               case
-               when l_count = l_timeseries_data.count then
-                  dbms_application_info.set_action ('Returning due to no data passed constrained pseudo-regular filter');
-                  return;      -- have already created ts_code if it didn't exist
-               when l_count > 0 then
-                  l_filtered_ts_data.trim(l_count);
-               else
-                  null; -- no times filetered out
-               end case;
-               l_timeseries_data := l_filtered_ts_data;
+            if l_is_lrts then
+               select interval_forward,
+                      interval_backward
+                 into l_interval_forward,
+                      l_interval_backward
+                 from at_cwms_ts_spec
+                where ts_code = l_ts_code;
+               if l_interval_forward is not null or l_interval_backward is not null then
+                  -----------------------------------
+                  -- snap times to interval offset --
+                  -----------------------------------
+                  select cast(multiset(select tsv_type(
+                                                   from_tz(
+                                                    cast(
+                                                       snap_to_interval_offset_tz(
+                                                          date_time,
+                                                          l_irr_interval,
+                                                          l_irr_offset,
+                                                          extract(timezone_region from date_time),
+                                                          l_loc_tz,
+                                                          nvl(l_interval_forward, 0),
+                                                          nvl(l_interval_backward, 0))
+                                                       as timestamp),
+                                                    extract(timezone_region from date_time)),
+                                                 value,
+                                                 quality_code
+                                              )
+                                         from table(l_timeseries_data)
+                                      )as tsv_array)
+                    into l_timeseries_data -- times outside snapping window will be set to null
+                    from dual;
+                  ------------------------------------
+                  -- filter out times not on offset --
+                  ------------------------------------
+                  select cast(multiset(select tsv_type(date_time, value, quality_code)
+                                         from table(l_timeseries_data)
+                                        where date_time is not null
+                                        order by date_time
+                                      ) as tsv_array
+                             )
+                    into l_timeseries_data
+                    from dual;
+               end if;
+               if l_timeseries_data.count = 0 then
+                  dbms_application_info.set_action ('Returning due to no in snapping window');
+                  return;
+               end if;
             end if;
          end if;
       END IF;
-
 
       DBMS_APPLICATION_INFO.set_action (
          'getting vertical datum offset if parameter is elevation');
@@ -5931,21 +6344,27 @@ AS
                ||chr(10)
                ||dbms_utility.format_error_backtrace
                ||l_timeseries_data.count
-               ||' values'
-               ||chr(10)
-               ||'first = '
-               ||l_timeseries_data(1).date_time
-               ||chr(9)
-               ||l_timeseries_data(1).value
-               ||chr(9)
-               ||l_timeseries_data(1).quality_code
-               ||chr(10)
-               ||'last = '
-               ||l_timeseries_data(l_timeseries_data.count).date_time
-               ||chr(9)
-               ||l_timeseries_data(l_timeseries_data.count).value
-               ||chr(9)
-               ||l_timeseries_data(l_timeseries_data.count).quality_code);
+               ||case
+                 when l_timeseries_data.count > 0 then
+                    ' values'
+                    ||chr(10)
+                    ||'first = '
+                    ||l_timeseries_data(1).date_time
+                    ||chr(9)
+                    ||l_timeseries_data(1).value
+                    ||chr(9)
+                    ||l_timeseries_data(1).quality_code
+                    ||chr(10)
+                    ||'last = '
+                    ||l_timeseries_data(l_timeseries_data.count).date_time
+                    ||chr(9)
+                    ||l_timeseries_data(l_timeseries_data.count).value
+                    ||chr(9)
+                    ||l_timeseries_data(l_timeseries_data.count).quality_code
+                 else
+                    null
+                 end
+               );
          end if;
          cwms_err.raise ('ERROR', dbms_utility.format_error_backtrace);
    end store_ts_2;
