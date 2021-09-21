@@ -5,7 +5,6 @@ wcdba_overrides.xml*.md
 docs
 .teamcity
 database_codegen_jooq
-src/test
 auto-build-error.txt
 auto-build-output.txt
 auto-kill-error.txt
