@@ -885,5 +885,134 @@
 		</resolver:deploy>
 	</target>
 
+	<property name="docker.props.container_name" value="antdb"/>
+	<property name="docker.props.network_name" value="antdbnet"/>
+
+	<target name="docker.buildimage">
+		<echo message="Creating baseline docker image"/>
+		<exec dir="${root}" executable="docker"  failonerror="true">
+			<arg value="build"/>
+			<arg value="--tag"/>
+			<arg value="cwmsdb_ant_test:latest"/>
+			<arg value="."/>
+			<redirector output="${root}/build/docker.txt" error="${root}/build/docker" alwayslog="true"/>
+		</exec>
+	</target>
+
+	<target name="docker.createnetwork">
+		<exec executable="docker" failonerror="false" outputproperty="networkList">
+			<arg value="network"/>
+			<arg value="ls"/>
+		</exec>
+		<if>
+			<matches pattern="${docker.props.network_name}" string="${networkList}"/>
+			<then>
+				<echo message="Network already created"/>
+			</then>
+			<else>
+				<echo message="Creating the docker internal network"/>
+				<exec executable="docker" failonerror="true">
+					<arg value="network"/>
+					<arg value="create"/>
+					<arg value="${docker.props.network_name"/>
+				</exec>
+			</else>
+		</if>
+	</target>
+
+	<target name="docker.setupparameters">
+		<echo message="Creating parameter file"/>
+		<if>
+			<available file="${root}/build/database.props"/>
+			<then>
+				<echo message="Already have proprties"/>
+			</then>
+			<else>
+				<propertyfile file="${root}/build/database.props">
+					<entry key="database.syspw" value="antsyspassword"/>
+					<entry key="database.cwmspw" value="antcwmspassword"/>
+					<entry key="database.builduser" value="antbuildpassword"/>
+					<entry key="database.office" value="SPK"/>
+					<entry key="database.eroc" value="l2"/>
+					<entry key="database.host_and_port" value="antdb:1521"/>
+					<entry key="database.name" value="CWMSANT"/>
+				</propertyfile>
+			</else>
+		</if>
+	</target>
+<!--
+		docker run \-\-network database_net -d \-\-name testdb -e ORACLE_PDB=$DBNAME -e ORACLE_PWD=$SYS_PASSWORD -p 1522:1521 -e enterprise oracle/database:19.3.0-ee
+		docker run \-\-network database_net -e DB_HOST_PORT="testdb:1521" -e DB_NAME="/$DBNAME" -e SYS_PASSWORD=$SYS_PASSWORD cwms_db_install:latest
+	-->
+	<target name="docker.prepdb" depends="docker.setupparameters,docker.killdb,docker.createnetwork">
+		<echo message="Creating baseline docker database"/>
+		<loadproperties srcFile="${root}/build/database.props"/>
+		<exec executable="docker" outputproperty="containerList">
+			<arg value="container"/>
+			<arg value="ls"/>
+			<arg value="-a"/>
+		</exec>
+		<if>
+			<matches pattern="${docker.props.container_name}" string="${containerList}"/>
+			<then>
+				<echo message="Starting Existing Oracle databse"/>
+				<exec executable="docker" failonerror="true">
+					<arg value="start"/>
+					<arg value="${docker.props.container_name}"/>
+				</exec>
+			</then>
+			<else>
+				<echo message="Creating new database"/>
+				<exec dir="${root}" executable="docker" failonerror="true">
+					<arg value="run"/>
+					<arg value="-d"/>
+					<arg value="--network"/>
+					<arg value="${docker.props.network_name}"/>
+					<arg value="--name"/>
+					<arg value="${docker.props.container_name}"/>
+					<arg value="-e"/>
+					<arg value="ORACLE_PDB=${database.name}"/>
+					<arg value="-e"/>
+					<arg value="ORACLE_PWD=${database.syspw}"/>
+					<arg value="-e"/>
+					<arg value="enterprise"/>
+					<arg value="oracle/database:19.3.0-ee"/>
+				</exec>
+			</else>
+		</if>
+		<waitfor checkevery="1000" maxwait="3600" maxwaitunit="hour"> <!-- Yes, this takes a while. -->
+			<scriptcondition language="javascript" value="false"><![CDATA[
+				var p = java.lang.Runtime.getRuntime().exec("docker logs -n 100 " + cwms_database_schema.getProperty("docker.props.container_name") );
+				p.waitFor();
+				var reader = new java.io.InputStreamReader(p.getInputStream());
+				var out = org.apache.tools.ant.util.FileUtils.safeReadFully(reader);
+				var echo = cwms_database_schema.createTask("echo");
+				echo.setMessage("got" + out);
+				echo.perform();
+				self.setValue(out.contains("DATABASE IS READY TO USE"));
+				]]>
+			</scriptcondition>
+
+		</waitfor>
+
+	</target>
+
+
+
+	<target name="docker.killdb">
+		<echo message="Removing oracle database instance"/>
+		<exec dir="${root}" executable="docker" failonerror="false">
+			<arg value="rm"/>
+			<arg value="-f"/>
+			<arg value="${docker.props.container_name}"/>
+
+		</exec>
+
+	</target>
+
+	<target name="docker.resetdb" depends="docker.killdb">
+		<echo message="Removing generated properties files"/>
+		<delete file="${root}/build/database.props"/>
+	</target>
 
 </project>
