@@ -3,7 +3,7 @@ create or replace package test_lrts_updates as
 --%suite(Test schema for full LRTS compatibility)
 
 --%rollback(manual)
---%@ afterall(teardown)
+--%afterall(teardown)
 
 --%test(CREATE_TS_CODE with zero offset without time zone)
 procedure create_ts_code_no_tz1;
