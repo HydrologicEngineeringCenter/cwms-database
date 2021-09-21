@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "I installing CWMS Database with the following parameters"
+echo "I'm installing CWMS Database with the following parameters"
 echo "DB HOST_PORT: $DB_HOST_PORT"
 echo "DB NAME: $DB_NAME"
 echo "OFFICE_ID: $OFFICE_ID"
