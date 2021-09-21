@@ -501,13 +501,13 @@ AS
          cwms_err.raise('ERROR', 'Interval offset ('||l_interval_offset||') must be less than interval ('||l_interval||')');
       end if;
       begin
-         l_interval_forward := interval_offset_minutes(p_interval_forward);
+         l_interval_forward := interval_offset_minutes(nvl(p_interval_forward, '0'));
       exception
          when others then
             cwms_err.raise('ERROR', 'Invalid interval forward '||p_interval_forward);
       end;
       begin
-         l_interval_backward := interval_offset_minutes(p_interval_backward);
+         l_interval_backward := interval_offset_minutes(nvl(p_interval_backward, '0'));
       exception
          when others then
             cwms_err.raise('ERROR', 'Invalid interval backward '||p_interval_backward);
@@ -580,17 +580,20 @@ AS
       if p_offset_time_zone is null then cwms_err.raise('NULL_ARGUMENT', 'P_OFFSET_TIME_ZONE'); end if;
       l_interval        := interval_minutes(p_interval);
       l_interval_offset := interval_offset_minutes(p_interval_offset);
+      if l_interval_offset in (cwms_util.utc_offset_undefined, cwms_util.utc_offset_irregular) then
+         return p_date_time;
+      end if;
       if l_interval_offset >= l_interval then
          cwms_err.raise('ERROR', 'Interval offset ('||l_interval_offset||') must be less than interval ('||l_interval||')');
       end if;
       begin
-         l_interval_forward := interval_offset_minutes(p_interval_forward);
+         l_interval_forward := interval_offset_minutes(nvl(p_interval_forward, 0));
       exception
          when others then
             cwms_err.raise('ERROR', 'Invalid interval forward '||p_interval_forward);
       end;
       begin
-         l_interval_backward := interval_offset_minutes(p_interval_backward);
+         l_interval_backward := interval_offset_minutes(nvl(p_interval_backward, 0));
       exception
          when others then
             cwms_err.raise('ERROR', 'Invalid interval backward '||p_interval_backward);
