@@ -1,5 +1,5 @@
 create or replace package test_update_ts_extents as
---%suite(Test schema for versioned time series functionality)
+--%suite(Test time series extents functionality)
 
 --%beforeall(setup)
 --%afterall(teardown)
@@ -432,4 +432,3 @@ end update_ts_extents;
 end test_update_ts_extents;
 /
 show errors
-

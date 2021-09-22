@@ -161,6 +161,185 @@ AS
       RETURN VARCHAR2;
 
    /**
+    * Retrieves the Daylight Saving Time boundaries (if any) for a specified time zone and year
+    *
+    * @param p_tz_name The time zone for DST times
+    * @param p_year    The year to return the DST boundaries in to take the year from
+    *
+    * @return A Table of two dates, the Spring and Autum DST boundaries. If the time zone doesn't observe DST, both values will be null.
+    */
+   function dst_times(
+      p_tz_name in varchar2,
+      p_year    in integer)
+   return date_table_type;
+
+   /**
+    * Retrieves the Daylight Saving Time boundaries (if any) for a specified time zone and year
+    *
+    * @param p_tz_name The time zone for DST times
+    * @param p_test    A date to take the year from
+    *
+    * @return A Table of two dates, the Spring and Autum DST boundaries. If the time zone doesn't observe DST, both values will be null.
+    */
+   function dst_times(
+      p_tz_name in varchar2,
+      p_test    in date)
+   return date_table_type;
+
+   /**
+    * Returns the number of minutes in a valid CWMS interval
+    *
+    * @param p_interval The CWMS interval as either the number of minutes or the interval ID.
+    *                   The number of minutes may be specifie either as an integer (which will be implicitly cast to a string) or a string.
+    *
+    * @return The number of minutes (always non-negative) in the interval
+    *
+    * @throws ERROR if p_interval is not a valid CWMS interval
+    */
+   function interval_minutes(
+      p_interval in varchar2)
+      return integer;
+
+   /**
+    * Returns the number of minutes in a valid interval offset
+    *
+    * @param p_interval offset The interval offset as either a number of minutes or a string in the format nnUU (nn=number, UU=unit).
+    *                          The number of minutes may be specifie either as an integer (which will be implicitly cast to a string) or a string.
+    *                          In the nnUU format, the unit must be a case insensitive initial portion of 'MINUTES', 'HOURS', or 'DAYS'
+    *
+    * @return The number of minutes (always non-negative) in the interval offset
+    *
+    * @throws ERROR if p_interval_offset is not valid
+    */
+   function interval_offset_minutes(
+      p_interval_offset in varchar2)
+      return integer;
+
+   /**
+    * Returns the time of the top of the current or next CWMS interval, incremented by a UTC offset
+    *
+    * @param p_date_time           The time to get the CWMS interval for
+    * @param p_interval            The CWMS interval, in number of minutes (integer or string) or interval ID
+    * @param p_interval_offset     The offset into the CWMS UTC interval in minutes (integer or string) or nnUU (e.g., '15MIN')
+    * @param p_next                A flag ('T'/'F') specifying wheter to retrieve the beginning of the current interval ('T') or the next interval ('F').
+    *                              If p_date_time is at the top of an interval (incremented by an offset), the that interval is used regardless of this parameter
+    *
+    * @return The top of the specified interval, offset by the specified offset
+    *
+    * @throws ERROR if <ul>
+    *                  <li>p_interval is not a valid CWMS interval</li>
+    *                  <li>p_interval_offset is not valid</li>
+    *                  <li>p_interval_offset >= p_interval</li>
+    *                  </ul>
+    *
+    * @see cwms_ts.top_of_interval_tz
+    */
+   function top_of_interval_utc(
+      p_date_time          in date,
+      p_interval           in varchar2,
+      p_interval_offset    in varchar2,
+      p_next               in varchar2 default 'F')
+      return date;
+
+   /**
+    * Returns the time of the top of the current or next CWMS interval, incremented by an offset in a specified time zone
+    *
+    * @param p_date_time           The time to get the CWMS interval for
+    * @param p_interval            The CWMS interval, in number of minutes (integer or string) or interval ID
+    * @param p_interval_offset     The offset into the CWMS interval in minutes (integer or string) or nnUU (e.g., '15MIN')
+    * @param p_time_zone           The time zone of p_date_time and the returned time
+    * @param p_offset_time_zone    The time zone in which the interval offset should be applied
+    * @param p_next                A flag ('T'/'F') specifying wheter to retrieve the beginning of the current interval ('T') or the next interval ('F').
+    *                              If p_date_time is at the top of an interval (incremented by an offset), the that interval is used regardless of this parameter
+    *
+    * @return The top of the specified interval, offset by the specified offset
+    *
+    * @throws ERROR if <ul>
+    *                  <li>p_interval is not a valid CWMS interval</li>
+    *                  <li>p_interval_offset is not valid</li>
+    *                  <li>p_interval_offset >= p_interval</li>
+    *                  <li>p_offset_time_zone is in valid</li>
+    *                  <li>p_output_time_zone is in valid</li>
+    *                  </ul>
+    *
+    * @see cwms_ts.top_of_interval_utc
+    */
+   function top_of_interval_tz(
+      p_date_time        in date,
+      p_interval         in varchar2,
+      p_interval_offset  in varchar2,
+      p_time_zone        in varchar2,
+      p_offset_time_zone in varchar2,
+      p_next             in varchar2 default 'F')
+      return date;
+
+   /**
+    * Returns the input time snapped to the top of the current or next CWMS interval, incremented by a UTC offset, if the input time is within the snapping window
+    *
+    * @param p_date_time           The time to get the CWMS interval for
+    * @param p_interval            The CWMS interval, in number of minutes (integer or string) or interval ID
+    * @param p_interval_offset     The offset into the CWMS UTC interval in minutes (integer or string) or nnUU (e.g., '15MIN')
+    * @param p_interval_forward    The number of minutes after the expected time to accept values, in minutes (integer or string) or nnUU (e.g., '15MIN')
+    * @param p_interval_backward   The number of minutes before the expected time to accept values, in minutes (integer or string) or nnUU (e.g., '15MIN')
+    *
+    * @return The expected time (top of CWMS interval plus UTC offset) if p_date_time is in the snapping window, otherwise null;
+    *
+    * @throws ERROR if <ul>
+    *                  <li>p_interval is not a valid CWMS interval</li>
+    *                  <li>p_interval_offset is not valid</li>
+    *                  <li>p_interval_offset >= p_interval</li>
+    *                  <li>p_interval_offset + p_interval_forward >= p_interval</li>
+    *                  <li>p_interval_offset - p_interval_backward <= 0</li>
+    *                  </ul>
+    *
+    * @see cwms_ts.top_of_interval_utc
+    * @see cwms_ts.snap_to_interval_offset_tz
+    */
+   function snap_to_interval_offset_utc(
+      p_date_time         in date,
+      p_interval          in varchar2,
+      p_interval_offset   in varchar2,
+      p_interval_forward  in varchar2 default null,
+      p_interval_backward in varchar2 default null)
+      return date;
+
+   /**
+    * Returns the input time snapped to the top of the current or next CWMS interval, incremented by a offset in a specified time zone, if the input time is within the snapping window
+    *
+    * @param p_date_time           The time to get the CWMS interval for
+    * @param p_interval            The CWMS interval, in number of minutes (integer or string) or interval ID
+    * @param p_interval_offset     The offset into the CWMS UTC interval in minutes (integer or string) or nnUU (e.g., '15MIN')
+    * @param p_time_zone           The time zone of p_date_time and the returned time
+    * @param p_offset_time_zone    The time zone in which the interval offset should be applied
+    * @param p_interval_forward    The number of minutes after the expected time to accept values, in minutes (integer or string) or nnUU (e.g., '15MIN')
+    * @param p_interval_backward   The number of minutes before the expected time to accept values, in minutes (integer or string) or nnUU (e.g., '15MIN')
+    *
+    * @return The expected time (top of CWMS interval plus UTC offset) if p_date_time is in the snapping window, otherwise null;
+    *
+    * @throws ERROR if <ul>
+    *                  <li>p_interval is not a valid CWMS interval</li>
+    *                  <li>p_interval_offset is not valid</li>
+    *                  <li>p_interval_offset >= p_interval</li>
+    *                  <li>p_offset_time_zone is in valid</li>
+    *                  <li>p_output_time_zone is in valid</li>
+    *                  <li>p_interval_offset + p_interval_forward >= p_interval</li>
+    *                  <li>p_interval_offset - p_interval_backward <= 0</li>
+    *                  </ul>
+    *
+    * @see cwms_ts.top_of_interval_tz
+    * @see cwms_ts.snap_to_interval_offset_utc
+    */
+   function snap_to_interval_offset_tz(
+      p_date_time         in date,
+      p_interval          in varchar2,
+      p_interval_offset   in varchar2,
+      p_time_zone         in varchar2,
+      p_offset_time_zone  in varchar2,
+      p_interval_forward  in varchar2 default null,
+      p_interval_backward in varchar2 default null)
+      return date;
+
+   /**
     * Retrieve the beginning time of the next interval a specified time, interval, and offset
     *
     * @param p_datetime    The UTC time to retrieve the start of the next interval for
@@ -168,6 +347,8 @@ AS
     * @param p_ts_interval The data interval length in minutes
     *
     * @return The beginning time of the next interval
+    * @deprecated Use top_of_interval_utc
+    * @see cwms_ts.top_of_interval_utc
     */
    FUNCTION get_time_on_after_interval (p_datetime      IN DATE,
                                         p_ts_offset     IN NUMBER,
@@ -182,6 +363,8 @@ AS
     * @param p_ts_interval The data interval length in minutes
     *
     * @return The beginning time of the current interval
+    * @deprecated Use top_of_interval_utc
+    * @see cwms_ts.top_of_interval_utc
     */
    FUNCTION get_time_on_before_interval (p_datetime      IN DATE,
                                          p_ts_offset     IN NUMBER,

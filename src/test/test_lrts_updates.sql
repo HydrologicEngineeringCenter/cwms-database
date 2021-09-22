@@ -1163,6 +1163,7 @@ begin
          limit 1000;
 
          close l_crsr;
+
          ut.expect(l_cwms_ts_id_out).to_equal(l_cwms_ts_id_in);
          ut.expect(l_units_out).to_equal(c_ts_unit);
          ut.expect(l_date_times.count).to_equal(c_value_count);
@@ -1859,10 +1860,10 @@ begin
    l_ts_values.extend(c_value_count);
    for i in 1..c_value_count loop
       l_ts_values(i) := tsv_type(
-         date_time    => cast(c_ts_values_utc(2)(i).date_time as timestamp) at time zone 'US/Central',
+         date_time    => cast(trunc(c_ts_values_utc(2)(i).date_time, 'HH') as timestamp) at time zone 'US/Central',
          value        => c_ts_values_utc(2)(i).value,
          quality_code => c_ts_values_utc(2)(i).quality_code);
-      if mod(i, 2) = 0 then
+      if mod(i, 2) = 1 then
          l_ts_values(i).date_time := l_ts_values(i).date_time + to_dsinterval('0 0:10:0');
       end if;
    end loop;
