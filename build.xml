@@ -933,7 +933,7 @@
 				<propertyfile file="${root}/build/database.props">
 					<entry key="database.syspw" value="antsyspassword"/>
 					<entry key="database.cwmspw" value="antcwmspassword"/>
-					<entry key="database.builduser" value="antbuildpassword"/>
+					<entry key="database.buildpw" value="antbuildpassword"/>
 					<entry key="database.office" value="SPK"/>
 					<entry key="database.eroc" value="l2"/>
 					<entry key="database.host_and_port" value="antdb:1521"/>
@@ -1014,25 +1014,25 @@
 			<arg value="SYS_PASSWORD=${database.syspw}"/>
 			<arg value="-e"/>
 			<arg value="CWMS_PASSWORD=${database.cwmspw}"/>
+			<arg value="-e"/>
+			<arg value="BUILDUSER_PASSWORD=${database.buildpw}"/>
 			<arg value="${docker.props.image_name}"/>
 		</exec>
 	</target>
 
 	<target name="docker.stopdb">
 		<echo message="Stopping database"/>
-		<exec dir="${root}" executable="docker" failonerror="true">
+		<exec dir="${root}" executable="docker" failonerror="false">
 			<arg value="stop"/>
 			<arg value="${docker.props.container_name}"/>
 		</exec>
 	</target>
 
-	<target name="docker.killdb">
-		<echo message="Removing oracle database instance" depends="docker.stopdb"/>
+	<target name="docker.killdb" depends="docker.stopdb">
+		<echo message="Removing oracle database instance"/>
 		<exec dir="${root}" executable="docker" failonerror="true">
 			<arg value="rm"/>
-
 			<arg value="${docker.props.container_name}"/>
-
 		</exec>
 
 	</target>
