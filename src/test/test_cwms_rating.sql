@@ -58,7 +58,7 @@ begin
    if not inspect_after_test then
       delete from at_clob where id like '/XSLT\_TEST/RESULT\_%' escape '\';
       delete from at_clob where id like '/XSLT\_TEST/COMPARISON\_%' escape '\';
-   end if;   
+   end if;
 end teardown_xslt;
 --------------------------------------------------------------------------------
 -- procedure teardown_xslt2
@@ -68,7 +68,7 @@ is
 begin
    if not inspect_after_test then
       delete from at_clob where id like '/XSLT\_TEST/%' escape '\';
-   end if;   
+   end if;
 end teardown_xslt2;
 --------------------------------------------------------------------------------
 -- procedure test_ratings_xsl
@@ -89,6 +89,7 @@ is
    exc_null_object   exception;
    pragma exception_init(exc_null_object, -30625);
 begin
+   cwms_properties.set_property('CWMS-RADAR', 'query.max-time', '00 00:01:00','TESTing default', 'CWMS');
    ----------------------------------------------------------------------
    -- make sure we have the number of ratings and transforms we expect --
    ----------------------------------------------------------------------
@@ -115,7 +116,7 @@ begin
          p_xml            => cwms_text.retrieve_text(l_rating_ids(i), '&&office_id'),
          p_fail_if_exists => 'F',
          p_replace_base   => 'T');
-      commit;   
+      commit;
       if l_errors is not null then
          for rec in (select column_value as line from table(cwms_util.split_text(l_errors, chr(10)))) loop
             dbms_output.put_line('===> '||rec.line);
@@ -218,10 +219,10 @@ procedure test_ratings_delete
 is
  l_count NUMBER;
 begin
- select count(*) into l_count from cwms_v_rating; 
+ select count(*) into l_count from cwms_v_rating;
  ut.expect(l_count).to_be_greater_than(0);
  CWMS_RATING.DELETE_TEMPLATES('*', cwms_util.delete_all, '*');
- select count(*) into l_count from cwms_v_rating; 
+ select count(*) into l_count from cwms_v_rating;
  ut.expect(l_count).to_equal(0);
 end;
 
