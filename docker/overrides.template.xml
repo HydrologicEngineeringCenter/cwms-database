@@ -2,21 +2,21 @@
 
 	<!-- properties for oracle cc build . -->
 
-	
+
 
 	<!-- the oracle hostport to install to. -->
 
-	<property name="oracle.cwms.hostport" value="HOST_AND_PORT"/>
+	<property name="oracle.cwms.hostport" value="@HOST_AND_PORT@"/>
 
-	
+
 
 	<!-- the oracle instance to install to. -->
 
- 	<property name="oracle.cwms.instance" value="HOST_AND_PORT/SERVICE_NAME"/>
+ 	<property name="oracle.cwms.instance" value="@HOST_AND_PORT@/${database.name}"/>
 
 
 
- 	
+
 
 	<!-- oracle user to build CWMS schema -->
 
@@ -24,7 +24,7 @@
 
 	<!-- oracle.builduser password -->
 
-	<property name="oracle.builduser.password" value="BUILDUSER_PASS"/>
+	<property name="oracle.builduser.password" value="${database.buildpw}"/>
 
  	<!-- the oracle user to install to the oracle instance. -->
 
@@ -34,9 +34,9 @@
 
 	<!-- the office that owns the cwms database instance. -->
 
-	<property name="office.primary.id" value="OFFICE_ID"/> 
+	<property name="office.primary.id" value="${database.office}"/>
 
-	<property name="office.primary.code" value="OFFICE_CODE"/> 
+	<property name="office.primary.code" value="${database.eroc}"/>
 
 
 
@@ -44,7 +44,7 @@
 
 	<!-- secondary is optional and the value can be 0 to many offices separated by a space. -->
 
-	<property name="office.secondary.id" value=""/> 
+	<property name="office.secondary.id" value=""/>
 
 
 
@@ -54,29 +54,29 @@
 
 
 
-	<property name="oracle.sys.password" value="SYS_PASSWORD"/>
+	<property name="oracle.sys.password" value="${database.syspw}"/>
 
-	<property name="oracle.cwms.password" value="PASSWORD"/>
+	<property name="oracle.cwms.password" value="${database.cwmspw}"/>
 
 
 
 	<!-- the password for the ${office.primary.code}cwmsdbi account -->
 
-	<property name="oracle.cwmspd.password" value="PASSWORD"/>
+	<property name="oracle.cwmspd.password" value="${database.cwmspw}"/>
 
-	<property name="oracle.cwmsdbi.password" value="PASSWORD"/>
+	<property name="oracle.cwmsdbi.password" value="${database.cwmspw}"/>
 
 
 
 	<!-- the password for the ${office.primary.code}hectest account -->
 
-	<property name="oracle.hectest.password" value="PASSWORD"/>
+	<property name="oracle.hectest.password" value="${database.cwmspw}"/>
 
-	
+
 
 	<!-- flag to create the test account -->
 
-	<property name="test.account.create" value="TEST_ACCOUNT_FLAG"/>
+	<property name="test.account.create" value="-testaccount"/>
 
 
 
@@ -92,10 +92,8 @@
 
 	<property name="autokill.force" value="-force"/>
 	<property name="build.restrict" value=""/>
-	
+
 
 	<!-- end of properties for oracle cc build. -->
 
 </project>
-
-

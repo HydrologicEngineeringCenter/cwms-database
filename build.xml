@@ -967,6 +967,8 @@
 					<arg value="-d"/>
 					<arg value="--network"/>
 					<arg value="${docker.props.network_name}"/>
+					<arg value="-p"/>
+					<arg value="1521"/> <!-- random external port will be assigned and stored -->
 					<arg value="--name"/>
 					<arg value="${docker.props.container_name}"/>
 					<arg value="-e"/>
@@ -994,7 +996,29 @@
 
 		</waitfor>
 
+
 	</target>
+
+	<target name="docker.showport" depends="docker.prepdb">
+		<exec executable="docker" outputproperty="portOutput" failonerror="true">
+			<arg value="port"/>
+			<arg value="${docker.props.container_name}"/>
+		</exec>
+		<echo message="Your database is listening on ${portOutput}"/>
+		<loadresource property="portLine1">
+			<propertyresource name="portOutput"/>
+			<filterchain>
+				<headfilter lines="1"/>
+			</filterchain>
+		</loadresource>
+		<exec executable="sed" outputProperty="docker.props.external_port">
+			<arg value="-e"/>
+			<arg value="s/^\(.*:\)\(.*\)$/\2/"/>
+			<redirector inputstring="${portLine1}"/>
+		</exec>
+		<echo message="Port is ${docker.props.external_port}"/>
+	</target>
+
 <!--
 		docker run \-\-network database_net -d \-\-name testdb -e ORACLE_PDB=$DBNAME -e ORACLE_PWD=$SYS_PASSWORD -p 1522:1521 -e enterprise oracle/database:19.3.0-ee
 		docker run \-\-network database_net -e DB_HOST_PORT="testdb:1521" -e DB_NAME="/$DBNAME" -e SYS_PASSWORD=$SYS_PASSWORD cwms_db_install:latest
@@ -1016,8 +1040,30 @@
 			<arg value="CWMS_PASSWORD=${database.cwmspw}"/>
 			<arg value="-e"/>
 			<arg value="BUILDUSER_PASSWORD=${database.buildpw}"/>
+			<arg value="-e"/>
+			<arg value="OFFICE_ID=${database.office}"/>
 			<arg value="${docker.props.image_name}"/>
 		</exec>
+	</target>
+
+	<target name="docker.generateoverrides" depends="docker.showport">
+		<copy file="docker/overrides.template.xml" tofile="${root}/build/overrides.internal.xml">
+			<filterchain>
+				<expandproperties/>
+				<replacetokens>
+					<token key="HOST_AND_PORT" value="${database.host_and_port}"/>
+				</replacetokens>
+			</filterchain>
+		</copy>
+
+		<copy file="docker/overrides.template.xml" tofile="${root}/build/overrides.external.xml">
+			<filterchain>
+				<expandproperties/>
+				<replacetokens>
+					<token key="HOST_AND_PORT" value="localhost:${docker.props.external_port}"/>
+				</replacetokens>
+			</filterchain>
+		</copy>
 	</target>
 
 	<target name="docker.stopdb">
@@ -1034,7 +1080,6 @@
 			<arg value="rm"/>
 			<arg value="${docker.props.container_name}"/>
 		</exec>
-
 	</target>
 
 	<target name="docker.resetdbprops" depends="docker.killdb">
