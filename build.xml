@@ -885,9 +885,12 @@
 		</resolver:deploy>
 	</target>
 
-	<!-- nothing below this line should EVER depend on a passed in overrides file. -->
-	<property name="docker.props.container_name" value="antdb"/>
-	<property name="docker.props.network_name" value="antdbnet"/>
+	<!-- nothing below this line should EVER depend on a passed in overrides file. '
+		 However, one may override settings, like the container_name with a simple -Ddocker.props.container_name=<Some text>
+
+	-->
+	<property name="docker.props.container_name" value="antdockercwmsdb"/>
+	<property name="docker.props.network_name" value="cwmsdbnet"/>
 	<property name="docker.props.image_name" value="cwms_db:latest"/>
 
 	<target name="docker.buildimage">
@@ -916,13 +919,26 @@
 				<exec executable="docker" failonerror="true">
 					<arg value="network"/>
 					<arg value="create"/>
-					<arg value="${docker.props.network_name"/>
+					<arg value="${docker.props.network_name}"/>
 				</exec>
 			</else>
 		</if>
 	</target>
 
 	<target name="docker.setupparameters">
+		<echo message="processing container name to safe characters. Starting with: ${docker.props.container_name}"/>
+		<exec executable="sed" outputProperty="docker.props.container_name_valid" failonerror="true">
+			<arg value="-e"/>
+			<arg value="s@/refs/heads/@@g"/>
+			<arg value="-e"/>
+			<arg value="s@/@_@g"/>
+			<arg value="-e"/>
+			<arg value="s@-@_@g"/>
+			<arg value="-e"/>
+			<arg value="s@#@_@g"/>
+			<redirector inputString="${docker.props.container_name}"/>
+		</exec>
+		<echo message="Name used will be: ${docker.props.container_name_valid}"/>
 		<echo message="Creating parameter file"/>
 		<if>
 			<available file="${root}/build/database.props"/>
@@ -936,8 +952,8 @@
 					<entry key="database.buildpw" value="antbuildpassword"/>
 					<entry key="database.office" value="SPK"/>
 					<entry key="database.eroc" value="l2"/>
-					<entry key="database.host_and_port" value="antdb:1521"/>
-					<entry key="database.name" value="CWMSANT"/>
+					<entry key="database.host_and_port" value="${docker.props.container_name_valid}:1521"/>
+					<entry key="database.name" value="CWMS"/>
 				</propertyfile>
 			</else>
 		</if>
@@ -952,12 +968,12 @@
 			<arg value="-a"/>
 		</exec>
 		<if>
-			<matches pattern="${docker.props.container_name}" string="${containerList}"/>
+			<matches pattern="${docker.props.container_name_valid}" string="${containerList}"/>
 			<then>
 				<echo message="Starting Existing Oracle databse"/>
 				<exec executable="docker" failonerror="true">
 					<arg value="start"/>
-					<arg value="${docker.props.container_name}"/>
+					<arg value="${docker.props.container_name_valid}"/>
 				</exec>
 			</then>
 			<else>
@@ -970,7 +986,7 @@
 					<arg value="-p"/>
 					<arg value="1521"/> <!-- random external port will be assigned and stored -->
 					<arg value="--name"/>
-					<arg value="${docker.props.container_name}"/>
+					<arg value="${docker.props.container_name_valid}"/>
 					<arg value="-e"/>
 					<arg value="ORACLE_PDB=${database.name}"/>
 					<arg value="-e"/>
@@ -983,7 +999,7 @@
 		</if>
 		<waitfor checkevery="1000" maxwait="3600" maxwaitunit="hour"> <!-- Yes, this takes a while. -->
 			<scriptcondition language="javascript" value="false"><![CDATA[
-				var p = java.lang.Runtime.getRuntime().exec("docker logs -n 100 " + cwms_database_schema.getProperty("docker.props.container_name") );
+				var p = java.lang.Runtime.getRuntime().exec("docker logs -n 100 " + cwms_database_schema.getProperty("docker.props.container_name_valid") );
 				p.waitFor();
 				var reader = new java.io.InputStreamReader(p.getInputStream());
 				var out = org.apache.tools.ant.util.FileUtils.safeReadFully(reader);
@@ -1002,7 +1018,7 @@
 	<target name="docker.showport" depends="docker.prepdb">
 		<exec executable="docker" outputproperty="portOutput" failonerror="true">
 			<arg value="port"/>
-			<arg value="${docker.props.container_name}"/>
+			<arg value="${docker.props.container_name_valid}"/>
 		</exec>
 		<echo message="Your database is listening on ${portOutput}"/>
 		<loadresource property="portLine1">
@@ -1070,7 +1086,7 @@
 		<echo message="Stopping database"/>
 		<exec dir="${root}" executable="docker" failonerror="false">
 			<arg value="stop"/>
-			<arg value="${docker.props.container_name}"/>
+			<arg value="${docker.props.container_name_valid}"/>
 		</exec>
 	</target>
 
@@ -1078,7 +1094,7 @@
 		<echo message="Removing oracle database instance"/>
 		<exec dir="${root}" executable="docker" failonerror="true">
 			<arg value="rm"/>
-			<arg value="${docker.props.container_name}"/>
+			<arg value="${docker.props.container_name_valid}"/>
 		</exec>
 	</target>
 
