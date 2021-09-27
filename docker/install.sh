@@ -4,6 +4,7 @@ echo "I'm installing CWMS Database with the following parameters"
 echo "DB HOST_PORT: $DB_HOST_PORT"
 echo "DB NAME: $DB_NAME"
 echo "OFFICE_ID: $OFFICE_ID"
+echo "OFFICE_EROC: $OFFICE_EROC"
 if [ "$CWMS_PASSWORD" ==  "" ]
 then
     export CWMS_PASSWORD=`tr -cd '[:alnum:]' < /dev/urandom | fold -w25 | head -n1`
@@ -46,7 +47,7 @@ sed -e "s/HOST_AND_PORT/$DB_HOST_PORT/g" \
     -e "s/\/SERVICE_NAME/$SUB_DB_NAME/g" \
     -e "s/BUILDUSER_PASS/$BUILDUSER_PASSWORD/g" \
     -e "s/OFFICE_ID/$OFFICE_ID/g" \
-    -e "s/OFFICE_CODE/L2/g" \
+    -e "s/OFFICE_CODE/$OFFICE_EROC/g" \
     -e "s/TEST_ACCOUNT_FLAG/-testaccount/g" \
     -e "s/SYS_PASSWORD/$SYS_PASSWORD/g" \
     -e "s/PASSWORD/$CWMS_PASSWORD/g" /cwmsdb/teamcity_overrides.xml > /overrides.xml
