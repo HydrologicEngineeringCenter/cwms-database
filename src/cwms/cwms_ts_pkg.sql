@@ -216,6 +216,22 @@ AS
       return integer;
 
    /**
+    * Returns the number of minutes in a specified date/time is into the specified interval
+    *
+    * @param p_date_time The date/time whose offset into the interval is to be determined
+    * @param p_interval  The CWMS interval as either the number of minutes or the interval ID.
+    *                    The number of minutes may be specifie either as an integer (which will be implicitly cast to a string) or a string.
+    *
+    * @return The number of minutes (always non-negative) of the interval offset
+    *
+    * @throws ERROR if p_date_time is null or p_interval is not valid
+    */
+   function interval_offset_minutes(
+      p_date_time in date,
+      p_interval  in varchar2)
+      return integer;
+
+   /**
     * Returns the time of the top of the current or next CWMS interval, incremented by a UTC offset
     *
     * @param p_date_time           The time to get the CWMS interval for
