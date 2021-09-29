@@ -1,83 +1,84 @@
+drop package test_lrts_updates;
 create or replace package test_lrts_updates as
 
---@ %suite(Test schema for full LRTS compatibility)
+--%suite(Test schema for full LRTS compatibility)
 
---@ %rollback(manual)
---@ %afterall(teardown)
+--%rollback(manual)
+--%afterall(teardown)
 
---@ %test(CREATE_TS_CODE with zero offset without time zone)
+--%test(CREATE_TS_CODE with zero offset without time zone)
 procedure create_ts_code_no_tz1;
---@ %test(CREATE_TS_CODE with non-zero offset without time zone)
+--%test(CREATE_TS_CODE with non-zero offset without time zone)
 procedure create_ts_code_no_tz2;
---@ %test(CREATE_TS_CODE with with negative offset)
+--%test(CREATE_TS_CODE with with negative offset)
 procedure create_lrts_ts_code_neg_offset;
---@ %test(CREATE_TS_CODE with with positive offset)
+--%test(CREATE_TS_CODE with with positive offset)
 procedure create_lrts_ts_code_pos_offset;
---@ %test(UPDATE_TS_CODE with with negative offset)
+--%test(UPDATE_TS_CODE with with negative offset)
 procedure update_lrts_ts_code_neg_offset;
---@ %test(UPDATE_TS_CODE with with positive offset)
+--%test(UPDATE_TS_CODE with with positive offset)
 procedure update_lrts_ts_code_pos_offset;
---@ %test(Time zone in AT_CWMS_TS_SPEC table)
+--%test(Time zone in AT_CWMS_TS_SPEC table)
 procedure tz_in_at_cwms_ts_spec;
---@ %test(Time zone in AT_CWMS_TS_ID table)
+--%test(Time zone in AT_CWMS_TS_ID table)
 procedure tz_in_at_cwms_ts_id;
---@ %test(Time zone in AV_CWMS_TS_ID view)
+--%test(Time zone in AV_CWMS_TS_ID view)
 procedure tz_in_av_cwms_ts_id;
---@ %test(Time zone in AV_CWMS_TS_ID2 view)
+--%test(Time zone in AV_CWMS_TS_ID2 view)
 procedure tz_in_av_cwms_ts_id2;
---@ %test(Time zone in ZAV_CWMS_TS_ID view)
+--%test(Time zone in ZAV_CWMS_TS_ID view)
 procedure tz_in_zav_cwms_ts_id;
---@ %test(Time zone in cwms_cat.cat_ts_id)
+--%test(Time zone in cwms_cat.cat_ts_id)
 procedure tz_in_catalog;
---@ %test(RETRIEVE_TS_OUT overload)
+--%test(RETRIEVE_TS_OUT overload)
 procedure retrieve_ts_out;
---@ %test(RETRIEVE_TS [1.4] overload)
+--%test(RETRIEVE_TS [1.4] overload)
 procedure retrieve_ts_old;
---@ %test(RETRIEVE_TS_2 [1.4] overload)
+--%test(RETRIEVE_TS_2 [1.4] overload)
 procedure retrieve_ts_2_old;
---@ %test(RETRIEVE_TS [2.0] overload)
+--%test(RETRIEVE_TS [2.0] overload)
 procedure retrieve_ts;
---@ %test(ZRETRIEVE_TS overload)
+--%test(ZRETRIEVE_TS overload)
 procedure zretrieve_ts;
---@ %test(ZRETRIEVE_TS_JAVA overload)
+--%test(ZRETRIEVE_TS_JAVA overload)
 procedure zretrieve_ts_java;
---@ %test(RETRIEVE_TS_MULTI)
+--%test(RETRIEVE_TS_MULTI)
 procedure retrieve_ts_multi;
---@ %test(STORE_TS [2.0])
+--%test(STORE_TS [2.0])
 procedure store_ts;
---@ %test(STORE_TS [1.4])
+--%test(STORE_TS [1.4])
 procedure store_ts_old;
---@ %test(STORE_TS targeted for cxOracle client)
+--%test(STORE_TS targeted for cxOracle client)
 procedure store_ts_oracle;
---@ %test(STORE_TS targeted for jython client)
+--%test(STORE_TS targeted for jython client)
 procedure store_ts_jython;
---@ %test(ZSTORE_TS)
+--%test(ZSTORE_TS)
 procedure zstore_ts;
---@ %test (STORE_TS_MULTI)
+--%test (STORE_TS_MULTI)
 procedure store_ts_multi;
---@ %test (ZSTORE_TS_MULTI)
+--%test (ZSTORE_TS_MULTI)
 procedure zstore_ts_multi;
---@ %test(SET_TSID_TIME_ZONE removed)
---@ %throws(-00900)
+--%test(SET_TSID_TIME_ZONE removed)
+--%throws(-00900)
 procedure set_tsid_time_zone;
---@ %test(SET_TS_TIME_ZONE removed)
---@ %throws(-00900)
+--%test(SET_TS_TIME_ZONE removed)
+--%throws(-00900)
 procedure set_ts_time_zone;
---@ %test(CREATE_TS_TZ removed)
---@ %throws(-00900)
+--%test(CREATE_TS_TZ removed)
+--%throws(-00900)
 procedure create_ts_tz;
---@ %test(CREATE_TS_CODE_TZ removed)
---@ %throws(-00900)
+--%test(CREATE_TS_CODE_TZ removed)
+--%throws(-00900)
 procedure create_ts_code_tz;
---@ %test(GET_TSID_TIME_ZONE)
+--%test(GET_TSID_TIME_ZONE)
 procedure get_tsid_time_zone;
---@ %test(GET_TS_TIME_ZONE)
+--%test(GET_TS_TIME_ZONE)
 procedure get_ts_time_zone;
---@ %test(retrieve_ts_multi_single_value - testing bugfix when a single value is retrieved, but an empty cursor is returned)
+--%test(retrieve_ts_multi_single_value - testing bugfix when a single value is retrieved, but an empty cursor is returned)
 procedure retrieve_ts_multi_single_value;
---@ %test(update_lrts_ts_code_neg_offset_from_undefined - testing bugfix when an undefined offset isn't correctly updated from a negative offset)
+--%test(update_lrts_ts_code_neg_offset_from_undefined - testing bugfix when an undefined offset isn't correctly updated from a negative offset)
 procedure update_lrts_ts_code_neg_offset_from_undefined;
---@ %test(Test retrieve LRTS with P_TRIM = 'F')
+--%test(Test retrieve LRTS with P_TRIM = 'F')
 procedure retrieve_lrts_untrimmed;
 
 procedure setup(p_options in varchar2 default null);
@@ -1029,7 +1030,7 @@ begin
          end loop;
       end loop;
    end loop;
-end tz_in_zav_cwms_ts_id;   
+end tz_in_zav_cwms_ts_id;
 --------------------------------------------------------------------------------
 -- procedure tz_in_catalog
 --------------------------------------------------------------------------------
@@ -2714,7 +2715,7 @@ end get_ts_time_zone;
 procedure retrieve_lrts_untrimmed
 is
    type test_info_rec_t is record(
-      interval_id     varchar2(16), 
+      interval_id     varchar2(16),
       start_times     cwms_t_date_table,
       interval_offset integer,
       value_count     integer);
@@ -2747,9 +2748,7 @@ begin
         into l_interval
         from cwms_interval
        where interval_id = substr(l_test_info(i).interval_id, 2);
---      dbms_output.put_line(l_cwms_ts_id);
       for j in 1..l_test_info(i).start_times.count loop
---         dbms_output.put_line(chr(9)||'Storing '||l_seasons(j)||'...');
          l_ts_values := cwms_t_ztsv_array();
          for k in 1..l_test_info(i).value_count loop
              l_ts_values.extend;
@@ -2757,18 +2756,13 @@ begin
              l_utc_time := cwms_util.change_timezone(l_local_time, 'US/Central', 'UTC');
              l_ts_values(l_ts_values.count) := cwms_t_ztsv(l_utc_time, k, 0);
          end loop;
-         select cast(multiset(select cwms_t_ztsv(date_time, value, quality_code) 
-                                from table(l_ts_values) 
+         select cast(multiset(select cwms_t_ztsv(date_time, value, quality_code)
+                                from table(l_ts_values)
                                where date_time is not null
                              ) as cwms_t_ztsv_array
-                    ) 
-           into l_ts_values 
+                    )
+           into l_ts_values
            from dual;
-         for k in 1..l_ts_values.count loop
-            l_utc_time   := l_ts_values(k).date_time;
-            l_local_time := cwms_util.change_timezone(l_utc_time, 'UTC', 'US/Central');
---            dbms_output.put_line(chr(9)||chr(9)||k||chr(9)||l_local_time||chr(9)||l_ts_values(k).value);
-         end loop;
          cwms_ts.create_ts(
             p_cwms_ts_id        => l_cwms_ts_id,
             p_utc_offset        => l_test_info(i).interval_offset,
@@ -2783,9 +2777,9 @@ begin
             p_timeseries_data => l_ts_values,
             p_store_rule      => cwms_util.replace_all,
             p_office_id       => c_office_id);
+         commit;
          l_start_time := l_test_info(i).start_times(j) - l_extra_count * l_interval / 1440;
          l_end_time   := l_test_info(i).start_times(j) + (l_test_info(i).value_count + l_extra_count) * l_interval / 1440;
---         dbms_output.put_line(chr(9)||'Retrieving '||l_seasons(j)||' : '||l_start_time||' -> '||l_end_time);
          cwms_ts.retrieve_ts(
             p_at_tsv_rc  => l_crsr,
             p_cwms_ts_id => l_cwms_ts_id,
@@ -2795,15 +2789,15 @@ begin
             p_time_zone  => 'US/Central',
             p_trim       => 'F',
             p_office_id  => c_office_id);
-            
+
          fetch l_crsr
           bulk collect
           into l_times,
                l_values,
                l_qualities;
-               
+
          close l_crsr;
-         
+
          if i = 1 and j = 1 then
             --------------------------------
             -- ~1Hour crossing Srping DST --
@@ -2813,7 +2807,7 @@ begin
             if l_times.count = l_expected_count then
                for k in 1..l_times.count loop
                   if k between l_extra_count + 1 and l_extra_count + l_test_info(i).value_count - 1 then
-                     ut.expect(l_values(k)).to_equal(l_ts_values(k+l_expected_count).value);
+                     ut.expect(l_values(k)).to_equal(l_ts_values(k-l_extra_count).value);
                   else
                      ut.expect(l_values(k)).to_be_null;
                   end if;
@@ -2828,17 +2822,14 @@ begin
             if l_times.count = l_expected_count then
                for k in 1..l_times.count loop
                   if k between l_extra_count + 1 and l_extra_count + l_test_info(i).value_count then
-                     ut.expect(l_values(k)).to_equal(l_ts_values(k+l_expected_count).value);
+                     ut.expect(l_values(k)).to_equal(l_ts_values(k-l_extra_count).value);
                   else
                      ut.expect(l_values(k)).to_be_null;
                   end if;
                end loop;
             end if;
          end if;
---         for k in 1..l_times.count loop
---            dbms_output.put_line(chr(9)||chr(9)||k||chr(9)||l_times(k)||chr(9)||l_values(k));
---         end loop;
-         
+
          cwms_ts.delete_ts(l_cwms_ts_id, cwms_util.delete_all, c_office_id);
       end loop;
    end loop;

@@ -2608,18 +2608,16 @@ AS
                                 max(quality_code) keep(dense_rank :first_or_last order by version_date) "QUALITY_CODE"
                            from av_tsv_dqu
                           where ts_code    =  :ts_code
-                            and date_time  >= to_date(:l_start, :l_date_fmt)
-                            and date_time  <= to_date(:l_end,   :l_date_fmt)
                             and unit_id    =  :units
-                            and start_date <= to_date(:l_end,   :l_date_fmt)
-                            and end_date   >  to_date(:l_start, :l_date_fmt)
+                            and start_date <= to_date(:reg_l_end, :l_date_fmt)
+                            and end_date   >  to_date(:l_reg_start, :l_date_fmt)
                        group by date_time
                          ) v
                          right outer join
                          (select date_time
                            from (select cwms_util.change_timezone(add_months(to_date(:reg_start, :l_date_fmt), (level-1) * :interval), :l_time_zone, ''UTC'') date_time
                                    from dual
-                                connect by level <= months_between(to_date(:reg_end,   :l_date_format),
+                                connect by level <= months_between(to_date(:reg_end, :l_date_format),
                                                                    to_date(:reg_start, :l_date_format)) / :interval + 1
                                 )
                           where date_time is not null      
@@ -2633,14 +2631,10 @@ AS
                      USING l_value_offset,
                            l_missing,
                            l_ts_code,
-                           l_start_str,
-                           l_date_format,
-                           l_end_str,
-                           l_date_format,
                            l_units,
-                           l_end_str,
+                           l_reg_end_str,
                            l_date_format,
-                           l_start_str,
+                           l_reg_start_str,
                            l_date_format,
                            l_reg_start_str,
                            l_date_format,
@@ -2670,11 +2664,9 @@ AS
                                     max(quality_code) keep(dense_rank :first_or_last order by version_date) "QUALITY_CODE"
                                from av_tsv_dqu
                               where ts_code    =  :ts_code
-                                and date_time  >= to_date(:l_start, :l_date_fmt)
-                                and date_time  <= to_date(:l_end,   :l_date_fmt)
                                 and unit_id    =  :units
-                                and start_date <= to_date(:l_end,   :l_date_fmt)
-                                and end_date   >  to_date(:l_start, :l_date_fmt)
+                                and start_date <= to_date(:l_reg_end, :l_date_fmt)
+                                and end_date   >  to_date(:l_reg_start, :l_date_fmt)
                               group by date_time
                              ) v
                              right outer join
@@ -2683,7 +2675,7 @@ AS
                                              cwms_util.change_timezone(local_time, :l_time_zone, ''UTC'') date_time
                                         from (select to_date(:reg_start, :l_date_fmt) + (level-1) * :interval local_time
                                                 from dual
-                                             connect by level <= round((to_date(:reg_end,   :l_date_fmt)
+                                             connect by level <= round((to_date(:reg_end, :l_date_fmt)
                                                                       - to_date(:reg_start, :l_date_fmt)) / :interval + 1)
                                              )                         
                                      )
@@ -2692,20 +2684,15 @@ AS
                              on v.date_time = t.date_time
                        order by t.date_time asc';
                   replace_strings;
-                  cwms_util.check_dynamic_sql(l_query_str);
 
                   OPEN l_cursor FOR l_query_str
                      USING l_value_offset,
                            l_missing,
                            l_ts_code,
-                           l_start_str,
-                           l_date_format,
-                           l_end_str,
-                           l_date_format,
                            l_units,
-                           l_end_str,
+                           l_reg_end_str,
                            l_date_format,
-                           l_start_str,
+                           l_reg_start_str,
                            l_date_format,
                            l_time_zone,
                            l_reg_start_str,
