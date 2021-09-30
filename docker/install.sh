@@ -54,20 +54,28 @@ sed -e "s/HOST_AND_PORT/$DB_HOST_PORT/g" \
  # TODO: create lookup system for office code
 
 cat /overrides.xml
-
-cd /cwmsdb
-echo "Creating table spaces at sys/$SYS_PASSWORD@$DB_HOST_PORT$DB_NAME as sysdba"
-sqlplus sys/$SYS_PASSWORD@$DB_HOST_PORT$DB_NAME as sysdba @src/windows_tablespaces.sql
-
-
-
+TABLESPACE_DIR="/opt/oracle/oradata"
 echo "Installing APEX"
 cd /opt/apex/apex
 sqlplus sys/$SYS_PASSWORD@$DB_HOST_PORT$DB_NAME as sysdba <<END
-    create tablespace apex datafile 'apex01.dat' size 100M autoextend on next 1M;
+    alter system set db_create_file_dest = '/opt/oracle/oradata';
+    create tablespace apex datafile '/opt/oracle/oradata/apex01.dat' size 100M autoextend on next 1M;
 END
 
 sqlplus sys/$SYS_PASSWORD@$DB_HOST_PORT$DB_NAME as sysdba @apexins.sql APEX APEX TEMP /i/
+
+cd /cwmsdb
+echo "Creating table spaces at sys/$SYS_PASSWORD@$DB_HOST_PORT$DB_NAME as sysdba"
+sqlplus sys/$SYS_PASSWORD@$DB_HOST_PORT$DB_NAME as sysdba <<END
+    CREATE TABLESPACE "CWMS_20AT_DATA" DATAFILE '/opt/oracle/oradata/at_data.dat' size 20M autoextend on next 10M;
+    CREATE TABLESPACE "CWMS_20DATA" DATAFILE '/opt/oracle/oradata/data.dat' size 20M autoextend on next 10M;
+    CREATE TABLESPACE "CWMS_20_TSV" DATAFILE '/opt/oracle/oradata/tsv.dat' size 20M autoextend on next 10M;
+    CREATE TABLESPACE "CWMS_AQ" DATAFILE '/opt/oracle/oradata/aq.dat' size 20M autoextend on next 10M;
+    CREATE TABLESPACE "CWMS_AQ_EX" DATAFILE '/opt/oracle/oradata/aq_ex.dat' size 20M autoextend on next 10M;
+
+END
+
+
 
 echo "Installing CWMS Schema"
 cd /cwmsdb
