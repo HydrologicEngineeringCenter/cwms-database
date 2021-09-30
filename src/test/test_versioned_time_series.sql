@@ -32,7 +32,7 @@ c_expected_values constant double_tab_tab_t := double_tab_tab_t(
                                                   double_tab_t(   0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13,  14,  15,  16,  17,  18,  19,  20,1021,2022,3023,4024),  -- (6) min version date, original data
                                                   double_tab_t(   0,1001,2002,3003,4004,4005,4006,4007,4008,4009,4010,4011,4012,4013,4014,4015,4016,4017,4018,4019,4020,4021,4022,4023,4024),  -- (7) max version date, original data
                                                   double_tab_t( 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120,1021,2022,3023,4024),  -- (8) min version date, updated data
-                                                  double_tab_t( 100,1001,2002,3003,4004,4005,4006,4007,4008,4009,4010,4011,4012,4013,4014,4015,4016,4017,4018,4019,4020,4021,4022,4023,4024)); -- (9) max version date, updated data                                                  
+                                                  double_tab_t( 100,1001,2002,3003,4004,4005,4006,4007,4008,4009,4010,4011,4012,4013,4014,4015,4016,4017,4018,4019,4020,4021,4022,4023,4024)); -- (9) max version date, updated data
 end test_versioned_time_series;
 /
 create or replace package body test_versioned_time_series as
@@ -45,7 +45,7 @@ begin
    cwms_loc.delete_location(
       p_location_id   => c_location_id,
       p_delete_action => cwms_util.delete_all,
-      p_db_office_id  => c_office_id); 
+      p_db_office_id  => c_office_id);
 end teardown;
 --------------------------------------------------------------------------------
 -- procedure setup
@@ -64,7 +64,7 @@ procedure store_retrieve_time_series
 is
    l_ts_data    ztsv_array := ztsv_array();
    l_crsr       sys_refcursor;
-   
+
    procedure verify_retrieved_data(
       p_crsr            in sys_refcursor,
       p_expected_values in double_tab_t)
@@ -75,10 +75,18 @@ is
    begin
       fetch p_crsr
        bulk collect
-       into l_date_times, 
-            l_values, 
+       into l_date_times,
+            l_values,
             l_qualities
       limit c_value_count + c_version_dates.count;
+      if p_crsr%rowcount != p_expected_values.count then
+         for i in 1..greatest(l_date_times.count, p_expected_values.count) loop
+            dbms_output.put_line(i
+            ||chr(9)||case when i > l_date_times.count then 'missing' else to_char(l_date_times(i)) end
+            ||chr(9)||case when i > l_date_times.count then 'missing' else nvl(to_char(l_values(i)), '<null>') end
+            ||chr(9)||case when i > p_expected_values.count then 'missing' else nvl(to_char(p_expected_values(i)), '<null>') end);
+         end loop;
+      end if;
       ut.expect(p_crsr%rowcount).to_equal(p_expected_values.count);
       if l_values.count = p_expected_values.count then
          for i in 1..p_expected_values.count loop
@@ -91,6 +99,12 @@ is
       end if;
    end verify_retrieved_data;
 begin
+   begin
+      teardown;
+   exception
+      when others then null;
+   end;
+   setup;
    -----------------------------
    -- create the base ts_data --
    -----------------------------
@@ -110,18 +124,20 @@ begin
    ------------------------------------------------
    -- retrieve and verify the non-versioned data --
    ------------------------------------------------
+   dbms_output.put_line('Retrieving NON_VERSIONED data');
    cwms_ts.zretrieve_ts(
       p_at_tsv_rc    => l_crsr,
       p_units        => c_units,
       p_cwms_ts_id   => c_ts_id,
       p_start_time   => c_start_time,
       p_end_time     => c_end_time,
+      p_trim         => 'F',
       p_db_office_id => c_office_id);
-      
+
    verify_retrieved_data(
       p_crsr            => l_crsr,
       p_expected_values => c_expected_values(1));
-   close l_crsr;   
+   close l_crsr;
    --------------------------------------
    -- set the time series to versioned --
    --------------------------------------
@@ -135,7 +151,7 @@ begin
    for i in 1..c_version_dates.count loop
       for j in 1..l_ts_data.count loop
          l_ts_data(j).date_time := l_ts_data(j).date_time + 1 / 24;
-         l_ts_data(j).value     := i * 1000 + i + j - 1; 
+         l_ts_data(j).value     := i * 1000 + i + j - 1;
       end loop;
       cwms_ts.zstore_ts(
          p_cwms_ts_id      => c_ts_id,
@@ -148,71 +164,77 @@ begin
    ----------------------------------------------
    -- retrieve and verify the min version data --
    ----------------------------------------------
+   dbms_output.put_line('Retrieving MIN_VERSIONED data');
    cwms_ts.zretrieve_ts(
       p_at_tsv_rc    => l_crsr,
       p_units        => c_units,
       p_cwms_ts_id   => c_ts_id,
       p_start_time   => c_start_time,
       p_end_time     => c_end_time,
+      p_trim         => 'F',
       p_version_date => null,
       p_max_version  => 'F',
       p_db_office_id => c_office_id);
-      
+
    verify_retrieved_data(
       p_crsr            => l_crsr,
       p_expected_values => c_expected_values(6));
-   close l_crsr;   
+   close l_crsr;
    ----------------------------------------------------------
    -- retrieve and verify each version of the  time series --
    ----------------------------------------------------------
+   dbms_output.put_line('Retrieving version date = '||cwms_util.non_versioned||' data');
    cwms_ts.zretrieve_ts(
       p_at_tsv_rc    => l_crsr,
       p_units        => c_units,
       p_cwms_ts_id   => c_ts_id,
       p_start_time   => c_start_time,
       p_end_time     => c_end_time,
-      p_trim         => 'T',
+      p_trim         => 'F',
       p_version_date => cwms_util.non_versioned,
       p_db_office_id => c_office_id);
-      
+
    verify_retrieved_data(
       p_crsr            => l_crsr,
       p_expected_values => c_expected_values(1));
    close l_crsr;
-   
+
    for j in 1..c_version_dates.count loop
+      dbms_output.put_line('Retrieving version date = '||c_version_dates(j)||' data');
       cwms_ts.zretrieve_ts(
          p_at_tsv_rc    => l_crsr,
          p_units        => c_units,
          p_cwms_ts_id   => c_ts_id,
          p_start_time   => c_start_time,
          p_end_time     => c_end_time,
-         p_trim         => 'T',
+         p_trim         => 'F',
          p_version_date => c_version_dates(j),
          p_db_office_id => c_office_id);
-         
+
       verify_retrieved_data(
          p_crsr            => l_crsr,
          p_expected_values => c_expected_values(j+1));
-      close l_crsr;   
+      close l_crsr;
    end loop;
    ----------------------------------------------
    -- retrieve and verify the max version data --
    ----------------------------------------------
+   dbms_output.put_line('Retrieving MAX_VERSIONED data');
    cwms_ts.zretrieve_ts(
       p_at_tsv_rc    => l_crsr,
       p_units        => c_units,
       p_cwms_ts_id   => c_ts_id,
       p_start_time   => c_start_time,
       p_end_time     => c_end_time,
+      p_trim         => 'F',
       p_version_date => null,
       p_max_version  => 'T',
       p_db_office_id => c_office_id);
-      
+
    verify_retrieved_data(
       p_crsr            => l_crsr,
       p_expected_values => c_expected_values(7));
-   close l_crsr;   
+   close l_crsr;
    -------------------------------------------------------------------
    -- re-store the base data as non-versioned with different values --
    -------------------------------------------------------------------
@@ -228,37 +250,41 @@ begin
    -------------------------------------------------
    -- re-retrieve and verify the min version data --
    -------------------------------------------------
+   dbms_output.put_line('Retrieving MIN_VERSIONED data with NEW VALUES');
    cwms_ts.zretrieve_ts(
       p_at_tsv_rc    => l_crsr,
       p_units        => c_units,
       p_cwms_ts_id   => c_ts_id,
       p_start_time   => c_start_time,
       p_end_time     => c_end_time,
+      p_trim         => 'F',
       p_version_date => null,
       p_max_version  => 'F',
       p_db_office_id => c_office_id);
-      
+
    verify_retrieved_data(
       p_crsr            => l_crsr,
       p_expected_values => c_expected_values(8));
-   close l_crsr;   
+   close l_crsr;
    -------------------------------------------------
    -- re-retrieve and verify the max version data --
    -------------------------------------------------
+   dbms_output.put_line('Retrieving MAX_VERSIONED data with NEW VALUES');
    cwms_ts.zretrieve_ts(
       p_at_tsv_rc    => l_crsr,
       p_units        => c_units,
       p_cwms_ts_id   => c_ts_id,
       p_start_time   => c_start_time,
       p_end_time     => c_end_time,
+      p_trim         => 'F',
       p_version_date => null,
       p_max_version  => 'T',
       p_db_office_id => c_office_id);
-      
+
    verify_retrieved_data(
       p_crsr            => l_crsr,
       p_expected_values => c_expected_values(9));
-   close l_crsr;   
+   close l_crsr;
 end store_retrieve_time_series;
 
 end test_versioned_time_series;
