@@ -91,12 +91,6 @@ is
       end if;
    end verify_retrieved_data;
 begin
-   begin
-      teardown;
-   exception
-      when others then null;
-   end;
-   setup;
    -----------------------------
    -- create the base ts_data --
    -----------------------------
