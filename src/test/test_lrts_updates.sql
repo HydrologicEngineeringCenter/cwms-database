@@ -2772,10 +2772,6 @@ begin
             p_active_flag       => 'T',
             p_office_id         => c_office_id);
 
-         for j in 1..l_ts_values.count loop
-            dbms_output.put_line(chr(9)||j||chr(9)||l_ts_values(j).date_time||chr(9)||l_ts_values(j).value);
-         end loop;
-
          cwms_ts.zstore_ts(
             p_cwms_ts_id      => l_cwms_ts_id,
             p_units           => c_ts_unit,
@@ -2785,19 +2781,6 @@ begin
 
          l_start_time := l_test_info(i).start_times(j) - l_extra_count * l_interval / 1440;
          l_end_time   := l_test_info(i).start_times(j) + (l_test_info(i).value_count + l_extra_count) * l_interval / 1440;
-
-         for rec in (select date_time,
-                            value
-                       from av_tsv_dqu
-                      where cwms_ts_id = l_cwms_ts_id
-                        and unit_id = c_ts_unit
-                      order by date_time
-                    )
-         loop
-            dbms_output.put_line(chr(9)||rec.date_time||chr(9)||rec.value);
-         end loop;
-         dbms_output.put_line('start time = '||l_start_time);
-         dbms_output.put_line('end time   = '||l_end_time);
 
          cwms_ts.retrieve_ts(
             p_at_tsv_rc  => l_crsr,

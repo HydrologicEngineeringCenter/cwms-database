@@ -79,14 +79,6 @@ is
             l_values,
             l_qualities
       limit c_value_count + c_version_dates.count;
-      if p_crsr%rowcount != p_expected_values.count then
-         for i in 1..greatest(l_date_times.count, p_expected_values.count) loop
-            dbms_output.put_line(i
-            ||chr(9)||case when i > l_date_times.count then 'missing' else to_char(l_date_times(i)) end
-            ||chr(9)||case when i > l_date_times.count then 'missing' else nvl(to_char(l_values(i)), '<null>') end
-            ||chr(9)||case when i > p_expected_values.count then 'missing' else nvl(to_char(p_expected_values(i)), '<null>') end);
-         end loop;
-      end if;
       ut.expect(p_crsr%rowcount).to_equal(p_expected_values.count);
       if l_values.count = p_expected_values.count then
          for i in 1..p_expected_values.count loop
@@ -124,7 +116,6 @@ begin
    ------------------------------------------------
    -- retrieve and verify the non-versioned data --
    ------------------------------------------------
-   dbms_output.put_line('Retrieving NON_VERSIONED data');
    cwms_ts.zretrieve_ts(
       p_at_tsv_rc    => l_crsr,
       p_units        => c_units,
@@ -164,7 +155,6 @@ begin
    ----------------------------------------------
    -- retrieve and verify the min version data --
    ----------------------------------------------
-   dbms_output.put_line('Retrieving MIN_VERSIONED data');
    cwms_ts.zretrieve_ts(
       p_at_tsv_rc    => l_crsr,
       p_units        => c_units,
@@ -183,7 +173,6 @@ begin
    ----------------------------------------------------------
    -- retrieve and verify each version of the  time series --
    ----------------------------------------------------------
-   dbms_output.put_line('Retrieving version date = '||cwms_util.non_versioned||' data');
    cwms_ts.zretrieve_ts(
       p_at_tsv_rc    => l_crsr,
       p_units        => c_units,
@@ -200,7 +189,6 @@ begin
    close l_crsr;
 
    for j in 1..c_version_dates.count loop
-      dbms_output.put_line('Retrieving version date = '||c_version_dates(j)||' data');
       cwms_ts.zretrieve_ts(
          p_at_tsv_rc    => l_crsr,
          p_units        => c_units,
@@ -219,7 +207,6 @@ begin
    ----------------------------------------------
    -- retrieve and verify the max version data --
    ----------------------------------------------
-   dbms_output.put_line('Retrieving MAX_VERSIONED data');
    cwms_ts.zretrieve_ts(
       p_at_tsv_rc    => l_crsr,
       p_units        => c_units,
@@ -250,7 +237,6 @@ begin
    -------------------------------------------------
    -- re-retrieve and verify the min version data --
    -------------------------------------------------
-   dbms_output.put_line('Retrieving MIN_VERSIONED data with NEW VALUES');
    cwms_ts.zretrieve_ts(
       p_at_tsv_rc    => l_crsr,
       p_units        => c_units,
@@ -269,7 +255,6 @@ begin
    -------------------------------------------------
    -- re-retrieve and verify the max version data --
    -------------------------------------------------
-   dbms_output.put_line('Retrieving MAX_VERSIONED data with NEW VALUES');
    cwms_ts.zretrieve_ts(
       p_at_tsv_rc    => l_crsr,
       p_units        => c_units,

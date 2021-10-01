@@ -131,11 +131,6 @@ begin
          p_active_flag       => 'T',
          p_office_id         => c_office_id);
 
-      dbms_output.put_line(chr(10)||c_start_dates(i));
-      for j in 1..l_ts_values.count loop
-         dbms_output.put_line(chr(9)||j||chr(9)||l_ts_values(j).date_time||chr(9)||l_ts_values(j).value);
-      end loop;
-
       cwms_ts.store_ts(
          p_cwms_ts_id      => c_rts_ts_id,
          p_units           => c_units,
@@ -144,18 +139,6 @@ begin
          p_override_prot   => 'F',
          p_version_date    => cwms_util.non_versioned,
          p_office_id       => c_office_id);
-
-      dbms_output.put_line('---------------------------------------------');
-      for rec in (select date_time,
-                         value
-                    from av_tsv_dqu
-                   where cwms_ts_id = c_rts_ts_id
-                     and unit_id = c_units
-                   order by date_time
-                 )
-      loop
-         dbms_output.put_line(chr(9)||chr(9)||rec.date_time||chr(9)||rec.value);
-      end loop;
 
       cwms_ts.retrieve_ts(
          p_at_tsv_rc       => l_crsr,
@@ -174,11 +157,6 @@ begin
             l_qualities;
 
       close l_crsr;
-
-      dbms_output.put_line('---------------------------------------------');
-      for j in 1..l_times.count loop
-         dbms_output.put_line(chr(9)||j||chr(9)||l_times(i)||chr(9)||l_values(i));
-      end loop;
 
       ut.expect(l_times.count).to_equal(c_expected_rts_values.count);
       l_first_time := c_start_dates(i) + 2 + c_interval_offset / 1440;
@@ -252,11 +230,6 @@ begin
             l_qualities;
 
       close l_crsr;
-
-      dbms_output.put_line(c_start_dates(i));
-      for j in 1..l_times.count loop
-         dbms_output.put_line(chr(9)||j||chr(9)||l_times(j)||chr(9)||l_values(j));
-      end loop;
 
       ut.expect(l_times.count).to_equal(c_expected_lrts_values.count);
       l_first_time := c_start_dates(i) + 2 + c_interval_offset / 1440;
