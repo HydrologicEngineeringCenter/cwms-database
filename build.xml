@@ -889,9 +889,13 @@
 		 However, one may override settings, like the container_name with a simple -Ddocker.props.container_name=<Some text>
 
 	-->
-	<property name="docker.props.container_name" value="antdockercwmsdb"/>
+	<condition property="docker.props.container_name" value="cwmsdb_${teamcity.branch}" else="antdockercwmsdb">
+		<isset property="teamcity.branch"/>
+	</condition>
+<!--	<property name="docker.props.container_name" value="antdockercwmsdb"/>-->
 	<property name="docker.props.network_name" value="cwmsdbnet"/>
 	<property name="docker.props.image_name" value="cwms_db:latest"/>
+
 
 	<target name="docker.buildimage">
 		<echo message="Creating baseline docker image"/>
@@ -954,6 +958,7 @@
 					<entry key="database.eroc" value="l2"/>
 					<entry key="database.host_and_port" value="${docker.props.container_name_valid}:1521"/>
 					<entry key="database.name" value="CWMS"/>
+					<entry key="database.volume" value="${docker.props.container_name_valid}_volume"/>
 				</propertyfile>
 			</else>
 		</if>
@@ -979,6 +984,11 @@
 			<else>
 				<echo message="Creating new database"/>
 				<exec dir="${root}" executable="docker" failonerror="true">
+					<arg value="volume"/>
+					<arg value="create"/>
+					<arg value="${database.volume}"/>
+				</exec>
+				<exec dir="${root}" executable="docker" failonerror="true">
 					<arg value="run"/>
 					<arg value="-d"/>
 					<arg value="--network"/>
@@ -993,6 +1003,8 @@
 					<arg value="ORACLE_PWD=${database.syspw}"/>
 					<arg value="-e"/>
 					<arg value="enterprise"/>
+					<arg value="-v"/>
+					<arg value="${database.volume}:/opt/oracle/oradata"/>
 					<arg value="oracle/database:19.3.0-ee"/>
 				</exec>
 			</else>
