@@ -1382,7 +1382,7 @@ unit_aliases = {
 	"m"          : ["meter","meters","metre","metres","METERS","METRES","METRE","METER"],
 	"m2"         : ["sq m","sq meter","sq meters","square meters","M2"],
 	"m3"         : ["cu m","cu meter","cu meters","cubic meters","M3"],
-	"m/s"        : ["MPS","mps","meters per second","meter per second","M/S"],
+	"m/s"        : ["MPS","mps","meters per second","M/S","METERS PER SECOND"],
 	"mb"         : ["mbar","mbars","millibar","millibars"],
 	"mcm"        : ["1000000 m3"],
 	"mg/l"       : ["millgrams/liter","milligrams per liter","mg/L"],
