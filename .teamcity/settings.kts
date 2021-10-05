@@ -108,6 +108,7 @@ object Build : BuildType({
         ant {
             name = "Stop database"
             targets = "docker.stopdb"
+            executionMode = BuildStep.ExecutionMode.ALWAYS
             antArguments = "-Dteamcity.branch=%teamcity.build.branch%"
         }
     }
