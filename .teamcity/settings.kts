@@ -85,13 +85,8 @@ object Build : BuildType({
     steps {
         script {
             name = "Setup Path variables"
-            scriptContent = """cat <<EOF
-            ##teamcity[setParameter name='env.PATH' value='/usr/local/buildtools/instantclient_19_9:\$PATH']
-            ##teamcity[setParameter name='env.LD_LIBRARY_PATH' value='/usr/local/buildtools/instantclient_19_9']
-            ##teamcity[setParameter name='env.ORACLE_HOME' value='/usr/local/buildtools/instantclient_19_9']
+            scriptContent = Helpers.readScript("scripts/setup_parameters.sh")
 
-            EOF
-            """
         }
         ant {
             name = "Prep Oracle"
