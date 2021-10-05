@@ -83,55 +83,32 @@ object Build : BuildType({
     }
 
     steps {
-        script {
-            name = "Generate Overrides file and Parameters"
-            scriptContent = Helpers.readScript("scripts/setup_parameters.sh");
-        }
-        script {
-            name = "Destroy Database In case of prevous failure"
-            executionMode = BuildStep.ExecutionMode.ALWAYS
-            scriptContent = Helpers.readScript("scripts/destroy_database.sh");
-        }
-        script {
-            name = "Create PDB"
-            scriptContent = Helpers.readScript("scripts/create_database.sh")
-        }
-        script {
-            name = "Create Tablespaces"
-            enabled = false
-            scriptContent = """
-                sqlplus sys/${'$'}SYS_PASSWORD@${'$'}HOST_AND_PORT/${'$'}CWMS_PDB as SYSDBA <<EOF
-                define data_file_prefix=/opt/oracle/oradata/${'$'}CWMS_PDB
-                CREATE TABLESPACE USERS DATAFILE '&data_file_prefix.users.dbf' SIZE 8M autoextend on next 2M;
-                CREATE TABLESPACE "CWMS_20AT_DATA" DATAFILE '&data_file_prefix.cmws_at_data.tblspc' SIZE  2m AUTOEXTEND ON NEXT 20m;
-                CREATE TABLESPACE "CWMS_20DATA" DATAFILE '&data_file_prefix.cwms_data.tblspc' SIZE 2m AUTOEXTEND ON NEXT 20m;
-                CREATE TABLESPACE "CWMS_20_TSV" DATAFILE '&data_file_prefix.cwms_tsv.tblspc' SIZE 2m AUTOEXTEND ON NEXT 20m;
-                CREATE TABLESPACE "CWMS_AQ" DATAFILE '&data_file_prefix.cwms_aq.tblspc' SIZE 2m AUTOEXTEND ON NEXT 20m;
-                CREATE TABLESPACE "CWMS_AQ_EX" DATAFILE '&data_file_prefix.cwms_aq_ex.tblspc' SIZE 2m AUTOEXTEND ON NEXT 20m;
-                EOF
-            """.trimIndent()
+        ant {
+            name = "Prep Oracle"
+            targets = "docker.preparedb"
+            antArguments = "-Dteamcity.branch=%teamcity.build.branch%"
         }
         ant {
             name = "Install CWMS Database"
             mode = antFile {
             }
-            targets = "clean,build"
-            antArguments = "-Dbuilduser.overrides=output/overrides.xml"
+            targets = "docker.install, docker.generateoverrides"
+            antArguments = "-Dteamcity.branch=%teamcity.build.branch%"
         }
         ant {
             name = "Run Tests"
             targets = "test"
-            antArguments = "-Dbuilduser.overrides=output/overrides.xml"
+            antArguments = "-Dbuilduser.overrides=build/overrides.external.xml"
         }
         ant {
             name = "Run Generate Test Bundle (will include generated artifacts)"
             targets = "bundle"
-            antArguments = "-Dbuilduser.overrides=output/overrides.xml"
+            antArguments = "-Dbuilduser.overrides=build/overrides.external.xml"
         }
-        script {
-            name = "Destroy Database Since we are done"
-            executionMode = BuildStep.ExecutionMode.ALWAYS
-            scriptContent = Helpers.readScript("scripts/destroy_database.sh");
+        ant {
+            name = "Stop database"
+            targets = "docker.stopdb"
+            antArgument = "-Dteamcity.branch=%teamcity.build.branch%"
         }
     }
 
