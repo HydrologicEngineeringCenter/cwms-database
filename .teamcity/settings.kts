@@ -85,7 +85,7 @@ object Build : BuildType({
     steps {
         ant {
             name = "Prep Oracle"
-            targets = "docker.preparedb"
+            targets = "docker.prepdb"
             antArguments = "-Dteamcity.branch=%teamcity.build.branch%"
         }
         ant {
