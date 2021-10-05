@@ -1078,6 +1078,8 @@
 			<arg value="BUILDUSER_PASSWORD=${database.buildpw}"/>
 			<arg value="-e"/>
 			<arg value="OFFICE_ID=${database.office}"/>
+			<arg value="-e"/>
+			<arg value="OFFICE_EROC=${database.eroc}"/>
 			<arg value="${docker.props.image_name}"/>
 		</exec>
 	</target>
