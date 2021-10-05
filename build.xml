@@ -433,7 +433,7 @@
         <echo message="    Running tests" />
         <exec executable="utplsql" resultproperty="utreturn">
             <arg value="run"/>
-			<arg value="-p=${oracle.cwms.user}.test_missing_shift_points,${oracle.cwms.user}.test_lrts_updates,${oracle.cwms.user}.test_probability_parameter,${oracle.cwms.user}.test_cwms_loc,${oracle.cwms.user}.test_cwms_ts,${oracle.cwms.user}.test_cwms_util,${oracle.cwms.user}.test_cwms_rating,${oracle.cwms.user}.test_cwms_prop,${oracle.cwms.user}.test_versioned_time_series,${oracle.cwms.user}.test_update_ts_extents,${oracle.cwms.user}.test_cwms_pool,${oracle.cwms.user}.test_timeseries_snapping"/>
+			<arg value="-p=${oracle.cwms.user}.test_missing_shift_points,${oracle.cwms.user}.test_lrts_updates,${oracle.cwms.user}.test_probability_parameter,${oracle.cwms.user}.test_cwms_loc,${oracle.cwms.user}.test_cwms_ts,${oracle.cwms.user}.test_cwms_util,${oracle.cwms.user}.test_cwms_rating,${oracle.cwms.user}.test_cwms_prop,${oracle.cwms.user}.test_versioned_time_series,${oracle.cwms.user}.test_update_ts_extents,${oracle.cwms.user}.test_cwms_pool,${oracle.cwms.user}.test_timeseries_snapping,${oracle.cwms.user}.test_cwms_cat"/>
             <arg value="-f"/><arg value="UT_COVERAGE_HTML_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/index.html" />
             <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/coverage_pd.xml" />
             <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_pd.xml" />

@@ -25,5 +25,6 @@ exec cwms_sec.create_user('OTHER_DIST','other', char_32_array_type('CWMS Users')
 @test_clean_all.sql;
 @test_versioned_time_series.sql;
 @test_timeseries_snapping.sql;
+@test_cwms_cat.sql;
 
 show errors;
