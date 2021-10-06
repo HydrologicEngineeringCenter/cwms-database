@@ -106,7 +106,7 @@ object Build : BuildType({
             antArguments = "-Dbuilduser.overrides=build/overrides.external.xml"
         }
         ant {
-            name = "Run Generate Test Bundle (will include generated artifacts)"
+            name = "Generate Bundle (will include generated artifacts)"
             targets = "bundle"
             antArguments = "-Dbuilduser.overrides=build/overrides.external.xml"
         }
