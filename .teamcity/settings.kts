@@ -41,7 +41,6 @@ project {
     }
     sequential {
         buildType(Build)
-        buildType(Deploy)
     }.buildTypes().forEach { buildType(it) }
 
 }
@@ -63,7 +62,6 @@ object Build : BuildType({
         build/resources => resources.zip
         build/resources.jar =>
         build/docs.zip =>
-        build/installer_image.tar.gz =>
     """.trimIndent()
 
     params {
@@ -106,7 +104,23 @@ object Build : BuildType({
             targets = "bundle"
             antArguments = "-Dbuilduser.overrides=build/overrides.external.xml"
         }
-
+        ant {
+            name = "Cleanup Generated Files"
+            targets = "clean-output-files"
+            antArguments = "-Dbuilduser.overrides=build/overrides.external.xml"
+            conditions {
+                matches("teamcity.build.branch", "(master|release/.*)")
+            }
+        }
+        ant {
+            name = "Build Bundle"
+            mode = antFile {}
+            targets = "deploy"
+            antArguments = "-Dbuilduser.overrides=build/overrides.external.xml"
+            conditions {
+                matches("teamcity.build.branch", "(master|release/.*)")
+            }
+        }
         ant {
             name = "Stop database"
             targets = "docker.stopdb"
@@ -150,78 +164,4 @@ object Build : BuildType({
     requirements {
         contains("docker.server.osType", "linux")
     }
-})
-
-
-object Deploy : BuildType({
-    name = "Deploy to Nexus"
-
-    artifactRules = """
-
-    """.trimIndent()
-
-    vcs {
-        root(DslContext.settingsRoot)
-    }
-
-    params {
-        password("env.SYS_PASSWORD", "credentialsJSON:e335ba71-db80-4491-8ea3-a9ca51bfa6d7")
-    }
-
-    steps {
-        exec {
-            path = "echo"
-            arguments = """"##teamcity[setParameter name='env.IS_DEPLOY' value='1']"""
-        }
-        script {
-            name = "Generate Overrides file and Parameters"
-            scriptContent = Helpers.readScript("scripts/setup_parameters.sh");
-        }
-        script {
-            name = "Create PDB"
-            scriptContent = Helpers.readScript("scripts/create_database.sh")
-        }
-        ant {
-            name = "Install CWMS Database"
-            mode = antFile {
-            }
-            targets = "clean,build"
-            antArguments = "-Dbuilduser.overrides=output/overrides.xml"
-        }
-        ant {
-            name = "Cleanup Generated Files"
-            targets = "clean-output-files"
-            antArguments = "-Dbuilduser.overrides=output/overrides.xml"
-        }
-        ant {
-            name = "Build Bundle"
-            mode = antFile {}
-            targets = "deploy"
-            antArguments = "-Dbuilduser.overrides=output/overrides.xml"
-        }
-        script {
-            name = "Destroy Database Since we are done"
-            executionMode = BuildStep.ExecutionMode.ALWAYS
-            scriptContent = Helpers.readScript("scripts/destroy_database.sh");
-        }
-    }
-
-    triggers {
-        finishBuildTrigger {
-            buildType = "${Build.id}"
-            successfulOnly = true
-            branchFilter = """
-                +:<default>
-                +:release/*
-            """.trimIndent()
-
-        }
-
-    }
-
-    requirements {
-        contains("docker.server.osType", "linux")
-    }
-
-
 })
