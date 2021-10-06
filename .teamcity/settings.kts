@@ -95,7 +95,9 @@ object Build : BuildType({
         }
         ant {
             name = "Install CWMS Database"
-            targets = "install"
+            targets = "clean,build"
+            mode = antFile {
+            }
             antArguments = "-Dbuilduser.overrides=build/overrides.external.xml"
         }
         ant {
