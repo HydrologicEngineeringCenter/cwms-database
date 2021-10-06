@@ -58,16 +58,12 @@ object Build : BuildType({
     name = "Build (create in oracle)"
 
     artifactRules = """
-        output/database.info => database/
-        output/users.txt => database/
-        output/build-sql-script-output.txt => buildinfo/
-        output/build-sql-script-error.txt => buildinfo/
-        output/overrides.xml => buildinfo/
-        src/buildCWMS_DB.log => buildinfo/
+        build/buildCWMS_DB.log => buildinfo/
         build/coverage.zip => /
         build/resources => resources.zip
         build/resources.jar =>
         build/docs.zip =>
+        build/installer_image.tar.gz =>
     """.trimIndent()
 
     params {
@@ -95,10 +91,10 @@ object Build : BuildType({
         }
         ant {
             name = "Install CWMS Database"
-            targets = "clean,build"
+            targets = "docker.install"
             mode = antFile {
             }
-            antArguments = "-Dbuilduser.overrides=build/overrides.external.xml"
+            antArguments = "-Dteamcity.branch=%teamcity.build.branch%"
         }
         ant {
             name = "Run Tests"
@@ -110,6 +106,7 @@ object Build : BuildType({
             targets = "bundle"
             antArguments = "-Dbuilduser.overrides=build/overrides.external.xml"
         }
+
         ant {
             name = "Stop database"
             targets = "docker.stopdb"

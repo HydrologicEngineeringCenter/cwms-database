@@ -1065,9 +1065,8 @@
 	-->
 	<target name="docker.install" depends="docker.prepdb, docker.buildimage">
 		<echo message="Using Docker build to install database"/>
-		<exec executable="docker" failonerror="true">
+		<exec executable="docker" failonerror="true" output="build/buildCWMS_DB.log">
 			<arg value="run"/>
-
 			<arg value="--network"/>
 			<arg value="${docker.props.network_name}"/>
 			<arg value="-e"/>
