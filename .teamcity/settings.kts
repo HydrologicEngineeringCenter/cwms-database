@@ -94,11 +94,6 @@ object Build : BuildType({
             antArguments = "-Dteamcity.branch=%teamcity.build.branch%"
         }
         ant {
-            name = "Generate Overrides"
-            targets = "docker.generateoverrides"
-            antArguments = "-Dteamcity.branch=%teamcity.build.branch%"
-        }
-        ant {
             name = "Install CWMS Database"
             targets = "install"
             antArguments = "-Dbuilduser.overrides=build/overrides.external.xml"

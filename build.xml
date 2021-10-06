@@ -1037,7 +1037,9 @@
 
 	</target>
 
-	<target name="docker.showport" >
+	<target name="docker.showport" depends="docker.setupparameters">
+		<!--<loadproperties srcFile="${root}/build/database.props"/>-->
+		<echo message="Finding port for {docker.props.container_name_valid}"/>
 		<exec executable="docker" outputproperty="portOutput" failonerror="true">
 			<arg value="port"/>
 			<arg value="${docker.props.container_name_valid}"/>
