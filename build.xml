@@ -937,7 +937,7 @@
 		</if>
 	</target>
 
-	<target name="docker.setupparameters">
+	<target name="docker.setupparameters" depends="init">
 		<echo message="processing container name to safe characters. Starting with: ${docker.props.container_name}"/>
 		<exec executable="sed" outputProperty="docker.props.container_name_valid" failonerror="true">
 			<arg value="-e"/>
