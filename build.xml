@@ -955,21 +955,21 @@
 		<if>
 			<available file="${root}/build/database.props"/>
 			<then>
-				<echo message="Already have proprties"/>
+				<echo message="Overwriting Existing Parameters"/>
 			</then>
-			<else>
-				<propertyfile file="${root}/build/database.props">
-					<entry key="database.syspw" value="antsyspassword"/>
-					<entry key="database.cwmspw" value="antcwmspassword"/>
-					<entry key="database.buildpw" value="antbuildpassword"/>
-					<entry key="database.office" value="${database.office}"/>
-					<entry key="database.eroc" value="${database.eroc}"/>
-					<entry key="database.host_and_port" value="${docker.props.container_name_valid}:1521"/>
-					<entry key="database.name" value="CWMS"/>
-					<entry key="database.volume" value="${docker.props.container_name_valid}_volume"/>
-				</propertyfile>
-			</else>
 		</if>
+
+		<propertyfile file="${root}/build/database.props">
+			<entry key="database.syspw" value="antsyspassword"/>
+			<entry key="database.cwmspw" value="antcwmspassword"/>
+			<entry key="database.buildpw" value="antbuildpassword"/>
+			<entry key="database.office" value="${database.office}"/>
+			<entry key="database.eroc" value="${database.eroc}"/>
+			<entry key="database.host_and_port" value="${docker.props.container_name_valid}:1521"/>
+			<entry key="database.name" value="CWMS"/>
+			<entry key="database.volume" value="${docker.props.container_name_valid}_volume"/>
+		</propertyfile>
+
 	</target>
 
 	<target name="docker.prepdb" depends="docker.setupparameters,docker.stopdb,docker.createnetwork">
@@ -1031,11 +1031,13 @@
 			</scriptcondition>
 
 		</waitfor>
+		<echo message="generating overrides for this run"/>
+		<antcall target="docker.generateoverrides"/>
 
 
 	</target>
 
-	<target name="docker.showport" depends="docker.prepdb">
+	<target name="docker.showport" >
 		<exec executable="docker" outputproperty="portOutput" failonerror="true">
 			<arg value="port"/>
 			<arg value="${docker.props.container_name_valid}"/>
@@ -1085,7 +1087,8 @@
 	</target>
 
 	<target name="docker.generateoverrides" depends="docker.showport">
-		<copy file="docker/overrides.template.xml" tofile="${root}/build/overrides.internal.xml">
+		<copy file="docker/overrides.template.xml" tofile="${root}/build/overrides.internal.xml"
+		 	   overwrite="true">
 			<filterchain>
 				<expandproperties/>
 				<replacetokens>
@@ -1094,7 +1097,8 @@
 			</filterchain>
 		</copy>
 
-		<copy file="docker/overrides.template.xml" tofile="${root}/build/overrides.external.xml">
+		<copy file="docker/overrides.template.xml" tofile="${root}/build/overrides.external.xml"
+			  overwrite="true">
 			<filterchain>
 				<expandproperties/>
 				<replacetokens>
