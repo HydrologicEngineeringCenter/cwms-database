@@ -2088,6 +2088,12 @@ AS
                     from at_physical_location
                    where location_code = l_base_location_code;
                end if;
+               if l_time_zone_code is null then
+                  select time_zone_code
+                    into l_time_zone_code
+                    from cwms_time_zone
+                   where time_zone_name = 'UTC';
+               end if;
 
                INSERT INTO at_cwms_ts_spec t (ts_code,
                                               location_code,
