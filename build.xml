@@ -890,23 +890,54 @@
 		 However, one may override settings, like the container_name with a simple -Ddocker.props.container_name=<Some text>
 
 	-->
-	<condition property="docker.props.container_name" value="cwmsdb_${teamcity.branch}" else="antdockercwmsdb">
-		<isset property="teamcity.branch"/>
-	</condition>
-	<condition property="database.office" value="${database.office}" else="SPK">
-		<isset property="database.office"/>
-	</condition>
+	<target name="docker.init" depends="init">
+		<condition property="docker.props.container_name" value="cwmsdb_${teamcity.branch}" else="antdockercwmsdb">
+			<isset property="teamcity.branch"/>
+		</condition>
+		<condition property="database.office" value="${database.office}" else="SPK">
+			<isset property="database.office"/>
+		</condition>
 
-	<condition property="database.eroc" value="${database.eroc}" else="l2">
-		<isset property="database.eroc"/>
-	</condition>
-
-<!--	<property name="docker.props.container_name" value="antdockercwmsdb"/>-->
-	<property name="docker.props.network_name" value="cwmsdbnet"/>
-	<property name="docker.props.image_name" value="cwms_db:build"/>
+		<condition property="database.eroc" value="${database.eroc}" else="l2">
+			<isset property="database.eroc"/>
+		</condition>
 
 
-	<target name="docker.buildimage">
+		<property name="docker.props.network_name" value="cwmsdbnet"/>
+
+		<condition property="isdeployed" value="true" else="false">
+			<and>
+				<isset property="teamcity.branch"/>
+				<matches string="${teamcity.branch}" pattern="^(master|release/*)" casesensitive="false"/>
+			</and>
+		</condition>
+
+		<if>
+			<and>
+				<isset property="teamcity.branch"/>
+				<equals arg1="${isdeployed}" arg2="true"/>
+			</and>
+			<then>
+				<property name="docker.props.image_name" value="cwms_schema_installer:${pom.version}"/>
+			</then>
+			<else>
+				<condition property="docker.props.image_name" value="cwms_schema_installer:build-${env.BUILD_NUMBER}" else="cwms_schema_installer:build-local">
+					<isset property="env.BUILD_NUMBER"/>
+				</condition>
+
+			</else>
+
+		</if>
+		<condition property="tmp.props.image_name_with_buildnumber" value="cwms_schema_installer:build-${env.teamcity.build.number}">
+			<and>
+				<isset property="env.BUILD_NUMBER"/>
+				<equals arg1="${isdeployed}" arg2="false"/>
+			</and>
+
+		</condition>
+	</target>
+
+	<target name="docker.buildimage" depends="docker.init">
 		<echo message="Creating baseline docker image"/>
 		<exec dir="${root}" executable="docker"  failonerror="true">
 			<arg value="build"/>
@@ -925,7 +956,7 @@
 
 	</target>
 
-	<target name="docker.createnetwork">
+	<target name="docker.createnetwork" depends="docker.init">
 		<exec executable="docker" failonerror="false" outputproperty="networkList">
 			<arg value="network"/>
 			<arg value="ls"/>
@@ -946,7 +977,7 @@
 		</if>
 	</target>
 
-	<target name="docker.setupparameters" depends="init">
+	<target name="docker.setupparameters" depends="docker.init">
 		<echo message="processing container name to safe characters. Starting with: ${docker.props.container_name}"/>
 		<exec executable="sed" outputProperty="docker.props.container_name_valid" failonerror="true">
 			<arg value="-e"/>
