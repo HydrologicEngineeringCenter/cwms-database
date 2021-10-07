@@ -25,11 +25,11 @@ c_interval_offset      constant integer           := 7 * 60; -- 7 hours into UTC
 c_snap_backward        constant integer           := 8;
 c_snap_forward         constant integer           := 5;
 c_units                constant varchar2(16)      := 'n/a';
-c_start_time           constant date              := date '2021-03-01';
 c_value_count          constant pls_integer       := 21;
 --                                                                     Crosses Spring DST  Normal             Crosses Autum DST
 --                                                                     ------------------  -----------------  -------------------
 c_start_dates          constant cwms_t_date_table := cwms_t_date_table(date '2021-03-01',  date '2021-07-01', date '2021-11-01' );
+
 c_expected_rts_values  constant cwms_t_number_tab := cwms_t_number_tab(      3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16                    );
 c_expected_lrts_values constant cwms_t_number_tab := cwms_t_number_tab(      3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16                    );
 c_expected_its_values  constant cwms_t_number_tab := cwms_t_number_tab(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21);
@@ -139,7 +139,6 @@ begin
          p_override_prot   => 'F',
          p_version_date    => cwms_util.non_versioned,
          p_office_id       => c_office_id);
-
 
       cwms_ts.retrieve_ts(
          p_at_tsv_rc       => l_crsr,

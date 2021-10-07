@@ -1,3 +1,4 @@
+drop package test_lrts_updates;
 create or replace package test_lrts_updates as
 
 --%suite(Test schema for full LRTS compatibility)
@@ -77,6 +78,8 @@ procedure get_ts_time_zone;
 procedure retrieve_ts_multi_single_value;
 --%test(update_lrts_ts_code_neg_offset_from_undefined - testing bugfix when an undefined offset isn't correctly updated from a negative offset)
 procedure update_lrts_ts_code_neg_offset_from_undefined;
+--%test(Test retrieve LRTS with P_TRIM = 'F')
+procedure retrieve_lrts_untrimmed;
 
 procedure setup(p_options in varchar2 default null);
 procedure teardown;
@@ -1027,7 +1030,7 @@ begin
          end loop;
       end loop;
    end loop;
-end tz_in_zav_cwms_ts_id;   
+end tz_in_zav_cwms_ts_id;
 --------------------------------------------------------------------------------
 -- procedure tz_in_catalog
 --------------------------------------------------------------------------------
@@ -2644,9 +2647,9 @@ begin
        end if;
    end loop;
 end zstore_ts_multi;
--------------------------------
+--------------------------------------------------------------------------------
 -- procedure set_tsid_time_zone
--------------------------------
+--------------------------------------------------------------------------------
 procedure set_tsid_time_zone
 is
 begin
@@ -2654,17 +2657,17 @@ begin
    execute immediate 'cwms_ts.set_tsid_time_zone('':1'', ''UTC'', ''&&office_id'')'
      using v_ts_ids(1);
 end set_tsid_time_zone;
------------------------------
+--------------------------------------------------------------------------------
 -- procedure set_ts_time_zone
------------------------------
+--------------------------------------------------------------------------------
 procedure set_ts_time_zone
 is
 begin
    execute immediate 'cwms_ts.set_ts_time_zone(0, ''UTC'')';
 end set_ts_time_zone;
-----------------------------
--- procedure create_ts_tz --
-----------------------------
+--------------------------------------------------------------------------------
+-- procedure create_ts_tz
+--------------------------------------------------------------------------------
 procedure create_ts_tz
 is
 begin
@@ -2672,9 +2675,9 @@ begin
    execute immediate 'cwms_ts.create_ts_tz('':1'', p_time_zone_name=>''UTC'', p_office_id=>''&&office_id'')'
      using v_ts_ids(1);
 end create_ts_tz;
-------------------------------
+--------------------------------------------------------------------------------
 -- procedure create_ts_code_tz
-------------------------------
+--------------------------------------------------------------------------------
 procedure create_ts_code_tz
 is
    l_ts_code at_cwms_ts_spec.ts_code%type;
@@ -2683,9 +2686,9 @@ begin
    execute immediate 'cwms_ts.create_ts_tz(:1, '':2'', p_time_zone_name=>''UTC'', p_office_id=>''&&office_id'')'
      using l_ts_code, v_ts_ids(1);
 end create_ts_code_tz;
--------------------------------
+--------------------------------------------------------------------------------
 -- procedure get_tsid_time_zone
--------------------------------
+--------------------------------------------------------------------------------
 procedure get_tsid_time_zone
 is
    l_timezone cwms_time_zone.time_zone_name%type;
@@ -2694,9 +2697,9 @@ begin
    l_timezone := cwms_ts.get_tsid_time_zone(replace(v_ts_ids(1), '<intvl>', c_intervals(1)), '&&office_id');
    ut.expect(l_timezone).to_equal(v_timezone_ids(1));
 end get_tsid_time_zone;
------------------------------
+--------------------------------------------------------------------------------
 -- procedure get_ts_time_zone
------------------------------
+--------------------------------------------------------------------------------
 procedure get_ts_time_zone
 is
    l_timezone cwms_time_zone.time_zone_name%type;
@@ -2705,6 +2708,134 @@ begin
    l_timezone := cwms_ts.get_ts_time_zone(cwms_ts.get_ts_code(replace(v_ts_ids(1), '<intvl>', c_intervals(1)), '&&office_id'));
    ut.expect(l_timezone).to_equal(v_timezone_ids(1));
 end get_ts_time_zone;
+
+--------------------------------------------------------------------------------
+-- procedure retrieve_lrts_untrimmed
+--------------------------------------------------------------------------------
+procedure retrieve_lrts_untrimmed
+is
+   type test_info_rec_t is record(
+      interval_id     varchar2(16),
+      start_times     cwms_t_date_table,
+      interval_offset integer,
+      value_count     integer);
+   type test_info_tab_t is table of test_info_rec_t;
+   l_test_info test_info_tab_t := test_info_tab_t(
+      test_info_rec_t('~1Hour', cwms_t_date_table(timestamp '2021-03-14 00:00:00', timestamp '2021-11-14 00:00:00'),  15, 24),
+      test_info_rec_t('~1Day',  cwms_t_date_table(timestamp '2021-03-01 00:00:00', timestamp '2021-11-01 00:00:00'), 420, 30));
+   l_interval       number;
+   l_cwms_ts_id     varchar2(183);
+   l_local_time     date;
+   l_utc_time       date;
+   l_start_time     date;
+   l_end_time       date;
+   l_ts_values      cwms_t_ztsv_array;
+   l_extra_count    integer := 5;
+   l_crsr           sys_refcursor;
+   l_times          cwms_t_date_table;
+   l_values         cwms_t_double_tab;
+   l_qualities      cwms_t_number_tab;
+   l_expected_count integer;
+   l_seasons        cwms_t_str_tab    := cwms_t_str_tab('Spring', 'Fall');
+   l_start_times    cwms_t_date_table := cwms_t_date_table(
+                                         timestamp '2021-03-14 00:00:00',  -- DST starts at 02:00 local
+                                         timestamp '2021-11-14 00:00:00'); -- DST ends at 02:00 local
+begin
+   setup('INIT, STORE_LOCATIONS');
+   for i in 1..l_test_info.count loop
+      l_cwms_ts_id := replace(c_location_ids(1)||c_ts_id_part, '<intvl>', l_test_info(i).interval_id);
+      select interval
+        into l_interval
+        from cwms_interval
+       where interval_id = substr(l_test_info(i).interval_id, 2);
+      for j in 1..l_test_info(i).start_times.count loop
+         l_ts_values := cwms_t_ztsv_array();
+         for k in 1..l_test_info(i).value_count loop
+             l_ts_values.extend;
+             l_local_time := l_test_info(i).start_times(j) + (k - 1) * l_interval / 1440 + l_test_info(i).interval_offset / 1440;
+             l_utc_time := cwms_util.change_timezone(l_local_time, 'US/Central', 'UTC');
+             l_ts_values(l_ts_values.count) := cwms_t_ztsv(l_utc_time, k, 0);
+         end loop;
+         select cast(multiset(select cwms_t_ztsv(date_time, value, quality_code)
+                                from table(l_ts_values)
+                               where date_time is not null
+                             ) as cwms_t_ztsv_array
+                    )
+           into l_ts_values
+           from dual;
+         cwms_ts.create_ts(
+            p_cwms_ts_id        => l_cwms_ts_id,
+            p_utc_offset        => l_test_info(i).interval_offset,
+            p_interval_forward  => null,
+            p_interval_backward => null,
+            p_versioned         => 'F',
+            p_active_flag       => 'T',
+            p_office_id         => c_office_id);
+
+         cwms_ts.zstore_ts(
+            p_cwms_ts_id      => l_cwms_ts_id,
+            p_units           => c_ts_unit,
+            p_timeseries_data => l_ts_values,
+            p_store_rule      => cwms_util.replace_all,
+            p_office_id       => c_office_id);
+
+         l_start_time := l_test_info(i).start_times(j) - l_extra_count * l_interval / 1440;
+         l_end_time   := l_test_info(i).start_times(j) + (l_test_info(i).value_count + l_extra_count) * l_interval / 1440;
+
+         cwms_ts.retrieve_ts(
+            p_at_tsv_rc  => l_crsr,
+            p_cwms_ts_id => l_cwms_ts_id,
+            p_units      => c_ts_unit,
+            p_start_time => l_start_time,
+            p_end_time   => l_end_time,
+            p_time_zone  => 'US/Central',
+            p_trim       => 'F',
+            p_office_id  => c_office_id);
+
+         fetch l_crsr
+          bulk collect
+          into l_times,
+               l_values,
+               l_qualities;
+
+         close l_crsr;
+
+         if i = 1 and j = 1 then
+            --------------------------------
+            -- ~1Hour crossing Srping DST --
+            --------------------------------
+            l_expected_count := l_test_info(i).value_count + 2 * l_extra_count - 1;
+            ut.expect(l_times.count).to_equal(l_expected_count);
+            if l_times.count = l_expected_count then
+               for k in 1..l_times.count loop
+                  if k between l_extra_count + 1 and l_extra_count + l_test_info(i).value_count - 1 then
+                     ut.expect(l_values(k)).to_equal(l_ts_values(k-l_extra_count).value);
+                  else
+                     ut.expect(l_values(k)).to_be_null;
+                  end if;
+               end loop;
+            end if;
+         else
+            ----------------
+            -- all others --
+            ----------------
+            l_expected_count := l_test_info(i).value_count + 2 * l_extra_count;
+            ut.expect(l_times.count).to_equal(l_expected_count);
+            if l_times.count = l_expected_count then
+               for k in 1..l_times.count loop
+                  if k between l_extra_count + 1 and l_extra_count + l_test_info(i).value_count then
+                     ut.expect(l_values(k)).to_equal(l_ts_values(k-l_extra_count).value);
+                  else
+                     ut.expect(l_values(k)).to_be_null;
+                  end if;
+               end loop;
+            end if;
+         end if;
+
+         cwms_ts.delete_ts(l_cwms_ts_id, cwms_util.delete_all, c_office_id);
+      end loop;
+   end loop;
+end retrieve_lrts_untrimmed;
 
 end test_lrts_updates;
 /
