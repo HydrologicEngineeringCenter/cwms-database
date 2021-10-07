@@ -935,6 +935,10 @@
 			</and>
 
 		</condition>
+
+		<echo message="running with the following baseline propertyes"/>
+		<echoproperties prefix="docker."/>
+
 	</target>
 
 	<target name="docker.buildimage" depends="docker.init">
@@ -1009,7 +1013,8 @@
 			<entry key="database.name" value="CWMS"/>
 			<entry key="database.volume" value="${docker.props.container_name_valid}_volume"/>
 		</propertyfile>
-
+		<echo message="Procedding with the following database parameters"/>
+		<echoproperties prefix="database."/>
 	</target>
 
 	<target name="docker.prepdb" depends="docker.setupparameters,docker.stopdb,docker.createnetwork">
