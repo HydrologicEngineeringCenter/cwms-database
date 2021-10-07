@@ -39,6 +39,7 @@ AS
         test_cwms_pool.teardown;
         test_update_ts_extents.teardown;
         test_timeseries_snapping.teardown;
+        test_cwms_cat.teardown;
     END teardown_all;
 
 END test_clean_all;

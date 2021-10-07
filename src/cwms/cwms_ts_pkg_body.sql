@@ -2086,7 +2086,7 @@ AS
                   select time_zone_code
                     into l_time_zone_code
                     from at_physical_location
-                   where location_code = cwms_loc.get_location_code(l_office_id, l_base_location_id);
+                   where location_code = l_base_location_code;
                end if;
                if l_time_zone_code is null then
                   select time_zone_code
