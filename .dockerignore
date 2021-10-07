@@ -4,6 +4,7 @@ v3.0
 wcdba_overrides.xml*.md
 docs
 .teamcity
+.git
 database_codegen_jooq
 auto-build-error.txt
 auto-build-output.txt
