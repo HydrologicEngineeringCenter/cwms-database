@@ -873,7 +873,7 @@
             <resolver:artifact file="${build.dir}/docs.zip" type="zip" id="docs" pomref="pom" classifier="docs"/>
 			<resolver:artifact file="${build.dir}/resources.jar" type="jar" id="resources" pomref="pom" classifier="resources"/>
             <resolver:artifact file="${xml_schema_zipfile}" type="zip" id="xml_schemas" pomref="pom" classifier="xml_schema_docs"/>
-			<resolver:artifact file="${build.dir}/cwms_schema_installer.tar" type="tar" id="cwms_schema_installer" pomref="pom" classifer="docker"/>
+			<resolver:artifact file="${build.dir}/cwms_schema_installer.tar" type="tar" id="cwms_schema_installer" pomref="pom" classifier="docker"/>
 		</resolver:artifacts>
 	</target>
 	<target name="install" depends="bundle">

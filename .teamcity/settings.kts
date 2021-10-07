@@ -113,7 +113,7 @@ object Build : BuildType({
             }
         }
         ant {
-            name = "Build Bundle"
+            name = "Push to Nexus"
             mode = antFile {}
             targets = "deploy"
             antArguments = "-Dbuilduser.overrides=build/overrides.external.xml"
