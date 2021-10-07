@@ -2688,7 +2688,7 @@ AS
                END IF;
             ELSE
                --
-               -- regular time seires (RTS)
+               -- regular time series (RTS)
                --
                IF MOD (l_interval, 30) = 0 OR MOD (l_interval, 365) = 0
                THEN
