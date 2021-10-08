@@ -111,7 +111,7 @@ object Build : BuildType({
             publisher = bitbucketServer {
                 url = "https://bitbucket.hecdev.net"
                 userName = "builduser"
-                password = "credentialsJSON:tcStashPassword"
+                password = "credentialsJSON:a8e6f8db-975b-4af8-844f-e203b50e37f2"
             }
         }
         feature {
