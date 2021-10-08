@@ -27,7 +27,9 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
-
+/**
+ * An container manager to manage creation of CWMSDatabases for automated tests
+ */
 public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> extends JdbcDatabaseContainer<SELF> {
     public static final String ORACLE_19C= "oracle/database:19.3.0-ee";
     private static final String PDBNAME = "CWMS";
@@ -49,6 +51,12 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
 
     GenericContainer<?> cwmsInstaller = null;
 
+    /**
+     * DockerImageName corresponding to the oracle version you want to use.
+     * The following is currently tested:
+     * oracle/database-19.3.0-ee
+     * @param oracleImageName
+     */
     public CwmsDatabaseContainer(DockerImageName oracleImageName) {
 		super(oracleImageName);
 
@@ -62,7 +70,11 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
         this.withStartupTimeoutSeconds((int)Duration.ofMinutes(30).getSeconds());
         this.withReuse(true);
     }
-
+    /**
+     * See CwmsDatabaseContainer(DockerImageName oracleImageName)
+     * The constant ORACLE_19C is the current valid image
+     * @param oracleVersion
+     */
 	public CwmsDatabaseContainer(final String oracleVersion) {
         this(DockerImageName.parse(oracleVersion));
     }
@@ -132,11 +144,17 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
 		return String.format("jdbc:oracle:thin:@%s:%d/%s", getHost(),getMappedPort(1521),PDBNAME);
 	}
 
+    /**
+     * Retrieve a regular "CWMS User" name for the system
+     */
 	@Override
 	public String getUsername() {
 		return officeEroc+"hectest";
 	}
 
+    /**
+     * The password shared by all accounts
+     */
 	@Override
 	public String getPassword() {
 
@@ -149,49 +167,100 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
 	}
 
 
+    /**
+     * The 3-4 letter office code you want this database to be for.
+     * @param officeId
+     * @return
+     */
     public SELF withOfficeId(String officeId){
         this.officeId = officeId;
         return self();
     }
 
+    /**
+     * The two character (letter,digit) office identifier corresponding to the office ID you've choosen.
+     * @param officeEroc
+     * @return
+     */
     public SELF withOfficeEroc(String officeEroc){
         this.officeEroc = officeEroc;
         return self();
     }
 
-
+    /**
+     * What Oracle SYS password to you. NOTE: not requried, a default is created for this instance
+     * @param sysPassword
+     * @return
+     */
     public SELF withSysPassword(String sysPassword){
         this.sysPassword = sysPassword;
         return self();
     }
 
+
+    /**
+     * Name of the docker volume to user for this run, it can be whatever you want locally but should be based
+     * on branch name on the build server
+     * @param volumeName
+     * @return
+     */
     public SELF withVolumeName(String volumeName){
         this.volumeName = volumeName;
         return self();
     }
 
+    /**
+     * What version of the cwms database you desire for this test. It should only be the version number
+     * e.g. 18-SNAPSHOT, or 18.1.9, etc
+     * @param schemaVersion
+     * @return
+     */
     public SELF withSchemaVersion(String schemaVersion){
         this.schemaVersion = schemaVersion;
         return self();
     }
 
-
+    /**
+     * Get the user name for a user with CWMS_DBA privileges
+     * @return
+     */
     public String getDbaUser() {
         return officeEroc+"hectest_db";
     }
 
+    /**
+     * Get the username for a user with CWMS PD User privileges.
+     * @return
+     */
     public String getPdUser() {
         return officeEroc+"hectest_pu";
     }
 
+
+    /**
+     * get the username for a user with Read Only privileges
+     * @return
+     */
     public String getReadOnly() {
         return officeEroc+"hectest_ro";
     }
 
+    /**
+     * Execute a block of sql, it can be any valid sql but assumes there is no returned contents to the user
+     * Default to executing with the user from getUsername();
+     * @param theSQL
+     * @throws SQLException
+     */
     public void executeSQL( String theSQL ) throws SQLException {
         this.executeSQL(theSQL, getUsername() );
     }
 
+    /**
+     * As executeSQL without a user, but instead use the specified username.
+     * @param theSQL
+     * @param user
+     * @throws SQLException
+     */
     public void executeSQL( String theSQL, String user) throws SQLException {
         connection( (c) -> {
 
@@ -205,7 +274,13 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
         }, user );
     }
 
-
+    /**
+     * Create connection with the specified user
+     * @param user
+     * @return
+     * @throws SQLException
+     * @throws NoDriverFoundException
+     */
     private Connection getConnection(String user) throws SQLException, NoDriverFoundException {
         if( driverInstance == null ){
             try{
@@ -223,10 +298,21 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
 
     }
 
+    /**
+     * Get an open connection from the system and perform arbitrary JDBC commands."
+     * @param function
+     * @throws SQLException
+     */
     public void connection ( Consumer<java.sql.Connection> function ) throws SQLException {
         this.connection(function, getUsername() );
     }
 
+    /**
+     * As connection without a user, but uses the specified username instead of the default
+     * @param function
+     * @param user
+     * @throws SQLException
+     */
     public void connection( Consumer<java.sql.Connection> function, String user ) throws SQLException{
         try( Connection conn = getConnection(user);){
             function.accept(conn);
