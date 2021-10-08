@@ -241,7 +241,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
      * get the username for a user with Read Only privileges
      * @return
      */
-    public String getReadOnly() {
+    public String getReadOnlyUser() {
         return officeEroc+"hectest_ro";
     }
 
