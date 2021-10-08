@@ -1,4 +1,4 @@
-CREATE OR REPLACE package &cwms_schema..test_cwms_ts as
+CREATE OR REPLACE package &&cwms_schema..test_cwms_ts as
 
 --%suite(Test cwms_ts package code)
 --%beforeall (setup)
@@ -9,6 +9,8 @@ CREATE OR REPLACE package &cwms_schema..test_cwms_ts as
 procedure test_set_active_flag;
 --%test(Test yearly tables)
 procedure test_yearly_tables;
+--%test(Test filter duplicates)
+procedure test_filter_duplicates;
 
 
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
@@ -18,7 +20,7 @@ end test_cwms_ts;
 /
 SHOW ERRORS;
 
-CREATE OR REPLACE PACKAGE BODY &cwms_schema..test_cwms_ts
+CREATE OR REPLACE PACKAGE BODY &&cwms_schema..test_cwms_ts
 AS
 
 
@@ -38,7 +40,7 @@ AS
                 cwms_loc.delete_location (
                     p_location_id     => rec.loc_name,
                     p_delete_action   => cwms_util.delete_all,
-                    p_db_office_id    => '&office_id');
+                    p_db_office_id    => '&&office_id');
             EXCEPTION
                 WHEN exc_location_id_not_found
                 THEN
@@ -53,7 +55,7 @@ AS
         delete_all;
         cwms_loc.store_location (p_location_id    => test_base_location_id,
                                  p_active         => 'F',
-                                 p_db_office_id   => '&office_id');
+                                 p_db_office_id   => '&&office_id');
         COMMIT;
     END;
 
@@ -80,9 +82,9 @@ AS
         l_cwms_ts_id := l_base_location_id || '.Stage.Inst.0.0.raw';
         cwms_loc.store_location (p_location_id    => l_base_location_id,
                                  p_active         => 'F',
-                                 p_db_office_id   => '&office_id');
+                                 p_db_office_id   => '&&office_id');
         COMMIT;
-        cwms_ts.create_ts ('&office_id', l_cwms_ts_id);
+        cwms_ts.create_ts ('&&office_id', l_cwms_ts_id);
         COMMIT;
 
           SELECT bas_loc_active_flag,
@@ -104,7 +106,7 @@ AS
         ut.expect (l_net_ts_active).to_equal ('F');
         cwms_loc.store_location (p_location_id    => l_base_location_id,
                                  p_active         => 'T',
-                                 p_db_office_id   => '&office_id');
+                                 p_db_office_id   => '&&office_id');
         COMMIT;
 
 
@@ -127,7 +129,7 @@ AS
         ut.expect (l_net_ts_active).to_equal ('T');
         CWMS_TS.UPDATE_TS_ID (p_cwms_ts_id       => l_cwms_ts_id,
                               p_ts_active_flag   => 'F',
-                              p_db_office_id     => '&office_id');
+                              p_db_office_id     => '&&office_id');
         COMMIT;
 
           SELECT bas_loc_active_flag,
@@ -160,7 +162,7 @@ AS
         l_cwms_ts_id := test_base_location_id || '.Stage.Inst.1Hour.0.';
         cwms_loc.store_location (p_location_id    => test_base_location_id,
                                  p_active         => 'T',
-                                 p_db_office_id   => '&office_id.');
+                                 p_db_office_id   => '&&office_id.');
 
 
         FOR c
@@ -301,6 +303,134 @@ AS
             END IF;
         END LOOP;
     END test_yearly_tables;
+
+    --------------------------------------------------------------------------------
+    -- procedure test_filter_duplicates
+    --------------------------------------------------------------------------------
+    procedure test_filter_duplicates
+    is
+        l_ts_id      varchar2(191)   := 'TestFilterDupsMsg.Code.Inst.1Hour.0.Test';
+        l_loc_id     varchar2(57)    := cwms_util.split_text(l_ts_id, 1, '.');
+        l_unit       varchar2(16)    := 'n/a';
+        l_office_id  varchar2(16)    := '&&office_id';
+        l_ts_data cwms_t_ztsv_array := cwms_t_ztsv_array(
+            cwms_t_ztsv(date '2021-10-01' + 1 / 24, 1, 0),
+            cwms_t_ztsv(date '2021-10-01' + 2 / 24, 2, 0),
+            cwms_t_ztsv(date '2021-10-01' + 3 / 24, 3, 0),
+            cwms_t_ztsv(date '2021-10-01' + 4 / 24, 4, 0),
+            cwms_t_ztsv(date '2021-10-01' + 5 / 24, 5, 0),
+            cwms_t_ztsv(date '2021-10-01' + 6 / 24, 6, 0));
+        l_ts_data2   cwms_t_ztsv_array;
+        l_ts         timestamp;
+        l_msg_rec    cwms_v_ts_msg_archive%rowtype;
+    begin
+        -------------------------------------
+        -- set up the overlapping data set --
+        -------------------------------------
+        l_ts_data2 := l_ts_data;
+        l_ts_data2.extend;
+        l_ts_data2(l_ts_data2.count) := cwms_t_ztsv(
+            l_ts_data(l_ts_data.count).date_time + 1 / 24,
+            l_ts_data(l_ts_data.count).value + 1,
+            0);
+        -----------------------------------------------------
+        -- create the location and store the original data --
+        -----------------------------------------------------
+        cwms_loc.store_location(
+            p_location_id  => l_loc_id,
+            p_db_office_id => l_office_id);
+
+        cwms_ts.zstore_ts(
+            p_cwms_ts_id      => l_ts_id,
+            p_units           => l_unit,
+            p_timeseries_data => l_ts_data,
+            p_store_rule      => cwms_util.replace_all,
+            p_office_id       => l_office_id);
+        ------------------------------------------------------------
+        -- set filter duplicates to FALSE and store the same data --
+        ------------------------------------------------------------
+        cwms_ts.set_filter_duplicates_ofc('F', l_office_id);
+
+        l_ts := systimestamp;
+
+        cwms_ts.zstore_ts(
+            p_cwms_ts_id      => l_ts_id,
+            p_units           => l_unit,
+            p_timeseries_data => l_ts_data,
+            p_store_rule      => cwms_util.replace_all,
+            p_office_id       => l_office_id);
+        --------------------------------------------------------------------
+        -- we should have a ts archive message for the entire time window --
+        --------------------------------------------------------------------
+        select *
+          into l_msg_rec
+          from cwms_v_ts_msg_archive
+         where message_time > l_ts
+           and db_office_id = l_office_id
+           and cwms_ts_id = l_ts_id;
+
+        ut.expect(l_msg_rec.first_data_time).to_equal(l_ts_data(1).date_time);
+        ut.expect(l_msg_rec.last_data_time).to_equal(l_ts_data(l_ts_data.count).date_time);
+        -----------------------------------------------------------
+        -- set filter duplicates to TRUE and store the same data --
+        -----------------------------------------------------------
+        cwms_ts.set_filter_duplicates_ofc('F', l_office_id);
+        cwms_ts.set_filter_duplicates_ofc('T', l_office_id);
+
+        l_ts := systimestamp;
+
+        cwms_ts.zstore_ts(
+            p_cwms_ts_id      => l_ts_id,
+            p_units           => l_unit,
+            p_timeseries_data => l_ts_data,
+            p_store_rule      => cwms_util.replace_all,
+            p_office_id       => l_office_id);
+        -----------------------------------------------
+        -- we should not have ANY ts archive message --
+        -----------------------------------------------
+        begin
+            select *
+              into l_msg_rec
+              from cwms_v_ts_msg_archive
+             where message_time > l_ts
+               and db_office_id = l_office_id
+               and cwms_ts_id = l_ts_id;
+
+            cwms_err.raise('ERROR', 'Expected exception not raised');
+        exception
+            when no_data_found then null;
+        end;
+        ----------------------------------------------------------------
+        -- leave filter duplicates to TRUE and store overlapping data --
+        ----------------------------------------------------------------
+        l_ts := systimestamp;
+
+        cwms_ts.zstore_ts(
+            p_cwms_ts_id      => l_ts_id,
+            p_units           => l_unit,
+            p_timeseries_data => l_ts_data2,
+            p_store_rule      => cwms_util.replace_all,
+            p_office_id       => l_office_id);
+        -------------------------------------------------------------------------------------------------
+        -- we should have a ts archive message for only the non-overlapping portion of the time window --
+        -------------------------------------------------------------------------------------------------
+        select *
+          into l_msg_rec
+          from cwms_v_ts_msg_archive
+         where message_time > l_ts
+           and db_office_id = l_office_id
+           and cwms_ts_id = l_ts_id;
+
+        ut.expect(l_msg_rec.first_data_time).to_equal(l_ts_data2(l_ts_data2.count).date_time);
+        ut.expect(l_msg_rec.last_data_time).to_equal(l_ts_data2(l_ts_data2.count).date_time);
+        -----------------------------------------
+        -- delete the location and time series --
+        -----------------------------------------
+        cwms_loc.delete_location(
+            p_location_id   => l_loc_id,
+            p_delete_action => cwms_util.delete_all,
+            p_db_office_id  => l_office_id);
+    end test_filter_duplicates;
 END test_cwms_ts;
 /
 

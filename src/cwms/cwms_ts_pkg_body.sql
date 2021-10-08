@@ -6111,6 +6111,36 @@ AS
          end;
       end loop;
 
+      if l_filter_duplicates = 'T' then
+         ----------------------------------------------------------------------
+         -- update l_timeseries_data to be the data that was actually stored --
+         -- for purposes of updating ts extents and publishing messages      --
+         ----------------------------------------------------------------------
+         declare
+            l_start_date date;
+            l_end_date   date;
+            l_time_zone  varchar2(28);
+         begin
+            l_time_zone  := extract(timezone_region from l_timeseries_data(1).date_time);
+            l_start_date := cast((cwms_util.fixup_timezone(l_timeseries_data(1).date_time) at time zone 'UTC') as date);
+            l_end_date   := cast((cwms_util.fixup_timezone(l_timeseries_data(l_timeseries_data.count).date_time) at time zone 'UTC') as date);
+            select tsv_type(
+                     cast(cwms_util.change_timezone(date_time, 'UTC', l_time_zone) as timestamp),
+                     value,
+                     quality_code
+                   )
+            bulk collect
+            into l_timeseries_data
+            from av_tsv_dqu
+            where ts_code = l_ts_code
+               and start_date <= l_end_date
+               and end_date > l_start_date
+               and version_date = l_version_date
+               and data_entry_date = l_store_date
+               order by date_time;
+         end;
+      end if;
+
       if l_count > 0  then
          ------------------------------------
          -- update the time series extents --
