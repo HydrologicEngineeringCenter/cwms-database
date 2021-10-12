@@ -873,6 +873,7 @@
             <resolver:artifact file="${build.dir}/docs.zip" type="zip" id="docs" pomref="pom" classifier="docs"/>
 			<resolver:artifact file="${build.dir}/resources.jar" type="jar" id="resources" pomref="pom" classifier="resources"/>
             <resolver:artifact file="${xml_schema_zipfile}" type="zip" id="xml_schemas" pomref="pom" classifier="xml_schema_docs"/>
+			<resolver:artifact file="${build.dir}/cwms_schema_installer.tar" type="tar" id="cwms_schema_installer" pomref="pom" classifier="docker"/>
 		</resolver:artifacts>
 	</target>
 	<target name="install" depends="bundle">
@@ -885,5 +886,301 @@
 		</resolver:deploy>
 	</target>
 
+	<!-- nothing below this line should EVER depend on a passed in overrides file. '
+		 However, one may override settings, like the container_name with a simple -Ddocker.props.container_name=<Some text>
+
+	-->
+	<target name="docker.init" depends="init">
+		<condition property="docker.props.container_name" value="cwmsdb_${teamcity.branch}" else="antdockercwmsdb">
+			<isset property="teamcity.branch"/>
+		</condition>
+		<condition property="database.office" value="${database.office}" else="SPK">
+			<isset property="database.office"/>
+		</condition>
+
+		<condition property="database.eroc" value="${database.eroc}" else="l2">
+			<isset property="database.eroc"/>
+		</condition>
+
+		<condition property="docker.props.oracle.image" value="${oracle.image}" else="oracle/database:19.3.0-ee">
+			<isset property="oracle.image"/>
+		</condition>
+
+		<condition property="docker.props.db_name" value="XEPDB1" else="CWMS">
+			<matches string="${docker.props.oracle.image}" pattern="^.*xe$" casesensitive="false"/>
+		</condition>
+
+		<property name="docker.props.network_name" value="cwmsdbnet"/>
+
+		<condition property="isdeployed" value="true" else="false">
+			<and>
+				<isset property="teamcity.branch"/>
+				<matches string="${teamcity.branch}" pattern="^(master|release/*)" casesensitive="false"/>
+			</and>
+		</condition>
+
+		<if>
+			<and>
+				<isset property="teamcity.branch"/>
+				<equals arg1="${isdeployed}" arg2="true"/>
+			</and>
+			<then>
+				<property name="docker.props.image_name" value="cwms_schema_installer:${pom.version}"/>
+			</then>
+			<else>
+				<condition property="docker.props.image_name" value="cwms_schema_installer:build-${env.BUILD_NUMBER}" else="cwms_schema_installer:build-local">
+					<isset property="env.BUILD_NUMBER"/>
+				</condition>
+
+			</else>
+
+		</if>
+		<condition property="tmp.props.image_name_with_buildnumber" value="cwms_schema_installer:build-${env.teamcity.build.number}">
+			<and>
+				<isset property="env.BUILD_NUMBER"/>
+				<equals arg1="${isdeployed}" arg2="false"/>
+			</and>
+
+		</condition>
+
+		<echo message="running with the following baseline propertyes"/>
+		<echoproperties prefix="docker."/>
+
+	</target>
+
+	<target name="docker.buildimage" depends="docker.init">
+		<echo message="Creating baseline docker image"/>
+		<exec dir="${root}" executable="docker"  failonerror="true">
+			<arg value="build"/>
+			<arg value="--tag"/>
+			<arg value="${docker.props.image_name}"/>
+			<arg value="."/>
+			<redirector output="${root}/build/docker.txt" error="${root}/build/docker" alwayslog="true"/>
+		</exec>
+		<exec dir="${root}" executable="docker" failonerror="true">
+			<arg value="image"/>
+			<arg value="save"/>
+			<arg value="-o"/>
+			<arg value="${build.dir}/cwms_schema_installer.tar"/>
+			<arg value="${docker.props.image_name}"/>
+		</exec>
+
+	</target>
+
+	<target name="docker.createnetwork" depends="docker.init">
+		<exec executable="docker" failonerror="false" outputproperty="networkList">
+			<arg value="network"/>
+			<arg value="ls"/>
+		</exec>
+		<if>
+			<matches pattern="${docker.props.network_name}" string="${networkList}"/>
+			<then>
+				<echo message="Network already created"/>
+			</then>
+			<else>
+				<echo message="Creating the docker internal network"/>
+				<exec executable="docker" failonerror="true">
+					<arg value="network"/>
+					<arg value="create"/>
+					<arg value="${docker.props.network_name}"/>
+				</exec>
+			</else>
+		</if>
+	</target>
+
+	<target name="docker.setupparameters" depends="docker.init">
+		<echo message="processing container name to safe characters. Starting with: ${docker.props.container_name}"/>
+		<exec executable="sed" outputProperty="docker.props.container_name_valid" failonerror="true">
+			<arg value="-e"/>
+			<arg value="s@/refs/heads/@@g"/>
+			<arg value="-e"/>
+			<arg value="s@/@_@g"/>
+			<arg value="-e"/>
+			<arg value="s@-@_@g"/>
+			<arg value="-e"/>
+			<arg value="s@#@_@g"/>
+			<redirector inputString="${docker.props.container_name}"/>
+		</exec>
+		<echo message="Name used will be: ${docker.props.container_name_valid}"/>
+		<echo message="Creating parameter file"/>
+		<if>
+			<available file="${root}/build/database.props"/>
+			<then>
+				<echo message="Overwriting Existing Parameters"/>
+			</then>
+		</if>
+
+		<propertyfile file="${root}/build/database.props">
+			<entry key="database.syspw" value="antsyspassword"/>
+			<entry key="database.cwmspw" value="antcwmspassword"/>
+			<entry key="database.buildpw" value="antbuildpassword"/>
+			<entry key="database.office" value="${database.office}"/>
+			<entry key="database.eroc" value="${database.eroc}"/>
+			<entry key="database.host_and_port" value="${docker.props.container_name_valid}:1521"/>
+			<entry key="database.name" value="${docker.props.db_name}"/>
+			<entry key="database.volume" value="${docker.props.container_name_valid}_volume"/>
+		</propertyfile>
+		<echo message="Procedding with the following database parameters"/>
+		<echoproperties prefix="database."/>
+	</target>
+
+	<target name="docker.prepdb" depends="docker.setupparameters,docker.stopdb,docker.createnetwork">
+		<echo message="Creating baseline docker database"/>
+		<loadproperties srcFile="${root}/build/database.props"/>
+		<exec executable="docker" outputproperty="containerList">
+			<arg value="container"/>
+			<arg value="ls"/>
+			<arg value="-a"/>
+		</exec>
+		<if>
+			<matches pattern="${docker.props.container_name_valid}" string="${containerList}"/>
+			<then>
+				<echo message="Starting Existing Oracle databse"/>
+				<exec executable="docker" failonerror="true">
+					<arg value="start"/>
+					<arg value="${docker.props.container_name_valid}"/>
+				</exec>
+			</then>
+			<else>
+				<echo message="Creating new database"/>
+				<exec dir="${root}" executable="docker" failonerror="true">
+					<arg value="volume"/>
+					<arg value="create"/>
+					<arg value="${database.volume}"/>
+				</exec>
+				<exec dir="${root}" executable="docker" failonerror="true">
+					<arg value="run"/>
+					<arg value="-d"/>
+					<arg value="--network"/>
+					<arg value="${docker.props.network_name}"/>
+					<arg value="-p"/>
+					<arg value="1521"/> <!-- random external port will be assigned and stored -->
+					<arg value="--name"/>
+					<arg value="${docker.props.container_name_valid}"/>
+					<arg value="-e"/>
+					<arg value="ORACLE_PDB=${database.name}"/>
+					<arg value="-e"/>
+					<arg value="ORACLE_PWD=${database.syspw}"/>
+					<arg value="-e"/>
+					<arg value="enterprise"/>
+					<arg value="-v"/>
+					<arg value="${database.volume}:/opt/oracle/oradata"/>
+					<arg value="${docker.props.oracle.image}"/>
+				</exec>
+			</else>
+		</if>
+		<waitfor checkevery="200" maxwait="3600" maxwaitunit="hour"> <!-- Yes, this takes a while. -->
+			<scriptcondition language="javascript" value="false"><![CDATA[
+				var p = java.lang.Runtime.getRuntime().exec("docker logs -n 200 " + cwms_database_schema.getProperty("docker.props.container_name_valid") );
+				p.waitFor();
+				var reader = new java.io.InputStreamReader(p.getInputStream());
+				var out = org.apache.tools.ant.util.FileUtils.safeReadFully(reader);
+				var echo = cwms_database_schema.createTask("echo");
+				//echo.setMessage("got" + out);
+				//echo.perform();
+				self.setValue(out.contains("DATABASE IS READY TO USE"));
+				]]>
+			</scriptcondition>
+
+		</waitfor>
+		<echo message="generating overrides for this run"/>
+		<antcall target="docker.generateoverrides"/>
+
+
+	</target>
+
+	<target name="docker.showport" depends="docker.setupparameters">
+		<!--<loadproperties srcFile="${root}/build/database.props"/>-->
+		<echo message="Finding port for {docker.props.container_name_valid}"/>
+		<exec executable="docker" outputproperty="portOutput" failonerror="true">
+			<arg value="port"/>
+			<arg value="${docker.props.container_name_valid}"/>
+		</exec>
+		<echo message="Your database is listening on ${portOutput}"/>
+		<loadresource property="portLine1">
+			<propertyresource name="portOutput"/>
+			<filterchain>
+				<headfilter lines="1"/>
+			</filterchain>
+		</loadresource>
+		<exec executable="sed" outputProperty="docker.props.external_port">
+			<arg value="-e"/>
+			<arg value="s/^\(.*:\)\(.*\)$/\2/"/>
+			<redirector inputstring="${portLine1}"/>
+		</exec>
+		<echo message="Port is ${docker.props.external_port}"/>
+	</target>
+
+<!--
+		docker run \-\-network database_net -d \-\-name testdb -e ORACLE_PDB=$DBNAME -e ORACLE_PWD=$SYS_PASSWORD -p 1522:1521 -e enterprise oracle/database:19.3.0-ee
+		docker run \-\-network database_net -e DB_HOST_PORT="testdb:1521" -e DB_NAME="/$DBNAME" -e SYS_PASSWORD=$SYS_PASSWORD cwms_db_install:latest
+	-->
+	<target name="docker.install" depends="docker.prepdb, docker.buildimage">
+		<echo message="Using Docker build to install database"/>
+		<exec executable="docker" failonerror="true" output="build/buildCWMS_DB.log">
+			<arg value="run"/>
+			<arg value="--rm"/>
+			<arg value="--network"/>
+			<arg value="${docker.props.network_name}"/>
+			<arg value="-e"/>
+			<arg value="DB_HOST_PORT=${database.host_and_port}"/>
+			<arg value="-e"/>
+			<arg value="DB_NAME=/${database.name}"/>
+			<arg value="-e"/>
+			<arg value="SYS_PASSWORD=${database.syspw}"/>
+			<arg value="-e"/>
+			<arg value="CWMS_PASSWORD=${database.cwmspw}"/>
+			<arg value="-e"/>
+			<arg value="BUILDUSER_PASSWORD=${database.buildpw}"/>
+			<arg value="-e"/>
+			<arg value="OFFICE_ID=${database.office}"/>
+			<arg value="-e"/>
+			<arg value="OFFICE_EROC=${database.eroc}"/>
+			<arg value="${docker.props.image_name}"/>
+		</exec>
+	</target>
+
+	<target name="docker.generateoverrides" depends="docker.showport">
+		<copy file="docker/overrides.template.xml" tofile="${root}/build/overrides.internal.xml"
+		 	   overwrite="true">
+			<filterchain>
+				<expandproperties/>
+				<replacetokens>
+					<token key="HOST_AND_PORT" value="${database.host_and_port}"/>
+				</replacetokens>
+			</filterchain>
+		</copy>
+
+		<copy file="docker/overrides.template.xml" tofile="${root}/build/overrides.external.xml"
+			  overwrite="true">
+			<filterchain>
+				<expandproperties/>
+				<replacetokens>
+					<token key="HOST_AND_PORT" value="localhost:${docker.props.external_port}"/>
+				</replacetokens>
+			</filterchain>
+		</copy>
+	</target>
+
+	<target name="docker.stopdb" depends="docker.setupparameters">
+		<echo message="Stopping database"/>
+		<exec dir="${root}" executable="docker" failonerror="false">
+			<arg value="stop"/>
+			<arg value="${docker.props.container_name_valid}"/>
+		</exec>
+	</target>
+
+	<target name="docker.killdb" depends="docker.stopdb">
+		<echo message="Removing oracle database instance"/>
+		<exec dir="${root}" executable="docker" failonerror="true">
+			<arg value="rm"/>
+			<arg value="${docker.props.container_name_valid}"/>
+		</exec>
+	</target>
+
+	<target name="docker.resetdbprops" depends="docker.killdb">
+		<echo message="Removing generated properties files"/>
+		<delete file="${root}/build/database.props"/>
+	</target>
 
 </project>
