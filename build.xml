@@ -315,7 +315,7 @@
 
     </target>
 
-    <target name="test-as_up_user" description="run tests that require connecting with a RO user">
+    <target name="test-as_up_user" description="run tests that require connecting with UPASS user">
         <if>
             <available file="build/tests.log"/>
             <then></then>
