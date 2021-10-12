@@ -374,7 +374,6 @@ AS
         -----------------------------------------------------------
         -- set filter duplicates to TRUE and store the same data --
         -----------------------------------------------------------
-        cwms_ts.set_filter_duplicates_ofc('F', l_office_id);
         cwms_ts.set_filter_duplicates_ofc('T', l_office_id);
 
         l_ts := systimestamp;
