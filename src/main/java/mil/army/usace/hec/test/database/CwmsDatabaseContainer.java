@@ -293,6 +293,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
         Properties info = new Properties();
         info.put("user", user);
         info.put("password", this.getPassword());
+        info.put("oracle.net.disableOob","true");
 
         return driverInstance.connect(getJdbcUrl(),info);
 
