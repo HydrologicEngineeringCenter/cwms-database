@@ -170,7 +170,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
     /**
      * The 3-4 letter office code you want this database to be for.
      * @param officeId
-     * @return
+     * @return This Container
      */
     public SELF withOfficeId(String officeId){
         this.officeId = officeId;
@@ -180,7 +180,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
     /**
      * The two character (letter,digit) office identifier corresponding to the office ID you've choosen.
      * @param officeEroc
-     * @return
+     * @return This Container
      */
     public SELF withOfficeEroc(String officeEroc){
         this.officeEroc = officeEroc;
@@ -190,7 +190,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
     /**
      * What Oracle SYS password to you. NOTE: not requried, a default is created for this instance
      * @param sysPassword
-     * @return
+     * @return This Container
      */
     public SELF withSysPassword(String sysPassword){
         this.sysPassword = sysPassword;
@@ -202,7 +202,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
      * Name of the docker volume to user for this run, it can be whatever you want locally but should be based
      * on branch name on the build server
      * @param volumeName
-     * @return
+     * @return This Container
      */
     public SELF withVolumeName(String volumeName){
         this.volumeName = volumeName;
@@ -213,7 +213,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
      * What version of the cwms database you desire for this test. It should only be the version number
      * e.g. 18-SNAPSHOT, or 18.1.9, etc
      * @param schemaVersion
-     * @return
+     * @return This Container
      */
     public SELF withSchemaVersion(String schemaVersion){
         this.schemaVersion = schemaVersion;
@@ -221,16 +221,16 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
     }
 
     /**
-     * Get the user name for a user with CWMS_DBA privileges
-     * @return
+     *
+     * @return the user name for a user with CWMS_DBA privileges
      */
     public String getDbaUser() {
         return officeEroc+"hectest_db";
     }
 
     /**
-     * Get the username for a user with CWMS PD User privileges.
-     * @return
+     *
+     * @return the username for a user with CWMS PD User privileges.
      */
     public String getPdUser() {
         return officeEroc+"hectest_pu";
@@ -238,8 +238,8 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
 
 
     /**
-     * get the username for a user with Read Only privileges
-     * @return
+     *
+     * @return the username for a user with Read Only privileges
      */
     public String getReadOnlyUser() {
         return officeEroc+"hectest_ro";
@@ -275,9 +275,9 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
     }
 
     /**
-     * Create connection with the specified user
+     *
      * @param user
-     * @return
+     * @return connection opened with the specified user
      * @throws SQLException
      * @throws NoDriverFoundException
      */
