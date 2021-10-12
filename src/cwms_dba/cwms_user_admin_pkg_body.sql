@@ -61,7 +61,7 @@ AS
 		l_sql_string						VARCHAR2 (400);
 	BEGIN
 		l_sql_string := 'ALTER user ' || p_username || ' account lock';
-		DBMS_OUTPUT.put_line (l_sql_string);
+		--DBMS_OUTPUT.put_line (l_sql_string);
       check_dynamic_sql(l_sql_string);
 
 		EXECUTE IMMEDIATE l_sql_string;
@@ -72,7 +72,7 @@ AS
 		l_sql_string						VARCHAR2 (400);
 	BEGIN
 		l_sql_string := 'ALTER user ' || p_username || ' account unlock';
-		DBMS_OUTPUT.put_line (l_sql_string);
+		--DBMS_OUTPUT.put_line (l_sql_string);
       check_dynamic_sql(l_sql_string);
 
 		EXECUTE IMMEDIATE l_sql_string;
@@ -149,13 +149,13 @@ AS
 		create_db_account (p_username, p_password);
 
 		l_sql_string := 'GRANT CONNECT TO ' || dbms_assert.simple_sql_name(p_username);
-		DBMS_OUTPUT.put_line (l_sql_string);
+		--DBMS_OUTPUT.put_line (l_sql_string);
         check_dynamic_sql(l_sql_string);
 
 		EXECUTE IMMEDIATE l_sql_string;
 
 		l_sql_string := 'GRANT CWMS_USER TO ' || dbms_assert.simple_sql_name(p_username);
-		DBMS_OUTPUT.put_line (l_sql_string);
+		--DBMS_OUTPUT.put_line (l_sql_string);
         check_dynamic_sql(l_sql_string);
 
 		EXECUTE IMMEDIATE l_sql_string;
@@ -168,19 +168,19 @@ AS
 		l_sql_string VARCHAR2 (400);
 	BEGIN
 		l_sql_string := 'GRANT CONNECT TO ' || dbms_assert.simple_sql_name(p_username);
-		DBMS_OUTPUT.put_line (l_sql_string);
+		--DBMS_OUTPUT.put_line (l_sql_string);
       		check_dynamic_sql(l_sql_string);
 
 		EXECUTE IMMEDIATE l_sql_string;
 
 		l_sql_string := 'GRANT CWMS_USER TO ' || dbms_assert.simple_sql_name(p_username);
-		DBMS_OUTPUT.put_line (l_sql_string);
+		--DBMS_OUTPUT.put_line (l_sql_string);
       		check_dynamic_sql(l_sql_string);
 
 		EXECUTE IMMEDIATE l_sql_string;
 
 		l_sql_string := 'ALTER USER  ' || dbms_assert.simple_sql_name(p_username) || ' PROFILE CWMS_PROF';
-		DBMS_OUTPUT.put_line (l_sql_string);
+		--DBMS_OUTPUT.put_line (l_sql_string);
       		check_dynamic_sql(l_sql_string);
 
 		EXECUTE IMMEDIATE l_sql_string;
@@ -195,13 +195,13 @@ AS
 		create_db_account (p_username, p_password);
 
 		l_sql_string := 'GRANT CONNECT TO ' || dbms_assert.simple_sql_name(p_username);
-		DBMS_OUTPUT.put_line (l_sql_string);
+		--DBMS_OUTPUT.put_line (l_sql_string);
       		check_dynamic_sql(l_sql_string);
 
 		EXECUTE IMMEDIATE l_sql_string;
 
 		l_sql_string := 'GRANT CWMS_USER TO ' || dbms_assert.simple_sql_name(p_username);
-		DBMS_OUTPUT.put_line (l_sql_string);
+		--DBMS_OUTPUT.put_line (l_sql_string);
       		check_dynamic_sql(l_sql_string);
 
 		EXECUTE IMMEDIATE l_sql_string;

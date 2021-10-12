@@ -2600,7 +2600,7 @@ AS
     BEGIN
         UPDATE at_sec_service_user
            SET timeout = (SYSDATE + 1 / 24)
-         WHERE userid = p_username;
+         WHERE userid = p_username and timeout < (SYSDATE + 1 / 24);
 
         COMMIT;
     END update_service_timeout;
