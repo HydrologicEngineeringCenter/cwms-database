@@ -103,7 +103,7 @@ object Build : BuildType({
     }
 
     failureConditions {
-        executionTimeoutMin = 5
+        executionTimeoutMin = 50
     }
 
     features {
