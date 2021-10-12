@@ -902,6 +902,13 @@
 			<isset property="database.eroc"/>
 		</condition>
 
+		<condition property="docker.props.oracle.image" value="${oracle.image}" else="oracle/database:19.3.0-ee">
+			<isset property="oracle.image"/>
+		</condition>
+
+		<condition property="docker.props.db_name" value="XEPDB1" else="CWMS">
+			<matches string="${docker.props.oracle.image}" pattern="^.*xe$" casesensitive="false"/>
+		</condition>
 
 		<property name="docker.props.network_name" value="cwmsdbnet"/>
 
@@ -1010,7 +1017,7 @@
 			<entry key="database.office" value="${database.office}"/>
 			<entry key="database.eroc" value="${database.eroc}"/>
 			<entry key="database.host_and_port" value="${docker.props.container_name_valid}:1521"/>
-			<entry key="database.name" value="CWMS"/>
+			<entry key="database.name" value="${docker.props.db_name}"/>
 			<entry key="database.volume" value="${docker.props.container_name_valid}_volume"/>
 		</propertyfile>
 		<echo message="Procedding with the following database parameters"/>
@@ -1058,7 +1065,7 @@
 					<arg value="enterprise"/>
 					<arg value="-v"/>
 					<arg value="${database.volume}:/opt/oracle/oradata"/>
-					<arg value="oracle/database:19.3.0-ee"/>
+					<arg value="${docker.props.oracle.image}"/>
 				</exec>
 			</else>
 		</if>
