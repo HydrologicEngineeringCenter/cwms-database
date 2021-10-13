@@ -935,13 +935,7 @@
 			</else>
 
 		</if>
-		<condition property="tmp.props.image_name_with_buildnumber" value="cwms_schema_installer:build-${env.teamcity.build.number}">
-			<and>
-				<isset property="env.BUILD_NUMBER"/>
-				<equals arg1="${isdeployed}" arg2="false"/>
-			</and>
 
-		</condition>
 
 		<echo message="running with the following baseline propertyes"/>
 		<echoproperties prefix="docker."/>
