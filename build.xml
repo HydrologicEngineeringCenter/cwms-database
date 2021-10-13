@@ -779,7 +779,6 @@
 		<delete>
 			<fileset dir="src/updateScripts" includes="*.log"/>
 		</delete>
-		<delete dir="${build.dir}"/>
 	</target>
 
 	<target name="xml-schemas">
