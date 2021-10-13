@@ -1,0 +1,31 @@
+
+
+apply plugin: 'java-library'
+
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+
+    implementation "org.testcontainers:testcontainers:1.16.0"
+    implementation "org.testcontainers:database-commons:1.16.0"
+    implementation "org.testcontainers:jdbc:1.16.0"
+
+
+    testImplementation "org.testcontainers:junit-jupiter:1.16.0"
+    testImplementation 'com.oracle.ojdbc:ojdbc8:19.3.0.0'
+    testImplementation 'org.mockito:mockito-core:3.4.6'
+    testImplementation 'org.mockito:mockito-junit-jupiter:3.4.6'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.6.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.6.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.6.2'
+}
+
+
+test {
+    useJUnitPlatform()
+    jvmArgs += "-Djava.net.preferIPv4Stack=true"
+}
