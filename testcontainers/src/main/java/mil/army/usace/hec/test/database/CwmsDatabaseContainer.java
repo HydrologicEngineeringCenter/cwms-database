@@ -32,6 +32,7 @@ import org.testcontainers.containers.wait.strategy.Wait;
  */
 public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> extends JdbcDatabaseContainer<SELF> {
     public static final String ORACLE_19C= "oracle/database:19.3.0-ee";
+    public static final String ORACLE_18XE = "oracle/database:18.4.0-xe";
     private static final String PDBNAME = "CWMS";
     private static final String NETWORK_ALIAS = "cwmsdb";
 
