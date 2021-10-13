@@ -88,7 +88,7 @@ object Build : BuildType({
             name = "Prep Oracle"
             workingDir = "./schema"
             mode = antFile {
-                path = "database_schema/build.xml"
+                path = "schema/build.xml"
             }
             targets = "docker.prepdb"
             antArguments = "-Dteamcity.branch=%teamcity.build.branch%"
@@ -97,7 +97,7 @@ object Build : BuildType({
             name = "Install CWMS Database"
             workingDir = "./schema"
             mode = antFile {
-                path = "database_schema/build.xml"
+                path = "schema/build.xml"
             }
             targets = "docker.install"
             antArguments = "-Dteamcity.branch=%teamcity.build.branch%"
@@ -106,7 +106,7 @@ object Build : BuildType({
             name = "Run Tests"
             workingDir = "./schema"
             mode = antFile {
-                path = "database_schema/build.xml"
+                path = "schema/build.xml"
             }
             targets = "test"
             antArguments = "-Dbuilduser.overrides=build/overrides.external.xml"
@@ -114,7 +114,7 @@ object Build : BuildType({
         ant {
             workingDir = "./schema"
             mode = antFile {
-                path = "database_schema/build.xml"
+                path = "schema/build.xml"
             }
             name = "Generate Bundle (will include generated artifacts)"
             targets = "bundle"
@@ -125,7 +125,7 @@ object Build : BuildType({
             name = "Cleanup Generated Files"
             workingDir = "./schema"
             mode = antFile {
-                path = "database_schema/build.xml"
+                path = "schema/build.xml"
             }
             targets = "clean-output-files"
             antArguments = "-Dbuilduser.overrides=build/overrides.external.xml"
@@ -137,7 +137,7 @@ object Build : BuildType({
             name = "Push to Nexus"
             workingDir = "./schema"
             mode = antFile {
-                path = "database_schema/build.xml"
+                path = "schema/build.xml"
             }
             targets = "deploy"
             antArguments = "-Dbuilduser.overrides=build/overrides.external.xml"
@@ -149,7 +149,7 @@ object Build : BuildType({
             name = "Stop database"
             workingDir = "./schema"
             mode = antFile {
-                path = "database_schema/build.xml"
+                path = "schema/build.xml"
             }
             targets = "docker.stopdb"
             executionMode = BuildStep.ExecutionMode.ALWAYS
