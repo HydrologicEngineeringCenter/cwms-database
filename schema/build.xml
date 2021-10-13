@@ -931,10 +931,19 @@
 				<condition property="docker.props.image_name" value="cwms_schema_installer:build-${env.BUILD_NUMBER}" else="cwms_schema_installer:build-local">
 					<isset property="env.BUILD_NUMBER"/>
 				</condition>
-
 			</else>
-
 		</if>
+
+		<loadresource property="tmp.image_version">
+			<propertyresource name="docker.props.image_name"/>
+			<filterchain>
+				<tokenfilter>
+					<filetokenizer/>
+					<replacestring from="cwms_schema_installer:" to=""/>
+				</tokenfilter>
+			</filterchain>
+		</loadresource>
+		<echo message="##teamcity[setParameter name='env.CWMS_INSTALLER_IMAGE' value='${tmp.image_version}']"/>
 
 
 		<echo message="running with the following baseline propertyes"/>

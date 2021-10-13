@@ -2,6 +2,7 @@ import jetbrains.buildServer.configs.kotlin.v2019_2.*
 import jetbrains.buildServer.configs.kotlin.v2019_2.buildFeatures.commitStatusPublisher
 import jetbrains.buildServer.configs.kotlin.v2019_2.buildSteps.ant
 import jetbrains.buildServer.configs.kotlin.v2019_2.buildSteps.script
+import jetbrains.buildServer.configs.kotlin.v2019_2.buildSteps.gradle
 import jetbrains.buildServer.configs.kotlin.v2019_2.buildSteps.exec
 import jetbrains.buildServer.configs.kotlin.v2019_2.failureConditions.BuildFailureOnMetric
 import jetbrains.buildServer.configs.kotlin.v2019_2.failureConditions.failOnMetricChange
@@ -41,6 +42,7 @@ project {
     }
     sequential {
         buildType(Build)
+        buildType(TestContainer)
     }.buildTypes().forEach { buildType(it) }
 
 }
@@ -118,6 +120,7 @@ object Build : BuildType({
             targets = "bundle"
             antArguments = "-Dbuilduser.overrides=build/overrides.external.xml"
         }
+
         ant {
             name = "Cleanup Generated Files"
             workingDir = "./schema"
@@ -151,6 +154,79 @@ object Build : BuildType({
             targets = "docker.stopdb"
             executionMode = BuildStep.ExecutionMode.ALWAYS
             antArguments = "-Dteamcity.branch=%teamcity.build.branch%"
+        }
+    }
+
+    triggers {
+        vcs {
+        }
+    }
+
+    failureConditions {
+        executionTimeoutMin = 45
+        failOnMetricChange {
+            metric = BuildFailureOnMetric.MetricType.ARTIFACT_SIZE
+            units = BuildFailureOnMetric.MetricUnit.DEFAULT_UNIT
+            comparison = BuildFailureOnMetric.MetricComparison.MORE
+            compareTo = value()
+            stopBuildOnFailure = true
+            param("metricThreshold", "20MB")
+        }
+    }
+
+    features {
+        commitStatusPublisher {
+            publisher = bitbucketServer {
+                url = "https://bitbucket.hecdev.net"
+                userName = "builduser"
+                password = "credentialsJSON:0c6a7d80-71bc-4c22-931e-1f6999bcc0f1"
+            }
+        }
+        feature {
+            type = "xml-report-plugin"
+            param("xmlReportParsing.reportType", "junit")
+            param("xmlReportParsing.reportDirs", "build/tests*.xml")
+        }
+    }
+
+    requirements {
+        contains("docker.server.osType", "linux")
+    }
+})
+
+
+object TestContainer : BuildType({
+    name = "Build TestContainers"
+
+    artifactRules = """
+        build/libs/ =>
+    """.trimIndent()
+
+    params {
+
+    }
+
+    vcs {
+        root(DslContext.settingsRoot)
+    }
+
+    steps {
+        gradle {
+            name = "Build"
+            workingDir="testcontainers"
+            tasks = "build"
+            jdkHome ="%env.JDK_1_8_x64%"
+        }
+        gradle {
+            name = "Push to Nexus"
+            workingDir = "./testcontainers"
+
+            tasks = "publish"
+            gradleParams = "-DmavenUser=%env.NEXUS_USER% -DmavenPassword=%env.NEXUS_PASSWORD%"
+            jdkHome ="%env.JDK_1_8_x64%"
+            conditions {
+                matches("teamcity.build.branch", "(master|release/.*)")
+            }
         }
     }
 
