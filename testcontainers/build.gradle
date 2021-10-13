@@ -1,6 +1,10 @@
 
 
 apply plugin: 'java-library'
+apply plugin: 'maven-publish'
+
+group = "mil.army.usace.hec"
+version = "21-SNAPSHOT"
 
 
 repositories {
@@ -28,4 +32,26 @@ dependencies {
 test {
     useJUnitPlatform()
     jvmArgs += "-Djava.net.preferIPv4Stack=true"
+}
+
+publishing {
+		repositories {
+			maven {
+				def baseUrl = 'https://www.hec.usace.army.mil/nexus/repository'
+				def releasesRepoUrl = "$baseUrl/cwms-releases"
+				def snapshotsRepoUrl = "$baseUrl/cwms-snapshots"
+				url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+				credentials {
+					username "$mavenUser"
+					password "$mavenPassword"
+				}
+			}
+		}
+
+        publications {
+        mavenJava(MavenPublication) {
+            artifactId = 'testcontainers-cwms'
+            from components.java
+        }
+    }
 }
