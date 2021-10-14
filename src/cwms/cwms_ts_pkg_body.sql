@@ -6125,7 +6125,7 @@ AS
             l_start_date := cast((cwms_util.fixup_timezone(l_timeseries_data(1).date_time) at time zone 'UTC') as date);
             l_end_date   := cast((cwms_util.fixup_timezone(l_timeseries_data(l_timeseries_data.count).date_time) at time zone 'UTC') as date);
             select tsv_type(
-                     cast(cwms_util.change_timezone(date_time, 'UTC', l_time_zone) as timestamp),
+                     from_tz(cast(cwms_util.change_timezone(date_time, 'UTC', l_time_zone) as timestamp), l_time_zone),
                      value,
                      quality_code
                    )
