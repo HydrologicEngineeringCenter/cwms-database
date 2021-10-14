@@ -1031,8 +1031,10 @@
 			<arg value="ls"/>
 			<arg value="-a"/>
 		</exec>
+		<echo message="Existing Containers at time of run. Checking for ${docker.props.container_name_valid}"/>
+		<echo message="${containerList}"/>
 		<if>
-			<matches pattern="${docker.props.container_name_valid}$" string="${containerList}"/>
+			<matches pattern="${docker.props.container_name_valid}$" string="${containerList}" multiline="true"/>
 			<then>
 				<echo message="Starting Existing Oracle databse"/>
 				<exec executable="docker" failonerror="true">
