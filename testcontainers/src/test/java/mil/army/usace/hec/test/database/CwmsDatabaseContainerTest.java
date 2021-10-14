@@ -7,7 +7,7 @@ import org.testcontainers.junit.jupiter.Container;
 public class CwmsDatabaseContainerTest {
 
     public final static String branch = System.getProperty("teamcity.build.branch");
-    public final static String imageVersion = System.getProperty("cwms.image") != null ? System.getProperty("cwms.iamge") : "18-SNAPSHOT";
+    public final static String imageVersion = System.getProperty("cwms.image") != null ? System.getProperty("cwms.image") : "18-SNAPSHOT";
     public final static String volumeName = branch != null ? TeamCityUtilities.cleanupBranchName(branch) : "cwms_container_test_db";
 
     @Container
