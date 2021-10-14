@@ -1296,7 +1296,7 @@ IS
              v.cwms_ts_id,
              v.interval_utc_offset,
              v.time_zone_id as lrts_timezone,
-             t.net_ts_active_flag as active_flag,
+             t.net_ts_active_flag as ts_active_flag,
              p.net_privilege_bit as user_privileges
         from at_cwms_ts_id v,
              at_cwms_ts_id t,
