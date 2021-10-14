@@ -139,10 +139,13 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
 		return "oracle.jdbc.driver.OracleDriver";
 	}
 
-
+    /**
+     *
+     * @return the appropriate JDBC url for this container
+     */
 	@Override
 	public String getJdbcUrl() {
-		return String.format("jdbc:oracle:thin:@%s:%d/%s", getHost(),getMappedPort(1521),PDBNAME);
+		return String.format("jdbc:oracle:thin:@%s:%d/%s?oracle.net.disableOob=true", getHost(),getMappedPort(1521),PDBNAME);
 	}
 
     /**
@@ -294,7 +297,6 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
         Properties info = new Properties();
         info.put("user", user);
         info.put("password", this.getPassword());
-        info.put("oracle.net.disableOob","true");
 
         return driverInstance.connect(getJdbcUrl(),info);
 
