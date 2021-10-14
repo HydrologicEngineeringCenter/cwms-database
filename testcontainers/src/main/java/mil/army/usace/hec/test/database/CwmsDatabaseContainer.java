@@ -33,7 +33,7 @@ import org.testcontainers.containers.wait.strategy.Wait;
 public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> extends JdbcDatabaseContainer<SELF> {
     public static final String ORACLE_19C= "oracle/database:19.3.0-ee";
     public static final String ORACLE_18XE = "oracle/database:18.4.0-xe";
-    private static final String PDBNAME = "CWMS";
+
     private static final String NETWORK_ALIAS = "cwmsdb";
 
     // CWMS Portion
@@ -49,6 +49,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
 
     private String sysPassword = "SmallPass0wrd";
     private String volumeName = "cwms_test_db_volume";
+    private String pdbName = "CWMS";
 
     GenericContainer<?> cwmsInstaller = null;
 
@@ -61,7 +62,10 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
     public CwmsDatabaseContainer(DockerImageName oracleImageName) {
 		super(oracleImageName);
 
-
+        if( oracleImageName.asCanonicalNameString().endsWith("-xe")){
+            pdbName="XEPDB1";
+            volumeName = volumeName + "_xe";
+        }
 
         this.waitStrategy = new LogMessageWaitStrategy()
             .withRegEx("^DATABASE IS READY TO USE.*\\n")
@@ -89,7 +93,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
         withNetworkAliases(NETWORK_ALIAS);
 
         addEnv("enterprise","1");
-        addEnv("ORACLE_PDB",PDBNAME);
+        addEnv("ORACLE_PDB",pdbName);
         addEnv("ORACLE_PWD",sysPassword);
 
         this.withCreateContainerCmdModifier(
@@ -105,7 +109,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
         cwmsInstaller.addEnv("BUILDUSER_PASSWORD",buildUserPassword);
         cwmsInstaller.addEnv("CWMS_PASSWORD",password);
         cwmsInstaller.addEnv("DB_HOST_PORT",""+NETWORK_ALIAS+":1521");
-        cwmsInstaller.addEnv("DB_NAME","/"+PDBNAME);
+        cwmsInstaller.addEnv("DB_NAME","/"+pdbName);
         cwmsInstaller.addEnv("SYS_PASSWORD",sysPassword);
         cwmsInstaller.withStartupCheckStrategy(
             new OneShotStartupCheckStrategy().withTimeout(Duration.ofMinutes(15))
@@ -145,7 +149,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
      */
 	@Override
 	public String getJdbcUrl() {
-		return String.format("jdbc:oracle:thin:@%s:%d/%s?oracle.net.disableOob=true", getHost(),getMappedPort(1521),PDBNAME);
+		return String.format("jdbc:oracle:thin:@%s:%d/%s?oracle.net.disableOob=true", getHost(),getMappedPort(1521),pdbName);
 	}
 
     /**
