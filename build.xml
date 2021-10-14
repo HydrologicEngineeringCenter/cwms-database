@@ -1032,7 +1032,7 @@
 			<arg value="-a"/>
 		</exec>
 		<if>
-			<matches pattern="${docker.props.container_name_valid}" string="${containerList}"/>
+			<matches pattern="${docker.props.container_name_valid}$" string="${containerList}"/>
 			<then>
 				<echo message="Starting Existing Oracle databse"/>
 				<exec executable="docker" failonerror="true">
