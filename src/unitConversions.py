@@ -1327,11 +1327,11 @@ unit_aliases = {
 	"1000 m2"    : ["1000 sq m","1000 sq meters","1000 M2"],
 	"1000 m3"    : ["1000 cu m","1000 M3"],
 	"ac-ft"      : ["AC-FT","ACFT","acft","acre-feet","acre-ft"],
-	"acre"       : ["acres","ACRES"],
+	"acre"       : ["acres","ACRES","ACRE"],
 	"ampere"     : ["amp","AMP","Amp","AMPERE","Ampere","Amperes","AMPERES","amperes","AMPS","amps","Amps"],
 	"B"          : ["b", "b_unit", "b-unit", "B_UNIT", "B-UNIT"],
 	"bar"        : ["BAR", 'bars', "BARS","atm", "ATM","atmosphere", "ATMOSPHERE", "atmospheres", "ATMOSPHERES"],
-	"C"          : ["Celsius","Centigrade","DEG C","deg C","DEG-C","Deg-C","DegC","degC","deg c"],
+	"C"          : ["Celsius","celsius","CELSIUS","Centigrade","CENTIGRADE","DEG C","deg C","DEG-C","Deg-C","DegC","degC","deg c"],
 	"C-day"      : ["degC-day"],
 	"cal"        : ["calorie", "calories"],
 	"cfs"        : ["CFS","cu-ft/sec","cuft/sec","cusecs","ft3/sec","ft^3/s","FT3/S","FT3/SEC","ft3/s"],
@@ -1339,7 +1339,7 @@ unit_aliases = {
 	"cms"        : ["CMS","cu-meters/sec","M3/S","m3/s","m3/sec","M3/SEC"],
 	"day"        : ["DAY","day","DAYS","days"],
 	"dsf"        : ["DSF","SFD","cfs-day","second-foot-day","sfd"],
-	"F"          : ["DEG F","deg F","deg f","DEG-F","Deg-F","DegF","degF","Fahrenheit"],
+	"F"          : ["DEG F","deg F","deg f","DEG-F","Deg-F","DegF","degF","Fahrenheit","FAHRENHEIT","fahrenheit"],
 	"F-day"      : ["degF-day"],
 	"FNU"        : ["fnu"],
 	"ft"         : ["FEET","feet","foot","FT","Feet"],
@@ -1367,6 +1367,7 @@ unit_aliases = {
 	"KAF/mon"    : ["1000 ac-ft/mon"],
 	"kcfs"       : ["1000 cfs","1000 cu-ft/sec","1000 ft3/sec","KCFS"],
 	"kcms"       : ["1000 cms","KCMS"],
+	"kdsf"       : ["KDSF","KSFD","ksfd","ksecond-foot-day","kcfs-day","1000 sfd","1000 dsf","1000 cfs-day"],
 	"kgal"       : ["1000 gallon","1000 gallons","KGAL","TGAL","tgal"],
 	"kHz"        : ["khz", "KHZ", "KHz"],
 	"km"         : ["kilometer","kilometers"],
@@ -1378,9 +1379,10 @@ unit_aliases = {
 	"kWh"        : ["KWH"],
 	"lb"         : ["lbf", "lbs", "pounds", "POUNDS"],
 	"lbm/ft3"    : ["lb/ft3", "lbs/ft3"],
-	"m"          : ["meter","meters","metre","metres","METERS"],
+	"m"          : ["meter","meters","metre","metres","METERS","METRES","METRE","METER"],
 	"m2"         : ["sq m","sq meter","sq meters","square meters","M2"],
 	"m3"         : ["cu m","cu meter","cu meters","cubic meters","M3"],
+	"m/s"        : ["MPS","mps","meters per second","M/S","METERS PER SECOND"],
 	"mb"         : ["mbar","mbars","millibar","millibars"],
 	"mcm"        : ["1000000 m3"],
 	"mg/l"       : ["millgrams/liter","milligrams per liter","mg/L"],
@@ -1394,6 +1396,7 @@ unit_aliases = {
 	"MJ"         : ["megajoule", "megajoules", "MEGAJOULE", "MEGAJOULES"],
 	"mm"         : ["millimeter","millimeters","MM"],
 	"mm/deg-day" : ["mm/deg-d"],
+	"mph"        : ["MPH","miles per hour","MILES PER HOUR"],
 	"MWh"        : ["MWH"],
 	"N"          : ["newton", "newtons"],
 	"NTU"        : ["ntu"],
@@ -1754,6 +1757,7 @@ def convert(value, from_unit, to_unit) :
 	else :
 		result = float(Decimal(value) * factor + offset)
 	return result
+
 
 def get_java_resource_format() :
 	buf = StringIO.StringIO()
