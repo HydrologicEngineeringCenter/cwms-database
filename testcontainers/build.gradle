@@ -4,7 +4,7 @@ apply plugin: 'java-library'
 apply plugin: 'maven-publish'
 
 group = "mil.army.usace.hec"
-version = "21-SNAPSHOT"
+version = "1.0.1-SNAPSHOT"
 
 
 repositories {
