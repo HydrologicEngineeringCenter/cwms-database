@@ -1,7 +1,11 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'jacoco'
+    id 'org.sonarqube' version '2.7'
+}
 
 
-apply plugin: 'java-library'
-apply plugin: 'maven-publish'
 
 group = "mil.army.usace.hec"
 version = "1.0.1-SNAPSHOT"

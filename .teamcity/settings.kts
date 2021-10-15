@@ -218,8 +218,14 @@ object TestContainer : BuildType({
             jdkHome ="%env.JDK_1_8_x64%"
         }
         gradle {
-            name = "Push to Nexus"
+            name = "SonarQube Analysis"
             workingDir = "./testcontainers"
+
+            tasks = ":sonarqube"
+            gradleParams = "-Dsonar.login=%system.SONAR_TOKEN% -Dsonar.host.url=https://sonarqube.hecdev.net"
+        }
+        gradle {
+            name = "Push to Nexus"
 
             tasks = "publish"
             gradleParams = "-DmavenUser=%env.NEXUS_USER% -DmavenPassword=%env.NEXUS_PASSWORD%"
