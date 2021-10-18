@@ -226,6 +226,7 @@ object TestContainer : BuildType({
         }
         gradle {
             name = "Push to Nexus"
+            workingDir = "./testcontainers"
 
             tasks = "publish"
             gradleParams = "-DmavenUser=%env.NEXUS_USER% -DmavenPassword=%env.NEXUS_PASSWORD%"
