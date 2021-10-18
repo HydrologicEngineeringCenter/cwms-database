@@ -51,3 +51,4 @@ src/xml/*.svg
 src/xml/*.out
 src/xml/*.log
 src/xml/hec-datatypes.xsd
+**/*.bad
