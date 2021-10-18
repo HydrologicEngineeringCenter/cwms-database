@@ -1247,10 +1247,7 @@ IS
             := nvl(cwms_util.normalize_wildcards(TRIM (p_ts_subselect_string)), '%') ;
    BEGIN
 
-      l_db_office_code := case
-                          when p_db_office_id is null then null
-                          else cwms_util.get_db_office_code(p_db_office_id)
-                          end;
+      l_db_office_code := cwms_util.get_db_office_code(p_db_office_id);
 
       ---------------------------------------------------
       -- get the loc_group_code if cat/group passed in --

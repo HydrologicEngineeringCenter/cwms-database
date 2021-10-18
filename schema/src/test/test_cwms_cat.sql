@@ -198,41 +198,55 @@ begin
    -----------------------------
    -- catalog the time series --
    -----------------------------
-   cwms_cat.cat_ts_id(
-      p_cwms_cat            => l_crsr,
-      p_ts_subselect_string => '*',
-      p_db_office_id        => c_office_id);
-   fetch l_crsr
-    bulk collect
-    into l_office_ids,
-         l_base_location_ids,
-         l_cwms_ts_ids,
-         l_offsets,
-         l_lrts_timezone_ids,
-         l_active_flags,
-         l_user_privileges;
-   close l_crsr;
-   ut.expect(l_cwms_ts_ids.count).to_equal(c_locations.count * c_timeseries.count);
-   for i in 1..l_cwms_ts_ids.count loop
-      if p_create then
-         -----------------------------
-         -- use v_active_timeseries --
-         -----------------------------
-         if v_active_timeseries.exists(l_cwms_ts_ids(i)) then
-            ut.expect(l_active_flags(i)).to_equal('T');
+   for i in 1..3 loop
+      case
+      when i = 1 then
+         cwms_cat.cat_ts_id(
+            p_cwms_cat            => l_crsr,
+            p_ts_subselect_string => '*',
+            p_db_office_id        => c_office_id);
+      when i = 2 then
+         cwms_cat.cat_ts_id(
+            p_cwms_cat            => l_crsr,
+            p_ts_subselect_string => '*',
+            p_db_office_id        => null);
+      when i = 3 then
+         cwms_cat.cat_ts_id(
+            p_cwms_cat            => l_crsr,
+            p_ts_subselect_string => '*');
+      end case;
+      fetch l_crsr
+      bulk collect
+      into l_office_ids,
+            l_base_location_ids,
+            l_cwms_ts_ids,
+            l_offsets,
+            l_lrts_timezone_ids,
+            l_active_flags,
+            l_user_privileges;
+      close l_crsr;
+      ut.expect(l_cwms_ts_ids.count).to_equal(c_locations.count * c_timeseries.count);
+      for j in 1..l_cwms_ts_ids.count loop
+         if p_create then
+            -----------------------------
+            -- use v_active_timeseries --
+            -----------------------------
+            if v_active_timeseries.exists(l_cwms_ts_ids(j)) then
+               ut.expect(l_active_flags(j)).to_equal('T');
+            else
+               ut.expect(l_active_flags(j)).to_equal('F');
+            end if;
          else
-            ut.expect(l_active_flags(i)).to_equal('F');
+            -------------------------------------------------------------------------------------------------
+            -- use v_active_locations since STORE_TS always creates an active time seires if it creates it --
+            -------------------------------------------------------------------------------------------------
+            if v_active_locations.exists(cwms_util.split_text(l_cwms_ts_ids(j), 1, '.')) then
+               ut.expect(l_active_flags(j)).to_equal('T');
+            else
+               ut.expect(l_active_flags(j)).to_equal('F');
+            end if;
          end if;
-      else
-         -------------------------------------------------------------------------------------------------
-         -- use v_active_locations since STORE_TS always creates an active time seires if it creates it --
-         -------------------------------------------------------------------------------------------------
-         if v_active_locations.exists(cwms_util.split_text(l_cwms_ts_ids(i), 1, '.')) then
-            ut.expect(l_active_flags(i)).to_equal('T');
-         else
-            ut.expect(l_active_flags(i)).to_equal('F');
-         end if;
-      end if;
+      end loop;
    end loop;
 end test_cat_ts_id;
 --------------------------------------------------------------------------------
