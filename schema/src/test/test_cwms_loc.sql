@@ -481,6 +481,7 @@ AS
         l_vertical_datum       AV_LOC.VERTICAL_DATUM%TYPE;
         l_elevation      AV_LOC.ELEVATION%TYPE;
         l_xml            varchar2(2048);
+        l_rounding_spec    varchar2(10) := '4444444449';
     BEGIN
         --------------------------------
         -- cleanup any previous tests --
@@ -520,6 +521,7 @@ AS
                AND unit_system = 'EN';
 
         ut.expect (abs(l_elevation-1600)).to_be_less_or_equal (0.01);
+        ut.expect (abs(cwms_rounding.round_nt_f(l_elevation, l_rounding_spec)-1600)).to_be_less_or_equal (0.01);
         
         l_xml := '<vertical-datum-info office="'||l_office_id||'" unit="in"><location>'||l_location_id1||'</location><native-datum>NGVD-29</native-datum><elevation>19200.01</elevation><offset estimate="false"><to-datum>NGVD-29</to-datum><value>0.0</value></offset><offset estimate="true"><to-datum>NAVD-88</to-datum><value>-5.846</value></offset></vertical-datum-info>';
 
@@ -535,6 +537,7 @@ AS
                AND unit_system = 'EN';
 
         ut.expect (abs(l_elevation-1600)).to_be_less_or_equal (0.01);
+        ut.expect (abs(cwms_rounding.round_nt_f(l_elevation, l_rounding_spec)-1600)).to_be_less_or_equal (0.01);
         
     END test_set_vertical_datum_info;
     PROCEDURE test_set_vertical_datum_info_exp
