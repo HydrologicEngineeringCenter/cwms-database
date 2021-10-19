@@ -7915,7 +7915,7 @@ end unassign_loc_groups;
            into l_elevation_db
            from at_physical_location
           where location_code = p_location_code;
-         if l_elevation_db is not null and abs(cwms_rounding.round_nt_f(l_elevation_db, l_rounding_spec) - l_elevation) > 0.00000001 then
+         if l_elevation_db is not null and abs(cwms_rounding.round_nt_f(l_elevation_db, l_rounding_spec) - l_elevation) > 0.01 then
             cwms_err.raise(
                'ERROR',
                'Specified elevation for '
