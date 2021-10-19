@@ -70,9 +70,9 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
         this.waitStrategy = new LogMessageWaitStrategy()
             .withRegEx("^DATABASE IS READY TO USE.*\\n")
             .withTimes(1)
-            .withStartupTimeout(Duration.ofMinutes(30)) // it's oracle, it just takes that long
+            .withStartupTimeout(Duration.ofMinutes(50)) // it's oracle, it just takes that long, sometimes
             ;
-        this.withStartupTimeoutSeconds((int)Duration.ofMinutes(30).getSeconds());
+        this.withStartupTimeoutSeconds((int)Duration.ofMinutes(50).getSeconds());
         this.withReuse(true);
     }
     /**

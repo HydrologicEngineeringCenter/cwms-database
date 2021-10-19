@@ -163,7 +163,10 @@ object Build : BuildType({
     }
 
     failureConditions {
-        executionTimeoutMin = 45
+
+        // Shouldn't ever take this long, but sometimes it happens with the creation
+        // Of the oracle databases
+        executionTimeoutMin = 180
         failOnMetricChange {
             metric = BuildFailureOnMetric.MetricType.ARTIFACT_SIZE
             units = BuildFailureOnMetric.MetricUnit.DEFAULT_UNIT
@@ -243,7 +246,7 @@ object TestContainer : BuildType({
     }
 
     failureConditions {
-        executionTimeoutMin = 45
+        executionTimeoutMin = 180
         failOnMetricChange {
             metric = BuildFailureOnMetric.MetricType.ARTIFACT_SIZE
             units = BuildFailureOnMetric.MetricUnit.DEFAULT_UNIT
