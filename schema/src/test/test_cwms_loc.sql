@@ -506,7 +506,7 @@ AS
 
         ut.expect (l_vertical_datum).to_equal ('NGVD29');
         
-        l_xml := '<vertical-datum-info office="'||l_office_id||'" unit="in"><location>'||l_location_id1||'</location><native-datum>NGVD-29</native-datum><elevation>19200</elevation><offset estimate="true"><to-datum>NAVD-88</to-datum><value>-5.846</value></offset></vertical-datum-info>';
+        l_xml := '<vertical-datum-info office="'||l_office_id||'" unit="in"><location>'||l_location_id1||'</location><native-datum>NGVD-29</native-datum><elevation>19200</elevation><offset estimate="false"><to-datum>NGVD-29</to-datum><value>0.0</value></offset><offset estimate="true"><to-datum>NAVD-88</to-datum><value>-5.846</value></offset></vertical-datum-info>';
         
         cwms_loc.set_vertical_datum_info (
         l_xml, 
@@ -519,9 +519,9 @@ AS
                AND location_id = l_location_id1
                AND unit_system = 'EN';
 
-        ut.expect (abs(l_elevation-1600)).to_be_less_or_equal (0.00000001);
+        ut.expect (abs(l_elevation-1600)).to_be_less_or_equal (0.01);
         
-        l_xml := '<vertical-datum-info office="'||l_office_id||'" unit="in"><location>'||l_location_id1||'</location><native-datum>NGVD-29</native-datum><elevation>19200.0000000001</elevation><offset estimate="true"><to-datum>NAVD-88</to-datum><value>-5.846</value></offset></vertical-datum-info>';
+        l_xml := '<vertical-datum-info office="'||l_office_id||'" unit="in"><location>'||l_location_id1||'</location><native-datum>NGVD-29</native-datum><elevation>19200.01</elevation><offset estimate="false"><to-datum>NGVD-29</to-datum><value>0.0</value></offset><offset estimate="true"><to-datum>NAVD-88</to-datum><value>-5.846</value></offset></vertical-datum-info>';
 
         cwms_loc.set_vertical_datum_info (
         l_xml,
@@ -534,7 +534,7 @@ AS
                AND location_id = l_location_id1
                AND unit_system = 'EN';
 
-        ut.expect (abs(l_elevation-1600)).to_be_less_or_equal (0.00000001);
+        ut.expect (abs(l_elevation-1600)).to_be_less_or_equal (0.01);
         
     END test_set_vertical_datum_info;
     PROCEDURE test_set_vertical_datum_info_exp
@@ -567,7 +567,7 @@ AS
         'T');
         
         
-        l_xml := '<vertical-datum-info office="'||l_office_id||'" unit="in"><location>'||l_location_id1||'</location><native-datum>NGVD-29</native-datum><elevation>19200.0001</elevation><offset estimate="true"><to-datum>NAVD-88</to-datum><value>-5.846</value></offset></vertical-datum-info>';
+        l_xml := '<vertical-datum-info office="'||l_office_id||'" unit="in"><location>'||l_location_id1||'</location><native-datum>NGVD-29</native-datum><elevation>19200.1</elevation><offset estimate="true"><to-datum>NAVD-88</to-datum><value>-5.846</value></offset></vertical-datum-info>';
 
         cwms_loc.set_vertical_datum_info (
         l_xml,
