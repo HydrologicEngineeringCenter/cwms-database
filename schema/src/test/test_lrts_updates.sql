@@ -1,4 +1,5 @@
 drop package test_lrts_updates;
+set verify off
 create or replace package test_lrts_updates as
 
 --%suite(Test schema for full LRTS compatibility)
@@ -80,6 +81,8 @@ procedure retrieve_ts_multi_single_value;
 procedure update_lrts_ts_code_neg_offset_from_undefined;
 --%test(Test retrieve LRTS with P_TRIM = 'F')
 procedure retrieve_lrts_untrimmed;
+--%test(Test Jira issue CWDB-150 - Last hour of DST is not storing new time series)
+procedure test_cwdb_150;
 
 procedure setup(p_options in varchar2 default null);
 procedure teardown;
@@ -2708,7 +2711,6 @@ begin
    l_timezone := cwms_ts.get_ts_time_zone(cwms_ts.get_ts_code(replace(v_ts_ids(1), '<intvl>', c_intervals(1)), '&&office_id'));
    ut.expect(l_timezone).to_equal(v_timezone_ids(1));
 end get_ts_time_zone;
-
 --------------------------------------------------------------------------------
 -- procedure retrieve_lrts_untrimmed
 --------------------------------------------------------------------------------
@@ -2836,8 +2838,195 @@ begin
       end loop;
    end loop;
 end retrieve_lrts_untrimmed;
+--------------------------------------------------------------------------------
+-- procedure test_cwdb-150
+--------------------------------------------------------------------------------
+procedure test_cwdb_150
+is
+-- QUALITY_CODE SCREENED_ID VALIDITY_ID  RANGE_ID CHANGED_ID REPL_CAUSE_ID REPL_METHOD_ID TEST_FAILED_ID PROTECTION_ID
+-- ------------ ----------- ------------ -------- ---------- ------------- -------------- -------------- -------------
+--            5 SCREENED    MISSING      NO_RANGE ORIGINAL   NONE          NONE           NONE           UNPROTECTED
+--        65545 SCREENED    QUESTIONABLE NO_RANGE ORIGINAL   NONE          NONE           CONSTANT_VALUE UNPROTECTED
+--  -2147483645 SCREENED    OKAY         NO_RANGE ORIGINAL   NONE          NONE           NONE           PROTECTED
+--     33554435 SCREENED    OKAY         NO_RANGE ORIGINAL   NONE          NONE           DISTRIBUTION   UNPROTECTED
+--     33554437 SCREENED    MISSING      NO_RANGE ORIGINAL   NONE          NONE           DISTRIBUTION   UNPROTECTED
+l_cwms_ts_id     varchar2(191) := 'TestLoc1.Code.Inst.~1Hour.0.CWDB-150';
+l_time_zone      varchar2(28)  := 'America/Los_Angeles';
+l_time_zone_2    varchar2(28);
+l_start_time     date := cwms_util.change_timezone(timestamp '2020-10-31 22:00:00', l_time_zone, 'UTC');
+l_dump_values    boolean := false;
+l_crsr           sys_refcursor;
+l_date_times     cwms_t_date_table;
+l_values         cwms_t_double_tab;
+l_quality_codes  cwms_t_number_tab;
+l_initial_zts    cwms_t_ztsv_array := cwms_t_ztsv_array(
+   cwms_t_ztsv(l_start_time + 0 / 24,   31,  33554435),
+   cwms_t_ztsv(l_start_time + 1 / 24,   32,  65545),
+   cwms_t_ztsv(l_start_time + 2 / 24,   33,  33554435),
+   cwms_t_ztsv(l_start_time + 3 / 24,   34,  65545),
+   cwms_t_ztsv(l_start_time + 4 / 24,   35,  33554435),
+   cwms_t_ztsv(l_start_time + 5 / 24, null,  5),
+   cwms_t_ztsv(l_start_time + 6 / 24,   37, -2147483645),
+   cwms_t_ztsv(l_start_time + 7 / 24,   38,  65545),
+   cwms_t_ztsv(l_start_time + 8 / 24, null,  5),
+   cwms_t_ztsv(l_start_time + 9 / 24, null,  5));
+
+l_subsequent_zts cwms_t_ztsv_array := cwms_t_ztsv_array(
+   cwms_t_ztsv(l_start_time + 1 / 24,   20, -2147483645),
+   cwms_t_ztsv(l_start_time + 2 / 24, null,  33554435),
+   cwms_t_ztsv(l_start_time + 3 / 24,   22,  65545),
+   cwms_t_ztsv(l_start_time + 4 / 24,   35,  65545),
+   cwms_t_ztsv(l_start_time + 5 / 24, null,  33554437),
+   cwms_t_ztsv(l_start_time + 6 / 24,   25,  65545),
+   cwms_t_ztsv(l_start_time + 7 / 24, null,  5),
+   cwms_t_ztsv(l_start_time + 8 / 24,   27,  65545),
+   cwms_t_ztsv(l_start_time + 9 / 24,   28, -2147483645),
+   cwms_t_ztsv(l_start_time +10 / 24, null,  33554435));
+
+l_expected_zts   cwms_t_ztsv_array := cwms_t_ztsv_array(
+   cwms_t_ztsv(l_start_time + 0 / 24,   31,  33554435),
+   cwms_t_ztsv(l_start_time + 1 / 24,   32,  65545),
+   cwms_t_ztsv(l_start_time + 2 / 24,   33,  33554435),
+   cwms_t_ztsv(l_start_time + 3 / 24,   34,  65545),
+   cwms_t_ztsv(l_start_time + 4 / 24,   35,  33554435),
+   cwms_t_ztsv(l_start_time + 5 / 24, null,  33554437),
+   cwms_t_ztsv(l_start_time + 6 / 24,   37, -2147483645),
+   cwms_t_ztsv(l_start_time + 7 / 24,   38,  65545),
+   cwms_t_ztsv(l_start_time + 8 / 24,   27,  65545),
+   cwms_t_ztsv(l_start_time + 9 / 24,   28,  -2147483645),
+   cwms_t_ztsv(l_start_time +10 / 24, null,  5));
+begin
+   cwms_loc.store_location(
+      p_location_id	=> cwms_util.split_text(l_cwms_ts_id, 1, '.'),
+      p_time_zone_id => l_time_zone,
+      p_db_office_id => c_office_id);
+
+   ----------------------------
+   -- store the initial data --
+   ----------------------------
+   if l_dump_values then
+      dbms_output.put_line(chr(10)||'Storing values: ');
+      for i in 1..l_initial_zts.count loop
+         dbms_output.put_line(
+            chr(9)||from_tz(cast(l_initial_zts(i).date_time as timestamp), 'UTC') at time zone l_time_zone
+            ||chr(9)||to_number(l_initial_zts(i).value)
+            ||chr(9)||l_initial_zts(i).quality_code);
+      end loop;
+   end if;
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => l_cwms_ts_id,
+      p_units           => c_ts_unit,
+      p_timeseries_data => l_initial_zts,
+      p_store_rule      => cwms_util.delete_insert,
+      p_override_prot   => 'T',
+      p_version_date    => cwms_util.non_versioned,
+      p_office_id       => c_office_id,
+      p_create_as_lrts  => 'T');
+   ------------------------------------------
+   -- retrieve the intial data time window --
+   ------------------------------------------
+   cwms_ts.retrieve_ts(
+      p_at_tsv_rc    => l_crsr,
+      p_time_zone_id => l_time_zone_2,
+      p_cwms_ts_id   => l_cwms_ts_id,
+      p_units        => c_ts_unit,
+      p_start_time   => l_initial_zts(1).date_time,
+      p_end_time     => l_initial_zts(l_initial_zts.count).date_time,
+      p_time_zone    => 'UTC',
+      p_trim         => 'F',
+      p_office_id    => c_office_id);
+   fetch l_crsr
+    bulk collect
+    into l_date_times,
+         l_values,
+         l_quality_codes;
+   close l_crsr;
+   if l_dump_values then
+      dbms_output.put_line(chr(10)||'Retrieved values: ');
+      for i in 1..l_date_times.count loop
+         dbms_output.put_line(
+            chr(9)||from_tz(cast(l_date_times(i) as timestamp), 'UTC') at time zone l_time_zone
+            ||chr(9)||to_number(l_values(i))
+            ||chr(9)||l_quality_codes(i));
+      end loop;
+   end if;
+   -------------------------------------------------
+   -- compare retrieved data against initial data --
+   -------------------------------------------------
+   ut.expect(l_time_zone_2).to_equal(l_time_zone);
+   ut.expect(l_date_times.count).to_equal(l_initial_zts.count);
+   for i in 1..l_date_times.count loop
+      ut.expect(l_date_times(i)).to_equal(l_initial_zts(i).date_time);
+      if l_initial_zts(i).value is null then
+         ut.expect(l_values(i)).to_be_null;
+      else
+         ut.expect(l_values(i)).to_equal(l_initial_zts(i).value);
+      end if;
+      ut.expect(l_quality_codes(i)).to_equal(l_initial_zts(i).quality_code);
+   end loop;
+   --------------------------------------
+   -- store data over the initial data --
+   --------------------------------------
+   if l_dump_values then
+      dbms_output.put_line(chr(10)||'Storing values: ');
+      for i in 1..l_subsequent_zts.count loop
+         dbms_output.put_line(
+            chr(9)||cast(l_subsequent_zts(i).date_time as timestamp) at time zone l_time_zone
+            ||chr(9)||to_number(l_subsequent_zts(i).value)
+            ||chr(9)||l_subsequent_zts(i).quality_code);
+      end loop;
+   end if;
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => l_cwms_ts_id,
+      p_units           => c_ts_unit,
+      p_timeseries_data => l_subsequent_zts,
+      p_store_rule      => cwms_util.replace_missing_values_only,
+      p_override_prot   => 'T',
+      p_version_date    => cwms_util.non_versioned,
+      p_office_id       => c_office_id);
+   ---------------------------------------------
+   -- retrieve the resultant data time window --
+   ---------------------------------------------
+   cwms_ts.retrieve_ts(
+      p_at_tsv_rc    => l_crsr,
+      p_cwms_ts_id   => l_cwms_ts_id,
+      p_units        => c_ts_unit,
+      p_start_time   => l_initial_zts(1).date_time,
+      p_end_time     => l_subsequent_zts(l_subsequent_zts.count).date_time,
+      p_time_zone    => 'UTC',
+      p_trim         => 'F',
+      p_office_id    => c_office_id);
+   fetch l_crsr
+    bulk collect
+    into l_date_times,
+         l_values,
+         l_quality_codes;
+   close l_crsr;
+   if l_dump_values then
+      dbms_output.put_line(chr(10)||'Retrieved values: ');
+      for i in 1..l_date_times.count loop
+         dbms_output.put_line(
+            chr(9)||from_tz(cast(l_date_times(i) as timestamp), 'UTC') at time zone l_time_zone
+            ||chr(9)||to_number(l_values(i))
+            ||chr(9)||l_quality_codes(i));
+      end loop;
+   end if;
+   --------------------------------------------------
+   -- compare resulting data with expected results --
+   --------------------------------------------------
+   ut.expect(l_date_times.count).to_equal(l_expected_zts.count);
+   for i in 1..l_date_times.count loop
+      ut.expect(l_date_times(i)).to_equal(l_expected_zts(i).date_time);
+      if l_expected_zts(i).value is null then
+         ut.expect(l_values(i)).to_be_null;
+      else
+         ut.expect(l_values(i)).to_equal(l_expected_zts(i).value);
+      end if;
+      ut.expect(l_quality_codes(i)).to_equal(l_expected_zts(i).quality_code);
+   end loop;
+end test_cwdb_150;
 
 end test_lrts_updates;
 /
-
+show errors
 grant execute on test_lrts_updates to cwms_user;

@@ -494,6 +494,9 @@ AS
       l_time_zone        varchar2(28);
       l_offset_time_zone varchar2(28);
       l_top              date;
+      l_dates            date_table_type;
+      l_date_diff        number;
+      l_top_diff         number;
    begin
       -------------------
       -- sanity checks --
@@ -510,14 +513,30 @@ AS
       if cwms_util.change_timezone(p_date_time, l_time_zone, 'UTC') is null then
          return null;
       end if;
-
+      -------------------------------------------------------------------------
+      -- change to offset tz, get top of intreval as if UTC, and change back --
+      -------------------------------------------------------------------------
       l_date_time := cwms_util.change_timezone(p_date_time, l_time_zone, l_offset_time_zone);
+      l_dates := date_table_type();
+      l_dates.extend(4);
+      l_dates(1) := p_date_time;
+      l_dates(2) := l_date_time;
       l_top := top_of_interval_utc(
          l_date_time,
          p_interval,
          p_interval_offset,
          p_next);
+      l_dates(3) := l_top;
       l_top := cwms_util.change_timezone(l_top, l_offset_time_zone, l_time_zone);
+      l_dates(4) := l_top;
+      ----------------------------------------------------------------------------------------------
+      -- l_date_time and l_top are in different sides of DST boundary, adjust l_top by dst offset --
+      ----------------------------------------------------------------------------------------------
+      l_date_diff := l_dates(1) - l_dates(2);
+      l_top_diff  := l_dates(4) - l_dates(3);
+      if l_top_diff != l_date_diff then
+         l_top := l_top - (l_top_diff - l_date_diff);
+      end if;
       -----------------------------------------------
       -- disallow invalid (due to DST) output time --
       -----------------------------------------------
@@ -639,6 +658,7 @@ AS
       if p_offset_time_zone is null then cwms_err.raise('NULL_ARGUMENT', 'P_OFFSET_TIME_ZONE'); end if;
       l_interval        := interval_minutes(p_interval);
       l_interval_offset := interval_offset_minutes(p_interval_offset);
+
       if l_interval_offset in (cwms_util.utc_offset_undefined, cwms_util.utc_offset_irregular) then
          return p_date_time;
       end if;
