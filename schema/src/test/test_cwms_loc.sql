@@ -21,6 +21,11 @@ procedure test_rename_loc_sub_to_same_base_with_different_sub;
 procedure test_rename_loc_sub_to_different_base_with_different_sub;
 --%test(Test store_location_with_multiple_attributes_and_active_flags)
 procedure test_store_location_with_multiple_attributes_and_actvie_flags;
+--%test(Test set_vertical_datum_info)
+procedure test_set_vertical_datum_info;
+--%test(Test set_vertical_datum_info_exp)
+--%throws(-20998)
+procedure test_set_vertical_datum_info_exp;
 --%test(Test new av_loc view with old view)
 procedure test_av_loc_view;
 
@@ -61,6 +66,9 @@ AS
     IS
     BEGIN
         EXECUTE IMMEDIATE 'alter trigger at_physical_location_t03 disable';
+        COMMIT;
+
+        EXECUTE IMMEDIATE 'delete from at_cwms_ts_spec';
         COMMIT;
 
         EXECUTE IMMEDIATE 'delete from at_physical_location where location_code<>0';
@@ -466,7 +474,109 @@ AS
             cwms_util.get_base_id (l_location_id2));
         ut.expect (l_location_ids (2)).to_equal (l_location_id2);
     END test_rename_loc_sub_to_different_base_with_different_sub;
+    PROCEDURE test_set_vertical_datum_info
+    IS
+        l_office_id            av_loc.db_office_id%TYPE;
+        l_location_id1          av_loc.location_id%TYPE;
+        l_vertical_datum       AV_LOC.VERTICAL_DATUM%TYPE;
+        l_elevation      AV_LOC.ELEVATION%TYPE;
+        l_xml            varchar2(2048);
+        l_rounding_spec    varchar2(10) := '4444444449';
+    BEGIN
+        --------------------------------
+        -- cleanup any previous tests --
+        --------------------------------
+        setup_rename;
+        ----------------------------------------------------
+        -- create the location and get the location codes --
+        ----------------------------------------------------
+        l_office_id := 'NAB';
+        l_location_id1 := 'TestLoc1';
+        
 
+        cwms_loc.store_location (p_location_id    => l_location_id1,
+                                 p_db_office_id   => l_office_id,
+                                 p_vertical_datum   => 'NGVD29');
+
+        SELECT vertical_datum
+          INTO l_vertical_datum
+          FROM av_loc
+         WHERE     db_office_id = l_office_id
+               AND location_id = l_location_id1
+               AND unit_system = 'EN';
+
+        ut.expect (l_vertical_datum).to_equal ('NGVD29');
+        
+        l_xml := '<vertical-datum-info office="'||l_office_id||'" unit="in"><location>'||l_location_id1||'</location><native-datum>NGVD-29</native-datum><elevation>19200</elevation><offset estimate="false"><to-datum>NGVD-29</to-datum><value>0.0</value></offset><offset estimate="true"><to-datum>NAVD-88</to-datum><value>-5.846</value></offset></vertical-datum-info>';
+        
+        cwms_loc.set_vertical_datum_info (
+        l_xml, 
+        'T');
+        
+        SELECT elevation
+          INTO l_elevation
+          FROM av_loc
+         WHERE     db_office_id = l_office_id
+               AND location_id = l_location_id1
+               AND unit_system = 'EN';
+
+        ut.expect (abs(l_elevation-1600)).to_be_less_or_equal (0.01);
+        ut.expect (abs(cwms_rounding.round_nt_f(l_elevation, l_rounding_spec)-1600)).to_be_less_or_equal (0.01);
+        
+        l_xml := '<vertical-datum-info office="'||l_office_id||'" unit="in"><location>'||l_location_id1||'</location><native-datum>NGVD-29</native-datum><elevation>19200.01</elevation><offset estimate="false"><to-datum>NGVD-29</to-datum><value>0.0</value></offset><offset estimate="true"><to-datum>NAVD-88</to-datum><value>-5.846</value></offset></vertical-datum-info>';
+
+        cwms_loc.set_vertical_datum_info (
+        l_xml,
+        'T');
+        
+        SELECT elevation
+          INTO l_elevation
+          FROM av_loc
+         WHERE     db_office_id = l_office_id
+               AND location_id = l_location_id1
+               AND unit_system = 'EN';
+
+        ut.expect (abs(l_elevation-1600)).to_be_less_or_equal (0.01);
+        ut.expect (abs(cwms_rounding.round_nt_f(l_elevation, l_rounding_spec)-1600)).to_be_less_or_equal (0.01);
+        
+    END test_set_vertical_datum_info;
+    PROCEDURE test_set_vertical_datum_info_exp
+    IS
+        l_office_id            av_loc.db_office_id%TYPE;
+        l_location_id1          av_loc.location_id%TYPE;
+        l_vertical_datum       AV_LOC.VERTICAL_DATUM%TYPE;
+        l_elevation      AV_LOC.ELEVATION%TYPE;
+        l_xml            varchar2(2048);
+    BEGIN
+        --------------------------------
+        -- cleanup any previous tests --
+        --------------------------------
+        setup_rename;
+        ----------------------------------------------------
+        -- create the location and get the location codes --
+        ----------------------------------------------------
+        l_office_id := 'NAB';
+        l_location_id1 := 'TestLoc1';
+        
+
+        cwms_loc.store_location (p_location_id    => l_location_id1,
+                                 p_db_office_id   => l_office_id,
+                                 p_vertical_datum   => 'NGVD29');
+
+        l_xml := '<vertical-datum-info office="'||l_office_id||'" unit="in"><location>'||l_location_id1||'</location><native-datum>NGVD-29</native-datum><elevation>19200</elevation><offset estimate="true"><to-datum>NAVD-88</to-datum><value>-5.846</value></offset></vertical-datum-info>';
+        
+        cwms_loc.set_vertical_datum_info (
+        l_xml, 
+        'T');
+        
+        
+        l_xml := '<vertical-datum-info office="'||l_office_id||'" unit="in"><location>'||l_location_id1||'</location><native-datum>NGVD-29</native-datum><elevation>19200.1</elevation><offset estimate="true"><to-datum>NAVD-88</to-datum><value>-5.846</value></offset></vertical-datum-info>';
+
+        cwms_loc.set_vertical_datum_info (
+        l_xml,
+        'T');
+    END test_set_vertical_datum_info_exp;
+        
     --------------------------------------------------------------------------------
     -- procedure test_store_location_with_multiple_attributes_and_actvie_flags
     --------------------------------------------------------------------------------

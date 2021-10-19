@@ -6706,14 +6706,16 @@ end unassign_loc_groups;
                    description = p_description
              where rowid = l_rowid;
       elsif l_insert then
-         if l_delete then
+         if(regexp_replace(upper(p_vertical_datum_id_1), '(N[AG]VD)[ -]', '\1', 1, 0) <> regexp_replace(upper(p_vertical_datum_id_1), '(N[AG]VD)[ -]', '\1', 1, 0))
+         then
+           if l_delete then
             delete
               from at_vert_datum_offset
              where rowid = l_rowid;
-         end if;
-         insert
-           into at_vert_datum_offset
-         values (cwms_loc.get_location_code(p_office_id, p_location_id),
+           end if;
+           insert
+             into at_vert_datum_offset
+               values (cwms_loc.get_location_code(p_office_id, p_location_id),
                  regexp_replace(upper(p_vertical_datum_id_1), '(N[AG]VD)[ -]', '\1', 1, 0),
                  regexp_replace(upper(p_vertical_datum_id_2), '(N[AG]VD)[ -]', '\1', 1, 0),
                  cwms_util.change_timezone(
@@ -6723,6 +6725,7 @@ end unassign_loc_groups;
                  cwms_util.convert_units(p_offset, p_unit, 'm'),
                  p_description
                 );
+          end if;
       end if;
     end store_vertical_datum_offset;
 
@@ -7842,6 +7845,7 @@ end unassign_loc_groups;
       l_elevation           binary_double;
       l_elevation_db        binary_double;
       l_fail_if_exists      boolean;
+      l_rounding_spec    varchar2(10) := '4444444449';
    begin
       delete from at_vert_datum_local  where location_code = p_location_code;
       delete from at_vert_datum_offset where location_code = p_location_code;
@@ -7911,7 +7915,7 @@ end unassign_loc_groups;
            into l_elevation_db
            from at_physical_location
           where location_code = p_location_code;
-         if l_elevation_db is not null and l_elevation_db != l_elevation then
+         if l_elevation_db is not null and abs(cwms_rounding.round_nt_f(l_elevation_db, l_rounding_spec) - l_elevation) > 0.01 then
             cwms_err.raise(
                'ERROR',
                'Specified elevation for '
