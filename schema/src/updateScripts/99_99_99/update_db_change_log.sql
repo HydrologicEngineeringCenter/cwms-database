@@ -25,7 +25,7 @@ begin
            99,
            to_date ('31DEC2200', 'DDMONYYYY'),
            'CWMS Database Release 99.99.99',
-           'Updaed from 18.1.8'
+           'Updaed from 21.1.1'
           );
    commit;
 end;
