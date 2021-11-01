@@ -1339,7 +1339,7 @@ unit_aliases = {
 	"cms"        : ["CMS","cu-meters/sec","M3/S","m3/s","m3/sec","M3/SEC"],
 	"day"        : ["DAY","day","DAYS","days"],
 	"dsf"        : ["DSF","SFD","cfs-day","second-foot-day","sfd"],
-	"F"          : ["DEG F","deg F","deg f","DEG-F","Deg-F","DegF","degF","Fahrenheit","FAHRENHEIT","fahrenheit"],
+	"F"          : ["DEG F","deg F","deg f","DEG-F","Deg-F","DegF","degF","Fahrenheit","FAHRENHEIT","fahrenheit","DEGF"],
 	"F-day"      : ["degF-day"],
 	"FNU"        : ["fnu"],
 	"ft"         : ["FEET","feet","foot","FT","Feet"],
