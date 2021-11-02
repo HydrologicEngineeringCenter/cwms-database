@@ -34,13 +34,19 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
     public static final String ORACLE_19C= "oracle/database:19.3.0-ee";
     public static final String ORACLE_18XE = "oracle/database:18.4.0-xe";
 
+    public static final String BYPASS_URL = "testcontainer.cwms.bypass.url";
+    public static final String BYPASS_SYS_PASSWORD = "testcontainer.cwms.bypass.sys.pass";
+    public static final String BYPASS_CWMS_PASSWORD = "testcontainer.cwms.bypass.cwms.pass";
+    public static final String BYPASS_CWMS_OFFICE_ID = "testcontainer.cwms.bypass.office.id";
+    public static final String BYPASS_CWMS_OFFICE_EROC="testcontainer.cwms.bypass.office.eroc";
+
     private static final String NETWORK_ALIAS = "cwmsdb";
 
     // CWMS Portion
-    private String password = "cwmspassword";
+    private String password = System.getProperty(BYPASS_CWMS_PASSWORD,"cwmspassword");
     private String buildUserPassword = "builduserpassword";
-    private String officeId = "SPK";
-    private String officeEroc = "l2";
+    private String officeId = System.getProperty(BYPASS_CWMS_OFFICE_ID,"SPK");
+    private String officeEroc = System.getProperty(BYPASS_CWMS_OFFICE_EROC,"l2");
     private String cwmsImageName = "cwms_schema_installer";
     private String schemaVersion = "";
     private Driver driverInstance = null;
@@ -50,6 +56,9 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
     private String sysPassword = "SmallPass0wrd";
     private String volumeName = "cwms_test_db_volume";
     private String pdbName = "CWMS";
+
+
+    private boolean bypass = System.getProperty(BYPASS_URL) != null;
 
     GenericContainer<?> cwmsInstaller = null;
 
@@ -86,7 +95,6 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
 
     @Override
     protected void configure(){
-
 
         addExposedPorts(1521);
         setNetwork(Network.newNetwork());
@@ -132,6 +140,8 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
 
     @Override
     protected void containerIsStarted(InspectContainerResponse containerInfo) {
+        if( bypass ) return;
+
         super.containerIsStarted(containerInfo);
         System.out.println("Installing schema");
         cwmsInstaller.setNetwork(getNetwork());
@@ -143,13 +153,26 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
 		return "oracle.jdbc.driver.OracleDriver";
 	}
 
+    @Override
+    public void start(){
+        if( bypass ) return;
+
+        super.start();
+
+    }
+
     /**
      *
      * @return the appropriate JDBC url for this container
      */
 	@Override
 	public String getJdbcUrl() {
-		return String.format("jdbc:oracle:thin:@%s:%d/%s?oracle.net.disableOob=true", getHost(),getMappedPort(1521),pdbName);
+        if( !bypass) {
+            return String.format("jdbc:oracle:thin:@%s:%d/%s?oracle.net.disableOob=true", getHost(),getMappedPort(1521),pdbName);
+        } else {
+            return System.getProperty(BYPASS_URL);
+        }
+
 	}
 
     /**
@@ -165,8 +188,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
      */
 	@Override
 	public String getPassword() {
-
-		return password;
+        return password;
 	}
 
 	@Override
@@ -181,7 +203,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
      * @return This Container
      */
     public SELF withOfficeId(String officeId){
-        this.officeId = officeId;
+        this.officeId = System.getProperty(BYPASS_CWMS_OFFICE_ID,officeId);
         return self();
     }
 
@@ -191,7 +213,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
      * @return This Container
      */
     public SELF withOfficeEroc(String officeEroc){
-        this.officeEroc = officeEroc;
+        this.officeEroc = System.getProperty(BYPASS_CWMS_OFFICE_EROC,officeEroc);
         return self();
     }
 
@@ -201,7 +223,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
      * @return This Container
      */
     public SELF withSysPassword(String sysPassword){
-        this.sysPassword = sysPassword;
+        this.sysPassword = System.getProperty(BYPASS_SYS_PASSWORD, sysPassword);
         return self();
     }
 

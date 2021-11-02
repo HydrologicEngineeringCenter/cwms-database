@@ -113,3 +113,22 @@ public class CwmsDatabaseContainerTest {
 
 }
 ```
+
+## Bypass
+
+Sometimes when you're either testing so other part of the test, or you know for sure you don't need to reset the database for a given
+test you may want to bypass container creation and point the tests at an existing database. YOu can set the following properties such that they
+show up in System.getProperties to redirect.
+
+BEWARED, tests can and should be written assuming they have complete control. Do not bypass a test with writes to a live production database. You WILL get yelled at... by a lot of people. Frankly don't point the read tests at a live database either, get a copy created.
+
+```properties
+# disableOob is required IF your test database is docker container based
+testcontainer.cwms.bypass.url="jdbc:thin://@localhost:1521/MIKETESTDB??oracle.net.disableOob=true"
+testcontainer.cwms.bypass.sys.pass="sys password";
+testcontainer.cwms.bypass.cwms.pass="password for all the test accounts";
+testcontainer.cwms.bypass.office.id="HEC"
+# eroc must be lower case.
+testcontainer.cwms.bypass.office.eroc="q0"
+
+```
