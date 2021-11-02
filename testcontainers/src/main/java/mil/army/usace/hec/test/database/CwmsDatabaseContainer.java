@@ -218,7 +218,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
     }
 
     /**
-     * What Oracle SYS password to you. NOTE: not requried, a default is created for this instance
+     * What Oracle SYS password to use. NOTE: not required, a default is created for this instance
      * @param sysPassword
      * @return This Container
      */
