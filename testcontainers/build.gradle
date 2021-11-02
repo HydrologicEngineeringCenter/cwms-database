@@ -15,6 +15,11 @@ compileJava {
     targetCompatibility = '1.8'
 }
 
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
 repositories {
     mavenCentral()
 }
