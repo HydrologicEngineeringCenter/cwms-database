@@ -8,8 +8,17 @@ plugins {
 
 
 group = "mil.army.usace.hec"
-version = "1.0.1-SNAPSHOT"
+version = "1.0.2"
 
+compileJava {
+    sourceCompatibility = '1.8'
+    targetCompatibility = '1.8'
+}
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
 
 repositories {
     mavenCentral()
