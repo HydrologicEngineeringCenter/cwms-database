@@ -1,4 +1,4 @@
-are
+declare
    utc_time_zone_code cwms_time_zone.time_zone_code%type;
 begin
    select time_zone_code
