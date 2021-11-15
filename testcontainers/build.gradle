@@ -51,8 +51,8 @@ publishing {
 		repositories {
 			maven {
 				def baseUrl = 'https://www.hec.usace.army.mil/nexus/repository'
-				def releasesRepoUrl = "$baseUrl/cwms-releases"
-				def snapshotsRepoUrl = "$baseUrl/cwms-snapshots"
+				def releasesRepoUrl = "$baseUrl/maven-releases"
+				def snapshotsRepoUrl = "$baseUrl/maven-snapshots"
 				url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
 				credentials {
 					username "$mavenUser"
