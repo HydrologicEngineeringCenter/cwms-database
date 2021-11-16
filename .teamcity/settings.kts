@@ -91,7 +91,7 @@ object Build : BuildType({
                 path = "schema/build.xml"
             }
             targets = "docker.prepdb"
-            antArguments = "-Dteamcity.branch=%teamcity.build.branch%"
+            antArguments = "-Dteamcity.branch=%teamcity.build.branch%_%teamcity.agent.name%"
         }
         ant {
             name = "Install CWMS Database"
@@ -100,7 +100,7 @@ object Build : BuildType({
                 path = "schema/build.xml"
             }
             targets = "docker.install"
-            antArguments = "-Dteamcity.branch=%teamcity.build.branch%"
+            antArguments = "-Dteamcity.branch=%teamcity.build.branch%_%teamcity.agent.name%"
         }
         ant {
             name = "Run Tests"
@@ -153,7 +153,7 @@ object Build : BuildType({
             }
             targets = "docker.stopdb"
             executionMode = BuildStep.ExecutionMode.ALWAYS
-            antArguments = "-Dteamcity.branch=%teamcity.build.branch%"
+            antArguments = "-Dteamcity.branch=%teamcity.build.branch%_%teamcity.agent.name%"
         }
     }
 
