@@ -5,7 +5,7 @@ define office_id = '&1';
 define cwms_schema = '&2';
 define upass_id = '&3';
 -- make sure the info required for the below user is present
-exec cwms_sec.create_user('OTHER_DIST','other', char_32_array_type('CWMS Users'),'HQ');
+exec cwms_sec.add_cwms_user('OTHER_DIST', char_32_array_type('CWMS Users'),'HQ');
 @test_cwms_prop.sql;
 @test_cwms_msg.sql;
 @test_aaa.sql;

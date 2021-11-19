@@ -32,13 +32,13 @@ create or replace package body test_aaa as
     procedure setup_users is
     begin
         cwms_env.set_session_office_id('&office_id');
-        cwms_sec.create_user('basic_user','bu_pw', char_32_array_type('CWMS Users'), '&office_id');
+        cwms_sec.add_cwms_user('basic_user', char_32_array_type('CWMS Users'), '&office_id');
         cwms_sec.update_edipi('basic_user',1000000000);
 
-        cwms_sec.create_user('user_admin','us_pw', char_32_array_type('CWMS Users', 'CWMS User Admins'), '&office_id');
+        cwms_sec.add_cwms_user('user_admin', char_32_array_type('CWMS Users', 'CWMS User Admins'), '&office_id');
         cwms_sec.update_edipi('user_admin',2000000000);
 
-        cwms_sec.create_user('No_EDIPI', 'noe_pw', char_32_array_type('CWMS Users'),'&office_id');
+        cwms_sec.add_cwms_user('No_EDIPI',  char_32_array_type('CWMS Users'),'&office_id');
         
     end;
 
@@ -75,7 +75,7 @@ create or replace package body test_aaa as
         username varchar2(400);
         session_key varchar2(400);
     begin        
-        cwms_sec.create_user('basic_user2','bu_pw', char_32_array_type('CWMS Users'), '&office_id');
+        cwms_sec.add_cwms_user('basic_user2', char_32_array_type('CWMS Users'), '&office_id');
         cwms_sec.update_edipi('basic_user2',1000000000);
 
         cwms_sec.get_user_credentials(1000000000,username,session_key);

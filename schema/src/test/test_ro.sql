@@ -1,5 +1,5 @@
 create or replace package test_ro as
-    -- %suite(Test read only user functionality )
+    --%suite(Test read only user functionality )
     --%afterall(teardown)
     --%rollback(manual)
 
