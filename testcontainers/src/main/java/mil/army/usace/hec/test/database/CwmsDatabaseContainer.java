@@ -183,6 +183,10 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
 		return officeEroc+"hectest";
 	}
 
+    public String getOfficeId() {
+		return officeId;
+	}
+
     /**
      * The password shared by all accounts
      */
