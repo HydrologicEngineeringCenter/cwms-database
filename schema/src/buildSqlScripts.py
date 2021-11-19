@@ -5935,6 +5935,34 @@ def main() :
     create user &eroc.hectest_up identified by "&test_passwd";
     grant execute on cwms_upass to &eroc.hectest_up;
     grant connect to &eroc.hectest_up;
+    create user &eroc.hectest identified by "&test_passwd";
+    grant connect to &eroc.hectest;
+    create user &eroc.hectest_ro identified by "&test_passwd";
+    grant connect to &eroc.hectest_ro;
+    create user &eroc.hectest_db identified by "&test_passwd";
+    grant connect to &eroc.hectest_db;
+    create user &eroc.hectest_ua identified by "&test_passwd";
+    grant connect to &eroc.hectest_ua;
+    create user &eroc.hectest_pu identified by "&test_passwd";
+    grant connect to &eroc.hectest_pu;
+    create user &eroc.hectest_dx identified by "&test_passwd";
+    grant connect to &eroc.hectest_dx;
+    create user &eroc.hectest_da identified by "&test_passwd";
+    grant connect to &eroc.hectest_da;
+    create user &eroc.hectest_vt identified by "&test_passwd";
+    grant connect to &eroc.hectest_vt;
+    create user &eroc.hectest_dv identified by "&test_passwd";
+    grant connect to &eroc.hectest_dv;
+    create user &eroc.hectest_ccp_p identified by "&test_passwd";
+    grant connect to &eroc.hectest_ccp_p;
+    create user &eroc.hectest_ccp_m identified by "&test_passwd";
+    grant connect to &eroc.hectest_ccp_m;
+    create user &eroc.hectest_ccp_r identified by "&test_passwd";
+    grant connect to &eroc.hectest_ccp_r;
+    create user &eroc.hectest_rdl_r identified by "&test_passwd";
+    grant connect to &eroc.hectest_rdl_r;
+    create user &eroc.hectest_rdl_m identified by "&test_passwd";
+    grant connect to &eroc.hectest_rdl_m;
     '''
 
     test_user_template = '''
@@ -5951,58 +5979,58 @@ def main() :
     BEGIN
         -- hectest
         group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('TS ID Creator', 'CWMS Users');
-        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest', test_passwd, group_list, '&office_id');
+        "&cwms_schema"."CWMS_SEC"."ADD_CWMS_USER" ('&eroc.hectest', group_list, '&office_id');
         --
         -- hectest_ro
         group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS Users', 'Viewer Users');
-        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_ro', test_passwd, group_list, '&office_id');
+        "&cwms_schema"."CWMS_SEC"."ADD_CWMS_USER" ('&eroc.hectest_ro', group_list, '&office_id');
         --
         -- hectest_dba
         group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS DBA Users');
-        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_db', test_passwd, group_list, '&office_id');
+        "&cwms_schema"."CWMS_SEC"."ADD_CWMS_USER" ('&eroc.hectest_db', group_list, '&office_id');
         --
         -- hectest_ua
         group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS User Admins', 'TS ID Creator', 'Viewer Users');
-        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_ua', test_passwd, group_list, '&office_id');
+        "&cwms_schema"."CWMS_SEC"."ADD_CWMS_USER" ('&eroc.hectest_ua', group_list, '&office_id');
         --
         -- hectest_pu
         group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS User Admins', 'CWMS PD Users','TS ID Creator', 'Viewer Users');
-        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_pu', test_passwd, group_list, '&office_id');
+        "&cwms_schema"."CWMS_SEC"."ADD_CWMS_USER" ('&eroc.hectest_pu', group_list, '&office_id');
         --
         -- hectest_dx
         group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('Data Exchange Mgr', 'TS ID Creator', 'CWMS Users');
-        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_dx', test_passwd, group_list, '&office_id');
+        "&cwms_schema"."CWMS_SEC"."ADD_CWMS_USER" ('&eroc.hectest_dx', group_list, '&office_id');
         --
         -- hectest_da
         group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('Data Acquisition Mgr', 'TS ID Creator', 'CWMS Users');
-        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_da', test_passwd, group_list, '&office_id');
+        "&cwms_schema"."CWMS_SEC"."ADD_CWMS_USER" ('&eroc.hectest_da', group_list, '&office_id');
         --
         -- hectest_vt
         group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('VT Mgr', 'TS ID Creator', 'CWMS Users');
-        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_vt', test_passwd, group_list, '&office_id');
+        "&cwms_schema"."CWMS_SEC"."ADD_CWMS_USER" ('&eroc.hectest_vt', group_list, '&office_id');
         --
         -- hectest_dv
         group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('Data Acquisition Mgr', 'VT Mgr', 'TS ID Creator', 'CWMS Users');
-        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_dv', test_passwd, group_list, '&office_id');
+        "&cwms_schema"."CWMS_SEC"."ADD_CWMS_USER" ('&eroc.hectest_dv', group_list, '&office_id');
         --
         -- hectest_ccp_p
         group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS PD Users', 'CCP Proc', 'TS ID Creator', 'CWMS Users');
-        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_ccp_p', test_passwd, group_list, '&office_id');
+        "&cwms_schema"."CWMS_SEC"."ADD_CWMS_USER" ('&eroc.hectest_ccp_p', group_list, '&office_id');
         --
         -- hectest_ccp_m
         group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS PD Users', 'CCP Mgr', 'TS ID Creator', 'CWMS Users');
-        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_ccp_m', test_passwd, group_list, '&office_id');
+        "&cwms_schema"."CWMS_SEC"."ADD_CWMS_USER" ('&eroc.hectest_ccp_m', group_list, '&office_id');
         --
         -- hectest_ccp_r
         group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS PD Users', 'CCP Reviewer', 'TS ID Creator', 'CWMS Users');
-        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_ccp_r', test_passwd, group_list, '&office_id');
+        "&cwms_schema"."CWMS_SEC"."ADD_CWMS_USER" ('&eroc.hectest_ccp_r', group_list, '&office_id');
 
         -- hectest_rdl_r
         group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS PD Users', 'RDL Reviewer', 'TS ID Creator', 'CWMS Users');
-        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_rdl_r', test_passwd, group_list, '&office_id');
+        "&cwms_schema"."CWMS_SEC"."ADD_CWMS_USER" ('&eroc.hectest_rdl_r', group_list, '&office_id');
         -- hectest_rdl_m
         group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS PD Users', 'RDL Mgr', 'TS ID Creator', 'CWMS Users');
-        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_rdl_m', test_passwd, group_list, '&office_id');
+        "&cwms_schema"."CWMS_SEC"."ADD_CWMS_USER" ('&eroc.hectest_rdl_m', group_list, '&office_id');
     END;
     /
     '''
@@ -6014,6 +6042,8 @@ def main() :
     whenever sqlerror continue
 
     drop user &eroc.cwmspd;
+    create user &eroc.cwmspd identified by "&pd_passwd";
+    grant connect to &eroc.cwmspd;
     '''
 
     user_template = '''
@@ -6032,7 +6062,7 @@ def main() :
         group_list      "&cwms_schema"."CHAR_32_ARRAY_TYPE" := "&cwms_schema"."CHAR_32_ARRAY_TYPE"('CWMS PD Users');
     BEGIN
 
-        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.cwmspd', pd_passwd, group_list, '&office_id');
+        "&cwms_schema"."CWMS_SEC"."ADD_CWMS_USER" ('&eroc.cwmspd', group_list, '&office_id');
 
         "&cwms_schema"."CWMS_SEC"."ASSIGN_TS_GROUP_USER_GROUP" ('All Rev TS IDs', 'Viewer Users', 'Read', '&office_id');
 

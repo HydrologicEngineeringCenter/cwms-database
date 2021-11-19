@@ -177,7 +177,13 @@ end;
 alter session set current_schema = &builduser
 -- Create CWMS_DBXC_ROLE
 
-@@cwms/User-Roles/cwms_dbx_role_et_user
+-- create CWMS service user
+begin execute immediate 'create user ' || cwms_sec.cac_service_user || ' PROFILE CWMS_PROF IDENTIFIED BY values ''FEDCBA9876543210'' '; end; 
+/
+begin execute immediate 'grant connect to ' || cwms_sec.cac_service_user; end; 
+/
+begin execute immediate 'grant cwms_user to ' || cwms_sec.cac_service_user; end; 
+/
 
 set echo off
 --

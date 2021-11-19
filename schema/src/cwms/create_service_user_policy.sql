@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION CHECK_SESSION_USER(
    if dbms_mview.i_am_a_refresh then
    return null;
   end if;
-  IF ((SYS_CONTEXT ('CWMS_ENV', 'CWMS_USER') IS NULL) AND (USER = 'CWMS9999'))
+  IF ((SYS_CONTEXT ('CWMS_ENV', 'CWMS_USER') IS NULL) AND (USER = cwms_sec.cac_service_user))
   THEN
     return '1=0';
   ELSE
@@ -41,4 +41,3 @@ BEGIN
 END;
 /
 
-exec cwms_sec.create_cwms_service_user

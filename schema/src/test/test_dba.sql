@@ -1,5 +1,5 @@
 create or replace package test_dba as
-    -- %suite(Test dba user functionality )
+    --%suite(Test dba user functionality )
     --%afterall(teardown)
     --%rollback(manual)
 
@@ -34,9 +34,8 @@ AS
     IS
         l_count   NUMBER;
     BEGIN
-        CWMS_SEC.CREATE_USER (
+        CWMS_SEC.ADD_CWMS_USER (
             'TestUser',
-            'Test Passwd',
             cwms_20.char_32_array_type ('CWMS PD Users', 'CCP Mgr'),
             '&office_id');
 
