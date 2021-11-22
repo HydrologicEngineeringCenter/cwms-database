@@ -1140,8 +1140,13 @@ AS
 
         insert_noaccess_entry (UPPER (p_username), l_db_office_code);
 
-        create_logon_trigger (p_username);
-        cwms_dba.cwms_user_admin.grant_cwms_permissions(p_username);
+        -- Do this only when DB user exists 
+        if(l_count <> 0) 
+        then
+            create_logon_trigger (p_username);
+            cwms_dba.cwms_user_admin.grant_cwms_permissions(p_username);
+        end if;
+
         unlock_user(p_username,p_db_office_id);
         COMMIT;
     END add_cwms_user;

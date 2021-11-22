@@ -19,6 +19,10 @@ create or replace package test_ro as
     -- %test (store sec.upass.id property: throws an exception)
     --%throws(-20998)
     procedure test_store_upass_id_property;
+ 
+    -- %test(create cwms user)
+    --%throws(-20998)
+    PROCEDURE test_create_cwms_user;
 
     procedure teardown;
     test_log_message_val VARCHAR2(64) := 'Test Message random';
@@ -38,6 +42,15 @@ AS
       delete from at_application_login;
       commit;
     END; 
+    PROCEDURE test_create_cwms_user
+    IS
+        l_count   NUMBER;
+    BEGIN
+        CWMS_SEC.ADD_CWMS_USER (
+            'TestUser',
+            cwms_20.char_32_array_type ('CWMS PD Users', 'CCP Mgr'),
+            '&office_id');
+    END;
     PROCEDURE test_set_application_login_info
     IS
         l_uuid          VARCHAR2 (64);
