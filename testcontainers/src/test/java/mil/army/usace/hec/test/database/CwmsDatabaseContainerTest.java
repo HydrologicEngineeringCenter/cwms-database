@@ -1,5 +1,15 @@
 package mil.army.usace.hec.test.database;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.JDBCType;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.SQLType;
+
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.testcontainers.junit.jupiter.Container;
@@ -26,4 +36,38 @@ public class CwmsDatabaseContainerTest {
         database.executeSQL("select 1 from dual", database.getReadOnlyUser());
     }
 
+    @Test
+    @SuppressWarnings("unchecked")
+    public void test_can_run_pd_user_commands() throws Exception {
+        String pdUser = database.getPdUser();
+        String normalUser = database.getUsername();
+        database.connection( (c) -> {
+            Connection conn = (Connection)c;
+            try( CallableStatement addUser =conn.prepareCall("call cwms_sec.add_user_to_group(?,?)"); ){
+                addUser.setString(1,normalUser);
+                addUser.setString(2,"CWMS DBA Users");
+                addUser.execute();
+            } catch( SQLException err ){
+                throw new RuntimeException(err);
+            }
+        }, pdUser);
+    }
+
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void test_can_run_as_cwms_20() throws Exception {
+        database.connection( c -> {
+            Connection conn = (Connection)c;
+            try( PreparedStatement stmt = conn.prepareStatement("select * from cwms_office");
+                 ResultSet rs = stmt.executeQuery();
+            ){
+
+                assertTrue(rs.next(), "operating as cwms_20 does not appear to have worked.");
+
+            } catch( SQLException err ){
+                throw new RuntimeException(err);
+            }
+        },"cwms_20");
+    }
 }
