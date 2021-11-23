@@ -1057,6 +1057,7 @@ AS
         l_username          VARCHAR2 (31) := UPPER (TRIM (p_username));
         l_user_group_code   NUMBER;
         l_count             NUMBER;
+        l_user_exists       BOOLEAN;
         l_msg               VARCHAR2(1024);
     BEGIN
         confirm_user_admin_priv (l_db_office_code);
@@ -1071,6 +1072,9 @@ AS
             l_msg := 'Warning: User: ' || upper(p_username) || ' doesn''t exist in the database';
             dbms_output.put_line(l_msg);
             cwms_msg.log_db_message (cwms_msg.msg_level_basic,l_msg);
+            l_user_exists := FALSE;
+        ELSE
+            l_user_exists := TRUE;
         END IF;
 
         SELECT COUNT (*)
@@ -1141,7 +1145,7 @@ AS
         insert_noaccess_entry (UPPER (p_username), l_db_office_code);
 
         -- Do this only when DB user exists 
-        if(l_count <> 0) 
+        if(l_user_exists) 
         then
             create_logon_trigger (p_username);
             cwms_dba.cwms_user_admin.grant_cwms_permissions(p_username);
