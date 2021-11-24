@@ -217,7 +217,8 @@ object TestContainer : BuildType({
         gradle {
             name = "Build"
             workingDir="testcontainers"
-            tasks = "build"
+            tasks = "build test"
+            gradleParams="--info"
             jdkHome ="%env.JDK_1_8_x64%"
         }
         gradle {
