@@ -144,6 +144,12 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
 
         super.containerIsStarted(containerInfo);
         System.out.println("Installing schema");
+        try{
+            executeSQL("alter system set JAVA_JIT_ENABLED=FALSE", "sys");
+        } catch( SQLException err ){
+            throw new RuntimeException("Error getting database into correct state",err);
+        }
+
         cwmsInstaller.setNetwork(getNetwork());
         cwmsInstaller.start();
     }
@@ -325,8 +331,8 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
         }
 
         Properties info = new Properties();
-        info.put("user", user);
-        info.put("password", this.getPassword());
+        info.put("user", user.equals("sys") ? user +" as sysdba": user);
+        info.put("password", user.equals("sys") ? this.sysPassword : this.getPassword());
 
         return driverInstance.connect(getJdbcUrl(),info);
 
@@ -353,4 +359,6 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
         }
 
     }
+
+
 }
