@@ -45,6 +45,8 @@ dependencies {
 test {
     useJUnitPlatform()
     jvmArgs += "-Djava.net.preferIPv4Stack=true"
+    systemProperties += System.getProperties().findAll{ k,v -> k.startsWith("teamcity") }
+    systemProperties += project.properties.findAll{ k,v -> k.startsWith("teamcity") }
 }
 
 publishing {
