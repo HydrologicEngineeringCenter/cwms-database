@@ -223,14 +223,14 @@ object TestContainer : BuildType({
         }
         gradle {
             name = "SonarQube Analysis"
-            workingDir = "./testcontainers"
+            workingDir = "testcontainers"
 
             tasks = ":sonarqube"
             gradleParams = "-Dsonar.login=%system.SONAR_TOKEN% -Dsonar.host.url=https://sonarqube.hecdev.net -Pteamcity.build.branch=%teamcity.build.branch% --info"
         }
         gradle {
             name = "Push to Nexus"
-            workingDir = "./testcontainers"
+            workingDir = "testcontainers"
 
             tasks = "publish"
             gradleParams = "-DmavenUser=%env.NEXUS_USER% -DmavenPassword=%env.NEXUS_PASSWORD%"
