@@ -145,7 +145,8 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
         super.containerIsStarted(containerInfo);
         System.out.println("Installing schema");
         try{
-            executeSQL("alter system set JAVA_JIT_ENABLED=FALSE", "sys");
+            executeSQL("alter system set JAVA_JIT_ENABLED=FALSE;", "sys");
+            System.out.println("JAVA_JIT disabled");
         } catch( SQLException err ){
             throw new RuntimeException("Error getting database into correct state",err);
         }
