@@ -156,7 +156,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
 
 	@Override
 	public String getDriverClassName() {
-		return "oracle.jdbc.driver.OracleDriver";
+        return "oracle.jdbc.OracleDriver";
 	}
 
     @Override

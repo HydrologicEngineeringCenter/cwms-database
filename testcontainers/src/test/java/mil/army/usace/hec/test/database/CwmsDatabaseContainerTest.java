@@ -1,6 +1,8 @@
 package mil.army.usace.hec.test.database;
 
+
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.sql.CallableStatement;
 import java.sql.Connection;
@@ -58,6 +60,7 @@ public class CwmsDatabaseContainerTest {
     @SuppressWarnings("unchecked")
     public void test_can_run_as_cwms_20() throws Exception {
         database.connection( c -> {
+            assertNotNull(c);
             Connection conn = (Connection)c;
             try( PreparedStatement stmt = conn.prepareStatement("select * from cwms_office");
                  ResultSet rs = stmt.executeQuery();
