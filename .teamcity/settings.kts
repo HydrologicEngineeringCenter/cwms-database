@@ -218,7 +218,7 @@ object TestContainer : BuildType({
             name = "Build"
             workingDir="testcontainers"
             tasks = "test"
-            gradleParams="--info -Pteamcity.build.branch=%teamcity.build.branch% -Pcwms.image=build-%env.USER%"
+            gradleParams="--info -Pteamcity.build.branch=%teamcity.build.branch%"
             jdkHome ="%env.JDK_1_8_x64%"
         }
         gradle {
@@ -226,7 +226,7 @@ object TestContainer : BuildType({
             workingDir = "testcontainers"
 
             tasks = ":sonarqube"
-            gradleParams = "-Dsonar.login=%system.SONAR_TOKEN% -Dsonar.host.url=https://sonarqube.hecdev.net -Pteamcity.build.branch=%teamcity.build.branch% --info"
+            gradleParams = "-Dsonar.login=%system.SONAR_TOKEN% -Dsonar.host.url=https://sonarqube.hecdev.net -Pteamcity.build.branch=%teamcity.build.branch% -Pcwms.image=build-%env.USER% --info"
         }
         gradle {
             name = "Push to Nexus"

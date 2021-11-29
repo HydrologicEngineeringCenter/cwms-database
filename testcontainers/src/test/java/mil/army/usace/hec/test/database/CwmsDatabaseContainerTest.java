@@ -34,14 +34,14 @@ public class CwmsDatabaseContainerTest {
     @Container
     private static CwmsDatabaseContainer database = new CwmsDatabaseContainer(CwmsDatabaseContainer.ORACLE_19C)
                                                         .withSchemaVersion(imageVersion)
-                                                        .withVolumeName(volumeName);
+                                                        .withVolumeName(volumeName)
+                                                        .withLogConsumer((line) -> {
+                                                            System.out.println(((OutputFrame)line).getUtf8String());
+                                                        });
 
     @BeforeAll
     private static void setup() {
         database.start();
-        database.followOutput((line) -> {
-            System.out.println(((OutputFrame)line).getUtf8String());
-        });
     }
 
     @Test

@@ -16,8 +16,7 @@ import com.github.dockerjava.api.command.InspectContainerResponse;
 
 
 import org.testcontainers.containers.Network;
-
-
+import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.JdbcDatabaseContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -61,6 +60,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
     private boolean bypass = System.getProperty(BYPASS_URL) != null;
 
     GenericContainer<?> cwmsInstaller = null;
+    private Consumer<OutputFrame> logConsumer = null;
 
     /**
      * DockerImageName corresponding to the oracle version you want to use.
@@ -125,6 +125,9 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
         cwmsInstaller.dependsOn(this);
         cwmsInstaller.withReuse(true);
         //setNetwork(oracle.getNetwork());
+        if( logConsumer != null ){
+            cwmsInstaller.withLogConsumer(this.logConsumer);
+        }
     }
 
     /*
@@ -359,6 +362,13 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
             function.accept(conn);
         }
 
+    }
+
+    @Override
+    public SELF withLogConsumer( Consumer<OutputFrame> logConsumer ){
+        super.withLogConsumer(logConsumer);
+        this.logConsumer = logConsumer;
+        return self();
     }
 
 
