@@ -218,7 +218,7 @@ object TestContainer : BuildType({
             name = "Build"
             workingDir="testcontainers"
             tasks = "test"
-            gradleParams="--info -Pteamcity.build.branch=%teamcity.build.branch%"
+            gradleParams="--info -Pteamcity.build.branch=%teamcity.build.branch% -Pcwms.image=build-%env.USER%"
             jdkHome ="%env.JDK_1_8_x64%"
         }
         gradle {
