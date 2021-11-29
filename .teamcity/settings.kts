@@ -276,4 +276,8 @@ object TestContainer : BuildType({
     requirements {
         contains("docker.server.osType", "linux")
     }
+
+    snapshot(Build){
+        runOnSameAgent = true
+    }
 })
