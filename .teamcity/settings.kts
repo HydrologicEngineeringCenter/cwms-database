@@ -277,7 +277,11 @@ object TestContainer : BuildType({
         contains("docker.server.osType", "linux")
     }
 
-    snapshot(Build){
-        runOnSameAgent = true
+    dependencies {
+        snapshot(Build){
+            runOnSameAgent = true
+            onDependencyFailure = FailureAction.CANCEL
+        }
     }
+
 })
