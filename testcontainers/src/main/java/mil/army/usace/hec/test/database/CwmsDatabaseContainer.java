@@ -19,8 +19,8 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.JdbcDatabaseContainer;
 import org.testcontainers.utility.DockerImageName;
-
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
@@ -30,6 +30,7 @@ import org.testcontainers.containers.wait.strategy.Wait;
  * An container manager to manage creation of CWMSDatabases for automated tests
  */
 public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> extends JdbcDatabaseContainer<SELF> {
+    public static final Logger log = LoggerFactory.getLogger(CwmsDatabaseContainer.class);
     public static final String ORACLE_19C= "oracle/database:19.3.0-ee";
     public static final String ORACLE_18XE = "oracle/database:18.4.0-xe";
 
@@ -72,6 +73,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
 		super(oracleImageName);
 
         if( oracleImageName.asCanonicalNameString().endsWith("-xe")){
+            log.debug("Set pluggable database name to XEPDB1");
             pdbName="XEPDB1";
             volumeName = volumeName + "_xe";
         }
@@ -95,6 +97,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
 
     @Override
     protected void configure(){
+        log.debug("Configuring Database and Schema container");
 
         addExposedPorts(1521);
         setNetwork(Network.newNetwork());
@@ -128,6 +131,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
         if( logConsumer != null ){
             cwmsInstaller.withLogConsumer(this.logConsumer);
         }
+        log.debug("Configuration Finished");
     }
 
     /*
@@ -146,15 +150,16 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
         if( bypass ) return;
 
         super.containerIsStarted(containerInfo);
-        System.out.println("Installing schema");
+
         try{
             executeSQL("alter system set JAVA_JIT_ENABLED=FALSE", "sys");
-            System.out.println("JAVA_JIT disabled");
+            log.debug("JAVA_JIT disabled");
         } catch( SQLException err ){
             throw new RuntimeException("Error getting database into correct state",err);
         }
 
         cwmsInstaller.setNetwork(getNetwork());
+        log.info("Installing schema");
         cwmsInstaller.start();
     }
 
@@ -166,8 +171,9 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
     @Override
     public void start(){
         if( bypass ) return;
-
+        log.debug("Starting Database");
         super.start();
+        log.debug("Database Started and Schema {}:{} installed",cwmsImageName,schemaVersion);
 
     }
 
@@ -329,15 +335,17 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
         if( driverInstance == null ){
             try{
                 driverInstance = (Driver)Class.forName(this.getDriverClassName()).newInstance();
+                log.debug("Oracle Driver Loaded");
             } catch( InstantiationException | IllegalAccessException | ClassNotFoundException e){
                 throw new NoDriverFoundException("Could not get driver", e);
             }
         }
 
+
         Properties info = new Properties();
         info.put("user", user.equals("sys") ? user +" as sysdba": user);
         info.put("password", user.equals("sys") ? this.sysPassword : this.getPassword());
-
+        log.debug("Creating database connection");
         return driverInstance.connect(getJdbcUrl(),info);
 
     }

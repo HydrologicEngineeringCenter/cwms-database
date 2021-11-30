@@ -15,12 +15,15 @@ import java.sql.SQLType;
 
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.ToStringConsumer;
 import org.testcontainers.containers.output.OutputFrame.OutputType;
 import org.testcontainers.junit.jupiter.Container;
 
 public class CwmsDatabaseContainerTest {
+    public static final Logger log = LoggerFactory.getLogger(CwmsDatabaseContainerTest.class);
 
     public final static String branch = System.getProperty("teamcity.build.branch");
     public final static String imageVersion = System.getProperty("cwms.image") != null ? System.getProperty("cwms.image") : "18-SNAPSHOT";
@@ -41,7 +44,9 @@ public class CwmsDatabaseContainerTest {
 
     @BeforeAll
     private static void setup() {
+        log.debug("Starting Test Database");
         database.start();
+        log.debug("Test Database Started");
     }
 
     @Test
