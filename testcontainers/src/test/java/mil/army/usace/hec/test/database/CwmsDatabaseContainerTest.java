@@ -31,7 +31,9 @@ public class CwmsDatabaseContainerTest {
 
 
     private static String teamcityVolumeName(String branch){
-        return "cwmsdb_"+TeamCityUtilities.cleanupBranchName(branch)+"_"+System.getProperty("teamcity.build.agent")+"_volume";
+        String generatedVolumeName = "cwmsdb_"+TeamCityUtilities.cleanupBranchName(branch)+"_"+System.getProperty("teamcity.build.agent")+"_volume";
+        log.debug("Using volume name {}",generatedVolumeName);
+        return generatedVolumeName;
     }
 
     @Container

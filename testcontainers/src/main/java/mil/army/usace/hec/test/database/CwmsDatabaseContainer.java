@@ -53,7 +53,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
 
     //Oracle Portion
 
-    private String sysPassword = "SmallPass0wrd";
+    private String sysPassword = System.getProperty("cwms.database.syspw","SmallPass0wrd");
     private String volumeName = "cwms_test_db_volume";
     private String pdbName = "CWMS";
 
