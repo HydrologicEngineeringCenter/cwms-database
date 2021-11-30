@@ -39,12 +39,16 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-params:5.6.2'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.2'
     testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.6.2'
+
+    testImplementation 'ch.qos.logback:logback-classic:1.2.7'
+
 }
 
 
 test {
     useJUnitPlatform()
     jvmArgs += "-Djava.net.preferIPv4Stack=true"
+    jvmArgs += "-Dlogback.configurationFile=$projectDir/logback-config.xml"
     systemProperties += System.getProperties().findAll{ k,v -> k.startsWith("teamcity") || k.startsWith("cwms") }
     systemProperties += project.properties.findAll{ k,v -> k.startsWith("teamcity") || k.startsWith("cwms") }
 }
