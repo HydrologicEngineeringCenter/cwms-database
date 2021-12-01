@@ -24,9 +24,9 @@ public class ContainerBypassTest {
 
     @AfterAll
     private static void tearDown() {
-        System.setProperty(CwmsDatabaseContainer.BYPASS_URL, null);
-        System.setProperty(CwmsDatabaseContainer.BYPASS_CWMS_PASSWORD,null);
-        System.setProperty(CwmsDatabaseContainer.BYPASS_CWMS_OFFICE_EROC,null);
+        System.clearProperty(CwmsDatabaseContainer.BYPASS_URL);
+        System.clearProperty(CwmsDatabaseContainer.BYPASS_CWMS_PASSWORD);
+        System.clearProperty(CwmsDatabaseContainer.BYPASS_CWMS_OFFICE_EROC);
     }
 
     @Test
