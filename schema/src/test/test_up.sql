@@ -1,5 +1,5 @@
 create or replace package test_up as
-    -- %suite(Test read only user functionality )
+    --%suite(Test read only user functionality )
     --%beforeall(setup)
     --%afterall(teardown)
     --%rollback(manual)
