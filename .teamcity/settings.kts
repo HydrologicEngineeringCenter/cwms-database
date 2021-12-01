@@ -188,7 +188,7 @@ object Build : BuildType({
         feature {
             type = "xml-report-plugin"
             param("xmlReportParsing.reportType", "junit")
-            param("xmlReportParsing.reportDirs", "build/tests*.xml")
+            param("xmlReportParsing.reportDirs", "schema/build/tests*.xml")
         }
     }
 
@@ -217,19 +217,21 @@ object TestContainer : BuildType({
         gradle {
             name = "Build"
             workingDir="testcontainers"
-            tasks = "build"
+            tasks = "clean test"
+            gradleParams="--info -Pteamcity.build.branch=%teamcity.build.branch% -Pcwms.image=build-%env.USER% -Dcwms.database.syspw=antsyspassword"
             jdkHome ="%env.JDK_1_8_x64%"
         }
         gradle {
             name = "SonarQube Analysis"
-            workingDir = "./testcontainers"
+            workingDir = "testcontainers"
 
-            tasks = ":sonarqube"
-            gradleParams = "-Dsonar.login=%system.SONAR_TOKEN% -Dsonar.host.url=https://sonarqube.hecdev.net"
+            tasks = "sonarqube"
+            gradleParams = "-Dsonar.login=%system.SONAR_TOKEN% -Dsonar.host.url=https://sonarqube.hecdev.net -Pteamcity.build.branch=%teamcity.build.branch% -Pcwms.image=build-%env.USER% --info -Dcwms.database.syspw=antsyspassword"
+            jdkHome="%env.JDK_1_8_x64%"
         }
         gradle {
             name = "Push to Nexus"
-            workingDir = "./testcontainers"
+            workingDir = "testcontainers"
 
             tasks = "publish"
             gradleParams = "-DmavenUser=%env.NEXUS_USER% -DmavenPassword=%env.NEXUS_PASSWORD%"
@@ -275,4 +277,12 @@ object TestContainer : BuildType({
     requirements {
         contains("docker.server.osType", "linux")
     }
+
+    dependencies {
+        snapshot(Build){
+            runOnSameAgent = true
+            onDependencyFailure = FailureAction.CANCEL
+        }
+    }
+
 })

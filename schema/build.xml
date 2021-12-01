@@ -927,7 +927,7 @@
 				<property name="docker.props.image_name" value="cwms_schema_installer:${pom.version}"/>
 			</then>
 			<else>
-				<condition property="docker.props.image_name" value="cwms_schema_installer:build-${env.BUILD_NUMBER}" else="cwms_schema_installer:build-local">
+				<condition property="docker.props.image_name" value="cwms_schema_installer:build-${env.USER}" else="cwms_schema_installer:build-local">
 					<isset property="env.BUILD_NUMBER"/>
 				</condition>
 			</else>
