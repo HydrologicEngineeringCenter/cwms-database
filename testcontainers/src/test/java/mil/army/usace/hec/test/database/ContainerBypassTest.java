@@ -7,24 +7,32 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.testcontainers.junit.jupiter.Container;
 
 public class ContainerBypassTest {
+    final static String url = "url.bypassed";
+    final static String cwmsPassword = "password.bypassed";
 
+    final static String officeEroc = "q0";
 
 
 
     @BeforeAll
     private static void setup() {
 
+        System.setProperty(CwmsDatabaseContainer.BYPASS_URL, url);
+        System.setProperty(CwmsDatabaseContainer.BYPASS_CWMS_PASSWORD,cwmsPassword);
+        System.setProperty(CwmsDatabaseContainer.BYPASS_CWMS_OFFICE_EROC,officeEroc);
+    }
+
+    @AfterAll
+    private static void tearDown() {
+        System.setProperty(CwmsDatabaseContainer.BYPASS_URL, null);
+        System.setProperty(CwmsDatabaseContainer.BYPASS_CWMS_PASSWORD,null);
+        System.setProperty(CwmsDatabaseContainer.BYPASS_CWMS_OFFICE_EROC,null);
     }
 
     @Test
     public void test_bypass_values_provided() throws Exception {
-        final String url = "url.bypassed";
-        final String cwmsPassword = "password.bypassed";
 
-        final String officeEroc = "q0";
-        System.setProperty(CwmsDatabaseContainer.BYPASS_URL, url);
-        System.setProperty(CwmsDatabaseContainer.BYPASS_CWMS_PASSWORD,cwmsPassword);
-        System.setProperty(CwmsDatabaseContainer.BYPASS_CWMS_OFFICE_EROC,officeEroc);
+
 
         CwmsDatabaseContainer database = new CwmsDatabaseContainer(CwmsDatabaseContainer.ORACLE_19C)
                                                             .withSchemaVersion("doesn't matter here")

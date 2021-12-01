@@ -170,7 +170,10 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
 
     @Override
     public void start(){
-        if( bypass ) return;
+        if( bypass ) {
+            log.debug("BYPASS_URL set to {}, skipping container start",System.getProperty(CwmsDatabaseContainer.BYPASS_URL));
+            return;
+        }
         log.debug("Starting Database");
         super.start();
         log.debug("Database Started and Schema {}:{} installed",cwmsImageName,schemaVersion);
