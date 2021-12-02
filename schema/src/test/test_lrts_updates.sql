@@ -83,6 +83,8 @@ procedure update_lrts_ts_code_neg_offset_from_undefined;
 procedure retrieve_lrts_untrimmed;
 --%test(Test Jira issue CWDB-150 - Last hour of DST is not storing new time series)
 procedure test_cwdb_150;
+--%test(Test Jira issue CWDB-153 - Daily LRTS data returned at incorrect timestamps
+procedure test_cwdb_153;
 
 procedure setup(p_options in varchar2 default null);
 procedure teardown;
@@ -2839,7 +2841,7 @@ begin
    end loop;
 end retrieve_lrts_untrimmed;
 --------------------------------------------------------------------------------
--- procedure test_cwdb-150
+-- procedure test_cwdb_150
 --------------------------------------------------------------------------------
 procedure test_cwdb_150
 is
@@ -3025,6 +3027,134 @@ begin
       ut.expect(l_quality_codes(i)).to_equal(l_expected_zts(i).quality_code);
    end loop;
 end test_cwdb_150;
+--------------------------------------------------------------------------------
+-- procedure test_cwdb_153
+--------------------------------------------------------------------------------
+procedure test_cwdb_153
+is
+   l_cwms_ts_id     varchar2(191) := 'TestLoc1.Code.Inst.~1Day.0.CWDB-153';
+   l_time_zone      varchar2(28)  := 'US/Central';
+   l_start_time     date := date '2017-10-16';
+   l_value_count    pls_integer := 25;
+   l_crsr           sys_refcursor;
+   l_dump_values    boolean := false;
+   l_date_times     cwms_t_date_table;
+   l_values         cwms_t_double_tab;
+   l_quality_codes  cwms_t_number_tab;
+   l_zts            cwms_t_ztsv_array := cwms_t_ztsv_array();
+   l_local_times    cwms_t_date_table := cwms_t_date_table();
+   l_utc_times      cwms_t_date_table := cwms_t_date_table();
+begin
+   cwms_loc.store_location(
+      p_location_id	=> cwms_util.split_text(l_cwms_ts_id, 1, '.'),
+      p_time_zone_id => l_time_zone,
+      p_db_office_id => c_office_id);
+   ----------------------------
+   -- create the time series --
+   ----------------------------
+   l_zts.extend(l_value_count);
+   l_local_times.extend(l_value_count);
+   l_utc_times.extend(l_value_count);
+   for i in 1..l_value_count loop
+      l_local_times(i) := l_start_time + i - 1;
+      l_utc_times(i) := cwms_util.change_timezone(l_local_times(i), l_time_zone, 'UTC');
+      l_zts(i) := cwms_t_ztsv(l_utc_times(i), i, 3);
+      if l_dump_values then
+         dbms_output.put_line(
+            i
+            ||chr(9)||l_zts(i).date_time
+            ||chr(9)||l_zts(i).value
+            ||chr(9)||l_zts(i).quality_code);
+      end if;
+   end loop;
+   ---------------------------
+   -- store the time series --
+   ---------------------------
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => l_cwms_ts_id,
+      p_units           => c_ts_unit,
+      p_timeseries_data => l_zts,
+      p_store_rule      => cwms_util.replace_all,
+      p_override_prot   => 'T',
+      p_version_date    => cwms_util.non_versioned,
+      p_office_id       => c_office_id,
+      p_create_as_lrts  => 'T');
+   ------------------------------
+   -- retrieve the data in UTC --
+   ------------------------------
+   cwms_ts.retrieve_ts(
+      p_at_tsv_rc      => l_crsr,
+      p_cwms_ts_id     => l_cwms_ts_id,
+      p_units          => c_ts_unit,
+      p_start_time     => l_zts(1).date_time - 1,
+      p_end_time       => l_zts(l_zts.count).date_time + 1,
+      p_time_zone      => 'UTC',
+      p_trim           => 'T',
+      p_office_id      => c_office_id);
+   fetch l_crsr
+    bulk collect
+    into l_date_times,
+         l_values,
+         l_quality_codes;
+   close l_crsr;
+   if l_dump_values then
+      dbms_output.put_line(chr(10));
+      for i in 1..l_date_times.count loop
+         dbms_output.put_line(
+            i
+            ||chr(9)||l_date_times(i)
+            ||chr(9)||to_number(l_values(i))
+            ||chr(9)||l_quality_codes(i));
+      end loop;
+   end if;
+   -----------------------------------
+   -- compare with expected results --
+   -----------------------------------
+   ut.expect(l_date_times.count).to_equal(l_zts.count);
+   if l_date_times.count = l_zts.count then
+      for i in 1..l_date_times.count loop
+         ut.expect(l_date_times(i)).to_equal(l_utc_times(i));
+      end loop;
+   end if;
+   ----------------------------------------------
+   -- retrieve the data in the local time zone --
+   ----------------------------------------------
+   cwms_ts.retrieve_ts(
+      p_at_tsv_rc    => l_crsr,
+      p_cwms_ts_id   => l_cwms_ts_id,
+      p_units        => c_ts_unit,
+      p_start_time   => l_zts(1).date_time - 1,
+      p_end_time     => l_zts(l_zts.count).date_time + 1,
+      p_time_zone    => l_time_zone,
+      p_trim         => 'T',
+      p_office_id    => c_office_id);
+   fetch l_crsr
+    bulk collect
+    into l_date_times,
+         l_values,
+         l_quality_codes;
+   close l_crsr;
+   dbms_output.put_line(chr(10));
+   if l_dump_values then
+      dbms_output.put_line(chr(10));
+      for i in 1..l_date_times.count loop
+         dbms_output.put_line(
+            i
+            ||chr(9)||l_date_times(i)
+            ||chr(9)||to_number(l_values(i))
+            ||chr(9)||l_quality_codes(i));
+      end loop;
+   end if;
+   -----------------------------------
+   -- compare with expected results --
+   -----------------------------------
+   ut.expect(l_date_times.count).to_equal(l_zts.count);
+   if l_date_times.count = l_zts.count then
+      for i in 1..l_date_times.count loop
+         ut.expect(l_date_times(i)).to_equal(l_local_times(i));
+      end loop;
+   end if;
+end test_cwdb_153;
 
 end test_lrts_updates;
 /
