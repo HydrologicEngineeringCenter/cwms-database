@@ -2260,9 +2260,11 @@ AS
                              p_next              IN     BOOLEAN,
                              p_trim              IN     BOOLEAN)
    IS
-      l_start_time   DATE := p_start_time;
-      l_end_time     DATE := p_end_time;
-      l_temp_time    DATE;
+      l_start_time    DATE := p_start_time;
+      l_end_time      DATE := p_end_time;
+      l_temp_time     DATE;
+      l_location_code INTEGER;
+      l_local_tz      VARCHAR2(28);
    BEGIN
       --
       -- handle inclusive/exclusive by adjusting start/end times inward
@@ -2358,21 +2360,39 @@ AS
             p_reg_start_time := NULL;
             p_reg_end_time := NULL;
          else
-            p_reg_start_time := top_of_interval_utc(
-               p_date_time        => case when p_is_lrts then cwms_util.change_timezone(l_start_time, 'UTC', p_time_zone) else l_start_time end,
-               p_interval         => p_interval,
-               p_interval_offset  => case when p_offset = cwms_util.utc_offset_undefined then null else p_offset end,
-               p_next             => 'T');
-
-            p_reg_end_time := top_of_interval_utc(
-               p_date_time        => case when p_is_lrts then cwms_util.change_timezone(l_end_time, 'UTC', p_time_zone) else l_end_time end,
-               p_interval         => p_interval,
-               p_interval_offset  => case when p_offset = cwms_util.utc_offset_undefined then null else p_offset end,
-               p_next             => 'F');
-
             if p_is_lrts then
-               p_reg_start_time := cwms_util.change_timezone(p_reg_start_time, p_time_zone, 'UTC');
-               p_reg_end_time   := cwms_util.change_timezone(p_reg_end_time,   p_time_zone, 'UTC');
+               select location_code
+                 into l_location_code
+                 from at_cwms_ts_spec
+                where ts_code = p_ts_code;
+
+               l_local_tz := cwms_loc.get_local_timezone(l_location_code);
+               p_reg_start_time := top_of_interval_utc(
+                  p_date_time        => cwms_util.change_timezone(l_start_time, 'UTC', l_local_tz),
+                  p_interval         => p_interval,
+                  p_interval_offset  => case when p_offset = cwms_util.utc_offset_undefined then null else p_offset end,
+                  p_next             => 'T');
+
+               p_reg_end_time := top_of_interval_utc(
+                  p_date_time        => cwms_util.change_timezone(l_end_time, 'UTC', l_local_tz),
+                  p_interval         => p_interval,
+                  p_interval_offset  => case when p_offset = cwms_util.utc_offset_undefined then null else p_offset end,
+                  p_next             => 'F');
+
+               p_reg_start_time := cwms_util.change_timezone(p_reg_start_time, l_local_tz, 'UTC');
+               p_reg_end_time   := cwms_util.change_timezone(p_reg_end_time,   l_local_tz, 'UTC');
+            else
+               p_reg_start_time := top_of_interval_utc(
+                  p_date_time        => l_start_time,
+                  p_interval         => p_interval,
+                  p_interval_offset  => case when p_offset = cwms_util.utc_offset_undefined then null else p_offset end,
+                  p_next             => 'T');
+
+               p_reg_end_time := top_of_interval_utc(
+                  p_date_time        => l_end_time,
+                  p_interval         => p_interval,
+                  p_interval_offset  => case when p_offset = cwms_util.utc_offset_undefined then null else p_offset end,
+                  p_next             => 'F');
             end if;
          end if;
       end if;
@@ -2413,6 +2433,7 @@ AS
       l_cwms_ts_id        VARCHAR2(191);
       l_units             VARCHAR2 (16);
       l_time_zone         VARCHAR2 (28);
+      l_local_time_zone   VARCHAR2 (28);
       l_base_parameter_id VARCHAR2(16);
       l_trim              BOOLEAN;
       l_start_inclusive   BOOLEAN;
@@ -2590,10 +2611,7 @@ AS
                --
                -- local regular time series (LRTS)
                --
-               l_start_time     := cwms_util.change_timezone(l_start_time,     'UTC', l_time_zone);
-               l_end_time       := cwms_util.change_timezone(l_end_time,       'UTC', l_time_zone);
-               l_reg_start_time := cwms_util.change_timezone(l_reg_start_time, 'UTC', l_time_zone);
-               l_reg_end_time   := cwms_util.change_timezone(l_reg_end_time,   'UTC', l_time_zone);
+               l_local_time_zone := cwms_loc.get_local_timezone(l_location_code);
                IF MOD (l_interval, 30) = 0 OR MOD (l_interval, 365) = 0
                THEN
                   --
@@ -2679,11 +2697,11 @@ AS
                              right outer join
                              (select date_time
                                 from (select local_time,
-                                             cwms_util.change_timezone(local_time, :l_time_zone, ''UTC'') date_time
-                                        from (select :reg_start + (level-1) * :interval local_time
+                                             cwms_util.change_timezone(local_time, :local_time_zone, ''UTC'') date_time
+                                        from (select cwms_util.change_timezone(:reg_start, ''UTC'', :local_time_zone) + (level-1) * :interval local_time
                                                 from dual
-                                             connect by level <= round((:reg_end
-                                                                      - :reg_start) / :interval + 1)
+                                             connect by level <= round((cwms_util.change_timezone(:reg_end, ''UTC'', :local_time_zone)
+                                                                      - cwms_util.change_timezone(:reg_start, ''UTC'', :local_time_zone)) / :interval + 1)
                                              )
                                      )
                                where date_time is not null
@@ -2699,11 +2717,14 @@ AS
                            l_units,
                            l_reg_end_time,
                            l_reg_start_time,
-                           l_time_zone,
+                           l_local_time_zone,
                            l_reg_start_time,
+                           l_local_time_zone,
                            l_interval,
                            l_reg_end_time,
+                           l_local_time_zone,
                            l_reg_start_time,
+                           l_local_time_zone,
                            l_interval;
                END IF;
             ELSE
