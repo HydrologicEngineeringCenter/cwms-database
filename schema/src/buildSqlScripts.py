@@ -5934,35 +5934,50 @@ def main() :
     -- create user for UPASS Admin 
     create user &eroc.hectest_up identified by "&test_passwd";
     grant execute on cwms_upass to &eroc.hectest_up;
-    grant connect to &eroc.hectest_up;
+    grant create session to &eroc.hectest_up;
+    grant set container to &eroc.hectest_up;
     create user &eroc.hectest identified by "&test_passwd";
-    grant connect to &eroc.hectest;
+    grant create session to &eroc.hectest;
+    grant set container to &eroc.hectest;
     create user &eroc.hectest_ro identified by "&test_passwd";
-    grant connect to &eroc.hectest_ro;
+    grant create session to &eroc.hectest_ro;
+    grant set container to &eroc.hectest_ro;
     create user &eroc.hectest_db identified by "&test_passwd";
-    grant connect to &eroc.hectest_db;
+    grant create session to &eroc.hectest_db;
+    grant set container to &eroc.hectest_db;
     create user &eroc.hectest_ua identified by "&test_passwd";
-    grant connect to &eroc.hectest_ua;
+    grant create session to &eroc.hectest_ua;
+    grant set container to &eroc.hectest_ua;
     create user &eroc.hectest_pu identified by "&test_passwd";
-    grant connect to &eroc.hectest_pu;
+    grant create session to &eroc.hectest_pu;
+    grant set container to &eroc.hectest_pu;
     create user &eroc.hectest_dx identified by "&test_passwd";
-    grant connect to &eroc.hectest_dx;
+    grant create session to &eroc.hectest_dx;
+    grant set container to &eroc.hectest_dx;
     create user &eroc.hectest_da identified by "&test_passwd";
-    grant connect to &eroc.hectest_da;
+    grant create session to &eroc.hectest_da;
+    grant set container to &eroc.hectest_da;
     create user &eroc.hectest_vt identified by "&test_passwd";
-    grant connect to &eroc.hectest_vt;
+    grant create session to &eroc.hectest_vt;
+    grant set container to &eroc.hectest_vt;
     create user &eroc.hectest_dv identified by "&test_passwd";
-    grant connect to &eroc.hectest_dv;
+    grant create session to &eroc.hectest_dv;
+    grant set container to &eroc.hectest_dv;
     create user &eroc.hectest_ccp_p identified by "&test_passwd";
-    grant connect to &eroc.hectest_ccp_p;
+    grant create session to &eroc.hectest_ccp_p;
+    grant set container to &eroc.hectest_ccp_p;
     create user &eroc.hectest_ccp_m identified by "&test_passwd";
-    grant connect to &eroc.hectest_ccp_m;
+    grant create session to &eroc.hectest_ccp_m;
+    grant set container to &eroc.hectest_ccp_m;
     create user &eroc.hectest_ccp_r identified by "&test_passwd";
-    grant connect to &eroc.hectest_ccp_r;
+    grant create session to &eroc.hectest_ccp_r;
+    grant set container to &eroc.hectest_ccp_r;
     create user &eroc.hectest_rdl_r identified by "&test_passwd";
-    grant connect to &eroc.hectest_rdl_r;
+    grant create session to &eroc.hectest_rdl_r;
+    grant set container to &eroc.hectest_rdl_r;
     create user &eroc.hectest_rdl_m identified by "&test_passwd";
-    grant connect to &eroc.hectest_rdl_m;
+    grant create session to &eroc.hectest_rdl_m;
+    grant set container to &eroc.hectest_rdl_m;
     '''
 
     test_user_template = '''
@@ -6043,7 +6058,8 @@ def main() :
 
     drop user &eroc.cwmspd;
     create user &eroc.cwmspd identified by "&pd_passwd";
-    grant connect to &eroc.cwmspd;
+    grant create session to &eroc.cwmspd;
+    grant set container to &eroc.cwmspd;
     '''
 
     user_template = '''
@@ -6072,33 +6088,16 @@ def main() :
     /
     '''
 
-    ex_queue_template = '''
-       dbms_aqadm.create_queue_table(
-          queue_table        => '%s_ex_table',
-          queue_payload_type => 'sys.aq$_jms_map_message',
-          storage_clause        =>  'tablespace %s',
-          multiple_consumers => true);
-
-       dbms_aqadm.create_queue(
-          queue_name  => '%s_ex',
-          queue_type  =>   sys.dbms_aqadm.exception_queue,
-          queue_table => '%s_ex_table');
-
-       dbms_aqadm.start_queue(queue_name => '%s_ex',enqueue=>false,dequeue=>true);
-    '''
     queue_template = '''
-       dbms_aqadm.create_queue_table(
-          queue_table        => '%s_%s_table',
-          queue_payload_type => 'sys.aq$_jms_map_message',
-          storage_clause        =>  'tablespace %s',
-          multiple_consumers => true);
+        
+        BEGIN
 
-       dbms_aqadm.create_queue(
-          queue_name  => '%s_%s',
-          queue_table => '%s_%s_table');
+            "&cwms_schema"."CWMS_MSG"."CREATE_QUEUES" ('%s');
+            "&cwms_schema"."CWMS_MSG"."CREATE_EXCEPTION_QUEUE" ('%s');
 
-       dbms_aqadm.start_queue(queue_name => '%s_%s');
-    '''
+        END;
+        /
+        '''
 
     #==============================================================================
 
@@ -6139,13 +6138,9 @@ def main() :
 
     sys.stderr.write("Creating py_Queues.sql\n")
     f = open("py_Queues.sql", "w")
-    f.write("set define off\nbegin")
     for office_id in office_ids :
         id = office_id.lower()
-        f.write(ex_queue_template % (id,aqExTableSpaceName,id,id,id))
-        for q in ("realtime_ops", "status", "ts_stored") :
-            f.write(queue_template % (id,q,aqTableSpaceName,id,q,id,q,id,q))
-    f.write("end;\n/\ncommit;\n")
+        f.write(queue_template % (id,id))
     f.close()
 
     #==============================================================================

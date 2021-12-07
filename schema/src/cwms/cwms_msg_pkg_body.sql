@@ -1863,6 +1863,12 @@ BEGIN
          enqueue      => TRUE,
          dequeue      => TRUE);
       DBMS_OUTPUT.put_line ('Started queue ' || l_queue_name);
+      -- Grant enqueue/dequeue privilege to CWMS_USER role
+      sys.DBMS_AQADM.grant_queue_privilege(
+	 privilege => 'ALL',
+	 queue_name => '&cwms_schema..' || l_queue_name,
+	 grantee  => 'CWMS_USER',
+	 grant_option => FALSE);
    END LOOP;
 END create_queues;
 

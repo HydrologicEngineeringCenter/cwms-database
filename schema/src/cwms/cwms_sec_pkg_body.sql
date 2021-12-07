@@ -938,6 +938,7 @@ AS
     IS
         group_exists   EXCEPTION;
         PRAGMA EXCEPTION_INIT (group_exists, -20998);
+        l_sql_string VARCHAR2(128); 
     BEGIN
         confirm_cwms_schema_user;
 
@@ -976,6 +977,12 @@ AS
         END LOOP;
 
         create_logon_trigger (p_username);
+        l_sql_string :=
+            'GRANT CWMS_USER TO ' || DBMS_ASSERT.simple_sql_name (p_username);
+        --DBMS_OUTPUT.put_line (l_sql_string);
+        cwms_util.check_dynamic_sql (l_sql_string);
+
+        EXECUTE IMMEDIATE l_sql_string;
         cwms_dba.cwms_user_admin.grant_cwms_permissions (p_username);
         COMMIT;
     END add_read_only_user_all_offices;
@@ -1059,6 +1066,7 @@ AS
         l_count             NUMBER;
         l_user_exists       BOOLEAN;
         l_msg               VARCHAR2(1024);
+	l_sql_string        VARCHAR2(128);
     BEGIN
         confirm_user_admin_priv (l_db_office_code);
 
@@ -1148,6 +1156,12 @@ AS
         if(l_user_exists) 
         then
             create_logon_trigger (p_username);
+            l_sql_string :=
+            	'GRANT CWMS_USER TO ' || DBMS_ASSERT.simple_sql_name (p_username);
+            --DBMS_OUTPUT.put_line (l_sql_string);
+           cwms_util.check_dynamic_sql (l_sql_string);
+
+            EXECUTE IMMEDIATE l_sql_string;
             cwms_dba.cwms_user_admin.grant_cwms_permissions(p_username);
         end if;
 

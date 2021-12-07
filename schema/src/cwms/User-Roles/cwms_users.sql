@@ -13,10 +13,11 @@ alter user &cwms_schema quota unlimited on CWMS_20DATA;
 alter user &cwms_schema quota unlimited on CWMS_AQ;
 alter user &cwms_schema quota unlimited on CWMS_AQ_EX;
 
-grant aq_administrator_role to &cwms_schema;
-grant aq_user_role to &cwms_schema;
+--grant aq_administrator_role to &cwms_schema;
+--grant aq_user_role to &cwms_schema;
 
-grant javauserpriv to &cwms_schema;
+grant create role to &cwms_schema;
+--grant javauserpriv to &cwms_schema;
 grant alter any index to &cwms_schema;
 grant alter any indextype to &cwms_schema;
 grant alter any materialized view to &cwms_schema;
@@ -100,7 +101,7 @@ grant select any table to &cwms_schema;
 grant select on  sys.v_$latch to &cwms_schema;
 grant select on  sys.v_$mystat to &cwms_schema;
 grant select on  sys.v_$statname to &cwms_schema;
-grant select on  sys.v_$timer to &cwms_schema;
+--grant select on  sys.v_$timer to &cwms_schema;
 grant update any table to &cwms_schema;
 
 -- These privileges are added as they are dervied from 'PUBLIC' user before. 
