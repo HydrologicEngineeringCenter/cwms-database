@@ -2398,6 +2398,129 @@ AS
       end if;
    END setup_retrieve;
 
+   FUNCTION get_lrts_times_utc(
+      p_start_time_utc  in date,
+      p_end_time_utc    in date,
+      p_interval        in number,
+      p_local_time_zone in varchar2)
+      return date_table_type deterministic
+   is
+      l_utc_times       date_table_type := date_table_type();
+      l_local_time      date;
+      l_local_time_prev date;
+      l_utc_time        date;
+      l_utc_time_tmp    date;
+      l_dst_offset      number;
+      l_fraction        number;
+      l_month_interval  integer;
+      l_first           boolean;
+      l_exists          char(1);
+   begin
+      select cwms_util.dsinterval_to_minutes(dst_offset) / 1440
+        into l_dst_offset
+        from cwms_time_zone
+       where time_zone_name = cwms_util.get_time_zone_name(p_local_time_zone);
+      if mod(p_interval, 30) = 0 or mod(p_interval, 365) = 0 then
+         if mod(p_interval, 30) = 0 then
+            l_month_interval := p_interval / 30;
+         else
+            l_month_interval := p_interval / 365 * 12;
+         end if;
+      end if;
+      l_utc_time := p_start_time_utc;
+      if l_month_interval is null then
+         ------------------------------------------------------------------
+         -- use date/time arithmetic                                     --
+         --                                                              --
+         -- here the interals can be on the same order as the DST offset --
+         -- so we have to worry about making sure we capture every valid --
+         -- UTC time in the area of the overlapped local time period     --
+         ------------------------------------------------------------------
+         l_first := true;
+         loop
+            l_local_time := cwms_util.change_timezone(l_utc_time, 'UTC', p_local_time_zone);
+            l_utc_time := cwms_util.change_timezone(l_local_time, p_local_time_zone, 'UTC');
+            if not l_first then
+               l_fraction := (l_local_time - l_local_time_prev) / p_interval;
+               if trunc(l_fraction) != l_fraction then
+                  ----------------------------------------------------------------
+                  -- adding the interval to the previous UTC time resulted in a --
+                  -- local time that isn't on the interval, so make the local   --
+                  -- time be on the interval and compute the UTC time from it   --
+                  ----------------------------------------------------------------
+                  l_local_time := l_local_time_prev + p_interval;
+                  l_utc_time := cwms_util.change_timezone(l_local_time, p_local_time_zone, 'UTC');
+                  l_utc_time_tmp := l_utc_time - l_dst_offset;
+                  if cwms_util.change_timezone(l_utc_time_tmp, 'UTC', p_local_time_zone) = l_local_time then
+                     l_utc_time := l_utc_time_tmp;
+                  end if;
+               else
+                  l_utc_time_tmp := l_utc_time - l_dst_offset;
+                  if cwms_util.change_timezone(l_utc_time_tmp, 'UTC', p_local_time_zone) = l_local_time then
+                     ----------------------------------------------------------------------------------------
+                     -- time is in the overlapped local time period (2 valid UTC times for the local time) --
+                     -- so choose the earlier UTC time unless it's already in the results                  --
+                     ----------------------------------------------------------------------------------------
+                     l_exists := 'F';
+                     begin
+                        select 'T'
+                          into l_exists
+                          from dual
+                         where exists (select column_value
+                                         from table(l_utc_times)
+                                        where column_value = l_utc_time_tmp
+                                      );
+                     exception
+                        when no_data_found then null;
+                     end;
+                     if l_exists = 'F' then
+                        l_utc_time := l_utc_time_tmp;
+                     end if;
+                  end if;
+               end if;
+            end if;
+            ----------------------------------------------------------------
+            -- delay exit until here because the test variable may be     --
+            -- recomputed between the top of the loop and here            --
+            ----------------------------------------------------------------
+            exit when l_utc_time > p_end_time_utc;
+            if l_utc_time is null then
+               ----------------------------------------------------------------------------
+               -- only happens when UTC time is computed from an invalid local time (any --
+               -- time in the missing local time hour of the spring DST transition)      --
+               ----------------------------------------------------------------------------
+               l_utc_time := cwms_util.change_timezone(l_local_time + p_interval, p_local_time_zone, 'UTC');
+            else
+               l_utc_times.extend;
+               l_utc_times(l_utc_times.count) := l_utc_time;
+               l_utc_time := l_utc_time + p_interval;
+            end if;
+            -------------------------------
+            -- set up for next iteration --
+            -------------------------------
+            l_local_time_prev := l_local_time;
+            l_first := false;
+         end loop;
+      else
+         --------------------------------------------------------------
+         -- use calendar math                                        --
+         --                                                          --
+         -- here the intervals are guaranteed to be so much greater  --
+         -- than the DST offset that we don't need to worry about it --
+         --------------------------------------------------------------
+         l_local_time := cwms_util.change_timezone(l_utc_time,   'UTC', p_local_time_zone);
+         loop
+            l_utc_time := cwms_util.change_timezone(l_local_time, p_local_time_zone, 'UTC');
+            exit when l_utc_time > p_end_time_utc;
+            if l_utc_time is not null then
+               l_utc_times.extend;
+               l_utc_times(l_utc_times.count) := l_utc_time;
+            end if;
+            l_local_time := add_months(l_local_time, l_month_interval);
+         end loop;
+      end if;
+      return l_utc_times;
+   end get_lrts_times_utc;
    --
    --*******************************************************************   --
    --*******************************************************************   --
@@ -2612,121 +2735,43 @@ AS
                -- local regular time series (LRTS)
                --
                l_local_time_zone := cwms_loc.get_local_timezone(l_location_code);
-               IF MOD (l_interval, 30) = 0 OR MOD (l_interval, 365) = 0
-               THEN
-                  --
-                  -- must use calendar math
-                  --
-                  -- change interval from days to months
-                  --
-                  IF MOD (l_interval, 30) = 0
-                  THEN
-                     l_interval := l_interval / 30;
-                  ELSE
-                     l_interval := l_interval / 365 * 12;
-                  END IF;
+               l_query_str :=
+                  'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
+                           case
+                              when value is nan then null
+                              else value + :value_offset
+                           end "VALUE",
+                           cwms_ts.normalize_quality(nvl(quality_code, :missing)) "QUALITY_CODE"
+                     from (
+                           select date_time,
+                                 max(value) keep(dense_rank :first_or_last order by version_date) "VALUE",
+                                 max(quality_code) keep(dense_rank :first_or_last order by version_date) "QUALITY_CODE"
+                              from av_tsv_dqu
+                           where ts_code    =  :ts_code
+                              and unit_id    =  :units
+                              and start_date <= :reg_end
+                              and end_date   >  :reg_start
+                           group by date_time
+                           ) v
+                           right outer join
+                           (select column_value as date_time
+                              from table(cwms_ts.get_lrts_times_utc(:reg_start, :reg_end, :interval, :local_timezone))
+                           ) t
+                           on v.date_time = t.date_time
+                     order by t.date_time asc';
+               replace_strings;
 
-                  l_query_str :=
-                     'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
-                         case
-                            when value is nan then null
-                            else value + :l_value_offset
-                         end "VALUE",
-                         cwms_ts.normalize_quality(nvl(quality_code, :missing)) "QUALITY_CODE"
-                    from (
-                         select date_time,
-                                max(value) keep(dense_rank :first_or_last order by version_date) "VALUE",
-                                max(quality_code) keep(dense_rank :first_or_last order by version_date) "QUALITY_CODE"
-                           from av_tsv_dqu
-                          where ts_code    =  :ts_code
-                            and unit_id    =  :units
-                            and start_date <= :reg_l_end
-                            and end_date   >  :l_reg_start_time
-                       group by date_time
-                         ) v
-                         right outer join
-                         (select date_time
-                           from (select cwms_util.change_timezone(add_months(:reg_start, (level-1) * :interval), :l_time_zone, ''UTC'') date_time
-                                   from dual
-                                connect by level <= months_between(:reg_end,
-                                                                   :reg_start) / :interval + 1
-                                )
-                          where date_time is not null
-                         ) t
-                         on v.date_time = t.date_time
-                         order by t.date_time asc';
-                  replace_strings;
-                  cwms_util.check_dynamic_sql(l_query_str);
-
-                  OPEN l_cursor FOR l_query_str
-                     USING l_value_offset,
-                           l_missing,
-                           l_ts_code,
-                           l_units,
-                           l_reg_end_time,
-                           l_reg_start_time,
-                           l_reg_start_time,
-                           l_interval,
-                           l_time_zone,
-                           l_reg_start_time,
-                           l_reg_end_time,
-                           l_reg_start_time,
-                           l_interval;
-               ELSE
-                  --
-                  -- can use date arithmetic
-                  --
-                  l_query_str :=
-                     'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
-                             case
-                                when value is nan then null
-                                else value + :l_value_offset
-                             end "VALUE",
-                             cwms_ts.normalize_quality(nvl(quality_code, :missing)) "QUALITY_CODE"
-                        from (
-                             select date_time,
-                                    max(value) keep(dense_rank :first_or_last order by version_date) "VALUE",
-                                    max(quality_code) keep(dense_rank :first_or_last order by version_date) "QUALITY_CODE"
-                               from av_tsv_dqu
-                              where ts_code    =  :ts_code
-                                and unit_id    =  :units
-                                and start_date <= :l_reg_end_time
-                                and end_date   >  :l_reg_start_time
-                              group by date_time
-                             ) v
-                             right outer join
-                             (select date_time
-                                from (select local_time,
-                                             cwms_util.change_timezone(local_time, :local_time_zone, ''UTC'') date_time
-                                        from (select cwms_util.change_timezone(:reg_start, ''UTC'', :local_time_zone) + (level-1) * :interval local_time
-                                                from dual
-                                             connect by level <= round((cwms_util.change_timezone(:reg_end, ''UTC'', :local_time_zone)
-                                                                      - cwms_util.change_timezone(:reg_start, ''UTC'', :local_time_zone)) / :interval + 1)
-                                             )
-                                     )
-                               where date_time is not null
-                             ) t
-                             on v.date_time = t.date_time
-                       order by t.date_time asc';
-                  replace_strings;
-
-                  OPEN l_cursor FOR l_query_str
-                     USING l_value_offset,
-                           l_missing,
-                           l_ts_code,
-                           l_units,
-                           l_reg_end_time,
-                           l_reg_start_time,
-                           l_local_time_zone,
-                           l_reg_start_time,
-                           l_local_time_zone,
-                           l_interval,
-                           l_reg_end_time,
-                           l_local_time_zone,
-                           l_reg_start_time,
-                           l_local_time_zone,
-                           l_interval;
-               END IF;
+               OPEN l_cursor FOR l_query_str
+                  USING l_value_offset,
+                        l_missing,
+                        l_ts_code,
+                        l_units,
+                        l_reg_end_time,
+                        l_reg_start_time,
+                        l_reg_start_time,
+                        l_reg_end_time,
+                        l_interval,
+                        l_local_time_zone;
             ELSE
                --
                -- regular time series (RTS)
