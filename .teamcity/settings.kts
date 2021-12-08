@@ -59,12 +59,13 @@ object Build : BuildType({
     name = "Build (create in oracle)"
 
     artifactRules = """
-        build/buildCWMS_DB.log => buildinfo/
-        build/coverage.zip => /
-        build/resources => resources.zip
-        build/resources.jar =>
-        build/docs.zip =>
+        schema/build/buildCWMS_DB.log => buildinfo/
+        schema/build/coverage.zip => /
+        schema/build/resources => resources.zip
+        schema/build/resources.jar =>
+        schema/build/docs.zip =>
     """.trimIndent()
+
 
     params {
         param("env.OFFICE_CODE", "e1")
