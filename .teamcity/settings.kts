@@ -174,7 +174,7 @@ object Build : BuildType({
             comparison = BuildFailureOnMetric.MetricComparison.MORE
             compareTo = value()
             stopBuildOnFailure = true
-            param("metricThreshold", "20MB")
+            param("metricThreshold", "100MB")
         }
     }
 
