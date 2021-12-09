@@ -15,7 +15,7 @@ spool buildCWMS_DB.log
 --
 -- log on as builduser
 --
-connect builduser/&builduser_passwd@&inst 
+connect &builduser/&builduser_passwd@&inst 
 --ALTER SYSTEM ENABLE RESTRICTED SESSION;
 --
 --
@@ -28,9 +28,15 @@ set echo &echo_state
 -- create user roles and users
 --
 @@cwms/User-Roles/cwms_user_profile
-@@cwms/User-Roles/cwms_user_roles
 @@cwms/User-Roles/cwms_users
 @@cwms/User-Roles/cwms_dba_user
+
+-- Make &cwms_schema user owner of CWMS_USER role so that it can be granted to other users
+connect &cwms_schema/&cwms_passwd@&inst
+@@cwms/User-Roles/cwms_user_role_create
+-- Add system grants to CWMS_USER as build user 
+connect &builduser/&builduser_passwd@&inst 
+@@cwms/User-Roles/cwms_user_role_grant_system
 
 --
 @@cwms_dba/cwms_user_admin_pkg
@@ -175,14 +181,14 @@ begin
 end;
 /
 alter session set current_schema = &builduser
--- Create CWMS_DBXC_ROLE
 
 -- create CWMS service user
 begin execute immediate 'create user ' || cwms_sec.cac_service_user || ' PROFILE CWMS_PROF IDENTIFIED BY values ''FEDCBA9876543210'' '; end; 
 /
-begin execute immediate 'grant connect to ' || cwms_sec.cac_service_user; end; 
+-- Replace connect to role with create session/set container for RDS compatibility
+begin execute immediate 'grant create session to ' || cwms_sec.cac_service_user; end; 
 /
-begin execute immediate 'grant cwms_user to ' || cwms_sec.cac_service_user; end; 
+begin execute immediate 'grant set container to ' || cwms_sec.cac_service_user; end; 
 /
 
 set echo off
@@ -195,8 +201,11 @@ set echo off
 set define on
 prompt Connecting as &cwms_schema
 connect &cwms_schema/&cwms_passwd@&inst
+begin execute immediate 'grant cwms_user to ' || cwms_sec.cac_service_user; end; 
+/
 set serveroutput on
 prompt Connected as &cwms_schema
+grant execute on cwms_util to cwms_dba;
 alter session set ddl_lock_timeout = 100;
 --
 -- Create pd/test user accounts...

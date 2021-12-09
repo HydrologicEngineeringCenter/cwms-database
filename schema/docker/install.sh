@@ -81,6 +81,7 @@ echo "Installing CWMS Schema"
 cd /cwmsdb
 ant -Dbuilduser.overrides=/overrides.xml clean build
 cat src/buildCWMS_DB.log
+cat *.txt
 if [ $? -eq 0 ]; then
     echo "CWMS USER PASSWORD: $CWMS_PASSWORD"
     exit 0

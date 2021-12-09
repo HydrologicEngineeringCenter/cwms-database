@@ -13,10 +13,11 @@ alter user &cwms_schema quota unlimited on CWMS_20DATA;
 alter user &cwms_schema quota unlimited on CWMS_AQ;
 alter user &cwms_schema quota unlimited on CWMS_AQ_EX;
 
-grant aq_administrator_role to &cwms_schema;
-grant aq_user_role to &cwms_schema;
+--grant aq_administrator_role to &cwms_schema;
+--grant aq_user_role to &cwms_schema;
 
-grant javauserpriv to &cwms_schema;
+grant create role to &cwms_schema;
+--grant javauserpriv to &cwms_schema;
 grant alter any index to &cwms_schema;
 grant alter any indextype to &cwms_schema;
 grant alter any materialized view to &cwms_schema;
@@ -100,7 +101,7 @@ grant select any table to &cwms_schema;
 grant select on  sys.v_$latch to &cwms_schema;
 grant select on  sys.v_$mystat to &cwms_schema;
 grant select on  sys.v_$statname to &cwms_schema;
-grant select on  sys.v_$timer to &cwms_schema;
+--grant select on  sys.v_$timer to &cwms_schema;
 grant update any table to &cwms_schema;
 
 -- These privileges are added as they are dervied from 'PUBLIC' user before. 
@@ -129,36 +130,48 @@ begin
    --
    -- grant network address lookup privilege
    --
-   dbms_network_acl_admin.add_privilege(
+   /*dbms_network_acl_admin.add_privilege(
       acl         => 'resolve.xml',
       principal   => upper('&cwms_schema'),
       is_grant    => true,
-      privilege   => 'resolve');
+      privilege   => 'resolve');*/
 end;
 /
+declare
+   privilege_not_granted exception;
+   pragma exception_init(privilege_not_granted, -1927);
 
 begin
    --
-   -- grant http connect privilege
+   -- grant network privilege
    --
-   begin
-      dbms_network_acl_admin.drop_acl('www.xml');
-   exception
-      when others then null;
-   end;
-   dbms_network_acl_admin.create_acl(
-      acl         => 'www.xml', 
-      description => 'WWW ACL', 
-      principal   => '&cwms_schema', 
-      is_grant    => true, 
-      privilege   => 'connect');    
-   dbms_network_acl_admin.add_privilege(     
-      acl         => 'www.xml', 
-      principal   => '&cwms_schema', 
-      is_grant    => true, 
-      privilege   => 'resolve');
-   dbms_network_acl_admin.assign_acl(
-      acl  => 'www.xml',
-      host => '*');      
+     ----------------------------------------
+      -- remove existing ACEs if they exist --
+      ----------------------------------------
+      begin
+         dbms_network_acl_admin.remove_host_ace(
+            host => '*',
+            ace  => xs$ace_type(
+               privilege_list   => xs$name_list('resolve','connect','http','smtp'),
+               granted          => true,
+               principal_name   => '&cwms_schema',
+               principal_type   => xs_acl.ptype_db),
+            remove_empty_acl => true);
+      exception
+         when privilege_not_granted then null;
+      end;
+      commit;
+     ---------------------------------------------------------------
+      -- grant 'resolve', 'connect', 'http', and 'smpt' to CWMS_20 --
+      ---------------------------------------------------------------
+      dbms_network_acl_admin.append_host_ace(
+         host => '*',
+         ace  => xs$ace_type(
+            privilege_list => xs$name_list('resolve','connect','http','smtp'),
+            granted        => true,
+            principal_name => '&cwms_schema',
+            principal_type  => xs_acl.ptype_db));
+       commit;
+
 end;
 /
