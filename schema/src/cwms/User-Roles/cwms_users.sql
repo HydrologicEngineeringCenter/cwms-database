@@ -130,11 +130,11 @@ begin
    --
    -- grant network address lookup privilege
    --
-   dbms_network_acl_admin.add_privilege(
+   /*dbms_network_acl_admin.add_privilege(
       acl         => 'resolve.xml',
       principal   => upper('&cwms_schema'),
       is_grant    => true,
-      privilege   => 'resolve');
+      privilege   => 'resolve');*/
 end;
 /
 
