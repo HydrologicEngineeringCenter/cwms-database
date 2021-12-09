@@ -137,29 +137,41 @@ begin
       privilege   => 'resolve');*/
 end;
 /
+declare
+   privilege_not_granted exception;
+   pragma exception_init(privilege_not_granted, -1927);
 
 begin
    --
-   -- grant http connect privilege
+   -- grant network privilege
    --
-   begin
-      dbms_network_acl_admin.drop_acl('www.xml');
-   exception
-      when others then null;
-   end;
-   dbms_network_acl_admin.create_acl(
-      acl         => 'www.xml', 
-      description => 'WWW ACL', 
-      principal   => '&cwms_schema', 
-      is_grant    => true, 
-      privilege   => 'connect');    
-   dbms_network_acl_admin.add_privilege(     
-      acl         => 'www.xml', 
-      principal   => '&cwms_schema', 
-      is_grant    => true, 
-      privilege   => 'resolve');
-   dbms_network_acl_admin.assign_acl(
-      acl  => 'www.xml',
-      host => '*');      
+     ----------------------------------------
+      -- remove existing ACEs if they exist --
+      ----------------------------------------
+      begin
+         dbms_network_acl_admin.remove_host_ace(
+            host => '*',
+            ace  => xs$ace_type(
+               privilege_list   => xs$name_list('resolve','connect','http','smtp'),
+               granted          => true,
+               principal_name   => '&cwms_schema',
+               principal_type   => xs_acl.ptype_db),
+            remove_empty_acl => true);
+      exception
+         when privilege_not_granted then null;
+      end;
+      commit;
+     ---------------------------------------------------------------
+      -- grant 'resolve', 'connect', 'http', and 'smpt' to CWMS_20 --
+      ---------------------------------------------------------------
+      dbms_network_acl_admin.append_host_ace(
+         host => '*',
+         ace  => xs$ace_type(
+            privilege_list => xs$name_list('resolve','connect','http','smtp'),
+            granted        => true,
+            principal_name => '&cwms_schema',
+            principal_type  => xs_acl.ptype_db));
+       commit;
+
 end;
 /

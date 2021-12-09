@@ -9,25 +9,41 @@ grant set container to cwms_user;
 -- execute on packages granted later
 -- select on views granted later
 
+declare
+   privilege_not_granted exception;
+   pragma exception_init(privilege_not_granted, -1927);
 
 begin
    --
-   -- grant network address resolve privileges (new in Oracle 11)
+   -- grant network address resolve privileges (new in Oracle 12)
    --
-   begin
-      dbms_network_acl_admin.drop_acl('resolve.xml');
-   exception
-      when others then null;
-   end;
-   dbms_network_acl_admin.create_acl(
-      acl         => 'resolve.xml',
-      description => 'resolve acl', 
-      principal   => 'CWMS_USER', 
-      is_grant    => true, 
-      privilege   => 'resolve');
-   dbms_network_acl_admin.assign_acl(
-      acl         => 'resolve.xml', 
-      host        => '*');
+     ----------------------------------------
+      -- remove existing ACEs if they exist --
+      ----------------------------------------
+      begin
+         dbms_network_acl_admin.remove_host_ace(
+            host => '*',
+            ace  => xs$ace_type(
+               privilege_list   => xs$name_list('resolve'),
+               granted          => true,
+               principal_name   => 'CWMS_USER',
+               principal_type   => xs_acl.ptype_db),
+            remove_empty_acl => true);
+      exception
+         when privilege_not_granted then null;
+      end;
+     commit;
+     ----------------------------------
+      -- grant 'resolve' to CWMS_USER --
+      ----------------------------------
+      dbms_network_acl_admin.append_host_ace(
+         host => '*',
+         ace  => xs$ace_type(
+            privilege_list  => xs$name_list('resolve'),
+            granted         => true,
+            principal_name  => 'CWMS_USER',
+            principal_type  => xs_acl.ptype_db));
+     commit;
 end;
 /
 
