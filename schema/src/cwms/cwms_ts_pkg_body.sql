@@ -2416,10 +2416,27 @@ AS
       l_first           boolean;
       l_exists          char(1);
    begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      if p_interval        is null then cwms_err.raise('NULL_ARGUMENT', 'P_Interval');        end if;
+      if p_local_time_zone is null then cwms_err.raise('NULL_ARGUMENT', 'P_Local_time_Zone'); end if;
+      ---------------------------------------
+      -- short circuit on null input times --
+      ---------------------------------------
+      if p_start_time_utc is null or p_end_time_utc is null then
+         return l_utc_times;
+      end if;
+      --------------------
+      -- get DST offset --
+      --------------------
       select cwms_util.dsinterval_to_minutes(dst_offset) / 1440
         into l_dst_offset
         from cwms_time_zone
        where time_zone_name = cwms_util.get_time_zone_name(p_local_time_zone);
+      ------------------------------------
+      -- get interval in days or months --
+      ------------------------------------
       if mod(p_interval, 30) = 0 or mod(p_interval, 365) = 0 then
          if mod(p_interval, 30) = 0 then
             l_month_interval := p_interval / 30;
