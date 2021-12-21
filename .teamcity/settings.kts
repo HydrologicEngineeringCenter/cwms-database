@@ -227,7 +227,7 @@ object TestContainer : BuildType({
             workingDir = "testcontainers"
 
             tasks = "sonarqube"
-            gradleParams = "-Dsonar.login=%system.SONAR_TOKEN% -Dsonar.host.url=https://sonarqube.hecdev.net -Pteamcity.build.branch=%teamcity.build.branch% -Pcwms.image=build-%env.USER% --info -Dcwms.database.syspw=antsyspassword"
+            gradleParams = "-Dsonar.login=%system.SONAR_TOKEN% -Dsonar.host.url=https://sonarqube.hecdev.net -Dorg.gradle.java.home=/usr/lib/jvm/adoptopenjdk-11-hotspot -Pteamcity.build.branch=%teamcity.build.branch% -Pcwms.image=build-%env.USER% --info -Dcwms.database.syspw=antsyspassword"
             jdkHome="%env.JDK_1_8_x64%"
         }
         gradle {

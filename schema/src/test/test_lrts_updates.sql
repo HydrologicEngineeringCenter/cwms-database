@@ -3240,7 +3240,7 @@ is
    l_start_time     date := date '2017-10-16';
    l_value_count    pls_integer := 25;
    l_crsr           sys_refcursor;
-   l_dump_values    boolean := false;
+   l_dump_values    boolean := true;
    l_date_times     cwms_t_date_table;
    l_values         cwms_t_double_tab;
    l_quality_codes  cwms_t_number_tab;
@@ -3248,7 +3248,17 @@ is
    l_utc_times      cwms_t_date_table := cwms_t_date_table();
    l_local_times    cwms_t_date_table := cwms_t_date_table();
    l_nonlocal_times cwms_t_date_table := cwms_t_date_table();
+   l_ts             cwms_t_tsv_array;
+   l_ts_req         cwms_t_timeseries_req_array;
 begin
+   begin
+      cwms_loc.delete_location(
+         p_location_id   => cwms_util.split_text(l_cwms_ts_id, 1, '.'),
+         p_delete_action => cwms_util.delete_all,
+         p_db_office_id  => c_office_id);
+   exception
+      when others then null;
+   end;
    cwms_loc.store_location(
       p_location_id	=> cwms_util.split_text(l_cwms_ts_id, 1, '.'),
       p_time_zone_id => l_local_tz,
@@ -3396,6 +3406,269 @@ begin
          ut.expect(l_date_times(i)).to_equal(l_nonlocal_times(i));
       end loop;
    end if;
+   ---------------------------------------------------------------------------
+   -- specific test for RMA unit test failure
+   ---------------------------------------------------------------------------
+   l_local_tz    := 'America/Los_Angeles';
+   l_start_time  := date '2005-01-01';
+   l_value_count := 31;
+   
+   begin
+      cwms_loc.delete_location(
+         p_location_id   => cwms_util.split_text(l_cwms_ts_id, 1, '.'),
+         p_delete_action => cwms_util.delete_all,
+         p_db_office_id  => c_office_id);
+   exception
+      when others then null;
+   end;
+   cwms_loc.store_location(
+      p_location_id	=> cwms_util.split_text(l_cwms_ts_id, 1, '.'),
+      p_time_zone_id => l_local_tz,
+      p_db_office_id => c_office_id);
+      
+   ----------------------------
+   -- create the time series --
+   ----------------------------
+   l_ts := cwms_t_tsv_array();
+   l_ts.extend(l_value_count);
+   for i in 1..l_value_count loop
+      l_ts(i) := cwms_t_tsv(
+         from_tz(cast(l_start_time+i-1 as timestamp), l_local_tz),
+         i,
+         3);
+   end loop;
+   if l_dump_values then
+      for i in 1..l_value_count loop
+         dbms_output.put_line(i
+         ||chr(9)||l_ts(i).date_time
+         ||chr(9)||l_ts(i).value
+         ||chr(9)||l_ts(i).quality_code);
+      end loop;
+   end if;
+   --------------------
+   -- store the data --
+   --------------------
+   cwms_ts.store_ts(
+      p_cwms_ts_id       => l_cwms_ts_id,
+      p_units            => c_ts_unit,
+      p_timeseries_data  => l_ts,
+      p_store_rule       => cwms_util.replace_all,
+      p_override_prot    => 'F',
+      p_version_date     => cwms_util.non_versioned,
+      p_office_id        => c_office_id,
+      p_create_as_lrts   => 'T');
+      
+   if l_dump_values then
+      -----------------------------------
+      -- select the data from the view --
+      -----------------------------------
+      dbms_output.put_line('Stored data');
+      for rec in (select date_time,
+                         value,
+                         quality_code
+                    from cwms_v_tsv_dqu
+                   where cwms_ts_id = l_cwms_ts_id
+                     and unit_id = c_ts_unit
+                     and start_date = date '2005-01-01'
+                   order by date_time  
+                 )
+      loop
+         dbms_output.put_line(rec.date_time||chr(9)||rec.value||chr(9)||rec.quality_code);
+      end loop;
+   end if;
+
+   declare
+      l_seq_out     integer;
+      l_tsid_out    varchar2(191);
+      l_unit_out    varchar2(16);
+      l_start_out   date;
+      l_end_out     date;
+      l_data_tz_out varchar2(28);
+      l_data_out    sys_refcursor;
+      l_loc_tz_out  varchar2(28);
+      ts1           timestamp;
+      ts2           timestamp;
+   begin
+      ----------------------------------------------------
+      -- retrieve the data with the correct time window --
+      ----------------------------------------------------
+      l_ts_req := cwms_t_timeseries_req_array();
+      l_ts_req.extend;
+      l_ts_req(1) := cwms_t_timeseries_req(
+         l_cwms_ts_id,
+         c_ts_unit,
+         date '2005-01-01',
+         date '2005-02-01');
+      ts1 := systimestamp;   
+      cwms_ts.retrieve_ts_multi(
+         p_at_tsv_rc       => l_crsr,
+         p_timeseries_info => l_ts_req,
+         p_time_zone       => null,
+         p_trim            => 'F',
+         p_start_inclusive => 'T',
+         p_end_inclusive   => 'T',
+         p_previous        => 'F',
+         p_next            => 'F',
+         p_version_date    => null,
+         p_max_version     => 'T',
+         p_office_id       => null);
+      ts2 := systimestamp;   
+      dbms_output.put_line((ts2-ts1));
+      loop
+         fetch l_crsr 
+          into l_seq_out,
+               l_tsid_out,
+               l_unit_out,
+               l_start_out,
+               l_end_out,
+               l_data_tz_out,
+               l_data_out,
+               l_loc_tz_out;
+         exit when l_crsr%notfound; 
+         fetch l_data_out
+          bulk collect
+          into l_date_times,
+               l_values,
+               l_quality_codes;
+         close l_data_out;            
+         if l_dump_values then
+            dbms_output.put_line(l_seq_out
+               ||chr(9)||l_unit_out
+               ||chr(9)||l_start_out
+               ||chr(9)||l_end_out
+               ||chr(9)||l_data_tz_out
+               ||chr(9)||l_loc_tz_out);
+            for i in 1..l_date_times.count loop
+               dbms_output.put_line(null
+                  ||chr(9)||i
+                  ||chr(9)||l_date_times(i)
+                  ||chr(9)||to_number(l_values(i))
+                  ||chr(9)||l_quality_codes(i));
+            end loop;
+         end if;
+         ut.expect(l_date_times.count).to_equal(l_ts.count);
+         if l_date_times.count = l_ts.count then
+            for i in 1..l_date_times.count loop
+               ut.expect(l_date_times(i)).to_equal(cwms_util.change_timezone(cast(l_ts(i).date_time as date), l_local_tz, l_data_tz_out));
+               ut.expect(l_values(i)).to_equal(l_ts(i).value);
+               ut.expect(l_quality_codes(i)).to_equal(l_ts(i).quality_code);
+            end loop;
+         end if;
+      end loop;
+      close l_crsr;      
+      -----------------------------------------------
+      -- retrieve the data with a too early window --
+      -----------------------------------------------
+      l_ts_req(1) := cwms_t_timeseries_req(
+         l_cwms_ts_id,
+         c_ts_unit,
+         date '2004-10-01',
+         date '2004-11-01');
+      ts1 := systimestamp;   
+      cwms_ts.retrieve_ts_multi(
+         p_at_tsv_rc       => l_crsr,
+         p_timeseries_info => l_ts_req,
+         p_time_zone       => null,
+         p_trim            => 'F',
+         p_start_inclusive => 'T',
+         p_end_inclusive   => 'T',
+         p_previous        => 'F',
+         p_next            => 'F',
+         p_version_date    => null,
+         p_max_version     => 'T',
+         p_office_id       => null);
+      ts2 := systimestamp;   
+      dbms_output.put_line((ts2-ts1));
+      loop
+         fetch l_crsr 
+          into l_seq_out,
+               l_tsid_out,
+               l_unit_out,
+               l_start_out,
+               l_end_out,
+               l_data_tz_out,
+               l_data_out,
+               l_loc_tz_out;
+         exit when l_crsr%notfound; 
+         fetch l_data_out
+          bulk collect
+          into l_date_times,
+               l_values,
+               l_quality_codes;
+         close l_data_out;            
+         if l_dump_values then
+            dbms_output.put_line(l_seq_out
+               ||chr(9)||l_unit_out
+               ||chr(9)||l_start_out
+               ||chr(9)||l_end_out
+               ||chr(9)||l_data_tz_out
+               ||chr(9)||l_loc_tz_out);
+         end if;
+         ut.expect(l_date_times.count).to_equal(31);
+         if l_date_times.count = 31 then
+            for i in 1..31 loop
+               ut.expect(l_values(i)).to_be_null;
+            end loop;
+         end if;
+      end loop;
+      close l_crsr;
+      -----------------------------------------------
+      -- retrieve the data with a too late window --
+      -----------------------------------------------
+      l_ts_req(1) := cwms_t_timeseries_req(
+         l_cwms_ts_id,
+         c_ts_unit,
+         date '2005-03-01',
+         date '2005-04-01');
+      ts1 := systimestamp;   
+      cwms_ts.retrieve_ts_multi(
+         p_at_tsv_rc       => l_crsr,
+         p_timeseries_info => l_ts_req,
+         p_time_zone       => null,
+         p_trim            => 'F',
+         p_start_inclusive => 'T',
+         p_end_inclusive   => 'T',
+         p_previous        => 'F',
+         p_next            => 'F',
+         p_version_date    => null,
+         p_max_version     => 'T',
+         p_office_id       => null);
+      ts2 := systimestamp;   
+      dbms_output.put_line((ts2-ts1));
+      loop
+         fetch l_crsr 
+          into l_seq_out,
+               l_tsid_out,
+               l_unit_out,
+               l_start_out,
+               l_end_out,
+               l_data_tz_out,
+               l_data_out,
+               l_loc_tz_out;
+         exit when l_crsr%notfound; 
+         fetch l_data_out
+          bulk collect
+          into l_date_times,
+               l_values,
+               l_quality_codes;
+         close l_data_out;            
+         if l_dump_values then
+            dbms_output.put_line(l_seq_out
+               ||chr(9)||l_unit_out
+               ||chr(9)||l_start_out
+               ||chr(9)||l_end_out
+               ||chr(9)||l_data_tz_out
+               ||chr(9)||l_loc_tz_out);
+         end if;
+         ut.expect(l_date_times.count).to_equal(31);
+         if l_date_times.count = 31 then
+            for i in 1..31 loop
+               ut.expect(l_values(i)).to_be_null;
+            end loop;
+         end if;
+      end loop;
+      close l_crsr;
+   end;
 end test_cwdb_153;
 
 end test_lrts_updates;
