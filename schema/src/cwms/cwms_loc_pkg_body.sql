@@ -7845,7 +7845,6 @@ end unassign_loc_groups;
       l_elevation           binary_double;
       l_elevation_db        binary_double;
       l_fail_if_exists      boolean;
-      l_rounding_spec    varchar2(10) := '4444444449';
    begin
       delete from at_vert_datum_local  where location_code = p_location_code;
       delete from at_vert_datum_offset where location_code = p_location_code;
@@ -7915,7 +7914,7 @@ end unassign_loc_groups;
            into l_elevation_db
            from at_physical_location
           where location_code = p_location_code;
-         if l_elevation_db is not null and abs(cwms_rounding.round_nt_f(l_elevation_db, l_rounding_spec) - l_elevation) > 0.01 then
+         if l_elevation_db is not null and abs(l_elevation_db - l_elevation) > 0.05 then
             cwms_err.raise(
                'ERROR',
                'Specified elevation for '
