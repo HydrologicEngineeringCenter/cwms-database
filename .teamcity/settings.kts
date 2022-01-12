@@ -65,7 +65,7 @@ object Build : BuildType({
         schema/build/resources => resources.zip
         schema/build/resources.jar =>
         schema/build/docs.zip =>
-        codegen
+        codegen/cwms-db-jooq-codegen/*.jar =>
     """.trimIndent()
 
 
