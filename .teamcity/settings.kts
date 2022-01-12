@@ -141,7 +141,7 @@ object Build : BuildType({
             userSettingsSelection = "cwms-maven-settings"
             goals = "package"
             jdkHome = "%env.JDK_11_x64%"
-            runnerArgs =  "-Dbuilduser.overrides=build/overrides.external.xml"
+            runnerArgs =  "-Dbuilduser.overrides=schema/build/overrides.external.xml"
         }
         maven {
             name = "jOOQ Codegen"
@@ -149,7 +149,7 @@ object Build : BuildType({
             userSettingsSelection = "cwms-maven-settings"
             goals = "deploy"
             jdkHome = "%env.JDK_11_x64%"
-            runnerArgs =  "-Dbuilduser.overrides=build/overrides.external.xml"
+            runnerArgs =  "-Dbuilduser.overrides=schema/build/overrides.external.xml"
             conditions {
                 matches("teamcity.build.branch", "(master|release/.*)")
             }
