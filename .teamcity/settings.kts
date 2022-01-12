@@ -124,7 +124,7 @@ object Build : BuildType({
         }
         maven {
             name = "Deploy jOOQ Codegen"
-            pomLocation = "HecClientServerParent/pom.xml"
+            pomLocation = "schema/pom.xml"
             userSettingsSelection = "cwms-maven-settings"
             goals = "deploy"
             jdkHome = "%env.JDK_11_x64%"
