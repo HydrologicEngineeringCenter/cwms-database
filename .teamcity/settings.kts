@@ -114,6 +114,25 @@ object Build : BuildType({
             targets = "test"
             antArguments = "-Dbuilduser.overrides=build/overrides.external.xml"
         }
+        maven {
+            name = "jOOQ Codegen"
+            pomLocation = "schema/pom.xml"
+            userSettingsSelection = "cwms-maven-settings"
+            goals = "package"
+            jdkHome = "%env.JDK_11_x64%"
+            runnerArgs =  "-Dbuilduser.overrides=schema/build/overrides.external.xml"
+        }
+        maven {
+            name = "Deploy jOOQ Codegen"
+            pomLocation = "HecClientServerParent/pom.xml"
+            userSettingsSelection = "cwms-maven-settings"
+            goals = "deploy"
+            jdkHome = "%env.JDK_11_x64%"
+            runnerArgs =  "-Dbuilduser.overrides=schema/build/overrides.external.xml"
+            conditions {
+                matches("teamcity.build.branch", "(master|release/.*)")
+            }
+        }
         ant {
             workingDir = "./schema"
             mode = antFile {
@@ -131,25 +150,6 @@ object Build : BuildType({
             }
             targets = "clean-output-files"
             antArguments = "-Dbuilduser.overrides=build/overrides.external.xml"
-            conditions {
-                matches("teamcity.build.branch", "(master|release/.*)")
-            }
-        }
-        maven {
-            name = "jOOQ Codegen"
-            pomLocation = "schema/pom.xml"
-            userSettingsSelection = "cwms-maven-settings"
-            goals = "package"
-            jdkHome = "%env.JDK_11_x64%"
-            runnerArgs =  "-Dbuilduser.overrides=schema/build/overrides.external.xml"
-        }
-        maven {
-            name = "jOOQ Codegen"
-            pomLocation = "HecClientServerParent/pom.xml"
-            userSettingsSelection = "cwms-maven-settings"
-            goals = "deploy"
-            jdkHome = "%env.JDK_11_x64%"
-            runnerArgs =  "-Dbuilduser.overrides=schema/build/overrides.external.xml"
             conditions {
                 matches("teamcity.build.branch", "(master|release/.*)")
             }
