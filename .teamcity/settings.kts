@@ -1,6 +1,7 @@
 import jetbrains.buildServer.configs.kotlin.v2019_2.*
 import jetbrains.buildServer.configs.kotlin.v2019_2.buildFeatures.commitStatusPublisher
 import jetbrains.buildServer.configs.kotlin.v2019_2.buildSteps.ant
+import jetbrains.buildServer.configs.kotlin.v2019_2.buildSteps.maven
 import jetbrains.buildServer.configs.kotlin.v2019_2.buildSteps.script
 import jetbrains.buildServer.configs.kotlin.v2019_2.buildSteps.gradle
 import jetbrains.buildServer.configs.kotlin.v2019_2.buildSteps.exec
@@ -64,6 +65,7 @@ object Build : BuildType({
         schema/build/resources => resources.zip
         schema/build/resources.jar =>
         schema/build/docs.zip =>
+        codegen/cwms-db-jooq-codegen/*.jar =>
     """.trimIndent()
 
 
@@ -112,6 +114,25 @@ object Build : BuildType({
             targets = "test"
             antArguments = "-Dbuilduser.overrides=build/overrides.external.xml"
         }
+        maven {
+            name = "jOOQ Codegen"
+            pomLocation = "schema/pom.xml"
+            userSettingsSelection = "cwms-maven-settings"
+            goals = "package"
+            jdkHome = "%env.JDK_11_x64%"
+            runnerArgs =  "-Dbuilduser.overrides=schema/build/overrides.external.xml"
+        }
+        maven {
+            name = "Deploy jOOQ Codegen"
+            pomLocation = "schema/pom.xml"
+            userSettingsSelection = "cwms-maven-settings"
+            goals = "deploy"
+            jdkHome = "%env.JDK_11_x64%"
+            runnerArgs =  "-Dbuilduser.overrides=schema/build/overrides.external.xml"
+            conditions {
+                matches("teamcity.build.branch", "(master|release/.*)")
+            }
+        }
         ant {
             workingDir = "./schema"
             mode = antFile {
@@ -121,7 +142,6 @@ object Build : BuildType({
             targets = "bundle"
             antArguments = "-Dbuilduser.overrides=build/overrides.external.xml"
         }
-
         ant {
             name = "Cleanup Generated Files"
             workingDir = "./schema"

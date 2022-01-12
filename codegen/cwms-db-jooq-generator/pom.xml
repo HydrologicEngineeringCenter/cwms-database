@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<!--
+  ~ Copyright (c) 2018
+  ~ United States Army Corps of Engineers - Hydrologic Engineering Center (USACE/HEC)
+  ~ All Rights Reserved.  USACE PROPRIETARY/CONFIDENTIAL.
+  ~ Source may not be released without written approval from HEC
+  -->
+
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+		 xmlns="http://maven.apache.org/POM/4.0.0"
+		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>mil.army.usace.hec</groupId>
+		<artifactId>cwms-database-schema</artifactId>
+		<version>99-99-99-SNAPSHOT</version>
+		<relativePath>../../schema/pom.xml</relativePath>
+	</parent>
+	<artifactId>cwms-db-jooq-generator</artifactId>
+	<name>CwmsDbJooqGenerator</name>
+	<url>http://maven.apache.org</url>
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+	<dependencies>
+		<dependency>
+			<groupId>org.jooq.pro</groupId>
+			<artifactId>jooq-codegen</artifactId>
+			<version>${jooq.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>*</groupId>
+					<artifactId>ojdbc8</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.jooq.pro</groupId>
+			<artifactId>jooq-meta</artifactId>
+			<version>${jooq.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>*</groupId>
+					<artifactId>ojdbc8</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+	</dependencies>
+</project>
