@@ -60,7 +60,7 @@ public class CwmsDbPropertiesGenerator extends AbstractMojo
             retrieveDbVersionInfo(conn);
             writeDbVersionInfo();
         }
-        catch (SQLException | ClassNotFoundException | InstantiationException | IllegalAccessException ex)
+        catch (SQLException ex)
         {
             getLog().error("Unable to retrieve CWMS Schema");
             getLog().error(ex);

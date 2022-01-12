@@ -65,6 +65,7 @@ object Build : BuildType({
         schema/build/resources => resources.zip
         schema/build/resources.jar =>
         schema/build/docs.zip =>
+        codegen
     """.trimIndent()
 
 
@@ -139,8 +140,8 @@ object Build : BuildType({
             pomLocation = "schema/pom.xml"
             userSettingsSelection = "cwms-maven-settings"
             goals = "package"
-            jdkHome = "%env.JDK_18_x64%"
-            runnerArgs =  "-Dbuilduser.overrides=output/overrides.xml"
+            jdkHome = "%env.JDK_11_x64%"
+            runnerArgs =  "-Dbuilduser.overrides=build/overrides.external.xml"
         }
         maven {
             name = "jOOQ Codegen"
@@ -148,7 +149,7 @@ object Build : BuildType({
             userSettingsSelection = "cwms-maven-settings"
             goals = "deploy"
             jdkHome = "%env.JDK_11_x64%"
-            runnerArgs =  "-Dbuilduser.overrides=output/overrides.xml"
+            runnerArgs =  "-Dbuilduser.overrides=build/overrides.external.xml"
             conditions {
                 matches("teamcity.build.branch", "(master|release/.*)")
             }

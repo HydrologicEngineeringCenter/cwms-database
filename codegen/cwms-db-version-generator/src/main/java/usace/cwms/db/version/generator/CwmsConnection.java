@@ -28,19 +28,15 @@ import org.apache.maven.plugins.annotations.Parameter;
 public class CwmsConnection 
 {
     @Parameter
-    private String driver;
-    
-    @Parameter
     private String url;
     @Parameter
     private String user;
     @Parameter
     private String password;
     
-    public Connection buildConnection() throws SQLException, ClassNotFoundException, InstantiationException, IllegalAccessException
+    public Connection buildConnection() throws SQLException
     {
         DriverManager.registerDriver(new OracleDriver());
-        Class.forName(driver).newInstance();
         return DriverManager.getConnection(url, user, password);
     }
 }
