@@ -18,6 +18,16 @@
 	</parent>
 	<artifactId>cwms-db-jooq-codegen</artifactId>
 	<name>CwmsDbJooqCodegen</name>
+	<distributionManagement>
+		<snapshotRepository>
+			<id>hec-nexus-snapshots</id>
+			<url>https://www.hec.usace.army.mil/nexus/repository/maven-snapshots</url>
+		</snapshotRepository>
+		<repository>
+			<id>hec-nexus-releases</id>
+			<url>https://www.hec.usace.army.mil/nexus/repository/maven-releases</url>
+		</repository>
+	</distributionManagement>
 	<dependencies>
 		<dependency>
 			<groupId>com.oracle.database.jdbc</groupId>
