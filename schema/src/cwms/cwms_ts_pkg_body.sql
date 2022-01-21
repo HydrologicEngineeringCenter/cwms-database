@@ -4945,6 +4945,7 @@ AS
       l_allow_sub_minute    boolean;
       l_override_prot       BOOLEAN;
       l_version_date        DATE;
+      l_is_versioned        VARCHAR2(1);
       --
       l_units               VARCHAR2 (16);
       l_base_parameter_id   VARCHAR2 (16);
@@ -5023,11 +5024,6 @@ AS
       end;
 
       l_location_code := cwms_loc.get_location_code(l_office_code, cwms_Util.split_text(l_cwms_ts_id, 1, '.', 1));
-
-      l_version_date := NVL(p_version_date, cwms_util.non_versioned); -- allow seconds on version date
-      if l_version_date = cwms_util.all_version_dates then
-         cwms_err.raise('ERROR', 'Cannot use CWMS_UTIL.ALL_VERSION_DATES for storing data.');
-      end if;
 
       l_allow_sub_minute := cwms_util.return_true_or_false(p_allow_sub_minute);
 
@@ -5140,6 +5136,16 @@ AS
             'Unable to create or locate ts_code for ' || l_cwms_ts_id,
             TRUE);
       END IF;
+
+      cwms_ts.is_ts_versioned(l_is_versioned, l_ts_code);
+      if l_is_versioned = 'T' then
+         l_version_date := nvl(p_version_date, sysdate); -- allow seconds on version date
+      else
+         l_version_date := cwms_util.non_versioned;
+      end if;
+      if l_version_date = cwms_util.all_version_dates then
+         cwms_err.raise('ERROR', 'Cannot use CWMS_UTIL.ALL_VERSION_DATES for storing data.');
+      end if;
 
       --------------------------------------
       -- verify the time series is active --
