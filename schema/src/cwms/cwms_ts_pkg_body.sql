@@ -3168,7 +3168,6 @@ AS
                            l_version_date,
                            l_reg_start_time,
                            l_interval,
-                           l_reg_start_time,
                            l_reg_end_time,
                            l_reg_start_time,
                            l_interval;

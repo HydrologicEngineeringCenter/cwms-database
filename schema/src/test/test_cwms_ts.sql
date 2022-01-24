@@ -11,6 +11,8 @@ procedure test_set_active_flag;
 procedure test_yearly_tables;
 --%test(Test filter duplicates)
 procedure test_filter_duplicates;
+--%test(Test retrieve TS with calendar-based times [JIRA Issue CWDB-157])
+procedure test_retrieve_ts_with_calendar_based_times__JIRA_CWDB_157;
 
 
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
@@ -303,14 +305,13 @@ AS
             END IF;
         END LOOP;
     END test_yearly_tables;
-
     --------------------------------------------------------------------------------
     -- procedure test_filter_duplicates
     --------------------------------------------------------------------------------
     procedure test_filter_duplicates
     is
-        l_ts_id      varchar2(191)   := 'TestFilterDupsMsg.Code.Inst.1Hour.0.Test';
-        l_loc_id     varchar2(57)    := cwms_util.split_text(l_ts_id, 1, '.');
+        l_ts_id      varchar2(191)   := test_base_location_id||'.Code.Inst.1Hour.0.Test';
+        l_loc_id     varchar2(57)    := test_base_location_id;
         l_unit       varchar2(16)    := 'n/a';
         l_office_id  varchar2(16)    := '&&office_id';
         l_ts_data cwms_t_ztsv_array := cwms_t_ztsv_array(
@@ -430,6 +431,89 @@ AS
             p_delete_action => cwms_util.delete_all,
             p_db_office_id  => l_office_id);
     end test_filter_duplicates;
+    --------------------------------------------------------------------------------
+    -- procedure test_retrieve_ts_with_calendar_based_times__JIRA_CWDB_157
+    --------------------------------------------------------------------------------
+   procedure test_retrieve_ts_with_calendar_based_times__JIRA_CWDB_157
+   is
+      l_ts_id         varchar2(191) := test_base_location_id||'.Code.Inst.1Month.0.Test';
+      l_loc_id        varchar2(57)  := test_base_location_id;
+      l_unit          varchar2(16)  := 'n/a';
+      l_office_id     varchar2(16)  := '&&office_id';
+      l_ts_data       cwms_t_ztsv_array;
+      l_crsr          sys_refcursor;
+      l_date_times    cwms_t_date_table;
+      l_values        cwms_t_double_tab;
+      l_quality_codes cwms_t_number_tab;
+   begin
+      --------------------------------------
+      -- make sure the location is active --
+      --------------------------------------
+      cwms_loc.store_location(
+         p_location_id  => l_loc_id,
+         p_active       => 'T',
+         p_db_office_id => l_office_id);
+      for i in 1..2 loop
+         ---------------------------
+         -- store the time series --
+         ---------------------------
+         if i = 1 then
+            l_ts_data := cwms_t_ztsv_array(
+               cwms_t_ztsv(date '2022-01-01', 1, 0),
+               cwms_t_ztsv(date '2022-02-01', 2, 0),
+               cwms_t_ztsv(date '2022-03-01', 2, 0),
+               cwms_t_ztsv(date '2022-04-01', 3, 0));
+         else
+            l_ts_data := cwms_t_ztsv_array(
+               cwms_t_ztsv(date '2022-01-01', 1, 0),
+               cwms_t_ztsv(date '2023-01-01', 2, 0),
+               cwms_t_ztsv(date '2024-01-01', 2, 0),
+               cwms_t_ztsv(date '2025-01-01', 3, 0));
+            l_ts_id := replace(l_ts_id, '1Month', '1Year');
+         end if;
+         cwms_ts.zstore_ts(
+            p_cwms_ts_id      => l_ts_id,
+            p_units           => l_unit,
+            p_timeseries_data => l_ts_data,
+            p_store_rule      => cwms_util.replace_all,
+            p_override_prot   => 'F',
+            p_version_date    => cwms_util.non_versioned,
+            p_office_id       => l_office_id,
+            p_create_as_lrts  => 'F');
+         -----------------------
+         -- retrieve the data --
+         -----------------------
+         cwms_ts.retrieve_ts(
+            p_at_tsv_rc       => l_crsr,
+            p_cwms_ts_id      => l_ts_id,
+            p_units           => l_unit,
+            p_start_time      => l_ts_data(1).date_time,
+            p_end_time        => l_ts_data(l_ts_data.count).date_time,
+            p_time_zone       => 'UTC',
+            p_trim            => 'F',
+            p_start_inclusive => 'T',
+            p_end_inclusive   => 'T',
+            p_previous        => 'F',
+            p_next            => 'F',
+            p_version_date    => cwms_util.non_versioned,
+            p_max_version     => 'T',
+            p_office_id       => l_office_id);
+         fetch l_crsr
+           bulk collect
+           into l_date_times,
+                l_values,
+                l_quality_codes;
+         close l_crsr;
+         ut.expect(l_date_times.count).to_equal(l_ts_data.count);
+         if l_date_times.count  = l_ts_data.count then
+            for j in 1..l_date_times.count loop
+               ut.expect(l_date_times(j)).to_equal(l_ts_data(j).date_time);
+               ut.expect(l_values(j)).to_equal(l_ts_data(j).value);
+               ut.expect(l_quality_codes(j)).to_equal(l_ts_data(j).quality_code);
+            end loop;
+         end if;
+      end loop;
+   end test_retrieve_ts_with_calendar_based_times__JIRA_CWDB_157;
 END test_cwms_ts;
 /
 
