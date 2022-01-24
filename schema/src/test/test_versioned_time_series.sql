@@ -7,6 +7,8 @@ create or replace package &cwms_schema..test_versioned_time_series as
 
 --%test(Store and retrieve non-versioned and versioned time series)
 procedure store_retrieve_time_series;
+--%test(Test whether time series versioned flag is effective)
+procedure cwdb_151;
 
 procedure setup;
 procedure teardown;
@@ -265,6 +267,150 @@ begin
       p_expected_values => c_expected_values(9));
    close l_crsr;
 end store_retrieve_time_series;
+--------------------------------------------------------------------------------
+-- procedure cwdb_151
+--------------------------------------------------------------------------------
+procedure cwdb_151
+is
+   l_ts_id         varchar2(183)     := replace(c_ts_id, '1Hour', '1Day');
+   l_ts_data       cwms_t_ztsv_array := cwms_t_ztsv_array(cwms_t_ztsv(date '2022-01-01', 1, 0),cwms_t_ztsv(date '2022-01-02', 2, 0));
+   l_ts_code       integer;
+   l_version_dates cwms_t_date_table;
+   l_date_times    cwms_t_date_table;
+   l_values        cwms_t_double_tab;
+   l_current_time  date;
+begin
+   --------------------------------
+   -- create ts as non-versioned --
+   --------------------------------
+   cwms_ts.create_ts_code(
+      p_ts_code           => l_ts_code,
+      p_cwms_ts_id        => l_ts_id,
+      p_utc_offset        => null,
+      p_interval_forward  => null,
+      p_interval_backward => null,
+      p_versioned         => 'F',
+      p_active_flag       => 'T',
+      p_fail_if_exists    => 'T',
+      p_office_id         => c_office_id);
+   ---------------------------------------------------
+   -- store non-versioned ts with null version date --
+   ---------------------------------------------------
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => l_ts_id,
+      p_units           => c_units,
+      p_timeseries_data => l_ts_data,
+      p_store_rule      => cwms_util.replace_all,
+      p_override_prot   => 'F',
+      p_version_date    => null,
+      p_office_id       => c_office_id,
+      p_create_as_lrts  => 'F');
+   ---------------------------------
+   -- verify expected data stored --
+   ---------------------------------
+   select version_date,
+          date_time,
+          value
+     bulk collect
+     into l_version_dates,
+          l_date_times,
+          l_values
+     from cwms_v_tsv_dqu
+    where ts_code = l_ts_code
+      and unit_id = c_units
+    order by 1, 2, 3;
+
+   ut.expect(l_version_dates.count).to_equal(l_ts_data.count);
+   if l_version_dates.count = l_ts_data.count then
+      for i in 1..l_ts_data.count loop
+         ut.expect(l_version_dates(i)).to_equal(cwms_util.non_versioned);
+         ut.expect(l_date_times(i)).to_equal(l_ts_data(i).date_time);
+         ut.expect(l_values(i)).to_equal(l_ts_data(i).value);
+      end loop;
+   end if;
+   -------------------------------------------------------
+   -- store non-versioned ts with non-null version date --
+   -------------------------------------------------------
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => l_ts_id,
+      p_units           => c_units,
+      p_timeseries_data => l_ts_data,
+      p_store_rule      => cwms_util.replace_all,
+      p_override_prot   => 'F',
+      p_version_date    => sysdate,
+      p_office_id       => c_office_id,
+      p_create_as_lrts  => 'F');
+   ---------------------------------
+   -- verify expected data stored --
+   ---------------------------------
+   select version_date,
+          date_time,
+          value
+     bulk collect
+     into l_version_dates,
+          l_date_times,
+          l_values
+     from cwms_v_tsv_dqu
+    where ts_code = l_ts_code
+      and unit_id = c_units
+    order by 1, 2, 3;
+
+   ut.expect(l_version_dates.count).to_equal(l_ts_data.count);
+   if l_version_dates.count = l_ts_data.count then
+      for i in 1..l_ts_data.count loop
+         ut.expect(l_version_dates(i)).to_equal(cwms_util.non_versioned);
+         ut.expect(l_date_times(i)).to_equal(l_ts_data(i).date_time);
+         ut.expect(l_values(i)).to_equal(l_ts_data(i).value);
+      end loop;
+   end if;
+   -------------------------------
+   -- modify ts to be versioned --
+   -------------------------------
+   cwms_ts.set_ts_versioned(
+      p_cwms_ts_code => l_ts_code,
+      p_versioned    => 'T');
+   -----------------------------------------------
+   -- store versioned ts with null version date --
+   -----------------------------------------------
+   l_current_time := sysdate;
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => l_ts_id,
+      p_units           => c_units,
+      p_timeseries_data => l_ts_data,
+      p_store_rule      => cwms_util.replace_all,
+      p_override_prot   => 'F',
+      p_version_date    => null,
+      p_office_id       => c_office_id,
+      p_create_as_lrts  => 'F');
+   ---------------------------------
+   -- verify expected data stored --
+   ---------------------------------
+   select version_date,
+          date_time,
+          value
+     bulk collect
+     into l_version_dates,
+          l_date_times,
+          l_values
+     from cwms_v_tsv_dqu
+    where ts_code = l_ts_code
+      and unit_id = c_units
+    order by 1, 2, 3;
+
+   ut.expect(l_version_dates.count).to_equal(l_ts_data.count * 2);
+   if l_version_dates.count = l_ts_data.count * 2 then
+      for i in 1..l_ts_data.count loop
+         ut.expect(l_version_dates(i)).to_equal(cwms_util.non_versioned);
+         ut.expect(l_date_times(i)).to_equal(l_ts_data(i).date_time);
+         ut.expect(l_values(i)).to_equal(l_ts_data(i).value);
+      end loop;
+      for i in 1..l_ts_data.count loop
+         ut.expect(l_version_dates(l_ts_data.count+i)).to_be_greater_or_equal(l_current_time);
+         ut.expect(l_date_times(l_ts_data.count+i)).to_equal(l_ts_data(i).date_time);
+         ut.expect(l_values(l_ts_data.count+i)).to_equal(l_ts_data(i).value);
+      end loop;
+   end if;
+end cwdb_151;
 
 end test_versioned_time_series;
 /
