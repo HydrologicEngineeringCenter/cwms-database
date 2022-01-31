@@ -1,0 +1,33 @@
+buildscript {
+    dependencies {
+        classpath 'com.oracle.database.jdbc:ojdbc8:19.13.0.0.1'
+    }
+
+}
+
+plugins {
+    id 'java'
+    id 'org.flywaydb.flyway' version '8.4.3'
+}
+
+configurations {
+    flywayMigration
+}
+
+dependencies {
+    compile "org.flywaydb:flyway-core:8.4.3"
+    flywayMigration "com.oracle.database.jdbc:ojdbc8:19.13.0.0.1"
+    flywayMigration sourceSets.main.runtimeClasspath
+}
+
+flyway {
+    location = ["db/migrations"]
+    confiugrations = ['flywayMigration','compile']
+    url = "$DB_URL"
+    user = BUILD_USER
+    password = BUILD_USERPASSWORD
+    mixed = true
+    schemas = ['CWMS_20','CWMS_DBA','CWMS_APEX']
+}
+
+flywayMigrate.dependsOnClasses
