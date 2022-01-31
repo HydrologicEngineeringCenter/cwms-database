@@ -1,0 +1,8 @@
+ext.ORACLE_JDBC_VERSION='19.3.0.0'
+
+subprojects {
+    apply plugin: 'java'
+    repositories {
+        mavenCentral()
+    }
+}

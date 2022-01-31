@@ -15,4 +15,6 @@ include 'api'
 include 'services:webservice'
 */
 
-rootProject.name = 'testcontainers'
+rootProject.name = 'CWMS Database'
+include 'schema'
+include 'testcontainers'
