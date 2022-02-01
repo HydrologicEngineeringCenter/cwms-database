@@ -328,7 +328,7 @@ as
          'F');
 
    end store;
-   
+
    -----------------------------------------------------------------------------
    -- member fields factor and offset must previously be set to provide any
    -- necessary units conversion for the comparison
@@ -336,12 +336,12 @@ as
    -- p_rate must be specified for the interval indicated in the member field
    -- rate_interval
    -----------------------------------------------------------------------------
-   member function eval_expression(      
+   member function eval_expression(
       p_value   in binary_double,
       p_level   in binary_double,
       p_level_2 in binary_double)
    return binary_double
-   is  
+   is
       l_arguments double_tab_t;
    begin
       -------------------------------------------------
@@ -354,8 +354,8 @@ as
       l_arguments(3) :=  p_level_2 * factor + offset;
       return cwms_util.eval_tokenized_expression(expression_tokens, l_arguments); -- may return null
    end eval_expression;
-   
-   member function eval_rate_expression(      
+
+   member function eval_rate_expression(
       p_rate in binary_double)
    return binary_double
    is
@@ -366,7 +366,7 @@ as
       l_arguments(4) := (p_rate * rate_factor + rate_offset) * interval_factor;
       return cwms_util.eval_tokenized_expression(rate_expression_tokens, l_arguments); -- may return null
    end eval_rate_expression;
-   
+
    member function is_set(
       p_value   in binary_double,
       p_level   in binary_double,
@@ -466,5 +466,3 @@ as
    end is_set;
 
 end;
-/
-show errors;

@@ -1,23 +1,23 @@
-create or replace type body logic_expr_t 
+create or replace type body logic_expr_t
 as
    constructor function logic_expr_t(
       p_expr in varchar2)
       return self as result
-   is 
+   is
       l_tokens str_tab_tab_t;
    begin
       l_tokens := cwms_util.tokenize_logic_expression(p_expr);
       self := new logic_expr_t(l_tokens);
       return;
-   end logic_expr_t;      
-      
+   end logic_expr_t;
+
    constructor function logic_expr_t(
       p_table in out nocopy str_tab_tab_t)
       return self as result
-   is                                    
+   is
       l_op    str_tab_t;
       l_value str_tab_t;
-      
+
       function pop return str_tab_t is
          l_item str_tab_t;
       begin
@@ -28,7 +28,7 @@ as
          p_table.trim;
          return l_item;
       end pop;
-      
+
    begin
       ----------------------
       -- get the operator --
@@ -66,8 +66,8 @@ as
       end if;
       return;
    end logic_expr_t;
-         
-            
+
+
    overriding member function evaluate(
       p_args        in double_tab_t,
       p_args_offset in integer default 0)
@@ -87,39 +87,39 @@ as
          -- combination expression --
          ----------------------------
          case self.operator
-         when 'NOT' then 
+         when 'NOT' then
             ------------------------------
             -- nothing to short circuit --
             ------------------------------
             l_result := not self.operand_1.evaluate(p_args, p_args_offset);
          when 'AND' then
-            ------------------------------- 
+            -------------------------------
             -- PL/SQL AND short circuits --
-            ------------------------------- 
+            -------------------------------
             l_result := self.operand_1.evaluate(p_args, p_args_offset)
-                    and self.operand_2.evaluate(p_args, p_args_offset); 
+                    and self.operand_2.evaluate(p_args, p_args_offset);
          when 'XOR' then
-            --------------------------------- 
+            ---------------------------------
             -- must evaluate both operands --
-            --------------------------------- 
-            l_result1 := self.operand_1.evaluate(p_args, p_args_offset); 
+            ---------------------------------
+            l_result1 := self.operand_1.evaluate(p_args, p_args_offset);
             l_result2 := self.operand_2.evaluate(p_args, p_args_offset);
-            l_result  := (l_result1 or l_result2) and not (l_result1 and l_result2); 
-         when 'OR'  then 
-            ------------------------------ 
+            l_result  := (l_result1 or l_result2) and not (l_result1 and l_result2);
+         when 'OR'  then
+            ------------------------------
             -- PL/SQL OR short circuits --
-            ------------------------------ 
+            ------------------------------
             l_result := self.operand_1.evaluate(p_args, p_args_offset)
-                     or self.operand_2.evaluate(p_args, p_args_offset); 
+                     or self.operand_2.evaluate(p_args, p_args_offset);
          end case;
       end if;
       return l_result;
    end evaluate;
-   
+
    overriding member procedure print(
-      p_level in integer default 0)      
+      p_level in integer default 0)
    is
-   begin 
+   begin
       dbms_output.put(trim(to_char(p_level, '09'))||'|');
       for i in 1..p_level loop
          dbms_output.put('..');
@@ -137,8 +137,8 @@ as
          end if;
       end if;
    end print;
-      
-   overriding member function to_algebraic( 
+
+   overriding member function to_algebraic(
       self in out nocopy logic_expr_t)
       return varchar2
    is
@@ -146,8 +146,8 @@ as
    begin
       self.to_algebraic(l_expr);
       return substr(l_expr, 2);
-   end to_algebraic;      
-   
+   end to_algebraic;
+
    overriding member procedure to_algebraic(
       p_expr in out nocopy varchar2)
    is
@@ -160,7 +160,7 @@ as
                    ||cwms_util.get_comparison_op_symbol(self.expression(3)(1))
                    ||' '
                    ||cwms_util.to_algebraic(self.expression(2));
-      else 
+      else
          if self.operand_2 is not null then
             self.operand_1.to_algebraic(p_expr);
          end if;
@@ -168,8 +168,8 @@ as
          self.operand_2.to_algebraic(p_expr);
       end if;
    end to_algebraic;
-   
-   overriding member function to_rpn( 
+
+   overriding member function to_rpn(
       self in out nocopy logic_expr_t)
       return varchar2
    is
@@ -177,8 +177,8 @@ as
    begin
       self.to_rpn(l_expr);
       return substr(l_expr, 2);
-   end to_rpn;      
-   
+   end to_rpn;
+
    overriding member procedure to_rpn(
       p_expr in out nocopy varchar2)
    is
@@ -199,8 +199,8 @@ as
          p_expr := p_expr||' '||self.operator;
       end if;
    end to_rpn;
-               
-   overriding member function to_xml_text( 
+
+   overriding member function to_xml_text(
       self in out nocopy logic_expr_t)
       return varchar2
    is
@@ -208,8 +208,8 @@ as
    begin
       self.to_xml_text(l_expr);
       return substr(l_expr, 2);
-   end to_xml_text;      
-   
+   end to_xml_text;
+
    overriding member procedure to_xml_text(
       p_expr in out nocopy varchar2)
    is
@@ -222,7 +222,7 @@ as
                    ||cwms_util.get_comparison_op_text(self.expression(3)(1))
                    ||' '
                    ||cwms_util.to_algebraic(self.expression(2));
-      else 
+      else
          if self.operand_2 is not null then
             self.operand_1.to_xml_text(p_expr);
          end if;
@@ -231,6 +231,3 @@ as
       end if;
    end to_xml_text;
 end;
-/
-show errors;
-commit;

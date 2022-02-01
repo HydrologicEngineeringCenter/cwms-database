@@ -14,7 +14,7 @@ as
       end;
       return;
    end;
-   
+
    constructor function location_obj_t(
       p_location_code in number)
       return self as result
@@ -22,13 +22,13 @@ as
    begin
       self.init(p_location_code);
       return;
-   end;      
+   end;
 
    member procedure init(
       p_location_code in number)
    is
    begin
-      for rec in 
+      for rec in
          (  select l.location_code,
                    l.base_location_id,
                    l.sub_location_id,
@@ -74,7 +74,7 @@ as
                             pl.published_longitude,
                             pl.office_code,
                             pl.nation_code,
-                            pl.nearest_city                
+                            pl.nearest_city
                        from at_physical_location pl,
                             at_base_location     bl
                       where bl.base_location_code = pl.base_location_code
@@ -118,8 +118,6 @@ as
          self.nation_id            := rec.nation_id;
          self.nearest_city         := rec.nearest_city;
       end loop;
-   end;      
-      
+   end;
+
 end;
-/
-show errors;

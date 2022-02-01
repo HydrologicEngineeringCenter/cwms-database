@@ -430,5 +430,3 @@ as
       l_obj.store;
    end store;
 end;
-/
-show errors;

@@ -27,14 +27,14 @@ under rating_t
 -- source_ratings  rating_tab_t,
    native_datum    varchar2(16),
    current_datum   varchar2(16),
-   elev_positions  number_tab_t,  
-                           
+   elev_positions  number_tab_t,
+
    /**
     * Constructs a vdatum_rating_t object from a rating_t object and a current datum
     *
     * @param p_rating         The existing rating_t object
     * @param p_current_datum  The current datum that the rating object is represented in
-    * @param p_elev_positions A table of positions in the parameter list that are elevations. Positive positions indicate independent parameters, -1 indicates the dependent parameter. 
+    * @param p_elev_positions A table of positions in the parameter list that are elevations. Positive positions indicate independent parameters, -1 indicates the dependent parameter.
     *
     */
    constructor function vdatum_rating_t(
@@ -44,21 +44,21 @@ under rating_t
    ) return self as result,
    /**
     * Copy constructor
-    */   
+    */
    constructor function vdatum_rating_t(
       p_other in vdatum_rating_t
    ) return self as result,
-      
+
    /**
     * Modifies the elevations in the rating to be in the specified datum
     *
     * @param p_vertical_datum The vertical datum to adjust the elevations to
-    */   
+    */
    member procedure to_vertical_datum(
       p_vertical_datum in varchar2),
    /**
     * Modifies the elevations in the rating to be in the location's local datum
-    */      
+    */
    member procedure to_native_datum,
    /**
     * Retrieves the rating as an XML instance in an CLOB object
@@ -81,11 +81,7 @@ under rating_t
       p_timezone   in varchar2 default null,
       p_units      in varchar2 default null,
       p_vert_datum in varchar2 default null)
-      return xmltype      
+      return xmltype
 );
-/
-
-show errors;
 
 create or replace public synonym cwms_t_vdatum_rating for vdatum_rating_t;
-

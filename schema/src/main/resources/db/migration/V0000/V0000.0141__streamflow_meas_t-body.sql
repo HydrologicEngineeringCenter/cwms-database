@@ -61,16 +61,16 @@ as
 
          if upper(self.ctrl_cond_id) = 'UNSPECIFED'    then self.ctrl_cond_id := 'Unspecified'; end if;
          if upper(self.flow_adj_id) in ('NONE','UNKN') then self.flow_adj_id  := 'UNSP';        end if;
-         
+
          select count(*) into l_field_count from cwms_usgs_meas_qual where qual_id = self.quality;
          if l_field_count = 0 then self.quality := null; end if;
-         
+
          select count(*) into l_field_count from cwms_usgs_rating_ctrl_cond where ctrl_cond_id = self.ctrl_cond_id;
          if l_field_count = 0 then self.ctrl_cond_id := null; end if;
-         
+
          select count(*) into l_field_count from cwms_usgs_flow_adj where adj_id = self.flow_adj_id;
          if l_field_count = 0 then self.ctrl_cond_id := null; end if;
-         
+
       end loop;
       return;
    end streamflow_meas_t;
@@ -417,6 +417,3 @@ as
       return l_text;
    end to_string1;
 end;
-/
-show errors;
-

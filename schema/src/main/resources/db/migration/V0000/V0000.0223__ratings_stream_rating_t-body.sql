@@ -2256,5 +2256,3 @@ as
              end;
    end;
 end;
-/
-show errors;

@@ -158,5 +158,3 @@ as
    end create_location;
 
 end;
-/
-show errors

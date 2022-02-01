@@ -620,5 +620,3 @@ as
    end get_max_indicator_values;
 
 end;
-/
-show errors;

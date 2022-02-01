@@ -16,9 +16,9 @@ create type logic_expr_t
 under abs_logic_expr_t (
 -- operator   varchar2(3),
    operand_1  abs_logic_expr_t,
-   operand_2  abs_logic_expr_t, 
+   operand_2  abs_logic_expr_t,
    expression str_tab_tab_t,
-        
+
    /**
     * Constructs a logic expression object from a text expression.
     *
@@ -38,11 +38,11 @@ under abs_logic_expr_t (
       p_table in out nocopy str_tab_tab_t)
       return self as result,
    /**
-    * Evaluates the logic expression given specific arguments arg1..argN. This evaluation uses the short-circuit behavior of PL/SQL 
+    * Evaluates the logic expression given specific arguments arg1..argN. This evaluation uses the short-circuit behavior of PL/SQL
     * logic operators. The first expression of any operator is always evaluated.  The second expression of binary operators will
     * not be evaluated if it cannot affect the outcome.
     *
-    * @param p_args the actual values to use for arg1...argN. Values are assigned 
+    * @param p_args the actual values to use for arg1...argN. Values are assigned
     *        positionally beginning with the specified or default offset
     * @param p_args_offset the offset into <code><big>p_args</big></code> from which
     *        to start assigning values.  If 0 (default) then the arg1 will be assigned
@@ -50,43 +50,41 @@ under abs_logic_expr_t (
     *
     * @return TRUE or FALSE
     *
-    * @see cwms_util.eval_expression        
-    */            
+    * @see cwms_util.eval_expression
+    */
    overriding member function evaluate(
       p_args   in double_tab_t,
       p_args_offset in integer default 0)
       return boolean,
-   /**   
-    * Uses the DBMS_OUTPUT package to output a schematic of the evaluation tree 
+   /**
+    * Uses the DBMS_OUTPUT package to output a schematic of the evaluation tree
     *
     * @param p_level Depth of the outermost operator. Used for recursive calls only.
-    */    
+    */
    overriding member procedure print(
-      p_level in integer default 0),      
-      
-   overriding member function to_algebraic( 
+      p_level in integer default 0),
+
+   overriding member function to_algebraic(
       self in out nocopy logic_expr_t)
       return varchar2,
-   
+
    overriding member procedure to_algebraic(
       p_expr in out nocopy varchar2),
-   
-   overriding member function to_rpn( 
-      self in out nocopy logic_expr_t)
-      return varchar2,       
-   
-   overriding member procedure to_rpn(
-      p_expr in out nocopy varchar2),
-      
-   overriding member function to_xml_text( 
+
+   overriding member function to_rpn(
       self in out nocopy logic_expr_t)
       return varchar2,
-   
+
+   overriding member procedure to_rpn(
+      p_expr in out nocopy varchar2),
+
+   overriding member function to_xml_text(
+      self in out nocopy logic_expr_t)
+      return varchar2,
+
    overriding member procedure to_xml_text(
       p_expr in out nocopy varchar2)
-)
-/
-show errors;
+);
+
 
 create or replace public synonym cwms_t_logic_expr for logic_expr_t;
-

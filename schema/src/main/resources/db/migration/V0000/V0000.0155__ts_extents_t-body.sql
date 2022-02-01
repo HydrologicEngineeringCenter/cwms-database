@@ -6,7 +6,7 @@ as
    begin
       return;
    end ts_extents_t;
-   
+
    constructor function ts_extents_t(
       p_rowid in urowid)
       return self as result
@@ -14,36 +14,36 @@ as
       l_ts_extents at_ts_extents%rowtype;
    begin
       select * into l_ts_extents from at_ts_extents where rowid = p_rowid;
-      self.ts_code                       := l_ts_extents.ts_code;                      
-      self.version_time                  := l_ts_extents.version_time;                 
-      self.earliest_time                 := l_ts_extents.earliest_time;                
-      self.earliest_time_entry           := l_ts_extents.earliest_time_entry;          
-      self.earliest_entry_time           := l_ts_extents.earliest_entry_time;          
-      self.earliest_non_null_time        := l_ts_extents.earliest_non_null_time;       
-      self.earliest_non_null_time_entry  := l_ts_extents.earliest_non_null_time_entry; 
-      self.earliest_non_null_entry_time  := l_ts_extents.earliest_non_null_entry_time; 
-      self.latest_time                   := l_ts_extents.latest_time;                  
-      self.latest_time_entry             := l_ts_extents.latest_time_entry;            
-      self.latest_entry_time             := l_ts_extents.latest_entry_time;            
-      self.latest_non_null_time          := l_ts_extents.latest_non_null_time;         
-      self.latest_non_null_time_entry    := l_ts_extents.latest_non_null_time_entry;   
-      self.latest_non_null_entry_time    := l_ts_extents.latest_non_null_entry_time;   
-      self.least_value                   := l_ts_extents.least_value;             
-      self.least_value_time              := l_ts_extents.least_value_time;             
-      self.least_value_entry             := l_ts_extents.least_value_entry;            
-      self.least_accepted_value          := l_ts_extents.least_accepted_value;    
-      self.least_accepted_value_time     := l_ts_extents.least_accepted_value_time;    
-      self.least_accepted_value_entry    := l_ts_extents.least_accepted_value_entry;   
-      self.greatest_value                := l_ts_extents.greatest_value;          
-      self.greatest_value_time           := l_ts_extents.greatest_value_time;          
-      self.greatest_value_entry          := l_ts_extents.greatest_value_entry;         
-      self.greatest_accepted_value       := l_ts_extents.greatest_accepted_value; 
-      self.greatest_accepted_value_time  := l_ts_extents.greatest_accepted_value_time; 
+      self.ts_code                       := l_ts_extents.ts_code;
+      self.version_time                  := l_ts_extents.version_time;
+      self.earliest_time                 := l_ts_extents.earliest_time;
+      self.earliest_time_entry           := l_ts_extents.earliest_time_entry;
+      self.earliest_entry_time           := l_ts_extents.earliest_entry_time;
+      self.earliest_non_null_time        := l_ts_extents.earliest_non_null_time;
+      self.earliest_non_null_time_entry  := l_ts_extents.earliest_non_null_time_entry;
+      self.earliest_non_null_entry_time  := l_ts_extents.earliest_non_null_entry_time;
+      self.latest_time                   := l_ts_extents.latest_time;
+      self.latest_time_entry             := l_ts_extents.latest_time_entry;
+      self.latest_entry_time             := l_ts_extents.latest_entry_time;
+      self.latest_non_null_time          := l_ts_extents.latest_non_null_time;
+      self.latest_non_null_time_entry    := l_ts_extents.latest_non_null_time_entry;
+      self.latest_non_null_entry_time    := l_ts_extents.latest_non_null_entry_time;
+      self.least_value                   := l_ts_extents.least_value;
+      self.least_value_time              := l_ts_extents.least_value_time;
+      self.least_value_entry             := l_ts_extents.least_value_entry;
+      self.least_accepted_value          := l_ts_extents.least_accepted_value;
+      self.least_accepted_value_time     := l_ts_extents.least_accepted_value_time;
+      self.least_accepted_value_entry    := l_ts_extents.least_accepted_value_entry;
+      self.greatest_value                := l_ts_extents.greatest_value;
+      self.greatest_value_time           := l_ts_extents.greatest_value_time;
+      self.greatest_value_entry          := l_ts_extents.greatest_value_entry;
+      self.greatest_accepted_value       := l_ts_extents.greatest_accepted_value;
+      self.greatest_accepted_value_time  := l_ts_extents.greatest_accepted_value_time;
       self.greatest_accepted_value_entry := l_ts_extents.greatest_accepted_value_entry;
       self.last_update                   := l_ts_extents.last_update;
       return;
    end ts_extents_t;
-   
+
    member procedure convert_units(
       p_from_unit in varchar2 default null,
       p_to_unit   in varchar2 default null)
@@ -121,6 +121,4 @@ as
          self.last_update                   := cwms_util.change_timezone(self.last_update,                   l_from_timezone, l_to_timezone);
       end if;
    end change_timezone;
-end;                 
-/
-show errors;
+end;

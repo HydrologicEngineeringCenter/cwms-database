@@ -504,5 +504,3 @@ as
    end store;
 
 end;
-/
-show errors;

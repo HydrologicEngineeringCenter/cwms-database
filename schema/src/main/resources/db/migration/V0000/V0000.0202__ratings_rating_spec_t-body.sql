@@ -8,7 +8,7 @@ as
       init(p_rating_spec_code);
       return;
    end;
-         
+
    constructor function rating_spec_t(
       p_location_id in varchar2,
       p_template_id in varchar2,
@@ -19,8 +19,8 @@ as
    begin
       init(p_location_id, p_template_id, p_version, p_office_id);
       return;
-   end;      
-         
+   end;
+
    constructor function rating_spec_t(
       p_rating_id in varchar2,
       p_office_id in varchar2 default null)
@@ -240,7 +240,7 @@ as
       self.validate_obj;
       return;
    end;
-            
+
    member procedure init(
       p_rating_spec_code in number)
    is
@@ -251,7 +251,7 @@ as
       -- use loop for convenience - only 1 at most will match --
       ----------------------------------------------------------
       for rec in
-         (  select * 
+         (  select *
               from at_rating_spec
              where rating_spec_code = p_rating_spec_code
          )
@@ -264,7 +264,7 @@ as
          self.auto_migrate_ext_flag := rec.auto_migrate_ext_flag;
          self.dep_rounding_spec     := rec.dep_rounding_spec;
          self.description           := rec.description;
-         
+
          select lt.parameters_id,
                 lt.version,
                 o.office_id
@@ -275,26 +275,26 @@ as
                 cwms_office o
           where lt.template_code = rec.template_code
             and o.office_code = lt.office_code;
-            
-         self.template_id := l_template_parameters_id || cwms_rating.separator1 || l_template_version;             
-         
-         self.source_agency_id := cwms_entity.get_entity_id(rec.source_agency_code); 
-          
+
+         self.template_id := l_template_parameters_id || cwms_rating.separator1 || l_template_version;
+
+         self.source_agency_id := cwms_entity.get_entity_id(rec.source_agency_code);
+
          select rating_method_id
            into self.in_range_rating_method
            from cwms_rating_method
-          where rating_method_code = rec.in_range_rating_method;                    
-          
+          where rating_method_code = rec.in_range_rating_method;
+
          select rating_method_id
            into self.out_range_low_rating_method
            from cwms_rating_method
-          where rating_method_code = rec.out_range_low_rating_method;                    
-          
+          where rating_method_code = rec.out_range_low_rating_method;
+
          select rating_method_id
            into self.out_range_high_rating_method
            from cwms_rating_method
-          where rating_method_code = rec.out_range_high_rating_method;                    
-        
+          where rating_method_code = rec.out_range_high_rating_method;
+
          self.ind_rounding_specs := str_tab_t();
          for rec2 in
             ( select rounding_spec
@@ -305,17 +305,17 @@ as
          loop
             self.ind_rounding_specs.extend;
             self.ind_rounding_specs(self.ind_rounding_specs.count) := rec2.rounding_spec;
-         end loop;  
+         end loop;
       end loop;
-      self.validate_obj;         
-   end;      
-      
+      self.validate_obj;
+   end;
+
    member procedure init(
       p_location_id in varchar2,
       p_template_id in varchar2,
       p_version     in varchar2,
       p_office_id   in varchar2 default null)
-   is 
+   is
       l_rating_spec_code number(14);
    begin
       l_rating_spec_code := rating_spec_t.get_rating_spec_code(
@@ -323,18 +323,18 @@ as
          p_template_id,
          p_version,
          p_office_id);
-         
-      init(l_rating_spec_code);         
-   end;      
-   
+
+      init(l_rating_spec_code);
+   end;
+
    member procedure validate_obj
    is
-      LOCATION_ID_NOT_FOUND exception; 
+      LOCATION_ID_NOT_FOUND exception;
       pragma exception_init (LOCATION_ID_NOT_FOUND, -20025);
       l_code     number(14);
-      l_template rating_template_t; 
+      l_template rating_template_t;
       l_invalid  boolean;
-      
+
       -------------------------------------------------------
       -- local routine to validate 10-digit rounding specs --
       -------------------------------------------------------
@@ -352,31 +352,31 @@ as
             cwms_err.raise(
                'INVALID_ITEM',
                nvl(p_rounding_spec, '<NULL>'),
-               'USGS-style rounding specification'); 
-      end;         
+               'USGS-style rounding specification');
+      end;
    begin
       ---------------------------
       -- check for null fields --
       ---------------------------
       if self.office_id is null then
          cwms_err.raise(
-            'ERROR', 
-            'Office identifier cannot be null in rating specification');  
+            'ERROR',
+            'Office identifier cannot be null in rating specification');
       end if;
       if self.location_id is null then
          cwms_err.raise(
-            'ERROR', 
-            'Location identifier cannot be null in rating specification');  
+            'ERROR',
+            'Location identifier cannot be null in rating specification');
       end if;
       if self.template_id is null then
          cwms_err.raise(
-            'ERROR', 
-            'Template identifier cannot be null in rating specification');  
+            'ERROR',
+            'Template identifier cannot be null in rating specification');
       end if;
       if self.version is null then
          cwms_err.raise(
-            'ERROR', 
-            'Version cannot be null in rating specification');  
+            'ERROR',
+            'Version cannot be null in rating specification');
       end if;
       ---------------
       -- office_id --
@@ -398,7 +398,7 @@ as
       begin
          l_code := cwms_loc.get_location_code(self.office_id, self.location_id);
       exception
-         when LOCATION_ID_NOT_FOUND then           
+         when LOCATION_ID_NOT_FOUND then
             declare
                l_base_code number(14);
             begin
@@ -408,7 +408,7 @@ as
                   cwms_util.get_base_id(self.location_id),
                   cwms_util.get_sub_id(self.location_id),
                   cwms_util.get_db_office_code(self.office_id));
-            end;            
+            end;
       end;
       -----------------
       -- template_id --
@@ -494,14 +494,14 @@ as
       end if;
       validate_rounding_spec(self.dep_rounding_spec);
    end;
-   
+
    member function get_location_code
    return number
    is
    begin
       return cwms_loc.get_location_code(self.office_id, self.location_id);
    end;
-   
+
    member function get_template_code
    return number
    is
@@ -515,10 +515,10 @@ as
        where office_code = cwms_util.get_office_code(self.office_id)
          and upper(parameters_id) = upper(l_parts(1))
          and upper(version) = upper(l_parts(2));
-         
-      return l_template_code;          
+
+      return l_template_code;
    end;
-   
+
    member function get_source_agency_code
    return number
    is
@@ -529,10 +529,10 @@ as
       end if;
       return l_source_agency_code;
    end;
-   
+
    member function get_rating_code(
       p_rating_id in varchar2)
-   return number 
+   return number
    is
    begin
       return cwms_rating.get_rating_method_code(p_rating_id);
@@ -541,30 +541,30 @@ as
          cwms_err.raise(
             'INVALID_ITEM',
             p_rating_id,
-            'rating method identifier');             
+            'rating method identifier');
    end;
-   
+
    member function get_in_range_rating_code
    return number
    is
    begin
       return get_rating_code(self.in_range_rating_method);
-   end;     
-   
+   end;
+
    member function get_out_range_low_rating_code
    return number
    is
    begin
       return get_rating_code(self.out_range_low_rating_method);
-   end;     
-   
+   end;
+
    member function get_out_range_high_rating_code
    return number
    is
    begin
       return get_rating_code(self.out_range_high_rating_method);
    end;
-   
+
    member procedure store(
       p_fail_if_exists in varchar2)
    is
@@ -603,7 +603,7 @@ as
             || l_parts.count
             || ' independent parameters, but rating specification has '
             || self.ind_rounding_specs.count
-            || ' rounding specifications'); 
+            || ' rounding specifications');
       end if;
       l_location_code := self.get_location_code;
       begin
@@ -619,7 +619,7 @@ as
                'Rating specification',
                self.office_id||'/'||self.location_id||cwms_rating.separator1||self.template_id||cwms_rating.separator1||self.version);
          end if;
-         l_rec.source_agency_code           := self.get_source_agency_code;            
+         l_rec.source_agency_code           := self.get_source_agency_code;
          l_rec.in_range_rating_method       := self.get_in_range_rating_code;
          l_rec.out_range_low_rating_method  := self.get_out_range_low_rating_code;
          l_rec.out_range_high_rating_method := self.get_out_range_high_rating_code;
@@ -629,22 +629,22 @@ as
          l_rec.auto_migrate_ext_flag        := self.auto_migrate_ext_flag;
          l_rec.dep_rounding_spec            := self.dep_rounding_spec;
          l_rec.description                  := self.description;
-         
+
          update at_rating_spec
             set row = l_rec
           where rating_spec_code = l_rec.rating_spec_code;
-          
+
          delete
            from at_rating_ind_rounding
           where rating_spec_code = l_rec.rating_spec_code;
-                    
+
       exception
          when no_data_found then
             l_rec.rating_spec_code             := cwms_seq.nextval;
             l_rec.template_code                := l_template_code;
             l_rec.location_code                := l_location_code;
             l_rec.version                      := self.version;
-            l_rec.source_agency_code           := self.get_source_agency_code;            
+            l_rec.source_agency_code           := self.get_source_agency_code;
             l_rec.in_range_rating_method       := self.get_in_range_rating_code;
             l_rec.out_range_low_rating_method  := self.get_out_range_low_rating_code;
             l_rec.out_range_high_rating_method := self.get_out_range_high_rating_code;
@@ -654,19 +654,19 @@ as
             l_rec.auto_migrate_ext_flag        := self.auto_migrate_ext_flag;
             l_rec.dep_rounding_spec            := self.dep_rounding_spec;
             l_rec.description                  := self.description;
-            
+
             insert
               into at_rating_spec
             values l_rec;
       end;
-            
+
       for i in 1..self.ind_rounding_specs.count loop
          insert
            into at_rating_ind_rounding
          values (l_rec.rating_spec_code, i, self.ind_rounding_specs(i));
-      end loop;   
+      end loop;
    end;
-   
+
    member function to_clob
    return clob
    is
@@ -680,7 +680,7 @@ as
                    when true  then 'true'
                    when false then 'false'
                 end;
-      end;         
+      end;
    begin
       dbms_lob.createtemporary(l_text, true);
       dbms_lob.open(l_text, dbms_lob.lob_readwrite);
@@ -710,18 +710,18 @@ as
               when true  then '<description/>'
               when false then '<description>'||self.description||'</description>'
            end
-         ||'</rating-spec>');         
+         ||'</rating-spec>');
       dbms_lob.close(l_text);
       return l_text;
-   end;     
-   
+   end;
+
    member function to_xml
    return xmltype
    is
    begin
       return xmltype(self.to_clob);
    end;
-         
+
    static function get_rating_spec_code(
       p_location_id in varchar2,
       p_template_id in varchar2,
@@ -741,14 +741,14 @@ as
             p_template_id,
             'Rating template identifier');
       end if;
-      
+
       select rating_spec_code
         into l_rating_spec_code
         from at_rating_spec
        where template_code = rating_template_t.get_template_code(p_template_id, l_office_code)
          and location_code = cwms_loc.get_location_code(l_office_id, p_location_id)
          and upper(version) = upper(p_version);
-         
+
       return l_rating_spec_code;
    exception
       when no_data_found then
@@ -756,8 +756,8 @@ as
             'ITEM_DOES_NOT_EXIST',
             'Rating specification',
             l_office_id||'/'||p_location_id||cwms_rating.separator1||p_template_id||cwms_rating.separator1||p_version);
-   end;      
-         
+   end;
+
    static function get_rating_spec_code(
       p_rating_id in varchar2,
       p_office_id in varchar2 default null)
@@ -772,12 +772,10 @@ as
             p_rating_id,
             'rating specification');
       end if;
-      return rating_spec_t.get_rating_spec_code( 
+      return rating_spec_t.get_rating_spec_code(
          l_parts(1),
          l_parts(2) || cwms_rating.separator1 || l_parts(3),
          l_parts(4),
          p_office_id);
    end;
 end;
-/
-show errors

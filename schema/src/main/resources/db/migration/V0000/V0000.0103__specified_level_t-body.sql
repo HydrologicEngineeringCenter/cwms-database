@@ -50,5 +50,3 @@ as
       cwms_level.store_specified_level(level_id, description, 'F', office_id);
    end store;
 end;
-/
-show errors;

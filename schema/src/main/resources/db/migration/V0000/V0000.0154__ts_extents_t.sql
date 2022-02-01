@@ -34,32 +34,32 @@ create or replace type ts_extents_t
  *
  */
 as object (
-   ts_code                       integer,       
-   version_time                  date,          
-   earliest_time                 date,          
-   earliest_time_entry           timestamp,     
-   earliest_entry_time           timestamp,     
-   earliest_non_null_time        date,          
-   earliest_non_null_time_entry  timestamp,     
-   earliest_non_null_entry_time  timestamp,     
-   latest_time                   date,          
-   latest_time_entry             timestamp,     
-   latest_entry_time             timestamp,     
-   latest_non_null_time          date,          
-   latest_non_null_time_entry    timestamp,     
-   latest_non_null_entry_time    timestamp,     
-   least_value                   binary_double, 
-   least_value_time              date,          
-   least_value_entry             timestamp,     
-   least_accepted_value          binary_double, 
-   least_accepted_value_time     date,          
-   least_accepted_value_entry    timestamp,     
-   greatest_value                binary_double, 
-   greatest_value_time           date,          
-   greatest_value_entry          timestamp,     
-   greatest_accepted_value       binary_double, 
-   greatest_accepted_value_time  date,          
-   greatest_accepted_value_entry timestamp,     
+   ts_code                       integer,
+   version_time                  date,
+   earliest_time                 date,
+   earliest_time_entry           timestamp,
+   earliest_entry_time           timestamp,
+   earliest_non_null_time        date,
+   earliest_non_null_time_entry  timestamp,
+   earliest_non_null_entry_time  timestamp,
+   latest_time                   date,
+   latest_time_entry             timestamp,
+   latest_entry_time             timestamp,
+   latest_non_null_time          date,
+   latest_non_null_time_entry    timestamp,
+   latest_non_null_entry_time    timestamp,
+   least_value                   binary_double,
+   least_value_time              date,
+   least_value_entry             timestamp,
+   least_accepted_value          binary_double,
+   least_accepted_value_time     date,
+   least_accepted_value_entry    timestamp,
+   greatest_value                binary_double,
+   greatest_value_time           date,
+   greatest_value_entry          timestamp,
+   greatest_accepted_value       binary_double,
+   greatest_accepted_value_time  date,
+   greatest_accepted_value_entry timestamp,
    last_update                   timestamp,
    /**
     * Null constructor. Initializes all attributes to null
@@ -75,7 +75,7 @@ as object (
       p_rowid in urowid)
       return self as result,
    /**
-    * Converts the units of the value fields 
+    * Converts the units of the value fields
     *
     * @param p_from_unit The unit to convert from. If unspecified or NULL, the default database unit is used.
     * @param p_to_unit   The unit to convert to. If unspecified or NULL, the default database unit is used.
@@ -86,14 +86,12 @@ as object (
    /**
     * Changes the time zone of the date and timestamp fields
     *
-    * @param p_from_timezone The time zone to change from. If unspecified or NULL, the database time zone of 'UTC' is used. If 'LOCAL', the location's local time zone is used. 
-    * @param p_to_timezone The time zone to change to. If unspecified or NULL, the database time zone of 'UTC' is used. If 'LOCAL', the location's local time zone is used. 
+    * @param p_from_timezone The time zone to change from. If unspecified or NULL, the database time zone of 'UTC' is used. If 'LOCAL', the location's local time zone is used.
+    * @param p_to_timezone The time zone to change to. If unspecified or NULL, the database time zone of 'UTC' is used. If 'LOCAL', the location's local time zone is used.
     */
    member procedure change_timezone(
       p_from_timezone in varchar2 default null,
       p_to_timezone   in varchar2 default null)
 );
-/
-show errors
-create or replace public synonym cwms_t_ts_extents for ts_extents_t;
 
+create or replace public synonym cwms_t_ts_extents for ts_extents_t;

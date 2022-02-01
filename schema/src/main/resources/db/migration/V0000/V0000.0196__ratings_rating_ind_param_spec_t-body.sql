@@ -16,26 +16,26 @@ as
       loop
          self.parameter_position := rec.parameter_position;
          self.parameter_id := cwms_util.get_parameter_id(rec.parameter_code);
-         
-         select rating_method_id 
-           into self.in_range_rating_method 
-           from cwms_rating_method 
+
+         select rating_method_id
+           into self.in_range_rating_method
+           from cwms_rating_method
           where rating_method_code = rec.in_range_rating_method;
-          
-         select rating_method_id 
-           into self.out_range_low_rating_method 
-           from cwms_rating_method 
+
+         select rating_method_id
+           into self.out_range_low_rating_method
+           from cwms_rating_method
           where rating_method_code = rec.out_range_low_rating_method;
-          
-         select rating_method_id 
-           into self.out_range_high_rating_method 
+
+         select rating_method_id
+           into self.out_range_high_rating_method
            from cwms_rating_method
           where rating_method_code = rec.out_range_high_rating_method;
       end loop;
       self.validate_obj;
-      return;         
+      return;
    end;
-   
+
    constructor function rating_ind_param_spec_t(
       p_xml in xmltype)
    return self as result
@@ -97,7 +97,7 @@ as
       self.validate_obj;
       return;
    end;
-   
+
    member procedure validate_obj
    is
       l_code number(14);
@@ -159,7 +159,7 @@ as
                'CWMS rating method');
       end;
    end;
-   
+
    member function get_parameter_code(
       p_office_id in varchar2)
    return number
@@ -169,10 +169,10 @@ as
    begin
       return cwms_ts.get_parameter_code(l_base_param_id, l_sub_param_id, p_office_id, 'T');
    end;
-   
+
    member function get_rating_code(
       p_rating_id in varchar2)
-   return number 
+   return number
    is
    begin
       return cwms_rating.get_rating_method_code(p_rating_id);
@@ -181,30 +181,30 @@ as
          cwms_err.raise(
             'INVALID_ITEM',
             p_rating_id,
-            'rating method identifier');             
+            'rating method identifier');
    end;
-   
+
    member function get_in_range_rating_code
    return number
    is
    begin
       return get_rating_code(self.in_range_rating_method);
    end;
-   
+
    member function get_out_range_low_rating_code
    return number
    is
    begin
       return get_rating_code(self.out_range_low_rating_method);
    end;
-   
+
    member function get_out_range_high_rating_code
    return number
    is
    begin
       return get_rating_code(self.out_range_high_rating_method);
    end;
-   
+
    member procedure store(
       p_template_code  in number,
       p_fail_if_exists in varchar2)
@@ -216,7 +216,7 @@ as
    begin
       l_rec.template_code   := p_template_code;
       l_rec.parameter_position := self.parameter_position;
-      
+
       select o.office_id,
              lt.parameters_id,
              lt.version
@@ -227,7 +227,7 @@ as
              cwms_office o
        where lt.template_code = p_template_code
          and o.office_code = lt.office_code;
-      
+
       begin
          select *
            into l_rec
@@ -238,19 +238,19 @@ as
             cwms_err.raise(
                'ITEM_ALREADY_EXISTS',
                'Independent rating parameter specification',
-               l_office_id 
-               || '/' 
+               l_office_id
+               || '/'
                || l_parameters_id
                || cwms_rating.separator1
-               || l_version 
-               || ' parameter ' 
+               || l_version
+               || ' parameter '
                || self.parameter_position);
-         end if;            
+         end if;
          l_rec.parameter_code               := self.get_parameter_code(l_office_id);
          l_rec.in_range_rating_method       := self.get_in_range_rating_code;
          l_rec.out_range_low_rating_method  := self.get_out_range_low_rating_code;
          l_rec.out_range_high_rating_method := self.get_out_range_high_rating_code;
-         
+
          update at_rating_ind_param_spec
             set row = l_rec
           where ind_param_spec_code = l_rec.ind_param_spec_code;
@@ -261,13 +261,13 @@ as
             l_rec.in_range_rating_method       := self.get_in_range_rating_code;
             l_rec.out_range_low_rating_method  := self.get_out_range_low_rating_code;
             l_rec.out_range_high_rating_method := self.get_out_range_high_rating_code;
-            
+
             insert
               into at_rating_ind_param_spec
             values l_rec;
       end;
-   end;      
-      
+   end;
+
    member function to_xml
    return xmltype
    is
@@ -278,15 +278,13 @@ as
          ||'<out-range-low-method>'||self.out_range_low_rating_method||'</out-range-low-method>'
          ||'<out-range-high-method>'||self.out_range_high_rating_method||'</out-range-high-method>'
          ||'</ind-parameter-spec>');
-   end;      
-      
+   end;
+
    member function to_clob
    return clob
    is
       l_xml xmltype := self.to_xml;
    begin
       return l_xml.getclobval;
-   end;      
+   end;
 end;
-/
-show errors;

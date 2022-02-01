@@ -16,15 +16,15 @@ as
       loop
          self.note_id     := rec.note_id;
          self.description := rec.description;
-         
+
          select office_id
            into self.office_id
            from cwms_office
           where office_code = rec.office_code;
       end loop;
-      return;         
+      return;
   end;
-            
+
    member function get_note_code
    return number
    is
@@ -35,11 +35,11 @@ as
         from at_rating_value_note
        where office_code in (cwms_util.get_office_code(self.office_id), cwms_util.db_office_code_all)
          and note_id = upper(self.note_id);
-         
-      return l_note_code;         
+
+      return l_note_code;
    end;
 
-   
+
    member procedure store(
       p_fail_if_exists in varchar)
    is
@@ -51,9 +51,9 @@ as
             'ERROR',
             'Cannot store a rating value note for the CWMS office.');
       end if;
-      select note_id bulk collect 
-        into l_cwms_note_ids 
-        from at_rating_value_note 
+      select note_id bulk collect
+        into l_cwms_note_ids
+        from at_rating_value_note
        where office_code = cwms_util.db_office_code_all;
       for i in 1..l_cwms_note_ids.count loop
          if upper(self.note_id) = l_cwms_note_ids(i) then
@@ -61,7 +61,7 @@ as
                'ERROR',
                'NOTE_ID '|| upper(self.note_id) || ' exists for the CWMS office, cannot store.');
          end if;
-      end loop; 
+      end loop;
       l_rec.office_code := cwms_util.get_office_code(self.office_id);
       l_rec.note_id     := upper(self.note_id);
       begin
@@ -77,21 +77,19 @@ as
                self.office_id || '/' || self.note_id);
         end if;
         l_rec.description := self.description;
-        
+
         update at_rating_value_note
            set row = l_rec
-         where note_code = l_rec.note_code;             
-         
+         where note_code = l_rec.note_code;
+
       exception
          when no_data_found then
             l_rec.description := self.description;
-                    
+
             insert
               into at_rating_value_note
-            values l_rec;             
+            values l_rec;
       end;
-   end;      
+   end;
 
 end;
-/
-show errors;

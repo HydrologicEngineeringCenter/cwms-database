@@ -142,5 +142,3 @@ as
       end loop;
    end store;
 end;
-/
-show errors;

@@ -8,53 +8,53 @@ as
    begin
       cwms_err.raise('ERROR', 'Evaluate function cannot be called on abstract type');
    end evaluate;
-   
+
    member procedure print(
       p_level in integer default 0)
    is
    begin
       cwms_err.raise('ERROR', 'Print procedure cannot be called on abstract type');
    end print;
-      
-   member function to_algebraic( 
+
+   member function to_algebraic(
       self in out nocopy abs_logic_expr_t)
       return varchar2
    is
    begin
       cwms_err.raise('ERROR', 'To_algebraic function cannot be called on abstract type');
-   end to_algebraic;      
-   
+   end to_algebraic;
+
    member procedure to_algebraic(
       p_expr in out nocopy varchar2)
    is
    begin
       cwms_err.raise('ERROR', 'To_algebraic procedure cannot be called on abstract type');
    end to_algebraic;
-   
-   member function to_rpn( 
+
+   member function to_rpn(
       self in out nocopy abs_logic_expr_t)
       return varchar2
    is
    begin
       cwms_err.raise('ERROR', 'To_rpn function cannot be called on abstract type');
-   end to_rpn;      
-   
+   end to_rpn;
+
    member procedure to_rpn(
       p_expr in out nocopy varchar2)
    is
    begin
       cwms_err.raise('ERROR', 'To_rpn procedure cannot be called on abstract type');
-   end to_rpn;                           
-   
-      
-   member function to_xml_text( 
+   end to_rpn;
+
+
+   member function to_xml_text(
       self in out nocopy abs_logic_expr_t)
       return varchar2
    is
    begin
       cwms_err.raise('ERROR', 'To_xml_text function cannot be called on abstract type');
-   end to_xml_text;      
-   
+   end to_xml_text;
+
    member procedure to_xml_text(
       p_expr in out nocopy varchar2)
    is
@@ -62,7 +62,3 @@ as
       cwms_err.raise('ERROR', 'To_xml_text procedure cannot be called on abstract type');
    end to_xml_text;
 end;
-/
-show errors;
-commit;
-

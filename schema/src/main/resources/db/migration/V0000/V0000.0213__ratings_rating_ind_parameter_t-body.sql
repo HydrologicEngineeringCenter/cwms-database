@@ -1372,5 +1372,3 @@ as
    end;
 
 end;
-/
-show errors;

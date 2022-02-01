@@ -4091,5 +4091,3 @@ as
       return l_rating_code;
    end;
 end;
-/
-show errors;

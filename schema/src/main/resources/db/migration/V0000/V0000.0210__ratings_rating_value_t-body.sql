@@ -1,6 +1,6 @@
 create or replace type body rating_value_t
 as
-   
+
    constructor function rating_value_t
    return self as result
    is
@@ -8,7 +8,7 @@ as
       -- members are null!
       return;
    end;
-   
+
    constructor function rating_value_t(
       p_rating_ind_param_code in number,
       p_other_ind             in double_tab_t,
@@ -34,24 +34,24 @@ as
             and other_ind_hash = p_other_ind_hash
             and ind_value = p_ind_value;
       end if;
-      
+
       self.ind_value := l_rec.ind_value;
       self.dep_value := l_rec.dep_value;
-      
+
       if l_rec.dep_rating_ind_param_code is not null then
          self.dep_rating_ind_param := rating_ind_parameter_t(l_rec.dep_rating_ind_param_code, p_other_ind, self.ind_value);
       end if;
-      
+
       if l_rec.note_code is not null then
          select note_id
            into self.note_id
            from at_rating_value_note
           where note_code = l_rec.note_code;
       end if;
-      
-      return;              
+
+      return;
    end;
-   
+
    member procedure store(
       p_rating_ind_param_code in number,
       p_other_ind             in double_tab_t,
@@ -82,7 +82,7 @@ as
                l_note_rec.note_code   := cwms_seq.nextval;
                l_note_rec.office_code := l_office_code;
                l_note_rec.note_id     := self.note_id;
-               
+
                insert
                  into at_rating_value_note
                values l_note_rec;
@@ -114,18 +114,18 @@ as
                ||')');
          end if;
          l_other_ind(l_parameter_position) := self.ind_value;
-          
+
          select rating_code
            into l_rating_code
            from at_rating_ind_parameter
           where rating_ind_param_code = p_rating_ind_param_code;
-           
+
          self.dep_rating_ind_param.store(
             p_rating_ind_param_code => l_rec.dep_rating_ind_param_code, --- out parameter
             p_rating_code           => l_rating_code,
             p_other_ind             => l_other_ind,
             p_fail_if_exists        => 'F');
-      end if;            
+      end if;
       ----------------------------
       -- store the rating value --
       ----------------------------
@@ -133,8 +133,8 @@ as
       l_rec.other_ind_hash            := rating_value_t.hash_other_ind(p_other_ind);
       l_rec.ind_value                 := self.ind_value;
       l_rec.dep_value                 := self.dep_value;
-      l_rec.note_code                 := l_note_rec.note_code;               
-         
+      l_rec.note_code                 := l_note_rec.note_code;
+
       if cwms_util.is_true(p_is_extension) then
          -- cwms_err.raise('ERROR', 'Unexpected p_is_extension: '||p_is_extension);
          insert
@@ -145,8 +145,8 @@ as
            into at_rating_value
          values l_rec;
       end if;
-   end;      
-      
+   end;
+
    static function hash_other_ind(
       p_other_ind in double_tab_t)
    return varchar2
@@ -159,7 +159,5 @@ as
          end loop;
       end if;
       return rawtohex(dbms_crypto.hash(utl_raw.cast_to_raw(l_text), dbms_crypto.hash_sh1));
-   end;      
+   end;
 end;
-/
-show errors;

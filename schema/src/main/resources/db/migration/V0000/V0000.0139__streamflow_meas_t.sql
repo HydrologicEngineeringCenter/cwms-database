@@ -1,4 +1,4 @@
-set define off
+
 create type streamflow_meas_t
 /**
  * Holds a stream flow measurement
@@ -21,7 +21,7 @@ create type streamflow_meas_t
  * @member ctrl_cond_id   The condition of the rating control at the time of the measurement
  * @member flow_adj_id    The adjustment code for the measured discharge
  * @member remarks        Any remarks about the rating
- * @member time_zone      The time zone of the date_time field    
+ * @member time_zone      The time zone of the date_time field
  * @member height_unit    The unit of the gage_height, shift_used, and delta_height fields
  * @member flow_unit      The unit of the flow field
  * @member temp_unit      The unit of the temperature fields
@@ -45,7 +45,7 @@ as object (
    delta_height   binary_double,
    delta_time     binary_double,
    ctrl_cond_id   varchar2(20),
-   flow_adj_id    varchar2(4),       
+   flow_adj_id    varchar2(4),
    remarks        varchar2(256),
    time_zone      varchar2(28),
    height_unit    varchar2(16),
@@ -53,8 +53,8 @@ as object (
    temp_unit      varchar2(16),
    air_temp       binary_double,
    water_temp     binary_double,
-   wm_comments    varchar2(256),       
-   
+   wm_comments    varchar2(256),
+
    /**
     * Constructs a streamflow_meas_t object from one record of a rdb-formated measurement from USGS NWIS
     *
@@ -86,30 +86,30 @@ as object (
     *   &lt;delta-time&gt;1.07&lt;/delta-time&gt;
     *   &lt;control-condition&gt;CLER&lt;/control-condition&gt;
     *   &lt;flow-adjustment&gt;MEAS&lt;/flow-adjustment&gt;
-    *   &lt;remarks/&gt; 
-    *   &lt;air-temp unit="F"/&gt; 
-    *   &lt;water-temp unit="F"/&gt; 
-    *   &lt;wm-comments/&gt; 
+    *   &lt;remarks/&gt;
+    *   &lt;air-temp unit="F"/&gt;
+    *   &lt;water-temp unit="F"/&gt;
+    *   &lt;wm-comments/&gt;
     * &lt;/stream-flow-measurement&gt;
     * </big></pre>
     */
    constructor function streamflow_meas_t (
       p_xml in xmltype)
-      return self as result,       
+      return self as result,
    /**
     * Contstucts a streamflow_meas_t object from an entry in the CWMS database
     *
     * @param p_location    The location of the measurements
     * @param p_date_time   The date and time of the measuerement
     * @param p_unit_system The unit system (EN/SI) for the height and flow values
-    * @param p_time_zone   The time zone of the p_date_time parameter. If not specified or NULL, the location's time zone is use 
+    * @param p_time_zone   The time zone of the p_date_time parameter. If not specified or NULL, the location's time zone is use
     */
    constructor function streamflow_meas_t (
       p_location    in location_ref_t,
       p_date_time   in date,
       p_unit_system in varchar2 default 'EN',
       p_time_zone   in varchar2 default null)
-      return self as result,      
+      return self as result,
    /**
     * Contstucts a streamflow_meas_t object from an entry in the CWMS database
     *
@@ -125,7 +125,7 @@ as object (
    /**
     * Contstucts a streamflow_meas_t object from an entry in the CWMS database
     *
-    * @param p_rowid       The row identifier of the measurement's record in the AT_STREAMFLOW_MEAS table. 
+    * @param p_rowid       The row identifier of the measurement's record in the AT_STREAMFLOW_MEAS table.
     * @param p_unit_system The unit system (EN/SI) for the height and flow values
     */
    constructor function streamflow_meas_t (
@@ -136,14 +136,14 @@ as object (
     * Sets the height unit for the streamflow_meas_t object, converting all heights to the specified unit
     *
     * @param h_height_unit The height unit to use.  If 'EN' or 'SI' are specified, the height unit is set to the default for or Engilsh or SI unit system, respectively
-    */ 
+    */
    member procedure set_height_unit(
       p_height_unit in varchar2),
    /**
     * Sets the flow unit for the streamflow_meas_t object, converting the flow to the specified unit
     *
     * @param h_flow_unit The flow unit to use.  If 'EN' or 'SI' are specified, the flow unit is set to the default for or Engilsh or SI unit system, respectively
-    */ 
+    */
    member procedure set_flow_unit(
       p_flow_unit in varchar2),
    /**
@@ -172,11 +172,10 @@ as object (
     * @return The object as a VARCHAR2
     */
    member function to_string1
-      return varchar2         
+      return varchar2
 );
 /
 
-show errors
+
 
 create or replace public synonym cwms_t_streamflow_meas for streamflow_meas_t;
-

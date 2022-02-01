@@ -25,5 +25,3 @@ as
    end init;
 
 end;
-/
-show errors;
