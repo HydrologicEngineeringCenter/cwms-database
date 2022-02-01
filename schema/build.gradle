@@ -29,6 +29,9 @@ flyway {
     password = BUILD_USERPASSWORD
     mixed = true
     schemas = ['CWMS_20','CWMS_DBA']
+    placeholders = [
+        "CWMS_SCHEMA": "CWMS_20"
+    ]
 }
 
 flywayMigrate.dependsOn classes
