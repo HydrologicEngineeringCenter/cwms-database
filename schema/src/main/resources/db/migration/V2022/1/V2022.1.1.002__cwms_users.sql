@@ -1,115 +1,111 @@
-SET define on
-create user &cwms_schema
-  identified by "&cwms_passwd"
-  default tablespace CWMS_20DATA
-  temporary tablespace temp
-  profile cwms_prof
-  account unlock;
 
-  
-alter user &cwms_schema quota unlimited on CWMS_20_TSV;
-alter user &cwms_schema quota unlimited on CWMS_20AT_DATA;
-alter user &cwms_schema quota unlimited on CWMS_20DATA;
-alter user &cwms_schema quota unlimited on CWMS_AQ;
-alter user &cwms_schema quota unlimited on CWMS_AQ_EX;
+alter user ${CWMS_SCHEMA} ${CWMS_SCHEMA_AUTH};
+alter user ${CWMS_SCHEMA} account unlock;
+alter user ${CWMS_SCHEMA} profile cwms_prof;
+alter user ${CWMS_SCHEMA} default tablespace CWMS_20DATA;
+alter user ${CWMS_SCHEMA} quota unlimited on CWMS_20_TSV;
+alter user ${CWMS_SCHEMA} quota unlimited on CWMS_20AT_DATA;
+alter user ${CWMS_SCHEMA} quota unlimited on CWMS_20DATA;
+alter user ${CWMS_SCHEMA} quota unlimited on CWMS_AQ;
+alter user ${CWMS_SCHEMA} quota unlimited on CWMS_AQ_EX;
 
---grant aq_administrator_role to &cwms_schema;
---grant aq_user_role to &cwms_schema;
+--grant aq_administrator_role to ${CWMS_SCHEMA};
+--grant aq_user_role to ${CWMS_SCHEMA};
 
-grant create role to &cwms_schema;
---grant javauserpriv to &cwms_schema;
-grant alter any index to &cwms_schema;
-grant alter any indextype to &cwms_schema;
-grant alter any materialized view to &cwms_schema;
-grant alter any procedure to &cwms_schema;
-grant alter any sequence to &cwms_schema;
-grant alter any table to &cwms_schema;
-grant alter any trigger to &cwms_schema;
-grant alter any type to &cwms_schema;
-grant alter resource cost to &cwms_schema;
-grant alter tablespace to &cwms_schema;
-grant analyze any dictionary to &cwms_schema;
-grant analyze any to &cwms_schema;
-grant become user to &cwms_schema;
-grant comment any table to &cwms_schema;
-grant create any context to &cwms_schema;
-grant create any index to &cwms_schema;
-grant create any indextype to &cwms_schema;
-grant create any job to &cwms_schema;
-grant create any library to &cwms_schema;
-grant create any materialized view to &cwms_schema;
-grant create any procedure to &cwms_schema;
-grant create any sequence to &cwms_schema;
-grant create any synonym to &cwms_schema;
-grant create any table to &cwms_schema;
-grant create any trigger to &cwms_schema;
-grant create any type to &cwms_schema;
-grant create any view to &cwms_schema;
-grant create cluster to &cwms_schema;
-grant create database link to &cwms_schema;
-grant create dimension to &cwms_schema;
-grant create indextype to &cwms_schema;
-grant create job to &cwms_schema;
-grant create library to &cwms_schema;
-grant create materialized view to &cwms_schema;
-grant create operator to &cwms_schema;
-grant create procedure to &cwms_schema;
-grant create public synonym to &cwms_schema;
-grant create sequence to &cwms_schema;
-grant create session to &cwms_schema;
-grant create synonym to &cwms_schema;
-grant create table to &cwms_schema;
-grant create tablespace to &cwms_schema;
-grant create trigger to &cwms_schema;
-grant create type to &cwms_schema;
-grant create view to &cwms_schema;
-grant debug any procedure to &cwms_schema;
-grant debug connect session to &cwms_schema;
-grant delete any table to &cwms_schema;
-grant drop any index to &cwms_schema;
-grant drop any indextype to &cwms_schema;
-grant drop any materialized view to &cwms_schema;
-grant drop any procedure to &cwms_schema;
-grant drop any sequence to &cwms_schema;
-grant drop any table to &cwms_schema;
-grant drop any trigger to &cwms_schema;
-grant drop any type to &cwms_schema;
-grant drop any view to &cwms_schema;
-grant drop public synonym to &cwms_schema;
-grant drop tablespace to &cwms_schema;
-grant execute any class to &cwms_schema;
-grant execute any indextype to &cwms_schema;
-grant execute any procedure to &cwms_schema with admin option;
-grant execute any type to &cwms_schema;
-grant execute on  ctxsys.ctx_ddl to &cwms_schema;
-grant execute on  ctxsys.ctx_doc to &cwms_schema;
-grant execute on  dbms_crypto to &cwms_schema;
-grant execute on  sys.dbms_aq to &cwms_schema;
-grant execute on  sys.dbms_aq_bqview to &cwms_schema;
-grant execute on  sys.dbms_aqadm to &cwms_schema;
-grant execute on  sys.dbms_lock to &cwms_schema;
-grant execute on  sys.dbms_rls to &cwms_schema;
-grant execute on  sys.utl_recomp to &cwms_schema;
-grant export full database to &cwms_schema;
-grant import full database to &cwms_schema;
-grant insert any table to &cwms_schema;
-grant manage scheduler to &cwms_schema;
-grant manage tablespace to &cwms_schema;
-grant select any dictionary to &cwms_schema;
-grant select any sequence to &cwms_schema;
-grant select any table to &cwms_schema;
-grant select on  sys.v_$latch to &cwms_schema;
-grant select on  sys.v_$mystat to &cwms_schema;
-grant select on  sys.v_$statname to &cwms_schema;
---grant select on  sys.v_$timer to &cwms_schema;
-grant update any table to &cwms_schema;
+grant create role to ${CWMS_SCHEMA};
+--grant javauserpriv to ${CWMS_SCHEMA};
+grant alter any index to ${CWMS_SCHEMA};
+grant alter any indextype to ${CWMS_SCHEMA};
+grant alter any materialized view to ${CWMS_SCHEMA};
+grant alter any procedure to ${CWMS_SCHEMA};
+grant alter any sequence to ${CWMS_SCHEMA};
+grant alter any table to ${CWMS_SCHEMA};
+grant alter any trigger to ${CWMS_SCHEMA};
+grant alter any type to ${CWMS_SCHEMA};
+grant alter resource cost to ${CWMS_SCHEMA};
+grant alter tablespace to ${CWMS_SCHEMA};
+grant analyze any dictionary to ${CWMS_SCHEMA};
+grant analyze any to ${CWMS_SCHEMA};
+grant become user to ${CWMS_SCHEMA};
+grant comment any table to ${CWMS_SCHEMA};
+grant create any context to ${CWMS_SCHEMA};
+grant create any index to ${CWMS_SCHEMA};
+grant create any indextype to ${CWMS_SCHEMA};
+grant create any job to ${CWMS_SCHEMA};
+grant create any library to ${CWMS_SCHEMA};
+grant create any materialized view to ${CWMS_SCHEMA};
+grant create any procedure to ${CWMS_SCHEMA};
+grant create any sequence to ${CWMS_SCHEMA};
+grant create any synonym to ${CWMS_SCHEMA};
+grant create any table to ${CWMS_SCHEMA};
+grant create any trigger to ${CWMS_SCHEMA};
+grant create any type to ${CWMS_SCHEMA};
+grant create any view to ${CWMS_SCHEMA};
+grant create cluster to ${CWMS_SCHEMA};
+grant create database link to ${CWMS_SCHEMA};
+grant create dimension to ${CWMS_SCHEMA};
+grant create indextype to ${CWMS_SCHEMA};
+grant create job to ${CWMS_SCHEMA};
+grant create library to ${CWMS_SCHEMA};
+grant create materialized view to ${CWMS_SCHEMA};
+grant create operator to ${CWMS_SCHEMA};
+grant create procedure to ${CWMS_SCHEMA};
+grant create public synonym to ${CWMS_SCHEMA};
+grant create sequence to ${CWMS_SCHEMA};
+grant create session to ${CWMS_SCHEMA};
+grant create synonym to ${CWMS_SCHEMA};
+grant create table to ${CWMS_SCHEMA};
+grant create tablespace to ${CWMS_SCHEMA};
+grant create trigger to ${CWMS_SCHEMA};
+grant create type to ${CWMS_SCHEMA};
+grant create view to ${CWMS_SCHEMA};
+grant debug any procedure to ${CWMS_SCHEMA};
+grant debug connect session to ${CWMS_SCHEMA};
+grant delete any table to ${CWMS_SCHEMA};
+grant drop any index to ${CWMS_SCHEMA};
+grant drop any indextype to ${CWMS_SCHEMA};
+grant drop any materialized view to ${CWMS_SCHEMA};
+grant drop any procedure to ${CWMS_SCHEMA};
+grant drop any sequence to ${CWMS_SCHEMA};
+grant drop any table to ${CWMS_SCHEMA};
+grant drop any trigger to ${CWMS_SCHEMA};
+grant drop any type to ${CWMS_SCHEMA};
+grant drop any view to ${CWMS_SCHEMA};
+grant drop public synonym to ${CWMS_SCHEMA};
+grant drop tablespace to ${CWMS_SCHEMA};
+grant execute any class to ${CWMS_SCHEMA};
+grant execute any indextype to ${CWMS_SCHEMA};
+grant execute any procedure to ${CWMS_SCHEMA} with admin option;
+grant execute any type to ${CWMS_SCHEMA};
+grant execute on  ctxsys.ctx_ddl to ${CWMS_SCHEMA};
+grant execute on  ctxsys.ctx_doc to ${CWMS_SCHEMA};
+grant execute on  dbms_crypto to ${CWMS_SCHEMA};
+grant execute on  sys.dbms_aq to ${CWMS_SCHEMA};
+grant execute on  sys.dbms_aq_bqview to ${CWMS_SCHEMA};
+grant execute on  sys.dbms_aqadm to ${CWMS_SCHEMA};
+grant execute on  sys.dbms_lock to ${CWMS_SCHEMA};
+grant execute on  sys.dbms_rls to ${CWMS_SCHEMA};
+grant execute on  sys.utl_recomp to ${CWMS_SCHEMA};
+grant export full database to ${CWMS_SCHEMA};
+grant import full database to ${CWMS_SCHEMA};
+grant insert any table to ${CWMS_SCHEMA};
+grant manage scheduler to ${CWMS_SCHEMA};
+grant manage tablespace to ${CWMS_SCHEMA};
+grant select any dictionary to ${CWMS_SCHEMA};
+grant select any sequence to ${CWMS_SCHEMA};
+grant select any table to ${CWMS_SCHEMA};
+grant select on  sys.v_$latch to ${CWMS_SCHEMA};
+grant select on  sys.v_$mystat to ${CWMS_SCHEMA};
+grant select on  sys.v_$statname to ${CWMS_SCHEMA};
+--grant select on  sys.v_$timer to ${CWMS_SCHEMA};
+grant update any table to ${CWMS_SCHEMA};
 
--- These privileges are added as they are dervied from 'PUBLIC' user before. 
+-- These privileges are added as they are dervied from 'PUBLIC' user before.
 -- These grants will be revoked from 'PUBLIC' to confirm to STIG requirements
-grant execute on dbms_lob to &cwms_schema;
-grant execute on dbms_random to &cwms_schema;
-grant execute on utl_smtp to &cwms_schema;
-grant execute on utl_http to &cwms_schema;
+grant execute on dbms_lob to ${CWMS_SCHEMA};
+grant execute on dbms_random to ${CWMS_SCHEMA};
+grant execute on utl_smtp to ${CWMS_SCHEMA};
+grant execute on utl_http to ${CWMS_SCHEMA};
 
 begin
    --
@@ -117,22 +113,22 @@ begin
    --
    sys.dbms_aqadm.grant_system_privilege (
       privilege    => 'enqueue_any',
-      grantee      => '&cwms_schema',
+      grantee      => '${CWMS_SCHEMA}',
       admin_option => false);
    sys.dbms_aqadm.grant_system_privilege (
       privilege    => 'dequeue_any',
-      grantee      => '&cwms_schema',
+      grantee      => '${CWMS_SCHEMA}',
       admin_option => false);
    sys.dbms_aqadm.grant_system_privilege (
       privilege    => 'manage_any',
-      grantee      => '&cwms_schema',
+      grantee      => '${CWMS_SCHEMA}',
       admin_option => false);
    --
    -- grant network address lookup privilege
    --
    /*dbms_network_acl_admin.add_privilege(
       acl         => 'resolve.xml',
-      principal   => upper('&cwms_schema'),
+      principal   => upper('${CWMS_SCHEMA}'),
       is_grant    => true,
       privilege   => 'resolve');*/
 end;
@@ -154,7 +150,7 @@ begin
             ace  => xs$ace_type(
                privilege_list   => xs$name_list('resolve','connect','http','smtp'),
                granted          => true,
-               principal_name   => '&cwms_schema',
+               principal_name   => '${CWMS_SCHEMA}',
                principal_type   => xs_acl.ptype_db),
             remove_empty_acl => true);
       exception
@@ -169,7 +165,7 @@ begin
          ace  => xs$ace_type(
             privilege_list => xs$name_list('resolve','connect','http','smtp'),
             granted        => true,
-            principal_name => '&cwms_schema',
+            principal_name => '${CWMS_SCHEMA}',
             principal_type  => xs_acl.ptype_db));
        commit;
 

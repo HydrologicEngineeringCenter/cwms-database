@@ -30,7 +30,9 @@ flyway {
     mixed = true
     schemas = ['CWMS_20','CWMS_DBA']
     placeholders = [
-        "CWMS_SCHEMA": "CWMS_20"
+        "CWMS_SCHEMA": "CWMS_20",
+        "CWMS_SCHEMA_AUTH": "no authentication", // override on commandline with identified by portion if needed.
+        "CWMS_DBA_AUTH": "no authentication"
     ]
 }
 
