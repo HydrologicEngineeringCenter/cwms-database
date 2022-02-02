@@ -1,6 +1,3 @@
-SET define on
-@@defines.sql
-
 
 CREATE TABLE AT_XCHG_DATASTORE_DSS
 (
@@ -26,8 +23,8 @@ STORAGE    (
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING;
@@ -73,8 +70,8 @@ STORAGE    (
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING;
@@ -130,8 +127,8 @@ STORAGE    (
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING;
@@ -183,11 +180,11 @@ NOPARALLEL;
 create or replace trigger at_unit_alias_constraint
 before delete or update
 of alias_id
-on "&cwms_schema"."AT_UNIT_ALIAS" 
+on "${CWMS_SCHEMA}"."AT_UNIT_ALIAS"
 referencing new as new old as old
 for each row
 declare
-   l_count number;   
+   l_count number;
 begin
    if deleting or (updating and :new.alias_id != :old.alias_id) then
       select count(unit_id)
@@ -212,6 +209,5 @@ begin
    end if;
 end at_unit_alias_constraint;
 /
-show errors;
-commit;
 
+commit;
