@@ -1,89 +1,4 @@
-WHENEVER sqlerror exit sql.sqlcode
-SET define on
--- @@../cwms/defines.sql
-@@defines.sql
 
-SET serveroutput on
-
-----------------------------------------------------
--- drop tables, mviews & mview logs if they exist --
-----------------------------------------------------
-
-DECLARE
-   TYPE id_array_t IS TABLE OF VARCHAR2 (32);
-
-   table_names       id_array_t
-      := id_array_t ('AT_CONSTRUCTION_HISTORY',
-           'AT_DOCUMENT',
-           'AT_EMBANKMENT',
-           'AT_GATE_SETTING',
-           'AT_LOCK',
-           'AT_LOCKAGE',
-           'AT_GATE_CHANGE',
-           'AT_TURBINE_CHANGE',
-           'AT_OUTLET',
-           'AT_PROJECT',
-           'AT_PROJECT_AGREEMENT',
-           'AT_PROJECT_CONGRESS_DISTRICT',
-           'AT_PROJECT_LOCK',
-           'AT_PROJECT_PURPOSES',
-           'AT_PRJ_LCK_REVOKER_RIGHTS',
-           'AT_TURBINE',
-           'AT_TURBINE_SETTING',
-           'AT_WAT_USR_CONTRACT_ACCOUNTING',
-           'AT_WATER_USER_CONTRACT',
-           'AT_WATER_USER',
-           'AT_XREF_WAT_USR_CONTRACT_DOCS',
-           'AT_DOCUMENT_TYPE',
-           'AT_EMBANK_PROTECTION_TYPE',
-           'AT_EMBANK_STRUCTURE_TYPE',
-           'AT_GATE_CH_COMPUTATION_CODE',
-           'AT_GATE_RELEASE_REASON_CODE',
-           'AT_PHYSICAL_TRANSFER_TYPE',
-           'AT_PROJECT_PURPOSE',
-           'AT_TURBINE_SETTING_REASON',
-           'AT_TURBINE_COMPUTATION_CODE',
-           'AT_WS_CONTRACT_TYPE',
-           'AT_OPERATIONAL_STATUS_CODE',
-           'AT_OUTLET_CHARACTERISTIC',
-           'AT_TURBINE_CHARACTERISTIC'
-                    );
-   mview_log_names   id_array_t
-      := id_array_t (' '
-                    );
-BEGIN
-   FOR i IN table_names.FIRST .. table_names.LAST
-   LOOP
-      BEGIN
-         EXECUTE IMMEDIATE    'drop table '
-                           || table_names (i)
-                           || ' cascade constraints purge';
-
-         DBMS_OUTPUT.put_line ('Dropped table ' || table_names (i));
-      EXCEPTION
-         WHEN OTHERS
-         THEN
-            NULL;
-      END;
-   END LOOP;
-
-   FOR i IN mview_log_names.FIRST .. mview_log_names.LAST
-   LOOP
-      BEGIN
-         EXECUTE IMMEDIATE    'drop materialized view log on '
-                           || mview_log_names (i);
-
-         DBMS_OUTPUT.put_line (   'Dropped materialized view log on '
-                               || mview_log_names (i)
-                              );
-      EXCEPTION
-         WHEN OTHERS
-         THEN
-            NULL;
-      END;
-   END LOOP;
-END;
-/
 
 -------------------
 -- CREATE TABLES --
@@ -349,9 +264,9 @@ CHECK ( purpose_active = 'T' OR purpose_active = 'F'))
 
 insert into at_project_purposes values ( 1, 53, 'Debris Control', 'Debris Control', 'T', 'D');
 insert into at_project_purposes values ( 2, 53, 'Fire Prot/Small Fish Pond', 'Fire Protection Stock or Small Fish Pond', 'T', 'P');
-set escape on
+--set escape on
 insert into at_project_purposes values ( 3, 53, 'Fish \& Wildlife Pond', 'Fish \& Wildlife Pond', 'T', 'F');
-set escape off
+--set escape off
 insert into at_project_purposes values ( 4, 53, 'Flood Control', 'Flood Control', 'T', 'C');
 insert into at_project_purposes values ( 5, 53, 'Grade Stabilization', 'Grade Stabilization', 'T', 'G');
 insert into at_project_purposes values ( 6, 53, 'HydroElectric', 'HydroElectric', 'T', 'H');
@@ -1514,7 +1429,7 @@ COMMENT ON COLUMN at_lock.volume_per_lockage IS 'The volume of water discharged 
 COMMENT ON COLUMN at_lock.minimum_draft IS 'The minimum depth of water that is maintained for vessels for this particular lock';
 
 CREATE UNIQUE INDEX at_lock_idx_1 ON at_lock
-(lock_location_code,project_location_code)
+(lock_location_code,project_location_code);
 
 ALTER TABLE at_lock ADD (
   CONSTRAINT at_lock_pk
@@ -3312,4 +3227,3 @@ comment on column at_prj_lck_revoker_rights.office_code    is 'The office the us
 comment on column at_prj_lck_revoker_rights.application_id is 'The application the user rights are described for';
 comment on column at_prj_lck_revoker_rights.allow_flag     is 'Specifies whether this list is the ALLOW or DISALLOW list';
 comment on column at_prj_lck_revoker_rights.project_list   is 'Comma-separated list of project identiers and/or project identifer masks';
-
