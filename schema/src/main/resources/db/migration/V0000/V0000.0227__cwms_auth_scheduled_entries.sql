@@ -1,14 +1,14 @@
-create table cwms_auth_sched_entries(	
-   database_name   varchar2(30), 
+create table cwms_auth_sched_entries(
+   database_name   varchar2(30),
    job_owner       varchar2(30),
-	job_name        varchar2(30),   
-	job_creator     varchar2(30),   
-	job_style       varchar2(11),   
-	job_type        varchar2(16),   
-	job_priority    number,         
-	schedule_type   varchar2(12),   
-	repeat_interval varchar2(4000), 
-	comments        varchar2(240),  
+	job_name        varchar2(30),
+	job_creator     varchar2(30),
+	job_style       varchar2(11),
+	job_type        varchar2(16),
+	job_priority    number,
+	schedule_type   varchar2(12),
+	repeat_interval varchar2(4000),
+	comments        varchar2(240),
 	job_action      varchar2(4000),
 	constraint cwms_auth_sched_entries_pk primary key (database_name, job_owner, job_name) using index
 )  tablespace cwms_20data;
@@ -39,11 +39,10 @@ begin
    :new.job_owner     := upper(:new.job_owner);
    :new.job_name      := upper(:new.job_name);
 end cwms_auth_sched_entries_t01;
-/
-show errors
 
-insert 
-  into cwms_auth_sched_entries 
+
+insert
+  into cwms_auth_sched_entries
 values ('CWMS',
         'CWMS_20',
         'CLEAN_SESSION_KEYS_JOB',
@@ -56,7 +55,7 @@ values ('CWMS',
         'Clean expired session keys',
         'cwms_sec.clean_session_keys');
 insert
-  into CWMS_auth_sched_entries 
+  into CWMS_auth_sched_entries
 values ('CWMS',
         'CWMS_20',
         'REMOVE_STATUS_SUBSCRIBERS',
@@ -75,7 +74,7 @@ values ('CWMS',
         'UPDATE_SHEF_SPEC_MAPPING',
         'CWMS_20',
         'REGULAR',
-        'STORED_PROCEDURE',                                             
+        'STORED_PROCEDURE',
         3,
         'CALENDAR',
         'freq=minutely; interval=1',
@@ -137,7 +136,7 @@ insert
   into CWMS_auth_sched_entries
 values ('CWMS',
         'CWMS_STR_ADM',
-        'STREAMS_CHECK_CAPTURE_JOB',                                                                
+        'STREAMS_CHECK_CAPTURE_JOB',
         'CWMS_STR_ADM',
         'REGULAR',
         'STORED_PROCEDURE',
