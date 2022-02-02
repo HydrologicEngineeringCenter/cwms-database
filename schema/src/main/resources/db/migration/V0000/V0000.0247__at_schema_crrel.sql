@@ -1,42 +1,11 @@
-SET serveroutput on
-SET define on
---@@defines.sql
-----------------------------------------------------
--- drop tables, mviews & mview logs if they exist --
-----------------------------------------------------
 
-DECLARE
-   TYPE id_array_t IS TABLE OF VARCHAR2 (32);
 
-   table_names       id_array_t
-      := id_array_t ('UPLOADED_XLS_FILE_ROWS_T',
-                     'UPLOADED_XLS_FILES_T',
-                     'TEMP_COLLECTION_API_FIRE_TBL'
-                    );
-BEGIN
-   FOR i IN table_names.FIRST .. table_names.LAST
-   LOOP
-      BEGIN
-         EXECUTE IMMEDIATE    'drop table '
-                           || table_names (i)
-                           || ' cascade constraints';
-
-         DBMS_OUTPUT.put_line ('Dropped table ' || table_names (i));
-      EXCEPTION
-         WHEN OTHERS
-         THEN
-            NULL;
-      END;
-   END LOOP;
-
-END;
-/
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 --
--- UPLOADED_XLS_FILE_ROWS_SEQ  (Sequence) 
+-- UPLOADED_XLS_FILE_ROWS_SEQ  (Sequence)
 --
 CREATE SEQUENCE UPLOADED_XLS_FILE_ROWS_SEQ
   START WITH 100
@@ -51,27 +20,28 @@ CREATE SEQUENCE UPLOADED_XLS_FILE_ROWS_SEQ
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 --
--- STRING_AGG_TYPE  (Type) 
+-- STRING_AGG_TYPE  (Type)
 --
+
 CREATE OR REPLACE type string_agg_type as object
    (
       total varchar2(4000),
-    
+
        static function
             ODCIAggregateInitialize(sctx IN OUT string_agg_type )
             return number,
-    
+
        member function
           ODCIAggregateIterate(self IN OUT string_agg_type ,
                                value IN varchar2 )
           return number,
-  
+
      member function
           ODCIAggregateTerminate(self IN string_agg_type,
                                  returnValue OUT  varchar2,
                                  flags IN number)
            return number,
-   
+
       member function
            ODCIAggregateMerge(self IN OUT string_agg_type,
                               ctx2 IN string_agg_type)
@@ -80,78 +50,12 @@ CREATE OR REPLACE type string_agg_type as object
 /
 
 
---
--- STRING_AGG_TYPE  (Type Body) 
---
---  Dependencies: 
---   STANDARD (Package)
---   STANDARD (Package)
---   ODCICONST (Synonym)
---
-CREATE OR REPLACE type body string_agg_type
-    is
-    
-    static function ODCIAggregateInitialize(sctx IN OUT string_agg_type)
-    return number
-    is
-    begin
-        sctx := string_agg_type( null );
-        return ODCIConst.Success;
-   end;
-   
-   member function ODCIAggregateIterate(self IN OUT string_agg_type,
-                                        value IN varchar2 )
-   return number
-   is
-   begin
-       self.total := self.total || ',' || value;
-       return ODCIConst.Success;
-   end;
-   
-   member function ODCIAggregateTerminate(self IN string_agg_type,
-                                          returnValue OUT varchar2,
-                                          flags IN number)
-   return number
-   is
-   begin
-       returnValue := ltrim(self.total,',');
-       return ODCIConst.Success;
-   end;
-   
-   member function ODCIAggregateMerge(self IN OUT string_agg_type,
-                                      ctx2 IN string_agg_type)
-   return number
-   is
-   begin
-       self.total := self.total || ctx2.total;
-       return ODCIConst.Success;
-   end;
-   
-   
-   end;
-/
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 --
--- STRAGG  (Function) 
---
---  Dependencies: 
---   STANDARD (Package)
---   SYS_STUB_FOR_PURITY_ANALYSIS (Package)
---   STRING_AGG_TYPE (Type)
---
-CREATE OR REPLACE FUNCTION stragg(input varchar2 )
-    RETURN varchar2
-    PARALLEL_ENABLE AGGREGATE USING string_agg_type;
-/
-
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
---
--- UPLOADED_XLS_FILES_T  (Table) 
+-- UPLOADED_XLS_FILES_T  (Table)
 --
 --   Row count:3
 CREATE TABLE UPLOADED_XLS_FILES_T
@@ -229,8 +133,8 @@ STORAGE    (
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
@@ -240,9 +144,9 @@ MONITORING
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 --
--- UPLOADED_XLS_FILE_ROWS_T  (Table) 
+-- UPLOADED_XLS_FILE_ROWS_T  (Table)
 --
---  Dependencies: 
+--  Dependencies:
 --   UPLOADED_XLS_FILES_T (Table)
 --
 --   Row count:7
@@ -272,8 +176,8 @@ STORAGE    (
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
@@ -281,9 +185,9 @@ MONITORING
 
 
 --
--- UPLOADED_XLS_FILES_T_PK  (Index) 
+-- UPLOADED_XLS_FILES_T_PK  (Index)
 --
---  Dependencies: 
+--  Dependencies:
 --   UPLOADED_XLS_FILES_T (Table)
 --
 CREATE UNIQUE INDEX UPLOADED_XLS_FILES_T_PK ON UPLOADED_XLS_FILES_T
@@ -306,9 +210,9 @@ NOPARALLEL
 
 
 --
--- UPLOADED_XLS_FILE_ROWS_T_PK  (Index) 
+-- UPLOADED_XLS_FILE_ROWS_T_PK  (Index)
 --
---  Dependencies: 
+--  Dependencies:
 --   UPLOADED_XLS_FILE_ROWS_T (Table)
 --
 CREATE UNIQUE INDEX UPLOADED_XLS_FILE_ROWS_T_PK ON UPLOADED_XLS_FILE_ROWS_T
@@ -330,9 +234,9 @@ NOPARALLEL
 /
 
 
--- 
--- Non Foreign Key Constraints for Table UPLOADED_XLS_FILES_T 
--- 
+--
+-- Non Foreign Key Constraints for Table UPLOADED_XLS_FILES_T
+--
 ALTER TABLE UPLOADED_XLS_FILES_T ADD (
   CONSTRAINT UPLOADED_XLS_FILES_T_PK
   PRIMARY KEY
@@ -340,9 +244,9 @@ ALTER TABLE UPLOADED_XLS_FILES_T ADD (
   USING INDEX UPLOADED_XLS_FILES_T_PK)
 /
 
--- 
--- Non Foreign Key Constraints for Table UPLOADED_XLS_FILE_ROWS_T 
--- 
+--
+-- Non Foreign Key Constraints for Table UPLOADED_XLS_FILE_ROWS_T
+--
 ALTER TABLE UPLOADED_XLS_FILE_ROWS_T ADD (
   CONSTRAINT UPLOADED_XLS_FILE_ROWS_T_PK
   PRIMARY KEY
@@ -350,12 +254,12 @@ ALTER TABLE UPLOADED_XLS_FILE_ROWS_T ADD (
   USING INDEX UPLOADED_XLS_FILE_ROWS_T_PK)
 /
 
--- 
--- Foreign Key Constraints for Table UPLOADED_XLS_FILE_ROWS_T 
--- 
+--
+-- Foreign Key Constraints for Table UPLOADED_XLS_FILE_ROWS_T
+--
 ALTER TABLE UPLOADED_XLS_FILE_ROWS_T ADD (
-  CONSTRAINT UPLOADED_XLS_FILE_ROWS_T__FK1 
-  FOREIGN KEY (FILE_ID) 
+  CONSTRAINT UPLOADED_XLS_FILE_ROWS_T__FK1
+  FOREIGN KEY (FILE_ID)
   REFERENCES UPLOADED_XLS_FILES_T (ID))
 /
 
@@ -363,7 +267,7 @@ ALTER TABLE UPLOADED_XLS_FILE_ROWS_T ADD (
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 --
--- TEMP_COLLECTION_API_FIRE_TBL  (Table) 
+-- TEMP_COLLECTION_API_FIRE_TBL  (Table)
 --
 --   Row count:539
 CREATE TABLE TEMP_COLLECTION_API_FIRE_TBL
@@ -386,8 +290,8 @@ STORAGE    (
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
