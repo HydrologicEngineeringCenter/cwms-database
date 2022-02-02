@@ -2,15 +2,12 @@
 /* CWMS Version 2.0 --
 This script should be run by the cwms schema owner.
 */
-SET serveroutput on
-SET define on
-@@defines.sql
 
 ------------------------------------------------------
 -- drop tables, mviews and mview logs if they exist --
 ------------------------------------------------------
-
-declare
+/* flyway does this quite ubrubtly on clean (or it should go in afterClean.sql)*/
+/*declare
    type id_array_t is table of varchar2 (32);
 
    table_names     id_array_t := new id_array_t();
@@ -49,19 +46,12 @@ begin
       end;
    end loop;
 end;
-/
+*/
 
--------------------
--- CREATE TABLES --
--------------------
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
-@@./cwms/tables/cwms_auth_sched_entries.sql
-@@./cwms/tables/cwms_unauth_sched_entries.sql
-@@./cwms/tables/cwms_nation_sp.sql -- must be created before AT_PHYSICAL_LOCATION
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
 
+-- moved to seperate files
+--@@./cwms/tables/cwms_auth_sched_entries.sql
+--@@./cwms/tables/cwms_unauth_sched_entries.sql
 -------------------------
 -- AT_TS_TABLE_PROPERTIES table
 --
@@ -195,8 +185,8 @@ ALTER TABLE at_base_location ADD (
                 MINEXTENTS       1
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
-               ))
-/
+               ));
+
 
 ALTER TABLE at_base_location ADD (
   CONSTRAINT at_base_location_fk1
@@ -208,9 +198,9 @@ INSERT INTO at_base_location
      VALUES (0, (SELECT office_code
                    FROM cwms_office
                   WHERE office_id = 'CWMS'), 'Deleted TS ID', 'F'
-            )
-/
-COMMIT;
+            );
+
+
 --------------------
 -- AT_PHYSICAL_LOCATION table
 --
@@ -260,7 +250,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 
 COMMENT ON TABLE  AT_PHYSICAL_LOCATION                     IS 'Defines unique locations';
 COMMENT ON COLUMN AT_PHYSICAL_LOCATION.LOCATION_CODE       IS 'Unique record identifier, primarily used for internal database processing. This code is automatically assigned by the system.';
@@ -308,15 +298,14 @@ STORAGE    (
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-NOPARALLEL
-/
+NOPARALLEL;
 
 
 INSERT INTO at_physical_location
             (location_code, base_location_code, active_flag, location_kind)
      VALUES (0, 0, 'F', 1);
 
-COMMIT;
+
 
 ---------------------------------------------------------------------------
 -- This information is not included directly in the AT_PHYSICAL_LOCATION --
@@ -368,7 +357,7 @@ DELETE FROM USER_SDO_GEOM_METADATA WHERE TABLE_NAME='AT_GEOGRAPHIC_LOCATION';
 DELETE FROM MDSYS.SDO_GEOM_METADATA_TABLE WHERE SDO_TABLE_NAME='AT_GEOGRAPHIC_LOCATION';
 
 INSERT INTO MDSYS.SDO_GEOM_METADATA_TABLE VALUES (
-   '&cwms_schema',
+   '${CWMS_SCHEMA}',
    'AT_GEOGRAPHIC_LOCATION',
    'POINT',
    SDO_DIM_ARRAY(
@@ -380,7 +369,7 @@ INSERT INTO MDSYS.SDO_GEOM_METADATA_TABLE VALUES (
      WHERE CS_NAME='WGS 84 (geographic 3D)'));
 
 INSERT INTO MDSYS.SDO_GEOM_METADATA_TABLE VALUES (
-   '&cwms_schema',
+   '${CWMS_SCHEMA}',
    'AT_GEOGRAPHIC_LOCATION',
    'MULTI_POINT',
    SDO_DIM_ARRAY(
@@ -392,7 +381,7 @@ INSERT INTO MDSYS.SDO_GEOM_METADATA_TABLE VALUES (
      WHERE CS_NAME='WGS 84 (geographic 3D)'));
 
 INSERT INTO MDSYS.SDO_GEOM_METADATA_TABLE VALUES (
-   '&cwms_schema',
+   '${CWMS_SCHEMA}',
    'AT_GEOGRAPHIC_LOCATION',
    'POLYGON',
    SDO_DIM_ARRAY(
@@ -1637,8 +1626,107 @@ STORAGE    (
 NOPARALLEL
 /
 
-@@./cwms/tables/at_loc_lvl_label
-@@./cwms/tables/at_loc_lvl_source
+create table at_loc_lvl_label(
+   loc_lvl_label_code       integer,
+   location_code            integer not null,
+   specified_level_code     integer not null,
+   parameter_code           integer not null,
+   parameter_type_code      integer not null,
+   duration_code            integer not null,
+   attr_value               number,
+   attr_parameter_code      integer,
+   attr_parameter_type_code integer,
+   attr_duration_code       integer,
+   configuration_code       integer not null,
+   label                    varchar2(32),
+   constraint at_loc_lvl_label_pk  primary key (loc_lvl_label_code),
+   constraint at_loc_lvl_label_fk1 foreign key (location_code) references at_physical_location (location_code),
+   constraint at_loc_lvl_label_fk2 foreign key (specified_level_code) references at_specified_level (specified_level_code),
+   constraint at_loc_lvl_label_fk3 foreign key (parameter_code) references at_parameter (parameter_code),
+   constraint at_loc_lvl_label_fk4 foreign key (parameter_type_code) references cwms_parameter_type (parameter_type_code),
+   constraint at_loc_lvl_label_fk5 foreign key (duration_code) references cwms_duration (duration_code),
+   constraint at_loc_lvl_label_fk6 foreign key (attr_parameter_code) references at_parameter (parameter_code),
+   constraint at_loc_lvl_label_fk7 foreign key (attr_parameter_type_code) references cwms_parameter_type (parameter_type_code),
+   constraint at_loc_lvl_label_fk8 foreign key (attr_duration_code) references cwms_duration (duration_code),
+   constraint at_loc_lvl_label_fk9 foreign key (configuration_code) references at_configuration (configuration_code)
+)
+tablespace cwms_20at_data;
+
+comment on table  at_loc_lvl_label                          is 'Holds configuration-specific labels for location levels';
+comment on column at_loc_lvl_label.loc_lvl_label_code       is 'Synthetic key';
+comment on column at_loc_lvl_label.location_code            is 'Location of location level';
+comment on column at_loc_lvl_label.specified_level_code     is 'Specified level of location level';
+comment on column at_loc_lvl_label.parameter_code           is 'Parameter of location level';
+comment on column at_loc_lvl_label.parameter_type_code      is 'Parameter type of location level';
+comment on column at_loc_lvl_label.duration_code            is 'Duration of location level';
+comment on column at_loc_lvl_label.attr_value               is 'Attribute value of location level';
+comment on column at_loc_lvl_label.attr_parameter_code      is 'Attribute parameter code of location level';
+comment on column at_loc_lvl_label.attr_parameter_type_code is 'Attribute parameter type of location level';
+comment on column at_loc_lvl_label.attr_duration_code       is 'Attribute duration of location level';
+comment on column at_loc_lvl_label.configuration_code       is 'Configuration label is associated with';
+comment on column at_loc_lvl_label.label                    is 'Location level label';
+
+create unique index at_loc_lvl_label_u1 on at_loc_lvl_label (
+      location_code,
+      specified_level_code,
+      parameter_code,
+      parameter_type_code,
+      duration_code,
+      nvl(attr_value               , -1),
+      nvl(attr_parameter_code      , -1),
+      nvl(attr_parameter_type_code , -1),
+      nvl(attr_duration_code       , -1),
+      configuration_code);
+
+
+create table at_loc_lvl_source(
+   loc_lvl_source_code      integer,
+   location_code            integer not null,
+   specified_level_code     integer not null,
+   parameter_code           integer not null,
+   parameter_type_code      integer not null,
+   duration_code            integer not null,
+   attr_value               number,
+   attr_parameter_code      integer,
+   attr_parameter_type_code integer,
+   attr_duration_code       integer,
+   source_entity            integer,
+   constraint at_loc_lvl_source_pk  primary key (loc_lvl_source_code),
+   constraint at_loc_lvl_source_fk1 foreign key (location_code) references at_physical_location (location_code),
+   constraint at_loc_lvl_source_fk2 foreign key (specified_level_code) references at_specified_level (specified_level_code),
+   constraint at_loc_lvl_source_fk3 foreign key (parameter_code) references at_parameter (parameter_code),
+   constraint at_loc_lvl_source_fk4 foreign key (parameter_type_code) references cwms_parameter_type (parameter_type_code),
+   constraint at_loc_lvl_source_fk5 foreign key (duration_code) references cwms_duration (duration_code),
+   constraint at_loc_lvl_source_fk6 foreign key (attr_parameter_code) references at_parameter (parameter_code),
+   constraint at_loc_lvl_source_fk7 foreign key (attr_parameter_type_code) references cwms_parameter_type (parameter_type_code),
+   constraint at_loc_lvl_source_fk8 foreign key (attr_duration_code) references cwms_duration (duration_code),
+   constraint at_loc_lvl_source_fk9 foreign key (source_entity) references at_entity (entity_code)
+)
+tablespace cwms_20at_data;
+
+comment on table  at_loc_lvl_source                          is 'Holds source entity for location levels';
+comment on column at_loc_lvl_source.loc_lvl_source_code      is 'Synthetic key';
+comment on column at_loc_lvl_source.location_code            is 'Location of location level';
+comment on column at_loc_lvl_source.specified_level_code     is 'Specified level of location level';
+comment on column at_loc_lvl_source.parameter_code           is 'Parameter of location level';
+comment on column at_loc_lvl_source.parameter_type_code      is 'Parameter type of location level';
+comment on column at_loc_lvl_source.duration_code            is 'Duration of location level';
+comment on column at_loc_lvl_source.attr_value               is 'Attribute value of location level';
+comment on column at_loc_lvl_source.attr_parameter_code      is 'Attribute parameter code of location level';
+comment on column at_loc_lvl_source.attr_parameter_type_code is 'Attribute parameter type of location level';
+comment on column at_loc_lvl_source.attr_duration_code       is 'Attribute duration of location level';
+comment on column at_loc_lvl_source.source_entity            is 'Entity that is the source of the location level';
+
+create unique index at_loc_lvl_source_u1 on at_loc_lvl_source (
+      location_code,
+      specified_level_code,
+      parameter_code,
+      parameter_type_code,
+      duration_code,
+      nvl(attr_value               , -1),
+      nvl(attr_parameter_code      , -1),
+      nvl(attr_parameter_type_code , -1),
+      nvl(attr_duration_code       , -1));
 
 CREATE TABLE AT_SEASONAL_LOCATION_LEVEL
 (
@@ -5674,7 +5762,7 @@ MONITORING
 
 
 
-SET DEFINE OFF;
+
 Insert into CWMS_APEX_ROLES
    (USER_GROUP_CODE, USER_GROUP_ID, APEX_ROLE_DISPLAY_ID, APEX_ROLE_RETURN_ID)
  Values
@@ -5717,9 +5805,8 @@ Insert into CWMS_APEX_ROLES
    (5, 'VT Mgr', 'CWMS General User', 'CWMS_GU');
 COMMIT;
 
-SHOW ERRORS;
 COMMIT ;
-SET define on
+
 
 create table at_vert_datum_offset (
    location_code       number(14)    not null,
@@ -6285,7 +6372,7 @@ comment on column at_queue_subscriber_name.os_process_id     is 'The process ide
 
 create index at_queue_subscriber_name_idx1 on at_queue_subscriber_name (queue_name, nvl(update_time, create_time));
 
-@@rowcps_schema.sql
+/*@@rowcps_schema.sql
 ---
 @@./cwms/tables/at_pool_name
 @@./cwms/tables/at_pool
@@ -6302,6 +6389,4 @@ create index at_queue_subscriber_name_idx1 on at_queue_subscriber_name (queue_na
 @@./cwms/tables/at_ts_profile_parser
 @@./cwms/tables/at_ts_profile_parser_param
 @@./cwms/tables/at_virtual_location_level
-@@./cwms/tables/at_vloc_lvl_constituent
-
-
+@@./cwms/tables/at_vloc_lvl_constituent*/
