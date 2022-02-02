@@ -32,7 +32,11 @@ flyway {
     placeholders = [
         "CWMS_SCHEMA": "CWMS_20",
         "CWMS_SCHEMA_AUTH": "no authentication", // override on commandline with identified by portion if needed.
-        "CWMS_DBA_AUTH": "no authentication"
+        "CWMS_DBA_AUTH": "no authentication",
+        "CWMS_TABLESPACE": "CWMS_20DATA",
+        "AT_TABLESPACE": "CWMS_20ATDATA",
+        "AQ_TABLESPACE": "CWMS_AQ",
+        "AQ_EX_TABLESPACE": "CWMS_AQ_EX"
     ]
 }
 
