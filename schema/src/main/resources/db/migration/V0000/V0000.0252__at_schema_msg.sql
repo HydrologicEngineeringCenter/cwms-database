@@ -1,5 +1,3 @@
-SET define on
-@@defines.sql
 
 -----------------------------
 -- AT_TS_MSG_ARCHIVE_1 table
@@ -24,8 +22,8 @@ storage    (
             pctincrease      0
             buffer_pool      default
            )
-logging 
-nocompress 
+logging
+nocompress
 nocache
 noparallel
 monitoring;
@@ -43,7 +41,7 @@ comment on column at_ts_msg_archive_1.last_data_time  is 'End of time window of 
 -- AT_TS_MSG_ARCHIVE_1 constraints
 --
 alter table at_ts_msg_archive_1 add constraint at_ts_msg_archive_1_pk primary key (msg_id)
-    using index 
+    using index
     TABLESPACE CWMS_20AT_DATA
     pctfree    10
     initrans   2
@@ -55,8 +53,7 @@ alter table at_ts_msg_archive_1 add constraint at_ts_msg_archive_1_pk primary ke
                 pctincrease      0
                );
 
-show errors;
-commit;
+
 -----------------------------
 -- AT_TS_MSG_ARCHIVE_1 indicies
 --
@@ -75,7 +72,7 @@ storage    (
             buffer_pool      default
            )
 noparallel;
-commit;
+
 
 -----------------------------
 -- AT_TS_MSG_ARCHIVE_2 table
@@ -100,8 +97,8 @@ storage    (
             pctincrease      0
             buffer_pool      default
            )
-logging 
-nocompress 
+logging
+nocompress
 nocache
 noparallel
 monitoring;
@@ -119,7 +116,7 @@ comment on column at_ts_msg_archive_2.last_data_time  is 'End of time window of 
 -- AT_TS_MSG_ARCHIVE_2 constraints
 --
 alter table at_ts_msg_archive_2 add constraint at_ts_msg_archive_2_pk primary key (msg_id)
-    using index 
+    using index
     TABLESPACE CWMS_20AT_DATA
     pctfree    10
     initrans   2
@@ -131,7 +128,7 @@ alter table at_ts_msg_archive_2 add constraint at_ts_msg_archive_2_pk primary ke
                 pctincrease      0
                );
 
-show errors;
+
 -----------------------------
 -- AT_TS_MSG_ARCHIVE_2 indicies
 --
@@ -150,7 +147,7 @@ storage    (
             buffer_pool      default
            )
 noparallel;
-commit;
+
 
 -----------------------------
 -- AT_LOG_MESSAGE table
@@ -186,8 +183,8 @@ storage    (
             pctincrease      0
             buffer_pool      default
            )
-logging 
-nocompress 
+logging
+nocompress
 nocache
 noparallel
 monitoring;
@@ -220,7 +217,7 @@ alter table at_log_message add constraint at_log_message_fk1 foreign key (msg_ty
 alter table at_log_message add constraint at_log_message_fk2 foreign key (office_code) references cwms_office (office_code);
 alter table at_log_message add constraint at_log_message_ck2 check (msg_level between 1 and 7);
 alter table at_log_message add constraint at_log_message_pk  primary key (msg_id)
-    using index 
+    using index
     TABLESPACE CWMS_20AT_DATA
     pctfree    10
     initrans   2
@@ -269,7 +266,7 @@ storage    (
             pctincrease      0
             buffer_pool      default
            )
-logging 
+logging
 TABLESPACE CWMS_20AT_DATA
 nocompress
 nocache
@@ -297,6 +294,3 @@ alter table at_log_message_properties add constraint at_log_message_properties_p
 -- AT_LOG_MESSAGE_PROPERTIES indexes
 --
 create index at_log_message_properties_idx1 on at_log_message_properties (prop_name, nvl(prop_text, prop_value), msg_id) tablespace cwms_20at_data;
-
-show errors;
-commit;
