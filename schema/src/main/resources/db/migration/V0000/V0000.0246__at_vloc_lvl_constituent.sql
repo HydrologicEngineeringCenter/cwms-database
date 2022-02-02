@@ -57,4 +57,3 @@ begin
    end case;
 end at_vloc_level_constituent_t01;
 /
-commit;

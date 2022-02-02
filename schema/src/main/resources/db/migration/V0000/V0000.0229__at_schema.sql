@@ -6371,22 +6371,3 @@ comment on column at_queue_subscriber_name.application_name  is 'The application
 comment on column at_queue_subscriber_name.os_process_id     is 'The process identifier (pid) associated with the subscriber';
 
 create index at_queue_subscriber_name_idx1 on at_queue_subscriber_name (queue_name, nvl(update_time, create_time));
-
-/*@@rowcps_schema.sql
----
-@@./cwms/tables/at_pool_name
-@@./cwms/tables/at_pool
-@@./cwms/tables/at_ts_extents
-@@./cwms/tables/at_application_login
-@@./cwms/tables/at_application_session
-@@./cwms/tables/at_app_log_dir
-@@./cwms/tables/at_app_log_file
-@@./cwms/tables/at_app_log_entry
-@@./cwms/tables/at_app_log_ingest_control
-@@./cwms/tables/at_ts_profile
-@@./cwms/tables/at_ts_profile_param
-@@./cwms/tables/at_ts_profile_instance
-@@./cwms/tables/at_ts_profile_parser
-@@./cwms/tables/at_ts_profile_parser_param
-@@./cwms/tables/at_virtual_location_level
-@@./cwms/tables/at_vloc_lvl_constituent*/

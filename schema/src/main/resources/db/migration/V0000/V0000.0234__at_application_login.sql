@@ -58,8 +58,7 @@ begin
       when :new.login_server != :old.login_server then update_error('login server');
       else null;
       end case;
-   else null;   
+   else null;
    end case;
 end at_application_login_t01;
 /
-show errors;

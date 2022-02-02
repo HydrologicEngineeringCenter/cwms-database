@@ -43,4 +43,3 @@ comment on column at_virtual_location_level.attribute_comment              is 'O
 
 create index at_virtual_location_level_idx1
     on at_virtual_location_level(location_code, specified_level_code, parameter_code, parameter_type_code, duration_code, effective_date);
-commit;

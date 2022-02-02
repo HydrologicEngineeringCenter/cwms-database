@@ -61,7 +61,3 @@ begin
    end if;
 end at_pool_t01;
 /
-
-show errors
-
-
