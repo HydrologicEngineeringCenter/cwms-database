@@ -93,5 +93,5 @@ as object (
       p_from_timezone in varchar2 default null,
       p_to_timezone   in varchar2 default null)
 );
-
+/
 create or replace public synonym cwms_t_ts_extents for ts_extents_t;

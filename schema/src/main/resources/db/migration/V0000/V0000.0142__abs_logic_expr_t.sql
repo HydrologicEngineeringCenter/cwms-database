@@ -40,6 +40,6 @@ as object(
    member procedure to_xml_text(
       p_expr in out nocopy varchar2)
 ) not final;
-
+/
 
 create or replace public synonym cwms_t_abs_logic_expr for abs_logic_expr_t;

@@ -7,5 +7,5 @@ create or replace type ts_extents_tab_t
  */
 as table of ts_extents_t;
 /
-create or replace public synonym cwms_t_ts_extents_tab for ts_extents_tab_t;
 
+create or replace public synonym cwms_t_ts_extents_tab for ts_extents_tab_t;

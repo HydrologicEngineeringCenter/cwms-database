@@ -85,6 +85,6 @@ under abs_logic_expr_t (
    overriding member procedure to_xml_text(
       p_expr in out nocopy varchar2)
 );
-
+/
 
 create or replace public synonym cwms_t_logic_expr for logic_expr_t;
