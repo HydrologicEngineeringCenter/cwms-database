@@ -1,3 +1,4 @@
+
 create type tr_template_set_type
 /* (non-javadoc)
  * [description needed]
@@ -32,4 +33,3 @@ AS OBJECT (
 
 
 create or replace public synonym cwms_t_tr_template_set for tr_template_set_type;
-
