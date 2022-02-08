@@ -2,7 +2,7 @@
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-@@defines.sql
+
 
 CREATE TABLE at_sec_locked_users
 (
@@ -123,7 +123,7 @@ ALTER TABLE cwms_sec_privileges ADD (
 					 PCTINCREASE		0
 					))
 /
-SET DEFINE OFF;
+
 
 INSERT INTO cwms_sec_privileges (privilege_bit, privilege_id
 										  )
@@ -141,7 +141,7 @@ COMMIT;
 --=============================================================================
 --
 
-SET define on
+
 
 --
 --=============================================================================
@@ -427,7 +427,7 @@ BEGIN
 END;
 /
 
-SHOW ERRORS;
+
 ALTER TABLE at_sec_ts_group_masks ADD (
   CONSTRAINT at_sec_ts_group_masks_pk
  PRIMARY KEY
@@ -591,7 +591,7 @@ ALTER TABLE cwms_sec_user_groups ADD (
 					 PCTINCREASE		0
 					))
 /
-SET DEFINE OFF;
+
 
 INSERT INTO cwms_sec_user_groups (
 												 user_group_code,
@@ -698,7 +698,7 @@ INSERT INTO cwms_sec_user_groups (
               )
   VALUES   (-1, 'CCP Proc', 'Intended for Service Accounts that will be running CCP daemon services in the background, e.g., the service account running compproc.'
               );
-              
+
 INSERT INTO cwms_sec_user_groups (
                                                  user_group_code,
                                                  user_group_id,
@@ -706,7 +706,7 @@ INSERT INTO cwms_sec_user_groups (
               )
   VALUES   (-2, 'CCP Mgr', 'Users that will be managing (i.e., adding/modifying) CCP computations. This privilege is intended to be assigned to real people/user accounts.'
               );
-              
+
 INSERT INTO cwms_sec_user_groups (
                                                  user_group_code,
                                                  user_group_id,
@@ -727,7 +727,7 @@ INSERT INTO cwms_sec_user_groups (
                                                  user_group_id,
                                                  user_group_desc
               )
-  VALUES   (-5, 'RDL Mgr', 'Users that will be managing (i.e., adding/modifying) RDL configurations.' 
+  VALUES   (-5, 'RDL Mgr', 'Users that will be managing (i.e., adding/modifying) RDL configurations.'
               );
 COMMIT;
 --
@@ -750,7 +750,7 @@ END;
 --=============================================================================
 --
 
-SET define on
+
 CREATE TABLE cwms_sec_ts_groups
 (
 	ts_group_code						NUMBER NOT NULL,
@@ -808,7 +808,7 @@ ALTER TABLE cwms_sec_ts_groups ADD (
 					 PCTINCREASE		0
 					))
 /
-SET DEFINE OFF;
+
 
 INSERT INTO cwms_sec_ts_groups (
 											  ts_group_code,
@@ -891,9 +891,3 @@ BEGIN
 		 WHERE	office_code != 0;
 END;
 /
-
-@@cwms/views/av_sec_ts_privileges_mv
-@@cwms/views/av_sec_ts_group_mask
-@@cwms/views/av_sec_ts_privileges
-@@cwms/views/av_sec_users
-@@cwms/views/av_sec_user_groups
