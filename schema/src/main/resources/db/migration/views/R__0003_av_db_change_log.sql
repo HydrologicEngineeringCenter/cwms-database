@@ -47,6 +47,6 @@ as
       where o.office_code = l.office_code
    order by ver_major desc, ver_minor desc, ver_build desc;
 
-show errors;
+
 
 create or replace public synonym cwms_v_db_change_log for av_db_change_log;

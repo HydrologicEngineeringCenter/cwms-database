@@ -15,12 +15,11 @@ create or replace force view av_gage_method(
    method_id,
    description)
 as
-   select method_code, 
-          method_id, 
-          description 
+   select method_code,
+          method_id,
+          description
      from cwms_gage_method;
 /
-SHOW ERRORS;
+
 
 create or replace public synonym cwms_v_gage_method for av_gage_method;
-

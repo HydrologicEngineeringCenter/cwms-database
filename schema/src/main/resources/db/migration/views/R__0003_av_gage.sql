@@ -3,7 +3,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_GAGE', null,
 /**
  * Displays CWMS Gages
  *
- * @since CWMS 3.0                                                              
+ * @since CWMS 3.0
  *
  * @field office_id                The office that owns the gage''s location
  * @field location_id              The location where the gage resides
@@ -28,7 +28,7 @@ create or replace force view av_gage(
    office_id,
    location_id,
    gage_id,
-   gage_type_id,                                         
+   gage_type_id,
    discontinued,
    out_of_service,
    manufacturer,
@@ -40,10 +40,10 @@ create or replace force view av_gage(
    associated_location_id,
    comments,
    gage_code,
-   location_code,                                                           
+   location_code,
    associated_location_code)
 as
-   select a.office_id,    
+   select a.office_id,
           a.location_id,
           a.gage_id,
           a.gage_type_id,
@@ -79,7 +79,6 @@ as
              from at_gage ag, cwms_gage_type gt, av_loc lv
             where gt.gage_type_code = ag.gage_type_code and lv.location_code = ag.gage_location_code) a
           left outer join (select location_code, location_id from av_loc) b on b.location_code = a.associated_location_code;
-SHOW ERRORS;
+
 
 create or replace public synonym cwms_v_gage for av_gage;
-                                               
