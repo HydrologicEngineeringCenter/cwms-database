@@ -1,8 +1,7 @@
-SET define on
-@@defines.sql
+
 -------------------------
 -- AT_CWMS_TSV_**** table
--- 
+--
 
 DECLARE
     TYPE name_tab_t IS TABLE OF VARCHAR2 (21);
@@ -30,7 +29,7 @@ DECLARE
         VERSION_DATE     DATE                         NOT NULL,
         DATA_ENTRY_DATE  TIMESTAMP(6)                 NOT NULL,
         VALUE            BINARY_DOUBLE,
-        QUALITY_CODE     NUMBER(14), 
+        QUALITY_CODE     NUMBER(14),
         DEST_FLAG          NUMBER(1),
         CONSTRAINT AT_TSV$name_PK
        PRIMARY KEY
@@ -52,19 +51,19 @@ DECLARE
       COMPRESS 2
       NOPARALLEL
       MONITORING';
-      
+
     l_template_2 VARCHAR2 (256)
             := '
     ALTER TABLE AT_TSV$name ADD (
-     CONSTRAINT AT_TSV$name_FK1 
-    FOREIGN KEY (TS_CODE) 
+     CONSTRAINT AT_TSV$name_FK1
+    FOREIGN KEY (TS_CODE)
     REFERENCES AT_CWMS_TS_SPEC (TS_CODE))';
-      
+
     l_template_3 VARCHAR2 (256)
             := '
     ALTER TABLE AT_TSV$name ADD (
-     CONSTRAINT AT_TSV$name_FK2 
-    FOREIGN KEY (QUALITY_CODE) 
+     CONSTRAINT AT_TSV$name_FK2
+    FOREIGN KEY (QUALITY_CODE)
     REFERENCES CWMS_DATA_QUALITY (QUALITY_CODE))';
 BEGIN
     l_names.EXTEND (3);
@@ -137,4 +136,32 @@ BEGIN
    END LOOP;
 END;
 /
-@@cwms/tables/at_tsv_count
+
+CREATE TABLE AT_TSV_COUNT
+(
+  DATA_ENTRY_DATE  TIMESTAMP(6) CONSTRAINT AT_TSVC_DATA_ENTRY_DATE_NN NOT NULL,
+  INSERTS          NUMBER(6) CONSTRAINT AT_TSVC_INSERTS_NN NOT NULL,
+  UPDATES          NUMBER(6) CONSTRAINT AT_TSVC_UPDATES_NN NOT NULL,
+  DELETES          NUMBER(6) CONSTRAINT AT_TSVC_DELETES_NN NOT NULL,
+  SELECTS          NUMBER(6),
+  CONSTRAINT AT_TSV_COUNT_PK
+  PRIMARY KEY
+  (DATA_ENTRY_DATE)
+  ENABLE VALIDATE
+)
+ORGANIZATION INDEX
+PCTTHRESHOLD 50
+TABLESPACE CWMS_20DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            NEXT             1M
+            MAXSIZE          UNLIMITED
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOLOGGING ;
