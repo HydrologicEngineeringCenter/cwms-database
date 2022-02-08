@@ -1,12 +1,10 @@
-SET define on
-@@defines.sql
 
 /* Formatted on 2008/06/24 04:39 (Formatter Plus v4.8.8) */
 --******************************
 --******************************
 --------------------------------
 
-CREATE TABLE "&cwms_schema"."CWMS_TR_TRANSFORMATIONS"
+CREATE TABLE "${CWMS_SCHEMA}"."CWMS_TR_TRANSFORMATIONS"
 (
   transform_id  VARCHAR2(32 BYTE)               NOT NULL,
   description   VARCHAR2(256 BYTE)              NOT NULL
@@ -29,7 +27,7 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-CREATE UNIQUE INDEX "&cwms_schema"."CWMS_TR_TRANSFORMATIONS_PK" ON "&cwms_schema"."CWMS_TR_TRANSFORMATIONS"
+CREATE UNIQUE INDEX "${CWMS_SCHEMA}"."CWMS_TR_TRANSFORMATIONS_PK" ON "${CWMS_SCHEMA}"."CWMS_TR_TRANSFORMATIONS"
 (transform_id)
 LOGGING
 tablespace CWMS_20AT_DATA
@@ -45,7 +43,7 @@ STORAGE    (
            )
 NOPARALLEL
 /
-CREATE UNIQUE INDEX "&cwms_schema"."CWMS_TR_TRANSFORMATIONS_UI01" ON "&cwms_schema"."CWMS_TR_TRANSFORMATIONS"
+CREATE UNIQUE INDEX "${CWMS_SCHEMA}"."CWMS_TR_TRANSFORMATIONS_UI01" ON "${CWMS_SCHEMA}"."CWMS_TR_TRANSFORMATIONS"
 (UPPER("TRANSFORM_ID"))
 LOGGING
 tablespace CWMS_20AT_DATA
@@ -61,7 +59,7 @@ STORAGE    (
            )
 NOPARALLEL
 /
-ALTER TABLE "&cwms_schema"."CWMS_TR_TRANSFORMATIONS" ADD (
+ALTER TABLE "${CWMS_SCHEMA}"."CWMS_TR_TRANSFORMATIONS" ADD (
   CONSTRAINT cwms_tr_transformations_pk
  PRIMARY KEY
  (transform_id)
@@ -78,19 +76,19 @@ ALTER TABLE "&cwms_schema"."CWMS_TR_TRANSFORMATIONS" ADD (
                ))
 /
 
-INSERT INTO "&cwms_schema"."CWMS_TR_TRANSFORMATIONS"
+INSERT INTO "${CWMS_SCHEMA}"."CWMS_TR_TRANSFORMATIONS"
             (transform_id, description
             )
      VALUES ('Validation', 'Triggers a Validation, if validation criteria.'
             );
-INSERT INTO "&cwms_schema"."CWMS_TR_TRANSFORMATIONS"
+INSERT INTO "${CWMS_SCHEMA}"."CWMS_TR_TRANSFORMATIONS"
             (transform_id,
              description
             )
      VALUES ('Scaling',
              'Applies scaling factors as reflected in y = (x + a) b + c'
             );
-INSERT INTO "&cwms_schema"."CWMS_TR_TRANSFORMATIONS"
+INSERT INTO "${CWMS_SCHEMA}"."CWMS_TR_TRANSFORMATIONS"
             (transform_id,
              description
             )
@@ -105,8 +103,8 @@ COMMIT ;
 --************************
 ------------------
 
-SET define on
-CREATE TABLE "&cwms_schema"."AT_TR_TEMPLATE_ID"
+
+CREATE TABLE "${CWMS_SCHEMA}"."AT_TR_TEMPLATE_ID"
 (
   template_code             NUMBER,
   template_id               VARCHAR2(32 BYTE)   NOT NULL,
@@ -134,7 +132,7 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-CREATE UNIQUE INDEX "&cwms_schema"."AT_TR_TEMPLATE_ID_PK" ON "&cwms_schema"."AT_TR_TEMPLATE_ID"
+CREATE UNIQUE INDEX "${CWMS_SCHEMA}"."AT_TR_TEMPLATE_ID_PK" ON "${CWMS_SCHEMA}"."AT_TR_TEMPLATE_ID"
 (template_code)
 LOGGING
 tablespace CWMS_20AT_DATA
@@ -150,7 +148,7 @@ STORAGE    (
            )
 NOPARALLEL
 /
-CREATE UNIQUE INDEX "&cwms_schema"."AT_TR_TEMPLATE_ID_UQ01" ON "&cwms_schema"."AT_TR_TEMPLATE_ID"
+CREATE UNIQUE INDEX "${CWMS_SCHEMA}"."AT_TR_TEMPLATE_ID_UQ01" ON "${CWMS_SCHEMA}"."AT_TR_TEMPLATE_ID"
 (UPPER("TEMPLATE_ID"), db_office_code)
 LOGGING
 tablespace CWMS_20AT_DATA
@@ -166,7 +164,7 @@ STORAGE    (
            )
 NOPARALLEL
 /
-ALTER TABLE "&cwms_schema"."AT_TR_TEMPLATE_ID" ADD (
+ALTER TABLE "${CWMS_SCHEMA}"."AT_TR_TEMPLATE_ID" ADD (
   CONSTRAINT at_tr_template_id_pk
  PRIMARY KEY
  (template_code)
@@ -182,16 +180,16 @@ ALTER TABLE "&cwms_schema"."AT_TR_TEMPLATE_ID" ADD (
                 PCTINCREASE      0
                ))
 /
-ALTER TABLE "&cwms_schema"."AT_TR_TEMPLATE_ID" ADD (
+ALTER TABLE "${CWMS_SCHEMA}"."AT_TR_TEMPLATE_ID" ADD (
   CONSTRAINT at_tr_template_id_r01
  FOREIGN KEY (db_office_code)
- REFERENCES "&cwms_schema"."CWMS_OFFICE" (office_code),
+ REFERENCES "${CWMS_SCHEMA}"."CWMS_OFFICE" (office_code),
   CONSTRAINT at_tr_template_id_r02
  FOREIGN KEY (primary_indep_param_code)
- REFERENCES "&cwms_schema"."AT_PARAMETER" (parameter_code),
+ REFERENCES "${CWMS_SCHEMA}"."AT_PARAMETER" (parameter_code),
   CONSTRAINT at_tr_template_id_r03
  FOREIGN KEY (dep_param_code)
- REFERENCES "&cwms_schema"."AT_PARAMETER" (parameter_code))
+ REFERENCES "${CWMS_SCHEMA}"."AT_PARAMETER" (parameter_code))
 /
 --************************
 --------------------------
@@ -199,7 +197,7 @@ ALTER TABLE "&cwms_schema"."AT_TR_TEMPLATE_ID" ADD (
 
 
 
-CREATE TABLE "&cwms_schema"."AT_TR_TEMPLATE_SET"
+CREATE TABLE "${CWMS_SCHEMA}"."AT_TR_TEMPLATE_SET"
 (
   template_code          NUMBER,
   sequence_no            NUMBER,
@@ -231,13 +229,13 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-COMMENT ON COLUMN "&cwms_schema"."AT_TR_TEMPLATE_SET"."DESCRIPTION" IS 'description is of AT_TR_TEMPLATE_SET'
+COMMENT ON COLUMN "${CWMS_SCHEMA}"."AT_TR_TEMPLATE_SET"."DESCRIPTION" IS 'description is of AT_TR_TEMPLATE_SET'
 /
-COMMENT ON COLUMN "&cwms_schema"."AT_TR_TEMPLATE_SET"."STORE_DEP_FLAG" IS 'If T, then dependent variable is store to database, else it''s simply available for the next transform.'
+COMMENT ON COLUMN "${CWMS_SCHEMA}"."AT_TR_TEMPLATE_SET"."STORE_DEP_FLAG" IS 'If T, then dependent variable is store to database, else it''s simply available for the next transform.'
 /
-COMMENT ON COLUMN "&cwms_schema"."AT_TR_TEMPLATE_SET"."UNIT_SYSTEM" IS 'Either SI or EN or null - null indicates that the computation is not system dependant (which means it will really be done in the SI system).'
+COMMENT ON COLUMN "${CWMS_SCHEMA}"."AT_TR_TEMPLATE_SET"."UNIT_SYSTEM" IS 'Either SI or EN or null - null indicates that the computation is not system dependant (which means it will really be done in the SI system).'
 /
-CREATE UNIQUE INDEX "&cwms_schema"."AT_TR_TEMPLATE_SET_PK" ON "&cwms_schema"."AT_TR_TEMPLATE_SET"
+CREATE UNIQUE INDEX "${CWMS_SCHEMA}"."AT_TR_TEMPLATE_SET_PK" ON "${CWMS_SCHEMA}"."AT_TR_TEMPLATE_SET"
 (template_code, sequence_no)
 LOGGING
 tablespace CWMS_20AT_DATA
@@ -253,7 +251,7 @@ STORAGE    (
            )
 NOPARALLEL
 /
-ALTER TABLE "&cwms_schema"."AT_TR_TEMPLATE_SET" ADD (
+ALTER TABLE "${CWMS_SCHEMA}"."AT_TR_TEMPLATE_SET" ADD (
   CONSTRAINT at_tr_template_set_pk
  PRIMARY KEY
  (template_code, sequence_no)
@@ -269,13 +267,13 @@ ALTER TABLE "&cwms_schema"."AT_TR_TEMPLATE_SET" ADD (
                 PCTINCREASE      0
                ))
 /
-ALTER TABLE "&cwms_schema"."AT_TR_TEMPLATE_SET" ADD (
+ALTER TABLE "${CWMS_SCHEMA}"."AT_TR_TEMPLATE_SET" ADD (
   CONSTRAINT at_tr_template_set_r01
  FOREIGN KEY (template_code)
- REFERENCES "&cwms_schema"."AT_TR_TEMPLATE_ID" (template_code),
+ REFERENCES "${CWMS_SCHEMA}"."AT_TR_TEMPLATE_ID" (template_code),
   CONSTRAINT at_tr_template_set_r02
  FOREIGN KEY (transform_id)
- REFERENCES "&cwms_schema"."CWMS_TR_TRANSFORMATIONS" (transform_id))
+ REFERENCES "${CWMS_SCHEMA}"."CWMS_TR_TRANSFORMATIONS" (transform_id))
 /
 
 
@@ -284,7 +282,7 @@ ALTER TABLE "&cwms_schema"."AT_TR_TEMPLATE_SET" ADD (
 --************************
 
 
-CREATE TABLE "&cwms_schema"."AT_TR_TS_MASK"
+CREATE TABLE "${CWMS_SCHEMA}"."AT_TR_TS_MASK"
 (
   template_code        NUMBER,
   sequence_no          NUMBER,
@@ -314,7 +312,7 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-CREATE UNIQUE INDEX "&cwms_schema"."AT_TR_TS_MASK_PK" ON "&cwms_schema"."AT_TR_TS_MASK"
+CREATE UNIQUE INDEX "${CWMS_SCHEMA}"."AT_TR_TS_MASK_PK" ON "${CWMS_SCHEMA}"."AT_TR_TS_MASK"
 (template_code, sequence_no, variable_no)
 LOGGING
 tablespace CWMS_20AT_DATA
@@ -330,7 +328,7 @@ STORAGE    (
            )
 NOPARALLEL
 /
-ALTER TABLE "&cwms_schema"."AT_TR_TS_MASK" ADD (
+ALTER TABLE "${CWMS_SCHEMA}"."AT_TR_TS_MASK" ADD (
   CONSTRAINT at_tr_ts_mask_pk
  PRIMARY KEY
  (template_code, sequence_no, variable_no)
@@ -346,32 +344,32 @@ ALTER TABLE "&cwms_schema"."AT_TR_TS_MASK" ADD (
                 PCTINCREASE      0
                ))
 /
-ALTER TABLE "&cwms_schema"."AT_TR_TS_MASK" ADD (
+ALTER TABLE "${CWMS_SCHEMA}"."AT_TR_TS_MASK" ADD (
   CONSTRAINT at_tr_ts_mask_r01
  FOREIGN KEY (template_code, sequence_no)
- REFERENCES "&cwms_schema"."AT_TR_TEMPLATE_SET" (template_code,sequence_no),
+ REFERENCES "${CWMS_SCHEMA}"."AT_TR_TEMPLATE_SET" (template_code,sequence_no),
   CONSTRAINT at_tr_ts_mask1_r02
  FOREIGN KEY (location_code)
- REFERENCES "&cwms_schema"."AT_PHYSICAL_LOCATION" (location_code),
+ REFERENCES "${CWMS_SCHEMA}"."AT_PHYSICAL_LOCATION" (location_code),
   CONSTRAINT at_tr_ts_mask1_r03
  FOREIGN KEY (parameter_code)
- REFERENCES "&cwms_schema"."AT_PARAMETER" (parameter_code),
+ REFERENCES "${CWMS_SCHEMA}"."AT_PARAMETER" (parameter_code),
   CONSTRAINT at_tr_ts_mask1_r04
  FOREIGN KEY (parameter_type_code)
- REFERENCES "&cwms_schema"."CWMS_PARAMETER_TYPE" (parameter_type_code),
+ REFERENCES "${CWMS_SCHEMA}"."CWMS_PARAMETER_TYPE" (parameter_type_code),
   CONSTRAINT at_tr_ts_mask1_r05
  FOREIGN KEY (interval_code)
- REFERENCES "&cwms_schema"."CWMS_INTERVAL" (interval_code),
+ REFERENCES "${CWMS_SCHEMA}"."CWMS_INTERVAL" (interval_code),
   CONSTRAINT at_tr_ts_mask1_r06
  FOREIGN KEY (duration_code)
- REFERENCES "&cwms_schema"."CWMS_DURATION" (duration_code))
+ REFERENCES "${CWMS_SCHEMA}"."CWMS_DURATION" (duration_code))
 /
 --************************
 --------------------------
 --************************
 
 
-CREATE TABLE "&cwms_schema"."AT_TR_TEMPLATE"
+CREATE TABLE "${CWMS_SCHEMA}"."AT_TR_TEMPLATE"
 (
   ts_code_indep_1  NUMBER,
   template_code    NUMBER,
@@ -396,7 +394,7 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-CREATE UNIQUE INDEX "&cwms_schema"."AT_TR_TEMPLATE_PK" ON "&cwms_schema"."AT_TR_TEMPLATE"
+CREATE UNIQUE INDEX "${CWMS_SCHEMA}"."AT_TR_TEMPLATE_PK" ON "${CWMS_SCHEMA}"."AT_TR_TEMPLATE"
 (ts_code_indep_1, template_code)
 LOGGING
 tablespace CWMS_20AT_DATA
@@ -412,7 +410,7 @@ STORAGE    (
            )
 NOPARALLEL
 /
-ALTER TABLE "&cwms_schema"."AT_TR_TEMPLATE" ADD (
+ALTER TABLE "${CWMS_SCHEMA}"."AT_TR_TEMPLATE" ADD (
   CONSTRAINT at_tr_template_pk
  PRIMARY KEY
  (ts_code_indep_1, template_code)
@@ -428,11 +426,11 @@ ALTER TABLE "&cwms_schema"."AT_TR_TEMPLATE" ADD (
                 PCTINCREASE      0
                ))
 /
-ALTER TABLE "&cwms_schema"."AT_TR_TEMPLATE" ADD (
+ALTER TABLE "${CWMS_SCHEMA}"."AT_TR_TEMPLATE" ADD (
   CONSTRAINT at_tr_template_r01
  FOREIGN KEY (template_code)
- REFERENCES "&cwms_schema"."AT_TR_TEMPLATE_ID" (template_code),
+ REFERENCES "${CWMS_SCHEMA}"."AT_TR_TEMPLATE_ID" (template_code),
   CONSTRAINT at_tr_template_r02
  FOREIGN KEY (ts_code_indep_1)
- REFERENCES "&cwms_schema"."AT_CWMS_TS_SPEC" (ts_code))
+ REFERENCES "${CWMS_SCHEMA}"."AT_CWMS_TS_SPEC" (ts_code))
 /
