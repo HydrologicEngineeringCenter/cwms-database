@@ -1,4 +1,3 @@
-whenever sqlerror continue
 delete from at_clob where office_code = 53 and id = '/VIEWDOCS/AV_TS_PROFILE_PARSER';
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TS_PROFILE_PARSER', null,
 '
@@ -26,7 +25,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TS_PROFILE_PARSE
  * @field loc_alias_group           The location group to which the alias for the location_id or base_location_id belongs. Null if location_id is not an alias.
  */
 ');
-whenever sqlerror exit
+
 
 create or replace view av_ts_profile_parser (
    location_code,

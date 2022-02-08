@@ -1,6 +1,4 @@
-whenever sqlerror continue
 delete from at_clob where id = '/VIEWDOCS/AV_POOL_NAME';
-whenever sqlerror exit sqlcode
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_POOL_NAME', null,
 '
 /**
@@ -37,4 +35,3 @@ end;
 
 
 create or replace public synonym cwms_v_pool_name for av_pool_name;
-

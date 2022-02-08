@@ -1,6 +1,6 @@
-whenever sqlerror continue
+
 delete from at_clob where id = '/VIEWDOCS/AV_FORECAST_SPEC';
-whenever sqlerror exit sqlcode
+
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_FORECAST_SPEC', null,
 '
 /**
@@ -65,4 +65,3 @@ end;
 /
 
 create or replace public synonym cwms_v_forecast_spec for av_forecast_spec;
-

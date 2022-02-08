@@ -1,4 +1,4 @@
-whenever sqlerror continue
+--whenever sqlerror continue
 delete from at_clob where id = '/VIEWDOCS/AV_APPLICATION_SESSION';
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_APPLICATION_SESSION', null,
 '
@@ -17,7 +17,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_APPLICATION_SESS
  * @field login_server   The URL of the login server handling the login or logout
  */
 ');
-whenever sqlerror exit
+
 create or replace force view av_application_session(
    uuid,
    office_id,

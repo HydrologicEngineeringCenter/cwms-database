@@ -1,6 +1,4 @@
-whenever sqlerror continue
 delete from at_clob where id = '/VIEWDOCS/AV_POOL';
-whenever sqlerror exit sqlcode
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_POOL', null,
 '
 /**

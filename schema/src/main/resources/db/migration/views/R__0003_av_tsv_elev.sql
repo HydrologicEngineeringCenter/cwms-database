@@ -1,4 +1,3 @@
-whenever sqlerror continue
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV_ELEV', null,
 '
 /**
@@ -24,7 +23,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV_ELEV', null,
  * @field end_date         The end date of the underlying table holding the time series value
  */
 ');
-whenever sqlerror exit
+
 create or replace force view av_tsv_elev
 as
 select ts_code,
@@ -76,4 +75,3 @@ end;
 
 
 create or replace public synonym cwms_v_tsv_elev for av_tsv_elev;
-

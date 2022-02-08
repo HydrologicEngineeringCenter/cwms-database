@@ -1,4 +1,3 @@
-whenever sqlerror continue
 delete from at_clob where id = '/VIEWDOCS/AV_LOC_VERT_DATUM';
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_VERT_DATUM', null,'
 /**
@@ -21,7 +20,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_VERT_DATUM',
  * @field en_unit                 The unit of the English unit offset (''ft'')
  */
 ');
-whenever sqlerror exit
+
 create or replace force view av_loc_vert_datum (
    location_code,
    office_id,

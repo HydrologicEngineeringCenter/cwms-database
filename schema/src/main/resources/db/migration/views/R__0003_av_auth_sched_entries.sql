@@ -1,6 +1,4 @@
-whenever sqlerror continue
 delete from at_clob where id = '/VIEWDOCS/AV_AUTH_SCHED_ENTRIES';
-whenever sqlerror exit sqlcode
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_AUTH_SCHED_ENTRIES', null,
 '
 /**
@@ -66,4 +64,3 @@ end;
 
 
 create or replace public synonym cwms_v_auth_sched_entries for av_auth_sched_entries;
-
