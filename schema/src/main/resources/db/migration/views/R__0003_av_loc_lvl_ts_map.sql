@@ -239,4 +239,3 @@ create or replace force view av_loc_lvl_ts_map as
                 and nvl((to_char(ind.attribute_duration_code)), '@') = nvl((to_char(lvl.attribute_duration_code)), '@')
           );
 /
-show errors;

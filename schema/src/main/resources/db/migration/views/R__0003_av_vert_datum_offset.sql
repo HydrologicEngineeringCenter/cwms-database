@@ -9,7 +9,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_VERT_DATUM_OFFSE
  * @field vertical_datum_id_1 The first vertical datum
  * @field vertical_datum_id_2 The second vertical datum
  * @field effective_date      The effective date of the offset
- * @field offset              The offset to add to a value in the first vertical datum to generate a value in the second vertical datum 
+ * @field offset              The offset to add to a value in the first vertical datum to generate a value in the second vertical datum
  * @field description         A description (source of offset, etc...)
  */
 ');
@@ -36,5 +36,4 @@ as
     where pl.location_code = d.location_code
       and bl.base_location_code = pl.base_location_code
       and o.office_code = bl.db_office_code
-/    
-show errors;
+/

@@ -45,5 +45,3 @@ AS
           at_cwms_ts_spec atcts
     where attc.db_office_code = o1.office_code and attg.db_office_code = o2.office_code(+) and attc.ts_category_code = attg.ts_category_code(+) and atcts.ts_code(+) = attg.shared_ts_ref_code;
 /
-
-SHOW ERRORS;

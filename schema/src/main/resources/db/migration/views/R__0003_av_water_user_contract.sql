@@ -12,7 +12,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_WATER_USER_CONTR
  * @field project_id                    The project that the contract is for
  * @field entity_name                   The name of the water user holding the contract
  * @field water_right                   A description of the water user''s water right
- * @field contract_name                 The identifying name of the water user contract 
+ * @field contract_name                 The identifying name of the water user contract
  * @field contract_type                 The contract type
  * @field contract_storage_unit         The unit of storage for this contract
  * @field contracted_storage            The contracted storage for this contract in the contract storage unit
@@ -25,7 +25,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_WATER_USER_CONTR
  * @field contracted_storage_m3         The contracted storage for this contract in cubic meters, can be used for comparing storages between contracts
  * @field pump_out_location_id          Name of location where water is withdrawn from permanent pool
  * @field pump_out_below_location_id    Name of location where water is withdrawn within or below the outlet works
- * @field pump_in_location_id           Name of location where water is supplied to the permanent pool  
+ * @field pump_in_location_id           Name of location where water is supplied to the permanent pool
  * @field project_location_code         Database location code for the project
  * @field pump_out_location_code        Database location code for the pump out location
  * @field pump_out_below_location_code  Database location code for the pump out below location
@@ -33,29 +33,29 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_WATER_USER_CONTR
  */
 ');
 create or replace force view av_water_user_contract(
-   office_id, 
-   project_id, 
-   entity_name, 
-   water_right, 
-   contract_name, 
-   contract_type, 
-   contract_storage_unit, 
-   contracted_storage, 
-   contract_effective_date, 
-   contract_expiration_date,                                       
-   initial_use_allocation, 
-   future_use_allocation, 
-   future_use_percent_activated, 
-   total_alloc_percent_activated,                         
-   contracted_storage_m3, 
-   pump_out_location_id,                           
-   pump_out_below_location_id, 
-   pump_in_location_id, 
-   project_location_code, 
-   pump_out_location_code, 
-   pump_out_below_location_code, 
+   office_id,
+   project_id,
+   entity_name,
+   water_right,
+   contract_name,
+   contract_type,
+   contract_storage_unit,
+   contracted_storage,
+   contract_effective_date,
+   contract_expiration_date,
+   initial_use_allocation,
+   future_use_allocation,
+   future_use_percent_activated,
+   total_alloc_percent_activated,
+   contracted_storage_m3,
+   pump_out_location_id,
+   pump_out_below_location_id,
+   pump_in_location_id,
+   project_location_code,
+   pump_out_location_code,
+   pump_out_below_location_code,
    pump_in_location_code)
-as 
+as
 select office_id,
        project_id,
        entity_name,
@@ -151,10 +151,9 @@ select office_id,
          where pl.active_flag = 'T'
            and bl.active_flag = 'T'
            and bl.base_location_code = pl.base_location_code
-       ) q4 on q4.location_code = q1.pump_in_location_code 
+       ) q4 on q4.location_code = q1.pump_in_location_code
  order by 1, 2, 3, 5;
- 
- show errors
+
+
 
 create or replace public synonym cwms_v_water_user_contract for av_water_user_contract;
-

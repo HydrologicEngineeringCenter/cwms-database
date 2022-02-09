@@ -31,4 +31,3 @@ as
        from cwms_location_kind lk1, cwms_location_kind lk2
       where lk2.location_kind_code(+) = lk1.parent_location_kind
    order by lk1.location_kind_code;
-SHOW ERRORS;

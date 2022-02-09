@@ -25,5 +25,4 @@ as
           prop_comment
      from cwms_office o, at_properties p
     where o.office_code = p.office_code
-/    
-show errors;
+/

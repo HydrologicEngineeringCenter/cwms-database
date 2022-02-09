@@ -78,5 +78,3 @@ AS
 				AND d.message_type_code = a.msg_type;
 
 /
-
-SHOW ERRORS;

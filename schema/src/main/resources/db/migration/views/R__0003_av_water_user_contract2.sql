@@ -12,7 +12,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_WATER_USER_CONTR
  * @field project_id                    The name or alias of project that the contract is for
  * @field entity_name                   The name of the water user holding the contract
  * @field water_right                   A description of the water user''s water right
- * @field contract_name                 The identifying name of the water user contract 
+ * @field contract_name                 The identifying name of the water user contract
  * @field contract_type                 The contract type
  * @field contract_storage_unit         The unit of storage for this contract
  * @field contracted_storage            The contracted storage for this contract in the contract storage unit
@@ -25,7 +25,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_WATER_USER_CONTR
  * @field contracted_storage_m3         The contracted storage for this contract in cubic meters, can be used for comparing storages between contracts
  * @field pump_out_location_id          Name or alias of location where water is withdrawn from permanent pool
  * @field pump_out_below_location_id    Name or alias of location where water is withdrawn within or below the outlet works
- * @field pump_in_location_id           Name or alias of location where water is supplied to the permanent pool  
+ * @field pump_in_location_id           Name or alias of location where water is supplied to the permanent pool
  * @field project_aliased_item          Portion of project_id that is aliased
  * @field pump_out_aliased_item         Portion of pump_out_location_id that is aliased
  * @field pump_out_below_aliased_item   Portion of pump_out_below_location_id that is aliased
@@ -39,35 +39,35 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_WATER_USER_CONTR
  */
 ');
 create or replace force view av_water_user_contract2(
-   office_id, 
-   project_id, 
-   entity_name, 
-   water_right, 
-   contract_name, 
-   contract_type, 
-   contract_storage_unit, 
-   contracted_storage, 
-   contract_effective_date, 
-   contract_expiration_date,                                       
-   initial_use_allocation, 
-   future_use_allocation, 
-   future_use_percent_activated, 
-   total_alloc_percent_activated,                         
-   contracted_storage_m3, 
-   pump_out_location_id,                           
-   pump_out_below_location_id, 
-   pump_in_location_id, 
+   office_id,
+   project_id,
+   entity_name,
+   water_right,
+   contract_name,
+   contract_type,
+   contract_storage_unit,
+   contracted_storage,
+   contract_effective_date,
+   contract_expiration_date,
+   initial_use_allocation,
+   future_use_allocation,
+   future_use_percent_activated,
+   total_alloc_percent_activated,
+   contracted_storage_m3,
+   pump_out_location_id,
+   pump_out_below_location_id,
+   pump_in_location_id,
    project_aliased_item,
    pump_out_aliased_item,
    pump_out_below_aliased_item,
    pump_in_aliased_item,
    loc_alias_category,
    loc_alias_group,
-   project_location_code, 
-   pump_out_location_code, 
-   pump_out_below_location_code, 
+   project_location_code,
+   pump_out_location_code,
+   pump_out_below_location_code,
    pump_in_location_code)
-as 
+as
 select office_id,
        project_id,
        entity_name,
@@ -146,8 +146,8 @@ select office_id,
          where vl.active_flag = 'T'
            and vl.unit_system = 'SI'
        ) q2 on q2.location_code = q1.pump_out_location_code
-               and nvl(q2.loc_alias_category, '.') = nvl(q1.loc_alias_category, '.') 
-               and nvl(q2.loc_alias_group, '.') = nvl(q1.loc_alias_group, '.') 
+               and nvl(q2.loc_alias_category, '.') = nvl(q1.loc_alias_category, '.')
+               and nvl(q2.loc_alias_group, '.') = nvl(q1.loc_alias_group, '.')
        left outer join
        (select vl.location_code,
                vl.location_id as pump_out_below_location_id,
@@ -158,8 +158,8 @@ select office_id,
          where vl.active_flag = 'T'
            and vl.unit_system = 'SI'
        ) q3 on q3.location_code = q1.pump_out_below_location_code
-               and nvl(q3.loc_alias_category, '.') = nvl(q1.loc_alias_category, '.') 
-               and nvl(q3.loc_alias_group, '.') = nvl(q1.loc_alias_group, '.') 
+               and nvl(q3.loc_alias_category, '.') = nvl(q1.loc_alias_category, '.')
+               and nvl(q3.loc_alias_group, '.') = nvl(q1.loc_alias_group, '.')
        left outer join
        (select vl.location_code,
                vl.location_id as pump_in_location_id,
@@ -169,12 +169,11 @@ select office_id,
           from av_loc2 vl
          where vl.active_flag = 'T'
            and vl.unit_system = 'SI'
-       ) q4 on q4.location_code = q1.pump_in_location_code 
-               and nvl(q4.loc_alias_category, '.') = nvl(q1.loc_alias_category, '.') 
-               and nvl(q4.loc_alias_group, '.') = nvl(q1.loc_alias_group, '.') 
+       ) q4 on q4.location_code = q1.pump_in_location_code
+               and nvl(q4.loc_alias_category, '.') = nvl(q1.loc_alias_category, '.')
+               and nvl(q4.loc_alias_group, '.') = nvl(q1.loc_alias_group, '.')
  order by 1, 2, 3, 5;
 
-show errors
+
 
 create or replace public synonym cwms_v_water_user_contract2 for av_water_user_contract2;
-

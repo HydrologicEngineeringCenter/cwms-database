@@ -26,4 +26,3 @@ create or replace force view av_loc_lvl_cur_max_ind (
 as
 select * from table(cwms_cat.cat_loc_lvl_cur_max_ind)
 /
-show errors;

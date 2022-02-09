@@ -34,10 +34,9 @@ as
                   transmit_method,
                   description
              from cwms_gage_type
-          ) gt                                                                                
+          ) gt
           left outer join (select method_code, method_id from cwms_gage_method) gmi on gmi.method_code = gt.inquiry_method
           left outer join (select method_code, method_id from cwms_gage_method) gmt on gmt.method_code = gt.transmit_method;
-SHOW ERRORS;
+
 
 create or replace public synonym cwms_v_gage_type for av_gage_type;
-                                               

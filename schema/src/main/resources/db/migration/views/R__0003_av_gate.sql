@@ -55,7 +55,7 @@ select o.office_id as office_id,
        at_physical_location pl2,
        at_project p,
        at_outlet ou,
-       at_loc_category lc, 
+       at_loc_category lc,
        at_loc_group lg,
        at_loc_group_assignment lga,
        at_gate_group gg,
@@ -72,5 +72,4 @@ select o.office_id as office_id,
    and upper(lc.loc_category_id) = 'RATING'
    and gg.loc_group_code = lg.loc_group_code
    and gt.gate_type_code = gg.gate_type_code
-/            
-show errors
+/

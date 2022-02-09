@@ -53,4 +53,3 @@ select pl.location_code,
    and bl.base_location_code = pl.base_location_code
    and o.office_code = bl.db_office_code;
 /
-show errors;

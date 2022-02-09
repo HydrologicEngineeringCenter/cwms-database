@@ -62,5 +62,3 @@ AS
             AND acts2.ts_code(+) = atga.ts_ref_code
             AND acts3.ts_code(+) = atg.shared_ts_ref_code
 /
-
-SHOW ERRORS;

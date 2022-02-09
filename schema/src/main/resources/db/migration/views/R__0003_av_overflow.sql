@@ -21,14 +21,14 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_OVERFLOW', null,
 ');
 create or replace force view av_overflow (
    office_id,
-   overflow_location_id, 
-   unit_system, 
-   crest_elevation, 
-   elevation_unit, 
-   length_or_diameter, 
-   length_unit, 
-   is_circular, 
-   rating_spec_id, 
+   overflow_location_id,
+   unit_system,
+   crest_elevation,
+   elevation_unit,
+   length_or_diameter,
+   length_unit,
+   is_circular,
+   rating_spec_id,
    description,
    overflow_location_code,
    rating_spec_code)
@@ -46,7 +46,7 @@ select q1.office_id,
        q1.overflow_location_code,
        q1.rating_spec_code
  from (select co.office_id,
-              bl.base_location_id                                                
+              bl.base_location_id
               ||substr('-', 1, length(pl.sub_location_id))
               ||pl.sub_location_id as overflow_location_id,
               us.unit_system,
@@ -55,22 +55,22 @@ select q1.office_id,
                      else cwms_util.convert_units(crest_elevation, 'm', 'ft')
                      end,
                 '7777777777') as crest_elevation,
-              case when us.unit_system = 'SI' then 'm' 
-                   else 'ft' 
+              case when us.unit_system = 'SI' then 'm'
+                   else 'ft'
                    end as elevation_unit,
               cwms_rounding.round_dt_f(
                 case when us.unit_system = 'SI' then length_or_diameter
                      else cwms_util.convert_units(length_or_diameter, 'm', 'ft')
                      end,
                 '7777777777') as length_or_diameter,
-              case when us.unit_system = 'SI' then 'm' 
-                   else 'ft' 
+              case when us.unit_system = 'SI' then 'm'
+                   else 'ft'
                    end as length_unit,
               ao.is_circular,
               ao.description,
               ao.overflow_location_code,
               ao.rating_spec_code
-         from at_overflow ao,  
+         from at_overflow ao,
               at_physical_location pl,
               at_base_location bl,
               cwms_office co,
@@ -82,7 +82,7 @@ select q1.office_id,
           and bl.base_location_code = pl.base_location_code
           and co.office_code = bl.db_office_code
       ) q1
-      left outer join 
+      left outer join
       (select bl.base_location_id
               ||substr('-', 1, length(pl.sub_location_id))
               ||pl.sub_location_id
@@ -102,7 +102,6 @@ select q1.office_id,
           and bl.base_location_code = pl.base_location_code
       ) q2 on q2.rating_spec_code = q1.rating_spec_code;
 
-show errors
+
 
 create or replace public synonym cwms_v_overflow for av_overflow;
-

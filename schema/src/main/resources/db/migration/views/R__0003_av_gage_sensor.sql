@@ -3,7 +3,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_GAGE_SENSOR', nu
 /**
  * Displays CWMS Gages
  *
- * @since CWMS 3.0                                                              
+ * @since CWMS 3.0
  *
  * @field office_id                The office that owns the location where the sensor''s gage resides
  * @field location_id              The location where the sensor''s gage resides
@@ -20,7 +20,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_GAGE_SENSOR', nu
  * @field serial_number            The serial number of the sensor
  * @field comments                 Any comments about the sensor
  * @field gage_code                The unique numeric code that identifies the sensor''s gage in the database
- * @field location_code            The unique numeric code that identifies the location where the sensor''s gage resides in the database 
+ * @field location_code            The unique numeric code that identifies the location where the sensor''s gage resides in the database
  */
 ');
 create or replace force view av_gage_sensor(
@@ -62,7 +62,6 @@ as
           av_parameter pv,
           cwms_unit cu
     where gv.gage_code = gs.gage_code and pv.parameter_code = gs.parameter_code and cu.unit_code = gs.unit_code;
-SHOW ERRORS;
+
 
 create or replace public synonym cwms_v_gage_sensor for av_gage_sensor;
-                                               

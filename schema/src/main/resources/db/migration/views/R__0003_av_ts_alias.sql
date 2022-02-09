@@ -41,5 +41,3 @@ AS
 				AND atga.ts_group_code = atg.ts_group_code
 				AND atg.ts_category_code = atc.ts_category_code
 /
-
-SHOW ERRORS;

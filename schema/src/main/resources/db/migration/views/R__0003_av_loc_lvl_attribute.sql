@@ -118,7 +118,7 @@ as
       and pt2.parameter_type_code = ll.attribute_parameter_type_code
       and d2.duration_code = ll.attribute_duration_code
 /
-show errors;
+
 
 begin
 	execute immediate 'grant select on av_loc_lvl_attribute to cwms_user';
@@ -129,5 +129,3 @@ end;
 
 
 create or replace public synonym cwms_v_loc_lvl_attribute for av_loc_lvl_attribute;
-
-
