@@ -42,12 +42,10 @@ select substr(queue_name, 1, instr(queue_name, '_')-1) as office_id,
        os_process_id
   from at_queue_subscriber_name;
 
-create public synonym cwms_v_queue_subscriber_name for cwms_20.av_queue_subscriber_name;
+create or replace public synonym cwms_v_queue_subscriber_name for cwms_20.av_queue_subscriber_name;
 begin
 	execute immediate 'grant select on av_queue_subscriber_name to cwms_user';
 exception
 	when others then null;
 end;
 /
-
-
