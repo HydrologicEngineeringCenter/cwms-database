@@ -1,6 +1,6 @@
-/* CWMS Version 2.0 
+/* CWMS Version 2.0
 This script should be run by the cwms schema owner.
-*/ 
+*/
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV', null,
 '
 /**
@@ -22,33 +22,8 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV', null,
  * @field end_date        The end date of the underlying table holding the time series value
  */
 ');
-declare
-   l_sel   varchar2 (120);
-   l_sql   varchar2 (8000);
+--exec cwms_util.create_view;
 
-   cursor c1 is select * from at_ts_table_properties;
-begin
-   l_sql := 'create or replace force view av_tsv as ';
-   l_sel := 'select ts_code, date_time, version_date, data_entry_date, value, quality_code, date ''';
-
-   for rec in c1 loop
-      if c1%rowcount > 1 then
-         l_sql := l_sql || ' union all ';
-      end if;
-      l_sql :=
-            l_sql
-         || l_sel
-         || to_char (rec.start_date, 'yyyy-mm-dd')
-         || ''' as start_date, date '''
-         || to_char (rec.end_date, 'yyyy-mm-dd')
-         || ''' as end_date from '
-         || rec.table_name;
-   end loop;
-
-   execute immediate l_sql;
-end;
-/
-show errors;
 
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV_DQU', null,
 '
@@ -68,24 +43,24 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV_DQU', null,
  * @field value           The time series value, in the specified unit
  * @field office_id       The office owning the time series
  * @field unit_id         The unit of the time series value
- * @field cwms_ts_id      The time series identifier or alias  
+ * @field cwms_ts_id      The time series identifier or alias
  * @field quality_code    The quality code associated with the time series value
  * @field start_date      The start date of the underlying table holding the time series value
  * @field end_date        The end date of the underlying table holding the time series value
- * @field aliased_item        Null if the cwms_ts_id is not an alias, ''LOCATION'' if the entire location is aliased, ''BASE LOCATION'' if only the base location is alaised, or ''TIME SERIES'' if the entire cwms_time_series_id is aliased.  
- * @field loc_alias_category  The location category for the location alias if aliased_item is ''LOCATION'' or ''BASE LOCATION''  
- * @field loc_alias_group     The location group for the location alias if aliased_item is ''LOCATION'' or ''BASE LOCATION''              
- * @field ts_alias_category   The time series category for the time series alias if aliased_item is ''TIME SERIES''  
- * @field ts_alias_group      The time series group for the time series alias if aliased_item is ''TIME SERIES''              
+ * @field aliased_item        Null if the cwms_ts_id is not an alias, ''LOCATION'' if the entire location is aliased, ''BASE LOCATION'' if only the base location is alaised, or ''TIME SERIES'' if the entire cwms_time_series_id is aliased.
+ * @field loc_alias_category  The location category for the location alias if aliased_item is ''LOCATION'' or ''BASE LOCATION''
+ * @field loc_alias_group     The location group for the location alias if aliased_item is ''LOCATION'' or ''BASE LOCATION''
+ * @field ts_alias_category   The time series category for the time series alias if aliased_item is ''TIME SERIES''
+ * @field ts_alias_group      The time series group for the time series alias if aliased_item is ''TIME SERIES''
  */
 ');
 
 CREATE OR REPLACE VIEW AV_TSV_DQU
-(TS_CODE, VERSION_DATE, DATA_ENTRY_DATE, DATE_TIME, VALUE, 
- OFFICE_ID, UNIT_ID, CWMS_TS_ID, QUALITY_CODE, START_DATE, 
+(TS_CODE, VERSION_DATE, DATA_ENTRY_DATE, DATE_TIME, VALUE,
+ OFFICE_ID, UNIT_ID, CWMS_TS_ID, QUALITY_CODE, START_DATE,
  END_DATE, ALIASED_ITEM, LOC_ALIAS_CATEGORY, LOC_ALIAS_GROUP,
  TS_ALIAS_CATEGORY, TS_ALIAS_GROUP)
-AS 
+AS
 select tsv.ts_code,
        tsv.version_date,
        tsv.data_entry_date,
@@ -107,7 +82,7 @@ select tsv.ts_code,
        cwms_unit_conversion c
  where tsv.ts_code = ts.ts_code
    and ts.unit_id  = c.from_unit_id
-/ 
+/
 
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV_DQU_30D', null,
 '
@@ -127,24 +102,24 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV_DQU_30D', nu
  * @field value           The time series value, in the specified unit
  * @field office_id       The office owning the time series
  * @field unit_id         The unit of the time series value
- * @field cwms_ts_id      The time series identifier or alias     
+ * @field cwms_ts_id      The time series identifier or alias
  * @field quality_code    The quality code associated with the time series value
  * @field start_date      The start date of the underlying table holding the time series value
  * @field end_date        The end date of the underlying table holding the time series value
- * @field aliased_item        Null if the cwms_ts_id is not an alias, ''LOCATION'' if the entire location is aliased, ''BASE LOCATION'' if only the base location is alaised, or ''TIME SERIES'' if the entire cwms_time_series_id is aliased.  
- * @field loc_alias_category  The location category for the location alias if aliased_item is ''LOCATION'' or ''BASE LOCATION''  
- * @field loc_alias_group     The location group for the location alias if aliased_item is ''LOCATION'' or ''BASE LOCATION''              
- * @field ts_alias_category   The time series category for the time series alias if aliased_item is ''TIME SERIES''  
- * @field ts_alias_group      The time series group for the time series alias if aliased_item is ''TIME SERIES''              
+ * @field aliased_item        Null if the cwms_ts_id is not an alias, ''LOCATION'' if the entire location is aliased, ''BASE LOCATION'' if only the base location is alaised, or ''TIME SERIES'' if the entire cwms_time_series_id is aliased.
+ * @field loc_alias_category  The location category for the location alias if aliased_item is ''LOCATION'' or ''BASE LOCATION''
+ * @field loc_alias_group     The location group for the location alias if aliased_item is ''LOCATION'' or ''BASE LOCATION''
+ * @field ts_alias_category   The time series category for the time series alias if aliased_item is ''TIME SERIES''
+ * @field ts_alias_group      The time series group for the time series alias if aliased_item is ''TIME SERIES''
  */
 ');
 
 CREATE OR REPLACE VIEW AV_TSV_DQU_30D
-(TS_CODE, VERSION_DATE, DATA_ENTRY_DATE, DATE_TIME, VALUE, 
- OFFICE_ID, UNIT_ID, CWMS_TS_ID, QUALITY_CODE, START_DATE, 
+(TS_CODE, VERSION_DATE, DATA_ENTRY_DATE, DATE_TIME, VALUE,
+ OFFICE_ID, UNIT_ID, CWMS_TS_ID, QUALITY_CODE, START_DATE,
  END_DATE, ALIASED_ITEM, LOC_ALIAS_CATEGORY, LOC_ALIAS_GROUP,
  TS_ALIAS_CATEGORY, TS_ALIAS_GROUP)
-AS 
+AS
 select tsv.ts_code,
        tsv.version_date,
        tsv.data_entry_date,
@@ -167,7 +142,7 @@ select tsv.ts_code,
  where tsv.ts_code    = ts.ts_code
    and ts.unit_id     = c.from_unit_id
    and tsv.date_time >= sysdate - 30
-/ 
+/
 
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV_DQU_24H', null,
 '
@@ -191,20 +166,20 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV_DQU_24H', nu
  * @field quality_code    The quality code associated with the time series value
  * @field start_date      The start date of the underlying table holding the time series value
  * @field end_date        The end date of the underlying table holding the time series value
- * @field aliased_item        Null if the cwms_ts_id is not an alias, ''LOCATION'' if the entire location is aliased, ''BASE LOCATION'' if only the base location is alaised, or ''TIME SERIES'' if the entire cwms_time_series_id is aliased.  
- * @field loc_alias_category  The location category for the location alias if aliased_item is ''LOCATION'' or ''BASE LOCATION''  
- * @field loc_alias_group     The location group for the location alias if aliased_item is ''LOCATION'' or ''BASE LOCATION''              
- * @field ts_alias_category   The time series category for the time series alias if aliased_item is ''TIME SERIES''  
- * @field ts_alias_group      The time series group for the time series alias if aliased_item is ''TIME SERIES''              
+ * @field aliased_item        Null if the cwms_ts_id is not an alias, ''LOCATION'' if the entire location is aliased, ''BASE LOCATION'' if only the base location is alaised, or ''TIME SERIES'' if the entire cwms_time_series_id is aliased.
+ * @field loc_alias_category  The location category for the location alias if aliased_item is ''LOCATION'' or ''BASE LOCATION''
+ * @field loc_alias_group     The location group for the location alias if aliased_item is ''LOCATION'' or ''BASE LOCATION''
+ * @field ts_alias_category   The time series category for the time series alias if aliased_item is ''TIME SERIES''
+ * @field ts_alias_group      The time series group for the time series alias if aliased_item is ''TIME SERIES''
  */
 ');
 
 CREATE OR REPLACE VIEW AV_TSV_DQU_24H
-(TS_CODE, VERSION_DATE, DATA_ENTRY_DATE, DATE_TIME, VALUE, 
- OFFICE_ID, UNIT_ID, CWMS_TS_ID, QUALITY_CODE, START_DATE, 
+(TS_CODE, VERSION_DATE, DATA_ENTRY_DATE, DATE_TIME, VALUE,
+ OFFICE_ID, UNIT_ID, CWMS_TS_ID, QUALITY_CODE, START_DATE,
  END_DATE, ALIASED_ITEM, LOC_ALIAS_CATEGORY, LOC_ALIAS_GROUP,
  TS_ALIAS_CATEGORY, TS_ALIAS_GROUP)
-AS 
+AS
 select tsv.ts_code,
        tsv.version_date,
        tsv.data_entry_date,
@@ -227,5 +202,4 @@ select tsv.ts_code,
  where tsv.ts_code    = ts.ts_code
    and ts.unit_id     = c.from_unit_id
    and tsv.date_time >= sysdate - 1
-/ 
-
+/
