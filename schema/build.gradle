@@ -16,6 +16,7 @@ configurations {
 }
 
 dependencies {
+    implementation "org.flywaydb:flyway-core:8.4.4"
     compile "org.flywaydb:flyway-core:8.4.4"
     flywayMigration "com.oracle.database.jdbc:ojdbc8:$ORACLE_JDBC_VERSION"
     flywayMigration sourceSets.main.runtimeClasspath
@@ -23,10 +24,11 @@ dependencies {
 
 flyway {
     locations = ["db/migration"]
-    configurations = ['flywayMigration','compile']
-    url = "$DB_URL"
+    configurations = ['flywayMigration','compile','runtimeClasspath']
+    /*url = "$DB_URL"
     user = BUILD_USER
-    password = BUILD_USERPASSWORD
+    password = BUILD_USERPASSWORD*/
+    resolvers =  ['cwms.resolvers.DependsOnPackageResolver']
     mixed = true
     schemas = ['CWMS_20','CWMS_DBA']
     placeholders = [
@@ -41,3 +43,5 @@ flyway {
 }
 
 flywayMigrate.dependsOn classes
+flywayClean.dependsOn classes
+flywayRepair.dependsOn classes
