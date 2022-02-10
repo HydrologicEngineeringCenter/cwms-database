@@ -1,8 +1,6 @@
 /* Formatted on 7/6/2009 7:18:08 AM (QP5 v5.115.810.9015) */
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
-set define on
-@@defines.sql
-create or replace context cwms_env using &cwms_schema..cwms_env;
-/
 
+create or replace context cwms_env using ${CWMS_SCHEMA}.cwms_env;
+/
