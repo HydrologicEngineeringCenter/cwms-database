@@ -24,8 +24,8 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV', null,
 ');
 --exec cwms_util.create_view;
 -- temp view, really view gets created in after script
-create or replace view av_tsv(ts_code,date_time,version_date,data_entry_date,value,quality_code,start_date,end_date) as
-select ts_code, date_time, version_date, data_entry_date, value, quality_code, start_date, end_date from at_tsv_inf_and_beyond;
+create or replace view av_tsv(ts_code,date_time,version_date,data_entry_date,value,quality_code,start_date, end_date) as
+select ts_code, date_time, version_date, data_entry_date, value, quality_code, DATE '1900-01-01' start_date,DATE '2500-01-01' end_date from at_tsv_inf_and_beyond;
 
 
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV_DQU', null,

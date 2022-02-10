@@ -11,6 +11,13 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/MV_TIME_ZONE', null
  * @field dst_offset      Offset for Daylight Saving Time
 */
 ');
+begin
+   execute immediate 'drop materialized view ${CWMS_SCHEMA}.MV_Time_zone;';
+   exception
+      when others then null;
+end;
+/
+
 create materialized view mv_time_zone as
    select * from
       (
@@ -19,7 +26,7 @@ create materialized view mv_time_zone as
              utc_offset,
              dst_offset
         from cwms_time_zone
-      union all     
+      union all
       select z.time_zone_code,
              a.time_zone_alias as time_zone_name,
              z.utc_offset,
@@ -27,7 +34,7 @@ create materialized view mv_time_zone as
         from cwms_time_zone_alias a,
              cwms_time_zone z
        where z.time_zone_name = a.time_zone_name
-       ) order by time_zone_code, time_zone_name;              
+       ) order by time_zone_code, time_zone_name;
 
 create index mv_time_zone_idx1 on mv_time_zone(time_zone_name);
 create index mv_time_zone_idx2 on mv_time_zone(time_zone_code);

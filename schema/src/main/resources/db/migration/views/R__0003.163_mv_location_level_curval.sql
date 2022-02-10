@@ -44,7 +44,12 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/MV_LOCATION_LEVEL_C
  * @field ll_as_of                      The date/time that this snapshot was last refreshed
 */
 ');
-
+begin
+   execute immediate 'drop materialized view ${CWMS_SCHEMA}.mv_location_level_curval;';
+   exception
+      when others then null;
+end;
+/
 create materialized view mv_location_level_curval
    tablespace cwms_20data
    build immediate using index

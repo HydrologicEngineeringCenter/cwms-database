@@ -1,4 +1,10 @@
-ALTER SESSION SET current_schema = ${CWMS_SCHEMA};
+begin
+   execute immediate 'drop materialized view ${CWMS_SCHEMA}.MV_TS_CODE_FILTER;';
+   exception
+      when others then null;
+end;
+/
+
 CREATE MATERIALIZED VIEW ${CWMS_SCHEMA}.MV_TS_CODE_FILTER
     (TS_CODE,DEST)
 TABLESPACE CWMS_20AT_DATA
@@ -83,4 +89,7 @@ BEGIN
 END START_MV_TS_REFRESH_JOB;
 /
 
-EXEC ${CWMS_SCHEMA}.START_MV_TS_REFRESH_JOB;
+begin
+   ${CWMS_SCHEMA}.START_MV_TS_REFRESH_JOB;
+end;
+/
