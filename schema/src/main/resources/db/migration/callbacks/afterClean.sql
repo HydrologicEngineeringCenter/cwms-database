@@ -1,5 +1,19 @@
-DROP PROFILE cwms_prof cascade;
-drop role cwms_user;
+
+begin
+   execute immediate 'DROP PROFILE cwms_prof cascade';
+   exception
+     when others then null;
+
+end;
+/
+
+begin
+   execute immediate 'drop role cwms_user';
+   exception
+     when others then null;
+
+end;
+/
 
 begin
    for rec in (select object_name

@@ -83,5 +83,6 @@ under rating_t
       p_vert_datum in varchar2 default null)
       return xmltype
 );
+/
 
 create or replace public synonym cwms_t_vdatum_rating for vdatum_rating_t;
