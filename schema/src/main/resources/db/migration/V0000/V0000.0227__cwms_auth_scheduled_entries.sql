@@ -39,7 +39,7 @@ begin
    :new.job_owner     := upper(:new.job_owner);
    :new.job_name      := upper(:new.job_name);
 end cwms_auth_sched_entries_t01;
-
+/
 
 insert
   into cwms_auth_sched_entries
