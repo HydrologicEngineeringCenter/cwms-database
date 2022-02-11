@@ -79,10 +79,8 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 NOPARALLEL
-MONITORING
-/
+MONITORING;
 
-COMMIT ;
 
 --
 ----
@@ -119,8 +117,7 @@ LOGGING
 NOCOMPRESS
 NOCACHE
 NOPARALLEL
-MONITORING
-/
+MONITORING;
 
 COMMENT ON COLUMN at_base_location.db_office_code IS 'Refererences the office "owning" this location.  In the CWMS v2 schema, the office hosting the database "owns" all locations.';
 COMMENT ON COLUMN at_base_location.base_location_id IS 'Text name of this Base Location';
@@ -141,8 +138,8 @@ STORAGE    (
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-NOPARALLEL
-/
+NOPARALLEL;
+
 
 
 CREATE UNIQUE INDEX at_base_location_idx1 ON at_base_location
@@ -159,13 +156,12 @@ STORAGE    (
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-NOPARALLEL
-/
+NOPARALLEL;
 
 ALTER TABLE at_base_location ADD (
    CONSTRAINT at_base_location_ck_1
    CHECK (TRIM("BASE_LOCATION_ID")="BASE_LOCATION_ID"))
-/
+;
 --ALTER TABLE AT_BASE_LOCATION ADD (
 --  CONSTRAINT AT_BASE_LOCATION_CK_2
 -- CHECK (NVL("ACTIVE_FLAG",'T')='T'))
@@ -340,7 +336,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 
 COMMENT ON TABLE  AT_GEOGRAPHIC_LOCATION               IS 'Geographic aspect of location';
 COMMENT ON COLUMN AT_GEOGRAPHIC_LOCATION.GEOGRAPHIC_ID IS 'Text ID of point and/or multi-point and/or polygon';
@@ -395,18 +391,15 @@ INSERT INTO MDSYS.SDO_GEOM_METADATA_TABLE VALUES (
 
 CREATE INDEX AT_GEOGRAPHIC_LOCATION_PT_IDX
    ON AT_GEOGRAPHIC_LOCATION(POINT)
-   INDEXTYPE IS MDSYS.SPATIAL_INDEX PARAMETERS ('layer_gtype=POINT')
-/
+   INDEXTYPE IS MDSYS.SPATIAL_INDEX PARAMETERS ('layer_gtype=POINT');
 
 CREATE INDEX AT_GEOGRAPHIC_LOCATION_MP_IDX
    ON AT_GEOGRAPHIC_LOCATION(MULTI_POINT)
-   INDEXTYPE IS MDSYS.SPATIAL_INDEX PARAMETERS ('layer_gtype=MULTIPOINT')
-/
+   INDEXTYPE IS MDSYS.SPATIAL_INDEX PARAMETERS ('layer_gtype=MULTIPOINT');
 
 CREATE INDEX AT_GEOGRAPHIC_LOCATION_PG_IDX
    ON AT_GEOGRAPHIC_LOCATION(POLYGON)
-   INDEXTYPE IS MDSYS.SPATIAL_INDEX PARAMETERS ('layer_gtype=POLYGON')
-/
+   INDEXTYPE IS MDSYS.SPATIAL_INDEX PARAMETERS ('layer_gtype=POLYGON');
 
 CREATE TABLE AT_LOCATION_URL
 (
@@ -433,8 +426,7 @@ LOGGING
 NOCOMPRESS
 NOCACHE
 NOPARALLEL
-MONITORING
-/
+MONITORING;
 
 
 COMMENT ON TABLE  AT_LOCATION_URL               IS 'Contains URLs pertaining to specific locations.';
@@ -462,8 +454,7 @@ STORAGE    (
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-NOPARALLEL
-/
+NOPARALLEL;
 
 CREATE TABLE AT_STREAM
 (
@@ -497,8 +488,7 @@ LOGGING
 NOCOMPRESS
 NOCACHE
 NOPARALLEL
-MONITORING
-/
+MONITORING;
 
 COMMENT ON TABLE  AT_STREAM                           IS 'Contains non-geographic information for streams';
 COMMENT ON COLUMN AT_STREAM.STREAM_LOCATION_CODE      IS 'References stream location.';
@@ -550,8 +540,7 @@ LOGGING
 NOCOMPRESS
 NOCACHE
 NOPARALLEL
-MONITORING
-/
+MONITORING;
 
 COMMENT ON TABLE  AT_STREAM_LOCATION                         IS 'Contains metadata for stream locations';
 COMMENT ON COLUMN AT_STREAM_LOCATION.LOCATION_CODE           IS 'Reference to physical location';
@@ -582,7 +571,7 @@ CREATE TABLE AT_STREAM_REACH (
    CONSTRAINT AT_STREAM_REACH_FK4 FOREIGN KEY (DOWNSTREAM_LOCATION_CODE) REFERENCES AT_STREAM_LOCATION (LOCATION_CODE),
    CONSTRAINT AT_STREAM_REACH_FK5 FOREIGN KEY (CONFIGURATION_CODE) REFERENCES AT_CONFIGURATION (CONFIGURATION_CODE)
 ) TABLESPACE CWMS_20DATA
-/
+;
 
 COMMENT ON TABLE  AT_STREAM_REACH IS 'Contains placement information for stream reaches';
 COMMENT ON COLUMN AT_STREAM_REACH.STREAM_LOCATION_CODE     IS 'References stream';
@@ -596,14 +585,14 @@ CREATE UNIQUE INDEX AT_STREAM_REACH_U1 ON AT_STREAM_REACH (
    DOWNSTREAM_LOCATION_CODE,
    CONFIGURATION_CODE
 ) TABLESPACE CWMS_20DATA
-/
+;
 
 CREATE UNIQUE INDEX AT_STREAM_REACH_U2 ON AT_STREAM_REACH (
    STREAM_LOCATION_CODE,
    UPSTREAM_LOCATION_CODE,
    CONFIGURATION_CODE
 ) TABLESPACE CWMS_20DATA
-/
+;
 
 CREATE TABLE AT_BASIN
 (
@@ -633,7 +622,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 
 COMMENT ON TABLE  AT_BASIN                              IS 'Contains non-geographic information for basins';
 COMMENT ON COLUMN AT_BASIN.BASIN_LOCATION_CODE          IS 'References basin location.';
@@ -683,7 +672,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 
 COMMENT ON TABLE AT_GAGE                           IS 'Contains gage type information for locations';
 COMMENT ON COLUMN AT_GAGE.GAGE_CODE                IS 'Synthetic key.';
@@ -722,7 +711,7 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 NOPARALLEL
-/
+;
 
 CREATE TABLE AT_GAGE_SENSOR
 (
@@ -758,7 +747,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 
 COMMENT ON TABLE  AT_GAGE_SENSOR                    IS 'Contains information about sensors on gages.';
 COMMENT ON COLUMN AT_GAGE_SENSOR.GAGE_CODE          IS 'Reference to gage.';
@@ -794,7 +783,7 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 NOPARALLEL
-/
+;
 
 CREATE TABLE AT_GOES
 (
@@ -829,7 +818,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 
 COMMENT ON TABLE  AT_GOES                          IS 'Contains information about GOES transmissions from location.';
 COMMENT ON COLUMN AT_GOES.GAGE_CODE                IS 'References gage.';
@@ -874,7 +863,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 
 COMMENT ON TABLE  AT_DISPLAY_SCALE                IS 'Contains display information for values at a location.';
 COMMENT ON COLUMN AT_DISPLAY_SCALE.LOCATION_CODE  IS 'References a location.';
@@ -912,7 +901,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 
 CREATE UNIQUE INDEX at_loc_category_name_pk ON at_loc_category
 (loc_category_code)
@@ -929,7 +918,7 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 NOPARALLEL
-/
+;
 
 CREATE UNIQUE INDEX at_loc_category_name_u1 ON at_loc_category
 (UPPER("LOC_CATEGORY_ID"), db_office_code)
@@ -946,7 +935,7 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 NOPARALLEL
-/
+;
 
 ALTER TABLE at_loc_category ADD (
   CONSTRAINT at_loc_category_name_pk
@@ -963,7 +952,7 @@ ALTER TABLE at_loc_category ADD (
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
-/
+;
 
 ALTER TABLE AT_LOC_CATEGORY ADD CONSTRAINT AT_LOC_CATEGORY_FK1 FOREIGN KEY (DB_OFFICE_CODE) REFERENCES CWMS_OFFICE (OFFICE_CODE);
 
@@ -1005,7 +994,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 comment on table  at_loc_group                     is 'Specifies a location group within a location group category';
 comment on column at_loc_group.loc_group_code      is 'Primary key uniquely identifying this group';
 comment on column at_loc_group.loc_category_code   is 'Reference to location group category to which this group belongs';
@@ -1031,13 +1020,13 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 NOPARALLEL
-/
+;
 
 CREATE UNIQUE INDEX at_loc_groups_u1 ON at_loc_group
 (db_office_code, loc_category_code, UPPER("LOC_GROUP_ID"))
 LOGGING
 TABLESPACE CWMS_20AT_DATA
-/
+;
 
 ALTER TABLE at_loc_group ADD (
   CONSTRAINT at_loc_groups_pk
@@ -1054,23 +1043,23 @@ ALTER TABLE at_loc_group ADD (
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
-/
+;
 
 ALTER TABLE at_loc_group ADD (
   CONSTRAINT at_loc_groups_fk3
  FOREIGN KEY (shared_loc_ref_code)
  REFERENCES at_physical_location (location_code))
-/
+;
 ALTER TABLE at_loc_group ADD (
   CONSTRAINT at_loc_groups_fk2
  FOREIGN KEY (db_office_code)
  REFERENCES cwms_office (office_code))
-/
+;
 ALTER TABLE at_loc_group ADD (
   CONSTRAINT at_loc_groups_fk1
  FOREIGN KEY (loc_category_code)
  REFERENCES at_loc_category (loc_category_code))
-/
+;
 INSERT INTO at_loc_group VALUES ( 0, 0, 'Default'            , 'All Locations'                                                                            , 53, NULL, NULL, NULL);
 INSERT INTO at_loc_group VALUES ( 1, 1, 'USGS Station Name'  , 'US Geological Survey Station Name'                                                        , 53, NULL, NULL, NULL);
 INSERT INTO at_loc_group VALUES ( 2, 1, 'USGS Station Number', 'US Geological Survey Station Number'                                                      , 53, NULL, NULL, NULL);
@@ -1086,32 +1075,8 @@ INSERT INTO at_loc_group VALUES (11, 1, 'NIDID'              , 'The National Inv
 COMMIT ;
 -----
 
-create or replace trigger at_loc_group_t01
-before insert or update of shared_loc_alias_id on at_loc_group
-for each row
-declare
-   l_rec         at_gate_group%rowtype;
-   l_rating_spec rating_spec_t;
-   l_office_id   cwms_office.office_id%type;
-begin
-   select *
-     into l_rec
-     from at_gate_group
-    where loc_group_code = :new.loc_group_code;
 
-   select office_id into l_office_id from cwms_office where office_code = :new.db_office_code;
-   begin
-      l_rating_spec := rating_spec_t(
-         :new.shared_loc_alias_id,
-         l_office_id);
-   exception
-      when others then cwms_err.raise('ERROR', 'Gate location group specifies invalid rating specification: '||:new.shared_loc_alias_id);
-   end;
-exception
-   when no_data_found then null;
-end at_loc_group_t01;
-/
-COMMIT ;
+
 -----
 
 CREATE TABLE at_loc_group_assignment
@@ -1140,7 +1105,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 
 comment on table  at_loc_group_assignment                is 'Assigns locations to location groups';
 comment on column at_loc_group_assignment.location_code  is 'Reference to assigned location';
@@ -1165,7 +1130,7 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 NOPARALLEL
-/
+;
 
 ALTER TABLE at_loc_group_assignment ADD (
   CONSTRAINT at_loc_group_assignment_pk
@@ -1182,33 +1147,33 @@ ALTER TABLE at_loc_group_assignment ADD (
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
-/
+;
 
 ALTER TABLE at_loc_group_assignment ADD (
   CONSTRAINT at_loc_group_assignment_fk1
  FOREIGN KEY (location_code)
  REFERENCES at_physical_location (location_code))
-/
+;
 ALTER TABLE at_loc_group_assignment ADD (
   CONSTRAINT at_loc_group_assignment_fk2
  FOREIGN KEY (loc_group_code)
  REFERENCES at_loc_group (loc_group_code))
-/
+;
 ALTER TABLE at_loc_group_assignment ADD (
   CONSTRAINT at_loc_group_assignment_fk3
  FOREIGN KEY (loc_ref_code)
  REFERENCES at_physical_location (location_code))
-/
+;
 ALTER TABLE at_loc_group_assignment ADD (
   CONSTRAINT at_loc_group_assignment_fk4
  FOREIGN KEY (office_code)
  REFERENCES cwms_office(office_code))
-/
+;
 CREATE INDEX at_loc_group_assignment_idx1 ON
  at_loc_group_assignment(office_code, upper(loc_alias_id))
  LOGGING
  TABLESPACE CWMS_20DATA
-/
+;
 INSERT INTO at_loc_group_assignment
             (location_code, loc_group_code, loc_alias_id, loc_ref_code, office_code
             )
@@ -1268,7 +1233,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 
 
 COMMENT ON TABLE at_cwms_ts_spec IS 'Defines time series based on CWMS requirements.  This table also serves as time series specification super type.';
@@ -1308,7 +1273,7 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 NOPARALLEL
-/
+;
 
 
 CREATE UNIQUE INDEX at_cwms_ts_spec_pk ON at_cwms_ts_spec
@@ -1326,7 +1291,7 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 NOPARALLEL
-/
+;
 
 CREATE INDEX at_cwms_ts_spec_locations ON at_cwms_ts_spec
 (location_code, prev_location_code)
@@ -1356,19 +1321,19 @@ ALTER TABLE at_cwms_ts_spec ADD (
 ALTER TABLE at_cwms_ts_spec ADD (
   CONSTRAINT at_cwms_ts_spec_ck_3
  CHECK (TRIM(VERSION)=VERSION))
-/
+;
 ALTER TABLE at_cwms_ts_spec ADD (
   CONSTRAINT at_cwms_ts_spec_ck_4
  CHECK (nvl(version_flag, 'F') in ('T', 'F')))
-/
+;
 ALTER TABLE at_cwms_ts_spec ADD (
   CONSTRAINT at_cwms_ts_spec_ck_5
  CHECK (active_flag ='T' OR active_flag = 'F'))
-/
+;
 alter table at_cwms_ts_spec add (
   constraint at_cwms_ts_spec_ck_6
  check (historic_flag = 'T' or historic_flag = 'F'))
-/
+;
 ALTER TABLE at_cwms_ts_spec ADD (
   CONSTRAINT at_cwms_ts_spec_pk
  PRIMARY KEY
@@ -1384,43 +1349,43 @@ ALTER TABLE at_cwms_ts_spec ADD (
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
-/
+;
 
 ALTER TABLE at_cwms_ts_spec ADD (
   CONSTRAINT at_cwms_ts_spec_fk_1
  FOREIGN KEY (parameter_type_code)
  REFERENCES cwms_parameter_type (parameter_type_code))
-/
+;
 
 ALTER TABLE at_cwms_ts_spec ADD (
   CONSTRAINT at_cwms_ts_spec_fk_2
  FOREIGN KEY (parameter_code)
  REFERENCES at_parameter (parameter_code))
-/
+;
 
 ALTER TABLE at_cwms_ts_spec ADD (
   CONSTRAINT at_cwms_ts_spec_fk_3
  FOREIGN KEY (interval_code)
  REFERENCES cwms_interval (interval_code))
-/
+;
 
 ALTER TABLE at_cwms_ts_spec ADD (
   CONSTRAINT at_cwms_ts_spec_fk_4
  FOREIGN KEY (duration_code)
  REFERENCES cwms_duration (duration_code))
-/
+;
 
 ALTER TABLE at_cwms_ts_spec ADD (
   CONSTRAINT at_cwms_ts_spec_fk_5
  FOREIGN KEY (location_code)
  REFERENCES at_physical_location (location_code))
-/
+;
 
 ALTER TABLE at_cwms_ts_spec ADD (
   CONSTRAINT at_cwms_ts_spec_fk_6
  FOREIGN KEY (time_zone_code)
  REFERENCES cwms_time_zone (time_zone_code))
-/
+;
 
 ALTER TABLE at_cwms_ts_spec ADD (
   CONSTRAINT at_cwms_ts_spec_fk_7
@@ -1455,7 +1420,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 
 COMMENT ON TABLE  AT_SPECIFIED_LEVEL                      IS 'Contains stream levels of interest.';
 COMMENT ON COLUMN AT_SPECIFIED_LEVEL.SPECIFIED_LEVEL_CODE IS 'Primary key to relate stream levels to other entities.';
@@ -1481,7 +1446,7 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 NOPARALLEL
-/
+;
 
 COMMIT;
 
@@ -1554,7 +1519,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 
 COMMENT ON TABLE  AT_LOCATION_LEVEL                               IS 'Contains levels of interest at specific locations.';
 COMMENT ON COLUMN AT_LOCATION_LEVEL.LOCATION_LEVEL_CODE           IS 'Primary key that relates location levels to other entities.';
@@ -1624,7 +1589,7 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 NOPARALLEL
-/
+;
 
 create table at_loc_lvl_label(
    loc_lvl_label_code       integer,
@@ -1754,7 +1719,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 
 COMMENT ON TABLE  AT_SEASONAL_LOCATION_LEVEL                     IS 'Contains seasonal levels for specific locations.';
 COMMENT ON COLUMN AT_SEASONAL_LOCATION_LEVEL.LOCATION_LEVEL_CODE IS 'References specified level at a specific location.';
@@ -1813,7 +1778,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 
 COMMENT ON TABLE  AT_LOC_LVL_INDICATOR                          IS 'Specifies location level indicators.';
 COMMENT ON COLUMN AT_LOC_LVL_INDICATOR.LEVEL_INDICATOR_CODE     IS 'Primary key that relates location level indicators to specific conditions.';
@@ -1893,7 +1858,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 
 COMMENT ON TABLE  AT_LOC_LVL_INDICATOR_COND                            IS 'Specifies conditions for specific location level indicators.';
 COMMENT ON COLUMN AT_LOC_LVL_INDICATOR_COND.LEVEL_INDICATOR_CODE       IS 'References location level indicator for this condition.';
@@ -1949,7 +1914,7 @@ CREATE GLOBAL TEMPORARY TABLE AT_LOC_LVL_INDICATOR_TAB
    CONDITIONS             VARCHAR2(4000)
 )
 ON COMMIT DELETE ROWS
-/
+;
 
 COMMENT ON TABLE  AT_LOC_LVL_INDICATOR_TAB IS 'Used by CWMS_LEVEL.CAT_LOC_LVL_INDICATOR2';
 
@@ -1982,7 +1947,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 
 CREATE UNIQUE INDEX at_ts_category_name_pk ON at_ts_category
 (ts_category_code)
@@ -1999,7 +1964,7 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 NOPARALLEL
-/
+;
 
 CREATE UNIQUE INDEX at_ts_category_name_u1 ON at_ts_category
 (UPPER("TS_CATEGORY_ID"), db_office_code)
@@ -2016,7 +1981,7 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 NOPARALLEL
-/
+;
 
 ALTER TABLE at_ts_category ADD (
   CONSTRAINT at_ts_category_name_pk
@@ -2033,7 +1998,7 @@ ALTER TABLE at_ts_category ADD (
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
-/
+;
 
 ALTER TABLE AT_TS_CATEGORY ADD CONSTRAINT AT_TS_CATEGORY_FK1 FOREIGN KEY (DB_OFFICE_CODE) REFERENCES CWMS_OFFICE (OFFICE_CODE);
 
@@ -2070,7 +2035,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 comment on table  at_ts_group                    is 'Specifies a ts group within a ts group category';
 comment on column at_ts_group.ts_group_code      is 'Primary key uniquely identifying this group';
 comment on column at_ts_group.ts_category_code   is 'Reference to ts group category to which this group belongs';
@@ -2095,13 +2060,13 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 NOPARALLEL
-/
+;
 
 CREATE UNIQUE INDEX at_ts_groups_u1 ON at_ts_group
 (db_office_code, ts_category_code, UPPER("TS_GROUP_ID"))
 LOGGING
 TABLESPACE CWMS_20AT_DATA
-/
+;
 
 ALTER TABLE at_ts_group ADD (
   CONSTRAINT at_ts_groups_pk
@@ -2118,23 +2083,23 @@ ALTER TABLE at_ts_group ADD (
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
-/
+;
 
 ALTER TABLE at_ts_group ADD (
   CONSTRAINT at_ts_groups_fk3
  FOREIGN KEY (shared_ts_ref_code)
  REFERENCES at_cwms_ts_spec (ts_code))
-/
+;
 ALTER TABLE at_ts_group ADD (
   CONSTRAINT at_ts_groups_fk2
  FOREIGN KEY (db_office_code)
  REFERENCES cwms_office (office_code))
-/
+;
 ALTER TABLE at_ts_group ADD (
   CONSTRAINT at_ts_groups_fk1
  FOREIGN KEY (ts_category_code)
  REFERENCES at_ts_category (ts_category_code))
-/
+;
 INSERT INTO at_ts_group VALUES (0, 0, 'Default',        'All Time Series',                           53, NULL, NULL);
 INSERT INTO at_ts_group VALUES (1, 1, 'USACE Standard', 'USACE National Standard Naming Convention', 53, NULL, NULL);
 COMMIT ;
@@ -2166,7 +2131,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 
 comment on table  at_ts_group_assignment               is 'Assigns time series to ts groups';
 comment on column at_ts_group_assignment.ts_code       is 'Reference to assigned ts';
@@ -2191,7 +2156,7 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 NOPARALLEL
-/
+;
 
 ALTER TABLE at_ts_group_assignment ADD (
   CONSTRAINT at_ts_group_assignment_pk
@@ -2208,33 +2173,33 @@ ALTER TABLE at_ts_group_assignment ADD (
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
-/
+;
 
 ALTER TABLE at_ts_group_assignment ADD (
   CONSTRAINT at_ts_group_assignment_fk1
  FOREIGN KEY (ts_code)
  REFERENCES at_cwms_ts_spec (ts_code))
-/
+;
 ALTER TABLE at_ts_group_assignment ADD (
   CONSTRAINT at_ts_group_assignment_fk2
  FOREIGN KEY (ts_group_code)
  REFERENCES at_ts_group (ts_group_code))
-/
+;
 ALTER TABLE at_ts_group_assignment ADD (
   CONSTRAINT at_ts_group_assignment_fk3
  FOREIGN KEY (ts_ref_code)
  REFERENCES at_cwms_ts_spec (ts_code))
-/
+;
 ALTER TABLE at_ts_group_assignment ADD (
   CONSTRAINT at_ts_group_assignment_fk4
  FOREIGN KEY (office_code)
  REFERENCES cwms_office(office_code))
-/
+;
 CREATE INDEX at_ts_group_assignment_idx1 ON
  at_ts_group_assignment(office_code, upper(ts_alias_id))
  LOGGING
  TABLESPACE CWMS_20DATA
-/
+;
 COMMIT ;
 
 ---------------------------------
@@ -2264,7 +2229,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 
 COMMENT ON COLUMN at_screening.active_flag IS 'T of F';
 
@@ -2283,7 +2248,7 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 NOPARALLEL
-/
+;
 
 ALTER TABLE at_screening ADD (
   CONSTRAINT at_screening_pk
@@ -2300,13 +2265,13 @@ ALTER TABLE at_screening ADD (
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
-/
+;
 
 ALTER TABLE at_screening ADD (
   CONSTRAINT at_screening_fk02
  FOREIGN KEY (resultant_ts_code)
  REFERENCES at_cwms_ts_spec (ts_code))
-/
+;
 
 
 ---------------------------------
@@ -2336,7 +2301,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 
 COMMENT ON COLUMN at_alarm.active_flag IS 'T or F';
 
@@ -2355,7 +2320,7 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 NOPARALLEL
-/
+;
 
 ALTER TABLE at_alarm ADD (
   CONSTRAINT at_alarm_pk
@@ -2372,7 +2337,7 @@ ALTER TABLE at_alarm ADD (
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
-/
+;
 
 
 ---------------------------------
@@ -2410,7 +2375,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 
 CREATE UNIQUE INDEX at_comp_vt_pk ON at_comp_vt
 (comp_vt_code)
@@ -2427,7 +2392,7 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 NOPARALLEL
-/
+;
 
 CREATE UNIQUE INDEX at_comp_vt_u01 ON at_comp_vt
 (comp_vt_id, db_office_code)
@@ -2444,7 +2409,7 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 NOPARALLEL
-/
+;
 
 ALTER TABLE at_comp_vt ADD (
   CONSTRAINT at_comp_vt_pk
@@ -2461,7 +2426,7 @@ ALTER TABLE at_comp_vt ADD (
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
-/
+;
 
 ALTER TABLE at_comp_vt ADD (
   CONSTRAINT at_comp_vt_u01
@@ -2477,13 +2442,13 @@ ALTER TABLE at_comp_vt ADD (
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
-/
+;
 
 ALTER TABLE at_comp_vt ADD (
   CONSTRAINT at_comp_vt_r01
  FOREIGN KEY (db_office_code)
  REFERENCES cwms_office (office_code))
-/
+;
 ---------------------------------
 -- AT_TRANSFORM_CRITERIA table.
 --
@@ -2520,7 +2485,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 
 CREATE UNIQUE INDEX at_transform_criteria_pk ON at_transform_criteria
 (ts_code)
@@ -2537,7 +2502,7 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 NOPARALLEL
-/
+;
 
 CREATE UNIQUE INDEX at_transform_criteria_u02 ON at_transform_criteria
 (resultant_ts_code)
@@ -2554,7 +2519,7 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 NOPARALLEL
-/
+;
 
 ALTER TABLE at_transform_criteria ADD (
   CONSTRAINT at_transform_criteria_pk
@@ -2571,7 +2536,7 @@ ALTER TABLE at_transform_criteria ADD (
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
-/
+;
 
 ALTER TABLE at_transform_criteria ADD (
   CONSTRAINT at_transform_criteria_u02
@@ -2587,25 +2552,25 @@ ALTER TABLE at_transform_criteria ADD (
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
-/
+;
 
 ALTER TABLE at_transform_criteria ADD (
   CONSTRAINT at_transform_criteria_r02
  FOREIGN KEY (resultant_ts_code)
  REFERENCES at_cwms_ts_spec (ts_code))
-/
+;
 
 ALTER TABLE at_transform_criteria ADD (
   CONSTRAINT at_transform_criteria_r01
  FOREIGN KEY (ts_code)
  REFERENCES at_cwms_ts_spec (ts_code))
-/
+;
 
 ALTER TABLE at_transform_criteria ADD (
   CONSTRAINT at_transform_criteria_r03
  FOREIGN KEY (comp_vt_code)
  REFERENCES at_comp_vt (comp_vt_code))
-/
+;
 
 -----------------------------
 -- AT_UNIT_ALIAS TABLE.
@@ -2633,7 +2598,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 
 -----------------------------
 -- AT_UNIT_ALIAS TABLE comments
@@ -2660,7 +2625,7 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 NOPARALLEL
-/
+;
 
 -----------------------------
 -- AT_UNIT_ALIAS TABLE constraints
@@ -2679,7 +2644,7 @@ ALTER TABLE at_unit_alias ADD CONSTRAINT at_unit_alias_pk  PRIMARY KEY (alias_id
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                )
-/
+;
 
 -----------------------------
 -- AT_USER_PREFERENCES TABLE.
@@ -2708,7 +2673,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 
 CREATE UNIQUE INDEX at_user_preferences_pk ON at_user_preferences
 (db_office_code, username)
@@ -2725,7 +2690,7 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 NOPARALLEL
-/
+;
 
 ALTER TABLE at_user_preferences ADD (
   CONSTRAINT at_user_preferences_pk
@@ -2742,7 +2707,7 @@ ALTER TABLE at_user_preferences ADD (
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
-/
+;
 -----------------------------
 -- AT_OFFICE_SETTINGS TABLE.
 --
@@ -2776,7 +2741,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 
 CREATE UNIQUE INDEX at_office_settings_pk ON at_office_settings
 (db_office_code)
@@ -2793,7 +2758,7 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 NOPARALLEL
-/
+;
 
 ALTER TABLE at_office_settings ADD (
   CONSTRAINT at_office_settings_pk
@@ -2810,7 +2775,7 @@ ALTER TABLE at_office_settings ADD (
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
-/
+;
 
 ---------------------------------
 -- AT_PROPERTIES table.
@@ -2830,7 +2795,7 @@ CREATE TABLE at_properties
     NOCACHE
     NOPARALLEL
     NOMONITORING
-/
+;
 
 COMMENT ON TABLE at_properties IS 'Generic properties, such as for Java application.';
 COMMENT ON COLUMN at_properties.office_code   IS 'References the office that "owns" this property.';
@@ -2922,7 +2887,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 
 -----------------------------
 -- AT_REPORT_TEMPLATES comments
@@ -2953,7 +2918,7 @@ ALTER TABLE at_report_templates ADD
     PCTINCREASE      0
   )
 )
-/
+;
 
 -----------------------------
 -- AT_REPORT_TEMPLATES default data
@@ -3046,7 +3011,7 @@ LOB (VALUE) STORE AS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 
 -----------------------------
 -- AT_CLOB comments
@@ -3102,7 +3067,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 
 COMMENT ON TABLE  AT_FORECAST_SPEC                      IS 'Contains forecast specifications.';
 COMMENT ON COLUMN AT_FORECAST_SPEC.FORECAST_SPEC_CODE   IS 'Synthetic key.';
@@ -3131,7 +3096,7 @@ CREATE TABLE AT_FORECAST_TS
    CONSTRAINT AT_FORECAST_TS_PK  PRIMARY KEY (FORECAST_SPEC_CODE, TS_CODE, FORECAST_DATE, ISSUE_DATE)
 )
 TABLESPACE CWMS_20AT_DATA
-/
+;
 
 COMMENT ON TABLE  AT_FORECAST_TS                    IS 'Contains cross references between forecasts and time sereies';
 COMMENT ON COLUMN AT_FORECAST_TS.FORECAST_SPEC_CODE IS 'References forecst specification';
@@ -3152,7 +3117,7 @@ CREATE TABLE AT_FORECAST_TEXT
    CONSTRAINT AT_FORECAST_TEXT_PK  PRIMARY KEY (FORECAST_SPEC_CODE, FORECAST_DATE, ISSUE_DATE)
 )
 TABLESPACE CWMS_20AT_DATA
-/
+;
 
 COMMENT ON TABLE  AT_FORECAST_TEXT                    IS 'Contains cross references between forecasts and time sereies';
 COMMENT ON COLUMN AT_FORECAST_TEXT.FORECAST_SPEC_CODE IS 'References forecst specification';
@@ -3172,7 +3137,7 @@ CREATE TABLE AT_TS_DELETED_TIMES (
 )
 ORGANIZATION INDEX
 TABLESPACE CWMS_20_TSV
-/
+;
 
 COMMENT ON TABLE  AT_TS_DELETED_TIMES              IS 'Contains times of recently deleted time series data in Java milliseconds';
 COMMENT ON COLUMN AT_TS_DELETED_TIMES.DELETED_TIME IS 'Time at which the data were deleted';
@@ -3186,7 +3151,7 @@ create table at_boolean_state(
    constraint at_boolean_state_ck1 check (nvl(state, 'T') in ('T','F'))
 )
 tablespace cwms_20at_data
-/
+;
 
 comment on table  at_boolean_state       is 'Holds named boolean states';
 comment on column at_boolean_state.name  is 'Name of boolean state';
@@ -3205,7 +3170,7 @@ create global temporary table at_schema_object_diff
    constraint at_schema_object_diff_pk primary key (object_type, object_name)
 )
 on commit delete rows
-/
+;
 
 create global temporary table at_session_info
 (
@@ -3214,7 +3179,7 @@ create global temporary table at_session_info
    num_value number
 )
 on commit preserve rows
-/
+;
 
 create table cwms_media_type (
    media_type_code    number(4)    not null,
@@ -3225,7 +3190,7 @@ create table cwms_media_type (
    constraint cwms_media_type_ck1 check(lower(media_type_id) = media_type_id),
    constraint cwms_media_type_ck2 check(media_type_clob_tf in ('T','F'))
 ) tablespace CWMS_20AT_DATA
-/
+;
 comment on table  cwms_media_type                    is 'Contains internet media type (MIME type) strings';
 comment on column cwms_media_type.media_type_code    is 'Synthetic key';
 comment on column cwms_media_type.media_type_id      is 'The internet media type';
@@ -3239,7 +3204,7 @@ create table at_file_extension(
    constraint at_file_extension_ck1 check(lower(file_ext) = file_ext),
    constraint at_file_extension_fk1 foreign key(media_type_code) references cwms_media_type(media_type_code)
 ) tablespace cwms_20at_data
-/
+;
 comment on table  at_file_extension                 is 'Relates file extensions to media types';
 comment on column at_file_extension.office_code     is 'The office that owns the file extension relationship (may be CWMS office code)';
 comment on column at_file_extension.file_ext        is 'The file extension (without leading ''.'')';
@@ -3255,9 +3220,9 @@ create table at_blob(
    constraint at_blob_pk  primary key(blob_code),
    constraint at_blob_fk1 foreign key(media_type_code) references cwms_media_type(media_type_code)
 ) tablespace cwms_20at_data
-/
+;
 create unique index at_blob_u1 on at_blob(office_code, upper(id)) tablespace cwms_20at_data
-/
+;
 comment on table  at_blob                 is 'Contains binary data';
 comment on column at_blob.blob_code       is 'Synthetic key';
 comment on column at_blob.office_code     is 'Office that owns the binary data';
@@ -3275,7 +3240,7 @@ create table at_std_text(
    constraint at_std_text_ck1 check(std_text_id = upper(std_text_id)),
    constraint at_std_text_fk1 foreign key(clob_code) references at_clob(clob_code)
 ) tablespace cwms_20at_data
-/
+;
 comment on table  at_std_text               is 'Contains short references to descriptive text';
 comment on column at_std_text.std_text_code is 'Synthetic key';
 comment on column at_std_text.office_code   is 'Office that owns the standard text';
@@ -3295,11 +3260,11 @@ create table at_tsv_std_text(
    constraint at_tsv_std_text_fk1 foreign key(ts_code) references at_cwms_ts_spec(ts_code),
    constraint at_tsv_std_text_fk2 foreign key(std_text_code) references at_std_text(std_text_code)
 ) tablespace cwms_20_tsv
-/
+;
 create index at_tsv_std_text_idx1 on at_tsv_std_text(data_entry_date) tablespace cwms_20_tsv
-/
+;
 create index at_tsv_std_text_idx2 on at_tsv_std_text(std_text_code) tablespace cwms_20_tsv
-/
+;
 
 comment on table  at_tsv_std_text                 is 'Contains references to standard text from a time series';
 comment on column at_tsv_std_text.ts_code         is 'The time series';
@@ -3320,9 +3285,9 @@ create table at_tsv_text(
    constraint at_tsv_text_fk1 foreign key(ts_code) references at_cwms_ts_spec(ts_code),
    constraint at_tsv_text_fk2 foreign key(clob_code) references at_clob(clob_code)
 ) tablespace cwms_20_tsv
-/
+;
 create index at_tsv_text_idx1 on at_tsv_text(data_entry_date) tablespace cwms_20_tsv
-/
+;
 comment on table  at_tsv_text                 is 'Contains references to (nonstandard) text from a time series';
 comment on column at_tsv_text.ts_code         is 'The time series';
 comment on column at_tsv_text.date_time       is 'The date/time in the time series for the reference';
@@ -3342,9 +3307,9 @@ create table at_tsv_binary(
    constraint at_tsv_binary_fk1 foreign key(ts_code) references at_cwms_ts_spec(ts_code),
    constraint at_tsv_binary_fk2 foreign key(blob_code) references at_blob(blob_code)
 ) tablespace cwms_20_tsv
-/
+;
 create index at_tsv_binary_idx1 on at_tsv_binary(data_entry_date) tablespace cwms_20_tsv
-/
+;
 comment on table  at_tsv_binary                 is 'Contains references to binary data from a time series';
 comment on column at_tsv_binary.ts_code         is 'The time series';
 comment on column at_tsv_binary.date_time       is 'The date/time in the time series for the reference';
@@ -4840,7 +4805,7 @@ begin
    insert into cwms_media_type values (i, 'video/x-sgi-movie', 'F'); i := i + 1;
    insert into cwms_media_type values (i, 'x-conference/x-cooltalk', 'F'); i := i + 1;
 end;
-/
+;
 commit;
 begin
    insert into at_file_extension values(53, '123',         (select media_type_code from cwms_media_type where media_type_id = 'application/vnd.lotus-1-2-3'));
@@ -5727,7 +5692,7 @@ begin
    insert into at_file_extension values(53, 'zirz',        (select media_type_code from cwms_media_type where media_type_id = 'application/vnd.zul'));
    insert into at_file_extension values(53, 'zmm',         (select media_type_code from cwms_media_type where media_type_id = 'application/vnd.handheld-entertainment+xml'));
 end;
-/
+;
 commit;
 
 --
@@ -5758,7 +5723,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-/
+;
 
 
 
@@ -5821,7 +5786,7 @@ create table at_vert_datum_offset (
    constraint at_vert_datum_offset_fk3 foreign key (vertical_datum_id_2) references cwms_vertical_datum (vertical_datum_id),
    constraint at_vert_datum_offset_ck1 check (vertical_datum_id_1 <> vertical_datum_id_2)
 ) tablespace cwms_20at_data
-/
+;
 
 comment on table  at_vert_datum_offset                     is 'Contains vertical datum offsets for CWMS locations';
 comment on column at_vert_datum_offset.location_code       is 'References CWMS location';
@@ -5837,7 +5802,7 @@ create table at_vert_datum_local (
    constraint at_vert_datum_local_pk  primary key (location_code) using index,
    constraint at_vert_datum_local_fk1 foreign key (location_code) references at_physical_location(location_code)
 ) tablespace cwms_20at_data
-/
+;
 
 comment on table  at_vert_datum_local                  is 'Contains names of local vertical datums for locations.';
 comment on column at_vert_datum_local.location_code    is 'References location with a named local vertical datum.';
@@ -5852,7 +5817,7 @@ create table at_specified_level_order (
    constraint at_specified_level_order_fk1 foreign key (office_code) references cwms_office (office_code),
    constraint at_specified_level_order_fk2 foreign key (specified_level_code) references at_specified_level (specified_level_code)
 ) tablespace cwms_20data
-/
+;
 
 comment on table at_specified_level_order is 'Contains specified level sort order for UI components';
 comment on column at_specified_level_order.office_code is          'The office that the sort order is for. References CWMS_OFFICE';
@@ -5868,7 +5833,7 @@ create table at_store_rule_order (
    constraint at_store_rule_order_fk1 foreign key(office_code) references cwms_office(office_code),
    constraint at_store_rule_order_fk2 foreign key(store_rule_id) references cwms_store_rule(store_rule_id)
 ) tablespace cwms_20at_data
-/
+;
 
 comment on table at_store_rule_order is 'Holds sort order for store rules for UI lists';
 comment on column at_store_rule_order.office_code   is 'Foreign key to CWMS_OFFICE';
@@ -5882,7 +5847,7 @@ create table at_store_rule_default (
    constraint at_store_rule_default_fk1 foreign key(office_code) references cwms_office(office_code),
    constraint at_store_rule_default_fk2 foreign key(default_store_rule) references cwms_store_rule(store_rule_id)
 ) tablespace cwms_20at_data
-/
+;
 
 comment on table at_store_rule_default is 'Holds default store rules for UI lists';
 comment on column at_store_rule_default.office_code        is 'Office that default office applie to (foreign key to CWMS_OFFICE)';
@@ -5901,7 +5866,7 @@ create table at_text_filter (
    constraint at_text_filter_fk1 foreign key (configuration_code) references at_configuration (configuration_code),
    constraint at_text_filter_ck1 check (trim(text_filter_id) = text_filter_id)
 ) tablespace cwms_20at_data
-/
+;
 
 comment on table  at_text_filter is 'Holds text filter definitions';
 comment on column at_text_filter.text_filter_code   is 'Synthetic key';
@@ -5924,7 +5889,7 @@ create table at_text_filter_element (
    constraint at_text_filter_element_fk1 foreign key (text_filter_code) references at_text_filter (text_filter_code),
    constraint at_text_filter_element_ck1 check (include in ('T', 'F'))
 ) tablespace cwms_20at_data
-/
+;
 
 comment on table  at_text_filter_element is 'Holds sequenced filter definitions for text filters.';
 comment on column at_text_filter_element.text_filter_code is 'Foreign key to the text filter this element is for';
@@ -5949,7 +5914,7 @@ create table at_usgs_parameter(
    constraint at_usgs_parameter_fk4 foreign key (office_code) references cwms_office (office_code),
    constraint at_usgs_parameter_fk5 foreign key (usgs_parameter_code) references cwms_usgs_parameter (usgs_parameter_code)
 ) tablespace cwms_20at_data
-/
+;
 
 comment on table  at_usgs_parameter is 'Holds information for storing time series retrieved from USGS into CWMS';
 comment on column at_usgs_parameter.office_code              is 'Office that owns this conversion record. CWMS office applies to all unless overridden';
@@ -6315,7 +6280,7 @@ begin
       cwms_err.raise('ERROR', 'Location group contains non-outlet locations');
    end if;
 end at_gate_group_t01;
-/
+;
 commit;
 ---
 
