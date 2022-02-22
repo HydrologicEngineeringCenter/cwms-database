@@ -1187,4 +1187,8 @@
 		<delete file="${root}/build/database.props"/>
 	</target>
 
+	<target name="docker.push" depends="docker.setupparameters">
+
+	</target>
+
 </project>
