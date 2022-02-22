@@ -1519,7 +1519,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-;
+/
 
 COMMENT ON TABLE  AT_LOCATION_LEVEL                               IS 'Contains levels of interest at specific locations.';
 COMMENT ON COLUMN AT_LOCATION_LEVEL.LOCATION_LEVEL_CODE           IS 'Primary key that relates location levels to other entities.';
@@ -1589,7 +1589,7 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 NOPARALLEL
-;
+/
 
 create table at_loc_lvl_label(
    loc_lvl_label_code       integer,
@@ -1719,7 +1719,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-;
+/
 
 COMMENT ON TABLE  AT_SEASONAL_LOCATION_LEVEL                     IS 'Contains seasonal levels for specific locations.';
 COMMENT ON COLUMN AT_SEASONAL_LOCATION_LEVEL.LOCATION_LEVEL_CODE IS 'References specified level at a specific location.';
@@ -1778,7 +1778,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-;
+/
 
 COMMENT ON TABLE  AT_LOC_LVL_INDICATOR                          IS 'Specifies location level indicators.';
 COMMENT ON COLUMN AT_LOC_LVL_INDICATOR.LEVEL_INDICATOR_CODE     IS 'Primary key that relates location level indicators to specific conditions.';
@@ -1858,7 +1858,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-;
+/
 
 COMMENT ON TABLE  AT_LOC_LVL_INDICATOR_COND                            IS 'Specifies conditions for specific location level indicators.';
 COMMENT ON COLUMN AT_LOC_LVL_INDICATOR_COND.LEVEL_INDICATOR_CODE       IS 'References location level indicator for this condition.';
@@ -1914,7 +1914,7 @@ CREATE GLOBAL TEMPORARY TABLE AT_LOC_LVL_INDICATOR_TAB
    CONDITIONS             VARCHAR2(4000)
 )
 ON COMMIT DELETE ROWS
-;
+/
 
 COMMENT ON TABLE  AT_LOC_LVL_INDICATOR_TAB IS 'Used by CWMS_LEVEL.CAT_LOC_LVL_INDICATOR2';
 
@@ -1947,7 +1947,7 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-;
+/
 
 CREATE UNIQUE INDEX at_ts_category_name_pk ON at_ts_category
 (ts_category_code)
@@ -1964,7 +1964,7 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 NOPARALLEL
-;
+/
 
 CREATE UNIQUE INDEX at_ts_category_name_u1 ON at_ts_category
 (UPPER("TS_CATEGORY_ID"), db_office_code)
@@ -1981,7 +1981,7 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 NOPARALLEL
-;
+/
 
 ALTER TABLE at_ts_category ADD (
   CONSTRAINT at_ts_category_name_pk
@@ -1998,7 +1998,7 @@ ALTER TABLE at_ts_category ADD (
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
-;
+/
 
 ALTER TABLE AT_TS_CATEGORY ADD CONSTRAINT AT_TS_CATEGORY_FK1 FOREIGN KEY (DB_OFFICE_CODE) REFERENCES CWMS_OFFICE (OFFICE_CODE);
 
@@ -2035,7 +2035,8 @@ NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
-;
+/
+
 comment on table  at_ts_group                    is 'Specifies a ts group within a ts group category';
 comment on column at_ts_group.ts_group_code      is 'Primary key uniquely identifying this group';
 comment on column at_ts_group.ts_category_code   is 'Reference to ts group category to which this group belongs';
@@ -2060,7 +2061,7 @@ STORAGE    (
             BUFFER_POOL      DEFAULT
            )
 NOPARALLEL
-;
+/
 
 CREATE UNIQUE INDEX at_ts_groups_u1 ON at_ts_group
 (db_office_code, ts_category_code, UPPER("TS_GROUP_ID"))
@@ -3317,7 +3318,7 @@ comment on column at_tsv_binary.version_date    is 'The version date/time of the
 comment on column at_tsv_binary.blob_code       is 'Reference to the binary data';
 comment on column at_tsv_binary.data_entry_date is 'The date/time the references was stored';
 comment on column at_tsv_binary.attribute       is 'Attribute that can be used for sorting or other puropses';
---
+
 declare
    i number(4) := 0;
 begin
@@ -4805,7 +4806,8 @@ begin
    insert into cwms_media_type values (i, 'video/x-sgi-movie', 'F'); i := i + 1;
    insert into cwms_media_type values (i, 'x-conference/x-cooltalk', 'F'); i := i + 1;
 end;
-;
+/
+
 commit;
 begin
    insert into at_file_extension values(53, '123',         (select media_type_code from cwms_media_type where media_type_id = 'application/vnd.lotus-1-2-3'));
@@ -5692,7 +5694,7 @@ begin
    insert into at_file_extension values(53, 'zirz',        (select media_type_code from cwms_media_type where media_type_id = 'application/vnd.zul'));
    insert into at_file_extension values(53, 'zmm',         (select media_type_code from cwms_media_type where media_type_id = 'application/vnd.handheld-entertainment+xml'));
 end;
-;
+/
 commit;
 
 --
@@ -5770,7 +5772,6 @@ Insert into CWMS_APEX_ROLES
    (5, 'VT Mgr', 'CWMS General User', 'CWMS_GU');
 COMMIT;
 
-COMMIT ;
 
 
 create table at_vert_datum_offset (
@@ -6280,7 +6281,7 @@ begin
       cwms_err.raise('ERROR', 'Location group contains non-outlet locations');
    end if;
 end at_gate_group_t01;
-;
+/
 commit;
 ---
 
