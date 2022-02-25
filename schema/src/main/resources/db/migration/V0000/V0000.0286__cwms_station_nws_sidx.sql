@@ -1,7 +1,7 @@
 --
 -- indexes_for_spatial_data.sql -------------------
 ---------------------------------------------------
-prompt INSERT sdo geom metatdata for CWMS_STATION_NWS_SP
+--prompt INSERT sdo geom metatdata for CWMS_STATION_NWS_SP
 ---------------------------------------------------
 -- Must be run as the CWMS_20 user-----------------
 INSERT INTO user_sdo_geom_metadata (TABLE_NAME,
@@ -21,7 +21,7 @@ INSERT INTO user_sdo_geom_metadata (TABLE_NAME,
              8307);
 -- indexes_for_spatial_data.sql -------------------
 ---------------------------------------------------
-prompt CREATE CWMS_STATION_NWS_SP_SIDX
+--prompt CREATE CWMS_STATION_NWS_SP_SIDX
 ---------------------------------------------------
 --
 CREATE INDEX CWMS_STATION_NWS_SIDX
