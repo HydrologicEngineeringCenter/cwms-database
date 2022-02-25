@@ -1185,10 +1185,6 @@ AS
     */
    PROCEDURE DUMP (p_str IN VARCHAR2, p_len IN PLS_INTEGER DEFAULT 80 );
    /**
-    * Creates the partitioned timeseries table view
-    */
-   PROCEDURE create_view;
-   /**
     * Retrieves the office identifier and office long name for the current user
     *
     * @param p_office_id the office identifier of the current user
