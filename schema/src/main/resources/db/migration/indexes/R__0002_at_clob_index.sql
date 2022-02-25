@@ -2,6 +2,9 @@
   This must be run as the cwms_20 user. DO NOT run as SYS!
   This index was added as part of the CMA v2 project with CRREL
   Dated 28 May 2014
+
+  Indeterminate as to whether it depends on CWMS Package
+  however it seems complex enough to warrent placement.
 */
 DECLARE
   xcnt number;
@@ -35,4 +38,3 @@ CREATE INDEX at_clob_cidx
    ON at_clob (VALUE)
    INDEXTYPE IS CTXSYS.CONTEXT
       PARAMETERS ('datastore ctxsys.default_datastore WORDLIST at_clob_wordlist');
-
