@@ -1,7 +1,7 @@
 /* Formatted on 7/10/2011 12:26:48 PM (QP5 v5.163.1008.3004) */
 ALTER SESSION SET current_schema = sys;
-SET SERVEROUTPUT ON
-SET ECHO ON
+--SET SERVEROUTPUT ON
+--SET ECHO ON
 --
 --
 -- create public synonyms for CWMS schema packages and views
@@ -30,7 +30,7 @@ BEGIN
 	SELECT	synonym_name
 	  BULK	COLLECT INTO l_public_synonyms
 	  FROM	dba_synonyms
-	 WHERE	owner = 'PUBLIC' AND table_owner = '&cwms_schema';
+	 WHERE	owner = 'PUBLIC' AND table_owner = '${CWMS_SCHEMA}';
 
 	--
 	-- collect CWMS schema packages except for security
@@ -38,7 +38,7 @@ BEGIN
 	SELECT	object_name
 	  BULK	COLLECT INTO l_package_names
 	  FROM	dba_objects
-	 WHERE		 owner = '&cwms_schema'
+	 WHERE		 owner = '${CWMS_SCHEMA}'
 				AND object_type = 'PACKAGE'
 				AND object_name NOT LIKE '%_SEC_%'
 			        AND object_name <> 'CWMS_UPASS';
@@ -49,7 +49,7 @@ BEGIN
 	SELECT	object_name
 	  BULK	COLLECT INTO l_view_names
 	  FROM	dba_objects
-	 WHERE		 owner = '&cwms_schema'
+	 WHERE		 owner = '${CWMS_SCHEMA}'
 				AND object_type LIKE '%VIEW'
 				AND object_name NOT LIKE '%_SEC_%'
 				AND REGEXP_LIKE (object_name, '^[AM]V_');
@@ -60,7 +60,7 @@ BEGIN
 	SELECT	object_name
 	  BULK	COLLECT INTO l_type_names
 	  FROM	dba_objects
-	 WHERE		 owner = '&cwms_schema'
+	 WHERE		 owner = '${CWMS_SCHEMA}'
 				AND object_type = 'TYPE'
 				AND object_name NOT LIKE 'SYS_%';
 
@@ -87,7 +87,7 @@ BEGIN
 		l_sql_statement :=
 				'CREATE OR REPLACE PUBLIC SYNONYM '
 			|| l_package_names (i)
-			|| ' FOR &cwms_schema'
+			|| ' FOR ${CWMS_SCHEMA}'
 			|| '.'
 			|| l_package_names (i);
 		DBMS_OUTPUT.put_line ('-- ' || l_sql_statement);
@@ -114,7 +114,7 @@ BEGIN
 				-20999,
 					'Synonym ('
 				|| l_synonym
-				|| ') for type &cwms_schema..'
+				|| ') for type ${CWMS_SCHEMA}.'
 				|| l_view_names (i)
 				|| ' is too long'
 			);
@@ -123,7 +123,7 @@ BEGIN
 		l_sql_statement :=
 				'CREATE OR REPLACE PUBLIC SYNONYM '
 			|| l_synonym
-			|| ' FOR &cwms_schema'
+			|| ' FOR ${CWMS_SCHEMA}'
 			|| '.'
 			|| l_view_names (i);
 		DBMS_OUTPUT.put_line ('-- ' || l_sql_statement);
@@ -149,7 +149,7 @@ BEGIN
 			DBMS_OUTPUT.put_line (
 					'-- Synonym ('
 				|| l_synonym
-				|| ') for type &cwms_schema..'
+				|| ') for type ${CWMS_SCHEMA}.'
 				|| l_type_names (i)
 				|| ' is too long'
 			);
@@ -161,7 +161,7 @@ BEGIN
 			l_sql_statement :=
 					'CREATE OR REPLACE PUBLIC SYNONYM '
 				|| l_synonym
-				|| ' FOR &cwms_schema'
+				|| ' FOR ${CWMS_SCHEMA}'
 				|| '.'
 				|| l_type_names (i);
 			DBMS_OUTPUT.put_line ('-- ' || l_sql_statement);
@@ -187,7 +187,7 @@ BEGIN
 	FOR i IN 1 .. l_package_names.COUNT
 	LOOP
 		l_sql_statement :=
-				'GRANT EXECUTE ON &cwms_schema'
+				'GRANT EXECUTE ON ${CWMS_SCHEMA}'
 			|| '.'
 			|| l_package_names (i)
 			|| ' TO CWMS_USER';
@@ -204,7 +204,7 @@ BEGIN
 	FOR i IN 1 .. l_type_names.COUNT
 	LOOP
 		l_sql_statement :=
-				'GRANT EXECUTE ON &cwms_schema'
+				'GRANT EXECUTE ON ${CWMS_SCHEMA}'
 			|| '.'
 			|| l_type_names (i)
 			|| ' TO CWMS_USER';
@@ -216,16 +216,16 @@ BEGIN
 	--
 	-- grant select on collected views to CWMS_USER role
 	--
-	DBMS_OUTPUT.put_line ('--');
+	--DBMS_OUTPUT.put_line ('--');
 
 	FOR i IN 1 .. l_view_names.COUNT
 	LOOP
 		l_sql_statement :=
-				'GRANT SELECT ON &cwms_schema'
+				'GRANT SELECT ON ${CWMS_SCHEMA}'
 			|| '.'
 			|| l_view_names (i)
 			|| ' TO CWMS_USER';
-		DBMS_OUTPUT.put_line ('-- ' || l_sql_statement);
+		--DBMS_OUTPUT.put_line ('-- ' || l_sql_statement);
 
 		EXECUTE IMMEDIATE l_sql_statement;
 	END LOOP;
@@ -238,40 +238,40 @@ END;
 --
 -- PROCEDURE Synonyms...
 --
-GRANT EXECUTE ON &cwms_schema..download_file TO public;
-create or replace public synonym DOWNLOAD_FILE for &cwms_schema..DOWNLOAD_FILE;
+GRANT EXECUTE ON ${CWMS_SCHEMA}.download_file TO public;
+create or replace public synonym DOWNLOAD_FILE for ${CWMS_SCHEMA}.DOWNLOAD_FILE;
 --
 -----------------------------------------------
 -- removed until CMS spec and body are fixed --
 -- MDP  16 Oct 2015                          --
 -----------------------------------------------
--- GRANT EXECUTE ON &cwms_schema..p_chart_by_ts_code TO public;
--- create public synonym P_CHART_BY_TS_CODE for &cwms_schema..P_CHART_BY_TS_CODE;
+-- GRANT EXECUTE ON ${CWMS_SCHEMA}.p_chart_by_ts_code TO public;
+-- create public synonym P_CHART_BY_TS_CODE for ${CWMS_SCHEMA}.P_CHART_BY_TS_CODE;
 --
 -- FUNCTION Synonyms...
 --
-GRANT EXECUTE ON &cwms_schema..str2tbl TO CWMS_USER;
-create or replace public synonym str2tbl for &cwms_schema..str2tbl;
+GRANT EXECUTE ON ${CWMS_SCHEMA}.str2tbl TO CWMS_USER;
+create or replace public synonym str2tbl for ${CWMS_SCHEMA}.str2tbl;
 --
-GRANT EXECUTE ON &cwms_schema..stragg TO CWMS_USER;
-create or replace public synonym stragg for &cwms_schema..stragg;
+GRANT EXECUTE ON ${CWMS_SCHEMA}.stragg TO CWMS_USER;
+create or replace public synonym stragg for ${CWMS_SCHEMA}.stragg;
 
 -----------------------------------------------
 -- New GRANTS on TABLES for public interface --
 -----------------------------------------------
---GRANT SELECT on &cwms_schema..cwms_usace_dam TO CWMS_USER;
---GRANT SELECT on &cwms_schema..cwms_nid TO CWMS_USER;
---GRANT SELECT ON &cwms_schema..cwms_station_nws TO CWMS_User;
---GRANT SELECT ON &cwms_schema..cwms_station_usgs TO CWMS_User;
+--GRANT SELECT on ${CWMS_SCHEMA}.cwms_usace_dam TO CWMS_USER;
+--GRANT SELECT on ${CWMS_SCHEMA}.cwms_nid TO CWMS_USER;
+--GRANT SELECT ON ${CWMS_SCHEMA}.cwms_station_nws TO CWMS_User;
+--GRANT SELECT ON ${CWMS_SCHEMA}.cwms_station_usgs TO CWMS_User;
 --
-GRANT SELECT ON &cwms_schema..UPLOADED_XLS_FILE_ROWS_T TO CWMS_USER;
-GRANT INSERT ON &cwms_schema..UPLOADED_XLS_FILE_ROWS_T TO CWMS_USER;
-GRANT DELETE ON &cwms_schema..UPLOADED_XLS_FILE_ROWS_T TO CWMS_USER;
-GRANT UPDATE ON &cwms_schema..UPLOADED_XLS_FILE_ROWS_T TO CWMS_USER;
-GRANT SELECT ON &cwms_schema..UPLOADED_XLS_FILES_T TO CWMS_USER;
-GRANT INSERT ON &cwms_schema..UPLOADED_XLS_FILES_T TO CWMS_USER;
-GRANT DELETE ON &cwms_schema..UPLOADED_XLS_FILES_T TO CWMS_USER;
-GRANT UPDATE ON &cwms_schema..UPLOADED_XLS_FILES_T TO CWMS_USER;
+GRANT SELECT ON ${CWMS_SCHEMA}.UPLOADED_XLS_FILE_ROWS_T TO CWMS_USER;
+GRANT INSERT ON ${CWMS_SCHEMA}.UPLOADED_XLS_FILE_ROWS_T TO CWMS_USER;
+GRANT DELETE ON ${CWMS_SCHEMA}.UPLOADED_XLS_FILE_ROWS_T TO CWMS_USER;
+GRANT UPDATE ON ${CWMS_SCHEMA}.UPLOADED_XLS_FILE_ROWS_T TO CWMS_USER;
+GRANT SELECT ON ${CWMS_SCHEMA}.UPLOADED_XLS_FILES_T TO CWMS_USER;
+GRANT INSERT ON ${CWMS_SCHEMA}.UPLOADED_XLS_FILES_T TO CWMS_USER;
+GRANT DELETE ON ${CWMS_SCHEMA}.UPLOADED_XLS_FILES_T TO CWMS_USER;
+GRANT UPDATE ON ${CWMS_SCHEMA}.UPLOADED_XLS_FILES_T TO CWMS_USER;
 
 ----
 -- END: non-standard CMA related GRANTS and SYNONYMS
