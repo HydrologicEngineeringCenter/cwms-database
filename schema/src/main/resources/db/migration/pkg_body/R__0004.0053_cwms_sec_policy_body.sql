@@ -1,8 +1,4 @@
-/* Formatted on 3/3/2011 8:05:07 AM (QP5 v5.163.1008.3004) */
-SET DEFINE ON
-@@defines.sql
-
-CREATE OR REPLACE PACKAGE BODY &cwms_schema..cwms_sec_policy
+CREATE OR REPLACE PACKAGE BODY cwms_sec_policy
 AS
     FUNCTION cwms_duration_filter (p_schema IN VARCHAR2, p_table IN VARCHAR2)
         RETURN VARCHAR2
