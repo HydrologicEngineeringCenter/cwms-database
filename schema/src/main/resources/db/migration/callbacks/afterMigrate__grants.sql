@@ -1,0 +1,1 @@
+grant execute on cwms_util to cwms_dba;
