@@ -4,8 +4,8 @@ DECLARE
    l_upass VARCHAR2(128) := '';
 BEGIN
    FOR c IN (SELECT table_name
-               FROM user_tables
-              WHERE table_name LIKE 'AT_%' AND TEMPORARY = 'N' AND table_name not in ('AT_LOG_MESSAGE','AT_LOG_MESSAGE_PROPERTIES','AT_APPLICATION_LOGIN','AT_APPLICATION_SESSION','AT_API_KEYS'))
+               FROM dba_tables
+              WHERE owner='${CWMS_SCHEMA}' AND table_name LIKE 'AT_%' AND TEMPORARY = 'N' AND table_name not in ( 'AT_LOG_MESSAGE','AT_LOG_MESSAGE_PROPERTIES','AT_APPLICATION_LOGIN','AT_APPLICATION_SESSION'))
    LOOP
       l_trig := replace(c.table_name,'AT_','ST_');
       if(c.table_name = 'AT_SEC_USERS' OR c.table_name='AT_SEC_LOCKED_USERS' OR c.table_name='AT_SEC_USER_OFFICE' OR
@@ -20,30 +20,30 @@ BEGIN
             'CREATE OR REPLACE TRIGGER '
          || l_trig
          || ' BEFORE DELETE OR INSERT OR UPDATE
-              ON '
+              ON ${CWMS_SCHEMA}.'
          || c.table_name
          || ' REFERENCING NEW AS NEW OLD AS OLD
 
              DECLARE
-    
+
              l_priv   VARCHAR2 (16);
              BEGIN
-             l_priv := NVL(SYS_CONTEXT (''CWMS_ENV'', ''CWMS_PRIVILEGE''),''''); 
-             IF (l_priv <> ''CAN_WRITE'' AND user NOT IN (''SYS'', ''&cwms_schema'')'
-          || l_upass 
+             l_priv := NVL(SYS_CONTEXT (''CWMS_ENV'', ''CWMS_PRIVILEGE''),'''');
+             IF (l_priv <> ''CAN_WRITE'' AND user NOT IN (''SYS'', ''${CWMS_SCHEMA}'')'
+          || l_upass
           || ')
              THEN
-     
+
                CWMS_20.CWMS_ERR.RAISE(''NO_WRITE_PRIVILEGE'');
-     
+
              END IF;
            END;';
    --DBMS_OUTPUT.PUT_LINE(l_cmd);
    execute immediate l_cmd;
    END LOOP;
    FOR c IN (SELECT table_name
-               FROM user_tables
-              WHERE table_name in ( 'AT_LOG_MESSAGE','AT_LOG_MESSAGE_PROPERTIES','AT_APPLICATION_LOGIN','AT_APPLICATION_SESSION'))
+               FROM dba_tables
+              WHERE owner='${CWMS_SCHEMA}' and table_name in ( 'AT_LOG_MESSAGE','AT_LOG_MESSAGE_PROPERTIES','AT_APPLICATION_LOGIN','AT_APPLICATION_SESSION'))
    LOOP
       l_trig := replace(c.table_name,'AT_','ST_');
       DBMS_OUTPUT.PUT_LINE(c.table_name || ':' || l_upass);
@@ -51,20 +51,20 @@ BEGIN
             'CREATE OR REPLACE TRIGGER '
          || l_trig
          || ' BEFORE DELETE OR INSERT OR UPDATE
-              ON '
+              ON ${CWMS_SCHEMA}.'
          || c.table_name
          || ' REFERENCING NEW AS NEW OLD AS OLD
 
              DECLARE
-    
+
              l_priv   VARCHAR2 (16);
              BEGIN
-             l_priv := NVL(SYS_CONTEXT (''CWMS_ENV'', ''CWMS_PRIVILEGE''),''''); 
-             IF ((l_priv <> ''CAN_WRITE'') AND (l_priv <> ''CAN_LOGIN'') AND user NOT IN (''SYS'', ''&cwms_schema''))
+             l_priv := NVL(SYS_CONTEXT (''CWMS_ENV'', ''CWMS_PRIVILEGE''),'''');
+             IF ((l_priv <> ''CAN_WRITE'') AND (l_priv <> ''CAN_LOGIN'') AND user NOT IN (''SYS'', ''${CWMS_SCHEMA}''))
              THEN
-     
+
                CWMS_20.CWMS_ERR.RAISE(''NO_WRITE_PRIVILEGE'');
-     
+
              END IF;
            END;';
    --DBMS_OUTPUT.PUT_LINE(l_cmd);

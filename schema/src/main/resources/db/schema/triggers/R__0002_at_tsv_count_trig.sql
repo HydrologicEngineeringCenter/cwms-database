@@ -17,7 +17,7 @@ BEGIN
         -- count inserts, updates and deletes using the cwms_tsv package
 
                 l_dml := 0;
-        
+
                 if INSERTING then
                         l_dml := 1;
                 elsif UPDATING then

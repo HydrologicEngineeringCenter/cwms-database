@@ -3,7 +3,7 @@ CREATE OR REPLACE FUNCTION CHECK_SESSION_USER(
   table_p    IN VARCHAR2)
  RETURN VARCHAR2
  AS
-  
+
  BEGIN
    if dbms_mview.i_am_a_refresh then
    return null;
@@ -22,7 +22,7 @@ BEGIN
     loop
         BEGIN
           DBMS_RLS.DROP_POLICY(
-        object_schema    => '&cwms_schema',
+        object_schema    => '${CWMS_SCHEMA}',
         object_name      => c.table_name,
         policy_name      => 'SERVICE_USER_POLICY');
        EXCEPTION WHEN OTHERS THEN
@@ -30,14 +30,13 @@ BEGIN
        END;
 
         DBMS_RLS.ADD_POLICY (
-        object_schema    => '&cwms_schema',
+        object_schema    => '${CWMS_SCHEMA}',
         object_name      => c.table_name,
         policy_name      => 'SERVICE_USER_POLICY',
-        function_schema  => '&cwms_schema',
+        function_schema  => '${CWMS_SCHEMA}',
         policy_function  => 'CHECK_SESSION_USER',
         policy_type      => DBMS_RLS.SHARED_CONTEXT_SENSITIVE,
         statement_types  => 'select');
     end loop;
 END;
 /
-
