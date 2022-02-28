@@ -1,18 +1,3 @@
-/* Formatted on 10/13/2011 12:17:43 PM (QP5 v5.163.1008.3004) */
---
--- AV_DATA_STREAMS_CURRENT  (View)
---
---  Dependencies:
---   ZV_CURRENT_CRIT_FILE_CODE (View)
---   AT_DATA_STREAM_ID (Table)
---   AV_SHEF_DECODE_SPEC (View)
---   CWMS_OFFICE (Table)
---   CWMS_UTIL (Package)
---
-
---
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_DATA_STREAMS_CURRENT', null,
-'
 /**
  * Displays info about CWMS data streams
  *
@@ -36,9 +21,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_DATA_STREAMS_CUR
  * @field data_stream_code          [description needed]
  * @field db_office_code            [description needed]
  */
-');
-
-
 CREATE OR REPLACE FORCE VIEW av_data_streams_current
 (
     db_office_id,

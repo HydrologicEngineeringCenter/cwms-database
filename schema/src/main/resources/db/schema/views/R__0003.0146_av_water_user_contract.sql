@@ -1,8 +1,3 @@
-----------------------------
--- AV_WATER_USER_CONTRACT --
-----------------------------
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_WATER_USER_CONTRACT', null,
-'
 /**
  * Displays information on water user contracts
  *
@@ -31,7 +26,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_WATER_USER_CONTR
  * @field pump_out_below_location_code  Database location code for the pump out below location
  * @field pump_in_location_code         Database location code for the pump in location
  */
-');
 create or replace force view av_water_user_contract(
    office_id,
    project_id,

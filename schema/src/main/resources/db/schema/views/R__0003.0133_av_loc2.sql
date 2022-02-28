@@ -1,30 +1,3 @@
-/* Formatted on 5/22/2015 11:37:32 AM (QP5 v5.269.14213.34769) */
---
--- AV_LOC2  (View)
---
---  Dependencies:
---   CWMS_LOCATION_KIND (Table)
---   CWMS_NATION (Table)
---   CWMS_OFFICE (Table)
---   CWMS_STATE (Table)
---   CWMS_TIME_ZONE (Table)
---   CWMS_UNIT_CONVERSION (Table)
---   CWMS_COUNTY (Table)
---   AT_BASE_LOCATION (Table)
---   AT_DISPLAY_UNITS (Table)
---   AT_PHYSICAL_LOCATION (Table)
---   AT_LOC_GROUP_ASSIGNMENT (Table)
---   AT_LOC_GROUP (Table)
---   AT_LOC_CATEGORY (Table)
---
-
-insert into at_clob
-        values (
-                  cwms_seq.nextval,
-                  53,
-                  '/VIEWDOCS/AV_LOC2',
-                  null,
-                  '
 /**
  * Displays CWMS Locations, Including Location Aliases
  *
@@ -65,8 +38,6 @@ insert into at_clob
  * @field loc_alias_group      The location group to which the alias for the location_id or base_location_id belongs. Null if location_id is not an alias.
  * @field db_office_code       Unique number identifying the office that owns the location
  */
-');
-
 create or replace force view av_loc2
 (
    location_code,
@@ -433,4 +404,3 @@ end;
 
 
 create or replace public synonym cwms_v_loc2 for av_loc2;
-

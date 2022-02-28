@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_A2W_TS_CODES_BY_LOC', null,
-'
 /**
  * Displays A2W_TS_CODES_BY_LOC information
  *
@@ -36,7 +34,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_A2W_TS_CODES_BY_
  * @field TS_CODE_IRRAD              The TSC to show Irradaiance at a location (amount of sunlight).
  * @field TS_CODE_EVAP               The TSC to show Evaporations at a location.
  */
-');
 create or replace force view av_a2w_ts_codes_by_loc
 (
    location_id,

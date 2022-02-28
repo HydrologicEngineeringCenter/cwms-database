@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_EMBANK_PROTECTION_TYPE', null,
-'
 /**
  * Displays information about embankment types
  *
@@ -10,7 +8,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_EMBANK_PROTECTIO
  * @field db_office_code                The numeric code of the office that owns the protection type
  * @field protection_type_code          The numeric code of the protection type
  */
-');
 create or replace force view av_embank_protection_type(
    db_office_id,
    protection_type_display_value,
@@ -25,9 +22,8 @@ as
           ept.protection_type_active,
           ept.db_office_code db_office_code,
           ept.protection_type_code
-     from at_embank_protection_type ept, 
+     from at_embank_protection_type ept,
           cwms_office o
     where ept.db_office_code = o.office_code;
-      
-create or replace public synonym cwms_v_embank_protection_type for av_embank_protection_type;
 
+create or replace public synonym cwms_v_embank_protection_type for av_embank_protection_type;

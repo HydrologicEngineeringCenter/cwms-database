@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_OUTLET', null,
-'
 /**
  * Displays information about outlets at CWMS projects
  *
@@ -13,7 +11,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_OUTLET', null,
  * @field opening_unit_en Opening unit in English unit system
  * @field opening_unit_si Opening unit in SI unit system
  */
-');
 create or replace force view av_outlet
 (
    office_id,
@@ -43,7 +40,7 @@ select o.office_id as office_id,
        at_physical_location pl2,
        at_project p,
        at_outlet ou,
-       at_loc_category lc, 
+       at_loc_category lc,
        at_loc_group lg,
        at_loc_group_assignment lga
  where bl1.db_office_code = o.office_code
@@ -56,4 +53,4 @@ select o.office_id as office_id,
    and lg.loc_group_code = lga.loc_group_code
    and lc.loc_category_code = lg.loc_category_code
    and upper(lc.loc_category_id) = 'RATING'
-/            
+/

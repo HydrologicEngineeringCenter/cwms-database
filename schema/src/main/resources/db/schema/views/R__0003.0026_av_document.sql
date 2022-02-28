@@ -1,8 +1,6 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_DOCUMENT', null,
-'
 /**
- * Displays information about documents in the database 
- * 
+ * Displays information about documents in the database
+ *
  * @field db_office_id           The text identfier of the office that owns the document
  * @field base_location_id       The base location identifier of the location that owns the document
  * @field sub_location_id        The sub-location identifier of the location that owns the document
@@ -20,7 +18,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_DOCUMENT', null,
  * @field stored_document        The foreign key to at_blob/at_clob that stores the document
  * @field document_type_id       The document type of the document
  */
-');
 create or replace force view av_document(
    db_office_id,
    base_location_id,

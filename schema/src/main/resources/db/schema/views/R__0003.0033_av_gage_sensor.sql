@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_GAGE_SENSOR', null,
-'
 /**
  * Displays CWMS Gages
  *
@@ -22,7 +20,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_GAGE_SENSOR', nu
  * @field gage_code                The unique numeric code that identifies the sensor''s gage in the database
  * @field location_code            The unique numeric code that identifies the location where the sensor''s gage resides in the database
  */
-');
 create or replace force view av_gage_sensor(
    office_id,
    location_id,

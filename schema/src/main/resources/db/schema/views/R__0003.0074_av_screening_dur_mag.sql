@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_SCREENING_DUR_MAG', null,
-'
 /**
  * [description needed]
  *
@@ -24,7 +22,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_SCREENING_DUR_MA
  * @field question_lo         [description needed]
  * @field question_hi         [description needed]
  */
-');
 CREATE OR REPLACE FORCE VIEW AV_SCREENING_DUR_MAG
 (
    SCREENING_CODE,

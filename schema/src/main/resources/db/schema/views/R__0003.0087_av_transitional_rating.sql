@@ -1,8 +1,3 @@
-----------------------------
--- AV_TRANSITIONAL_RATING --
-----------------------------
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TRANSITIONAL_RATING', null,
-'
 /**
  * Displays information on transitional ratings
  *
@@ -22,7 +17,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TRANSITIONAL_RAT
  * @field source_rating_spec_code  The unique numeric code of the source rating specification if the evaluation expression is the output of one of the source ratings
  * @field transition_date          The date/time to start transition (interpolation) from previous rating in UTC
  */
-');
 create or replace force view av_transitional_rating(
    office_id,
    rating_spec,
@@ -49,10 +43,10 @@ as
              else regexp_replace(
                      cwms_util.to_algebraic_logic(
                         regexp_replace(
-                           a.condition, 
-                           'I(\d+)', 
-                           'ARG\1')), 
-                     'ARG(\d+)', 
+                           a.condition,
+                           'I(\d+)',
+                           'ARG\1')),
+                     'ARG(\d+)',
                      'I\1')
           end
              as condition,
@@ -61,10 +55,10 @@ as
                 cwms_util.to_algebraic(
                    regexp_replace(
                       regexp_replace(
-                         a.expression, 
-                         'R(\d+)', 
-                         'ARG90\1'), 
-                      'I(\d+)', 
+                         a.expression,
+                         'R(\d+)',
+                         'ARG90\1'),
+                      'I(\d+)',
                       'ARG\1')),
                 'ARG90(\d+)',
                 'R\1'),
@@ -77,7 +71,7 @@ as
           b.rating_spec_code as source_rating_spec_code,
           a.transition_date
      from (select tr.transitional_rating_code,
-                  tr.rating_spec_code, 
+                  tr.rating_spec_code,
                   tr.native_units,
                   tr.effective_date,
                   tr.create_date,
@@ -138,7 +132,7 @@ as
               and pl.location_code = rs.location_code
               and bl.base_location_code = pl.base_location_code
           ) b on a.transitional_rating_code = b.transitional_rating_code
-             and a.expression = b.expression 
+             and a.expression = b.expression
              and to_number(substr(b.expression, 2)) = b.position;
 
 CREATE OR REPLACE PUBLIC SYNONYM CWMS_V_TRANSITIONAL_RATING FOR AV_TRANSITIONAL_RATING;

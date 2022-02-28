@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_DATAEXCHANGE_JOB', null,
-'
 /**
  * Displays information on dataexchange batch jobs
  *
@@ -18,7 +16,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_DATAEXCHANGE_JOB
  * @field processed_by   Entity that executed data exchange
  * @field results        Text describing result of job execution
  */
-');
 CREATE OR REPLACE FORCE VIEW av_dataexchange_job
 AS
     WITH request$

@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_PUMP', null,
-'
 /**
  * Displays information about pumps about pump locations in the CWMS database
  *
@@ -10,13 +8,12 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_PUMP', null,
  * @field description        A description of the structure
  * @field pump_location_code The unique numeric code that identifies the pump location in the database
  */
-');
 create or replace force view av_pump (
-   office_id, 
-   pump_location_id, 
-   description, 
-   pump_location_code) 
-as 
+   office_id,
+   pump_location_id,
+   description,
+   pump_location_code)
+as
 select o.office_id,
        bl.base_location_id
        ||substr('-', 1, length(pl.sub_location_id))
@@ -32,4 +29,3 @@ select o.office_id,
    and o.office_code = bl.db_office_code;
 
 create or replace public synonym cwms_v_pump for av_pump;
-

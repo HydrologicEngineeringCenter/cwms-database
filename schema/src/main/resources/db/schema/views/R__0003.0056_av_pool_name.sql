@@ -1,6 +1,3 @@
-delete from at_clob where id = '/VIEWDOCS/AV_POOL_NAME';
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_POOL_NAME', null,
-'
 /**
  * Displays reservoir pool names stored in the database
  *
@@ -11,7 +8,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_POOL_NAME', null
  * @field pool_name       The name of the pool in the database
  * @field pool_name_code  The numeric code of the pool name in the database
  */
-');
 create or replace force view av_pool_name(
    office_id,
    office_code,

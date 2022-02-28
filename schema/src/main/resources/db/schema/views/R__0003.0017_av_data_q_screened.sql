@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_DATA_Q_SCREENED', null,
-'
 /**
  * Displays information about the screened_id component of data quality codes
  *
@@ -10,5 +8,4 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_DATA_Q_SCREENED'
  * @field screened_id  Specifies a valid value for the screened_id component
  * @field description  Describes the specified value
  */
-');
 create view av_data_q_screened as select * from cwms_data_q_screened;

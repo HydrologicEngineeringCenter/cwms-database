@@ -1,11 +1,10 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_USGS_RATING', null,'
 /**
  * Contains information for retrieving ratings from USGS into the CWMS database
  *
  * @since CWMS 2.2
  *
  * @param office_id             The office that owns the rating
- * @param location_id           The CWMS text identifier of the location for the rating 
+ * @param location_id           The CWMS text identifier of the location for the rating
  * @param usgs_site             The USGS station number
  * @param rating_spec           The CWMS text rating specification
  * @param auto_update_flag      A flag (T/F) specifying whether the rating should be auto-retrieved
@@ -17,7 +16,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_USGS_RATING', nu
  * @param location_code         The CWMS numeric code of the location for the rating
  * @param rating_spec_code      The CWMS numeric code of the rating specification
  */
-');
 create or replace force view av_usgs_rating(
    office_id,
    location_id,

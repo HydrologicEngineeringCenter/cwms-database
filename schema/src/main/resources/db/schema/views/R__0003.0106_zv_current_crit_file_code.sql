@@ -1,13 +1,3 @@
-/* Formatted on 7/8/2011 2:12:28 PM (QP5 v5.163.1008.3004) */
---
--- ZV_CURRENT_CRIT_FILE_CODE	(View)
---
---  Dependencies:
---   AT_SHEF_CRIT_FILE_REC (Table)
---
-
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/ZV_CURRENT_CRIT_FILE_CODE', null,
-'
 /**
  * [description needed]
  *
@@ -22,7 +12,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/ZV_CURRENT_CRIT_FIL
  * @field num_crit_files          [description needed]
  * @field crit_file_hash          [description needed]
  */
-');
 CREATE OR REPLACE FORCE VIEW zv_current_crit_file_code
 (
     crit_file_code,

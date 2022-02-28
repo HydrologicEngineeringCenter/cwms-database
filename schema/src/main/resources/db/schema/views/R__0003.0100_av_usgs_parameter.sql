@@ -1,10 +1,9 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_USGS_PARAMETER', null,'
 /**
  * Contains information for converting USGS parameters to CWMS
  *
  * @since CWMS 2.2
  *
- * @member office_id           The office that owns the conversion 
+ * @member office_id           The office that owns the conversion
  * @member usgs_parameter_code The 5-digit USGS parameter code to convert
  * @member parameter_id        The CWMS Parameter
  * @member parameter_type_id   The CWMS Parameter Type
@@ -12,7 +11,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_USGS_PARAMETER',
  * @member factor              CWMS = USGS * factor + offset
  * @member offset              CWMS = USGS * factor + offset
  */
-');
 create or replace force view av_usgs_parameter(
    office_id,
    usgs_parameter_code,

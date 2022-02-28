@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_CITIES_SP', null,
-'
 /**
  * Displays AV_CITIES_SP information
  *
@@ -15,7 +13,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_CITIES_SP', null
  * @field CAPITAL                    The..
  * @field SHAPE                      The..
  */
-');
 CREATE OR REPLACE FORCE VIEW AV_CITIES_SP
 (
    OBJECTID,

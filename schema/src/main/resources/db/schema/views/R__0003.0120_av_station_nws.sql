@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_STATION_NWS', null,
-'
 /**
  * Displays AV_STATION_NWS information
  *
@@ -11,7 +9,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_STATION_NWS', nu
  * @field LON                        The..
  * @field SHAPE                      The..
  */
-');
 CREATE OR REPLACE FORCE VIEW AV_STATION_NWS
 (
    NWS_ID,

@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TS_ALIAS', null,
-'
 /**
  * Displays information about time series aliases
  *
@@ -12,7 +10,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TS_ALIAS', null,
  * @field ts_id         The time series
  * @field alias_id      The alias for the time series in this category/group
  */
-');
 CREATE OR REPLACE VIEW av_ts_alias
 (
 	category_id,

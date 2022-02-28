@@ -1,5 +1,10 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/MV_TIME_ZONE', null,
-'
+begin
+   execute immediate 'drop materialized view ${CWMS_SCHEMA}.MV_Time_zone;';
+   exception
+      when others then null;
+end;
+/
+
 /**
  * Displays CWMS time zones and time zone aliases
  *
@@ -10,14 +15,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/MV_TIME_ZONE', null
  * @field utc_offset      Offset from UTC
  * @field dst_offset      Offset for Daylight Saving Time
 */
-');
-begin
-   execute immediate 'drop materialized view ${CWMS_SCHEMA}.MV_Time_zone;';
-   exception
-      when others then null;
-end;
-/
-
 create materialized view mv_time_zone as
    select * from
       (

@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_SPECIFIED_LEVEL_ORDER', null,
-'
 /**
  * Displays AV_SPECIFIED_LEVEL_ORDER information
  *
@@ -12,7 +10,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_SPECIFIED_LEVEL_
  * @field description                The..
  * @field sort_order                 The..
  */
-');
 CREATE OR REPLACE VIEW av_specified_level_order
 (
    db_office_id,
@@ -33,6 +30,3 @@ AS
     WHERE     slo.specified_level_code = sl.specified_level_code
           AND slo.office_code = o.office_code
 /
-
-
- 

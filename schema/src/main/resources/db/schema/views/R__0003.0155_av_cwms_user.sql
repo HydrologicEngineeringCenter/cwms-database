@@ -1,6 +1,3 @@
-delete from at_clob where office_code = 53 and id = '/VIEWDOCS/AV_CWMS_USER';
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_CWMS_USER', null,
-'
 /**
  * Displays identifier and name information about CWMS users
  *
@@ -15,7 +12,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_CWMS_USER', null
  * @field office_symbol The full office symbol for the user
  * @field office_id     The CWMS office identifier for the user
  */
-');
 create or replace view av_cwms_user (
    user_id,
    first_name,
@@ -50,7 +46,7 @@ select user_id,
        end as phone,
        email,
        office_symbol,
-       office_id       
+       office_id
   from (select upper(userid) as user_id,
                initcap(substr(fullname, 1, instr(fullname, ' ') - 1)) as first_name,
                initcap(substr(fullname, instr(fullname, ' ', -1) + 1)) as last_name,
@@ -58,7 +54,7 @@ select user_id,
                regexp_replace(phone, '\D', null) as phone,
                lower(email) as email,
                upper(office) as office_symbol,
-               upper(org) as office_id               
+               upper(org) as office_id
           from at_sec_cwms_users
        );
 

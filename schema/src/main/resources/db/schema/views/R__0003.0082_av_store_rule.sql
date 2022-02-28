@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_STORE_RULE', null,
-'
 /**
  * Displays information about CWMS Store Rules
  *
@@ -9,14 +7,12 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_STORE_RULE', nul
  *
  * @see view av_store_rule_ui
  */
-');
 create or replace force view av_store_rule(
    store_rule_code,
    store_rule_id,
    description)
 as
-   select store_rule_code, 
-          store_rule_id, 
-          description 
+   select store_rule_code,
+          store_rule_id,
+          description
      from cwms_store_rule;
-                                                                                          

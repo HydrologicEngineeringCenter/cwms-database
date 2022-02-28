@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_NATION_SP', null,
-'
 /**
  * Displays AV_NATION_SP information
  *
@@ -22,7 +20,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_NATION_SP', null
  * @field COLOR_MAP                  The..
  * @field SHAPE                      The..
  */
-');
 CREATE OR REPLACE FORCE VIEW AV_NATION_SP
 (
    OBJECTID,

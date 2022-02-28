@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_USACE_DAM', null,
-'
 /**
  * Displays AV_USACE_DAM information
  *
@@ -63,7 +61,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_USACE_DAM', null
  * @field BUSINESS_LINE_ID           The..
  * @field SHAPE                      The..
  */
-');
 CREATE OR REPLACE FORCE VIEW AV_USACE_DAM
 (
    DAM_ID,

@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_RATING_VALUES', null,
-'
 /**
  * Displays rating values in database storage units
  *
@@ -17,7 +15,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_RATING_VALUES', 
  * @field ind_value_5 The value for the fifth independent parameter, if any, in database storage unit
  * @field dep_value   The value for the dependent parameter in database storage unit
  */
-');
 CREATE OR REPLACE FORCE VIEW av_rating_values
 (
     rating_code,

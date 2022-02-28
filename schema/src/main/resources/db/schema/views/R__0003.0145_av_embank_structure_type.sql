@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_EMBANK_STRUCTURE_TYPE', null,
-'
 /**
  * Displays information about embankment types
  *
@@ -10,7 +8,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_EMBANK_STRUCTURE
  * @field db_office_code               The numeric code of the office that owns the structure type
  * @field structure_type_code          The numeric code of the structure type
  */
-');
 create or replace force view av_embank_structure_type(
    db_office_id,
    structure_type_display_value,
@@ -27,6 +24,5 @@ as
           ept.structure_type_code
      from at_embank_structure_type ept, cwms_office o
     where ept.db_office_code = o.office_code;
-      
-create or replace public synonym cwms_v_embank_structure_type for av_embank_structure_type;
 
+create or replace public synonym cwms_v_embank_structure_type for av_embank_structure_type;

@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_LVL_SOURCE', null,
-'
 /**
  * Displays source entities associated with location levels
  *
@@ -32,8 +30,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_LVL_SOURCE',
  * @field attr_parameter_type_code The unique numeric code that identifies the attribute parameter type, if any
  * @field attr_duration_code       The unique numeric code that identifies the attribute parameter, if any
  */
-');
-
 create or replace force view av_loc_lvl_source (
    office_id,
    location_level_id,
@@ -171,4 +167,3 @@ end;
 
 
 create or replace public synonym cwms_v_loc_lvl_source for av_loc_lvl_source;
-

@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TEXT_FILTER_ELEMENT', null,
-'
 /**
  * Displays information on text filter elements stored in the database
  *
@@ -10,11 +8,10 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TEXT_FILTER_ELEM
  * @field text_filter_id   The text identifier (name) of the text filter
  * @field is_regex         A flag (T/F) specifying whether the text filter uses regular expressions
  * @field element_sequence The order in which this element is applied
- * @field inclusion        Specifies whether this element is used include or exclude text 
- * @field filter_text      The glob-style wildcard mask or regular expression used to match text for this element 
+ * @field inclusion        Specifies whether this element is used include or exclude text
+ * @field filter_text      The glob-style wildcard mask or regular expression used to match text for this element
  * @field regex_flags      The Oracle regular expression flags (match parameter) used with this element
  */
-');
 create or replace force view av_text_filter_element(
    text_filter_code,
    office_id,

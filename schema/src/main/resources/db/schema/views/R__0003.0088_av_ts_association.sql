@@ -1,8 +1,3 @@
------------------------------
--- AV_TS_ASSOCIATION--
------------------------------
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TS_ASSOCIATION', null,
-'
 /**
  * Displays information about time series associations
  *
@@ -16,8 +11,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TS_ASSOCIATION',
  * @field timeseries_id     The associated time series
  * @field usage_description The description of the association
  */
-');
-
 CREATE OR REPLACE FORCE VIEW av_ts_association
 (
     office_id,

@@ -1,8 +1,3 @@
------------------------------
--- AV_RATING_VALUES_NATIVE --
------------------------------
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_RATING_VALUES_NATIVE', null,
-'
 /**
  * Displays rating values in native rating units
  *
@@ -20,8 +15,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_RATING_VALUES_NA
  * @field ind_value_5 The value for the fifth independent parameter, if any, in native rating unit
  * @field dep_value   The value for the dependent parameter in native rating unit
  */
-');
-
 CREATE OR REPLACE FORCE VIEW av_rating_values_native
 (
     rating_code,

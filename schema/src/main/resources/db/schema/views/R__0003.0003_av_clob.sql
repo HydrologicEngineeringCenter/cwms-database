@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_CLOB', null,
-'
 /**
  * Displays information about CLOBs in the database
  *
@@ -9,7 +7,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_CLOB', null,
  * @field description Description of this CLOB
  * @field value       The CLOB data
  */
-');
 create or replace force view av_clob(
    clob_code,
    office_code,
@@ -23,4 +20,3 @@ as
           "DESCRIPTION",
           "VALUE"
      from at_clob;
-                                                                                          

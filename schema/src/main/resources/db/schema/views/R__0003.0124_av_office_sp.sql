@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_OFFICE_SP', null,
-'
 /**
  * Displays Office Information
  *
@@ -17,7 +15,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_OFFICE_SP', null
  * @field shape                 Office Boundary
  * @field shape_office_building Office Building Boundary
  */
-');
 CREATE OR REPLACE FORCE VIEW AV_OFFICE_SP
 (
    OFFICE_ID,

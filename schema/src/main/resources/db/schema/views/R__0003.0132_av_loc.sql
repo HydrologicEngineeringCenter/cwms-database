@@ -1,26 +1,3 @@
---
--- AV_LOC  (View)
---
---  Dependencies:
---   CWMS_LOCATION_KIND (Table)
---   CWMS_NATION (Table)
---   CWMS_OFFICE (Table)
---   CWMS_STATE (Table)
---   CWMS_TIME_ZONE (Table)
---   CWMS_UNIT_CONVERSION (Table)
---   CWMS_COUNTY (Table)
---   AT_BASE_LOCATION (Table)
---   AT_DISPLAY_UNITS (Table)
---   AT_PHYSICAL_LOCATION (Table)
---
-
-insert into at_clob
-        values (
-                  cwms_seq.nextval,
-                  53,
-                  '/VIEWDOCS/AV_LOC',
-                  null,
-                  '
 /**
  * Displays CWMS Locations
  *
@@ -57,45 +34,43 @@ insert into at_clob
  * @field nearest_city         City nearest to location (may be inherited from base location)
  * @field active_flag          Depricated - loc_active_flag replaces active_flag as of v2.1
  */
-');
-
-CREATE OR REPLACE VIEW AV_LOC 
+CREATE OR REPLACE VIEW AV_LOC
 AS
-select LOCATION_CODE, 
-       BASE_LOCATION_CODE, 
-       DB_OFFICE_ID, 
-       BASE_LOCATION_ID, 
-       SUB_LOCATION_ID, 
-       LOCATION_ID, 
-       LOCATION_TYPE, 
-       UNIT_SYSTEM, 
-       ELEVATION, 
-       UNIT_ID, 
-       VERTICAL_DATUM, 
-       round(LONGITUDE,12) LONGITUDE, 
+select LOCATION_CODE,
+       BASE_LOCATION_CODE,
+       DB_OFFICE_ID,
+       BASE_LOCATION_ID,
+       SUB_LOCATION_ID,
+       LOCATION_ID,
+       LOCATION_TYPE,
+       UNIT_SYSTEM,
+       ELEVATION,
+       UNIT_ID,
+       VERTICAL_DATUM,
+       round(LONGITUDE,12) LONGITUDE,
        round(LATITUDE, 12) LATITUDE,
-       HORIZONTAL_DATUM, 
-       TIME_ZONE_NAME, 
-       COUNTY_NAME, 
-       STATE_INITIAL, 
-       PUBLIC_NAME, 
-       LONG_NAME, 
-       DESCRIPTION, 
-       BASE_LOC_ACTIVE_FLAG, 
-       LOC_ACTIVE_FLAG, 
-       LOCATION_KIND_ID, 
-       MAP_LABEL, 
-       round(PUBLISHED_LATITUDE, 12) PUBLISHED_LATITUDE, 
-       round(PUBLISHED_LONGITUDE,12) PUBLISHED_LONGITUDE, 
-       BOUNDING_OFFICE_ID, 
-       NATION_ID, 
-       NEAREST_CITY, 
+       HORIZONTAL_DATUM,
+       TIME_ZONE_NAME,
+       COUNTY_NAME,
+       STATE_INITIAL,
+       PUBLIC_NAME,
+       LONG_NAME,
+       DESCRIPTION,
+       BASE_LOC_ACTIVE_FLAG,
+       LOC_ACTIVE_FLAG,
+       LOCATION_KIND_ID,
+       MAP_LABEL,
+       round(PUBLISHED_LATITUDE, 12) PUBLISHED_LATITUDE,
+       round(PUBLISHED_LONGITUDE,12) PUBLISHED_LONGITUDE,
+       BOUNDING_OFFICE_ID,
+       NATION_ID,
+       NEAREST_CITY,
        active_flag
-from 
+from
 ( with phy_loc as
   ( select loc.location_code,
            loc.base_location_code,
-           blo.db_office_code,         
+           blo.db_office_code,
            blo.base_location_id,
            loc.sub_location_id,
            blo.base_location_id||nvl2(loc.sub_location_id,'-',null)||loc.sub_location_id as location_id,
@@ -106,7 +81,7 @@ from
            nvl (loc.latitude,         bas.latitude)         as latitude,
            nvl (loc.horizontal_datum, bas.horizontal_datum) as horizontal_datum,
            nvl (loc.time_zone_code,   bas.time_zone_code)   as time_zone_code,
-           nvl (loc.county_code,      bas.county_code)      as county_code,         
+           nvl (loc.county_code,      bas.county_code)      as county_code,
            loc.public_name,
            loc.long_name,
            loc.description,
@@ -123,28 +98,28 @@ from
     from  -- join the base location metadata (bas) with the location (loc)
           cwms_20.at_physical_location loc left join
           cwms_20.at_physical_location bas on ( bas.location_code = loc.base_location_code ) left join
-          cwms_20.at_base_location     blo on ( blo.base_location_code = loc.base_location_code ) 
-  ), 
+          cwms_20.at_base_location     blo on ( blo.base_location_code = loc.base_location_code )
+  ),
   unit_system as
-  ( select u.*, factor, offset from 
-    ( select 'SI' as unit_system, 'm' unit_id from dual 
+  ( select u.*, factor, offset from
+    ( select 'SI' as unit_system, 'm' unit_id from dual
       union
       select 'EN', cwms_20.cwms_display.retrieve_user_unit_f('Elev', 'EN', null, cwms_util.user_office_id) from dual
-    ) u left join 
+    ) u left join
     cwms_20.cwms_unit_conversion on ( from_unit_id='m' and to_unit_id=unit_id )
   )
-  select odb.office_id db_office_id, 
+  select odb.office_id db_office_id,
          obo.office_id bounding_office_id,
-         location_kind_id, 
-         time_zone_name, 
-         county_name, 
+         location_kind_id,
+         time_zone_name,
+         county_name,
          state_initial,
          n.long_name as nation_id,
          unit_system,
          unit_id,
          si_elevation*factor elevation,
          p.*
-  from   phy_loc p left join  
+  from   phy_loc p left join
          cwms_20.cwms_office    odb on ( odb.office_code    = p.db_office_code ) left join
          cwms_20.cwms_office    obo on ( obo.office_code    = p.office_code )    left join
          cwms_20.cwms_location_kind on ( location_kind_code = p.location_kind )  left join

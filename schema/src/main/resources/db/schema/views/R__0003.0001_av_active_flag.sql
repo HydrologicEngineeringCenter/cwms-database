@@ -6,9 +6,6 @@
 --   AT_DATA_STREAM_ID (Table)
 --   AT_SHEF_DECODE (Table)
 --
-
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_ACTIVE_FLAG', null,
-'
 /**
  * Displays Time Series Active Information for CWMS Data Stream
  *
@@ -26,8 +23,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_ACTIVE_FLAG', nu
  * @field ds_active_flag        [description needed]
  * @field net_active_flag       [description needed]
  */
-');
-
 CREATE OR REPLACE FORCE VIEW av_active_flag
 (
     data_stream_id,

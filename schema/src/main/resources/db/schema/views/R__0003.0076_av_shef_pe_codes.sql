@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_SHEF_PE_CODES', null,
-'
 /**
  * [description needed]
  *
@@ -20,7 +18,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_SHEF_PE_CODES', 
  * @field unit_code_en          [description needed]
  * @field unit_code_si          [description needed]
  */
-');
 CREATE OR REPLACE FORCE VIEW av_shef_pe_codes
 (
     shef_pe_code,

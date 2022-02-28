@@ -1,8 +1,3 @@
-/* CWMS Version 2.0
-This script should be run by the cwms schema owner.
-*/
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV', null,
-'
 /**
  * Displays time series times, values, and quality in database storage units
  *
@@ -21,15 +16,10 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV', null,
  * @field start_date      The start date of the underlying table holding the time series value
  * @field end_date        The end date of the underlying table holding the time series value
  */
-');
---exec cwms_util.create_view;
--- temp view, really view gets created in after script
 create or replace view av_tsv(ts_code,date_time,version_date,data_entry_date,value,quality_code,start_date, end_date) as
 select ts_code, date_time, version_date, data_entry_date, value, quality_code, DATE '1900-01-01' start_date,DATE '2500-01-01' end_date from at_tsv_inf_and_beyond;
 
 
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV_DQU', null,
-'
 /**
  * Displays time series times, values, and quality in every valid unit
  *
@@ -56,8 +46,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV_DQU', null,
  * @field ts_alias_category   The time series category for the time series alias if aliased_item is ''TIME SERIES''
  * @field ts_alias_group      The time series group for the time series alias if aliased_item is ''TIME SERIES''
  */
-');
-
 CREATE OR REPLACE VIEW AV_TSV_DQU
 (TS_CODE, VERSION_DATE, DATA_ENTRY_DATE, DATE_TIME, VALUE,
  OFFICE_ID, UNIT_ID, CWMS_TS_ID, QUALITY_CODE, START_DATE,
@@ -87,8 +75,6 @@ select tsv.ts_code,
    and ts.unit_id  = c.from_unit_id
 /
 
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV_DQU_30D', null,
-'
 /**
  * Displays time series times, values, and quality in every valid unit for most recent 30 days
  *
@@ -115,8 +101,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV_DQU_30D', nu
  * @field ts_alias_category   The time series category for the time series alias if aliased_item is ''TIME SERIES''
  * @field ts_alias_group      The time series group for the time series alias if aliased_item is ''TIME SERIES''
  */
-');
-
 CREATE OR REPLACE VIEW AV_TSV_DQU_30D
 (TS_CODE, VERSION_DATE, DATA_ENTRY_DATE, DATE_TIME, VALUE,
  OFFICE_ID, UNIT_ID, CWMS_TS_ID, QUALITY_CODE, START_DATE,
@@ -144,11 +128,8 @@ select tsv.ts_code,
        cwms_unit_conversion c
  where tsv.ts_code    = ts.ts_code
    and ts.unit_id     = c.from_unit_id
-   and tsv.date_time >= sysdate - 30
-/
+   and tsv.date_time >= sysdate - 30;
 
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV_DQU_24H', null,
-'
 /**
  * Displays time series times, values, and quality in every valid unit for most recent 24 hours
  *
@@ -175,8 +156,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV_DQU_24H', nu
  * @field ts_alias_category   The time series category for the time series alias if aliased_item is ''TIME SERIES''
  * @field ts_alias_group      The time series group for the time series alias if aliased_item is ''TIME SERIES''
  */
-');
-
 CREATE OR REPLACE VIEW AV_TSV_DQU_24H
 (TS_CODE, VERSION_DATE, DATA_ENTRY_DATE, DATE_TIME, VALUE,
  OFFICE_ID, UNIT_ID, CWMS_TS_ID, QUALITY_CODE, START_DATE,

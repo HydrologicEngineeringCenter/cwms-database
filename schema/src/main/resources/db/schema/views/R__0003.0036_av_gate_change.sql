@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_GATE_CHANGE', null,
-'
 /**
  * Displays information on changes to gate settings at CWMS projects
  *
@@ -29,7 +27,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_GATE_CHANGE', nu
  * @field gate_change_notes         Notes about the gate change
  * @field protected                 Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code>) specifying whether the gate change is protected from future updates
  */
-');
 create or replace force view av_gate_change
 (
    gate_change_code,
@@ -63,32 +60,32 @@ select gc.gate_change_code,
        ||substr('-', 1, length(pl.sub_location_id))
        ||pl.sub_location_id as project_id,
        cwms_util.change_timezone(
-          gc.gate_change_date, 
-          'UTC', 
+          gc.gate_change_date,
+          'UTC',
           cwms_loc.get_local_timezone(gc.project_location_code)) as gate_change_date,
        cwms_loc.get_local_timezone(gc.project_location_code) as time_zone,
        cwms_rounding.round_dd_f(
-          cwms_util.convert_units(gc.elev_pool, 'm', 'ft'), 
+          cwms_util.convert_units(gc.elev_pool, 'm', 'ft'),
           '9999999999') as elev_pool_en,
        cwms_rounding.round_dd_f(
-          cwms_util.convert_units(gc.elev_tailwater, 'm', 'ft'), 
+          cwms_util.convert_units(gc.elev_tailwater, 'm', 'ft'),
           '9999999999') as elev_tailwater_en,
        'ft' as elev_unit_en,
        cwms_rounding.round_dd_f(gc.elev_pool, '9999999999') as elev_pool_si,
        cwms_rounding.round_dd_f(gc.elev_tailwater, '9999999999') as elev_tailwater_si,
        'm' as elev_unit_si,
        cwms_rounding.round_dd_f(
-          cwms_util.convert_units(gc.old_total_discharge_override, 'cms', 'cfs'), 
+          cwms_util.convert_units(gc.old_total_discharge_override, 'cms', 'cfs'),
           '9999999999') as old_discharge_override_en,
        cwms_rounding.round_dd_f(
-          cwms_util.convert_units(gc.new_total_discharge_override, 'cms', 'cfs'), 
+          cwms_util.convert_units(gc.new_total_discharge_override, 'cms', 'cfs'),
           '9999999999') as new_discharge_override_en,
        'cfs' as discharge_unit_en,
        cwms_rounding.round_dd_f(
-          gc.old_total_discharge_override, 
+          gc.old_total_discharge_override,
           '9999999999') as old_discharg_override_si,
        cwms_rounding.round_dd_f(
-          gc.new_total_discharge_override, 
+          gc.new_total_discharge_override,
           '9999999999') as new_discharge_override_si,
        'cms' as discharge_unit_si,
        gcc.discharge_comp_display_value as discharge_comp,
@@ -105,7 +102,7 @@ select gc.gate_change_code,
        at_gate_release_reason_code grr
  where bl.db_office_code = o.office_code
    and pl.base_location_code = bl.base_location_code
-   and gc.project_location_code = pl.location_code 
+   and gc.project_location_code = pl.location_code
    and gcc.discharge_comp_code = gc.discharge_computation_code
    and grr.release_reason_code = gc.release_reason_code
-/   
+/

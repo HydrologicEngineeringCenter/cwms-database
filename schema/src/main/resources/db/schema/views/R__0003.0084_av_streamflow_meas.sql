@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_STREAMFLOW_MEAS', null,
-'
 /**
  * Displays information about stream flow measurements in the database
  *
@@ -29,8 +27,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_STREAMFLOW_MEAS'
  * @field air_temperature          The air temperature at the location when the measurement was performed
  * @field water_temperature        The water temperature at the location when the measurement was performed
  * @field wm_comments              Comments about the rating by water management personnel
- */                                
-');                                
+ */
 create or replace force view av_streamflow_meas(
    office_id,
    location_id,
@@ -109,6 +106,5 @@ as
       and cumq.qual_id (+) = sm.quality
       and curcc.ctrl_cond_id (+) = sm.ctrl_cond_id
       and cufa.adj_id (+) = sm.flow_adj_id;
-      
-create or replace public synonym cwms_v_streamflow_meas for av_streamflow_meas;      
 
+create or replace public synonym cwms_v_streamflow_meas for av_streamflow_meas;

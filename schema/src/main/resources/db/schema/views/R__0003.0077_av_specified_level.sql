@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_SPECIFIED_LEVEL', null,
-'
 /**
  * Displays information about CWMS Specified Levels
  *
@@ -10,7 +8,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_SPECIFIED_LEVEL'
  *
  * @see view av_specified_level_ui
  */
-');
 create or replace force view av_specified_level(
    specified_level_code,
    office_id,
@@ -23,4 +20,3 @@ as
           sl.description
      from cwms_office co, at_specified_level sl
     where co.office_code = sl.office_code;
-                                                                                          

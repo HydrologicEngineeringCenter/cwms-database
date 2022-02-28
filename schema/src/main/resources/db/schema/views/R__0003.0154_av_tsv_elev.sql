@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV_ELEV', null,
-'
 /**
  * Displays time series times, values, and quality of elevations in database storage units and various vertical datums
  *
@@ -22,8 +20,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV_ELEV', null,
  * @field start_date       The start date of the underlying table holding the time series value
  * @field end_date         The end date of the underlying table holding the time series value
  */
-');
-
 create or replace force view av_tsv_elev
 as
 select ts_code,

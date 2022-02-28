@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_COUNTY_SP', null,
-'
 /**
  * Displays AV_COUNTY_SP information
  *
@@ -13,7 +11,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_COUNTY_SP', null
  * @field SQUARE_MIL                 The..
  * @field SHAPE                      The..
  */
-');
 CREATE OR REPLACE FORCE VIEW AV_COUNTY_SP
 (
    COUNTY_CODE,

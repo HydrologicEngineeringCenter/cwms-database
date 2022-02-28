@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TS_GRP_ASSGN', null,
-'
 /**
  * Displays information on time series group membership
  *
@@ -16,7 +14,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TS_GRP_ASSGN', n
  * @field shared_alias_id  The alias, if any, shared by all members of the time series group
  * @field shared_ref_ts_id The referenced time series, if any, shared by all members of the time series group
  */
-');
 CREATE OR REPLACE VIEW av_ts_grp_assgn
 (
    category_id,

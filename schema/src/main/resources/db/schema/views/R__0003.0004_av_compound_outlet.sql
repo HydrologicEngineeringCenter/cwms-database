@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_COMPOUND_OUTLET', null,
-'
 /**
  * Displays information about compound outlets (gate sequences) at CWMS projects
  *
@@ -15,9 +13,8 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_COMPOUND_OUTLET'
  * @field project_code         Numeric code that identifies the project in the database
  * @field compound_outlet_code Numeric code that identifies the compound outlet in the database
  * @field outlet_code          Numeric code that identifies the outlet in the database
- * @field next_outlet_code     Numeric code that identifies the next downstream outlet in the database   
+ * @field next_outlet_code     Numeric code that identifies the next downstream outlet in the database
  */
-');
 create or replace force view av_compound_outlet(
    office_id,
    project_id,
@@ -47,6 +44,6 @@ as
       and bl1.base_location_code = pl1.base_location_code
       and co.office_code = bl1.db_office_code
       and acoc.compound_outlet_code = aco.compound_outlet_code
-/            
+/
 
 create or replace public synonym cwms_v_compound_outlet for av_compound_outlet;

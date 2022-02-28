@@ -1,6 +1,3 @@
-delete from at_clob where id = '/VIEWDOCS/AV_AUTH_SCHED_ENTRIES';
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_AUTH_SCHED_ENTRIES', null,
-'
 /**
  * Displays expected scheduler entries for this database
  *
@@ -19,7 +16,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_AUTH_SCHED_ENTRI
  * @field comments        Comments on the job
  * @field job_action      What actually gets executed
  */
-');
 create or replace force view av_auth_sched_entries
 (
    office_id,

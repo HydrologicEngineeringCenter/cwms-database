@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TIME_ZONE_SP', null,
-'
 /**
  * Displays AV_TIME_ZONE_SP information
  *
@@ -9,7 +7,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TIME_ZONE_SP', n
  * @field ZONE                       The..
  * @field SHAPE                      The..
  */
-');
 CREATE OR REPLACE FORCE VIEW AV_TIME_ZONE_SP
 (
    OBJECTID,

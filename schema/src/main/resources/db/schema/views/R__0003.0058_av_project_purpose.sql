@@ -1,4 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_PROJECT_PURPOSE', null,'
 /**
  * Displays information on purposes for specific projects
  *
@@ -9,7 +8,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_PROJECT_PURPOSE'
  * @field purpose_type           The purpose type.  Either OPERATIONAL or AUTHORIZED
  * @field additional_notes       Any additional notes pertinent to this project purpose
  */
-');
 create or replace force view av_project_purpose(
    project_location_code,
    project_purpose_code,
@@ -31,6 +29,6 @@ as
           av_loc l
     where l.location_code = pp.project_location_code
       and pps.purpose_code = pp.project_purpose_code
-                 
-          
+
+
 /

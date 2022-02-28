@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_NATION', null,
-'
 /**
  * Displays nations
  *
@@ -8,7 +6,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_NATION', null,
  * @field nation_id     The unique nation identifier
  * @field nation_name   The name of the nation
  */
-');
 create or replace force view av_nation
 (
    nation_id,

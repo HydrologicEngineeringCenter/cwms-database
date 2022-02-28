@@ -1,6 +1,3 @@
-
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_APPLICATION_LOGIN', null,
-'
 /**
  * Displays application login information
  *
@@ -17,8 +14,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_APPLICATION_LOGI
  * @field normal_logout  ''T'' if application logged out, ''F'' if its session was found to be disconnected
  * @field login_server   The URL of the login server handling the login or logout
  */
-');
-
 create or replace force view av_application_login(
    uuid,
    office_id,

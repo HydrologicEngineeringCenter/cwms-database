@@ -1,6 +1,10 @@
-delete from at_clob where id = '/VIEWDOCS/MV_LOCATION_LEVEL_CURVAL';
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/MV_LOCATION_LEVEL_CURVAL', null,
-'
+begin
+   execute immediate 'drop materialized view ${CWMS_SCHEMA}.mv_location_level_curval;';
+   exception
+      when others then null;
+end;
+/
+
 /**
  * Displays information about location levels, including the current value
  *
@@ -43,13 +47,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/MV_LOCATION_LEVEL_C
  * @field attribute_duration_code       The unique numeric code that identifies the attribute duration in the database
  * @field ll_as_of                      The date/time that this snapshot was last refreshed
 */
-');
-begin
-   execute immediate 'drop materialized view ${CWMS_SCHEMA}.mv_location_level_curval;';
-   exception
-      when others then null;
-end;
-/
 create materialized view mv_location_level_curval
    tablespace cwms_20data
    build immediate using index

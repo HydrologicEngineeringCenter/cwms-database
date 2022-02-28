@@ -1,8 +1,3 @@
---------------------
--- AV_RATING_SPEC --
---------------------
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_RATING_SPEC', null,
-'
 /**
  * Displays information on ratings specifications
  *
@@ -24,14 +19,12 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_RATING_SPEC', nu
  * @field ind_rounding_specs    Specifies USGS-style rounding specification(s) for displaying independent parameter(s)
  * @field dep_rounding_spec     Specifies USGS-style rounding specification for displaying dependent parameter
  * @field description           The description for this rating specification
- * @field aliased_item          Null if the location_id is not an alias, ''LOCATION'' if the entire location_id is aliased, or ''BASE LOCATION'' if only the base_location_id is alaised.  
- * @field loc_alias_category    The location category that owns the location group to which the alias for the location_id or base_location_id belongs. Null if location_id is not an alias.  
- * @field loc_alias_group       The location group to which the alias for the location_id or base_location_id belongs. Null if location_id is not an alias.              
+ * @field aliased_item          Null if the location_id is not an alias, ''LOCATION'' if the entire location_id is aliased, or ''BASE LOCATION'' if only the base_location_id is alaised.
+ * @field loc_alias_category    The location category that owns the location group to which the alias for the location_id or base_location_id belongs. Null if location_id is not an alias.
+ * @field loc_alias_group       The location group to which the alias for the location_id or base_location_id belongs. Null if location_id is not an alias.
  * @field rating_spec_code      The unique numeric code that identifies the rating specification in the database
- * @field template_code         The unique numeric code that identifies the specification''s template in the database              
+ * @field template_code         The unique numeric code that identifies the specification''s template in the database
  */
-');
-
 create or replace force view av_rating_spec
 (
    office_id,
@@ -75,32 +68,32 @@ select distinct
        loc_alias_group,
        a.rating_spec_code,
        a.template_code
-  from (select rs.rating_spec_code, 
-               rs.template_code, 
+  from (select rs.rating_spec_code,
+               rs.template_code,
                v.db_office_id as office_id,
-               v.location_id 
-               || '.' 
-               || rt.parameters_id 
-               || '.' 
-               || rt.version 
-               || '.' 
+               v.location_id
+               || '.'
+               || rt.parameters_id
+               || '.'
+               || rt.version
+               || '.'
                || rs.version as rating_id,
                v.location_id,
-               rt.parameters_id 
-               || '.' 
+               rt.parameters_id
+               || '.'
                || rt.version as template_id,
                rs.version,
                replace(e.entity_id, 'OTHER', null) as source_agency,
-               rs.active_flag, 
+               rs.active_flag,
                rs.auto_update_flag,
-               rs.auto_activate_flag, 
+               rs.auto_activate_flag,
                rs.auto_migrate_ext_flag,
-               rm2.rating_method_id 
-               || ',' 
-               || rm1.rating_method_id 
-               || ',' 
+               rm2.rating_method_id
+               || ','
+               || rm1.rating_method_id
+               || ','
                || rm3.rating_method_id as date_methods,
-               rs.dep_rounding_spec, 
+               rs.dep_rounding_spec,
                rs.description,
                v.aliased_item,
                v.loc_alias_category,
@@ -122,38 +115,38 @@ select distinct
       join
       (select p1.rating_spec_code,
               p1.rounding_spec
-              || substr('/', 1, length(p2.rounding_spec)) 
-              || p2.rounding_spec 
-              || substr('/', 1, length(p3.rounding_spec)) 
-              || p3.rounding_spec 
-              || substr('/', 1, length(p4.rounding_spec)) 
-              || p4.rounding_spec 
-              || substr('/', 1, length(p5.rounding_spec)) 
+              || substr('/', 1, length(p2.rounding_spec))
+              || p2.rounding_spec
+              || substr('/', 1, length(p3.rounding_spec))
+              || p3.rounding_spec
+              || substr('/', 1, length(p4.rounding_spec))
+              || p4.rounding_spec
+              || substr('/', 1, length(p5.rounding_spec))
               || p5.rounding_spec as ind_rounding_specs
-        from (select rating_spec_code, 
+        from (select rating_spec_code,
                      rounding_spec
                 from at_rating_ind_rounding
                where parameter_position = 1
              ) p1
-             left outer join 
+             left outer join
             (select rating_spec_code,
                     rounding_spec
                from at_rating_ind_rounding
               where parameter_position = 2
             ) p2 on p2.rating_spec_code = p1.rating_spec_code
-            left outer join 
+            left outer join
             (select rating_spec_code,
                     rounding_spec
                from at_rating_ind_rounding
               where parameter_position = 3
             ) p3 on p3.rating_spec_code = p1.rating_spec_code
-            left outer join 
+            left outer join
             (select rating_spec_code,
                     rounding_spec
                from at_rating_ind_rounding
               where parameter_position = 4
             ) p4 on p4.rating_spec_code = p1.rating_spec_code
-            left outer join 
+            left outer join
             (select rating_spec_code,
                     rounding_spec
                from at_rating_ind_rounding

@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_LVL_INDICATOR', null,
-'
 /**
  * Displays information about location level indicators with each indicator condition in its own row
  *
@@ -20,7 +18,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_LVL_INDICATO
  * @field minimum_duration          The minimum amount of time that the expression(s) must continuously evaluate to TRUE for condition to be set
  * @field maximum_age               The maximum amount of time that the condition can be considered current
  */
-');
 CREATE OR REPLACE FORCE VIEW av_loc_lvl_indicator
 AS
     WITH llic

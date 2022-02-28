@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_BASIN', null,
-'
 /**
  * Displays basin information
  *
@@ -17,7 +15,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_BASIN', null,
  * @field primary_stream_code        The unique numeric code that identifies the primary stream in the database
  * @field parent_basin_code          The unique numeric code that identifies the parent basin in the database
  */
-');
 create or replace force view av_basin(
    office_id,
    basin_id,
@@ -60,4 +57,3 @@ as
       and bl3.base_location_code(+) = pl3.base_location_code
       and cu.from_unit_id = cwms_util.get_default_units('Area', 'SI')
 /
-

@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_EMBANKMENT', null,
-'
 /**
  * Displays information about embankments
  *
@@ -19,10 +17,9 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_EMBANKMENT', nul
  * @field embankment_project_loc_code The location numeric code of the project that the embankment belongs to
  * @field embankment_location_code    The location numeric code of the embankment
  * @field structure_type_code         The structure type numeric code of the embankment
- * @field upstream_prot_type_code     The protection type numeric code for the upstream or water side of the embankment  
+ * @field upstream_prot_type_code     The protection type numeric code for the upstream or water side of the embankment
  * @field downstream_prot_type_code   The protection type numeric code for the downstream or land side of the embankment
  */
-');
 create or replace force view av_embankment(
    office_id,
    project_id,
@@ -85,6 +82,5 @@ as
       and e.upstream_prot_type_code = ept1.protection_type_code(+)
       and e.downstream_prot_type_code = ept2.protection_type_code(+)
       and e.structure_type_code = est.structure_type_code;
-      
-create or replace public synonym cwms_v_embankment for av_embankment;
 
+create or replace public synonym cwms_v_embankment for av_embankment;

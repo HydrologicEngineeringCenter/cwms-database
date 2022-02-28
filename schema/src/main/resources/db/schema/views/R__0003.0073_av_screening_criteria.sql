@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_SCREENING_CRITERIA', null,
-'
 /**
  * [description needed]
  *
@@ -42,7 +40,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_SCREENING_CRITER
  * @field dur_mag_active_flag          [description needed]
  * @field rate_change_disp_interval_id [description needed]
  */
-');
 CREATE OR REPLACE FORCE VIEW AV_SCREENING_CRITERIA
 (
    SCREENING_CODE,

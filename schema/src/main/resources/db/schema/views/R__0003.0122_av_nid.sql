@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_NID', null,
-'
 /**
  * Displays AV_NID information
  *
@@ -43,7 +41,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_NID', null,
  * @field SORT_CATEGORY              The..
  * @field SHAPE                      The..
  */
-');
 CREATE OR REPLACE FORCE VIEW AV_NID
 (
    RECORDID,

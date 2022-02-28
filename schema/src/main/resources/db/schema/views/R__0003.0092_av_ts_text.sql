@@ -1,6 +1,3 @@
---delete from at_clob where id = '/VIEWDOCS/AV_TS_TEXT';
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TS_TEXT', null,
-'
 /**
  * Displays time series text, whether associated with a value time series or not
  *
@@ -31,9 +28,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TS_TEXT', null,
  * @field ts_code             The numeric code identifying the time series
  * @field clob_code           The code identifying the non-standard or long standard text
  */
-');
-
-
 create or replace force view av_ts_text (
    office_id,
    location_id,
@@ -321,4 +315,3 @@ end;
 
 
 create or replace public synonym cwms_v_ts_text for av_ts_text;
-

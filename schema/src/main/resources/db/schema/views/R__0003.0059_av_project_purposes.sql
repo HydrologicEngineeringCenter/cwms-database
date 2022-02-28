@@ -1,17 +1,15 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_PROJECT_PURPOSES', null,'
 /**
  * Displays information on purposes that can be associated with projects
  *
  * @since CWMS 2.1
  *
- * @field office_id              The office that owns the project purpose 
+ * @field office_id              The office that owns the project purpose
  * @field purpose_code           Identifying key for the project purpose
  * @field purpose_display_value  The descriptive text to display for the project purpose
- * @field purpose_tooltip        The tooltip or short description of the project purpose 
+ * @field purpose_tooltip        The tooltip or short description of the project purpose
  * @field purpose_active         Flag (T/F) specifying whether the project purpose is active
  * @field purpose_nid_code       National Inventory of Dams code for this purpose
  */
-');
 create or replace force view av_project_purposes(
    office_id,
    purpose_code,
@@ -26,7 +24,7 @@ as
             pp.purpose_tooltip,
             pp.purpose_active,
             pp.purpose_nid_code
-       from cwms_office co, 
+       from cwms_office co,
             at_project_purposes pp
       where co.office_code = pp.db_office_code
    order by office_code, purpose_display_value

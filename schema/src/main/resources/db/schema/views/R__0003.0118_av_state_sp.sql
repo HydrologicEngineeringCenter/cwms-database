@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_STATE_SP', null,
-'
 /**
  * Displays AV_STATE_SP information
  *
@@ -14,7 +12,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_STATE_SP', null,
  * @field STATE_ABBR                 The..
  * @field SHAPE                      The..
  */
-');
 CREATE OR REPLACE FORCE VIEW AV_STATE_SP
 (
    STATE_CODE,

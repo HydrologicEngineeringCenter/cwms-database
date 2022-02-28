@@ -1,4 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_PARAMETER', null,'
 /**
  * Displays information on parameters
  *
@@ -14,8 +13,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_PARAMETER', null
  * @field description         The parameter description
  * @field has_values          Specifies if the parameter can be used for items that contain values (e.g., time series, ratings)
  */
-');
-
 create or replace view av_parameter(
    db_office_id,
    db_office_code,
@@ -35,7 +32,7 @@ as
           p.sub_parameter_id,
           b.base_parameter_id || substr('-', 1, length(p.sub_parameter_id)) || p.sub_parameter_id parameter_id,
           nvl(p.sub_parameter_desc, b.long_name) as description,
-          case 
+          case
              when p.parameter_code < 0 then 'F'
              else 'T'
           end as has_values

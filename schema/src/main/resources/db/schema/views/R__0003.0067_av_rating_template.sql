@@ -1,8 +1,3 @@
-------------------------
--- AV_RATING_TEMPLATE --
-------------------------
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_RATING_TEMPLATE', null,
-'
 /**
  * Displays information about rating templates
  *
@@ -20,8 +15,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_RATING_TEMPLATE'
  * @field rating_methods         Specifies the behavior of any rating associated with this template when looking up independent parameters
  * @field tempalate_code         The unique numeric code that identifies the template in the database.
  */
-');
-
 CREATE OR REPLACE FORCE VIEW av_rating_template
 (
     office_id,

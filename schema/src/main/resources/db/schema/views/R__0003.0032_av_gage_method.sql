@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_GAGE_METHOD', null,
-'
 /**
  * Displays CWMS Gage Communication Methods
  *
@@ -9,7 +7,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_GAGE_METHOD', nu
  * @field method_id   The text identifier of the gage communication method
  * @field description The description of the gage communication method
  */
-');
 create or replace force view av_gage_method(
    method_code,
    method_id,

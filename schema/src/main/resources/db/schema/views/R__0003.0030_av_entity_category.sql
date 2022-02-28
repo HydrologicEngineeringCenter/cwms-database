@@ -1,8 +1,3 @@
-------------------------
--- AV_ENTITY_CATEGORY --
-------------------------
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_ENTITY_CATEGORY', null,
-'
 /**
  * Displays entity categories
  *
@@ -11,7 +6,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_ENTITY_CATEGORY'
  * @field category_id The entity category
  * @field description A description of the category
  */
-');
+
 create or replace force view av_entity_category (
    category_id,
    description)
@@ -29,4 +24,3 @@ end;
 
 
 create or replace public synonym cwms_v_entity_category for av_entity_category;
-

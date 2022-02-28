@@ -1,6 +1,3 @@
-delete from at_clob where id = '/VIEWDOCS/AV_LOCATION_LEVEL_CURVAL';
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_LEVEL_CURVAL', null,
-'
 /**
  * Displays information about location levels, including the current value
  *
@@ -42,8 +39,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_LEVEL_C
  * @field attribute_parameter_code      The unique numeric code that identifies the attribute parameter in the database
  * @field attribute_duration_code       The unique numeric code that identifies the attribute duration in the database
 */
-');
-
 create or replace force view av_location_level_curval
 as
 select q1.office_id,

@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_TS_ID_COUNT', null,
-'
 /**
  * Displays the number of time series associated with each location
  *
@@ -9,7 +7,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_TS_ID_COUNT'
  * @field ts_id_count   The number of time series identifiers associated with the location
  * @field location_code The unique numeric code associated with the location
  * @field db_office_id  The office that owns the location
- */');
+ */
 CREATE OR REPLACE FORCE VIEW CWMS_20.AV_LOC_TS_ID_COUNT
 (
    LOCATION_ID,

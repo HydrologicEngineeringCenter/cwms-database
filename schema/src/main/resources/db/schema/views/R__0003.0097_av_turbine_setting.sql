@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TURBINE_SETTING', null,
-'
 /**
  * Displays information on turbine settings at CWMS projects
  *
@@ -18,7 +16,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TURBINE_SETTING'
  * @field real_power           The actual power generated at the time of the setting, in power unit
  * @field power_unit           The unit of scheduled load and real power
  */
-');
 create or replace force view av_turbine_setting
 (
    turbine_change_code,
@@ -41,26 +38,26 @@ select ts.turbine_change_code,
        ||substr('-', 1, length(pl.sub_location_id))
        ||pl.sub_location_id as turbine_id,
        cwms_rounding.round_dd_f(
-          cwms_util.convert_units(ts.old_discharge, 'cms', 'cfs'), 
+          cwms_util.convert_units(ts.old_discharge, 'cms', 'cfs'),
           '9999999999') as old_discharge_en,
        cwms_rounding.round_dd_f(
-          cwms_util.convert_units(ts.new_discharge, 'cms', 'cfs'), 
+          cwms_util.convert_units(ts.new_discharge, 'cms', 'cfs'),
           '9999999999') as new_discharge_en,
        'cfs' as discharge_unit_en,
        cwms_rounding.round_dd_f(
-          ts.old_discharge, 
+          ts.old_discharge,
           '9999999999') as old_discharge_si,
        cwms_rounding.round_dd_f(
-          ts.new_discharge, 
+          ts.new_discharge,
           '9999999999') as new_discharge_si,
        'cms' as discharge_unit_si,
        cwms_rounding.round_dd_f(
-          ts.scheduled_load, 
+          ts.scheduled_load,
           '9999999999') as scheduled_load,
        cwms_rounding.round_dd_f(
-          ts.real_power, 
+          ts.real_power,
           '9999999999') as real_power,
-      'MW' as power_unit          
+      'MW' as power_unit
   from at_turbine_setting ts,
        at_physical_location pl,
        at_base_location bl,
@@ -68,4 +65,4 @@ select ts.turbine_change_code,
  where pl.location_code = ts.turbine_location_code
    and bl.base_location_code = pl.base_location_code
    and o.office_code = bl.db_office_code;
-/   
+/

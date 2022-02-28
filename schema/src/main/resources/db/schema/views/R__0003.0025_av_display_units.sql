@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_DISPLAY_UNITS', null,
-'
 /**
  * Displays information on preferred units for specified parameters
  *
@@ -10,7 +8,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_DISPLAY_UNITS', 
  * @field unit_system  The unit system (EN or SI) that the preferred unit is specified for
  * @field unit_id      The preferred unit to use with the specified paramter and unit system
  */
-');
 CREATE OR REPLACE VIEW av_display_units
 (
     office_id,

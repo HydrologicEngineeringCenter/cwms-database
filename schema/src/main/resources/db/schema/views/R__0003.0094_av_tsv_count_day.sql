@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV_COUNT_DAY', null,
-'
 /**
  * Displays per day insert/delete/update statistics for AT_TSV tables
  *
@@ -11,7 +9,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TSV_COUNT_DAY', 
  * @field deletes              Number of deletes to TSV tables on this day
  * @field total                Total number of inserts/updates/deletes to TSV tables on this day
  */
-');
 create or replace force view av_tsv_count_day(
    day,
    inserts,
@@ -41,4 +38,3 @@ end;
 
 
 create or replace public synonym cwms_v_tsv_count_day for av_tsv_count_day;
-

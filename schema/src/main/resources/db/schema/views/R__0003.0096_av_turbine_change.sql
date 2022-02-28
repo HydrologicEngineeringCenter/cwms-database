@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TURBINE_CHANGE', null,
-'
 /**
  * Displays information on changes to power turbine settings at CWMS projects
  *
@@ -29,7 +27,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TURBINE_CHANGE',
  * @field turbine_change_notes      Notes about the turbine change
  * @field protected                 Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code>) specifying whether the turbine change is protected from future updates
  */
-');
 create or replace force view av_turbine_change
 (
    turbine_change_code,
@@ -63,32 +60,32 @@ select tc.turbine_change_code,
        ||substr('-', 1, length(pl.sub_location_id))
        ||pl.sub_location_id as project_id,
        cwms_util.change_timezone(
-          tc.turbine_change_datetime, 
-          'UTC', 
+          tc.turbine_change_datetime,
+          'UTC',
           cwms_loc.get_local_timezone(tc.project_location_code)) as turbine_change_date,
        cwms_loc.get_local_timezone(tc.project_location_code) as time_zone,
        cwms_rounding.round_dd_f(
-          cwms_util.convert_units(tc.elev_pool, 'm', 'ft'), 
+          cwms_util.convert_units(tc.elev_pool, 'm', 'ft'),
           '9999999999') as elev_pool_en,
        cwms_rounding.round_dd_f(
-          cwms_util.convert_units(tc.elev_tailwater, 'm', 'ft'), 
+          cwms_util.convert_units(tc.elev_tailwater, 'm', 'ft'),
           '9999999999') as elev_tailwater_en,
        'ft' as elev_unit_en,
        cwms_rounding.round_dd_f(tc.elev_pool, '9999999999') as elev_pool_si,
        cwms_rounding.round_dd_f(tc.elev_tailwater, '9999999999') as elev_tailwater_si,
        'm' as elev_unit_si,
        cwms_rounding.round_dd_f(
-          cwms_util.convert_units(tc.old_total_discharge_override, 'cms', 'cfs'), 
+          cwms_util.convert_units(tc.old_total_discharge_override, 'cms', 'cfs'),
           '9999999999') as old_discharge_override_en,
        cwms_rounding.round_dd_f(
-          cwms_util.convert_units(tc.new_total_discharge_override, 'cms', 'cfs'), 
+          cwms_util.convert_units(tc.new_total_discharge_override, 'cms', 'cfs'),
           '9999999999') as new_discharge_override_en,
        'cfs' as discharge_unit_en,
        cwms_rounding.round_dd_f(
-          tc.old_total_discharge_override, 
+          tc.old_total_discharge_override,
           '9999999999') as old_discharge_override_si,
        cwms_rounding.round_dd_f(
-          tc.new_total_discharge_override, 
+          tc.new_total_discharge_override,
           '9999999999') as new_discharge_override_si,
        'cms' as discharge_unit_si,
        tcc.turbine_comp_display_value as discharge_comp,
@@ -105,7 +102,7 @@ select tc.turbine_change_code,
        at_turbine_setting_reason tsr
  where bl.db_office_code = o.office_code
    and pl.base_location_code = bl.base_location_code
-   and tc.project_location_code = pl.location_code 
+   and tc.project_location_code = pl.location_code
    and tcc.turbine_comp_code = tc.turbine_discharge_comp_code
    and tsr.turb_set_reason_code = tc.turbine_setting_reason_code;
 /

@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TS_MSG_ARCHIVE', null,
-'
 /**
  * Displays information about time series data store calls
  *
@@ -11,7 +9,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TS_MSG_ARCHIVE',
  * @field first_data_time      Starting date/time of this store call
  * @field last_data_time       End date/time of this store call
  */
-');
 create or replace force view av_ts_msg_archive (cwms_ts_id,
                 db_office_id,
                 message_time,
@@ -38,4 +35,3 @@ end;
 
 
 create or replace public synonym cwms_v_ts_msg_archive for av_ts_msg_archive;
-

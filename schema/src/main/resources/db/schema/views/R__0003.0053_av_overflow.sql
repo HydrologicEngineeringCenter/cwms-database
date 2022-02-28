@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_OVERFLOW', null,
-'
 /**
  * Displays information about outlets at CWMS spillways and weirs
  *
@@ -18,7 +16,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_OVERFLOW', null,
  * @field overflow_location_code The unique numeric code that identifies the overflow location in the database
  * @field rating_spec_code       The unique numeric code that identifies the rating specification in the database
  */
-');
 create or replace force view av_overflow (
    office_id,
    overflow_location_id,

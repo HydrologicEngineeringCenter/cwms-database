@@ -1,9 +1,3 @@
---
--- AV_LOCATION_KIND  (View)
---
-
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_KIND', null,
-'
 /**
  * Displays CWMS Location object types
  *
@@ -15,7 +9,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_KIND', 
  * @field representative_point The point represented by the lat/lon in the physical location table
  * @field description          Descriptive text about the location kind
  */
-');
 create or replace force view av_location_kind(
    location_kind_code,
    location_kind_id,

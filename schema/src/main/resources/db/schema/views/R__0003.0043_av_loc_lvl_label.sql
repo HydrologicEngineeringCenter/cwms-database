@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_LVL_LABEL', null,
-'
 /**
  * Displays labels associated with location levels and configurations
  *
@@ -34,8 +32,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_LVL_LABEL', 
  * @field attr_duration_code       The unique numeric code that identifies the attribute parameter, if any
  * @field configuration_code       The unique numeric code that identifies the configuration
  */
-');
-
 create or replace force view av_loc_lvl_label (
    office_id,
    location_level_id,
@@ -179,4 +175,3 @@ end;
 
 
 create or replace public synonym cwms_v_loc_lvl_label for av_loc_lvl_label;
-

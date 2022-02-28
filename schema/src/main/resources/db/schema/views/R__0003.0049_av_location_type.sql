@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_TYPE', null,
-'
 /**
  * Displays location types in the CWMS database.
  * <p>
@@ -27,7 +25,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_TYPE', 
  * @field location_id      The full location identifier
  * @field location_type    The location type
  */
-');
 create or replace force view av_location_type
 (
    location_code,

@@ -1,8 +1,3 @@
-------------------------
--- AV_ENTITY_LOCATION --
-------------------------
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_ENTITY_LOCATION', null,
-'
 /**
  * Displays information on water entities
  *
@@ -17,37 +12,36 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_ENTITY_LOCATION'
  * @field parent_entity_id     The text identifier of the parent entity, if any
  * @field entity_category_id   The category of the entity
  * @field entity_name          The entity name
- * @field aliased_item         Null if the location_id is not an alias, ''LOCATION'' if the entire location_id is aliased, or ''BASE LOCATION'' if only the base_location_id is alaised.  
- * @field loc_alias_category   The location category that owns the location group to which the alias for the location_id or base_location_id belongs. Null if location_id is not an alias.  
+ * @field aliased_item         Null if the location_id is not an alias, ''LOCATION'' if the entire location_id is aliased, or ''BASE LOCATION'' if only the base_location_id is alaised.
+ * @field loc_alias_category   The location category that owns the location group to which the alias for the location_id or base_location_id belongs. Null if location_id is not an alias.
  * @field loc_alias_group      The location group to which the alias for the location_id or base_location_id belongs. Null if location_id is not an alias.
  * @field location_office_code The numeric code that identifies the location office in the database
  * @field base_location_code   The numeric code that identifies the base location in the database
  * @field location_code        The numeric code that identifies the location in the database
  * @field entity_office_code   The numeric code that identifies the entity office in the database
  * @field entity_code          The numeric code that idenifies the entity in the database
- * @field parent_entity_code   The numeric code that identifies the parent entity in the database 
+ * @field parent_entity_code   The numeric code that identifies the parent entity in the database
  */
-');
 create or replace force view av_entity_location (
    location_office_id,
-   base_location_id,  
-   sub_location_id,   
-   location_id,       
-   entity_office_id,  
-   entity_id,         
-   parent_entity_id,  
+   base_location_id,
+   sub_location_id,
+   location_id,
+   entity_office_id,
+   entity_id,
+   parent_entity_id,
    entity_category_id,
-   entity_name,       
-   aliased_item,      
-   loc_alias_category,  
-   loc_alias_group,   
+   entity_name,
+   aliased_item,
+   loc_alias_category,
+   loc_alias_group,
    location_office_code,
    base_location_code,
-   location_code,     
+   location_code,
    entity_office_code,
-   entity_code,       
+   entity_code,
    parent_entity_code)
-as 
+as
 select q1.office_id as location_office_id,
        q1.base_location_id,
        q1.sub_location_id,
@@ -135,7 +129,7 @@ select q1.office_id as location_office_id,
        ) q1,
        (select q2_1.office_id,
                q2_1.office_code,
-               q2_1.entity_id,      
+               q2_1.entity_id,
                q2_2.entity_id as parent_entity_id,
                q2_1.category_id,
                q2_1.entity_name,
@@ -145,22 +139,21 @@ select q1.office_id as location_office_id,
                      o.office_code,
                      e.entity_id,
                      e.entity_code,
-                     e.parent_code,                                       
+                     e.parent_code,
                      e.category_id,
                      e.entity_name
                 from at_entity e,
-                     cwms_office o     
+                     cwms_office o
                where o.office_code = e.office_code
              ) q2_1
              left outer join
              (select entity_code,
                      entity_id
-                from at_entity     
+                from at_entity
              ) q2_2 on q2_2.entity_code = q2_1.parent_code
        ) q2,
        at_entity_location e
  where q1.location_code = e.location_code
    and q2.entity_code = e.entity_code;
-   
-create or replace public synonym cwms_v_entity_location for av_entity_location;
 
+create or replace public synonym cwms_v_entity_location for av_entity_location;

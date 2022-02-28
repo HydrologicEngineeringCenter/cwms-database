@@ -1,4 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_VERT_DATUM_OFFSET', null,'
 /**
  * Displays information on vertical datum offsets
  *
@@ -12,7 +11,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_VERT_DATUM_OFFSE
  * @field offset              The offset to add to a value in the first vertical datum to generate a value in the second vertical datum
  * @field description         A description (source of offset, etc...)
  */
-');
 create or replace force view av_vert_datum_offset(
    office_id,
    location_id,

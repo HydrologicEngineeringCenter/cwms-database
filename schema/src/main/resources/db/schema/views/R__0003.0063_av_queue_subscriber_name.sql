@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_QUEUE_SUBSCRIBER_NAME', null,
-'
 /**
  * Holds registered subscribers for queue messages
  *
@@ -16,8 +14,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_QUEUE_SUBSCRIBER
  * @field application_name  The application name assosicated with the subscriber
  * @field os_process_id     The process identifier (pid) associated with the subscriber
  */
-');
-
 create or replace force view av_queue_subscriber_name (
    office_id,
    queue_name,

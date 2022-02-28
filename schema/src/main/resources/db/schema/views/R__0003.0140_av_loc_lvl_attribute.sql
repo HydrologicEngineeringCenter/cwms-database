@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_LVL_ATTRIBUTE', null,
-'
 /**
  * Displays the location level attributes
  *
@@ -24,7 +22,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_LVL_ATTRIBUT
  * @field attr_parameter_type_id The parameter type identifier for the attribute
  * @field attr_duration_id       The duration identifier for the attribute
  */
-');
 create or replace force view av_loc_lvl_attribute(
    location_level_code,
    office_id,

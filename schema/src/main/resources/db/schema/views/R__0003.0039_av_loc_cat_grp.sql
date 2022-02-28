@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_CAT_GRP', null,
-'
 /**
  * Displays information about location categories and groups
  *
@@ -15,7 +13,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_CAT_GRP', nu
  * @field shared_ref_location_id The referenced location, if any, shared by all members of the location group
  * @field loc_group_attribute    A number that can be used for sorting location groups within a category, etc...
  */
-');
 CREATE OR REPLACE VIEW av_loc_cat_grp
 (
     cat_db_office_id,

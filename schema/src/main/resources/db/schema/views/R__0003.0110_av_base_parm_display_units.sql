@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_BASE_PARM_DISPLAY_UNITS ', null,
-'
 /**
  * Displays AV_BASE_PARM_DISPLAY_UNITS  information
  *
@@ -11,7 +9,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_BASE_PARM_DISPLA
  * @field UNIT_ID                    The..
  * @field UNIT_SYSTEM                The..
  */
-');
 CREATE OR REPLACE FORCE VIEW AV_BASE_PARM_DISPLAY_UNITS
 (
    BASE_PARAMETER_CODE,

@@ -1,8 +1,3 @@
-----------------------
--- AV_CONFIGURATION --
-----------------------
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_CONFIGURATION', null,
-'
 /**
  * Displays information on configurations
  *
@@ -14,18 +9,17 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_CONFIGURATION', 
  * @field category_id             The category of the configuration
  * @field configuration_name      The configuration name
  * @field configuration_code      The numeric code that idenifies the configuration in the database
- * @field parent_code             The numeric code that identifies the parent configuration in the database 
+ * @field parent_code             The numeric code that identifies the parent configuration in the database
  */
-');
 create or replace force view av_configuration (
-   office_id,                                       
-   configuration_id, 
-   parent_configuration_id, 
-   category_id, 
+   office_id,
+   configuration_id,
+   parent_configuration_id,
+   category_id,
    configuration_name,
    configuration_code,
    parent_code)
-as 
+as
 select q1.office_id,
        q1.configuration_id,
        q2.configuration_id as parent_configuration_id,
@@ -36,7 +30,7 @@ select q1.office_id,
 from (select o.office_id,
              e.configuration_id,
              e.configuration_code,
-             e.parent_code,                                       
+             e.parent_code,
              e.category_id,
              e.configuration_name
         from at_configuration e,
@@ -46,8 +40,7 @@ from (select o.office_id,
      left outer join
      (select configuration_code,
              configuration_id
-        from at_configuration     
+        from at_configuration
      ) q2 on q2.configuration_code = q1.parent_code;
 
 create or replace public synonym cwms_v_configuration for av_configuration;
-

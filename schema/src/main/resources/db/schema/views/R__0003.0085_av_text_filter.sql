@@ -1,6 +1,3 @@
-delete from at_clob where id = '/VIEWDOCS/AV_TEXT_FILTER';
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TEXT_FILTER', null,
-'
 /**
  * Displays information on text filters stored in the database
  *
@@ -13,7 +10,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TEXT_FILTER', nu
  * @field is_regex         A flag (T/F) specifying whether the text filter uses regular expressions (T) or glob wildcards (F)
  * @field configuration_id The text identifier of the configuration to which the text filter belongs
  */
-');
 create or replace force view av_text_filter(
    text_filter_code,
    office_id,

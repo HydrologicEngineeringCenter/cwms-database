@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_USACE_DAM_STATE', null,
-'
 /**
  * Displays AV_USACE_DAM_STATE information
  *
@@ -10,7 +8,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_USACE_DAM_STATE'
  * @field   STATE_ABBR               The..
  * @field   DISTRICT_ID              The..
  */
-');
 CREATE OR REPLACE FORCE VIEW AV_USACE_DAM_STATE
 (
    STATE_ID,

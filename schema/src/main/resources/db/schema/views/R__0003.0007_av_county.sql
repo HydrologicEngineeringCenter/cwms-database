@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_COUNTY', null,
-'
 /**
  * Displays state counties
  *
@@ -9,7 +7,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_COUNTY', null,
  * @field county_name   The name of the county
  * @field state_initial The two letter abbreviation of the state the county is in
  */
-');
 create or replace force view av_county
 (
    county_id,

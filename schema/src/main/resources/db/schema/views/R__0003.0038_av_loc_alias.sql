@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_ALIAS', null,
-'
 /**
  * Displays information about location aliases
  *
@@ -14,8 +12,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_ALIAS', null
  * @field location_id      The location
  * @field alias_id         The alias for the location in this category/group
  */
-');
-
 CREATE OR REPLACE VIEW av_loc_alias
 (
     category_id,

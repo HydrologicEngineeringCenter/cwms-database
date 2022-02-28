@@ -1,14 +1,3 @@
-/* Formatted on 7/8/2011 2:11:35 PM (QP5 v5.163.1008.3004) */
---
--- AV_DATA_STREAMS  (View)
---
---  Dependencies:
---   AT_DATA_STREAM_ID (Table)
---   CWMS_OFFICE (Table)
---   AT_SHEF_CRIT_FILE_REC (Table)
---
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_DATA_STREAMS', null,
-'
 /**
  * Displays information about data streams
  *
@@ -28,9 +17,8 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_DATA_STREAMS', n
  * @field crit_file_code            [description needed]
  * @field data_stream_code          [description needed]
  * @field db_office_code            [description needed]
- * @field  */
-');
-
+ * @field
+*/
 CREATE OR REPLACE FORCE VIEW AV_DATA_STREAMS
 (
    DB_OFFICE_ID,
@@ -81,5 +69,3 @@ AS
             UPPER (data_stream_id),
             crit_file_creation_date DESC
 /
-
-

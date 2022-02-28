@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_PROJECT', null,
-'
 /**
  * Displays information on CWMS projects
  *
@@ -21,7 +19,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_PROJECT', null,
  * @field yield_time_frame_end           End of critical period for yield analysis, if applicable
  * @field project_remarks                General remarks for project
  */
-');
 create or replace force view av_project
 (
    office_id,
@@ -101,4 +98,4 @@ select project.office_id,
           where pl.base_location_code = bl.base_location_code
             and p.project_location_code = pl.location_code
        ) neargage on neargage.location_code = project.near_gage_location_code
-/       
+/

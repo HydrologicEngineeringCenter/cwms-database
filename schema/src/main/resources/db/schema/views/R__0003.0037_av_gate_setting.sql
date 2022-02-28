@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_GATE_SETTING', null,
-'
 /**
  * Displays information on gate settings at CWMS projects
  *
@@ -13,7 +11,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_GATE_SETTING', n
  * @field gate_opening_si   Gate opening in SI unit
  * @field opening_unit_si   Opening unit in SI unit system
   */
-');
 create or replace force view av_gate_setting
 (
    gate_change_code,

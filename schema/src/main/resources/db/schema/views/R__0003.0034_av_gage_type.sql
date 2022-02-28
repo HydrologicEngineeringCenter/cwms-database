@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_GAGE_TYPE', null,
-'
 /**
  * Displays CWMS Gage Types
  *
@@ -12,7 +10,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_GAGE_TYPE', null
  * @field transmit_method The communication_type for gage transmissions
  * @field description     A description of the gage type
  */
-');
 create or replace force view av_gage_type(
    gage_type_code,
    gage_type_id,

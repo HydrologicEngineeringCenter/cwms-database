@@ -1,29 +1,3 @@
-/* Formatted on 12/29/2011 8:46:31 AM (QP5 v5.185.11230.41888) */
---
--- AV_SHEF_DECODE_SPEC    (View)
---
---  Dependencies:
---   AT_LOC_CATEGORY (Table)
---   AT_LOC_GROUP (Table)
---   AT_LOC_GROUP_ASSIGNMENT (Table)
---   AT_CWMS_TS_ID (Table)
---   AT_CWMS_TS_SPEC (Table)
---   AT_DATA_FEED_ID (Table)
---   AT_DATA_STREAM_ID (Table)
---   CWMS_OFFICE (Table)
---   CWMS_SHEF_TIME_ZONE (Table)
---   CWMS_UNIT (Table)
---   CWMS_UTIL (Package)
---   AT_SHEF_DECODE (Table)
---   AT_SHEF_IGNORE (Table)
---
-
-INSERT INTO at_clob
-     VALUES (cwms_seq.NEXTVAL,
-             53,
-             '/VIEWDOCS/AV_SHEF_DECODE_SPEC',
-             NULL,
-             '
 /**
  * [description needed]
  *
@@ -65,8 +39,6 @@ INSERT INTO at_clob
  * @field data_stream_code      [description needed]
  * @field shef_crit_line        [description needed]
  */
-');
-
 CREATE OR REPLACE FORCE VIEW CWMS_20.AV_SHEF_DECODE_SPEC
 (
    TS_CODE,

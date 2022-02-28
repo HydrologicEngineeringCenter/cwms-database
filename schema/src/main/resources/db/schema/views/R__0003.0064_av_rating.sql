@@ -1,9 +1,3 @@
----------------
--- AV_RATING --
----------------
-
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_RATING', null,
-'
 /**
  * Displays information on individual ratings in the UTC time zone
  *
@@ -30,7 +24,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_RATING', null,
  * @field template_code      The unique numeric code that identifies the rating''s template in the database
  * @field transition_date    The date/time to start transition (interpolation) from previous rating in UTC
 */
-');
 create or replace force view av_rating
 (
    rating_code,
@@ -104,4 +97,3 @@ end;
 
 
 create or replace public synonym cwms_v_rating for av_rating;
-

@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_GRP_ASSGN', null,
-'
 /**
  * Displays information on location group membership
  *
@@ -18,7 +16,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_GRP_ASSGN', 
  * @field shared_alias_id        The alias, if any, shared by all members of the location group
  * @field shared_ref_location_id The referenced location, if any, shared by all members of the location group
  */
-');
 CREATE OR REPLACE VIEW av_loc_grp_assgn
 (
     category_id,

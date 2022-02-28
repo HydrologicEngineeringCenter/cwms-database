@@ -1,12 +1,3 @@
---
--- AV_CWMS_TS_ID    (View)
---
---  Dependencies:
---   AT_CWMS_TS_ID (Synonym)
---
-
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_CWMS_TS_ID2', null,
-'
 /**
  * Displays CWMS Time Series Identifiers, including aliases
  *
@@ -46,8 +37,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_CWMS_TS_ID2', nu
  * @field historic_flag       Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code>) specifying whether the time series is part of the hitoric record
  * @field time_zone_id        The time zone of the location for this time series
  */
-');
-
 CREATE OR REPLACE FORCE VIEW av_cwms_ts_id2
 (
     db_office_id,

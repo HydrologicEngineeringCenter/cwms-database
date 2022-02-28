@@ -1,9 +1,3 @@
----------------------
--- AV_RATING_LOCAL --
----------------------
-
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_RATING_LOCAL', null,
-'
 /**
  * Displays information on ratings in the local time zone of the rating''s location
  *
@@ -22,15 +16,14 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_RATING_LOCAL', n
  * @field active_flag        Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code>) specifying whether this rating is active
  * @field formula            The formula for this rating if it is formula-based
  * @field description        The description for this rating
- * @field aliased_item       Null if the location_id is not an alias, ''LOCATION'' if the entire location_id is aliased, or ''BASE LOCATION'' if only the base_location_id is alaised.  
- * @field loc_alias_category The location category that owns the location group to which the alias for the location_id or base_location_id belongs. Null if location_id is not an alias.  
- * @field loc_alias_group    The location group to which the alias for the location_id or base_location_id belongs. Null if location_id is not an alias.              
+ * @field aliased_item       Null if the location_id is not an alias, ''LOCATION'' if the entire location_id is aliased, or ''BASE LOCATION'' if only the base_location_id is alaised.
+ * @field loc_alias_category The location category that owns the location group to which the alias for the location_id or base_location_id belongs. Null if location_id is not an alias.
+ * @field loc_alias_group    The location group to which the alias for the location_id or base_location_id belongs. Null if location_id is not an alias.
  * @field database_units     The databse storage units for each parameter for this rating
  * @field rating_spec_code   The unique numeric code that identifies the rating''s specification in the database
- * @field template_code      The unique numeric code that identifies the rating''s template in the database              
+ * @field template_code      The unique numeric code that identifies the rating''s template in the database
  * @field transition_date    The date/time to start transition (interpolation) from previous rating in location''s time zone
  */
-');
 create or replace force view av_rating_local
 (
    rating_code,
@@ -55,25 +48,25 @@ create or replace force view av_rating_local
    transition_date
 )
 as
-   select r.rating_code, 
+   select r.rating_code,
           r.ref_rating_code as parent_rating_code,
           v.db_office_id as office_id,
-          v.location_id 
-          || '.' 
-          || rt.parameters_id 
-          || '.' 
-          || rt.version 
-          || '.' 
+          v.location_id
+          || '.'
+          || rt.parameters_id
+          || '.'
+          || rt.version
+          || '.'
           || rs.version as rating_id,
           v.location_id,
-          rt.parameters_id 
-          || '.' 
+          rt.parameters_id
+          || '.'
           || rt.version as template_id, rs.version,
-          r.native_units, 
+          r.native_units,
           cwms_util.change_timezone(r.effective_date, 'UTC', v.time_zone_name) as effective_date,
           cwms_util.change_timezone(r.create_date, 'UTC', v.time_zone_name) as create_date,
           r.active_flag,
-          regexp_replace(upper(r.formula), 'ARG(\d+)', 'I\1'), 
+          regexp_replace(upper(r.formula), 'ARG(\d+)', 'I\1'),
           r.description,
           v.aliased_item,
           v.loc_alias_category,

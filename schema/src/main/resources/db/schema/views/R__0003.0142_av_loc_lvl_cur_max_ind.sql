@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_LVL_CUR_MAX_IND', null,
-'
 /**
  * Displays the current maximum location level indicator that is set for each time series
  *
@@ -13,7 +11,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_LVL_CUR_MAX_
  * @field max_indicator      The maximum indicator that is currently set
  * @field indicator_name     The name of the indicator
  */
-');
 create or replace force view av_loc_lvl_cur_max_ind (
    office_id,
    cwms_ts_id,

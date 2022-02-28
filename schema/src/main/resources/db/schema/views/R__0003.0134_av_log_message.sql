@@ -1,9 +1,3 @@
--------------------------
--- AV_LOG_MESSAGE view.
---
-
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOG_MESSAGE', null,
-'
 /**
  * Displays messages logged to the database
  *
@@ -22,7 +16,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOG_MESSAGE', nu
  * @field msg_text             The text of the message
  * @field properties           Any properties associated with the message
  */
-');
 CREATE OR REPLACE FORCE VIEW av_log_message
 (
 	msg_id,

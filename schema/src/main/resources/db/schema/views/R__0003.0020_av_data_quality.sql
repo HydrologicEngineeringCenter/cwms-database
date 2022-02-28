@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_DATA_QUALITY', null,
-'
 /**
  * Displays information about data quality codes
  *
@@ -24,5 +22,4 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_DATA_QUALITY', n
  * @field test_failed_id Specifies which test(s), if any, were failed when the value was screened
  * @field protection_id  Specifies whether the value is protected from further change
  */
-');
 create view av_data_quality as select * from cwms_data_quality;

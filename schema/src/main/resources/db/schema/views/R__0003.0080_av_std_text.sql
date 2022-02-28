@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_STD_TEXT', null,
-'
 /**
  * Displays standard text information
  *
@@ -9,7 +7,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_STD_TEXT', null,
  * @field std_text_id The standard text identifier (key)
  * @field long_text   The long text (value) of the standard text, if any
  */
-');
 create or replace force view av_std_text (
    office_id,
    std_text_id,

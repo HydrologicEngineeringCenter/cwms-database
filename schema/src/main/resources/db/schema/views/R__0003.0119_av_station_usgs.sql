@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_STATION_USGS', null,
-'
 /**
  * Displays AV_STATION_USGS information
  *
@@ -19,7 +17,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_STATION_USGS', n
  * @field STATE_ABBR                 The..
  * @field SHAPE                      The..
  */
-');
 CREATE OR REPLACE FORCE VIEW AV_STATION_USGS
 (
    AGENCY_CD,

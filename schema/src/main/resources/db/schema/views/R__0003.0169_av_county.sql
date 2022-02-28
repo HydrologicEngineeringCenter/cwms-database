@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_URL', null,
-'
 /**
  * Displays location URLs
  *
@@ -11,7 +9,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_URL', n
  * @field url_address   	The URL
  * @field url_title 	 	The title for URL display
  */
-');
 create or replace view av_county
 as
 SELECT l.db_Office_id

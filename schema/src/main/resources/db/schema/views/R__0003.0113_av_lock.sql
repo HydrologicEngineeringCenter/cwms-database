@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCK', null,
-'
 /**
  * Displays AV_LOCK information
  *
@@ -19,7 +17,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCK', null,
  * @field normal_lock_lift           The..
  * @field db_office_id               The database office ID of the lock
  */
-');
 create or replace force view av_lock(
    lock_id,
    project_id,
@@ -84,4 +81,3 @@ end;
 
 
 create or replace public synonym cwms_v_lock for av_lock;
-

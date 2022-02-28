@@ -1,7 +1,3 @@
-declare
-   l_clob clob;
-begin
-   l_clob := '
 /**
  * Displays information about time series extents in location-local time zone
  *
@@ -48,11 +44,6 @@ begin
  * @field last_update                   The time that this record was updated
  * @field has_non_zero_quality          Specifies whether the ENTIRE time series has ANY quality_code other than zero
  */
-';
-   delete from at_clob where office_code = 53 and id = '/VIEWDOCS/AV_TS_EXTENTS_LOCAL';
-   insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TS_EXTENTS_LOCAL', null, l_clob);
-end;
-/
 create or replace force view av_ts_extents_local (
    ts_code,
    db_office_id,
@@ -152,4 +143,3 @@ end;
 
 
 create or replace public synonym cwms_v_ts_extents_local for av_ts_extents_local;
-

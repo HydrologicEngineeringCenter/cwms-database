@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_USACE_DAM_COUNTY', null,
-'
 /**
  * Displays AV_USACE_DAM_COUNTY information
  *
@@ -9,7 +7,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_USACE_DAM_COUNTY
  * @field STATE_ID                   The..
  * @field COUNTY_NAME                The..
  */
-');
 CREATE OR REPLACE FORCE VIEW AV_USACE_DAM_COUNTY
 (
    COUNTY_ID,

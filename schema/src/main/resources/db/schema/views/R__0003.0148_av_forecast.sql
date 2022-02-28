@@ -1,8 +1,3 @@
-
-delete from at_clob where id = '/VIEWDOCS/AV_FORECAST';
-
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_FORECAST', null,
-'
 /**
  * Displays information about forecasts in the database
  *
@@ -23,8 +18,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_FORECAST', null,
  * @param forecast_spec_code  The unique numeric code identifying the forecast specification for the forecast
  * @param location_code       The unique numeric code identifying the target location for the forecast
  */
-');
-
 create or replace force view av_forecast (
    office_id,
    location_id,

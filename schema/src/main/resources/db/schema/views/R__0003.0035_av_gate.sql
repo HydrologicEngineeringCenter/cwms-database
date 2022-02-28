@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_GATE', null,
-'
 /**
  * Displays information about gates at CWMS projects
  *
@@ -17,7 +15,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_GATE', null,
  * @field opening_unit_en Opening unit in English unit system
  * @field opening_unit_si Opening unit in SI unit system
  */
-');
 create or replace force view av_gate
 (
    office_id,

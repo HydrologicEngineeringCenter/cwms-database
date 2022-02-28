@@ -1,9 +1,8 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_STREAM_LOCATION', null,'
 /**
  * Contains non-geographic information for streams
  *
  * @since CWMS 2.1
- 
+
  * @field location_code           Reference to physical location
  * @field stream_location_code    Reference to stream
  * @field db_office_id            The office that owns this location in the databaes
@@ -21,7 +20,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_STREAM_LOCATION'
  * @field drainage_area           Total drainage area above this stream location
  * @field ungaged_area            Drainage area above this stream location and below upstream gage(s)
  */
-');
 create or replace force view av_stream_location(
    location_code,
    stream_location_code,
@@ -47,25 +45,25 @@ as
           l2.location_id stream_location_id,
           sl.bank,
           l1.unit_system,
-          case 
-             when l1.unit_system = 'EN' then 'ft' 
-             else 'm' 
+          case
+             when l1.unit_system = 'EN' then 'ft'
+             else 'm'
           end as stage_unit,
-          case 
-             when l1.unit_system = 'EN' then 'mi' 
-             else 'km' 
+          case
+             when l1.unit_system = 'EN' then 'mi'
+             else 'km'
           end as station_unit,
-          case 
-             when l1.unit_system = 'EN' then 'mi2' 
-             else 'km2' 
+          case
+             when l1.unit_system = 'EN' then 'mi2'
+             else 'km2'
           end as area_unit,
           case
              when l1.unit_system = 'SI' then cwms_rounding.round_dd_f(lowest_measurable_stage, '4444444444')
              else cwms_rounding.round_dd_f(cwms_util.convert_units(lowest_measurable_stage, 'm', 'ft'), '4444444444')
           end as lowest_measurable_stage,
-          case 
-             when l1.unit_system = 'SI' then cwms_rounding.round_nn_f(station, '4444444444') 
-             else cwms_rounding.round_nn_f(cwms_util.convert_units(station, 'km', 'mi'), '4444444444') 
+          case
+             when l1.unit_system = 'SI' then cwms_rounding.round_nn_f(station, '4444444444')
+             else cwms_rounding.round_nn_f(cwms_util.convert_units(station, 'km', 'mi'), '4444444444')
           end as station,
           case
              when l1.unit_system = 'SI' then cwms_rounding.round_nn_f(navigation_station, '4444444444')
@@ -75,13 +73,13 @@ as
              when l1.unit_system = 'SI' then cwms_rounding.round_nn_f(published_station, '4444444444')
              else cwms_rounding.round_nn_f(cwms_util.convert_units(published_station, 'km', 'mi'), '4444444444')
           end as published_station,
-          case 
-             when l1.unit_system = 'SI' then cwms_rounding.round_dd_f(cwms_util.convert_units(drainage_area, 'm2', 'km2'), '4444444444') 
-             else cwms_rounding.round_dd_f(cwms_util.convert_units(drainage_area, 'm2', 'mi2'), '4444444444') 
+          case
+             when l1.unit_system = 'SI' then cwms_rounding.round_dd_f(cwms_util.convert_units(drainage_area, 'm2', 'km2'), '4444444444')
+             else cwms_rounding.round_dd_f(cwms_util.convert_units(drainage_area, 'm2', 'mi2'), '4444444444')
           end as drainage_area,
-          case 
-             when l1.unit_system = 'SI' then cwms_rounding.round_dd_f(cwms_util.convert_units(ungaged_area, 'm2', 'km2'), '4444444444') 
-             else cwms_rounding.round_dd_f(cwms_util.convert_units(ungaged_area, 'm2', 'mi2'), '4444444444') 
+          case
+             when l1.unit_system = 'SI' then cwms_rounding.round_dd_f(cwms_util.convert_units(ungaged_area, 'm2', 'km2'), '4444444444')
+             else cwms_rounding.round_dd_f(cwms_util.convert_units(ungaged_area, 'm2', 'mi2'), '4444444444')
           end as ungaged_area
      from at_stream_location sl,
           cwms_office o,

@@ -1,23 +1,3 @@
---
--- ZAV_CWMS_TS_ID  (View)
---
---  Dependencies:
---   CWMS_INTERVAL (Table)
---   CWMS_OFFICE (Table)
---   CWMS_PARAMETER_TYPE (Table)
---   CWMS_UNIT (Table)
---   CWMS_ABSTRACT_PARAMETER (Table)
---   CWMS_BASE_PARAMETER (Table)
---   CWMS_DURATION (Table)
---   AT_BASE_LOCATION (Table)
---   AT_CWMS_TS_SPEC (Table)
---   AT_PARAMETER (Table)
---   AT_PHYSICAL_LOCATION (Table)
---
-
--- delete from at_clob where id = '/VIEWDOCS/ZAV_CWMS_TS_ID';
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/ZAV_CWMS_TS_ID', null,
-'
 /**
  * Displays CWMS Time Series Identifiers
  *
@@ -52,7 +32,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/ZAV_CWMS_TS_ID', nu
  * @field historic_flag        Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code>) specifying whether the time series is part of historic record
  * @field time_zone_id         The (location''s) time zone if the time series is a local-regular time series (LRTS)
 */
-');
 CREATE OR REPLACE FORCE VIEW zav_cwms_ts_id
 (
     db_office_code,

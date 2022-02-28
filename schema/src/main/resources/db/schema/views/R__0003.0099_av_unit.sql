@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_UNIT', null,
-'
 /**
  * Displays information about units
  *
@@ -15,7 +13,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_UNIT', null,
  * @field abstract_param_code Unique numeric value that identifies the abstract parameter associated with the unit
  * @field db_office_code      Unique numeric value that identifies the office that owns the unit
  */
-');
 CREATE OR REPLACE FORCE VIEW av_unit
 (
     unit_system,

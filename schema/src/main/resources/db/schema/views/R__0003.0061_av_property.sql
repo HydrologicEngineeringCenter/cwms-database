@@ -1,4 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_PROPERTY', null,'
 /**
  * Displays information on properties
  *
@@ -10,7 +9,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_PROPERTY', null,
  * @field prop_value    The property value
  * @field prop_comment  An optional comment or description of the property
  */
-');
 create or replace force view av_property(
    office_id,
    prop_category,

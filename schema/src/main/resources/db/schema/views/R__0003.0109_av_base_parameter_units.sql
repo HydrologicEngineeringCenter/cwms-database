@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_BASE_PARAMETER_UNITS', null,
-'
 /**
  * Displays AV_BASE_PARAMETER_UNITS information
  *
@@ -15,7 +13,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_BASE_PARAMETER_U
  * @field UNIT_CODE                  The..
  * @field DB_OFFICE_CODE             The..
  */
-');
 CREATE OR REPLACE FORCE VIEW AV_BASE_PARAMETER_UNITS
 (
    BASE_PARAMETER_ID,
@@ -52,4 +49,3 @@ end;
 
 
 create or replace public synonym cwms_v_base_parameter_units for av_base_parameter_units;
-

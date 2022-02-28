@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_STORAGE_UNIT', null,
-'
 /**
  * Displays storage units for parameters
  *
@@ -9,7 +7,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_STORAGE_UNIT', n
  * @field sub_parameter_id  The sub-parameter identifier, if any
  * @field unit_id           The database storage unit
  */
-');
 CREATE OR REPLACE FORCE VIEW av_storage_unit
 (
     base_parameter_id,

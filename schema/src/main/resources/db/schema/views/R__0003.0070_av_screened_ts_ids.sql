@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_SCREENED_TS_IDS', null,
-'
 /**
  * [description needed]
  *
@@ -24,7 +22,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_SCREENED_TS_IDS'
  * @field parameter_type_id  [description needed]
  * @field duration_id        [description needed]
  */
-');
 CREATE OR REPLACE VIEW av_screened_ts_ids
 (
     screening_code,

@@ -1,5 +1,3 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TURBINE', null,
-'
 /**
  * Displays information about turbines at CWMS projects
  *
@@ -9,7 +7,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TURBINE', null,
  * @field project_id      Location identifier of project
  * @field turbine_id      Turbine identifier
  */
-');
 create or replace force view av_turbine
 (
    office_id,
@@ -20,10 +17,10 @@ as
 select o.office_id,
        bl1.base_location_id
        ||substr('-', 1, length(pl1.sub_location_id))
-       ||pl1.sub_location_id as project_id, 
+       ||pl1.sub_location_id as project_id,
        bl2.base_location_id
        ||substr('-', 1, length(pl2.sub_location_id))
-       ||pl2.sub_location_id as turbine_id 
+       ||pl2.sub_location_id as turbine_id
   from at_turbine t,
        at_physical_location pl1,
        at_base_location bl1,
