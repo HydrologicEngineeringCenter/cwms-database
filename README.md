@@ -4,7 +4,7 @@ This repository contains the information necessary to both create a CWMS databas
 
 ## Contributing
 
-clone the repository with 
+clone the repository with
 
     git clone https://bitbucket.hecdev.net/scm/cwms/cwms_database.git
 
@@ -26,13 +26,13 @@ All contributions will be made through a Pull Request. If you have write access 
 
     git push origin <branch name>
 
-and then go to the bitbucket site and create the PR. 
+and then go to the bitbucket site and create the PR.
 
 Please do this as early as possible in your development cycle. This will help prevent duplication of work and open up a consistent communication channel. It is expected that ones initial submission will not meet all of the requirements and guidance will be provided.
 
 For you code to be accepted it must successfully install into Oracle and be approved by one of the people at the bottom of this readme in the Reviewers section.
 
-In the future we will enforce coding style standards and test coverage. 
+In the future we will enforce coding style standards and test coverage.
 
 If you do not have write access you may be able to fork it in bitbucket and submit a PR from the fork. If that doesn't work contact one of the Reviewers for access.
 
@@ -133,25 +133,29 @@ The Compose file references [USACE/cwms-radar-api](https://github.com/USACE/cwms
 
 ### build for dev
 
-copy the wcdba_overrides.xml or teamcity_overrides.xml to build/localoverrides.xml and alter the settings internally to match the test database you have either setup or had provided.
+At present the build assumes you have a database setup with the appropriate table spaces and APEX installed.
+The CWMS_20 user does not need to exist already.
 
-It is assumed that apex (20.1 at time of writing) has previously been installed in the database; failure to meet this condition will cause the build to fail. Additionally, the Oracle Instant client with the SQL*Plus and Tools packages is required to be set in the PATH variable. 
+to push the schema to the system run the following. Adjust the url, user, and password as appropriate
 
-to build the database run the following:
+`./gradlew :schema:flywayMigrate -Pflyway.url=jdbc:oracle:thin:@localhost:1521/FEATURES -Pcwms.user=CWMS_EXTRA -Pflyway.password=extrauser`
 
-    ant -Dbuilduser.overrides=build/local_overrides.xml clean build
+to push the baseline data
 
-*clean* will remove any existing schemas with the CWMS_20 name.
+`./gradlew :schema:dataMigrate -Pflyway.url=jdbc:oracle:thin:@localhost:1521/FEATURES -Pcwms.user=CWMS_EXTRA -Pflyway.password=extrauser`
 
-*build* will initialize the database.
+to clean the database
+`./gradlew :schema:flywayClean -Pflyway.url=jdbc:oracle:thin:@localhost:1521/FEATURES -Pcwms.user=CWMS_EXTRA -Pflyway.password=extrauser`
+
+If flyway created teh CWMS_20 user it will be dropped at the end of this task. If the flyway user already existed it will not.
 
 
 ### test
 
-You must have utplsql from github.com/utPLSQL/utPLSQL-cli on your path. 
+You must have utplsql from github.com/utPLSQL/utPLSQL-cli on your path.
 If you get the error that the oci version doesn't match while trying to run the tests remove all of the oracle jar from the utPLSQL-cli installation path *lib* directory and copy the ojdbc8.jar from your instantclient folder. (This issue has previously been reported to the utPLSQL team and should eventually be fixed.)
 
-to run the tests 
+to run the tests
 
    ant -Dbuilduser.overrides=build/local_overrides.xml test
 
@@ -166,8 +170,8 @@ The test framework will be installed, and the tests will be run. The following f
 
 For simple modifications provide a pull request with the build code modified as normal.
 
-If you want to create a new build configuration you will first need to submit a pull request with the code with the build steps commented out but otherwise generating the new configuration. 
-Once everyone agrees on this new step we will merge it into master, which will cause teamcity to generate and link the new configuration, and you will need to continue further on a new branch so that TeamCity can actually run the steps. This is a current limitation of TeamCity. 
+If you want to create a new build configuration you will first need to submit a pull request with the code with the build steps commented out but otherwise generating the new configuration.
+Once everyone agrees on this new step we will merge it into master, which will cause teamcity to generate and link the new configuration, and you will need to continue further on a new branch so that TeamCity can actually run the steps. This is a current limitation of TeamCity.
 
 
 ### Update scripts and Releases
@@ -180,7 +184,7 @@ Once everyone agrees on this new step we will merge it into master, which will c
 
 There is a pom.xml file in the root directory that contains the current version. The version follows the following format:
 
-    XX.YY.ZZ[-SNAPSHOT] 
+    XX.YY.ZZ[-SNAPSHOT]
 
 XX-Year/major
 YY-minor

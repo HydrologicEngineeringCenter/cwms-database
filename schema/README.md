@@ -42,7 +42,7 @@ and
 afterClean.sql
 afterClean__<name>.sql
 ```
-To finalize cleanup.
+To finalize cleanup. Note that files are run in alphabetical (lexographical) order.
 
 Flyway will drop the CWMS_20 and CWMS_DBA schema objects quite fully but some things like profiles and roles are
 not automatically dropped.
