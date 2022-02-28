@@ -25,7 +25,7 @@ dependencies {
 var build_user = project.getProperty("cwms.user")
 
 flyway {
-    locations = ["db/migration"]
+    locations = ["db/schema"]
     configurations = ['flywayMigration','compile','runtimeClasspath']
     user = build_user
     /*url = "$DB_URL"
