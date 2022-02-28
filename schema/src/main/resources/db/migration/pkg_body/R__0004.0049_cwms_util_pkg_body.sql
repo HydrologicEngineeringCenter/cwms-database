@@ -6,7 +6,7 @@ begin
                                                                   name,
                                                                   line
                                                              from dba_identifiers
-                                                            where owner = ''&cwms_schema''
+                                                            where owner = ''${CWMS_SCHEMA}''
                                                               and type in (''PROCEDURE'', ''FUNCTION'')
                                                               and usage = ''DEFINITION''
                                                               and object_type = ''PACKAGE BODY''
@@ -488,7 +488,7 @@ as
            FROM sys.all_synonyms
           WHERE     synonym_name = l_name
                 AND owner = 'PUBLIC'
-                AND table_owner = '&cwms_schema';
+                AND table_owner = '${CWMS_SCHEMA}';
       EXCEPTION
          WHEN invalid_sql_name
          THEN
@@ -526,7 +526,7 @@ as
 
       IF l_office_id IS NULL
       THEN
-         IF l_username = '&cwms_schema' or l_username = 'NOBODY' or l_username = 'CCP' or l_username = 'SYS' or upper(l_username) = upper(l_upass_id)
+         IF l_username = '${CWMS_SCHEMA}' or l_username = 'NOBODY' or l_username = 'CCP' or l_username = 'SYS' or upper(l_username) = upper(l_upass_id)
          THEN
             RETURN 'CWMS';
          ELSE
@@ -5871,7 +5871,7 @@ as
       l_user_group_id varchar2(32);
    begin
       l_user_id := get_user_id;
-      if l_user_id != '&cwms_schema' then
+      if l_user_id != '${CWMS_SCHEMA}' then
          l_office_id := cwms_util.get_db_office_id(p_office_id);
          if p_user_group_id is null then
             l_user_group_id := 'All Users';
@@ -6034,7 +6034,7 @@ as
                l_parts := cwms_util.split_text(rec.column_value);
                if l_parts.count > 3 and l_parts(3) in ('function', 'procedure', 'trigger', 'package') then
                   l_call_stack.extend;
-                  l_parts(l_parts.count) := replace(l_parts(l_parts.count), '&cwms_schema..', null);
+                  l_parts(l_parts.count) := replace(l_parts(l_parts.count), '${CWMS_SCHEMA}', null);
                   if l_parts(3) in ('function', 'procedure', 'trigger') then
                      l_call_stack(l_call_stack.count) := str_tab_t(l_parts(4), l_parts(2));
                   elsif l_parts(4) = 'body' then

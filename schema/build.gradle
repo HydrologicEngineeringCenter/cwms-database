@@ -22,9 +22,12 @@ dependencies {
     flywayMigration sourceSets.main.runtimeClasspath
 }
 
+var build_user = project.getProperty("cwms.user")
+
 flyway {
     locations = ["db/migration"]
     configurations = ['flywayMigration','compile','runtimeClasspath']
+    user = build_user
     /*url = "$DB_URL"
     user = BUILD_USER
     password = BUILD_USERPASSWORD*/
@@ -42,6 +45,38 @@ flyway {
     ]
 }
 
+task dataMigrate(type: org.flywaydb.gradle.task.FlywayMigrateTask){ /*  dependsOn: flywayMigrate){*/
+    locations = ["db/data"]
+    configurations = ['flywayMigration','compile','runtimeClasspath']
+    user = "${build_user}[CWMS_20]"
+    url = flyway.url
+    password = flyway.password
+    mixed = true
+    table = "flyway_data_history"
+    baselineOnMigrate = true // The structure migration task has already created a table here. We need a 2nd one.
+    schemas = ['CWMS_20']
+    placeholders = [
+        "CWMS_SCHEMA": "CWMS_20"
+    ]
+}
+
+task dataRepair(type: org.flywaydb.gradle.task.FlywayRepairTask){
+    locations = ["db/data"]
+    configurations = ['flywayMigration','compile','runtimeClasspath']
+    user = "${build_user}[CWMS_20]"
+    url = flyway.url
+    password = flyway.password
+    mixed = true
+    table = "flyway_data_history"
+    baselineOnMigrate = true // The structure migration task has already created a table here. We need a 2nd one.
+    schemas = ['CWMS_20']
+    placeholders = [
+        "CWMS_SCHEMA": "CWMS_20"
+    ]
+}
+
 flywayMigrate.dependsOn classes
 flywayClean.dependsOn classes
 flywayRepair.dependsOn classes
+dataMigrate.dependsOn classes
+dataRepair.dependsOn classes

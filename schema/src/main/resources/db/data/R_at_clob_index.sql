@@ -18,7 +18,7 @@ BEGIN
 --
   BEGIN
     EXECUTE IMMEDIATE 'drop index at_clob_cidx';
-    DBMS_OUTPUT.put_line ('Dropped index at_clob_cidx');
+    --DBMS_OUTPUT.put_line ('Dropped index at_clob_cidx');
   EXCEPTION
     WHEN OTHERS THEN
       NULL;

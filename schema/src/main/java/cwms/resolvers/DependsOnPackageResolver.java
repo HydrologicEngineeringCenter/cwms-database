@@ -49,7 +49,7 @@ public class DependsOnPackageResolver implements MigrationResolver {
 
 
         List<ResolvedMigration> migrations = new ArrayList<>();
-        String suffix = "sqld";
+        String suffix = "data";
 
 
         addMigrations(migrations,context.getConfiguration().getSqlMigrationPrefix(),suffix,context);
