@@ -4933,7 +4933,8 @@ AS
       -- allow only a single copy to be scheduled --
       ----------------------------------------------
       if job_count > 0 then
-         cwms_err.raise('ERROR', 'Cannot start job '||l_job_name||',  another instance is already running');
+         dbms_scheduler.drop_job(l_job_name);
+         --cwms_err.raise('ERROR', 'Cannot start job '||l_job_name||',  another instance is already running');
       end if;
       -----------------------------------------------
       -- get the "local" time zone of the database --
@@ -14253,7 +14254,8 @@ end retrieve_existing_item_counts;
       -- allow only a single copy to be scheduled --
       ----------------------------------------------
       if job_count > 0 then
-         cwms_err.raise('ERROR', 'Cannot start job '||l_job_name||',  another instance is already running');
+         dbms_scheduler.drop_job(l_job_name);
+         --cwms_err.raise('ERROR', 'Cannot start job '||l_job_name||',  another instance is already running');
       end if;
       ----------------------------------------------------------
       -- create the job to start immediately and never repeat --

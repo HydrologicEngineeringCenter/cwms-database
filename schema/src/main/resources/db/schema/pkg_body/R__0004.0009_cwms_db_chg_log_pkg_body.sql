@@ -46,85 +46,17 @@ as
          || to_char (p_ver_build);
    end;
 
-   procedure get_next_ver_build (
-      p_application   in     varchar2 default 'CWMS',
-      p_version          out varchar2,
-      p_ver_major        out number,
-      p_ver_minor        out number,
-      p_ver_build        out number)
-   is
-      l_application   cwms_db_change_log.application%type;
-   begin
-      l_application := nvl (upper (trim (p_application)), 'CWMS');
-      get_current_ver (l_application,
-                       p_version,
-                       p_ver_major,
-                       p_ver_minor,
-                       p_ver_build);
-      p_ver_build := p_ver_build + 1;
-      p_version :=
-            to_char (p_ver_major)
-         || '.'
-         || to_char (p_ver_minor)
-         || '.'
-         || to_char (p_ver_build);
-   end;
-
-   procedure get_next_ver_minor (
-      p_application   in     varchar2 default 'CWMS',
-      p_version          out varchar2,
-      p_ver_major        out number,
-      p_ver_minor        out number,
-      p_ver_build        out number)
-   is
-      l_application   cwms_db_change_log.application%type;
-   begin
-      l_application := nvl (upper (trim (p_application)), 'CWMS');
-      get_current_ver (l_application,
-                       p_version,
-                       p_ver_major,
-                       p_ver_minor,
-                       p_ver_build);
-      p_ver_minor := p_ver_minor + 1;
-      p_version :=
-         to_char (p_ver_major) || '.' || to_char (p_ver_minor) || '.0';
-   end;
-
-   procedure get_next_ver_major (
-      p_application   in     varchar2 default 'CWMS',
-      p_version          out varchar2,
-      p_ver_major        out number,
-      p_ver_minor        out number,
-      p_ver_build        out number)
-   is
-      l_application   cwms_db_change_log.application%type;
-   begin
-      l_application := nvl (upper (trim (p_application)), 'CWMS');
-      get_current_ver (l_application,
-                       p_version,
-                       p_ver_major,
-                       p_ver_minor,
-                       p_ver_build);
-      p_ver_major := p_ver_major + 1;
-      p_version := to_char (p_ver_major) || '.0.0';
-   end;
-
    function get_version (p_application in varchar2 default 'CWMS')
       return varchar2
    is
-      l_application   cwms_db_change_log.application%type;
-      l_ver_major     cwms_db_change_log.ver_major%type;
-      l_ver_minor     cwms_db_change_log.ver_minor%type;
-      l_ver_build     cwms_db_change_log.ver_build%type;
+      l_application   varchar2;
+      l_ver_schema    varchar2;
+      l_ver_data      varchar2;
       l_version       varchar2(32);
    begin
-      l_application := nvl (upper (trim (p_application)), 'CWMS');
-      get_current_ver (l_application,
-                       l_version,
-                       l_ver_major,
-                       l_ver_minor,
-                       l_ver_build);
-
+      select version into l_ver_schema from cwms_20.flyway_schema_history where version <> null order by version desc;
+      select version into l_ver_data from cwms_20.flyway_data_history where version <> null order by version desc;
+      l_version := 'schema=' || l_ver_schema || ', data=' || l_ver_data;
       return l_version;
    end;
 end cwms_db_chg_log;
