@@ -41,7 +41,9 @@ flyway {
         "CWMS_TABLESPACE": "CWMS_20DATA",
         "AT_TABLESPACE": "CWMS_20ATDATA",
         "AQ_TABLESPACE": "CWMS_AQ",
-        "AQ_EX_TABLESPACE": "CWMS_AQ_EX"
+        "AQ_EX_TABLESPACE": "CWMS_AQ_EX",
+        "CWMS_OFFICE_ID": project.findProperty("cwms.office") ?:"SPK",
+        "CWMS_OFFICE_EROC": project.findProperty("cwms.eroc") ?:"l2" //TODO: change to lookup once this data is in a resource file
     ]
 }
 

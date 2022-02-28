@@ -4597,11 +4597,11 @@ AS
       --------------------------------------
       l_user_id := cwms_util.get_user_id;
 
-      IF l_user_id != '&cwms_schema'
+      IF l_user_id != '${CWMS_SCHEMA}'
       THEN
          raise_application_error (
             -20999,
-            'Must be &cwms_schema user to start job ' || l_job_id,
+            'Must be ${CWMS_SCHEMA} user to start job ' || l_job_id,
             TRUE);
       END IF;
 

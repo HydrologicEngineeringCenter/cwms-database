@@ -4926,8 +4926,8 @@ AS
       ----------------------------------------
       -- only allow schema owner to execute --
       ----------------------------------------
-      if cwms_util.get_user_id != '&cwms_schema' then
-         cwms_err.raise('ERROR', 'Must be &cwms_schema user to start job '||l_job_name);
+      if cwms_util.get_user_id != '${CWMS_SCHEMA}' then
+         cwms_err.raise('ERROR', 'Must be ${CWMS_SCHEMA} user to start job '||l_job_name);
       end if;
       ----------------------------------------------
       -- allow only a single copy to be scheduled --
@@ -4995,8 +4995,8 @@ AS
       ----------------------------------------
       -- only allow schema owner to execute --
       ----------------------------------------
-      if cwms_util.get_user_id != '&cwms_schema' then
-         cwms_err.raise('ERROR', 'Must be &cwms_schema user to start job '||l_job_name);
+      if cwms_util.get_user_id != '${CWMS_SCHEMA}' then
+         cwms_err.raise('ERROR', 'Must be ${CWMS_SCHEMA} user to start job '||l_job_name);
       end if;
       ----------------------------------------------
       -- allow only a single copy to be scheduled --
@@ -12175,13 +12175,13 @@ end retrieve_existing_item_counts;
       --------------------------------------
       l_user_id := cwms_util.get_user_id;
 
-      IF UPPER (l_user_id) != UPPER ('&cwms_schema')
+      IF UPPER (l_user_id) != UPPER ('${CWMS_SCHEMA}')
       THEN
 --         DBMS_OUTPUT.put_line ('User ID = ' || l_user_id);
 --         DBMS_OUTPUT.put_line ('Must be : ' || 'CWMS_20');
          raise_application_error (
             -20999,
-            'Must be &cwms_schema user to start job ' || l_job_id,
+            'Must be ${CWMS_SCHEMA} user to start job ' || l_job_id,
             TRUE);
       END IF;
 
@@ -14246,8 +14246,8 @@ end retrieve_existing_item_counts;
       ----------------------------------------
       -- only allow schema owner to execute --
       ----------------------------------------
-      if cwms_util.get_user_id != '&cwms_schema' then
-         cwms_err.raise('ERROR', 'Must be &cwms_schema user to start job '||l_job_name);
+      if cwms_util.get_user_id != '${CWMS_SCHEMA}' then
+         cwms_err.raise('ERROR', 'Must be ${CWMS_SCHEMA} user to start job '||l_job_name);
       end if;
       ----------------------------------------------
       -- allow only a single copy to be scheduled --

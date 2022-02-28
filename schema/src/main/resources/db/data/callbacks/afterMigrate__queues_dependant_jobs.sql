@@ -1,0 +1,11 @@
+begin
+   cwms_msg.start_trim_log_job;
+   cwms_msg.start_remove_subscribers_job;
+   cwms_ts.start_trim_ts_deleted_job;
+   cwms_sec.start_clean_session_job;
+   cwms_shef.start_update_shef_spec_map_job;
+   cwms_ts.start_update_ts_extents_job;
+   cwms_ts.start_immediate_upd_tsx_job;
+   cwms_ts.start_truncate_ts_msg_arch_job;
+end;
+/

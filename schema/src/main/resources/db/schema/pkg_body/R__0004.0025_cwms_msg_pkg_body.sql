@@ -7,8 +7,8 @@ declare
 begin
    select count(*)
      into l_count
-     from user_views
-    where view_name = 'AV_QUEUE_MESSAGES';
+     from dba_views
+    where view_name = 'AV_QUEUE_MESSAGES' and owner='${CWMS_SCHEMA}';
 
    if l_count = 0 then
       execute immediate 'create view av_queue_messages as select null as queue, null as subscriber, null as ready, null as processed, null as expired, null as undeliverable, null as total, null as max_ready_age from dual';
@@ -40,7 +40,7 @@ end get_queue_prefix;
 function get_exception_queue_name(p_office_id varchar2) return varchar2
 is
 begin
-   return '&cwms_schema..' || p_office_id || '_EX';
+   return '${CWMS_SCHEMA}.' || p_office_id || '_EX';
 end;
 
 -------------------------------------------------------------------------------
@@ -59,7 +59,7 @@ begin
               into l_queuename
               from dba_queues
              where name = upper(l_queuename)
-               and owner = '&cwms_schema'
+               and owner = '${CWMS_SCHEMA}'
                and queue_type = 'NORMAL_QUEUE';
             l_found := true;
          exception
@@ -72,7 +72,7 @@ begin
    if not l_found then
       l_queuename := null;
    else
-      l_queuename := '&cwms_schema'||'.'|| l_queuename;
+      l_queuename := '${CWMS_SCHEMA}'||'.'|| l_queuename;
    end if;
 
    return l_queuename;
@@ -1705,10 +1705,10 @@ begin
    --------------------------------------
    l_user_id := cwms_util.get_user_id;
 
-   if l_user_id != '&cwms_schema'
+   if l_user_id != '${CWMS_SCHEMA}'
    then
       raise_application_error (-20999,
-                                  'Must be &cwms_schema user to start job '
+                                  'Must be ${CWMS_SCHEMA} user to start job '
                                || l_job_id,
                                true
                               );
@@ -1811,7 +1811,7 @@ BEGIN
 
       BEGIN
          sys.DBMS_AQADM.stop_queue (
-            queue_name   => '&cwms_schema..' || l_queue_name);
+            queue_name   => '${CWMS_SCHEMA}.' || l_queue_name);
          DBMS_OUTPUT.put_line ('Stopped queue ' || l_queue_name);
       EXCEPTION
          WHEN OTHERS
@@ -1821,7 +1821,7 @@ BEGIN
 
       BEGIN
          sys.DBMS_AQADM.drop_queue (
-            queue_name   => '&cwms_schema..' || l_queue_name);
+            queue_name   => '${CWMS_SCHEMA}.' || l_queue_name);
          DBMS_OUTPUT.put_line ('Dropped queue ' || l_queue_name);
       EXCEPTION
          WHEN OTHERS
@@ -1831,7 +1831,7 @@ BEGIN
 
       BEGIN
          sys.DBMS_AQADM.drop_queue_table (
-            queue_table   => '&cwms_schema..' || l_table_name);
+            queue_table   => '${CWMS_SCHEMA}.' || l_table_name);
          DBMS_OUTPUT.put_line ('Dropped queue table ' || l_table_name);
       EXCEPTION
          WHEN OTHERS
@@ -1842,7 +1842,7 @@ BEGIN
 
       BEGIN
          sys.DBMS_AQADM.create_queue_table (
-            queue_table          => '&cwms_schema..' || l_table_name,
+            queue_table          => '${CWMS_SCHEMA}.' || l_table_name,
             queue_payload_type   => 'SYS.AQ$_JMS_MAP_MESSAGE',
             storage_clause       => 'tablespace CWMS_AQ',
             multiple_consumers   => TRUE);
@@ -1850,22 +1850,22 @@ BEGIN
       END;
 
       sys.DBMS_AQADM.create_queue (
-         queue_name       => '&cwms_schema..' || l_queue_name,
-         queue_table      => '&cwms_schema..' || l_table_name,
+         queue_name       => '${CWMS_SCHEMA}.' || l_queue_name,
+         queue_table      => '${CWMS_SCHEMA}.' || l_table_name,
          queue_type       => sys.DBMS_AQADM.normal_queue,
             max_retries      => 5,
             retry_delay      => 0,
             retention_time   => 0);
       DBMS_OUTPUT.put_line ('Created queue ' || l_queue_name);
       sys.DBMS_AQADM.start_queue (
-         queue_name   => '&cwms_schema..' || l_queue_name,
+         queue_name   => '${CWMS_SCHEMA}.' || l_queue_name,
          enqueue      => TRUE,
          dequeue      => TRUE);
       DBMS_OUTPUT.put_line ('Started queue ' || l_queue_name);
       -- Grant enqueue/dequeue privilege to CWMS_USER role
       sys.DBMS_AQADM.grant_queue_privilege(
 	 privilege => 'ALL',
-	 queue_name => '&cwms_schema..' || l_queue_name,
+	 queue_name => '${CWMS_SCHEMA}.' || l_queue_name,
 	 grantee  => 'CWMS_USER',
 	 grant_option => FALSE);
    END LOOP;
@@ -1894,29 +1894,29 @@ begin
       l_queue_name := l_office_id || '_EX';
       l_table_name := l_queue_name || '_TABLE';
          begin
-            sys.dbms_aqadm.stop_queue(queue_name => '&cwms_schema..' || l_queue_name);
-            sys.dbms_aqadm.drop_queue(queue_name => '&cwms_schema..' || l_queue_name);
+            sys.dbms_aqadm.stop_queue(queue_name => '${CWMS_SCHEMA}.' || l_queue_name);
+            sys.dbms_aqadm.drop_queue(queue_name => '${CWMS_SCHEMA}.' || l_queue_name);
             dbms_output.put_line('Dropped queue '||l_queue_name);
          exception
             when others then dbms_output.put_line('Could not drop queue '||l_queue_name);
          end;
          begin
-            sys.dbms_aqadm.drop_queue_table(queue_table => '&cwms_schema..' || l_table_name);
+            sys.dbms_aqadm.drop_queue_table(queue_table => '${CWMS_SCHEMA}.' || l_table_name);
             dbms_output.put_line('Dropped queue table '||l_table_name);
          exception
             when others then dbms_output.put_line('Could not drop queue table '||l_table_name);
          end;
          begin
             sys.dbms_aqadm.create_queue_table(
-               queue_table        => '&cwms_schema..' || l_table_name,
+               queue_table        => '${CWMS_SCHEMA}.' || l_table_name,
                queue_payload_type => 'SYS.AQ$_JMS_MAP_MESSAGE',
 	       storage_clause        =>  'tablespace CWMS_AQ_EX',
                multiple_consumers => true);
             dbms_output.put_line('Created queue table '||l_table_name);
          end;
          sys.dbms_aqadm.create_queue(
-            queue_name     => '&cwms_schema..' || l_queue_name,
-            queue_table    => '&cwms_schema..' || l_table_name,
+            queue_name     => '${CWMS_SCHEMA}.' || l_queue_name,
+            queue_table    => '${CWMS_SCHEMA}.' || l_table_name,
             queue_type     => sys.dbms_aqadm.exception_queue
             );
          dbms_output.put_line('Created queue '||l_queue_name);
@@ -2101,8 +2101,8 @@ begin
    -- make sure we're the correct user --
    --------------------------------------
    l_user_id := cwms_util.get_user_id;
-   if l_user_id != '&cwms_schema' then
-      cwms_err.raise('ERROR',  'Must be &cwms_schema user to start job '|| l_job_id);
+   if l_user_id != '${CWMS_SCHEMA}' then
+      cwms_err.raise('ERROR',  'Must be ${CWMS_SCHEMA} user to start job '|| l_job_id);
    end if;
 
    -------------------------------------------
