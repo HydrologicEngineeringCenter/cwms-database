@@ -1119,7 +1119,7 @@ begin
    --------------------------------------
    -- make sure we're the correct user --
    --------------------------------------
-   if l_user_office_id != l_office_id and cwms_util.get_user_id != '&cwms_schema' then
+   if l_user_office_id != l_office_id and cwms_util.get_user_id != '${CWMS_SCHEMA}' then
       cwms_err.raise(
          'ERROR',
          'Cannot start job '||l_job_id||' when default office is '||l_user_office_id);
@@ -1224,7 +1224,7 @@ begin
    --------------------------------------
    -- make sure we're the correct user --
    --------------------------------------
-   if l_user_office_id != l_office_id and cwms_util.get_user_id != '&cwms_schema' then
+   if l_user_office_id != l_office_id and cwms_util.get_user_id != '${CWMS_SCHEMA}' then
       cwms_err.raise(
          'ERROR',
          'Cannot stop job '||l_job_id||' when default office is '||l_user_office_id);
@@ -1562,7 +1562,7 @@ begin
    --------------------------------------
    -- make sure we're the correct user --
    --------------------------------------
-   if l_user_office_id != l_office_id and cwms_util.get_user_id != '&cwms_schema' then
+   if l_user_office_id != l_office_id and cwms_util.get_user_id != '${CWMS_SCHEMA}' then
       cwms_err.raise(
          'ERROR',
          'Cannot start job '||l_job_id||' when default office is '||l_user_office_id);
@@ -1667,7 +1667,7 @@ begin
    --------------------------------------
    -- make sure we're the correct user --
    --------------------------------------
-   if l_user_office_id != l_office_id and cwms_util.get_user_id != '&cwms_schema' then
+   if l_user_office_id != l_office_id and cwms_util.get_user_id != '${CWMS_SCHEMA}' then
       cwms_err.raise(
          'ERROR',
          'Cannot stop job '||l_job_id||' when default office is '||l_user_office_id);
@@ -3919,7 +3919,7 @@ begin
    --------------------------------------
    -- make sure we're the correct user --
    --------------------------------------
-   if l_user_office_id != l_office_id and cwms_util.get_user_id != '&cwms_schema' then
+   if l_user_office_id != l_office_id and cwms_util.get_user_id != '${CWMS_SCHEMA}' then
       cwms_err.raise(
          'ERROR',
          'Cannot start job '||l_job_id||' when default office is '||l_user_office_id);
@@ -4024,7 +4024,7 @@ begin
    --------------------------------------
    -- make sure we're the correct user --
    --------------------------------------
-   if l_user_office_id != l_office_id and cwms_util.get_user_id != '&cwms_schema' then
+   if l_user_office_id != l_office_id and cwms_util.get_user_id != '${CWMS_SCHEMA}' then
       cwms_err.raise(
          'ERROR',
          'Cannot stop job '||l_job_id||' when default office is '||l_user_office_id);
@@ -4074,7 +4074,7 @@ begin
    --------------------------------------
    -- make sure we're the correct user --
    --------------------------------------
-   if l_user_office_id != l_office_id and cwms_util.get_user_id != '&cwms_schema' then
+   if l_user_office_id != l_office_id and cwms_util.get_user_id != '${CWMS_SCHEMA}' then
       cwms_err.raise(
          'ERROR',
          'Cannot start job '||l_job_id||' when default office is '||l_user_office_id);
@@ -4179,7 +4179,7 @@ begin
    --------------------------------------
    -- make sure we're the correct user --
    --------------------------------------
-   if l_user_office_id != l_office_id and cwms_util.get_user_id != '&cwms_schema' then
+   if l_user_office_id != l_office_id and cwms_util.get_user_id != '${CWMS_SCHEMA}' then
       cwms_err.raise(
          'ERROR',
          'Cannot stop job '||l_job_id||' when default office is '||l_user_office_id);
