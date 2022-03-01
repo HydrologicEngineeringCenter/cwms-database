@@ -696,12 +696,13 @@ is
 begin
    select count(*)
      into l_count
-     from cwms_db_change_log;
+     from CWMS_20."flyway_schema_history";
    ut.expect(l_count).to_be_greater_than(0);
-   select max(apply_date)
-     into l_apply_date
-     from cwms_db_change_log;
-   ut.expect(sysdate - l_apply_date).to_be_less_than(1);
+
+   select count(*)
+     into l_count
+     from CWMS_20."flyway_data_history";
+   ut.expect(l_count).to_be_greater_than(0);
 end test_cwms_db_change_log;
 
 end test_cwms_util;

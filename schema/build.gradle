@@ -10,9 +10,18 @@ plugins {
     id 'org.flywaydb.flyway' version '8.4.4'
 }
 
+//defaults
+def cwms_schema_name = project.findProperty("cwms.schema") ?: "CWMS_20"
+def cwms_office = project.findProperty("cwms.office") ?:"SPK"
+def cwms_eroc = project.findProperty("cwms.eroc") ?:"l2"
+def create_users = project.hasProperty("testaccounts") ? "create" : "nocreate"
+def pd_password = project.findProperty("cwms.pd_password") ?: project.findProperty("flyway.password")
+def test_password = project.findProperty("cwms.test_password") ?: pd_password
+
 configurations {
     compile
     flywayMigration
+    utplsql
 }
 
 dependencies {
@@ -20,9 +29,11 @@ dependencies {
     compile "org.flywaydb:flyway-core:8.4.4"
     flywayMigration "com.oracle.database.jdbc:ojdbc8:$ORACLE_JDBC_VERSION"
     flywayMigration sourceSets.main.runtimeClasspath
+    utplsql 'org.utplsql:utplsql:3.1.10@zip'
 }
 
-var build_user = project.getProperty("cwms.user")
+var build_user = project.findProperty("cwms.user") ?: 'must set user to run these tasks'
+
 
 flyway {
     locations = ["db/schema"]
@@ -33,47 +44,54 @@ flyway {
     password = BUILD_USERPASSWORD*/
     resolvers =  ['cwms.resolvers.DependsOnPackageResolver']
     mixed = true
-    schemas = ['CWMS_20','CWMS_DBA']
+    schemas = [cwms_schema_name,'CWMS_DBA']
     placeholders = [
-        "CWMS_SCHEMA": "CWMS_20",
+        "CWMS_SCHEMA": cwms_schema_name,
         "CWMS_SCHEMA_AUTH": "no authentication", // override on commandline with identified by portion if needed.
         "CWMS_DBA_AUTH": "no authentication",
         "CWMS_TABLESPACE": "CWMS_20DATA",
         "AT_TABLESPACE": "CWMS_20ATDATA",
         "AQ_TABLESPACE": "CWMS_AQ",
         "AQ_EX_TABLESPACE": "CWMS_AQ_EX",
-        "CWMS_OFFICE_ID": project.findProperty("cwms.office") ?:"SPK",
-        "CWMS_OFFICE_EROC": project.findProperty("cwms.eroc") ?:"l2" //TODO: change to lookup once this data is in a resource file
+        "CWMS_OFFICE_ID": cwms_office,
+        "CWMS_OFFICE_EROC": cwms_eroc,
+        "CWMS_TEST_USERS": create_users,
+        "PD_PASSWORD": pd_password,
+        "TEST_PASSWORD": test_password
     ]
 }
 
 task dataMigrate(type: org.flywaydb.gradle.task.FlywayMigrateTask){ /*  dependsOn: flywayMigrate){*/
     locations = ["db/data"]
     configurations = ['flywayMigration','compile','runtimeClasspath']
-    user = "${build_user}[CWMS_20]"
+    user = "${build_user}[$cwms_schema_name]"
     url = flyway.url
     password = flyway.password
     mixed = true
     table = "flyway_data_history"
     baselineOnMigrate = true // The structure migration task has already created a table here. We need a 2nd one.
-    schemas = ['CWMS_20']
+    schemas = [cwms_schema_name]
     placeholders = [
-        "CWMS_SCHEMA": "CWMS_20"
+        "CWMS_SCHEMA": cwms_schema_name,
+        "CWMS_OFFICE_ID": cwms_office,
+        "CWMS_OFFICE_EROC": cwms_eroc
     ]
 }
 
 task dataRepair(type: org.flywaydb.gradle.task.FlywayRepairTask){
     locations = ["db/data"]
     configurations = ['flywayMigration','compile','runtimeClasspath']
-    user = "${build_user}[CWMS_20]"
+    user = "${build_user}[$cwms_schema_name]"
     url = flyway.url
     password = flyway.password
     mixed = true
     table = "flyway_data_history"
     baselineOnMigrate = true // The structure migration task has already created a table here. We need a 2nd one.
-    schemas = ['CWMS_20']
+    schemas = [cwms_schema_name]
     placeholders = [
-        "CWMS_SCHEMA": "CWMS_20"
+        "CWMS_SCHEMA": cwms_schema_name,
+        "CWMS_OFFICE_ID": cwms_office,
+        "CWMS_OFFICE_EROC": cwms_eroc
     ]
 }
 
@@ -82,3 +100,79 @@ flywayClean.dependsOn classes
 flywayRepair.dependsOn classes
 dataMigrate.dependsOn classes
 dataRepair.dependsOn classes
+
+var sysPassword = project.findProperty("db.sys_password")
+def tmp = project.findProperty("flyway.url")
+def dbUrl = tmp == null ? tmp: tmp.split("@")[1]
+
+task checkTestSetup {
+    doFirst {
+        def result = exec {
+            executable "sqlplus"
+
+            args "-h"
+            ignoreExitValue = true
+            standardOutput = new ByteArrayOutputStream()
+            errorOutput = new ByteArrayOutputStream()
+
+        }
+        if( result.getExitValue() !=0){
+            throw new GradleException("sqlplus must be available for test framework to execute")
+        }
+
+
+        if( sysPassword == null) {
+            throw new GradleException("Tests can only be run if db.sys_password is set.")
+        }
+
+        if( dbUrl == null ){
+            throw new GradleException("Test framework assumes you are allow running flyway Migrate tasks, please set flyway.url")
+        }
+    }
+}
+
+task downloadUtplSql(type: Copy, dependsOn: checkTestSetup ){
+
+    from zipTree(configurations.utplsql.singleFile)
+    into "$buildDir/deps"
+    doLast {
+        File createOwner = new File("$buildDir/deps/utPLSQL/source/create_utplsql_owner.sql")
+        createOwner.withWriterAppend( out -> {
+            out.println("\ngrant execute on dbms_lob to &ut3_user;")
+            out.println("grant execute on dbms_random to &ut3_user;")
+	  		out.println("grant execute on dbms_random to &ut3_user;")
+	  		out.println("grant execute on dbms_obfuscation_toolkit to &ut3_user;")
+	  		out.println("grant execute on dbms_sql to &ut3_user;")
+        })
+    }
+}
+
+task installTestFramework(type: Exec ) {
+    dependsOn downloadUtplSql
+    dependsOn checkTestSetup
+
+    executable "sqlplus"
+    args "sys/${sysPassword}@${dbUrl} as sysdba"
+    args "@install_headless_with_trigger.sql"
+    workingDir "$buildDir/deps/utPLSQL"
+    doLast {
+        exec {
+            executable "sqlplus"
+            args "sys/${sysPassword}@${dbUrl} as sysdba"
+            standardInput = new ByteArrayInputStream("GRANT INHERIT PRIVILEGES ON USER sys TO ut3;".getBytes())
+
+        }
+    }
+}
+
+
+task installTests(type: Exec ){
+    dependsOn installTestFramework
+    workingDir "src/test"
+    executable "sqlplus"
+    args "${build_user}[$cwms_schema_name]/\"${project.findProperty("flyway.password")}\"@${dbUrl}"
+    args "@tests.sql"
+    args cwms_office
+    args cwms_schema_name
+    args cwms_eroc + "hectest_up"
+}
