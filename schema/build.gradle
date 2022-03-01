@@ -17,6 +17,7 @@ def cwms_eroc = project.findProperty("cwms.eroc") ?:"l2"
 def create_users = project.hasProperty("testaccounts") ? "create" : "nocreate"
 def pd_password = project.findProperty("cwms.pd_password") ?: project.findProperty("flyway.password")
 def test_password = project.findProperty("cwms.test_password") ?: pd_password
+def coverageDir = "$buildDir/coverage"
 
 configurations {
     compile
@@ -99,6 +100,7 @@ flywayMigrate.dependsOn classes
 flywayClean.dependsOn classes
 flywayRepair.dependsOn classes
 dataMigrate.dependsOn classes
+dataMigrate.dependsOn flywayMigrate
 dataRepair.dependsOn classes
 
 var sysPassword = project.findProperty("db.sys_password")
@@ -109,15 +111,26 @@ task checkTestSetup {
     doFirst {
         def result = exec {
             executable "sqlplus"
-
             args "-h"
             ignoreExitValue = true
             standardOutput = new ByteArrayOutputStream()
             errorOutput = new ByteArrayOutputStream()
-
         }
+
         if( result.getExitValue() !=0){
             throw new GradleException("sqlplus must be available for test framework to execute")
+        }
+
+        result = exec {
+            executable "utplsql"
+            args "-h"
+            ignoreExitValue = true
+            standardOutput = new ByteArrayOutputStream()
+            errorOutput = new ByteArrayOutputStream()
+        }
+
+        if( result.getExitValue() != 0 ) {
+            throw new GradleException("utplsql-cli must be installed and in PATH for tests to run")
         }
 
 
@@ -168,6 +181,7 @@ task installTestFramework(type: Exec ) {
 
 task installTests(type: Exec ){
     dependsOn installTestFramework
+    dependsOn dataMigrate
     workingDir "src/test"
     executable "sqlplus"
     args "${build_user}[$cwms_schema_name]/\"${project.findProperty("flyway.password")}\"@${dbUrl}"
@@ -175,4 +189,94 @@ task installTests(type: Exec ){
     args cwms_office
     args cwms_schema_name
     args cwms_eroc + "hectest_up"
+    doLast {
+        project.mkdir(coverageDir)
+    }
 }
+
+task cleanTestData(type: Exec) {
+    dependsOn installTests
+    executable="utplsql"
+    args "run"
+	args "-p=${cwms_schema_name}.test_clean_all"
+    args "-f=UT_COVERAGE_HTML_REPORTER"
+        args "-o=${coverageDir}/index.html"
+    args "-f=UT_COVERAGE_COBERTURA_REPORTER"
+        args "-o=${coverageDir}/coverage_pd.xml"
+    args "-f=UT_JUNIT_REPORTER"
+        args "-o=$buildDir/tests_pd.xml"
+	args "-f=UT_DOCUMENTATION_REPORTER"
+    args "-d"
+	args "${cwms_eroc}hectest_pu/\"${test_password}\"@${dbUrl}"
+}
+
+task loadTestData() {
+    dependsOn installTests
+    doLast {
+        println("Loading Test Clobs")
+        exec {
+            workingDir "${projectDir}/src/test/data/ratings"
+            executable "sqlldr"
+            args "${build_user}[$cwms_schema_name]/\"${project.findProperty("flyway.password")}\"@${dbUrl}"
+            args "control=xsl_test_clobs.ctl"
+        }
+        println("load base locations")
+        exec {
+            workingDir "${projectDir}/src/test/data/locs"
+            executable "sqlldr"
+            args "${build_user}[$cwms_schema_name]/\"${project.findProperty("flyway.password")}\"@${dbUrl}"
+            args "control=AT_BASE_LOCATION.ctl"
+        }
+        println("loading parameters")
+        exec {
+            workingDir "${projectDir}/src/test/data/locs"
+            executable "sqlldr"
+            args "${build_user}[$cwms_schema_name]/\"${project.findProperty("flyway.password")}\"@${dbUrl}"
+            args "control=AT_PARAMETER.ctl"
+        }
+        println("loading physical locations")
+        exec {
+            workingDir "${projectDir}/src/test/data/locs"
+            executable "sqlldr"
+            args "${build_user}[$cwms_schema_name]/\"${project.findProperty("flyway.password")}\"@${dbUrl}"
+            args "control=AT_PHYSICAL_LOCATION.ctl"
+        }
+        println("reseting sequence.")
+        exec {
+            workingDir "$projectDir/src/test"
+            executable "sqlplus"
+            args "${build_user}[$cwms_schema_name]/\"${project.findProperty("flyway.password")}\"@${dbUrl}"
+            args "@reset_seq"
+        }
+    }
+
+}
+
+task testAsPdUser(type: Exec) {
+    dependsOn installTests
+    dependsOn loadTestData
+
+    executable "utplsql"
+    args "run"
+	args "-p=${cwms_schema_name}.test_aaa"
+    args "-f=UT_COVERAGE_HTML_REPORTER"
+        args "-o=${coverageDir}/index.html"
+    args "-f=UT_COVERAGE_COBERTURA_REPORTER"
+        args "-o=${coverageDir}/coverage_dba.xml"
+    args "-f=UT_JUNIT_REPORTER"
+        args "-o=$buildDir/tests_pdu.xml"
+	args "-f=UT_DOCUMENTATION_REPORTER"
+    args "-d"
+	args "${cwms_eroc}hectest_pu/\"${test_password}\"@${dbUrl}"
+}
+
+
+task testDb() {
+    dependsOn installTests
+
+    dependsOn cleanTestData
+    dependsOn loadTestData
+    dependsOn testAsPdUser
+}
+
+test.dependsOn testDb
