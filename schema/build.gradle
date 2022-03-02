@@ -43,7 +43,6 @@ flyway {
     /*url = "$DB_URL"
     user = BUILD_USER
     password = BUILD_USERPASSWORD*/
-    resolvers =  ['cwms.resolvers.DependsOnPackageResolver']
     mixed = true
     schemas = [cwms_schema_name,'CWMS_DBA']
     placeholders = [
@@ -69,6 +68,7 @@ task dataMigrate(type: org.flywaydb.gradle.task.FlywayMigrateTask){ /*  dependsO
     url = flyway.url
     password = flyway.password
     mixed = true
+    resolvers =  ['cwms.resolvers.CwmsBulkDataResolver']
     table = "flyway_data_history"
     baselineOnMigrate = true // The structure migration task has already created a table here. We need a 2nd one.
     schemas = [cwms_schema_name]

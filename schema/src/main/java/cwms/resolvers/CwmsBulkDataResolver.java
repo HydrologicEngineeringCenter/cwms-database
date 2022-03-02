@@ -1,6 +1,7 @@
 package cwms.resolvers;
 
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.net.URISyntaxException;
@@ -11,10 +12,12 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Random;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
+import org.flywaydb.core.api.FlywayException;
 import org.flywaydb.core.api.Location;
 import org.flywaydb.core.api.MigrationType;
 import org.flywaydb.core.api.ResourceProvider;
@@ -25,34 +28,35 @@ import org.flywaydb.core.api.resolver.MigrationResolver;
 import org.flywaydb.core.api.resolver.ResolvedMigration;
 import org.flywaydb.core.api.resource.LoadableResource;
 import org.flywaydb.core.internal.parser.ParsingContext;
+import org.flywaydb.core.internal.resolver.ChecksumCalculator;
 import org.flywaydb.core.internal.resolver.ResolvedMigrationImpl;
 import org.flywaydb.core.internal.resource.ResourceName;
 import org.flywaydb.core.internal.resource.ResourceNameParser;
 import org.flywaydb.core.internal.sqlscript.SqlScriptExecutorFactory;
 import org.flywaydb.core.internal.sqlscript.SqlScriptFactory;
 
-public class DependsOnPackageResolver implements MigrationResolver {
-    public static final Logger log = Logger.getLogger(DependsOnPackageResolver.class.getName());
+public class CwmsBulkDataResolver implements MigrationResolver {
+    public static final Logger log = Logger.getLogger(CwmsBulkDataResolver.class.getName());
 
     private ResourceProvider resourceProvider;
 
     private Configuration configuration;
 
 
-    public DependsOnPackageResolver(){
+    public CwmsBulkDataResolver(){
     }
 
     @Override
     public Collection<ResolvedMigration> resolveMigrations(Context context) {
-        log.info("*************helllo, scaning for CWMS Custom Migrations.*****");
+        log.info("*************hello, scanning for CWMS Custom Migrations.*****");
         this.configuration = context.getConfiguration();
 
 
         List<ResolvedMigration> migrations = new ArrayList<>();
-        String suffix = "data";
+        String suffix = "csv";
 
 
-        addMigrations(migrations,context.getConfiguration().getSqlMigrationPrefix(),suffix,context);
+        addMigrations(migrations,context.getConfiguration().getRepeatableSqlMigrationPrefix(),suffix,context);
 
 
         return migrations;
@@ -63,52 +67,30 @@ public class DependsOnPackageResolver implements MigrationResolver {
         System.out.println("finding CWMS Custom migrations");
 
 
-        for(LoadableResource resource: getResources(prefix, suffix) ){
+        for(DataResource resource: getResources(prefix, suffix) ){
             String filename = resource.getFilename();
             System.out.println("*********" + filename +"**************");
             ResourceName name = nameParser.parse(filename);
             if(!name.isValid() || !prefix.equals(name.getPrefix())) {
                 continue;
             }
-            System.out.println(name);
-            /*
+            Integer checkSum = new Random().nextInt(); //ChecksumCalculator.calculate(resource);
+            Integer equiv = checkSum; //ChecksumCalculator.calculate(resource);
             migrations.add(new ResolvedMigrationImpl(name.getVersion(),
                                                      name.getDescription(),
                                                      resource.getRelativePath(),
-                                                     0, //checksum
-                                                     0, //equivalentChecksum,
+                                                     checkSum, //checksum
+                                                     equiv, //equivalentChecksum,
                                                      MigrationType.CUSTOM,
                                                      resource.getAbsolutePath(),
-                                                     new MigrationExecutor() {
-
-                                                        @Override
-                                                        public void execute(
-                                                                org.flywaydb.core.api.executor.Context context)
-                                                                throws SQLException {
-                                                            // TODO Auto-generated method stub
-
-                                                        }
-
-                                                        @Override
-                                                        public boolean canExecuteInTransaction() {
-                                                            // TODO Auto-generated method stub
-                                                            return true;
-                                                        }
-
-                                                        @Override
-                                                        public boolean shouldExecute() {
-                                                            // TODO Auto-generated method stub
-                                                            return true;
-                                                        }
-
-                                                     }));*/
+                                                     new CwmsDataLoadExecutor(resource)));
         }
 
     }
 
 
-    private List<LoadableResource> getResources(final String prefix, final String suffix){
-        List<LoadableResource> resources = new ArrayList<>();
+    private List<DataResource> getResources(final String prefix, final String suffix){
+        List<DataResource> resources = new ArrayList<>();
 
 
 
@@ -122,39 +104,8 @@ public class DependsOnPackageResolver implements MigrationResolver {
                     if( name.startsWith(prefix) && name.endsWith(suffix) ){
                         System.out.println(f.getAbsolutePath() + " -> " + f.getName());
 
-                        resources.add( new LoadableResource() {
-
-                            @Override
-                            public String getAbsolutePath() {
-                                return f.getAbsolutePath();
-                            }
-
-                            @Override
-                            public String getAbsolutePathOnDisk() {
-                                return f.getAbsolutePath();
-                            }
-
-                            @Override
-                            public String getFilename() {
-
-                                return f.getName();
-                            }
-
-                            @Override
-                            public String getRelativePath() {
-                                return f.getPath();
-                            }
-
-                            @Override
-                            public Reader read() {
-                                // TODO Auto-generated method stub
-                                return null;
-                            }
-
-                        });
+                        resources.add( new DataResource(f));
                     }
-
-
                 });
             } catch (URISyntaxException e) {
 
