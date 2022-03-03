@@ -6626,6 +6626,8 @@ end unassign_loc_groups;
       l_delete         boolean := false;
       l_insert         boolean := false;
       l_update         boolean := false;
+      l_vertical_datum_id_1 varchar2(16) := upper(regexp_replace(upper(p_vertical_datum_id_1), '(N[AG]VD)[ -]', '\1', 1, 0));
+      l_vertical_datum_id_2 varchar2(16) := upper(regexp_replace(upper(p_vertical_datum_id_2), '(N[AG]VD)[ -]', '\1', 1, 0));
    begin
       ---------------------------
       -- normalize cookie date --
@@ -6639,8 +6641,8 @@ end unassign_loc_groups;
       -------------------------------------------------
       l_rowid := get_vertical_datum_offset_row(
          p_location_id,
-         p_vertical_datum_id_1,
-         p_vertical_datum_id_2,
+         l_vertical_datum_id_1,
+         l_vertical_datum_id_2,
          l_effective_date,
          l_time_zone,
          'T',
@@ -6651,8 +6653,8 @@ end unassign_loc_groups;
          ------------------------------------------
          l_rowid := get_vertical_datum_offset_row(
             p_location_id,
-            p_vertical_datum_id_2,
-            p_vertical_datum_id_1,
+            l_vertical_datum_id_2,
+            l_vertical_datum_id_1,
             l_effective_date,
             l_time_zone,
             'T',
@@ -6675,8 +6677,8 @@ end unassign_loc_groups;
                   'CWMS Vertical Datum Offset',
                   cwms_util.get_db_office_id(p_office_id)
                   ||'/'||p_location_id
-                  ||'/'||upper(p_vertical_datum_id_2)
-                  ||'/'||upper(p_vertical_datum_id_1)
+                  ||'/'||upper(l_vertical_datum_id_2)
+                  ||'/'||upper(l_vertical_datum_id_1)
                   ||'@'||to_char(l_effective_date, 'yyyy-mm-dd hh24:mi:ss')
                   ||'('||l_time_zone
                   ||')');
@@ -6686,8 +6688,8 @@ end unassign_loc_groups;
                   'CWMS Vertical Datum Offset',
                   cwms_util.get_db_office_id(p_office_id)
                   ||'/'||p_location_id
-                  ||'/'||upper(p_vertical_datum_id_1)
-                  ||'/'||upper(p_vertical_datum_id_2)
+                  ||'/'||upper(l_vertical_datum_id_1)
+                  ||'/'||upper(l_vertical_datum_id_2)
                   ||'@'||to_char(l_effective_date, 'yyyy-mm-dd hh24:mi:ss')
                   ||'('||l_time_zone
                   ||')');
@@ -6706,7 +6708,7 @@ end unassign_loc_groups;
                    description = p_description
              where rowid = l_rowid;
       elsif l_insert then
-         if(regexp_replace(upper(p_vertical_datum_id_1), '(N[AG]VD)[ -]', '\1', 1, 0) <> regexp_replace(upper(p_vertical_datum_id_1), '(N[AG]VD)[ -]', '\1', 1, 0))
+         if l_vertical_datum_id_1 <> l_vertical_datum_id_2
          then
            if l_delete then
             delete
@@ -6716,8 +6718,8 @@ end unassign_loc_groups;
            insert
              into at_vert_datum_offset
                values (cwms_loc.get_location_code(p_office_id, p_location_id),
-                 regexp_replace(upper(p_vertical_datum_id_1), '(N[AG]VD)[ -]', '\1', 1, 0),
-                 regexp_replace(upper(p_vertical_datum_id_2), '(N[AG]VD)[ -]', '\1', 1, 0),
+                 l_vertical_datum_id_1,
+                 l_vertical_datum_id_2,
                  cwms_util.change_timezone(
                     l_effective_date,
                     l_time_zone,
@@ -6725,7 +6727,7 @@ end unassign_loc_groups;
                  cwms_util.convert_units(p_offset, p_unit, 'm'),
                  p_description
                 );
-          end if;
+         end if;
       end if;
     end store_vertical_datum_offset;
 
@@ -7613,7 +7615,7 @@ end unassign_loc_groups;
       l_datum_offset     binary_double;
       l_effective_date   date;
       l_estimate         varchar2(1);
-      l_rounding_spec    varchar2(10) := '4444444449';
+      l_rounding_spec    varchar2(10) := '4444567894';
    begin
       l_unit := cwms_util.get_unit_id(p_unit);
 
@@ -7649,7 +7651,8 @@ end unassign_loc_groups;
          ||nvl(replace(l_native_datum, 'LOCAL', 'OTHER'), 'UNKNOWN')
          ||'</native-datum>'
          ||chr(10);
-      if l_native_datum = 'LOCAL' then
+      l_native_datum := regexp_replace(upper(l_native_datum), '(N[AG]VD)[ -]', '\1', 1, 0);
+      if l_native_datum in ('OTHER', 'LOCAL') then
          l_local_datum_name := get_local_vert_datum_name_f(p_location_code);
          if l_local_datum_name is null then
             l_vert_datum_info := l_vert_datum_info
@@ -7683,7 +7686,7 @@ end unassign_loc_groups;
                l_effective_date,
                l_estimate,
                p_location_code,
-               l_native_datum,
+               replace(l_native_datum, 'OTHER', 'LOCAL'),
                rec.vertical_datum_id);
             if l_datum_offset is not null then
                l_vert_datum_info := l_vert_datum_info
@@ -7880,31 +7883,47 @@ end unassign_loc_groups;
       if l_native_datum is not null then
          l_native_datum := replace(l_native_datum, 'OTHER', 'LOCAL');
          l_native_datum := regexp_replace(l_native_datum, '(N[AG]VD).+(29|88)', '\1\2');
-         l_native_datum_db := get_location_vertical_datum(p_location_code);
-         if l_native_datum_db is not null and l_native_datum_db != l_native_datum then
-            cwms_err.raise(
-               'ERROR',
-               'Specified native datum for '
-               ||l_office_id||'/'||l_location_id
-               ||' of '
-               ||cwms_util.get_xml_text(l_node, '/vertical-datum-info/native-datum')
-               ||' does not agree with native datum in database of '
-               ||l_native_datum_db);
-         end if;
-         if l_native_datum = 'LOCAL' then
+         if l_fail_if_exists then
+            -----------------------------------
+            -- verify specified native datum --
+            -----------------------------------
+            l_native_datum_db := get_location_vertical_datum(p_location_code);
+            if l_native_datum_db is not null and l_native_datum_db != l_native_datum then
+               cwms_err.raise(
+                  'ERROR',
+                  'Specified native datum for '
+                  ||l_office_id||'/'||l_location_id
+                  ||' of '
+                  ||cwms_util.get_xml_text(l_node, '/vertical-datum-info/native-datum')
+                  ||' does not agree with native datum in database of '
+                  ||l_native_datum_db);
+            end if;
+            if l_native_datum = 'LOCAL' then
+               l_local_datum_name := cwms_util.get_xml_text(l_node, '/vertical-datum-info/local-datum-name');
+               if l_local_datum_name is not null then
+                  l_local_datum_name_db := get_local_vert_datum_name_f(p_location_code);
+                  if l_local_datum_name_db is not null and l_local_datum_name_db != l_local_datum_name then
+                     cwms_err.raise(
+                        'ERROR',
+                        'Specified local datum name for '
+                        ||l_office_id||'/'||l_location_id
+                        ||' of '
+                        ||l_local_datum_name
+                        ||' does not agree with local datum name in database of '
+                        ||l_local_datum_name_db);
+                  end if;
+               end if;
+            end if;
+         else
+            -------------------------------------
+            -- update native datum in database --
+            -------------------------------------
+            update at_physical_location
+               set vertical_datum = replace(regexp_replace(l_native_datum, '(N[AG]VD).+(29|88)', '\1\2'), 'LOCAL', 'OTHER')
+             where location_code = p_location_code;
             l_local_datum_name := cwms_util.get_xml_text(l_node, '/vertical-datum-info/local-datum-name');
             if l_local_datum_name is not null then
-               l_local_datum_name_db := get_local_vert_datum_name_f(p_location_code);
-               if l_local_datum_name_db is not null and l_local_datum_name_db != l_local_datum_name then
-                  cwms_err.raise(
-                     'ERROR',
-                     'Specified local datum name for '
-                     ||l_office_id||'/'||l_location_id
-                     ||' of '
-                     ||l_local_datum_name
-                     ||' does not agree with local datum name in database of '
-                     ||l_local_datum_name_db);
-               end if;
+               set_local_vert_datum_name(p_location_code, l_local_datum_name);
             end if;
          end if;
       end if;
@@ -7914,19 +7933,31 @@ end unassign_loc_groups;
            into l_elevation_db
            from at_physical_location
           where location_code = p_location_code;
-         if l_elevation_db is not null and abs(l_elevation_db-l_elevation) > 0.05 then
-            cwms_err.raise(
-               'ERROR',
-               'Specified elevation for '
-               ||l_office_id||'/'||l_location_id
-               ||' of '
-               ||l_elevation
-               ||' '
-               ||l_unit
-               ||' does not agree with elevation in database of '
-               ||l_elevation_db
-               ||' '
-               ||l_unit);
+         if l_fail_if_exists then
+            --------------------------------
+            -- verify specified elevation --
+            --------------------------------
+            if l_elevation_db is not null and abs(l_elevation_db-l_elevation) > 0.05 then
+               cwms_err.raise(
+                  'ERROR',
+                  'Specified elevation for '
+                  ||l_office_id||'/'||l_location_id
+                  ||' of '
+                  ||l_elevation
+                  ||' '
+                  ||l_unit
+                  ||' does not agree with elevation in database of '
+                  ||l_elevation_db
+                  ||' '
+                  ||l_unit);
+            end if;
+         else
+            ----------------------------------
+            -- update elevation in database --
+            ----------------------------------
+            update at_physical_location
+               set elevation = cwms_util.convert_units(l_elevation, l_unit, 'm')
+             where location_code = p_location_code;
          end if;
       end if;
       for i in 1..999999 loop
@@ -7956,19 +7987,6 @@ end unassign_loc_groups;
             p_fail_if_exists      => p_fail_if_exists,
             p_office_id           => l_office_id);
       end loop;
-      if l_native_datum_db is null then
-         update at_physical_location
-            set vertical_datum = l_native_datum_db
-          where location_code = p_location_code;
-      end if;
-      if l_local_datum_name is not null and l_local_datum_name_db is null then
-         set_local_vert_datum_name(p_location_code, l_local_datum_name);
-      end if;
-      if l_elevation_db is null and l_elevation is not null then
-         update at_physical_location
-            set elevation = cwms_util.convert_units(l_elevation, l_unit, 'm')
-          where location_code = p_location_code;
-      end if;
    end set_vertical_datum_info;
 
    function get_vertical_datum_info_f(
@@ -8109,42 +8127,46 @@ end unassign_loc_groups;
       l_local_vert_datum_name varchar2(16);
    begin
       l_local_vert_datum_name := get_local_vert_datum_name_f(p_location_code);
-      case
-         when l_local_vert_datum_name is null then
-            insert into at_vert_datum_local values (p_location_code, p_vert_datum_name);
-         when l_local_vert_datum_name = p_vert_datum_name then
-            null;
-         when cwms_util.is_true(p_fail_if_exists) then
-            declare
-               l_office_id   varchar2(16);
-               l_location_id varchar2(57);
-            begin
-               select o.office_id,
-                      bl.base_location_id
-                      ||substr('-', 1, length(pl.sub_location_id))
-                      ||pl.sub_location_id
-                 into l_office_id,
-                      l_location_id
-                 from at_physical_location pl,
-                      at_base_location bl,
-                      cwms_office o
-                where pl.location_code = p_location_code
-                  and bl.base_location_code = pl.base_location_code
-                  and o.office_code = bl.db_office_code;
-               cwms_err.raise(
-                  'ERROR',
-                  'Location '
-                  ||l_office_id
-                  ||'/'
-                  ||l_location_id
-                  ||' already has a local vertical datum name of '
-                  ||l_local_vert_datum_name);
-            end;
-         else
-            update at_vert_datum_local
-               set local_datum_name = p_vert_datum_name
-             where location_code = p_location_code;
-      end case;
+      if p_vert_datum_name is null then
+         delete from at_vert_datum_local where location_code = p_location_code;
+      else
+         case
+            when l_local_vert_datum_name is null then
+               insert into at_vert_datum_local values (p_location_code, p_vert_datum_name);
+            when l_local_vert_datum_name = p_vert_datum_name then
+               null;
+            when cwms_util.is_true(p_fail_if_exists) then
+               declare
+                  l_office_id   varchar2(16);
+                  l_location_id varchar2(57);
+               begin
+                  select o.office_id,
+                         bl.base_location_id
+                         ||substr('-', 1, length(pl.sub_location_id))
+                         ||pl.sub_location_id
+                    into l_office_id,
+                         l_location_id
+                    from at_physical_location pl,
+                         at_base_location bl,
+                         cwms_office o
+                   where pl.location_code = p_location_code
+                     and bl.base_location_code = pl.base_location_code
+                     and o.office_code = bl.db_office_code;
+                  cwms_err.raise(
+                     'ERROR',
+                     'Location '
+                     ||l_office_id
+                     ||'/'
+                     ||l_location_id
+                     ||' already has a local vertical datum name of '
+                     ||l_local_vert_datum_name);
+               end;
+            else
+               update at_vert_datum_local
+                  set local_datum_name = p_vert_datum_name
+                where location_code = p_location_code;
+         end case;
+      end if;
    end set_local_vert_datum_name;
 
    procedure set_local_vert_datum_name(
