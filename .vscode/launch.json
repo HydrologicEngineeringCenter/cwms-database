@@ -1,0 +1,11 @@
+{
+    "configurations": [
+    {
+        "type": "java",
+        "name": "Attach to Gradle",
+        "request": "attach",
+        "hostName": "localhost",
+        "port": "5005"
+    }
+    ]
+}

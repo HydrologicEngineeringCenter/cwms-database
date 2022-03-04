@@ -25,11 +25,10 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
 
     private class Group {
         public Group( String item, String pattern, String type, String endSequence){
-            this.continues=continues;
             this.item = item;
             this.pattern = Pattern.compile(pattern);
             this.type = type;
-
+            this.endSequence = endSequence;
             this.continues = !endSequence.isEmpty();
 
         }
@@ -83,48 +82,67 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
 
         PreparedStatement stmt = connection.prepareStatement(query);
 
-
         String line;
-        while( (line = reader.readLine()) != null) {
+        while ((line = reader.readLine()) != null) {
             stmt.clearParameters();
             //logger.info(line);
             String remainder = line;
-            int idx = 1;
+            int idx = 0;
             for( Group grp: groups ){
                 logger.info("searching for " + grp.item);
-                Matcher matches = grp.pattern.matcher(remainder);
-                if( matches.matches() ){
-                    logger.info("Found matches for " + remainder);
-                    String current = matches.group(1);
-                    remainder = matches.group(2);
-                    logger.info("Found " + current + " For " + grp.item);
+                Matcher matches = grp.pattern.matcher(remainder.trim());
+                if (matches.matches() ){
+                    idx++;
+                    logger.info("Found matches in " + remainder);
+
+                    /**
+                     * Most of this silly logic is caused by the weird grouping required
+                     * to handle ,/ in the middle of a line. If one can fix that regex
+                     * we can simplify
+                     */
+                    String current = matches.group(1) != null ? matches.group(1) : matches.group(3);
+                    logger.info(" using " + current);
+                    if (matches.groupCount() > 1 && matches.group(2) != null) {
+                        remainder = matches.group(2);
+                    } else {
+                        remainder = "";
+                    }
+
+                    //logger.info("Found " + current + " For " + grp.item + "(" + idx +")");
                     StringBuilder data = new StringBuilder();
                     data.append(current);
-                    if( grp.continues && !current.endsWith(grp.endSequence)) {
+                    if (grp.continues && remainder == "") {
                         do {
                             line = reader.readLine().trim();
-                            data.append(line.substring(1));
-                        } while( !line.endsWith(grp.endSequence));
+                            //logger.info("Found extra line " + line);
+
+                            data.append("," + line.replace("#","").replace(grp.endSequence,""));
+                        } while( line.trim().indexOf(grp.endSequence) < 0);
+
+                        if( !line.endsWith(grp.endSequence )) {
+                            int seqIdx = line.indexOf(grp.endSequence);
+                            remainder = line.substring(seqIdx+grp.endSequence.length());
+                            //logger.info("remaining" + remainder);
+                        }
                     }
                     setJdbcParameter(connection,stmt,grp,idx,data.toString());
-                    idx++;
                 }
             }
-            logger.info( idx + " elements set");
+            logger.info(idx + " elements set");
             logger.info(stmt.toString());
             stmt.addBatch();
         }
-        stmt.execute();
+        stmt.executeBatch();
     }
 
     private void setJdbcParameter(Connection conn, PreparedStatement stmt, Group grp, int idx, String string) throws SQLException {
         if( "string".equalsIgnoreCase(grp.type)){
-            stmt.setString(idx,string);
-        } else if( "number".equalsIgnoreCase(grp.type)) {
-            stmt.setDouble(idx, Double.parseDouble(string));
+            stmt.setString(idx,string.replace("\"",""));
+        } else if( "int".equalsIgnoreCase(grp.type)) {
+            stmt.setInt(idx, Integer.parseInt(string));
         } else if( "clob".equalsIgnoreCase(grp.type)) {
             Clob c = conn.createClob();
-            c.setString(0,string);
+            c.setString(1,string);
             stmt.setClob(idx,c);
         } else {
             throw new FlywayException("unknown type " + grp.type + ". Maybe typo, may need new code implemented");

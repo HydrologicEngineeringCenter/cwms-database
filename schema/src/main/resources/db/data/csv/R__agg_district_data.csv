@@ -6,50 +6,59 @@ declare
     p_org_symbol varchar(5) := ?;
     p_sdo_gtype number := ?;
     p_sdo_srid number :=?;
-    p_sdo_element_info clob := ?;
-    p_sdo_ordinate_array clob := ?;
+    p_sdo_element_info_text str_tab_t := cwms_util.split_text(?,',');
+    p_sdo_ordinate_array_text str_tab_t := cwms_util.split_text(?,',');
+    l_sdo_element_info sdo_elem_info_array := sdo_elem_info_array();
+    l_sdo_ordinate_array sdo_ordinate_array := sdo_ordinate_array();
+    l_sdo_geom SDO_geometry;
 begin
-    MERGE into cwms_agg_district_data ad
+    cwms_msg.log_db_message(cwms_msg.msg_level_normal,'Loading cwms_agg_district_data');
+    l_sdo_element_info.extend(p_sdo_element_info_text.count);
+    l_sdo_ordinate_array.extend(p_sdo_ordinate_array_text.count);
+
+    for e in 1..p_sdo_element_info_text.count loop
+        l_sdo_element_info(e) := to_number(p_sdo_element_info_text(e));
+    end loop;
+
+    for i in 1..p_sdo_ordinate_array_text.count loop
+        l_sdo_ordinate_array(i) := to_number(p_sdo_ordinate_array_text(i));
+    end loop;
+
+    l_sdo_geom := SDO_geometry (
+                    p_sdo_gtype, p_sdo_srid,
+                    null,
+                    l_sdo_element_info,
+                    l_sdo_ordinate_array
+                );
+    MERGE into cwms_20.cwms_agg_district ad
         USING dual
-        ON ad.office_code = p_office_code
+        ON (ad.office_code = p_office_code)
         WHEN MATCHED then
             update set
-                ad.object_id = p_object_id,
+                ad.objectid = p_object_id,
                 ad.name = p_office_name,
-                ad.org_symbol = p_org_symbol,
-                ad.shape = SDO_GEOMETRY(
-                    p_sdo_gtype,
-                    p_sdo_srid,
-                    p_sdo_point_type,
-                    sdo_element_info_array(cwms_util.split(p_sdo_info_array,',')),
-                    sdo_ordinate_array(cwms_util.split(p_sdo_ordinate_array,','))
-                )
+                ad.symbol = p_org_symbol,
+                ad.shape = l_sdo_geom
         WHEN NOT MATCHED then
-            insert( office_code, object_id, name, org_symbol, shape)
+            insert( office_code, objectid, name, symbol, shape)
             values( p_office_code,
-                    p_object_id
+                    p_object_id,
                     p_office_name,
                     p_org_symbol,
-                    SDO_GEOMETRY(
-                        p_sdo_gtype,
-                        p_sdo_srid,
-                        p_sdo_point_type,
-                        sdo_element_info_array(cwms_util.split(p_sdo_info_array,',')),
-                        sdo_ordinate_array(cwms_util.split(p_sdo_ordinate_array,','))
-            )
+                    l_sdo_geom
+                )
 ;
 end;
-/
 !endquery
 !description
 :office_code (^[0-9]*),(.*) int
 :object_id (^[0-9]*),(.*) int
-:office_name (^.*_),(.*) string
+:office_name (^"?.*?"?),(.*),(.*) string
+:org_symbol ("?[a-zA-Z]{2,4}"?),(.*) string
 :sdo_gtype (^[0-9]*),(.*) int
 :sdo_srid (^[0-9]*),(.*) int
-:sdo_point_type (^[0-9]*),(.*) int
-:sdo_element_info_array (^.*),/(.*) string
-:sdo_ordinate_array (^.*)\,\(/|$\) string /
+:sdo_element_info_array (.*)(?:,/(.*))|(^.*$) clob /
+:sdo_ordinate_array (.*)(?:,/(.*))|(^.*$) clob /
 !enddescription
 !data
  32,1,"Omaha","NWO",2003,8265,1,1003,1,/-113.477019932154,44.9477118698208,-113.489112913482,44.9046856247905,-113.449309867777,44.8643606626365,-113.394698880488,44.834262651763,-113.376517910078,
