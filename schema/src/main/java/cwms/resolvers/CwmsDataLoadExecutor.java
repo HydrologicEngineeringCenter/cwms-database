@@ -125,6 +125,7 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
                             //logger.info("remaining" + remainder);
                         }
                     }
+                    logger.info("Setting " + idx);
                     setJdbcParameter(connection,stmt,grp,idx,data.toString());
                 }
             }

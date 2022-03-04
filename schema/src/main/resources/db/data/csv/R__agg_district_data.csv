@@ -57,8 +57,8 @@ end;
 :org_symbol (?<current>"?[a-zA-Z]{2,4}"?),(?<remains>.*) string
 :sdo_gtype (?<current>^[0-9]*),(?<remains>.*) int
 :sdo_srid (?<current>^[0-9]*),(?<remains>.*) int
-:sdo_element_info_array (?<current>.*)(?:,/(?<remains>.*))|(?<all>^.*$) clob /
-:sdo_ordinate_array (?<current>.*)(?:,/(?<remains>.*))|(?<all>^.*$) clob /
+:sdo_element_info_array (?<current>.*?)(?:,/(?<remains>.*))|(?<all>^.*$) clob /
+:sdo_ordinate_array (?<current>.*?)(?:,/(?<remains>.*))|(?<all>^.*$) clob /
 !enddescription
 !data
  32,1,"Omaha","NWO",2003,8265,1,1003,1,/-113.477019932154,44.9477118698208,-113.489112913482,44.9046856247905,-113.449309867777,44.8643606626365,-113.394698880488,44.834262651763,-113.376517910078,
