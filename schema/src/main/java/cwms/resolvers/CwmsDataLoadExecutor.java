@@ -100,10 +100,10 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
                      * to handle ,/ in the middle of a line. If one can fix that regex
                      * we can simplify
                      */
-                    String current = matches.group(1) != null ? matches.group(1) : matches.group(3);
+                    String current = matches.group("current") != null ? matches.group("current") : matches.group("all");
                     logger.info(" using " + current);
-                    if (matches.groupCount() > 1 && matches.group(2) != null) {
-                        remainder = matches.group(2);
+                    if (matches.groupCount() > 1 && matches.group("remains") != null) {
+                        remainder = matches.group("remains");
                     } else {
                         remainder = "";
                     }
