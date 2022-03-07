@@ -64,7 +64,8 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
                     loadDescription(reader);
                 } else if( line.startsWith("!data")){
                     logger.info("Processing Data Elemements");
-                    processData(reader,context.getConnection());
+                    int entries = processData(reader,context.getConnection());
+                    logger.info("Total Entries loaded for (" + resource.getFilename() + ") is " + entries);
                 }
 
 
@@ -78,11 +79,13 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
 
     }
 
-    private void processData(BufferedReader reader,Connection connection) throws IOException, SQLException {
+    private int processData(BufferedReader reader,Connection connection) throws IOException, SQLException {
 
         PreparedStatement stmt = connection.prepareStatement(query);
-
+        boolean defaultAutoCommit = connection.getAutoCommit();
+        connection.setAutoCommit(false);
         String line;
+        int totalEntries = 0;
         while ((line = reader.readLine()) != null) {
             stmt.clearParameters();
             //logger.info(line);
@@ -132,8 +135,12 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
             logger.info(idx + " elements set");
             logger.info(stmt.toString());
             stmt.addBatch();
+            totalEntries++;
         }
         stmt.executeBatch();
+        connection.commit();
+        connection.setAutoCommit(defaultAutoCommit);
+        return totalEntries;
     }
 
     private void setJdbcParameter(Connection conn, PreparedStatement stmt, Group grp, int idx, String string) throws SQLException {
