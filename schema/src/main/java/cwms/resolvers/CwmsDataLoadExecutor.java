@@ -148,12 +148,14 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
             stmt.setString(idx,string.replace("\"",""));
         } else if( "int".equalsIgnoreCase(grp.type)) {
             stmt.setInt(idx, Integer.parseInt(string));
+        } else if( "double".equalsIgnoreCase(grp.type) ) {
+            stmt.setDouble(idx, Double.parseDouble(string));
         } else if( "clob".equalsIgnoreCase(grp.type)) {
             Clob c = conn.createClob();
             c.setString(1,string);
             stmt.setClob(idx,c);
         } else {
-            throw new FlywayException("unknown type " + grp.type + ". Maybe typo, may need new code implemented");
+            throw new FlywayException("unknown type '" + grp.type + "''. Maybe typo, may need new code implemented");
         }
     }
 
