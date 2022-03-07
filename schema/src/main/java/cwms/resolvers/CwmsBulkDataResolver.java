@@ -74,8 +74,8 @@ public class CwmsBulkDataResolver implements MigrationResolver {
             if(!name.isValid() || !prefix.equals(name.getPrefix())) {
                 continue;
             }
-            Integer checkSum = new Random().nextInt(); //ChecksumCalculator.calculate(resource);
-            Integer equiv = checkSum; //ChecksumCalculator.calculate(resource);
+            Integer checkSum = ChecksumCalculator.calculate(resource);
+            Integer equiv = ChecksumCalculator.calculate(resource);
             migrations.add(new ResolvedMigrationImpl(name.getVersion(),
                                                      name.getDescription(),
                                                      resource.getRelativePath(),
