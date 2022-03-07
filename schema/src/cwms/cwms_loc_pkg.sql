@@ -2240,8 +2240,6 @@ AS
     *     &lt;/offset&gt;
     *   &lt;/vertical-datum-info&gt;
     * &lt;/vertical-datum-info-set&gt;</big></pre>
-    * This procedure will not update a location's existing native vertical datum nor its existing elevation and will fail if either are specified and do not match the current values in the database.
-    * However, If either of these items are not set in the database they will be initialized from the XML values.
     * @param p_fail_if_exists  A flag ('T'/'F') specifying whether the procedure should fail if any of the specified vertical datum info (except native datum and elevation) already exists
     */
    procedure set_vertical_datum_info(
@@ -2268,8 +2266,6 @@ AS
     *     &lt;value&gt;1.07&lt;/value&gt;
     *   &lt;/offset&gt;
     * &lt;/vertical-datum-info&gt;</big></pre>
-    * This procedure will not update a location's existing native vertical datum nor its existing elevation and will fail if either are specified and do not match the current values in the database.
-    * However, If either of these items are not set in the database they will be initialized from the XML values.
     * @param p_fail_if_exists  A flag ('T'/'F') specifying whether the procedure should fail if any of the specified vertical datum info (except native datum and elevation) already exists
     *
     * @see get_vertical_datum_info
@@ -2299,8 +2295,6 @@ AS
     *     &lt;value&gt;1.07&lt;/value&gt;
     *   &lt;/offset&gt;
     * &lt;/vertical-datum-info&gt;</big></pre>
-    * This procedure will not update a location's existing native vertical datum nor its existing elevation and will fail if either are specified and do not match the current values in the database.
-    * However, If either of these items are not set in the database they will be initialized from the XML values.
     * @param p_fail_if_exists  A flag ('T'/'F') specifying whether the procedure should fail if any of the specified vertical datum info (except native datum and elevation) already exists
     * @param p_office_id       The office that owns the location.  If unspecified or NULL, the session user's default location will be used.
     *

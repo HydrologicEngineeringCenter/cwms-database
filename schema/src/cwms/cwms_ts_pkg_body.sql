@@ -4374,6 +4374,12 @@ AS
             l_rec.earliest_non_null_time_entry  := p_ts_extents_rec.earliest_non_null_time_entry;
             l_updated                           := true;
          end if;
+         if p_ts_extents_rec.earliest_entry_time is not null
+            and (l_rec.earliest_entry_time is null or p_ts_extents_rec.earliest_entry_time < l_rec.earliest_entry_time)
+         then
+            l_rec.earliest_entry_time           := p_ts_extents_rec.earliest_entry_time;
+            l_updated                           := true;
+         end if;
          if p_ts_extents_rec.earliest_non_null_entry_time is not null
             and (l_rec.earliest_non_null_entry_time is null or p_ts_extents_rec.earliest_non_null_entry_time < l_rec.earliest_non_null_entry_time)
          then
@@ -4462,6 +4468,7 @@ AS
       p_ts_code      in integer default null,
       p_version_date in date default null)
    is
+      pragma autonomous_transaction;
       type at_ts_extents_tabtype is table of at_ts_extents%rowtype;
       l_crsr           sys_refcursor;
       l_ts1            timestamp;
@@ -4684,6 +4691,15 @@ AS
            from at_ts_extents
           where ts_code = p_ts_code
             and version_time = nvl(p_version_date, version_time);
+         if p_version_date is not null then
+            -- all fields are null from initialization
+            l_rec.ts_code := p_ts_code;
+            l_rec.version_time := p_version_date;
+            if update_ts_extents(l_rec) then null; end if;
+         end if;
+         ------------------------------------
+         -- loop across time series tables --
+         ------------------------------------
          for rec in (select table_name from at_ts_table_properties order by start_date) loop
             l_ts_table_start := l_ts1;
             cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'Starting table '||rec.table_name);
@@ -4711,9 +4727,6 @@ AS
             cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'Finished table '||rec.table_name||' in '||l_elapsed);
          end loop;
       end if;
-      ------------------------------------
-      -- loop across time series tables --
-      ------------------------------------
       cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'UPDATE_TS_EXTENTS done for '||nvl(to_char(p_ts_code), 'NULL')||', '||nvl(to_char(p_version_date), 'NULL'));
    end update_ts_extents;
 

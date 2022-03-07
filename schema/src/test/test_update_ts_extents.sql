@@ -7,6 +7,10 @@ create or replace package test_update_ts_extents as
 
 --%test(Update Time Series Extents)
 procedure update_ts_extents;
+--%test(Update TS Extents can be called in a function)
+procedure cwdb_119_test_for_no_error_on_update_in_select;
+--%test(Update TS Extents creates record even if no TS data)
+procedure cwdb_119_test_for_update_always_creates_record;
 
 procedure setup;
 procedure teardown;
@@ -428,6 +432,70 @@ begin
    ut.expect(l_extents.last_update).to_be_between(l_ts9, l_ts10);
    
 end update_ts_extents;
+--------------------------------------------------------------------------------
+-- procedure cwdb_119_test_for_no_error_on_update_in_select
+--------------------------------------------------------------------------------
+procedure cwdb_119_test_for_no_error_on_update_in_select
+is
+    l_ts_code   integer;
+    l_date_time date;
+begin
+    setup();
+    l_ts_code := cwms_ts.get_ts_code(c_ts_id, c_office_id);
+    ----------------------------------------------------------
+    -- store time series data without going through the API --
+    -- (prevents update_ts_extents from being called)       --
+    ----------------------------------------------------------
+    insert
+      into at_tsv_2021
+           (ts_code,
+            date_time,
+            version_date,
+            data_entry_date,
+            value,
+            quality_code,
+            dest_flag
+           )
+    select l_ts_code,
+           date_time,
+           cwms_util.non_versioned,
+           systimestamp,
+           value,
+           quality_code,
+           0
+      from table(c_base_ts_data);
+    commit;
+    ------------------------------------------------------
+    -- perform a query that will call update_ts_extents --
+    ------------------------------------------------------
+    select cwms_ts.get_ts_min_date(
+              p_cwms_ts_id   => c_ts_id,
+              p_time_zone    => c_time_zone,
+              p_version_date => cwms_util.non_versioned,
+              p_office_id    => c_office_id)
+      into l_date_time
+      from dual;
+    ut.expect(l_date_time).to_be_not_null();
+end cwdb_119_test_for_no_error_on_update_in_select;
+--------------------------------------------------------------------------------
+-- procedure cwdb_119_test_for_update_always_creates_record
+--------------------------------------------------------------------------------
+procedure cwdb_119_test_for_update_always_creates_record
+is
+    l_ts_code integer;
+    l_count   integer;
+begin
+    setup();
+    l_ts_code := cwms_ts.get_ts_code(c_ts_id, c_office_id);
+    commit;
+    cwms_ts.update_ts_extents(l_ts_code, cwms_util.non_versioned);
+    select count(*)
+      into l_count
+      from at_ts_extents
+     where ts_code = l_ts_code
+       and version_time = cwms_util.non_versioned;
+    ut.expect(l_count).to_equal(1);
+end cwdb_119_test_for_update_always_creates_record;
 
 end test_update_ts_extents;
 /
