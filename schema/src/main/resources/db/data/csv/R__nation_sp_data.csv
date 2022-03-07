@@ -1,3 +1,125 @@
+!query
+declare
+    p_object_id number := ?;       -- 1
+    p_fips_country char(2) := ?;  -- 2
+    p_gmi_country char(3) := ?;  -- 3
+    p_iso_2digit char(2) := ?; -- 4
+    p_iso_3digit char(3) := ?; -- 5
+    p_country_name char(40) := ?; --6
+    p_long_name char(40) := ?; --7
+    p_sovereign char(40) := ?; --8
+    p_population number := ?; --9
+    p_curr_type char(16) := ?; --10
+    p_curr_code char(4) := ?; --11
+    p_land_locked char(1) := ?; --12
+    p_square_km number := ?; --13
+    p_square_miles number := ?;  --14
+    p_color_map char(1) := ?; -- 15
+    p_sdo_gtype number := ?;    --16
+    p_sdo_srid number := ?;      --17
+    p_sdo_element_info_text str_tab_t := cwms_util.split_text(?,','); -- 18
+    p_sdo_ordinate_array_text str_tab_t := cwms_util.split_text(?,','); -- 19
+    l_sdo_element_info sdo_elem_info_array := sdo_elem_info_array();
+    l_sdo_ordinate_array sdo_ordinate_array := sdo_ordinate_array();
+    l_sdo_geom SDO_geometry;
+begin
+    cwms_msg.log_db_message(cwms_msg.msg_level_normal,'Loading CWMS_COUNTY_SP data');
+    l_sdo_element_info.extend(p_sdo_element_info_text.count);
+    l_sdo_ordinate_array.extend(p_sdo_ordinate_array_text.count);
+
+    for e in 1..p_sdo_element_info_text.count loop
+        l_sdo_element_info(e) := to_number(p_sdo_element_info_text(e));
+    end loop;
+
+    for i in 1..p_sdo_ordinate_array_text.count loop
+        l_sdo_ordinate_array(i) := to_number(p_sdo_ordinate_array_text(i));
+    end loop;
+
+    l_sdo_geom := SDO_geometry (
+                    p_sdo_gtype, p_sdo_srid,
+                    null,
+                    l_sdo_element_info,
+                    l_sdo_ordinate_array
+                );
+    MERGE into cwms_20.CWMS_NATION_SP nat
+        USING dual
+        ON (nat.objectid = p_object_id)
+        WHEN MATCHED then
+            update set
+                nat.fips_cntry = p_fips_country,
+                nat.GMI_CNTRY = p_gmi_country,
+                nat.iso_2digit = p_iso_2digit,
+                nat.iso_3digit = p_iso_3digit,
+                nat.cntry_name = p_country_name,
+                nat.long_name = p_long_name,
+                nat.sovereign = p_sovereign,
+                nat.pop_cntry = p_population,
+                nat.curr_type = p_curr_type,
+                nat.curr_code = p_curr_code,
+                nat.landlocked = p_land_locked,
+                nat.sqkm = p_square_km,
+                nat.sqmi = p_square_miles,
+                nat.color_map = p_color_map,
+                nat.shape = l_sdo_geom
+        WHEN NOT MATCHED then
+            insert( objectid,
+                    fips_cntry,
+                    GMI_CNTRY,
+                    iso_2digit,
+                    iso_3digit,
+                    cntry_name,
+                    long_name,
+                    sovereign,
+                    pop_cntry,
+                    curr_type,
+                    curr_code,
+                    landlocked,
+                    sqkm,
+                    sqmi,
+                    color_map,
+                    shape)
+            values( p_object_id,
+                    p_fips_country,
+                    p_gmi_country,
+                    p_iso_2digit,
+                    p_iso_3digit,
+                    p_country_name,
+                    p_long_name,
+                    p_population,
+                    p_sovereign,
+                    p_curr_type,
+                    p_curr_code,
+                    p_land_locked,
+                    p_square_km,
+                    p_square_miles,
+                    p_color_map,
+                    l_sdo_geom
+                )
+    ;
+end;
+!endquery
+!description
+:objectid (?<current>[0-9]*),(?<remains>.*) int
+:fips_country (?:"?(?<current>.*?)"?),(?<remains>.*) string
+:gmi_country (?:"?(?<current>.*?)"?),(?<remains>.*) string
+:iso_2digit (?:"?(?<current>.*?)"?),(?<remains>.*) string
+:iso_3digit (?:"?(?<current>.*?)"?),(?<remains>.*) string
+:country_name ("?)(?<current>[()-\.'a-z&A-Z,\s0-9]*)\1,(?<remains>.*) string
+:long_name ("?)(?<current>[()-\.'a-z&A-Z,\s0-9]*)\1,(?<remains>.*) string
+:sovereign ("?)(?<current>[()-\.'a-z&A-Z,\s0-9]*)\1,(?<remains>.*) string
+:population (?<current>-?[0-9]*\.?[0-9]*?),(?<remains>.*) int
+:curr_type (?:"?(?<current>.*?)"?),(?<remains>.*) string
+:curr_code (?:"?(?<current>.*?)"?),(?<remains>.*) string
+:landlocked ("?)(?<current>[nNyYfFtT])\1,(?<remains>.*) string
+:square_kilometers (?<current>[0-9]*\.?[0-9]*?),(?<remains>.*) double
+:square_miles (?<current>[0-9]*\.?[0-9]*?),(?<remains>.*) double
+:color_map (?:"?(?<current>.)"?),(?<remains>.*) string
+:sdo_gtype (?<current>^[0-9]*),(?<remains>.*) int
+:sdo_srid (?<current>^[0-9]*),(?<remains>.*) int
+:sdo_element_info_array (?<current>.*?)(?:,/(?<remains>.*))|(?<all>^.*$) clob /
+:sdo_ordinate_array (?<current>.*?)(?:,/(?<remains>.*))|(?<all>^.*$) clob /
+!enddescription
+!data
  11,"LG","LVA","LV","LVA","Latvia","Latvia","Latvia",2690291,"Lat","LVL","N",64744.68,24997.92,"3",2003,8265,1,1003,1,/21.0516855196065,56.077308802275,22.0672185205524,56.4194408025935,24.1693015225101,56.262218802447,24.8941615231852,56.4498518026219,25.1015245233782,
 #56.1991578023883,25.5827755238265,56.1513828023437,26.6132085247862,55.6748348019,26.9858285251332,55.8323558020468,27.6002425257054,55.7925228020097,28.1680105262342,
 #56.1501538023426,28.2359675262974,56.2763788024602,27.9388145260207,56.8224258029688,27.7016605257998,56.9147108030547,27.8553425259429,57.3059658034192,27.3720585254928,
