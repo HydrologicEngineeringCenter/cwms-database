@@ -8,6 +8,8 @@ import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.SQLType;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -104,7 +106,7 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
                      * we can simplify
                      */
                     String current = matches.group("current") != null ? matches.group("current") : matches.group("all");
-                    logger.info(" using " + current);
+                    logger.info(" using '" + current +"'");
                     if (matches.groupCount() > 1 && matches.group("remains") != null) {
                         remainder = matches.group("remains");
                     } else {
@@ -147,9 +149,18 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
         if( "string".equalsIgnoreCase(grp.type)){
             stmt.setString(idx,string.replace("\"",""));
         } else if( "int".equalsIgnoreCase(grp.type)) {
-            stmt.setInt(idx, Integer.parseInt(string));
+            if( !string.isEmpty()) {
+                stmt.setInt(idx, Integer.parseInt(string));
+            } else {
+                stmt.setNull(idx,Types.NUMERIC);
+            }
         } else if( "double".equalsIgnoreCase(grp.type) ) {
-            stmt.setDouble(idx, Double.parseDouble(string));
+            if( !string.isEmpty() ){
+                stmt.setDouble(idx, Double.parseDouble(string));
+            } else {
+                stmt.setNull(idx, Types.DOUBLE);
+            }
+
         } else if( "clob".equalsIgnoreCase(grp.type)) {
             Clob c = conn.createClob();
             c.setString(1,string);
