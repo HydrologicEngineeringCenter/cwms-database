@@ -680,7 +680,7 @@ AS
       if l_interval_backward + l_interval_forward >= l_interval then
          cwms_err.raise(
             'ERROR',
-            'Interval backward ('||l_interval_backward||') + interval forward ('||l_interval_forward||') >= interval length ('||l_interval||')');
+            'Interval backward ('||l_interval_backward||') + interval forward ('||l_interval_forward||') >= interval length ('||l_interval||')' );
       end if;
       ------------------------------------------------------------------------------
       -- return top of current interval if p_date_time within its snapping window --
