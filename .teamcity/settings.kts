@@ -175,6 +175,9 @@ object Build : BuildType({
             }
             targets = "docker.push"
             antArguments = "-Dteamcity.branch=%teamcity.build.branch%"
+            conditions {
+                matches("teamcity.build.branch", "(master|release/.*)")
+            }
         }
         ant {
             name = "Stop database"
