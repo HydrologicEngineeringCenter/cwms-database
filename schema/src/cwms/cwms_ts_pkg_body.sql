@@ -677,15 +677,10 @@ AS
          when others then
             cwms_err.raise('ERROR', 'Invalid interval backward '||p_interval_backward);
       end;
-      if l_interval_offset + l_interval_forward >= l_interval then
+      if l_interval_backward + l_interval_forward >= l_interval then
          cwms_err.raise(
             'ERROR',
-            'Interval offset ('||l_interval_offset||') + interval forward ('||l_interval_forward||') >= interval length ('||l_interval||')');
-      end if;
-      if l_interval_offset - l_interval_backward < 0 then
-         cwms_err.raise(
-            'ERROR',
-            'Interval offset ('||l_interval_offset||') - interval backward ('||l_interval_backward||') < 0');
+            'Interval backward ('||l_interval_backward||') + interval forward ('||l_interval_forward||') >= interval length ('||l_interval||')' );
       end if;
       ------------------------------------------------------------------------------
       -- return top of current interval if p_date_time within its snapping window --
