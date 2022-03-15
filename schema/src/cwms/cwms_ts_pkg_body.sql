@@ -2806,7 +2806,6 @@ AS
                   ELSE
                      l_interval := l_interval / 365 * 12;
                   END IF;
-
                   l_query_str :=
                      'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
                          case
@@ -2848,7 +2847,6 @@ AS
                            l_reg_start_time,
                            l_reg_start_time,
                            l_interval,
-                           l_reg_start_time,
                            l_reg_end_time,
                            l_reg_start_time,
                            l_interval;
@@ -3051,7 +3049,6 @@ AS
                            l_reg_start_time,
                            l_interval,
                            l_time_zone,
-                           l_reg_start_time,
                            l_reg_end_time,
                            l_reg_start_time,
                            l_interval;
