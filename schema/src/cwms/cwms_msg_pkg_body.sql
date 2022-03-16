@@ -1924,158 +1924,158 @@ begin
          dbms_output.put_line('Started queue '||l_queue_name);
 end create_exception_queue;
 
-    PROCEDURE purge_exception_queues
+PROCEDURE REMOVE_DEAD_SUBSCRIBERS
+IS
+    l_cmd             VARCHAR2 (256);
+
+    TYPE strarray IS TABLE OF VARCHAR2 (32)
+        INDEX BY PLS_INTEGER;
+
+    TYPE numarray IS TABLE OF INTEGER
+        INDEX BY PLS_INTEGER;
+
+    l_sub_names       strarray;
+    l_queue_names     strarray;
+    l_counts          numarray;
+    l_max_days        NUMBER;
+
+    TYPE l_cur_type IS REF CURSOR;
+
+    l_purge_options   DBMS_AQADM.AQ$_PURGE_OPTIONS_T;
+
+    PROCEDURE REMOVE_SINGLE_SUBSCRIBER (l_subscriber_name   VARCHAR2,
+                                        l_queue_name        VARCHAR2)
     IS
-        l_purge_options   DBMS_AQADM.AQ$_PURGE_OPTIONS_T;
     BEGIN
-        FOR rec IN (SELECT name AS queue_name, queue_table
-                      FROM user_queues
-                     WHERE queue_type = 'EXCEPTION_QUEUE')
-        LOOP
-            l_purge_options.block := FALSE;
-            l_purge_options.delivery_mode := DBMS_AQ.PERSISTENT;
-            DBMS_AQADM.purge_queue_table (rec.queue_table,
-                                          NULL,
-                                          l_purge_options);
-
-
-            log_db_message ('purge_exception_queues',
-                            cwms_msg.msg_level_normal,
-                            'Purged ' || rec.queue_table);
-        END LOOP;
-    END purge_exception_queues;
-
-    PROCEDURE remove_dead_subscribers
-    IS
-        l_cmd           VARCHAR2 (256);
-
-        TYPE strarray IS TABLE OF VARCHAR2 (32)
-            INDEX BY PLS_INTEGER;
-
-        TYPE numarray IS TABLE OF INTEGER
-            INDEX BY PLS_INTEGER;
-
-        l_sub_names     strarray;
-        l_queue_names   strarray;
-        l_counts        numarray;
-        l_max_days      NUMBER;
-
-        TYPE l_cur_type IS REF CURSOR;
-
-        PROCEDURE REMOVE_SINGLE_SUBSCRIBER (l_subscriber_name   VARCHAR2,
-                                            l_queue_name        VARCHAR2)
-        IS
-        BEGIN
-            DBMS_OUTPUT.put_line (
-                   'Removing subscriber: '
-                || l_subscriber_name
-                || ' for '
-                || l_queue_name);
-            cwms_msg.log_db_message (
-                cwms_msg.msg_level_normal,
-                   'Removing subscriber: '
-                || l_subscriber_name
-                || ' for '
-                || l_queue_name);
-            DBMS_AQADM.remove_subscriber (
-                l_queue_name,
-                sys.AQ$_AGENT (l_subscriber_name, l_queue_name, 0));
-            DBMS_OUTPUT.put_line (
-                   'Removed subscriber: '
-                || l_subscriber_name
-                || ' for '
-                || l_queue_name);
-            cwms_msg.log_db_message (
-                cwms_msg.msg_level_normal,
-                   'Removed subscriber: '
-                || l_subscriber_name
-                || ' for '
-                || l_queue_name);
-        EXCEPTION
-            WHEN OTHERS
-            THEN
-                BEGIN
-                    DBMS_AQADM.remove_subscriber (
-                        l_queue_name,
-                        sys.AQ$_AGENT ('"' || l_subscriber_name || '"',
-                                       l_queue_name,
-                                       0));
-                    DBMS_OUTPUT.put_line (
-                           'Removed subscriber: '
-                        || '"'
-                        || l_subscriber_name
-                        || '"'
-                        || ' for '
-                        || l_queue_name);
+        DBMS_OUTPUT.put_line (
+               'Removing subscriber: '
+            || l_subscriber_name
+            || ' for '
+            || l_queue_name);
+        cwms_msg.log_db_message (
+            cwms_msg.msg_level_normal,
+               'Removing subscriber: '
+            || l_subscriber_name
+            || ' for '
+            || l_queue_name);
+        DBMS_AQADM.remove_subscriber (
+            l_queue_name,
+            sys.AQ$_AGENT (l_subscriber_name, l_queue_name, 0));
+        DBMS_OUTPUT.put_line (
+               'Removed subscriber: '
+            || l_subscriber_name
+            || ' for '
+            || l_queue_name);
+        cwms_msg.log_db_message (
+            cwms_msg.msg_level_normal,
+               'Removed subscriber: '
+            || l_subscriber_name
+            || ' for '
+            || l_queue_name);
+    EXCEPTION
+        WHEN OTHERS
+        THEN
+            BEGIN
+                DBMS_AQADM.remove_subscriber (
+                    l_queue_name,
+                    sys.AQ$_AGENT ('"' || l_subscriber_name || '"',
+                                   l_queue_name,
+                                   0));
+                DBMS_OUTPUT.put_line (
+                       'Removed subscriber: '
+                    || '"'
+                    || l_subscriber_name
+                    || '"'
+                    || ' for '
+                    || l_queue_name);
+                cwms_msg.log_db_message (
+                    cwms_msg.msg_level_normal,
+                       'Removed subscriber: '
+                    || '"'
+                    || l_subscriber_name
+                    || '"'
+                    || ' for '
+                    || l_queue_name);
+            EXCEPTION
+                WHEN OTHERS
+                THEN
                     cwms_msg.log_db_message (
                         cwms_msg.msg_level_normal,
-                           'Removed subscriber: '
-                        || '"'
-                        || l_subscriber_name
-                        || '"'
-                        || ' for '
-                        || l_queue_name);
-                EXCEPTION
-                    WHEN OTHERS
-                    THEN
-                        cwms_msg.log_db_message (
-                            cwms_msg.msg_level_normal,
-                            'Error removing subscriber: ' || SQLERRM);
-                        DBMS_OUTPUT.put_line (
-                            'Error removing subscriber: ' || SQLERRM);
-                END;
-        END;
-    BEGIN
-        FOR c
-            IN (SELECT 'AQ$' || queue_table     queue_table
-                  FROM user_queues
-                 WHERE queue_type = 'EXCEPTION_QUEUE' AND name NOT LIKE 'AQ%')
+                        'Error removing subscriber: ' || SQLERRM);
+                    DBMS_OUTPUT.put_line (
+                        'Error removing subscriber: ' || SQLERRM);
+            END;
+    END;
+BEGIN
+    FOR c IN (SELECT 'AQ$' || queue_table     queue_table
+                FROM user_queues
+               WHERE queue_type = 'EXCEPTION_QUEUE' AND name NOT LIKE 'AQ%')
+    LOOP
+        l_cmd :=
+               'select count(msg_state),consumer_name,original_queue_name from '
+            || c.queue_table
+            || ' where msg_state=''EXPIRED'' and consumer_name not like ''%CCP%'' group by consumer_name,original_queue_name';
+        DBMS_OUTPUT.PUT_LINE (l_cmd);
+
+        EXECUTE IMMEDIATE l_cmd
+            BULK COLLECT INTO l_counts, l_sub_names, l_queue_names;
+
+        FOR i IN 1 .. l_counts.COUNT
         LOOP
-            l_cmd :=
-                   'select count(msg_state),consumer_name,original_queue_name from '
-                || c.queue_table
-                || ' where msg_state=''EXPIRED'' and consumer_name not like ''%CCP%'' group by consumer_name,original_queue_name';
-            DBMS_OUTPUT.PUT_LINE (l_cmd);
-
-            EXECUTE IMMEDIATE l_cmd
-                BULK COLLECT INTO l_counts, l_sub_names, l_queue_names;
-
-            FOR i IN 1 .. l_counts.COUNT
-            LOOP
-                IF (l_counts (i) > to_number(cwms_properties.get_property('CWMSDB','max_expired_messages',max_expired_messages,'CWMS')))
-                THEN
-                    BEGIN
-                        REMOVE_SINGLE_SUBSCRIBER (l_sub_names (i),
-                                                  l_queue_names (i));
-                    END;
-                END IF;
-            END LOOP;
-
-            l_sub_names.delete;
-            l_queue_names.delete;
-            l_max_days := to_number(cwms_properties.get_property('CWMSDB','max_tsub_age_days',max_tsub_age_days,'CWMS'));
-            FOR c IN (SELECT name
-                        FROM user_queues
-                       WHERE name NOT LIKE 'AQ%' AND name NOT LIKE '%EX')
-            LOOP
-                l_cmd :=
-                       'select name,queue_name from aq$_'
-                    || c.name
-                    || '_table_s where creation_time < sysdate-'|| l_max_days || ' and name like ''TSUB%''';
-
-                EXECUTE IMMEDIATE l_cmd
-                    BULK COLLECT INTO l_sub_names, l_queue_names;
-
-                FOR i IN 1 .. l_sub_names.COUNT
-                LOOP
+            IF (l_counts (i) > TO_NUMBER (cwms_properties.get_property (
+                                              'CWMSDB',
+                                              'max_expired_messages',
+                                              cwms_msg.max_expired_messages,
+                                              'CWMS')))
+            THEN
+                BEGIN
                     REMOVE_SINGLE_SUBSCRIBER (l_sub_names (i),
                                               l_queue_names (i));
-                END LOOP;
-            END LOOP;
+                END;
+            END IF;
         END LOOP;
 
-        purge_exception_queues;
-    END remove_dead_subscribers;
+        l_sub_names.delete;
+        l_queue_names.delete;
+        l_max_days :=
+            TO_NUMBER (cwms_properties.get_property (
+                           'CWMSDB',
+                           'max_tsub_age_days',
+                           cwms_msg.max_tsub_age_days,
+                           'CWMS'));
+
+        FOR c IN (SELECT name
+                    FROM user_queues
+                   WHERE name NOT LIKE 'AQ%' AND name NOT LIKE '%EX')
+        LOOP
+            l_cmd :=
+                   'select name,queue_name from aq$_'
+                || c.name
+                || '_table_s where creation_time < sysdate-'
+                || l_max_days
+                || ' and name like ''TSUB%''';
+
+            EXECUTE IMMEDIATE l_cmd
+                BULK COLLECT INTO l_sub_names, l_queue_names;
+
+            FOR i IN 1 .. l_sub_names.COUNT
+            LOOP
+                REMOVE_SINGLE_SUBSCRIBER (l_sub_names (i), l_queue_names (i));
+            END LOOP;
+        END LOOP;
+    END LOOP;
+
+    FOR c IN (SELECT queue_table FROM user_queue_tables)
+    LOOP
+        l_purge_options.block := FALSE;
+        l_purge_options.delivery_mode := DBMS_AQ.PERSISTENT;
+        DBMS_AQADM.purge_queue_table (queue_table       => c.queue_table,
+                                      purge_condition   => 'qtview.msg_state = ''EXPIRED''',
+                                      purge_options     => l_purge_options);
+        COMMIT;
+    END LOOP;
+END remove_dead_subscribers;
+
 procedure start_remove_subscribers_job(
    p_interval_minutes in integer default null)
 is
