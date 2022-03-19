@@ -1642,6 +1642,71 @@ AS
                       p_office_id           => p_office_id);
    END create_ts;
 
+   FUNCTION verify_paramter_type_and_duration (
+        p_parameter_type_id   VARCHAR2,
+        p_duration_id         VARCHAR2,
+        p_duration            INTEGER,
+        p_interval            INTEGER)
+        RETURN VARCHAR2
+    IS
+        l_str_error   VARCHAR2 (256);
+    BEGIN
+        IF    (    UPPER (p_parameter_type_id) IN ('INST', 'CUM')
+               AND p_duration <> 0)
+           OR (    UPPER (p_parameter_type_id) NOT IN ('INST', 'CUM')
+               AND p_duration = 0
+               AND p_interval <> 0)
+           OR (    UPPER (p_duration_id) = 'UNTILCHANGED'
+               AND (UPPER (p_parameter_type_id) <> 'CONST'
+               OR p_interval <> 0))
+           OR (    UPPER (p_duration_id) = 'VARIABLE'
+               AND UPPER (p_parameter_type_id)  IN
+                       ('INST', 'CUM', 'CONST'))
+        THEN
+            IF (    UPPER (p_parameter_type_id) IN ('INST', 'CUM')
+                AND p_duration <> 0)
+            THEN
+                l_str_error :=
+                       l_str_error
+                    || CHR (10)
+                    || ' Inst/Cum parameter types cannot have non-zero duration';
+            END IF;
+
+            IF (    UPPER (p_parameter_type_id) NOT IN ('INST', 'CUM')
+                AND p_duration = 0
+                AND p_interval <> 0)
+            THEN
+                l_str_error :=
+                       l_str_error
+                    || CHR (10)
+                    || ' Non-Inst/Non-Cum parameter types cannot have zero duration on regular time series';
+            END IF;
+
+            IF (    UPPER (p_duration_id) = 'UNTILCHANGED'
+                AND ( UPPER (p_parameter_type_id) <> 'CONST'
+                OR p_interval <> 0))
+            THEN
+                l_str_error :=
+                       l_str_error
+                    || CHR (10)
+                    || ' UntilChanged duration is valid for Const parameter type irregular time series only';
+            END IF;
+
+            IF (    UPPER (p_duration_id) = 'VARIABLE'
+                AND UPPER (p_parameter_type_id) IN
+                        ('INST', 'CUM', 'CONST'))
+            THEN
+                l_str_error :=
+                       l_str_error
+                    || CHR (10)
+                    || ' Variable duration is valid for non Const/Inst/Cum parameter types only';
+            END IF;
+
+            RETURN l_str_error;
+        ELSE
+            RETURN NULL;
+        END IF;
+    END verify_paramter_type_and_duration;
    --
    --*******************************************************************   --
    --*******************************************************************   --
@@ -1821,8 +1886,6 @@ AS
          OR l_duration_code IS NULL
          OR l_parameter_type_code IS NULL
          OR l_interval_code IS NULL
-         OR (upper (l_parameter_type_id) =  'INST' AND l_duration <> 0)
-         OR (UPPER (l_parameter_type_id) <> 'INST' AND l_duration =  0 AND l_interval <> 0)
       THEN
          l_str_error :=
             'ERROR: Invalid Time Series Description: ' || p_cwms_ts_id;
@@ -1854,21 +1917,6 @@ AS
                || ' is not a valid interval';
          END IF;
 
-         IF (UPPER (l_parameter_type_id) = 'INST' AND l_duration <> 0)
-         THEN
-            l_str_error :=
-                  l_str_error
-               || CHR (10)
-               || ' Inst parameter type cannot have non-zero duration';
-         END IF;
-
-         IF (UPPER (l_parameter_type_id) <> 'INST' AND l_duration = 0 and l_interval <> 0)
-         THEN
-            l_str_error :=
-                  l_str_error
-               || chr (10)
-               || ' Non-Inst parameter type cannot have zero duration on regular time series';
-         END IF;
 
          IF l_can_create
          THEN
@@ -1877,6 +1925,22 @@ AS
 
          raise_application_error (-20205, l_str_error, TRUE);
       END IF;
+
+      l_str_error :=
+            verify_paramter_type_and_duration (l_parameter_type_id,
+                                               l_duration_id,
+                                               l_duration,
+                                               l_interval);
+
+        IF (l_str_error IS NOT NULL)
+        THEN
+            IF l_can_create
+            THEN
+                l_ret := DBMS_LOCK.release (l_hashcode);
+            END IF;
+
+            raise_application_error (-20205, 'ERROR: Invalid Time Series Description: ' || p_cwms_ts_id || l_str_error, TRUE);
+        END IF;
 
       BEGIN
          IF l_sub_parameter_id IS NULL
@@ -7637,6 +7701,7 @@ AS
       l_parameter_type_id_new     cwms_parameter_type.parameter_type_id%TYPE;
       l_interval_id_new           cwms_interval.interval_id%TYPE;
       l_duration_id_new           cwms_duration.duration_id%TYPE;
+      l_duration_new              cwms_duration.duration%TYPE;
       l_version_id_new            at_cwms_ts_spec.VERSION%TYPE;
       l_utc_offset_new            at_cwms_ts_spec.interval_utc_offset%TYPE;
       --
@@ -7654,6 +7719,7 @@ AS
       l_office_id                 cwms_office.office_id%TYPE;
       l_has_data                  BOOLEAN;
       l_tmp                       NUMBER;
+      l_str_error                 VARCHAR2(256);
    --
    BEGIN
       DBMS_APPLICATION_INFO.set_module ('rename_ts_code',
@@ -7791,8 +7857,8 @@ AS
       -- Validate the duration --
       ---------------------------
       BEGIN
-         SELECT duration_code
-           INTO l_duration_code_new
+         SELECT duration_code,duration
+           INTO l_duration_code_new,l_duration_new
            FROM cwms_duration
           WHERE UPPER (duration_id) = UPPER (l_duration_id_new);
       EXCEPTION
@@ -7865,13 +7931,16 @@ AS
          end if;
       end if;
 
-      -------------------------------------------------------------
-      ---- Make sure that 'Inst' Parameter type doesn't have a duration--
-      --------------------------------------------------------------
-      IF (UPPER (l_parameter_type_id_new) = 'INST' AND l_duration_id_new <> '0')
-      THEN
-        raise_application_error (-20205, 'Inst parameter type can not have non-zero duration', TRUE);
-      END IF;
+      l_str_error :=
+            verify_paramter_type_and_duration (l_parameter_type_id_new,
+                                               l_duration_id_new,
+                                               l_duration_new,
+                                               l_interval_dur_new);
+
+        IF (l_str_error IS NOT NULL)
+        THEN
+            raise_application_error (-20205, 'ERROR: Invalid Time Series Description: ' || p_cwms_ts_id_new||l_str_error, TRUE);
+        END IF;
 
       ---------------------------------------------------
       -- Check whether the ts_code has associated data --

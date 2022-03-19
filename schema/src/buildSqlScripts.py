@@ -4136,6 +4136,7 @@ intervals = [
     [57,    '~1Month',        0,'Local time irregular: expected recurrence interval of 1 month'   ],
     [58,    '~1Year',         0,'Local time irregular: expected recurrence interval of 1 year'    ],
     [59,    '~1Decade',       0,'Local time irregular: expected recurrence interval of 1 decade'  ],
+    [60,    'Irr',            0,'Irregular (alias for 0)'  ],
     [1,     '1Minute',       1,'Regular recurrence interval of 1 minute'  ],
     [2,     '2Minutes',      2,'Regular recurrence interval of 2 minutes' ],
     [3,     '3Minutes',      3,'Regular recurrence interval of 3 minutes' ],
@@ -4231,7 +4232,9 @@ durations = [
     [57,    '1DecadeBOP',   5256000,    'Measurement applies over 1 decade, time stamped at period beginning'],
     [58,    '10Minutes',    10, 'Measurement applies over 10 minutes, time stamped at period end'],
     [59,    '10MinutesBOP', 10, 'Measurement applies over 10 minutes, time stamped at period beginning'],
-    [60,    '0BOP',         0,  'Measurement applies intantaneously at time stamp or until next time stamp']
+    [60,    '0BOP',         0,  'Measurement applies intantaneously at time stamp or until next time stamp'],
+    [61,    'Variable',     -1,  'Variable duration for non-instantaneous or const parameter types'],
+    [62,    'UntilChanged', -2,  'Duration for const parameter types']
 ]
 
 #---------------------#
@@ -4708,6 +4711,8 @@ parameterTypes = [
     {"ID" : "Const", "DESCRIPTION" : "CONSTANT"     },
     {"ID" : "Ave",   "DESCRIPTION" : "AVERAGE"      },
     {"ID" : "Inst",  "DESCRIPTION" : "INSTANTANEOUS"},
+    {"ID" : "Cum",   "DESCRIPTION" : "CUMULATIVE"},
+    {"ID" : "Inc",   "DESCRIPTION" : "INCREMENTAL"},
 ]
 
 #---------------------#
