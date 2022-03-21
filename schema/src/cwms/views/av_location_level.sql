@@ -2,7 +2,7 @@
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_LEVEL', null,
 '
 /**
- * Displays information about location levels
+ * Displays information about concrete location levels
  *
  * @since CWMS 2.1 (extended in 3.0)
  *

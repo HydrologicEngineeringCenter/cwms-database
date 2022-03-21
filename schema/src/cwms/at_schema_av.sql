@@ -55,6 +55,7 @@ DECLARE
       'av_loc_ts_id_count',
       'av_location_level',
       'av_location_level_curval',
+      'av_location_level2',        -- created in at_schema_2
       'av_log_message',            -- created in at_schema_2
       'av_nation',
       'av_office',
@@ -116,6 +117,8 @@ DECLARE
       'av_usgs_parameter_all',
       'av_usgs_rating',
       'av_vert_datum_offset',
+      'av_vloc_lvl_constituent',   -- created in at_schema_2
+      'av_virtual_location_level', -- created in at_schema_2
       'av_virtual_rating',
       'av_water_user_contract',    -- created in at_schema_2
       'av_water_user_contract2'    -- created in at_schema_2

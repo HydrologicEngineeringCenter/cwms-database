@@ -3196,7 +3196,7 @@ as
          if l_days > 0 then
             l_duration := l_duration || l_days || 'D';
          end if;
-         if l_hours + l_minutes > 0 then
+         if l_hours + l_minutes > 0 or l_days = 0 then
             l_duration := l_duration || 'T';
          end if;
          if l_hours > 0 then
@@ -4244,6 +4244,14 @@ as
             l_val2 := pop;
             l_val1 := pop;
             push(power(l_val1, l_val2));
+         when p_rpn_tokens(i) = 'MIN'  then
+            l_val2 := pop;
+            l_val1 := pop;
+            push(least(l_val1, l_val2));
+         when p_rpn_tokens(i) = 'MAX'  then
+            l_val2 := pop;
+            l_val1 := pop;
+            push(greatest(l_val1, l_val2));
          ---------------
          -- constants --
          ---------------

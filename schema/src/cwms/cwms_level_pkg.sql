@@ -554,6 +554,22 @@ procedure store_location_level4(
    p_fail_if_exists          in  varchar2 default 'T',
    p_office_id               in  varchar2 default null);
 /**
+ * Stores location levels specified in an XML instance
+ *
+ * @param p_errors         On output, contains error reports of any errors that occured storing the location levels.
+ *                         If NULL on input and no errors occur, it will be NULL on output.
+ *                         If NULL on input and errors occur, it will be a new temporary CLOB that should be freed after use.
+ *                         If not NULL on input, any errors will be appended to the input value.
+ * @param p_xml            The XML instance containing the location levels to store
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies whether to fail if one of the location levels in the input already exists
+ * @param p_fail_on_error  A flag ('T' of 'F') that specifies whether to fail if there is an error storing one of the location levels in the input
+ */
+procedure store_location_levels_xml(
+   p_errors         out nocopy clob,
+   p_xml            in  clob,
+   p_fail_if_exists in  varchar2 default 'T',
+   p_fail_on_error  in  varchar2 default 'F');
+/**
  * Retrieves a location level from the database. To retrieve an irregularly varying level
  * using a time series, use <a href="retrieve_location_level3">store_location_level3</a>.
  *
@@ -823,6 +839,13 @@ procedure retrieve_location_level4(
  *   </tr>
  * </table>
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_precedence   One or two characters that specify the precedence of virtual and non-virtual location levels to be retrieved. Valid value are:
+ * <ul>
+ *   <li><b>N</b> retrieves a non-virtual (normal) location level or NULL if not matched
+ *   <li><b>V</b> retrieves a virtual location level or NULL if not matched
+ *   <li><b>NV</b> retrieves non-virtual (normal) location level if matched, otherwise a virtual location level if matched, otherwise NULL
+ *   <li><b>VN</b> (default) retrieves virtual location level if matched, otherwise a non-virtual (normal) location level if matched, otherwise NULL
+ * </ul>
  *
  * @return The location level
  */
@@ -835,8 +858,131 @@ function retrieve_location_level(
    p_attribute_value         in  number   default null,
    p_attribute_units         in  varchar2 default null,
    p_match_date              in  varchar2 default 'F',
-   p_office_id               in  varchar2 default null)
+   p_office_id               in  varchar2 default null,
+   p_level_precedence        in  varchar2 default 'VN')
    return location_level_t;
+/**
+ * Retrieves location levels matching input specifications in XML format. Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table class="descr"">
+ *   <tr>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_location_levels            The location levels matching the specified parameters, in XML format
+ * @param p_location_level_id_mask     The location level identifiers to match, using glob-style wildcards. If not specified, '*' is used.
+ * @param p_attribute_id_mask          The location level attribute identifiers to match, using glob-style wildcards. If not specified, '*' is used. If NULL, only levels without attributes are matched.
+ * @param p_start_time                 The earilest time to match levels for. If not specified or NULL, no earliest time constraint is used
+ * @param p_end_time                   The latest time match levels for. If not specified or NULL, no latest time constraint is used.
+ * @param p_timezone_id                The time zone of p_start_time and p_end_time, and also of effective and expiration times in the output. If not specified, 'UTC' is used.
+ * @param p_unit_system                The unit system ('SI' or 'EN') to output the information in. If not specified, 'SI' is used.
+ * @param p_attribute_value            The value of the location level attribute, if any
+ * @param p_attribute_unit             The unit of p_attribute_value, if any
+ * @param p_level_type                 One or two characters that specify which types of location levels to include. If not specified, 'VN' is used.
+ * <ul>
+ *   <li><b>N</b> include non-virtual (normal) location levels only
+ *   <li><b>V</b> include virtual location levels only (but see p_include_constituent_levels below)
+ *   <li><b>NV</b> include both non-virtual and virtual location levels
+ *   <li><b>VN</b> include both non-virtual and virtual location levels
+ * </ul>
+ * @param p_include_levels             A flag ('T' or 'F') that specifies whether actual location levels will be included in the output.
+ * @param p_include_constituent_levels A flag ('T' or 'F') that specifies whether information for location level constituents of virtual location levels will be included in the output.
+ *                                     If 'T', non-virtual constituent location levels will be included even if p_level_type is 'V'. If unspecified, 'F' is used.
+ * @param p_include_level_sources      A flag ('T' or 'F') that specifies whether location level sources will be included in the output.
+ * @param p_include_level_labels       A flag ('T' or 'F') that specifies whether location level labels will be included in the output.
+ * @param p_retrieve_level_indicators  A flag ('T' or 'F') that specifies whether location level indicators will be included in the output.
+ * @param p_office_id                  The office to output the location levels for. If unspecified or NULL, the session user's default office is used.
+ */
+procedure retrieve_location_levels_xml(
+   p_location_levels            out nocopy clob,
+   p_location_level_id_mask     in  varchar2 default '*',
+   p_attribute_id_mask          in  varchar2 default '*',
+   p_start_time                 in  date     default null,
+   p_end_time                   in  date     default null,
+   p_timezone_id                in  varchar2 default 'UTC',
+   p_unit_system                in  varchar2 default 'SI',
+   p_attribute_value            in  number   default null,
+   p_attribute_unit             in  varchar2 default null,
+   p_level_type                 in  varchar2 default 'VN',
+   p_include_levels             in  varchar2 default 'T',
+   p_include_constituent_levels in  varchar2 default 'F',
+   p_include_level_sources      in  varchar2 default 'F',
+   p_include_level_labels       in  varchar2 default 'F',
+   p_include_level_indicators   in  varchar2 default 'F',
+   p_office_id                  in  varchar2 default null);
+/**
+ * Retrieves location levels matching input specifications in XML format. Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table class="descr"">
+ *   <tr>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_location_level_id_mask     The location level identifiers to match, using glob-style wildcards. If not specified, '*' is used.
+ * @param p_attribute_id_mask          The location level attribute identifiers to match, using glob-style wildcards. If not specified, '*' is used. If NULL, only levels without attributes are matched.
+ * @param p_start_time                 The earilest time to match levels for. If not specified or NULL, no earliest time constraint is used
+ * @param p_end_time                   The latest time match levels for. If not specified or NULL, no latest time constraint is used.
+ * @param p_timezone_id                The time zone of p_start_time and p_end_time, and also of effective and expiration times in the output. If not specified, 'UTC' is used.
+ * @param p_unit_system                The unit system ('SI' or 'EN') to output the information in. If not specified, 'SI' is used.
+ * @param p_attribute_value            The value of the location level attribute, if any
+ * @param p_attribute_unit             The unit of p_attribute_value, if any
+ * @param p_level_type                 One or two characters that specify which types of location levels to include. If not specified, 'VN' is used.
+ * <ul>
+ *   <li><b>N</b> include non-virtual (normal) location levels only
+ *   <li><b>V</b> include virtual location levels only (but see p_include_constituent_levels below)
+ *   <li><b>NV</b> include both non-virtual and virtual location levels
+ *   <li><b>VN</b> include both non-virtual and virtual location levels
+ * </ul>
+ * @param p_include_levels             A flag ('T' or 'F') that specifies whether actual location levels will be included in the output.
+ * @param p_include_constituent_levels A flag ('T' or 'F') that specifies whether information for location level constituents of virtual location levels will be included in the output.
+ *                                     If 'T', non-virtual constituent location levels will be included even if p_level_type is 'V'. If unspecified, 'F' is used.
+ * @param p_include_level_sources      A flag ('T' or 'F') that specifies whether location level sources will be included in the output.
+ * @param p_include_level_labels       A flag ('T' or 'F') that specifies whether location level labels will be included in the output.
+ * @param p_retrieve_level_indicators  A flag ('T' or 'F') that specifies whether location level indicators will be included in the output.
+ * @param p_office_id                  The office to output the location levels for. If unspecified or NULL, the session user's default office is used.
+ * @return The location levels matching the specified parameters, in XML format
+ */
+function retrieve_location_levels_xml_f(
+   p_location_level_id_mask     in varchar2 default '*',
+   p_attribute_id_mask          in varchar2 default '*',
+   p_start_time                 in date     default null,
+   p_end_time                   in date     default null,
+   p_timezone_id                in varchar2 default 'UTC',
+   p_unit_system                in varchar2 default 'SI',
+   p_attribute_value            in number   default null,
+   p_attribute_unit             in varchar2 default null,
+   p_level_type                 in varchar2 default 'VN',
+   p_include_levels             in varchar2 default 'T',
+   p_include_constituent_levels in varchar2 default 'F',
+   p_include_level_sources      in varchar2 default 'F',
+   p_include_level_labels       in varchar2 default 'F',
+   p_include_level_indicators   in varchar2 default 'F',
+   p_office_id                  in varchar2 default null)
+   return clob;
 --
 -- not documented
 --
@@ -877,6 +1023,15 @@ function get_next_effective_date(
  * @param p_attribute_units    The unit of the attribute, if applicable
  * @param p_timezone_id        The time zone of the time window. Retrieved dates are also in this time zone
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_precedence   One or two characters that specify the precedence of virtual and non-virtual location levels in the results.
+ *                             The default value 'VN' gives virtual location levels higher precedence, allowing them to hide non-virtual location levels
+ *                             where the two types overlap in time. Valid value are:
+ * <ul>
+ *   <li><b>N</b> specifies results from non-virtual (normal) location levels only
+ *   <li><b>V</b> specifies results from virtual location levels only
+ *   <li><b>NV</b> specifies results from non-virtual (normal) location levels where they exist, with virtual location levels allowed where non-virtual levels don't exist
+ *   <li><b>VN</b> (default) specifies results from virtual location levels where they exist, with non-virtual location levels allowed where virtual levels don't exist
+ * </ul>
  */
 procedure retrieve_location_level_values(
    p_level_values            out ztsv_array,
@@ -888,7 +1043,8 @@ procedure retrieve_location_level_values(
    p_attribute_value         in  number   default null,
    p_attribute_units         in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
-   p_office_id               in  varchar2 default null);
+   p_office_id               in  varchar2 default null,
+   p_level_precedence        in  varchar2 default 'VN');
 /**
  * Retrieves a time series of location level values for a specified location level
  * and a time window
@@ -902,6 +1058,15 @@ procedure retrieve_location_level_values(
  * @param p_attribute_units    The unit of the attribute, if applicable
  * @param p_timezone_id        The time zone of the time window. Retrieved dates are also in this time zone
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_precedence   One or two characters that specify the precedence of virtual and non-virtual location levels in the results.
+ *                             The default value 'VN' gives virtual location levels higher precedence, allowing them to hide non-virtual location levels
+ *                             where the two types overlap in time. Valid value are:
+ * <ul>
+ *   <li><b>N</b> specifies results from non-virtual (normal) location levels only
+ *   <li><b>V</b> specifies results from virtual location levels only
+ *   <li><b>NV</b> specifies results from non-virtual (normal) location levels where they exist, with virtual location levels allowed where non-virtual levels don't exist
+ *   <li><b>VN</b> (default) specifies results from virtual location levels where they exist, with non-virtual location levels allowed where virtual levels don't exist
+ * </ul>
  *
  * @return The location level values. The time series contains values at the spcified
  * start and end times of the time window and may contain values at intermediate times.
@@ -925,7 +1090,8 @@ function retrieve_location_level_values(
    p_attribute_value         in  number   default null,
    p_attribute_units         in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
-   p_office_id               in  varchar2 default null)
+   p_office_id               in  varchar2 default null,
+   p_level_precedence        in  varchar2 default 'VN')
    return ztsv_array;
 /**
  * Retrieves a time series of location level values for a specified location level
@@ -955,6 +1121,15 @@ function retrieve_location_level_values(
  * @param p_attribute_units    The unit of the attribute, if applicable
  * @param p_timezone_id        The time zone of the time window. Retrieved dates are also in this time zone
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_precedence   One or two characters that specify the precedence of virtual and non-virtual location levels in the results.
+ *                             The default value 'VN' gives virtual location levels higher precedence, allowing them to hide non-virtual location levels
+ *                             where the two types overlap in time. Valid value are:
+ * <ul>
+ *   <li><b>N</b> specifies results from non-virtual (normal) location levels only
+ *   <li><b>V</b> specifies results from virtual location levels only
+ *   <li><b>NV</b> specifies results from non-virtual (normal) location levels where they exist, with virtual location levels allowed where non-virtual levels don't exist
+ *   <li><b>VN</b> (default) specifies results from virtual location levels where they exist, with non-virtual location levels allowed where virtual levels don't exist
+ * </ul>
  */
 procedure retrieve_loc_lvl_values2(
    p_level_values            out varchar2,
@@ -966,7 +1141,8 @@ procedure retrieve_loc_lvl_values2(
    p_attribute_value         in  number   default null,
    p_attribute_units         in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
-   p_office_id               in  varchar2 default null);
+   p_office_id               in  varchar2 default null,
+   p_level_precedence        in  varchar2 default 'VN');
 /**
  * Retrieves a time series of location level values for a specified location level
  * and a time window, using simple types
@@ -981,6 +1157,15 @@ procedure retrieve_loc_lvl_values2(
  * @param p_attribute_units    The unit of the attribute, if applicable
  * @param p_timezone_id        The time zone of the time window. Retrieved dates are also in this time zone
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_precedence   One or two characters that specify the precedence of virtual and non-virtual location levels in the results.
+ *                             The default value 'VN' gives virtual location levels higher precedence, allowing them to hide non-virtual location levels
+ *                             where the two types overlap in time. Valid value are:
+ * <ul>
+ *   <li><b>N</b> specifies results from non-virtual (normal) location levels only
+ *   <li><b>V</b> specifies results from virtual location levels only
+ *   <li><b>NV</b> specifies results from non-virtual (normal) location levels where they exist, with virtual location levels allowed where non-virtual levels don't exist
+ *   <li><b>VN</b> (default) specifies results from virtual location levels where they exist, with non-virtual location levels allowed where virtual levels don't exist
+ * </ul>
  *
  * @return The location level values as a string recordset. The time series contains
  * values at the spcified start and end times of the time window and may contain
@@ -1005,7 +1190,8 @@ function retrieve_loc_lvl_values2(
    p_attribute_value         in  number   default null,
    p_attribute_units         in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
-   p_office_id               in  varchar2 default null)
+   p_office_id               in  varchar2 default null,
+   p_level_precedence        in  varchar2 default 'VN')
    return varchar2;
 /**
  * Retrieves a time series of location level values for a specified location level
@@ -1032,6 +1218,15 @@ function retrieve_loc_lvl_values2(
  * @param p_attribute_units    The unit of the attribute, if applicable
  * @param p_timezone_id        The time zone of the time window. Retrieved dates are also in this time zone
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_precedence   One or two characters that specify the precedence of virtual and non-virtual location levels in the results.
+ *                             The default value 'VN' gives virtual location levels higher precedence, allowing them to hide non-virtual location levels
+ *                             where the two types overlap in time. Valid value are:
+ * <ul>
+ *   <li><b>N</b> specifies results from non-virtual (normal) location levels only
+ *   <li><b>V</b> specifies results from virtual location levels only
+ *   <li><b>NV</b> specifies results from non-virtual (normal) location levels where they exist, with virtual location levels allowed where non-virtual levels don't exist
+ *   <li><b>VN</b> (default) specifies results from virtual location levels where they exist, with non-virtual location levels allowed where virtual levels don't exist
+ * </ul>
  */
 procedure retrieve_loc_lvl_values3(
    p_level_values            out ztsv_array,
@@ -1042,7 +1237,8 @@ procedure retrieve_loc_lvl_values3(
    p_attribute_value         in  number   default null,
    p_attribute_units         in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
-   p_office_id               in  varchar2 default null);
+   p_office_id               in  varchar2 default null,
+   p_level_precedence        in  varchar2 default 'VN');
 /**
  * Retrieves a time series of location level values for a specified location level
  * and specified times
@@ -1055,6 +1251,15 @@ procedure retrieve_loc_lvl_values3(
  * @param p_attribute_units    The unit of the attribute, if applicable
  * @param p_timezone_id        The time zone of the time window. Retrieved dates are also in this time zone
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_precedence   One or two characters that specify the precedence of virtual and non-virtual location levels in the results.
+ *                             The default value 'VN' gives virtual location levels higher precedence, allowing them to hide non-virtual location levels
+ *                             where the two types overlap in time. Valid value are:
+ * <ul>
+ *   <li><b>N</b> specifies results from non-virtual (normal) location levels only
+ *   <li><b>V</b> specifies results from virtual location levels only
+ *   <li><b>NV</b> specifies results from non-virtual (normal) location levels where they exist, with virtual location levels allowed where non-virtual levels don't exist
+ *   <li><b>VN</b> (default) specifies results from virtual location levels where they exist, with non-virtual location levels allowed where virtual levels don't exist
+ * </ul>
  *
  * @return The location level values as a ztsv_array. The time series contains
  * values at the spcified start and end times of the time window and may contain
@@ -1078,7 +1283,8 @@ function retrieve_loc_lvl_values3(
    p_attribute_value         in  number   default null,
    p_attribute_units         in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
-   p_office_id               in  varchar2 default null)
+   p_office_id               in  varchar2 default null,
+   p_level_precedence        in  varchar2 default 'VN')
    return ztsv_array;
 /**
  * Retrieves a time series of location level values for a specified location level
@@ -1093,6 +1299,15 @@ function retrieve_loc_lvl_values3(
  * @param p_attribute_units    The unit of the attribute, if applicable
  * @param p_timezone_id        The time zone of the time window. Retrieved dates are also in this time zone
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_precedence   One or two characters that specify the precedence of virtual and non-virtual location levels in the results.
+ *                             The default value 'VN' gives virtual location levels higher precedence, allowing them to hide non-virtual location levels
+ *                             where the two types overlap in time. Valid value are:
+ * <ul>
+ *   <li><b>N</b> specifies results from non-virtual (normal) location levels only
+ *   <li><b>V</b> specifies results from virtual location levels only
+ *   <li><b>NV</b> specifies results from non-virtual (normal) location levels where they exist, with virtual location levels allowed where non-virtual levels don't exist
+ *   <li><b>VN</b> (default) specifies results from virtual location levels where they exist, with non-virtual location levels allowed where virtual levels don't exist
+ * </ul>
  */
 procedure retrieve_loc_lvl_values3(
    p_level_values            out double_tab_t,
@@ -1103,7 +1318,8 @@ procedure retrieve_loc_lvl_values3(
    p_attribute_value         in  number   default null,
    p_attribute_units         in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
-   p_office_id               in  varchar2 default null);
+   p_office_id               in  varchar2 default null,
+   p_level_precedence        in  varchar2 default 'VN');
 /**
  * Retrieves a time series of location level values for a specified location level
  * and specified times
@@ -1116,6 +1332,15 @@ procedure retrieve_loc_lvl_values3(
  * @param p_attribute_units    The unit of the attribute, if applicable
  * @param p_timezone_id        The time zone of the time window. Retrieved dates are also in this time zone
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_precedence   One or two characters that specify the precedence of virtual and non-virtual location levels in the results.
+ *                             The default value 'VN' gives virtual location levels higher precedence, allowing them to hide non-virtual location levels
+ *                             where the two types overlap in time. Valid value are:
+ * <ul>
+ *   <li><b>N</b> specifies results from non-virtual (normal) location levels only
+ *   <li><b>V</b> specifies results from virtual location levels only
+ *   <li><b>NV</b> specifies results from non-virtual (normal) location levels where they exist, with virtual location levels allowed where non-virtual levels don't exist
+ *   <li><b>VN</b> (default) specifies results from virtual location levels where they exist, with non-virtual location levels allowed where virtual levels don't exist
+ * </ul>
  *
  * @return The location level values as a double_tab_t
  */
@@ -1127,7 +1352,8 @@ function retrieve_loc_lvl_values3(
    p_attribute_value         in  number   default null,
    p_attribute_units         in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
-   p_office_id               in  varchar2 default null)
+   p_office_id               in  varchar2 default null,
+   p_level_precedence        in  varchar2 default 'VN')
    return double_tab_t;
 /**
  * Retrieves a time series of location level values for a specified location level
@@ -1156,6 +1382,15 @@ function retrieve_loc_lvl_values3(
  * @param p_attribute_units    The unit of the attribute, if applicable
  * @param p_timezone_id        The time zone of the time window. Retrieved dates are also in this time zone
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_precedence   One or two characters that specify the precedence of virtual and non-virtual location levels in the results.
+ *                             The default value 'VN' gives virtual location levels higher precedence, allowing them to hide non-virtual location levels
+ *                             where the two types overlap in time. Valid value are:
+ * <ul>
+ *   <li><b>N</b> specifies results from non-virtual (normal) location levels only
+ *   <li><b>V</b> specifies results from virtual location levels only
+ *   <li><b>NV</b> specifies results from non-virtual (normal) location levels where they exist, with virtual location levels allowed where non-virtual levels don't exist
+ *   <li><b>VN</b> (default) specifies results from virtual location levels where they exist, with non-virtual location levels allowed where virtual levels don't exist
+ * </ul>
  */
 procedure retrieve_loc_lvl_values3(
    p_level_values            out ztsv_array,
@@ -1168,7 +1403,8 @@ procedure retrieve_loc_lvl_values3(
    p_attribute_value         in  number   default null,
    p_attribute_units         in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
-   p_office_id               in  varchar2 default null);
+   p_office_id               in  varchar2 default null,
+   p_level_precedence        in  varchar2 default 'VN');
 /**
  * Retrieves a time series of location level values for a specified location level
  * and times taken from a specified time series
@@ -1183,6 +1419,15 @@ procedure retrieve_loc_lvl_values3(
  * @param p_attribute_units    The unit of the attribute, if applicable
  * @param p_timezone_id        The time zone of the time window. Retrieved dates are also in this time zone
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_precedence   One or two characters that specify the precedence of virtual and non-virtual location levels in the results.
+ *                             The default value 'VN' gives virtual location levels higher precedence, allowing them to hide non-virtual location levels
+ *                             where the two types overlap in time. Valid value are:
+ * <ul>
+ *   <li><b>N</b> specifies results from non-virtual (normal) location levels only
+ *   <li><b>V</b> specifies results from virtual location levels only
+ *   <li><b>NV</b> specifies results from non-virtual (normal) location levels where they exist, with virtual location levels allowed where non-virtual levels don't exist
+ *   <li><b>VN</b> (default) specifies results from virtual location levels where they exist, with non-virtual location levels allowed where virtual levels don't exist
+ * </ul>
  *
  * @param p_level_values       The location level values as a ztsv_array
  */
@@ -1196,7 +1441,8 @@ function retrieve_loc_lvl_values3(
    p_attribute_value         in  number   default null,
    p_attribute_units         in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
-   p_office_id               in  varchar2 default null)
+   p_office_id               in  varchar2 default null,
+   p_level_precedence        in  varchar2 default 'VN')
    return ztsv_array;
 /**
  * Retrieves a time series of location level values for a specified location level
@@ -1228,6 +1474,15 @@ function retrieve_loc_lvl_values3(
  * @param p_attribute_duration_id       The duratino identifier of the attribute, if applicable. Format is parameter.parameter_type.duration
  * @param p_timezone_id                 The time zone of the time window. Retrieved dates are also in this time zone
  * @param p_office_id                   The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_precedence   One or two characters that specify the precedence of virtual and non-virtual location levels in the results.
+ *                             The default value 'VN' gives virtual location levels higher precedence, allowing them to hide non-virtual location levels
+ *                             where the two types overlap in time. Valid value are:
+ * <ul>
+ *   <li><b>N</b> specifies results from non-virtual (normal) location levels only
+ *   <li><b>V</b> specifies results from virtual location levels only
+ *   <li><b>NV</b> specifies results from non-virtual (normal) location levels where they exist, with virtual location levels allowed where non-virtual levels don't exist
+ *   <li><b>VN</b> (default) specifies results from virtual location levels where they exist, with non-virtual location levels allowed where virtual levels don't exist
+ * </ul>
  */
 procedure retrieve_location_level_values(
    p_level_values            out ztsv_array,
@@ -1242,7 +1497,8 @@ procedure retrieve_location_level_values(
    p_attribute_param_type_id in  varchar2 default null,
    p_attribute_duration_id   in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
-   p_office_id               in  varchar2 default null);
+   p_office_id               in  varchar2 default null,
+   p_level_precedence        in  varchar2 default 'VN');
 /**
  * Retrieves a time series of location level values for a specified location level
  * time series, specified level, and time window.  The location level identifier
@@ -1260,6 +1516,15 @@ procedure retrieve_location_level_values(
  * @param p_attribute_duration_id       The duratino identifier of the attribute, if applicable. Format is parameter.parameter_type.duration
  * @param p_timezone_id                 The time zone of the time window. Retrieved dates are also in this time zone
  * @param p_office_id                   The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_precedence   One or two characters that specify the precedence of virtual and non-virtual location levels in the results.
+ *                             The default value 'VN' gives virtual location levels higher precedence, allowing them to hide non-virtual location levels
+ *                             where the two types overlap in time. Valid value are:
+ * <ul>
+ *   <li><b>N</b> specifies results from non-virtual (normal) location levels only
+ *   <li><b>V</b> specifies results from virtual location levels only
+ *   <li><b>NV</b> specifies results from non-virtual (normal) location levels where they exist, with virtual location levels allowed where non-virtual levels don't exist
+ *   <li><b>VN</b> (default) specifies results from virtual location levels where they exist, with non-virtual location levels allowed where virtual levels don't exist
+ * </ul>
  *
  * @return The location level values. The time series contains
  * values at the spcified start and end times of the time window and may contain
@@ -1287,7 +1552,8 @@ function retrieve_location_level_values(
    p_attribute_param_type_id in  varchar2 default null,
    p_attribute_duration_id   in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
-   p_office_id               in  varchar2 default null)
+   p_office_id               in  varchar2 default null,
+   p_level_precedence        in  varchar2 default 'VN')
    return ztsv_array;
 /**
  * Retrieves a location level value for a specified location level and time
@@ -1301,6 +1567,15 @@ function retrieve_location_level_values(
  * @param p_attribute_units    The unit of the attribute, if applicable
  * @param p_timezone_id        The time zone of p_date
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_precedence   One or two characters that specify the precedence of virtual and non-virtual location levels in the results.
+ *                             The default value 'VN' gives virtual location levels higher precedence, allowing them to hide non-virtual location levels
+ *                             where the two types overlap in time. Valid value are:
+ * <ul>
+ *   <li><b>N</b> specifies results from non-virtual (normal) location levels only
+ *   <li><b>V</b> specifies results from virtual location levels only
+ *   <li><b>NV</b> specifies results from non-virtual (normal) location levels where they exist, with virtual location levels allowed where non-virtual levels don't exist
+ *   <li><b>VN</b> (default) specifies results from virtual location levels where they exist, with non-virtual location levels allowed where virtual levels don't exist
+ * </ul>
  */
 procedure retrieve_location_level_value(
    p_level_value             out number,
@@ -1311,7 +1586,8 @@ procedure retrieve_location_level_value(
    p_attribute_value         in  number   default null,
    p_attribute_units         in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
-   p_office_id               in  varchar2 default null);
+   p_office_id               in  varchar2 default null,
+   p_level_precedence        in  varchar2 default 'VN');
 /**
  * Retrieves a location level value for a specified location level and time
  *
@@ -1323,6 +1599,15 @@ procedure retrieve_location_level_value(
  * @param p_attribute_units    The unit of the attribute, if applicable
  * @param p_timezone_id        The time zone of the time window
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_precedence   One or two characters that specify the precedence of virtual and non-virtual location levels in the results.
+ *                             The default value 'VN' gives virtual location levels higher precedence, allowing them to hide non-virtual location levels
+ *                             where the two types overlap in time. Valid value are:
+ * <ul>
+ *   <li><b>N</b> specifies results from non-virtual (normal) location levels only
+ *   <li><b>V</b> specifies results from virtual location levels only
+ *   <li><b>NV</b> specifies results from non-virtual (normal) location levels where they exist, with virtual location levels allowed where non-virtual levels don't exist
+ *   <li><b>VN</b> (default) specifies results from virtual location levels where they exist, with non-virtual location levels allowed where virtual levels don't exist
+ * </ul>
  *
  * @return The location level value
  */
@@ -1334,7 +1619,8 @@ function retrieve_location_level_value(
    p_attribute_value         in  number   default null,
    p_attribute_units         in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
-   p_office_id               in  varchar2 default null)
+   p_office_id               in  varchar2 default null,
+   p_level_precedence        in  varchar2 default 'VN')
    return number;
 /**
  * Retrieves a location level value for a specified location level
@@ -1351,6 +1637,15 @@ function retrieve_location_level_value(
  * @param p_attribute_units    The unit of the attribute, if applicable
  * @param p_timezone_id        The time zone of p_date
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_precedence   One or two characters that specify the precedence of virtual and non-virtual location levels in the results.
+ *                             The default value 'VN' gives virtual location levels higher precedence, allowing them to hide non-virtual location levels
+ *                             where the two types overlap in time. Valid value are:
+ * <ul>
+ *   <li><b>N</b> specifies results from non-virtual (normal) location levels only
+ *   <li><b>V</b> specifies results from virtual location levels only
+ *   <li><b>NV</b> specifies results from non-virtual (normal) location levels where they exist, with virtual location levels allowed where non-virtual levels don't exist
+ *   <li><b>VN</b> (default) specifies results from virtual location levels where they exist, with non-virtual location levels allowed where virtual levels don't exist
+ * </ul>
  */
 procedure retrieve_location_level_value(
    p_level_value             out number,
@@ -1362,7 +1657,8 @@ procedure retrieve_location_level_value(
    p_attribute_value         in  number   default null,
    p_attribute_units         in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
-   p_office_id               in  varchar2 default null);
+   p_office_id               in  varchar2 default null,
+   p_level_precedence        in  varchar2 default 'VN');
 /**
  * Retrieves a location level value for a specified location level
  * time series, specified level, and time.  The location level identifier
@@ -1377,6 +1673,15 @@ procedure retrieve_location_level_value(
  * @param p_attribute_units    The unit of the attribute, if applicable
  * @param p_timezone_id        The time zone of p_date
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_precedence   One or two characters that specify the precedence of virtual and non-virtual location levels in the results.
+ *                             The default value 'VN' gives virtual location levels higher precedence, allowing them to hide non-virtual location levels
+ *                             where the two types overlap in time. Valid value are:
+ * <ul>
+ *   <li><b>N</b> specifies results from non-virtual (normal) location levels only
+ *   <li><b>V</b> specifies results from virtual location levels only
+ *   <li><b>NV</b> specifies results from non-virtual (normal) location levels where they exist, with virtual location levels allowed where non-virtual levels don't exist
+ *   <li><b>VN</b> (default) specifies results from virtual location levels where they exist, with non-virtual location levels allowed where virtual levels don't exist
+ * </ul>
  *
  * @return The location level value
  */
@@ -1389,10 +1694,11 @@ function retrieve_location_level_value(
    p_attribute_value         in  number   default null,
    p_attribute_units         in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
-   p_office_id               in  varchar2 default null)
+   p_office_id               in  varchar2 default null,
+   p_level_precedence        in  varchar2 default 'VN')
    return number;
 /**
- * Retrieves a location level value for a specified location level and time
+ * Retrieves a location level value for a specified location level and time, with maximum age if level is irregularly varying (backed by a time seiries)
  *
  * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
  * @param p_level_units        The value unit to retrieve the level value in
@@ -1410,6 +1716,15 @@ function retrieve_location_level_value(
  *                             If the timepsan exceeds the specified maximum, NULL is returned. If not specified or NULL, no restriction on the timespan is used
  * @param p_ignore_errors      A flag ('T'/'F') that specifies whether to handle any exceptions raised during execution and return a NULL value ('T'). If 'F', exceptions are passed back to the calling environment
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_precedence   One or two characters that specify the precedence of virtual and non-virtual location levels in the results.
+ *                             The default value 'VN' gives virtual location levels higher precedence, allowing them to hide non-virtual location levels
+ *                             where the two types overlap in time. Valid value are:
+ * <ul>
+ *   <li><b>N</b> specifies results from non-virtual (normal) location levels only
+ *   <li><b>V</b> specifies results from virtual location levels only
+ *   <li><b>NV</b> specifies results from non-virtual (normal) location levels where they exist, with virtual location levels allowed where non-virtual levels don't exist
+ *   <li><b>VN</b> (default) specifies results from virtual location levels where they exist, with non-virtual location levels allowed where virtual levels don't exist
+ * </ul>
  *
  * @return The location level value
  */
@@ -1423,9 +1738,10 @@ function retrieve_loc_lvl_value_ex(
    p_attribute_units         in  varchar2 default null, -- required with non-null p_attribute_id
    p_max_ts_timespan         in  varchar2 default null, -- ISO 8601 format, returns null if time series timespan too long
    p_ignore_errors           in  varchar2 default 'F',  -- returns null on error if 'T'
-   p_office_id               in  varchar2 default null) -- user's office id if null
-   return number result_cache;
-   /**
+   p_office_id               in  varchar2 default null,
+   p_level_precedence        in  varchar2 default 'VN') -- user's office id if null
+   return number;
+/**
  * Retrieves all the attribute values for a Location Level in effect at a specified time
  *
  * @param p_attribute_values   The retrieved attribute values
@@ -1435,6 +1751,13 @@ function retrieve_loc_lvl_value_ex(
  * @param p_timezone_id        The time zone of the p_date
  * @param p_date               The date/time to retrieve the attribute values for
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_type         One or two characters that specify which types of location levels to lookup values for. If not specified, 'VN' will be used.
+ * <ul>
+ *   <li><b>N</b> lookup values for non-virtual (normal) location levels only
+ *   <li><b>V</b> lookup values for virtual location levels only
+ *   <li><b>NV</b> lookup values for both non-virtual and virtual location levels
+ *   <li><b>VN</b> lookup values for both non-virtual and virtual location levels
+ * </ul>
  */
 procedure retrieve_location_level_attrs(
    p_attribute_values        out number_tab_t,
@@ -1443,7 +1766,8 @@ procedure retrieve_location_level_attrs(
    p_attribute_units         in  varchar2,
    p_timezone_id             in  varchar2 default null,
    p_date                    in  date     default null,
-   p_office_id               in  varchar2 default null);
+   p_office_id               in  varchar2 default null,
+   p_level_type              in  varchar2 default 'VN');
 /**
  * Retrieves all the attribute values for a Location Level in effect at a specified time
  *
@@ -1453,6 +1777,13 @@ procedure retrieve_location_level_attrs(
  * @param p_timezone_id        The time zone of the p_date
  * @param p_date               The date/time to retrieve the attribute values for
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_type         One or two characters that specify which types of location levels to lookup values for. If not specified, 'VN' will be used.
+ * <ul>
+ *   <li><b>N</b> lookup values for non-virtual (normal) location levels only
+ *   <li><b>V</b> lookup values for virtual location levels only
+ *   <li><b>NV</b> lookup values for both non-virtual and virtual location levels
+ *   <li><b>VN</b> lookup values for both non-virtual and virtual location levels
+ * </ul>
  *
  * @return The retrieved attribute values
  */
@@ -1462,7 +1793,8 @@ function retrieve_location_level_attrs(
    p_attribute_units         in  varchar2,
    p_timezone_id             in  varchar2 default null,
    p_date                    in  date     default null,
-   p_office_id               in  varchar2 default null)
+   p_office_id               in  varchar2 default null,
+   p_level_type              in  varchar2 default 'VN')
    return number_tab_t;
 /**
  * Retrieves all the attribute values for a Location Level in effect at a specified time using simple types
@@ -1474,6 +1806,13 @@ function retrieve_location_level_attrs(
  * @param p_timezone_id        The time zone of the p_date
  * @param p_date               The date/time to retrieve the attribute values for. Format is 'yyyy/mm/dd hh:mm:ss'
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_type         One or two characters that specify which types of location levels to lookup values for. If not specified, 'VN' will be used.
+ * <ul>
+ *   <li><b>N</b> lookup values for non-virtual (normal) location levels only
+ *   <li><b>V</b> lookup values for virtual location levels only
+ *   <li><b>NV</b> lookup values for both non-virtual and virtual location levels
+ *   <li><b>VN</b> lookup values for both non-virtual and virtual location levels
+ * </ul>
  */
 procedure retrieve_location_level_attrs2(
    p_attribute_values        out varchar2,
@@ -1482,7 +1821,8 @@ procedure retrieve_location_level_attrs2(
    p_attribute_units         in  varchar2,
    p_timezone_id             in  varchar2 default null,
    p_date                    in  varchar2 default null,
-   p_office_id               in  varchar2 default null);
+   p_office_id               in  varchar2 default null,
+   p_level_type              in  varchar2 default 'VN');
 /**
  * Retrieves all the attribute values for a Location Level in effect at a specified time using simple types
  *
@@ -1492,6 +1832,13 @@ procedure retrieve_location_level_attrs2(
  * @param p_timezone_id        The time zone of the p_date
  * @param p_date               The date/time to retrieve the attribute values for. Format is 'yyyy/mm/dd hh:mm:ss'
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_type         One or two characters that specify which types of location levels to lookup values for. If not specified, 'VN' will be used.
+ * <ul>
+ *   <li><b>N</b> lookup values for non-virtual (normal) location levels only
+ *   <li><b>V</b> lookup values for virtual location levels only
+ *   <li><b>NV</b> lookup values for both non-virtual and virtual location levels
+ *   <li><b>VN</b> lookup values for both non-virtual and virtual location levels
+ * </ul>
  *
  * @return The retrieved attribute values
  */
@@ -1501,7 +1848,8 @@ function retrieve_location_level_attrs2(
    p_attribute_units         in  varchar2,
    p_timezone_id             in  varchar2 default null,
    p_date                    in  varchar2 default null,
-   p_office_id               in  varchar2 default null)
+   p_office_id               in  varchar2 default null,
+   p_level_type              in  varchar2 default 'VN')
    return varchar2;
 /**
  * Retrieves the level value of a Location Level that corresponds to a specified attribute value and date
@@ -1522,49 +1870,59 @@ function retrieve_location_level_attrs2(
  * @param p_attribute_value    The value of the attribute
  * @param p_attribute_units    The unit of the attribute
  * @param p_level_units        The value unit to retrieve the level value in
- * @param p_in_range_behavior  Specifies the lookup behavior if the specified attribute is in the range of attributes for the specified level and date.
+ * @param p_in_range_behavior  Specifies the lookup behavior if the specified attribute value is between two stored attribute values for the specified level and date.
  * Valid values are
  * <p>
  * <table class="descr"">
  *   <tr>
  *     <th class="descr">p_in_range_behavior</th>
+ *     <th class="descr">numeric value</th>
  *     <th class="descr">lookup behavior</th>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_null</td>
- *     <td class="descr">Return null if between values</td>
+ *     <td class="descr">1</td>
+ *     <td class="descr">Return null if p_attribute_value is between stored attribute values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_error</td>
- *     <td class="descr">Raise an exception if between values</td>
+ *     <td class="descr">2</td>
+ *     <td class="descr">Raise an exception if p_attribute_value is between stored attribute values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_linear</td>
- *     <td class="descr">Linear interpolation of attribute and level values</td>
+ *     <td class="descr">3</td>
+ *     <td class="descr">Linear interpolation of level value based on linear ratio of attribute values if p_attribute_value is between stored attribute values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_logarithmic</td>
- *     <td class="descr">Logarithmic interpolation of attribute and level values</td>
+ *     <td class="descr">4</td>
+ *     <td class="descr">Logarithmic interpolation of level value based on logarithmic ratio of attribute values if p_attribute_value is between stored attribute values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_lin_log</td>
- *     <td class="descr">Linear interpolation of attribute values, Logarithmic of level values</td>
+ *     <td class="descr">5</td>
+ *     <td class="descr">Logarithmic interpolation of level value based on linear ratio of attribute values if p_attribute_value is between stored attribute values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_log_lin</td>
- *     <td class="descr">Logarithmic interpolation of attribute values, Linear of level values</td>
+ *     <td class="descr">6</td>
+ *     <td class="descr">Linear interpolation of level value based on logarithmic ratio of attribute values if p_attribute_value is between stored attribute values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_lower</td>
- *     <td class="descr">Return the value that is lower in magnitude</td>
+ *     <td class="descr">10</td>
+ *     <td class="descr">Return the level value that is associated with the stored attribute value that is immediately lower in magnitude than p_attribute_value if p_attribute_value is between stored attribute values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_higher</td>
- *     <td class="descr">Return the value that is higher in magnitude</td>
+ *     <td class="descr">11</td>
+ *     <td class="descr">Return the level value that is associated with the stored attribute value that is immediately higher in magnitude than p_attribute_value if p_attribute_value is between stored attribute values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_closest</td>
- *     <td class="descr">Return the value that is closest in magnitude</td>
+ *     <td class="descr">12</td>
+ *     <td class="descr">Return the level value that is associated with the stored attribute value that is closest in magnitude than p_attribute_value if p_attribute_value is between stored attribute values</td>
  *   </tr>
  * </table>
  * @param p_out_range_behavior Specifies the lookup behavior if the specified attribute is outside the range of attributes for the specified level and date.
@@ -1573,40 +1931,55 @@ function retrieve_location_level_attrs2(
  * <table class="descr"">
  *   <tr>
  *     <th class="descr">p_out_range_behavior</th>
+ *     <th class="descr">numeric value</th>
  *     <th class="descr">lookup behavior</th>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_null</td>
- *     <td class="descr">Return null if outside range</td>
+ *     <td class="descr">1</td>
+ *     <td class="descr">Return null if p_attribute_value is outside the range of stored attribute values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_error</td>
- *     <td class="descr">Raise an exception outside range</td>
+ *     <td class="descr">2</td>
+ *     <td class="descr">Raise an exception if p_attribute_value is outside the range of stored attribute values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_linear</td>
- *     <td class="descr">Linear extrapolation of attribute and level values</td>
+ *     <td class="descr">3</td>
+ *     <td class="descr">Linear interpolation of level value based on linear ratio of attribute values if p_attribute_value is outside the range of stored attribute values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_logarithmic</td>
- *     <td class="descr">Logarithmic extrapolation of attribute and level values</td>
+ *     <td class="descr">4</td>
+ *     <td class="descr">Logarithmic interpolation of level value based on logarithmic ratio of attribute values if p_attribute_value is outside the range of stored attribute values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_lin_log</td>
- *     <td class="descr">Linear extrapoloation of attribute values, Logarithmic of level values</td>
+ *     <td class="descr">5</td>
+ *     <td class="descr">Logarithmic interpolation of level value based on linear ratio of attribute values if p_attribute_value is outside the range of stored attribute values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_log_lin</td>
- *     <td class="descr">Logarithmic extrapoloation of attribute values, Linear of level values</td>
+ *     <td class="descr">6</td>
+ *     <td class="descr">Linear interpolation of level value based on logarithmic ratio of attribute values if p_attribute_value is outside the range of stored attribute values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_closest</td>
- *     <td class="descr">Return the value that is closest in magnitude</td>
+ *     <td class="descr">10</td>
+ *     <td class="descr">Return the level value that is associated with the stored attribute value that is immediately lower in magnitude than p_attribute_value if p_attribute_value is outside the range of stored attribute values</td>
  *   </tr>
  * </table>
  * @param p_timezone_id        The time zone of p_date
  * @param p_date               The date/time to retrieve the attribute value for
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_precedence   One or two characters that specify the precedence of virtual and non-virtual location levels to lookup values for. Valid value are:
+ * <ul>
+ *   <li><b>N</b> lookup values for non-virtual (normal) location levels only
+ *   <li><b>V</b> lookup values for virtual (normal) location levels only
+ *   <li><b>NV</b> lookup values for non-virtual (normal) location levels, but if none exists, lookup values for virtual location levels
+ *   <li><b>VN</b> (default) lookup values for virtual location levels, but if none exists, lookup values for non-virtual (normal) location levels
+ * </ul>
  */
 procedure lookup_level_by_attribute(
    p_level                   out number,
@@ -1619,7 +1992,8 @@ procedure lookup_level_by_attribute(
    p_out_range_behavior      in  integer  default cwms_lookup.method_null,
    p_timezone_id             in  varchar2 default null,
    p_date                    in  date     default null,
-   p_office_id               in  varchar2 default null);
+   p_office_id               in  varchar2 default null,
+   p_level_precedence        in  varchar2 default 'VN');
 /**
  * Retrieves the level value of a Location Level that corresponds to a specified attribute value and date
  *
@@ -1638,49 +2012,59 @@ procedure lookup_level_by_attribute(
  * @param p_attribute_value    The value of the attribute
  * @param p_attribute_units    The unit of the attribute
  * @param p_level_units        The value unit to retrieve the level value in
- * @param p_in_range_behavior  Specifies the lookup behavior if the specified attribute is in the range of attributes for the specified level and date.
+ * @param p_in_range_behavior  Specifies the lookup behavior if the specified attribute value is between two stored attribute values for the specified level and date.
  * Valid values are
  * <p>
- * <table class="descr">
+ * <table class="descr"">
  *   <tr>
  *     <th class="descr">p_in_range_behavior</th>
+ *     <th class="descr">numeric value</th>
  *     <th class="descr">lookup behavior</th>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_null</td>
- *     <td class="descr">Return null if between values</td>
+ *     <td class="descr">1</td>
+ *     <td class="descr">Return null if p_attribute_value is between stored attribute values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_error</td>
- *     <td class="descr">Raise an exception if between values</td>
+ *     <td class="descr">2</td>
+ *     <td class="descr">Raise an exception if p_attribute_value is between stored attribute values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_linear</td>
- *     <td class="descr">Linear interpolation of attribute and level values</td>
+ *     <td class="descr">3</td>
+ *     <td class="descr">Linear interpolation of level value based on linear ratio of attribute values if p_attribute_value is between stored attribute values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_logarithmic</td>
- *     <td class="descr">Logarithmic interpolation of attribute and level values</td>
+ *     <td class="descr">4</td>
+ *     <td class="descr">Logarithmic interpolation of level value based on logarithmic ratio of attribute values if p_attribute_value is between stored attribute values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_lin_log</td>
- *     <td class="descr">Linear interpolation of attribute values, Logarithmic of level values</td>
+ *     <td class="descr">5</td>
+ *     <td class="descr">Logarithmic interpolation of level value based on linear ratio of attribute values if p_attribute_value is between stored attribute values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_log_lin</td>
- *     <td class="descr">Logarithmic interpolation of attribute values, Linear of level values</td>
+ *     <td class="descr">6</td>
+ *     <td class="descr">Linear interpolation of level value based on logarithmic ratio of attribute values if p_attribute_value is between stored attribute values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_lower</td>
- *     <td class="descr">Return the value that is lower in magnitude</td>
+ *     <td class="descr">10</td>
+ *     <td class="descr">Return the level value that is associated with the stored attribute value that is immediately lower in magnitude than p_attribute_value if p_attribute_value is between stored attribute values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_higher</td>
- *     <td class="descr">Return the value that is higher in magnitude</td>
+ *     <td class="descr">11</td>
+ *     <td class="descr">Return the level value that is associated with the stored attribute value that is immediately higher in magnitude than p_attribute_value if p_attribute_value is between stored attribute values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_closest</td>
- *     <td class="descr">Return the value that is closest in magnitude</td>
+ *     <td class="descr">12</td>
+ *     <td class="descr">Return the level value that is associated with the stored attribute value that is closest in magnitude than p_attribute_value if p_attribute_value is between stored attribute values</td>
  *   </tr>
  * </table>
  * @param p_out_range_behavior Specifies the lookup behavior if the specified attribute is outside the range of attributes for the specified level and date.
@@ -1689,40 +2073,55 @@ procedure lookup_level_by_attribute(
  * <table class="descr"">
  *   <tr>
  *     <th class="descr">p_out_range_behavior</th>
+ *     <th class="descr">numeric value</th>
  *     <th class="descr">lookup behavior</th>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_null</td>
- *     <td class="descr">Return null if outside range</td>
+ *     <td class="descr">1</td>
+ *     <td class="descr">Return null if p_attribute_value is outside the range of stored attribute values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_error</td>
- *     <td class="descr">Raise an exception outside range</td>
+ *     <td class="descr">2</td>
+ *     <td class="descr">Raise an exception if p_attribute_value is outside the range of stored attribute values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_linear</td>
- *     <td class="descr">Linear extrapolation of attribute and level values</td>
+ *     <td class="descr">3</td>
+ *     <td class="descr">Linear interpolation of level value based on linear ratio of attribute values if p_attribute_value is outside the range of stored attribute values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_logarithmic</td>
- *     <td class="descr">Logarithmic extrapolation of attribute and level values</td>
+ *     <td class="descr">4</td>
+ *     <td class="descr">Logarithmic interpolation of level value based on logarithmic ratio of attribute values if p_attribute_value is outside the range of stored attribute values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_lin_log</td>
- *     <td class="descr">Linear extrapoloation of attribute values, Logarithmic of level values</td>
+ *     <td class="descr">5</td>
+ *     <td class="descr">Logarithmic interpolation of level value based on linear ratio of attribute values if p_attribute_value is outside the range of stored attribute values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_log_lin</td>
- *     <td class="descr">Logarithmic extrapoloation of attribute values, Linear of level values</td>
+ *     <td class="descr">6</td>
+ *     <td class="descr">Linear interpolation of level value based on logarithmic ratio of attribute values if p_attribute_value is outside the range of stored attribute values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_closest</td>
- *     <td class="descr">Return the value that is closest in magnitude</td>
+ *     <td class="descr">10</td>
+ *     <td class="descr">Return the level value that is associated with the stored attribute value that is immediately lower in magnitude than p_attribute_value if p_attribute_value is outside the range of stored attribute values</td>
  *   </tr>
  * </table>
  * @param p_timezone_id        The time zone of p_date
  * @param p_date               The date/time to retrieve the attribute value for
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_precedence   One or two characters that specify the precedence of virtual and non-virtual location levels to lookup values for. Valid value are:
+ * <ul>
+ *   <li><b>N</b> lookup values for non-virtual (normal) location levels only
+ *   <li><b>V</b> lookup values for virtual (normal) location levels only
+ *   <li><b>NV</b> lookup values for non-virtual (normal) location levels, but if none exists, lookup values for virtual location levels
+ *   <li><b>VN</b> (default) lookup values for virtual location levels, but if none exists, lookup values for non-virtual (normal) location levels
+ * </ul>
  *
  * @return The retrieved location level value
  */
@@ -1736,7 +2135,8 @@ function lookup_level_by_attribute(
    p_out_range_behavior      in  integer  default cwms_lookup.method_null,
    p_timezone_id             in  varchar2 default null,
    p_date                    in  date     default null,
-   p_office_id               in  varchar2 default null)
+   p_office_id               in  varchar2 default null,
+   p_level_precedence        in  varchar2 default 'VN')
    return number;
 /**
  * Retrieves the attribute value of a Location Level that corresponds to a specified level value and date
@@ -1757,91 +2157,116 @@ function lookup_level_by_attribute(
  * @param p_level_value        The level value
  * @param p_level_units        The unit of the level value
  * @param p_attribute_units    The unit of the attribute to return the attribute in
- * @param p_in_range_behavior  Specifies the lookup behavior if the specified attribute is in the range of attributes for the specified level and date.
+ * @param p_in_range_behavior  Specifies the lookup behavior if the specified level value between stored level values of attributes for the specified level and date.
  * Valid values are
  * <p>
  * <table class="descr"">
  *   <tr>
  *     <th class="descr">p_in_range_behavior</th>
+ *     <th class="descr">numeric value</th>
  *     <th class="descr">lookup behavior</th>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_null</td>
- *     <td class="descr">Return null if between values</td>
+ *     <td class="descr">1</td>
+ *     <td class="descr">Return null if p_level_value is between stored level values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_error</td>
- *     <td class="descr">Raise an exception if between values</td>
+ *     <td class="descr">2</td>
+ *     <td class="descr">Raise an exception if p_level_value is between stored level values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_linear</td>
- *     <td class="descr">Linear interpolation of attribute and level values</td>
+ *     <td class="descr">3</td>
+ *     <td class="descr">Linear interpolation of attribute value based on linear ratio of level values if p_level_value is between stored level values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_logarithmic</td>
- *     <td class="descr">Logarithmic interpolation of attribute and level values</td>
+ *     <td class="descr">4</td>
+ *     <td class="descr">Logarithmic interpolation of attribute value based on logarithmic ratio of level values if p_level_value is between stored level values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_lin_log</td>
- *     <td class="descr">Linear interpolation of attribute values, Logarithmic of level values</td>
+ *     <td class="descr">5</td>
+ *     <td class="descr">Logarithmic interpolation of attribute value based on linear ratio of level values if p_level_value is between stored level values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_log_lin</td>
- *     <td class="descr">Logarithmic interpolation of attribute values, Linear of level values</td>
+ *     <td class="descr">6</td>
+ *     <td class="descr">Linear interpolation of attribute value based on logarithmic ratio of level values if p_level_value is between stored level values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_lower</td>
- *     <td class="descr">Return the value that is lower in magnitude</td>
+ *     <td class="descr">10</td>
+ *     <td class="descr">Return the attribute value that is associated with the stored level value that is immediately lower in magnitude than p_level_value if p_level_value is between stored level values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_higher</td>
- *     <td class="descr">Return the value that is higher in magnitude</td>
+ *     <td class="descr">11</td>
+ *     <td class="descr">Return the attribute value that is associated with the stored level value that is immediately higher in magnitude than p_level_value if p_level_value is between stored level values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_closest</td>
- *     <td class="descr">Return the value that is closest in magnitude</td>
+ *     <td class="descr">12</td>
+ *     <td class="descr">Return the attribute value that is associated with the stored level value that is closest in magnitude than p_level_value if p_level_value is between stored level values</td>
  *   </tr>
  * </table>
- * @param p_out_range_behavior Specifies the lookup behavior if the specified attribute is outside the range of attributes for the specified level and date.
+ * @param p_out_range_behavior Specifies the lookup behavior if the specified level value is outside the range of level values for the specified level and date.
  * Valid values are
  * <p>
  * <table class="descr"">
  *   <tr>
- *     <th class="descr">p_out_range_behavior</th>
+ *     <th class="descr">p_in_range_behavior</th>
+ *     <th class="descr">numeric value</th>
  *     <th class="descr">lookup behavior</th>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_null</td>
- *     <td class="descr">Return null if outside range</td>
+ *     <td class="descr">1</td>
+ *     <td class="descr">Return null if p_level_value is outside the range of stored level values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_error</td>
- *     <td class="descr">Raise an exception outside range</td>
+ *     <td class="descr">2</td>
+ *     <td class="descr">Raise an exception if p_level_value is outside the range of stored level values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_linear</td>
- *     <td class="descr">Linear extrapolation of attribute and level values</td>
+ *     <td class="descr">3</td>
+ *     <td class="descr">Linear interpolation of attribute value based on linear ratio of level values if p_level_value is outside the range of stored level values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_logarithmic</td>
- *     <td class="descr">Logarithmic extrapolation of attribute and level values</td>
+ *     <td class="descr">4</td>
+ *     <td class="descr">Logarithmic interpolation of attribute value based on logarithmic ratio of level values if p_level_value is outside the range of stored level values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_lin_log</td>
- *     <td class="descr">Linear extrapoloation of attribute values, Logarithmic of level values</td>
+ *     <td class="descr">5</td>
+ *     <td class="descr">Logarithmic interpolation of attribute value based on linear ratio of level values if p_level_value is outside the range of stored level values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_log_lin</td>
- *     <td class="descr">Logarithmic extrapoloation of attribute values, Linear of level values</td>
+ *     <td class="descr">6</td>
+ *     <td class="descr">Linear interpolation of attribute value based on logarithmic ratio of level values if p_level_value is outside the range of stored level values</td>
  *   </tr>
  *   <tr>
- *     <td class="descr">cwms_lookup.method_closest</td>
- *     <td class="descr">Return the value that is closest in magnitude</td>
+ *     <td class="descr">cwms_lookup.method_lower</td>
+ *     <td class="descr">10</td>
+ *     <td class="descr">Return the attribute value that is associated with the stored level value that is immediately lower in magnitude than p_level_value if p_level_value is outside the range of stored level values</td>
  *   </tr>
  * </table>
  * @param p_timezone_id        The time zone of p_date
  * @param p_date               The date/time to retrieve the attribute value for
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_precedence   One or two characters that specify the precedence of virtual and non-virtual location levels to lookup values for. Valid value are:
+ * <ul>
+ *   <li><b>N</b> lookup values for non-virtual (normal) location levels only
+ *   <li><b>V</b> lookup values for virtual (normal) location levels only
+ *   <li><b>NV</b> lookup values for non-virtual (normal) location levels, but if none exists, lookup values for virtual location levels
+ *   <li><b>VN</b> (default) lookup values for virtual location levels, but if none exists, lookup values for non-virtual (normal) location levels
+ * </ul>
  */
 procedure lookup_attribute_by_level(
    p_attribute               out number,
@@ -1854,7 +2279,8 @@ procedure lookup_attribute_by_level(
    p_out_range_behavior      in  integer  default cwms_lookup.method_null,
    p_timezone_id             in  varchar2 default null,
    p_date                    in  date     default null,
-   p_office_id               in  varchar2 default null);
+   p_office_id               in  varchar2 default null,
+   p_level_precedence        in  varchar2 default 'VN');
 /**
  * Retrieves the attribute value of a Location Level that corresponds to a specified level value and date
  *
@@ -1873,91 +2299,116 @@ procedure lookup_attribute_by_level(
  * @param p_level_value        The level value
  * @param p_level_units        The unit of the level value
  * @param p_attribute_units    The unit of the attribute to return the attribute in
- * @param p_in_range_behavior  Specifies the lookup behavior if the specified attribute is in the range of attributes for the specified level and date.
+ * @param p_in_range_behavior  Specifies the lookup behavior if the specified level value between stored level values of attributes for the specified level and date.
  * Valid values are
  * <p>
  * <table class="descr"">
  *   <tr>
  *     <th class="descr">p_in_range_behavior</th>
+ *     <th class="descr">numeric value</th>
  *     <th class="descr">lookup behavior</th>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_null</td>
- *     <td class="descr">Return null if between values</td>
+ *     <td class="descr">1</td>
+ *     <td class="descr">Return null if p_level_value is between stored level values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_error</td>
- *     <td class="descr">Raise an exception if between values</td>
+ *     <td class="descr">2</td>
+ *     <td class="descr">Raise an exception if p_level_value is between stored level values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_linear</td>
- *     <td class="descr">Linear interpolation of attribute and level values</td>
+ *     <td class="descr">3</td>
+ *     <td class="descr">Linear interpolation of attribute value based on linear ratio of level values if p_level_value is between stored level values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_logarithmic</td>
- *     <td class="descr">Logarithmic interpolation of attribute and level values</td>
+ *     <td class="descr">4</td>
+ *     <td class="descr">Logarithmic interpolation of attribute value based on logarithmic ratio of level values if p_level_value is between stored level values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_lin_log</td>
- *     <td class="descr">Linear interpolation of attribute values, Logarithmic of level values</td>
+ *     <td class="descr">5</td>
+ *     <td class="descr">Logarithmic interpolation of attribute value based on linear ratio of level values if p_level_value is between stored level values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_log_lin</td>
- *     <td class="descr">Logarithmic interpolation of attribute values, Linear of level values</td>
+ *     <td class="descr">6</td>
+ *     <td class="descr">Linear interpolation of attribute value based on logarithmic ratio of level values if p_level_value is between stored level values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_lower</td>
- *     <td class="descr">Return the value that is lower in magnitude</td>
+ *     <td class="descr">10</td>
+ *     <td class="descr">Return the attribute value that is associated with the stored level value that is immediately lower in magnitude than p_level_value if p_level_value is between stored level values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_higher</td>
- *     <td class="descr">Return the value that is higher in magnitude</td>
+ *     <td class="descr">11</td>
+ *     <td class="descr">Return the attribute value that is associated with the stored level value that is immediately higher in magnitude than p_level_value if p_level_value is between stored level values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_closest</td>
- *     <td class="descr">Return the value that is closest in magnitude</td>
+ *     <td class="descr">12</td>
+ *     <td class="descr">Return the attribute value that is associated with the stored level value that is closest in magnitude than p_level_value if p_level_value is between stored level values</td>
  *   </tr>
  * </table>
- * @param p_out_range_behavior Specifies the lookup behavior if the specified attribute is outside the range of attributes for the specified level and date.
+ * @param p_out_range_behavior Specifies the lookup behavior if the specified level value is outside the range of level values for the specified level and date.
  * Valid values are
  * <p>
  * <table class="descr"">
  *   <tr>
- *     <th class="descr">p_out_range_behavior</th>
+ *     <th class="descr">p_in_range_behavior</th>
+ *     <th class="descr">numeric value</th>
  *     <th class="descr">lookup behavior</th>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_null</td>
- *     <td class="descr">Return null if outside range</td>
+ *     <td class="descr">1</td>
+ *     <td class="descr">Return null if p_level_value is outside the range of stored level values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_error</td>
- *     <td class="descr">Raise an exception outside range</td>
+ *     <td class="descr">2</td>
+ *     <td class="descr">Raise an exception if p_level_value is outside the range of stored level values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_linear</td>
- *     <td class="descr">Linear extrapolation of attribute and level values</td>
+ *     <td class="descr">3</td>
+ *     <td class="descr">Linear interpolation of attribute value based on linear ratio of level values if p_level_value is outside the range of stored level values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_logarithmic</td>
- *     <td class="descr">Logarithmic extrapolation of attribute and level values</td>
+ *     <td class="descr">4</td>
+ *     <td class="descr">Logarithmic interpolation of attribute value based on logarithmic ratio of level values if p_level_value is outside the range of stored level values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_lin_log</td>
- *     <td class="descr">Linear extrapoloation of attribute values, Logarithmic of level values</td>
+ *     <td class="descr">5</td>
+ *     <td class="descr">Logarithmic interpolation of attribute value based on linear ratio of level values if p_level_value is outside the range of stored level values</td>
  *   </tr>
  *   <tr>
  *     <td class="descr">cwms_lookup.method_log_lin</td>
- *     <td class="descr">Logarithmic extrapoloation of attribute values, Linear of level values</td>
+ *     <td class="descr">6</td>
+ *     <td class="descr">Linear interpolation of attribute value based on logarithmic ratio of level values if p_level_value is outside the range of stored level values</td>
  *   </tr>
  *   <tr>
- *     <td class="descr">cwms_lookup.method_closest</td>
- *     <td class="descr">Return the value that is closest in magnitude</td>
+ *     <td class="descr">cwms_lookup.method_lower</td>
+ *     <td class="descr">10</td>
+ *     <td class="descr">Return the attribute value that is associated with the stored level value that is immediately lower in magnitude than p_level_value if p_level_value is outside the range of stored level values</td>
  *   </tr>
  * </table>
  * @param p_timezone_id        The time zone of p_date
  * @param p_date               The date/time to retrieve the attribute value for
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_precedence   One or two characters that specify the precedence of virtual and non-virtual location levels to lookup values for. Valid value are:
+ * <ul>
+ *   <li><b>N</b> lookup values for non-virtual (normal) location levels only
+ *   <li><b>V</b> lookup values for virtual (normal) location levels only
+ *   <li><b>NV</b> lookup values for non-virtual (normal) location levels, but if none exists, lookup values for virtual location levels
+ *   <li><b>VN</b> (default) lookup values for virtual location levels, but if none exists, lookup values for non-virtual (normal) location levels
+ * </ul>
  *
  * @return The retrieved attribute level value
  */
@@ -1971,7 +2422,8 @@ function lookup_attribute_by_level(
    p_out_range_behavior      in  integer  default cwms_lookup.method_null,
    p_timezone_id             in  varchar2 default null,
    p_date                    in  date     default null,
-   p_office_id               in  varchar2 default null)
+   p_office_id               in  varchar2 default null,
+   p_level_precedence        in  varchar2 default 'VN')
    return number;
 /**
  * Renames a location level in the database
@@ -1995,7 +2447,14 @@ procedure rename_location_level(
  * @param p_attribute_units    The unit of the attribute, if applicable
  * @param p_cascade            A flag ('T' or 'F') that specifies whether to delete any recurring pattern records. If 'F' and such records exist, the routine will fail
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
- */
+ * @param p_level_type         One or two characters that specify which types of location levels to delete. If not specified, 'VN' will be used.
+ * <ul>
+ *   <li><b>N</b> delete non-virtual (normal) location levels only
+ *   <li><b>V</b> delete virtual location levels only
+ *   <li><b>NV</b> delete both non-virtual and virtual location levels
+ *   <li><b>VN</b> delete both non-virtual and virtual location levels
+ * </ul>
+*/
 procedure delete_location_level(
    p_location_level_id       in  varchar2,
    p_effective_date          in  date     default null,
@@ -2004,7 +2463,8 @@ procedure delete_location_level(
    p_attribute_value         in  number   default null,
    p_attribute_units         in  varchar2 default null,
    p_cascade                 in  varchar2 default 'F',
-   p_office_id               in  varchar2 default null);
+   p_office_id               in  varchar2 default null,
+   p_level_type              in  varchar2 default 'VN');
 /**
  * Deletes a location level, optionally deleting any recurring pattern records
  *
@@ -2028,6 +2488,13 @@ procedure delete_location_level(
  * @param p_cascade            A flag ('T' or 'F') that specifies whether to delete any recurring pattern records. If 'F' and such records exist, the routine will fail
  * @param p_delete_indicators  A flag ('T' or 'F') that specifies whether to delete any location level indicators associated with the location level
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_type         One or two characters that specify which types of location levels to delete. If not specified, 'VN' will be used.
+ * <ul>
+ *   <li><b>N</b> delete non-virtual (normal) location levels only
+ *   <li><b>V</b> delete virtual location levels only
+ *   <li><b>NV</b> delete both non-virtual and virtual location levels
+ *   <li><b>VN</b> delete both non-virtual and virtual location levels
+ * </ul>
  */
 procedure delete_location_level_ex(
    p_location_level_id       in  varchar2,
@@ -2038,7 +2505,8 @@ procedure delete_location_level_ex(
    p_attribute_units         in  varchar2 default null,
    p_cascade                 in  varchar2 default 'F',
    p_delete_indicators       in  varchar2 default 'F',
-   p_office_id               in  varchar2 default null);
+   p_office_id               in  varchar2 default null,
+   p_level_type              in  varchar2 default 'VN');
 /**
  * Deletes a location level, optionally deleting any recurring pattern records and location level indicators
  *
@@ -2051,6 +2519,13 @@ procedure delete_location_level_ex(
  * @param p_cascade            A flag ('T' or 'F') that specifies whether to delete any recurring pattern records. If 'F' and such records exist, the routine will fail
  * @param p_delete_indicators  A flag ('T' or 'F') that specifies whether to delete any location level indicators associated with the location level
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_type         One or two characters that specify which types of location levels to delete. If not specified, 'VN' will be used.
+ * <ul>
+ *   <li><b>N</b> delete non-virtual (normal) location levels only
+ *   <li><b>V</b> delete virtual location levels only
+ *   <li><b>NV</b> delete both non-virtual and virtual location levels
+ *   <li><b>VN</b> delete both non-virtual and virtual location levels
+ * </ul>
  */
 procedure delete_location_level2(
    p_location_level_id       in  varchar2,
@@ -2061,7 +2536,8 @@ procedure delete_location_level2(
    p_attribute_units         in  varchar2 default null,
    p_cascade                 in  varchar2 default 'F',
    p_delete_indicators       in  varchar2 default 'F',
-   p_office_id               in  varchar2 default null);
+   p_office_id               in  varchar2 default null,
+   p_level_type              in  varchar2 default 'VN');
 /**
  * Deletes a location level, optionally deleting any recurring pattern records and location level indicators
  *
@@ -2086,6 +2562,13 @@ procedure delete_location_level2(
  * @param p_delete_indicators  A flag ('T' or 'F') that specifies whether to delete any location level indicators associated with the location level
  * @param p_delete_pools       A flag ('T' or 'F') that specifies whether to delete any explicit pool definitions associated with the location level
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_type         One or two characters that specify which types of location levels to delete. If not specified, 'VN' will be used.
+ * <ul>
+ *   <li><b>N</b> delete non-virtual (normal) location levels only
+ *   <li><b>V</b> delete virtual location levels only
+ *   <li><b>NV</b> delete both non-virtual and virtual location levels
+ *   <li><b>VN</b> delete both non-virtual and virtual location levels
+ * </ul>
  */
 procedure delete_location_level3(
    p_location_level_id       in  varchar2,
@@ -2097,7 +2580,8 @@ procedure delete_location_level3(
    p_cascade                 in  varchar2 default 'F',
    p_delete_indicators       in  varchar2 default 'F',
    p_delete_pools            in  varchar2 default 'F',
-   p_office_id               in  varchar2 default null);
+   p_office_id               in  varchar2 default null,
+   p_level_type              in  varchar2 default 'VN');
 /**
  * Deletes a location level, optionally deleting any recurring pattern records, location level indicators, and associated pool definitions
  *
@@ -2434,7 +2918,7 @@ procedure delete_loc_lvl_source(
  * </table>
  *
  * @param p_cursor A cursor containing all matching basins.  The cursor contains
- * the following columns:
+ * the following columns, and is sorted ascending by columns 1, 2, 3, 4, 6, & 8
  * <p>
  * <table class="descr"">
  *   <tr>
@@ -2475,9 +2959,21 @@ procedure delete_loc_lvl_source(
  *   </tr>
  *   <tr>
  *     <td class="descr-center">6</td>
- *     <td class="descr">location_level_date</td>
+ *     <td class="descr">effective_date</td>
  *     <td class="descr">date</td>
  *     <td class="descr">The effective date of the location level</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">expiration_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The expiration date of the location level</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">level_type</td>
+ *     <td class="descr">varchar2(11)</td>
+ *     <td class="descr">Either 'NON-VIRTUAL' or 'VIRTUAL'</td>
  *   </tr>
  * </table>
  *
@@ -2492,8 +2988,14 @@ procedure delete_loc_lvl_source(
  * matching.
  *
  * @param p_timezone_id The time zone to retrieve dates/times in
- *
  * @param p_unit_system The unit system ('EN' or 'SI') to retrieve values in
+ * @param p_level_type  One or two characters that specify which types of location levels to catalog. If not specified, 'VN' will be used.
+ * <ul>
+ *   <li><b>N</b> catalog non-virtual (normal) location levels only
+ *   <li><b>V</b> catalog virtual location levels only
+ *   <li><b>NV</b> catalog both non-virtual and virtual location levels
+ *   <li><b>VN</b> catalog both non-virtual and virtual location levels
+ * </ul>
  */
 procedure cat_location_levels(
    p_cursor                 out sys_refcursor,
@@ -2501,7 +3003,8 @@ procedure cat_location_levels(
    p_attribute_id_mask      in  varchar2 default '*',
    p_office_id_mask         in  varchar2 default null,
    p_timezone_id            in  varchar2 default 'UTC',
-   p_unit_system            in  varchar2 default 'SI');
+   p_unit_system            in  varchar2 default 'SI',
+   p_level_type             in  varchar2 default 'VN');
 -- not documented
 function get_loc_lvl_indicator_code(
    p_loc_lvl_indicator_id   in  varchar2,
@@ -3889,7 +4392,6 @@ procedure retrieve_location_levels(
  *
  * @return                 The location level values as time series, in the specified time zones, formats, and vertical datums
  */
-
 function retrieve_location_levels_f(
    p_names       in  varchar2,
    p_format      in  varchar2,
@@ -3900,8 +4402,196 @@ function retrieve_location_levels_f(
    p_timezone    in  varchar2 default null,
    p_office_id   in  varchar2 default null)
    return clob;
+/*
+ * Virtual location level routines
+ */
+procedure process_constituents(
+   p_values                  out nocopy ztsv_array,         -- generated values
+   p_unit                    in varchar2,                   -- specified output unit
+   p_connections_str         in varchar2,                   -- comma-separated list of constituent connections
+   p_constituent_abbrs       in str_tab_t,                  -- table of constituent abbreviations
+   p_constituent_types       in str_tab_t,                  -- table of consituent types
+   p_constituent_names       in str_tab_t,                  -- table of constituent names (type-dependent)
+   p_constituent_attr_ids    in str_tab_t    default null,  -- table of attribute identifiers for location level constituents
+   p_constituent_attr_values in number_tab_t default null,  -- table of attribute values for location level constituents
+   p_constituent_attr_units  in str_tab_t    default null,  -- table of attribute units for location level constituents
+   p_start_time              in date         default null,  -- start of the time window
+   p_end_time                in date         default null,  -- end of the time window
+   p_time_zone               in varchar2     default null,  -- time zone of date/times
+   p_office                  in varchar2     default null); -- office identifier of owning office
+
+procedure process_constituents(
+   p_values                  out nocopy ztsv_array,            -- generated values
+   p_unit                    in varchar2,                      -- specified output unit
+   p_connections_str         in varchar2,                      -- comma-separated list of constituent connections
+   p_constituent_abbrs       in str_tab_t,                     -- table of constituent abbreviations
+   p_constituent_types       in str_tab_t,                     -- table of consituent types
+   p_constituent_names       in str_tab_t,                     -- table of constituent names (type-dependent)
+   p_constituent_attr_ids    in str_tab_t       default null,  -- table of attribute identifiers for location level constituents
+   p_constituent_attr_values in number_tab_t    default null,  -- table of attribute values for location level constituents
+   p_constituent_attr_units  in str_tab_t       default null,  -- table of attribute units for location level constituents
+   p_date_times              in date_table_type default null,  -- table of date/times to generate values for
+   p_time_zone               in varchar2        default null,  -- time zone of date/times
+   p_office                  in varchar2        default null);  -- office identifier of owning office
+
+procedure validate_constituents(
+   p_connections_str         in varchar2,                   -- comma-separated list of constituent connections
+   p_constituent_abbrs       in str_tab_t,                  -- table of constituent abbreviations
+   p_constituent_types       in str_tab_t,                  -- table of consituent types
+   p_constituent_names       in str_tab_t,                  -- table of constituent names (type-dependent)
+   p_constituent_attr_ids    in str_tab_t    default null,  -- table of attribute identifiers for location level constituents
+   p_constituent_attr_values in number_tab_t default null,  -- table of attribute values for location level constituents
+   p_constituent_attr_units  in str_tab_t    default null,  -- table of attribute units for location level constituents
+   p_office                  in varchar2     default null);  -- office identifier of owning office
+
+function get_virtual_loc_lvl_code(
+   p_location_level_id in varchar2,
+   p_effective_date    in date,
+   p_timezone_id       in varchar2,
+   p_attribute_id      in varchar2 default null,
+   p_attribute_value   in number   default null,
+   p_attribute_unit    in varchar2 default null,
+   p_match_time        in varchar2 default 'F',
+   p_office_id         in varchar2 default null)
+   return integer;
+
+procedure store_virtual_location_level(
+   p_location_level_id       in varchar2,
+   p_constituents            in str_tab_tab_t,
+   p_constituent_connections in varchar2 default null,
+   p_level_comment           in varchar2 default null,
+   p_attribute_id            in varchar2 default null,
+   p_attribute_value         in number   default null,
+   p_attribute_unit          in varchar2 default null,
+   p_attribute_comment       in varchar2 default null,
+   p_effective_date          in date     default null,
+   p_expiration_date         in date     default null,
+   p_timezone_id             in varchar2 default 'UTC',
+   p_fail_if_exists          in varchar2 default 'T',
+   p_ignore_nulls            in varchar2 default 'T',
+   p_office_id               in varchar2 default null);
+
+procedure store_virtual_location_level(
+   p_location_level_id       in varchar2,
+   p_constituents            in varchar2 default null,
+   p_constituent_connections in varchar2 default null,
+   p_level_comment           in varchar2 default null,
+   p_attribute_id            in varchar2 default null,
+   p_attribute_value         in number   default null,
+   p_attribute_unit          in varchar2 default null,
+   p_attribute_comment       in varchar2 default null,
+   p_effective_date          in date     default null,
+   p_expiration_date         in date     default null,
+   p_timezone_id             in varchar2 default 'UTC',
+   p_fail_if_exists          in varchar2 default 'T',
+   p_ignore_nulls            in varchar2 default 'T',
+   p_office_id               in varchar2 default null);
+
+procedure retrieve_virtual_loc_lvl(
+   p_constituents            out nocopy str_tab_tab_t,
+   p_constituent_connections out nocopy varchar2,
+   p_level_comment           out nocopy varchar2,
+   p_attribute_comment       out nocopy varchar2,
+   p_effective_date_out      out nocopy date,
+   p_expiration_date         out nocopy date,
+   p_location_level_id       in  varchar2,
+   p_attribute_id            in  varchar2 default null,
+   p_attribute_value         in  number   default null,
+   p_attribute_unit          in  varchar2 default null,
+   p_effective_date_in       in  date     default null,
+   p_timezone_id             in  varchar2 default 'UTC',
+   p_match_time              in  varchar2 default 'F',
+   p_office_id               in  varchar2 default null);
+/**
+ * Retrieves a time series of location level values for a specified virtual location level
+ * and a time window
+ *
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_level_units        The value unit to retrieve the level values in
+ * @param p_start_time         The start of the time window
+ * @param p_end_time           The end of the time window
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_value    The value of the attribute, if applicable
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_timezone_id        The time zone of the time window. Retrieved dates are also in this time zone
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ *
+ * @return The location level values. The time series contains values at the spcified
+ * start and end times of the time window and may contain values at intermediate times.
+ * <ul>
+ *   <li>If the level <b>is constant</b>, the time series will be of length 2 and the quality_codes of both elements will be zero</li>
+ *   <li>If the level <b>varies in a recurring pattern</b>, the time series will include values at any pattern breakpoints in the time window. The quality_codes of all elements will be zero</li>
+ *   <li>If the level <b>varies irregularly</b>, the time series will include values of at any times of the representing time series that are in the time window.  The quality codes of times within the time window will be the quality codes of the representing time series. The quality codes of the elements at the beginning and end of the time window may be zero</li>
+ * </ul>
+ * The quality code of each returned value will be one of the following
+ * <ul>
+ *   <li><b>0:&nbsp;</b>The value for all times between the previous value time and this one is the same as the previous value</li>
+ *   <li><b>1:&nbsp;</b>The value for all times between the previous value time and this one is interpolated between the previous value and this one</li>
+ * </ul>
+ */
+function retrieve_vloc_lvl_values(
+   p_location_level_id       in  varchar2,
+   p_level_units             in  varchar2,
+   p_start_time              in  date,
+   p_end_time                in  date,
+   p_attribute_id            in  varchar2 default null,
+   p_attribute_value         in  number   default null,
+   p_attribute_units         in  varchar2 default null,
+   p_timezone_id             in  varchar2 default 'UTC',
+   p_office_id               in  varchar2 default null)
+   return ztsv_array;
+
+/* maybe */
+function get_vloc_lvl_eff_and_exp(
+   p_location_level_id in varchar2,
+   p_start_time        in date,
+   p_end_time          in date,
+   p_timezone_id       in varchar2 default 'UTC',
+   p_attribute_id      in varchar2 default null,
+   p_attribute_value   in number   default null,
+   p_attribute_unit    in varchar2 default null,
+   p_office_id         in varchar2 default null)
+   return date2_tab_t;
+
+/* maybe */
+procedure retrieve_vloc_lvl_values_utc(
+   p_level_values            out nocopy ztsv_array,
+   p_location_id             in  varchar2,
+   p_parameter_id            in  varchar2,
+   p_parameter_type_id       in  varchar2,
+   p_duration_id             in  varchar2,
+   p_spec_level_id           in  varchar2,
+   p_level_units             in  varchar2,
+   p_start_time_utc          in  date,
+   p_end_time_utc            in  date,
+   p_attribute_value         in  number default null,
+   p_attribute_units         in  varchar2 default null,
+   p_attribute_parameter_id  in  varchar2 default null,
+   p_attribute_param_type_id in  varchar2 default null,
+   p_attribute_duration_id   in  varchar2 default null,
+   p_office_id               in  varchar2 default null);
+
+/* maybe */
+function retrieve_vloc_lvl_values_utc_f(
+   p_location_id             in  varchar2,
+   p_parameter_id            in  varchar2,
+   p_parameter_type_id       in  varchar2,
+   p_duration_id             in  varchar2,
+   p_spec_level_id           in  varchar2,
+   p_level_units             in  varchar2,
+   p_start_time_utc          in  date,
+   p_end_time_utc            in  date,
+   p_attribute_value         in  number default null,
+   p_attribute_units         in  varchar2 default null,
+   p_attribute_parameter_id  in  varchar2 default null,
+   p_attribute_param_type_id in  varchar2 default null,
+   p_attribute_duration_id   in  varchar2 default null,
+   p_office_id               in  varchar2 default null)
+   return ztsv_array;
+   return number;
 
 END cwms_level;
 /
 
 show errors;
+create or replace context cwms_level using cwms_level;
