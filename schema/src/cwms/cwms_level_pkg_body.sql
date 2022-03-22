@@ -4567,9 +4567,11 @@ begin
                      p_attribute_duration_id   => p_attribute_duration_id,
                      p_level_precedence        => 'N',
                      p_office_id               => p_office_id);
-                  for i in 1..l_level_values.count loop
-                     l_combined_values_hash(to_char(l_level_values(i).date_time, c_date_fmt)) := l_level_values(i);
-                  end loop;
+                  if l_level_values is not null then
+                     for i in 1..l_level_values.count loop
+                        l_combined_values_hash(to_char(l_level_values(i).date_time, c_date_fmt)) := l_level_values(i);
+                     end loop;
+                  end if;
                exception
                   when item_does_not_exist then null;
                end;
@@ -4791,11 +4793,6 @@ begin
       end if;
       l_level_dates(to_char(l_effective_date, c_date_fmt)) := true;
    end if;
-   l_date_str := l_level_dates.first;
-   loop
-      exit when l_date_str is null;
-      l_date_str := l_level_dates.next(l_date_str);
-   end loop;
    if l_level_dates.count > 1 then
       -------------------------------------------
       -- working with multiple effective dates --
@@ -5088,9 +5085,12 @@ begin
          -- constant value --
          --------------------
          l_value := l_rec.location_level_value * l_factor + l_offset;
-         l_level_values.extend(2);
+         l_level_values.extend;
          l_level_values(1) := new ztsv_type(l_start_time_utc, l_value, case when l_rec.interpolate = 'T' then 1 else 0 end);
-         l_level_values(2) := new ztsv_type(l_end_time_utc,   l_value, case when l_rec.interpolate = 'T' then 1 else 0 end);
+         if l_end_time_utc is not null then
+            l_level_values.extend;
+            l_level_values(2) := new ztsv_type(l_end_time_utc, l_value, case when l_rec.interpolate = 'T' then 1 else 0 end);
+         end if;
       end if;
       if l_rec.expiration_date is not null then
          -----------------------------------------------------------------------------
@@ -5107,7 +5107,7 @@ begin
                             rownum as seq
                        from table(l_level_values)
                    )
-             where date_time > l_rec.expiration_date;
+             where date_time >= l_rec.expiration_date;
 
             if l_next is not null then
                ---------------------------------------------
