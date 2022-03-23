@@ -365,6 +365,7 @@ conversion_definitions = [
 	('ft/s',        'mm/day',      'm_per_ft[m]/[ft] | m*_per_*[mm]/[m] | s_per_day[s]/[day]'),
 	('ft/s',        'mm/hr',       'm_per_ft[m]/[ft] | m*_per_*[mm]/[m] | s_per_hr[s]/[hr]'),
 	('ft/s',        'mph',         '[mi]/ft_per_mile[ft] | s_per_hr[s]/[hr] | [mph]/[mi/hr]'),
+	('ft2/s',       'm2/s',        'm_per_ft^2[m2]/[ft2]'),
 	('ft2',         '1000 acre',   '[acre]/ft2_per_acre[ft2] | [1000 acre]/*_per_k*[acre]'),
 	('ft2',         '1000 m2',     'm_per_ft^2[m2]/[ft2] | [1000 m2]/*_per_k*[m2]'),
 	('ft2',         'acre',        '[acre]/ft2_per_acre[ft2]'),
@@ -643,6 +644,7 @@ conversion_definitions = [
 	('m/s',         'mm/day',      'm*_per_*[mm]/[m] | s_per_day[s]/[day]'),
 	('m/s',         'mm/hr',       'm*_per_*[mm]/[m] | s_per_hr[s]/[hr]'),
 	('m/s',         'mph',         '[ft]/m_per_ft[m] | [mi]/ft_per_mile[ft] | s_per_hr[s]/[hr] | [mph]/[mi/hr]'),
+	('m2/s',        'ft2/s',       '[ft2]/m_per_ft^2[m2]'),
 	('m2',          '1000 acre',   '[ft2]/m_per_ft^2[m2] | [acre]/ft2_per_acre[ft2] | [1000 acre]/*_per_k*[acre]'),
 	('m2',          '1000 m2',     '[1000 m2]/*_per_k*[m2]'),
 	('m2',          'acre',        '[ft2]/m_per_ft^2[m2] | [acre]/ft2_per_acre[ft2]'),
@@ -855,6 +857,7 @@ english_units = {"English" : [
 	"ft",
 	"ft/hr",
 	"ft/s",
+	"ft2/s",
 	"ft2",
 	"ft3",
 	"ftUS",
@@ -972,6 +975,7 @@ si_units = {"SI" : [
 	"m",
 	"m/hr",
 	"m/s",
+	"m2/s",
 	"m2",
 	"m3",
 	"mb",
@@ -1073,6 +1077,11 @@ currency_per_volume_units = {"Currency per Volume" : [
 decay_coefficient_units = {"Decay Coeffs" : [
 	"1/ft",
 	"1/m",
+]}
+
+depth_velocity_units = {"Depth Velocity" : [
+	"ft2/s",
+	"m2/s",
 ]}
 
 elapsed_time_units = {"Elapsed Time" : [
@@ -1265,6 +1274,7 @@ units_by_param = [
 	currency_units,
 	currency_per_volume_units,
 	decay_coefficient_units,
+	depth_velocity_units,
 	elapsed_time_units,
 	electric_charge_rate_units,
 	electromotive_potential_units,

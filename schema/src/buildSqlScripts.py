@@ -4276,6 +4276,7 @@ abstractParams = [
     "Mass",
     "Mass Per Volume",
     "Mass Rate",
+    "Depth Velocity",
 ]
 
 #-------#
@@ -4420,6 +4421,8 @@ unitDefs = [
     ["Volume Rate",                      "mcm/mon",     "EN",   "Million cubic meters per month",    "Volume rate of 1E+06 cubic meters per month"                                  ],
     ["Volume",                           "kdsf",        "EN",   "Kilo-day-second-foot",              "Volume of 1E+03 dsf"                                                          ],
     ["Volume",                           "mcm",         "SI",   "Millions of cubic meters",          "Volume of 1E+06 cubic meters"                                                 ],
+    ["Depth Velocity",                   "m2/s",        "SI",   "Depth times velocity",              "Depth of 1 meter and Velocity of 1 meter/second"                                                          ],
+    ["Depth Velocity",                   "ft2/s",       "EN",   "Depth times velocity",              "Depth of 1 feet and Velocity of 1 feet/second"                                                 ],
 ]
 
 unitDefsById = {}
@@ -4661,6 +4664,7 @@ parameters = [
     [46,    "Electric Charge Rate",             "Current",     "Current",            "ampere",  "ampere",  "ampere",      "Electric current flowing past a point in a circuit"                          ],
     [47,    "Frequency",                        "Freq",        "Frequency",          "Hz",      "Hz",      "Hz",          "The number of cycles or occurrences per time unit"                           ],
     [48,    "None",                             "Probability", "Probability",        "n/a",     "n/a",     "n/a",         "Expected fraction of all events for a specific event"                        ],
+    [49,    "Depth Velocity",                   "DepthVelocity",          "Depth Velocity",  "m2/s",    "ft2/s",   "ft2/s",          "Depth Velocity"                        ],
 #   Negative base parameter codes for non-value parmameters (i.e., no entries in AT_TSV... tables)
     [-1,    "None",                             "Text",     "Text Data",          "n/a",     "n/a",     "n/a",         "Text data only, no numeric values"                                           ],
     [-2,    "None",                             "Binary",   "Binary Data",        "n/a",     "n/a",     "n/a",         "Binary data such as images, documents, etc..."                               ],
