@@ -13,6 +13,8 @@ create or replace package test_dba as
 
     -- %test (store sec.upass.id property)
     procedure test_store_upass_id_property;
+    -- %test (test locking and unlocking of user)
+    procedure test_lock_unlock_user;
 
     procedure teardown;
 end;
@@ -30,6 +32,19 @@ AS
      DELETE FROM AT_SEC_CWMS_USERS WHERE lower(USERID)=lower('TestUser');
      COMMIT;
     END;
+
+    PROCEDURE test_lock_unlock_user
+    IS
+     l_status VARCHAR2(64);
+    BEGIN
+        cwms_sec.lock_db_account(cwms_sec.cac_service_user);
+        select account_status into l_status from dba_users where username=cwms_sec.cac_service_user;
+        ut.expect(l_status).to_equal('LOCKED');
+        cwms_sec.unlock_db_account(cwms_sec.cac_service_user);
+        select account_status into l_status from dba_users where username=cwms_sec.cac_service_user;
+        ut.expect(l_status).to_equal('OPEN');
+    END;
+
     PROCEDURE test_create_cwms_user
     IS
         l_count   NUMBER;
