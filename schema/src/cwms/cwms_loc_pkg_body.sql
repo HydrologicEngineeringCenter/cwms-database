@@ -2883,8 +2883,7 @@ AS
                           attribute_unit
                      from cwms_v_location_level
                     where office_id = nvl (upper (trim (p_db_office_id)),cwms_util.user_office_id)
-                      and location_level_id like l_location_ids (i) || '.%'
-                      and unit_system = 'SI')
+                      and location_level_id like l_location_ids (i) || '.%')
             loop
                cwms_level.delete_location_level_ex(
                   rec.location_level_id,

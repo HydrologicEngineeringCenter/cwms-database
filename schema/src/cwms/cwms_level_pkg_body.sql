@@ -1791,6 +1791,8 @@ is
    l_fail_if_exists            boolean;
    l_spec_level_code           number(14);
    l_interval_origin           date;
+   l_interval_origin_tz        date;
+   l_seasonal_date_utc         date;
    l_location_code             number(14);
    l_location_tz_code          number(14);
    l_parts                     str_tab_t;
@@ -1821,6 +1823,8 @@ is
    l_attr_param_is_elev        boolean;
    l_level_vert_datum_offset   binary_double;
    l_attr_vert_datum_offset    binary_double;
+   l_offset_months             integer;
+   l_offset_minutes            integer;
 begin
    l_fail_if_exists := cwms_util.return_true_or_false(p_fail_if_exists);
    -------------------
@@ -2014,8 +2018,9 @@ begin
          -- set the interval origin for the seaonal values --
          -- (always stored in UTC in the database)         --
          ----------------------------------------------------
+         l_interval_origin_tz := nvl(p_interval_origin, to_date('01JAN2000 0000', 'ddmonyyyy hh24mi'));
          l_interval_origin := cwms_util.change_timezone(
-            nvl(p_interval_origin, to_date('01JAN2000 0000', 'ddmonyyyy hh24mi')),
+            l_interval_origin_tz,
             l_timezone_id,
             'UTC');
 
@@ -2073,11 +2078,27 @@ begin
                    l_expiration_date);
          end if;
          for i in 1..p_seasonal_values.count loop
+            -----------------------------------------------------------------------
+            -- convert the offset months/minutes from specified time zone to UTC --
+            --                                                                   --
+            -- This assumes each offset will either be in or out of DST in       --
+            -- every interval, which may not actually be the case                --
+            -----------------------------------------------------------------------
+            l_seasonal_date_utc := cwms_util.change_timezone(
+               add_months(l_interval_origin_tz, p_seasonal_values(i).offset_months) + p_seasonal_values(i).offset_minutes / 1440, 
+               l_timezone_id,
+               'UTC');
+            l_offset_months := months_between(l_seasonal_date_utc, l_interval_origin);
+            l_offset_minutes := round((l_seasonal_date_utc - add_months(l_interval_origin, l_offset_months)) * 1440, 9);
+            if (l_offset_minutes < 0) then
+               l_offset_months := l_offset_months - 1;
+               l_offset_minutes := round((l_seasonal_date_utc - add_months(l_interval_origin, l_offset_months)) * 1440, 9);
+            end if;
             insert
               into at_seasonal_location_level
             values(l_location_level_code,
-                   cwms_util.months_to_yminterval(p_seasonal_values(i).offset_months),
-                   cwms_util.minutes_to_dsinterval(p_seasonal_values(i).offset_minutes),
+                   cwms_util.months_to_yminterval(l_offset_months),
+                   cwms_util.minutes_to_dsinterval(l_offset_minutes),
                    p_seasonal_values(i).value * l_level_factor + l_level_offset);
          end loop;
       end if;
@@ -2123,13 +2144,12 @@ begin
          -- set the interval origin for the seaonal values --
          -- (always stored in UTC in the database)         --
          ----------------------------------------------------
-         if p_interval_origin is null then
-            l_interval_origin := to_date('01JAN2000 0000', 'ddmonyyyy hh24mi');
-         else
-            l_interval_origin := cast(
-               from_tz(cast(p_interval_origin as timestamp), l_timezone_id)
-               at time zone 'UTC' as date);
-         end if;
+         l_interval_origin_tz := nvl(p_interval_origin, to_date('01JAN2000 0000', 'ddmonyyyy hh24mi'));
+         l_interval_origin := cwms_util.change_timezone(
+            l_interval_origin_tz,
+            l_timezone_id,
+            'UTC');
+
          update at_location_level
             set location_level_value = null,
                 location_level_comment = p_level_comment,
@@ -2147,11 +2167,27 @@ begin
            from at_seasonal_location_level
           where location_level_code = l_location_level_code;
          for i in 1..p_seasonal_values.count loop
+            -----------------------------------------------------------------------
+            -- convert the offset months/minutes from specified time zone to UTC --
+            --                                                                   --
+            -- This assumes each offset will either be in or out of DST in       --
+            -- every interval, which may not actually be the case                --
+            -----------------------------------------------------------------------
+            l_seasonal_date_utc := cwms_util.change_timezone(
+               add_months(l_interval_origin_tz, p_seasonal_values(i).offset_months) + p_seasonal_values(i).offset_minutes,
+               l_timezone_id,
+               'UTC');
+            l_offset_months := months_between(l_seasonal_date_utc, l_interval_origin);
+            l_offset_minutes := round((l_seasonal_date_utc - add_months(l_interval_origin, l_offset_months)) * 1440, 9);
+            if (l_offset_minutes < 0) then
+               l_offset_months := l_offset_months - 1;
+               l_offset_minutes := round((l_seasonal_date_utc - add_months(l_interval_origin, l_offset_months)) * 1440, 9);
+            end if;
             insert
               into at_seasonal_location_level
             values(l_location_level_code,
-                   cwms_util.months_to_yminterval(p_seasonal_values(i).offset_months),
-                   cwms_util.minutes_to_dsinterval(p_seasonal_values(i).offset_minutes),
+                   cwms_util.months_to_yminterval(l_offset_months),
+                   cwms_util.minutes_to_dsinterval(l_offset_minutes),
                    p_seasonal_values(i).value * l_level_factor + l_level_offset);
          end loop;
       end if;
@@ -5040,7 +5076,7 @@ begin
                l_ts(i) := ztsv_type(l_dates(i), l_values(i), case when l_rec.interpolate = 'T' then 1 else 0 end);
             end loop;
             if l_ts is not null and l_ts.count > 0 then
-               if l_ts(1).date_time < l_start_time_utc then
+               if l_ts(1).date_time < l_start_time_utc and l_ts.count > 1 then
                   l_first := 2;
                   if l_ts(2).date_time > l_start_time_utc then
                      l_level_values.extend;

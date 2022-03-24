@@ -2343,7 +2343,7 @@ AS
       --
       IF p_previous
       THEN
-         IF p_interval = 0
+         IF p_interval = 0 or p_is_lrts
          THEN
             SELECT MAX (date_time)
               INTO l_temp_time
@@ -2363,7 +2363,7 @@ AS
 
       IF p_next
       THEN
-         IF p_interval = 0
+         IF p_interval = 0 or p_is_lrts
          THEN
             SELECT MIN (date_time)
               INTO l_temp_time
@@ -3058,13 +3058,8 @@ AS
                   --
                   -- change interval from days to months
                   --
-                  IF MOD (l_interval, 30) = 0
-                  THEN
-                     l_interval := l_interval / 30;
-                  ELSE
-                     l_interval := l_interval / 365 * 12;
-                  END IF;
 
+                  l_local_time_zone := cwms_loc.get_local_timezone(l_location_code);
                   l_query_str :=
                      'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
                          case
@@ -3084,13 +3079,8 @@ AS
                             and version_date =  :version
                          ) v
                          right outer join
-                         (select date_time
-                           from (select cwms_util.change_timezone(add_months(:reg_start, (level-1) * :interval), :l_time_zone, ''UTC'') date_time
-                                   from dual
-                                connect by level <= months_between(:reg_end,
-                                                                   :reg_start) / :interval + 1
-                                )
-                          where date_time is not null
+                         (select column_value as date_time
+                            from table(cwms_ts.get_lrts_times_utc(:reg_start, :reg_end, :interval, :local_timezone))
                          ) t
                          on v.date_time = t.date_time
                          order by t.date_time asc';
@@ -3106,11 +3096,9 @@ AS
                            l_reg_start_time,
                            l_version_date,
                            l_reg_start_time,
-                           l_interval,
-                           l_time_zone,
                            l_reg_end_time,
-                           l_reg_start_time,
-                           l_interval;
+                           l_interval,
+                           l_local_time_zone;
                ELSE
                   --
                   -- can use date arithmetic
