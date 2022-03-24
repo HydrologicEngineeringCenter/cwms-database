@@ -60,6 +60,7 @@ DECLARE
       'av_office',
       'av_outlet',
       'av_parameter',
+      'av_parameter_type',
       'av_project',
       'av_project_purpose',
       'av_project_purposes',
@@ -191,6 +192,7 @@ END;
 @@cwms/views/av_outlet
 @@cwms/views/av_overflow
 @@cwms/views/av_parameter
+@@cwms/views/av_parameter_type
 @@cwms/views/av_pool
 @@cwms/views/av_pool_name
 @@cwms/views/av_project

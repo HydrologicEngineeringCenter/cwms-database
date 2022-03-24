@@ -17,6 +17,13 @@ procedure test_retrieve_ts_with_calendar_based_times__JIRA_CWDB_157;
 --%test(Test creation various types of time series)
 procedure test_create_ts_parameter_types;
 
+--%test(Test rename time series) 
+procedure test_rename_ts;
+
+--%test(Test rename time series inst to median) 
+--%throws(-20013)
+procedure test_rename_ts_inst_to_median;
+
 --%test(create depth velocity time series)
 procedure test_create_depth_velocity; 
 
@@ -190,14 +197,35 @@ AS
         throw_an_exception(test_base_location_id || '.Precip.Const.0.Variable.raw');
     END;
 
+    PROCEDURE test_rename_ts
+    IS
+        l_time NUMBER := CWMS_UTIL.TO_MILLIS (TIMESTAMP '2010-01-01 00:00:00');
+    BEGIN
+        store_a_value( test_base_location_id || '.Flow.Ave.Irr.Variable.raw','cfs',l_time,10,0);
+	cwms_ts.rename_ts(p_cwms_ts_id_old => test_base_location_id || '.Flow.Ave.Irr.Variable.raw',p_cwms_ts_id_new =>test_base_location_id || '.Flow.Median.Irr.Variable.raw');
+	delete_ts_id(test_base_location_id || '.Flow.Median.Irr.Variable.raw');
+    END;
+
+    PROCEDURE test_rename_ts_inst_to_median
+    IS
+        l_time NUMBER := CWMS_UTIL.TO_MILLIS (TIMESTAMP '2010-01-01 00:00:00');
+    BEGIN
+        store_a_value( test_base_location_id || '.Flow.Inst.Irr.0.raw','cfs',l_time,10,0);
+	cwms_ts.rename_ts(p_cwms_ts_id_old => test_base_location_id || '.Flow.Inst.Irr.0.raw',p_cwms_ts_id_new =>test_base_location_id || '.Flow.Median.1Day.1Day.raw');
+    END;
+
     PROCEDURE test_create_ts_parameter_types
     IS
         l_time NUMBER := CWMS_UTIL.TO_MILLIS (TIMESTAMP '2010-01-01 00:00:00');
     BEGIN
         store_a_value( test_base_location_id || '.Flow.Ave.Irr.Variable.raw','cfs',l_time,10,0);
 	delete_ts_id(test_base_location_id || '.Flow.Ave.Irr.Variable.raw');
+        store_a_value( test_base_location_id || '.Flow.Median.Irr.Variable.raw','cfs',l_time,10,0);
+	delete_ts_id(test_base_location_id || '.Flow.Median.Irr.Variable.raw');
         store_a_value( test_base_location_id || '.Flow.Ave.0.Variable.raw','cfs',l_time,10,0);
 	delete_ts_id(test_base_location_id || '.Flow.Ave.0.Variable.raw');
+        store_a_value( test_base_location_id || '.Flow.Median.0.Variable.raw','cfs',l_time,10,0);
+	delete_ts_id(test_base_location_id || '.Flow.Median.0.Variable.raw');
         store_a_value( test_base_location_id || '.Opening.Const.Irr.UntilChanged.raw','ft',l_time,10,0);
 	delete_ts_id(test_base_location_id || '.Opening.Const.Irr.UntilChanged.raw');
         store_a_value( test_base_location_id || '.Opening.Const.0.UntilChanged.raw','ft',l_time,10,0);

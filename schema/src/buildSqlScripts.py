@@ -4717,6 +4717,7 @@ parameterTypes = [
     {"ID" : "Inst",  "DESCRIPTION" : "INSTANTANEOUS"},
     {"ID" : "Cum",   "DESCRIPTION" : "CUMULATIVE"},
     {"ID" : "Inc",   "DESCRIPTION" : "INCREMENTAL"},
+    {"ID" : "Median","DESCRIPTION" : "MEDIAN"},
 ]
 
 #---------------------#
