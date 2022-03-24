@@ -2,7 +2,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_PARAMETER_TYPE',
 /**
  * Displays information on parameters
  *
- * @Added after CWMS 21.1.x
+ * @since after CWMS 21.1.x
  *
  * @field parameter_type_code Unique numeric code identifying the parameter_type
  * @field parameter_id        Parameter type 
