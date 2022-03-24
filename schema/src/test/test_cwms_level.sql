@@ -353,7 +353,6 @@ begin
          p_date              => l_date,
          p_timezone_id       => c_timezone_id,
          p_office_id         => c_office_id);
-      dbms_output.put_line(l_date);
       if l_date < l_effective_date then
          ut.expect(l_value).to_be_null;
       else

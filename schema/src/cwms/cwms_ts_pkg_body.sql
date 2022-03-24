@@ -63,22 +63,13 @@ AS
    IS
       l_cwms_ts_id   VARCHAR2(191);
    begin
-      BEGIN
-         SELECT cwms_ts_id
-           INTO l_cwms_ts_id
-           FROM at_cwms_ts_id
-          WHERE ts_code = p_ts_code;
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            SELECT cwms_ts_id
-              INTO l_cwms_ts_id
-              FROM at_cwms_ts_id
-             WHERE ts_code = p_ts_code;
-      END;
+      select cwms_ts_id
+        into l_cwms_ts_id
+        from at_cwms_ts_id
+       where ts_code = p_ts_code;
 
-      RETURN l_cwms_ts_id;
-   END;
+      return l_cwms_ts_id;
+   end;
 
    function clean_ts_id(
       p_ts_id in varchar2)

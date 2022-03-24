@@ -77,11 +77,20 @@ as
       self.interval_months  := cwms_util.yminterval_to_months(p_obj.calendar_interval);
       self.interval_minutes := cwms_util.dsinterval_to_minutes(p_obj.time_interval);
       self.interpolate      := p_obj.interpolate;
-      self.tsid             := case p_obj.ts_code is null
-                                  when true  then null
-                                  when false then cwms_ts.get_ts_id(p_obj.ts_code)
-                               end;
-      self.expiration_date := p_obj.expiration_date;
+      self.expiration_date  := p_obj.expiration_date;
+      begin
+         self.tsid := case p_obj.ts_code is null
+                         when true  then null
+                         when false then cwms_ts.get_ts_id(p_obj.ts_code)
+                      end;
+      exception
+         when no_data_found then
+            ---------------------------------------------------------------------
+            -- this happens when deleting irregularly varying location levels  --
+            -- the time series is deleted before the location level is deleted --
+            ---------------------------------------------------------------------
+            self.tsid := null;
+      end;
       if p_obj.seasonal_level_values is not null then
          self.seasonal_values := new seasonal_value_tab_t();
          for i in 1..p_obj.seasonal_level_values.count loop

@@ -1086,9 +1086,17 @@ AS
       ---------.
       -- Update time_zone...
       --
-      IF p_time_zone_id IS NOT NULL
+      IF p_time_zone_id IS NOT NULL OR l_location_code != l_base_location_code
       THEN
-         l_time_zone_code := cwms_util.get_time_zone_code (p_time_zone_id);
+         if p_time_zone_id is null then
+            select time_zone_code
+              into l_time_zone_code
+              from at_physical_location
+             where location_code = l_base_location_code;
+         else
+            l_time_zone_code := cwms_util.get_time_zone_code (p_time_zone_id);
+         end if;
+
          select time_zone_code
            into l_old_time_zone_code
            from at_physical_location
@@ -1099,6 +1107,9 @@ AS
             declare
                l_tmp          integer;
             begin
+               -------------------------------------------------
+               -- see if we can update time series time zones --
+               -------------------------------------------------
                for rec in (select tss.ts_code,
                                   -tss.interval_utc_offset as interval_utc_offset,
                                   ci.interval,
@@ -1287,6 +1298,7 @@ AS
              nation_code = l_nation_code,
              nearest_city = l_nearest_city
        WHERE location_code = l_location_code;
+
        if l_base_location_code = l_location_code and p_active is not null then
           -----------------------------------
           -- update at_base_location table --

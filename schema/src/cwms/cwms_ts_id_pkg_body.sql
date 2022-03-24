@@ -17,6 +17,8 @@ AS
 		p_cwms_ts_id		  OUT at_cwms_ts_id%ROWTYPE
 	)
 	IS
+      l_base_location_code integer;
+      l_time_zone_code     integer;
 	BEGIN
 		p_cwms_ts_id.ts_code := p_cwms_ts_spec.ts_code;
 		p_cwms_ts_id.location_code := p_cwms_ts_spec.location_code;
@@ -74,15 +76,29 @@ AS
 						ON (co.office_code = abl.db_office_code)
 		 WHERE	location_code = p_cwms_ts_id.location_code;
 
-		begin
+      if p_cwms_ts_spec.time_zone_code is null then
+         select base_location_code
+           into l_base_location_code
+           from at_physical_location
+          where location_code = p_cwms_ts_spec.location_code;
+         if l_base_location_code != p_cwms_ts_spec.location_code then
+            select time_zone_code
+              into l_time_zone_code
+              from at_physical_location
+             where location_code = l_base_location_code;
+         end if;
+      else
+         l_time_zone_code := p_cwms_ts_spec.time_zone_code;
+      end if;
+      begin
          select time_zone_name
            into p_cwms_ts_id.time_zone_id
            from cwms_time_zone
-          where time_zone_code = p_cwms_ts_spec.time_zone_code;
-		exception
-		   when no_data_found then
+          where time_zone_code = l_time_zone_code;
+      exception
+         when no_data_found then
             cwms_err.raise(
-               'ERROR', 
+               'ERROR',
                'AT_CWMS_TS_SPEC has invalid time zone code of '
                ||nvl(to_char(p_cwms_ts_spec.time_zone_code), '<NULL>')
                ||' for time series code '
