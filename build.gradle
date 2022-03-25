@@ -1,5 +1,13 @@
 ext.ORACLE_JDBC_VERSION='19.3.0.0'
 
+// default property values to save some hassle.
+if ( !project.findProperty('mavenUser')) {
+    ext.mavenUser = ""
+}
+if ( !project.findProperty('mavenPassword')) {
+    ext.mavenPassword = ""
+}
+
 subprojects {
     apply plugin: 'java'
     repositories {
