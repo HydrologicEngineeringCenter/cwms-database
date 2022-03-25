@@ -24,6 +24,7 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
     private static final Logger logger = Logger.getLogger(CwmsDataLoadExecutor.class.getName());
     private DataResource resource;
     private String query;
+    private ArrayList<String> disabledIndexes = new ArrayList<>();
 
     private class Group {
         public Group( String item, String pattern, String type, String endSequence){
@@ -68,9 +69,19 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
                     logger.info("Processing Data Elemements");
                     int entries = processData(reader,context.getConnection());
                     logger.info("Total Entries loaded for (" + resource.getFilename() + ") is " + entries);
+                } else if( line.startsWith("!disableindex")) {
+
+                    disableIndex(line.split("\\s+")[1],context.getConnection());
+                } else if( line.startsWith("!")){
+                    // do nothing, comment
                 }
 
 
+            }
+            PreparedStatement enableIndex = context.getConnection().prepareStatement("alter index ? rebuild online");
+            for(String index: disabledIndexes){
+                enableIndex.setString(1,index);
+                enableIndex.execute();
             }
         } catch( IOException e ){
             throw new FlywayException("Data load processing failure",e);
@@ -81,6 +92,15 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
 
     }
 
+    private void disableIndex(String indexName, Connection connection) throws SQLException {
+        logger.info("Disabling index: " + indexName);
+        connection.createStatement().execute("alter session set skip_unusable_indexes = true");
+        String query = "alter index " +indexName + " unusable";
+        logger.info("Running " + query);
+        connection.createStatement().execute(query);
+        logger.info("Disabled");
+    }
+
     private int processData(BufferedReader reader,Connection connection) throws IOException, SQLException {
 
         PreparedStatement stmt = connection.prepareStatement(query);
@@ -88,6 +108,7 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
         connection.setAutoCommit(false);
         String line;
         int totalEntries = 0;
+        int batchSize = 10000;
         while ((line = reader.readLine()) != null) {
             stmt.clearParameters();
             //logger.info(line);
@@ -138,6 +159,10 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
             logger.info(stmt.toString());
             stmt.addBatch();
             totalEntries++;
+            if( totalEntries % batchSize == 0 ){
+                stmt.executeBatch();
+                logger.info("Have now saved: " + totalEntries + " records total for this set.");
+            }
         }
         stmt.executeBatch();
         connection.commit();
