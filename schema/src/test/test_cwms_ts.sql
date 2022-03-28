@@ -177,7 +177,7 @@ AS
             NULL,
             'T',
             -1,
-            'NAB');
+            '&office_id');
 
         SELECT COUNT (*)
           INTO l_count
