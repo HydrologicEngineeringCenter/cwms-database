@@ -11,6 +11,8 @@ procedure test_set_active_flag;
 procedure test_yearly_tables;
 --%test(Test filter duplicates)
 procedure test_filter_duplicates;
+--%test(Test delete ts data for location without timezone)
+procedure delete_ts_with_location_without_timezone;
 --%test(Test retrieve TS with calendar-based times [JIRA Issue CWDB-157])
 procedure test_retrieve_ts_with_calendar_based_times__JIRA_CWDB_157;
 
@@ -113,6 +115,80 @@ AS
         ut.expect (l_count).to_equal (0);
     END;
 
+    PROCEDURE delete_ts_with_location_without_timezone
+    IS
+        l_times        CWMS_TS.NUMBER_ARRAY;
+        l_values       CWMS_TS.DOUBLE_ARRAY;
+        l_qualities    CWMS_TS.NUMBER_ARRAY;
+        l_ts_code      NUMBER;
+        l_count        INTEGER;
+        l_cwms_ts_id   VARCHAR2 (200)
+            :=    test_base_location_id
+               || '.Flow-Res Out.Ave.~1Day.1Day.Raw-CDEC-web';
+    BEGIN
+        cwms_loc.store_location (p_location_id    => test_base_location_id,
+                                 p_active         => 'T',
+                                 p_db_office_id   => '&office_id');
+        cwms_ts.create_ts ('&office_id', l_cwms_ts_id);
+        COMMIT;
+
+        SELECT COUNT (*)
+          INTO l_count
+          FROM at_cwms_ts_id
+         WHERE UPPER (cwms_ts_id) = UPPER (l_cwms_ts_id);
+
+        ut.expect (l_count).to_equal (1);
+
+        SELECT ts_code
+          INTO l_ts_code
+          FROM at_cwms_ts_id
+         WHERE cwms_ts_id = l_cwms_ts_id;
+
+	FOR i in 1..9
+	LOOP
+         l_times (i) :=
+            CWMS_UTIL.TO_MILLIS (
+                TO_DATE ('2022-03-0' || i || ' 07:00:00', 'YYYY-MM-DD HH24:MI:SS'));
+         l_values (i) := i; 
+         l_qualities (i) := 0;
+         CWMS_TS.STORE_TS (l_cwms_ts_id,
+                          'cfs',
+                          l_times,
+                          l_values,
+                          l_qualities,
+                          'Delete Insert');
+	END LOOP;
+
+        SELECT COUNT (*)
+          INTO l_count
+          FROM at_tsv_2022
+         WHERE ts_code = l_ts_code;
+
+        ut.expect (l_count).to_equal (9);
+        CWMS_TS.DELETE_TS (
+            l_cwms_ts_id,
+            'T',
+            TO_DATE ('2022-03-01 06:00:00', 'YYYY-MM-DD HH24:MI:SS'),
+            TO_DATE ('2022-03-22 07:00:00', 'YYYY-MM-DD HH24:MI:SS'),
+            'T',
+            'T',
+            NULL,
+            'UTC',
+            NULL,
+            'T',
+            -1,
+            '&office_id');
+
+        SELECT COUNT (*)
+          INTO l_count
+          FROM at_tsv_2022
+         WHERE ts_code = l_ts_code;
+
+        ut.expect (l_count).to_equal (0);
+	delete_ts_id(l_cwms_ts_id);
+    END;
+
+
     PROCEDURE store_a_value (p_cwms_ts_id VARCHAR2, p_units VARCHAR2,p_time NUMBER,p_value BINARY_DOUBLE,p_quality NUMBER)
     IS
         p_times       CWMS_TS.NUMBER_ARRAY;
@@ -121,6 +197,9 @@ AS
         l_ts_code     NUMBER;
         l_count INTEGER;
     BEGIN
+        cwms_loc.store_location (p_location_id    => test_base_location_id,
+                                 p_active         => 'T',
+                                 p_db_office_id   => '&office_id');
         cwms_ts.create_ts ('&office_id', p_cwms_ts_id);
         COMMIT;
 
