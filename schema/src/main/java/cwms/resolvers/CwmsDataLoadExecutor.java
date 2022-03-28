@@ -108,12 +108,15 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
         connection.setAutoCommit(false);
         String line;
         int totalEntries = 0;
-        int batchSize = 10000;
+        int batchSize = 1000;
         while ((line = reader.readLine()) != null) {
             stmt.clearParameters();
             //logger.info(line);
             String remainder = line;
             int idx = 0;
+            if( line.trim().isEmpty()){
+                continue;
+            }
             for( Group grp: groups ){
                 logger.info("searching for " + grp.item);
                 Matcher matches = grp.pattern.matcher(remainder.trim());
