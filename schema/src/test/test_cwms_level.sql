@@ -281,7 +281,7 @@ begin
    ---------------------------
    select cwms_t_tsv(
              date_time    => from_tz(cast(add_months(l_start_time, level-1) as timestamp), c_timezone_id),
-             value        => round(1000 + 10 * dbms_random.normal, 2),
+             value        => 1000 + level,
              quality_code => 0)
      bulk collect
      into l_ts_data
