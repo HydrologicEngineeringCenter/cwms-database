@@ -2884,6 +2884,15 @@ AS
          ---------------------
          -- location levels --
          ---------------------
+         delete
+           from at_vloc_lvl_constituent
+          where location_level_code in (select location_level_code
+                                          from at_virtual_location_level
+                                         where location_code in (select * from table(l_location_codes))
+                                       );
+         delete
+           from at_virtual_location_level
+          where location_code in (select * from table(l_location_codes));
          for i in 1..l_location_ids.count loop
             for rec
                in (select distinct

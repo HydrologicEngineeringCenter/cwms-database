@@ -13386,13 +13386,11 @@ is
    l_loc_level_hash       varchar2(30);            -- hash to uniquely identify location level
    l_level_precedence     varchar2(2);             -- used for calls to retrieve_loc_lvl_values3 for recursion control
 /*------------------------------------------------------------------------------
-This procedure performs the guts of computing virtual location levels
-
 Virtual location levels are made up of CONSTITUENTS and CONNECTIONS.
 
 CONSTITUENTS are the database objects that the virtual location levels can be
 constructed from, and they come in two categories, with each category comprising
-two types. The categories are INPUT and TRANSFORM. INPUT types are LOCATION_LEVELS
+two types. The categories are INPUT and TRANSFORM. INPUT types are LOCATION_LEVEL
 and TIME_SERIES, while TRANSFORM types are RATING and FORMULA.
 
 Each virtual rating must have at least one INPUT and one TRANSFORM, although it
@@ -13479,6 +13477,29 @@ handled normally (i.e, they have the same values and units as the connected poin
 units at evaluation time. When propagating the output of a formula to the input
 of a rating, the value is converted into database unit of the rating
 parameter being connected to.
+
+CONSTITUENTS are specified as a table of tables, with each outer row specifying
+one CONSTITUENT with the inner table for that outer table row having 3, 5, or 6
+as follows:
+
+ Required
+ ========================================================================
+ 1. ABBREVIATION
+ 2. TYPE
+ 3. NAME
+
+ Only if TYPE is LOCATION_LEVEL and the level has an attribute
+ ========================================================================
+ 4. Attritube ID
+ 5. Attritube value
+
+ Only if attribute value is not in database units for attribute parameter
+ ========================================================================
+ 6. Attribute value unit
+
+The table of CONSTITUENTs can be specified as a CWMS_T_STR_TAB_TAB type or as a
+character string with the newline character (ASCII 10) separating rows of the
+outer table and the tab character (ASCII 9) separating rows of the inner tables.
 
 ------------------------------------------------------------------------------*/
 --------------------------------------------------------------------------------
@@ -13878,11 +13899,9 @@ begin
             ---------------------------------------------
             -- clear the recursion prevention variable --
             ---------------------------------------------
-            if l_level_precedence = 'VN' then
-               dbms_session.clear_context(
-                  namespace => 'CWMS_LEVEL',
-                  attribute => l_loc_level_hash);
-            end if;
+            dbms_session.clear_context(
+               namespace => 'CWMS_LEVEL',
+               attribute => l_loc_level_hash);
          elsif p_constituent_types(i) = 'TIME_SERIES' then
             --------------------------------
             -- get the time series values --
@@ -15636,12 +15655,16 @@ begin
       l_constituent_recs := constituent_tab_t();
       l_constituent_recs.extend(p_constituents.count);
       for i in 1..p_constituents.count loop
-         l_constituent_recs(i).location_level_code         := l_level_rec.location_level_code;
-         l_constituent_recs(i).constituent_abbr            := p_constituents(i)(1);
-         l_constituent_recs(i).constituent_type            := p_constituents(i)(2);
-         l_constituent_recs(i).constituent_name            := p_constituents(i)(3);
+         l_constituent_recs(i).location_level_code := l_level_rec.location_level_code;
+         l_constituent_recs(i).constituent_abbr    := p_constituents(i)(1);
+         l_constituent_recs(i).constituent_type    := p_constituents(i)(2);
+         if l_constituent_recs(i).constituent_type = 'FORMULA' then
+            l_constituent_recs(i).constituent_name := regexp_replace(p_constituents(i)(3), '\$i(\d+)', 'ARG\1', 1, 0, 'i');
+         else
+            l_constituent_recs(i).constituent_name := p_constituents(i)(3);
+         end if;
          if p_constituents(i).count > 3 then
-            l_constituent_recs(i).constituent_attribute_id    := p_constituents(i)(4);
+            l_constituent_recs(i).constituent_attribute_id := p_constituents(i)(4);
             if p_constituents(i).count > 5 then
                l_constituent_recs(i).constituent_attribute_value := cwms_util.convert_units(
                   to_number(p_constituents(i)(5)),
@@ -16018,10 +16041,14 @@ begin
       namespace => 'CWMS_LEVEL',
       attribute => l_loc_lvl_hash,
       value     => 'PROCESSING');
-   case extract(second from cast(p_end_time_utc as timestamp))
-   when 59 then l_end_time_utc := p_end_time_utc;
-   else l_end_time_utc := p_end_time_utc - 1 / 86400;
-   end case;
+   if p_end_time_utc = p_start_time_utc then
+      l_end_time_utc := p_end_time_utc;
+   else
+      case extract(second from cast(p_end_time_utc as timestamp))
+      when 59 then l_end_time_utc := p_end_time_utc;
+      else l_end_time_utc := p_end_time_utc - 1 / 86400;
+      end case;
+   end if;
    ---------------------------------------------
    -- build sortable hash of dates to process --
    ---------------------------------------------
