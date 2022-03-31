@@ -4737,7 +4737,7 @@ AS
          ------------------------------------
          for rec in (select table_name from at_ts_table_properties order by start_date) loop
             l_ts_table_start := l_ts1;
-            cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'Starting table '||rec.table_name);
+            --cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'Starting table '||rec.table_name);
             ------------
             -- select --
             ------------
@@ -4759,7 +4759,7 @@ AS
             commit;
             l_ts_table_end := systimestamp;
             l_elapsed := l_ts_table_end - l_ts_table_start;
-            cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'Finished table '||rec.table_name||' in '||l_elapsed);
+            --cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'Finished table '||rec.table_name||' in '||l_elapsed);
          end loop;
       end if;
       cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'UPDATE_TS_EXTENTS done for '||nvl(to_char(p_ts_code), 'NULL')||', '||nvl(to_char(p_version_date), 'NULL'));

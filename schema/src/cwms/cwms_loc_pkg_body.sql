@@ -3741,7 +3741,11 @@ AS
    begin
       select * into l_rec from at_physical_location where location_code = p_location_code;
       if l_rec.time_zone_code is null and l_rec.base_location_code != p_location_code then
+	begin
          select * into l_rec from at_physical_location where location_code = l_rec.base_location_code;
+	exception when others then
+	 null;
+        end;
       end if;
       return l_rec.time_zone_code;
    end get_local_timezone_code;
@@ -7540,12 +7544,16 @@ end unassign_loc_groups;
         from at_physical_location
        where location_code = p_location_code;
       if l_vertical_datum is null and l_base_location_code != p_location_code then
+	begin
          select base_location_code,
                 vertical_datum
            into l_base_location_code,
                 l_vertical_datum
            from at_physical_location
           where location_code = l_base_location_code;
+	exception when others then
+	 null;
+        end;
       end if;
       p_vertical_datum := l_vertical_datum;
    end get_location_vertical_datum;

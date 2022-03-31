@@ -25,14 +25,20 @@ AS
     PROCEDURE unlock_db_account (p_username IN VARCHAR2 DEFAULT NULL)
     AS
         l_sql_string   VARCHAR2 (400);
+	l_status VARCHAR2(64);
     BEGIN
-        l_sql_string := 'ALTER user ' || p_username || ' account unlock';
-        --DBMS_OUTPUT.put_line (l_sql_string);
+	l_sql_string := 'SELECT account_status FROM dba_users where username='''||p_username||'''';
         cwms_util.check_dynamic_sql (l_sql_string);
+	execute immediate l_sql_string into l_status;
+	if(l_status = 'LOCKED')
+	then
+          l_sql_string := 'ALTER user ' || p_username || ' account unlock';
+          --DBMS_OUTPUT.put_line (l_sql_string);
+          cwms_util.check_dynamic_sql (l_sql_string);
 
-        EXECUTE IMMEDIATE l_sql_string;
+          EXECUTE IMMEDIATE l_sql_string;
+	end if;
     END;
-
 
 
     PROCEDURE grant_cwms_permissions (p_username IN VARCHAR2)

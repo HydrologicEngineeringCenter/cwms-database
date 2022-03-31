@@ -11,11 +11,23 @@ procedure test_set_active_flag;
 procedure test_yearly_tables;
 --%test(Test filter duplicates)
 procedure test_filter_duplicates;
+--%test(Test delete ts data for location without timezone)
+procedure delete_ts_with_location_without_timezone;
 --%test(Test retrieve TS with calendar-based times [JIRA Issue CWDB-157])
 procedure test_retrieve_ts_with_calendar_based_times__JIRA_CWDB_157;
 
 --%test(Test creation various types of time series)
-procedure test_create_ts;
+procedure test_create_ts_parameter_types;
+
+--%test(Test rename time series) 
+procedure test_rename_ts;
+
+--%test(Test rename time series inst to median) 
+--%throws(-20013)
+procedure test_rename_ts_inst_to_median;
+
+--%test(create depth velocity time series)
+procedure test_create_depth_velocity; 
 
 --%test(Incremental precip with non zero duration)
 --%throws(-20205)
@@ -89,7 +101,95 @@ AS
         delete_all;
     END teardown;
 
-    PROCEDURE store_a_value (p_cwms_ts_id VARCHAR2, p_units VARCHAR2)
+    PROCEDURE delete_ts_id(p_cwms_ts_id VARCHAR2)
+    IS
+     l_count NUMBER;
+    BEGIN
+        CWMS_TS.DELETE_TS ( p_cwms_ts_id,cwms_util.delete_all);
+
+        SELECT COUNT (*)
+          INTO l_count
+          FROM at_cwms_ts_id
+         WHERE UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id);
+
+        ut.expect (l_count).to_equal (0);
+    END;
+
+    PROCEDURE delete_ts_with_location_without_timezone
+    IS
+        l_times        CWMS_TS.NUMBER_ARRAY;
+        l_values       CWMS_TS.DOUBLE_ARRAY;
+        l_qualities    CWMS_TS.NUMBER_ARRAY;
+        l_ts_code      NUMBER;
+        l_count        INTEGER;
+        l_cwms_ts_id   VARCHAR2 (200)
+            :=    test_base_location_id
+               || '.Flow-Res Out.Ave.~1Day.1Day.Raw-CDEC-web';
+    BEGIN
+        cwms_loc.store_location (p_location_id    => test_base_location_id,
+                                 p_active         => 'T',
+                                 p_db_office_id   => '&office_id');
+        cwms_ts.create_ts ('&office_id', l_cwms_ts_id);
+        COMMIT;
+
+        SELECT COUNT (*)
+          INTO l_count
+          FROM at_cwms_ts_id
+         WHERE UPPER (cwms_ts_id) = UPPER (l_cwms_ts_id);
+
+        ut.expect (l_count).to_equal (1);
+
+        SELECT ts_code
+          INTO l_ts_code
+          FROM at_cwms_ts_id
+         WHERE cwms_ts_id = l_cwms_ts_id;
+
+	FOR i in 1..9
+	LOOP
+         l_times (i) :=
+            CWMS_UTIL.TO_MILLIS (
+                TO_DATE ('2022-03-0' || i || ' 07:00:00', 'YYYY-MM-DD HH24:MI:SS'));
+         l_values (i) := i; 
+         l_qualities (i) := 0;
+         CWMS_TS.STORE_TS (l_cwms_ts_id,
+                          'cfs',
+                          l_times,
+                          l_values,
+                          l_qualities,
+                          'Delete Insert');
+	END LOOP;
+
+        SELECT COUNT (*)
+          INTO l_count
+          FROM at_tsv_2022
+         WHERE ts_code = l_ts_code;
+
+        ut.expect (l_count).to_equal (9);
+        CWMS_TS.DELETE_TS (
+            l_cwms_ts_id,
+            'T',
+            TO_DATE ('2022-03-01 06:00:00', 'YYYY-MM-DD HH24:MI:SS'),
+            TO_DATE ('2022-03-22 07:00:00', 'YYYY-MM-DD HH24:MI:SS'),
+            'T',
+            'T',
+            NULL,
+            'UTC',
+            NULL,
+            'T',
+            -1,
+            '&office_id');
+
+        SELECT COUNT (*)
+          INTO l_count
+          FROM at_tsv_2022
+         WHERE ts_code = l_ts_code;
+
+        ut.expect (l_count).to_equal (0);
+	delete_ts_id(l_cwms_ts_id);
+    END;
+
+
+    PROCEDURE store_a_value (p_cwms_ts_id VARCHAR2, p_units VARCHAR2,p_time NUMBER,p_value BINARY_DOUBLE,p_quality NUMBER)
     IS
         p_times       CWMS_TS.NUMBER_ARRAY;
         p_values      CWMS_TS.DOUBLE_ARRAY;
@@ -97,6 +197,9 @@ AS
         l_ts_code     NUMBER;
         l_count INTEGER;
     BEGIN
+        cwms_loc.store_location (p_location_id    => test_base_location_id,
+                                 p_active         => 'T',
+                                 p_db_office_id   => '&office_id');
         cwms_ts.create_ts ('&office_id', p_cwms_ts_id);
         COMMIT;
 
@@ -112,9 +215,9 @@ AS
           FROM at_cwms_ts_id
          WHERE cwms_ts_id = p_cwms_ts_id;
 
-        p_times (1) := CWMS_UTIL.TO_MILLIS (TIMESTAMP '2010-01-01 00:00:00');
-        p_values (1) := 20.0;
-        p_qualities (1) := 10;
+        p_times (1) := p_time;
+        p_values (1) := p_value; 
+        p_qualities (1) := p_quality; 
         CWMS_TS.STORE_TS (p_cwms_ts_id,
                           p_units,
                           p_times,
@@ -128,14 +231,6 @@ AS
          WHERE ts_code = l_ts_code;
 
         ut.expect (l_count).to_equal (1);
-        CWMS_TS.DELETE_TS ( p_cwms_ts_id,cwms_util.delete_all);
-
-        SELECT COUNT (*)
-          INTO l_count
-          FROM at_cwms_ts_id
-         WHERE UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id);
-
-        ut.expect (l_count).to_equal (0);
     END;
 
     PROCEDURE throw_an_exception(p_cwms_ts_id VARCHAR2)
@@ -181,15 +276,86 @@ AS
         throw_an_exception(test_base_location_id || '.Precip.Const.0.Variable.raw');
     END;
 
-    PROCEDURE test_create_ts
+    PROCEDURE test_rename_ts
     IS
+        l_time NUMBER := CWMS_UTIL.TO_MILLIS (TIMESTAMP '2010-01-01 00:00:00');
     BEGIN
-        store_a_value( test_base_location_id || '.Flow.Ave.Irr.Variable.raw','cfs');
-        store_a_value( test_base_location_id || '.Flow.Ave.0.Variable.raw','cfs');
-        store_a_value( test_base_location_id || '.Opening.Const.Irr.UntilChanged.raw','ft');
-        store_a_value( test_base_location_id || '.Opening.Const.0.UntilChanged.raw','ft');
-        store_a_value ( test_base_location_id || '.Precip.Cum.1Hour.0.raw','in');
-        store_a_value (test_base_location_id || '.Precip.Inc.1Hour.1Hour.raw','in');
+        store_a_value( test_base_location_id || '.Flow.Ave.Irr.Variable.raw','cfs',l_time,10,0);
+	cwms_ts.rename_ts(p_cwms_ts_id_old => test_base_location_id || '.Flow.Ave.Irr.Variable.raw',p_cwms_ts_id_new =>test_base_location_id || '.Flow.Median.Irr.Variable.raw');
+	delete_ts_id(test_base_location_id || '.Flow.Median.Irr.Variable.raw');
+    END;
+
+    PROCEDURE test_rename_ts_inst_to_median
+    IS
+        l_time NUMBER := CWMS_UTIL.TO_MILLIS (TIMESTAMP '2010-01-01 00:00:00');
+    BEGIN
+        store_a_value( test_base_location_id || '.Flow.Inst.Irr.0.raw','cfs',l_time,10,0);
+	cwms_ts.rename_ts(p_cwms_ts_id_old => test_base_location_id || '.Flow.Inst.Irr.0.raw',p_cwms_ts_id_new =>test_base_location_id || '.Flow.Median.1Day.1Day.raw');
+    END;
+
+    PROCEDURE test_create_ts_parameter_types
+    IS
+        l_time NUMBER := CWMS_UTIL.TO_MILLIS (TIMESTAMP '2010-01-01 00:00:00');
+    BEGIN
+        store_a_value( test_base_location_id || '.Flow.Ave.Irr.Variable.raw','cfs',l_time,10,0);
+	delete_ts_id(test_base_location_id || '.Flow.Ave.Irr.Variable.raw');
+        store_a_value( test_base_location_id || '.Flow.Median.Irr.Variable.raw','cfs',l_time,10,0);
+	delete_ts_id(test_base_location_id || '.Flow.Median.Irr.Variable.raw');
+        store_a_value( test_base_location_id || '.Flow.Ave.0.Variable.raw','cfs',l_time,10,0);
+	delete_ts_id(test_base_location_id || '.Flow.Ave.0.Variable.raw');
+        store_a_value( test_base_location_id || '.Flow.Median.0.Variable.raw','cfs',l_time,10,0);
+	delete_ts_id(test_base_location_id || '.Flow.Median.0.Variable.raw');
+        store_a_value( test_base_location_id || '.Opening.Const.Irr.UntilChanged.raw','ft',l_time,10,0);
+	delete_ts_id(test_base_location_id || '.Opening.Const.Irr.UntilChanged.raw');
+        store_a_value( test_base_location_id || '.Opening.Const.0.UntilChanged.raw','ft',l_time,10,0);
+	delete_ts_id(test_base_location_id || '.Opening.Const.0.UntilChanged.raw');
+        store_a_value ( test_base_location_id || '.Precip.Cum.1Hour.0.raw','in',l_time,10,0);
+	delete_ts_id(test_base_location_id || '.Precip.Cum.1Hour.0.raw');
+        store_a_value (test_base_location_id || '.Precip.Inc.1Hour.1Hour.raw','in',l_time,10,0);
+	delete_ts_id(test_base_location_id || '.Precip.Inc.1Hour.1Hour.raw');
+    END;
+
+    PROCEDURE test_create_depth_velocity
+    IS
+        l_time NUMBER := CWMS_UTIL.TO_MILLIS (TIMESTAMP '2010-01-01 00:00:00');
+	l_value BINARY_DOUBLE;
+	l_ts_code NUMBER;
+	l_cwms_ts_id VARCHAR2(200) := test_base_location_id || '.DepthVelocity.Ave.Irr.Variable.raw';
+    BEGIN
+        store_a_value(l_cwms_ts_id,'ft2/s',l_time,10,0);
+        SELECT ts_code
+          INTO l_ts_code
+          FROM at_cwms_ts_id
+         WHERE cwms_ts_id = l_cwms_ts_id;
+        SELECT value 
+          INTO l_value
+          FROM at_tsv_2010
+         WHERE ts_code = l_ts_code;
+        ut.expect (abs(l_value-(10*0.092903))).to_be_less_or_equal (0.0001);
+        SELECT value 
+          INTO l_value
+          FROM av_tsv_dqu
+         WHERE ts_code = l_ts_code
+	 AND upper(unit_id)='FT2/S';
+        ut.expect (abs(l_value-10)).to_be_less_or_equal(0.0001);
+	delete_ts_id(l_cwms_ts_id);
+        store_a_value( l_cwms_ts_id,'m2/s',l_time,10,0);
+        SELECT ts_code
+          INTO l_ts_code
+          FROM at_cwms_ts_id
+         WHERE cwms_ts_id = l_cwms_ts_id;
+        SELECT value 
+          INTO l_value
+          FROM at_tsv_2010
+         WHERE ts_code = l_ts_code;
+        ut.expect (l_value).to_equal (10);
+        SELECT value 
+          INTO l_value
+          FROM av_tsv_dqu
+         WHERE ts_code = l_ts_code
+	 AND upper(unit_id)='FT2/S';
+        ut.expect (abs(l_value-(10/0.092903))).to_be_less_or_equal (0.001);
+	delete_ts_id(l_cwms_ts_id);
     END;
 
     --------------------------------------------------------------------------------
