@@ -17,6 +17,8 @@ procedure test_regularly_varying_location_levels;
 procedure test_irregularly_varying_location_levels;
 --%test(Test virtual location levels)
 procedure test_virtual_location_levels;
+--%test(Test guide curve (multiple seasonal location levels with attributes))
+procedure test_guide_curve;
 
 c_office_id             varchar2(16)  := '&&office_id';
 c_location_id           varchar2(57)  := 'LocLevelTestLoc';
@@ -623,6 +625,134 @@ begin
       end loop;
    end loop;
 end test_virtual_location_levels;
+--------------------------------------------------------------------------------
+-- procedure test_guide_curve
+--------------------------------------------------------------------------------
+-- The location level data for this test is taken from the file
+-- test_cwms_level.test_guide_curve.xlsx in the src/test directory (same
+-- directory as this file). The file has an embedded plot that facilitates
+-- visualizing the maximum flow limits at various times of the year for any
+-- amount of system flood storage utilized. The data in the l_eval_info variable
+-- were chosen from this plot to because the flow limits change throughout the
+-- year for the selected storage utilization values.
+--------------------------------------------------------------------------------
+procedure test_guide_curve
+is
+   type seasonal_value_tab_tab_t is table of cwms_t_seasonal_value_tab;
+   type eval_rec_t is record(date_time date, basin_pct_full number, flow_limit number);
+   type eval_tab_t is table of eval_rec_t;
+   l_location_level_id varchar2(404) := c_location_id||'.%-of Basin Full.Inst.0.Guide Curve';
+   l_attribute_id      varchar2(92)  := 'Flow.Max.0';
+   l_level_unit        varchar2(16)  := '%';
+   l_attribute_unit    varchar2(16)  := 'cfs';
+   l_effective_date    date := date '2005-05-16';
+   l_interval_origin   date := date '2000-01-01';
+   l_interval_months   integer := 12;
+   l_attribute_value   number;
+   l_attribute_values  cwms_t_number_tab := cwms_t_number_tab(20000, 40000, 60000, 150000);
+   l_seasonal_values   seasonal_value_tab_tab_t := seasonal_value_tab_tab_t();
+   l_eval_info         eval_tab_t := eval_tab_t(
+                          eval_rec_t(date '2022-02-01',  5,  20000),
+                          eval_rec_t(date '2022-02-01', 10,  40000),
+                          eval_rec_t(date '2022-02-01', 20,  60000),
+                          eval_rec_t(date '2022-02-01', 45, 150000),
+
+                          eval_rec_t(date '2022-04-01',  5,  40000),
+                          eval_rec_t(date '2022-04-01', 10,  60000),
+                          eval_rec_t(date '2022-04-01', 20,  60000),
+                          eval_rec_t(date '2022-04-01', 45, 150000),
+
+                          eval_rec_t(date '2022-08-01',  5,  20000),
+                          eval_rec_t(date '2022-08-01', 10,  20000),
+                          eval_rec_t(date '2022-08-01', 20,  60000),
+                          eval_rec_t(date '2022-08-01', 45, 150000),
+
+                          eval_rec_t(date '2022-11-01',  5,  20000),
+                          eval_rec_t(date '2022-11-01', 10,  40000),
+                          eval_rec_t(date '2022-11-01', 20,  60000),
+                          eval_rec_t(date '2022-11-01', 45,  60000));
+begin
+   setup;
+   l_seasonal_values.extend(4);
+   l_seasonal_values(1) := cwms_t_seasonal_value_tab(
+      cwms_t_seasonal_value( 0,  0 * 1440,  0),  -- 01 Jan
+      cwms_t_seasonal_value( 1, 14 * 1440,  0),  -- 15 Feb
+      cwms_t_seasonal_value( 2,  0 * 1440,  0),  -- 01 Mar
+      cwms_t_seasonal_value( 4, 14 * 1440,  0),  -- 15 May
+      cwms_t_seasonal_value( 5, 14 * 1440,  0),  -- 15 Jun
+      cwms_t_seasonal_value( 8, 14 * 1440,  0),  -- 15 Sep
+      cwms_t_seasonal_value( 9,  0 * 1440,  0),  -- 01 Oct
+      cwms_t_seasonal_value(10,  0 * 1440,  0),  -- 01 Nov
+      cwms_t_seasonal_value(11, 14 * 1440,  0),  -- 15 Dec
+      cwms_t_seasonal_value(11, 30 * 1440,  0)); -- 31 Dec
+   l_seasonal_values(2) := cwms_t_seasonal_value_tab(
+      cwms_t_seasonal_value( 0,  0 * 1440,  7),  -- 01 Jan
+      cwms_t_seasonal_value( 1, 14 * 1440,  7),  -- 15 Feb
+      cwms_t_seasonal_value( 2,  0 * 1440,  3),  -- 01 Mar
+      cwms_t_seasonal_value( 4, 14 * 1440,  3),  -- 15 May
+      cwms_t_seasonal_value( 5, 14 * 1440, 11),  -- 15 Jun
+      cwms_t_seasonal_value( 8, 14 * 1440, 11),  -- 15 Sep
+      cwms_t_seasonal_value( 9,  0 * 1440,  7),  -- 01 Oct
+      cwms_t_seasonal_value(10,  0 * 1440,  7),  -- 01 Nov
+      cwms_t_seasonal_value(11, 14 * 1440,  7),  -- 15 Dec
+      cwms_t_seasonal_value(11, 30 * 1440,  7)); -- 31 Dec
+   l_seasonal_values(3) := cwms_t_seasonal_value_tab(
+      cwms_t_seasonal_value( 0,  0 * 1440, 15),  -- 01 Jan
+      cwms_t_seasonal_value( 1, 14 * 1440, 15),  -- 15 Feb
+      cwms_t_seasonal_value( 2,  0 * 1440,  8),  -- 01 Mar
+      cwms_t_seasonal_value( 4, 14 * 1440,  8),  -- 15 May
+      cwms_t_seasonal_value( 5, 14 * 1440, 18),  -- 15 Jun
+      cwms_t_seasonal_value( 8, 14 * 1440, 18),  -- 15 Sep
+      cwms_t_seasonal_value( 9,  0 * 1440, 15),  -- 01 Oct
+      cwms_t_seasonal_value(10,  0 * 1440, 15),  -- 01 Nov
+      cwms_t_seasonal_value(11, 14 * 1440, 15),  -- 15 Dec
+      cwms_t_seasonal_value(11, 30 * 1440, 15)); -- 31 Dec
+   l_seasonal_values(4) := cwms_t_seasonal_value_tab(
+      cwms_t_seasonal_value( 0,  0 * 1440, 40),  -- 01 Jan
+      cwms_t_seasonal_value( 1, 14 * 1440, 40),  -- 15 Feb
+      cwms_t_seasonal_value( 2,  0 * 1440, 40),  -- 01 Mar
+      cwms_t_seasonal_value( 4, 14 * 1440, 40),  -- 15 May
+      cwms_t_seasonal_value( 5, 14 * 1440, 40),  -- 15 Jun
+      cwms_t_seasonal_value( 8, 14 * 1440, 40),  -- 15 Sep
+      cwms_t_seasonal_value( 9,  0 * 1440, 50),  -- 01 Oct
+      cwms_t_seasonal_value(10,  0 * 1440, 50),  -- 01 Nov
+      cwms_t_seasonal_value(11, 14 * 1440, 50),  -- 15 Dec
+      cwms_t_seasonal_value(11, 30 * 1440, 40)); -- 31 Dec
+   ---------------------------
+   -- store the guide curve --
+   ---------------------------
+   for i in 1..4 loop
+      cwms_level.store_location_level4(
+         p_location_level_id =>  l_location_level_id,
+         p_level_value       =>  null,
+         p_level_units       =>  l_level_unit,
+         p_effective_date    =>  l_effective_date,
+         p_timezone_id       =>  c_timezone_id,
+         p_attribute_value   =>  l_attribute_values(i),
+         p_attribute_units   =>  l_attribute_unit,
+         p_attribute_id      =>  l_attribute_id,
+         p_interval_origin   =>  l_interval_origin,
+         p_interval_months   =>  l_interval_months,
+         p_seasonal_values   =>  l_seasonal_values(i),
+         p_office_id         =>  c_office_id);
+      commit;
+   end loop;
+   for i in 1..l_eval_info.count loop
+      l_attribute_value := cwms_level.lookup_attribute_by_level(
+         p_location_level_id  => l_location_level_id,
+         p_attribute_id       => l_attribute_id,
+         p_level_value        => l_eval_info(i).basin_pct_full,
+         p_level_units        => l_level_unit,
+         p_attribute_units    => l_attribute_unit,
+         p_in_range_behavior  => cwms_lookup.method_lower,
+         p_out_range_behavior => cwms_lookup.method_closest,
+         p_timezone_id        => c_timezone_id,
+         p_date               => l_eval_info(i).date_time,
+         p_office_id          => c_office_id);
+
+     ut.expect(round(l_attribute_value, 9)).to_equal(l_eval_info(i).flow_limit);
+   end loop;
+end test_guide_curve;
 
 end test_cwms_level;
 /

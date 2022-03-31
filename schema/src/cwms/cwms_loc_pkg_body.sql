@@ -2886,38 +2886,40 @@ AS
          ---------------------
          delete
            from at_vloc_lvl_constituent
-          where location_level_code in (select location_level_code
-                                          from at_virtual_location_level
-                                         where location_code in (select * from table(l_location_codes))
-                                       );
+          where location_level_code in
+                (select location_level_code
+                   from at_virtual_location_level
+                  where location_code in (select * from table(l_location_codes))
+                );
          delete
            from at_virtual_location_level
           where location_code in (select * from table(l_location_codes));
-         for i in 1..l_location_ids.count loop
-            for rec
-               in (select distinct
-                          office_id,
-                          location_level_id,
-                          level_date,
-                          attribute_id,
-                          attribute_value,
-                          attribute_unit
-                     from cwms_v_location_level
-                    where office_id = nvl (upper (trim (p_db_office_id)),cwms_util.user_office_id)
-                      and location_level_id like l_location_ids (i) || '.%')
-            loop
-               cwms_level.delete_location_level_ex(
-                  rec.location_level_id,
-                  rec.level_date,
-                  'UTC',
-                  rec.attribute_id,
-                  rec.attribute_value,
-                  rec.attribute_unit,
-                  'T',
-                  'T',
-                  rec.office_id);
-            end loop;
-         end loop;
+         delete
+           from at_loc_lvl_indicator_cond
+          where level_indicator_code in
+                (select level_indicator_code
+                   from at_loc_lvl_indicator
+                  where location_code in (select * from table(l_location_codes))
+                );
+         delete
+           from at_loc_lvl_indicator
+          where location_code in (select * from table(l_location_codes));
+         delete
+           from at_seasonal_location_level
+          where location_level_code in
+                (select location_level_code
+                   from at_location_level
+                  where location_code in (select * from table(l_location_codes))
+                );
+         delete
+           from at_location_level
+          where location_code in (select * from table(l_location_codes));
+         delete
+           from at_loc_lvl_label
+          where location_code in (select * from table(l_location_codes));
+         delete
+           from at_loc_lvl_source
+          where location_code in (select * from table(l_location_codes));
          --------------------------
          -- time series profiles --
          --------------------------
