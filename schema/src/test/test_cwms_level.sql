@@ -324,7 +324,7 @@ begin
          p_timezone_id       => c_timezone_id,
          p_office_id         => c_office_id);
 
-      if l_ts_data(i).date_time < l_effective_date then
+      if cast(l_ts_data(i).date_time as date) < l_effective_date then
          ut.expect(l_value).to_be_null;
       else
          ut.expect(round(l_value, 5)).to_equal(round(l_ts_data(i).value, 5));
