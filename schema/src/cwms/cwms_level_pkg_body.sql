@@ -1405,7 +1405,7 @@ function get_loc_lvl_indicator_id(
    p_level_indicator_id in varchar2)
    return varchar2 /*result_cache*/
 is
-   l_location_level_id varchar2(3);
+   l_location_level_id varchar2(437);
 begin
    l_location_level_id := p_location_id
                           || '.' || p_parameter_id
@@ -11372,7 +11372,7 @@ begin
              cuc.to_unit_id as attribute_units,
              o.get_max_indicator_values(
                 l_ts,
-                l_start_time) as indicator_values
+                l_start_time at time zone nvl(p_time_zone, 'UTC')) as indicator_values
         from table(l_loc_lvl_objs) o,
              cwms_unit_conversion cuc
        where cuc.from_unit_id = nvl(

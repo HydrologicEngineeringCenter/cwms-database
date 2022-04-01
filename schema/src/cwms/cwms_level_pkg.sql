@@ -4296,8 +4296,8 @@ procedure get_level_indicator_values(
  *   <tr>
  *     <td class="descr-center">5</td>
  *     <td class="descr">indicator_values</td>
- *     <td class="descr">number_tab_t</td>
- *     <td class="descr">The maximum location level indicator condition values that are set for the specified parameters</td>
+ *     <td class="descr">ztsv_array</td>
+ *     <td class="descr">The maximum location level indicator condition values that are set for the specified parameters at each time of the time series in time window. The times are in the specified time zone.</td>
  *   </tr>
  * </table>
  * @param p_tsid                 A time series identifier. p_cursor will only include conditions for location levels that have the same location, parameter, and parameter type
