@@ -4467,7 +4467,7 @@ function get_virtual_loc_lvl_code(
    p_match_time        in varchar2 default 'F',
    p_office_id         in varchar2 default null)
    return integer;
-/*
+/**
  * Stores (inserts or updates) a virtual location level to the database.
  * <p>
  * Each virtual location level is computed from a set of CONSTITUENTS, each of which is either an INPUT or a TRANSFORM as shown below.
@@ -4595,7 +4595,7 @@ procedure store_virtual_location_level(
    p_fail_if_exists          in varchar2 default 'T',
    p_ignore_nulls            in varchar2 default 'T',
    p_office_id               in varchar2 default null);
-/*
+/**
  * Stores (inserts or updates) a virtual location level to the database.
  * <p>
  * Each virtual location level is computed from a set of CONSTITUENTS, each of which is either an INPUT or a TRANSFORM as shown below.
