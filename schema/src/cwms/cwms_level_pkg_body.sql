@@ -7367,76 +7367,218 @@ end delete_location_level2;
 -- PROCEDURE delete_location_level3
 --------------------------------------------------------------------------------
 procedure delete_location_level3(
-   p_location_level_id       in  varchar2,
-   p_effective_date          in  date     default null,
-   p_timezone_id             in  varchar2 default 'UTC',
-   p_attribute_id            in  varchar2 default null,
-   p_attribute_value         in  number   default null,
-   p_attribute_units         in  varchar2 default null,
-   p_cascade                 in  varchar2 default 'F',
-   p_delete_indicators       in  varchar2 default 'F',
-   p_delete_pools            in  varchar2 default 'F',
-   p_office_id               in  varchar2 default null,
-   p_level_type              in  varchar2 default 'VN')
+   p_location_level_id          in varchar2,
+   p_effective_date             in date     default null,
+   p_timezone_id                in varchar2 default 'UTC',
+   p_attribute_id               in varchar2 default null,
+   p_attribute_value            in number   default null,
+   p_attribute_units            in varchar2 default null,
+   p_cascade                    in varchar2 default 'F',
+   p_delete_indicators          in varchar2 default 'F',
+   p_delete_pools               in varchar2 default 'F',
+   p_office_id                  in varchar2 default null,
+   p_level_type                 in varchar2 default 'VN',
+   p_most_recent_effective_date in varchar2 default 'F',
+   p_all_effective_dates        in varchar2 default 'F',
+   p_all_attribute_values       in varchar2 default 'F')
 is
-   l_location_level_code       number(14);
-   l_location_id               varchar2(57);
-   l_parameter_id              varchar2(49);
-   l_parameter_type_id         varchar2(16);
-   l_duration_id               varchar2(16);
-   l_spec_level_id             varchar2(256);
-   l_date                      date;
-   l_attribute_parameter_id    varchar2(49);
-   l_attribute_param_type_id   varchar2(16);
-   l_attribute_duration_id     varchar2(16);
-   l_level_type                varchar2(2);
-   l_count                     pls_integer := 0;
+   l_location_level_code          number(14);
+   l_location_level_codes         number_tab_t := number_tab_t();
+   l_location_id                  varchar2(57);
+   l_parameter_id                 varchar2(49);
+   l_parameter_type_id            varchar2(16);
+   l_duration_id                  varchar2(16);
+   l_spec_level_id                varchar2(256);
+   l_date                         date;
+   l_date_to_delete               date;
+   l_attribute_parameter_id       varchar2(49);
+   l_attribute_param_type_id      varchar2(16);
+   l_attribute_duration_id        varchar2(16);
+   l_level_type                   varchar2(2);
+   l_most_recent_effective_date   boolean;
+   l_all_effective_dates          boolean;
+   l_all_attribute_values         boolean;
 begin
+   -------------------
+   -- sanity checks --
+   -------------------
+   if p_location_level_id is null then
+      cwms_err.raise('NULL_ARGUMENT', p_location_level_id);
+   end if;
    if upper(p_level_type) in ('N', 'V', 'NV', 'VN') then
       l_level_type := upper(p_level_type);
    else
       cwms_err.raise('ERROR', 'P_LEVEL_TYPE must be one of ''N'', ''V'', ''NV'', or ''VN''');
    end if;
-   l_date := cast(
-      from_tz(cast(p_effective_date as timestamp), p_timezone_id)
-      at time zone 'UTC' as date);
-   parse_location_level_id(
-      l_location_id,
-      l_parameter_id,
-      l_parameter_type_id,
-      l_duration_id,
-      l_spec_level_id,
-      p_location_level_id);
-   parse_attribute_id(
-      l_attribute_parameter_id,
-      l_attribute_param_type_id,
-      l_attribute_duration_id,
-      p_attribute_id);
-   for i in 1..length(l_level_type) loop
-      l_location_level_code := get_location_level_code(
-         p_location_id             => l_location_id,
-         p_parameter_id            => l_parameter_id,
-         p_parameter_type_id       => l_parameter_type_id,
-         p_duration_id             => l_duration_id,
-         p_spec_level_id           => l_spec_level_id,
-         p_effective_date_in       => l_date,
-         p_match_date              => true,
-         p_attribute_value         => p_attribute_value,
-         p_attribute_units         => p_attribute_units,
-         p_attribute_parameter_id  => l_attribute_parameter_id,
-         p_attribute_param_type_id => l_attribute_param_type_id,
-         p_attribute_duration_id   => l_attribute_duration_id,
-         p_office_id               => p_office_id,
-         p_level_precedence        => substr(l_level_type, i, 1));
-      if l_location_level_code is not null then
-         l_count := l_count + 1;
-         delete_location_level2(
-            l_location_level_code,
-            p_cascade,
-            p_delete_indicators);
+   l_most_recent_effective_date := cwms_util.return_true_or_false(p_most_recent_effective_date);
+   l_all_effective_dates        := cwms_util.return_true_or_false(p_all_effective_dates);
+   l_all_attribute_values       := cwms_util.return_true_or_false(p_all_attribute_values);
+   ----------------------------------
+   -- collect location level codes --
+   ----------------------------------
+   if l_all_effective_dates then
+      if instr(l_level_type, 'N') > 0 then
+         ----------------------------------------------------
+         -- normal location levels for all effective dates --
+         ----------------------------------------------------
+         if l_all_attribute_values then
+            for rec in (select distinct
+                               location_level_code
+                          from av_location_level
+                         where office_id = cwms_util.get_db_office_id(p_office_id)
+                           and upper(location_level_id) = upper(p_location_level_id)
+                           and upper(nvl(attribute_id, '@')) = upper(nvl(p_attribute_id, '@'))
+                           and unit_system = 'SI'
+                       )
+            loop
+               l_location_level_codes.extend;
+               l_location_level_codes(l_location_level_codes.count) := rec.location_level_code;
+            end loop;
+         else
+            for rec in (select distinct
+                               location_level_code
+                          from av_location_level
+                         where office_id = cwms_util.get_db_office_id(p_office_id)
+                           and upper(location_level_id) = upper(p_location_level_id)
+                           and upper(nvl(attribute_id, '@')) = upper(nvl(p_attribute_id, '@'))
+                           and unit_system = 'SI'
+                           and nvl(to_char(round(attribute_value,9)), '@') = nvl(to_char(round(cwms_util.convert_to_db_units(p_attribute_value, attribute_base_parameter_id, p_attribute_units),9)), '@')
+                       )
+            loop
+               l_location_level_codes.extend;
+               l_location_level_codes(l_location_level_codes.count) := rec.location_level_code;
+            end loop;
+         end if;
       end if;
-   end loop;
-   if l_count = 0 then
+      if instr(l_level_type, 'V') > 0 then
+         -----------------------------------------------------
+         -- virtual location levels for all effective dates --
+         -----------------------------------------------------
+         if l_all_attribute_values then
+            for rec in (select location_level_code
+                          from av_virtual_location_level
+                         where office_id = cwms_util.get_db_office_id(p_office_id)
+                           and upper(location_level_id) = upper(p_location_level_id)
+                           and upper(nvl(attribute_id, '@')) = upper(nvl(p_attribute_id, '@'))
+                           and aliased_item is null
+                       )
+            loop
+               l_location_level_codes.extend;
+               l_location_level_codes(l_location_level_codes.count) := rec.location_level_code;
+            end loop;
+         else
+            for rec in (select location_level_code
+                          from av_virtual_location_level
+                         where office_id = cwms_util.get_db_office_id(p_office_id)
+                           and upper(location_level_id) = upper(p_location_level_id)
+                           and upper(nvl(attribute_id, '@')) = upper(nvl(p_attribute_id, '@'))
+                           and nvl(to_char(round(attr_value_si,9)), '@') = nvl(to_char(round(cwms_util.convert_to_db_units(p_attribute_value, attr_base_parameter_id, p_attribute_units),9)), '@')
+                           and aliased_item is null
+                       )
+            loop
+               l_location_level_codes.extend;
+               l_location_level_codes(l_location_level_codes.count) := rec.location_level_code;
+            end loop;
+         end if;
+      end if;
+   else
+      l_date := nvl(cwms_util.change_timezone(p_effective_date, p_timezone_id, 'UTC'), sysdate);
+      if instr(l_level_type, 'N') > 0 then
+         ------------------------------------------------------
+         -- normal location levels for single effective date --
+         ------------------------------------------------------
+         l_date_to_delete := null;
+         if l_all_attribute_values then
+            for rec in (select distinct
+                               location_level_code,
+                               level_date
+                          from av_location_level
+                         where office_id = cwms_util.get_db_office_id(p_office_id)
+                           and upper(location_level_id) = upper(p_location_level_id)
+                           and upper(nvl(attribute_id, '@')) = upper(nvl(p_attribute_id, '@'))
+                           and unit_system = 'SI'
+                         order by level_date desc
+                       )
+            loop
+               continue when rec.level_date > l_date;
+               exit when l_date_to_delete is not null and rec.level_date < l_date_to_delete;
+               if rec.level_date = l_date or l_most_recent_effective_date then
+                  l_date_to_delete := rec.level_date;
+                  l_location_level_codes.extend;
+                  l_location_level_codes(l_location_level_codes.count) := rec.location_level_code;
+               end if;
+            end loop;
+         else
+            for rec in (select distinct
+                               location_level_code,
+                               level_date
+                          from av_location_level
+                         where office_id = cwms_util.get_db_office_id(p_office_id)
+                           and upper(location_level_id) = upper(p_location_level_id)
+                           and upper(nvl(attribute_id, '@')) = upper(nvl(p_attribute_id, '@'))
+                           and unit_system = 'SI'
+                           and nvl(to_char(round(attribute_value,9)), '@') = nvl(to_char(round(cwms_util.convert_to_db_units(p_attribute_value, attribute_base_parameter_id, p_attribute_units),9)), '@')
+                         order by level_date desc
+                       )
+            loop
+               continue when rec.level_date > l_date;
+               exit when l_date_to_delete is not null and rec.level_date < l_date_to_delete;
+               if rec.level_date = l_date or l_most_recent_effective_date then
+                  l_date_to_delete := rec.level_date;
+                  l_location_level_codes.extend;
+                  l_location_level_codes(l_location_level_codes.count) := rec.location_level_code;
+               end if;
+            end loop;
+         end if;
+      end if;
+      if instr(l_level_type, 'V') > 0 then
+         -------------------------------------------------------
+         -- virtual location levels for single effective date --
+         -------------------------------------------------------
+         l_date_to_delete := null;
+         if l_all_attribute_values then
+            for rec in (select location_level_code,
+                               effective_date_utc
+                          from av_virtual_location_level
+                         where office_id = cwms_util.get_db_office_id(p_office_id)
+                           and upper(location_level_id) = upper(p_location_level_id)
+                           and upper(nvl(attribute_id, '@')) = upper(nvl(p_attribute_id, '@'))
+                           and aliased_item is null
+                         order by effective_date_utc desc
+                       )
+            loop
+               continue when rec.effective_date_utc > l_date;
+               exit when l_date_to_delete is not null and rec.effective_date_utc < l_date_to_delete;
+               if rec.effective_date_utc = l_date or l_most_recent_effective_date then
+                  l_date_to_delete := rec.effective_date_utc;
+                  l_location_level_codes.extend;
+                  l_location_level_codes(l_location_level_codes.count) := rec.location_level_code;
+               end if;
+            end loop;
+         else
+            for rec in (select location_level_code,
+                               effective_date_utc
+                          from av_virtual_location_level
+                         where office_id = cwms_util.get_db_office_id(p_office_id)
+                           and upper(location_level_id) = upper(p_location_level_id)
+                           and upper(nvl(attribute_id, '@')) = upper(nvl(p_attribute_id, '@'))
+                           and nvl(to_char(round(attr_value_si,9)), '@') = nvl(to_char(round(cwms_util.convert_to_db_units(p_attribute_value, attr_base_parameter_id, p_attribute_units),9)), '@')
+                           and aliased_item is null
+                         order by effective_date_utc desc
+                       )
+            loop
+               continue when rec.effective_date_utc > l_date;
+               exit when l_date_to_delete is not null and rec.effective_date_utc < l_date_to_delete;
+               if rec.effective_date_utc = l_date or l_most_recent_effective_date then
+                  l_date_to_delete := rec.effective_date_utc;
+                  l_location_level_codes.extend;
+                  l_location_level_codes(l_location_level_codes.count) := rec.location_level_code;
+               end if;
+            end loop;
+         end if;
+      end if;
+   end if;
+   if l_location_level_codes.count = 0 then
       cwms_err.raise(
          'ITEM_DOES_NOT_EXIST',
          'Location level',
@@ -7446,9 +7588,18 @@ begin
             when p_attribute_value is null then null
             else ' (' || p_attribute_value || ' ' || p_attribute_units || ')'
             end
-         || '@' || p_effective_date);
+         || case
+            when p_effective_date is null then null
+            else '@' || p_effective_date
+            end);
    end if;
-
+   for i in 1..l_location_level_codes.count loop
+      delete_location_level3(
+         l_location_level_codes(i),
+         p_cascade,
+         p_delete_pools,
+         p_delete_indicators);
+   end loop;
 
 end delete_location_level3;
 --------------------------------------------------------------------------------
@@ -7717,9 +7868,19 @@ begin
    -------------------------------
    -- delete the location level --
    -------------------------------
-   delete
-     from at_location_level
-    where location_level_code = p_location_level_code;
+   if l_loc_lvl_obj.is_virtual then
+      delete from at_vloc_lvl_constituent
+       where location_level_code = p_location_level_code;
+
+      delete
+        from at_virtual_location_level
+       where location_level_code = p_location_level_code;
+   else
+      delete
+        from at_location_level
+       where location_level_code = p_location_level_code;
+   end if;
+
 end delete_location_level3;
 --------------------------------------------------------------------------------
 -- PROCEDURE set_loc_lvl_label
@@ -13393,9 +13554,9 @@ constructed from, and they come in two categories, with each category comprising
 two types. The categories are INPUT and TRANSFORM. INPUT types are LOCATION_LEVEL
 and TIME_SERIES, while TRANSFORM types are RATING and FORMULA.
 
-Each virtual rating must have at least one INPUT and one TRANSFORM, although it
-may have multiples of each. The values generated by a virtual location level are
-always the output of a TRANSFORM.
+Each virtual location level must have at least one INPUT and one TRANSFORM,
+although it may have multiples of each. The values generated by a virtual location
+level are always the output of a TRANSFORM.
 
 Each constituent has a NAME, and that name must be appropritate for the TYPE.
 

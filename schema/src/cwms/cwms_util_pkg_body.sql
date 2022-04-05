@@ -2883,6 +2883,10 @@ as
       l_factor   BINARY_DOUBLE;
       l_offset   BINARY_DOUBLE;
    BEGIN
+      if p_value is null or p_parameter_id is null or p_unit_id is null then
+         return null;
+      end if;
+
       SELECT uc.factor, uc.offset
         INTO l_factor, l_offset
         FROM cwms_unit_conversion uc, cwms_base_parameter bp

@@ -72,6 +72,7 @@ is
    l_value1          number := 1000;
    l_value2          number := 1010;
    l_value           number;
+   l_count           pls_integer;
 begin
    setup;
    ----------------------------------------
@@ -173,6 +174,31 @@ begin
       p_office_id         => c_office_id);
 
    ut.expect(l_value).to_be_null;
+   ------------------------------------------------------------------
+   -- test delete_location_level3 with p_all_effective_dates = 'T' --
+   ------------------------------------------------------------------
+   select count(*)
+     into l_count
+     from cwms_v_location_level
+    where office_id = c_office_id
+      and location_id = c_location_id
+      and unit_system = 'EN';
+
+   ut.expect(l_count).to_equal(2);
+
+   cwms_level.delete_location_level3(
+      p_location_level_id   => c_top_of_normal_elev_id,
+      p_office_id           => c_office_id,
+      p_all_effective_dates => 'T');
+
+   select count(*)
+     into l_count
+     from cwms_v_location_level
+    where office_id = c_office_id
+      and location_id = c_location_id
+      and unit_system = 'EN';
+
+   ut.expect(l_count).to_equal(0);
 
 end test_constant_location_levels;
 --------------------------------------------------------------------------------
@@ -188,6 +214,7 @@ is
    l_effective_date  date := date '2021-01-01';
    l_interval_origin date := date '2000-01-01';
    l_interval_months integer := 12;
+   l_count           pls_integer;
    l_seasonal_values cwms_t_seasonal_value_tab := cwms_t_seasonal_value_tab(
       cwms_t_seasonal_value( 0,  0 * 1440, 1000),  -- 01 Jan
       cwms_t_seasonal_value( 2, 14 * 1440, 1010),  -- 15 Mar
@@ -265,6 +292,35 @@ begin
 
       ut.expect(round(l_value / l_expected_value, 4)).to_equal(1);
    end loop;
+   -------------------------------------------------------------------------
+   -- test delete_location_level3 with p_most_recent_effective_date = 'T' --
+   -------------------------------------------------------------------------
+   select count(*)
+     into l_count
+     from cwms_v_location_level
+    where office_id = c_office_id
+      and location_id = c_location_id
+      and level_date = cwms_util.change_timezone(l_effective_date, c_timezone_id, 'UTC')
+      and unit_system = 'EN';
+
+   ut.expect(l_count).to_equal(l_seasonal_values.count);
+
+   cwms_level.delete_location_level3(
+      p_location_level_id          => c_top_of_normal_elev_id,
+      p_cascade                    => 'T',
+      p_office_id                  => c_office_id,
+      p_most_recent_effective_date => 'T');
+
+   select count(*)
+     into l_count
+     from cwms_v_location_level
+    where office_id = c_office_id
+      and location_id = c_location_id
+      and level_date = cwms_util.change_timezone(l_effective_date, c_timezone_id, 'UTC')
+      and unit_system = 'EN';
+
+   ut.expect(l_count).to_equal(0);
+
 end test_regularly_varying_location_levels;
 --------------------------------------------------------------------------------
 --procedure test_irregularly_varying_location_levels
@@ -279,6 +335,7 @@ is
    l_ts_data         cwms_t_tsv_array;
    l_value           number;
    l_expected_value  number;
+   l_count           pls_integer;
 begin
    setup;
    ---------------------------
@@ -364,6 +421,34 @@ begin
          ut.expect(round(l_value / l_expected_value, 2)).to_equal(1);
       end if;
    end loop;
+   ---------------------------------------------------------------
+   -- test delete_location_level3 with specified effective date --
+   ---------------------------------------------------------------
+   select count(*)
+     into l_count
+     from cwms_v_location_level
+    where office_id = c_office_id
+      and location_id = c_location_id
+      and unit_system = 'EN';
+
+   ut.expect(l_count).to_equal(1);
+
+   cwms_level.delete_location_level3(
+      p_location_level_id => c_top_of_normal_elev_id,
+      p_effective_date    => l_effective_date,
+      p_timezone_id       => c_timezone_id,
+      p_cascade           => 'T',
+      p_office_id         => c_office_id);
+
+   select count(*)
+     into l_count
+     from cwms_v_location_level
+    where office_id = c_office_id
+      and location_id = c_location_id
+      and unit_system = 'EN';
+
+   ut.expect(l_count).to_equal(0);
+
 end test_irregularly_varying_location_levels;
 --------------------------------------------------------------------------------
 -- procedure test_virtual_location_levels
@@ -377,6 +462,7 @@ is
    l_date                 date;
    l_date1                date;
    l_date2                date;
+   l_count                pls_integer;
    l_effective_date       date := date '2021-01-01';
    l_interval_origin      date := date '2000-01-01';
    l_interval_months      integer := 12;
@@ -626,6 +712,99 @@ begin
          ut.expect(round(l_value / l_expected_value, 4)).to_equal(1);
       end loop;
    end loop;
+   -----------------------------------------------------------
+   -- test delete_location_level3 with level type specified --
+   -----------------------------------------------------------
+   select count(*)
+     into l_count
+     from cwms_v_location_level
+    where office_id = c_office_id
+      and location_level_id = c_top_of_normal_elev_id
+      and unit_system = 'EN';
+
+   ut.expect(l_count).to_equal(l_seasonal_elev_values.count);
+
+   select count(*)
+     into l_count
+     from cwms_v_virtual_location_level
+    where office_id = c_office_id
+      and location_level_id = c_top_of_normal_elev_id;
+
+   ut.expect(l_count).to_equal(1);
+
+   select count(*)
+     into l_count
+     from cwms_v_virtual_location_level
+    where office_id = c_office_id
+      and location_level_id = c_top_of_normal_stor_id;
+
+   ut.expect(l_count).to_equal(1);
+
+   select count(*)
+     into l_count
+     from cwms_v_vloc_lvl_constituent;
+
+   ut.expect(l_count).to_equal(4);
+
+   cwms_level.delete_location_level3(
+      p_location_level_id   => c_top_of_normal_stor_id,
+      p_office_id           => c_office_id,
+      p_level_type          => 'V',
+      p_all_effective_dates => 'T');
+
+   select count(*)
+     into l_count
+     from cwms_v_virtual_location_level
+    where office_id = c_office_id
+      and location_level_id = c_top_of_normal_elev_id;
+
+   ut.expect(l_count).to_equal(1);
+
+   select count(*)into l_count
+     from cwms_v_virtual_location_level
+    where office_id = c_office_id
+      and location_level_id = c_top_of_normal_stor_id;
+
+   ut.expect(l_count).to_equal(0);
+
+   cwms_level.delete_location_level3(
+      p_location_level_id   => c_top_of_normal_elev_id,
+      p_timezone_id         => c_timezone_id,
+      p_cascade             => 'T',
+      p_office_id           => c_office_id,
+      p_level_type          => 'N',
+      p_all_effective_dates => 'T');
+
+   select count(*)
+     into l_count
+     from cwms_v_location_level
+    where office_id = c_office_id
+      and location_level_id = c_top_of_normal_elev_id
+      and unit_system = 'EN';
+
+   ut.expect(l_count).to_equal(0);
+
+   cwms_level.delete_location_level3(
+      p_location_level_id   => c_top_of_normal_elev_id,
+      p_timezone_id         => c_timezone_id,
+      p_office_id           => c_office_id,
+      p_level_type          => 'V',
+      p_all_effective_dates => 'T');
+
+   select count(*)
+     into l_count
+     from cwms_v_virtual_location_level
+    where office_id = c_office_id
+      and location_level_id = c_top_of_normal_elev_id;
+
+   ut.expect(l_count).to_equal(0);
+
+   select count(*)
+     into l_count
+     from cwms_v_vloc_lvl_constituent;
+
+   ut.expect(l_count).to_equal(0);
+
 end test_virtual_location_levels;
 --------------------------------------------------------------------------------
 -- procedure test_guide_curve
@@ -651,6 +830,8 @@ is
    l_interval_origin   date := date '2000-01-01';
    l_interval_months   integer := 12;
    l_attribute_value   number;
+   l_count             pls_integer;
+   l_expected_count    pls_integer;
    l_attribute_values  cwms_t_number_tab := cwms_t_number_tab(20000, 40000, 60000, 150000);
    l_seasonal_values   seasonal_value_tab_tab_t := seasonal_value_tab_tab_t();
    l_eval_info         eval_tab_t := eval_tab_t(
@@ -757,6 +938,40 @@ begin
 
      ut.expect(round(l_attribute_value, 9)).to_equal(l_eval_info(i).flow_limit);
    end loop;
+   -------------------------------------------------------------------
+   -- test delete_location_level3 with p_all_attribute_values = 'T' --
+   -------------------------------------------------------------------
+   l_expected_count := 0;
+   for i in 1..l_seasonal_values.count loop
+      l_expected_count := l_expected_count + l_seasonal_values(i).count;
+   end loop;
+
+   select count(*)
+     into l_count
+     from cwms_v_location_level
+    where office_id = c_office_id
+      and location_level_id = l_location_level_id
+      and unit_system = 'EN';
+
+   ut.expect(l_count).to_equal(l_expected_count);
+
+   cwms_level.delete_location_level3(
+      p_location_level_id    => l_location_level_id,
+      p_attribute_id         => l_attribute_id,
+      p_cascade              => 'T',
+      p_office_id            => c_office_id,
+      p_all_effective_dates  => 'T',
+      p_all_attribute_values => 'T');
+
+   select count(*)
+     into l_count
+     from cwms_v_location_level
+    where office_id = c_office_id
+      and location_level_id = l_location_level_id
+      and unit_system = 'EN';
+
+   ut.expect(l_count).to_equal(0);
+
 end test_guide_curve;
 --------------------------------------------------------------------------------
 -- procedure test_indicators_and_conditions
@@ -784,6 +999,7 @@ is
    l_pct_full_expr    varchar2(26)  := '(V - L2) / (L1 - L2) * 100';
    l_rate_expr        varchar2(1)   := 'R';
    l_value_count      integer := 48;
+   l_count            pls_integer;
    l_elev_ts_data     cwms_t_tsv_array;
    l_stor_ts_data     cwms_t_tsv_array;
    l_pct_full_vals    cwms_t_number_tab := cwms_t_number_tab(10, 25, 50, 75, 90);
@@ -1088,7 +1304,6 @@ begin
    ------------------------------------------------------------------------------------------
    -- evaluate the percent flood pool used indicator expression for each time series value --
    ------------------------------------------------------------------------------------------
-   dbms_output.put_line(chr(10)||'CP1'||chr(10));
    l_pct_full_ind_ts := cwms_level.eval_level_indicator_expr(
       p_tsid                   => l_stor_tsid,
       p_start_time             => l_start_time,
@@ -1106,7 +1321,6 @@ begin
    -------------------------------------------------------------------------------------------------------
    -- get the max condition values for the percent flood pool used indicator for each time series value --
    -------------------------------------------------------------------------------------------------------
-   dbms_output.put_line(chr(10)||'CP2'||chr(10));
    cwms_level.get_level_indicator_max_values(
       p_cursor               => l_crsr,
       p_tsid                 => l_stor_tsid,
@@ -1138,7 +1352,6 @@ begin
    -----------------------------------------------------------------------------------------
    -- evaluate the flood pool inflow rate indicator expression for each time series value --
    -----------------------------------------------------------------------------------------
-   dbms_output.put_line(chr(10)||'CP3'||chr(10));
    l_inflow_ind_ts := cwms_level.eval_level_indicator_expr(
       p_tsid                   => l_stor_tsid,
       p_start_time             => l_start_time,
@@ -1163,7 +1376,6 @@ begin
    -------------------------------------------------------------------------------------------
    -- get the max condition values for the inflow rate indicator for each time series value --
    -------------------------------------------------------------------------------------------
-   dbms_output.put_line(chr(10)||'CP4'||chr(10));
    cwms_level.get_level_indicator_max_values(
       p_cursor               => l_crsr,
       p_tsid                 => l_stor_tsid,
@@ -1189,6 +1401,123 @@ begin
       ---------------------------------------------------------------------------------------------
       ut.expect(l_indicator_values(i).value).to_equal(case when i < 15 then 0 else 2 end);
    end loop;
+
+   select count(*)
+     into l_count
+     from cwms_v_location_level
+    where office_id = c_office_id
+      and location_level_id = l_elev_bottom_id
+      and unit_system = 'EN';
+
+   ut.expect(l_count).to_equal(1);
+
+   select count(*)
+     into l_count
+     from cwms_v_location_level
+    where office_id = c_office_id
+      and location_level_id = l_elev_top_id
+      and unit_system = 'EN';
+
+   ut.expect(l_count).to_equal(1);
+
+   select count(*)
+     into l_count
+     from cwms_v_virtual_location_level
+    where office_id = c_office_id
+      and location_level_id = l_stor_bottom_id;
+
+   ut.expect(l_count).to_equal(1);
+
+   select count(*)
+     into l_count
+     from cwms_v_virtual_location_level
+    where office_id = c_office_id
+      and location_level_id = l_stor_top_id;
+
+   ut.expect(l_count).to_equal(1);
+
+   select count(*)
+     into l_count
+     from cwms_v_loc_lvl_indicator
+    where office_id = c_office_id
+      and level_indicator_id = l_pct_full_ind_id;
+
+   ut.expect(l_count).to_equal(5);
+
+   select count(*)
+     into l_count
+     from cwms_v_loc_lvl_indicator
+    where office_id = c_office_id
+      and level_indicator_id = l_inflow_ind_id;
+
+   ut.expect(l_count).to_equal(5);
+
+   for rec in (select l_elev_bottom_id as level_id from dual
+               union all
+               select l_elev_top_id as level_id from dual
+               union all
+               select l_stor_bottom_id as level_id from dual
+               union all
+               select l_stor_top_id as level_id from dual
+              )
+   loop
+      cwms_level.delete_location_level3(
+         p_location_level_id          => rec.level_id,
+         p_delete_indicators          => 'T',
+         p_office_id                  => c_office_id,
+         p_most_recent_effective_date => 'T');
+   end loop;
+
+   select count(*)
+     into l_count
+     from cwms_v_location_level
+    where office_id = c_office_id
+      and location_level_id = l_elev_bottom_id
+      and unit_system = 'EN';
+
+   ut.expect(l_count).to_equal(0);
+
+   select count(*)
+     into l_count
+     from cwms_v_location_level
+    where office_id = c_office_id
+      and location_level_id = l_elev_top_id
+      and unit_system = 'EN';
+
+   ut.expect(l_count).to_equal(0);
+
+   select count(*)
+     into l_count
+     from cwms_v_virtual_location_level
+    where office_id = c_office_id
+      and location_level_id = l_stor_bottom_id;
+
+   ut.expect(l_count).to_equal(0);
+
+   select count(*)
+     into l_count
+     from cwms_v_virtual_location_level
+    where office_id = c_office_id
+      and location_level_id = l_stor_top_id;
+
+   ut.expect(l_count).to_equal(0);
+
+   select count(*)
+     into l_count
+     from cwms_v_loc_lvl_indicator
+    where office_id = c_office_id
+      and level_indicator_id = l_pct_full_ind_id;
+
+   ut.expect(l_count).to_equal(0);
+
+   select count(*)
+     into l_count
+     from cwms_v_loc_lvl_indicator
+    where office_id = c_office_id
+      and level_indicator_id = l_inflow_ind_id;
+
+   ut.expect(l_count).to_equal(0);
+
 end test_indicators_and_conditions;
 
 end test_cwms_level;

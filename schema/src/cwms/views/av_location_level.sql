@@ -401,7 +401,7 @@ select q1.office_id,
                    null as attribute_parameter_type_id,
                    null as attribute_duration_id,
                    a_ll.location_level_date as level_date,
-                   null as unit_system,
+                   us.unit_system as unit_system,
                    a_ll.attribute_value as attribute_value,
                    null as constant_level,
                    a_ll.interval_origin as interval_origin,
@@ -434,7 +434,10 @@ select q1.office_id,
                    cwms_duration c_d1,
                    cwms_base_parameter c_bp1,
                    cwms_parameter_type c_pt1,
-                   cwms_office c_o
+                   cwms_office c_o,
+                   (select 'EN' as unit_system from  dual
+                    union all
+                    select 'SI' as unit_system from dual) us
              where a_pl.location_code = a_ll.location_code
                and a_bl.base_location_code = a_pl.base_location_code
                and c_o.office_code = a_bl.db_office_code
@@ -501,10 +504,9 @@ select q1.office_id,
                    cwms_base_parameter c_bp2,
                    cwms_parameter_type c_pt2,
                    cwms_office c_o,
-                   (select 'EN' as unit_system from dual
+                   (select 'EN' as unit_system from  dual
                     union all
-                    select 'SI' as unit_system from dual
-                   ) us
+                    select 'SI' as unit_system from dual) us
              where a_pl.location_code = a_ll.location_code
                and a_bl.base_location_code = a_pl.base_location_code
                and c_o.office_code = a_bl.db_office_code

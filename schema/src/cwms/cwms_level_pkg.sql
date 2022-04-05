@@ -2477,7 +2477,7 @@ procedure delete_location_level(
 /**
  * Deletes a location level, optionally deleting any recurring pattern records and location level indicators
  *
- * @deprecated Use Delete_Location_Level2 instead.
+ * @deprecated Use Delete_Location_Level3 instead.
  *
  * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
  * @param p_effective_date     The effective date of the level to delete
@@ -2507,8 +2507,11 @@ procedure delete_location_level_ex(
    p_delete_indicators       in  varchar2 default 'F',
    p_office_id               in  varchar2 default null,
    p_level_type              in  varchar2 default 'VN');
+pragma deprecate(delete_location_level_ex, 'Use DELETE_LOCATION_LEVEL3 instead of DELETE_LOCATION_LEVEL_EX');
 /**
  * Deletes a location level, optionally deleting any recurring pattern records and location level indicators
+ *
+ * @deprecated Use Delete_Location_Level3 instead.
  *
  * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
  * @param p_effective_date     The effective date of the level to delete
@@ -2538,6 +2541,7 @@ procedure delete_location_level2(
    p_delete_indicators       in  varchar2 default 'F',
    p_office_id               in  varchar2 default null,
    p_level_type              in  varchar2 default 'VN');
+pragma deprecate(delete_location_level2, 'Use DELETE_LOCATION_LEVEL3 instead of DELETE_LOCATION_LEVEL2');
 /**
  * Deletes a location level, optionally deleting any recurring pattern records and location level indicators
  *
@@ -2552,36 +2556,45 @@ procedure delete_location_level2(
 /**
  * Deletes a location level, optionally deleting any recurring pattern records, location level indicators, and associated pool definitions
  *
- * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
- * @param p_effective_date     The effective date of the level to delete
- * @param p_timezone_id        The time zone of p_effective_date
- * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
- * @param p_attribute_value    The value of the attribute, if applicable
- * @param p_attribute_units    The unit of the attribute, if applicable
- * @param p_cascade            A flag ('T' or 'F') that specifies whether to delete any recurring pattern records. If 'F' and such records exist, the routine will fail
- * @param p_delete_indicators  A flag ('T' or 'F') that specifies whether to delete any location level indicators associated with the location level
- * @param p_delete_pools       A flag ('T' or 'F') that specifies whether to delete any explicit pool definitions associated with the location level
- * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
- * @param p_level_type         One or two characters that specify which types of location levels to delete. If not specified, 'VN' will be used.
+ * @param p_location_level_id          The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_effective_date             The effective date of the level to delete. If null, one of p_most_recent_effective_date or p_all_effective_dates must be 'T'
+ * @param p_timezone_id                The time zone of p_effective_date
+ * @param p_attribute_id               The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_value            The value of the attribute, if applicable
+ * @param p_attribute_units            The unit of the attribute, if applicable
+ * @param p_cascade                    A flag ('T' or 'F') that specifies whether to delete any recurring pattern records. If 'F' and such records exist, the routine will fail
+ * @param p_delete_indicators          A flag ('T' or 'F') that specifies whether to delete any location level indicators associated with the location level
+ * @param p_delete_pools               A flag ('T' or 'F') that specifies whether to delete any explicit pool definitions associated with the location level
+ * @param p_office_id                  The office that owns the location level. If not specified or NULL, the session user's default office is used
+ * @param p_level_type                 One or two characters that specify which types of location levels to delete. If not specified, 'VN' will be used.
  * <ul>
  *   <li><b>N</b> delete non-virtual (normal) location levels only
  *   <li><b>V</b> delete virtual location levels only
  *   <li><b>NV</b> delete both non-virtual and virtual location levels
  *   <li><b>VN</b> delete both non-virtual and virtual location levels
  * </ul>
+ * @param p_most_recent_effective_date A flag ('T' or 'F') That specifies deleting the latest effective date on or before the specified effective dates of the specified level type(s).
+ *                                     If 'T' and p_effective_date is null, then the latest effective date on or before the current time will be deleted.
+ * @param p_all_effective_dates        A flag ('T' or 'F') that specifies deleting all effective dates of the specified level type(s).
+ *                                     If 'T', p_effective_date is ignored.
+ * @param p_all_attribute_values       A flag ('T' or 'F') that specifies deleting levels with all attribute values for the specified id, effective date(s) and level type(s).
+ *                                     If 'T', p_attribute_value is ignored.
  */
 procedure delete_location_level3(
-   p_location_level_id       in  varchar2,
-   p_effective_date          in  date     default null,
-   p_timezone_id             in  varchar2 default 'UTC',
-   p_attribute_id            in  varchar2 default null,
-   p_attribute_value         in  number   default null,
-   p_attribute_units         in  varchar2 default null,
-   p_cascade                 in  varchar2 default 'F',
-   p_delete_indicators       in  varchar2 default 'F',
-   p_delete_pools            in  varchar2 default 'F',
-   p_office_id               in  varchar2 default null,
-   p_level_type              in  varchar2 default 'VN');
+   p_location_level_id          in varchar2,
+   p_effective_date             in date     default null,
+   p_timezone_id                in varchar2 default 'UTC',
+   p_attribute_id               in varchar2 default null,
+   p_attribute_value            in number   default null,
+   p_attribute_units            in varchar2 default null,
+   p_cascade                    in varchar2 default 'F',
+   p_delete_indicators          in varchar2 default 'F',
+   p_delete_pools               in varchar2 default 'F',
+   p_office_id                  in varchar2 default null,
+   p_level_type                 in varchar2 default 'VN',
+   p_most_recent_effective_date in varchar2 default 'F',
+   p_all_effective_dates        in varchar2 default 'F',
+   p_all_attribute_values       in varchar2 default 'F');
 /**
  * Deletes a location level, optionally deleting any recurring pattern records, location level indicators, and associated pool definitions
  *
@@ -4454,7 +4467,119 @@ function get_virtual_loc_lvl_code(
    p_match_time        in varchar2 default 'F',
    p_office_id         in varchar2 default null)
    return integer;
-
+/*
+ * Stores (inserts or updates) a virtual location level to the database.
+ * <p>
+ * Each virtual location level is computed from a set of CONSTITUENTS, each of which is either an INPUT or a TRANSFORM as shown below.
+ * <table border="1" cellpadding="4" style="border-collapse:collapse">
+ *   <tr style="font-weight:bold"><td>Category</td><td>Type</td><td>Name</td><td>Example</td></tr>
+ *   <tr><td rowspan="2">INPUT</td><td>LOCATION_LEVEL</td><td>Location Level ID</td><td>Freemont.Elev.Inst.0.Top of Flood</td></tr>
+ *   <tr><td>TIME_SERIES</td><td>Time Series ID</td><td>Freemont.Elev.Inst.0.0.rev-ccp</td></tr>
+ *   <tr><td rowspan="2">TRANSFORM</td><td>RATING</td><td>Rating Specification</td><td>Freemont.Elev;Stor.Linear.Standard.Step</td></tr>
+ *   <tr><td>FORMULA</td><td>Mathematical Expression with Units</td><td>(ARG1 + ARG2) / 2 {ac-ft,ac-ft;ac-ft}</td></tr>
+ * </table>
+ * <p>
+ * The constituent name for a formula constituent must include the units for each input (e.g. ARGn) separated by a comma, followed by a
+ * semicolon and the unit of the the result of the formula. This string must be surrounded by curly braces {}.
+ * <p>
+ * Each virtual location levels must have at least one INPUT and one TRANSFORM, although it may have multiple of each. The values of a virtual
+ * location level is always the output of a TRANSFORM.
+ * <p>
+ * Each constituent has a TYPE and a NAME - as described above - and an ABBREVIATION that is used in the connection string. The rules for
+ * constituent abbreviations are:
+ * <ul>
+ *   <li>The first character of the abbreviation must be the same as the first character of the contituent type (L, T, R, or F)</li>
+ *   <li>The abbreviation can be no more that four characters in length</li>
+ * </ul>
+ * Normally, the abbreviation of the first specified location level constituent is L1, that of the seconds specified location level is L2, etc....
+ * Likewise for time seires (T1, T2, ...), ratings (R1, R2, ...), and formula (F1, F2, ...) constituents. However, this convention is not
+ * required.
+ * <p>
+ * Each constituent has one or more connection points which connect it to one or more of the other constituents. Input constituents have
+ * only one connection point, which is named the same as the constiuent's abbreviation. Transform constituents have a minimum of two
+ * connection points: they have one or more independent (normally input) connection points and one dependent (normally output). These connection
+ * points are named by appending I1, I2, etc... to the constituent abbreviation for independent connection points and appending D to the
+ * abbreviation for dependent connection points (e.g, R1I1, F2I1, R2D, etc...). Only when the transform constituent is a reversible rating
+ * (monotonic single indpependent paramter rating) can the dependent connection point be an input and the independent connection point
+ * be an output.
+ * <p>
+ * Each virtual location level has a CONNECTION STRING that specifies how the constiuents are tied together. The connection string specifies
+ * one or more sets of connected connection points by placing them on either side of an equals sign character ('='). If more than one connection
+ * is required, the sets of connected connection points are separated by the comma character (','). The connections string must connect every
+ * input connection point to the independent connection point of one or more transforms and must leave exactly one transform dependent connection
+ * point unconnectd. Complex virtual location levels may connect input connection points or transform dependent connection points to more than one
+ * transform independent connection points. Some example connection strings are:
+ * <table border="1" cellpadding="4" style="border-collapse:collapse">
+ *   <tr style="font-weight:bold"><td>Type</td><td>Name</td><td>Abbreviation</td><td>Connection string</td><td>Result</td><td>Description</td></tr>
+ *   <tr><td>LOCATION_LEVEL</td><td>Freemont.Elev.Inst.0.Top of Flood</td><td>L1</td><td rowspan="2">L1=R1I1</td><td rowspan="2">R1D</td><td rowspan="2">Storage location level rated from elevation location level</td></tr>
+ *   <tr><td>RATING</td><td>Freemont.Elev;Stor.Linear.Step</td><td>R1</td></tr>
+ *   <tr><td>TIME_SERIES</td><td>Freemont.Elev-UpperEnd.Ave.6Hour.0.Computed-ccp</td><td>T1</td><td rowspan="3">T1=F1I1,T2=F1I2</td><td rowspan="3">F1D</td><td rowspan="3">Average elevattion location level</td></tr>
+ *   <tr><td>TIME_SERIES</td><td>Freemont.Elev-LowerEnd.Ave.6Hour.0.Computed-ccp</td><td>T2</td></tr>
+ *   <tr><td>FORMULA</td><td>(ARG1 + ARG2) / 2 {ft,ft;ft}</td><td>F1</td></tr>
+ *   <tr><td>LOCATION_LEVEL</td><td>Freemont.Elev.Inst.0.Top of Flood</td><td>L1</td><td rowspan="2">L1=F1I1</td><td rowspan="2">F1D</td><td rowspan="2">Elev location level limited to max elevation</td></tr>
+ *   <tr><td>FORMULA</td><td>MIN($I1, 1070.35)</td><td>F1</td></tr>
+ * </table>
+ * <p>
+ * Formulas may be specified in infix (algebraic) or postfix (RPN) notation. Input arguments by be specified as ARG1, ARG2, etc... or
+ * $I1, $I2, etc.... Negated arguments (e.g., -ARG1, -$I1) may be specified. All forumla arguments, operators, and function names must be
+ * separated by spaces except for parentheses used in infix notation. The operators, functions, and constants available for use in
+ * formulas is shown below.
+ * <table border="1" cellpadding="4" style="border-collapse:collapse">
+ *   <tr style="font-weight:bold"><td colspan="3">Unary Operator</td></tr>
+ *   <tr><td>-</td><td>negation</td><td>prepend to argument without spaces, can be used only on numbers and arguments (not expressions)</td></tr>
+ *   <tr style="font-weight:bold"><td colspan="3">Binary Operators</td></tr>
+ *   <tr><td>+</td><td>addition</td><td></td></tr>
+ *   <tr><td>-</td><td>subtraction</td><td></td></tr>
+ *   <tr><td>*</td><td>multiplication</td><td></td></tr>
+ *   <tr><td>/</td><td>division</td><td></td></tr>
+ *   <tr><td>//</td><td>integer division</td><td>like Python operator</td></tr>
+ *   <tr><td>%</td><td>modulus</td><td>like Python math.fmod, not Python %</td></tr>
+ *   <tr><td>^</td><td>exponentiation</td><td></td></tr>
+ *   <tr style="font-weight:bold"><td colspan="3">Unary Functions</td></tr>
+ *   <tr><td>ABS</td><td>absolute value</td><td></td></tr>
+ *   <tr><td>ACOS</td><td>arccosine</td><td></td></tr>
+ *   <tr><td>ASIN</td><td>arcsine</td><td></td></tr>
+ *   <tr><td>ATAN</td><td>arctangent</td><td></td></tr>
+ *   <tr><td>CEIL</td><td>ceiling</td><td>smallest integer value &gt;= argument</td></tr>
+ *   <tr><td>COS</td><td>cosine</td><td></td></tr>
+ *   <tr><td>EXP</td><td>exponential</td><td><em>e</em> raised to power of argument</td></tr>
+ *   <tr><td>FLOOR</td><td>floor</td><td>largest integer value &lt;= argument</td></tr>
+ *   <tr><td>INV</td><td>inverse</td><td>1 / argument</td></tr>
+ *   <tr><td>LN</td><td>natural logarithm</td><td></td></tr>
+ *   <tr><td>LOG</td><td>base 10 logarithm</td><td></td></tr>
+ *   <tr><td>NEG</td><td>negation</td><td></td></tr>
+ *   <tr><td>ROUND</td><td>round to nearest integer</td><td></td></tr>
+ *   <tr><td>SIGN</td><td>signum</td><td>sign of argument: -1 or +1</td></tr>
+ *   <tr><td>SIN</td><td>sine</td><td></td></tr>
+ *   <tr><td>SQRT</td><td>square root</td><td></td></tr>
+ *   <tr><td>TAN</td><td>tangent</td><td></td></tr>
+ *   <tr><td>TRUNC</td><td>truncate to integer portion</td><td></td></tr>
+ *   <tr style="font-weight:bold"><td colspan="3">Binary Functions</td></tr>
+ *   <tr><td>MAX</td><td>maximum of two arguments</td><td></td></tr>
+ *   <tr><td>MIN</td><td>minimum of two arguments</td><td></td></tr>
+ *   <tr style="font-weight:bold"><td colspan="3">Constants</td></tr>
+ *   <tr><td>E</td><td style="font-style:italic">e</td><td>Euler's number</td></tr>
+ *   <tr><td>PI</td><td>π</td><td>ratio of a cirlce's circumference to its diameter</td></tr>
+ * </table>
+ * @param p_location_level_id       The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_constituents            The constituents as a table of tables. Each row of the outer table specifies a single constituent and each
+ *                                  row of the inner table specifies the abbreviation, type, name, and optionally the attribute id, value, and unit
+ *                                  for the constituent, as described above.
+ * @param p_constituent_connections The connection string for the constituents
+ * @param p_level_comment           A comment about the location level
+ * @param p_attribute_id            The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_value         The value of the attribute, if applicable
+ * @param p_attribute_unit          he unit of the attribute, if applicable
+ * @param p_attribute_comment       A comment about the attribute, if applicable
+ * @param p_effective_date          The effective date for the location level. Applies from this time forward
+ * @param p_expiration_date         The date/time that the location level expires
+ * @param p_timezone_id             The time zone of p_effective_date and p_interval_origin, if applicable
+ * @param p_fail_if_exists          A flag ('T' or 'F') that specifies whether the routine should fail if the location level already exists in the database
+ * @param p_ignore_nulls            A flag ('T' or 'F') that specifies whether NULL parameters should be ignored when updating
+ * @param p_office_id               The office that owns the location level. If not specified or NULL, the session user's default office is used
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and the location level already exists in the database
+ */
 procedure store_virtual_location_level(
    p_location_level_id       in varchar2,
    p_constituents            in str_tab_tab_t,
@@ -4470,7 +4595,121 @@ procedure store_virtual_location_level(
    p_fail_if_exists          in varchar2 default 'T',
    p_ignore_nulls            in varchar2 default 'T',
    p_office_id               in varchar2 default null);
-
+/*
+ * Stores (inserts or updates) a virtual location level to the database.
+ * <p>
+ * Each virtual location level is computed from a set of CONSTITUENTS, each of which is either an INPUT or a TRANSFORM as shown below.
+ * <table border="1" cellpadding="4" style="border-collapse:collapse">
+ *   <tr style="font-weight:bold"><td>Category</td><td>Type</td><td>Name</td><td>Example</td></tr>
+ *   <tr><td rowspan="2">INPUT</td><td>LOCATION_LEVEL</td><td>Location Level ID</td><td>Freemont.Elev.Inst.0.Top of Flood</td></tr>
+ *   <tr><td>TIME_SERIES</td><td>Time Series ID</td><td>Freemont.Elev.Inst.0.0.rev-ccp</td></tr>
+ *   <tr><td rowspan="2">TRANSFORM</td><td>RATING</td><td>Rating Specification</td><td>Freemont.Elev;Stor.Linear.Standard.Step</td></tr>
+ *   <tr><td>FORMULA</td><td>Mathematical Expression with Units</td><td>(ARG1 + ARG2) / 2 {ac-ft,ac-ft;ac-ft}</td></tr>
+ * </table>
+ * <p>
+ * The constituent name for a formula constituent must include the units for each input (e.g. ARGn) separated by a comma, followed by a
+ * semicolon and the unit of the the result of the formula. This string must be surrounded by curly braces {}.
+ * <p>
+ * Each virtual location levels must have at least one INPUT and one TRANSFORM, although it may have multiple of each. The values of a virtual
+ * location level is always the output of a TRANSFORM.
+ * <p>
+ * Each constituent has a TYPE and a NAME - as described above - and an ABBREVIATION that is used in the connection string. The rules for
+ * constituent abbreviations are:
+ * <ul>
+ *   <li>The first character of the abbreviation must be the same as the first character of the contituent type (L, T, R, or F)</li>
+ *   <li>The abbreviation can be no more that four characters in length</li>
+ * </ul>
+ * Normally, the abbreviation of the first specified location level constituent is L1, that of the seconds specified location level is L2, etc....
+ * Likewise for time seires (T1, T2, ...), ratings (R1, R2, ...), and formula (F1, F2, ...) constituents. However, this convention is not
+ * required.
+ * <p>
+ * Each constituent has one or more connection points which connect it to one or more of the other constituents. Input constituents have
+ * only one connection point, which is named the same as the constiuent's abbreviation. Transform constituents have a minimum of two
+ * connection points: they have one or more independent (normally input) connection points and one dependent (normally output). These connection
+ * points are named by appending I1, I2, etc... to the constituent abbreviation for independent connection points and appending D to the
+ * abbreviation for dependent connection points (e.g, R1I1, F2I1, R2D, etc...). Only when the transform constituent is a reversible rating
+ * (monotonic single indpependent paramter rating) can the dependent connection point be an input and the independent connection point
+ * be an output.
+ * <p>
+ * Each virtual location level has a CONNECTION STRING that specifies how the constiuents are tied together. The connection string specifies
+ * one or more sets of connected connection points by placing them on either side of an equals sign character ('='). If more than one connection
+ * is required, the sets of connected connection points are separated by the comma character (','). The connections string must connect every
+ * input connection point to the independent connection point of one or more transforms and must leave exactly one transform dependent connection
+ * point unconnectd. Complex virtual location levels may connect input connection points or transform dependent connection points to more than one
+ * transform independent connection points. Some example connection strings are:
+ * <table border="1" cellpadding="4" style="border-collapse:collapse">
+ *   <tr style="font-weight:bold"><td>Type</td><td>Name</td><td>Abbreviation</td><td>Connection string</td><td>Result</td><td>Description</td></tr>
+ *   <tr><td>LOCATION_LEVEL</td><td>Freemont.Elev.Inst.0.Top of Flood</td><td>L1</td><td rowspan="2">L1=R1I1</td><td rowspan="2">R1D</td><td rowspan="2">Storage location level rated from elevation location level</td></tr>
+ *   <tr><td>RATING</td><td>Freemont.Elev;Stor.Linear.Step</td><td>R1</td></tr>
+ *   <tr><td>TIME_SERIES</td><td>Freemont.Elev-UpperEnd.Ave.6Hour.0.Computed-ccp</td><td>T1</td><td rowspan="3">T1=F1I1,T2=F1I2</td><td rowspan="3">F1D</td><td rowspan="3">Average elevattion location level</td></tr>
+ *   <tr><td>TIME_SERIES</td><td>Freemont.Elev-LowerEnd.Ave.6Hour.0.Computed-ccp</td><td>T2</td></tr>
+ *   <tr><td>FORMULA</td><td>(ARG1 + ARG2) / 2 {ft,ft;ft}</td><td>F1</td></tr>
+ *   <tr><td>LOCATION_LEVEL</td><td>Freemont.Elev.Inst.0.Top of Flood</td><td>L1</td><td rowspan="2">L1=F1I1</td><td rowspan="2">F1D</td><td rowspan="2">Elev location level limited to max elevation</td></tr>
+ *   <tr><td>FORMULA</td><td>MIN($I1, 1070.35)</td><td>F1</td></tr>
+ * </table>
+ * <p>
+ * Formulas may be specified in infix (algebraic) or postfix (RPN) notation. Input arguments by be specified as ARG1, ARG2, etc... or
+ * $I1, $I2, etc.... Negated arguments (e.g., -ARG1, -$I1) may be specified. All forumla arguments, operators, and function names must be
+ * separated by spaces except for parentheses used in infix notation. The operators, functions, and constants available for use in
+ * formulas is shown below.
+ * <table border="1" cellpadding="4" style="border-collapse:collapse">
+ *   <tr style="font-weight:bold"><td colspan="3">Unary Operator</td></tr>
+ *   <tr><td>-</td><td>negation</td><td>prepend to argument without spaces, can be used only on numbers and arguments (not expressions)</td></tr>
+ *   <tr style="font-weight:bold"><td colspan="3">Binary Operators</td></tr>
+ *   <tr><td>+</td><td>addition</td><td></td></tr>
+ *   <tr><td>-</td><td>subtraction</td><td></td></tr>
+ *   <tr><td>*</td><td>multiplication</td><td></td></tr>
+ *   <tr><td>/</td><td>division</td><td></td></tr>
+ *   <tr><td>//</td><td>integer division</td><td>like Python operator</td></tr>
+ *   <tr><td>%</td><td>modulus</td><td>like Python math.fmod, not Python %</td></tr>
+ *   <tr><td>^</td><td>exponentiation</td><td></td></tr>
+ *   <tr style="font-weight:bold"><td colspan="3">Unary Functions</td></tr>
+ *   <tr><td>ABS</td><td>absolute value</td><td></td></tr>
+ *   <tr><td>ACOS</td><td>arccosine</td><td></td></tr>
+ *   <tr><td>ASIN</td><td>arcsine</td><td></td></tr>
+ *   <tr><td>ATAN</td><td>arctangent</td><td></td></tr>
+ *   <tr><td>CEIL</td><td>ceiling</td><td>smallest integer value &gt;= argument</td></tr>
+ *   <tr><td>COS</td><td>cosine</td><td></td></tr>
+ *   <tr><td>EXP</td><td>exponential</td><td><em>e</em> raised to power of argument</td></tr>
+ *   <tr><td>FLOOR</td><td>floor</td><td>largest integer value &lt;= argument</td></tr>
+ *   <tr><td>INV</td><td>inverse</td><td>1 / argument</td></tr>
+ *   <tr><td>LN</td><td>natural logarithm</td><td></td></tr>
+ *   <tr><td>LOG</td><td>base 10 logarithm</td><td></td></tr>
+ *   <tr><td>NEG</td><td>negation</td><td></td></tr>
+ *   <tr><td>ROUND</td><td>round to nearest integer</td><td></td></tr>
+ *   <tr><td>SIGN</td><td>signum</td><td>sign of argument: -1 or +1</td></tr>
+ *   <tr><td>SIN</td><td>sine</td><td></td></tr>
+ *   <tr><td>SQRT</td><td>square root</td><td></td></tr>
+ *   <tr><td>TAN</td><td>tangent</td><td></td></tr>
+ *   <tr><td>TRUNC</td><td>truncate to integer portion</td><td></td></tr>
+ *   <tr style="font-weight:bold"><td colspan="3">Binary Functions</td></tr>
+ *   <tr><td>MAX</td><td>maximum of two arguments</td><td></td></tr>
+ *   <tr><td>MIN</td><td>minimum of two arguments</td><td></td></tr>
+ *   <tr style="font-weight:bold"><td colspan="3">Constants</td></tr>
+ *   <tr><td>E</td><td style="font-style:italic">e</td><td>Euler's number</td></tr>
+ *   <tr><td>PI</td><td>π</td><td>ratio of a cirlce's circumference to its diameter</td></tr>
+ * </table>
+ * @param p_location_level_id       The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_constituents            The constituents as a table of tables. Each row of the outer table specifies a single constituent and each
+ *                                  row of the inner table specifies the abbreviation, type, name, and optionally the attribute id, value, and unit
+ *                                  for the constituent, as described above. The table structure stored in a text string, with the linefeed character
+ *                                  ('\n', chr(10)) separating rows of the outer table and the tab character ('\t', chr(9)) separating rows of
+ *                                  each inner table.
+ * @param p_constituent_connections The connection string for the constituents
+ * @param p_level_comment           A comment about the location level
+ * @param p_attribute_id            The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_value         The value of the attribute, if applicable
+ * @param p_attribute_unit          he unit of the attribute, if applicable
+ * @param p_attribute_comment       A comment about the attribute, if applicable
+ * @param p_effective_date          The effective date for the location level. Applies from this time forward
+ * @param p_expiration_date         The date/time that the location level expires
+ * @param p_timezone_id             The time zone of p_effective_date and p_interval_origin, if applicable
+ * @param p_fail_if_exists          A flag ('T' or 'F') that specifies whether the routine should fail if the location level already exists in the database
+ * @param p_ignore_nulls            A flag ('T' or 'F') that specifies whether NULL parameters should be ignored when updating
+ * @param p_office_id               The office that owns the location level. If not specified or NULL, the session user's default office is used
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and the location level already exists in the database
+ */
 procedure store_virtual_location_level(
    p_location_level_id       in varchar2,
    p_constituents            in varchar2 default null,
@@ -4486,22 +4725,6 @@ procedure store_virtual_location_level(
    p_fail_if_exists          in varchar2 default 'T',
    p_ignore_nulls            in varchar2 default 'T',
    p_office_id               in varchar2 default null);
-
-procedure retrieve_virtual_loc_lvl(
-   p_constituents            out nocopy str_tab_tab_t,
-   p_constituent_connections out nocopy varchar2,
-   p_level_comment           out nocopy varchar2,
-   p_attribute_comment       out nocopy varchar2,
-   p_effective_date_out      out nocopy date,
-   p_expiration_date         out nocopy date,
-   p_location_level_id       in  varchar2,
-   p_attribute_id            in  varchar2 default null,
-   p_attribute_value         in  number   default null,
-   p_attribute_unit          in  varchar2 default null,
-   p_effective_date_in       in  date     default null,
-   p_timezone_id             in  varchar2 default 'UTC',
-   p_match_time              in  varchar2 default 'F',
-   p_office_id               in  varchar2 default null);
 /**
  * Retrieves a time series of location level values for a specified virtual location level
  * and a time window
