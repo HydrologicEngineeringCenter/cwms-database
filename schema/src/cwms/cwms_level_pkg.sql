@@ -4559,7 +4559,7 @@ function get_virtual_loc_lvl_code(
  *   <tr><td>MIN</td><td>minimum of two arguments</td><td></td></tr>
  *   <tr style="font-weight:bold"><td colspan="3">Constants</td></tr>
  *   <tr><td>E</td><td style="font-style:italic">e</td><td>Euler's number</td></tr>
- *   <tr><td>PI</td><td>π</td><td>ratio of a cirlce's circumference to its diameter</td></tr>
+ *   <tr><td>PI</td><td>&pi;</td><td>ratio of a cirlce's circumference to its diameter</td></tr>
  * </table>
  * @param p_location_level_id       The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
  * @param p_constituents            The constituents as a table of tables. Each row of the outer table specifies a single constituent and each
@@ -4687,7 +4687,7 @@ procedure store_virtual_location_level(
  *   <tr><td>MIN</td><td>minimum of two arguments</td><td></td></tr>
  *   <tr style="font-weight:bold"><td colspan="3">Constants</td></tr>
  *   <tr><td>E</td><td style="font-style:italic">e</td><td>Euler's number</td></tr>
- *   <tr><td>PI</td><td>π</td><td>ratio of a cirlce's circumference to its diameter</td></tr>
+ *   <tr><td>PI</td><td>&pi;</td><td>ratio of a cirlce's circumference to its diameter</td></tr>
  * </table>
  * @param p_location_level_id       The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
  * @param p_constituents            The constituents as a table of tables. Each row of the outer table specifies a single constituent and each

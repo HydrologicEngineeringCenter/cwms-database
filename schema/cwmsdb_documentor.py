@@ -835,7 +835,7 @@ def add_routine(summary_table, details_div, routine_name, routine_type, return_t
       HtmlElem('', '&nbsp;')])
    if param_count == 0 :
       routine_table = HtmlElem('table', attrs=[('class', 'members'+dep)], content= [
-         HtmlElem('tr', [
+         HtmlElem('tr', attrs=[('class', 'inline'+dep)], [
             HtmlElem('td', [
                HtmlElem('span', attrs=[('class', 'routine-name'+dep)], content=format(routine_name, False))])])])
    else :
@@ -868,7 +868,7 @@ def add_routine(summary_table, details_div, routine_name, routine_type, return_t
             col4.add_content([HtmlElem('span', attrs=[('class', 'comma'+dep)], content=',')])
          if i == 0 :
             routine_table = HtmlElem('table', attrs=[('class', 'members'+dep)], content= [
-               HtmlElem('tr', [col1, col2, col3, col4])])
+               HtmlElem('tr', attrs=[('class', 'inline'+dep)], [col1, col2, col3, col4])])
          else :
             routine_table.add_content([HtmlElem('tr', [col1, col2, col3, col4])])
    details_div.add_content([routine_table]).add_content(jdoc, local_names).add_content([HtmlElem('p'), HtmlElem('hr')])
