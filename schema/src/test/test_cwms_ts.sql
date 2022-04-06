@@ -1,4 +1,4 @@
-CREATE OR REPLACE package &cwms_schema..test_cwms_ts as
+CREATE OR REPLACE package &&cwms_schema..test_cwms_ts as
 
 --%suite(Test cwms_ts package code)
 --%beforeall (setup)
@@ -50,6 +50,8 @@ PROCEDURE variable_with_inst;
 --%test(Variable duration with const)
 --%throws(-20205)   
 PROCEDURE variable_with_const;
+--%test(Make sure quality on generated rts/lrts values is 0 (unscreened) and not 5 (missing) [JIRA Issue CWMSVIEW-212])
+procedure quality_on_generated_rts_values__JIRA_CWMSVIEW_212;
 
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
 procedure setup;
@@ -58,7 +60,7 @@ end test_cwms_ts;
 /
 
 /* Formatted on 3/18/2022 2:16:22 PM (QP5 v5.381) */
-CREATE OR REPLACE PACKAGE BODY &cwms_schema..test_cwms_ts
+CREATE OR REPLACE PACKAGE BODY &&cwms_schema..test_cwms_ts
 AS
     --------------------------------------------------------------------------------
     -- procedure delete_all
@@ -76,7 +78,7 @@ AS
                 cwms_loc.delete_location (
                     p_location_id     => rec.loc_name,
                     p_delete_action   => cwms_util.delete_all,
-                    p_db_office_id    => '&office_id');
+                    p_db_office_id    => '&&office_id');
             EXCEPTION
                 WHEN exc_location_id_not_found
                 THEN
@@ -91,7 +93,7 @@ AS
         delete_all;
         cwms_loc.store_location (p_location_id    => test_base_location_id,
                                  p_active         => 'F',
-                                 p_db_office_id   => '&office_id');
+                                 p_db_office_id   => '&&office_id');
         COMMIT;
     END;
 
@@ -128,8 +130,8 @@ AS
     BEGIN
         cwms_loc.store_location (p_location_id    => test_base_location_id,
                                  p_active         => 'T',
-                                 p_db_office_id   => '&office_id');
-        cwms_ts.create_ts ('&office_id', l_cwms_ts_id);
+                                 p_db_office_id   => '&&office_id');
+        cwms_ts.create_ts ('&&office_id', l_cwms_ts_id);
         COMMIT;
 
         SELECT COUNT (*)
@@ -177,7 +179,7 @@ AS
             NULL,
             'T',
             -1,
-            '&office_id');
+            '&&office_id');
 
         SELECT COUNT (*)
           INTO l_count
@@ -199,8 +201,8 @@ AS
     BEGIN
         cwms_loc.store_location (p_location_id    => test_base_location_id,
                                  p_active         => 'T',
-                                 p_db_office_id   => '&office_id');
-        cwms_ts.create_ts ('&office_id', p_cwms_ts_id);
+                                 p_db_office_id   => '&&office_id');
+        cwms_ts.create_ts ('&&office_id', p_cwms_ts_id);
         COMMIT;
 
         SELECT COUNT (*)
@@ -236,7 +238,7 @@ AS
     PROCEDURE throw_an_exception(p_cwms_ts_id VARCHAR2)
     IS
     BEGIN
-        cwms_ts.create_ts ('&office_id', p_cwms_ts_id);
+        cwms_ts.create_ts ('&&office_id', p_cwms_ts_id);
         COMMIT;
     END;
 
@@ -375,9 +377,9 @@ AS
         l_cwms_ts_id := l_base_location_id || '.Stage.Inst.0.0.raw';
         cwms_loc.store_location (p_location_id    => l_base_location_id,
                                  p_active         => 'F',
-                                 p_db_office_id   => '&office_id');
+                                 p_db_office_id   => '&&office_id');
         COMMIT;
-        cwms_ts.create_ts ('&office_id', l_cwms_ts_id);
+        cwms_ts.create_ts ('&&office_id', l_cwms_ts_id);
         COMMIT;
 
           SELECT bas_loc_active_flag,
@@ -399,7 +401,7 @@ AS
         ut.expect (l_net_ts_active).to_equal ('F');
         cwms_loc.store_location (p_location_id    => l_base_location_id,
                                  p_active         => 'T',
-                                 p_db_office_id   => '&office_id');
+                                 p_db_office_id   => '&&office_id');
         COMMIT;
 
 
@@ -422,7 +424,7 @@ AS
         ut.expect (l_net_ts_active).to_equal ('T');
         CWMS_TS.UPDATE_TS_ID (p_cwms_ts_id       => l_cwms_ts_id,
                               p_ts_active_flag   => 'F',
-                              p_db_office_id     => '&office_id');
+                              p_db_office_id     => '&&office_id');
         COMMIT;
 
           SELECT bas_loc_active_flag,
@@ -456,7 +458,7 @@ AS
         l_cwms_ts_id := test_base_location_id || '.Stage.Inst.1Hour.0.';
         cwms_loc.store_location (p_location_id    => test_base_location_id,
                                  p_active         => 'T',
-                                 p_db_office_id   => '&office_id');
+                                 p_db_office_id   => '&&office_id');
 
 
         FOR c
@@ -609,7 +611,7 @@ AS
                           := test_base_location_id || '.Code.Inst.1Hour.0.Test';
         l_loc_id      VARCHAR2 (57) := test_base_location_id;
         l_unit        VARCHAR2 (16) := 'n/a';
-        l_office_id   VARCHAR2 (16) := '&office_id';
+        l_office_id   VARCHAR2 (16) := '&&office_id';
         l_ts_data     cwms_t_ztsv_array
             := cwms_t_ztsv_array (
                    cwms_t_ztsv (DATE '2021-10-01' + 1 / 24, 1, 0),
@@ -741,7 +743,7 @@ AS
         l_ts_id                     VARCHAR2 (191);
         l_loc_id                    VARCHAR2 (57) := test_base_location_id;
         l_unit                      VARCHAR2 (16) := 'n/a';
-        l_office_id                 VARCHAR2 (16) := '&office_id';
+        l_office_id                 VARCHAR2 (16) := '&&office_id';
         l_ts_data                   cwms_t_ztsv_array;
         l_crsr                      SYS_REFCURSOR;
         l_date_times                cwms_t_date_table;
@@ -888,6 +890,134 @@ AS
             END LOOP;
         END LOOP;
     END test_retrieve_ts_with_calendar_based_times__JIRA_CWDB_157;
+
+   --------------------------------------------------------------------------------
+   -- procedure quality_on_generated_rts_values__JIRA_CWMSVIEW_212
+   --------------------------------------------------------------------------------
+   procedure quality_on_generated_rts_values__JIRA_CWMSVIEW_212
+   is
+      l_ts_id        varchar2(191) := test_base_location_id || '.Code.Inst.1Day.0.QualityTest';
+      l_office_id    varchar2(16)  := '&&office_id';
+      l_start_time   date          := date '2022-03-01';
+      l_value_count  pls_integer   := 11;
+      l_unit         varchar2(16)  := 'n/a';
+      l_time_zone    varchar2(28)  := 'US/Central';
+      l_version_date date          := cwms_util.non_versioned;
+      l_first_date   date;
+      l_last_date    date;
+      l_zts_data     cwms_t_ztsv_array;
+      l_ts_data      cwms_t_tsv_array;
+      l_crsr         sys_refcursor;
+      l_date_times   cwms_t_date_table;
+      l_values       cwms_t_double_tab;
+      l_qualities    cwms_t_number_tab;
+   begin
+      ---------------------------------
+      -- create the time series data --
+      ---------------------------------
+      select cwms_t_tsv(from_tz(cast(l_start_time + level - 1 as timestamp), l_time_zone), level, 3)
+        bulk collect
+        into l_ts_data
+        from dual
+     connect by level <= l_value_count;
+
+      select cwms_t_ztsv(l_start_time + level - 1, level, 3)
+        bulk collect
+        into l_zts_data
+        from dual
+     connect by level <= l_value_count;
+      ------------------------
+      -- store the location --
+      ------------------------
+      cwms_loc.store_location (p_location_id    => test_base_location_id,
+                               p_active         => 'T',
+                               p_db_office_id   => '&&office_id');
+      ----------------------------------
+      -- store the time series as RTS --
+      ----------------------------------
+      cwms_ts.zstore_ts (
+         p_cwms_ts_id      => l_ts_id,
+         p_units           => l_unit,
+         p_timeseries_data => l_zts_data,
+         p_store_rule      => cwms_util.replace_all,
+         p_override_prot   => 'F',
+         p_version_date    => l_version_date,
+         p_office_id       => l_office_id,
+         p_create_as_lrts  => 'F');
+      ------------------------------------------------------
+      -- retrieve the time sereies with untrimmed padding --
+      ------------------------------------------------------
+      l_first_date := l_zts_data(1).date_time;
+      l_last_date  := l_zts_data(l_zts_data.count).date_time;
+      cwms_ts.retrieve_ts (
+         p_at_tsv_rc         => l_crsr,
+         p_cwms_ts_id        => l_ts_id,
+         p_units             => l_unit,
+         p_start_time        => l_first_date - 5,
+         p_end_time          => l_last_date + 5,
+         p_time_zone         => 'UTC',
+         p_trim              => 'F',
+         p_start_inclusive   => 'T',
+         p_end_inclusive     => 'T',
+         p_previous          => 'F',
+         p_next              => 'F',
+         p_version_date      => l_version_date,
+         p_max_version       => 'T',
+         p_office_id         => l_office_id);
+      fetch l_crsr bulk collect into l_date_times, l_values, l_qualities;
+      close l_crsr;
+      for i in 1..l_date_times.count loop
+         if l_date_times(i) between l_first_date and l_last_date then
+            ut.expect(l_qualities(i)).to_equal(3);
+         else
+            ut.expect(l_qualities(i)).to_equal(0);
+         end if;
+      end loop;
+      -----------------------------------
+      -- store the time series as LRTS --
+      -----------------------------------
+      l_ts_id := replace(l_ts_id, '1Day', '~1Day');
+      cwms_ts.store_ts (
+         p_cwms_ts_id      => l_ts_id,
+         p_units           => l_unit,
+         p_timeseries_data => l_ts_data,
+         p_store_rule      => cwms_util.replace_all,
+         p_override_prot   => 'F',
+         p_version_date    => l_version_date,
+         p_office_id       => l_office_id,
+         p_create_as_lrts  => 'T');
+      ------------------------------------------------------
+      -- retrieve the time sereies with untrimmed padding --
+      ------------------------------------------------------
+      l_first_date := cast(l_ts_data (1).date_time as date);
+      l_last_date  := cast(l_ts_data(l_zts_data.count).date_time as date);
+      cwms_ts.retrieve_ts (
+         p_at_tsv_rc         => l_crsr,
+         p_cwms_ts_id        => l_ts_id,
+         p_units             => l_unit,
+         p_start_time        => l_first_date - 5,
+         p_end_time          => l_last_date + 5,
+         p_time_zone         => l_time_zone,
+         p_trim              => 'F',
+         p_start_inclusive   => 'T',
+         p_end_inclusive     => 'T',
+         p_previous          => 'F',
+         p_next              => 'F',
+         p_version_date      => l_version_date,
+         p_max_version       => 'T',
+         p_office_id         => l_office_id);
+      fetch l_crsr bulk collect into l_date_times, l_values, l_qualities;
+      close l_crsr;
+      for i in 1..l_date_times.count loop
+         if l_date_times(i) between l_zts_data(1).date_time and l_zts_data(l_value_count).date_time then
+            ut.expect(l_qualities(i)).to_equal(3);
+         else
+            ut.expect(l_qualities(i)).to_equal(0);
+         end if;
+      end loop;
+
+   end quality_on_generated_rts_values__JIRA_CWMSVIEW_212;
+
 END test_cwms_ts;
 /
 SHOW ERRORS
