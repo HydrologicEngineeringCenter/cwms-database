@@ -19,7 +19,7 @@ procedure test_irregularly_varying_location_levels;
 procedure test_virtual_location_levels;
 --%test(Test guide curve (multiple seasonal location levels with attributes))
 procedure test_guide_curve;
--- test(Test location level indicators and conditions) [only works if OS TZ is UTC]
+--%test(Test location level indicators and conditions) [only works if OS TZ is UTC]
 procedure test_indicators_and_conditions;
 
 c_office_id             varchar2(16)  := '&&office_id';
