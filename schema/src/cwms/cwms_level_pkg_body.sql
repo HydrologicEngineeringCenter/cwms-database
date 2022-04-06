@@ -127,7 +127,9 @@ begin
        where db_office_id = l_office_id
          and upper(location_id) = upper(l_parts(1));
    exception
-      when others then cwms_err.raise('ERROR', 'Bad location_id: '||l_parts(1));
+      when no_data_found then cwms_err.raise(
+         'ERROR',
+         'Location "'||l_parts(1)||'" does not exist for office "'||l_office_id||'"');
    end;
 
    begin
@@ -137,7 +139,9 @@ begin
        where db_office_id  in (l_office_id, 'CWMS')
          and upper(parameter_id) = upper(l_parts(2));
    exception
-      when others then cwms_err.raise('ERROR', 'Bad parameter_id: '||l_parts(2));
+      when no_data_found then cwms_err.raise(
+         'ERROR',
+         'Invalid parameter "'||l_parts(2)||'" in location level id');
    end;
 
    begin
@@ -146,7 +150,9 @@ begin
         from cwms_parameter_type
        where upper(parameter_type_id) = upper(l_parts(3));
    exception
-      when others then cwms_err.raise('ERROR', 'Bad parameter_type_id: '||l_parts(3));
+      when no_data_found then cwms_err.raise(
+         'ERROR',
+         'Invalid parameter type "'||l_parts(3)||'" in location level id');
    end;
 
    begin
@@ -155,7 +161,9 @@ begin
         from cwms_duration
        where upper(duration_id) = upper(l_parts(4));
    exception
-      when others then cwms_err.raise('ERROR', 'Bad duration_id: '||l_parts(4));
+      when no_data_found then cwms_err.raise(
+         'ERROR',
+         'Invalid duration "'||l_parts(4)||'" in location level id');
    end;
 
    begin
@@ -165,7 +173,10 @@ begin
        where office_code in (cwms_util.get_db_office_code(l_office_id), cwms_util.db_office_code_all)
          and upper(specified_level_id) = upper(l_parts(5));
    exception
-      when others then cwms_err.raise('ERROR', 'Bad specified_level_id: '||l_parts(5));
+      when no_data_found then cwms_err.raise(
+         'ERROR',
+         'Specified level "'||l_parts(5)||'" does not exist for office "'||l_office_id||'"');
+
    end;
 
    l_location_level_id := cwms_util.join_text(l_parts, '.');
@@ -180,7 +191,9 @@ begin
           where db_office_id in (l_office_id, 'CWMS')
             and upper(parameter_id) = upper(l_parts(1));
       exception
-         when others then cwms_err.raise('ERROR', 'Bad parameter_id: '||l_parts(1));
+         when no_data_found then cwms_err.raise(
+            'ERROR',
+            'Invalid parameter "'||l_parts(1)||'" in attribute id');
       end;
 
       begin
@@ -189,7 +202,9 @@ begin
            from cwms_parameter_type
           where upper(parameter_type_id) = upper(l_parts(2));
       exception
-         when others then cwms_err.raise('ERROR', 'Bad parameter_type_id: '||l_parts(2));
+         when no_data_found then cwms_err.raise(
+            'ERROR',
+            'Invalid parameter type "'||l_parts(2)||'" in attribute id');
       end;
 
       begin
@@ -198,7 +213,9 @@ begin
            from cwms_duration
           where upper(duration_id) = upper(l_parts(3));
       exception
-         when others then cwms_err.raise('ERROR', 'Bad duration_id: '||l_parts(3));
+         when no_data_found then cwms_err.raise(
+            'ERROR',
+            'Invalid duration "'||l_parts(3)||'" in attribute id');
       end;
 
        l_attribute_id := cwms_util.join_text(l_parts, '.');
