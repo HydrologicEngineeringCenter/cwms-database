@@ -16602,6 +16602,7 @@ begin
    v_package_log_prop_text := nvl(p_text, userenv('sessionid'));
 end set_package_log_property_text;
 
+
 end cwms_level;
 /
 show errors;
