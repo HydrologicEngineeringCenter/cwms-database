@@ -3049,6 +3049,7 @@ procedure test_cwdb_150
 is
 -- QUALITY_CODE SCREENED_ID VALIDITY_ID  RANGE_ID CHANGED_ID REPL_CAUSE_ID REPL_METHOD_ID TEST_FAILED_ID PROTECTION_ID
 -- ------------ ----------- ------------ -------- ---------- ------------- -------------- -------------- -------------
+--            0 UNSCREENED  UNKNOWN      NO_RANGE ORIGINAL   NONE          NONE           NONE           UNPROTECTED
 --            5 SCREENED    MISSING      NO_RANGE ORIGINAL   NONE          NONE           NONE           UNPROTECTED
 --        65545 SCREENED    QUESTIONABLE NO_RANGE ORIGINAL   NONE          NONE           CONSTANT_VALUE UNPROTECTED
 --  -2147483645 SCREENED    OKAY         NO_RANGE ORIGINAL   NONE          NONE           NONE           PROTECTED
@@ -3098,7 +3099,7 @@ l_expected_zts   cwms_t_ztsv_array := cwms_t_ztsv_array(
    cwms_t_ztsv(l_start_time + 7 / 24,   38,  65545),
    cwms_t_ztsv(l_start_time + 8 / 24,   27,  65545),
    cwms_t_ztsv(l_start_time + 9 / 24,   28,  -2147483645),
-   cwms_t_ztsv(l_start_time +10 / 24, null,  5));
+   cwms_t_ztsv(l_start_time +10 / 24, null,  0));
 begin
    cwms_loc.store_location(
       p_location_id	=> cwms_util.split_text(l_cwms_ts_id, 1, '.'),
