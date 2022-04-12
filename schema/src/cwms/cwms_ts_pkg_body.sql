@@ -2647,6 +2647,7 @@ AS
       l_reg_end_time      DATE;
       l_max_version       BOOLEAN;
       l_query_str         VARCHAR2 (32767);
+      l_unscreened        NUMBER := 0;
       l_cursor            SYS_REFCURSOR;
       l_strict_times      BOOLEAN := FALSE;
       l_value_offset      binary_double := 0;
@@ -2816,7 +2817,7 @@ AS
                               when value is nan then null
                               else value + :value_offset
                            end "VALUE",
-                           cwms_ts.normalize_quality(nvl(quality_code, 0)) "QUALITY_CODE"
+                           cwms_ts.normalize_quality(nvl(quality_code, :unscreened)) "QUALITY_CODE"
                      from (
                            select date_time,
                                  max(value) keep(dense_rank :first_or_last order by version_date) "VALUE",
@@ -2838,6 +2839,7 @@ AS
 
                OPEN l_cursor FOR l_query_str
                   USING l_value_offset,
+                        l_unscreened,
                         l_ts_code,
                         l_units,
                         l_reg_end_time,
@@ -2869,7 +2871,7 @@ AS
                             when value is nan then null
                             else value + :l_value_offset
                          end "VALUE",
-                         cwms_ts.normalize_quality(nvl(quality_code, 0)) "QUALITY_CODE"
+                         cwms_ts.normalize_quality(nvl(quality_code, :unscreened)) "QUALITY_CODE"
                     from (
                          select date_time,
                                 max(value) keep(dense_rank :first_or_last order by version_date) "VALUE",
@@ -2897,6 +2899,7 @@ AS
 
                   OPEN l_cursor FOR l_query_str
                      USING l_value_offset,
+                           l_unscreened,
                            l_ts_code,
                            l_units,
                            l_reg_end_time,
@@ -2916,7 +2919,7 @@ AS
                                 when value is nan then null
                                 else value + :l_value_offset
                              end "VALUE",
-                             cwms_ts.normalize_quality(nvl(quality_code, 0)) "QUALITY_CODE"
+                             cwms_ts.normalize_quality(nvl(quality_code, :unscreened)) "QUALITY_CODE"
                         from (
                              select date_time,
                                     max(value) keep(dense_rank :first_or_last order by version_date) "VALUE",
@@ -2940,6 +2943,7 @@ AS
 
                   OPEN l_cursor FOR l_query_str
                      USING l_value_offset,
+                           l_unscreened,
                            l_ts_code,
                            l_units,
                            l_reg_end_time,
@@ -3067,7 +3071,7 @@ AS
                             when value is nan then null
                             else value + :l_value_offset
                          end "VALUE",
-                         cwms_ts.normalize_quality(nvl(quality_code, 0)) "QUALITY_CODE"
+                         cwms_ts.normalize_quality(nvl(quality_code, :unscreened)) "QUALITY_CODE"
                     from (
                          select date_time,
                                 value,
@@ -3095,6 +3099,7 @@ AS
 
                   OPEN l_cursor FOR l_query_str
                      USING l_value_offset,
+                           l_unscreened,
                            l_ts_code,
                            l_units,
                            l_reg_end_time,
@@ -3116,7 +3121,7 @@ AS
                                 when value is nan then null
                                 else value + :l_value_offset
                              end "VALUE",
-                             cwms_ts.normalize_quality(nvl(quality_code, 0)) "QUALITY_CODE"
+                             cwms_ts.normalize_quality(nvl(quality_code, :unscreened)) "QUALITY_CODE"
                         from (
                              select date_time,
                                     value,
@@ -3146,6 +3151,7 @@ AS
 
                   OPEN l_cursor FOR l_query_str
                      USING l_value_offset,
+                           l_unscreened,
                            l_ts_code,
                            l_units,
                            l_reg_end_time,
@@ -3182,7 +3188,7 @@ AS
                             when value is nan then null
                             else value + :l_value_offset
                          end "VALUE",
-                         cwms_ts.normalize_quality(nvl(quality_code, 0)) "QUALITY_CODE"
+                         cwms_ts.normalize_quality(nvl(quality_code, :unscreened)) "QUALITY_CODE"
                     from (
                          select date_time,
                                 value,
@@ -3210,6 +3216,7 @@ AS
 
                   OPEN l_cursor FOR l_query_str
                      USING l_value_offset,
+                           l_unscreened,
                            l_ts_code,
                            l_units,
                            l_reg_end_time,
@@ -3230,7 +3237,7 @@ AS
                                 when value is nan then null
                                 else value + :l_value_offset
                              end "VALUE",
-                             cwms_ts.normalize_quality(nvl(quality_code, 0)) "QUALITY_CODE"
+                             cwms_ts.normalize_quality(nvl(quality_code, :unscreened)) "QUALITY_CODE"
                         from (
                              select date_time,
                                     value,
@@ -3254,6 +3261,7 @@ AS
 
                   OPEN l_cursor FOR l_query_str
                      USING l_value_offset,
+                           l_unscreened,
                            l_ts_code,
                            l_units,
                            l_reg_end_time,
