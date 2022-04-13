@@ -26,5 +26,6 @@ exec cwms_sec.add_cwms_user('OTHER_DIST', char_32_array_type('CWMS Users'),'HQ')
 @test_versioned_time_series.sql;
 @test_timeseries_snapping.sql;
 @test_cwms_cat.sql;
+@test_cwms_level.sql;
 
 show errors;

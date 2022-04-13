@@ -23,13 +23,15 @@ is object(
    expiration_date               date,
    seasonal_level_values         seasonal_loc_lvl_tab_t,
    indicators                    loc_lvl_indicator_tab_t,
+   constituents                  str_tab_tab_t,
+   connections                   varchar2(256),
 
    constructor function zlocation_level_t(
       p_location_level_code           in number)
-      return self as result,  
-      
+      return self as result,
+
    constructor function zlocation_level_t
-      return self as result,      
+      return self as result,
 
    member procedure init(
       p_location_level_code           in number,
@@ -53,7 +55,9 @@ is object(
       p_ts_code                       in number,
       p_expiration_date               in date,
       p_seasonal_values               in seasonal_loc_lvl_tab_t,
-      p_indicators                    in loc_lvl_indicator_tab_t),
+      p_indicators                    in loc_lvl_indicator_tab_t,
+      p_constituents                  in str_tab_tab_t,
+      p_connections                   in varchar2),
 
    member procedure store
 );

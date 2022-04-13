@@ -1086,9 +1086,17 @@ AS
       ---------.
       -- Update time_zone...
       --
-      IF p_time_zone_id IS NOT NULL
+      IF p_time_zone_id IS NOT NULL OR l_location_code != l_base_location_code
       THEN
-         l_time_zone_code := cwms_util.get_time_zone_code (p_time_zone_id);
+         if p_time_zone_id is null then
+            select time_zone_code
+              into l_time_zone_code
+              from at_physical_location
+             where location_code = l_base_location_code;
+         else
+            l_time_zone_code := cwms_util.get_time_zone_code (p_time_zone_id);
+         end if;
+
          select time_zone_code
            into l_old_time_zone_code
            from at_physical_location
@@ -1099,6 +1107,9 @@ AS
             declare
                l_tmp          integer;
             begin
+               -------------------------------------------------
+               -- see if we can update time series time zones --
+               -------------------------------------------------
                for rec in (select tss.ts_code,
                                   -tss.interval_utc_offset as interval_utc_offset,
                                   ci.interval,
@@ -1287,6 +1298,7 @@ AS
              nation_code = l_nation_code,
              nearest_city = l_nearest_city
        WHERE location_code = l_location_code;
+
        if l_base_location_code = l_location_code and p_active is not null then
           -----------------------------------
           -- update at_base_location table --
@@ -2872,32 +2884,42 @@ AS
          ---------------------
          -- location levels --
          ---------------------
-         for i in 1..l_location_ids.count loop
-            for rec
-               in (select distinct
-                          office_id,
-                          location_level_id,
-                          level_date,
-                          attribute_id,
-                          attribute_value,
-                          attribute_unit
-                     from cwms_v_location_level
-                    where office_id = nvl (upper (trim (p_db_office_id)),cwms_util.user_office_id)
-                      and location_level_id like l_location_ids (i) || '.%'
-                      and unit_system = 'SI')
-            loop
-               cwms_level.delete_location_level_ex(
-                  rec.location_level_id,
-                  rec.level_date,
-                  'UTC',
-                  rec.attribute_id,
-                  rec.attribute_value,
-                  rec.attribute_unit,
-                  'T',
-                  'T',
-                  rec.office_id);
-            end loop;
-         end loop;
+         delete
+           from at_vloc_lvl_constituent
+          where location_level_code in
+                (select location_level_code
+                   from at_virtual_location_level
+                  where location_code in (select * from table(l_location_codes))
+                );
+         delete
+           from at_virtual_location_level
+          where location_code in (select * from table(l_location_codes));
+         delete
+           from at_loc_lvl_indicator_cond
+          where level_indicator_code in
+                (select level_indicator_code
+                   from at_loc_lvl_indicator
+                  where location_code in (select * from table(l_location_codes))
+                );
+         delete
+           from at_loc_lvl_indicator
+          where location_code in (select * from table(l_location_codes));
+         delete
+           from at_seasonal_location_level
+          where location_level_code in
+                (select location_level_code
+                   from at_location_level
+                  where location_code in (select * from table(l_location_codes))
+                );
+         delete
+           from at_location_level
+          where location_code in (select * from table(l_location_codes));
+         delete
+           from at_loc_lvl_label
+          where location_code in (select * from table(l_location_codes));
+         delete
+           from at_loc_lvl_source
+          where location_code in (select * from table(l_location_codes));
          --------------------------
          -- time series profiles --
          --------------------------

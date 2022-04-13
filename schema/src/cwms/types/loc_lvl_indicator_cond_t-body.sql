@@ -389,7 +389,7 @@ as
       l_arguments(2) :=  p_level   * factor + offset;
       l_arguments(3) :=  p_level_2 * factor + offset;
       l_arguments(4) := (p_rate    * rate_factor + rate_offset) * interval_factor;
-      l_result := cwms_util.eval_tokenized_expression(expression_tokens, l_arguments); -- may return null
+      l_result := round(cwms_util.eval_tokenized_expression(expression_tokens, l_arguments), 9); -- may return null
       -----------------------------------
       -- evaluate the first comparison --
       -----------------------------------
@@ -427,7 +427,7 @@ as
       -- evaluate the rate if a rate expression exists --
       ---------------------------------------------------
       if l_is_set and rate_expression_tokens is not null then
-         l_result := cwms_util.eval_tokenized_expression(rate_expression_tokens, l_arguments); -- may return null
+         l_result := round(cwms_util.eval_tokenized_expression(rate_expression_tokens, l_arguments), 9); -- may return null
          ----------------------------------------
          -- evaluate the first rate comparison --
          ----------------------------------------

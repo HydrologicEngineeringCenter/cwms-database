@@ -16,6 +16,7 @@ GRANT EXECUTE ON &cwms_schema..test_versioned_time_series to &1;
 GRANT EXECUTE ON &cwms_schema..test_update_ts_extents to &1;
 GRANT EXECUTE ON &cwms_schema..test_timeseries_snapping to &1;
 GRANT EXECUTE ON &cwms_schema..test_cwms_cat to &1;
+GRANT EXECUTE ON &cwms_schema..test_cwms_level to &1;
 --GRANT EXECUTE any procedure to &1;
 --GRANT CREATE any procedure to &1;
 

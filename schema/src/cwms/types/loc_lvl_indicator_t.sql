@@ -46,11 +46,22 @@ is object
    minimum_duration       interval day to second,
    maximum_age            interval day to second,
    conditions             loc_lvl_ind_cond_tab_t,
-   -- not documented
+   /**
+    * Constructs an object with all member set to null
+    */
+   constructor function loc_lvl_indicator_t
+      return self as result,
+   /**
+    * Constructor from zloc_lvl_indicator_t
+    * @param p_obj The zloc_lvl_indicatort_t to initialize from
+    */
    constructor function loc_lvl_indicator_t(
       p_obj in zloc_lvl_indicator_t)
       return self as result,
-   -- not documented
+   /**
+    * Constructor from database row
+    * @param p_rowid The rowid of the database row to initialize from
+    */
    constructor function loc_lvl_indicator_t(
       p_rowid in urowid)
       return self as result,

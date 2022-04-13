@@ -2883,6 +2883,10 @@ as
       l_factor   BINARY_DOUBLE;
       l_offset   BINARY_DOUBLE;
    BEGIN
+      if p_value is null or p_parameter_id is null or p_unit_id is null then
+         return null;
+      end if;
+
       SELECT uc.factor, uc.offset
         INTO l_factor, l_offset
         FROM cwms_unit_conversion uc, cwms_base_parameter bp
@@ -3196,7 +3200,7 @@ as
          if l_days > 0 then
             l_duration := l_duration || l_days || 'D';
          end if;
-         if l_hours + l_minutes > 0 then
+         if l_hours + l_minutes > 0 or l_days = 0 then
             l_duration := l_duration || 'T';
          end if;
          if l_hours > 0 then
@@ -3744,7 +3748,8 @@ as
    is
       l_expr varchar2(512);
    begin
-      l_expr := regexp_replace(p_algebraic_expr, '([+*%^]|//)', ' \1 ');               -- insert spaces around most operators
+      l_expr := replace(p_algebraic_expr, ',', ' ');                                   -- remove commas
+      l_expr := regexp_replace(l_expr, '([+*%^]|//)', ' \1 ');                         -- insert spaces around most operators
       l_expr := regexp_replace(l_expr, '([^/])/([^/])', '\1 / \2');                    -- insert spaces around operator '/'
       l_expr := regexp_replace(l_expr, '([a-zA-Z0-9_])\s*-([a-zA-Z0-9_])', '\1 - \2'); -- insert spaces around binary operator '-'
       l_expr := regexp_replace(l_expr, '\s+', ' ', 1, 0, 'm');                         -- collapse contiguous spaces
@@ -3848,7 +3853,7 @@ as
       ---------------------------------
       -- parse the infix into tokens --
       ---------------------------------
-      l_infix_tokens := cwms_util.split_text(regexp_replace(normalize_algebraic(trim(p_algebraic_expr)),'([()])',' \1 '));
+      l_infix_tokens := cwms_util.split_text(trim(regexp_replace(normalize_algebraic(trim(p_algebraic_expr)),'([()])',' \1 ')));
       if l_infix_tokens(1) is null then -- happens when algebraic begins with an opening parenthesis
          l_infix_tokens := sub_table(l_infix_tokens, 2);
       end if;
@@ -4244,6 +4249,11 @@ as
             l_val2 := pop;
             l_val1 := pop;
             push(power(l_val1, l_val2));
+         ----------------------
+         -- binary functions --
+         ----------------------
+         when p_rpn_tokens(i) = 'MIN'  then push(least(pop, pop));
+         when p_rpn_tokens(i) = 'MAX'  then push(greatest(pop, pop));
          ---------------
          -- constants --
          ---------------
