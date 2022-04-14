@@ -1,5 +1,6 @@
 import jetbrains.buildServer.configs.kotlin.v2019_2.*
 import jetbrains.buildServer.configs.kotlin.v2019_2.buildFeatures.commitStatusPublisher
+import jetbrains.buildServer.configs.kotlin.v2019_2.buildFeatures.dockerSupport
 import jetbrains.buildServer.configs.kotlin.v2019_2.buildSteps.ant
 import jetbrains.buildServer.configs.kotlin.v2019_2.buildSteps.maven
 import jetbrains.buildServer.configs.kotlin.v2019_2.buildSteps.script
@@ -167,6 +168,18 @@ object Build : BuildType({
             }
         }
         ant {
+            name = "Push to docker registry"
+            workingDir = "./schema"
+            mode = antFile {
+                path = "schema/build.xml"
+            }
+            targets = "docker.push"
+            antArguments = "-Dteamcity.branch=%teamcity.build.branch%"
+            conditions {
+                matches("teamcity.build.branch", "(master|release/.*)")
+            }
+        }
+        ant {
             name = "Stop database"
             workingDir = "./schema"
             mode = antFile {
@@ -175,6 +188,9 @@ object Build : BuildType({
             targets = "docker.stopdb"
             executionMode = BuildStep.ExecutionMode.ALWAYS
             antArguments = "-Dteamcity.branch=%teamcity.build.branch%_%teamcity.agent.name%"
+            conditions {
+                matches("teamcity.build.branch", "(master|release/.*)")
+            }
         }
     }
 
@@ -210,6 +226,11 @@ object Build : BuildType({
             type = "xml-report-plugin"
             param("xmlReportParsing.reportType", "junit")
             param("xmlReportParsing.reportDirs", "schema/build/tests*.xml")
+        }
+        dockerSupport {
+            loginToRegistry = on {
+                dockerRegistryId = "PROJECT_EXT_11"
+            }
         }
     }
 
@@ -292,6 +313,11 @@ object TestContainer : BuildType({
             type = "xml-report-plugin"
             param("xmlReportParsing.reportType", "junit")
             param("xmlReportParsing.reportDirs", "build/tests*.xml")
+        }
+        dockerSupport {
+            loginToRegistry = on {
+                dockerRegistryId = "PROJECT_EXT_11"
+            }
         }
     }
 

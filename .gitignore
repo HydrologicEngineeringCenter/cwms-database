@@ -54,3 +54,4 @@ schema/src/xml/hec-datatypes.xsd
 **/.gradle
 **/bin
 **/*.bad
+**/target
