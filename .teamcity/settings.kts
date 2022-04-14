@@ -187,7 +187,7 @@ object Build : BuildType({
             }
             targets = "docker.stopdb"
             executionMode = BuildStep.ExecutionMode.ALWAYS
-            antArguments = "-Dteamcity.branch=%teamcity.build.branch%_%teamcity.agent.name%"
+            antArguments = "-Dteamcity.branch=%teamcity.build.branch%_%teamcity.agent.name% -Ddocker.registry=%teamcity.internal.docker.registry.repositoryUrl%"
             conditions {
                 matches("teamcity.build.branch", "(master|release/.*)")
             }
