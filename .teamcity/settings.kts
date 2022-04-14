@@ -174,7 +174,7 @@ object Build : BuildType({
                 path = "schema/build.xml"
             }
             targets = "docker.push"
-            antArguments = "-Dteamcity.branch=%teamcity.build.branch%"
+            antArguments = "-Dteamcity.branch=%teamcity.build.branch% -Ddocker.registry=%cwms.docker.registry.repositoryUrl%"
             conditions {
                 matches("teamcity.build.branch", "(master|release/.*)")
             }
