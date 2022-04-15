@@ -64,6 +64,12 @@ public class CodegenPropertiesReader extends AbstractMojo
 			String instantXpath = "/*/property[@name='oracle.cwms.instance']/@value";
 			String instance = (String) xPath.compile(instantXpath).evaluate(xmlDocument, XPathConstants.STRING);
 			_codegenUrl = "jdbc:oracle:thin:@" + instance;
+
+			String parametersXpath = "/*/property[@name='oracle.connection.parameters']/@value";
+			String parameters = (String) xPath.compile(parametersXpath).evaluate(xmlDocument, XPathConstants.STRING);
+			if( parameters != null && !parameters.isEmpty()){
+				_codegenUrl = _codegenUrl + "?" + parameters;
+			}
 			String testUserPasswordXpath = "/*/property[@name='oracle.hectest.password']/@value";
 			_testUserPassword = (String) xPath.compile(testUserPasswordXpath).evaluate(xmlDocument, XPathConstants.STRING);
 			String officeCodeXPath = "/*/property[@name='office.primary.code']/@value";

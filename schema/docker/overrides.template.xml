@@ -13,7 +13,7 @@
 	<!-- the oracle instance to install to. -->
 
  	<property name="oracle.cwms.instance" value="@HOST_AND_PORT@/${database.name}"/>
-
+	<property name="oracle.connection.parameters" value="@DB_PARAMETERS@"/>
 
 
 

@@ -174,7 +174,7 @@
 					<jdbc>
 						<driver>oracle.jdbc.OracleDriver</driver>
 						<!--These properties are read from the cwms-db-properties-reader plugin-->
-						<url>${oracle.codegen.url}?oracle.net.disableOob=true</url>
+						<url>${oracle.codegen.url}</url>
 						<user>${office.primary.code}hectest</user>
 						<password>${oracle.hectest.password}</password>
 					</jdbc>
