@@ -100,7 +100,10 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
         log.debug("Configuring Database and Schema container");
 
         addExposedPorts(1521);
-        setNetwork(Network.newNetwork());
+        if( getNetwork() == null ){
+            setNetwork(Network.newNetwork());
+        }
+        
         withNetworkAliases(NETWORK_ALIAS);
 
         addEnv("enterprise","1");
@@ -194,6 +197,14 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
 
 	}
 
+    public String getJdbcUrlInternal() {
+        if( !bypass) {
+            return String.format("jdbc:oracle:thin:@%s:%d/%s?oracle.net.disableOob=true", getNetworkAliases().get(0),1521,pdbName);
+        } else {
+            return System.getProperty(BYPASS_URL);
+        }
+    }
+
     /**
      * Retrieve a regular "CWMS User" name for the system
      */
@@ -259,6 +270,19 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
      */
     public SELF withVolumeName(String volumeName){
         this.volumeName = volumeName;
+        return self();
+    }
+
+    /**
+     * Allows downstream users to
+     * 1) set the network directly
+     * 2) have a cleaner structure by avoiding unnecessary type conversions
+     * @param network
+     * @return This Container
+     */
+    @Override
+    public SELF withNetwork(Network network){
+        setNetwork(network);
         return self();
     }
 
