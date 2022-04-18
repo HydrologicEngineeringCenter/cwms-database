@@ -1153,6 +1153,7 @@
 				<expandproperties/>
 				<replacetokens>
 					<token key="HOST_AND_PORT" value="${database.host_and_port}"/>
+					<token key="DB_PARAMETERS" value=""/>
 				</replacetokens>
 			</filterchain>
 		</copy>
@@ -1163,6 +1164,8 @@
 				<expandproperties/>
 				<replacetokens>
 					<token key="HOST_AND_PORT" value="localhost:${docker.props.external_port}"/>
+					<!-- set this here in case user doesn't have it set in their local sqlnet.ora file. -->
+					<token key="DB_PARAMETERS" value="oracle.net.disableOob=true"/>					
 				</replacetokens>
 			</filterchain>
 		</copy>
