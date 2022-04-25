@@ -2148,16 +2148,7 @@ AS
                                   'Versioned flag must be ''T'' or ''F''');
                END IF;
 
-               select time_zone_code
-                 into l_time_zone_code
-                 from at_physical_location
-                where location_code = l_location_code;
-               if l_time_zone_code is null and l_sub_location_id is not null then
-                  select time_zone_code
-                    into l_time_zone_code
-                    from at_physical_location
-                   where location_code = l_base_location_code;
-               end if;
+	       l_time_zone_code := cwms_loc.get_local_timezone_code(l_location_code);
                if l_time_zone_code is null then
                   select time_zone_code
                     into l_time_zone_code
