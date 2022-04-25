@@ -7,6 +7,8 @@ create or replace package &&cwms_schema..test_timeseries_snapping as
 
 --%test(Store and retrieve regular time series)
 procedure store_retrieve_rts;
+--%test(Store and retrieve regular time series with zero interval offset)
+procedure store_retrieve_rts_cwbi_172;
 --%test(Store and retrieve local regular time series)
 procedure store_retrieve_lrts;
 --%test(Store and retrieve irrregular time series)
@@ -66,7 +68,8 @@ end setup;
 --------------------------------------------------------------------------------
 function make_timeseries(
    p_ts_type    in varchar2,
-   p_start_date in date)
+   p_start_date in date,
+   p_interval_offset INTEGER)
    return cwms_t_tsv_array
 is
    l_ts_values cwms_t_tsv_array := cwms_t_tsv_array();
@@ -82,7 +85,7 @@ begin
                   p_start_date,
                   'UTC',
                   c_time_zone)
-               + (c_interval_offset - 10) / 1440 as timestamp),
+               + (p_interval_offset - 10) / 1440 as timestamp),
             c_time_zone),
          1,
          0);
@@ -98,7 +101,7 @@ begin
             from_tz(
                cast(
                   p_start_date + (i-1)
-                  + (c_interval_offset - 10 + i - 1)/1440 as timestamp),
+                  + (p_interval_offset - 10 + i - 1)/1440 as timestamp),
                c_time_zone),
             i,
             0);
@@ -122,7 +125,7 @@ is
    l_first_time     date;
 begin
    for i in 1..c_start_dates.count loop
-      l_ts_values      := make_timeseries('RTS', c_start_dates(i));
+      l_ts_values      := make_timeseries('RTS', c_start_dates(i),c_interval_offset);
 
       cwms_ts.create_ts(
          p_cwms_ts_id        => c_rts_ts_id,
@@ -180,6 +183,78 @@ begin
          p_db_office_id  => c_office_id);
    end loop;
 end store_retrieve_rts;
+
+procedure store_retrieve_rts_cwbi_172
+is
+   l_crsr           sys_refcursor;
+   l_times          cwms_t_date_table;
+   l_values         cwms_t_double_tab;
+   l_qualities      cwms_t_number_tab;
+   l_ts_values      cwms_t_tsv_array;
+   l_dst_times      cwms_t_date_table;
+   l_first_time     date;
+   l_interval_offset INTEGER := 0;
+begin
+   for i in 1..c_start_dates.count loop
+      l_ts_values      := make_timeseries('RTS', c_start_dates(i),l_interval_offset);
+
+      cwms_ts.create_ts(
+         p_cwms_ts_id        => c_rts_ts_id,
+         p_utc_offset        => l_interval_offset,
+         p_interval_forward  => c_snap_forward,
+         p_interval_backward => c_snap_backward,
+         p_versioned         => 'F',
+         p_active_flag       => 'T',
+         p_office_id         => c_office_id);
+
+      cwms_ts.store_ts(
+         p_cwms_ts_id      => c_rts_ts_id,
+         p_units           => c_units,
+         p_timeseries_data => l_ts_values,
+         p_store_rule      => cwms_util.replace_all,
+         p_override_prot   => 'F',
+         p_version_date    => cwms_util.non_versioned,
+         p_office_id       => c_office_id);
+
+      cwms_ts.retrieve_ts(
+         p_at_tsv_rc       => l_crsr,
+         p_cwms_ts_id      => c_rts_ts_id,
+         p_units           => c_units,
+         p_start_time      => c_start_dates(i) - 1,
+         p_end_time        => c_start_dates(i) + l_ts_values.count + 1,
+         p_time_zone       => c_time_zone,
+         p_trim            => 'T',
+         p_office_id       => c_office_id);
+
+      fetch l_crsr
+       bulk collect
+       into l_times,
+            l_values,
+            l_qualities;
+
+      close l_crsr;
+
+      ut.expect(l_times.count).to_equal(c_expected_rts_values.count);
+      l_first_time := c_start_dates(i) + 2 + l_interval_offset / 1440;
+      if l_times.count = c_expected_rts_values.count then
+         for j in 1..l_times.count loop
+            ut.expect(cwms_util.change_timezone(l_times(j), c_time_zone, 'UTC')).to_equal(l_first_time + j - 1);
+            l_dst_times := cwms_ts.dst_times(c_time_zone, l_times(j));
+            if l_dst_times(2) is not null and l_times(j) = l_dst_times(2) - 1/24 then
+               ut.expect(l_values(j)).to_be_null;
+            else
+               ut.expect(l_values(j)).to_equal(c_expected_rts_values(j));
+            end if;
+         end loop;
+      end if;
+
+      cwms_ts.delete_ts(
+         p_cwms_ts_id    => c_rts_ts_id,
+         p_delete_action => cwms_util.delete_all,
+         p_db_office_id  => c_office_id);
+   end loop;
+end store_retrieve_rts_cwbi_172;
+
 --------------------------------------------------------------------------------
 -- procedure store_retrieve_lrts
 --------------------------------------------------------------------------------
@@ -194,7 +269,7 @@ is
    l_first_time     date;
 begin
    for i in 1..c_start_dates.count loop
-      l_ts_values      := make_timeseries('LRTS', c_start_dates(i));
+      l_ts_values      := make_timeseries('LRTS', c_start_dates(i),c_interval_offset);
 
       cwms_ts.create_ts(
          p_cwms_ts_id        => c_lrts_ts_id,
@@ -266,7 +341,7 @@ is
    l_dst_times cwms_t_date_table;
 begin
    for i in 1..c_start_dates.count loop
-      l_ts_values      := make_timeseries('ITS', c_start_dates(i));
+      l_ts_values      := make_timeseries('ITS', c_start_dates(i),c_interval_offset);
 
       cwms_ts.create_ts(
          p_cwms_ts_id        => c_its_ts_id,
