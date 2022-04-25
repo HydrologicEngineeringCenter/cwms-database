@@ -8,7 +8,7 @@ create or replace package &&cwms_schema..test_timeseries_snapping as
 --%test(Store and retrieve regular time series)
 procedure store_retrieve_rts;
 --%test(Store and retrieve regular time series with zero interval offset)
-procedure store_retrieve_rts_cwbi_172;
+procedure store_retrieve_rts_cwdb_172;
 --%test(Store and retrieve local regular time series)
 procedure store_retrieve_lrts;
 --%test(Store and retrieve irrregular time series)
@@ -184,7 +184,7 @@ begin
    end loop;
 end store_retrieve_rts;
 
-procedure store_retrieve_rts_cwbi_172
+procedure store_retrieve_rts_cwdb_172
 is
    l_crsr           sys_refcursor;
    l_times          cwms_t_date_table;
@@ -253,7 +253,7 @@ begin
          p_delete_action => cwms_util.delete_all,
          p_db_office_id  => c_office_id);
    end loop;
-end store_retrieve_rts_cwbi_172;
+end store_retrieve_rts_cwdb_172;
 
 --------------------------------------------------------------------------------
 -- procedure store_retrieve_lrts
