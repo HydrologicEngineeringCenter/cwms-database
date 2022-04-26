@@ -52,8 +52,11 @@ PROCEDURE variable_with_inst;
 PROCEDURE variable_with_const;
 --%test(Make sure quality on generated rts/lrts values is 0 (unscreened) and not 5 (missing) [JIRA Issue CWMSVIEW-212])
 procedure quality_on_generated_rts_values__JIRA_CWMSVIEW_212;
+--%test(create a time series id with null timezone in location that has a  base location: CWDB-175)
+procedure create_ts_with_null_timezone;
 
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
+test_withsub_location_id VARCHAR2(32) := test_base_location_id||'-withsub';
 procedure setup;
 procedure teardown;
 end test_cwms_ts;
@@ -93,6 +96,10 @@ AS
         delete_all;
         cwms_loc.store_location (p_location_id    => test_base_location_id,
                                  p_active         => 'F',
+                                 p_db_office_id   => '&&office_id');
+        COMMIT;
+        cwms_loc.store_location (p_location_id    => test_withsub_location_id,
+                                 p_active         => 'T',
                                  p_db_office_id   => '&&office_id');
         COMMIT;
     END;
@@ -233,6 +240,23 @@ AS
          WHERE ts_code = l_ts_code;
 
         ut.expect (l_count).to_equal (1);
+    END;
+
+    PROCEDURE create_ts_with_null_timezone
+    IS
+    BEGIN
+        cwms_loc.store_location (p_location_id    => test_base_location_id,
+                                 p_active         => 'T',
+                                 p_db_office_id   => '&&office_id');
+        cwms_ts.create_ts('&&office_id', test_base_location_id || '.Flow.Ave.Irr.Variable.raw');
+	delete_ts_id(test_base_location_id || '.Flow.Ave.Irr.Variable.raw');
+        COMMIT;
+        cwms_loc.store_location (p_location_id    => test_withsub_location_id,
+                                 p_active         => 'T',
+                                 p_db_office_id   => '&&office_id');
+        cwms_ts.create_ts('&&office_id', test_withsub_location_id || '.Flow.Ave.Irr.Variable.raw');
+	delete_ts_id(test_withsub_location_id || '.Flow.Ave.Irr.Variable.raw');
+        COMMIT;
     END;
 
     PROCEDURE throw_an_exception(p_cwms_ts_id VARCHAR2)
