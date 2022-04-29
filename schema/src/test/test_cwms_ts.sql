@@ -7,8 +7,6 @@ CREATE OR REPLACE package &&cwms_schema..test_cwms_ts as
 
 --%test(Test setting active flag)
 procedure test_set_active_flag;
---%test(Test yearly tables)
-procedure test_yearly_tables;
 --%test(Test filter duplicates)
 procedure test_filter_duplicates;
 --%test(Test delete ts data for location without timezone)
@@ -62,8 +60,8 @@ procedure teardown;
 end test_cwms_ts;
 /
 
-/* Formatted on 3/18/2022 2:16:22 PM (QP5 v5.381) */
-CREATE OR REPLACE PACKAGE BODY &&cwms_schema..test_cwms_ts
+/* Formatted on 4/28/2022 2:38:41 PM (QP5 v5.381) */
+CREATE OR REPLACE PACKAGE BODY CWMS_20.test_cwms_ts
 AS
     --------------------------------------------------------------------------------
     -- procedure delete_all
@@ -110,11 +108,11 @@ AS
         delete_all;
     END teardown;
 
-    PROCEDURE delete_ts_id(p_cwms_ts_id VARCHAR2)
+    PROCEDURE delete_ts_id (p_cwms_ts_id VARCHAR2)
     IS
-     l_count NUMBER;
+        l_count   NUMBER;
     BEGIN
-        CWMS_TS.DELETE_TS ( p_cwms_ts_id,cwms_util.delete_all);
+        CWMS_TS.DELETE_TS (p_cwms_ts_id, cwms_util.delete_all);
 
         SELECT COUNT (*)
           INTO l_count
@@ -122,6 +120,7 @@ AS
          WHERE UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id);
 
         ut.expect (l_count).to_equal (0);
+
     END;
 
     PROCEDURE delete_ts_with_location_without_timezone
@@ -153,20 +152,21 @@ AS
           FROM at_cwms_ts_id
          WHERE cwms_ts_id = l_cwms_ts_id;
 
-	FOR i in 1..9
-	LOOP
-         l_times (i) :=
-            CWMS_UTIL.TO_MILLIS (
-                TO_DATE ('2022-03-0' || i || ' 07:00:00', 'YYYY-MM-DD HH24:MI:SS'));
-         l_values (i) := i; 
-         l_qualities (i) := 0;
-         CWMS_TS.STORE_TS (l_cwms_ts_id,
-                          'cfs',
-                          l_times,
-                          l_values,
-                          l_qualities,
-                          'Delete Insert');
-	END LOOP;
+        FOR i IN 1 .. 9
+        LOOP
+            l_times (i) :=
+                CWMS_UTIL.TO_MILLIS (
+                    TO_DATE ('2022-03-0' || i || ' 07:00:00',
+                             'YYYY-MM-DD HH24:MI:SS'));
+            l_values (i) := i;
+            l_qualities (i) := 0;
+            CWMS_TS.STORE_TS (l_cwms_ts_id,
+                              'cfs',
+                              l_times,
+                              l_values,
+                              l_qualities,
+                              'Delete Insert');
+        END LOOP;
 
         SELECT COUNT (*)
           INTO l_count
@@ -194,17 +194,25 @@ AS
          WHERE ts_code = l_ts_code;
 
         ut.expect (l_count).to_equal (0);
-	delete_ts_id(l_cwms_ts_id);
+        delete_ts_id (l_cwms_ts_id);
     END;
 
 
-    PROCEDURE store_a_value (p_cwms_ts_id VARCHAR2, p_units VARCHAR2,p_time NUMBER,p_value BINARY_DOUBLE,p_quality NUMBER)
+    PROCEDURE store_a_value (p_cwms_ts_id   VARCHAR2,
+                             p_units        VARCHAR2,
+                             p_interval     INTEGER,
+                             p_num_values   INTEGER,
+                             p_start_time   TIMESTAMP)
     IS
-        p_times       CWMS_TS.NUMBER_ARRAY;
-        p_values      CWMS_TS.DOUBLE_ARRAY;
-        p_qualities   CWMS_TS.NUMBER_ARRAY;
-        l_ts_code     NUMBER;
-        l_count INTEGER;
+        l_times           CWMS_TS.NUMBER_ARRAY;
+        l_values          CWMS_TS.DOUBLE_ARRAY;
+        l_qualities       CWMS_TS.NUMBER_ARRAY;
+        l_crsr            SYS_REFCURSOR;
+        l_ret_times       cwms_t_date_table;
+        l_ret_values      cwms_t_double_tab;
+        l_ret_qualities   cwms_t_number_tab;
+        l_ts_code         NUMBER;
+        l_count           INTEGER;
     BEGIN
         cwms_loc.store_location (p_location_id    => test_base_location_id,
                                  p_active         => 'T',
@@ -224,22 +232,58 @@ AS
           FROM at_cwms_ts_id
          WHERE cwms_ts_id = p_cwms_ts_id;
 
-        p_times (1) := p_time;
-        p_values (1) := p_value; 
-        p_qualities (1) := p_quality; 
+        FOR i IN 1 .. p_num_values
+        LOOP
+            l_times (i) :=
+                CWMS_UTIL.TO_MILLIS (p_start_time) + (p_interval * 1000 * i);
+            l_values (i) := i;
+            l_qualities (i) := 0;
+        END LOOP;
+
         CWMS_TS.STORE_TS (p_cwms_ts_id,
                           p_units,
-                          p_times,
-                          p_values,
-                          p_qualities,
+                          l_times,
+                          l_values,
+                          l_qualities,
                           'Delete Insert');
 
         SELECT COUNT (*)
           INTO l_count
-          FROM at_tsv_2010
-         WHERE ts_code = l_ts_code;
+          FROM av_tsv
+         WHERE     ts_code = l_ts_code
+               AND date_time >= p_start_time
+               AND date_time <=
+                   (  p_start_time
+                    + ((p_interval * p_num_values) / (3600 * 24)));
 
-        ut.expect (l_count).to_equal (1);
+        ut.expect (l_count).to_equal (p_num_values);
+
+        cwms_ts.retrieve_ts (
+            p_at_tsv_rc    => l_crsr,
+            p_cwms_ts_id   => p_cwms_ts_id,
+            p_units        => p_units,
+            p_start_time   => p_start_time,
+            p_end_time     =>
+                  p_start_time
+                + ((p_interval * p_num_values) / (3600 * 24)),
+            p_time_zone    => 'UTC',
+            p_trim         => 'T',
+            p_office_id    => '&&office_id');
+
+        FETCH l_crsr
+            BULK COLLECT INTO l_ret_times, l_ret_values, l_ret_qualities;
+
+        ut.expect (l_ret_times.COUNT).to_equal (p_num_values);
+
+        CLOSE l_crsr;
+
+        FOR j IN 1..l_ret_times.COUNT
+        LOOP
+            ut.expect (CWMS_UTIL.TO_MILLIS (l_ret_times (j))).to_equal (
+                CWMS_UTIL.TO_MILLIS (p_start_time) + (p_interval * 1000 * j));
+            ut.expect (round(l_ret_values (j))).to_equal (j);
+            ut.expect (l_ret_qualities (j)).to_equal (0);
+        END LOOP;
     END;
 
     PROCEDURE create_ts_with_null_timezone
@@ -248,18 +292,23 @@ AS
         cwms_loc.store_location (p_location_id    => test_base_location_id,
                                  p_active         => 'T',
                                  p_db_office_id   => '&&office_id');
-        cwms_ts.create_ts('&&office_id', test_base_location_id || '.Flow.Ave.Irr.Variable.raw');
-	delete_ts_id(test_base_location_id || '.Flow.Ave.Irr.Variable.raw');
+        cwms_ts.create_ts (
+            '&&office_id',
+            test_base_location_id || '.Flow.Ave.Irr.Variable.raw');
+        delete_ts_id (test_base_location_id || '.Flow.Ave.Irr.Variable.raw');
         COMMIT;
         cwms_loc.store_location (p_location_id    => test_withsub_location_id,
                                  p_active         => 'T',
                                  p_db_office_id   => '&&office_id');
-        cwms_ts.create_ts('&&office_id', test_withsub_location_id || '.Flow.Ave.Irr.Variable.raw');
-	delete_ts_id(test_withsub_location_id || '.Flow.Ave.Irr.Variable.raw');
+        cwms_ts.create_ts (
+            '&&office_id',
+            test_withsub_location_id || '.Flow.Ave.Irr.Variable.raw');
+        delete_ts_id (
+            test_withsub_location_id || '.Flow.Ave.Irr.Variable.raw');
         COMMIT;
     END;
 
-    PROCEDURE throw_an_exception(p_cwms_ts_id VARCHAR2)
+    PROCEDURE throw_an_exception (p_cwms_ts_id VARCHAR2)
     IS
     BEGIN
         cwms_ts.create_ts ('&&office_id', p_cwms_ts_id);
@@ -269,119 +318,259 @@ AS
     PROCEDURE inc_with_zero_duration
     IS
     BEGIN
-        throw_an_exception(test_base_location_id || '.Precip.Inc.1Hour.0.raw');
+        throw_an_exception (
+            test_base_location_id || '.Precip.Inc.1Hour.0.raw');
     END;
 
     PROCEDURE cum_with_non_zero_duration
     IS
     BEGIN
-        throw_an_exception(test_base_location_id || '.Precip.Cum.1Hour.1Hour.raw');
+        throw_an_exception (
+            test_base_location_id || '.Precip.Cum.1Hour.1Hour.raw');
     END;
 
     PROCEDURE untilchanged_with_regular
     IS
     BEGIN
-        throw_an_exception(test_base_location_id || '.Precip.Const.1Hour.UntilChanged.raw');
+        throw_an_exception (
+            test_base_location_id || '.Precip.Const.1Hour.UntilChanged.raw');
     END;
 
     PROCEDURE untilchanged_with_non_const
     IS
     BEGIN
-        throw_an_exception(test_base_location_id || '.Precip.Ave.0.UntilChanged.raw');
+        throw_an_exception (
+            test_base_location_id || '.Precip.Ave.0.UntilChanged.raw');
     END;
 
     PROCEDURE variable_with_inst
     IS
     BEGIN
-        throw_an_exception(test_base_location_id || '.Precip.Inst.0.Variable.raw');
+        throw_an_exception (
+            test_base_location_id || '.Precip.Inst.0.Variable.raw');
     END;
 
     PROCEDURE variable_with_const
     IS
     BEGIN
-        throw_an_exception(test_base_location_id || '.Precip.Const.0.Variable.raw');
+        throw_an_exception (
+            test_base_location_id || '.Precip.Const.0.Variable.raw');
     END;
 
     PROCEDURE test_rename_ts
     IS
-        l_time NUMBER := CWMS_UTIL.TO_MILLIS (TIMESTAMP '2010-01-01 00:00:00');
+        l_time   NUMBER
+                     := CWMS_UTIL.TO_MILLIS (TIMESTAMP '2010-01-01 00:00:00');
     BEGIN
-        store_a_value( test_base_location_id || '.Flow.Ave.Irr.Variable.raw','cfs',l_time,10,0);
-	cwms_ts.rename_ts(p_cwms_ts_id_old => test_base_location_id || '.Flow.Ave.Irr.Variable.raw',p_cwms_ts_id_new =>test_base_location_id || '.Flow.Median.Irr.Variable.raw');
-	delete_ts_id(test_base_location_id || '.Flow.Median.Irr.Variable.raw');
+        store_a_value (test_base_location_id || '.Flow.Ave.Irr.Variable.raw',
+                       'cfs',
+                       3600,
+                       240,
+                       TIMESTAMP '2022-03-01 00:00:00');
+        cwms_ts.rename_ts (
+            p_cwms_ts_id_old   =>
+                test_base_location_id || '.Flow.Ave.Irr.Variable.raw',
+            p_cwms_ts_id_new   =>
+                test_base_location_id || '.Flow.Median.Irr.Variable.raw');
+        delete_ts_id (
+            test_base_location_id || '.Flow.Median.Irr.Variable.raw');
     END;
 
     PROCEDURE test_rename_ts_inst_to_median
     IS
-        l_time NUMBER := CWMS_UTIL.TO_MILLIS (TIMESTAMP '2010-01-01 00:00:00');
+        l_time   NUMBER
+                     := CWMS_UTIL.TO_MILLIS (TIMESTAMP '2010-01-01 00:00:00');
     BEGIN
-        store_a_value( test_base_location_id || '.Flow.Inst.Irr.0.raw','cfs',l_time,10,0);
-	cwms_ts.rename_ts(p_cwms_ts_id_old => test_base_location_id || '.Flow.Inst.Irr.0.raw',p_cwms_ts_id_new =>test_base_location_id || '.Flow.Median.1Day.1Day.raw');
+        store_a_value (test_base_location_id || '.Flow.Inst.Irr.0.raw',
+                       'cfs',
+                       3600,
+                       240,
+                       TIMESTAMP '2022-03-01 00:00:00');
+        cwms_ts.rename_ts (
+            p_cwms_ts_id_old   =>
+                test_base_location_id || '.Flow.Inst.Irr.0.raw',
+            p_cwms_ts_id_new   =>
+                test_base_location_id || '.Flow.Median.1Day.1Day.raw');
     END;
 
     PROCEDURE test_create_ts_parameter_types
     IS
-        l_time NUMBER := CWMS_UTIL.TO_MILLIS (TIMESTAMP '2010-01-01 00:00:00');
     BEGIN
-        store_a_value( test_base_location_id || '.Flow.Ave.Irr.Variable.raw','cfs',l_time,10,0);
-	delete_ts_id(test_base_location_id || '.Flow.Ave.Irr.Variable.raw');
-        store_a_value( test_base_location_id || '.Flow.Median.Irr.Variable.raw','cfs',l_time,10,0);
-	delete_ts_id(test_base_location_id || '.Flow.Median.Irr.Variable.raw');
-        store_a_value( test_base_location_id || '.Flow.Ave.0.Variable.raw','cfs',l_time,10,0);
-	delete_ts_id(test_base_location_id || '.Flow.Ave.0.Variable.raw');
-        store_a_value( test_base_location_id || '.Flow.Median.0.Variable.raw','cfs',l_time,10,0);
-	delete_ts_id(test_base_location_id || '.Flow.Median.0.Variable.raw');
-        store_a_value( test_base_location_id || '.Opening.Const.Irr.UntilChanged.raw','ft',l_time,10,0);
-	delete_ts_id(test_base_location_id || '.Opening.Const.Irr.UntilChanged.raw');
-        store_a_value( test_base_location_id || '.Opening.Const.0.UntilChanged.raw','ft',l_time,10,0);
-	delete_ts_id(test_base_location_id || '.Opening.Const.0.UntilChanged.raw');
-        store_a_value ( test_base_location_id || '.Precip.Cum.1Hour.0.raw','in',l_time,10,0);
-	delete_ts_id(test_base_location_id || '.Precip.Cum.1Hour.0.raw');
-        store_a_value (test_base_location_id || '.Precip.Inc.1Hour.1Hour.raw','in',l_time,10,0);
-	delete_ts_id(test_base_location_id || '.Precip.Inc.1Hour.1Hour.raw');
+        store_a_value (test_base_location_id || '.Flow.Ave.Irr.Variable.raw',
+                       'cfs',
+                       3600,
+                       240,
+                       TIMESTAMP '2022-03-01 00:00:00');
+        delete_ts_id (test_base_location_id || '.Flow.Ave.Irr.Variable.raw');
+        store_a_value (
+            test_base_location_id || '.Flow.Median.Irr.Variable.raw',
+            'cfs',
+            3600,
+            240,
+            TIMESTAMP '2022-03-01 00:00:00');
+        delete_ts_id (
+            test_base_location_id || '.Flow.Median.Irr.Variable.raw');
+        store_a_value (test_base_location_id || '.Flow.Ave.0.Variable.raw',
+                       'cfs',
+                       3600,
+                       240,
+                       TIMESTAMP '2022-03-01 00:00:00');
+        delete_ts_id (test_base_location_id || '.Flow.Ave.0.Variable.raw');
+        store_a_value (
+            test_base_location_id || '.Flow.Median.0.Variable.raw',
+            'cfs',
+            3600,
+            240,
+            TIMESTAMP '2022-03-01 00:00:00');
+        delete_ts_id (test_base_location_id || '.Flow.Median.0.Variable.raw');
+        store_a_value (
+            test_base_location_id || '.Opening.Const.Irr.UntilChanged.raw',
+            'ft',
+            3600,
+            240,
+            TIMESTAMP '2022-03-01 00:00:00');
+        delete_ts_id (
+            test_base_location_id || '.Opening.Const.Irr.UntilChanged.raw');
+        store_a_value (
+            test_base_location_id || '.Opening.Const.0.UntilChanged.raw',
+            'ft',
+            3600,
+            240,
+            TIMESTAMP '2022-03-01 00:00:00');
+        delete_ts_id (
+            test_base_location_id || '.Opening.Const.0.UntilChanged.raw');
+        store_a_value (test_base_location_id || '.Precip.Cum.1Hour.0.raw',
+                       'in',
+                       3600,
+                       240,
+                       TIMESTAMP '2022-03-01 00:00:00');
+        delete_ts_id (test_base_location_id || '.Precip.Cum.1Hour.0.raw');
+        store_a_value (
+            test_base_location_id || '.Precip.Inc.1Hour.1Hour.raw',
+            'in',
+            3600,
+            240,
+            TIMESTAMP '2022-03-01 00:00:00');
+        delete_ts_id (test_base_location_id || '.Precip.Inc.1Hour.1Hour.raw');
+        store_a_value (test_base_location_id || '.Flow.Ave.Irr.Variable.raw',
+                       'cfs',
+                       3600,
+                       240,
+                       TIMESTAMP '2022-03-01 00:00:00');
+        delete_ts_id (test_base_location_id || '.Flow.Ave.Irr.Variable.raw');
+        store_a_value (
+            test_base_location_id || '.Flow.Median.Irr.Variable.raw',
+            'cfs',
+            3600,
+            240,
+            TIMESTAMP '2022-11-01 00:00:00');
+        delete_ts_id (
+            test_base_location_id || '.Flow.Median.Irr.Variable.raw');
+        store_a_value (test_base_location_id || '.Flow.Ave.0.Variable.raw',
+                       'cfs',
+                       3600,
+                       240,
+                       TIMESTAMP '2022-11-01 00:00:00');
+        delete_ts_id (test_base_location_id || '.Flow.Ave.0.Variable.raw');
+        store_a_value (
+            test_base_location_id || '.Flow.Median.0.Variable.raw',
+            'cfs',
+            3600,
+            240,
+            TIMESTAMP '2022-11-01 00:00:00');
+        delete_ts_id (test_base_location_id || '.Flow.Median.0.Variable.raw');
+        store_a_value (
+            test_base_location_id || '.Opening.Const.Irr.UntilChanged.raw',
+            'ft',
+            3600,
+            240,
+            TIMESTAMP '2022-11-01 00:00:00');
+        delete_ts_id (
+            test_base_location_id || '.Opening.Const.Irr.UntilChanged.raw');
+        store_a_value (
+            test_base_location_id || '.Opening.Const.0.UntilChanged.raw',
+            'ft',
+            3600,
+            240,
+            TIMESTAMP '2022-11-01 00:00:00');
+        delete_ts_id (
+            test_base_location_id || '.Opening.Const.0.UntilChanged.raw');
+        store_a_value (test_base_location_id || '.Precip.Cum.1Hour.0.raw',
+                       'in',
+                       3600,
+                       240,
+                       TIMESTAMP '2022-11-01 00:00:00');
+        delete_ts_id (test_base_location_id || '.Precip.Cum.1Hour.0.raw');
+        store_a_value (
+            test_base_location_id || '.Precip.Inc.1Hour.1Hour.raw',
+            'in',
+            3600,
+            240,
+            TIMESTAMP '2022-11-01 00:00:00');
+        delete_ts_id (test_base_location_id || '.Precip.Inc.1Hour.1Hour.raw');
     END;
 
     PROCEDURE test_create_depth_velocity
     IS
-        l_time NUMBER := CWMS_UTIL.TO_MILLIS (TIMESTAMP '2010-01-01 00:00:00');
-	l_value BINARY_DOUBLE;
-	l_ts_code NUMBER;
-	l_cwms_ts_id VARCHAR2(200) := test_base_location_id || '.DepthVelocity.Ave.Irr.Variable.raw';
+        l_time         NUMBER
+                           := CWMS_UTIL.TO_MILLIS (TIMESTAMP '2010-01-01 00:00:00');
+        l_value        BINARY_DOUBLE;
+        l_ts_code      NUMBER;
+        l_cwms_ts_id   VARCHAR2 (200)
+            := test_base_location_id || '.DepthVelocity.Ave.Irr.Variable.raw';
     BEGIN
-        store_a_value(l_cwms_ts_id,'ft2/s',l_time,10,0);
+        store_a_value (l_cwms_ts_id,
+                       'ft2/s',
+                       3600,
+                       1,
+                       TIMESTAMP '2022-03-01 00:00:00');
+
         SELECT ts_code
           INTO l_ts_code
           FROM at_cwms_ts_id
          WHERE cwms_ts_id = l_cwms_ts_id;
-        SELECT value 
+
+        SELECT VALUE
           INTO l_value
-          FROM at_tsv_2010
+          FROM at_tsv_2022
          WHERE ts_code = l_ts_code;
-        ut.expect (abs(l_value-(10*0.092903))).to_be_less_or_equal (0.0001);
-        SELECT value 
+
+        ut.expect (ABS (l_value - (1 * 0.092903))).to_be_less_or_equal (
+            0.0001);
+
+        SELECT VALUE
           INTO l_value
           FROM av_tsv_dqu
-         WHERE ts_code = l_ts_code
-	 AND upper(unit_id)='FT2/S';
-        ut.expect (abs(l_value-10)).to_be_less_or_equal(0.0001);
-	delete_ts_id(l_cwms_ts_id);
-        store_a_value( l_cwms_ts_id,'m2/s',l_time,10,0);
+         WHERE ts_code = l_ts_code AND UPPER (unit_id) = 'FT2/S';
+
+        ut.expect (ABS (l_value - 1)).to_be_less_or_equal (0.0001);
+        delete_ts_id (l_cwms_ts_id);
+        store_a_value (l_cwms_ts_id,
+                       'm2/s',
+                       3600,
+                       1,
+                       TIMESTAMP '2022-03-01 00:00:00');
+
         SELECT ts_code
           INTO l_ts_code
           FROM at_cwms_ts_id
          WHERE cwms_ts_id = l_cwms_ts_id;
-        SELECT value 
+
+        SELECT VALUE
           INTO l_value
-          FROM at_tsv_2010
+          FROM at_tsv_2022
          WHERE ts_code = l_ts_code;
-        ut.expect (l_value).to_equal (10);
-        SELECT value 
+
+        ut.expect (l_value).to_equal (1);
+
+        SELECT VALUE
           INTO l_value
           FROM av_tsv_dqu
-         WHERE ts_code = l_ts_code
-	 AND upper(unit_id)='FT2/S';
-        ut.expect (abs(l_value-(10/0.092903))).to_be_less_or_equal (0.001);
-	delete_ts_id(l_cwms_ts_id);
+         WHERE ts_code = l_ts_code AND UPPER (unit_id) = 'FT2/S';
+
+        ut.expect (ABS (l_value - (1 / 0.092903))).to_be_less_or_equal (
+            0.001);
+        delete_ts_id (l_cwms_ts_id);
     END;
 
     --------------------------------------------------------------------------------
@@ -469,162 +658,6 @@ AS
         ut.expect (l_ts_active).to_equal ('F');
         ut.expect (l_net_ts_active).to_equal ('F');
     END;
-
-    PROCEDURE test_yearly_tables
-    IS
-        l_cwms_ts_id   AV_CWMS_TS_ID.CWMS_TS_ID%TYPE;
-        p_times        CWMS_TS.NUMBER_ARRAY;
-        p_values       CWMS_TS.DOUBLE_ARRAY;
-        p_qualities    CWMS_TS.NUMBER_ARRAY;
-        l_cmd          VARCHAR2 (512);
-        l_count        NUMBER;
-    BEGIN
-        l_cwms_ts_id := test_base_location_id || '.Stage.Inst.1Hour.0.';
-        cwms_loc.store_location (p_location_id    => test_base_location_id,
-                                 p_active         => 'T',
-                                 p_db_office_id   => '&&office_id');
-
-
-        FOR c
-            IN (SELECT table_name, start_date, end_date
-                  FROM at_ts_table_properties)
-        LOOP
-            p_times (1) := CWMS_UTIL.TO_MILLIS (c.start_date) + 3600 * 1000;
-            p_values (1) := 10;
-            p_qualities (1) := 10;
-            p_times (2) := CWMS_UTIL.TO_MILLIS (c.start_date) - 3600 * 1000;
-            p_values (2) := 10;
-            p_qualities (2) := 10;
-            p_times (3) := CWMS_UTIL.TO_MILLIS (c.end_date) - 3600 * 1000;
-            p_values (3) := 10;
-            p_qualities (3) := 10;
-            p_times (4) := CWMS_UTIL.TO_MILLIS (c.end_date) + 3600 * 1000;
-            p_values (4) := 10;
-            p_qualities (4) := 10;
-            CWMS_TS.STORE_TS (l_cwms_ts_id || c.table_name,
-                              'FT',
-                              p_times,
-                              p_values,
-                              p_qualities,
-                              'Delete Insert');
-            l_cmd :=
-                   'select count(*) from '
-                || c.table_name
-                || ' where date_time = (select start_date+(1/24) from at_ts_table_properties where table_name = '''
-                || c.table_name
-                || ''') and ts_code = (select ts_code from at_cwms_ts_id where cwms_ts_id = '''
-                || l_cwms_ts_id
-                || c.table_name
-                || ''')';
-            DBMS_OUTPUT.put_line (l_cmd);
-
-            EXECUTE IMMEDIATE l_cmd
-                INTO l_count;
-
-            ut.expect (l_count).to_equal (1);
-            l_cmd :=
-                   'select count(*) from '
-                || c.table_name
-                || ' where date_time = (select end_date-(1/24) from at_ts_table_properties where table_name = '''
-                || c.table_name
-                || ''') and ts_code = (select ts_code from at_cwms_ts_id where cwms_ts_id = '''
-                || l_cwms_ts_id
-                || c.table_name
-                || ''')';
-
-            EXECUTE IMMEDIATE l_cmd
-                INTO l_count;
-
-            DBMS_OUTPUT.put_line (l_cmd);
-            ut.expect (l_count).to_equal (1);
-
-            l_cmd :=
-                   'select count(*) from av_tsv where ts_code = (select ts_code from at_cwms_ts_id where cwms_ts_id = '''
-                || l_cwms_ts_id
-                || c.table_name
-                || ''')';
-
-            EXECUTE IMMEDIATE l_cmd
-                INTO l_count;
-
-            DBMS_OUTPUT.put_line (l_cmd);
-
-            IF (   c.table_name = 'AT_TSV_ARCHIVAL'
-                OR c.table_name = 'AT_TSV_INF_AND_BEYOND')
-            THEN
-                ut.expect (l_count).to_equal (3);
-            ELSE
-                ut.expect (l_count).to_equal (4);
-            END IF;
-        END LOOP;
-
-        FOR c IN (SELECT table_name
-                    FROM at_ts_table_properties
-                   WHERE table_name <> 'AT_TSV_INF_AND_BEYOND')
-        LOOP
-            EXECUTE IMMEDIATE   'insert into at_tsv_inf_and_beyond select * from '
-                             || c.table_name;
-
-            EXECUTE IMMEDIATE 'delete from ' || c.table_name;
-
-            COMMIT;
-        END LOOP;
-
-        move_data_from_inf_to_yearly;
-
-        FOR c IN (SELECT table_name FROM at_ts_table_properties)
-        LOOP
-            l_cmd :=
-                   'select count(*) from '
-                || c.table_name
-                || ' where date_time = (select start_date+(1/24) from at_ts_table_properties where table_name = '''
-                || c.table_name
-                || ''') and ts_code = (select ts_code from at_cwms_ts_id where cwms_ts_id = '''
-                || l_cwms_ts_id
-                || c.table_name
-                || ''')';
-            DBMS_OUTPUT.put_line (l_cmd);
-
-            EXECUTE IMMEDIATE l_cmd
-                INTO l_count;
-
-            ut.expect (l_count).to_equal (1);
-            l_cmd :=
-                   'select count(*) from '
-                || c.table_name
-                || ' where date_time = (select end_date-(1/24) from at_ts_table_properties where table_name = '''
-                || c.table_name
-                || ''') and ts_code = (select ts_code from at_cwms_ts_id where cwms_ts_id = '''
-                || l_cwms_ts_id
-                || c.table_name
-                || ''')';
-
-            EXECUTE IMMEDIATE l_cmd
-                INTO l_count;
-
-            DBMS_OUTPUT.put_line (l_cmd);
-            ut.expect (l_count).to_equal (1);
-
-            l_cmd :=
-                   'select count(*) from av_tsv where ts_code = (select ts_code from at_cwms_ts_id where cwms_ts_id = '''
-                || l_cwms_ts_id
-                || c.table_name
-                || ''')';
-
-            EXECUTE IMMEDIATE l_cmd
-                INTO l_count;
-
-            DBMS_OUTPUT.put_line (l_cmd);
-
-            IF (   c.table_name = 'AT_TSV_ARCHIVAL'
-                OR c.table_name = 'AT_TSV_INF_AND_BEYOND')
-            THEN
-                ut.expect (l_count).to_equal (3);
-            ELSE
-                ut.expect (l_count).to_equal (4);
-            END IF;
-        END LOOP;
-    END test_yearly_tables;
 
     --------------------------------------------------------------------------------
     -- procedure test_filter_duplicates
@@ -915,132 +948,143 @@ AS
         END LOOP;
     END test_retrieve_ts_with_calendar_based_times__JIRA_CWDB_157;
 
-   --------------------------------------------------------------------------------
-   -- procedure quality_on_generated_rts_values__JIRA_CWMSVIEW_212
-   --------------------------------------------------------------------------------
-   procedure quality_on_generated_rts_values__JIRA_CWMSVIEW_212
-   is
-      l_ts_id        varchar2(191) := test_base_location_id || '.Code.Inst.1Day.0.QualityTest';
-      l_office_id    varchar2(16)  := '&&office_id';
-      l_start_time   date          := date '2022-03-01';
-      l_value_count  pls_integer   := 11;
-      l_unit         varchar2(16)  := 'n/a';
-      l_time_zone    varchar2(28)  := 'US/Central';
-      l_version_date date          := cwms_util.non_versioned;
-      l_first_date   date;
-      l_last_date    date;
-      l_zts_data     cwms_t_ztsv_array;
-      l_ts_data      cwms_t_tsv_array;
-      l_crsr         sys_refcursor;
-      l_date_times   cwms_t_date_table;
-      l_values       cwms_t_double_tab;
-      l_qualities    cwms_t_number_tab;
-   begin
-      ---------------------------------
-      -- create the time series data --
-      ---------------------------------
-      select cwms_t_tsv(from_tz(cast(l_start_time + level - 1 as timestamp), l_time_zone), level, 3)
-        bulk collect
-        into l_ts_data
-        from dual
-     connect by level <= l_value_count;
+    --------------------------------------------------------------------------------
+    -- procedure quality_on_generated_rts_values__JIRA_CWMSVIEW_212
+    --------------------------------------------------------------------------------
+    PROCEDURE quality_on_generated_rts_values__JIRA_CWMSVIEW_212
+    IS
+        l_ts_id          VARCHAR2 (191)
+            := test_base_location_id || '.Code.Inst.1Day.0.QualityTest';
+        l_office_id      VARCHAR2 (16) := '&&office_id';
+        l_start_time     DATE := DATE '2022-03-01';
+        l_value_count    PLS_INTEGER := 11;
+        l_unit           VARCHAR2 (16) := 'n/a';
+        l_time_zone      VARCHAR2 (28) := 'US/Central';
+        l_version_date   DATE := cwms_util.non_versioned;
+        l_first_date     DATE;
+        l_last_date      DATE;
+        l_zts_data       cwms_t_ztsv_array;
+        l_ts_data        cwms_t_tsv_array;
+        l_crsr           SYS_REFCURSOR;
+        l_date_times     cwms_t_date_table;
+        l_values         cwms_t_double_tab;
+        l_qualities      cwms_t_number_tab;
+    BEGIN
+            ---------------------------------
+            -- create the time series data --
+            ---------------------------------
+            SELECT cwms_t_tsv (
+                       FROM_TZ (CAST (l_start_time + LEVEL - 1 AS TIMESTAMP),
+                                l_time_zone),
+                       LEVEL,
+                       3)
+              BULK COLLECT INTO l_ts_data
+              FROM DUAL
+        CONNECT BY LEVEL <= l_value_count;
 
-      select cwms_t_ztsv(l_start_time + level - 1, level, 3)
-        bulk collect
-        into l_zts_data
-        from dual
-     connect by level <= l_value_count;
-      ------------------------
-      -- store the location --
-      ------------------------
-      cwms_loc.store_location (p_location_id    => test_base_location_id,
-                               p_active         => 'T',
-                               p_db_office_id   => '&&office_id');
-      ----------------------------------
-      -- store the time series as RTS --
-      ----------------------------------
-      cwms_ts.zstore_ts (
-         p_cwms_ts_id      => l_ts_id,
-         p_units           => l_unit,
-         p_timeseries_data => l_zts_data,
-         p_store_rule      => cwms_util.replace_all,
-         p_override_prot   => 'F',
-         p_version_date    => l_version_date,
-         p_office_id       => l_office_id,
-         p_create_as_lrts  => 'F');
-      ------------------------------------------------------
-      -- retrieve the time sereies with untrimmed padding --
-      ------------------------------------------------------
-      l_first_date := l_zts_data(1).date_time;
-      l_last_date  := l_zts_data(l_zts_data.count).date_time;
-      cwms_ts.retrieve_ts (
-         p_at_tsv_rc         => l_crsr,
-         p_cwms_ts_id        => l_ts_id,
-         p_units             => l_unit,
-         p_start_time        => l_first_date - 5,
-         p_end_time          => l_last_date + 5,
-         p_time_zone         => 'UTC',
-         p_trim              => 'F',
-         p_start_inclusive   => 'T',
-         p_end_inclusive     => 'T',
-         p_previous          => 'F',
-         p_next              => 'F',
-         p_version_date      => l_version_date,
-         p_max_version       => 'T',
-         p_office_id         => l_office_id);
-      fetch l_crsr bulk collect into l_date_times, l_values, l_qualities;
-      close l_crsr;
-      for i in 1..l_date_times.count loop
-         if l_date_times(i) between l_first_date and l_last_date then
-            ut.expect(l_qualities(i)).to_equal(3);
-         else
-            ut.expect(l_qualities(i)).to_equal(0);
-         end if;
-      end loop;
-      -----------------------------------
-      -- store the time series as LRTS --
-      -----------------------------------
-      l_ts_id := replace(l_ts_id, '1Day', '~1Day');
-      cwms_ts.store_ts (
-         p_cwms_ts_id      => l_ts_id,
-         p_units           => l_unit,
-         p_timeseries_data => l_ts_data,
-         p_store_rule      => cwms_util.replace_all,
-         p_override_prot   => 'F',
-         p_version_date    => l_version_date,
-         p_office_id       => l_office_id,
-         p_create_as_lrts  => 'T');
-      ------------------------------------------------------
-      -- retrieve the time sereies with untrimmed padding --
-      ------------------------------------------------------
-      l_first_date := cast(l_ts_data (1).date_time as date);
-      l_last_date  := cast(l_ts_data(l_zts_data.count).date_time as date);
-      cwms_ts.retrieve_ts (
-         p_at_tsv_rc         => l_crsr,
-         p_cwms_ts_id        => l_ts_id,
-         p_units             => l_unit,
-         p_start_time        => l_first_date - 5,
-         p_end_time          => l_last_date + 5,
-         p_time_zone         => l_time_zone,
-         p_trim              => 'F',
-         p_start_inclusive   => 'T',
-         p_end_inclusive     => 'T',
-         p_previous          => 'F',
-         p_next              => 'F',
-         p_version_date      => l_version_date,
-         p_max_version       => 'T',
-         p_office_id         => l_office_id);
-      fetch l_crsr bulk collect into l_date_times, l_values, l_qualities;
-      close l_crsr;
-      for i in 1..l_date_times.count loop
-         if l_date_times(i) between l_zts_data(1).date_time and l_zts_data(l_value_count).date_time then
-            ut.expect(l_qualities(i)).to_equal(3);
-         else
-            ut.expect(l_qualities(i)).to_equal(0);
-         end if;
-      end loop;
+            SELECT cwms_t_ztsv (l_start_time + LEVEL - 1, LEVEL, 3)
+              BULK COLLECT INTO l_zts_data
+              FROM DUAL
+        CONNECT BY LEVEL <= l_value_count;
 
-   end quality_on_generated_rts_values__JIRA_CWMSVIEW_212;
+        ------------------------
+        -- store the location --
+        ------------------------
+        cwms_loc.store_location (p_location_id    => test_base_location_id,
+                                 p_active         => 'T',
+                                 p_db_office_id   => '&&office_id');
+        ----------------------------------
+        -- store the time series as RTS --
+        ----------------------------------
+        cwms_ts.zstore_ts (p_cwms_ts_id        => l_ts_id,
+                           p_units             => l_unit,
+                           p_timeseries_data   => l_zts_data,
+                           p_store_rule        => cwms_util.replace_all,
+                           p_override_prot     => 'F',
+                           p_version_date      => l_version_date,
+                           p_office_id         => l_office_id,
+                           p_create_as_lrts    => 'F');
+        ------------------------------------------------------
+        -- retrieve the time sereies with untrimmed padding --
+        ------------------------------------------------------
+        l_first_date := l_zts_data (1).date_time;
+        l_last_date := l_zts_data (l_zts_data.COUNT).date_time;
+        cwms_ts.retrieve_ts (p_at_tsv_rc         => l_crsr,
+                             p_cwms_ts_id        => l_ts_id,
+                             p_units             => l_unit,
+                             p_start_time        => l_first_date - 5,
+                             p_end_time          => l_last_date + 5,
+                             p_time_zone         => 'UTC',
+                             p_trim              => 'F',
+                             p_start_inclusive   => 'T',
+                             p_end_inclusive     => 'T',
+                             p_previous          => 'F',
+                             p_next              => 'F',
+                             p_version_date      => l_version_date,
+                             p_max_version       => 'T',
+                             p_office_id         => l_office_id);
+
+        FETCH l_crsr BULK COLLECT INTO l_date_times, l_values, l_qualities;
+
+        CLOSE l_crsr;
+
+        FOR i IN 1 .. l_date_times.COUNT
+        LOOP
+            IF l_date_times (i) BETWEEN l_first_date AND l_last_date
+            THEN
+                ut.expect (l_qualities (i)).to_equal (3);
+            ELSE
+                ut.expect (l_qualities (i)).to_equal (0);
+            END IF;
+        END LOOP;
+
+        -----------------------------------
+        -- store the time series as LRTS --
+        -----------------------------------
+        l_ts_id := REPLACE (l_ts_id, '1Day', '~1Day');
+        cwms_ts.store_ts (p_cwms_ts_id        => l_ts_id,
+                          p_units             => l_unit,
+                          p_timeseries_data   => l_ts_data,
+                          p_store_rule        => cwms_util.replace_all,
+                          p_override_prot     => 'F',
+                          p_version_date      => l_version_date,
+                          p_office_id         => l_office_id,
+                          p_create_as_lrts    => 'T');
+        ------------------------------------------------------
+        -- retrieve the time sereies with untrimmed padding --
+        ------------------------------------------------------
+        l_first_date := CAST (l_ts_data (1).date_time AS DATE);
+        l_last_date := CAST (l_ts_data (l_zts_data.COUNT).date_time AS DATE);
+        cwms_ts.retrieve_ts (p_at_tsv_rc         => l_crsr,
+                             p_cwms_ts_id        => l_ts_id,
+                             p_units             => l_unit,
+                             p_start_time        => l_first_date - 5,
+                             p_end_time          => l_last_date + 5,
+                             p_time_zone         => l_time_zone,
+                             p_trim              => 'F',
+                             p_start_inclusive   => 'T',
+                             p_end_inclusive     => 'T',
+                             p_previous          => 'F',
+                             p_next              => 'F',
+                             p_version_date      => l_version_date,
+                             p_max_version       => 'T',
+                             p_office_id         => l_office_id);
+
+        FETCH l_crsr BULK COLLECT INTO l_date_times, l_values, l_qualities;
+
+        CLOSE l_crsr;
+
+        FOR i IN 1 .. l_date_times.COUNT
+        LOOP
+            IF l_date_times (i) BETWEEN l_zts_data (1).date_time
+                                    AND l_zts_data (l_value_count).date_time
+            THEN
+                ut.expect (l_qualities (i)).to_equal (3);
+            ELSE
+                ut.expect (l_qualities (i)).to_equal (0);
+            END IF;
+        END LOOP;
+    END quality_on_generated_rts_values__JIRA_CWMSVIEW_212;
 END test_cwms_ts;
 /
 SHOW ERRORS
