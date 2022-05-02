@@ -147,7 +147,7 @@ AS
         SELECT COUNT (*) INTO l_count FROM &office_id._ts_stored_table;
 
         ut.expect (201).to_equal (l_count);
-        DBMS_LOCK.sleep (150);
+        DBMS_SESSION.sleep (150);
 
         SELECT COUNT (*) INTO l_count FROM &office_id._ts_stored_table;
 
