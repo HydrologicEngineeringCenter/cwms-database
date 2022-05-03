@@ -2,39 +2,25 @@
 SET DEFINE ON
 @@defines.sql
 
-CREATE OR REPLACE PACKAGE BODY cwms_sec_policy
+CREATE OR REPLACE PACKAGE BODY &cwms_schema..cwms_sec_policy
 AS
-/******************************************************************************
-   NAME:       cwms_sec_policy
-   PURPOSE:
+    FUNCTION CHECK_SESSION_USER (p_schema IN VARCHAR2, p_table IN VARCHAR2)
+        RETURN VARCHAR2
+    IS
+    BEGIN
+        IF DBMS_MVIEW.i_am_a_refresh
+        THEN
+            RETURN NULL;
+        END IF;
 
-   REVISIONS:
-   Ver        Date        Author           Description
-   ---------  ----------  ---------------  ------------------------------------
-   1.0        1/3/2007             1. Created this package body.
-******************************************************************************/
-      FUNCTION da_role_office_codes (ns IN VARCHAR2, na IN VARCHAR2)
-      RETURN VARCHAR2
-   IS
-      l_predicate   VARCHAR2 (2000);
-   BEGIN
-      IF SYS_CONTEXT ('USERENV', 'SESSION_USER') = '&cwms_schema'
-      THEN
-         l_predicate := '1=1';
-      ELSE
-         l_predicate :=                       
-            'db_office_code in (SELECT db_office_code
-                                 FROM at_sec_users 
-                                 JOIN at_sec_locked_users 
-                                USING (username, db_office_code)
-                                WHERE is_locked = ''F'' 
-                                  AND user_group_code = 3 
-                                  AND username = cwms_util.get_user_id
-                                )';
-      END IF;
-
-      RETURN l_predicate;
-   END;
-
+        IF (    (SYS_CONTEXT ('CWMS_ENV', 'CWMS_USER') IS NULL)
+            AND (USER = cwms_sec.cac_service_user))
+        THEN
+            RETURN '1=0';
+        ELSE
+            RETURN '1=1';
+        END IF;
+    END CHECK_SESSION_USER;
 END cwms_sec_policy;
 /
+
