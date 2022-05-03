@@ -796,11 +796,13 @@ begin
    -------------------------------------
    -- use office unit if no user unit --
    -------------------------------------
-   begin
-      retrieve_unit(l_unit_id, p_parameter_id, l_unit_system, l_office_id);
-   exception
-      when item_does_not_exist then null;
-   end;
+   if l_unit_id is null then
+      begin
+         retrieve_unit(l_unit_id, p_parameter_id, l_unit_system, l_office_id);
+      exception
+         when item_does_not_exist then null;
+      end;
+   end if;
    ---------------------------------------
    -- use default unit as a last resort --
    ---------------------------------------
