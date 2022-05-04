@@ -351,7 +351,7 @@ end;
 /
 set define on
 @@cwms/create_sec_triggers
-@@cwms/create_service_user_policy
+@@cwms/create_user_policies
 @@cwms/at_tsv_count_trig
 @@cwms/at_dd_flag_trig
 -------------------------------------------------

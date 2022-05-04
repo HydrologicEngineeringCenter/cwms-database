@@ -4483,9 +4483,14 @@ AS
             -- no existing record --
             ------------------------
             l_updated := true;
-            insert
-              into at_ts_extents
-            values p_ts_extents_rec;
+	    begin
+              insert
+                into at_ts_extents
+              values p_ts_extents_rec;
+	    exception when DUP_VAL_ON_INDEX then
+	    -- An entry has already been inserted by UTX job. So no need to do anything
+               null;
+	    end;
       end;
       return l_updated;
    end update_ts_extents;
