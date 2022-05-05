@@ -1013,6 +1013,8 @@ is
    l_indicator_values cwms_t_ztsv_array;
    l_rating_spec      varchar2(615) := c_location_id||'.Elev;Stor.Linear.Production';
    l_errors           clob;
+   l_levels_xml1      clob;
+   l_levels_xml2      clob;
    l_rating_xml       varchar2(32767) := '
 <ratings>
   <rating-template office-id="'||c_office_id||'">
@@ -1127,6 +1129,7 @@ begin
    48	2022-04-02-00:00	1048	10480	 95.0
    49	2022-04-02-01:00	1049	10490	 95.5
 */
+   dbms_output.enable(2000000);
    setup;
    execute immediate 'alter index AT_LOC_LVL_INDICATOR_U1 rebuild'; --just in case
    ----------------------
@@ -1219,6 +1222,7 @@ begin
          p_expression             => l_pct_full_expr,
          p_comparison_operator_1  => 'GE',
          p_comparison_value_1     => l_pct_full_vals(i),
+         p_comparison_unit_id     => c_stor_unit,
          p_description            => 'Flood pool >= '||l_pct_full_vals(i)||'% full',
          p_ref_specified_level_id => cwms_util.split_text(l_stor_bottom_id, 5, '.'),
          p_office_id              => c_office_id);
@@ -1244,12 +1248,13 @@ begin
          p_expression                 => l_pct_full_expr,
          p_comparison_operator_1      => 'GE',
          p_comparison_value_1         => 10,
+         p_comparison_unit_id         => c_stor_unit,
          p_rate_expression            => l_rate_expr,
          p_rate_comparison_operator_1 => 'GE',
          p_rate_comparison_value_1    => 50 * i,
          p_rate_comparison_unit_id    => l_rate_unit,
          p_rate_interval              => l_rate_interval,
-         p_description                => 'Flood pool filling >= '||5 * i||' cfs',
+         p_description                => 'Flood pool filling >= '||50 * i||' cfs',
          p_ref_specified_level_id     => cwms_util.split_text(l_stor_bottom_id, 5, '.'),
          p_office_id                  => c_office_id);
    end loop;
@@ -1452,6 +1457,28 @@ begin
 
    ut.expect(l_count).to_equal(5);
 
+   -------------------------------------------------------------------------------
+   -- retrieve the current location levels xml for later storage and comparison --
+   -------------------------------------------------------------------------------
+   l_levels_xml1 := cwms_level.retrieve_location_levels_xml_f(
+      p_location_level_id_mask     => '*',
+      p_attribute_id_mask          => '*',
+      p_start_time                 => null,
+      p_end_time                   => null,
+      p_timezone_id                => 'UTC',
+      p_unit_system                => 'EN',
+      p_attribute_value            => null,
+      p_attribute_unit             => null,
+      p_level_type                 => 'VN',
+      p_include_levels             => 'T',
+      p_include_constituent_levels => 'F',
+      p_include_level_sources      => 'T',
+      p_include_level_labels       => 'T',
+      p_include_level_indicators   => 'T',
+      p_office_id                  => c_office_id);
+   ------------------------------------------------------------------------
+   -- delete the location levels + indicators and verify their deletions --
+   ------------------------------------------------------------------------
    for rec in (select l_elev_bottom_id as level_id from dual
                union all
                select l_elev_top_id as level_id from dual
@@ -1517,6 +1544,42 @@ begin
       and level_indicator_id = l_inflow_ind_id;
 
    ut.expect(l_count).to_equal(0);
+   -----------------------------------------------------
+   -- re-store the location levels via xml and verify --
+   -----------------------------------------------------
+   cwms_level.store_location_levels_xml(
+      p_errors         => l_errors,
+      p_xml            => l_levels_xml1,
+      p_fail_if_exists => 'F',
+      p_fail_on_error  => 'T');
+
+   ut.expect(l_errors).to_be_null;
+
+   l_levels_xml2 := cwms_level.retrieve_location_levels_xml_f(
+      p_location_level_id_mask     => '*',
+      p_attribute_id_mask          => '*',
+      p_start_time                 => null,
+      p_end_time                   => null,
+      p_timezone_id                => 'UTC',
+      p_unit_system                => 'EN',
+      p_attribute_value            => null,
+      p_attribute_unit             => null,
+      p_level_type                 => 'VN',
+      p_include_levels             => 'T',
+      p_include_constituent_levels => 'F',
+      p_include_level_sources      => 'T',
+      p_include_level_labels       => 'T',
+      p_include_level_indicators   => 'T',
+      p_office_id                  => c_office_id);
+
+   declare
+      l_code number;
+   begin
+      l_code := cwms_text.store_text(l_levels_xml1, '/_LEVELS_XML1', null, 'F', c_office_id);
+      l_code := cwms_text.store_text(l_levels_xml2, '/_LEVELS_XML2', null, 'F', c_office_id);
+   end;
+
+   ut.expect(l_levels_xml2).to_equal(l_levels_xml1);
 
 end test_indicators_and_conditions;
 

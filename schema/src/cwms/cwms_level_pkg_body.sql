@@ -2870,7 +2870,6 @@ begin
    -- loop through location level source nodes --
    ----------------------------------------------
    for i in 1..999999 loop
-      dbms_output.put_line(i);
       l_top_node := get_xml_node(l_xml, '/*/location-level-source['||i||']');
       exit when l_top_node is null;
       dbms_output.put_line('source '||i);
@@ -2909,7 +2908,6 @@ begin
    -- loop through location level label nodes --
    ---------------------------------------------
    for i in 1..999999 loop
-      dbms_output.put_line(i);
       l_top_node := get_xml_node(l_xml, '/*/location-level-label['||i||']');
       exit when l_top_node is null;
       dbms_output.put_line('label '||i);
@@ -2952,14 +2950,16 @@ begin
    -- loop through location level indicator nodes --
    -------------------------------------------------
    for i in 1..999999 loop
-      dbms_output.put_line(i);
       l_top_node := get_xml_node(l_xml, '/*/location-level-indicator['||i||']');
       exit when l_top_node is null;
       dbms_output.put_line('indicator '||i);
       begin
+         l_office_id := get_xml_text(l_top_node, '/*/@office');
          l_indicator_id := get_xml_text(l_top_node, '/*/location-level-indicator-id');
-         l_location_level_id := substr(l_indicator_id, 1, instr(l_indicator_id, '.', -1) - 1);
          dbms_output.put_line(l_office_id||'/'||l_indicator_id);
+         l_pos := instr(l_indicator_id, '.', -1);
+         l_location_level_id := substr(l_indicator_id, 1, l_pos - 1);
+         l_indicator_id := substr(l_indicator_id, l_pos + 1);
          l_node := get_xml_node(l_top_node, '/*/location-level-attribute');
          if l_node is null then
             l_attribute_id    := null;
@@ -2972,6 +2972,7 @@ begin
             dbms_output.put_line(l_attribute_id||' = '||l_attribute_value||' '||l_attribute_unit);
          end if;
          l_indicator := loc_lvl_indicator_t();
+         l_indicator.office_id := l_office_id;
          parse_location_level_id(
             p_location_id         => l_indicator.location_id,
             p_parameter_id        => l_indicator.parameter_id,
@@ -2979,9 +2980,9 @@ begin
             p_duration_id         => l_indicator.duration_id,
             p_specified_level_id  => l_indicator.specified_level_id,
             p_location_level_id   => l_location_level_id);
-         l_indicator.level_indicator_id := get_xml_text(l_top_node, '/*/identifier');
-         l_indicator.attr_value    := l_attribute_value;
-         l_indicator.attr_units_id := l_attribute_unit;
+         l_indicator.level_indicator_id := l_indicator_id;
+         l_indicator.attr_value         := l_attribute_value;
+         l_indicator.attr_units_id      := l_attribute_unit;
          parse_attribute_id(
             p_parameter_id        => l_indicator.attr_parameter_id,
             p_parameter_type_id   => l_indicator.attr_parameter_type_id,
@@ -3009,11 +3010,12 @@ begin
             exit when l_node2 is null;
             l_indicator.conditions.extend;
             l_indicator_value := get_xml_number(l_node2, '/*/@value');
+            l_description := get_xml_text(l_node2, '/*/description');
             l_text := get_xml_text(l_node2, '/*/value-expression');
             l_parts := cwms_util.split_text(l_text);
             for k in 1..l_parts.count loop
                l_pos := k;
-               exit when upper(l_parts(k)) in ('LE', 'LT', 'EQ', 'NE', 'GE', 'GT');
+               exit when cwms_util.is_comparison_operator(upper(l_parts(k)));
             end loop;
             l_expression            := cwms_util.join_text(cwms_util.sub_table(l_parts, 1, l_pos-1), ' ');
             l_comparison_operator_1 := l_parts(l_pos);
@@ -3025,7 +3027,7 @@ begin
                l_connector := l_parts(l_pos);
                for k in l_pos..l_parts.count loop
                   l_pos := k;
-                  exit when upper(l_parts(k)) in ('LE', 'LT', 'EQ', 'NE', 'GE', 'GT');
+                  exit when cwms_util.is_comparison_operator(upper(l_parts(k)));
                end loop;
                l_comparison_operator_2 := l_parts(l_pos);
                l_comparison_value_2    := l_parts(l_pos+1);
@@ -3040,30 +3042,28 @@ begin
                l_rate_comparison_operator_2 := null;
                l_rate_comparison_value_2    := null;
                l_rate_interval              := null;
-               l_description                := null;
             else
                l_parts := cwms_util.split_text(l_text);
                for k in 1..l_parts.count loop
                   l_pos := k;
-                  exit when upper(l_parts(k)) in ('LE', 'LT', 'EQ', 'NE', 'GE', 'GT');
+                  exit when cwms_util.is_comparison_operator(upper(l_parts(k)));
                end loop;
                l_rate_expression            := cwms_util.join_text(cwms_util.sub_table(l_parts, 1, l_pos-1), ' ');
                l_rate_comparison_operator_1 := l_parts(l_pos);
                l_rate_comparison_value_1    := l_parts(l_pos+1);
-               l_rate_comparison_unit_id    := get_xml_text(l_node2, '/*/value-expression/@unit');
+               l_rate_comparison_unit_id    := get_xml_text(l_node2, '/*/rate-expression/@unit');
                l_rate_comparison_unit_code  := cwms_util.get_unit_code(l_rate_comparison_unit_id, p_db_office_id => l_office_id);
                l_pos := l_pos + 2;
                if l_pos < l_parts.count then
                   l_rate_connector := l_parts(l_pos);
                   for k in l_pos..l_parts.count loop
                      l_pos := k;
-                     exit when upper(l_parts(k)) in ('LE', 'LT', 'EQ', 'NE', 'GE', 'GT');
+                     exit when cwms_util.is_comparison_operator(upper(l_parts(k)));
                   end loop;
                   l_rate_comparison_operator_2 := l_parts(l_pos);
                   l_rate_comparison_value_2    := l_parts(l_pos+1);
                end if;
-               l_rate_interval              := to_dsinterval(get_xml_text(l_node2, '/*/value-expression/@interval'));
-               l_description                := get_xml_text(l_node2, '/*/description');
+               l_rate_interval := to_dsinterval(get_xml_text(l_node2, '/*/rate-expression/@interval'));
             end if;
             l_indicator.conditions(l_indicator.conditions.count) := loc_lvl_indicator_cond_t(
                p_indicator_value            => l_indicator_value,
@@ -4350,7 +4350,11 @@ begin
                         cwms_util.append(l_auxiliary, '<description>'||encode(rec.description)||'</description>');
                      end if;
                      if rec.expression is not null then
-                        cwms_util.append(l_auxiliary, '<value-expression unit="'||encode(cwms_util.get_unit_id2(rec.comparison_unit))||'">');
+                        cwms_util.append(l_auxiliary, '<value-expression unit="'||case
+                                                                                  when rec.comparison_unit is null then null
+                                                                                  else encode(cwms_util.get_unit_id2(rec.comparison_unit))
+                                                                                  end
+                                                                                ||'">');
                         cwms_util.append(
                            l_auxiliary,
                            encode(rec.expression
@@ -4372,7 +4376,10 @@ begin
                         cwms_util.append(
                            l_auxiliary,
                            '<rate-expression unit="'
-                           ||encode(cwms_util.get_unit_id2(rec.rate_comparison_unit))
+                           ||case
+                             when rec.rate_comparison_unit is null then null
+                             else encode(cwms_util.get_unit_id2(rec.rate_comparison_unit))
+                             end
                            ||'" interval="'
                            ||rec.rate_interval
                            ||'">');
@@ -9879,7 +9886,7 @@ procedure store_loc_lvl_indicator(
 is
    l_loc_lvl_indicator loc_lvl_indicator_t;
 begin
-   l_loc_lvl_indicator := l_loc_lvl_indicator;
+   l_loc_lvl_indicator := p_loc_lvl_indicator;
    l_loc_lvl_indicator.store;
 end store_loc_lvl_indicator;
 --------------------------------------------------------------------------------
