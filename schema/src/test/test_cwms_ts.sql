@@ -27,6 +27,9 @@ procedure test_rename_ts_inst_to_median;
 --%test(create depth velocity time series)
 procedure test_create_depth_velocity; 
 
+--%test(test micrograms/l)
+procedure test_conc;
+
 --%test(Incremental precip with non zero duration)
 --%throws(-20205)
 PROCEDURE inc_with_zero_duration;
@@ -197,6 +200,118 @@ AS
         delete_ts_id (l_cwms_ts_id);
     END;
 
+    PROCEDURE test_unit_conversion (p_cwms_ts_id   VARCHAR2,
+                                    p_start_time   TIMESTAMP,
+                                    p_interval     NUMBER,
+                                    p_num_values   INTEGER,
+                                    p_units        VARCHAR2,
+                                    p_factor       NUMBER,
+                                    p_margin       NUMBER)
+    IS
+        l_times           CWMS_TS.NUMBER_ARRAY;
+        l_values          CWMS_TS.DOUBLE_ARRAY;
+        l_qualities       CWMS_TS.NUMBER_ARRAY;
+        l_crsr            SYS_REFCURSOR;
+        l_ret_times       cwms_t_date_table;
+        l_ret_values      cwms_t_double_tab;
+        l_ret_qualities   cwms_t_number_tab;
+        l_ts_code         NUMBER;
+        l_count           INTEGER;
+    BEGIN
+        cwms_ts.retrieve_ts (
+            p_at_tsv_rc    => l_crsr,
+            p_cwms_ts_id   => p_cwms_ts_id,
+            p_units        => p_units,
+            p_start_time   => p_start_time,
+            p_end_time     =>
+                p_start_time + ((p_interval * p_num_values) / (3600 * 24)),
+            p_time_zone    => 'UTC',
+            p_trim         => 'T',
+            p_office_id    => 'NAB');
+
+        FETCH l_crsr
+            BULK COLLECT INTO l_ret_times, l_ret_values, l_ret_qualities;
+
+        ut.expect (l_ret_times.COUNT).to_equal (p_num_values);
+
+        CLOSE l_crsr;
+
+        FOR j IN 1 .. l_ret_times.COUNT
+        LOOP
+            ut.expect (CWMS_UTIL.TO_MILLIS (l_ret_times (j))).to_equal (
+                CWMS_UTIL.TO_MILLIS (p_start_time) + (p_interval * 1000 * j));
+            ut.expect (abs(l_ret_values (j)-(j*p_factor))).to_be_less_or_equal(p_margin);
+            ut.expect (l_ret_qualities (j)).to_equal (0);
+        END LOOP;
+    END test_unit_conversion;
+
+    PROCEDURE test_conc
+    IS
+        l_cwms_ts_id      VARCHAR2 (200);
+        l_times           CWMS_TS.NUMBER_ARRAY;
+        l_values          CWMS_TS.DOUBLE_ARRAY;
+        l_qualities       CWMS_TS.NUMBER_ARRAY;
+        l_crsr            SYS_REFCURSOR;
+        l_ret_times       cwms_t_date_table;
+        l_ret_values      cwms_t_double_tab;
+        l_ret_qualities   cwms_t_number_tab;
+        l_ts_code         NUMBER;
+        l_count           INTEGER;
+        l_num_values      NUMBER := 10;
+        l_start_time      TIMESTAMP := TIMESTAMP '2022-03-01 00:00:00';
+        l_interval        NUMBER := 3600;
+    BEGIN
+        cwms_loc.store_location (p_location_id    => test_base_location_id,
+                                 p_active         => 'T',
+                                 p_db_office_id   => 'NAB');
+        l_cwms_ts_id := test_base_location_id || '.Conc.Ave.1Hour.1Hour.raw';
+        cwms_ts.create_ts ('NAB', l_cwms_ts_id);
+        COMMIT;
+
+        SELECT COUNT (*)
+          INTO l_count
+          FROM at_cwms_ts_id
+         WHERE UPPER (cwms_ts_id) = UPPER (l_cwms_ts_id);
+
+        ut.expect (l_count).to_equal (1);
+
+        SELECT ts_code
+          INTO l_ts_code
+          FROM at_cwms_ts_id
+         WHERE cwms_ts_id = l_cwms_ts_id;
+
+        FOR i IN 1 .. l_num_values
+        LOOP
+            l_times (i) :=
+                CWMS_UTIL.TO_MILLIS (l_start_time) + (l_interval * 1000 * i);
+            l_values (i) := i;
+            l_qualities (i) := 0;
+        END LOOP;
+
+        CWMS_TS.STORE_TS (l_cwms_ts_id,
+                          'ug/l',
+                          l_times,
+                          l_values,
+                          l_qualities,
+                          'Delete Insert');
+
+        SELECT COUNT (*)
+          INTO l_count
+          FROM av_tsv
+         WHERE     ts_code = l_ts_code
+               AND date_time >= l_start_time
+               AND date_time <=
+                   (  l_start_time
+                    + ((l_interval * l_num_values) / (3600 * 24)));
+
+        ut.expect (l_count).to_equal (l_num_values);
+        test_unit_conversion(l_cwms_ts_id,l_start_time,l_interval,10,'ug/l',1,1.0E-09);
+        test_unit_conversion(l_cwms_ts_id,l_start_time,l_interval,10,'g/l',1.0E-06,1.0E-09);
+        test_unit_conversion(l_cwms_ts_id,l_start_time,l_interval,10,'kg/l',1.0E-09,1.0E-02);
+        test_unit_conversion(l_cwms_ts_id,l_start_time,l_interval,10,'lb/l',8.3454042651525E-9,1.0E-02);
+        test_unit_conversion(l_cwms_ts_id,l_start_time,l_interval,10,'ppm',1.0E-3,1.0E-09);
+	delete_ts_id(l_cwms_ts_id);
+    END test_conc;
 
     PROCEDURE store_a_value (p_cwms_ts_id   VARCHAR2,
                              p_units        VARCHAR2,
