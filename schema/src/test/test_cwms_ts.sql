@@ -227,7 +227,7 @@ AS
                 p_start_time + ((p_interval * p_num_values) / (3600 * 24)),
             p_time_zone    => 'UTC',
             p_trim         => 'T',
-            p_office_id    => 'NAB');
+            p_office_id    => '&&office_id');
 
         FETCH l_crsr
             BULK COLLECT INTO l_ret_times, l_ret_values, l_ret_qualities;
@@ -263,9 +263,9 @@ AS
     BEGIN
         cwms_loc.store_location (p_location_id    => test_base_location_id,
                                  p_active         => 'T',
-                                 p_db_office_id   => 'NAB');
+                                 p_db_office_id   => '&&office_id');
         l_cwms_ts_id := test_base_location_id || '.Conc.Ave.1Hour.1Hour.raw';
-        cwms_ts.create_ts ('NAB', l_cwms_ts_id);
+        cwms_ts.create_ts ('&&office_id', l_cwms_ts_id);
         COMMIT;
 
         SELECT COUNT (*)
