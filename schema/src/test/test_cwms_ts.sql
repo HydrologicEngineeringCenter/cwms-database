@@ -58,6 +58,8 @@ procedure create_ts_with_null_timezone;
 
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
 test_withsub_location_id VARCHAR2(32) := test_base_location_id||'-withsub';
+test_renamed_base_location_id VARCHAR2(32) := 'RenameTestLoc1';
+test_renamed_withsub_location_id VARCHAR2(32) := test_renamed_base_location_id||'-withsub';
 procedure setup;
 procedure teardown;
 end test_cwms_ts;
@@ -76,7 +78,7 @@ AS
     BEGIN
         FOR rec
             IN (SELECT COLUMN_VALUE     AS loc_name
-                  FROM TABLE (str_tab_t (test_base_location_id)))
+                  FROM TABLE (str_tab_t (test_base_location_id,test_renamed_base_location_id)))
         LOOP
             BEGIN
                 cwms_loc.delete_location (
@@ -306,6 +308,7 @@ AS
 
         ut.expect (l_count).to_equal (l_num_values);
         test_unit_conversion(l_cwms_ts_id,l_start_time,l_interval,10,'ug/l',1,1.0E-09);
+        test_unit_conversion(l_cwms_ts_id,l_start_time,l_interval,10,'mg/l',1.0E-03,1.0E-09);
         test_unit_conversion(l_cwms_ts_id,l_start_time,l_interval,10,'g/l',1.0E-06,1.0E-09);
         test_unit_conversion(l_cwms_ts_id,l_start_time,l_interval,10,'kg/l',1.0E-09,1.0E-02);
         test_unit_conversion(l_cwms_ts_id,l_start_time,l_interval,10,'lb/l',8.3454042651525E-9,1.0E-02);
@@ -410,16 +413,20 @@ AS
         cwms_ts.create_ts (
             '&&office_id',
             test_base_location_id || '.Flow.Ave.Irr.Variable.raw');
-        delete_ts_id (test_base_location_id || '.Flow.Ave.Irr.Variable.raw');
+        cwms_loc.rename_loc('&&office_id',
+		test_base_location_id,
+		test_renamed_base_location_id);
+	COMMIT;
+        delete_ts_id (test_renamed_base_location_id || '.Flow.Ave.Irr.Variable.raw');
         COMMIT;
-        cwms_loc.store_location (p_location_id    => test_withsub_location_id,
+        cwms_loc.store_location (p_location_id    => test_renamed_withsub_location_id,
                                  p_active         => 'T',
                                  p_db_office_id   => '&&office_id');
         cwms_ts.create_ts (
             '&&office_id',
-            test_withsub_location_id || '.Flow.Ave.Irr.Variable.raw');
+            test_renamed_withsub_location_id || '.Flow.Ave.Irr.Variable.raw');
         delete_ts_id (
-            test_withsub_location_id || '.Flow.Ave.Irr.Variable.raw');
+            test_renamed_withsub_location_id || '.Flow.Ave.Irr.Variable.raw');
         COMMIT;
     END;
 
