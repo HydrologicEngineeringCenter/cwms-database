@@ -18,7 +18,6 @@ exec cwms_sec.add_cwms_user('OTHER_DIST', char_32_array_type('CWMS Users'),'HQ')
 @test_probability_parameter.sql;
 @test_cwms_util.sql;
 @test_cwms_loc.sql;
-@../updateScripts/util/move_data_from_inf_to_yearly;
 @test_cwms_ts.sql;
 @test_cwms_rating.sql;
 @test_cwms_pool.sql;

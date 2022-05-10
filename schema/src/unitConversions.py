@@ -398,11 +398,13 @@ conversion_definitions = [
 	('g',           'mg',          'm*_per_*[mg]/[g]'),
 	('g',           'ton',         '[kg]/*_per_k*[g] | [lbm]/kg_per_lbm[kg] | [ton]/lbm_per_ton[lbm]'),
 	('g',           'tonne',       '[kg]/*_per_k*[g] | [tonne]/kg_per_tonne[kg]'),
+	('g',           'ug',          'u*_per_*[ug]/[g]'),
 	('g/l',         'g/m3',        'l_per_m3[l]/[m3]'),
 	('g/l',         'gm/cm3',      'l_per_m3[l]/[m3] | [m3]/c*_per_*^3[cm3] | [gm]/[g]'),
 	('g/l',         'lbm/ft3',     '[kg]/*_per_k*[g] | [lbm]/kg_per_lbm[kg] | l_per_m3[l]/[m3] | m_per_ft^3[m3]/[ft3]'),
 	('g/l',         'mg/l',        'm*_per_*[mg/l]/[g/l]'),
 	('g/l',         'ppm',         'm*_per_*[mg/l]/[g/l] | [ppm]/[mg/l]'),
+	('g/l',         'ug/l',        'u*_per_*[ug/l]/[g/l]'),
 	('g/m3',        'g/l',         '[m3]/l_per_m3[l]'),
 	('g/m3',        'gm/cm3',      '[gm]/[g] | [m3]/c*_per_*^3[cm3]'),
 	('g/m3',        'lbm/ft3',     '[kg]/*_per_k*[g] | [lbm]/kg_per_lbm[kg] | m_per_ft^3[m3]/[ft3]'),
@@ -827,6 +829,8 @@ conversion_definitions = [
 	('tonne',       'mg',          'kg_per_tonne[kg]/[tonne] | *_per_k*[g]/[kg] | m*_per_*[mg]/[g]'),
 	('tonne',       'ton',         'kg_per_tonne[kg]/[tonne] | [lbm]/kg_per_lbm[kg] | [ton]/lbm_per_ton[lbm]'),
 	('tonne/day',   'ton/day',     'kg_per_tonne[kg]/[tonne] | [lbm]/kg_per_lbm[kg] | [ton]/lbm_per_ton[lbm]'),
+	('ug',          'g',           '[g]/u*_per_*[ug]'),
+	('ug/l',        'g/l',         '[g/l]/u*_per_*[ug/l]'),
 	('uS',          'S',           '[S]/u*_per_*[uS]'),
 	('uS',          'mho',         '[mho]/u*_per_*[uS]'),
 	('uS',          'umho',        '[umho]/[uS]'),
@@ -1008,6 +1012,8 @@ si_units = {"SI" : [
 	"tonne/day",
 	"TW",
 	"TWh",
+	"ug",
+	"ug/l",
 	"umho",
 	"umho/cm",
 	"unit",
@@ -1174,6 +1180,7 @@ mass_units = {"Mass" : [
 	"mg",
 	"ton",
 	"tonne",
+	"ug",
 ]}
 
 mass_concentration_units = {"Mass Concentration" : [
@@ -1183,6 +1190,7 @@ mass_concentration_units = {"Mass Concentration" : [
 	"lbm/ft3",
 	"mg/l",
 	"ppm",
+	"ug/l",
 ]}
 
 mass_rate_units = {"Mass Rate" : [
@@ -1413,6 +1421,8 @@ unit_aliases = {
 	"psi"        : ["lbs/sqin"],
 	"rpm"        : ["rev/min","revolutions per minute"],
 	"sec"        : ["second","seconds","SEC","SECOND","SECONDS"],
+	"ug"         : ["micrograms"],
+	"ug/l"       : ["micrograms/l","micrograms/L"],
 	"TWh"        : ["TWH"],
 	"Wh"         : ["WH"],
 	"umho/cm"    : ["umhos/cm","UMHO/CM","UMHOS/CM"],
@@ -1755,13 +1765,37 @@ for from_unit, to_unit, definition in conversion_definitions :
 		except : offset = Decimal('0')
 	conversion_to[to_unit] = {"factor" : factor, "offset" : offset, "function" : func_body}
 
+def checkTransitive(from_unit,to_unit):
+	for u1 in conversions.keys():
+		for u2 in conversions[u1].keys():
+			if u2 == to_unit:
+				for u3 in conversions.keys():
+					for u4 in conversions[u3].keys():
+						if (u4 == u1) and (u3 == from_unit):
+							fa1 = conversions[u1][u2]["factor"]
+							o1 = conversions[u1][u2]["offset"]
+							fu1 = conversions[u1][u2]["function"]
+							fa2 = conversions[u3][u4]["factor"]
+							o2 = conversions[u3][u4]["offset"]
+							fu2 = conversions[u3][u4]["function"]
+							if(fu1 is None and fu2 is None and o1==Decimal('0') and o2==Decimal('0')):
+								return fa1*fa2
+	return None
+
+
 def convert(value, from_unit, to_unit) :
 	try :
 		factor   = conversions[from_unit][to_unit]["factor"]
 		offset   = conversions[from_unit][to_unit]["offset"]
 		function = conversions[from_unit][to_unit]["function"]
 	except :
-		raise Exception("No conversion defined from '%s' to '%s'" % (from_unit, to_unit))
+		f = checkTransitive(from_unit,to_unit)
+		if f:
+			ret = float(Decimal(value) * f)
+			conversions[from_unit][to_unit]={"factor":f,"offset":Decimal(0),"function":None}
+			return ret
+		else:
+			raise Exception("No conversion defined from '%s' to '%s'" % (from_unit, to_unit))
 	if function :
 		result = Computation(function).compute(value)
 	else :

@@ -4423,6 +4423,8 @@ unitDefs = [
     ["Volume",                           "mcm",         "SI",   "Millions of cubic meters",          "Volume of 1E+06 cubic meters"                                                 ],
     ["Depth Velocity",                   "m2/s",        "SI",   "Depth times velocity",              "Depth of 1 meter and Velocity of 1 meter/second"                                                          ],
     ["Depth Velocity",                   "ft2/s",       "EN",   "Depth times velocity",              "Depth of 1 feet and Velocity of 1 feet/second"                                                 ],
+    ["Mass",                             "ug",          "SI",   "micrograms",                        "Mass of 1 microgram"                                                              ],
+    ["Mass Concentration",               "ug/l",        "SI",   "micrograms per liter",              "Mass concentration of 1E-06 gram per liter"                                   ],
 ]
 
 unitDefsById = {}
