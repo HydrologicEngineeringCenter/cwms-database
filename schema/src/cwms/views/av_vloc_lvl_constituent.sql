@@ -92,6 +92,6 @@ select location_level_code,
        end as constitusit_attr_unit_si
   from at_vloc_lvl_constituent;
 
-create public synonym cwms_v_vloc_lvl_constituent for av_vloc_lvl_constituent;
+create or replace public synonym cwms_v_vloc_lvl_constituent for av_vloc_lvl_constituent;
 grant select on av_vloc_lvl_constituent to cwms_user;
 
