@@ -11684,7 +11684,7 @@ is
    l_interp           pls_integer;
    l_estimated        boolean;
    l_level_values     ztsv_array_tab;
-   l_code             pls_integer;
+   l_code             at_physical_location.location_code%TYPE;
    l_segments         seg_tab_t;
    l_max_size         integer;
    l_max_time         interval day (0) to second (3);

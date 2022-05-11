@@ -2338,6 +2338,12 @@ AS
             THEN
                l_start_time := l_temp_time;
             END IF;
+         ELSIF mod(p_interval/1440, 30) = 0
+         THEN
+            l_start_time := add_months(l_start_time, -p_interval / 1440 / 30);
+         ELSIF mod(p_interval / 1440, 365) = 0
+         THEN
+            l_start_time := add_months(l_start_time, -p_interval / 1440 / 365 * 12);
          ELSE
             l_start_time := l_start_time - p_interval / 1440;
          END IF;
@@ -2358,6 +2364,12 @@ AS
             THEN
                l_end_time := l_temp_time;
             END IF;
+         ELSIF mod(p_interval / 1440, 30) = 0
+         THEN
+            l_end_time := add_months(l_end_time, p_interval / 1440 / 30);
+         ELSIF mod(p_interval / 1440, 365) = 0
+         THEN
+            l_end_time := add_months(l_end_time, p_interval / 1440 / 365 * 12);
          ELSE
             l_end_time := l_end_time + p_interval / 1440;
          END IF;
@@ -2805,10 +2817,11 @@ AS
                                  max(value) keep(dense_rank :first_or_last order by version_date) "VALUE",
                                  max(quality_code) keep(dense_rank :first_or_last order by version_date) "QUALITY_CODE"
                               from av_tsv_dqu
-                           where ts_code    =  :ts_code
-                              and unit_id    =  :units
-                              and start_date <= :reg_end
-                              and end_date   >  :reg_start
+                           where ts_code      =  :ts_code
+                             and unit_id      =  :units
+                             and start_date   <= :reg_end
+                             and end_date     >  :reg_start
+                             and aliased_item is null
                            group by date_time
                            ) v
                            right outer join
@@ -2859,10 +2872,11 @@ AS
                                 max(value) keep(dense_rank :first_or_last order by version_date) "VALUE",
                                 max(quality_code) keep(dense_rank :first_or_last order by version_date) "QUALITY_CODE"
                            from av_tsv_dqu
-                          where ts_code    =  :ts_code
-                            and unit_id    =  :units
-                            and start_date <= :reg_l_end
-                            and end_date   >  :l_reg_start_time
+                          where ts_code      =  :ts_code
+                            and unit_id      =  :units
+                            and start_date   <= :reg_l_end
+                            and end_date     >  :l_reg_start_time
+                            and aliased_item is null
                        group by date_time
                          ) v
                          right outer join
@@ -2907,10 +2921,11 @@ AS
                                     max(value) keep(dense_rank :first_or_last order by version_date) "VALUE",
                                     max(quality_code) keep(dense_rank :first_or_last order by version_date) "QUALITY_CODE"
                                from av_tsv_dqu
-                              where ts_code    =  :ts_code
-                                and unit_id    =  :units
-                                and start_date <= :l_reg_end_time
-                                and end_date   >  :l_reg_start_time
+                              where ts_code      =  :ts_code
+                                and unit_id      =  :units
+                                and start_date   <= :l_reg_end_time
+                                and end_date     >  :l_reg_start_time
+                                and aliased_item is null
                               group by date_time
                              ) v
                              right outer join
@@ -2955,12 +2970,13 @@ AS
                                end as value,
                                max(quality_code) keep(dense_rank :first_or_last order by version_date) as quality_code
                           from av_tsv_dqu
-                         where ts_code    =  :ts_code
-                           and date_time  >= :l_start_time
-                           and date_time  <= :l_end_time
-                           and unit_id    =  :units
-                           and start_date <= :l_end_time
-                           and end_date   >  :l_start_time
+                         where ts_code      =  :ts_code
+                           and date_time    >= :l_start_time
+                           and date_time    <= :l_end_time
+                           and unit_id      =  :units
+                           and start_date   <= :l_end_time
+                           and end_date     >  :l_start_time
+                           and aliased_item is null
                       group by date_time
                       )
                 group by local_time
@@ -2993,12 +3009,13 @@ AS
                                end as value,
                                max(quality_code) keep(dense_rank :first_or_last order by version_date) as quality_code
                           from av_tsv_dqu
-                         where ts_code    =  :ts_code
-                           and date_time  >= :l_start_time
-                           and date_time  <= :l_end_time
-                           and unit_id    =  :units
-                           and start_date <= :l_end_time
-                           and end_date   >  :l_start_time
+                         where ts_code      =  :ts_code
+                           and date_time    >= :l_start_time
+                           and date_time    <= :l_end_time
+                           and unit_id      =  :units
+                           and start_date   <= :l_end_time
+                           and end_date     >  :l_start_time
+                           and aliased_item is null
                          group by date_time
                        )
                  order by date_time';
@@ -3059,6 +3076,7 @@ AS
                             and start_date   <= :reg_l_end
                             and end_date     >  :l_reg_start_time
                             and version_date =  :version
+                            and aliased_item is null
                          ) v
                          right outer join
                          (select column_value as date_time
@@ -3102,6 +3120,7 @@ AS
                                 and start_date   <= :l_reg_end_time
                                 and end_date     >  :l_reg_start_time
                                 and version_date =  :version
+                                and aliased_item is null
                              ) v
                              right outer join
                              (select date_time
@@ -3169,6 +3188,7 @@ AS
                             and start_date   <= :reg_l_end
                             and end_date     >  :l_reg_start_time
                             and version_date =  :version
+                            and aliased_item is null
                          ) v
                          right outer join
                          (select date_time
@@ -3218,6 +3238,7 @@ AS
                                 and start_date   <= :l_reg_end_time
                                 and end_date     >  :l_reg_start_time
                                 and version_date =  :version
+                                and aliased_item is null
                              ) v
                              right outer join
                              (select :reg_start + (level-1) * :interval date_time
@@ -3269,6 +3290,7 @@ AS
                            and start_date   <= :l_end_time
                            and end_date     >  :l_start_time
                            and version_date =  :version
+                           and aliased_item is null
                       )
                 group by local_time
                 order by local_time';
@@ -3305,6 +3327,7 @@ AS
                            and start_date   <= :l_end_time
                            and end_date     >  :l_start_time
                            and version_date =  :version
+                           and aliased_item is null
                        )
                  order by date_time';
                replace_strings;
