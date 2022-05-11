@@ -55,6 +55,8 @@ PROCEDURE variable_with_const;
 procedure quality_on_generated_rts_values__JIRA_CWMSVIEW_212;
 --%test(create a time series id with null timezone in location that has a  base location: CWDB-175)
 procedure create_ts_with_null_timezone;
+--%test(Test flags p_start_inclusive, p_end_inclusive, p_previous, p_next, and ts with aliases: CWDB-180)
+procedure test_inclusion_options__JIRA_CWDB_180;
 
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
 test_withsub_location_id VARCHAR2(32) := test_base_location_id||'-withsub';
@@ -1207,6 +1209,479 @@ AS
             END IF;
         END LOOP;
     END quality_on_generated_rts_values__JIRA_CWMSVIEW_212;
+    --------------------------------------------------------------------------------
+    -- procedure test_inclusion_options__JIRA_CWDB_180
+    --------------------------------------------------------------------------------
+    procedure test_inclusion_options__JIRA_CWDB_180
+    is
+      l_ts_id_cal     varchar2(191) := test_base_location_id||'.Code.Inst.1Month.0.Test';
+      l_ts_id_tim     varchar2(191) := test_base_location_id||'.Code.Inst.1Day.0.Test';
+      l_time_zone     varchar2(28)  := 'US/Pacific';
+      l_unit          varchar2(16)  := 'n/a';
+      l_crsr          sys_refcursor;
+      l_values        cwms_t_double_tab;
+      l_quality_codes cwms_t_number_tab;
+      l_date_times    cwms_t_date_table;
+      l_ts_data_cal   cwms_t_ztsv_array := cwms_t_ztsv_array(
+                                            cwms_t_ztsv(timestamp '2021-01-01 08:00:00', 1, 3),
+                                            cwms_t_ztsv(timestamp '2021-02-01 08:00:00', 2, 3),
+                                            cwms_t_ztsv(timestamp '2021-03-01 08:00:00', 3, 3),
+                                            cwms_t_ztsv(timestamp '2021-04-01 08:00:00', 4, 3),
+                                            cwms_t_ztsv(timestamp '2021-05-01 08:00:00', 5, 3));
+      l_ts_data_tim cwms_t_ztsv_array := cwms_t_ztsv_array(
+                                            cwms_t_ztsv(timestamp '2022-01-01 08:00:00', 1, 3),
+                                            cwms_t_ztsv(timestamp '2022-01-02 08:00:00', 2, 3),
+                                            cwms_t_ztsv(timestamp '2022-01-03 08:00:00', 3, 3),
+                                            cwms_t_ztsv(timestamp '2022-01-04 08:00:00', 4, 3),
+                                            cwms_t_ztsv(timestamp '2022-01-05 08:00:00', 5, 3));
+    begin
+      ------------------------
+      -- store the location --
+      ------------------------
+      cwms_loc.store_location(
+         p_location_id  => test_base_location_id,
+         p_time_zone_id => l_time_zone,
+         p_active       => 'T',
+         p_db_office_id => '&&office_id');
+      ---------------------------------
+      -- store some location aliases --
+      ---------------------------------
+      cwms_loc.assign_loc_group(
+         p_loc_category_id => 'Agency Aliases',
+         p_loc_group_id    => 'USGS Station Number',
+         p_location_id     => test_base_location_id,
+         p_loc_alias_id    => '11111111',
+         p_db_office_id    => '&&office_id');
+      cwms_loc.assign_loc_group(
+         p_loc_category_id => 'Agency Aliases',
+         p_loc_group_id    => 'NWS Handbook 5 ID',
+         p_location_id     => test_base_location_id,
+         p_loc_alias_id    => '22222222',
+         p_db_office_id    => '&&office_id');
+      cwms_loc.assign_loc_group(
+         p_loc_category_id => 'Agency Aliases',
+         p_loc_group_id    => 'DCP Platform ID',
+         p_location_id     => test_base_location_id,
+         p_loc_alias_id    => '33333333',
+         p_db_office_id    => '&&office_id');
+      ----------------------------------
+      -- store the time series as RTS --
+      ----------------------------------
+      cwms_ts.zstore_ts(
+         p_cwms_ts_id      => l_ts_id_cal,
+         p_units           => l_unit,
+         p_timeseries_data => l_ts_data_cal,
+         p_store_rule      => cwms_util.replace_all,
+         p_override_prot   => 'F',
+         p_version_date    => cwms_util.non_versioned,
+         p_office_id       => '&&office_id',
+         p_create_as_lrts  => 'F');
+
+      cwms_ts.zstore_ts(
+         p_cwms_ts_id      => l_ts_id_tim,
+         p_units           => l_unit,
+         p_timeseries_data => l_ts_data_tim,
+         p_store_rule      => cwms_util.replace_all,
+         p_override_prot   => 'F',
+         p_version_date    => cwms_util.non_versioned,
+         p_office_id       => '&&office_id',
+         p_create_as_lrts  => 'F');
+      ---------------------------------------------------------------
+      -- retrieve the data with various options and verify results --
+      ---------------------------------------------------------------
+      -- interval = CALENDAR, inclusive = TRUE, prev/next = FALSE
+      cwms_ts.retrieve_ts(
+         p_at_tsv_rc       => l_crsr,
+         p_cwms_ts_id      => l_ts_id_cal,
+         p_units           => l_unit,
+         p_start_time      => l_ts_data_cal(2).date_time,
+         p_end_time        => l_ts_data_cal(4).date_time,
+         p_time_zone       => 'UTC',
+         p_trim            => 'T',
+         p_start_inclusive => 'T',
+         p_end_inclusive   => 'T',
+         p_previous        => 'F',
+         p_next            => 'F',
+         p_version_date    => cwms_util.non_versioned,
+         p_max_version     => 'T',
+         p_office_id       => '&&office_id');
+
+      fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
+      close l_crsr;
+
+      ut.expect(l_date_times.count).to_equal(3);
+      ut.expect(l_date_times(1)).to_equal(l_ts_data_cal(2).date_time);
+      ut.expect(l_date_times(3)).to_equal(l_ts_data_cal(4).date_time);
+      -- interval = CALENDAR, inclusive = FALSE, prev/next = FALSE
+      cwms_ts.retrieve_ts(
+         p_at_tsv_rc       => l_crsr,
+         p_cwms_ts_id      => l_ts_id_cal,
+         p_units           => l_unit,
+         p_start_time      => l_ts_data_cal(2).date_time,
+         p_end_time        => l_ts_data_cal(4).date_time,
+         p_time_zone       => 'UTC',
+         p_trim            => 'T',
+         p_start_inclusive => 'F',
+         p_end_inclusive   => 'F',
+         p_previous        => 'F',
+         p_next            => 'F',
+         p_version_date    => cwms_util.non_versioned,
+         p_max_version     => 'T',
+         p_office_id       => '&&office_id');
+
+      fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
+      close l_crsr;
+
+      ut.expect(l_date_times.count).to_equal(1);
+      ut.expect(l_date_times(1)).to_equal(l_ts_data_cal(3).date_time);
+      -- interval = CALENDAR, inclusive = FALSE, prev/next = TRUE
+      cwms_ts.retrieve_ts(
+         p_at_tsv_rc       => l_crsr,
+         p_cwms_ts_id      => l_ts_id_cal,
+         p_units           => l_unit,
+         p_start_time      => l_ts_data_cal(2).date_time,
+         p_end_time        => l_ts_data_cal(4).date_time,
+         p_time_zone       => 'UTC',
+         p_trim            => 'T',
+         p_start_inclusive => 'F',
+         p_end_inclusive   => 'F',
+         p_previous        => 'T',
+         p_next            => 'T',
+         p_version_date    => cwms_util.non_versioned,
+         p_max_version     => 'T',
+         p_office_id       => '&&office_id');
+
+      fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
+      close l_crsr;
+
+      ut.expect(l_date_times.count).to_equal(3);
+      ut.expect(l_date_times(1)).to_equal(l_ts_data_cal(2).date_time);
+      ut.expect(l_date_times(3)).to_equal(l_ts_data_cal(4).date_time);
+      -- interval = CALENDAR, inclusive = TRUE, prev/next = TRUE
+      cwms_ts.retrieve_ts(
+         p_at_tsv_rc       => l_crsr,
+         p_cwms_ts_id      => l_ts_id_cal,
+         p_units           => l_unit,
+         p_start_time      => l_ts_data_cal(2).date_time,
+         p_end_time        => l_ts_data_cal(4).date_time,
+         p_time_zone       => 'UTC',
+         p_trim            => 'T',
+         p_start_inclusive => 'T',
+         p_end_inclusive   => 'T',
+         p_previous        => 'T',
+         p_next            => 'T',
+         p_version_date    => cwms_util.non_versioned,
+         p_max_version     => 'T',
+         p_office_id       => '&&office_id');
+
+      fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
+      close l_crsr;
+
+      ut.expect(l_date_times.count).to_equal(5);
+      ut.expect(l_date_times(1)).to_equal(l_ts_data_cal(1).date_time);
+      ut.expect(l_date_times(5)).to_equal(l_ts_data_cal(5).date_time);
+      -- interval = TIME, inclusive = TRUE, prev/next = FALSE
+      cwms_ts.retrieve_ts(
+         p_at_tsv_rc       => l_crsr,
+         p_cwms_ts_id      => l_ts_id_tim,
+         p_units           => l_unit,
+         p_start_time      => l_ts_data_tim(2).date_time,
+         p_end_time        => l_ts_data_tim(4).date_time,
+         p_time_zone       => 'UTC',
+         p_trim            => 'T',
+         p_start_inclusive => 'T',
+         p_end_inclusive   => 'T',
+         p_previous        => 'F',
+         p_next            => 'F',
+         p_version_date    => cwms_util.non_versioned,
+         p_max_version     => 'T',
+         p_office_id       => '&&office_id');
+
+      fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
+      close l_crsr;
+
+      ut.expect(l_date_times.count).to_equal(3);
+      ut.expect(l_date_times(1)).to_equal(l_ts_data_tim(2).date_time);
+      ut.expect(l_date_times(3)).to_equal(l_ts_data_tim(4).date_time);
+      -- interval = TIME, inclusive = FALSE, prev/next = FALSE
+      cwms_ts.retrieve_ts(
+         p_at_tsv_rc       => l_crsr,
+         p_cwms_ts_id      => l_ts_id_tim,
+         p_units           => l_unit,
+         p_start_time      => l_ts_data_tim(2).date_time,
+         p_end_time        => l_ts_data_tim(4).date_time,
+         p_time_zone       => 'UTC',
+         p_trim            => 'T',
+         p_start_inclusive => 'F',
+         p_end_inclusive   => 'F',
+         p_previous        => 'F',
+         p_next            => 'F',
+         p_version_date    => cwms_util.non_versioned,
+         p_max_version     => 'T',
+         p_office_id       => '&&office_id');
+
+      fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
+      close l_crsr;
+
+      ut.expect(l_date_times.count).to_equal(1);
+      ut.expect(l_date_times(1)).to_equal(l_ts_data_tim(3).date_time);
+      -- interval = TIME, inclusive = FALSE, prev/next = TRUE
+      cwms_ts.retrieve_ts(
+         p_at_tsv_rc       => l_crsr,
+         p_cwms_ts_id      => l_ts_id_tim,
+         p_units           => l_unit,
+         p_start_time      => l_ts_data_tim(2).date_time,
+         p_end_time        => l_ts_data_tim(4).date_time,
+         p_time_zone       => 'UTC',
+         p_trim            => 'T',
+         p_start_inclusive => 'F',
+         p_end_inclusive   => 'F',
+         p_previous        => 'T',
+         p_next            => 'T',
+         p_version_date    => cwms_util.non_versioned,
+         p_max_version     => 'T',
+         p_office_id       => '&&office_id');
+
+      fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
+      close l_crsr;
+
+      ut.expect(l_date_times.count).to_equal(3);
+      ut.expect(l_date_times(1)).to_equal(l_ts_data_tim(2).date_time);
+      ut.expect(l_date_times(3)).to_equal(l_ts_data_tim(4).date_time);
+      -- interval = TIME, inclusive = TRUE, prev/next = TRUE
+      cwms_ts.retrieve_ts(
+         p_at_tsv_rc       => l_crsr,
+         p_cwms_ts_id      => l_ts_id_tim,
+         p_units           => l_unit,
+         p_start_time      => l_ts_data_tim(2).date_time,
+         p_end_time        => l_ts_data_tim(4).date_time,
+         p_time_zone       => 'UTC',
+         p_trim            => 'T',
+         p_start_inclusive => 'T',
+         p_end_inclusive   => 'T',
+         p_previous        => 'T',
+         p_next            => 'T',
+         p_version_date    => cwms_util.non_versioned,
+         p_max_version     => 'T',
+         p_office_id       => '&&office_id');
+
+      fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
+      close l_crsr;
+
+      ut.expect(l_date_times.count).to_equal(5);
+      ut.expect(l_date_times(1)).to_equal(l_ts_data_tim(1).date_time);
+      ut.expect(l_date_times(5)).to_equal(l_ts_data_tim(5).date_time);
+      ----------------------------------
+      -- store the time series as ITS --
+      ----------------------------------
+      l_ts_id_cal := replace(l_ts_id_cal, '1Month', '0');
+      l_ts_id_tim := replace(l_ts_id_tim, '1Day', '0');
+      cwms_ts.zstore_ts(
+         p_cwms_ts_id      => l_ts_id_cal,
+         p_units           => l_unit,
+         p_timeseries_data => l_ts_data_cal,
+         p_store_rule      => cwms_util.replace_all,
+         p_override_prot   => 'F',
+         p_version_date    => cwms_util.non_versioned,
+         p_office_id       => '&&office_id',
+         p_create_as_lrts  => 'F');
+
+      cwms_ts.zstore_ts(
+         p_cwms_ts_id      => l_ts_id_tim,
+         p_units           => l_unit,
+         p_timeseries_data => l_ts_data_tim,
+         p_store_rule      => cwms_util.replace_all,
+         p_override_prot   => 'F',
+         p_version_date    => cwms_util.non_versioned,
+         p_office_id       => '&&office_id',
+         p_create_as_lrts  => 'F');
+      ---------------------------------------------------------------
+      -- retrieve the data with various options and verify results --
+      ---------------------------------------------------------------
+      -- interval = NONE, inclusive = TRUE, prev/next = FALSE
+      cwms_ts.retrieve_ts(
+         p_at_tsv_rc       => l_crsr,
+         p_cwms_ts_id      => l_ts_id_cal,
+         p_units           => l_unit,
+         p_start_time      => l_ts_data_cal(2).date_time,
+         p_end_time        => l_ts_data_cal(4).date_time,
+         p_time_zone       => 'UTC',
+         p_trim            => 'T',
+         p_start_inclusive => 'T',
+         p_end_inclusive   => 'T',
+         p_previous        => 'F',
+         p_next            => 'F',
+         p_version_date    => cwms_util.non_versioned,
+         p_max_version     => 'T',
+         p_office_id       => '&&office_id');
+
+      fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
+      close l_crsr;
+
+      ut.expect(l_date_times.count).to_equal(3);
+      ut.expect(l_date_times(1)).to_equal(l_ts_data_cal(2).date_time);
+      ut.expect(l_date_times(3)).to_equal(l_ts_data_cal(4).date_time);
+      -- interval = NONE, inclusive = FALSE, prev/next = FALSE
+      cwms_ts.retrieve_ts(
+         p_at_tsv_rc       => l_crsr,
+         p_cwms_ts_id      => l_ts_id_cal,
+         p_units           => l_unit,
+         p_start_time      => l_ts_data_cal(2).date_time,
+         p_end_time        => l_ts_data_cal(4).date_time,
+         p_time_zone       => 'UTC',
+         p_trim            => 'T',
+         p_start_inclusive => 'F',
+         p_end_inclusive   => 'F',
+         p_previous        => 'F',
+         p_next            => 'F',
+         p_version_date    => cwms_util.non_versioned,
+         p_max_version     => 'T',
+         p_office_id       => '&&office_id');
+
+      fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
+      close l_crsr;
+
+      ut.expect(l_date_times.count).to_equal(1);
+      ut.expect(l_date_times(1)).to_equal(l_ts_data_cal(3).date_time);
+      -- interval = NONE, inclusive = FALSE, prev/next = TRUE
+      cwms_ts.retrieve_ts(
+         p_at_tsv_rc       => l_crsr,
+         p_cwms_ts_id      => l_ts_id_cal,
+         p_units           => l_unit,
+         p_start_time      => l_ts_data_cal(2).date_time,
+         p_end_time        => l_ts_data_cal(4).date_time,
+         p_time_zone       => 'UTC',
+         p_trim            => 'T',
+         p_start_inclusive => 'F',
+         p_end_inclusive   => 'F',
+         p_previous        => 'T',
+         p_next            => 'T',
+         p_version_date    => cwms_util.non_versioned,
+         p_max_version     => 'T',
+         p_office_id       => '&&office_id');
+
+      fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
+      close l_crsr;
+
+      ut.expect(l_date_times.count).to_equal(3);
+      ut.expect(l_date_times(1)).to_equal(l_ts_data_cal(2).date_time);
+      ut.expect(l_date_times(3)).to_equal(l_ts_data_cal(4).date_time);
+      -- interval = NONE, inclusive = TRUE, prev/next = TRUE
+      cwms_ts.retrieve_ts(
+         p_at_tsv_rc       => l_crsr,
+         p_cwms_ts_id      => l_ts_id_cal,
+         p_units           => l_unit,
+         p_start_time      => l_ts_data_cal(2).date_time,
+         p_end_time        => l_ts_data_cal(4).date_time,
+         p_time_zone       => 'UTC',
+         p_trim            => 'T',
+         p_start_inclusive => 'T',
+         p_end_inclusive   => 'T',
+         p_previous        => 'T',
+         p_next            => 'T',
+         p_version_date    => cwms_util.non_versioned,
+         p_max_version     => 'T',
+         p_office_id       => '&&office_id');
+
+      fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
+      close l_crsr;
+
+      ut.expect(l_date_times.count).to_equal(5);
+      ut.expect(l_date_times(1)).to_equal(l_ts_data_cal(1).date_time);
+      ut.expect(l_date_times(5)).to_equal(l_ts_data_cal(5).date_time);
+      -- interval = NONE, inclusive = TRUE, prev/next = FALSE
+      cwms_ts.retrieve_ts(
+         p_at_tsv_rc       => l_crsr,
+         p_cwms_ts_id      => l_ts_id_tim,
+         p_units           => l_unit,
+         p_start_time      => l_ts_data_tim(2).date_time,
+         p_end_time        => l_ts_data_tim(4).date_time,
+         p_time_zone       => 'UTC',
+         p_trim            => 'T',
+         p_start_inclusive => 'T',
+         p_end_inclusive   => 'T',
+         p_previous        => 'F',
+         p_next            => 'F',
+         p_version_date    => cwms_util.non_versioned,
+         p_max_version     => 'T',
+         p_office_id       => '&&office_id');
+
+      fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
+      close l_crsr;
+
+      ut.expect(l_date_times.count).to_equal(3);
+      ut.expect(l_date_times(1)).to_equal(l_ts_data_tim(2).date_time);
+      ut.expect(l_date_times(3)).to_equal(l_ts_data_tim(4).date_time);
+      -- interval = NONE, inclusive = FALSE, prev/next = FALSE
+      cwms_ts.retrieve_ts(
+         p_at_tsv_rc       => l_crsr,
+         p_cwms_ts_id      => l_ts_id_tim,
+         p_units           => l_unit,
+         p_start_time      => l_ts_data_tim(2).date_time,
+         p_end_time        => l_ts_data_tim(4).date_time,
+         p_time_zone       => 'UTC',
+         p_trim            => 'T',
+         p_start_inclusive => 'F',
+         p_end_inclusive   => 'F',
+         p_previous        => 'F',
+         p_next            => 'F',
+         p_version_date    => cwms_util.non_versioned,
+         p_max_version     => 'T',
+         p_office_id       => '&&office_id');
+
+      fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
+      close l_crsr;
+
+      ut.expect(l_date_times.count).to_equal(1);
+      ut.expect(l_date_times(1)).to_equal(l_ts_data_tim(3).date_time);
+      -- interval = NONE, inclusive = FALSE, prev/next = TRUE
+      cwms_ts.retrieve_ts(
+         p_at_tsv_rc       => l_crsr,
+         p_cwms_ts_id      => l_ts_id_tim,
+         p_units           => l_unit,
+         p_start_time      => l_ts_data_tim(2).date_time,
+         p_end_time        => l_ts_data_tim(4).date_time,
+         p_time_zone       => 'UTC',
+         p_trim            => 'T',
+         p_start_inclusive => 'F',
+         p_end_inclusive   => 'F',
+         p_previous        => 'T',
+         p_next            => 'T',
+         p_version_date    => cwms_util.non_versioned,
+         p_max_version     => 'T',
+         p_office_id       => '&&office_id');
+
+      fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
+      close l_crsr;
+
+      ut.expect(l_date_times.count).to_equal(3);
+      ut.expect(l_date_times(1)).to_equal(l_ts_data_tim(2).date_time);
+      ut.expect(l_date_times(3)).to_equal(l_ts_data_tim(4).date_time);
+      -- interval = NONE, inclusive = TRUE, prev/next = TRUE
+      cwms_ts.retrieve_ts(
+         p_at_tsv_rc       => l_crsr,
+         p_cwms_ts_id      => l_ts_id_tim,
+         p_units           => l_unit,
+         p_start_time      => l_ts_data_tim(2).date_time,
+         p_end_time        => l_ts_data_tim(4).date_time,
+         p_time_zone       => 'UTC',
+         p_trim            => 'T',
+         p_start_inclusive => 'T',
+         p_end_inclusive   => 'T',
+         p_previous        => 'T',
+         p_next            => 'T',
+         p_version_date    => cwms_util.non_versioned,
+         p_max_version     => 'T',
+         p_office_id       => '&&office_id');
+
+      fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
+      close l_crsr;
+
+      ut.expect(l_date_times.count).to_equal(5);
+      ut.expect(l_date_times(1)).to_equal(l_ts_data_tim(1).date_time);
+      ut.expect(l_date_times(5)).to_equal(l_ts_data_tim(5).date_time);
+
+    end test_inclusion_options__JIRA_CWDB_180;
 END test_cwms_ts;
 /
 SHOW ERRORS
