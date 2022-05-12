@@ -2329,7 +2329,7 @@ as
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
-         cwms_err.raise ('INVALID_ITEM', p_unit_code, 'CWMS unit');
+         cwms_err.raise ('INVALID_ITEM', nvl(p_unit_code, '<NULL>'), 'CWMS unit');
    END get_unit_id2;
 
    PROCEDURE get_valid_units (p_valid_units       OUT SYS_REFCURSOR,
