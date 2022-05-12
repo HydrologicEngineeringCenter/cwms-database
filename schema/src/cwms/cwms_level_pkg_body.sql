@@ -2688,12 +2688,10 @@ begin
    for i in 1..999999 loop
       l_top_node := get_xml_node(l_xml, '/*/location-level['||i||']');
       exit when l_top_node is null;
-      dbms_output.put_line('level '||i);
       begin
          l_office_id := get_xml_text(l_top_node, '/*/@office');
          l_interpolate := upper(substr(get_xml_text(l_top_node, '/*/@interpolate'), 1, 1));
          l_location_level_id := get_xml_text(l_top_node, '/*/location-level-id');
-         dbms_output.put_line(l_office_id||'/'||l_location_level_id);
          l_node := get_xml_node(l_top_node, '/*/location-level-attribute');
          if l_node is null then
             l_attribute_id      := null;
@@ -2705,17 +2703,14 @@ begin
             l_attribute_value   := get_xml_number(l_node, '/*/value');
             l_attribute_unit    := get_xml_text(l_node, '/*/value/@unit');
             l_attribute_comment := get_xml_text(l_node, '/*/comment');
-            dbms_output.put_line(l_attribute_id||' = '||l_attribute_value||' '||l_attribute_unit);
          end if;
          l_effective_date := cwms_util.to_timestamp(get_xml_text(l_top_node, '/*/effective-date'));
          l_level_comment  := get_xml_text(l_top_node, '/*/level-comment');
-         dbms_output.put_line('effective date = '||l_effective_date);
          l_node := get_xml_node(l_top_node, '/*/expiration-date');
          if l_node is null then
             l_expiration_date := null;
          else
             l_expiration_date := cwms_util.to_timestamp(get_xml_text(l_node, '.'));
-            dbms_output.put_line('expiration date = '||l_expiration_date);
          end if;
          l_value_node := get_xml_node(l_top_node, '(/*/constant|/*/regularly-varying|/*/irregularly-varying|/*/virtual)');
          case l_value_node.getrootelement
@@ -2723,7 +2718,6 @@ begin
             --------------------
             -- constant value --
             --------------------
-            dbms_output.put_line('CONSTANT');
             l_level_unit := get_xml_text(l_value_node, '/*/@unit');
             l_level_value := get_xml_number(l_value_node, '.');
             store_location_level4(
@@ -2750,15 +2744,10 @@ begin
             -----------------------------
             -- regularly-varying value --
             -----------------------------
-            dbms_output.put_line('REGULARLY-VARYING');
             l_interval_origin  := cwms_util.to_timestamp(get_xml_text(l_value_node, '/*/interval-origin'));
             cwms_util.duration_to_interval(l_yminterval, l_dsinterval, get_xml_text(l_value_node, '/*/interval-duration'));
             l_interval_months  := cwms_util.yminterval_to_months(l_yminterval);
             l_interval_minutes := cwms_util.dsinterval_to_minutes(l_dsinterval);
-            dbms_output.put_line(l_yminterval);
-            dbms_output.put_line(l_dsinterval);
-            dbms_output.put_line(l_interval_months);
-            dbms_output.put_line(l_interval_minutes);
             l_seasonal_values  := seasonal_value_tab_t();
             l_level_unit := get_xml_text(l_value_node, '/*/seasonal-value[1]/level-value/@unit');
             for j in 1..999999 loop
@@ -2796,7 +2785,6 @@ begin
             -------------------------------
             -- irregularly-varying value --
             -------------------------------
-            dbms_output.put_line('IRREGULARLY-VARYING');
             store_location_level4(
                p_location_level_id => l_location_level_id,
                p_level_value       => null,
@@ -2821,7 +2809,6 @@ begin
             -------------------
             -- virtual value --
             -------------------
-            dbms_output.put_line('VIRTUAL');
             l_connections  := get_xml_text(l_value_node, '/*/connections');
             l_constituents := null;
             for j in 1..999999 loop
@@ -2872,10 +2859,8 @@ begin
    for i in 1..999999 loop
       l_top_node := get_xml_node(l_xml, '/*/location-level-source['||i||']');
       exit when l_top_node is null;
-      dbms_output.put_line('source '||i);
       begin
          l_location_level_id := get_xml_text(l_top_node, '/*/location-level-id');
-         dbms_output.put_line(l_office_id||'/'||l_location_level_id);
          l_node := get_xml_node(l_top_node, '/*/location-level-attribute');
          if l_node is null then
             l_attribute_id    := null;
@@ -2885,10 +2870,8 @@ begin
             l_attribute_id    := get_xml_text(l_node, '/*/attribute-id');
             l_attribute_value := get_xml_number(l_node, '/*/value');
             l_attribute_unit  := get_xml_text(l_node, '/*/value/@unit');
-            dbms_output.put_line(l_attribute_id||' = '||l_attribute_value||' '||l_attribute_unit);
          end if;
          l_source := get_xml_text(l_top_node, '/*/entity/@id');
-         dbms_output.put_line('entity = '||l_source);
          cwms_level.set_loc_lvl_source(
             p_loc_lvl_source    => l_source,
             p_location_level_id => l_location_level_id,
@@ -2910,10 +2893,8 @@ begin
    for i in 1..999999 loop
       l_top_node := get_xml_node(l_xml, '/*/location-level-label['||i||']');
       exit when l_top_node is null;
-      dbms_output.put_line('label '||i);
       begin
          l_location_level_id := get_xml_text(l_top_node, '/*/location-level-id');
-         dbms_output.put_line(l_office_id||'/'||l_location_level_id);
          l_node := get_xml_node(l_top_node, '/*/location-level-attribute');
          if l_node is null then
             l_attribute_id    := null;
@@ -2923,13 +2904,10 @@ begin
             l_attribute_id    := get_xml_text(l_node, '/*/attribute-id');
             l_attribute_value := get_xml_number(l_node, '/*/value');
             l_attribute_unit  := get_xml_text(l_node, '/*/value/@unit');
-            dbms_output.put_line(l_attribute_id||' = '||l_attribute_value||' '||l_attribute_unit);
          end if;
          l_label.category := get_xml_text(l_top_node, '/*/configuration/@category');
          l_label.id       := get_xml_text(l_top_node, '/*/configuration/@id');
          l_label.label    := get_xml_text(l_top_node, '/*/text');
-         dbms_output.put_line('configuration = '||l_label.category||'/'||l_label.id);
-         dbms_output.put_line('label = '||l_label.label);
          cwms_level.set_loc_lvl_label(
             p_loc_lvl_label     => l_label.label,
             p_location_level_id => l_location_level_id,
@@ -2952,11 +2930,9 @@ begin
    for i in 1..999999 loop
       l_top_node := get_xml_node(l_xml, '/*/location-level-indicator['||i||']');
       exit when l_top_node is null;
-      dbms_output.put_line('indicator '||i);
       begin
          l_office_id := get_xml_text(l_top_node, '/*/@office');
          l_indicator_id := get_xml_text(l_top_node, '/*/location-level-indicator-id');
-         dbms_output.put_line(l_office_id||'/'||l_indicator_id);
          l_pos := instr(l_indicator_id, '.', -1);
          l_location_level_id := substr(l_indicator_id, 1, l_pos - 1);
          l_indicator_id := substr(l_indicator_id, l_pos + 1);
@@ -2969,7 +2945,6 @@ begin
             l_attribute_id    := get_xml_text(l_node, '/*/attribute-id');
             l_attribute_value := get_xml_number(l_node, '/*/value');
             l_attribute_unit  := get_xml_text(l_node, '/*/value/@unit');
-            dbms_output.put_line(l_attribute_id||' = '||l_attribute_value||' '||l_attribute_unit);
          end if;
          l_indicator := loc_lvl_indicator_t();
          l_indicator.office_id := l_office_id;

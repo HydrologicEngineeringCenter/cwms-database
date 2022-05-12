@@ -19,8 +19,8 @@ procedure test_irregularly_varying_location_levels;
 procedure test_virtual_location_levels;
 --%test(Test guide curve (multiple seasonal location levels with attributes))
 procedure test_guide_curve;
---%test(Test location level indicators and conditions) [only works if OS TZ is UTC]
-procedure test_indicators_and_conditions;
+--%test(Test location level labels, sources, indicators and conditions, and xml store/retrieve) [only works if OS TZ is UTC]
+procedure test_sources_labels_indicators_conditions_and_xml;
 
 c_office_id             varchar2(16)  := '&&office_id';
 c_location_id           varchar2(57)  := 'LocLevelTestLoc';
@@ -974,48 +974,53 @@ begin
 
 end test_guide_curve;
 --------------------------------------------------------------------------------
--- procedure test_indicators_and_conditions
+-- procedure test_sources_labels_indicators_conditions_and_xml
 --------------------------------------------------------------------------------
-procedure test_indicators_and_conditions
+procedure test_sources_labels_indicators_conditions_and_xml
 is
-   l_effective_date   date := date '2021-01-01';
-   l_start_time       date := trunc(sysdate-1, 'dd') + 1/24;
-   l_elev_bottom      number := 1010;
-   l_elev_top         number := 1050;
-   l_stor_bottom      number;
-   l_stor_top         number;
-   l_elev_bottom_id   varchar2(404) := c_location_id||'.Elev.Inst.0.Bottom of Flood';
-   l_elev_top_id      varchar2(404) := c_location_id||'.Elev.Inst.0.Top of Flood';
-   l_stor_bottom_id   varchar2(404) := c_location_id||'.Stor.Inst.0.Bottom of Flood';
-   l_stor_top_id      varchar2(404) := c_location_id||'.Stor.Inst.0.Top of Flood';
-   l_pct_full_ind_id  varchar2(437) := l_stor_top_id||'.PERCENT FULL';
-   l_inflow_ind_id    varchar2(437) := l_stor_top_id||'.INFLOW';
-   l_elev_tsid        varchar2(191) := c_location_id||'.Elev.Inst.1Hour.0.Test';
-   l_stor_tsid        varchar2(191) := c_location_id||'.Stor.Inst.1Hour.0.Test';
-   l_rate_unit        varchar2(16)  := 'ft3';
-   l_rate_interval    varchar2(12)  := '000 00:00:01';
-   l_minimum_duration varchar2(12)  := '000 01:00:00';
-   l_maximum_age      varchar2(12)  := '000 06:00:00';
-   l_pct_full_expr    varchar2(26)  := '(V - L2) / (L1 - L2) * 100';
-   l_rate_expr        varchar2(1)   := 'R';
-   l_value_count      integer := 48;
-   l_count            pls_integer;
-   l_elev_ts_data     cwms_t_tsv_array;
-   l_stor_ts_data     cwms_t_tsv_array;
-   l_pct_full_vals    cwms_t_number_tab := cwms_t_number_tab(10, 25, 50, 75, 90);
-   l_pct_full_ind_ts  cwms_t_ztsv_array;
-   l_inflow_ind_ts    cwms_t_ztsv_array;
-   l_crsr             sys_refcursor;
-   l_indicator_id     varchar2(437);
-   l_attribute_id     varchar2(83);
-   l_attribute_value  number;
-   l_attribute_unit   varchar2(16);
-   l_indicator_values cwms_t_ztsv_array;
-   l_rating_spec      varchar2(615) := c_location_id||'.Elev;Stor.Linear.Production';
-   l_errors           clob;
-   l_levels_xml1      clob;
-   l_levels_xml2      clob;
-   l_rating_xml       varchar2(32767) := '
+   l_effective_date    date := date '2021-01-01';
+   l_start_time        date := trunc(sysdate-1, 'dd') + 1/24;
+   l_elev_bottom       number := 1010;
+   l_elev_top          number := 1050;
+   l_stor_bottom       number;
+   l_stor_top          number;
+   l_elev_bottom_id    varchar2(404) := c_location_id||'.Elev.Inst.0.Bottom of Flood';
+   l_elev_bottom_label varchar2(32)  := c_location_id||' BFP Elev';
+   l_elev_top_id       varchar2(404) := c_location_id||'.Elev.Inst.0.Top of Flood';
+   l_elev_top_label    varchar2(32)  := c_location_id||' TFP Elev';
+   l_stor_bottom_id    varchar2(404) := c_location_id||'.Stor.Inst.0.Bottom of Flood';
+   l_stor_bottom_label varchar2(32)  := c_location_id||' BFP Stor';
+   l_stor_top_id       varchar2(404) := c_location_id||'.Stor.Inst.0.Top of Flood';
+   l_stor_top_label    varchar2(32)  := c_location_id||' TFP Stor';
+   l_pct_full_ind_id   varchar2(437) := l_stor_top_id||'.PERCENT FULL';
+   l_inflow_ind_id     varchar2(437) := l_stor_top_id||'.INFLOW';
+   l_source_entity     varchar2(32)  := 'CE'||c_office_id;
+   l_elev_tsid         varchar2(191) := c_location_id||'.Elev.Inst.1Hour.0.Test';
+   l_stor_tsid         varchar2(191) := c_location_id||'.Stor.Inst.1Hour.0.Test';
+   l_rate_unit         varchar2(16)  := 'ft3';
+   l_rate_interval     varchar2(12)  := '000 00:00:01';
+   l_minimum_duration  varchar2(12)  := '000 01:00:00';
+   l_maximum_age       varchar2(12)  := '000 06:00:00';
+   l_pct_full_expr     varchar2(26)  := '(V - L2) / (L1 - L2) * 100';
+   l_rate_expr         varchar2(1)   := 'R';
+   l_value_count       integer := 48;
+   l_count             pls_integer;
+   l_elev_ts_data      cwms_t_tsv_array;
+   l_stor_ts_data      cwms_t_tsv_array;
+   l_pct_full_vals     cwms_t_number_tab := cwms_t_number_tab(10, 25, 50, 75, 90);
+   l_pct_full_ind_ts   cwms_t_ztsv_array;
+   l_inflow_ind_ts     cwms_t_ztsv_array;
+   l_crsr              sys_refcursor;
+   l_indicator_id      varchar2(437);
+   l_attribute_id      varchar2(83);
+   l_attribute_value   number;
+   l_attribute_unit    varchar2(16);
+   l_indicator_values  cwms_t_ztsv_array;
+   l_rating_spec       varchar2(615) := c_location_id||'.Elev;Stor.Linear.Production';
+   l_errors            clob;
+   l_levels_xml1       clob;
+   l_levels_xml2       clob;
+   l_rating_xml        varchar2(32767) := '
 <ratings>
   <rating-template office-id="'||c_office_id||'">
     <parameters-id>Elev;Stor</parameters-id>
@@ -1202,6 +1207,61 @@ begin
       p_timezone_id             => c_timezone_id,
       p_office_id               => c_office_id);
    commit;
+   --------------------------------------------------------------
+   -- set the sources and labels for the elev and stor levels  --
+   --------------------------------------------------------------
+   cwms_level.set_loc_lvl_source(
+      p_loc_lvl_source    => l_source_entity,
+      p_location_level_id => l_elev_bottom_id,
+      p_office_id         => c_office_id);
+
+   cwms_level.set_loc_lvl_source(
+      p_loc_lvl_source    => l_source_entity,
+      p_location_level_id => l_elev_top_id,
+      p_office_id         => c_office_id);
+
+   cwms_level.set_loc_lvl_source(
+      p_loc_lvl_source    => l_source_entity,
+      p_location_level_id => l_stor_bottom_id,
+      p_office_id         => c_office_id);
+
+   cwms_level.set_loc_lvl_source(
+      p_loc_lvl_source    => l_source_entity,
+      p_location_level_id => l_stor_top_id,
+      p_office_id         => c_office_id);
+
+   cwms_level.set_loc_lvl_label(
+      p_loc_lvl_label     => l_elev_bottom_label,
+      p_location_level_id => l_elev_bottom_id,
+      p_office_id         => c_office_id);
+
+   cwms_level.set_loc_lvl_label(
+      p_loc_lvl_label     => l_elev_top_label,
+      p_location_level_id => l_elev_top_id,
+      p_office_id         => c_office_id);
+
+   cwms_level.set_loc_lvl_label(
+      p_loc_lvl_label     => l_stor_bottom_label,
+      p_location_level_id => l_stor_bottom_id,
+      p_office_id         => c_office_id);
+
+   cwms_level.set_loc_lvl_label(
+      p_loc_lvl_label     => l_stor_top_label,
+      p_location_level_id => l_stor_top_id,
+      p_office_id         => c_office_id);
+   -----------------------------------
+   -- verify the sources and labels --
+   -----------------------------------
+   ut.expect(cwms_level.get_loc_lvl_source_f(l_elev_bottom_id, null, null, null, c_office_id)).to_equal(l_source_entity);
+   ut.expect(cwms_level.get_loc_lvl_source_f(l_elev_top_id,    null, null, null, c_office_id)).to_equal(l_source_entity);
+   ut.expect(cwms_level.get_loc_lvl_source_f(l_stor_bottom_id, null, null, null, c_office_id)).to_equal(l_source_entity);
+   ut.expect(cwms_level.get_loc_lvl_source_f(l_stor_top_id,    null, null, null, c_office_id)).to_equal(l_source_entity);
+
+   ut.expect(cwms_level.get_loc_lvl_label_f(l_elev_bottom_id, null, null, null, null, c_office_id)).to_equal(l_elev_bottom_label);
+   ut.expect(cwms_level.get_loc_lvl_label_f(l_elev_top_id,    null, null, null, null, c_office_id)).to_equal(l_elev_top_label);
+   ut.expect(cwms_level.get_loc_lvl_label_f(l_stor_bottom_id, null, null, null, null, c_office_id)).to_equal(l_stor_bottom_label);
+   ut.expect(cwms_level.get_loc_lvl_label_f(l_stor_top_id,    null, null, null, null, c_office_id)).to_equal(l_stor_top_label);
+
    -------------------------------------------------
    -- store the percent flood pool used indicator --
    -------------------------------------------------
@@ -1572,16 +1632,9 @@ begin
       p_include_level_indicators   => 'T',
       p_office_id                  => c_office_id);
 
-   declare
-      l_code number;
-   begin
-      l_code := cwms_text.store_text(l_levels_xml1, '/_LEVELS_XML1', null, 'F', c_office_id);
-      l_code := cwms_text.store_text(l_levels_xml2, '/_LEVELS_XML2', null, 'F', c_office_id);
-   end;
-
    ut.expect(l_levels_xml2).to_equal(l_levels_xml1);
 
-end test_indicators_and_conditions;
+end test_sources_labels_indicators_conditions_and_xml;
 
 end test_cwms_level;
 /
