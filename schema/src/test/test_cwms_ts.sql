@@ -15,13 +15,16 @@ procedure delete_ts_with_location_without_timezone;
 procedure test_retrieve_ts_with_calendar_based_times__JIRA_CWDB_157;
 
 --%test(Test creation various types of time series)
+--%disabled(Disable naming convention updates for 22.1.1
 procedure test_create_ts_parameter_types;
 
 --%test(Test rename time series) 
+--%disabled(Disable naming convention updates for 22.1.1
 procedure test_rename_ts;
 
 --%test(Test rename time series inst to median) 
 --%throws(-20013)
+--%disabled(Disable naming convention updates for 22.1.1
 procedure test_rename_ts_inst_to_median;
 
 --%test(create depth velocity time series)
@@ -32,24 +35,30 @@ procedure test_conc;
 
 --%test(Incremental precip with non zero duration)
 --%throws(-20205)
+--%disabled(Disable naming convention updates for 22.1.1
 PROCEDURE inc_with_zero_duration;
 
 --%test(Incremental cumulative precip with zero duration)
 --%throws(-20205)
+--%disabled(Disable naming convention updates for 22.1.1
 PROCEDURE cum_with_non_zero_duration;
 
 --%test(regular interval with until changed duration)
 --%throws(-20205)
+--%disabled(Disable naming convention updates for 22.1.1
     PROCEDURE untilchanged_with_regular;
 --%test(non-const parameter type with until changed duration)
 --%throws(-20205)
+--%disabled(Disable naming convention updates for 22.1.1
     PROCEDURE untilchanged_with_non_const;
 --%test(Variable duration with non instantaneous)
 --%throws(-20205)    
+--%disabled(Disable naming convention updates for 22.1.1
 PROCEDURE variable_with_inst;
     
 --%test(Variable duration with const)
 --%throws(-20205)   
+--%disabled(Disable naming convention updates for 22.1.1
 PROCEDURE variable_with_const;
 --%test(Make sure quality on generated rts/lrts values is 0 (unscreened) and not 5 (missing) [JIRA Issue CWMSVIEW-212])
 procedure quality_on_generated_rts_values__JIRA_CWMSVIEW_212;
@@ -57,6 +66,8 @@ procedure quality_on_generated_rts_values__JIRA_CWMSVIEW_212;
 procedure create_ts_with_null_timezone;
 --%test(Test flags p_start_inclusive, p_end_inclusive, p_previous, p_next, and ts with aliases: CWDB-180)
 procedure test_inclusion_options__JIRA_CWDB_180;
+--%test(Make sure that naming updates are disabled for this release)
+PROCEDURE test_naming_updates;
 
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
 test_withsub_location_id VARCHAR2(32) := test_base_location_id||'-withsub';
@@ -408,27 +419,28 @@ AS
 
     PROCEDURE create_ts_with_null_timezone
     IS
+      l_cwms_ts_id VARCHAR2(200) := '.Flow.Ave.0.0.raw';
     BEGIN
         cwms_loc.store_location (p_location_id    => test_base_location_id,
                                  p_active         => 'T',
                                  p_db_office_id   => '&&office_id');
         cwms_ts.create_ts (
             '&&office_id',
-            test_base_location_id || '.Flow.Ave.Irr.Variable.raw');
+            test_base_location_id || l_cwms_ts_id);
         cwms_loc.rename_loc('&&office_id',
 		test_base_location_id,
 		test_renamed_base_location_id);
 	COMMIT;
-        delete_ts_id (test_renamed_base_location_id || '.Flow.Ave.Irr.Variable.raw');
+        delete_ts_id (test_renamed_base_location_id || l_cwms_ts_id);
         COMMIT;
         cwms_loc.store_location (p_location_id    => test_renamed_withsub_location_id,
                                  p_active         => 'T',
                                  p_db_office_id   => '&&office_id');
         cwms_ts.create_ts (
             '&&office_id',
-            test_renamed_withsub_location_id || '.Flow.Ave.Irr.Variable.raw');
+            test_renamed_withsub_location_id || l_cwms_ts_id);
         delete_ts_id (
-            test_renamed_withsub_location_id || '.Flow.Ave.Irr.Variable.raw');
+            test_renamed_withsub_location_id || l_cwms_ts_id);
         COMMIT;
     END;
 
@@ -641,7 +653,7 @@ AS
         l_value        BINARY_DOUBLE;
         l_ts_code      NUMBER;
         l_cwms_ts_id   VARCHAR2 (200)
-            := test_base_location_id || '.DepthVelocity.Ave.Irr.Variable.raw';
+            := test_base_location_id || '.DepthVelocity.Ave.0.0.raw';
     BEGIN
         store_a_value (l_cwms_ts_id,
                        'ft2/s',
@@ -1682,6 +1694,32 @@ AS
       ut.expect(l_date_times(5)).to_equal(l_ts_data_tim(5).date_time);
 
     end test_inclusion_options__JIRA_CWDB_180;
+
+   PROCEDURE test_naming_updates
+    IS
+        l_count   NUMBER;
+    BEGIN
+        SELECT COUNT (*)
+          INTO l_count
+          FROM cwms_duration
+         WHERE duration_id IN ('Variable', 'UntilChanged');
+
+        ut.expect (l_count).to_equal (0);
+
+        SELECT COUNT (*)
+          INTO l_count
+          FROM cwms_interval
+         WHERE interval_id = 'Irr';
+
+        ut.expect (l_count).to_equal (0);
+
+        SELECT COUNT (*)
+          INTO l_count
+          FROM cwms_parameter_type
+         WHERE parameter_type_id IN ('Cum', 'Inc', 'Median');
+
+        ut.expect (l_count).to_equal (0);
+    END;
 END test_cwms_ts;
 /
 SHOW ERRORS
