@@ -28,7 +28,7 @@
 	<property name="coverage.dir" location="${build.dir}/coverage"/>
 
     <resolver:localrepo dir="${build.dir}/repo"/>
-    <resolver:authentication id="auth" username="${env.UPLOAD_USERNAME}" password="${env.UPLOAD_PASSWORD}" />
+    <resolver:authentication id="auth" username="${env.NEXUS_USER}" password="${env.NEXUS_PASSWORD}" />
 	<resolver:remoterepo id="hec-nexus-snapshots" url="https://www.hec.usace.army.mil/nexus/repository/cwms-snapshots" type="default" releases="false" snapshots="true" authref="auth"/>
 	<resolver:remoterepo id="hec-nexus-releases" url="https://www.hec.usace.army.mil/nexus/repository/cwms-releases" type="default" releases="true" snapshots="false" authref="auth"/>
 
