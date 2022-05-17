@@ -46,27 +46,37 @@ whenever sqlerror exit;
 column db_name new_value db_name
 select :db_name as db_name from dual;
 define logfile=update_&db_name._21_1_x_to_22_1_1.log
-prompt log file = &logfile
+PROMPT log file = &logfile
 spool &logfile append;
 -------------------
 -- do the update --
 -------------------
-prompt ################################################################################
-prompt VERIFYING EXPECTED VERSION
+PROMPT ################################################################################
+PROMPT VERIFYING EXPECTED VERSION
 select systimestamp from dual;
 @@./22_1_1/verify_db_version
-prompt ################################################################################
+PROMPT ################################################################################
 
--- Update cwms tables
+PROMPT ********** store existing privileges to non-CWMS users
+@@./util/preupdate_privs.sql
+
+PROMPT ********** Update cwms tables
 @@./22_1_1/update_cwms_tables
--- Alter table
-ALTER TABLE CWMS_20.AT_LOC_LVL_INDICATOR_COND MODIFY(COMPARISON_UNIT  NOT NULL);
--- Add comments
-COMMENT ON COLUMN CWMS_20.AT_LOC_LVL_INDICATOR_COND.COMPARISON_UNIT IS 'Unit of V, L (or L1), and L2 used for comparisons. Not necessarliy the unit of the expression result';
-COMMENT ON COLUMN CWMS_20.AT_LOC_LVL_INDICATOR_COND.RATE_COMPARISON_UNIT IS 'Unit of V, L (or L1), and L2 used for rate comparisons. The numerator unit for R (e.g., ft3 for R in cfs [ft3/s])';
+
+PROMPT ********** Alter table(s)
+ALTER TABLE AT_LOC_LVL_INDICATOR_COND MODIFY(COMPARISON_UNIT  NOT NULL);
+ALTER TABLE AT_LOC_LVL_INDICATOR_COND
+ ADD CONSTRAINT AT_LOC_LVL_INDICATOR_COND_CK8
+  CHECK (NOT(RATE_EXPRESSION IS NOT NULL AND RATE_COMPARISON_UNIT IS NULL));
+
+PROMPT ********** Add/update comments
+COMMENT ON COLUMN AT_LOC_LVL_INDICATOR_COND.COMPARISON_UNIT IS 'Unit of V, L (or L1), and L2 used for comparisons. Not necessarliy the unit of the expression result';
+COMMENT ON COLUMN AT_LOC_LVL_INDICATOR_COND.RATE_COMPARISON_UNIT IS 'Unit of V, L (or L1), and L2 used for rate comparisons. The numerator unit for R (e.g., ft3 for R in cfs [ft3/s])';
 -----------
 -- VIEWS --
 -----------
+PROMPT ********** Updating views
+
 delete from at_clob where id = '/VIEWDOCS/AV_LOCATION_LEVEL';
 @../cwms/views/av_location_level
 delete from at_clob where id = '/VIEWDOCS/AV_LOCATION_LEVEL2';
@@ -82,6 +92,8 @@ commit;
 -------------------
 -- PACKAGE SPECS --
 -------------------
+PROMPT ********** update package specs
+
 @../cwms/cwms_level_pkg
 @../cwms/cwms_loc_pkg
 @../cwms/cwms_sec_pkg
@@ -91,15 +103,20 @@ commit;
 ----------------
 -- TYPE SPECS --
 ----------------
+PROMPT ********** update type specs
+
 drop type location_level_t force;
 @../cwms/types/location_level_t
 drop type loc_lvl_indicator_t force;
 @../cwms/types/loc_lvl_indicator_t
 drop type zlocation_level_t; 
 @../cwms/types/zlocation_level_t
+
 ----------------
 -- TYPE BODY --
 ----------------
+PROMPT ********** update type bodies
+
 @../cwms/types/location_level_t-body
 @../cwms/types/loc_lvl_indicator_cond_t-body
 @../cwms/types/loc_lvl_indicator_t-body
@@ -107,7 +124,8 @@ drop type zlocation_level_t;
 --------------------
 -- PACKAGE BODIES --
 --------------------
-prompt update package bodies
+PROMPT ********** update package bodies
+
 @../cwms/cwms_display_pkg_body
 @../cwms/cwms_level_pkg_body
 @../cwms/cwms_loc_pkg_body
@@ -118,25 +136,27 @@ prompt update package bodies
 @../cwms/cwms_ts_id_pkg_body
 @../cwms/cwms_util_pkg_body
 
--- Drop objects
+PROMPT ********** Drop objects
 whenever sqlerror continue;
 drop function check_session_user;
 drop procedure remove_dead_subscribers;
 whenever sqlerror exit;
 
--- Grant pemissions
+PROMPT ********** Grant pemissions
+
 grant execute on location_level_t to cwms_user;
 grant execute on loc_lvl_indicator_t to cwms_user;
 grant execute on zlocation_level_t to cwms_user;
 grant select on av_parameter_type to cwms_user;
 
 
--- Drop application triggers for read only users 
+PROMPT ********** Drop application triggers for read only users 
+
 BEGIN
     FOR c
         IN (SELECT *
               FROM dba_objects
-             WHERE     owner = 'CWMS_20'
+             WHERE     owner = '&cwms_schema'
                    AND object_type = 'TRIGGER'
                    AND object_name IN
                            ('ST_APPLICATION_LOGIN', 'ST_APPLICATION_SESSION'))
@@ -147,8 +167,8 @@ BEGIN
 END;
 /
 
-prompt ################################################################################
-prompt INVALID OBJECTS...
+PROMPT ################################################################################
+PROMPT INVALID OBJECTS...
 select systimestamp from dual;
 set pagesize 100
 select owner||'.'||substr(object_name, 1, 30) as invalid_object,
@@ -157,21 +177,21 @@ select owner||'.'||substr(object_name, 1, 30) as invalid_object,
  where status = 'INVALID'
    and owner in ('&cwms_schema', '&cwms_dba_schema')
  order by 1, 2;
-prompt ################################################################################
-prompt RECOMPILING SCHEMA
+PROMPT ################################################################################
+PROMPT ********** RECOMPILING SCHEMA
 select systimestamp from dual;
 @./util/compile_objects
-prompt ### retstart remove subscribers job
+PROMPT ********** retstart remove subscribers job
 exec cwms_msg.start_remove_subscribers_job()
+PROMPT ********** create user policies
 @../cwms/create_user_policies.sql
-prompt create read only triggers
+PROMPT ********** create read only triggers
 @../cwms/create_sec_triggers
-prompt RECOMPILING SCHEMA
+PROMPT ********** RECOMPILING SCHEMA
 select systimestamp from dual;
 @./util/compile_objects
-
-promp ################################################################################
-prompt REMAINING INVALID OBJECTS...
+PROMPT ################################################################################
+PROMPT ********** REMAINING INVALID OBJECTS...
 select owner||'.'||substr(object_name, 1, 30) as invalid_object,
        object_type
   from all_objects
@@ -186,26 +206,15 @@ select owner||'.'||substr(name, 1, 30) as name,
  where attribute = 'ERROR'
    and owner in ('&cwms_schema', '&cwms_dba_schema')
  order by owner, type, name, sequence;
-prompt ################################################################################
-prompt 'RESTORE CCP PRIVILEGES'
+PROMPT ################################################################################
+PROMPT ********** restore non-CWMS objects privileges
 select systimestamp from dual;
 whenever sqlerror continue;
-declare
-  l_count NUMBER;
-begin
-   select count(*) into l_count from dba_users where username='CCP';
-   if(l_count>0)
-   then
-     for rec in (select object_name from user_objects where object_type in ('PACKAGE', 'TYPE')) loop
-        execute immediate 'grant execute on '||rec.object_name||' to ccp';
-     end loop;
-   end if;
-end;
-/
+@@./util/restore_privs
 whenever sqlerror exit;
-prompt ################################################################################
-prompt ################################################################################
-prompt UPDATING DB_CHANGE_LOG
+PROMPT ################################################################################
+PROMPT ################################################################################
+PROMPT UPDATING DB_CHANGE_LOG
 select systimestamp from dual;
 @@./22_1_1/update_db_change_log
 select substr(version, 1, 10) as version,
@@ -214,8 +223,8 @@ select substr(version, 1, 10) as version,
   from av_db_change_log
  where application = 'CWMS'
  order by version_date;
-prompt ################################################################################
-prompt UPDATE COMPLETE
+PROMPT ################################################################################
+PROMPT ********** UPDATE COMPLETE
 select systimestamp from dual;
 exit
 
