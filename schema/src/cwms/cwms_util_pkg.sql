@@ -224,8 +224,8 @@ AS
     * Contains names of all functions that can be used with expression evaluation.
     */
    expression_functions str_tab_t := str_tab_t(
-      'ABS','ACOS','ASIN','ATAN','CEIL', 'COS', 'EXP','FLOOR','INV','LN', 
-      'MAX','MIN', 'LOG', 'NEG', 'ROUND','SIGN','SIN','SQRT', 'TAN','TRUNC');
+      'ABS','ACOS','ASIN','ATAN','AVG','CEIL','COS','COUNT','EXP','FLOOR','FMOD','INV','LN','LOG',
+      'LOG10','LOGN','MAX','MIN','MEAN','NEG','PROD','ROUND','SIGN','SIN','SQRT','SUM','TAN','TRUNC');
    function get_expression_functions return str_tab_t;
    /**
     * Contains all valid logical comparision operators
@@ -1662,6 +1662,17 @@ AS
     * @see expression_functions
     */
    function is_expression_function(p_token in varchar2) return boolean;
+   /**
+    * Determines whether a specified token is the name of a variadic function
+    * (takes a variable number of arguments)
+    *
+    * @param p_token the functio name to analyze
+    *
+    * @return whether the specified token is the name of a variadic function
+    *
+    * @see expression_functions
+    */
+   function is_variadic_function(p_token in varchar2) return boolean;
    /**
     * Determines whether a specified token is a comparison operator that can be used in
     * logic expression evaluation

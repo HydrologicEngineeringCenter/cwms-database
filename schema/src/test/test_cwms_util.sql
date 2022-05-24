@@ -30,6 +30,8 @@ procedure split_text_regex_max_split_include_delimiters;
 procedure split_text_regex_get_index;
 --%test(Test CWMS_DB_CHANGE_LOG entry)
 procedure test_cwms_db_change_log;
+--%test(Test math expressions)
+procedure test_math_expressions;
 
 procedure setup;
 procedure teardown;
@@ -484,6 +486,77 @@ begin
    end loop;
    ut.expect(cwms_util.split_text_ex(test_data_clob, '\s+', 'T', 'c', 'F', len_data_varchar*2).count).to_equal(0);
 end split_text_regex_get_index;
+--------------------------------------------------------------------------------
+-- procedure test_math_expressions
+--------------------------------------------------------------------------------
+procedure test_math_expressions
+is
+begin
+   -------------------------
+   -- test unary operator --
+   -------------------------
+   ut.expect(cwms_util.eval_expression('-i1', cwms_t_double_tab(10))).to_equal(-10);
+   ---------------------------
+   -- test binary operators --
+   ---------------------------
+   ut.expect(cwms_util.eval_expression(' 10 +   7', null)).to_equal(17);
+   ut.expect(cwms_util.eval_expression(' 10 -   7', null)).to_equal(3);
+   ut.expect(cwms_util.eval_expression(' 10 *   7', null)).to_equal(70);
+   ut.expect(cwms_util.eval_expression(' 10 /   7', null)).to_equal(10D/7D);
+   ut.expect(cwms_util.eval_expression(' 10 //  7', null)).to_equal(1);
+   ut.expect(cwms_util.eval_expression(' 10 %   7', null)).to_equal(mod(10D,7D));
+   ut.expect(cwms_util.eval_expression('-10 %   7', null)).to_equal(mod(-10D,7D));
+   ut.expect(cwms_util.eval_expression(' 10 %  -7', null)).to_equal(mod(10D,-7D));
+   ut.expect(cwms_util.eval_expression('-10 %  -7', null)).to_equal(mod(-10D,-7D));
+   ut.expect(cwms_util.eval_expression(' 10 ^   7', null)).to_equal(1E7);
+   --------------------------
+   -- test unary functions --
+   --------------------------
+   ut.expect(cwms_util.eval_expression('abs(-10)',   null)).to_equal(10);
+   ut.expect(cwms_util.eval_expression('abs(10)',    null)).to_equal(10);
+   ut.expect(cwms_util.eval_expression('acos(0.5)',  null)).to_equal(acos(0.5D));
+   ut.expect(cwms_util.eval_expression('asin(0.5)',  null)).to_equal(asin(0.5D));
+   ut.expect(cwms_util.eval_expression('atan(9.5)',  null)).to_equal(atan(9.5D));
+   ut.expect(cwms_util.eval_expression('cos(2.5)',   null)).to_equal(cos(2.5D));
+   ut.expect(cwms_util.eval_expression('ceil(2.5)',  null)).to_equal(3);
+   ut.expect(cwms_util.eval_expression('exp(2.5)',   null)).to_equal(exp(2.5D));
+   ut.expect(cwms_util.eval_expression('floor(2.5)', null)).to_equal(2);
+   ut.expect(cwms_util.eval_expression('inv(2.5)',   null)).to_equal(1D/2.5D);
+   ut.expect(cwms_util.eval_expression('ln(2.5)',    null)).to_equal(ln(2.5D));
+   ut.expect(cwms_util.eval_expression('log(2.5)',   null)).to_equal(log(10D, 2.5D));
+   ut.expect(cwms_util.eval_expression('log10(2.5)', null)).to_equal(log(10D, 2.5D));
+   ut.expect(cwms_util.eval_expression('logn(2.5)',  null)).to_equal(ln(2.5D));
+   ut.expect(cwms_util.eval_expression('neg(2.5)',   null)).to_equal(-2.5);
+   ut.expect(cwms_util.eval_expression('neg(-2.5)',  null)).to_equal(2.5);
+   ut.expect(cwms_util.eval_expression('round(2.5)', null)).to_equal(2);
+   ut.expect(cwms_util.eval_expression('round(3.5)', null)).to_equal(4);
+   ut.expect(cwms_util.eval_expression('sign(2.5)',  null)).to_equal(1);
+   ut.expect(cwms_util.eval_expression('sign(-2.5)', null)).to_equal(-1);
+   ut.expect(cwms_util.eval_expression('sqrt(2.5)',  null)).to_equal(sqrt(2.5D));
+   ut.expect(cwms_util.eval_expression('tan(2.5)',   null)).to_equal(tan(2.5D));
+   ut.expect(cwms_util.eval_expression('trunc(2.5)', null)).to_equal(2);
+   --------------------------
+   -- test binary function --
+   --------------------------
+   ut.expect(cwms_util.eval_expression('fmod( 10,  7)', null)).to_equal(mod(10D,7D));
+   ut.expect(cwms_util.eval_expression('fmod(-10,  7)', null)).to_equal(mod(-10D,7D));
+   ut.expect(cwms_util.eval_expression('fmod( 10, -7)', null)).to_equal(mod(10D,-7D));
+   ut.expect(cwms_util.eval_expression('fmod(-10, -7)', null)).to_equal(mod(-10D,-7D));
+   -----------------------------
+   -- test variadic functions --
+   -----------------------------
+   ut.expect(cwms_util.eval_expression('avg(1,2,3,4)',   null)).to_equal(2.5);
+   ut.expect(cwms_util.eval_expression('count(1,2,3,4)', null)).to_equal(4);
+   ut.expect(cwms_util.eval_expression('max(1,2,3,4)',   null)).to_equal(4);
+   ut.expect(cwms_util.eval_expression('mean(1,2,3,4)',  null)).to_equal(2.5);
+   ut.expect(cwms_util.eval_expression('min(1,2,3,4)',   null)).to_equal(1);
+   ut.expect(cwms_util.eval_expression('prod(1,2,3,4)',  null)).to_equal(24);
+   ut.expect(cwms_util.eval_expression('sum(1,2,3,4)',   null)).to_equal(10);
+   ------------------------------------
+   -- test nested variadic functions --
+   ------------------------------------
+   ut.expect(cwms_util.eval_expression('sum(1,max(0,1,2),3,min(4,5,6))', null)).to_equal(10);
+end test_math_expressions;
 ---------------------------------------
 -- procedure test_cwms_db_change_log --
 ---------------------------------------
@@ -502,6 +575,7 @@ begin
      from cwms_db_change_log;
    ut.expect(sysdate - l_apply_date).to_be_less_than(1);
 end test_cwms_db_change_log;
+
 end test_cwms_util;
 /
 
