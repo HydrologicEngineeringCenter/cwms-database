@@ -3390,6 +3390,16 @@ as
          END;
    END parse_odbc_ts_or_d_string;
 
+   function is_number(p_token in varchar2) return boolean
+   is
+      l_number number;
+   begin
+      l_number := to_number(p_token);
+      return true;
+   exception
+      when others then return false;
+   end is_number;
+
    function is_expression_constant(
       p_token in varchar2)
       return boolean
@@ -3476,6 +3486,50 @@ as
       return is_comparison_operator(p_token) or is_combination_operator(p_token);
    end is_logic_operator;
 
+   procedure validate_math_expression_token(
+      p_token in varchar2)
+   is
+   begin
+      case
+      when is_expression_operator(p_token) then null;
+      when is_expression_function(p_token) then null;
+      when is_expression_constant(p_token) then null;
+      when is_number(p_token)              then null;
+      when regexp_like(p_token, 'ARG\d')   then null;
+      else cwms_err.raise('ERROR', 'Invalid mathematical expression token: '||p_token);
+      end case;
+   end validate_math_expression_token;
+
+   procedure validate_comparison_expression_token(
+      p_token in varchar2)
+   is
+   begin
+      case
+      when is_expression_operator(p_token) then null;
+      when is_expression_function(p_token) then null;
+      when is_expression_constant(p_token) then null;
+      when is_number(p_token)              then null;
+      when regexp_like(p_token, 'ARG\d')   then null;
+      when is_comparison_operator(p_token) then null;
+      else cwms_err.raise('ERROR', 'Invalid comparison expression token: '||p_token);
+      end case;
+   end validate_comparison_expression_token;
+
+   procedure validate_logic_expression_token(
+      p_token in varchar2)
+   is
+   begin
+      case
+      when is_expression_operator(p_token) then null;
+      when is_expression_function(p_token) then null;
+      when is_expression_constant(p_token) then null;
+      when is_number(p_token)              then null;
+      when regexp_like(p_token, 'ARG\d')   then null;
+      when is_logic_operator(p_token)      then null;
+      else cwms_err.raise('ERROR', 'Invalid logic expression token: '||p_token);
+      end case;
+   end validate_logic_expression_token;
+
    function tokenize_comparison_expression(
       p_comparison_expression in varchar2)
       return str_tab_tab_t
@@ -3536,6 +3590,11 @@ as
          end case;
       end if;
       return l_tokenized;
+      for i in 1..l_tokenized.count loop
+         for j in 1..l_tokenized(i).count loop
+            validate_comparison_expression_token(l_tokenized(i)(j));
+         end loop;
+      end loop;
    end tokenize_comparison_expression;
 
    -----------------------------------------------------------------------------
@@ -3658,6 +3717,15 @@ as
             -----------------------------------------------------------
             l_start := l_replacements.count + 1;
             l_parts := split_text_regexp(l_expr, c_re, 'T', 'i');
+            -- collapse any null elements
+            select cast(multiset(select column_value
+                                   from table(l_parts)
+                                  where column_value is not null
+                                )
+                        as str_tab_t
+                       )
+              into l_parts
+              from dual;
             for rec in (select column_value as op from table(str_tab_t('NOT', 'AND', 'XOR', 'OR'))) loop
                for i in reverse 1..l_parts.count loop
                   if trim(l_parts(i)) = rec.op then
@@ -3700,6 +3768,15 @@ as
                   -- replace logic expression --
                   ------------------------------
                   l_parts := split_text_regexp(l_replacements(i), c_re, 'T', 'i');
+                  -- collapse any null elements
+                  select cast(multiset(select column_value
+                                         from table(l_parts)
+                                        where column_value is not null
+                                      )
+                              as str_tab_t
+                             )
+                    into l_parts
+                    from dual;
                   case l_parts.count
                   when 2 then
                      --------------------------
@@ -3747,6 +3824,11 @@ as
             l_results := tokenize_logic_expression(l_expr);
          end if;
       end if;
+      for i in 1..l_results.count loop
+         for j in 1..l_results(i).count loop
+            validate_logic_expression_token(l_results(i)(j));
+         end loop;
+      end loop;
       return l_results;
    end tokenize_logic_expression;
 
@@ -3756,12 +3838,11 @@ as
    is
       l_expr varchar2(512);
    begin
-      l_expr := regexp_replace(l_expr, '([+*%^]|//)', ' \1 ');                         -- insert spaces around most operators
+      l_expr := regexp_replace(p_algebraic_expr, '([+*%^]|//)', ' \1 ');               -- insert spaces around most operators
       l_expr := regexp_replace(l_expr, '([^/])/([^/])', '\1 / \2');                    -- insert spaces around operator '/'
       l_expr := regexp_replace(l_expr, '([a-zA-Z0-9_])\s*-([a-zA-Z0-9_])', '\1 - \2'); -- insert spaces around binary operator '-'
       l_expr := regexp_replace(l_expr, '\s+', ' ', 1, 0, 'm');                         -- collapse contiguous spaces
-      l_expr := replace(p_algebraic_expr, ',', ' ');                                   -- remove commas
-      l_expr := regexp_replace(l_expr, '\s*([()])\s*', '\1', 1, 0, 'm');               -- collapse spaces around parentheses
+      l_expr := replace(l_expr, ',', ' ');                                             -- remove commas
 
       return l_expr;
    end normalize_algebraic;
@@ -3823,6 +3904,7 @@ as
       procedure add_postfix_token(p_token in varchar2)
       is
       begin
+         validate_math_expression_token(p_token);
          l_postfix_tokens.extend;
          l_postfix_tokens(l_postfix_tokens.count) := p_token;
       end;
@@ -3994,8 +4076,13 @@ as
       return str_tab_t
       result_cache
    is
+      l_tokens str_tab_t;
    begin
-      return split_text(trim(upper(replace(regexp_replace(p_rpn_expr, '\$?I(\d)', 'ARG\1', 1, 0, 'i'), chr(10), ' '))));
+      l_tokens := split_text(trim(upper(replace(regexp_replace(p_rpn_expr, '\$?I(\d)', 'ARG\1', 1, 0, 'i'), chr(10), ' '))));
+      for i in 1..l_tokens.count loop
+         validate_math_expression_token(l_tokens(i));
+      end loop;
+      return l_tokens;
    end tokenize_rpn;
 
    -----------------------------------------------------------------------------
@@ -4547,12 +4634,12 @@ as
       l_val2 := eval_tokenized_expression(p_tokens(2), p_args, p_args_offset);
       l_op   := p_tokens(3)(1);
       case
-         when l_op =   '='        then l_result := l_val1  = l_val2;
-         when l_op in ('!=','<>') then l_result := l_val1 != l_val2;
-         when l_op in ('<', 'LT') then l_result := l_val1 <  l_val2;
-         when l_op in ('<=','LE') then l_result := l_val1 <= l_val2;
-         when l_op in ('>', 'GT') then l_result := l_val1 >  l_val2;
-         when l_op in ('>=','GE') then l_result := l_val1 >= l_val2;
+         when l_op =   '='              then l_result := l_val1  = l_val2;
+         when l_op in ('!=','<>', 'NE') then l_result := l_val1 != l_val2;
+         when l_op in ('<', 'LT')       then l_result := l_val1 <  l_val2;
+         when l_op in ('<=','LE')       then l_result := l_val1 <= l_val2;
+         when l_op in ('>', 'GT')       then l_result := l_val1 >  l_val2;
+         when l_op in ('>=','GE')       then l_result := l_val1 >= l_val2;
          else cwms_err.raise('ERROR', 'Invalid comparison operator: '||l_op);
       end case;
       return l_result;

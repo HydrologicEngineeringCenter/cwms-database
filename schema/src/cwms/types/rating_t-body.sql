@@ -2083,6 +2083,14 @@ as
                l_exists := false;
                l_rating_rec.rating_code := cwms_seq.nextval;
          end;
+         if self.formula is not null then
+            begin
+               self.formula_tokens := cwms_util.tokenize_expression(self.formula);
+            exception
+               when others then
+                  cwms_err.raise('ERROR', self.formula);
+            end;
+         end if;
 
          l_rating_rec.ref_rating_code := null;
          l_rating_rec.transition_date := self.transition_date;
