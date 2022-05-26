@@ -3858,6 +3858,8 @@ as
       l_func_stack          str_tab_t := new str_tab_t();
       l_need_argcount_stack str_tab_t := new str_tab_t();
       l_argcount_stack      number_tab_t := new number_tab_t();
+      l_need_argcount       varchar2(1);
+      l_argcount            integer;
       l_left_paren_count    binary_integer := 0;
       l_right_paren_count   binary_integer := 0;
       l_func                varchar2(8);
@@ -3938,18 +3940,18 @@ as
          l_need_argcount_stack(l_need_argcount_stack.count) := case when is_variadic_function(p_func) then 'T' else 'F' end;
       end;
 
-      function pop_func return varchar2
+      procedure pop_func(p_func out varchar2, p_need_argcount out varchar2)
       is
          l_func   varchar2(8);
       begin
          begin
-            l_func := l_func_stack(l_func_stack.count);
+            p_func := l_func_stack(l_func_stack.count);
+            p_need_argcount := l_need_argcount_stack(l_need_argcount_stack.count);
          exception
             when others then error;
          end;
          l_func_stack.trim;
          l_need_argcount_stack.trim;
-         return l_func;
       end;
 
       procedure push_argcount
@@ -4031,13 +4033,14 @@ as
             end loop;
 
             l_dummy := pop;
-            l_func := pop_func;
+            pop_func(l_func, l_need_argcount);
 
             if l_func_stack.count > 0 and l_func_stack(l_func_stack.count) is not null then
-               if l_need_argcount_stack(l_need_argcount_stack.count) = 'T' then
-                  add_postfix_token(pop_argcount);
+               pop_func(l_func, l_need_argcount);
+               l_argcount := pop_argcount;
+               if l_need_argcount = 'T' then
+                  add_postfix_token(l_argcount);
                end if;
-               l_func := pop_func;
                if substr(l_func, 1, 1) = '-' then
                   add_postfix_token(substr(l_func, 2));
                   add_postfix_token('NEG');
