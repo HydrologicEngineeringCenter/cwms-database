@@ -33,7 +33,6 @@ AS
         test_cwms_ts.teardown; 
         test_cwms_util.teardown; 
         test_lrts_updates.teardown; 
-        test_missing_shift_points.teardown; 
         test_ro.teardown;
         test_dba.teardown;
         test_cwms_pool.teardown;

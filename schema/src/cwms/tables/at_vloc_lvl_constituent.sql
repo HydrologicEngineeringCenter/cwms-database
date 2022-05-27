@@ -24,6 +24,7 @@ create or replace trigger at_vloc_level_constituent_t01
    for each row
 declare
    l_parts str_tab_t;
+   l_pos   pls_integer;
 begin
    if substr(:new.constituent_abbr, 1, 1) != substr(:new.constituent_type,1 , 1) then
       cwms_err.raise('ERROR', 'Constituent abbreviation must start with the same letter as constituent type');
@@ -46,7 +47,8 @@ begin
       end if;
    when 'FORMULA' then
       begin
-         l_parts := cwms_util.tokenize_expression(:new.constituent_name);
+         l_pos := regexp_instr(:new.constituent_name, '{.+?(,.+?)*;.+}');
+         l_parts := cwms_util.tokenize_expression(substr(:new.constituent_name, 1, l_pos-1));
       exception
          when others then
             cwms_err.raise('ERROR', 'Constituent name is not a valid formula');

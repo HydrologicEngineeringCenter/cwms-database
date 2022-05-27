@@ -12,7 +12,6 @@ exec cwms_sec.add_cwms_user('OTHER_DIST', char_32_array_type('CWMS Users'),'HQ')
 @test_ro.sql;
 @test_up.sql;
 @test_dba.sql;
-@test_missing_shift_points.sql
 @test_lrts_updates.sql;
 @test_update_ts_extents.sql;
 @test_probability_parameter.sql;
