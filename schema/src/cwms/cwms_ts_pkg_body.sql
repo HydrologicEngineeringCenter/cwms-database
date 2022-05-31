@@ -6320,67 +6320,65 @@ AS
          ------------------------------------
          -- update the time series extents --
          ------------------------------------
-         if upper (p_store_rule) = cwms_util.delete_insert then
-            ----------------------------------------------
-            -- possibly deleted some time series values --
-            ----------------------------------------------
-            if l_delete_times is not null then
-               declare
-                  job_name_already_exists exception;
-                  l_plsql_block           VARCHAR2 (256);
-                  pragma exception_init(job_name_already_exists, -27477);
-                  l_job_name varchar2(64) := 'UTX_'||l_ts_code||'_'||to_char(l_version_date, 'yyyymmdd_hh24miss');
+         if upper (p_store_rule) = cwms_util.delete_insert and l_delete_times is not null and l_delete_times.count > 0 then
+            -------------------------------------
+            -- deleted some time series values --
+            -------------------------------------
+            declare
+               job_name_already_exists exception;
+               l_plsql_block           VARCHAR2 (256);
+               pragma exception_init(job_name_already_exists, -27477);
+               l_job_name varchar2(64) := 'UTX_'||l_ts_code||'_'||to_char(l_version_date, 'yyyymmdd_hh24miss');
+            begin
                begin
-                  begin
-                    IF (l_version_date IS NULL) THEN
-                     l_plsql_block := 'begin ';
-                     IF(SYS_CONTEXT('CWMS_ENV','CWMS_SESSION_KEY') IS NOT NULL) THEN
-                        l_plsql_block := l_plsql_block
-                        || 'cwms_env.set_session_user('''
-                        || SYS_CONTEXT ('CWMS_ENV','CWMS_SESSION_KEY')
-                        || ''');';
-                     END IF;
+                 IF (l_version_date IS NULL) THEN
+                  l_plsql_block := 'begin ';
+                  IF(SYS_CONTEXT('CWMS_ENV','CWMS_SESSION_KEY') IS NOT NULL) THEN
                      l_plsql_block := l_plsql_block
-                     || 'cwms_env.set_session_office_id('''
-                     || SYS_CONTEXT ('CWMS_ENV','SESSION_OFFICE_ID')
-                     || '''); cwms_ts.update_ts_extents('''
-                     || l_ts_code
-                     || '''); end;';
-                  ELSE
-                     l_plsql_block := 'begin ';
-                     IF(SYS_CONTEXT('CWMS_ENV','CWMS_SESSION_KEY') IS NOT NULL) THEN
-                        l_plsql_block := l_plsql_block
-                        || 'cwms_env.set_session_user('''
-                        || SYS_CONTEXT ('CWMS_ENV','CWMS_SESSION_KEY')
-                        || ''');';
-                     END IF;
-                     l_plsql_block := l_plsql_block
-                     || 'cwms_env.set_session_office_id('''
-                     || SYS_CONTEXT ('CWMS_ENV','SESSION_OFFICE_ID')
-                     || '''); cwms_ts.update_ts_extents('''
-                     || l_ts_code
-                     || ''',to_date('''
-                     || TO_CHAR (l_version_date,'YYYY-MM-DD HH24:MI:SS')
-                     || ''',''YYYY-MM-DD HH24:MI:SS'')); end;';
+                     || 'cwms_env.set_session_user('''
+                     || SYS_CONTEXT ('CWMS_ENV','CWMS_SESSION_KEY')
+                     || ''');';
                   END IF;
-                     dbms_scheduler.create_job (
-                        job_name            => l_job_name,
-                        job_type            => 'PLSQL_BLOCK',
-                        job_action          => l_plsql_block,
-                        comments            => 'Updates the time series extents.');
-                       dbms_scheduler.enable(l_job_name);
-                  exception
-                     when job_name_already_exists then
-                        cwms_msg.log_db_message(
-                           cwms_msg.msg_level_normal,
-                           'UPDATE_TS_EXTENTS with '
-                           ||l_ts_code
-                           ||', '
-                           ||nvl(to_char(l_version_date), 'NULL')
-                           ||' already running.');
-                  end;
+                  l_plsql_block := l_plsql_block
+                  || 'cwms_env.set_session_office_id('''
+                  || SYS_CONTEXT ('CWMS_ENV','SESSION_OFFICE_ID')
+                  || '''); cwms_ts.update_ts_extents('''
+                  || l_ts_code
+                  || '''); end;';
+               ELSE
+                  l_plsql_block := 'begin ';
+                  IF(SYS_CONTEXT('CWMS_ENV','CWMS_SESSION_KEY') IS NOT NULL) THEN
+                     l_plsql_block := l_plsql_block
+                     || 'cwms_env.set_session_user('''
+                     || SYS_CONTEXT ('CWMS_ENV','CWMS_SESSION_KEY')
+                     || ''');';
+                  END IF;
+                  l_plsql_block := l_plsql_block
+                  || 'cwms_env.set_session_office_id('''
+                  || SYS_CONTEXT ('CWMS_ENV','SESSION_OFFICE_ID')
+                  || '''); cwms_ts.update_ts_extents('''
+                  || l_ts_code
+                  || ''',to_date('''
+                  || TO_CHAR (l_version_date,'YYYY-MM-DD HH24:MI:SS')
+                  || ''',''YYYY-MM-DD HH24:MI:SS'')); end;';
+               END IF;
+                  dbms_scheduler.create_job (
+                     job_name            => l_job_name,
+                     job_type            => 'PLSQL_BLOCK',
+                     job_action          => l_plsql_block,
+                     comments            => 'Updates the time series extents.');
+                    dbms_scheduler.enable(l_job_name);
+               exception
+                  when job_name_already_exists then
+                     cwms_msg.log_db_message(
+                        cwms_msg.msg_level_normal,
+                        'UPDATE_TS_EXTENTS with '
+                        ||l_ts_code
+                        ||', '
+                        ||nvl(to_char(l_version_date), 'NULL')
+                        ||' already running.');
                end;
-            end if;
+            end;
          else
             ----------------
             -- no deletes --

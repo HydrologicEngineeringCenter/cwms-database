@@ -509,13 +509,16 @@ procedure cwdb_182_test_for_update_with_delete_insert_without_deletes
 is
    l_ts_data cwms_t_ztsv_array;
    l_offset  pls_integer := 1;
-   l_ts1     cwms_v_ts_extents_utc.earliest_time_entry%type;  
-   l_ts2     cwms_v_ts_extents_utc.earliest_time_entry%type;  
-   l_ts3     cwms_v_ts_extents_utc.earliest_time_entry%type;  
-   l_ts4     cwms_v_ts_extents_utc.earliest_time_entry%type;  
+   l_ts1     timestamp(3);
+   l_ts2     timestamp(3);
+   l_ts3     timestamp(3);
+   l_ts4     timestamp(3);
    l_extents cwms_v_ts_extents_utc%rowtype;
 begin
    setup();
+   ------------------------------------------
+   -- store the base data with REPLACE ALL --
+   ------------------------------------------
    l_ts1 := systimestamp;
    cwms_ts.zstore_ts(
       p_cwms_ts_id      => c_ts_id,
@@ -526,56 +529,10 @@ begin
       p_version_date    => cwms_util.non_versioned,
       p_office_id       => c_office_id);
    l_ts2 := systimestamp;
-
-   select * 
-     into l_extents 
-     from cwms_v_ts_extents_utc
-    where ts_code = cwms_ts.get_ts_code(c_ts_id, c_office_id)
-      and version_time is null;
-
-   ut.expect(l_extents.earliest_time).to_equal(c_base_ts_data(1).date_time);
-   ut.expect(l_extents.earliest_time_entry).to_be_between(l_ts1, l_ts2);
-   ut.expect(l_extents.earliest_entry_time).to_be_between(l_ts1, l_ts2);
    
-   ut.expect(l_extents.earliest_non_null_time).to_equal(c_base_ts_data(2).date_time);
-   ut.expect(l_extents.earliest_non_null_time_entry).to_be_between(l_ts1, l_ts2);
-   ut.expect(l_extents.earliest_non_null_entry_time).to_be_between(l_ts1, l_ts2);
-
-   ut.expect(l_extents.latest_time).to_equal(c_base_ts_data(c_base_ts_data.count).date_time);
-   ut.expect(l_extents.latest_time_entry).to_be_between(l_ts1, l_ts2);
-   ut.expect(l_extents.latest_entry_time).to_be_between(l_ts1, l_ts2);
-
-   ut.expect(l_extents.latest_non_null_time).to_equal(c_base_ts_data(c_base_ts_data.count-1).date_time);
-   ut.expect(l_extents.latest_non_null_time_entry).to_be_between(l_ts1, l_ts2);
-   ut.expect(l_extents.latest_non_null_entry_time).to_be_between(l_ts1, l_ts2);
-   
-   ut.expect(l_extents.si_unit).to_equal(c_units);
-   ut.expect(l_extents.en_unit).to_equal(c_units);
-   
-   ut.expect(l_extents.least_value_si).to_equal(c_base_ts_data(2).value);
-   ut.expect(l_extents.least_value_en).to_equal(c_base_ts_data(2).value);
-   ut.expect(l_extents.least_value_time).to_equal(c_base_ts_data(2).date_time);
-   ut.expect(l_extents.least_value_entry).to_be_between(l_ts1, l_ts2);
-   
-   ut.expect(l_extents.least_accepted_value_si).to_equal(c_base_ts_data(3).value);
-   ut.expect(l_extents.least_accepted_value_en).to_equal(c_base_ts_data(3).value);
-   ut.expect(l_extents.least_accepted_value_time).to_equal(c_base_ts_data(3).date_time);
-   ut.expect(l_extents.least_accepted_value_entry).to_be_between(l_ts1, l_ts2);
-   
-   ut.expect(l_extents.greatest_value_si).to_equal(c_base_ts_data(c_base_ts_data.count-1).value);
-   ut.expect(l_extents.greatest_value_en).to_equal(c_base_ts_data(c_base_ts_data.count-1).value);
-   ut.expect(l_extents.greatest_value_time).to_equal(c_base_ts_data(c_base_ts_data.count-1).date_time);
-   ut.expect(l_extents.greatest_value_entry).to_be_between(l_ts1, l_ts2);
-   
-   ut.expect(l_extents.greatest_accepted_value_si).to_equal(c_base_ts_data(c_base_ts_data.count-2).value);
-   ut.expect(l_extents.greatest_accepted_value_en).to_equal(c_base_ts_data(c_base_ts_data.count-2).value);
-   ut.expect(l_extents.greatest_accepted_value_time).to_equal(c_base_ts_data(c_base_ts_data.count-2).date_time);
-   ut.expect(l_extents.greatest_accepted_value_entry).to_be_between(l_ts1, l_ts2);
-   
-   ut.expect(l_extents.last_update).to_be_between(l_ts1, l_ts2);
-   
-   dbms_output.put_line('--------------------------------------------------------------------------------');
-
+   ---------------------------------------------------------------------------------------
+   -- shift the base data to a non-overlapping time window and store with DELETE_INSERT --
+   ---------------------------------------------------------------------------------------
    l_ts_data := shift_ts_data(c_base_ts_data, 1);
    l_ts3 := systimestamp;
    cwms_ts.zstore_ts(
@@ -588,6 +545,9 @@ begin
       p_office_id       => c_office_id);
    l_ts4 := systimestamp;
 
+   ------------------------
+   -- verify the extents --
+   ------------------------
    select * 
      into l_extents 
      from cwms_v_ts_extents_utc
