@@ -560,6 +560,12 @@ begin
    -- test nested variadic functions --
    ------------------------------------
    ut.expect(cwms_util.eval_expression('sum(1,max(0,1,2),3,min(4,5,6))', null)).to_equal(10);
+   -------------------------------
+   -- test formats of variables --
+   -------------------------------
+   ut.expect(cwms_util.eval_expression('sum(arg1,arg2,arg3,arg4)', cwms_t_double_tab(1,2,3,4))).to_equal(10);
+   ut.expect(cwms_util.eval_expression('sum( $i1, $i2, $i3, $i4)', cwms_t_double_tab(1,2,3,4))).to_equal(10);
+   ut.expect(cwms_util.eval_expression('sum(  i1,  i2,  i3,  i4)', cwms_t_double_tab(1,2,3,4))).to_equal(10);
 end test_math_expressions;
 --------------------------------------------------------------------------------
 -- procedure test_comparison_expressions
@@ -567,6 +573,9 @@ end test_math_expressions;
 procedure test_comparison_expressions
 is
 begin
+   --------------------
+   -- test operators --
+   --------------------
    ut.expect(cwms_util.eval_comparison_expression('0  = 1', null)).to_equal(false);
    ut.expect(cwms_util.eval_comparison_expression('0 != 1', null)).to_equal(true);
    ut.expect(cwms_util.eval_comparison_expression('0 <> 1', null)).to_equal(true);
@@ -605,6 +614,12 @@ begin
    ut.expect(cwms_util.eval_comparison_expression('1 GT 0', null)).to_equal(true);
    ut.expect(cwms_util.eval_comparison_expression('1 >= 0', null)).to_equal(true);
    ut.expect(cwms_util.eval_comparison_expression('1 GE 0', null)).to_equal(true);
+   -------------------------------
+   -- test formats of variables --
+   -------------------------------
+   ut.expect(cwms_util.eval_comparison_expression('arg1 GE arg2', cwms_t_double_tab(1, 0))).to_equal(true);
+   ut.expect(cwms_util.eval_comparison_expression(' $i1 GE  $i2', cwms_t_double_tab(1, 0))).to_equal(true);
+   ut.expect(cwms_util.eval_comparison_expression('  i1 GE   i2', cwms_t_double_tab(1, 0))).to_equal(true);
 end test_comparison_expressions;
 --------------------------------------------------------------------------------
 -- procedure test_logic_expressions
@@ -612,57 +627,63 @@ end test_comparison_expressions;
 procedure test_logic_expressions
 is
 begin
-   ut.expect(logic_expr_t('not 0  = 1').evaluate(null)).to_equal(true);
-   ut.expect(logic_expr_t('not 0 != 1').evaluate(null)).to_equal(false);
-   ut.expect(logic_expr_t('not 0 <> 1').evaluate(null)).to_equal(false);
-   ut.expect(logic_expr_t('not 0 ne 1').evaluate(null)).to_equal(false);
-   ut.expect(logic_expr_t('not 0  < 1').evaluate(null)).to_equal(false);
-   ut.expect(logic_expr_t('not 0 lt 1').evaluate(null)).to_equal(false);
-   ut.expect(logic_expr_t('not 0 <= 1').evaluate(null)).to_equal(false);
-   ut.expect(logic_expr_t('not 0 le 1').evaluate(null)).to_equal(false);
-   ut.expect(logic_expr_t('not 0  > 1').evaluate(null)).to_equal(true);
-   ut.expect(logic_expr_t('not 0 gt 1').evaluate(null)).to_equal(true);
-   ut.expect(logic_expr_t('not 0 >= 1').evaluate(null)).to_equal(true);
-   ut.expect(logic_expr_t('not 0 ge 1').evaluate(null)).to_equal(true);
+   ut.expect(cwms_t_logic_expr('not 0  = 1').evaluate(null)).to_equal(true);
+   ut.expect(cwms_t_logic_expr('not 0 != 1').evaluate(null)).to_equal(false);
+   ut.expect(cwms_t_logic_expr('not 0 <> 1').evaluate(null)).to_equal(false);
+   ut.expect(cwms_t_logic_expr('not 0 ne 1').evaluate(null)).to_equal(false);
+   ut.expect(cwms_t_logic_expr('not 0  < 1').evaluate(null)).to_equal(false);
+   ut.expect(cwms_t_logic_expr('not 0 lt 1').evaluate(null)).to_equal(false);
+   ut.expect(cwms_t_logic_expr('not 0 <= 1').evaluate(null)).to_equal(false);
+   ut.expect(cwms_t_logic_expr('not 0 le 1').evaluate(null)).to_equal(false);
+   ut.expect(cwms_t_logic_expr('not 0  > 1').evaluate(null)).to_equal(true);
+   ut.expect(cwms_t_logic_expr('not 0 gt 1').evaluate(null)).to_equal(true);
+   ut.expect(cwms_t_logic_expr('not 0 >= 1').evaluate(null)).to_equal(true);
+   ut.expect(cwms_t_logic_expr('not 0 ge 1').evaluate(null)).to_equal(true);
 
-   ut.expect(logic_expr_t('0  = 1 and 1  = 1').evaluate(null)).to_equal(false);
-   ut.expect(logic_expr_t('0 != 1 and 1 != 1').evaluate(null)).to_equal(false);
-   ut.expect(logic_expr_t('0 <> 1 and 1 <> 1').evaluate(null)).to_equal(false);
-   ut.expect(logic_expr_t('0 ne 1 and 1 ne 1').evaluate(null)).to_equal(false);
-   ut.expect(logic_expr_t('0  < 1 and 1  < 1').evaluate(null)).to_equal(false);
-   ut.expect(logic_expr_t('0 lt 1 and 1 lt 1').evaluate(null)).to_equal(false);
-   ut.expect(logic_expr_t('0 <= 1 and 1 <= 1').evaluate(null)).to_equal(true);
-   ut.expect(logic_expr_t('0 le 1 and 1 le 1').evaluate(null)).to_equal(true);
-   ut.expect(logic_expr_t('0  > 1 and 1  > 1').evaluate(null)).to_equal(false);
-   ut.expect(logic_expr_t('0 gt 1 and 1 gt 1').evaluate(null)).to_equal(false);
-   ut.expect(logic_expr_t('0 >= 1 and 1 >= 1').evaluate(null)).to_equal(false);
-   ut.expect(logic_expr_t('0 ge 1 and 1 ge 1').evaluate(null)).to_equal(false);
+   ut.expect(cwms_t_logic_expr('0  = 1 and 1  = 1').evaluate(null)).to_equal(false);
+   ut.expect(cwms_t_logic_expr('0 != 1 and 1 != 1').evaluate(null)).to_equal(false);
+   ut.expect(cwms_t_logic_expr('0 <> 1 and 1 <> 1').evaluate(null)).to_equal(false);
+   ut.expect(cwms_t_logic_expr('0 ne 1 and 1 ne 1').evaluate(null)).to_equal(false);
+   ut.expect(cwms_t_logic_expr('0  < 1 and 1  < 1').evaluate(null)).to_equal(false);
+   ut.expect(cwms_t_logic_expr('0 lt 1 and 1 lt 1').evaluate(null)).to_equal(false);
+   ut.expect(cwms_t_logic_expr('0 <= 1 and 1 <= 1').evaluate(null)).to_equal(true);
+   ut.expect(cwms_t_logic_expr('0 le 1 and 1 le 1').evaluate(null)).to_equal(true);
+   ut.expect(cwms_t_logic_expr('0  > 1 and 1  > 1').evaluate(null)).to_equal(false);
+   ut.expect(cwms_t_logic_expr('0 gt 1 and 1 gt 1').evaluate(null)).to_equal(false);
+   ut.expect(cwms_t_logic_expr('0 >= 1 and 1 >= 1').evaluate(null)).to_equal(false);
+   ut.expect(cwms_t_logic_expr('0 ge 1 and 1 ge 1').evaluate(null)).to_equal(false);
 
-   ut.expect(logic_expr_t('0  = 1 or 1  = 1').evaluate(null)).to_equal(true);
-   ut.expect(logic_expr_t('0 != 1 or 1 != 1').evaluate(null)).to_equal(true);
-   ut.expect(logic_expr_t('0 <> 1 or 1 <> 1').evaluate(null)).to_equal(true);
-   ut.expect(logic_expr_t('0 ne 1 or 1 ne 1').evaluate(null)).to_equal(true);
-   ut.expect(logic_expr_t('0  < 1 or 1  < 1').evaluate(null)).to_equal(true);
-   ut.expect(logic_expr_t('0 lt 1 or 1 lt 1').evaluate(null)).to_equal(true);
-   ut.expect(logic_expr_t('0 <= 1 or 1 <= 1').evaluate(null)).to_equal(true);
-   ut.expect(logic_expr_t('0 le 1 or 1 le 1').evaluate(null)).to_equal(true);
-   ut.expect(logic_expr_t('0  > 1 or 1  > 1').evaluate(null)).to_equal(false);
-   ut.expect(logic_expr_t('0 gt 1 or 1 gt 1').evaluate(null)).to_equal(false);
-   ut.expect(logic_expr_t('0 >= 1 or 1 >= 1').evaluate(null)).to_equal(true);
-   ut.expect(logic_expr_t('0 ge 1 or 1 ge 1').evaluate(null)).to_equal(true);
+   ut.expect(cwms_t_logic_expr('0  = 1 or 1  = 1').evaluate(null)).to_equal(true);
+   ut.expect(cwms_t_logic_expr('0 != 1 or 1 != 1').evaluate(null)).to_equal(true);
+   ut.expect(cwms_t_logic_expr('0 <> 1 or 1 <> 1').evaluate(null)).to_equal(true);
+   ut.expect(cwms_t_logic_expr('0 ne 1 or 1 ne 1').evaluate(null)).to_equal(true);
+   ut.expect(cwms_t_logic_expr('0  < 1 or 1  < 1').evaluate(null)).to_equal(true);
+   ut.expect(cwms_t_logic_expr('0 lt 1 or 1 lt 1').evaluate(null)).to_equal(true);
+   ut.expect(cwms_t_logic_expr('0 <= 1 or 1 <= 1').evaluate(null)).to_equal(true);
+   ut.expect(cwms_t_logic_expr('0 le 1 or 1 le 1').evaluate(null)).to_equal(true);
+   ut.expect(cwms_t_logic_expr('0  > 1 or 1  > 1').evaluate(null)).to_equal(false);
+   ut.expect(cwms_t_logic_expr('0 gt 1 or 1 gt 1').evaluate(null)).to_equal(false);
+   ut.expect(cwms_t_logic_expr('0 >= 1 or 1 >= 1').evaluate(null)).to_equal(true);
+   ut.expect(cwms_t_logic_expr('0 ge 1 or 1 ge 1').evaluate(null)).to_equal(true);
 
-   ut.expect(logic_expr_t('0  = 1 xor 1  = 1').evaluate(null)).to_equal(true);
-   ut.expect(logic_expr_t('0 != 1 xor 1 != 1').evaluate(null)).to_equal(true);
-   ut.expect(logic_expr_t('0 <> 1 xor 1 <> 1').evaluate(null)).to_equal(true);
-   ut.expect(logic_expr_t('0 ne 1 xor 1 ne 1').evaluate(null)).to_equal(true);
-   ut.expect(logic_expr_t('0  < 1 xor 1  < 1').evaluate(null)).to_equal(true);
-   ut.expect(logic_expr_t('0 lt 1 xor 1 lt 1').evaluate(null)).to_equal(true);
-   ut.expect(logic_expr_t('0 <= 1 xor 1 <= 1').evaluate(null)).to_equal(false);
-   ut.expect(logic_expr_t('0 le 1 xor 1 le 1').evaluate(null)).to_equal(false);
-   ut.expect(logic_expr_t('0  > 1 xor 1  > 1').evaluate(null)).to_equal(false);
-   ut.expect(logic_expr_t('0 gt 1 xor 1 gt 1').evaluate(null)).to_equal(false);
-   ut.expect(logic_expr_t('0 >= 1 xor 1 >= 1').evaluate(null)).to_equal(true);
-   ut.expect(logic_expr_t('0 ge 1 xor 1 ge 1').evaluate(null)).to_equal(true);
+   ut.expect(cwms_t_logic_expr('0  = 1 xor 1  = 1').evaluate(null)).to_equal(true);
+   ut.expect(cwms_t_logic_expr('0 != 1 xor 1 != 1').evaluate(null)).to_equal(true);
+   ut.expect(cwms_t_logic_expr('0 <> 1 xor 1 <> 1').evaluate(null)).to_equal(true);
+   ut.expect(cwms_t_logic_expr('0 ne 1 xor 1 ne 1').evaluate(null)).to_equal(true);
+   ut.expect(cwms_t_logic_expr('0  < 1 xor 1  < 1').evaluate(null)).to_equal(true);
+   ut.expect(cwms_t_logic_expr('0 lt 1 xor 1 lt 1').evaluate(null)).to_equal(true);
+   ut.expect(cwms_t_logic_expr('0 <= 1 xor 1 <= 1').evaluate(null)).to_equal(false);
+   ut.expect(cwms_t_logic_expr('0 le 1 xor 1 le 1').evaluate(null)).to_equal(false);
+   ut.expect(cwms_t_logic_expr('0  > 1 xor 1  > 1').evaluate(null)).to_equal(false);
+   ut.expect(cwms_t_logic_expr('0 gt 1 xor 1 gt 1').evaluate(null)).to_equal(false);
+   ut.expect(cwms_t_logic_expr('0 >= 1 xor 1 >= 1').evaluate(null)).to_equal(true);
+   ut.expect(cwms_t_logic_expr('0 ge 1 xor 1 ge 1').evaluate(null)).to_equal(true);
+   -------------------------------
+   -- test formats of variables --
+   -------------------------------
+   ut.expect(cwms_t_logic_expr('arg1 ge 1 xor arg2 ge 1').evaluate(cwms_t_double_tab(0, 1))).to_equal(true);
+   ut.expect(cwms_t_logic_expr(' $i1 ge 1 xor  $i2 ge 1').evaluate(cwms_t_double_tab(0, 1))).to_equal(true);
+   ut.expect(cwms_t_logic_expr('  i1 ge 1 xor   i2 ge 1').evaluate(cwms_t_double_tab(0, 1))).to_equal(true);
 end test_logic_expressions;
 ---------------------------------------
 -- procedure test_cwms_db_change_log --

@@ -3648,7 +3648,7 @@ as
          return l_table;
       end drop_elements;
    begin
-      l_expr := upper(trim(p_expr));
+      l_expr := upper(trim(regexp_replace(p_expr, '\$?I(\d)', 'ARG\1', 1, 0, 'i')));
       l_len  := length(l_expr);
       if nvl(get_expression_depth_at(l_len+1, l_expr), 0) != 0 then
          cwms_err.raise('ERROR', 'Expression has unbalanced parentheses: '||p_expr);
