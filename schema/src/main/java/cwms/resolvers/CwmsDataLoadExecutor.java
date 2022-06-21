@@ -175,7 +175,11 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
 
     private void setJdbcParameter(Connection conn, PreparedStatement stmt, Group grp, int idx, String string) throws SQLException {
         if( "string".equalsIgnoreCase(grp.type)){
-            stmt.setString(idx,string.replace("\"",""));
+            if( "null".equalsIgnoreCase(string)){
+                stmt.setNull(idx,Types.VARCHAR);
+            } else {
+                stmt.setString(idx,string.replace("\"",""));
+            }            
         } else if( "int".equalsIgnoreCase(grp.type)) {
             if( !string.isEmpty()) {
                 stmt.setInt(idx, Integer.parseInt(string));
