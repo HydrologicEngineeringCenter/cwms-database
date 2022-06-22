@@ -11,7 +11,11 @@
 
 	<resolver:pom id="pom" file="pom.xml" />
 	<!-- used by both docker and maven plugin, leave above all the pom/maven stuff -->
-	<property name="docker.props.image.basename" value="cwms_schema_installer"/>
+	<property name="docker.props.image.basename" value="cwms/schema_installer"/>
+	<!-- Allow for now but this should've always been grouped under cwms. -->
+	<property name="docker.props.image.basename_old" value="cwms_schema_installer"/>
+	<property name="docker.registry" value="registry.hecdev.net"/>
+	<property name="dryrun" value="false"/>
 
 	<target name="version">
 		<echo message="${pom.version}"/>
@@ -857,7 +861,6 @@
             <resolver:artifact file="${build.dir}/docs.zip" type="zip" id="docs" pomref="pom" classifier="docs"/>
 			<resolver:artifact file="${build.dir}/resources.jar" type="jar" id="resources" pomref="pom" classifier="resources"/>
             <resolver:artifact file="${xml_schema_zipfile}" type="zip" id="xml_schemas" pomref="pom" classifier="xml_schema_docs"/>
-			<resolver:artifact file="${build.dir}/${docker.props.image.basename}.tar" type="tar" id="${docker.props.image.basename}" pomref="pom" classifier="docker"/>
 		</resolver:artifacts>
 	</target>
 	<target name="install" depends="bundle">
@@ -910,9 +913,13 @@
 			</and>
 			<then>
 				<property name="docker.props.image_name" value="${docker.props.image.basename}:${pom.version}"/>
+				<property name="docker.props.image_name_old" value="${docker.props.image.basename_old}:${pom.version}"/>
 			</then>
 			<else>
 				<condition property="docker.props.image_name" value="${docker.props.image.basename}:build-${env.USER}" else="${docker.props.image.basename}:build-local">
+					<isset property="env.BUILD_NUMBER"/>
+				</condition>
+				<condition property="docker.props.image_name_old" value="${docker.props.image.basename_old}:build-${env.USER}" else="${docker.props.image_old.basename}:build-local">
 					<isset property="env.BUILD_NUMBER"/>
 				</condition>
 			</else>
@@ -943,13 +950,6 @@
 			<arg value="${docker.props.image_name}"/>
 			<arg value="."/>
 			<redirector output="${root}/build/docker.txt" error="${root}/build/docker" alwayslog="true"/>
-		</exec>
-		<exec dir="${root}" executable="docker" failonerror="true">
-			<arg value="image"/>
-			<arg value="save"/>
-			<arg value="-o"/>
-			<arg value="${build.dir}/${docker.props.image.basename}.tar"/>
-			<arg value="${docker.props.image_name}"/>
 		</exec>
 
 	</target>
@@ -1178,7 +1178,7 @@
 	<target name="docker.push" depends="docker.setupparameters">
 		<echo message="Pushing docker image."/>
 		<property name="image_with_reg" value="${docker.registry}/${docker.props.image.basename}"/>
-
+		<property name="image_old_with_reg" value="${docker.registry}/${docker.props.image.basename_old}"/>
 		<if>
 			<and>
 				<isset property="teamcity.branch"/>
@@ -1191,6 +1191,7 @@
 						<matches string="${pom.version}" pattern="^.*-SNAPSHOT$" casesensitive="false"/>
 					</and>
 				</condition>
+				<echo message="Tagging images for registry"/>
 
 				<exec dir="${root}" executable="docker">
 					<arg value="tag"/>
@@ -1203,22 +1204,41 @@
 					<arg value="${image_with_reg}:${latest_value}"/>
 				</exec>
 
+				<echo message="Tagging images for registry with old name"/>
 				<exec dir="${root}" executable="docker">
-					<arg value="image"/>
-					<arg value="push"/>
-					<arg value="--all-tags"/>
-					<arg value="${image_with_reg}"/>
+					<arg value="tag"/>
+					<arg value="${docker.props.image_name}"/>
+					<arg value="${image_old_with_reg}:${pom.version}"/>
 				</exec>
-
+				<exec dir="${root}" executable="docker">
+					<arg value="tag"/>
+					<arg value="${docker.props.image_name}"/>
+					<arg value="${image_old_with_reg}:${latest_value}"/>
+				</exec>
+				
+				<if>
+					<not>
+						<equals arg1="${dryrun}" arg2="true"/>
+					</not>
+					<then>
+						<exec dir="${root}" executable="docker">
+							<arg value="image"/>
+							<arg value="push"/>
+							<arg value="--all-tags"/>
+							<arg value="${image_with_reg}"/>
+						</exec>
+					</then>
+					<else>
+						<echo message="Dry Not, not actually pushing images, just tagging."/>
+					</else>
+				</if>
+				
+				
 			</then>
 			<else>
 				<echo message="Not a deployable build"/>
 			</else>
 		</if>
-
-
-
-
 	</target>
 
 </project>

@@ -44,7 +44,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
     private String buildUserPassword = "builduserpassword";
     private String officeId = System.getProperty(BYPASS_CWMS_OFFICE_ID,"SPK");
     private String officeEroc = System.getProperty(BYPASS_CWMS_OFFICE_EROC,"l2");
-    private String cwmsImageName = "cwms_schema_installer";
+    private String cwmsImageName = "cwms/schema_installer";
     private String schemaVersion = "";
     private Driver driverInstance = null;
 
