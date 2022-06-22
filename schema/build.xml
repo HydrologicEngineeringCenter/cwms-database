@@ -1060,7 +1060,7 @@
 		</if>
 		<waitfor checkevery="1" checkeveryunit="minute" maxwait="2" maxwaitunit="hour"> <!-- Yes, this takes a while. -->
 			<scriptcondition language="javascript" value="false"><![CDATA[
-				var p = java.lang.Runtime.getRuntime().exec("docker logs -n 200 " + cwms_database_schema.getProperty("docker.props.container_name_valid") );
+				var p = java.lang.Runtime.getRuntime().exec("docker logs -n 500 " + cwms_database_schema.getProperty("docker.props.container_name_valid") );
 				p.waitFor();
 				var reader = new java.io.InputStreamReader(p.getInputStream());
 				var out = org.apache.tools.ant.util.FileUtils.safeReadFully(reader);
@@ -1159,10 +1159,25 @@
 
 	<target name="docker.stopdb" depends="docker.setupparameters">
 		<echo message="Stopping database"/>
-		<exec dir="${root}" executable="docker" failonerror="false">
+		<exec dir="${root}" executable="docker" failonerror="false"
+			  resultproperty="stop_fail_code" errorproperty="stop_fail_reason"
+			>
 			<arg value="stop"/>
 			<arg value="${docker.props.container_name_valid}"/>
 		</exec>
+		<if>									
+			<and>
+				<not>
+					<equals arg1="${stop_fail_code}" arg2="0"/>				
+				</not>
+				<not>
+					<contains string="${stop_fail_reason}" substring="No such container" casesensitive="false"/>
+				</not>								
+			</and>					
+			<then>
+				<fail message="Container stopped failed: ${stop_fail_reason}"/>
+			</then>			
+		</if>
 	</target>
 
 	<target name="docker.killdb" depends="docker.stopdb">
