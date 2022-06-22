@@ -1058,7 +1058,7 @@
 				</exec>
 			</else>
 		</if>
-		<waitfor checkevery="200" maxwait="3600" maxwaitunit="hour"> <!-- Yes, this takes a while. -->
+		<waitfor checkevery="1" checkeveryunit="minute" maxwait="2" maxwaitunit="hour"> <!-- Yes, this takes a while. -->
 			<scriptcondition language="javascript" value="false"><![CDATA[
 				var p = java.lang.Runtime.getRuntime().exec("docker logs -n 200 " + cwms_database_schema.getProperty("docker.props.container_name_valid") );
 				p.waitFor();
@@ -1067,6 +1067,9 @@
 				var echo = cwms_database_schema.createTask("echo");
 				//echo.setMessage("got" + out);
 				//echo.perform();
+				if( out.contains("DATABASE SETUP WAS NOT SUCCESSFUL!") ){
+					throw "Database Startup or create failed";
+				}
 				self.setValue(out.contains("DATABASE IS READY TO USE"));
 				]]>
 			</scriptcondition>
