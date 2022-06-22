@@ -1021,6 +1021,9 @@
 		</exec>
 		<echo message="Existing Containers at time of run. Checking for ${docker.props.container_name_valid}"/>
 		<echo message="${containerList}"/>
+		<tstamp>
+			<format property="checkstart" pattern="YYYY-MM-dd'T'HH:mm:ss'Z'" timezone="UTC"/>
+		</tstamp>
 		<if>
 			<matches pattern="${docker.props.container_name_valid}$" string="${containerList}" multiline="true"/>
 			<then>
@@ -1058,9 +1061,12 @@
 				</exec>
 			</else>
 		</if>
+		<echo message="checking from ${checkstart}"/>		
 		<waitfor checkevery="1" checkeveryunit="minute" maxwait="2" maxwaitunit="hour"> <!-- Yes, this takes a while. -->
 			<scriptcondition language="javascript" value="false"><![CDATA[
-				var p = java.lang.Runtime.getRuntime().exec("docker logs -n 500 " + cwms_database_schema.getProperty("docker.props.container_name_valid") );
+				var p = java.lang.Runtime.getRuntime().exec(
+					"docker logs --since " + cwms_database_schema.getProperty("checkstart")
+				   +" " + cwms_database_schema.getProperty("docker.props.container_name_valid") );
 				p.waitFor();
 				var reader = new java.io.InputStreamReader(p.getInputStream());
 				var out = org.apache.tools.ant.util.FileUtils.safeReadFully(reader);
