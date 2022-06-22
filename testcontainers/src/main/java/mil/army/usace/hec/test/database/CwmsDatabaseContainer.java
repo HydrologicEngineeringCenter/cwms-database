@@ -2,7 +2,6 @@ package mil.army.usace.hec.test.database;
 
 
 import java.time.Duration;
-import java.util.function.Function;
 import java.util.function.Consumer;
 import java.sql.Driver;
 import java.sql.Connection;
@@ -21,18 +20,16 @@ import org.testcontainers.containers.JdbcDatabaseContainer;
 import org.testcontainers.utility.DockerImageName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
-import org.testcontainers.containers.wait.strategy.Wait;
 /**
  * An container manager to manage creation of CWMSDatabases for automated tests
  */
 public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> extends JdbcDatabaseContainer<SELF> {
     public static final Logger log = LoggerFactory.getLogger(CwmsDatabaseContainer.class);
-    public static final String ORACLE_19C= "oracle/database:19.3.0-ee";
-    public static final String ORACLE_18XE = "oracle/database:18.4.0-xe";
+    public static final String ORACLE_19C= "registry.hecdev.net/oracle/database:19.3.0-ee";
+    public static final String ORACLE_18XE = "registry.hecdev.net/oracle/database:18.4.0-xe";
 
     public static final String BYPASS_URL = "testcontainer.cwms.bypass.url";
     public static final String BYPASS_SYS_PASSWORD = "testcontainer.cwms.bypass.sys.pass";
@@ -77,7 +74,6 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
             pdbName="XEPDB1";
             volumeName = volumeName + "_xe";
         }
-
         this.waitStrategy = new LogMessageWaitStrategy()
             .withRegEx("^DATABASE IS READY TO USE.*\\n")
             .withTimes(1)
@@ -294,6 +290,12 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
      */
     public SELF withSchemaVersion(String schemaVersion){
         this.schemaVersion = schemaVersion;
+        return self();
+    }
+
+    public SELF withSchemaImage(String schemaImage){
+        this.cwmsImageName = schemaImage;
+        this.schemaVersion = "";
         return self();
     }
 

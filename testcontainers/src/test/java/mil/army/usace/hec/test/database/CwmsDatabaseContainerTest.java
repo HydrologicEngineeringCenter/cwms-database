@@ -28,7 +28,7 @@ public class CwmsDatabaseContainerTest {
     public final static String branch = System.getProperty("teamcity.build.branch");
     public final static String imageVersion = System.getProperty("cwms.image") != null ? System.getProperty("cwms.image") : "18-SNAPSHOT";
     public final static String volumeName = branch != null ? teamcityVolumeName(branch) : "cwms_container_test_db";
-
+    private static final String DatabaseImage = System.getProperty("database.image", CwmsDatabaseContainer.ORACLE_19C);
 
     private static String teamcityVolumeName(String branch){
         String generatedVolumeName = "cwmsdb_"+TeamCityUtilities.cleanupBranchName(branch)+"_"+System.getProperty("teamcity.build.agent")+"_volume";
@@ -37,7 +37,7 @@ public class CwmsDatabaseContainerTest {
     }
 
     @Container
-    private static CwmsDatabaseContainer database = new CwmsDatabaseContainer(CwmsDatabaseContainer.ORACLE_19C)
+    private static CwmsDatabaseContainer database = new CwmsDatabaseContainer(DatabaseImage)
                                                         .withSchemaVersion(imageVersion)
                                                         .withVolumeName(volumeName)
                                                         .withLogConsumer((line) -> {
