@@ -140,16 +140,18 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
                     //logger.info("Found " + current + " For " + grp.item + "(" + idx +")");
                     StringBuilder data = new StringBuilder();
                     data.append(current);
-                    if (grp.continues && remainder == "") {
+                    if (grp.continues && remainder.isEmpty() && !line.endsWith(grp.endSequence)) {
+                        int seqIdx = -1;
                         do {
                             line = reader.readLine().trim();
-                            //logger.info("Found extra line " + line);
+                            seqIdx = line.indexOf(grp.endSequence);
+                            logger.info("Found extra line " + line);
 
-                            data.append("," + line.replace("#","").replace(grp.endSequence,""));
+                            data.append(line.replace("#","").replace(grp.endSequence,""));
                         } while( line.trim().indexOf(grp.endSequence) < 0);
 
                         if( !line.endsWith(grp.endSequence )) {
-                            int seqIdx = line.indexOf(grp.endSequence);
+                            seqIdx = line.indexOf(grp.endSequence);
                             remainder = line.substring(seqIdx+grp.endSequence.length());
                             //logger.info("remaining" + remainder);
                         }
@@ -174,6 +176,14 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
     }
 
     private void setJdbcParameter(Connection conn, PreparedStatement stmt, Group grp, int idx, String string) throws SQLException {
+        logger.fine(() -> new StringBuilder()
+            .append("JDBC Parms -> ")
+            .append("Index: ").append(idx)
+            .append(", Group: ").append(grp.item)
+            .append(", Type: ").append(grp.type)
+            .append(", Value: ").append(string)
+            .toString()
+        );
         if( "string".equalsIgnoreCase(grp.type)){
             if( "null".equalsIgnoreCase(string)){
                 stmt.setNull(idx,Types.VARCHAR);
@@ -181,13 +191,13 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
                 stmt.setString(idx,string.replace("\"",""));
             }            
         } else if( "int".equalsIgnoreCase(grp.type)) {
-            if( !string.isEmpty()) {
+            if( !string.isEmpty() && !string.equalsIgnoreCase("NULL")) {
                 stmt.setInt(idx, Integer.parseInt(string));
             } else {
                 stmt.setNull(idx,Types.NUMERIC);
             }
         } else if( "double".equalsIgnoreCase(grp.type) ) {
-            if( !string.isEmpty() ){
+            if( !string.isEmpty() && !string.equalsIgnoreCase("NULL") ){
                 stmt.setDouble(idx, Double.parseDouble(string));
             } else {
                 stmt.setNull(idx, Types.DOUBLE);
