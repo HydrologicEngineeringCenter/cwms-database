@@ -1,6 +1,6 @@
 !query
 declare
-    p_object_id number := ?;       -- 1
+    p_object_id number(38) := ?;       -- 1
     p_fips_country char(2) := ?;  -- 2
     p_gmi_country char(3) := ?;  -- 3
     p_iso_2digit char(2) := ?; -- 4
@@ -12,8 +12,8 @@ declare
     p_curr_type char(16) := ?; --10
     p_curr_code char(4) := ?; --11
     p_land_locked char(1) := ?; --12
-    p_square_km number := ?; --13
-    p_square_miles number := ?;  --14
+    p_square_km number(13,2) := ?; --13
+    p_square_miles number(13,2) := ?;  --14
     p_color_map char(1) := ?; -- 15
     p_sdo_gtype number := ?;    --16
     p_sdo_srid number := ?;      --17
@@ -23,7 +23,7 @@ declare
     l_sdo_ordinate_array sdo_ordinate_array := sdo_ordinate_array();
     l_sdo_geom SDO_geometry;
 begin
-    cwms_msg.log_db_message(cwms_msg.msg_level_normal,'Loading CWMS_COUNTY_SP data');
+    cwms_msg.log_db_message(cwms_msg.msg_level_normal,'Loading CWMS_NATION_SP data');
     l_sdo_element_info.extend(p_sdo_element_info_text.count);
     l_sdo_ordinate_array.extend(p_sdo_ordinate_array_text.count);
 
@@ -32,9 +32,10 @@ begin
     end loop;
 
     for i in 1..p_sdo_ordinate_array_text.count loop
-        l_sdo_ordinate_array(i) := to_number(p_sdo_ordinate_array_text(i));
+        l_sdo_ordinate_array(i) := to_number(p_sdo_ordinate_array_text(i));        
     end loop;
 
+    cwms_msg.log_db_message(cwms_msg.msg_level_normal,'Setting sdo_geometry');
     l_sdo_geom := SDO_geometry (
                     p_sdo_gtype, p_sdo_srid,
                     null,
@@ -85,8 +86,8 @@ begin
                     p_iso_3digit,
                     p_country_name,
                     p_long_name,
-                    p_population,
                     p_sovereign,
+                    p_population,                    
                     p_curr_type,
                     p_curr_code,
                     p_land_locked,
@@ -117,7 +118,7 @@ end;
 :sdo_gtype (?<current>^[0-9]*),(?<remains>.*) int
 :sdo_srid (?<current>^[0-9]*),(?<remains>.*) int
 :sdo_element_info_array (?<current>.*?)(?:,/(?<remains>.*))|(?<all>^.*$) clob /
-:sdo_ordinate_array (?<current>.*?)(?:,/(?<remains>.*))|(?<all>^.*$) clob /
+:sdo_ordinate_array (?<current>.*?)(?:,/(?<remains>.*))|(?<all>^.*$) clob ,/
 !enddescription
 !data
  11,"LG","LVA","LV","LVA","Latvia","Latvia","Latvia",2690291,"Lat","LVL","N",64744.68,24997.92,"3",2003,8265,1,1003,1,/21.0516855196065,56.077308802275,22.0672185205524,56.4194408025935,24.1693015225101,56.262218802447,24.8941615231852,56.4498518026219,25.1015245233782,
