@@ -145,7 +145,7 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
                         do {
                             line = reader.readLine().trim();
                             seqIdx = line.indexOf(grp.endSequence);
-                            logger.info("Found extra line " + line);
+                            logger.fine("Found extra line " + line);
 
                             data.append(line.replace("#","").replace(grp.endSequence,""));
                         } while( line.trim().indexOf(grp.endSequence) < 0);
