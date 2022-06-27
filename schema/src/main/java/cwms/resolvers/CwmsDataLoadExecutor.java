@@ -146,9 +146,12 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
                             line = reader.readLine().trim();
                             seqIdx = line.indexOf(grp.endSequence);
                             logger.fine("Found extra line " + line);
-
-                            data.append(line.replace("#","").replace(grp.endSequence,""));
-                        } while( line.trim().indexOf(grp.endSequence) < 0);
+                            String tmp = line;
+                            if( seqIdx > 0 ) {
+                                tmp = tmp.substring(0,seqIdx);
+                            } 
+                            data.append(tmp.replace("#","").replace(grp.endSequence,""));
+                        } while( seqIdx < 0);
 
                         if( !line.endsWith(grp.endSequence )) {
                             seqIdx = line.indexOf(grp.endSequence);
@@ -156,7 +159,7 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
                             //logger.info("remaining" + remainder);
                         }
                     }
-                    logger.info("Setting " + idx);
+                    logger.info("Setting " + idx);                    
                     setJdbcParameter(connection,stmt,grp,idx,data.toString());
                 }
             }
@@ -205,7 +208,12 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
 
         } else if( "clob".equalsIgnoreCase(grp.type)) {
             Clob c = conn.createClob();
-            c.setString(1,string);
+            logger.info("Num elements: " + string.split(",").length );
+            if( string.endsWith(",")) {                                
+                c.setString(1,string.substring(0,string.length()-1));
+            } else {
+                c.setString(1,string);
+            }
             stmt.setClob(idx,c);
         } else {
             throw new FlywayException("unknown type '" + grp.type + "''. Maybe typo, may need new code implemented");
