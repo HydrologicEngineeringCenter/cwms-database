@@ -273,7 +273,7 @@ object TestContainer : BuildType({
             workingDir = "testcontainers"
 
             tasks = "publish"
-            gradleParams = "-DmavenUser=%env.NEXUS_USER% -DmavenPassword=%env.NEXUS_PASSWORD%"
+            gradleParams = "-PmavenUser=%env.NEXUS_USER% -PmavenPassword=%env.NEXUS_PASSWORD%"
             jdkHome ="%env.JDK_1_8_x64%"
             conditions {
                 matches("teamcity.build.branch", "(master|release/.*)")
