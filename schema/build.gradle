@@ -212,6 +212,7 @@ task cleanTestData(type: Exec) {
 
 task loadTestData() {
     dependsOn installTests
+    dependsOn cleanTestData
     doLast {
         println("Loading Test Clobs")
         exec {
@@ -219,7 +220,7 @@ task loadTestData() {
             executable "sqlldr"
             args "${build_user}[$cwms_schema_name]/\"${project.findProperty("flyway.password")}\"@${dbUrl}"
             args "control=xsl_test_clobs.ctl"
-        }
+        }/*
         println("load base locations")
         exec {
             workingDir "${projectDir}/src/test/data/locs"
@@ -240,14 +241,8 @@ task loadTestData() {
             executable "sqlldr"
             args "${build_user}[$cwms_schema_name]/\"${project.findProperty("flyway.password")}\"@${dbUrl}"
             args "control=AT_PHYSICAL_LOCATION.ctl"
-        }
-        println("reseting sequence.")
-        exec {
-            workingDir "$projectDir/src/test"
-            executable "sqlplus"
-            args "${build_user}[$cwms_schema_name]/\"${project.findProperty("flyway.password")}\"@${dbUrl}"
-            args "@reset_seq"
-        }
+        }*/
+        
     }
 
 }

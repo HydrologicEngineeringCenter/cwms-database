@@ -8,7 +8,8 @@ declare
     p_sdo_gtype number := ?;
     p_sdo_srid number :=?;
     p_sdo_element_info_text str_tab_t := cwms_util.split_text(?,',');    
-    l_sdo_element_info sdo_elem_info_array := sdo_elem_info_array();    
+    l_sdo_element_info sdo_elem_info_array := sdo_elem_info_array();
+    l_sdo_point sdo_point_type := sdo_point_type(NULL,NULL,NULL);  
     l_sdo_geom SDO_geometry;
 begin    
     l_sdo_element_info.extend(p_sdo_element_info_text.count);    
@@ -19,8 +20,12 @@ begin
 
     l_sdo_geom := SDO_geometry (
                     p_sdo_gtype, p_sdo_srid,
+                    sdo_point_type(
+                        l_sdo_element_info(1),
+                        l_sdo_element_info(2),
+                        l_sdo_element_info(3)
+                    ),
                     null,
-                    l_sdo_element_info,
                     NULL
                 );
     MERGE into cwms_20.CWMS_OFFICES_GEOLOC ad
