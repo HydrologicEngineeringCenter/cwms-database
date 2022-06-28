@@ -864,4 +864,3 @@ end cwdb_200_ts_extents_has_field_for_non_zero_quality;
 
 end test_update_ts_extents;
 /
-show errors

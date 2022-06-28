@@ -10,7 +10,7 @@ procedure test_dummy;
 procedure teardown_all;
 end test_clean_all;
 /
-SHOW ERRORS;
+
 
 CREATE OR REPLACE PACKAGE BODY &cwms_schema..test_clean_all
 AS
@@ -46,5 +46,3 @@ AS
 
 END test_clean_all;
 /
-
-SHOW ERRORS;

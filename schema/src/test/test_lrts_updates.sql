@@ -4016,5 +4016,5 @@ end test_cwdb_153;
 
 end test_lrts_updates;
 /
-show errors
+
 grant execute on test_lrts_updates to cwms_user;

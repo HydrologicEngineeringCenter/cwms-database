@@ -1872,4 +1872,3 @@ end test_cwdb_235_exception_using_seasonal_levels_with_leap_day_value_in_non_lea
 
 end test_cwms_level;
 /
-show errors;

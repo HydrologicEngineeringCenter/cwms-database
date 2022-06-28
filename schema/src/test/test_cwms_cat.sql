@@ -268,6 +268,5 @@ end test_cat_ts_id_without_create;
 
 end test_cwms_cat;
 /
-show errors;
 
 grant execute on test_cwms_cat to cwms_user;

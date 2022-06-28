@@ -616,4 +616,3 @@ end test_table_rating;
 
 end test_cwms_rating;
 /
-show errors

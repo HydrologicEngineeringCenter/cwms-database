@@ -2252,4 +2252,4 @@ AS
 
 END test_cwms_ts;
 /
-SHOW ERRORS
+SHOW ERRORS;
