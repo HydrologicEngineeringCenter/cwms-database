@@ -4,7 +4,6 @@ alter user CWMS_DBA account unlock;
 
 -- This grants connect role
 GRANT CREATE SESSION TO CWMS_DBA;
-GRANT SET CONTAINER TO CWMS_DBA;
 ALTER USER CWMS_DBA DEFAULT ROLE ALL;
   -- 4 System Privileges for CWMS_DBA
 GRANT ALTER USER TO CWMS_DBA;

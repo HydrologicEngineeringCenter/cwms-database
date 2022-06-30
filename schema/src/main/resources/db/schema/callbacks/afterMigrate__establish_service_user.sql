@@ -8,8 +8,7 @@ begin
 
     -- Replace connect to role with create session/set container for RDS compatibility
     execute immediate 'grant create session to ' || cwms_sec.cac_service_user;
-
-    execute immediate 'grant set container to ' || cwms_sec.cac_service_user;
+    
     execute immediate 'grant cwms_user to ' || cwms_sec.cac_service_user;
     exception
         when user_exists then null;
