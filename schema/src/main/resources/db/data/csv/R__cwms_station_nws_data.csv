@@ -1,7 +1,7 @@
 !query
 declare
     p_nws_id char(5) := ?;
-    p_nws_name char(1999) := ?;
+    p_nws_name varchar2(512) := ?;
     p_lat number := ?;
     p_long number := ?;    
     p_sdo_gtype number := ?;
