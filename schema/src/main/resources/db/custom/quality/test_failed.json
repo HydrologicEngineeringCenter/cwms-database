@@ -1,0 +1,15 @@
+{
+    "shift"  : 15,
+    "values" : [
+        [0,    "NONE",           "The value passed all specified tests"              ],
+        [1,    "ABSOLUTE_VALUE", "The value failed an absolute magnitude test"       ],
+        [2,    "CONSTANT_VALUE", "The value failed a constant value test"            ],
+        [4,    "RATE_OF_CHANGE", "The value failed a rate of change test"            ],
+        [8,    "RELATIVE_VALUE", "The value failed a relative magnitude test"        ],
+        [16,   "DURATION_VALUE", "The value failed a duration-magnitude test"        ],
+        [32,   "NEG_INCREMENT",  "The value failed a negative incremental value test"],
+        [128,  "SKIP_LIST",      "The value was specifically excluded from testing"  ],
+        [512,  "USER_DEFINED",   "The value failed a user-defined test"              ],
+        [1024, "DISTRIBUTION",   "The value failed a distribution test"              ]
+    ]
+}

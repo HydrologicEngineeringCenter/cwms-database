@@ -1,0 +1,9 @@
+{
+    "shift"  : 1,
+    "values" : [
+        [0,    "UNKNOWN",        "The validity of the value has not been assessed"],
+        [1,    "OKAY",           "The value is accepted as valid"                 ],
+        [2,    "MISSING",        "The value has not been reported or computed"    ],
+        [4,    "QUESTIONABLE",   "The validity of the value doubtful"             ],
+        [8,    "REJECTED",       "The value is rejected as invalid"               ]]
+}

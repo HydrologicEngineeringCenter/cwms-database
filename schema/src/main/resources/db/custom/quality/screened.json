@@ -1,0 +1,7 @@
+{
+    "shift"  : 0,
+    "values" : [
+        [0,    "UNSCREENED",     "The value has not been screened"],
+        [1,    "SCREENED",       "The value has been screened"    ]
+    ]
+}

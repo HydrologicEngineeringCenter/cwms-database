@@ -1,0 +1,9 @@
+{
+    "shift"  : 5,
+    "values" : [
+        [0,    "NO_RANGE",       "The value is not greater than the 1st range limit or limits were not tested"],
+        [1,    "RANGE_1",        "The value is greater than the 1st, but not the 2nd range limit"             ],
+        [2,    "RANGE_2",        "The value is greater than the 2nd, but not the 3rd range limit"             ],
+        [3,    "RANGE_3",        "The value is greater than the 3rd range limit"                              ]
+    ]
+}

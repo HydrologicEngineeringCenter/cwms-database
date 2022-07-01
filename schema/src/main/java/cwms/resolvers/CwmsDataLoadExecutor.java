@@ -59,16 +59,16 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
                 if (line.startsWith("#")){
                     continue;
                 } else if( line.startsWith("!query")) {
-                    logger.info("Loading Query");
+                    logger.fine("Loading Query");
                     query = loadQuery(reader);
-                    logger.info(() -> String.format("Loading Data with: %s",query));
+                    logger.finest(() -> String.format("Loading Data with: %s",query));
                 } else if( line.startsWith("!description") ) {
-                    logger.info("Loading descriptions.");
+                    logger.fine("Loading descriptions.");
                     loadDescription(reader);
                 } else if( line.startsWith("!data")){
-                    logger.info("Processing Data Elemements");
+                    logger.fine("Processing Data Elemements");
                     int entries = processData(reader,context.getConnection());
-                    logger.info("Total Entries loaded for (" + resource.getFilename() + ") is " + entries);
+                    logger.finest("Total Entries loaded for (" + resource.getFilename() + ") is " + entries);
                 } else if( line.startsWith("!disableindex")) {
 
                     disableIndex(line.split("\\s+")[1],context.getConnection());
@@ -93,12 +93,12 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
     }
 
     private void disableIndex(String indexName, Connection connection) throws SQLException {
-        logger.info("Disabling index: " + indexName);
+        logger.fine("Disabling index: " + indexName);
         connection.createStatement().execute("alter session set skip_unusable_indexes = true");
         String query = "alter index " +indexName + " unusable";
-        logger.info("Running " + query);
+        logger.fine("Running " + query);
         connection.createStatement().execute(query);
-        logger.info("Disabled");
+        logger.fine("Disabled");
     }
 
     private int processData(BufferedReader reader,Connection connection) throws IOException, SQLException {
@@ -118,11 +118,11 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
                 continue;
             }
             for( Group grp: groups ){
-                logger.info("searching for " + grp.item);
+                logger.fine("searching for " + grp.item);
                 Matcher matches = grp.pattern.matcher(remainder.trim());
                 if (matches.matches() ){
                     idx++;
-                    logger.info("Found matches in " + remainder);
+                    logger.fine("Found matches in " + remainder);
 
                     /**
                      * Most of this silly logic is caused by the weird grouping required
@@ -130,7 +130,7 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
                      * we can simplify
                      */
                     String current = matches.group("current") != null ? matches.group("current") : matches.group("all");
-                    logger.info(" using '" + current +"'");
+                    logger.fine(" using '" + current +"'");
                     if (matches.groupCount() > 1 && matches.group("remains") != null) {
                         remainder = matches.group("remains");
                     } else {
@@ -156,20 +156,19 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
                         if( !line.endsWith(grp.endSequence )) {
                             seqIdx = line.indexOf(grp.endSequence);
                             remainder = line.substring(seqIdx+grp.endSequence.length());
-                            //logger.info("remaining" + remainder);
+                            logger.finest("remaining" + remainder);
                         }
                     }
-                    logger.info("Setting " + idx);                    
+                    logger.finest( "Setting " + idx);                    
                     setJdbcParameter(connection,stmt,grp,idx,data.toString());
                 }
             }
-            logger.info(idx + " elements set");
-            logger.info(stmt.toString());
+            logger.fine( idx + " elements set");            
             stmt.addBatch();
             totalEntries++;
             if( totalEntries % batchSize == 0 ){
                 stmt.executeBatch();
-                logger.info("Have now saved: " + totalEntries + " records total for this set.");
+                logger.fine( "Have now saved: " + totalEntries + " records total for this set.");
             }
         }
         stmt.executeBatch();
@@ -208,7 +207,7 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
 
         } else if( "clob".equalsIgnoreCase(grp.type)) {
             Clob c = conn.createClob();
-            logger.info("Num elements: " + string.split(",").length );
+            logger.finest(() -> "Num elements: " + string.split(",").length );
             if( string.endsWith(",")) {                                
                 c.setString(1,string.substring(0,string.length()-1));
             } else {
@@ -225,14 +224,14 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
 
         while( !(line = reader.readLine()).startsWith("!enddescription")) {
             String parts[] = line.split("\\s+");
-            logger.info( "Loading " + line + " Split to " + parts.length + " elements.");
+            logger.finest( "Loading " + line + " Split to " + parts.length + " elements.");
             groups.add( new Group(parts[0],
                                   parts[1],
                                   parts[2],
                                   parts.length == 4 ? parts[3] : ""
             ));
         }
-        logger.info("Descriptions loaded.");
+        logger.fine("Descriptions loaded.");
     }
 
     private String loadQuery(BufferedReader reader) throws IOException{

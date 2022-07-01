@@ -1,0 +1,10 @@
+{
+    "shift"  : 8,
+    "values" : [
+        [0,    "NONE",           "The value was not replaced"                                          ],
+        [1,    "AUTOMATIC",      "The value was automatically replaced by a pre-set software condition"], 
+        [2,    "INTERACTIVE",    "The value was interactively replaced using a software tool"          ], 
+        [3,    "MANUAL",         "The value was specified explicitly"                                  ], 
+        [4,    "RESTORED",       "The value was restored to the original report or computation"        ]
+    ]
+}

@@ -1,0 +1,7 @@
+{
+    "shift"  : 7,
+    "values" : [
+        [0,    "ORIGINAL",       "The value has not been changed from the original report or computation"],
+        [1,    "MODIFIED",       "The value has been changed from the original report or computation"]
+    ]
+}

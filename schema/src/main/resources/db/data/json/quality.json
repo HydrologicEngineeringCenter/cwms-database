@@ -1,0 +1,125 @@
+'''
+Data Quality Rules :
+
+    1. Unless the Screened bit is set, no other bits can be set.
+
+    2. Unused bits (22, 24, 27-31, 32+) must be reset (zero).
+
+    3. The Okay, Missing, Questioned and Rejected bits are mutually
+       exclusive.
+
+    4. No replacement cause or replacement method bits can be set unless
+       the changed (different) bit is also set, and if the changed (different)
+       bit is set, one of the cause bits and one of the replacement
+       method bits must be set.
+
+    5. Replacement Cause integer is in range 0..4.
+
+    6. Replacement Method integer is in range 0..4
+
+    7. The Test Failed bits are not mutually exclusive (multiple tests can be
+       marked as failed).
+
+Bit Mappings :
+
+         3                   2                   1
+     2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1
+
+     P - - - - - T T T T T T T T T T T M M M M C C C D R R V V V V S
+     |           <---------+---------> <--+--> <-+-> | <+> <--+--> |
+     |                     |              |      |   |  |     |    +------Screened T/F
+     |                     |              |      |   |  |     +-----------Validity Flags
+     |                     |              |      |   |  +--------------Value Range Integer
+     |                     |              |      |   +-------------------Different T/F
+     |                     |              |      +---------------Replacement Cause Integer
+     |                     |              +---------------------Replacement Method Integer
+     |                     +-------------------------------------------Test Failed Flags
+     +-------------------------------------------------------------------Protected T/F
+
+'''
+
+q_screened = {
+    "shift"  : 0,
+    "values" : [
+        (0,    "UNSCREENED",     "The value has not been screened"),
+        (1,    "SCREENED",       "The value has been screened"    )]}
+
+q_validity = {
+    "shift"  : 1,
+    "values" : [
+        (0,    "UNKNOWN",        "The validity of the value has not been assessed"),
+        (1,    "OKAY",           "The value is accepted as valid"                 ),
+        (2,    "MISSING",        "The value has not been reported or computed"    ),
+        (4,    "QUESTIONABLE",   "The validity of the value doubtful"             ),
+        (8,    "REJECTED",       "The value is rejected as invalid"               )]}
+
+q_value_range = {
+    "shift"  : 5,
+    "values" : [
+        (0,    "NO_RANGE",       "The value is not greater than the 1st range limit or limits were not tested"),
+        (1,    "RANGE_1",        "The value is greater than the 1st, but not the 2nd range limit"             ),
+        (2,    "RANGE_2",        "The value is greater than the 2nd, but not the 3rd range limit"             ),
+        (3,    "RANGE_3",        "The value is greater than the 3rd range limit"                              )]}
+
+q_different = {
+    "shift"  : 7,
+    "values" : [
+        (0,    "ORIGINAL",       "The value has not been changed from the original report or computation"),
+        (1,    "MODIFIED",       "The value has been changed from the original report or computation")]}
+
+q_replacement_cause = {
+    "shift"  : 8,
+    "values" : [
+        (0,    "NONE",           "The value was not replaced"                                          ),
+        (1,    "AUTOMATIC",      "The value was automatically replaced by a pre-set software condition"), # e.g. Interpolated by DATCHK
+        (2,    "INTERACTIVE",    "The value was interactively replaced using a software tool"          ), # e.g. "Fill" operation in Data Validation Editor
+        (3,    "MANUAL",         "The value was specified explicitly"                                  ), # e.g. Value typed in from keyboard
+        (4,    "RESTORED",       "The value was restored to the original report or computation"        )]}
+
+q_replacement_method = {
+    "shift"  : 11,
+    "values" : [
+        (0,    "NONE",           "The value was not replaced"                    ),
+        (1,    "LIN_INTERP",     "The value was replaced by linear interpolation"),
+        (2,    "EXPLICIT",       "The value was replaced by manual change"       ),
+        (3,    "MISSING",        "The value was replaced with missing"           ),
+        (4,    "GRAPHICAL",      "The value was replaced graphically"            )]}
+,
+q_test_failed: {
+    "shift"  : 15,
+    "values" : [
+        (0,    "NONE",           "The value passed all specified tests"              ),
+        (1,    "ABSOLUTE_VALUE", "The value failed an absolute magnitude test"       ),
+        (2,    "CONSTANT_VALUE", "The value failed a constant value test"            ),
+        (4,    "RATE_OF_CHANGE", "The value failed a rate of change test"            ),
+        (8,    "RELATIVE_VALUE", "The value failed a relative magnitude test"        ),
+        (16,   "DURATION_VALUE", "The value failed a duration-magnitude test"        ),
+        (32,   "NEG_INCREMENT",  "The value failed a negative incremental value test"),
+        (128,  "SKIP_LIST",      "The value was specifically excluded from testing"  ),
+        (512,  "USER_DEFINED",   "The value failed a user-defined test"              ),
+        (1024, "DISTRIBUTION",   "The value failed a distribution test"              )]}
+    }
+#
+# rebuild q_test_failed["values"] to include all combinations of values listed
+#
+testFailedCombinations = uniqueCombinations(q_test_failed["values"][1:])
+q_test_failed["values"] = q_test_failed["values"][:1]
+for items in testFailedCombinations :
+    if len(items) == 0 :
+        continue
+    if len(items) == 1 :
+        value = items[0][0]
+        id    = items[0][1]
+        desc  = items[0][2]
+    else :
+        values, ids, descriptions = zip(*items)
+        value = sum(values)
+        id    = "+".join(ids)
+        desc  = "The value failed %d tests" % len(items)
+    q_test_failed["values"].append((value, id, desc))
+
+q_protection = {
+    "shift"  : 31,
+    "values" : [
+        (0,    "UNPROTECTED",    "The value is not protected"),
+        (1,    "PROTECTED",      "The value is protected"    )]}

@@ -14,6 +14,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
@@ -64,12 +65,12 @@ public class CwmsBulkDataResolver implements MigrationResolver {
 
     private void addMigrations(List<ResolvedMigration> migrations, String prefix, String suffix, Context context){
         ResourceNameParser nameParser = new ResourceNameParser(context.getConfiguration());
-        System.out.println("finding CWMS Custom migrations");
+        log.info("finding CWMS Custom migrations");
 
 
         for(DataResource resource: getResources(prefix, suffix) ){
             String filename = resource.getFilename();
-            System.out.println("*********" + filename +"**************");
+            log.fine(()->"*********" + filename +"**************");
             ResourceName name = nameParser.parse(filename);
             if(!name.isValid() || !prefix.equals(name.getPrefix())) {
                 continue;
@@ -95,14 +96,14 @@ public class CwmsBulkDataResolver implements MigrationResolver {
 
 
         for( Location location: configuration.getLocations() ) {
-            System.out.println("Searching in " + location.getPath()+ "|||" + location.getDescriptor());
+            log.info("Searching in " + location.getPath()+ "|||" + location.getDescriptor());
             try {
-                URL dir = getClass().getClassLoader().getResource(location.getPath());
+                URL dir = getClass().getClassLoader().getResource(location.getPath()+"/csv");
                 Path path = Path.of(dir.toURI());
                 walk(path, (f) -> {
                     String name = f.getName();
                     if( name.startsWith(prefix) && name.endsWith(suffix) ){
-                        System.out.println(f.getAbsolutePath() + " -> " + f.getName());
+                        log.fine( () -> f.getAbsolutePath() + " -> " + f.getName());
 
                         resources.add( new DataResource(f));
                     }
@@ -129,8 +130,7 @@ public class CwmsBulkDataResolver implements MigrationResolver {
 
             });
         } catch (IOException e) {
-
-            e.printStackTrace();
+            log.log(Level.SEVERE,"Error walking path",e);        
         }
     }
 

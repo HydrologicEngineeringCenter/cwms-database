@@ -1,0 +1,10 @@
+{
+    "shift"  : 11,
+    "values" : [
+        [0,    "NONE",           "The value was not replaced"                    ],
+        [1,    "LIN_INTERP",     "The value was replaced by linear interpolation"],
+        [2,    "EXPLICIT",       "The value was replaced by manual change"       ],
+        [3,    "MISSING",        "The value was replaced with missing"           ],
+        [4,    "GRAPHICAL",      "The value was replaced graphically"            ]
+    ]
+}

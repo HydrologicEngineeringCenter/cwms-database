@@ -27,6 +27,7 @@ configurations {
 
 dependencies {
     implementation "org.flywaydb:flyway-core:8.4.4"
+    implementation "com.fasterxml.jackson.core:jackson-databind:2.11.1"
     compile "org.flywaydb:flyway-core:8.4.4"
     flywayMigration "com.oracle.database.jdbc:ojdbc8:$ORACLE_JDBC_VERSION"
     flywayMigration sourceSets.main.runtimeClasspath
@@ -150,7 +151,7 @@ task downloadUtplSql(type: Copy, dependsOn: checkTestSetup ){
     into "$buildDir/deps"
     doLast {
         File createOwner = new File("$buildDir/deps/utPLSQL/source/create_utplsql_owner.sql")
-        createOwner.withWriterAppend( out -> {
+        createOwner.withWriterAppend( out-> {
             out.println("\ngrant execute on dbms_lob to &ut3_user;")
             out.println("grant execute on dbms_random to &ut3_user;")
 	  		out.println("grant execute on dbms_random to &ut3_user;")
@@ -191,6 +192,17 @@ task installTests(type: Exec ){
     args cwms_eroc + "hectest_up"
     doLast {
         project.mkdir(coverageDir)
+        exec {
+            executable "sqlplus"
+            args "sys/${sysPassword}@${dbUrl} as sysdba"
+			args "@test_grants.sql"
+            args "${cwms_eroc}cwmspd"
+			args "${cwms_eroc}hectest_ro"
+			args "${cwms_eroc}hectest_db"
+			args "${cwms_eroc}hectest_pu"
+			args "${cwms_eroc}hectest_up"
+			args "${cwms_schema_name}"
+        }
     }
 }
 
@@ -253,7 +265,7 @@ task testAsPdUser(type: Exec) {
 
     executable "utplsql"
     args "run"
-	args "-p=${cwms_schema_name}.test_aaa"
+	args "-p=${cwms_schema_name}.test_cwms_rating,${cwms_schema_name}.test_lrts_updates,${cwms_schema_name}.test_probability_parameter,${cwms_schema_name}.test_cwms_loc,${cwms_schema_name}.test_cwms_ts,${cwms_schema_name}.test_cwms_util,${cwms_schema_name}.test_cwms_prop,${cwms_schema_name}.test_versioned_time_series,${cwms_schema_name}.test_update_ts_extents,${cwms_schema_name}.test_cwms_pool,${cwms_schema_name}.test_timeseries_snapping,${cwms_schema_name}.test_cwms_cat,${cwms_schema_name}.test_cwms_msg,${cwms_schema_name}.test_cwms_level,${cwms_schema_name}.test_cwms_display"
     args "-f=UT_COVERAGE_HTML_REPORTER"
         args "-o=${coverageDir}/index.html"
     args "-f=UT_COVERAGE_COBERTURA_REPORTER"
@@ -264,6 +276,13 @@ task testAsPdUser(type: Exec) {
     args "-d"
 	args "${cwms_eroc}hectest_pu/\"${test_password}\"@${dbUrl}"
 }
+/*
+task testAsRoUser(type: Exec ) {
+    dependsOn installTests
+    dependsOn loadTestData
+
+    
+}*/
 
 
 task testDb() {
