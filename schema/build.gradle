@@ -27,7 +27,7 @@ configurations {
 
 dependencies {
     implementation "org.flywaydb:flyway-core:8.4.4"
-    implementation "com.fasterxml.jackson.core:jackson-databind:2.11.1"
+    implementation "com.fasterxml.jackson.core:jackson-databind:2.13.3"
     compile "org.flywaydb:flyway-core:8.4.4"
     flywayMigration "com.oracle.database.jdbc:ojdbc8:$ORACLE_JDBC_VERSION"
     flywayMigration sourceSets.main.runtimeClasspath

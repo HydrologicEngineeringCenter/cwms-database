@@ -1,0 +1,7 @@
+{
+    "shift"  : 31,
+    "values" : [
+        [0,    "UNPROTECTED",    "The value is not protected"],
+        [1,    "PROTECTED",      "The value is protected"    ]
+    ]
+}
