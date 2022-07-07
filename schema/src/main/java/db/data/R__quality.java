@@ -21,6 +21,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.TreeTraversingParser;
 
+import io.herrmann.generator.Generator;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,6 +44,7 @@ public class R__quality extends BaseJavaMigration {
     private static final Logger log = Logger.getLogger(R__quality.class.getName());
 
     private Long checksum = 3L;
+    private String query = null;
 
     private Quality screenedData;
     private Quality validityData;
@@ -57,7 +60,8 @@ public class R__quality extends BaseJavaMigration {
         log.info("Loading Quality Data");
         CRC32 crc = new CRC32();
         
-        checksum = 6L;//crc.getValue();
+        checksum = 9L;//crc.getValue();
+        query = new String(getData("db/custom/quality/cwms_data_quality.sql").readAllBytes());
     }
 
     public InputStream getData(String fileName) throws Exception {
@@ -74,11 +78,9 @@ public class R__quality extends BaseJavaMigration {
         
         this.load_data();
 
-        try( PreparedStatement qualityInsert = context.getConnection().prepareStatement(
-              "insert into cwms_data_quality"
-            + "(QUALITY_CODE,SCREENED_ID,VALIDITY_ID,RANGE_ID,CHANGED_ID,REPL_CAUSE_ID,REPL_METHOD_ID,TEST_FAILED_ID,PROTECTION_ID)"
-            + " values(?   ,?           ,?          ,?       ,?         ,?            ,?             ,?             ,?)");
-        //             1    2            3           4        5          6             7              8              9
+        try( 
+            PreparedStatement qualityInsert = context.getConnection()
+                                                     .prepareStatement(query);              
         ) {
             qualityInsert.setLong(1, 0); // always unscreened
             qualityInsert.setString(2,screenedData.getValues().get(0).getName());
@@ -90,7 +92,8 @@ public class R__quality extends BaseJavaMigration {
             qualityInsert.setString(8,testFailedData.getValues().get(0).getName());
             qualityInsert.setString(9,protectionData.getValues().get(0).getName());
             qualityInsert.addBatch();
-            
+            int count = 1;
+            int batchSize = 100;
             for( QualityBitDescription validity: validityData.getValues()){
                 for( QualityBitDescription range: valueRangeData.getValues()){
                     for( QualityBitDescription different: differentData.getValues() ) {
@@ -118,6 +121,10 @@ public class R__quality extends BaseJavaMigration {
                                         qualityInsert.setString(8,testFailed.getName());
                                         qualityInsert.setString(9,protection.getName());
                                         qualityInsert.addBatch();
+                                        count++;
+                                        if( count % batchSize == 0 ){
+                                            qualityInsert.executeBatch();
+                                        }
                                     }
                                 }
                             }
@@ -154,6 +161,9 @@ public class R__quality extends BaseJavaMigration {
         protectionData = mapper.readValue(getData("db/custom/quality/protection.json"),Quality.class);
 
         fillTestFailedData(testFailedData);
+        for(QualityBitDescription qbd: testFailedData.getValues() ){
+            log.info(qbd.toString());
+        }
     }
 
     private void fillTestFailedData(Quality failedData) {
@@ -161,14 +171,15 @@ public class R__quality extends BaseJavaMigration {
 
         List<List<QualityBitDescription>> combinations = new ArrayList<>();
         for( int i = 0; i < values.size(); i++) {
-            for( List<QualityBitDescription> combinationsForElement: uniqueCombinations(values,i+1)) {
+            
+            for( List<QualityBitDescription> combinationsForElement: new UniqueComboGenerator(values.subList(1,values.size()),i+1)) {
                 combinations.add(combinationsForElement);
             }
         }
-
+        ArrayList<QualityBitDescription> testFails = new ArrayList<>(testFailedData.getValues().subList(0, 1));
         for(List<QualityBitDescription> combos: combinations){
             if( combos.size() == 1) {
-                failedData.getValues().add(combos.get(0)); 
+                testFails.add(combos.get(0)); 
             } else if ( combos.size() > 1 ) {
                 QualityBitDescription newQual = 
                     combos.stream()
@@ -176,20 +187,26 @@ public class R__quality extends BaseJavaMigration {
                             new QualityBitDescription(0L,"",""), 
                             (total, element) -> { 
                                 total.value += element.value;
-                                total.name += "+" + element.name;
+                                if( total.name.isEmpty()) {
+                                    total.name += element.name;    
+                                } else {
+                                    total.name += "+" + element.name;
+                                }
+                                
                                 
                                 return total;
                             }
                             );
                 newQual.description = String.format("The value failed %d tests", combos.size());
-                failedData.getValues().add(newQual);
+                testFails.add(newQual);
 
             } else {
                 // do nothing
-            }
-            
+            }            
         }
-    }
+        testFailedData.getValues().clear();
+        testFailedData.getValues().addAll(testFails);
+    }   
 
     
 
@@ -237,7 +254,13 @@ public class R__quality extends BaseJavaMigration {
         String getName() { return name; }
         String description() { return description; }
 
-
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append(value).append(",")
+              .append(name).append(",")
+              .append(description);
+            return sb.toString();
+        }
         
     }
 
@@ -254,5 +277,33 @@ public class R__quality extends BaseJavaMigration {
 
         public long getShift() { return shift; }        
         public List<QualityBitDescription> getValues() { return values; }
+    }
+
+    private class UniqueComboGenerator extends Generator<List<QualityBitDescription>> {
+
+        private List<QualityBitDescription> items;
+        private int n;
+
+        public UniqueComboGenerator(List<QualityBitDescription> items, int n) {
+            this.items = items;
+            this.n = n;
+        }
+
+        @Override
+        protected void run() throws InterruptedException {
+            if( this.n == 0 ) {
+                yield(List.of());
+            } else {
+                for( int i = 0; i < this.items.size(); i++ ) {
+                    for( List<QualityBitDescription> combos: new UniqueComboGenerator(this.items.subList(i+1, this.items.size()), this.n-1) ) {
+                        ArrayList<QualityBitDescription> tmp = new ArrayList<>(Arrays.asList(this.items.get(i)));
+                        tmp.addAll(combos);                        
+                        yield(tmp);
+                    }
+                }
+            }
+            
+        }
+
     }
 }
