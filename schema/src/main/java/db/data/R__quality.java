@@ -1,5 +1,6 @@
 package db.data;
 
+import org.apache.commons.io.IOUtils;
 import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
 
@@ -27,6 +28,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.CharBuffer;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -60,8 +62,14 @@ public class R__quality extends BaseJavaMigration {
         log.info("Loading Quality Data");
         CRC32 crc = new CRC32();
         
-        checksum = 9L;//crc.getValue();
-        query = new String(getData("db/custom/quality/cwms_data_quality.sql").readAllBytes());
+        checksum = 12L;//crc.getValue();
+        query = readQuery("db/custom/quality/cwms_data_quality.sql");
+    }
+
+    private String readQuery(String filename) throws Exception {
+        InputStream is = getData(filename);
+        
+        return new String( IOUtils.toByteArray(is) );
     }
 
     public InputStream getData(String fileName) throws Exception {
@@ -96,9 +104,15 @@ public class R__quality extends BaseJavaMigration {
             int batchSize = 100;
             for( QualityBitDescription validity: validityData.getValues()){
                 for( QualityBitDescription range: valueRangeData.getValues()){
-                    for( QualityBitDescription different: differentData.getValues() ) {
+                    for( QualityBitDescription different: differentData.getValues() ) {                        
                         for( QualityBitDescription replacementCause: replacementCauseData.getValues()) {
+                            if( (different.getValue() > 0) != (replacementCause.getValue() > 0) ) {
+                                continue;
+                            }
                             for( QualityBitDescription replacementMethod: replacementMethodData.getValues() ) {
+                                if( (different.getValue() > 0) != (replacementMethod.getValue() > 0)) {
+                                    continue;
+                                }
                                 for( QualityBitDescription testFailed: testFailedData.getValues() ) {
                                     for( QualityBitDescription protection: protectionData.getValues() ) {
                                         long qualityCode = 0L 
