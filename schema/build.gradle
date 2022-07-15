@@ -195,6 +195,7 @@ task installTests(type: Exec ){
         project.mkdir(coverageDir)
         exec {
             executable "sqlplus"
+            workingDir "src/test"
             args "sys/${sysPassword}@${dbUrl} as sysdba"
 			args "@test_grants.sql"
             args "${cwms_eroc}cwmspd"
