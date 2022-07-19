@@ -434,7 +434,46 @@ is
    l_end_time_out DATE;
    l_time_zone_out cwms_20.av_cwms_ts_id.time_zone_id%TYPE;
 begin
+   -----------------------------
+   -- create the base ts_data --
+   -----------------------------
+   for i in 1..c_value_count loop
+      l_ts_data.extend;
+      l_ts_data(i) := ztsv_type(c_start_time + (i-1) / 24, i-1, 0);
+   end loop;
+   ----------------------------------------------
+   -- store the time series as a non-versioned --
+   ----------------------------------------------
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => c_ts_id,
+      p_units           => c_units,
+      p_timeseries_data => l_ts_data,
+      p_store_rule      => cwms_util.replace_all,
+      p_office_id       => c_office_id);
 
+  --------------------------------------
+   -- set the time series to versioned --
+   --------------------------------------
+   cwms_ts.set_tsid_versioned(
+      p_cwms_ts_id   => c_ts_id,
+      p_versioned    => 'T',
+      p_db_office_id => c_office_id);
+   ------------------------------
+   -- store the versioned data --
+   ------------------------------
+   for i in 1..c_version_dates.count loop
+      for j in 1..l_ts_data.count loop
+         l_ts_data(j).date_time := l_ts_data(j).date_time + 1 / 24;
+         l_ts_data(j).value     := i * 1000 + i + j - 1;
+      end loop;
+      cwms_ts.zstore_ts(
+         p_cwms_ts_id      => c_ts_id,
+         p_units           => c_units,
+         p_timeseries_data => l_ts_data,
+         p_store_rule      => cwms_util.replace_all,
+         p_version_date    => c_version_dates(i),
+         p_office_id       => c_office_id);
+   end loop;
 
    cwms_loc.assign_loc_group(
      p_loc_category_id => 'Agency Aliases',
