@@ -9,6 +9,8 @@ create or replace package &cwms_schema..test_versioned_time_series as
 procedure store_retrieve_time_series;
 --%test(Test whether time series versioned flag is effective)
 procedure cwdb_151;
+--%test(Test retrieve_ts_multi with aliases)
+procedure retrieve_ts_multi_test;
 
 procedure setup;
 procedure teardown;
@@ -411,6 +413,99 @@ begin
       end loop;
    end if;
 end cwdb_151;
+
+procedure retrieve_ts_multi_test
+is
+   l_ts_data    ztsv_array := ztsv_array();
+   l_crsr       sys_refcursor;
+   l_sequence_out INTEGER;
+   l_crsr2      sys_refcursor;
+   p_location_id    varchar2(57); 
+   l_date_times cwms_20.date_table_type;
+   l_values cwms_20.double_tab_t;
+   l_quality_codes cwms_20.number_tab_t;
+   p_expected_values cwms_20.double_tab_t;
+   l_timeseries_info cwms_20.timeseries_req_array := cwms_20.timeseries_req_array ();
+   
+   l_cwms_ts_id_out cwms_20.av_cwms_ts_id.cwms_ts_id%TYPE;
+   l_unit_out cwms_20.av_cwms_ts_id.unit_id%TYPE;
+   l_location_time_zone_out cwms_20.av_cwms_ts_id.time_zone_id%TYPE;
+   l_start_time_out DATE;
+   l_end_time_out DATE;
+   l_time_zone_out cwms_20.av_cwms_ts_id.time_zone_id%TYPE;
+begin
+
+
+   cwms_loc.assign_loc_group(
+     p_loc_category_id => 'Agency Aliases',
+     p_loc_group_id    => 'USGS Station Number',
+     p_location_id     => c_location_id,
+     p_loc_alias_id    => '11111111',
+     p_db_office_id    => c_office_id);
+
+
+   p_location_id := cwms_loc.get_location_id_from_alias(
+          p_alias_id    => '11111111',
+          p_group_id    => 'USGS Station Number',
+          p_category_id => 'Agency Aliases' ,
+          p_office_id   => c_office_id);
+                            
+   ut.expect(p_location_id).to_equal(c_location_id);                       
+    
+   -------------------------------------------------------------
+   -- test retrieving versioned time series data with an alias--
+   -------------------------------------------------------------
+   
+   l_timeseries_info.EXTEND (1);
+   for j in 1..c_version_dates.count loop
+    l_timeseries_info (1) := cwms_20.timeseries_req_type (c_ts_id,c_units, c_start_time,c_end_time);
+    cwms_ts.retrieve_ts_multi (
+         p_at_tsv_rc => l_crsr,
+         p_timeseries_info => l_timeseries_info, 
+         p_version_date => c_version_dates(j), 
+         p_start_inclusive => 'T', 
+         p_end_inclusive => 'T', 
+         p_time_zone => Null, 
+         p_trim => 'F', 
+         p_previous => 'F', 
+         p_next => 'F', 
+         p_max_version => 'T');
+
+    p_expected_values := c_expected_values(j+1);
+    LOOP
+        FETCH l_crsr
+        INTO l_sequence_out,
+            l_cwms_ts_id_out,
+            l_unit_out,
+            l_start_time_out,
+            l_end_time_out,
+            l_time_zone_out,
+            l_crsr2,
+            l_location_time_zone_out;
+    
+    EXIT WHEN l_crsr%NOTFOUND;
+    
+    FETCH l_crsr2
+    BULK COLLECT INTO l_date_times, l_values, l_quality_codes;
+    --ut.expect(l_crsr2%rowcount).to_equal(p_expected_values.count);
+    CLOSE l_crsr2;
+    
+    
+    ut.expect(l_values.count).to_equal(p_expected_values.count);
+    if l_values.count = p_expected_values.count then
+        for i in 1..p_expected_values.count loop
+          if p_expected_values(i) is null then
+              ut.expect(l_values(i)).to_be_null;
+           else
+              ut.expect(l_values(i)).to_equal(p_expected_values(i));
+           end if;
+        end loop;
+     end if;
+    END LOOP;
+    
+    CLOSE l_crsr;
+   end loop;
+end retrieve_ts_multi_test;
 
 end test_versioned_time_series;
 /
