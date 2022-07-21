@@ -29,3 +29,5 @@ GRANT EXECUTE ON &cwms_schema..test_aaa to &4;
 --GRANT EXECUTE any procedure to &1;
 --GRANT CREATE any procedure to &1;
 GRANT EXECUTE ON &cwms_schema..test_up to &5;
+
+GRANT EXECUTE ON &cwms_schema..test_aq_user to &7;
