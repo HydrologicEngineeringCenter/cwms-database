@@ -186,7 +186,7 @@ public class R__quality extends BaseJavaMigration {
         List<List<QualityBitDescription>> combinations = new ArrayList<>();
         for( int i = 0; i < values.size(); i++) {
             
-            for( List<QualityBitDescription> combinationsForElement: new UniqueComboGenerator(values.subList(1,values.size()),i+1)) {
+            for( List<QualityBitDescription> combinationsForElement: new UniqueComboGenerator(values,i+1)) {
                 combinations.add(combinationsForElement);
             }
         }
