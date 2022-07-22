@@ -17,6 +17,9 @@ AS
     test_cwms_ts_id VARCHAR2(512) := test_base_location_id || '.Stage.Inst.0.0.ver';
     test_log_message VARCHAR2(512) := 'Test Message random';
     test_subscriber_name VARCHAR2(64) := 'TEST_USER_SUB';
+    already_subbed EXCEPTION;
+    PRAGMA EXCEPTION_INIT(already_subbed,-24034);
+    
 END;
 /
 
@@ -57,7 +60,13 @@ AS
                                  p_active         => 'T',
                                  p_db_office_id   => '&office_id');
         COMMIT;
-        
+        begin
+            dbms_aqadm.add_subscriber(queue_name=>'&cwms_schema..&office_id._TS_STORED', 
+                                    subscriber=>SYS.AQ$_AGENT(test_subscriber_name,'&cwms_schema..&office_id._TS_STORED',
+                                    NULL));
+        exception
+            when already_subbed then null;
+        end;
     END;
 
     
@@ -73,15 +82,14 @@ AS
         opId pls_integer;
         msgid raw(16);
     BEGIN
-        dbms_aqadm.add_subscriber(queue_name=>'&cwms_schema..&office_id._TS_STORED', 
-                                  subscriber=>SYS.AQ$_AGENT(test_subscriber_name,'&cwms_schema..&office_id._TS_STORED',
-                                  NULL));
+        
 
         cwms_ts.create_ts('&office_id',test_cwms_ts_id,NULL);
 
-        options.consumer_name := 'TEST';
+        options.consumer_name := test_subscriber_name;
         options.navigation := dbms_aq.FIRST_MESSAGE;
         options.msgid := null;
+        options.wait := 120; -- update to 2 minutes
         dbms_aq.dequeue(queue_name=>'&cwms_schema..&office_id._TS_STORED', dequeue_options => options,message_properties=>props,payload=>payload,msgid=>msgid);
         dbms_output.put_line('Have message, now doing something with it.');
         opId := payload.prepare(-1);
