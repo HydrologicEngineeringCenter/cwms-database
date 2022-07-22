@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE &cwms_schema..test_aq_user
+CREATE OR REPLACE PACKAGE &cwms_schema..test_aq_user AUTHID CURRENT_USER 
 AS
     -- %suite(Test AQ system for Normal user )
     --%beforeall(setup)
@@ -13,15 +13,15 @@ AS
 
     PROCEDURE setup;
 
-    test_base_location_id   VARCHAR2 (32) := 'TestLoc1';
-    test_cwms_ts_id VARCHAR2(200) := test_base_location_id || '.Stage.Inst.0.0.ver';
-    test_log_message VARCHAR2(64) := 'Test Message random';
-    test_subscriber_name VARCHAR2(8) := 'TEST_SUB';
+    test_base_location_id   VARCHAR2 (256) := 'TestLoc1';
+    test_cwms_ts_id VARCHAR2(512) := test_base_location_id || '.Stage.Inst.0.0.ver';
+    test_log_message VARCHAR2(512) := 'Test Message random';
+    test_subscriber_name VARCHAR2(64) := 'TEST_USER_SUB';
 END;
 /
 
 /* Formatted on 2/24/2022 3:11:58 PM (QP5 v5.381) */
-CREATE OR REPLACE PACKAGE BODY &cwms_schema..test_cwms_msg
+CREATE OR REPLACE PACKAGE BODY &cwms_schema..test_aq_user
 AS
     PROCEDURE teardown
     IS
@@ -47,14 +47,6 @@ AS
                 NULL;
         END;
 
-        DBMS_SCHEDULER.enable ('&cwms_schema..REMOVE_DEAD_SUBSCRIBERS_JOB');
-        COMMIT;
-        cwms_properties.set_property ('CWMSDB',
-                                    cwms_msg.msg_timeout_prop,
-                                    CWMS_MSG.msg_timeout_seconds,
-                                    'Reset timeout threshold',
-                                    'CWMS');
-
     END;
 
     PROCEDURE setup
@@ -65,23 +57,24 @@ AS
                                  p_active         => 'T',
                                  p_db_office_id   => '&office_id');
         COMMIT;
-        DBMS_SCHEDULER.disable ('&cwms_schema..REMOVE_DEAD_SUBSCRIBERS_JOB');
+        
     END;
 
     
 
-    PROCEDURE test_store_data            
+    PROCEDURE test_store_data           
     IS
         payload sys.aq$_jms_map_message;
         options dbms_aq.dequeue_options_t;
+        props dbms_aq.message_properties_t;
         payload_op pls_integer;
         the_type varchar(500);
         the_id varchar(500);
         opId pls_integer;
-    
+        msgid raw(16);
     BEGIN
-        dbms_aqadm.add_subscriber(queue_name=>'&cwms_schema..&office_id_TS_STORED', 
-                                  subscriber=>SYS.AQ$_AGENT('TEST','&cwms_schema..&office_id_TS_STORED',
+        dbms_aqadm.add_subscriber(queue_name=>'&cwms_schema..&office_id._TS_STORED', 
+                                  subscriber=>SYS.AQ$_AGENT(test_subscriber_name,'&cwms_schema..&office_id._TS_STORED',
                                   NULL));
 
         cwms_ts.create_ts('&office_id',test_cwms_ts_id,NULL);
@@ -89,7 +82,7 @@ AS
         options.consumer_name := 'TEST';
         options.navigation := dbms_aq.FIRST_MESSAGE;
         options.msgid := null;
-        dbms_aq.dequeue(queue_name=>'&cwms_schema..&office_id_TS_STORED', dequeue_options => options,message_properties=>props,payload=>payload,msgid=>msgid);
+        dbms_aq.dequeue(queue_name=>'&cwms_schema..&office_id._TS_STORED', dequeue_options => options,message_properties=>props,payload=>payload,msgid=>msgid);
         dbms_output.put_line('Have message, now doing something with it.');
         opId := payload.prepare(-1);
         dbms_output.put_line('Message Prepared');
