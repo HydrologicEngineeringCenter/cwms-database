@@ -75,7 +75,6 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
             pdbName="XEPDB1";
             volumeName = volumeName + "_xe";
         }
-
         this.waitStrategy = new LogMessageWaitStrategy()
             .withRegEx("^DATABASE IS READY TO USE.*\\n")
             .withTimes(1)
