@@ -28,4 +28,4 @@ if [ $? -ne 0 ]; then echo "Image tagging failed"; exit 7; fi
 
 cd ../testcontainers
 ./gradlew clean test --info -Dteamcity.build.branch=${BRANCH} -Dteamcity.build.agent=$AGENT -Dcwms.image=build-${AGENT} -Dcwms.database.syspw=antsyspassword
-if [ $? -ne 0 ]; then echo "Failed run test containers test"; exit 8; fi
+if [ $? -ne 0 ]; then echo "Failed run test containers test"; exit 7; fi
