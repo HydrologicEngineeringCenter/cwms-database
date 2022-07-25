@@ -2,6 +2,7 @@ package mil.army.usace.hec.test.database;
 
 
 import java.time.Duration;
+import java.util.function.Function;
 import java.util.function.Consumer;
 import java.sql.Driver;
 import java.sql.Connection;
@@ -74,6 +75,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
             pdbName="XEPDB1";
             volumeName = volumeName + "_xe";
         }
+
         this.waitStrategy = new LogMessageWaitStrategy()
             .withRegEx("^DATABASE IS READY TO USE.*\\n")
             .withTimes(1)
@@ -399,6 +401,18 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
             function.accept(conn);
         }
 
+    }
+
+    /**
+     * As connection without a user, but uses the specified username instead of the default
+     * @param function
+     * @param user
+     * @throws SQLException
+     */
+    public <T> T  connection( Function<java.sql.Connection, T> function, String user ) throws SQLException{
+        try( Connection conn = getConnection(user);){
+            return function.apply(conn);
+        }
     }
 
     @Override
