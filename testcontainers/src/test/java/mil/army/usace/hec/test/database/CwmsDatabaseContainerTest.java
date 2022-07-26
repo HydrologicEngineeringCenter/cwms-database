@@ -1,26 +1,24 @@
 package mil.army.usace.hec.test.database;
 
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import java.sql.CallableStatement;
 import java.sql.Connection;
-import java.sql.JDBCType;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.SQLType;
+import java.sql.Types;
 
-import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.output.OutputFrame;
-import org.testcontainers.containers.output.ToStringConsumer;
-import org.testcontainers.containers.output.OutputFrame.OutputType;
 import org.testcontainers.junit.jupiter.Container;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CwmsDatabaseContainerTest {
     public static final Logger log = LoggerFactory.getLogger(CwmsDatabaseContainerTest.class);
@@ -37,7 +35,7 @@ public class CwmsDatabaseContainerTest {
     }
 
     @Container
-    private static CwmsDatabaseContainer database = new CwmsDatabaseContainer(DatabaseImage)
+    private static MyCwmsDatabaseContainer database = new MyCwmsDatabaseContainer()
                                                         .withSchemaVersion(imageVersion)
                                                         .withVolumeName(volumeName)
                                                         .withLogConsumer((line) -> {
@@ -99,5 +97,36 @@ public class CwmsDatabaseContainerTest {
             },"cwms_20");
         });
 
+    }
+
+    @Test
+    public void test_connection_function() throws Exception {
+        String pdUser = database.getPdUser();
+        String userName = database.connection(this::getServiceAccountUsername, pdUser);
+        assertNotNull(userName, "Service account username should be returned");
+        assertFalse(userName.isEmpty(), "Service account username should be returned");
+    }
+
+
+    private String getServiceAccountUsername(Connection conn)
+    {
+        String procedure = "begin cwms_20.cwms_sec.get_service_credentials(?,?,?); end;";
+        try (CallableStatement callStmt = conn.prepareCall(procedure)) {
+            callStmt.registerOutParameter(1, Types.VARCHAR);
+            callStmt.registerOutParameter(2, Types.VARCHAR);
+            callStmt.registerOutParameter(3, Types.VARCHAR);
+            callStmt.execute();
+            return callStmt.getString(1);
+        } catch(SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static class MyCwmsDatabaseContainer extends CwmsDatabaseContainer<MyCwmsDatabaseContainer>
+    {
+        private MyCwmsDatabaseContainer()
+        {
+            super(DatabaseImage);
+        }
     }
 }
