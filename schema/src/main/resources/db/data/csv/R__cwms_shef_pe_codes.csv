@@ -1,15 +1,15 @@
 !query
 declare
-   p_shef_pe_code varchar(2) := ?;
-   p_shef_tse_code varchar(3) := ?;
+   p_shef_pe_code varchar2(2) := ?;
+   p_shef_tse_code varchar2(3) := ?;
    p_shef_duration_code char(1) := ?;
-   p_shef_req_send_code varchar(10) := ?;
+   p_shef_req_send_code varchar2(10) := ?;
    p_unit_code_en number := ?;
    p_unit_code_si number := ?;
    p_parameter_code number := ?;
    p_parameter_type_code number := ?;
-   p_description varchar(256) := ?;
-   p_notes varchar(258) := ?;
+   p_description varchar2(256) := ?;
+   p_notes varchar2(258) := ?;
 begin
    MERGE into cwms_20.CWMS_SHEF_PE_CODES shef
         USING dual

@@ -5,11 +5,11 @@ declare
     p_gmi_country char(3) := ?;  -- 3
     p_iso_2digit char(2) := ?; -- 4
     p_iso_3digit char(3) := ?; -- 5
-    p_country_name char(40) := ?; --6
-    p_long_name char(40) := ?; --7
-    p_sovereign char(40) := ?; --8
+    p_country_name varchar2(40) := ?; --6
+    p_long_name varchar2(40) := ?; --7
+    p_sovereign varchar2(40) := ?; --8
     p_population number := ?; --9
-    p_curr_type char(16) := ?; --10
+    p_curr_type varchar2(16) := ?; --10
     p_curr_code char(4) := ?; --11
     p_land_locked char(1) := ?; --12
     p_square_km number(13,2) := ?; --13

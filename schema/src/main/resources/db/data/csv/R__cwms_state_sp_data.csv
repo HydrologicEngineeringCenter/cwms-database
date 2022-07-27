@@ -3,10 +3,10 @@ declare
     p_state_code number := ?; --1
     p_object_id number := ?;       -- 2
     p_area number := ?;  -- 3
-    p_state_name char(25) := ?; -- 4
-    p_state_fips char(2) := ?;  -- 5
-    p_sub_region char(7) := ?; -- 6
-    p_state_abbr char(2) := ?; -- 7    
+    p_state_name varchar2(25) := ?; -- 4
+    p_state_fips varchar2(2) := ?;  -- 5
+    p_sub_region varchar2(7) := ?; -- 6
+    p_state_abbr varchar2(2) := ?; -- 7    
     p_sdo_gtype number := ?;       -- 8
     p_sdo_srid number :=?;         -- 9
     p_sdo_element_info_text str_tab_t := cwms_util.split_text(?,','); -- 10

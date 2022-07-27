@@ -2,8 +2,8 @@
 declare
     p_office_code number := ?;
     p_object_id number := ?;
-    p_office_name varchar(32) := ?;
-    p_org_symbol varchar(5) := ?;
+    p_office_name varchar2(32) := ?;
+    p_org_symbol varchar2(5) := ?;
     p_sdo_gtype number := ?;
     p_sdo_srid number :=?;
     p_sdo_element_info_text str_tab_t := cwms_util.split_text(?,',');

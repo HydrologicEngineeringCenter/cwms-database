@@ -1,12 +1,12 @@
 !query
 declare
     p_object_id number := ?;       -- 1
-    p_city_fips char(5) := ?;  -- 2
-    p_city_name char(40) := ?;  -- 3
-    p_state_fips char(2) := ?;  -- 4
-    p_state_name char(25) := ?; -- 5
-    p_state_city char(7) := ?; -- 6
-    p_type char(25) := ?;       -- 7
+    p_city_fips varchar2(5) := ?;  -- 2
+    p_city_name varchar2(40) := ?;  -- 3
+    p_state_fips varchar2(2) := ?;  -- 4
+    p_state_name varchar2(25) := ?; -- 5
+    p_state_city varchar2(7) := ?; -- 6
+    p_type varchar2(25) := ?;       -- 7
     p_is_capital char(1) := ?;  -- 8
     p_sdo_gtype number := ?;       -- 9
     p_sdo_srid number :=?;         -- 10
