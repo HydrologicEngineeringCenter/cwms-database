@@ -27,6 +27,7 @@ configurations {
 
 dependencies {
     implementation "org.flywaydb:flyway-core:8.4.4"
+    implementation "net.objecthunter:exp4j:0.4.8"
     implementation "com.fasterxml.jackson.core:jackson-databind:2.13.3"
     implementation 'commons-io:commons-io:2.11.0'
     compile "org.flywaydb:flyway-core:8.4.4"
@@ -152,7 +153,7 @@ task downloadUtplSql(type: Copy, dependsOn: checkTestSetup ){
     into "$buildDir/deps"
     doLast {
         File createOwner = new File("$buildDir/deps/utPLSQL/source/create_utplsql_owner.sql")
-        createOwner.withWriterAppend( out-> {
+        createOwner.withWriterAppend( out -> {
             out.println("\ngrant execute on dbms_lob to &ut3_user;")
             out.println("grant execute on dbms_random to &ut3_user;")
 	  		out.println("grant execute on dbms_random to &ut3_user;")

@@ -9,11 +9,28 @@
 package cwms.units;
 
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Queue;
 import java.util.Set;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+
+import net.hobbyscience.database.Conversion;
+import net.hobbyscience.database.ConversionMethod;
+import net.hobbyscience.database.exceptions.NoConversionFound;
+import net.hobbyscience.database.methods.ForDB;
+import net.hobbyscience.math.Equations;
 
 public class ConversionGraph {
+    private static Logger log = Logger.getLogger(ConversionGraph.class.getName());
     
-   
+    private Set<Conversion> conversions;
+
+    public ConversionGraph(Set<Conversion> conversions) {
+        this.conversions = conversions;
+    }
 
     private Set<Conversion> expandConversions(Set<String> unitClasses,
             Set<Conversion> conversions) {
@@ -25,16 +42,16 @@ public class ConversionGraph {
             return l.getName().compareTo(r.getName());
         }).distinct().collect(Collectors.toList());
         // forward
-        units.forEach( u -> System.out.println("*"+u+"*"));
+        units.forEach( u -> log.fine("*"+u+"*"));
         for( Unit from: units ){
             for( Unit to: units ){
                 if( from.equals(to) ) continue;
-                System.out.println(String.format("Finding conversion from %s to %s",from,to));
+                log.fine(() -> String.format("Finding conversion from %s to %s",from,to));
                 Queue<ConversionMethod> steps = findConversion(from,to,conversions);
                 if( steps.isEmpty() ){
                     throw new NoConversionFound("Unabled to find conversion from " + from + " to " + to);
                 }
-                System.out.println("Reducing/combining conversion steps");
+                log.fine("Reducing/combining conversion steps");
                 String postfix = steps.poll().getPostfix();
                 ConversionMethod step = null;
                 while( (step = steps.poll()) != null){
@@ -160,19 +177,18 @@ public class ConversionGraph {
             else if ( l.size() == r.size() ) return 0;
             else return 1;
         }).findFirst().get();
-        var justMethods = shortest.stream().map( q -> q.getMethod() ).collect(Collectors.toCollection(LinkedList::new));
-        
-        return justMethods;
+        return shortest.stream().map( q -> q.getMethod() ).collect(Collectors.toCollection(LinkedList::new));
+                
     }
 
     public HashSet<Conversion> generateConversions(){
         HashSet<Conversion> retVal = new HashSet<>();
-        Set<String> unitClasses = conversions.stream().map( c -> c.getFrom().getUnit_class() ).distinct().collect(Collectors.toSet());
+        Set<String> unitClasses = conversions.stream().map( c -> c.getFrom().getAbstractParameter() ).distinct().collect(Collectors.toSet());
         for( String unitClass: unitClasses){
             System.out.println ("Expanding unit conversions for unit class " + unitClass);
             Set<Conversion> _conversions = 
                 conversions.stream()
-                            .filter( c -> c.getFrom().getUnit_class().equalsIgnoreCase(unitClass) == true )
+                            .filter( c -> c.getFrom().getAbstractParameter().equalsIgnoreCase(unitClass) == true )
                             .collect( Collectors.toSet() );
             retVal.addAll( expandConversions(unitClasses, _conversions));
         }

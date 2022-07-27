@@ -42,7 +42,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.zip.CRC32;
 
-public class R__quality extends BaseJavaMigration {
+public class R__quality extends BaseJavaMigration implements CwmsMigration {
     private static final Logger log = Logger.getLogger(R__quality.class.getName());
 
     private Long checksum = 3L;
@@ -64,17 +64,14 @@ public class R__quality extends BaseJavaMigration {
         
         checksum = 12L;//crc.getValue();
         query = readQuery("db/custom/quality/cwms_data_quality.sql");
+
     }
 
     private String readQuery(String filename) throws Exception {
         InputStream is = getData(filename);
         
         return new String( IOUtils.toByteArray(is) );
-    }
-
-    public InputStream getData(String fileName) throws Exception {
-        return this.getClass().getClassLoader().getResourceAsStream(fileName);
-    }
+    }    
     
     public R__quality() throws Exception {
         this.init();
@@ -158,7 +155,7 @@ public class R__quality extends BaseJavaMigration {
     
     private void load_data() throws Exception {
         ObjectMapper mapper = new ObjectMapper();        
-
+        
         JsonNode tmp = mapper.readTree(getData("db/custom/quality/screened.json"));
 
         screenedData = mapper.readValue(new TreeTraversingParser(tmp,mapper), Quality.class);
