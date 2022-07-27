@@ -55,13 +55,13 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
         ConversionGraph convGraph = new ConversionGraph(conversions);
 
         var expandedConversions = convGraph.generateConversions();
-        log.info(() -> String.format("We have {0} total conversions",expandedConversions.size()));
+        log.info(() -> String.format("We have %s total conversions",expandedConversions.size()));
         log.log(Level.INFO, "Expanded Conversions:\n{0}", 
                 expandedConversions
                     .stream()
                     .map(conv -> conv.toString())
                     .collect(Collectors.joining("\n")));
-        
+        /* now we would insert or update the conversions */
     }
 
     private void loadData() throws Exception {
