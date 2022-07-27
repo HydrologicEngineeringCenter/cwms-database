@@ -47,7 +47,7 @@ PROCEDURE cum_with_non_zero_duration;
 --%test(Variable duration with non instantaneous)
 --%throws(-20205)    
 PROCEDURE variable_with_inst;
-    
+
 --%test(Variable duration with const)
 --%throws(-20205)   
 PROCEDURE variable_with_const;
@@ -57,6 +57,8 @@ procedure quality_on_generated_rts_values__JIRA_CWMSVIEW_212;
 procedure create_ts_with_null_timezone;
 --%test(Test flags p_start_inclusive, p_end_inclusive, p_previous, p_next, and ts with aliases: CWDB-180)
 procedure test_inclusion_options__JIRA_CWDB_180;
+--%test(Test STORE_TS can create a versioned time series: CWDB-190)
+procedure test_store_ts_can_create_versioned_time_series__JIRA_CWDB_190;
 
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
 test_withsub_location_id VARCHAR2(32) := test_base_location_id||'-withsub';
@@ -1682,6 +1684,74 @@ AS
       ut.expect(l_date_times(5)).to_equal(l_ts_data_tim(5).date_time);
 
     end test_inclusion_options__JIRA_CWDB_180;
+    --------------------------------------------------------------------------------
+    -- procedure test_store_ts_can_create_versioned_time_series__JIRA_CWDB_190
+    --------------------------------------------------------------------------------
+    procedure test_store_ts_can_create_versioned_time_series__JIRA_CWDB_190
+    is
+      l_ts_id         varchar2(191) := test_base_location_id||'.Code.Inst.1Day.0.CWDB_190';
+      l_time_zone     varchar2(28)  := 'US/Pacific';
+      l_unit          varchar2(16)  := 'n/a';
+      l_version_date  date          := timestamp '2021-01-01 10:00:00';
+      l_crsr          sys_refcursor;
+      l_values        cwms_t_double_tab;
+      l_quality_codes cwms_t_number_tab;
+      l_date_times    cwms_t_date_table;
+      l_ts_data       cwms_t_ztsv_array := cwms_t_ztsv_array(
+                                            cwms_t_ztsv(timestamp '2021-01-01 08:00:00', 1, 3),
+                                            cwms_t_ztsv(timestamp '2021-01-02 08:00:00', 2, 3),
+                                            cwms_t_ztsv(timestamp '2021-01-03 08:00:00', 3, 3),
+                                            cwms_t_ztsv(timestamp '2021-01-04 08:00:00', 4, 3),
+                                            cwms_t_ztsv(timestamp '2021-01-05 08:00:00', 5, 3));
+    begin
+      teardown;
+      ------------------------
+      -- store the location --
+      ------------------------
+      cwms_loc.store_location(
+         p_location_id  => test_base_location_id,
+         p_time_zone_id => l_time_zone,
+         p_active       => 'T',
+         p_db_office_id => '&&office_id');
+      -------------------------------------
+      -- store the versioned time series --
+      -------------------------------------
+      cwms_ts.zstore_ts (p_cwms_ts_id        => l_ts_id,
+                         p_units             => l_unit,
+                         p_timeseries_data   => l_ts_data,
+                         p_store_rule        => cwms_util.replace_all,
+                         p_version_date      => l_version_date,
+                         p_office_id         => '&&office_id');
+
+      ut.expect(cwms_ts.is_tsid_versioned_f(l_ts_id, '&&office_id')).to_equal('T');
+      if cwms_ts.is_tsid_versioned_f(l_ts_id, '&&office_id') = 'T' then
+         ------------------------------
+         -- retrieve the time series --
+         ------------------------------
+         cwms_ts.retrieve_ts(
+            p_at_tsv_rc       => l_crsr,
+            p_cwms_ts_id      => l_ts_id,
+            p_units           => l_unit,
+            p_start_time      => l_ts_data(1).date_time,
+            p_end_time        => l_ts_data(l_ts_data.count).date_time,
+            p_version_date    => l_version_date,
+            p_office_id       => '&&office_id');
+
+         fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
+         close l_crsr;
+
+         for i in 1..l_date_times.count loop
+            dbms_output.put_line(i||chr(9)||l_date_times(i)||chr(9)||l_values(i)||chr(9)||l_quality_codes(i));
+         end loop;
+         ut.expect(l_date_times.count).to_equal(l_ts_data.count);
+         if l_date_times.count = l_ts_data.count then
+            for i in 1..l_date_times.count loop
+               ut.expect(l_values(i)).to_equal(l_ts_data(i).value);
+            end loop;
+         end if;
+      end if;
+
+    end test_store_ts_can_create_versioned_time_series__JIRA_CWDB_190;
 END test_cwms_ts;
 /
 SHOW ERRORS
