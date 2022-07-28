@@ -252,10 +252,10 @@
 		<antcall target="clean-test-data"/>
 		<antcall target="load-test-data"/>
 		<antcall target="test-as_normal_user"/>
-		<!--<antcall target="test-as_pd_user"/>
+		<antcall target="test-as_pd_user"/>
 		<antcall target="test-as_ro_user"/>
 		<antcall target="test-as_up_user"/>
-		<antcall target="test-as_dba_user"/>-->
+		<antcall target="test-as_dba_user"/>
 		<!-- we will then merge all of the test output and code coverage-->
 
 		<!-- create coverage zip for TeamCity-->
