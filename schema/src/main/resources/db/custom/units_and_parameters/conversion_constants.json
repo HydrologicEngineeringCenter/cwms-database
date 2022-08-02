@@ -1,0 +1,8 @@
+{
+    "micro_per_unit"         : "1e6",  // micro-
+	"milli_per_unit"         : "1e3",  // milli-
+	"centi_per_unit"         : "1e2",  // centi-
+	"unit_per_kilo"         : "1e3",  // kilo-
+	"unit_per_giga"         : "1e9",  // giga-
+	"unit_per_tera"         : "1e12" // tera-
+}
