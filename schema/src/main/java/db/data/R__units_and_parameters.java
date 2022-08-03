@@ -29,6 +29,7 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
     private ArrayList<String> abstractParameters = new ArrayList<>();
     private Map<String,Unit> unitDefinitions = null;
     private HashSet<Conversion> conversions = new HashSet<>();
+    private int count = 0;
 
     public R__units_and_parameters() throws Exception {
         this.loadData();
@@ -87,10 +88,10 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
         JsonNode tmpConversions = mapper.readTree(
             getData("db/custom/units_and_parameters/conversions.json"));
 
-        tmpConversions.forEach( (conversion) -> {                        
+        tmpConversions.forEach( (conversion) -> {
             //Conversion c = new Conversion(from, to, method)
             Unit from = unitDefinitions.get(conversion.get(0).asText());
-            Unit to = unitDefinitions.get(conversion.get(0).asText());
+            Unit to = unitDefinitions.get(conversion.get(1).asText());
             if( from !=null && to != null ) {
                 Conversion c = new Conversion(from,to, new Linear(1.0, 0.0));
                 conversions.add(c);
