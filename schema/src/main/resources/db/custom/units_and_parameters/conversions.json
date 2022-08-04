@@ -49,10 +49,14 @@
 	//["C-day",       "F-day",       "[F-day]/C_per_F[C-day]"],
 	//["F-day",       "C-day",       "C_per_F[C-day]/[F-day]"],	
 	// The various forms of this in each direction will also be determined
-	[ "W",          "MW",          "linear: 1000000 0"],
-	[ "W",          "TW",          "linear: 1000000000000 0"],
-	[ "W",          "GW",          "linear: 1000000000  0"],
-	[ "W",          "kW",          "linear: 1000 0"]
+	//[ "W",          "MW",          "linear: 1000000 0"],
+	//[ "W",          "TW",          "linear: 1000000000000 0"],
+	//[ "W",          "GW",          "linear: 1000000000  0"],
+	[ "W",          "kW",          "linear: 1000 0"],
+	[ "kW",			"MW",		   "linear: 1000 0"],
+	[ "MW",     	"GW",		   "linear: 1000 0"],
+	[ "MW",			"TW",		   "linear: 1000 0"]
+
 	// ["GWh",         "J",           "*_per_G*[Wh]/[GWh] | J_per_Wh[J]/[Wh]"],
 	// ["GWh",         "MJ",          "*_per_G*[Wh]/[GWh] | J_per_Wh[J]/[Wh] | [MJ]/*_per_M*[J]"],
 	// ["GWh",         "MWh",         "*_per_G*[Wh]/[GWh] | [MWh]/*_per_M*[Wh]"],

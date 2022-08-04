@@ -6,6 +6,7 @@
 package db.migration;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import cwms.units.ConversionGraph;
@@ -75,6 +76,23 @@ public class UnitConversionTest {
 
         ret = SimpleInfixCalculator.calculate(infixKtoF, degK_val);
         assertEquals(degF_val, ret, 0.0001);
+
+    }
+
+
+    @Test    
+    public void test_reducer() {
+        String simpleConversionPostFix = "i 1000 * 0 + 1000 * 0 +";
+        String fToKConversion = "i 32.0 - 5.0 * 9.0 / 1.0 * 273.15 +";
+
+        String simpleConversionReduced = "i 1000000 * 0 +";
+        String fToKConversionReduced = "i .555555556 * 255.373 +";
+
+        String reduced = Equations.reduce(simpleConversionPostFix);
+        assertEquals(simpleConversionReduced,reduced);
+
+        reduced = Equations.reduce(fToKConversion);
+        assertEquals(fToKConversionReduced,reduced);
 
     }
 }

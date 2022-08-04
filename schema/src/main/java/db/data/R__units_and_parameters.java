@@ -125,7 +125,7 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
 
     @Override
     public Integer getChecksum() {
-        return Integer.valueOf(17);
+        return Integer.valueOf(18);
     }
 
 
