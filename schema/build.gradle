@@ -287,8 +287,15 @@ task testAsRoUser(type: Exec ) {
     
 }*/
 
+task testMigrationCode(type: Test) {
+    dependsOn compileJava
+    dependsOn compileTestJava
+    useJUnitPlatform()
+}
+
 
 task testDb() {
+    dependsOn testMigrationCode
     dependsOn installTests
 
     dependsOn cleanTestData
@@ -296,4 +303,7 @@ task testDb() {
     dependsOn testAsPdUser
 }
 
+
+
 test.dependsOn testDb
+test.dependsOn testMigrationCode

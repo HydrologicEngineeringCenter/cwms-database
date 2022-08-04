@@ -6,6 +6,7 @@
 package net.hobbyscience.database.methods;
 
 import net.hobbyscience.database.ConversionMethod;
+import net.hobbyscience.database.exceptions.BadMathExpression;
 import net.hobbyscience.database.exceptions.BadMethodData;
 import net.hobbyscience.math.Equations;
 
@@ -43,16 +44,16 @@ public class InvUSGS implements ConversionMethod {
      */
     @Override
     public String getAlgebra() {        
-        return String.format("( (i-%0.4f)/%0.4f)^(1.0/%0.4f) - %0.4f",d,a,c,b);
+        return String.format("( (i-%0.6f)/%0.6f)^(1.0/%0.6f) - %0.6f",d,a,c,b);
     }
 
     @Override
-    public String getPostfix() {        
+    public String getPostfix() throws BadMathExpression {        
         return Equations.infixToPostfix(getAlgebra());
     }
 
 	@Override
-	public ConversionMethod getInversion() {
+	public ConversionMethod getInversion() throws BadMathExpression {
 		return new USGS(a,b,c,d);
 	}
 

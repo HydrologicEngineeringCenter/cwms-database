@@ -8,6 +8,8 @@
  
 package cwms.units;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -34,30 +36,30 @@ public class ConversionGraph {
 
     private Set<Conversion> expandConversions(Set<String> unitClasses,
             Set<Conversion> conversions) {
-        HashSet<Conversion> new_conversions = new HashSet<>();
-        //new_conversions.addAll(conversions); // 
-        List<Unit> units = conversions.stream().map( c -> c.getFrom() ).distinct().collect( Collectors.toList() );
-        units.addAll( conversions.stream().map( c -> c.getTo() ).distinct().collect( Collectors.toList() ) );
-        units = units.stream().sorted( (l,r) -> {
-            return l.getName().compareTo(r.getName());
-        }).distinct().collect(Collectors.toList());
+        HashSet<Conversion> newConversions = new HashSet<>();        
+        List<Unit> units = conversions.stream().map( Conversion::getFrom ).distinct().collect( Collectors.toList() );
+        units.addAll( conversions.stream().map( Conversion::getTo ).distinct().collect( Collectors.toList() ) );
+        units = units.stream()
+                     .sorted( (l,r) -> l.getName().compareTo(r.getName()))
+                     .distinct()
+                     .collect(Collectors.toList());
         // forward
         units.forEach( u -> log.fine("*"+u+"*"));
         for( Unit from: units ){
             for( Unit to: units ){
                 if( from.equals(to) ) continue;
                 log.fine(() -> String.format("Finding conversion from %s to %s",from,to));
-                Queue<ConversionMethod> steps = findConversion(from,to,conversions);
+                Deque<ConversionMethod> steps = new ArrayDeque<>(findConversion(from,to,conversions));
                 if( steps.isEmpty() ){
-                    throw new NoConversionFound("Unabled to find conversion from " + from + " to " + to);
+                    throw new NoConversionFound("Unable to find conversion from " + from + " to " + to);
                 }
                 log.fine("Reducing/combining conversion steps");
-                String postfix = steps.poll().getPostfix();
+                String postfix = steps.pollLast().getPostfix();
                 ConversionMethod step = null;
-                while( (step = steps.poll()) != null){
+                while( (step = steps.pollLast()) != null){
                     postfix = Equations.combine(postfix, step.getPostfix());
                 }
-                new_conversions.add( 
+                newConversions.add( 
                         new Conversion(
                             from,
                             to,
@@ -67,7 +69,7 @@ public class ConversionGraph {
             }
         }        
 
-        return new_conversions;
+        return newConversions;
     }
 
     private class Node {

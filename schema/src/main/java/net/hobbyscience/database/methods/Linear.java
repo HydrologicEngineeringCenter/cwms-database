@@ -8,6 +8,7 @@ package net.hobbyscience.database.methods;
 import java.util.Objects;
 
 import net.hobbyscience.database.ConversionMethod;
+import net.hobbyscience.database.exceptions.BadMathExpression;
 import net.hobbyscience.database.exceptions.BadMethodData;
 import net.hobbyscience.math.Equations;
 
@@ -35,11 +36,11 @@ public class Linear implements ConversionMethod{
 
     @Override
     public String getAlgebra() {
-        return String.format("i*%.04f+%.04f",a,b);
+        return String.format("i*%.06f+%.06f",a,b);
     }
 
     @Override
-    public String getPostfix() {        
+    public String getPostfix() throws BadMathExpression {
         return Equations.infixToPostfix(getAlgebra());
     }
 

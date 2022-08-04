@@ -10,6 +10,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Stack;
 
+import net.hobbyscience.database.exceptions.BadMathExpression;
 import net.hobbyscience.database.exceptions.NoInverse;
 import net.hobbyscience.database.exceptions.NotImplemented;
 import net.objecthunter.exp4j.shuntingyard.ShuntingYard;
@@ -26,20 +27,24 @@ public class Equations {
      * @param infix Infix algebraic expression
      * @return a postfix preresentation of the equation
      */
-    public static String infixToPostfix( String infix){        
-        //System.out.println(infix);        
+    public static String infixToPostfix( String infix) throws BadMathExpression {                
         StringBuilder builder = new StringBuilder();
-        Token tokens[] = ShuntingYard.convertToRPN(infix, null, null, vars, false);
-        for( Token tok: tokens ){
-            switch(tok.getType()){
-                case Token.TOKEN_FUNCTION: { builder.append(((FunctionToken)tok).getFunction().getName()).append(" "); break;}
-                case Token.TOKEN_NUMBER: { builder.append(((NumberToken)tok).getValue()).append(" "); break;}
-                case Token.TOKEN_VARIABLE: { builder.append( ((VariableToken)tok).getName() ).append(" "); break;  }
-                case Token.TOKEN_OPERATOR: { builder.append( ((OperatorToken)tok).getOperator().getSymbol() ).append(" "); break; }
-                default: { break;}
-            }
-        }        
-        return builder.toString().trim();
+        try {
+            Token tokens[] = ShuntingYard.convertToRPN(infix, null, null, vars, false);
+            for( Token tok: tokens ){
+                switch(tok.getType()){
+                    case Token.TOKEN_FUNCTION: { builder.append(((FunctionToken)tok).getFunction().getName()).append(" "); break;}
+                    case Token.TOKEN_NUMBER: { builder.append(((NumberToken)tok).getValue()).append(" "); break;}
+                    case Token.TOKEN_VARIABLE: { builder.append( ((VariableToken)tok).getName() ).append(" "); break;  }
+                    case Token.TOKEN_OPERATOR: { builder.append( ((OperatorToken)tok).getOperator().getSymbol() ).append(" "); break; }
+                    default: { break;}
+                }
+            }        
+            return builder.toString().trim();
+        } catch ( IllegalArgumentException ex ) {
+            throw new BadMathExpression(String.format("Bad data in '%s'",infix),ex);
+        }
+        
     }
 
 
@@ -151,7 +156,7 @@ public class Equations {
     /**
      * 
      * @param postfix
-     * @return a version of the 
+     * @return a version of the expression with the fewest operations possible
      */
     public static String reduce( String postfix ){
         return postfix;
@@ -159,12 +164,12 @@ public class Equations {
 
     /**
      * 
-     * @param recieving postfix equation in fix the i will be subsituted
+     * @param receiving postfix equation in fix the i will be substituted
      * @param inserting the new "value" of i
      * @return a postfix equation
      */
-    public static String combine( String recieving, String inserting){
-        return recieving.replace("i", inserting);
+    public static String combine( String receiving, String inserting){
+        return receiving.replace("i", inserting);
     }
 
 }

@@ -6,6 +6,7 @@
 package net.hobbyscience.database.methods;
 
 import net.hobbyscience.database.ConversionMethod;
+import net.hobbyscience.database.exceptions.BadMathExpression;
 import net.hobbyscience.database.exceptions.BadMethodData;
 import net.hobbyscience.math.Equations;
 
@@ -33,16 +34,16 @@ public class InvLinear implements ConversionMethod{
 
     @Override
     public String getAlgebra() {
-        return String.format("(i-%.04f)/%.04f",b,a);
+        return String.format("(i-%.06f)/%.06f",b,a);
     }
     
     @Override
-    public String getPostfix() {        
+    public String getPostfix() throws BadMathExpression {        
         return Equations.infixToPostfix(getAlgebra());
     }
 
 	@Override
-	public ConversionMethod getInversion() {		
+	public ConversionMethod getInversion() throws BadMathExpression {		
 		return new Linear(a,b);
 	}
 

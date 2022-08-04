@@ -9,10 +9,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import cwms.CwmsMigrationError;
 import cwms.units.ConversionGraph;
 import cwms.units.Unit;
 import net.hobbyscience.database.Conversion;
-import net.hobbyscience.database.methods.Linear;
+import net.hobbyscience.database.ConversionFactory;
+import net.hobbyscience.database.ConversionMethod;
+import net.hobbyscience.database.methods.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,6 +32,7 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
     private ArrayList<String> abstractParameters = new ArrayList<>();
     private Map<String,Unit> unitDefinitions = null;
     private HashSet<Conversion> conversions = new HashSet<>();
+    private Map<String,Double> constants = null;
     private int count = 0;
 
     public R__units_and_parameters() throws Exception {
@@ -47,7 +51,7 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
                  .stream()
                  .map( unit -> unit.toString() )
                  .collect(Collectors.joining("\n")));
-        log.log( Level.FINEST, "Listed Conversions\n{0}", 
+        log.log( Level.INFO, "Listed Conversions\n{0}", 
                  conversions
                  .stream()
                  .map( conv -> conv.toString() )
@@ -85,6 +89,10 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
                     HashMap::new
             ));
 
+        constants = mapper.readValue(
+            getData("db/custom/units_and_parameters/conversion_constants.json"),
+            new TypeReference<HashMap<String,Double>>(){});
+
         JsonNode tmpConversions = mapper.readTree(
             getData("db/custom/units_and_parameters/conversions.json"));
 
@@ -92,21 +100,44 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
             //Conversion c = new Conversion(from, to, method)
             Unit from = unitDefinitions.get(conversion.get(0).asText());
             Unit to = unitDefinitions.get(conversion.get(1).asText());
-            if( from !=null && to != null ) {
-                Conversion c = new Conversion(from,to, new Linear(1.0, 0.0));
+            if( from !=null && to != null ) {                
+                String parts[] = conversion.get(2).asText().split(":");
+                String type = parts[0];
+                String function = parts[1].trim();
+                ConversionMethod method = null;
+                if( "linear".equalsIgnoreCase(type)){
+                   method = new Linear(substituteVariables(function));
+                } else if( "function".equalsIgnoreCase(type)){
+                   method = new net.hobbyscience.database.methods.Function(substituteVariables(function));
+                } else {
+                    throw new CwmsMigrationError("Invalid conversion method: " + type);
+                }
+                
+                Conversion c = new Conversion(from,to, method);
                 conversions.add(c);
             }
             
         });
 
 
+
     }
 
     @Override
     public Integer getChecksum() {
-        return Integer.valueOf(13);
+        return Integer.valueOf(17);
     }
 
 
-    
+    private String substituteVariables(String conversion) {
+        String tmp = conversion;
+        for( String constant: constants.keySet() ){
+            tmp = tmp.replace(constant,constants.get(constant).toString());
+        }
+        return tmp;
+    }
+
+    public HashSet<Conversion> getConversions() {
+        return conversions;
+    }
 }

@@ -5,9 +5,11 @@
 
 package net.hobbyscience.database;
 
+import net.hobbyscience.database.exceptions.BadMathExpression;
+
 public interface ConversionMethod { 
     public String getAlgebra();
-    public String getPostfix();
-    public ConversionMethod getInversion();
+    public String getPostfix() throws BadMathExpression;
+    public ConversionMethod getInversion() throws BadMathExpression;
     public String render();
 }

@@ -52,4 +52,12 @@ public class Unit {
           .append("description=").append(description).append("}");
         return sb.toString();
     }
+
+    @Override
+    public boolean equals(Object other) {
+        if( !(other instanceof Unit)) return false;
+        else {
+            return this.toString().equals(other.toString());
+        }
+    }
 }

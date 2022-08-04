@@ -6,6 +6,7 @@
 package net.hobbyscience.database.methods;
 
 import net.hobbyscience.database.ConversionMethod;
+import net.hobbyscience.database.exceptions.BadMathExpression;
 import net.hobbyscience.database.exceptions.BadMethodData;
 import net.hobbyscience.math.Equations;
 
@@ -14,7 +15,7 @@ public class Function implements ConversionMethod{
 
     public Function(String data){
         if( data == null || data.isEmpty() ){
-            throw new BadMethodData("an equation must be provided");
+            throw new BadMethodData("an infix expression must be provided");
         }
         this.data = data;
     }
@@ -25,12 +26,12 @@ public class Function implements ConversionMethod{
     }
 
     @Override
-    public String getPostfix() {        
+    public String getPostfix() throws BadMathExpression {        
         return Equations.infixToPostfix(data);
     }
 
 	@Override
-	public ConversionMethod getInversion() {		
+	public ConversionMethod getInversion() throws BadMathExpression {		
 		return new ForDB(Equations.invertPostfix(getPostfix()));
 	}
 

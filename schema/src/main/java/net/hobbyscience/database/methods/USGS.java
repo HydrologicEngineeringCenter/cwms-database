@@ -8,6 +8,7 @@ package net.hobbyscience.database.methods;
 import java.util.Objects;
 
 import net.hobbyscience.database.ConversionMethod;
+import net.hobbyscience.database.exceptions.BadMathExpression;
 import net.hobbyscience.database.exceptions.BadMethodData;
 import net.hobbyscience.math.Equations;
 
@@ -41,11 +42,11 @@ public class USGS implements ConversionMethod {
 
     @Override
     public String getAlgebra() {        
-        return String.format("%0.4f * (%0.4f + i)^%0.4f + %0.4f",a,b,c,d);
+        return String.format("%0.6f * (%0.6f + i)^%0.6f + %0.6f",a,b,c,d);
     }
 
     @Override
-    public String getPostfix() {        
+    public String getPostfix() throws BadMathExpression {        
         return Equations.infixToPostfix(getAlgebra());
     }
 
