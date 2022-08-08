@@ -15,6 +15,7 @@ import db.data.R__units_and_parameters;
 import net.hobbyscience.SimpleInfixCalculator;
 import net.hobbyscience.database.Conversion;
 import net.hobbyscience.math.Equations;
+import net.hobbyscience.math.PostfixReducer;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -97,11 +98,11 @@ public class UnitConversionTest {
 
         String simpleConversionReduced = "i 1000000 * 0 +";
         String fToKConversionReduced = "i .555555556 * 255.373 +";
-
-        String reduced = Equations.reduce(simpleConversionPostFix);
+        var reducer = new PostfixReducer();
+        String reduced = reducer.reduce(simpleConversionPostFix);
         assertEquals(simpleConversionReduced,reduced);
 
-        reduced = Equations.reduce(fToKConversion);
+        reduced = reducer.reduce(fToKConversion);
         assertEquals(fToKConversionReduced,reduced);
 
     }

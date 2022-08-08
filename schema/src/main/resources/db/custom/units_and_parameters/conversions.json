@@ -2,9 +2,11 @@
     //
     //	from_unit      to_unit         conversion identities
     //	-------------  -------------   --------------------------------------------------------------------------------------------
-    ["$",           "k$",          "linear: unit_per_kilo 0"],
-    // ["$/kaf",       "$/mcm",       "[kaf]/*_per_k*[ac-ft] | [ac-ft]/ft2_per_acre[ft3] | [ft3]/m_per_ft^3[m3] | *_per_M*[m3]/[mcm]"],
-    // ["$/mcm",       "$/kaf",       "[mcm]/*_per_M*[m3] | m_per_ft^3[m3]/[ft3] | ft2_per_acre[ft3]/[ac-ft] | *_per_k*[ac-ft]/[kaf]"],
+    
+		// Money
+	[	"$",           "k$",          "linear: unit_per_kilo 0"],	
+	//"[kaf]/*_per_k*[ac-ft] | [ac-ft]/ft2_per_acre[ft3] | [ft3]/m_per_ft^3[m3] | *_per_M*[m3]/[mcm]"],
+    //[ 	"$/mcm",       "$/kaf",       "[mcm]/*_per_M*[m3] | m_per_ft^3[m3]/[ft3] | ft2_per_acre[ft3]/[ac-ft] | *_per_k*[ac-ft]/[kaf]"],
     // ["%",           "n/a",         "[n/a]/c*_per_*[%]"],
     // ["1/ft",        "1/m",         "[ft]/m_per_ft[m]"],
     // ["1/m",         "1/ft",        "m_per_ft[m]/[ft]"],
@@ -18,6 +20,8 @@
 	// ["1000 acre",   "mile2",       "*_per_k*[acre]/[1000 acre] | ft2_per_acre[ft2]/[acre] | [mile2]/ft_per_mile^2[ft2]"],
 	// ["1000 m2",     "1000 acre",   "*_per_k*[m2]/[1000 m2] | [ft2]/m_per_ft^2[m2] | [acre]/ft2_per_acre[ft2] | [1000 acre]/*_per_k*[acre]"],
 	// ["1000 m2",     "acre",        "*_per_k*[m2]/[1000 m2] | [ft2]/m_per_ft^2[m2] | [acre]/ft2_per_acre[ft2]"],
+	[ "acre",	"ft2", "function: i*ft2_per_acre"],
+	[ "1000 acre", "acre", "linear 1000 0"],
 	// ["1000 m2",     "cm2",         "*_per_k*[m2]/[1000 m2] | c*_per_*^2[cm2]/[m2]"],
 	// ["1000 m2",     "ft2",         "*_per_k*[m2]/[1000 m2] | [ft2]/m_per_ft^2[m2]"],
 	// ["1000 m2",     "ha",          "*_per_k*[m2]/[1000 m2] | [ha]/m2_per_ha[m2]"],

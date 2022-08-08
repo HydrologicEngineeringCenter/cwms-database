@@ -62,12 +62,13 @@ public class ConversionGraph {
                 /** TODO: Equations.reduce(postfix) 
                  *  still have a few things to work out in the reducer.
                  */ 
+                var reduced = Reducer.reduce(postfix);
                 
                 newConversions.add( 
                         new Conversion(
                             from,
                             to,
-                            new ForDB(postfix)
+                            new ForDB(reduced)
                         )
                     );
             }

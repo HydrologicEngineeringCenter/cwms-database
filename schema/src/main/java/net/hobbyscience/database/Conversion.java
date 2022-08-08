@@ -58,7 +58,8 @@ public class Conversion {
           .append(" -> ")
           .append(to.getAbbreviation())
           .append(" with ")
-          .append(method.render());
+          .append(method.render())
+          .append(" )");
         return sb.toString();
     }
     
