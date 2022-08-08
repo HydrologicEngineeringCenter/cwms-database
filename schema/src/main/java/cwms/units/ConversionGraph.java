@@ -59,6 +59,10 @@ public class ConversionGraph {
                 while( (step = steps.pollLast()) != null){
                     postfix = Equations.combine(postfix, step.getPostfix());
                 }
+                /** TODO: Equations.reduce(postfix) 
+                 *  still have a few things to work out in the reducer.
+                 */ 
+                
                 newConversions.add( 
                         new Conversion(
                             from,

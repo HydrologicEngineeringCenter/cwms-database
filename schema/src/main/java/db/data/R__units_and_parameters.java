@@ -25,6 +25,7 @@ import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.zip.CRC32;
 
 public class R__units_and_parameters extends BaseJavaMigration  implements CwmsMigration {
     private static final Logger log = Logger.getLogger(R__units_and_parameters.class.getName());
@@ -35,8 +36,11 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
     private Map<String,Double> constants = null;
     private int count = 0;
 
-    public R__units_and_parameters() throws Exception {
+    private CRC32 crc = new CRC32();
+
+    public R__units_and_parameters() throws Exception {        
         this.loadData();
+        System.out.println(crc.getValue());
     }
 
     @Override
@@ -76,6 +80,9 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
         abstractParameters = mapper.readValue(
             getData("db/custom/units_and_parameters/abstract_parameters.json"),
             new TypeReference<ArrayList<String>>(){});
+        abstractParameters.forEach(ap -> {
+            crc.update(ap.getBytes());
+        });
 
         unitDefinitions = mapper.readValue(
             getData("db/custom/units_and_parameters/unit_definitions.json"),
@@ -88,10 +95,18 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
                     (o1,o2) -> o1,
                     HashMap::new
             ));
+        unitDefinitions.forEach( (k,v) -> {
+            crc.update(v.toString().getBytes());
+        });
+        
 
         constants = mapper.readValue(
             getData("db/custom/units_and_parameters/conversion_constants.json"),
             new TypeReference<HashMap<String,Double>>(){});
+        constants.forEach( (k,v) -> {
+            String tmp = String.format("%s:%f",k,v);
+            crc.update(tmp.getBytes());
+        });
 
         JsonNode tmpConversions = mapper.readTree(
             getData("db/custom/units_and_parameters/conversions.json"));
@@ -114,18 +129,17 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
                 }
                 
                 Conversion c = new Conversion(from,to, method);
+                crc.update(c.toString().getBytes());
                 conversions.add(c);
             }
             
-        });
-
-
+        });        
 
     }
 
     @Override
     public Integer getChecksum() {
-        return Integer.valueOf(18);
+        return Integer.valueOf((int)crc.getValue()); //Integer.valueOf(18);
     }
 
 
