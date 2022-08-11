@@ -19,6 +19,9 @@ create or replace package test_aaa AUTHID CURRENT_USER as
     -- %test(Can retrieve all users using View)
     procedure can_retrieve_all_users_with_view;    
 
+    -- %test(Get User State)
+    procedure can_get_user_state;
+
     -- %beforeall
     procedure setup_users;
 
@@ -108,6 +111,13 @@ create or replace package body test_aaa as
       open l_cursor for select * from cwms_20.av_sec_users;
       ut.expect(l_cursor).not_to_be_empty();
       -- ut.expect will close the cursor
+    end;
+
+    procedure can_get_user_state is    
+        l_user_state varchar2(255);
+    begin
+        l_user_state := cwms_sec.get_user_state('basic_user','SPK');
+        ut.expect(l_user_state).to_equal('UNLOCKED');
     end;
 
 
