@@ -61,3 +61,4 @@ AS
              at_sec_locked_users
           USING (username, db_office_code);
 /
+grant select on CWMS_20.AV_SEC_USERS to cwms_user;

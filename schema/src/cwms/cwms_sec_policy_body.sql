@@ -21,6 +21,18 @@ AS
             RETURN '1=1';
         END IF;
     END CHECK_SESSION_USER;
+
+    FUNCTION CHECK_IS_PD_OR_DBA( p_schema IN VARCHAR2, p_table IN VARCHAR2)
+        RETURN VARCHAR2
+    IS        
+    BEGIN
+        if (cwms_sec.is_user_admin(NULL) OR SYS_CONTEXT('USERENV','POLICY_INVOKER') = 'CWMS_20')
+        then
+            RETURN '1=1';
+        else
+            RETURN '1=0';
+        end if;
+    END CHECK_IS_PD_OR_DBA;
+
 END cwms_sec_policy;
 /
-
