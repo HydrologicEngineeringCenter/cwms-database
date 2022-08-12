@@ -253,6 +253,7 @@
 		<antcall target="load-test-data"/>
 		<antcall target="test-as_normal_user"/>
 		<antcall target="test-as_pd_user"/>
+		<antcall target="test-as_pdu_user"/>
 		<antcall target="test-as_ro_user"/>
 		<antcall target="test-as_up_user"/>
 		<antcall target="test-as_dba_user"/>
@@ -263,7 +264,7 @@
 	</target>
 
 
-    <target name="test-as_pdu_user" description="run tests that require connecting with a CWMS DBA user/PD user">
+    <target name="test-as_pdu_user" depends="setup-tests,tests-install" description="run tests that require connecting with a CWMS DBA user/PD user">
         <if>
             <available file="build/tests.log"/>
             <then></then>
@@ -280,7 +281,6 @@
 			<arg value="-f"/><arg value="UT_DOCUMENTATION_REPORTER"/>
             <arg value="-d"/>
 			<arg value="${office.primary.code}hectest_pu/${oracle.hectest.password}@${oracle.cwms.instance}" />
-
         </exec>
 
 		<fail>
@@ -383,7 +383,7 @@
 
     </target>
 
-	<target name="test-as_normal_user" description="run tests that require connecting with a normal CWMS user">
+	<target name="test-as_normal_user" depends="setup-tests,tests-install" description="run tests that require connecting with a normal CWMS user">
         <if>
             <available file="build/tests.log"/>
             <then></then>
@@ -393,7 +393,7 @@
         <echo message="    Running tests" />
         <exec executable="utplsql" resultproperty="utreturn">
             <arg value="run"/>
-			<arg value="-p=${oracle.cwms.user}.test_aq_user"/>
+			<arg value="-p=${oracle.cwms.user}.test_aq_user,${oracle.cwms.user}.test_aaa_normaluserfails"/>
             <arg value="-f"/><arg value="UT_COVERAGE_HTML_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/index.html" />
             <arg value="-f"/><arg value="UT_COVERAGE_COBERTURA_REPORTER"/><arg value="-o"/><arg value="${coverage.dir}/coverage_ro.xml" />
             <arg value="-f"/><arg value="UT_JUNIT_REPORTER"/><arg value="-o"/><arg value="build/tests_ro.xml" />

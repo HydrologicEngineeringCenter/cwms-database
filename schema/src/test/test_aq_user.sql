@@ -54,8 +54,7 @@ AS
 
     PROCEDURE setup
     IS
-    BEGIN
-
+    BEGIN        
         cwms_loc.store_location (p_location_id    => test_base_location_id,
                                  p_active         => 'T',
                                  p_db_office_id   => '&office_id');

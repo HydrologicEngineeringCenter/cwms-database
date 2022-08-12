@@ -1451,39 +1451,35 @@ AS
         confirm_user_admin_priv (l_db_office_code);
 
         BEGIN
-            SELECT account_status
+            SELECT userid
               INTO l_account_status
-              FROM dba_users
-             WHERE username = l_username;
+              FROM at_sec_cwms_users
+             WHERE userid = l_username;
         EXCEPTION
             WHEN NO_DATA_FOUND
             THEN
-                RETURN 'NO ACCOUNT';
+                RETURN acc_state_no_account;
         END;
-
-        IF l_account_status != 'OPEN'
-        THEN
-            RETURN l_account_status;
-        ELSE
-            BEGIN
-                SELECT is_locked
-                  INTO l_is_locked
-                  FROM at_sec_locked_users
-                 WHERE     username = l_username
-                       AND db_office_code = l_db_office_code;
-            EXCEPTION
-                WHEN NO_DATA_FOUND
-                THEN
-                    RETURN acc_state_locked;
-            END;
-
-            IF l_is_locked = 'T'
+                
+        BEGIN
+            SELECT is_locked
+                INTO l_is_locked
+                FROM at_sec_locked_users
+                WHERE     username = l_username
+                    AND db_office_code = l_db_office_code;
+        EXCEPTION
+            WHEN NO_DATA_FOUND
             THEN
                 RETURN acc_state_locked;
-            ELSE
-                RETURN acc_state_unlocked;
-            END IF;
+        END;
+
+        IF l_is_locked = 'T'
+        THEN
+            RETURN acc_state_locked;
+        ELSE
+            RETURN acc_state_unlocked;
         END IF;
+        
     END get_user_state;
 
 

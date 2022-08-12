@@ -9,6 +9,9 @@ exec cwms_sec.add_cwms_user('OTHER_DIST', char_32_array_type('CWMS Users'),'HQ')
 @test_cwms_prop.sql;
 @test_cwms_msg.sql;
 @test_aaa.sql;
+show errors;
+@test_aaa_normaluserfails.sql
+show errors;
 @test_ro.sql;
 @test_up.sql;
 @test_dba.sql;
