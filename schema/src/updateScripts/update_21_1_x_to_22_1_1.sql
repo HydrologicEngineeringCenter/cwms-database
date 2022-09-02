@@ -64,7 +64,23 @@ PROMPT ********** Update cwms tables
 @@./22_1_1/update_cwms_tables
 
 PROMPT ********** Alter table(s)
-ALTER TABLE AT_LOC_LVL_INDICATOR_COND MODIFY(COMPARISON_UNIT  NOT NULL);
+whenever sqlerror continue;
+ALTER TABLE AT_LOC_LVL_INDICATOR_COND DROP CONSTRAINT AT_LOC_LVL_INDICATOR_COND_CK8;
+whenever sqlerror exit;
+BEGIN
+    EXECUTE IMMEDIATE 'ALTER TABLE AT_LOC_LVL_INDICATOR_COND MODIFY(COMPARISON_UNIT  NOT NULL)';
+EXCEPTION
+    WHEN OTHERS
+    THEN
+        IF SQLCODE = -1442
+        THEN
+            DBMS_OUTPUT.PUT_LINE ('Column is already set to not null');
+            NULL;     
+        ELSE
+            RAISE;
+        END IF;
+END;
+/
 ALTER TABLE AT_LOC_LVL_INDICATOR_COND
  ADD CONSTRAINT AT_LOC_LVL_INDICATOR_COND_CK8
   CHECK (NOT(RATE_EXPRESSION IS NOT NULL AND RATE_COMPARISON_UNIT IS NULL));
@@ -72,6 +88,13 @@ ALTER TABLE AT_LOC_LVL_INDICATOR_COND
 PROMPT ********** Add/update comments
 COMMENT ON COLUMN AT_LOC_LVL_INDICATOR_COND.COMPARISON_UNIT IS 'Unit of V, L (or L1), and L2 used for comparisons. Not necessarliy the unit of the expression result';
 COMMENT ON COLUMN AT_LOC_LVL_INDICATOR_COND.RATE_COMPARISON_UNIT IS 'Unit of V, L (or L1), and L2 used for rate comparisons. The numerator unit for R (e.g., ft3 for R in cfs [ft3/s])';
+
+PROMPT ********** Build new index for CWMS_TIME_ZONE
+whenever sqlerror continue;
+DROP INDEX CWMS_TIME_ZONE_TNU;
+whenever sqlerror exit;
+CREATE UNIQUE INDEX CWMS_TIME_ZONE_TNU ON CWMS_TIME_ZONE(UPPER("TIME_ZONE_NAME"));
+
 -----------
 -- VIEWS --
 -----------
