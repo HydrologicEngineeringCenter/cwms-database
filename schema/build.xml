@@ -998,7 +998,7 @@
 			<arg value="--tag"/>
 			<arg value="${docker.props.image_name}"/>
 			<arg value="."/>
-			<redirector output="${root}/build/docker.txt" error="${root}/build/docker" alwayslog="true"/>
+			<redirector output="${root}/build/docker.txt" error="${root}/build/docker.txt" alwayslog="true"/>
 		</exec>
 
 	</target>
