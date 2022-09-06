@@ -39,7 +39,39 @@ If you do not have write access you may be able to fork it in bitbucket and subm
 
 ## build and testing
 
-### build
+### Docker installer for use
+
+`docker pull registy.hecdev.net/cwms/schema_installer:<version>`
+
+where `<version>` can be:
+
+- latest-dev
+- 21.1.1
+- latest
+- etc 
+
+latest-dev is the newest code, latest will be the main version deployed
+
+If you have the source you can use `ant docker.install` to get a default setup that will also start the database for you.
+
+Otherwise
+
+```bash
+docker run  -e DB_HOST_PORT=<database hostname/ip>:<port> \
+            -e DB_NAME=<database SID or Service Name \
+            -e SYS_PASSWORD=<sys password on your Oracle database> \
+            -e CWMS_PASSWORD=<desired CWMS_20 password or leave off to generate> \
+            -e BUILDUSER_PASSWORD=<desired build user password or leave off to generate> \
+            -e OFFICE_ID=<office ID, letters, all caps. default is HEC> \
+            -e OFFICE_EROC=<2 letter eroc, lower case, default is q0> \
+            registy.hecdev.net/cwms/schema_installer:<version>
+```
+
+NOTE the dockerimage is not generally the friendly for diagnosing thing as it's intended
+for use after the build scripts have been verified. The buildCWMS_DB.log and other logging .txt
+files will be printed to the schema installers stdout.
+
+### build for dev
 
 copy the wcdba_overrides.xml or teamcity_overrides.xml to build/localoverrides.xml and alter the settings internally to match the test database you have either setup or had provided.
 
@@ -111,4 +143,3 @@ patch - bug fixes to existing code
 Mike Neilson
 Mike Perryman
 Prasad Vemulapati
-

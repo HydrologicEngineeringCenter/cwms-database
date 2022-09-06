@@ -1,4 +1,8 @@
-<project name="cwms_database_schema" default="all" xmlns:resolver="antlib:org.apache.maven.resolver.ant">
+<project name="cwms_database_schema" 
+		 default="all" 
+		 xmlns:resolver="antlib:org.apache.maven.resolver.ant"
+		 xmlns:if="ant:if"
+		 xmlns:unless="ant:unless">
 	<taskdef uri="antlib:org.apache.maven.resolver.ant" resource="org/apache/maven/resolver/ant/antlib.xml"
     classpath="lib/maven-resolver-ant-tasks-1.2.1-uber.jar" />
 
@@ -106,10 +110,17 @@
                 </exec>
 	</target>
 
-	<target name="build" description="Executes python scripts to build the CWMS schema" depends="createbuilduser">
-
+	<target name="build" description="Executes python scripts to build the CWMS schema" depends="createbuilduser,database-version">
+		
+		<echo message="Building version: ${simple.build.version}"/>
+		<echo message="Have version: ${cwms.installed.version}"/>
+		<if>
+			<equals arg1="${cwms.installed.version}" arg2="${simple.build.version}"/>
+			<then>
+				<fail message="Version already installed" status="50"/>
+			</then>
+		</if>
 		<echo message="Build sql scripts..."/>
-
 		<if>
 			<equals arg1="${office.secondary.id}" arg2="" />
 			<then>
@@ -758,6 +769,8 @@
     <target name="rebuild-schema-with-export" depends="exportSchema,export,clean,build,import,createUsers" description="export AT tables,drop existing CWMS schema then build a new CWMS schema, import AT data, recreate user accounts">
     </target>
 
+	
+
 	<target name="clean-output-files">
 		<delete file="auto-build-error.txt"/>
 		<delete file="auto-build-output.txt"/>
@@ -802,7 +815,19 @@
 		</delete>
 	</target>
 
-	<target name="xml-schemas">
+	<target name="jdbcdeps">
+		<resolver:resolve>
+            <resolver:dependencies>
+                <resolver:dependency coords="org.python:jython-standalone:2.7.2" />
+                <resolver:dependency coords="com.oracle.ojdbc:ojdbc8:19.3.0.0" />
+            </resolver:dependencies>
+            <path refid="cp.runtime" scopes="compile,runtime,test"/>
+            <files refid="deps" dir="${build.dir}/deps" layout="{artifactId}.{extension}"/>
+            <resolver:properties prefix="dep." classpath="runtime"/>
+        </resolver:resolve>
+	</target>
+
+	<target name="xml-schemas" depends="jdbcdeps">
 	    <property name="xml_schema_zipfile" location="${build.dir}/xmlSchema.zip"/>
 	    <echo message="==> Cleaning the xml directory"/>
         <exec executable="make" dir="${src}/xml" failonerror="false">
@@ -814,15 +839,7 @@
             <arg value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} control=hec-datatypes_xml_schema.ctl"/>
         </exec>
 	    <echo message="==> Building the hec-datatypes.xsd file from the database"/>
-        <resolver:resolve>
-            <resolver:dependencies>
-                <resolver:dependency coords="org.python:jython-standalone:2.7.2" />
-                <resolver:dependency coords="com.oracle.ojdbc:ojdbc8:19.3.0.0" />
-            </resolver:dependencies>
-            <path refid="cp.runtime" scopes="compile,runtime,test"/>
-            <files refid="deps" dir="${build.dir}/deps" layout="{artifactId}.{extension}"/>
-            <resolver:properties prefix="dep." classpath="runtime"/>
-        </resolver:resolve>
+        
         <java
             fork="true"
 			failonerror="true"
@@ -1165,8 +1182,8 @@
 			<arg value="-e"/>
 			<arg value="OFFICE_ID=${database.office}"/>
 			<arg value="-e"/>
-			<arg value="OFFICE_EROC=${database.eroc}"/>
-			<arg value="${docker.props.image_name}"/>
+			<arg value="OFFICE_EROC=${database.eroc}"/>		
+			<arg value="${docker.props.image_name}"/>			
 		</exec>
 	</target>
 
@@ -1295,6 +1312,50 @@
 				<echo message="Not a deployable build"/>
 			</else>
 		</if>
+	</target>
+
+	<target name="database-version" depends="jdbcdeps">
+		<!-- 
+	arg value="-d"/><arg value="${oracle.cwms.instance}"/>
+            <arg value="-u"/><arg value="${oracle.cwms.user}"/>
+            <arg value="-p"/><arg value="${oracle.cwms.password}"/>
+
+		-->
+		<delete file="${build.dir}/sqlversion"/>
+		<sql driver="oracle.jdbc.driver.OracleDriver"
+			 url="jdbc:oracle:thin:@${oracle.cwms.instance}"
+			 userid="${oracle.cwms.user}"
+			 password="${oracle.cwms.password}"
+			 print="yes"
+			 output="${build.dir}/sqlversion"
+			 errorProperty="version.check.failed"
+			 showheaders="false"
+			 showtrailers="false"
+			 onerror="continue"
+			 failOnConnectionError="false"
+			 >
+			<classpath refid="cp.runtime"/>
+			select 
+    		cl.version 
+				from av_db_change_log cl 
+				where cl.apply_date = (select max(apply_date) from av_db_change_log);
+		</sql>		
+		<loadfile property="cwms.installed.version"
+				  srcFile="${build.dir}/sqlversion"
+				  failonerror="false"
+				  quiet="true"
+				  unless:set="version.check.failed"
+				  >
+			<filterchain>
+				<striplinebreaks/>
+			</filterchain>
+		</loadfile>
+		<property name="cwms.installed.version" value="not installed"/>
+		<propertyregex property="simple.build.version" input="${pom.version}" regexp="(.*)-SNAPSHOT" select="\1"/>
+		<propertyregex property="simple.build.version" input="${simple.build.version}" 
+					   override="true" 
+					   regexp="(\d+)-(\d+)-(\d+)" 
+					   replace="\1.\2.\3" defaultValue="${simple.build.version}"/>
 	</target>
 
 </project>

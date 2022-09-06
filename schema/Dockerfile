@@ -38,5 +38,6 @@ ENV LD_LIBRARY_PATH=/opt/oracle/instantclient_19_6
 
 ENV OFFICE_ID=HQ
 ENV OFFICE_EROC=Q0
+ENV INSTALLONCE=0
 
 CMD ["/cwmsdb/docker/install.sh"]
