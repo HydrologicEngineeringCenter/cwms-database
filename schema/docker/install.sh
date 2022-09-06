@@ -88,20 +88,22 @@ else
     echo "Running clean build tasks"
     ant -Dbuilduser.overrides=/overrides.xml clean build
     build_ret=$?
-    cat auto-kill*.txt    
 fi
-echo "Build Files contents are"
-echo "buildCWMS_DB.log:"
-echo "=================="
-cat src/buildCWMS_DB.log
-echo "=================="
-echo "other build .txt files"
-for f in `ls *.txt`; do
-    echo "$f:"
-    echo "==============="
-    cat $f
-    echo "==============="
-done
+
+if [ "$QUIET" == 0 ]; then
+    echo "Build Files contents are"
+    echo "buildCWMS_DB.log:"
+    echo "=================="
+    cat src/buildCWMS_DB.log
+    echo "=================="
+    echo "other build .txt files"
+    for f in `ls *.txt`; do
+        echo "$f:"
+        echo "==============="
+        cat $f
+        echo "==============="
+    done
+fi
 
 echo "ret val: $build_ret"
 if [ $build_ret -eq 0 ]; then
