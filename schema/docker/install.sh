@@ -79,11 +79,38 @@ END
 
 echo "Installing CWMS Schema"
 cd /cwmsdb
-ant -Dbuilduser.overrides=/overrides.xml clean build
-cat src/buildCWMS_DB.log
-cat *.txt
-if [ $? -eq 0 ]; then
+
+if [ "$INSTALLONCE" == "1" ]; then
+    echo "Running only build task"
+    ant -Dbuilduser.overrides=/overrides.xml build
+    build_ret=$?
+else
+    echo "Running clean build tasks"
+    ant -Dbuilduser.overrides=/overrides.xml clean build
+    build_ret=$?
+fi
+
+if [ "$QUIET" == 0 ]; then
+    echo "Build Files contents are"
+    echo "buildCWMS_DB.log:"
+    echo "=================="
+    cat src/buildCWMS_DB.log
+    echo "=================="
+    echo "other build .txt files"
+    for f in `ls *.txt`; do
+        echo "$f:"
+        echo "==============="
+        cat $f
+        echo "==============="
+    done
+fi
+
+echo "ret val: $build_ret"
+if [ $build_ret -eq 0 ]; then
     echo "CWMS USER PASSWORD: $CWMS_PASSWORD"
+    exit 0
+elif [ $build_ret -eq 50 ]; then
+    # password would've already been set
     exit 0
 else
     exit 1
