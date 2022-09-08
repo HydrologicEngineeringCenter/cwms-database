@@ -6,7 +6,6 @@
 package db.migration;
 
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import cwms.units.ConversionGraph;
@@ -14,12 +13,9 @@ import cwms.units.Unit;
 import db.data.R__units_and_parameters;
 import net.hobbyscience.SimpleInfixCalculator;
 import net.hobbyscience.database.Conversion;
-import net.hobbyscience.math.Equations;
-import net.hobbyscience.math.PostfixReducer;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.logging.Logger;
 
@@ -89,21 +85,5 @@ public class UnitConversionTest {
 
     }
 
-
-    @Test
-    @Disabled // still working out the kinks
-    public void test_reducer() {
-        String simpleConversionPostFix = "i 1000 * 0 + 1000 * 0 +";
-        String fToKConversion = "i 32.0 - 5.0 * 9.0 / 1.0 * 273.15 +";
-
-        String simpleConversionReduced = "i 1000000 * 0 +";
-        String fToKConversionReduced = "i .555555556 * 255.373 +";
-        var reducer = new PostfixReducer();
-        String reduced = reducer.reduce(simpleConversionPostFix);
-        assertEquals(simpleConversionReduced,reduced);
-
-        reduced = reducer.reduce(fToKConversion);
-        assertEquals(fToKConversionReduced,reduced);
-
-    }
+    
 }
