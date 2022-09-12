@@ -33,7 +33,7 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
     private ArrayList<String> abstractParameters = new ArrayList<>();
     private Map<String,Unit> unitDefinitions = null;
     private HashSet<Conversion> conversions = new HashSet<>();
-    private Map<String,Double> constants = null;
+    private Map<String,String> constants = null;
     private int count = 0;
 
     private CRC32 crc = new CRC32();
@@ -102,9 +102,9 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
 
         constants = mapper.readValue(
             getData("db/custom/units_and_parameters/conversion_constants.json"),
-            new TypeReference<HashMap<String,Double>>(){});
+            new TypeReference<HashMap<String,String>>(){});
         constants.forEach( (k,v) -> {
-            String tmp = String.format("%s:%f",k,v);
+            String tmp = String.format("%s:%s",k,v);
             crc.update(tmp.getBytes());
         });
 
@@ -146,7 +146,7 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
     private String substituteVariables(String conversion) {
         String tmp = conversion;
         for( String constant: constants.keySet() ){
-            tmp = tmp.replace(constant,constants.get(constant).toString());
+            tmp = tmp.replace(constant,constants.get(constant));
         }
         return tmp;
     }

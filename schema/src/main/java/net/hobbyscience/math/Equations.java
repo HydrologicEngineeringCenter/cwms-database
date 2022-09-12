@@ -5,6 +5,7 @@
 
 package net.hobbyscience.math;
 
+import java.text.NumberFormat;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,11 +15,14 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Stack;
+import java.util.regex.Pattern;
 
 import net.hobbyscience.database.exceptions.BadMathExpression;
 import net.hobbyscience.database.exceptions.NoInverse;
 import net.hobbyscience.database.exceptions.NotImplemented;
+import net.objecthunter.exp4j.function.Function;
 import net.objecthunter.exp4j.operator.Operator;
+import net.objecthunter.exp4j.operator.Operators;
 import net.objecthunter.exp4j.shuntingyard.ShuntingYard;
 import net.objecthunter.exp4j.tokenizer.*;
 
@@ -44,35 +48,49 @@ public class Equations {
         }        
     }
 
-    private static boolean isOperand(String token ){
-        switch( token ){
-            case "+": // fallthrough
-            case "-": // fallthrough
-            case "^": // fallthrough
-            case "*": // fallthrough
-            case "/": // fallthrough
-            case "i": //
-            case "nroot": {
-                return true;
-            }
-            default: {
-                return false;
-            }
-        }
+    private static boolean isOperator(Token token ) {
+        return token.getType() == Token.TOKEN_OPERATOR;
     }
 
-    private static String inverseFor(String operand){
-        switch( operand ){
-            case "+": return "-";
-            case "-": return "+";
-            case "^": return "nroot";
-            case "*": return "/";
-            case "/": return "*";
-            case "nroot": return "^";
+    private static boolean isNumber(Token token ) {
+        return token.getType() == Token.TOKEN_NUMBER;
+    }
+
+    /**
+     * @param operand 
+     * @return the opossite function
+     */
+    private static Token inverseFor(OperatorToken operand){
+        Operator op = null;
+        switch( operand.getOperator().getSymbol() ){
+            case "+": {
+                op = Operators.getBuiltinOperator('-', 2);
+                break;
+            }
+            case "-": {
+                op = Operators.getBuiltinOperator('+', 2);
+                break;
+            } 
+            case "^": { 
+                return new FunctionToken(null);                
+            }
+            case "*": {
+                op = Operators.getBuiltinOperator('/', 2);
+                break;
+            }
+            case "/": {
+                op = Operators.getBuiltinOperator('*', 2);
+                break;
+            }
+            case "nroot":{
+                 op = Operators.getBuiltinOperator('^', 2);
+                 break;
+            }
             default: {
                 throw new NoInverse("Cannot find inverser for operator " + operand);
-            }
+            }            
         }
+        return new OperatorToken(op);
     }
 
     private static NumberToken calc(NumberToken left, NumberToken right, Token operand) {
@@ -101,7 +119,7 @@ public class Equations {
                 throw new NotImplemented("Cannot calculate for operator " + operand);
             }
         }
-    }
+    }    
 
     /**
      * Invert a function so when writing out units we don't have to do anything in both directions.
@@ -109,38 +127,32 @@ public class Equations {
      * @return postfix but the function inverse
      */
     public static String invertPostfix( String postfix){
-        Queue<String> lhs = new LinkedList<>();
-        Stack<String> rhs = new Stack<>();
-        Stack<String> hold = new Stack<>();
-        for( String tok: postfix.split("\\s+") ){
-            rhs.push(tok);
-        }
+        Queue<Token> lhs = new LinkedList<>();
+        Deque<Token> rhs = postfixToTokens(postfix);
+        Stack<Token> hold = new Stack<>();        
     
-        while( !rhs.empty() ){
-            var token = rhs.pop();
-            switch( token ){
-                case "i":{
+        while( !rhs.isEmpty() ){
+            var token = rhs.pollLast();
+            switch( token.getType() ){
+                case Token.TOKEN_VARIABLE:{
                     break;
                 }
-                case "+": // fallthrough                                    
-                case "-": // fallthrough
-                case "^": // fallthrough
-                case "*": // fallthrough
-                case "/": // fallthrough
-                case "nroot": {
-                    String r = rhs.pop();
-                    String l = rhs.pop();
+                case Token.TOKEN_OPERATOR: {
+                    var op = ((OperatorToken)token).getOperator();
+                    
+                    var r = rhs.pollLast();
+                    var l = rhs.pollLast();
                     if( r.equals("i") ){
-                        hold.add(rhs.pop());
+                        hold.push(rhs.pop());
                         hold.add(token);
-                        rhs.push(l);                        
-                    } else if( !isOperand(r) && !isOperand(l) ){
-                        lhs.add(calc(l, r, token));
-                        lhs.add(inverseFor(token));
-                    } else if( !isOperand(r) ) {
+                        rhs.addLast(l);                        
+                    } else if( isNumber(r) && isNumber(l) ){
+                        lhs.add(calc((NumberToken)l, (NumberToken)r, token));
+                        lhs.add(inverseFor((OperatorToken)token));
+                    } else if( !isOperator(r) ) {
                         lhs.add(r);
-                        lhs.add(inverseFor(token));
-                        rhs.push(l);
+                        lhs.add(inverseFor((OperatorToken)token));
+                        rhs.addLast(l);
                     }
                     break;
                 }
@@ -150,15 +162,10 @@ public class Equations {
             }
         }
         if( !hold.isEmpty() ){
-            lhs.add(inverseFor(hold.pop())); // for now we'll assume only one "var op" will ever be present here.
+            lhs.add(inverseFor((OperatorToken)hold.pop())); // for now we'll assume only one "var op" will ever be present here.
         }
-        StringBuilder builder = new StringBuilder();
-        builder.append("i ");
-        lhs.forEach( t -> {
-            builder.append(t).append(" ");
-        });
-
-        return builder.toString().trim();
+        
+        return "i " + tokensToString(lhs);        
     }
 
     /**
@@ -176,6 +183,43 @@ public class Equations {
                 rhs.add(token);
             }            
         }
+        return rhs;
+    }
+
+    /**
+     * Convert a postfix expression into a series of Tokens
+     * @param postfix equation, expects all elements to be seperated by space
+     * @return
+     */
+    public static Deque<Token> postfixToTokens(String postfix) {
+        var isNumeric = Pattern.compile("^\\d+(\\.\\d+)$");
+        var isAlpha = Pattern.compile("^[a-zA-Z]+$");
+        Deque<Token> rhs = new LinkedList<>();
+        String elements[] = postfix.split("\\s+");
+        for( String item: elements) {
+            switch (item) {
+                case "*":
+                case "/":
+                case "^": 
+                case "-":
+                case "+":
+                case "operator": {
+                    rhs.add(new OperatorToken(Operators.getBuiltinOperator(item.charAt(0), 2)));
+                    break;
+                }                
+                default: {
+                    if (isNumeric.matcher(item).matches()) {
+                        rhs.add(new NumberToken(Double.parseDouble(item)));
+                    } else if (isAlpha.matcher(item).matches()) {
+                        rhs.add(new VariableToken(item));
+                    } else {
+                        throw new NotImplemented(String.format("token %s is not implemented",item));
+                    }
+                    break;
+                }
+            }
+
+        }        
         return rhs;
     }
 

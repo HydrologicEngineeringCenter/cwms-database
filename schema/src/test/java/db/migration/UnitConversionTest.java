@@ -31,7 +31,7 @@ public class UnitConversionTest {
 
         ConversionGraph graph = new ConversionGraph(migration.getConversions());
         conversions = graph.generateConversions();
-        log.fine( () -> { 
+        log.info( () -> { 
             StringBuilder sb = new StringBuilder();
             conversions.forEach(c-> sb.append(c.toString()).append(System.lineSeparator()));
             return sb.toString();

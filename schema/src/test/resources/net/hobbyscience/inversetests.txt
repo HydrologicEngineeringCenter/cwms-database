@@ -1,0 +1,6 @@
+#name:forward:inverse(postfix)
+m*x+b:i * 4 + 1:i 1.0 - 4.0 /
+m*x:i*4:i 4.0 /
+with ^: i ^ 2:i 2.0 nroot
+with ^ and +: (i +1 )^2:i 2.0 nroot 1.0
+m2->acre:(i/.3048^2)/43560: i 43560.0 * 0.3048 2 ^ *

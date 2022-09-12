@@ -4,6 +4,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 
 import jmc.cas.BinaryOperation;
+import jmc.cas.Mode;
 import jmc.cas.Operable;
 import jmc.cas.RawValue;
 import jmc.cas.UnaryOperation;
@@ -20,17 +21,23 @@ public class Reducer {
 
 
     public static String reduce(String equation) {
-        var operations = tokensToBin(equation);
-        operations = operations.simplify();        
-        var infix = operations.beautify().toString();
-        return Equations.infixToPostfix(infix);
+        try {
+            var operations = tokensToBin(equation);        
+            operations = operations.simplify();        
+            var infix = operations.beautify().toString();
+        
+            return Equations.infixToPostfix(infix);
+        } catch (BadMathExpression bme) {
+            throw new BadMathExpression(String.format("Unable to reduce %s",equation),bme);
+        }
+        
     }
 
     public static Operable tokensToBin(String equation) {
         // just gotta go through the stack
         Token current = null;
         
-        Deque<Token> tokens = Equations.stringToTokens(equation);
+        Deque<Token> tokens = Equations.postfixToTokens(equation);
 
         Deque<Operable> stack = new ArrayDeque<>(3);
         while ((current = tokens.pollFirst()) != null) {

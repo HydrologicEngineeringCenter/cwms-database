@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 
 import net.hobbyscience.database.Conversion;
 import net.hobbyscience.database.ConversionMethod;
+import net.hobbyscience.database.exceptions.BadMathExpression;
 import net.hobbyscience.database.exceptions.NoConversionFound;
 import net.hobbyscience.database.methods.ForDB;
 import net.hobbyscience.math.Equations;
@@ -28,10 +29,10 @@ import net.hobbyscience.math.Equations;
 public class ConversionGraph {
     private static Logger log = Logger.getLogger(ConversionGraph.class.getName());
     
-    private Set<Conversion> conversions;
+    private Set<Conversion> initialConversions;
 
     public ConversionGraph(Set<Conversion> conversions) {
-        this.conversions = conversions;
+        this.initialConversions = conversions;
     }
 
     private Set<Conversion> expandConversions(Set<String> unitClasses,
@@ -59,18 +60,26 @@ public class ConversionGraph {
                 while( (step = steps.pollLast()) != null){
                     postfix = Equations.combine(postfix, step.getPostfix());
                 }
-                /** TODO: Equations.reduce(postfix) 
-                 *  still have a few things to work out in the reducer.
-                 */ 
-                var reduced = Reducer.reduce(postfix);
                 
-                newConversions.add( 
+                try {
+                    var reduced = Reducer.reduce(postfix);
+                    newConversions.add( 
                         new Conversion(
                             from,
                             to,
                             new ForDB(reduced)
                         )
                     );
+                } catch( BadMathExpression bme ) {
+                    throw new BadMathExpression(
+                        String.format("Unable to handle converion (%s) for units (%s->%s)",
+                                      postfix,
+                                      from.getAbbreviation(),
+                                      to.getAbbreviation()));
+                }
+                
+                
+                
             }
         }        
 
@@ -190,11 +199,11 @@ public class ConversionGraph {
 
     public HashSet<Conversion> generateConversions(){
         HashSet<Conversion> retVal = new HashSet<>();
-        Set<String> unitClasses = conversions.stream().map( c -> c.getFrom().getAbstractParameter() ).distinct().collect(Collectors.toSet());
+        Set<String> unitClasses = initialConversions.stream().map( c -> c.getFrom().getAbstractParameter() ).distinct().collect(Collectors.toSet());
         for( String unitClass: unitClasses){
             System.out.println ("Expanding unit conversions for unit class " + unitClass);
             Set<Conversion> _conversions = 
-                conversions.stream()
+                initialConversions.stream()
                             .filter( c -> c.getFrom().getAbstractParameter().equalsIgnoreCase(unitClass) == true )
                             .collect( Collectors.toSet() );
             retVal.addAll( expandConversions(unitClasses, _conversions));
