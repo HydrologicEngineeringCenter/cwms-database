@@ -17,6 +17,11 @@ import java.util.Queue;
 import java.util.Stack;
 import java.util.regex.Pattern;
 
+import jmc.cas.BinaryOperation;
+import jmc.cas.Operable;
+import jmc.cas.RawValue;
+import jmc.cas.UnaryOperation;
+import jmc.cas.Variable;
 import net.hobbyscience.database.exceptions.BadMathExpression;
 import net.hobbyscience.database.exceptions.NoInverse;
 import net.hobbyscience.database.exceptions.NotImplemented;
@@ -121,53 +126,7 @@ public class Equations {
         }
     }    
 
-    /**
-     * Invert a function so when writing out units we don't have to do anything in both directions.
-     * @param postfix
-     * @return postfix but the function inverse
-     */
-    public static String invertPostfix( String postfix){
-        Queue<Token> lhs = new LinkedList<>();
-        Deque<Token> rhs = postfixToTokens(postfix);
-        Stack<Token> hold = new Stack<>();        
     
-        while( !rhs.isEmpty() ){
-            var token = rhs.pollLast();
-            switch( token.getType() ){
-                case Token.TOKEN_VARIABLE:{
-                    break;
-                }
-                case Token.TOKEN_OPERATOR: {
-                    var op = ((OperatorToken)token).getOperator();
-                    
-                    var r = rhs.pollLast();
-                    var l = rhs.pollLast();
-                    if( r.equals("i") ){
-                        hold.push(rhs.pop());
-                        hold.add(token);
-                        rhs.addLast(l);                        
-                    } else if( isNumber(r) && isNumber(l) ){
-                        lhs.add(calc((NumberToken)l, (NumberToken)r, token));
-                        lhs.add(inverseFor((OperatorToken)token));
-                    } else if( !isOperator(r) ) {
-                        lhs.add(r);
-                        lhs.add(inverseFor((OperatorToken)token));
-                        rhs.addLast(l);
-                    }
-                    break;
-                }
-                default: {
-                    lhs.add(token);
-                }
-            }
-        }
-        if( !hold.isEmpty() ){
-            lhs.add(inverseFor((OperatorToken)hold.pop())); // for now we'll assume only one "var op" will ever be present here.
-        }
-        
-        return "i " + tokensToString(lhs);        
-    }
-
     /**
      * 
      * @param expression postfix expression
@@ -253,4 +212,59 @@ public class Equations {
         return receiving.replace("i", inserting);
     }
 
+
+    /**
+     * Convert a postfix string equation into a Binary tree
+     * @param postfix
+     * @return jmc.cas binary tree
+     */
+    public static Operable tokensToBin(String postfix) {
+        // just gotta go through the stack
+        Token current = null;
+        
+        Deque<Token> tokens = Equations.postfixToTokens(postfix);
+
+        Deque<Operable> stack = new ArrayDeque<>(3);
+        while ((current = tokens.pollFirst()) != null) {
+            switch(current.getType()) {
+                case Token.TOKEN_NUMBER: {
+                    stack.add(new RawValue(((NumberToken)current).getValue()));
+                    break;
+                }
+                case Token.TOKEN_VARIABLE: {
+                    stack.add(new Variable(((VariableToken)current).getName()));
+                    break;
+                }
+                case Token.TOKEN_OPERATOR: {
+                    var tmp = (OperatorToken)current;
+                    var numOperands = tmp.getOperator().getNumOperands();
+                    switch (numOperands) {
+                        case 1: {
+                            var operand = stack.pollLast();
+                            var op = new UnaryOperation(operand, tmp.getOperator().getSymbol());
+                            stack.add(op);
+                            break;
+                        }
+                        case 2: {
+                            var right = stack.pollLast();
+                            var left = stack.pollLast();
+                            var op = new BinaryOperation(left, tmp.getOperator().getSymbol(), right);
+                            stack.add(op);
+                            break;
+                        }
+                    }
+                    break;
+                }
+                default: {
+                    throw new BadMathExpression("Element " + current.toString() + " not yet implemented");
+                }
+            }
+        }
+        if( stack.size() == 1 ) {
+            return stack.poll();
+        } else {
+            throw new BadMathExpression(String.format("Not all elements of the provided equation '%s' where converted",postfix) );
+        }
+        
+    }
 }

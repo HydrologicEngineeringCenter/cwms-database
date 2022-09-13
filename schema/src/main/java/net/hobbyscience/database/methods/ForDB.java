@@ -7,6 +7,7 @@ package net.hobbyscience.database.methods;
 
 import net.hobbyscience.database.ConversionMethod;
 import net.hobbyscience.database.exceptions.NotImplemented;
+import net.hobbyscience.math.EquationInverter;
 import net.hobbyscience.math.Equations;
 
 public class ForDB implements ConversionMethod{
@@ -28,7 +29,7 @@ public class ForDB implements ConversionMethod{
 
 	@Override
 	public ConversionMethod getInversion() {
-		return new ForDB(Equations.invertPostfix(postfix));
+		return new ForDB(EquationInverter.invertPostfix(postfix));
 	}
 
 	@Override

@@ -24,6 +24,7 @@ import net.hobbyscience.database.ConversionMethod;
 import net.hobbyscience.database.exceptions.BadMathExpression;
 import net.hobbyscience.database.exceptions.NoConversionFound;
 import net.hobbyscience.database.methods.ForDB;
+import net.hobbyscience.math.EquationReducer;
 import net.hobbyscience.math.Equations;
 
 public class ConversionGraph {
@@ -62,7 +63,7 @@ public class ConversionGraph {
                 }
                 
                 try {
-                    var reduced = Reducer.reduce(postfix);
+                    var reduced = EquationReducer.reduce(postfix);
                     newConversions.add( 
                         new Conversion(
                             from,

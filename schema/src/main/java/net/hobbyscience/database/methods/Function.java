@@ -8,6 +8,7 @@ package net.hobbyscience.database.methods;
 import net.hobbyscience.database.ConversionMethod;
 import net.hobbyscience.database.exceptions.BadMathExpression;
 import net.hobbyscience.database.exceptions.BadMethodData;
+import net.hobbyscience.math.EquationInverter;
 import net.hobbyscience.math.Equations;
 
 public class Function implements ConversionMethod{
@@ -32,7 +33,7 @@ public class Function implements ConversionMethod{
 
 	@Override
 	public ConversionMethod getInversion() throws BadMathExpression {		
-		return new ForDB(Equations.invertPostfix(getPostfix()));
+		return new ForDB(EquationInverter.invertPostfix(getPostfix()));
 	}
 
     @Override
