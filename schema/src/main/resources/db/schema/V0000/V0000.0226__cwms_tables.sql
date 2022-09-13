@@ -594,25 +594,9 @@ CREATE SEQUENCE CWMS_SEQ
     -- ##
     CREATE TABLE CWMS_ABSTRACT_PARAMETER
        (
-           ABSTRACT_PARAM_CODE NUMBER(14)         NOT NULL,
+           ABSTRACT_PARAM_CODE NUMBER(14) generated always NOT NULL as IDENTITY primary key,
            ABSTRACT_PARAM_ID   VARCHAR2(32 BYTE)  NOT NULL
-       )
-           PCTFREE 10
-           PCTUSED 40
-           INITRANS 1
-           MAXTRANS 255
-           TABLESPACE CWMS_20DATA
-           STORAGE
-           (
-              INITIAL 200K
-              NEXT 200K
-              MINEXTENTS 1
-              MAXEXTENTS 200
-              PCTINCREASE 25
-              FREELISTS 1
-              FREELIST GROUPS 1
-              BUFFER_POOL DEFAULT
-           );
+       )           
 
     -----------------------------
     -- CWMS_ABSTRACT_PARAMETER indicies
@@ -620,27 +604,7 @@ CREATE SEQUENCE CWMS_SEQ
     CREATE UNIQUE INDEX CWMS_ABSTRACT_PARAMETER_UI ON CWMS_ABSTRACT_PARAMETER
        (
            UPPER(ABSTRACT_PARAM_ID)
-       )
-           PCTFREE 10
-           INITRANS 2
-           MAXTRANS 255
-           TABLESPACE CWMS_20DATA
-           STORAGE
-           (
-              INITIAL 200k
-              NEXT 200k
-              MINEXTENTS 1
-              MAXEXTENTS 20
-              PCTINCREASE 25
-              FREELISTS 1
-              FREELIST GROUPS 1
-              BUFFER_POOL DEFAULT
-           );
-
-    -----------------------------
-    -- CWMS_ABSTRACT_PARAMETER constraints
-    --
-    ALTER TABLE CWMS_ABSTRACT_PARAMETER ADD CONSTRAINT CWMS_ABSTRACT_PARAMETER_PK PRIMARY KEY (ABSTRACT_PARAM_CODE);
+       )           
 
     -----------------------------
     -- CWMS_ABSTRACT_PARAMETER comments

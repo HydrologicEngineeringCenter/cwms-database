@@ -17,6 +17,7 @@ import net.hobbyscience.database.ConversionFactory;
 import net.hobbyscience.database.ConversionMethod;
 import net.hobbyscience.database.methods.*;
 
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,6 +25,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.CRC32;
 
@@ -34,7 +36,12 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
     private Map<String,Unit> unitDefinitions = null;
     private HashSet<Conversion> conversions = new HashSet<>();
     private Map<String,String> constants = null;
+    private String sqlConversions = null;
+    private String sqlAbstract = null;
     private int count = 0;
+
+    private final Pattern yEqualsMx = Pattern.compile("^i -?[0-9]+(\\.[0-9]+)? \\*$");
+    private final Pattern yEqualsMxPlusB = Pattern.compile("^i -?[0-9]+(\\.[0-9]+)? \\* ?[0-9]+(\\.[0-9]+)? [-+]$");
 
     private CRC32 crc = new CRC32();
 
@@ -70,11 +77,50 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
                     .stream()
                     .map(conv -> conv.toString())
                     .collect(Collectors.joining("\n")));
+/**
+CREATE TABLE CWMS_UNIT_CONVERSION
+    (
+      FROM_UNIT_ID        VARCHAR2(16 BYTE)       NOT NULL,
+      TO_UNIT_ID          VARCHAR2(16 BYTE)       NOT NULL,
+      ABSTRACT_PARAM_CODE NUMBER(14)              NOT NULL,
+      FROM_UNIT_CODE      NUMBER(14)              NOT NULL,
+      TO_UNIT_CODE        NUMBER(14)              NOT NULL,
+      FACTOR              BINARY_DOUBLE,
+      OFFSET              BINARY_DOUBLE,
+      FUNCTION            VARCHAR2(64),
+ */
+        Connection conn = context.getConnection();
         /* now we would insert or update the conversions */
+        try( var mergeAbstractParams = conn.prepareStatement(sqlAbstract);
+             var deleteAbstractParams = conn.prepareStatement("delete from cwms_abstract_parameters where abstract_parameter_id = ?");
+             var existingParametersRS = conn.createStatement().executeQuery("select * from cwms_abstract_parameters");
+              ) {
+            var existingParameters = new ArrayList<String>();
+            while( existingParametersRS.next() ) {
+                existingParameters.add(existingParametersRS.getString(1));
+            }
+
+
+            for(String param: abstractParameters) {
+                mergeAbstractParams.setString(1,param);
+                mergeAbstractParams.addBatch();
+            };
+            mergeAbstractParams.executeBatch();
+
+            var toRemove = existingParameters.stream()
+                                             .filter((s)-> !abstractParameters.contains(s))
+                                             .collect(Collectors.toList());
+            for( String param: toRemove) {
+                deleteAbstractParams.setString(1,param);
+                deleteAbstractParams.addBatch();
+            }
+            deleteAbstractParams.executeBatch();
+        } 
+
     }
 
     private void loadData() throws Exception {
-        ObjectMapper mapper = new ObjectMapper();        
+        ObjectMapper mapper = new ObjectMapper();
         mapper.enable(Feature.ALLOW_COMMENTS);
 
         abstractParameters = mapper.readValue(
@@ -98,7 +144,7 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
         unitDefinitions.forEach( (k,v) -> {
             crc.update(v.toString().getBytes());
         });
-        
+
 
         constants = mapper.readValue(
             getData("db/custom/units_and_parameters/conversion_constants.json"),
@@ -133,7 +179,10 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
                 conversions.add(c);
             }
             
-        });        
+        });
+
+        sqlAbstract = new String(getData("db/custom/units_and_parameters/abstract_parameters.sql").readAllBytes());
+        sqlConversions = new String(getData("db/custom/units_and_parameters/conversions.sql").readAllBytes());
 
     }
 
