@@ -28,7 +28,6 @@ public class ConversionTest {
         var conversion = new Function(infix);
         var inverse = conversion.getInversion();
         assertEquals(postfixInverse.trim(),inverse.render().trim(),() -> String.format("Inversion for %s did not work correctly",name));
-
     }
 
 }

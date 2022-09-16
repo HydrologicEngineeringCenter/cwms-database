@@ -18,6 +18,7 @@ import net.hobbyscience.database.ConversionMethod;
 import net.hobbyscience.database.methods.*;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,6 +39,7 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
     private Map<String,String> constants = null;
     private String sqlConversions = null;
     private String sqlAbstract = null;
+    private String sqlUnits = null;
     private int count = 0;
 
     private final Pattern yEqualsMx = Pattern.compile("^i -?[0-9]+(\\.[0-9]+)? \\*$");
@@ -45,7 +47,7 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
 
     private CRC32 crc = new CRC32();
 
-    public R__units_and_parameters() throws Exception {        
+    public R__units_and_parameters() throws Exception {
         this.loadData();
         System.out.println(crc.getValue());
     }
@@ -91,16 +93,20 @@ CREATE TABLE CWMS_UNIT_CONVERSION
  */
         Connection conn = context.getConnection();
         /* now we would insert or update the conversions */
-        try( var mergeAbstractParams = conn.prepareStatement(sqlAbstract);
-             var deleteAbstractParams = conn.prepareStatement("delete from cwms_abstract_parameters where abstract_parameter_id = ?");
-             var existingParametersRS = conn.createStatement().executeQuery("select * from cwms_abstract_parameters");
+        try (var mergeAbstractParams = conn.prepareStatement(sqlAbstract);
+             var mergeConversions = conn.prepareStatement(sqlConversions);
+             var mergeUnits = conn.prepareStatement(sqlUnits);
+             var deleteAbstractParams = conn.prepareStatement("delete from cwms_abstract_parameter where abstract_parameter_id = ?");
+             var existingParametersRS = conn.createStatement().executeQuery("select * from cwms_abstract_parameter");
               ) {
+            log.info("Querying for existing abstract parameters");
             var existingParameters = new ArrayList<String>();
             while( existingParametersRS.next() ) {
                 existingParameters.add(existingParametersRS.getString(1));
             }
 
 
+            log.info("inserting new abstract parameters");
             for(String param: abstractParameters) {
                 mergeAbstractParams.setString(1,param);
                 mergeAbstractParams.addBatch();
@@ -110,12 +116,46 @@ CREATE TABLE CWMS_UNIT_CONVERSION
             var toRemove = existingParameters.stream()
                                              .filter((s)-> !abstractParameters.contains(s))
                                              .collect(Collectors.toList());
+            log.info("Flushing old Abstract Parameters");
             for( String param: toRemove) {
+                log.info("\t" + param);
                 deleteAbstractParams.setString(1,param);
                 deleteAbstractParams.addBatch();
             }
             deleteAbstractParams.executeBatch();
-        } 
+
+
+            log.info("Mering Unit definitions");
+            for(Unit unit: unitDefinitions.values()) {
+                try {
+                    mergeUnits.setString(1,unit.getAbbreviation());
+                    mergeUnits.setString(2,unit.getAbstractParameter());
+                    if( "null".equalsIgnoreCase(unit.getSystem())) {
+                        mergeUnits.setString(3,null);
+                    } else {
+                        mergeUnits.setString(3,unit.getSystem());
+                    }
+                    
+                    mergeUnits.setString(4,unit.getName());
+                    mergeUnits.setString(5,unit.getDescription());
+                    mergeUnits.addBatch();                    
+                } catch(SQLException ex) {
+                    log.severe("Failed to store unit -> " + unit.toString());
+                    throw ex;
+                }
+            }
+            try {
+                mergeUnits.executeBatch();
+            } catch(SQLException ex) {
+                log.log(Level.SEVERE,"failed to execute unit definition merge",ex);
+                SQLException next = ex;
+                while( (next = next.getNextException()) != null) {
+                    log.log(Level.SEVERE,"because:", next);
+                }
+                throw ex;
+            }
+            
+        }
 
     }
 
@@ -183,6 +223,7 @@ CREATE TABLE CWMS_UNIT_CONVERSION
 
         sqlAbstract = new String(getData("db/custom/units_and_parameters/abstract_parameters.sql").readAllBytes());
         sqlConversions = new String(getData("db/custom/units_and_parameters/conversions.sql").readAllBytes());
+        sqlUnits = new String(getData("db/custom/units_and_parameters/units.sql").readAllBytes());
 
     }
 
