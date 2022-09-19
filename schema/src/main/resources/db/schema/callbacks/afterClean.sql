@@ -110,4 +110,4 @@ BEGIN
 END;
 /
 
-drop user ${CWMS_OFFICE_EROC}cwmspd cascade;
+-- drop user ${CWMS_OFFICE_EROC}cwmspd cascade;

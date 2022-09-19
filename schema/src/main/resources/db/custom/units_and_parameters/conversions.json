@@ -24,6 +24,7 @@
 	[ "1000 acre", 		"acre", 	"linear: 1000 0"],
 	[ "ft2", 			"m2", 		"function: i*(m_per_ft^2)"],
 	[ "1000 m2",		"m2",		"linear: 1000 0"],
+	[ "m",				"ft",		"function: i*m_per_ft"],
 	// ["1000 m2",     "cm2",         "*_per_k*[m2]/[1000 m2] | c*_per_*^2[cm2]/[m2]"],
 	// ["1000 m2",     "ft2",         "*_per_k*[m2]/[1000 m2] | [ft2]/m_per_ft^2[m2]"],
 	// ["1000 m2",     "ha",          "*_per_k*[m2]/[1000 m2] | [ha]/m2_per_ha[m2]"],
@@ -45,8 +46,8 @@
 	// ["B",           "Hz",          "function[Hz]/[B]"],
 	// ["B",           "MHz",         "function[Hz]/[B] | [MHz]/*_per_M*[Hz]"],
 	// ["B",           "kHz",         "function[Hz]/[B] | [kHz]/*_per_k*[Hz]"],
-	["C",           "F",           "function: (i * 9/5) +32"],
-	["C",           "K",           "linear: 1 273.15"],	
+	["C",           "F",           "function: (i * 9/5) + 32"],
+	["C",           "K",           "linear: 1 273.15"],
 	// The graph search will find these and build
 	// the sequence of operations to calculate
 	// and then reduce the equation

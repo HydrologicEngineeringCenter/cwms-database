@@ -1,10 +1,23 @@
+/**
+    Due to the permissions model, if you add a new user you *must* also add them in the afterMigrate_create_test_uesr_cwms.sql
+    script in the data folder.
+*/
 declare
     group_list ${CWMS_SCHEMA}.char_32_array_type := ${CWMS_SCHEMA}.char_32_array_type('CWMS PD Users');
     user_list     dbms_sql.varchar2_table;
     user_does_not_exist exception;
+    user_exists exception;
+    pragma exception_init(user_exists, -1920);
     pragma exception_init(user_does_not_exist, -1918);
 begin
     if '${CWMS_TEST_USERS}' = 'create' then
+        begin
+            execute immediate 'create user ${CWMS_OFFICE_EROC}cwmspd identified by "${PD_PASSWORD}"';
+            execute immediate 'grant create session to ${CWMS_OFFICE_EROC}cwmspd';
+        exception
+            when user_exists then null;
+        end;
+
         user_list(1) := 'hectest';--,'hectest_ro','hectest_up,hectest_db,hectest_ua,hectest_pu,hectest_ru,hectest_dx,hec)";
         user_list(2) := 'hectest_ro';
         user_list(3) := 'hectest_up';
@@ -35,18 +48,6 @@ begin
             execute immediate 'grant set container to ${CWMS_OFFICE_EROC}' || user_list(i);
         end loop;
         execute immediate 'grant execute on cwms_upass to ${CWMS_OFFICE_EROC}hectest_up';
-
-        begin
-            execute immediate 'create user ${CWMS_OFFICE_EROC}cwmspd identified by "${PD_PASSWORD}"';
-            execute immediate 'grant create session to ${CWMS_OFFICE_EROC}cwmspd';
-
-            ${CWMS_SCHEMA}.cwms_sec.add_cwms_user('${CWMS_OFFICE_EROC}cwmspd', group_list, '${CWMS_OFFICE_ID}');
-            ${CWMS_SCHEMA}.cwms_sec.assign_ts_group_user_group('All Rev TS IDs', 'Viewer Users', 'Read', '${CWMS_OFFICE_ID}');
-            ${CWMS_SCHEMA}.cwms_sec.assign_ts_group_user_group('All TS IDs', 'CWMS Users', 'Read-Write', '${CWMS_OFFICE_ID}');
-
-        exception
-            when user_exists then null;
-    end;
     end if;
 end;
 /

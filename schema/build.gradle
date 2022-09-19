@@ -206,6 +206,7 @@ task installTests(type: Exec ){
 			args "${cwms_eroc}hectest_pu"
 			args "${cwms_eroc}hectest_up"
 			args "${cwms_schema_name}"
+            args "${cwms_eroc}hectest"
         }
     }
 }
@@ -223,7 +224,7 @@ task cleanTestData(type: Exec) {
         args "-o=$buildDir/tests_pd.xml"
 	args "-f=UT_DOCUMENTATION_REPORTER"
     args "-d"
-	args "${cwms_eroc}hectest_pu/\"${test_password}\"@${dbUrl}"
+	args "${cwms_eroc}cwmspd/\"${test_password}\"@${dbUrl}"
 }
 
 task loadTestData() {
@@ -236,29 +237,7 @@ task loadTestData() {
             executable "sqlldr"
             args "${build_user}[$cwms_schema_name]/\"${project.findProperty("flyway.password")}\"@${dbUrl}"
             args "control=xsl_test_clobs.ctl"
-        }/*
-        println("load base locations")
-        exec {
-            workingDir "${projectDir}/src/test/data/locs"
-            executable "sqlldr"
-            args "${build_user}[$cwms_schema_name]/\"${project.findProperty("flyway.password")}\"@${dbUrl}"
-            args "control=AT_BASE_LOCATION.ctl"
         }
-        println("loading parameters")
-        exec {
-            workingDir "${projectDir}/src/test/data/locs"
-            executable "sqlldr"
-            args "${build_user}[$cwms_schema_name]/\"${project.findProperty("flyway.password")}\"@${dbUrl}"
-            args "control=AT_PARAMETER.ctl"
-        }
-        println("loading physical locations")
-        exec {
-            workingDir "${projectDir}/src/test/data/locs"
-            executable "sqlldr"
-            args "${build_user}[$cwms_schema_name]/\"${project.findProperty("flyway.password")}\"@${dbUrl}"
-            args "control=AT_PHYSICAL_LOCATION.ctl"
-        }*/
-        
     }
 
 }
@@ -278,7 +257,7 @@ task testAsPdUser(type: Exec) {
         args "-o=$buildDir/tests_pdu.xml"
 	args "-f=UT_DOCUMENTATION_REPORTER"
     args "-d"
-	args "${cwms_eroc}hectest_pu/\"${test_password}\"@${dbUrl}"
+	args "${cwms_eroc}cwmspd/\"${test_password}\"@${dbUrl}"
 }
 /*
 task testAsRoUser(type: Exec ) {

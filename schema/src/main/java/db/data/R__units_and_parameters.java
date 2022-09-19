@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import cwms.CwmsMigrationError;
+import cwms.CwmsMigrationSqlError;
 import cwms.units.ConversionGraph;
 import cwms.units.Unit;
 import net.hobbyscience.database.Conversion;
@@ -18,7 +19,10 @@ import net.hobbyscience.database.ConversionMethod;
 import net.hobbyscience.database.methods.*;
 
 import java.sql.Connection;
+import java.sql.JDBCType;
 import java.sql.SQLException;
+import java.sql.SQLType;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -44,6 +48,7 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
 
     private final Pattern yEqualsMx = Pattern.compile("^i -?[0-9]+(\\.[0-9]+)? \\*$");
     private final Pattern yEqualsMxPlusB = Pattern.compile("^i -?[0-9]+(\\.[0-9]+)? \\* ?[0-9]+(\\.[0-9]+)? [-+]$");
+    private final Pattern yEqualsXPlusB = Pattern.compile("^i -?[0-9]+(\\.[0-9]+)? [-+]$");
 
     private CRC32 crc = new CRC32();
 
@@ -54,7 +59,7 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
 
     @Override
     public void migrate(Context context) throws Exception {
-        log.info("Inserting/Updating units");
+        
         log.log( Level.FINEST, "Parameters: \n{0}", 
                  abstractParameters
                     .stream()
@@ -74,30 +79,19 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
 
         var expandedConversions = convGraph.generateConversions();
         log.info(() -> String.format("We have %s total conversions",expandedConversions.size()));
-        log.log(Level.INFO, "Expanded Conversions:\n{0}", 
+        log.log(Level.FINEST, "Expanded Conversions:\n{0}", 
                 expandedConversions
                     .stream()
                     .map(conv -> conv.toString())
                     .collect(Collectors.joining("\n")));
-/**
-CREATE TABLE CWMS_UNIT_CONVERSION
-    (
-      FROM_UNIT_ID        VARCHAR2(16 BYTE)       NOT NULL,
-      TO_UNIT_ID          VARCHAR2(16 BYTE)       NOT NULL,
-      ABSTRACT_PARAM_CODE NUMBER(14)              NOT NULL,
-      FROM_UNIT_CODE      NUMBER(14)              NOT NULL,
-      TO_UNIT_CODE        NUMBER(14)              NOT NULL,
-      FACTOR              BINARY_DOUBLE,
-      OFFSET              BINARY_DOUBLE,
-      FUNCTION            VARCHAR2(64),
- */
+
         Connection conn = context.getConnection();
         /* now we would insert or update the conversions */
         try (var mergeAbstractParams = conn.prepareStatement(sqlAbstract);
              var mergeConversions = conn.prepareStatement(sqlConversions);
              var mergeUnits = conn.prepareStatement(sqlUnits);
              var deleteAbstractParams = conn.prepareStatement("delete from cwms_abstract_parameter where abstract_parameter_id = ?");
-             var existingParametersRS = conn.createStatement().executeQuery("select * from cwms_abstract_parameter");
+             var existingParametersRS = conn.createStatement().executeQuery("select abstract_param_id from cwms_abstract_parameter");
               ) {
             log.info("Querying for existing abstract parameters");
             var existingParameters = new ArrayList<String>();
@@ -125,36 +119,60 @@ CREATE TABLE CWMS_UNIT_CONVERSION
             deleteAbstractParams.executeBatch();
 
 
-            log.info("Mering Unit definitions");
+            log.info("Merging Unit definitions");
             for(Unit unit: unitDefinitions.values()) {
-                try {
+                    mergeUnits.clearParameters();
+                    log.fine("Storing " + unit.toString());                
                     mergeUnits.setString(1,unit.getAbbreviation());
                     mergeUnits.setString(2,unit.getAbstractParameter());
                     if( "null".equalsIgnoreCase(unit.getSystem())) {
                         mergeUnits.setString(3,null);
                     } else {
                         mergeUnits.setString(3,unit.getSystem());
-                    }
-                    
+                    }                    
                     mergeUnits.setString(4,unit.getName());
                     mergeUnits.setString(5,unit.getDescription());
-                    mergeUnits.addBatch();                    
-                } catch(SQLException ex) {
-                    log.severe("Failed to store unit -> " + unit.toString());
-                    throw ex;
+                    mergeUnits.addBatch();                                    
+            }            
+            mergeUnits.executeBatch();
+
+
+            log.info("Merging conversions");
+            for(Conversion conv: expandedConversions) {
+                mergeConversions.clearParameters();
+                mergeConversions.setString(1,conv.getFrom().getAbbreviation());
+                mergeConversions.setString(2,conv.getTo().getAbbreviation());
+                mergeConversions.setString(3,conv.getFrom().getAbstractParameter());
+                String postfix = conv.getMethod().getPostfix();
+                if( yEqualsMx.matcher(postfix).matches()) { 
+                    String value = postfix.split("\\s+")[1];
+                    mergeConversions.setDouble(4,Double.parseDouble(value));
+                    mergeConversions.setDouble(5,0.0);
+                    mergeConversions.setString(6,null);
+                } else if (yEqualsXPlusB.matcher(postfix).matches()) {
+                    String value = postfix.split("\\s+")[1];
+                    mergeConversions.setDouble(4,0.0);
+                    mergeConversions.setDouble(5,Double.parseDouble(value));
+                    mergeConversions.setString(6,null);
+
+                } else if (yEqualsMxPlusB.matcher(postfix).matches()) {
+                    mergeConversions.setString(6,null);
+                    // i m * b +
+                    String values[] = postfix.split("\\s+");                    
+                    mergeConversions.setDouble(4,Double.parseDouble(values[1]));
+                    mergeConversions.setDouble(5,Double.parseDouble(values[3]));
+                    mergeConversions.setString(6,null);
+                } else {
+                    mergeConversions.setNull(4, Types.DOUBLE);
+                    mergeConversions.setNull(5, Types.DOUBLE);
+                    mergeConversions.setString(6,postfix.replace("i","ARG0"));
                 }
+                mergeConversions.addBatch();
             }
-            try {
-                mergeUnits.executeBatch();
-            } catch(SQLException ex) {
-                log.log(Level.SEVERE,"failed to execute unit definition merge",ex);
-                SQLException next = ex;
-                while( (next = next.getNextException()) != null) {
-                    log.log(Level.SEVERE,"because:", next);
-                }
-                throw ex;
-            }
+            mergeConversions.executeBatch();
             
+        } catch (SQLException ex) {
+            throw new CwmsMigrationSqlError("failed to merge unit data", ex);
         }
 
     }
@@ -229,7 +247,7 @@ CREATE TABLE CWMS_UNIT_CONVERSION
 
     @Override
     public Integer getChecksum() {
-        return Integer.valueOf((int)crc.getValue()); //Integer.valueOf(18);
+        return Integer.valueOf(5);//(int)crc.getValue()); //Integer.valueOf(18);
     }
 
 

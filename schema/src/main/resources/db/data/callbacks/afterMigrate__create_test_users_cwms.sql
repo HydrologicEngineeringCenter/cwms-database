@@ -3,7 +3,7 @@ DECLARE
    group_list     "${CWMS_SCHEMA}"."CHAR_32_ARRAY_TYPE";
 BEGIN
    if '${CWMS_TEST_USERS}' = 'create' then
-      "${CWMS_SCHEMA}"."CWMS_SEC"."ADD_CWMS_USER" ('${CWMS_OFFICE_EROC}cwmspd', group_list, '${CWMS_OFFICE_ID}');
+      "${CWMS_SCHEMA}"."CWMS_SEC"."ADD_CWMS_USER" ('${CWMS_OFFICE_EROC}cwmspd', pd_group_list, '${CWMS_OFFICE_ID}');
 
       "${CWMS_SCHEMA}"."CWMS_SEC"."ASSIGN_TS_GROUP_USER_GROUP" ('All Rev TS IDs', 'Viewer Users', 'Read', '${CWMS_OFFICE_ID}');
 
