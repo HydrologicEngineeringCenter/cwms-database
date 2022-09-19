@@ -109,3 +109,5 @@ BEGIN
    END LOOP;
 END;
 /
+
+drop user ${CWMS_OFFICE_EROC}cwmspd cascade;

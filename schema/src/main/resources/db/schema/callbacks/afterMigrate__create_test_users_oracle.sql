@@ -1,4 +1,5 @@
 declare
+    group_list ${CWMS_SCHEMA}.char_32_array_type := ${CWMS_SCHEMA}.char_32_array_type('CWMS PD Users');
     user_list     dbms_sql.varchar2_table;
     user_does_not_exist exception;
     pragma exception_init(user_does_not_exist, -1918);
@@ -34,6 +35,18 @@ begin
             execute immediate 'grant set container to ${CWMS_OFFICE_EROC}' || user_list(i);
         end loop;
         execute immediate 'grant execute on cwms_upass to ${CWMS_OFFICE_EROC}hectest_up';
+
+        begin
+            execute immediate 'create user ${CWMS_OFFICE_EROC}cwmspd identified by "${PD_PASSWORD}"';
+            execute immediate 'grant create session to ${CWMS_OFFICE_EROC}cwmspd';
+
+            ${CWMS_SCHEMA}.cwms_sec.add_cwms_user('${CWMS_OFFICE_EROC}cwmspd', group_list, '${CWMS_OFFICE_ID}');
+            ${CWMS_SCHEMA}.cwms_sec.assign_ts_group_user_group('All Rev TS IDs', 'Viewer Users', 'Read', '${CWMS_OFFICE_ID}');
+            ${CWMS_SCHEMA}.cwms_sec.assign_ts_group_user_group('All TS IDs', 'CWMS Users', 'Read-Write', '${CWMS_OFFICE_ID}');
+
+        exception
+            when user_exists then null;
+    end;
     end if;
 end;
 /
