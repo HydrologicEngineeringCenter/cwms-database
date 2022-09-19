@@ -154,7 +154,7 @@ task downloadUtplSql(type: Copy, dependsOn: checkTestSetup ){
     into "$buildDir/deps"
     doLast {
         File createOwner = new File("$buildDir/deps/utPLSQL/source/create_utplsql_owner.sql")
-        createOwner.withWriterAppend( out -> {
+        createOwner.withWriterAppend( { out ->
             out.println("\ngrant execute on dbms_lob to &ut3_user;")
             out.println("grant execute on dbms_random to &ut3_user;")
 	  		out.println("grant execute on dbms_random to &ut3_user;")
