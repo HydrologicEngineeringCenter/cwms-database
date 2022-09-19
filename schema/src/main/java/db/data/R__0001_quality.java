@@ -19,6 +19,7 @@ import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.zip.CRC32;
@@ -60,7 +61,7 @@ public class R__0001_quality extends BaseJavaMigration implements CwmsMigration 
 
     @Override
     public void migrate(Context context) throws Exception {
-        log.info("hello");
+        log.info("Merging Quality Information");
 
         this.load_data();
 
@@ -140,10 +141,8 @@ public class R__0001_quality extends BaseJavaMigration implements CwmsMigration 
         JsonNode tmp = mapper.readTree(getData("db/custom/quality/screened.json"));
 
         screenedData = mapper.readValue(new TreeTraversingParser(tmp,mapper), Quality.class);
-        log.info("Shift is: " + screenedData.getShift());
 
         validityData = mapper.readValue(getData("db/custom/quality/validity.json"),Quality.class);
-        log.info("Shift is: " + validityData.getShift());
 
         valueRangeData = mapper.readValue(getData("db/custom/quality/value_range.json"),Quality.class);
         differentData = mapper.readValue(getData("db/custom/quality/different.json"),Quality.class);
@@ -153,9 +152,10 @@ public class R__0001_quality extends BaseJavaMigration implements CwmsMigration 
         protectionData = mapper.readValue(getData("db/custom/quality/protection.json"),Quality.class);
 
         fillTestFailedData(testFailedData);
-        for(QualityBitDescription qbd: testFailedData.getValues() ){
-            log.info(qbd.toString());
-        }
+        log.log( Level.FINEST, "Parameters: \n{0}",
+                 testFailedData.getValues()
+                    .stream().map(QualityBitDescription::toString)
+                    .collect( Collectors.joining("\n")));
     }
 
     private void fillTestFailedData(Quality failedData) {
