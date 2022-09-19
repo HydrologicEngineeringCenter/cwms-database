@@ -23,8 +23,8 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.zip.CRC32;
 
-public class R__quality extends BaseJavaMigration implements CwmsMigration {
-    private static final Logger log = Logger.getLogger(R__quality.class.getName());
+public class R__0001_quality extends BaseJavaMigration implements CwmsMigration {
+    private static final Logger log = Logger.getLogger(R__0001_quality.class.getName());
 
     private Long checksum = 3L;
     private String query = null;
@@ -54,7 +54,7 @@ public class R__quality extends BaseJavaMigration implements CwmsMigration {
         return new String( IOUtils.toByteArray(is) );
     }
 
-    public R__quality() throws Exception {
+    public R__0001_quality() throws Exception {
         this.init();
     }
 

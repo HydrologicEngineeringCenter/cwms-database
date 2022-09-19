@@ -30,8 +30,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.CRC32;
 
-public class R__units_and_parameters extends BaseJavaMigration  implements CwmsMigration {
-    private static final Logger log = Logger.getLogger(R__units_and_parameters.class.getName());
+public class R__0002_units_and_parameters extends BaseJavaMigration  implements CwmsMigration {
+    private static final Logger log = Logger.getLogger(R__0002_units_and_parameters.class.getName());
 
     private ArrayList<String> abstractParameters = new ArrayList<>();
     private Map<String,Unit> unitDefinitions = null;
@@ -47,7 +47,7 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
 
     private CRC32 crc = new CRC32();
 
-    public R__units_and_parameters() throws Exception {
+    public R__0002_units_and_parameters() throws Exception {
         this.loadData();
         System.out.println(crc.getValue());
     }

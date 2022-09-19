@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import cwms.units.ConversionGraph;
 import cwms.units.Unit;
-import db.data.R__units_and_parameters;
+import db.data.R__0002_units_and_parameters;
 import net.hobbyscience.SimpleInfixCalculator;
 import net.hobbyscience.database.Conversion;
 
@@ -27,7 +27,7 @@ public class UnitConversionTest {
 
     @BeforeAll
     public static void setup() throws Exception {
-        R__units_and_parameters migration = new R__units_and_parameters();        
+        R__0002_units_and_parameters migration = new R__0002_units_and_parameters();        
 
         ConversionGraph graph = new ConversionGraph(migration.getConversions());
         conversions = graph.generateConversions();
