@@ -242,7 +242,7 @@ public class R__0002_units_and_parameters extends BaseJavaMigration  implements 
 
     @Override
     public Integer getChecksum() {
-        return Integer.valueOf(5);//(int)crc.getValue()); //Integer.valueOf(18);
+        return (int)crc.getValue(); //Integer.valueOf(18);
     }
 
 
