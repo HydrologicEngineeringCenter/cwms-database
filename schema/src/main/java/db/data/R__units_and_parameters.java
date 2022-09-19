@@ -3,7 +3,6 @@ package db.data;
 import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
 
-import com.fasterxml.jackson.annotation.JsonFormat.Features;
 import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -14,14 +13,11 @@ import cwms.CwmsMigrationSqlError;
 import cwms.units.ConversionGraph;
 import cwms.units.Unit;
 import net.hobbyscience.database.Conversion;
-import net.hobbyscience.database.ConversionFactory;
 import net.hobbyscience.database.ConversionMethod;
 import net.hobbyscience.database.methods.*;
 
 import java.sql.Connection;
-import java.sql.JDBCType;
 import java.sql.SQLException;
-import java.sql.SQLType;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -44,7 +40,6 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
     private String sqlConversions = null;
     private String sqlAbstract = null;
     private String sqlUnits = null;
-    private int count = 0;
 
     private final Pattern yEqualsMx = Pattern.compile("^i -?[0-9]+(\\.[0-9]+)? \\*$");
     private final Pattern yEqualsMxPlusB = Pattern.compile("^i -?[0-9]+(\\.[0-9]+)? \\* ?[0-9]+(\\.[0-9]+)? [-+]$");
@@ -59,17 +54,17 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
 
     @Override
     public void migrate(Context context) throws Exception {
-        
-        log.log( Level.FINEST, "Parameters: \n{0}", 
+
+        log.log( Level.FINEST, "Parameters: \n{0}",
                  abstractParameters
                     .stream()
                     .collect( Collectors.joining("\n")));
-        log.log( Level.FINEST, "units: \n{0}", 
+        log.log( Level.FINEST, "units: \n{0}",
                  unitDefinitions.values()
                  .stream()
                  .map( unit -> unit.toString() )
                  .collect(Collectors.joining("\n")));
-        log.log( Level.INFO, "Listed Conversions\n{0}", 
+        log.log( Level.INFO, "Listed Conversions\n{0}",
                  conversions
                  .stream()
                  .map( conv -> conv.toString() )
@@ -79,7 +74,7 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
 
         var expandedConversions = convGraph.generateConversions();
         log.info(() -> String.format("We have %s total conversions",expandedConversions.size()));
-        log.log(Level.FINEST, "Expanded Conversions:\n{0}", 
+        log.log(Level.FINEST, "Expanded Conversions:\n{0}",
                 expandedConversions
                     .stream()
                     .map(conv -> conv.toString())
@@ -122,18 +117,18 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
             log.info("Merging Unit definitions");
             for(Unit unit: unitDefinitions.values()) {
                     mergeUnits.clearParameters();
-                    log.fine("Storing " + unit.toString());                
+                    log.fine("Storing " + unit.toString());
                     mergeUnits.setString(1,unit.getAbbreviation());
                     mergeUnits.setString(2,unit.getAbstractParameter());
                     if( "null".equalsIgnoreCase(unit.getSystem())) {
                         mergeUnits.setString(3,null);
                     } else {
                         mergeUnits.setString(3,unit.getSystem());
-                    }                    
+                    }
                     mergeUnits.setString(4,unit.getName());
                     mergeUnits.setString(5,unit.getDescription());
-                    mergeUnits.addBatch();                                    
-            }            
+                    mergeUnits.addBatch();
+            }
             mergeUnits.executeBatch();
 
 
@@ -144,7 +139,7 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
                 mergeConversions.setString(2,conv.getTo().getAbbreviation());
                 mergeConversions.setString(3,conv.getFrom().getAbstractParameter());
                 String postfix = conv.getMethod().getPostfix();
-                if( yEqualsMx.matcher(postfix).matches()) { 
+                if( yEqualsMx.matcher(postfix).matches()) {
                     String value = postfix.split("\\s+")[1];
                     mergeConversions.setDouble(4,Double.parseDouble(value));
                     mergeConversions.setDouble(5,0.0);
@@ -158,7 +153,7 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
                 } else if (yEqualsMxPlusB.matcher(postfix).matches()) {
                     mergeConversions.setString(6,null);
                     // i m * b +
-                    String values[] = postfix.split("\\s+");                    
+                    String values[] = postfix.split("\\s+");
                     mergeConversions.setDouble(4,Double.parseDouble(values[1]));
                     mergeConversions.setDouble(5,Double.parseDouble(values[3]));
                     mergeConversions.setString(6,null);
@@ -170,7 +165,7 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
                 mergeConversions.addBatch();
             }
             mergeConversions.executeBatch();
-            
+
         } catch (SQLException ex) {
             throw new CwmsMigrationSqlError("failed to merge unit data", ex);
         }
@@ -219,7 +214,7 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
             //Conversion c = new Conversion(from, to, method)
             Unit from = unitDefinitions.get(conversion.get(0).asText());
             Unit to = unitDefinitions.get(conversion.get(1).asText());
-            if( from !=null && to != null ) {                
+            if( from !=null && to != null ) {
                 String parts[] = conversion.get(2).asText().split(":");
                 String type = parts[0];
                 String function = parts[1].trim();
@@ -231,12 +226,12 @@ public class R__units_and_parameters extends BaseJavaMigration  implements CwmsM
                 } else {
                     throw new CwmsMigrationError("Invalid conversion method: " + type);
                 }
-                
+
                 Conversion c = new Conversion(from,to, method);
                 crc.update(c.toString().getBytes());
                 conversions.add(c);
             }
-            
+
         });
 
         sqlAbstract = new String(getData("db/custom/units_and_parameters/abstract_parameters.sql").readAllBytes());

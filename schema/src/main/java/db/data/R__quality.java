@@ -4,40 +4,21 @@ import org.apache.commons.io.IOUtils;
 import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+
 import com.fasterxml.jackson.databind.node.TreeTraversingParser;
 
 import io.herrmann.generator.Generator;
 
-import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.CharBuffer;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.zip.CRC32;
@@ -58,10 +39,10 @@ public class R__quality extends BaseJavaMigration implements CwmsMigration {
     private Quality protectionData;
 
     public void init() throws Exception {
-        
+
         log.info("Loading Quality Data");
         CRC32 crc = new CRC32();
-        
+
         checksum = 12L;//crc.getValue();
         query = readQuery("db/custom/quality/cwms_data_quality.sql");
 
@@ -69,10 +50,10 @@ public class R__quality extends BaseJavaMigration implements CwmsMigration {
 
     private String readQuery(String filename) throws Exception {
         InputStream is = getData(filename);
-        
+
         return new String( IOUtils.toByteArray(is) );
-    }    
-    
+    }
+
     public R__quality() throws Exception {
         this.init();
     }
@@ -80,12 +61,12 @@ public class R__quality extends BaseJavaMigration implements CwmsMigration {
     @Override
     public void migrate(Context context) throws Exception {
         log.info("hello");
-        
+
         this.load_data();
 
-        try( 
+        try(
             PreparedStatement qualityInsert = context.getConnection()
-                                                     .prepareStatement(query);              
+                                                     .prepareStatement(query);
         ) {
             qualityInsert.setLong(1, 0); // always unscreened
             qualityInsert.setString(2,screenedData.getValues().get(0).getName());
@@ -101,7 +82,7 @@ public class R__quality extends BaseJavaMigration implements CwmsMigration {
             int batchSize = 100;
             for( QualityBitDescription validity: validityData.getValues()){
                 for( QualityBitDescription range: valueRangeData.getValues()){
-                    for( QualityBitDescription different: differentData.getValues() ) {                        
+                    for( QualityBitDescription different: differentData.getValues() ) {
                         for( QualityBitDescription replacementCause: replacementCauseData.getValues()) {
                             if( (different.getValue() > 0) != (replacementCause.getValue() > 0) ) {
                                 continue;
@@ -112,7 +93,7 @@ public class R__quality extends BaseJavaMigration implements CwmsMigration {
                                 }
                                 for( QualityBitDescription testFailed: testFailedData.getValues() ) {
                                     for( QualityBitDescription protection: protectionData.getValues() ) {
-                                        long qualityCode = 0L 
+                                        long qualityCode = 0L
                                                     | (screenedData.getValues().get(1).getValue() << screenedData.getShift())
                                                     | (validity.getValue() << validityData.getShift() )
                                                     | (range.getValue() << valueRangeData.getShift() )
@@ -142,7 +123,7 @@ public class R__quality extends BaseJavaMigration implements CwmsMigration {
 
                         }
                     }
-                }                
+                }
             }
             qualityInsert.executeBatch();
 
@@ -151,16 +132,16 @@ public class R__quality extends BaseJavaMigration implements CwmsMigration {
 
     }
 
-    
-    
+
+
     private void load_data() throws Exception {
-        ObjectMapper mapper = new ObjectMapper();        
-        
+        ObjectMapper mapper = new ObjectMapper();
+
         JsonNode tmp = mapper.readTree(getData("db/custom/quality/screened.json"));
 
         screenedData = mapper.readValue(new TreeTraversingParser(tmp,mapper), Quality.class);
         log.info("Shift is: " + screenedData.getShift());
-        
+
         validityData = mapper.readValue(getData("db/custom/quality/validity.json"),Quality.class);
         log.info("Shift is: " + validityData.getShift());
 
@@ -182,7 +163,7 @@ public class R__quality extends BaseJavaMigration implements CwmsMigration {
 
         List<List<QualityBitDescription>> combinations = new ArrayList<>();
         for( int i = 0; i < values.size(); i++) {
-            
+
             for( List<QualityBitDescription> combinationsForElement: new UniqueComboGenerator(values,i+1)) {
                 combinations.add(combinationsForElement);
             }
@@ -190,21 +171,21 @@ public class R__quality extends BaseJavaMigration implements CwmsMigration {
         ArrayList<QualityBitDescription> testFails = new ArrayList<>(testFailedData.getValues().subList(0, 1));
         for(List<QualityBitDescription> combos: combinations){
             if( combos.size() == 1) {
-                testFails.add(combos.get(0)); 
+                testFails.add(combos.get(0));
             } else if ( combos.size() > 1 ) {
-                QualityBitDescription newQual = 
+                QualityBitDescription newQual =
                     combos.stream()
-                          .reduce( 
-                            new QualityBitDescription(0L,"",""), 
-                            (total, element) -> { 
+                          .reduce(
+                            new QualityBitDescription(0L,"",""),
+                            (total, element) -> {
                                 total.value += element.value;
                                 if( total.name.isEmpty()) {
-                                    total.name += element.name;    
+                                    total.name += element.name;
                                 } else {
                                     total.name += "+" + element.name;
                                 }
-                                
-                                
+
+
                                 return total;
                             }
                             );
@@ -213,20 +194,20 @@ public class R__quality extends BaseJavaMigration implements CwmsMigration {
 
             } else {
                 // do nothing
-            }            
+            }
         }
         testFailedData.getValues().clear();
         testFailedData.getValues().addAll(testFails);
-    }   
+    }
 
-    
 
-    private List<List<QualityBitDescription>> uniqueCombinations(List<QualityBitDescription> values, int i) {        
+
+    private List<List<QualityBitDescription>> uniqueCombinations(List<QualityBitDescription> values, int i) {
         return  values.stream()
                       .flatMap( curVal -> values.subList(i,values.size())
                                              .stream()
                                              .map( subVal -> new ArrayList<>(Arrays.asList(curVal,subVal))))
-                       .collect(Collectors.toList());   
+                       .collect(Collectors.toList());
     }
 
     @Override
@@ -234,7 +215,7 @@ public class R__quality extends BaseJavaMigration implements CwmsMigration {
         return "Filling or updating the quality description table.";
     }
 
-     
+
     @Override
     public Integer getChecksum() {
         return checksum.intValue();
@@ -243,8 +224,8 @@ public class R__quality extends BaseJavaMigration implements CwmsMigration {
     public static class QualityBitDescription {
         private long value;
         private String name;
-        private String description;        
-        
+        private String description;
+
         public QualityBitDescription(@JsonProperty List<String> values){
             this.value = Integer.parseInt((values.get(0)));
             this.name= values.get(1);
@@ -252,13 +233,13 @@ public class R__quality extends BaseJavaMigration implements CwmsMigration {
         }
 
         @JsonCreator(mode=JsonCreator.Mode.PROPERTIES)
-        public QualityBitDescription(@JsonProperty(value="value",index=0) long value, 
+        public QualityBitDescription(@JsonProperty(value="value",index=0) long value,
                                      @JsonProperty(value="name",index=1) String name,
-                                     @JsonProperty(value="description",index=2) String description                                     
+                                     @JsonProperty(value="description",index=2) String description
                         ) {
             this.value = value;
             this.name = name;
-            this.description = description;            
+            this.description = description;
         }
 
         long getValue() { return value; }
@@ -272,12 +253,12 @@ public class R__quality extends BaseJavaMigration implements CwmsMigration {
               .append(description);
             return sb.toString();
         }
-        
+
     }
 
     public static class Quality {
         private long shift;
-        @JsonFormat(shape=JsonFormat.Shape.ARRAY)                
+        @JsonFormat(shape=JsonFormat.Shape.ARRAY)
         private List<QualityBitDescription> values = null;
 
         @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
@@ -286,7 +267,7 @@ public class R__quality extends BaseJavaMigration implements CwmsMigration {
             this.values = values;
         }
 
-        public long getShift() { return shift; }        
+        public long getShift() { return shift; }
         public List<QualityBitDescription> getValues() { return values; }
     }
 
@@ -308,12 +289,12 @@ public class R__quality extends BaseJavaMigration implements CwmsMigration {
                 for( int i = 0; i < this.items.size(); i++ ) {
                     for( List<QualityBitDescription> combos: new UniqueComboGenerator(this.items.subList(i+1, this.items.size()), this.n-1) ) {
                         ArrayList<QualityBitDescription> tmp = new ArrayList<>(Arrays.asList(this.items.get(i)));
-                        tmp.addAll(combos);                        
+                        tmp.addAll(combos);
                         yield(tmp);
                     }
                 }
             }
-            
+
         }
 
     }
