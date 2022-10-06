@@ -48,11 +48,6 @@
 	// ["B",           "kHz",         "function[Hz]/[B] | [kHz]/*_per_k*[Hz]"],
 	["C",           "F",           "function: (i * 9/5) + 32"],
 	["C",           "K",           "linear: 1 273.15"],
-	// The graph search will find these and build
-	// the sequence of operations to calculate
-	// and then reduce the equation
-	//["F",           "C",           "C_per_F[C]/[F]"],
-	//["F",           "K",           "function[K]/[F]"],
 	//["C-day",       "F-day",       "[F-day]/C_per_F[C-day]"],
 	//["F-day",       "C-day",       "C_per_F[C-day]/[F-day]"],	
 	// The various forms of this in each direction will also be determined
@@ -142,7 +137,9 @@
 	// ["Wh",          "kWh",         "[kWh]/*_per_k*[Wh]"],
 	// ["ac-ft",       "1000 m3",     "ft2_per_acre[ft3]/[ac-ft] | m_per_ft^3[m3]/[ft3] | [1000 m3]/*_per_k*[m3]"],
 	// ["ac-ft",       "dsf",         "ft2_per_acre[ft3]/[ac-ft] | [dsf]/ft3_per_dsf[ft3]"],
-	// ["ac-ft",       "ft3",         "ft2_per_acre[ft3]/[ac-ft]"],
+	["ac-ft",       "ft3",          "function: i * ft2_per_acre"],
+	["ft3",			"m3",			"function: i * m_per_ft^3"],
+	["m3",		    "1000 m3",		"linear: 1000 0"],	
 	// ["ac-ft",       "gal",         "ft2_per_acre[ft3]/[ac-ft] | m_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3]"],
 	// ["ac-ft",       "kaf",         "[kaf]/*_per_k*[ac-ft]"],
 	// ["ac-ft",       "kdsf",        "ft2_per_acre[ft3]/[ac-ft] | [dsf]/ft3_per_dsf[ft3] | [kdsf]/*_per_k*[dsf]"],
@@ -181,11 +178,8 @@
 	// ["cfs/mi2",     "cms/km2",     "[ft3/s]/[cfs] | m_per_ft^3[m3]/[ft3] | [mi2]/km_per_mile^2[km2] | [cms]/[m3/s]"],
 	// ["cm",          "ft",          "[m]/c*_per_*[cm] | [ft]/m_per_ft[m]"],
 	// ["cm",          "ftUS",        "[m]/c*_per_*[cm] | [ft]/m_per_ft[m] | ftUS_per_ft[ftUS]/[ft]"],
-	// ["cm",          "in",          "[m]/c*_per_*[cm] | [ft]/m_per_ft[m] | in_per_ft[in]/[ft]"],
-	// ["cm",          "km",          "[m]/c*_per_*[cm] | [km]/*_per_k*[m]"],
-	// ["cm",          "m",           "[m]/c*_per_*[cm]"],
-	// ["cm",          "mi",          "[m]/c*_per_*[cm] | [ft]/m_per_ft[m] | [mi]/ft_per_mile[ft]"],
-	// ["cm",          "mm",          "[m]/c*_per_*[cm] | m*_per_*[mm]/[m]"],
+	["cm",          "km",          "function: i * centi_per_unit * unit_per_kilo"],
+	["mm",			"cm",		   "function: i * centi_per_unit"],
 	// ["cm/day",      "ft/hr",       "[m]/c*_per_*[cm] | [ft]/m_per_ft[m] | [day]/hr_per_day[hr]"],
 	// ["cm/day",      "ft/s",        "[m]/c*_per_*[cm] | [ft]/m_per_ft[m] | [day]/s_per_day[s]"],
 	// ["cm/day",      "in/day",      "[m/day]/c*_per_*[cm/day] | [ft/day]/m_per_ft[m/day] | in_per_ft[in/day]/[ft/day]"],
