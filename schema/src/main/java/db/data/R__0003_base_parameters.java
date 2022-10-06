@@ -38,11 +38,14 @@ public class R__0003_base_parameters extends BaseJavaMigration implements CwmsMi
 
     @Override
     public void migrate(Context context) throws Exception {
+
+        
+
         log.info("Merging Base Parameters");
         Connection conn = context.getConnection();
-        try (var mergeBaseParameters = conn.prepareStatement(baseParametersMergeSql);
-             var mergeSubParameters = conn.prepareStatement(subParametersMergeSql);
-             var defaultBaseDisplayUnits = conn.prepareStatement(defaultBaseDisplayUnitsSql);) {
+        try (var mergeBaseParameters = conn.prepareStatement(expandPlaceHolders(baseParametersMergeSql,context));
+             var mergeSubParameters = conn.prepareStatement(expandPlaceHolders(subParametersMergeSql,context));
+             var defaultBaseDisplayUnits = conn.prepareStatement(expandPlaceHolders(defaultBaseDisplayUnitsSql,context));) {
             for(var param: parameters) {
                 log.fine("Saving" + param.toString());
                 mergeBaseParameters.clearParameters();

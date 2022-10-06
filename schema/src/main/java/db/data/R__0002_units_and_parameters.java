@@ -83,9 +83,9 @@ public class R__0002_units_and_parameters extends BaseJavaMigration  implements 
 
         Connection conn = context.getConnection();
         /* now we would insert or update the conversions */
-        try (var mergeAbstractParams = conn.prepareStatement(sqlAbstract);
-             var mergeConversions = conn.prepareStatement(sqlConversions);
-             var mergeUnits = conn.prepareStatement(sqlUnits);
+        try (var mergeAbstractParams = conn.prepareStatement(expandPlaceHolders(sqlAbstract,context));
+             var mergeConversions = conn.prepareStatement(expandPlaceHolders(sqlConversions,context));
+             var mergeUnits = conn.prepareStatement(expandPlaceHolders(sqlUnits,context));
              var deleteAbstractParams = conn.prepareStatement("delete from cwms_abstract_parameter where abstract_parameter_id = ?");
              var existingParametersRS = conn.createStatement().executeQuery("select abstract_param_id from cwms_abstract_parameter");
               ) {

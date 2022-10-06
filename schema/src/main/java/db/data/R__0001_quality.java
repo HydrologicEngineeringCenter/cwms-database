@@ -67,7 +67,7 @@ public class R__0001_quality extends BaseJavaMigration implements CwmsMigration 
 
         try(
             PreparedStatement qualityInsert = context.getConnection()
-                                                     .prepareStatement(query);
+                                                     .prepareStatement(expandPlaceHolders(query,context));
         ) {
             qualityInsert.setLong(1, 0); // always unscreened
             qualityInsert.setString(2,screenedData.getValues().get(0).getName());
