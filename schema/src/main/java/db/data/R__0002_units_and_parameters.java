@@ -48,6 +48,7 @@ public class R__0002_units_and_parameters extends BaseJavaMigration  implements 
     private CRC32 crc = new CRC32();
 
     public R__0002_units_and_parameters() throws Exception {
+        log.info("Loading Unit definitions and Abstract Parameters");
         this.loadData();
         System.out.println(crc.getValue());
     }

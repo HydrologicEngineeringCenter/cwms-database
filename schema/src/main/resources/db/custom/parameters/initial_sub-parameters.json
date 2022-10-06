@@ -1,0 +1,23 @@
+[
+    //           --  DEFAULT Sub_Parameters -------------------------------    -- Display Units --
+    //    Param  Base        Sub
+    //    Code   Param       Param          Sub-Parameter Descripiton           SI         Non-SI
+    //    ----- ----------- -------------- ---------------------------------- ---------- ---------
+        [ 301,  "%",        "ofArea-Snow", "Percent of Area Covered by Snow", "%",       "%"],
+        [ 302,  "%",        "Opening",     "Percent Open",                    "%",       "%"],
+        [ 303,  "Conc",     "Acidity",     "Acidity Concentration",           "mg/l",    "ppm"],
+        [ 304,  "Conc",     "Alkalinity",  "Alkalinity Concentration",        "mg/l",    "ppm"],
+        [ 305,  "Conc",     "DO",          "Disolved Oxygen Concentration",   "mg/l",    "ppm"],
+        [ 306,  "Conc",     "Iron",        "Iron Concentration",              "mg/l",    "ppm"],
+        [ 307,  "Conc",     "Sulfate",     "Sulfate Concentration",           "mg/l",    "ppm"],
+        [ 308,  "Conc",     "Salinity",    "Salinity Concentration",          "g/l",     "g/l"],
+        [ 309,  "Depth",    "Snow",        "Snow Depth",                      "mm",      "in"],
+        [ 310,  "Depth",    "SnowWE",      "Snow Water Equivalance",          "mm",      "in"],
+        [ 311,  "Flow",     "In",          "Inflow",                          "cms",     "cfs"],
+        [ 312,  "Flow",     "Out",         "Outflow",                         "cms",     "cfs"],
+        [ 313,  "Flow",     "Reg",         "Regulated Flow",                  "cms",     "cfs"],
+        [ 314,  "Flow",     "Spill",       "Spillway Flow",                   "cms",     "cfs"],
+        [ 315,  "Flow",     "Unreg",       "Unregulated Flow",                "cms",     "cfs"],
+        [ 316,  "Temp",     "Air",         "Air Temperature",                 "C",       "F"],
+        [ 317,  "Temp",     "Water",       "Water Temperature",               "C",       "F"]
+]

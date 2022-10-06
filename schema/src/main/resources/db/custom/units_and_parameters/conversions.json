@@ -7,7 +7,7 @@
 	[	"$",           "k$",          "linear: unit_per_kilo 0"],	
 	//"[kaf]/*_per_k*[ac-ft] | [ac-ft]/ft2_per_acre[ft3] | [ft3]/m_per_ft^3[m3] | *_per_M*[m3]/[mcm]"],
     //[ 	"$/mcm",       "$/kaf",       "[mcm]/*_per_M*[m3] | m_per_ft^3[m3]/[ft3] | ft2_per_acre[ft3]/[ac-ft] | *_per_k*[ac-ft]/[kaf]"],
-    // ["%",           "n/a",         "[n/a]/c*_per_*[%]"],
+    ["%",           "n/a",         "linear: 100 0"],
     // ["1/ft",        "1/m",         "[ft]/m_per_ft[m]"],
     // ["1/m",         "1/ft",        "m_per_ft[m]/[ft]"],
     // ["1000 acre",   "1000 m2",     "*_per_k*[acre]/[1000 acre] | ft2_per_acre[ft2]/[acre] | m_per_ft^2[m2]/[ft2] | [1000 m2]/*_per_k*[m2]"],
@@ -237,7 +237,7 @@
 	["ft",          "m",           "linear: .30480 0"],
 	["mi",          "ft",          "linear: 5280 0"],
 	["m",		    "mm",		   "linear: 1000 0"],
-	["m",			"cm",		   "linear: 10 0"]
+	["m",			"cm",		   "linear: 10 0"],
 	// ["ft",          "mm",          "m_per_ft[m]/[ft] | m*_per_*[mm]/[m]"],
 	// ["ft/hr",       "cm/day",      "m_per_ft[m]/[ft] | c*_per_*[cm]/[m] | hr_per_day[hr]/[day]"],
 	// ["ft/hr",       "ft/s",        "[hr]/s_per_hr[s]"],
@@ -397,7 +397,7 @@
 	// ["kWh",         "Wh",          "*_per_k*[Wh]/[kWh]"],
 	// ["kWh",         "cal",         "*_per_k*[Wh]/[kWh] | J_per_Wh[J]/[Wh] | [cal]/J_per_cal[J]"],
 	// ["kaf",         "1000 m3",     "*_per_k*[ac-ft]/[kaf] | ft2_per_acre[ft3]/[ac-ft] | m_per_ft^3[m3]/[ft3] | [1000 m3]/*_per_k*[m3]"],
-	// ["kaf",         "ac-ft",       "*_per_k*[ac-ft]/[kaf]"],
+	["kaf",         "ac-ft",       "linear: unit_per_kilo 0"]
 	// ["kaf",         "dsf",         "*_per_k*[ac-ft]/[kaf] | ft2_per_acre[ft3]/[ac-ft] | [dsf]/ft3_per_dsf[ft3]"],
 	// ["kaf",         "ft3",         "*_per_k*[ac-ft]/[kaf] | ft2_per_acre[ft3]/[ac-ft]"],
 	// ["kaf",         "gal",         "*_per_k*[ac-ft]/[kaf] | ft2_per_acre[ft3]/[ac-ft] | m_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3]"],

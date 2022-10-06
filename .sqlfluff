@@ -1,0 +1,8 @@
+[sqlfluff]
+dialect = oracle
+
+[sqlfluff:rules]
+tab_space_size = 4
+
+[sqlfluff:rules:L010]
+capitalisation_policy = lower
