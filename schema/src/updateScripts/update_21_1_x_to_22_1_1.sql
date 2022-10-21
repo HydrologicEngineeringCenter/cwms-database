@@ -293,4 +293,3 @@ prompt #########################################################################
 prompt UPDATE COMPLETE
 select systimestamp from dual;
 exit
-

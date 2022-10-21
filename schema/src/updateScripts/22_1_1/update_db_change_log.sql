@@ -23,7 +23,7 @@ begin
            22,
            1,
            1,
-           to_date ('12MAY2022', 'DDMONYYYY'),
+           to_date ('21OCT2022', 'DDMONYYYY'),
            'CWMS Database Release 22.1.1',
            'Updated from 21.1.1/21.1.2/21.1.3' 
           );
