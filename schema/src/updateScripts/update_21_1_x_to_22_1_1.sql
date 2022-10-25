@@ -46,22 +46,48 @@ whenever sqlerror exit;
 column db_name new_value db_name
 select :db_name as db_name from dual;
 define logfile=update_&db_name._21_1_x_to_22_1_1.log
-prompt log file = &logfile
+PROMPT log file = &logfile
 spool &logfile append;
 -------------------
 -- do the update --
 -------------------
-prompt ################################################################################
-prompt VERIFYING EXPECTED VERSION
+PROMPT ################################################################################
+PROMPT VERIFYING EXPECTED VERSION
 select systimestamp from dual;
 @@./22_1_1/verify_db_version
-prompt ################################################################################
-prompt CREATING AND ALTERING TABLES
-select systimestamp from dual;
 
+PROMPT ################################################################################
+PROMPT REMOVING REMOVE_DEAD_SUBSCRIBERS JOB
+select systimestamp from dual;
+begin
+    dbms_scheduler.drop_job(job_name => '&cwms_schema..remove_dead_subscribers_job',
+                            defer => false,
+                            force => true);
+exception
+   when others then
+      dbms_output.put_line(sqlerrm);
+end;
+/
+PROMPT ################################################################################
+PROMPT SAVING PRE-UPDATE PRIVILEGES
+select systimestamp from dual;
+@@./util/preupdate_privs.sql
+
+PROMPT ################################################################################
+PROMPT CREATING AND ALTERING TABLES
+select systimestamp from dual;
 whenever sqlerror continue;
 alter table at_loc_lvl_indicator_cond modify comparison_unit number(14) not null;
 alter table at_loc_lvl_indicator_cond add constraint at_loc_lvl_indicator_cond_ck8 check (not(rate_expression is not null and rate_comparison_unit is null));
+
+insert into cwms_interval values(60, 'Irr', 0, 'Irregular (alias for 0)');
+
+insert into cwms_duration values(62, 'UntilChanged', -2, 'Duration for const parameter types');
+insert into cwms_duration values(61, 'Variable',     -1, 'Variable duration for non-instantaneous or const parameter types');
+
+insert into cwms_parameter_type values(7, 'Cum',    'CUMULATIVE');
+insert into cwms_parameter_type values(8, 'Inc',    'INCREMENTAL');
+insert into cwms_parameter_type values(8, 'Median', 'MEDIAN');
 
 insert into cwms_abstract_parameter values (35, 'Depth Velocity');
 
@@ -108,15 +134,12 @@ insert into at_parameter values(49, 53, 49, null, 'Depth Velocity');
 
 create unique index cwms_time_zone_tnu on cwms_time_zone(upper(time_zone_name));
 
-prompt ################################################################################
-prompt REMOVING REMOVE_DEAD_SUBSCRIBERS JOB
-select systimestamp from dual;
-@@../cwms/remove_dead_subscribers
+comment on column at_loc_lvl_indicator_cond.comparison_unit is      'Unit of V, L (or L1), and L2 used for comparisons. Not necessarliy the unit of the expression result';
+comment on column at_loc_lvl_indicator_cond.rate_comparison_unit is 'Unit of V, L (or L1), and L2 used for rate comparisons. The numerator unit for R (e.g., ft3 for R in cfs [ft3/s])';
 
-prompt ################################################################################
-prompt CREATING AND ALTERING PACKAGE SPECIFICATIONS
+PROMPT ################################################################################
+PROMPT CREATING AND ALTERING PACKAGE SPECIFICATIONS
 select systimestamp from dual;
-
 @../cwms/cwms_level_pkg
 @../cwms/cwms_loc_pkg
 @../cwms/cwms_sec_pkg
@@ -126,10 +149,9 @@ alter session set current_schema = &cwms_dba_schema;
 @../cwms_dba/cwms_user_admin_pkg
 alter session set current_schema = &cwms_schema;
 
-prompt ################################################################################
-prompt CREATING AND ALTERING TYPE SPECIFICATIONS
+PROMPT ################################################################################
+PROMPT CREATING AND ALTERING TYPE SPECIFICATIONS
 select systimestamp from dual;
-
 drop type location_level_t    force;
 drop type loc_lvl_indicator_t force;
 drop type zlocation_level_t   force;
@@ -137,10 +159,9 @@ drop type zlocation_level_t   force;
 @../cwms/types/loc_lvl_indicator_t
 @../cwms/types/zlocation_level_t
 
-prompt ################################################################################
-prompt CREATING AND ALTERING PACKAGE BODIES
+PROMPT ################################################################################
+PROMPT CREATING AND ALTERING PACKAGE BODIES
 select systimestamp from dual;
-
 @../cwms/cwms_display_pkg_body
 @../cwms/cwms_level_pkg_body
 @../cwms/cwms_loc_pkg_body
@@ -154,19 +175,17 @@ alter session set current_schema = &cwms_dba_schema;
 @../cwms_dba/cwms_user_admin_pkg_body
 alter session set current_schema = &cwms_schema;
 
-prompt ################################################################################
-prompt CREATING AND ALTERING TYPE BODIES
+PROMPT ################################################################################
+PROMPT CREATING AND ALTERING TYPE BODIES
 select systimestamp from dual;
-
 @../cwms/types/location_level_t-body;
 @../cwms/types/loc_lvl_indicator_cond_t-body;
 @../cwms/types/loc_lvl_indicator_t-body;
 @../cwms/types/zlocation_level_t-body;
 
-prompt ################################################################################
-prompt CREATING AND ALTERING VIEWS
+PROMPT ################################################################################
+PROMPT CREATING AND ALTERING VIEWS
 select systimestamp from dual;
-
 delete from at_clob where id = '/VIEWDOCS/AV_TSV';
 delete from at_clob where id = '/VIEWDOCS/AV_TSV_DQU';
 delete from at_clob where id = '/VIEWDOCS/AV_TSV_DQU_30D';
@@ -184,40 +203,8 @@ delete from at_clob where id = '/VIEWDOCS/AV_VLOC_LVL_CONSTITUENT';
 @../cwms/views/av_vloc_lvl_constituent
 create or replace public synonym CWMS_V_PARAMETER_TYPE for AV_PARAMETER_TYPE;
 
-prompt ################################################################################
-prompt ENSURING GRANTS TO CWMS_USER AND CWMS_DBA
-select systimestamp from dual;
-
-begin 
-   for rec in (select object_name from dba_objects where owner = '&cwms_schema' and object_type = 'PACKAGE BODY') loop
-      begin
-         execute immediate 'grant execute on &cwms_schema..'||rec.object_name||' to cwms_user';
-         execute immediate 'grant execute on &cwms_schema..'||rec.object_name||' to &cwms_dba_schema';
-      exception
-         when others then null;
-      end;
-   end loop;
-   for rec in (select object_name from dba_objects where owner = '&cwms_schema' and object_type = 'TYPE') loop
-      begin
-         execute immediate 'grant execute on &cwms_schema..'||rec.object_name||' to cwms_user';
-         execute immediate 'grant execute on &cwms_schema..'||rec.object_name||' to &cwms_dba_schema';
-      exception
-         when others then null;
-      end;
-   end loop;
-   for rec in (select object_name from dba_objects where owner = '&cwms_schema' and object_type = 'VIEW' and object_name not like '%AQ$%') loop
-      begin
-         execute immediate 'grant select on &cwms_schema..'||rec.object_name||' to cwms_user';
-         execute immediate 'grant select on &cwms_schema..'||rec.object_name||' to &cwms_dba_schema';
-      exception
-         when others then null;
-      end;
-   end loop;
-end;
-/
-
-prompt ################################################################################
-prompt INVALID OBJECTS...
+PROMPT ################################################################################
+PROMPT INVALID OBJECTS...
 select systimestamp from dual;
 set pagesize 100
 select owner||'.'||substr(object_name, 1, 30) as invalid_object,
@@ -227,25 +214,96 @@ select owner||'.'||substr(object_name, 1, 30) as invalid_object,
    and owner in ('&cwms_schema', '&cwms_dba_schema')
  order by 1, 2;
 
-prompt ################################################################################
-prompt RECOMPILING SCHEMA
+PROMPT ################################################################################
+PROMPT RECOMPILING SCHEMA
 select systimestamp from dual;
 @./util/compile_objects
 
-prompt ################################################################################
-prompt REINSTATING ENTITIES
+PROMPT ################################################################################
+PROMPT UPDATING USER POLICIES (INCLUDING HIDING NEW CWMS DATA VALUES)
+@../cwms/create_user_policies
+
+PROMPT ################################################################################
+PROMPT REMOVING FUNCTIONS AND PROCEDURES
+drop function check_session_user;
+drop procedure remove_dead_subscribers;
+
+PROMPT ################################################################################
+PROMPT REINSTATING ENTITIES
 select systimestamp from dual;
 @../cwms/create_sec_triggers
 @../cwms/at_tsv_count_trig
 @../cwms/at_dd_flag_trig
 
-prompt ################################################################################
-prompt RECOMPILING SCHEMA
+promp ################################################################################
+PROMPT FINAL HOUSEKEEPING
+select systimestamp from dual;
+declare
+   type usernames_t is table of varchar2(30);
+   usernames usernames_t;
+   l_count integer;
+   cmd varchar2(128);
+begin
+   select count(*) into l_count from dba_users where username='CCP';
+   usernames := usernames_t('&cwms_schema', '&cwms_dba_schema');
+   if (l_count > 0) then
+      usernames.extend;
+      usernames(usernames.count) := 'CCP';
+   end if;
+   for rec in (select object_name from dba_objects where owner = '&cwms_schema' and object_type = 'PACKAGE BODY') loop
+      cmd := 'grant execute on &cwms_schema..'||rec.object_name||' to ';
+      dbms_output.put(cmd||'[');
+      for i in 1..usernames.count loop
+         begin
+            execute immediate(cmd||usernames(i));
+            dbms_output.put(' '||usernames(i)||'(SUCCESS)');
+         exception
+            when others then
+               dbms_output.put(' '||usernames(i)||'(FAILED)');
+         end;
+      end loop;
+      dbms_output.put_line(' ]');
+   end loop;
+   for rec in (select object_name from dba_objects where owner = '&cwms_schema' and object_type = 'TYPE') loop
+      cmd := 'grant execute on &cwms_schema..'||rec.object_name||' to ';
+      dbms_output.put(cmd||'[');
+      for i in 1..usernames.count loop
+         begin
+            execute immediate(cmd||usernames(i));
+            dbms_output.put(' '||usernames(i)||'(SUCCESS)');
+         exception
+            when others then
+               dbms_output.put(' '||usernames(i)||'(FAILED)');
+         end;
+      end loop;
+      dbms_output.put_line(' ]');
+   end loop;
+   for rec in (select object_name from dba_objects where owner = '&cwms_schema' and object_type = 'VIEW' and object_name not like '%AQ$%') loop
+      cmd := 'grant select on &cwms_schema..'||rec.object_name||' to ';
+      dbms_output.put(cmd||'[');
+      for i in 1..usernames.count loop
+         begin
+            execute immediate(cmd||usernames(i));
+            dbms_output.put(' '||usernames(i)||'(SUCCESS)');
+         exception
+            when others then
+               dbms_output.put(' '||usernames(i)||'(FAILED)');
+         end;
+      end loop;
+      dbms_output.put_line(' ]');
+   end loop;
+end;
+/
+@@./util/restore_privs
+exec cwms_msg.start_remove_subscribers_job()
+
+PROMPT ################################################################################
+PROMPT RECOMPILING SCHEMA
 select systimestamp from dual;
 @./util/compile_objects
 
 promp ################################################################################
-prompt REMAINING INVALID OBJECTS...
+PROMPT REMAINING INVALID OBJECTS...
 select systimestamp from dual;
 select owner||'.'||substr(object_name, 1, 30) as invalid_object,
        object_type
@@ -261,26 +319,12 @@ select owner||'.'||substr(name, 1, 30) as name,
  where attribute = 'ERROR'
    and owner in ('&cwms_schema', '&cwms_dba_schema')
  order by owner, type, name, sequence;
-prompt ################################################################################
-prompt RESTORE CCP PRIVILEGES
-select systimestamp from dual;
-whenever sqlerror continue;
-declare
-  l_count NUMBER;
-begin
-   select count(*) into l_count from dba_users where username='CCP';
-   if(l_count>0)
-   then
-     for rec in (select object_name from user_objects where object_type in ('PACKAGE', 'TYPE')) loop
-        execute immediate 'grant execute on '||rec.object_name||' to ccp';
-     end loop;
-   end if;
-end;
 /
+
 whenever sqlerror exit;
-prompt ################################################################################
-prompt ################################################################################
-prompt UPDATING DB_CHANGE_LOG
+
+PROMPT ################################################################################
+PROMPT UPDATING DB_CHANGE_LOG
 select systimestamp from dual;
 @@./22_1_1/update_db_change_log
 select substr(version, 1, 10) as version,
@@ -289,7 +333,21 @@ select substr(version, 1, 10) as version,
   from av_db_change_log
  where application = 'CWMS'
  order by version_date;
-prompt ################################################################################
-prompt UPDATE COMPLETE
+declare
+   l_count pls_integer;
+begin
+   select count(*)
+     into l_count
+     from all_objects
+    where status = 'INVALID'
+      and owner in ('&cwms_schema', '&cwms_dba_schema');
+
+   if l_count > 0 then
+      raise_application_error(-20999, chr(10)||'==>'||chr(10)||'==> SOME OBJECTS ARE STILL INVALID'||chr(10)||'==>');
+   end if;
+end;
+/
+PROMPT ################################################################################
+PROMPT UPDATE COMPLETE
 select systimestamp from dual;
 exit
