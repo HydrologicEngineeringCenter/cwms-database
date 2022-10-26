@@ -12,7 +12,7 @@
 	<parent>
 		<groupId>mil.army.usace.hec</groupId>
 		<artifactId>cwms-database-schema</artifactId>
-		<version>22.1.1</version>
+		<version>22.1.2</version>
 		<relativePath>../../schema/pom.xml</relativePath>
 	</parent>
 	<name>CwmsDbPropertiesReader</name>
