@@ -115,12 +115,21 @@ BEGIN
                 l_end_date := l_years (i) + 1 || '-01-01';
             END IF;
 
-            INSERT INTO at_ts_table_properties
-              VALUES   (
-                                TO_DATE (l_start_date, 'YYYY-MM-DD'),
-                                TO_DATE (l_end_date, 'YYYY-MM-DD'),
-                                'AT_TSV' || l_names (i)
-                          );
+            insert into at_ts_table_properties
+              values (to_date(l_start_date, 'yyyy-mm-dd'),
+                      to_date(l_end_date,   'yyyy-mm-dd'),
+                      'AT_TSV'||l_names (i));
+            execute immediate
+              'alter table AT_TSV'
+              ||l_names(i)
+              ||' add constraint AT_TSV'
+              ||l_names(i)
+              ||'_CK1 check ('
+              ||'date_time >= date '''
+              ||l_start_date
+              ||''' and date_time < date '''
+              ||l_end_date
+              ||''')';
         END IF;
 
         --
