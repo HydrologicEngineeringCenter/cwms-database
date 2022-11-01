@@ -1136,7 +1136,6 @@ begin
 */
    dbms_output.enable(2000000);
    setup;
-   execute immediate 'alter index AT_LOC_LVL_INDICATOR_U1 rebuild'; --just in case
    ----------------------
    -- store the rating --
    ----------------------

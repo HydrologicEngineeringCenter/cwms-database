@@ -3390,6 +3390,16 @@ as
          END;
    END parse_odbc_ts_or_d_string;
 
+   function is_number(p_token in varchar2) return boolean
+   is
+      l_number number;
+   begin
+      l_number := to_number(p_token);
+      return true;
+   exception
+      when others then return false;
+   end is_number;
+
    function is_expression_constant(
       p_token in varchar2)
       return boolean
@@ -3432,6 +3442,14 @@ as
       return l_count > 0;
    end is_expression_function;
 
+   function is_variadic_function(
+      p_token in varchar2)
+      return boolean
+   is
+   begin
+    return p_token in ('AVG','COUNT','MAX','MEAN','MIN','PROD','SUM');
+   end is_variadic_function;
+
    function is_comparison_operator(
       p_token in varchar2)
       return boolean
@@ -3467,6 +3485,50 @@ as
    begin
       return is_comparison_operator(p_token) or is_combination_operator(p_token);
    end is_logic_operator;
+
+   procedure validate_math_expression_token(
+      p_token in varchar2)
+   is
+   begin
+      case
+      when is_expression_operator(p_token) then null;
+      when is_expression_function(p_token) then null;
+      when is_expression_constant(p_token) then null;
+      when is_number(p_token)              then null;
+      when regexp_like(p_token, 'ARG\d')   then null;
+      else cwms_err.raise('ERROR', 'Invalid mathematical expression token: '||p_token);
+      end case;
+   end validate_math_expression_token;
+
+   procedure validate_comparison_expression_token(
+      p_token in varchar2)
+   is
+   begin
+      case
+      when is_expression_operator(p_token) then null;
+      when is_expression_function(p_token) then null;
+      when is_expression_constant(p_token) then null;
+      when is_number(p_token)              then null;
+      when regexp_like(p_token, 'ARG\d')   then null;
+      when is_comparison_operator(p_token) then null;
+      else cwms_err.raise('ERROR', 'Invalid comparison expression token: '||p_token);
+      end case;
+   end validate_comparison_expression_token;
+
+   procedure validate_logic_expression_token(
+      p_token in varchar2)
+   is
+   begin
+      case
+      when is_expression_operator(p_token) then null;
+      when is_expression_function(p_token) then null;
+      when is_expression_constant(p_token) then null;
+      when is_number(p_token)              then null;
+      when regexp_like(p_token, 'ARG\d')   then null;
+      when is_logic_operator(p_token)      then null;
+      else cwms_err.raise('ERROR', 'Invalid logic expression token: '||p_token);
+      end case;
+   end validate_logic_expression_token;
 
    function tokenize_comparison_expression(
       p_comparison_expression in varchar2)
@@ -3528,6 +3590,11 @@ as
          end case;
       end if;
       return l_tokenized;
+      for i in 1..l_tokenized.count loop
+         for j in 1..l_tokenized(i).count loop
+            validate_comparison_expression_token(l_tokenized(i)(j));
+         end loop;
+      end loop;
    end tokenize_comparison_expression;
 
    -----------------------------------------------------------------------------
@@ -3581,7 +3648,7 @@ as
          return l_table;
       end drop_elements;
    begin
-      l_expr := upper(trim(p_expr));
+      l_expr := upper(trim(regexp_replace(p_expr, '\$?I(\d)', 'ARG\1', 1, 0, 'i')));
       l_len  := length(l_expr);
       if nvl(get_expression_depth_at(l_len+1, l_expr), 0) != 0 then
          cwms_err.raise('ERROR', 'Expression has unbalanced parentheses: '||p_expr);
@@ -3650,6 +3717,15 @@ as
             -----------------------------------------------------------
             l_start := l_replacements.count + 1;
             l_parts := split_text_regexp(l_expr, c_re, 'T', 'i');
+            -- collapse any null elements
+            select cast(multiset(select column_value
+                                   from table(l_parts)
+                                  where column_value is not null
+                                )
+                        as str_tab_t
+                       )
+              into l_parts
+              from dual;
             for rec in (select column_value as op from table(str_tab_t('NOT', 'AND', 'XOR', 'OR'))) loop
                for i in reverse 1..l_parts.count loop
                   if trim(l_parts(i)) = rec.op then
@@ -3692,6 +3768,15 @@ as
                   -- replace logic expression --
                   ------------------------------
                   l_parts := split_text_regexp(l_replacements(i), c_re, 'T', 'i');
+                  -- collapse any null elements
+                  select cast(multiset(select column_value
+                                         from table(l_parts)
+                                        where column_value is not null
+                                      )
+                              as str_tab_t
+                             )
+                    into l_parts
+                    from dual;
                   case l_parts.count
                   when 2 then
                      --------------------------
@@ -3739,6 +3824,11 @@ as
             l_results := tokenize_logic_expression(l_expr);
          end if;
       end if;
+      for i in 1..l_results.count loop
+         for j in 1..l_results(i).count loop
+            validate_logic_expression_token(l_results(i)(j));
+         end loop;
+      end loop;
       return l_results;
    end tokenize_logic_expression;
 
@@ -3748,12 +3838,11 @@ as
    is
       l_expr varchar2(512);
    begin
-      l_expr := replace(p_algebraic_expr, ',', ' ');                                   -- remove commas
-      l_expr := regexp_replace(l_expr, '([+*%^]|//)', ' \1 ');                         -- insert spaces around most operators
+      l_expr := regexp_replace(p_algebraic_expr, '([+*%^]|//)', ' \1 ');               -- insert spaces around most operators
       l_expr := regexp_replace(l_expr, '([^/])/([^/])', '\1 / \2');                    -- insert spaces around operator '/'
       l_expr := regexp_replace(l_expr, '([a-zA-Z0-9_])\s*-([a-zA-Z0-9_])', '\1 - \2'); -- insert spaces around binary operator '-'
       l_expr := regexp_replace(l_expr, '\s+', ' ', 1, 0, 'm');                         -- collapse contiguous spaces
-      l_expr := regexp_replace(l_expr, '\s*([()])\s*', '\1', 1, 0, 'm');               -- collapse spaces around parentheses
+      l_expr := replace(l_expr, ',', ' ');                                             -- remove commas
 
       return l_expr;
    end normalize_algebraic;
@@ -3767,6 +3856,10 @@ as
       l_postfix_tokens      str_tab_t := new str_tab_t();
       l_stack               str_tab_t := new str_tab_t();
       l_func_stack          str_tab_t := new str_tab_t();
+      l_need_argcount_stack str_tab_t := new str_tab_t();
+      l_argcount_stack      number_tab_t := new number_tab_t();
+      l_need_argcount       varchar2(1);
+      l_argcount            integer;
       l_left_paren_count    binary_integer := 0;
       l_right_paren_count   binary_integer := 0;
       l_func                varchar2(8);
@@ -3810,6 +3903,14 @@ as
          return l_precedence;
       end;
 
+      procedure add_postfix_token(p_token in varchar2)
+      is
+      begin
+         validate_math_expression_token(p_token);
+         l_postfix_tokens.extend;
+         l_postfix_tokens(l_postfix_tokens.count) := p_token;
+      end;
+
       procedure push(p_op in varchar2)
       is
       begin
@@ -3834,26 +3935,58 @@ as
       is
       begin
          l_func_stack.extend;
+         l_need_argcount_stack.extend;
          l_func_stack(l_func_stack.count) := p_func;
+         l_need_argcount_stack(l_need_argcount_stack.count) := case when is_variadic_function(p_func) then 'T' else 'F' end;
       end;
 
-      function pop_func return varchar2
+      procedure pop_func(p_func out varchar2, p_need_argcount out varchar2)
       is
          l_func   varchar2(8);
       begin
          begin
-            l_func := l_func_stack(l_func_stack.count);
+            p_func := l_func_stack(l_func_stack.count);
+            p_need_argcount := l_need_argcount_stack(l_need_argcount_stack.count);
          exception
             when others then error;
          end;
          l_func_stack.trim;
-         return l_func;
+         l_need_argcount_stack.trim;
+      end;
+
+      procedure push_argcount
+      is
+      begin
+         l_argcount_stack.extend;
+         l_argcount_stack(l_argcount_stack.count) := 0;
+      end;
+
+      function pop_argcount return number
+      is
+         l_argcount integer;
+      begin
+         begin
+            l_argcount := l_argcount_stack(l_argcount_stack.count);
+         exception
+            when others then error;
+         end;
+         l_argcount_stack.trim;
+         return l_argcount;
+      end;
+
+      procedure increment_argcount
+      is
+         l_index integer := l_argcount_stack.count;
+      begin
+         if l_index > 0 then
+            l_argcount_stack(l_index) := l_argcount_stack(l_index) + 1;
+         end if;
       end;
    begin
       ---------------------------------
       -- parse the infix into tokens --
       ---------------------------------
-      l_infix_tokens := cwms_util.split_text(trim(regexp_replace(normalize_algebraic(trim(p_algebraic_expr)),'([()])',' \1 ')));
+      l_infix_tokens := cwms_util.split_text(trim(upper(regexp_replace(normalize_algebraic(trim(regexp_replace(p_algebraic_expr, '\$?I(\d)', 'ARG\1', 1, 0, 'i'))),'([()])',' \1 '))));
       if l_infix_tokens(1) is null then -- happens when algebraic begins with an opening parenthesis
          l_infix_tokens := sub_table(l_infix_tokens, 2);
       end if;
@@ -3868,50 +4001,51 @@ as
             -- operators --
             ---------------
             if l_stack.count > 0 and precedence(l_stack(l_stack.count)) >= precedence(l_infix_tokens(i)) then
-               l_postfix_tokens.extend;
-               l_postfix_tokens(l_postfix_tokens.count) := pop;
+               add_postfix_token(pop);
             end if;
-
             push(l_infix_tokens(i));
          when is_expression_function(l_infix_tokens(i)) then
             ---------------
             -- functions --
             ---------------
             push_func(l_infix_tokens(i));
+            increment_argcount;
          when substr(l_infix_tokens(i), 1, 1) = '-' and is_expression_function(substr(l_infix_tokens(i), 2)) then
             -----------------------
             -- negated functions --
             -----------------------
             push_func(l_infix_tokens(i));
+            increment_argcount;
          when l_infix_tokens(i) = '(' then
             ----------------------
             -- open parentheses --
             ----------------------
             push(null);
             push_func(null);
+            push_argcount;
             l_left_paren_count := l_left_paren_count + 1;
          when l_infix_tokens(i) = ')' then
             ------------------------
             -- close parentheses --
             ------------------------
             while l_stack(l_stack.count) is not null loop
-               l_postfix_tokens.extend;
-               l_postfix_tokens(l_postfix_tokens.count) := pop;
+               add_postfix_token(pop);
             end loop;
 
             l_dummy := pop;
-            l_func := pop_func;
+            pop_func(l_func, l_need_argcount);
 
             if l_func_stack.count > 0 and l_func_stack(l_func_stack.count) is not null then
-               l_func := pop_func;
+               pop_func(l_func, l_need_argcount);
+               l_argcount := pop_argcount;
+               if l_need_argcount = 'T' then
+                  add_postfix_token(l_argcount);
+               end if;
                if substr(l_func, 1, 1) = '-' then
-                  l_postfix_tokens.extend;
-                  l_postfix_tokens(l_postfix_tokens.count) := substr(l_func, 2);
-                  l_postfix_tokens.extend;
-                  l_postfix_tokens(l_postfix_tokens.count) := 'NEG';
+                  add_postfix_token(substr(l_func, 2));
+                  add_postfix_token('NEG');
                else
-                  l_postfix_tokens.extend;
-                  l_postfix_tokens(l_postfix_tokens.count) := l_func;
+                  add_postfix_token(l_func);
                end if;
             end if;
 
@@ -3920,8 +4054,8 @@ as
             ---------------------
             -- everything else --
             ---------------------
-            l_postfix_tokens.extend;
-            l_postfix_tokens(l_postfix_tokens.count) := l_infix_tokens(i);
+            add_postfix_token(l_infix_tokens(i));
+            increment_argcount;
          end case;
       end loop;
 
@@ -3930,10 +4064,8 @@ as
          error;
       end if;
 
-      while l_stack.count > 0
-      loop
-         l_postfix_tokens.extend;
-         l_postfix_tokens(l_postfix_tokens.count) := pop;
+      while l_stack.count > 0 loop
+         add_postfix_token(pop);
       end loop;
 
       return l_postfix_tokens;
@@ -3947,8 +4079,13 @@ as
       return str_tab_t
       result_cache
    is
+      l_tokens str_tab_t;
    begin
-      return split_text(trim(upper(replace(p_rpn_expr, chr(10), ' '))));
+      l_tokens := split_text(trim(upper(replace(regexp_replace(p_rpn_expr, '\$?I(\d)', 'ARG\1', 1, 0, 'i'), chr(10), ' '))));
+      for i in 1..l_tokens.count loop
+         validate_math_expression_token(l_tokens(i));
+      end loop;
+      return l_tokens;
    end tokenize_rpn;
 
    -----------------------------------------------------------------------------
@@ -4193,6 +4330,7 @@ as
       l_val1  binary_double;
       l_val2  binary_double;
       l_idx   binary_integer;
+      l_count binary_integer;
       --------------------
       -- local routines --
       --------------------
@@ -4241,7 +4379,7 @@ as
             l_val2 := nullif(pop, 0);
             l_val1 := pop;
             push(floor(l_val1 / l_val2));
-         when p_rpn_tokens(i) = '%'  then -- same as Python math.fmod, not %
+         when p_rpn_tokens(i) = '%'  then -- same as Java % and fmod() in various languages, not like Python %
             l_val2 := nullif(pop, 0);
             l_val1 := pop;
             push(mod(l_val1, l_val2));
@@ -4252,8 +4390,52 @@ as
          ----------------------
          -- binary functions --
          ----------------------
-         when p_rpn_tokens(i) = 'MIN'  then push(least(pop, pop));
-         when p_rpn_tokens(i) = 'MAX'  then push(greatest(pop, pop));
+         when p_rpn_tokens(i) = 'FMOD'  then
+            l_val2 := nullif(pop, 0);
+            l_val1 := pop;
+            push(mod(l_val1, l_val2));
+         ------------------------
+         -- variadic functions --
+         ------------------------
+         when p_rpn_tokens(i) = 'COUNT' then
+            l_count := pop;
+            for i in 1..l_count loop l_val1 := pop; end loop;
+            push(l_count);
+         when p_rpn_tokens(i) = 'MAX' then
+            l_count := pop;
+            l_val1 := pop;
+            for j in 1..l_count-1 loop
+               l_val1 := greatest(l_val1, pop);
+            end loop;
+            push(l_val1);
+         when p_rpn_tokens(i) in ('MEAN', 'AVG') then
+            l_count := pop;
+            l_val1 := pop;
+            for j in 1..l_count-1 loop
+               l_val1 := l_val1 + pop;
+            end loop;
+            push(l_val1 / l_count);
+         when p_rpn_tokens(i) = 'MIN' then
+            l_count := pop;
+            l_val1 := pop;
+            for j in 1..l_count-1 loop
+               l_val1 := least(l_val1, pop);
+            end loop;
+            push(l_val1);
+         when p_rpn_tokens(i) = 'PROD' then
+            l_count := pop;
+            l_val1 := pop;
+            for j in 1..l_count-1 loop
+               l_val1 := l_val1 * pop;
+            end loop;
+            push(l_val1);
+         when p_rpn_tokens(i) = 'SUM' then
+            l_count := pop;
+            l_val1 := pop;
+            for j in 1..l_count-1 loop
+               l_val1 := l_val1 + pop;
+            end loop;
+            push(l_val1);
          ---------------
          -- constants --
          ---------------
@@ -4273,6 +4455,8 @@ as
          when p_rpn_tokens(i) = 'INV'   then push(1 / pop);
          when p_rpn_tokens(i) = 'LN'    then push(ln(pop));
          when p_rpn_tokens(i) = 'LOG'   then push(log(10, pop)); -- log base 10
+         when p_rpn_tokens(i) = 'LOG10' then push(log(10, pop));
+         when p_rpn_tokens(i) = 'LOGN'  then push(ln(pop));
          when p_rpn_tokens(i) = 'NEG'   then push(pop * -1);
          when p_rpn_tokens(i) = 'ROUND' then push(round(pop));
          when p_rpn_tokens(i) = 'SIGN'  then                     -- not SQL sign, but +1, 0, or -1
@@ -4453,12 +4637,12 @@ as
       l_val2 := eval_tokenized_expression(p_tokens(2), p_args, p_args_offset);
       l_op   := p_tokens(3)(1);
       case
-         when l_op =   '='        then l_result := l_val1  = l_val2;
-         when l_op in ('!=','<>') then l_result := l_val1 != l_val2;
-         when l_op in ('<', 'LT') then l_result := l_val1 <  l_val2;
-         when l_op in ('<=','LE') then l_result := l_val1 <= l_val2;
-         when l_op in ('>', 'GT') then l_result := l_val1 >  l_val2;
-         when l_op in ('>=','GE') then l_result := l_val1 >= l_val2;
+         when l_op =   '='              then l_result := l_val1  = l_val2;
+         when l_op in ('!=','<>', 'NE') then l_result := l_val1 != l_val2;
+         when l_op in ('<', 'LT')       then l_result := l_val1 <  l_val2;
+         when l_op in ('<=','LE')       then l_result := l_val1 <= l_val2;
+         when l_op in ('>', 'GT')       then l_result := l_val1 >  l_val2;
+         when l_op in ('>=','GE')       then l_result := l_val1 >= l_val2;
          else cwms_err.raise('ERROR', 'Invalid comparison operator: '||l_op);
       end case;
       return l_result;

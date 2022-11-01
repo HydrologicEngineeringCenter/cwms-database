@@ -1766,7 +1766,7 @@ try :
                            HtmlElem('span', attrs=[('class', 'param-type')], content=format(type_name))])]),
                      HtmlElem('td', attrs=[('class', 'description-col')], content=[
                         HtmlElem('table', attrs=[('class', 'members')], content = [
-                           HtmlElem('tr', [
+                           HtmlElem('tr', attrs=[('class', 'inline')], content = [
                               HtmlElem('td', attrs=[('style','vertical-align:top')], content=[
                                  HtmlElem('span', attrs=[('class', 'keyword')], content=format('record', False)),
                                  HtmlElem('span', attrs=[('class', 'parentheses')], content=format('(', False))]),
@@ -1798,7 +1798,7 @@ try :
                         HtmlElem('', '&nbsp;'),
                         HtmlElem('span', attrs=[('class', 'param-type')], content=mark_parentheses(format(field_type))),
                         HtmlElem('span', attrs=[('class', 'comma')], content=',')])
-                  row = HtmlElem('tr', [col1, col2, col3])
+                  row = HtmlElem('tr', attrs=[('class', 'inline')], content = [col1, col2, col3])
                   field_elems.add_content([row])
                details_div.add_content([
                   HtmlElem('', [

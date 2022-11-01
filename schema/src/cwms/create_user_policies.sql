@@ -20,26 +20,27 @@ BEGIN
         statement_types  => 'select');
     end loop;
 
-    for c IN (select table_name from user_tables WHERE table_name in ('CWMS_DURATION','CWMS_INTERVAL','CWMS_PARAMETER_TYPE'))
+    -- allow PD and DBA users to view the av_sec views
+    for c IN (select view_name from user_views where view_name like 'AV_SEC%')
     loop
         BEGIN
           DBMS_RLS.DROP_POLICY(
         object_schema    => '&cwms_schema',
-        object_name      => c.table_name,
-        policy_name      => 'FILTER_'||c.table_name||'_POLICY');
+        object_name      => c.view_name,
+        policy_name      => 'ADMIN_VIEW_POLICY');
        EXCEPTION WHEN OTHERS THEN
         NULL;
        END;
 
         DBMS_RLS.ADD_POLICY (
         object_schema    => '&cwms_schema',
-        object_name      => c.table_name,
-        policy_name      => 'FILTER_'||c.table_name||'_POLICY', 
+        object_name      => c.view_name,
+        policy_name      => 'ADMIN_VIEW_POLICY',
         function_schema  => '&cwms_schema',
-        policy_function  => 'CWMS_SEC_POLICY.'||c.table_name||'_FILTER',
+        policy_function  => 'CWMS_SEC_POLICY.CHECK_IS_PD_OR_DBA',
         policy_type      => DBMS_RLS.SHARED_CONTEXT_SENSITIVE,
         statement_types  => 'select');
     end loop;
-
+    
 END;
 /

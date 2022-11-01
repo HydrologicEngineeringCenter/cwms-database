@@ -9,10 +9,12 @@ exec cwms_sec.add_cwms_user('OTHER_DIST', char_32_array_type('CWMS Users'),'HQ')
 @test_cwms_prop.sql;
 @test_cwms_msg.sql;
 @test_aaa.sql;
+show errors;
+@test_aaa_normaluserfails.sql
+show errors;
 @test_ro.sql;
 @test_up.sql;
 @test_dba.sql;
-@test_missing_shift_points.sql
 @test_lrts_updates.sql;
 @test_update_ts_extents.sql;
 @test_probability_parameter.sql;
@@ -27,5 +29,6 @@ exec cwms_sec.add_cwms_user('OTHER_DIST', char_32_array_type('CWMS Users'),'HQ')
 @test_cwms_cat.sql;
 @test_cwms_level.sql;
 @test_cwms_display.sql;
+@test_aq_user.sql;
 
 show errors;

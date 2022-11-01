@@ -21,18 +21,16 @@ import org.testcontainers.containers.JdbcDatabaseContainer;
 import org.testcontainers.utility.DockerImageName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
-import org.testcontainers.containers.wait.strategy.Wait;
 /**
  * An container manager to manage creation of CWMSDatabases for automated tests
  */
 public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> extends JdbcDatabaseContainer<SELF> {
     public static final Logger log = LoggerFactory.getLogger(CwmsDatabaseContainer.class);
-    public static final String ORACLE_19C= "oracle/database:19.3.0-ee";
-    public static final String ORACLE_18XE = "oracle/database:18.4.0-xe";
+    public static final String ORACLE_19C= "registry.hecdev.net/oracle/database:19.3.0-ee";
+    public static final String ORACLE_18XE = "registry.hecdev.net/oracle/database:18.4.0-xe";
 
     public static final String BYPASS_URL = "testcontainer.cwms.bypass.url";
     public static final String BYPASS_SYS_PASSWORD = "testcontainer.cwms.bypass.sys.pass";
@@ -47,7 +45,7 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
     private String buildUserPassword = "builduserpassword";
     private String officeId = System.getProperty(BYPASS_CWMS_OFFICE_ID,"SPK");
     private String officeEroc = System.getProperty(BYPASS_CWMS_OFFICE_EROC,"l2");
-    private String cwmsImageName = "cwms_schema_installer";
+    private String cwmsImageName = "cwms/schema_installer";
     private String schemaVersion = "";
     private Driver driverInstance = null;
 
@@ -77,7 +75,6 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
             pdbName="XEPDB1";
             volumeName = volumeName + "_xe";
         }
-
         this.waitStrategy = new LogMessageWaitStrategy()
             .withRegEx("^DATABASE IS READY TO USE.*\\n")
             .withTimes(1)
@@ -297,6 +294,12 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
         return self();
     }
 
+    public SELF withSchemaImage(String schemaImage){
+        this.cwmsImageName = schemaImage;
+        this.schemaVersion = "";
+        return self();
+    }
+
     /**
      *
      * @return the user name for a user with CWMS_DBA privileges
@@ -397,6 +400,18 @@ public class CwmsDatabaseContainer<SELF extends CwmsDatabaseContainer<SELF>> ext
             function.accept(conn);
         }
 
+    }
+
+    /**
+     * As connection without a user, but uses the specified username instead of the default
+     * @param function
+     * @param user
+     * @throws SQLException
+     */
+    public <T> T  connection( Function<java.sql.Connection, T> function, String user ) throws SQLException{
+        try( Connection conn = getConnection(user);){
+            return function.apply(conn);
+        }
     }
 
     @Override

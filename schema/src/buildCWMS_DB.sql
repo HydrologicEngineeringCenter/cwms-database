@@ -354,25 +354,19 @@ set define on
 @@cwms/create_user_policies
 @@cwms/at_tsv_count_trig
 @@cwms/at_dd_flag_trig
--------------------------------------------------
--- rebuild any disabled function-based indexes --
--------------------------------------------------
-declare
-   index_ddl clob;
-begin
-   for rec in (select index_name from all_indexes where owner = '&cwms_schema' and funcidx_status = 'DISABLED') loop
-      index_ddl := dbms_metadata.get_ddl('INDEX', rec.index_name, '&cwms_schema');
-      execute immediate 'drop index &cwms_schema..'||rec.index_name;
-      execute immediate index_ddl;
-   end loop;
-end;
-/
 prompt Recompiling all invalid objects...
 begin
    $if dbms_db_version.version < 12 $then
       execute immediate 'alter session set plscope_settings=''IDENTIFIERS:ALL''';
    $end
    dbms_utility.compile_schema('&cwms_schema');
+end;
+/
+prompt Rebuilding all disabled function-based indexes...
+begin
+   for rec in (select index_name from all_indexes where owner = '&cwms_schema' and funcidx_status = 'DISABLED') loop
+      execute immediate 'alter index &cwms_schema..'||rec.index_name||' rebuild';
+   end loop;
 end;
 /
 --
