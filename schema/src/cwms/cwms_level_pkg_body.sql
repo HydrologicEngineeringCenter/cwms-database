@@ -4469,6 +4469,42 @@ is
    v2                          binary_double;
    item_does_not_exist exception;
    pragma exception_init(item_does_not_exist, -20034);
+
+   procedure no_such_location_level(
+      p_location_id             in varchar2,
+      p_parameter_id            in varchar2,
+      p_parameter_type_id       in varchar2,
+      p_duration_id             in varchar2,
+      p_spec_level_id           in varchar2,
+      p_attribute_value         in number,
+      p_attribute_units         in varchar2,
+      p_attribute_parameter_id  in varchar2,
+      p_attribute_param_type_id in varchar2,
+      p_attribute_duration_id   in varchar2,
+      p_start_time_utc          in date)
+   is
+   begin
+      cwms_err.raise(
+         'ITEM_DOES_NOT_EXIST',
+         'Location level',
+         l_office_id
+         || '/' || p_location_id
+         || '.' || p_parameter_id
+         || '.' || p_parameter_type_id
+         || '.' || p_duration_id
+         || '.' || p_spec_level_id
+         || case
+               when p_attribute_value is null then
+                  null
+               else
+                  ' ('     || p_attribute_parameter_id
+                  || '.'   || p_attribute_param_type_id
+                  || '.'   || p_attribute_duration_id
+                  || ' = ' || p_attribute_value
+                  || ' '   || p_attribute_units || ')'
+            end
+         || '@' || p_start_time_utc || ' UTC');
+   end;
 begin
    -------------------
    -- sanity checks --
@@ -4682,6 +4718,20 @@ begin
             when no_data_found then null;
          end;
       end if;
+      if not p_in_recursion and (l_level_values is null or l_level_values.count = 0) then
+         no_such_location_level(
+            p_location_id,
+            p_parameter_id,
+            p_parameter_type_id,
+            p_duration_id,
+            p_spec_level_id,
+            p_attribute_value,
+            p_attribute_units,
+            p_attribute_parameter_id,
+            p_attribute_param_type_id,
+            p_attribute_duration_id,
+            p_start_time_utc);
+      end if;
       p_level_values := l_level_values;
       return;
    end if;
@@ -4747,6 +4797,20 @@ begin
          p_office_id                 => p_office_id,
          p_level_precedence          => 'N');
       if l_location_level_code is null then
+         if not p_in_recursion and (l_level_values is null or l_level_values.count = 0) then
+            no_such_location_level(
+               p_location_id,
+               p_parameter_id,
+               p_parameter_type_id,
+               p_duration_id,
+               p_spec_level_id,
+               p_attribute_value,
+               p_attribute_units,
+               p_attribute_parameter_id,
+               p_attribute_param_type_id,
+               p_attribute_duration_id,
+               p_start_time_utc);
+         end if;
          p_level_values := ztsv_array();
          return;
       end if;
@@ -4823,6 +4887,20 @@ begin
          p_office_id                 => p_office_id,
          p_level_precedence          => 'N');
       if l_location_level_code is null then
+         if not p_in_recursion and (l_level_values is null or l_level_values.count = 0) then
+            no_such_location_level(
+               p_location_id,
+               p_parameter_id,
+               p_parameter_type_id,
+               p_duration_id,
+               p_spec_level_id,
+               p_attribute_value,
+               p_attribute_units,
+               p_attribute_parameter_id,
+               p_attribute_param_type_id,
+               p_attribute_duration_id,
+               p_start_time_utc);
+         end if;
          p_level_values := ztsv_array();
          return;
       end if;
@@ -4927,22 +5005,18 @@ begin
                                           and location_level_date <= l_start_time_utc);
       exception
          when no_data_found then
-            cwms_err.raise(
-               'ITEM_DOES_NOT_EXIST',
-               'Location level',
-               l_office_id
-               || '/' || p_location_id
-               || '.' || p_parameter_id
-               || '.' || p_parameter_type_id
-               || '.' || p_duration_id
-               || '.' || p_spec_level_id
-               || case
-                     when p_attribute_value is null then
-                        null
-                     else
-                        ' (' || p_attribute_value || ' ' || p_attribute_units || ')'
-                  end
-               || '@' || l_start_time_utc);
+            no_such_location_level(
+               p_location_id,
+               p_parameter_id,
+               p_parameter_type_id,
+               p_duration_id,
+               p_spec_level_id,
+               p_attribute_value,
+               p_attribute_units,
+               p_attribute_parameter_id,
+               p_attribute_param_type_id,
+               p_attribute_duration_id,
+               p_start_time_utc);
       end;
       ----------------------------
       -- fill out the tsv array --
@@ -5310,16 +5384,18 @@ begin
       -- raise an exception if we can't get any values for the time window --
       -----------------------------------------------------------------------
       if l_level_values is null or l_level_values.count = 0 then
-         cwms_err.raise(
-            'ITEM_DOES_NOT_EXIST',
-            'Location level',
-            l_office_id
-            || '/' || p_location_id
-            || '.' || p_parameter_id
-            || '.' || p_parameter_type_id
-            || '.' || p_duration_id
-            || '.' || p_spec_level_id
-            || '@' || to_char(p_end_time_utc, 'dd-Mon-yyyy hh24:mi'));
+         no_such_location_level(
+            p_location_id,
+            p_parameter_id,
+            p_parameter_type_id,
+            p_duration_id,
+            p_spec_level_id,
+            p_attribute_value,
+            p_attribute_units,
+            p_attribute_parameter_id,
+            p_attribute_param_type_id,
+            p_attribute_duration_id,
+            p_start_time_utc);
       end if;
       if l_level_values.count > 1 then
          -------------------------------------------------------
@@ -5409,6 +5485,20 @@ begin
             when no_data_found then null;
          end;
       end if;
+   end if;
+   if not p_in_recursion and (l_level_values is null or l_level_values.count = 0) then
+      no_such_location_level(
+         p_location_id,
+         p_parameter_id,
+         p_parameter_type_id,
+         p_duration_id,
+         p_spec_level_id,
+         p_attribute_value,
+         p_attribute_units,
+         p_attribute_parameter_id,
+         p_attribute_param_type_id,
+         p_attribute_duration_id,
+         p_start_time_utc);
    end if;
    p_level_values := l_level_values;
 end retrieve_loc_lvl_values_utc;
