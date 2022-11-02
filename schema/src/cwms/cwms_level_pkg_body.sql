@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY cwms_level as
+create or replace PACKAGE BODY cwms_level as
 
 --------------------------------------------------------------------------------
 -- PRIVATE PACKAGE TYPES AND CONSTANTS
@@ -1875,7 +1875,7 @@ begin
          || 'in CREATE_LOCATION_LEVEL');
    end if;
    if p_seasonal_values is not null then
-      case 
+      case
       when nvl(p_interval_months, 0) > 0 and nvl(p_interval_minutes, 0) > 0 then
          cwms_err.raise(
             'ERROR',
@@ -2102,7 +2102,7 @@ begin
             -- every interval, which may not actually be the case                --
             -----------------------------------------------------------------------
             l_seasonal_date_utc := cwms_util.change_timezone(
-               add_months(l_interval_origin_tz, p_seasonal_values(i).offset_months) + p_seasonal_values(i).offset_minutes / 1440, 
+               add_months(l_interval_origin_tz, p_seasonal_values(i).offset_months) + p_seasonal_values(i).offset_minutes / 1440,
                l_timezone_id,
                'UTC');
             l_offset_months := months_between(l_seasonal_date_utc, l_interval_origin);
@@ -4469,6 +4469,42 @@ is
    v2                          binary_double;
    item_does_not_exist exception;
    pragma exception_init(item_does_not_exist, -20034);
+
+   procedure no_such_location_level(
+      p_location_id             in varchar2,
+      p_parameter_id            in varchar2,
+      p_parameter_type_id       in varchar2,
+      p_duration_id             in varchar2,
+      p_spec_level_id           in varchar2,
+      p_attribute_value         in number,
+      p_attribute_units         in varchar2,
+      p_attribute_parameter_id  in varchar2,
+      p_attribute_param_type_id in varchar2,
+      p_attribute_duration_id   in varchar2,
+      p_start_time_utc          in date)
+   is
+   begin
+      cwms_err.raise(
+         'ITEM_DOES_NOT_EXIST',
+         'Location level',
+         l_office_id
+         || '/' || p_location_id
+         || '.' || p_parameter_id
+         || '.' || p_parameter_type_id
+         || '.' || p_duration_id
+         || '.' || p_spec_level_id
+         || case
+               when p_attribute_value is null then
+                  null
+               else
+                  ' ('     || p_attribute_parameter_id
+                  || '.'   || p_attribute_param_type_id
+                  || '.'   || p_attribute_duration_id
+                  || ' = ' || p_attribute_value
+                  || ' '   || p_attribute_units || ')'
+            end
+         || '@' || p_start_time_utc || ' UTC');
+   end;
 begin
    -------------------
    -- sanity checks --
@@ -4682,6 +4718,20 @@ begin
             when no_data_found then null;
          end;
       end if;
+      if not p_in_recursion and (l_level_values is null or l_level_values.count = 0) then
+         no_such_location_level(
+            p_location_id,
+            p_parameter_id,
+            p_parameter_type_id,
+            p_duration_id,
+            p_spec_level_id,
+            p_attribute_value,
+            p_attribute_units,
+            p_attribute_parameter_id,
+            p_attribute_param_type_id,
+            p_attribute_duration_id,
+            p_start_time_utc);
+      end if;
       p_level_values := l_level_values;
       return;
    end if;
@@ -4747,6 +4797,20 @@ begin
          p_office_id                 => p_office_id,
          p_level_precedence          => 'N');
       if l_location_level_code is null then
+         if not p_in_recursion and (l_level_values is null or l_level_values.count = 0) then
+            no_such_location_level(
+               p_location_id,
+               p_parameter_id,
+               p_parameter_type_id,
+               p_duration_id,
+               p_spec_level_id,
+               p_attribute_value,
+               p_attribute_units,
+               p_attribute_parameter_id,
+               p_attribute_param_type_id,
+               p_attribute_duration_id,
+               p_start_time_utc);
+         end if;
          p_level_values := ztsv_array();
          return;
       end if;
@@ -4823,6 +4887,20 @@ begin
          p_office_id                 => p_office_id,
          p_level_precedence          => 'N');
       if l_location_level_code is null then
+         if not p_in_recursion and (l_level_values is null or l_level_values.count = 0) then
+            no_such_location_level(
+               p_location_id,
+               p_parameter_id,
+               p_parameter_type_id,
+               p_duration_id,
+               p_spec_level_id,
+               p_attribute_value,
+               p_attribute_units,
+               p_attribute_parameter_id,
+               p_attribute_param_type_id,
+               p_attribute_duration_id,
+               p_start_time_utc);
+         end if;
          p_level_values := ztsv_array();
          return;
       end if;
@@ -4927,22 +5005,18 @@ begin
                                           and location_level_date <= l_start_time_utc);
       exception
          when no_data_found then
-            cwms_err.raise(
-               'ITEM_DOES_NOT_EXIST',
-               'Location level',
-               l_office_id
-               || '/' || p_location_id
-               || '.' || p_parameter_id
-               || '.' || p_parameter_type_id
-               || '.' || p_duration_id
-               || '.' || p_spec_level_id
-               || case
-                     when p_attribute_value is null then
-                        null
-                     else
-                        ' (' || p_attribute_value || ' ' || p_attribute_units || ')'
-                  end
-               || '@' || l_start_time_utc);
+            no_such_location_level(
+               p_location_id,
+               p_parameter_id,
+               p_parameter_type_id,
+               p_duration_id,
+               p_spec_level_id,
+               p_attribute_value,
+               p_attribute_units,
+               p_attribute_parameter_id,
+               p_attribute_param_type_id,
+               p_attribute_duration_id,
+               p_start_time_utc);
       end;
       ----------------------------
       -- fill out the tsv array --
@@ -5310,16 +5384,18 @@ begin
       -- raise an exception if we can't get any values for the time window --
       -----------------------------------------------------------------------
       if l_level_values is null or l_level_values.count = 0 then
-         cwms_err.raise(
-            'ITEM_DOES_NOT_EXIST',
-            'Location level',
-            l_office_id
-            || '/' || p_location_id
-            || '.' || p_parameter_id
-            || '.' || p_parameter_type_id
-            || '.' || p_duration_id
-            || '.' || p_spec_level_id
-            || '@' || to_char(p_end_time_utc, 'dd-Mon-yyyy hh24:mi'));
+         no_such_location_level(
+            p_location_id,
+            p_parameter_id,
+            p_parameter_type_id,
+            p_duration_id,
+            p_spec_level_id,
+            p_attribute_value,
+            p_attribute_units,
+            p_attribute_parameter_id,
+            p_attribute_param_type_id,
+            p_attribute_duration_id,
+            p_start_time_utc);
       end if;
       if l_level_values.count > 1 then
          -------------------------------------------------------
@@ -5409,6 +5485,20 @@ begin
             when no_data_found then null;
          end;
       end if;
+   end if;
+   if not p_in_recursion and (l_level_values is null or l_level_values.count = 0) then
+      no_such_location_level(
+         p_location_id,
+         p_parameter_id,
+         p_parameter_type_id,
+         p_duration_id,
+         p_spec_level_id,
+         p_attribute_value,
+         p_attribute_units,
+         p_attribute_parameter_id,
+         p_attribute_param_type_id,
+         p_attribute_duration_id,
+         p_start_time_utc);
    end if;
    p_level_values := l_level_values;
 end retrieve_loc_lvl_values_utc;
@@ -6399,12 +6489,18 @@ is
    l_ym_interval   yminterval_unconstrained;
    l_ds_interval   dsinterval_unconstrained;
    l_max_date      date;
+   l_timezone_id   cwms_time_zone.time_zone_name%type;
+   l_date          date;
 begin
+   l_timezone_id := nvl(
+      p_timezone_id,
+      cwms_loc.get_local_timezone(cwms_util.split_text(p_location_level_id, 1, '.'), p_office_id));
+   l_date := nvl(p_date, cwms_util.change_timezone(sysdate, 'UTC', l_timezone_id));
    l_loc_level_obj := retrieve_location_level(
       p_location_level_id => p_location_level_id,
       p_level_units       => p_level_units,
-      p_date              => p_date,
-      p_timezone_id       => p_timezone_id,
+      p_date              => l_date,
+      p_timezone_id       => l_timezone_id,
       p_attribute_id      => p_attribute_id,
       p_attribute_value   => p_attribute_value,
       p_attribute_units   => p_attribute_units,
@@ -6421,9 +6517,9 @@ begin
             p_at_tsv_rc       => l_crsr,
             p_cwms_ts_id      => l_loc_level_obj.tsid,
             p_units           => p_level_units,
-            p_start_time      => p_date,
-            p_end_time        => p_date,
-            p_time_zone       => p_timezone_id,
+            p_start_time      => l_date,
+            p_end_time        => l_date,
+            p_time_zone       => l_timezone_id,
             p_trim            => 'F',
             p_start_inclusive => 'T',
             p_end_inclusive   => 'T',
@@ -6447,14 +6543,14 @@ begin
             ----------------------------------------------------------------------------------
             -- previous, current, and next values, use current value if time span in range  --
             ----------------------------------------------------------------------------------
-            if p_date <= l_max_date then l_value := l_values(2); end if;
+            if l_date <= l_max_date then l_value := l_values(2); end if;
          elsif l_date_times.count =  2 then
-            if l_date_times(1) < p_date then
-               if l_date_times(2) = p_date then
+            if l_date_times(1) < l_date then
+               if l_date_times(2) = l_date then
                   ---------------------------------------------------------------------------
                   -- previous and current values, use current value if time span in range  --
                   ---------------------------------------------------------------------------
-                  if p_date <= l_max_date then l_value := l_values(2); end if;
+                  if l_date <= l_max_date then l_value := l_values(2); end if;
                else
                   ------------------------------
                   -- previous and next values --
@@ -6464,13 +6560,13 @@ begin
                      -- use interpolated value if time span in range --
                      --------------------------------------------------
                      if l_date_times(2) <= l_max_date then
-                        l_value := l_values(1) + (p_date - l_date_times(1)) / (l_date_times(2) - l_date_times(1)) * (l_values(2) - l_values(1));
+                        l_value := l_values(1) + (l_date - l_date_times(1)) / (l_date_times(2) - l_date_times(1)) * (l_values(2) - l_values(1));
                      end if;
                   else
                      ----------------------------------------------
                      -- use previous value if time span in range --
                      ----------------------------------------------
-                     if p_date <= l_max_date then l_value := l_values(1); end if;
+                     if l_date <= l_max_date then l_value := l_values(1); end if;
                   end if;
                end if;
             end if;
@@ -6492,11 +6588,11 @@ begin
          l_value := retrieve_location_level_value(
             p_location_level_id => p_location_level_id,
             p_level_units       => p_level_units,
-            p_date              => p_date,
+            p_date              => l_date,
             p_attribute_id      => p_attribute_id,
             p_attribute_value   => p_attribute_value,
             p_attribute_units   => p_attribute_units,
-            p_timezone_id       => p_timezone_id,
+            p_timezone_id       => l_timezone_id,
             p_office_id         => p_office_id,
             p_level_precedence  => p_level_precedence);
       end if;
@@ -16587,4 +16683,3 @@ end set_package_log_property_text;
 
 end cwms_level;
 /
-show errors;
