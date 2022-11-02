@@ -1032,6 +1032,8 @@ function get_next_effective_date(
  *   <li><b>NV</b> specifies results from non-virtual (normal) location levels where they exist, with virtual location levels allowed where non-virtual levels don't exist
  *   <li><b>VN</b> (default) specifies results from virtual location levels where they exist, with non-virtual location levels allowed where virtual levels don't exist
  * </ul>
+ *
+ * @exception ITEM_DOES_NOT_EXIST if p_location_level_id doesn't exist for the the specified or default office, or is only effective after p_end_time
  */
 procedure retrieve_location_level_values(
    p_level_values            out ztsv_array,
@@ -1080,6 +1082,8 @@ procedure retrieve_location_level_values(
  *   <li><b>0:&nbsp;</b>The value for all times between the previous value time and this one is the same as the previous value</li>
  *   <li><b>1:&nbsp;</b>The value for all times between the previous value time and this one is interpolated between the previous value and this one</li>
  * </ul>
+ *
+ * @exception ITEM_DOES_NOT_EXIST if p_location_level_id doesn't exist for the the specified or default office, or is only effective after p_end_time
  */
 function retrieve_location_level_values(
    p_location_level_id       in  varchar2,
@@ -1483,6 +1487,8 @@ function retrieve_loc_lvl_values3(
  *   <li><b>NV</b> specifies results from non-virtual (normal) location levels where they exist, with virtual location levels allowed where non-virtual levels don't exist
  *   <li><b>VN</b> (default) specifies results from virtual location levels where they exist, with non-virtual location levels allowed where virtual levels don't exist
  * </ul>
+ *
+ * @exception ITEM_DOES_NOT_EXIST if p_location_level_id doesn't exist for the the specified or default office, or is only effective after p_end_time
  */
 procedure retrieve_location_level_values(
    p_level_values            out ztsv_array,
@@ -1539,6 +1545,8 @@ procedure retrieve_location_level_values(
  *   <li><b>0:&nbsp;</b>The value for all times between the previous value time and this one is the same as the previous value</li>
  *   <li><b>1:&nbsp;</b>The value for all times between the previous value time and this one is interpolated between the previous value and this one</li>
  * </ul>
+ *
+ * @exception ITEM_DOES_NOT_EXIST if p_location_level_id doesn't exist for the the specified or default office, or is only effective after p_end_time
  */
 function retrieve_location_level_values(
    p_ts_id                   in  varchar2,
@@ -1576,6 +1584,8 @@ function retrieve_location_level_values(
  *   <li><b>NV</b> specifies results from non-virtual (normal) location levels where they exist, with virtual location levels allowed where non-virtual levels don't exist
  *   <li><b>VN</b> (default) specifies results from virtual location levels where they exist, with non-virtual location levels allowed where virtual levels don't exist
  * </ul>
+ *
+ * @exception ITEM_DOES_NOT_EXIST if p_location_level_id doesn't exist for the the specified or default office, or is only effective after p_date
  */
 procedure retrieve_location_level_value(
    p_level_value             out number,
@@ -1610,6 +1620,8 @@ procedure retrieve_location_level_value(
  * </ul>
  *
  * @return The location level value
+ *
+ * @exception ITEM_DOES_NOT_EXIST if p_location_level_id doesn't exist for the the specified or default office, or is only effective after p_date
  */
 function retrieve_location_level_value(
    p_location_level_id       in  varchar2,
@@ -1646,6 +1658,8 @@ function retrieve_location_level_value(
  *   <li><b>NV</b> specifies results from non-virtual (normal) location levels where they exist, with virtual location levels allowed where non-virtual levels don't exist
  *   <li><b>VN</b> (default) specifies results from virtual location levels where they exist, with non-virtual location levels allowed where virtual levels don't exist
  * </ul>
+ *
+ * @exception ITEM_DOES_NOT_EXIST if p_location_level_id doesn't exist for the the specified or default office, or is only effective after p_date
  */
 procedure retrieve_location_level_value(
    p_level_value             out number,
@@ -1684,6 +1698,8 @@ procedure retrieve_location_level_value(
  * </ul>
  *
  * @return The location level value
+ *
+ * @exception ITEM_DOES_NOT_EXIST if p_location_level_id doesn't exist for the the specified or default office, or is only effective after p_date
  */
 function retrieve_location_level_value(
    p_ts_id                   in  varchar2,

@@ -100,14 +100,17 @@ begin
    -------------------------------------------------------------
    -- retrieve the value just before the first effective date --
    -------------------------------------------------------------
-   l_value := cwms_level.retrieve_location_level_value(
-      p_location_level_id => c_top_of_normal_elev_id,
-      p_level_units       => c_elev_unit,
-      p_date              => l_effective_date1 - 1/86400,
-      p_timezone_id       => c_timezone_id,
-      p_office_id         => c_office_id);
-
-   ut.expect(l_value).to_be_null;
+   begin
+      l_value := cwms_level.retrieve_location_level_value(
+         p_location_level_id => c_top_of_normal_elev_id,
+         p_level_units       => c_elev_unit,
+         p_date              => l_effective_date1 - 1/86400,
+         p_timezone_id       => c_timezone_id,
+         p_office_id         => c_office_id);
+      cwms_err.raise ('ERROR', 'Expected exception not raised');
+   exception
+      when others then ut.expect(sqlerrm).to_be_like('ORA-20034: ITEM_DOES_NOT_EXIST: Location level % does not exist.');
+   end;
    ----------------------------------------------------
    -- retrieve the value on the first effective date --
    ----------------------------------------------------
@@ -242,12 +245,17 @@ begin
    -------------------------------------------------------------
    -- retrieve the value just before the first effective date --
    -------------------------------------------------------------
-   l_value := cwms_level.retrieve_location_level_value(
-      p_location_level_id => c_top_of_normal_elev_id,
-      p_level_units       => c_elev_unit,
-      p_date              => l_effective_date - 1/86400,
-      p_timezone_id       => c_timezone_id,
-      p_office_id         => c_office_id);
+   begin
+      l_value := cwms_level.retrieve_location_level_value(
+         p_location_level_id => c_top_of_normal_elev_id,
+         p_level_units       => c_elev_unit,
+         p_date              => l_effective_date - 1/86400,
+         p_timezone_id       => c_timezone_id,
+         p_office_id         => c_office_id);
+         cwms_err.raise ('ERROR', 'Expected exception not raised');
+   exception
+      when others then ut.expect(sqlerrm).to_be_like('ORA-20034: ITEM_DOES_NOT_EXIST: Location level % does not exist.');
+   end;
 
    ut.expect(l_value).to_be_null;
    ----------------------------------------------------
@@ -376,18 +384,26 @@ begin
    -- retrieve values at each time series time --
    ----------------------------------------------
    for i in 1..l_ts_data.count loop
-      l_value := cwms_level.retrieve_location_level_value(
-         p_location_level_id => c_top_of_normal_elev_id,
-         p_level_units       => c_elev_unit,
-         p_date              => cast(l_ts_data(i).date_time as date),
-         p_timezone_id       => c_timezone_id,
-         p_office_id         => c_office_id);
-
-      if cast(l_ts_data(i).date_time as date) < l_effective_date then
-         ut.expect(l_value).to_be_null;
-      else
-         ut.expect(round(l_value, 5)).to_equal(round(l_ts_data(i).value, 5));
-      end if;
+      begin
+         l_value := cwms_level.retrieve_location_level_value(
+            p_location_level_id => c_top_of_normal_elev_id,
+            p_level_units       => c_elev_unit,
+            p_date              => cast(l_ts_data(i).date_time as date),
+            p_timezone_id       => c_timezone_id,
+            p_office_id         => c_office_id);
+         if cast(l_ts_data(i).date_time as date) < l_effective_date then
+            cwms_err.raise ('ERROR', 'Expected exception not raised');
+         else
+            ut.expect(round(l_value, 5)).to_equal(round(l_ts_data(i).value, 5));
+         end if;
+      exception
+         when others then
+            if cast(l_ts_data(i).date_time as date) < l_effective_date then
+               ut.expect(sqlerrm).to_be_like('ORA-20034: ITEM_DOES_NOT_EXIST: Location level % does not exist.');
+            else
+               raise;
+            end if;
+      end;
    end loop;
    ----------------------------------------------------
    -- retrieve value after the last time series time --
@@ -409,17 +425,26 @@ begin
          l_date := l_date;
       end if;
       l_expected_value := (l_ts_data(i-1).value + l_ts_data(i).value) / 2;
-      l_value := cwms_level.retrieve_location_level_value(
-         p_location_level_id => c_top_of_normal_elev_id,
-         p_level_units       => c_elev_unit,
-         p_date              => l_date,
-         p_timezone_id       => c_timezone_id,
-         p_office_id         => c_office_id);
-      if l_date < l_effective_date then
-         ut.expect(l_value).to_be_null;
-      else
-         ut.expect(round(l_value / l_expected_value, 2)).to_equal(1);
-      end if;
+      begin
+         l_value := cwms_level.retrieve_location_level_value(
+            p_location_level_id => c_top_of_normal_elev_id,
+            p_level_units       => c_elev_unit,
+            p_date              => l_date,
+            p_timezone_id       => c_timezone_id,
+            p_office_id         => c_office_id);
+         if l_date < l_effective_date then
+            cwms_err.raise ('ERROR', 'Expected exception not raised');
+         else
+            ut.expect(round(l_value / l_expected_value, 2)).to_equal(1);
+         end if;
+      exception
+         when others then
+            if l_date < l_effective_date then
+               ut.expect(sqlerrm).to_be_like('ORA-20034: ITEM_DOES_NOT_EXIST: Location level % does not exist.');
+            else
+               raise;
+            end if;
+      end;
    end loop;
    ---------------------------------------------------------------
    -- test delete_location_level3 with specified effective date --
