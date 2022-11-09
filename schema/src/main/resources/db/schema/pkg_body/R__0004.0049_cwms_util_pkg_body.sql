@@ -2906,6 +2906,10 @@ as
             || ' to database unit.');
    END convert_to_db_units;
 
+   /**
+    * @Deprecated, do not use
+    *
+    */
    FUNCTION get_factor_and_offset (p_from_unit_id   IN VARCHAR2,
                                    p_to_unit_id     IN VARCHAR2)
       RETURN double_tab_t
@@ -2924,6 +2928,13 @@ as
       RETURN l_factor_and_offset;
    END get_factor_and_offset;
 
+   /**
+    * Convert a given value with provided from and to unit names
+    * 
+    * Prefered function for conversion
+    *
+    * @See convert_units(binary_double,number,number) for more information
+    */
    function convert_units (
       p_value          in binary_double,
       p_from_unit_id   in varchar2,
@@ -2931,40 +2942,21 @@ as
       return binary_double
       result_cache
    is
-      l_factor    cwms_unit_conversion.factor%type;
-      l_offset    cwms_unit_conversion.offset%type;
-      l_function  cwms_unit_conversion.function%type;
-      l_converted binary_double;
+      l_from_unit_code cwms_unit.unit_code%type;
+      l_to_unit_code cwms_unit.unit_code%type;
    begin
-      if p_value is not null then
-         select factor,
-                offset,
-                function
-           into l_factor,
-                l_offset,
-                l_function
-           from cwms_unit_conversion
-          where from_unit_id = cwms_util.get_unit_id(p_from_unit_id)
-            and to_unit_id = cwms_util.get_unit_id(p_to_unit_id);
-
-         if l_factor is null then
-            l_converted := cwms_util.eval_expression(l_function, double_tab_t(p_value));
-         else
-            l_converted := p_value * l_factor + l_offset;
-         end if;
-      end if;
-      return l_converted;
-   exception
-      when no_data_found
-      then
-         cwms_err.raise (
-            'ERROR',
-            'Cannot convert from unit '
-            || p_from_unit_id
-            || ' to unit '
-            || p_to_unit_id);
+      l_from_unit_code := cwms_util.get_unit_code(p_from_unit_id);
+      l_to_unit_code := cwms_util.get_unit_code(p_to_unit_id);
+      return cwms_util.convert_units(p_value,l_from_unit_code,l_to_unit_code);
    end convert_units;
 
+   /**
+    * Convert a given value with provided from and to unit code
+    *
+    * If units match or the input is null the input value it returned
+    *
+    * Prefered function for conversion
+    */
    function convert_units (
       p_value            in binary_double,
       p_from_unit_code   in number,
@@ -2977,7 +2969,9 @@ as
       l_function  cwms_unit_conversion.function%type;
       l_converted binary_double;
    begin
-      if p_value is not null then
+      if p_from_unit_code = p_to_unit_code or p_value is null then
+         return p_value;
+      else
          select factor,
                 offset,
                 function
@@ -3001,11 +2995,16 @@ as
          cwms_err.raise (
             'ERROR',
             'Cannot convert from unit '
-            || p_from_unit_code
+            || cwms_util.get_unit_id2(p_from_unit_code)
             || ' to unit '
-            || p_to_unit_code);
+            || cwms_util.get_unit_id2(p_to_unit_code));
    end convert_units;
 
+   /**
+    * Convert given value with provided from unit code and to unit id
+    *
+    * Not preferred.
+    */
    function convert_units (
       p_value            in binary_double,
       p_from_unit_code   in number,
@@ -3013,40 +3012,17 @@ as
       return binary_double
       result_cache
    is
-      l_factor    cwms_unit_conversion.factor%type;
-      l_offset    cwms_unit_conversion.offset%type;
-      l_function  cwms_unit_conversion.function%type;
-      l_converted binary_double;
+      l_to_unit_code cwms_unit.unit_code%type;
    begin
-      if p_value is not null then
-         select factor,
-                offset,
-                function
-           into l_factor,
-                l_offset,
-                l_function
-           from cwms_unit_conversion
-          where from_unit_code = p_from_unit_code
-            and to_unit_id = cwms_util.get_unit_id(p_to_unit_id);
-
-         if l_factor is null then
-            l_converted := cwms_util.eval_expression(l_function, double_tab_t(p_value));
-         else
-            l_converted := p_value * l_factor + l_offset;
-         end if;
-      end if;
-      return l_converted;
-   exception
-      when no_data_found
-      then
-         cwms_err.raise (
-            'ERROR',
-            'Cannot convert from unit '
-            || p_from_unit_code
-            || ' to unit '
-            || p_to_unit_id);
+      l_to_unit_code := cwms_util.get_unit_code(p_to_unit_id);
+      return cwms_util.convert_units(p_value,p_from_unit_code,l_to_unit_code);
    end convert_units;
 
+   /**
+    * Convert given value with provided from unit id and to unit code
+    *
+    * Not preferred.
+    */
    function convert_units (
       p_value          in binary_double,
       p_from_unit_id   in varchar2,
@@ -3054,38 +3030,10 @@ as
       return binary_double
       result_cache
    is
-      l_factor    cwms_unit_conversion.factor%type;
-      l_offset    cwms_unit_conversion.offset%type;
-      l_function  cwms_unit_conversion.function%type;
-      l_converted binary_double;
+      l_from_unit_code cwms_unit.unit_code%type;
    begin
-      if p_value is not null then
-         select factor,
-                offset,
-                function
-           into l_factor,
-                l_offset,
-                l_function
-           from cwms_unit_conversion
-          where from_unit_id = cwms_util.get_unit_id(p_from_unit_id)
-            and to_unit_code = p_to_unit_code;
-
-         if l_factor is null then
-            l_converted := cwms_util.eval_expression(l_function, double_tab_t(p_value));
-         else
-            l_converted := p_value * l_factor + l_offset;
-         end if;
-      end if;
-      return l_converted;
-   exception
-      when no_data_found
-      then
-         cwms_err.raise (
-            'ERROR',
-            'Cannot convert from unit '
-            || p_from_unit_id
-            || ' to unit '
-            || p_to_unit_code);
+      l_from_unit_code := cwms_util.get_unit_code(p_from_unit_id);
+      return cwms_util.convert_units(p_value,l_from_unit_code,p_to_unit_code);
    end convert_units;
 
    --

@@ -161,7 +161,7 @@ public class R__0002_units_and_parameters extends BaseJavaMigration  implements 
                 } else {
                     mergeConversions.setNull(4, Types.DOUBLE);
                     mergeConversions.setNull(5, Types.DOUBLE);
-                    mergeConversions.setString(6,postfix.replace("i","ARG0"));
+                    mergeConversions.setString(6,postfix.replace("i","ARG1"));
                 }
                 mergeConversions.addBatch();
             }

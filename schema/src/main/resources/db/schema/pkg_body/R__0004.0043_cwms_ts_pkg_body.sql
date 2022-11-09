@@ -5621,41 +5621,31 @@ AS
 
       DBMS_APPLICATION_INFO.set_action ('check for unit conversion factors');
 
-
-      SELECT COUNT (*)
-        INTO l_ucount
-        FROM at_cwms_ts_spec s,
-             at_parameter ap,
-             cwms_unit_conversion c,
-             cwms_base_parameter p,
-             cwms_unit u
-       WHERE     s.ts_code = l_ts_code
-             AND s.parameter_code = ap.parameter_code
-             AND ap.base_parameter_code = p.base_parameter_code
-             AND p.unit_code = c.from_unit_code
-             AND c.to_unit_code = u.unit_code
-             AND u.unit_id = l_units;
-
-
-      IF l_ucount <> 1
-      THEN
+      begin
          SELECT unit_id
-           INTO l_base_unit_id
-           FROM cwms_unit a, cwms_base_parameter b
-          WHERE     A.UNIT_CODE = B.UNIT_CODE
+         INTO l_base_unit_id
+         FROM cwms_unit a, cwms_base_parameter b
+         WHERE      A.UNIT_CODE = B.UNIT_CODE
                 AND B.BASE_PARAMETER_ID = l_base_parameter_id;
-
-         raise_application_error (
-            -20103,
-               'Unit conversion from '
-            || l_units
-            || ' to the CWMS Database Base Units of '
-            || l_base_unit_id
-            || ' is not available for the '
-            || l_base_parameter_id
-            || ' parameter_id.',
-            TRUE);
-      END IF;
+         select cwms_util.convert_units(1,l_units,l_base_unit_id)
+         into l_ucount
+         from dual;
+      exception
+         when others then
+            raise_application_error (
+                  -20103,
+                     'Unit conversion from '
+                  || l_units
+                  || ' to the CWMS Database Base Units of '
+                  || l_base_unit_id
+                  || ' is not available for the '
+                  || l_base_parameter_id
+                  || ' parameter_id. '
+                  || sqlerrm 
+                  || ' from '
+                  || DBMS_UTILITY.format_error_backtrace,
+                  TRUE);
+      end;
 
       --
       -- Determine the min and max date in the dataset, convert
