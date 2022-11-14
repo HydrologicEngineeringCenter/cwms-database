@@ -1,5 +1,6 @@
 package db.data;
 
+import org.flywaydb.core.api.FlywayException;
 import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
 
@@ -168,7 +169,7 @@ public class R__0002_units_and_parameters extends BaseJavaMigration  implements 
             mergeConversions.executeBatch();
 
         } catch (SQLException ex) {
-            throw new CwmsMigrationSqlError("failed to merge unit data", ex);
+            throw new FlywayException(new CwmsMigrationSqlError("failed to merge unit data", ex));
         }
 
     }

@@ -23,7 +23,9 @@
 	//
 	//	English-->SI from NIST (http://physics.nist.gov/cuu/pdf/sp811.pdf)
 	//
-	"J/m2_per_langley" : "4.184e4",              // pg 51
+	"J_per_m2_per_langley" : "4.184e4",              // pg 51
+	"J_per_Wh"         : "3.6e3",                // pg 55
+	"J_per_cal"        : "4.184e00",             // pg 47 calorie_thermochemical
 	"kg_per_lbm"       : "4.5359237e-1",         // pg 53 (footnote)
 	"m/s_per_knot"     : "(1852/3600)", 		// pg 10
 	"m3_per_gal"       : "3.785412e-3",          // pg 50
