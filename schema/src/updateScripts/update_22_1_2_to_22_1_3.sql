@@ -112,8 +112,8 @@ end at_vloc_level_constituent_t01;
 PROMPT ################################################################################
 PROMPT UPDATING PACKAGE SPECIFICATIONS
 select systimestamp from dual;
-@../cwms/cwms_level_pkg
 @../cwms/cwms_sec_policy
+@../cwms/cwms_level_pkg
 @../cwms/cwms_util_pkg
 
 PROMPT ################################################################################
