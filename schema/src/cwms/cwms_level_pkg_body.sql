@@ -6536,8 +6536,12 @@ begin
                l_quality_codes;
          close l_crsr;
 
-         cwms_util.duration_to_interval(l_ym_interval, l_ds_interval, p_max_ts_timespan);
-         l_max_date := l_date_times(1) + l_ym_interval + l_ds_interval;
+         if p_max_ts_timespan is null then
+            l_max_date := date '3000-01-01';
+         else
+            cwms_util.duration_to_interval(l_ym_interval, l_ds_interval, p_max_ts_timespan);
+            l_max_date := l_date_times(1) + l_ym_interval + l_ds_interval;
+         end if;
 
          if l_date_times.count = 3 then
             ----------------------------------------------------------------------------------
