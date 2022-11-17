@@ -119,6 +119,7 @@ select systimestamp from dual;
 PROMPT ################################################################################
 PROMPT UPDATING TYPE SPECIFICATIONS
 select systimestamp from dual;
+drop type rating_t force;
 @../cwms/types/rating_t
 
 PROMPT ################################################################################
