@@ -59,6 +59,8 @@ procedure create_ts_with_null_timezone;
 procedure test_inclusion_options__JIRA_CWDB_180;
 --%test(Test STORE_TS can create a versioned time series: CWDB-190)
 procedure test_store_ts_can_create_versioned_time_series__JIRA_CWDB_190;
+--%test (Test RETRIEVE_TS for regular time series that has undefined interval offset)
+procedure test_retrieve_ts_with_undefined_interval_offset;
 
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
 test_withsub_location_id VARCHAR2(32) := test_base_location_id||'-withsub';
@@ -1752,6 +1754,49 @@ AS
       end if;
 
     end test_store_ts_can_create_versioned_time_series__JIRA_CWDB_190;
+    --------------------------------------------------------------------------------
+    -- procedure test_retrieve_ts_with_undefined_interval_offset
+    --------------------------------------------------------------------------------
+    procedure test_retrieve_ts_with_undefined_interval_offset
+    is
+       l_ts_data sys_refcursor;
+       l_rts_id  varchar2(191)  := test_base_location_id||'.Code.Inst.1Hour.0.Test';
+       ts_id_not_found     exception;
+       item_already_exists exception;
+       pragma exception_init(ts_id_not_found,     -20001);
+       pragma exception_init(item_already_exists, -20003);
+    begin
+       begin
+          cwms_loc.store_location(
+             p_location_id  => test_base_location_id,
+             p_db_office_id => '&&office_id');
+       exception
+          when item_already_exists then null;
+       end;
+       begin
+          cwms_ts.delete_ts(
+             p_cwms_ts_id    => l_rts_id,
+             p_delete_action => cwms_util.delete_all,
+             p_db_office_id  => '&&office_id');
+       exception
+          when ts_id_not_found then null;
+       end;
+
+       cwms_ts.create_ts(
+          p_cwms_ts_id  => l_rts_id,
+          p_versioned   => 'F',
+          p_active_flag => 'T',
+          p_office_id   => '&&office_id');
+
+       cwms_ts.zretrieve_ts(
+          p_at_tsv_rc    => l_ts_data,
+          p_units        => 'n/a',
+          p_cwms_ts_id   => l_rts_id,
+          p_start_time   => sysdate - 1,
+          p_end_time     => sysdate,
+          p_db_office_id => '&&office_id');
+
+    end test_retrieve_ts_with_undefined_interval_offset;
 END test_cwms_ts;
 /
 SHOW ERRORS

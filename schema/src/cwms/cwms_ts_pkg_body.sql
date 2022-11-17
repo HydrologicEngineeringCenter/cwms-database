@@ -346,7 +346,7 @@ AS
       then
          l_millis := cwms_util.to_millis(cast(p_date_time as timestamp));
          l_interval_millis := l_interval_minutes * c_millis_in_minute;
-         l_offset_millis   := l_millis - mod(l_millis, l_interval_millis);
+         l_offset_millis   := mod(l_millis, l_interval_millis);
          l_offset_minutes  := l_offset_millis / c_millis_in_minute;
       when l_interval_minutes = 43200 then
          ------------------------------
