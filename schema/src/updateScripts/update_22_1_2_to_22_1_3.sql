@@ -62,9 +62,77 @@ select systimestamp from dual;
 @@./util/preupdate_privs.sql
 
 PROMPT ################################################################################
+PROMPT UPDATING TABLES
+select systimestamp from dual;
+insert into at_unit_alias values ('DEGC-D', 53, 123);
+insert into at_unit_alias values ('DEGF-D', 53, 124);
+insert into at_unit_alias values ('FT/S',   53,  41);
+insert into at_unit_alias values ('MG/L',   53,  51);
+
+create or replace trigger at_vloc_level_constituent_t01
+   before insert or update of constituent_abbr, constituent_name, constituent_type
+   on at_vloc_lvl_constituent
+   for each row
+declare
+   l_parts str_tab_t;
+   l_pos   pls_integer;
+begin
+   if substr(:new.constituent_abbr, 1, 1) != substr(:new.constituent_type,1 , 1) then
+      cwms_err.raise('ERROR', 'Constituent abbreviation must start with the same letter as constituent type');
+   end if;
+   case :new.constituent_type
+   when 'LOCATION_LEVEL' then
+      l_parts := cwms_util.split_text(:new.constituent_name, '.');
+      if l_parts.count != 5 then
+         cwms_err.raise('ERROR', 'Constituent name is not a valid location level identifier');
+      end if;
+   when 'RATING' then
+      l_parts := cwms_util.split_text(:new.constituent_name, '.');
+      if l_parts.count != 4 or instr(l_parts(2), ';') = 0 then
+         cwms_err.raise('ERROR', 'Constituent name is not a valid rating specification');
+      end if;
+   when 'TIME_SERIES' then
+      l_parts := cwms_util.split_text(:new.constituent_name, '.');
+      if l_parts.count != 6 then
+         cwms_err.raise('ERROR', 'Constituent name is not a valid time series identifier');
+      end if;
+   when 'FORMULA' then
+      begin
+         l_pos := regexp_instr(:new.constituent_name, '{.+?(,.+?)*;.+}');
+         l_parts := cwms_util.tokenize_expression(substr(:new.constituent_name, 1, l_pos-1));
+      exception
+         when others then
+            cwms_err.raise('ERROR', 'Constituent name is not a valid formula');
+      end;
+   else cwms_err.raise('ERROR', 'Constituent type must be one of ''LOCATION_LEVEL'', ''RATING'', ''TIME_SERIES'', or ''FORMULA''');
+   end case;
+end at_vloc_level_constituent_t01;
+/
+
+PROMPT ################################################################################
+PROMPT UPDATING PACKAGE SPECIFICATIONS
+select systimestamp from dual;
+@../cwms/cwms_sec_policy
+@../cwms/cwms_level_pkg
+@../cwms/cwms_util_pkg
+
+PROMPT ################################################################################
+PROMPT UPDATING TYPE SPECIFICATIONS
+select systimestamp from dual;
+@../cwms/types/rating_t
+
+PROMPT ################################################################################
 PROMPT UPDATING PACKAGE BODIES
 select systimestamp from dual;
+@../cwms/cwms_sec_policy_body
 @../cwms/cwms_level_pkg_body
+@../cwms/cwms_util_pkg_body
+@../cwms/cwms_ts_pkg_body
+
+PROMPT ################################################################################
+PROMPT UPDATING TYPE BODIES
+select systimestamp from dual;
+@../cwms/types/rating_t-body
 
 PROMPT ################################################################################
 PROMPT FINAL HOUSEKEEPING
