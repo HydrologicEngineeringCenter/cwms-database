@@ -112,8 +112,8 @@ end at_vloc_level_constituent_t01;
 PROMPT ################################################################################
 PROMPT UPDATING PACKAGE SPECIFICATIONS
 select systimestamp from dual;
-@../cwms/cwms_sec_policy
 @../cwms/cwms_level_pkg
+@../cwms/cwms_sec_policy
 @../cwms/cwms_util_pkg
 
 PROMPT ################################################################################
@@ -125,10 +125,11 @@ drop type rating_t force;
 PROMPT ################################################################################
 PROMPT UPDATING PACKAGE BODIES
 select systimestamp from dual;
-@../cwms/cwms_sec_policy_body
 @../cwms/cwms_level_pkg_body
-@../cwms/cwms_util_pkg_body
+@../cwms/cwms_sec_pkg_body
+@../cwms/cwms_sec_policy_body
 @../cwms/cwms_ts_pkg_body
+@../cwms/cwms_util_pkg_body
 
 PROMPT ################################################################################
 PROMPT UPDATING TYPE BODIES
