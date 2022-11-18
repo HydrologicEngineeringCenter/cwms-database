@@ -125,7 +125,8 @@ begin
         into l_parts(1)
         from av_loc2
        where db_office_id = l_office_id
-         and upper(location_id) = upper(l_parts(1));
+         and upper(location_id) = upper(l_parts(1))
+         and aliased_item is null;
    exception
       when no_data_found then cwms_err.raise(
          'ERROR',

@@ -315,7 +315,8 @@ as
                 at_parameter ap
           where cbp.base_parameter_id = get_base_id(p_param_id)
             and ap.base_parameter_code = cbp.base_parameter_code
-            and nvl(ap.sub_parameter_id, '-') = nvl(get_sub_id(p_param_id), '-');
+            and nvl(ap.sub_parameter_id, '-') = nvl(get_sub_id(p_param_id), '-')
+            and db_office_code in (db_office_code_all, get_office_code(p_office_id));
       exception
          when no_data_found then
          cwms_err.raise(
