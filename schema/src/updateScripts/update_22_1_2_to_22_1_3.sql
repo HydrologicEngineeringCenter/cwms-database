@@ -110,6 +110,12 @@ end at_vloc_level_constituent_t01;
 /
 
 PROMPT ################################################################################
+PROMPT UPDATING VIEWS
+select systimestamp from dual;
+delete from at_clob where id = '/VIEWDOCS/AV_LOCATION_LEVEL_CURVAL';
+@../cwms/views/av_location_level_curval
+
+PROMPT ################################################################################
 PROMPT UPDATING PACKAGE SPECIFICATIONS
 select systimestamp from dual;
 @../cwms/cwms_sec_policy

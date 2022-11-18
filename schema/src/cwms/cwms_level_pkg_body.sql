@@ -6585,7 +6585,10 @@ begin
          -------------------------------------------------
          -- constant value, already retrieved in object --
          -------------------------------------------------
-         l_value := l_loc_level_obj.level_value;
+         l_value := cwms_util.convert_units(
+            l_loc_level_obj.level_value,
+            l_loc_level_obj.level_units_id,
+            p_level_units);
       else
          -------------------------------------------------------------------
          -- regularly varying or virtual value, retrieve value separately --

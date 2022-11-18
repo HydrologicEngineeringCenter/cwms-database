@@ -60,7 +60,7 @@ select q1.office_id,
          p_attribute_value   => q1.attribute_value,
          p_attribute_units   => q2.unit_si,
          p_ignore_errors     => 'T',
-         p_office_id         => q1.office_id), 10) as current_value_si,
+         p_office_id         => q1.office_id), 6) as current_value_si,
        cwms_display.retrieve_user_unit_f(q1.parameter_id, 'SI') as value_unit_si,
        cwms_rounding.round_f(cwms_level.retrieve_loc_lvl_value_ex(
          p_location_level_id => q1.location_level_id,
@@ -69,7 +69,7 @@ select q1.office_id,
          p_attribute_value   => q1.attribute_value,
          p_attribute_units   => q2.unit_si,
          p_ignore_errors     => 'T',
-         p_office_id         => q1.office_id), 10) as current_value_en,
+         p_office_id         => q1.office_id), 6) as current_value_en,
        cwms_display.retrieve_user_unit_f(q1.parameter_id, 'EN') as value_unit_en,
        case
        when q1.location_level_value is not null then 'CONSTANT'
