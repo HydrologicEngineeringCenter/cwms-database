@@ -110,6 +110,8 @@ set define on
 --
 -- Create public synonyms and cwms_user roles
 @@cwms/at_schema_public_interface.sql
+@@cwms/User-Roles/web_user_role_grants.sql
+show errors;
 -- Filter for streaming data
 @@cwms/mv_ts_code_filter
 
@@ -373,4 +375,3 @@ end;
 -- all done
 --
 exit 0
-

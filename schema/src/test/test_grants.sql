@@ -32,3 +32,4 @@ GRANT EXECUTE ON &cwms_schema..test_up to &5;
 
 GRANT EXECUTE ON &cwms_schema..test_aq_user to &7;
 GRANT EXECUTE ON &cwms_schema..test_aaa_normaluserfails to &7;
+GRANT EXECUTE ON &cwms_schema..test_webuser_abilities to &8;

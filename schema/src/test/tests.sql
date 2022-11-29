@@ -30,5 +30,6 @@ show errors;
 @test_cwms_level.sql;
 @test_cwms_display.sql;
 @test_aq_user.sql;
+@test_webuser_abilities.sql;
 
 show errors;
