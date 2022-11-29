@@ -29,6 +29,7 @@ show errors;
 @test_cwms_cat.sql;
 @test_cwms_level.sql;
 @test_cwms_display.sql;
+@test_cwms_data_dissem.sql;
 @test_aq_user.sql;
 
 show errors;
