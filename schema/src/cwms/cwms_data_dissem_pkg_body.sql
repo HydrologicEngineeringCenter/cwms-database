@@ -94,12 +94,31 @@ AS
        WHERE ts_group_code = CorpsNet_include_gp_code AND ts_code = p_ts_code;
 
       -- if l_cnt is zero, then ts_code is not in include list, so
-      -- return FALSE...
+      -- return FALSE unless it is allowed to dmz (1 case)...
       IF l_cnt = 0
       THEN
-         RETURN FALSE;
+         SELECT COUNT (*)
+           INTO l_cnt
+           FROM at_ts_group_assignment
+          WHERE ts_group_code = DMZ_include_gp_code AND ts_code = p_ts_code;
+         IF l_cnt = 0
+         THEN
+            RETURN FALSE;
+         END IF;
+         SELECT COUNT (*)
+           INTO l_cnt
+           FROM at_ts_group_assignment
+          WHERE ts_group_code = DMZ_exclude_gp_code AND ts_code = p_ts_code;
+         IF l_cnt > 0
+         THEN
+            RETURN FALSE;
+         END IF;
+         SELECT COUNT (*)
+           INTO l_cnt
+           FROM at_ts_group_assignment
+          WHERE ts_group_code = CorpsNet_exclude_gp_code AND ts_code = p_ts_code;
+         RETURN l_cnt = 0;
       END IF;
-
       -- ts_code is in include list, check if it's in CorpsNet exclude list
       SELECT COUNT (*)
         INTO l_cnt
@@ -271,23 +290,25 @@ AS
             'The combination of CorpsNet Filtering TRUE and DMZ Filtering FALSE is not allowed.');
       END IF;
 
-      BEGIN
-         UPDATE at_data_dissem
-            SET filter_to_corpsnet = l_filter_to_corpsnet,
+      begin
+         select office_code
+           into l_office_code
+           from at_data_dissem
+          where office_code = l_office_code;
+
+         update at_data_dissem
+            set filter_to_corpsnet = l_filter_to_corpsnet,
                 filter_to_dmz = l_filter_to_dmz
-          WHERE office_code = l_office_code;
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            INSERT
-              INTO at_data_dissem (office_code,
-                                   filter_to_corpsnet,
-                                   filter_to_dmz)
-            VALUES (l_office_code, l_filter_to_corpsnet, l_filter_to_dmz);
-         WHEN OTHERS
-         THEN
-            RAISE;
-      END;
+          where office_code = l_office_code;
+      exception
+         when no_data_found then
+            insert
+              into at_data_dissem
+            values (l_office_code,
+                    l_filter_to_corpsnet,
+                    l_filter_to_dmz
+                   );
+      end;
    END;
 
    FUNCTION cat_ts_transfer_tab (p_office_id IN VARCHAR2 DEFAULT NULL)
@@ -353,11 +374,11 @@ AS
                    db_office_id,
                    ts_code,
                    db_office_code,
-                   destination
+                   nvl(destination, 'CorpsNet') DESTINATION
               FROM at_cwms_ts_id a
                    JOIN at_physical_location b
                       USING (location_code)
-                   JOIN (SELECT UNIQUE ts_code, 'corpsnet' DESTINATION
+                   LEFT OUTER JOIN (SELECT UNIQUE ts_code, 'CorpsNet' DESTINATION
                            FROM at_ts_group_assignment
                           WHERE ts_code IN
                                    ( (SELECT ts_code FROM at_cwms_ts_id)
@@ -374,7 +395,7 @@ AS
                                         FROM at_ts_group_assignment
                                        WHERE ts_group_code = 103)))
                          UNION ALL
-                         SELECT UNIQUE ts_code, 'dmz' DESTINATION
+                         SELECT UNIQUE ts_code, 'DMZ' DESTINATION
                            FROM (SELECT ts_code
                                    FROM at_ts_group_assignment
                                   WHERE ts_group_code = 102
@@ -403,7 +424,7 @@ AS
               FROM at_cwms_ts_id a
                    JOIN at_physical_location b
                       USING (location_code)
-                   JOIN (SELECT UNIQUE ts_code, 'corpsnet' DESTINATION
+                   JOIN (SELECT UNIQUE ts_code, 'CorpsNet' DESTINATION
                            FROM at_ts_group_assignment
                           WHERE ts_code IN
                                    ( (SELECT ts_code
@@ -436,7 +457,7 @@ AS
                                              AND ts_group_code =
                                                     DMZ_exclude_gp_code)))
                          UNION ALL
-                         SELECT UNIQUE ts_code, 'dmz' DESTINATION
+                         SELECT UNIQUE ts_code, 'DMZ' DESTINATION
                            FROM (SELECT ts_code
                                    FROM at_ts_group_assignment
                                   WHERE     office_code = l_office_code
