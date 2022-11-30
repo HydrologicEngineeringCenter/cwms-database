@@ -244,6 +244,7 @@
 			<arg value="${office.primary.id}"/>
 			<arg value="${oracle.cwms.user}"/>
 			<arg value="${office.primary.code}hectest_up"/>
+			<arg value="${office.primary.code}"/>
         </exec>
 		<exec dir="src/test" executable="sqlplus">
 			<arg value="sys/${oracle.sys.password}@${oracle.cwms.instance} as sysdba"/>
@@ -263,12 +264,12 @@
 		<mkdir dir="${coverage.dir}" />
 		<antcall target="clean-test-data"/>
 		<antcall target="load-test-data"/>
-		<antcall target="test-as_normal_user"/>
+		<antcall target="test-as_normal_user"/><!--
 		<antcall target="test-as_pd_user"/>
 		<antcall target="test-as_pdu_user"/>
 		<antcall target="test-as_ro_user"/>
 		<antcall target="test-as_up_user"/>
-		<antcall target="test-as_dba_user"/>
+		<antcall target="test-as_dba_user"/>-->
 		<antcall target="test-as_web_user"/>
 		<!-- we will then merge all of the test output and code coverage-->
 

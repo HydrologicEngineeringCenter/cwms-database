@@ -4,6 +4,7 @@ set define on;
 define office_id = '&1';
 define cwms_schema = '&2';
 define upass_id = '&3';
+define eroc = '&4';
 -- make sure the info required for the below user is present
 exec cwms_sec.add_cwms_user('OTHER_DIST', char_32_array_type('CWMS Users'),'HQ');
 @test_cwms_prop.sql;

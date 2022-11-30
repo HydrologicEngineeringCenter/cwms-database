@@ -82,6 +82,21 @@ AS
     set_session_privileges;
    END set_session_user;
 
+   PROCEDURE set_session_user_direct(p_user VARCHAR2)
+   IS
+      l_userid VARCHAR2(32);
+      l_role varchar2(32) := null;
+   BEGIN
+      select granted_role into l_role from dba_role_privs where granted_role='WEB_USER' and grantee=USER;
+      set_cwms_env('CWMS_USER',p_user);
+      set_session_privileges;
+   exception
+      when no_data_found then
+         cwms_err.raise(
+               'ERROR',
+               'Permission Denied. Only accounts with the WEB_USER role can use this function');
+   END set_session_user_direct;
+
    PROCEDURE set_session_privileges
    IS
       l_office_id   VARCHAR2 (16);
@@ -181,3 +196,4 @@ AS
    END set_session_privileges;
 END cwms_env;
 /
+show errors;

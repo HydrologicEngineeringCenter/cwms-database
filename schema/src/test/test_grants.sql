@@ -30,6 +30,7 @@ GRANT EXECUTE ON &cwms_schema..test_aaa to &4;
 --GRANT CREATE any procedure to &1;
 GRANT EXECUTE ON &cwms_schema..test_up to &5;
 
+exec cwms_sec.update_edipi('&7',1234567890); /** an EDIPI value so we can call get_user_credentials in the webuser test */
 GRANT EXECUTE ON &cwms_schema..test_aq_user to &7;
 GRANT EXECUTE ON &cwms_schema..test_aaa_normaluserfails to &7;
 GRANT EXECUTE ON &cwms_schema..test_webuser_abilities to &8;
