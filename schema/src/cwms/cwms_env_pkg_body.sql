@@ -86,12 +86,19 @@ AS
    IS
       l_userid VARCHAR2(32);
       l_role varchar2(32) := null;
+      l_msg varchar(2048);
+      l_from_ip varchar(255) := SYS_CONTEXT('USERENV','IP_ADDRESS');
    BEGIN
       select granted_role into l_role from dba_role_privs where granted_role='WEB_USER' and grantee=USER;
+      l_msg := 'Login: ' || 'Session set to user ''' || p_user || ''' by ' 
+                         || USER || ' from host ' || l_from_ip;
+      cwms_msg.log_db_message('set_session_user_direct',cwms_msg.msg_level_basic,l_msg);
       set_cwms_env('CWMS_USER',p_user);
       set_session_privileges;
    exception
       when no_data_found then
+         l_msg := 'Unauthorized attempt to set user context by ' || USER || ' from ' || l_from_ip;
+         cwms_msg.log_db_message('set_session_user_direct',cwms_msg.msg_level_basic,l_msg);
          cwms_err.raise(
                'ERROR',
                'Permission Denied. Only accounts with the WEB_USER role can use this function');
