@@ -15,13 +15,16 @@ procedure delete_ts_with_location_without_timezone;
 procedure test_retrieve_ts_with_calendar_based_times__JIRA_CWDB_157;
 
 --%test(Test creation various types of time series)
+--%disabled until new parameter types, intervals, and durations are unhidden
 procedure test_create_ts_parameter_types;
 
 --%test(Test rename time series) 
+--%disabled until new parameter types, intervals, and durations are unhidden
 procedure test_rename_ts;
 
 --%test(Test rename time series inst to median) 
 --%throws(-20013)
+--%disabled until new parameter types, intervals, and durations are unhidden
 procedure test_rename_ts_inst_to_median;
 
 --%test(create depth velocity time series)
@@ -32,24 +35,30 @@ procedure test_conc;
 
 --%test(Incremental precip with non zero duration)
 --%throws(-20205)
+--%disabled until new parameter types, intervals, and durations are unhidden
 PROCEDURE inc_with_zero_duration;
 
 --%test(Incremental cumulative precip with zero duration)
 --%throws(-20205)
+--%disabled until new parameter types, intervals, and durations are unhidden
 PROCEDURE cum_with_non_zero_duration;
 
 --%test(regular interval with until changed duration)
 --%throws(-20205)
+--%disabled until new parameter types, intervals, and durations are unhidden
     PROCEDURE untilchanged_with_regular;
 --%test(non-const parameter type with until changed duration)
 --%throws(-20205)
+--%disabled until new parameter types, intervals, and durations are unhidden
     PROCEDURE untilchanged_with_non_const;
 --%test(Variable duration with non instantaneous)
 --%throws(-20205)    
+--%disabled until new parameter types, intervals, and durations are unhidden
 PROCEDURE variable_with_inst;
 
 --%test(Variable duration with const)
 --%throws(-20205)   
+--%disabled until new parameter types, intervals, and durations are unhidden
 PROCEDURE variable_with_const;
 --%test(Make sure quality on generated rts/lrts values is 0 (unscreened) and not 5 (missing) [JIRA Issue CWMSVIEW-212])
 procedure quality_on_generated_rts_values__JIRA_CWMSVIEW_212;
@@ -418,21 +427,25 @@ AS
                                  p_db_office_id   => '&&office_id');
         cwms_ts.create_ts (
             '&&office_id',
-            test_base_location_id || '.Flow.Ave.Irr.Variable.raw');
+--          test_base_location_id || '.Flow.Ave.Irr.Variable.raw'); until new parameter types, intervals, and durations are unhidden
+            test_base_location_id || '.Flow.Ave.0.0.raw');
         cwms_loc.rename_loc('&&office_id',
 		test_base_location_id,
 		test_renamed_base_location_id);
 	COMMIT;
-        delete_ts_id (test_renamed_base_location_id || '.Flow.Ave.Irr.Variable.raw');
+--      delete_ts_id (test_renamed_base_location_id || '.Flow.Ave.Irr.Variable.raw'); until new parameter types, intervals, and durations are unhidden
+        delete_ts_id (test_renamed_base_location_id || '.Flow.Ave.0.0.raw');
         COMMIT;
         cwms_loc.store_location (p_location_id    => test_renamed_withsub_location_id,
                                  p_active         => 'T',
                                  p_db_office_id   => '&&office_id');
         cwms_ts.create_ts (
             '&&office_id',
-            test_renamed_withsub_location_id || '.Flow.Ave.Irr.Variable.raw');
+--            test_renamed_withsub_location_id || '.Flow.Ave.Irr.Variable.raw'); until new parameter types, intervals, and durations are unhidden
+          test_renamed_withsub_location_id || '.Flow.Ave.0.0.raw');
         delete_ts_id (
-            test_renamed_withsub_location_id || '.Flow.Ave.Irr.Variable.raw');
+--            test_renamed_withsub_location_id || '.Flow.Ave.Irr.Variable.raw'); until new parameter types, intervals, and durations are unhidden
+            test_renamed_withsub_location_id || '.Flow.Ave.0.0.raw');
         COMMIT;
     END;
 
@@ -645,7 +658,8 @@ AS
         l_value        BINARY_DOUBLE;
         l_ts_code      NUMBER;
         l_cwms_ts_id   VARCHAR2 (200)
-            := test_base_location_id || '.DepthVelocity.Ave.Irr.Variable.raw';
+--          := test_base_location_id || '.DepthVelocity.Ave.Irr.Variable.raw'; until new intervals and durations are unhidden
+            := test_base_location_id || '.DepthVelocity.Ave.0.0.raw';
     BEGIN
         store_a_value (l_cwms_ts_id,
                        'ft2/s',
