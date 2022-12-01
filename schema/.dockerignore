@@ -44,6 +44,7 @@ src/radar_xslt_clobs.log
 src/vertcon_clobs.log
 src/updateScripts/*.log
 build
+bin
 .teamcity/target
 .project
 .settings

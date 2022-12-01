@@ -56,3 +56,4 @@ schema/src/xml/hec-datatypes.xsd
 **/*.bad
 **/target
 **/*.versionsBackup
+**/.vscode
