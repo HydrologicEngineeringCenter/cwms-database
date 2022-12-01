@@ -73,6 +73,7 @@ alter session set current_schema = &cwms_schema;
 @@cwms/at_schema_sec
 @@cwms/at_schema_apex_debug
 @@cwms/at_schema_cma
+@@cwms/at_api_keys
 
 --
 --  Load data into cwms tables...
@@ -99,6 +100,7 @@ whenever sqlerror exit -1
 @@cwms/views/av_ts_profile_inst_tsv2
 @@cwms/views/av_ts_profile_inst_elev
 @@cwms/views/av_ts_profile_inst_sp
+@@cwms/views/av_active_api_keys
 
 --
 -- Create pd/test user accounts...

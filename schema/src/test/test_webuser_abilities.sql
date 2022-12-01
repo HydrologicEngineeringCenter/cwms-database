@@ -9,6 +9,8 @@ AS
     -- %test(Can context back and forth)
     procedure can_set_context_users;
     
+    procedure can_interact_with_api_keys_table_and_view;
+
 END;
 /
 
@@ -51,6 +53,17 @@ AS
           when others then
             ut.fail('This call should have succedded. Environment for WEB_USER not reset correctly.');
         end;
+    end;
+
+    procedure can_interact_with_api_keys_table_and_view is
+        l_testkey cwms_20.at_api_keys.apikey%type := 'A simple test key';
+        l_testkey_name cwms_20.at_api_keys.key_name%type := 'A test key';
+        l_testkey_name_out cwms_20.at_api_keys.key_name%type;
+    begin
+        insert into cwms_20.at_api_keys(userid,key_name,apikey)
+            values (upper('&eroc.hectest'),l_testkey_name,l_testkey);
+        select key_name into l_testkey_name_out from cwms_20.av_active_api_keys where apikey=l_testkey;
+        ut.expect(l_testkey_name_out).to_equal(l_testkey_name);
     end;
 END;
 /

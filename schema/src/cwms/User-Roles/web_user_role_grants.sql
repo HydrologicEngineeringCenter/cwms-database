@@ -9,3 +9,5 @@ end;
 /
 
 grant execute on cwms_20.cwms_env to web_user;
+grant select,update,insert,delete on cwms_20.at_api_keys to web_user;
+grant select on cwms_20.av_active_api_keys to web_user;
