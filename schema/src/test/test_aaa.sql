@@ -116,7 +116,7 @@ create or replace package body test_aaa as
     procedure can_get_user_state is    
         l_user_state varchar2(255);
     begin
-        l_user_state := cwms_sec.get_user_state('basic_user','SPK');
+        l_user_state := cwms_sec.get_user_state('basic_user','&office_id');
         ut.expect(l_user_state).to_equal('UNLOCKED');
     end;
 
