@@ -104,6 +104,14 @@ AS
                'Permission Denied. Only accounts with the WEB_USER role can use this function');
    END set_session_user_direct;
 
+   PROCEDURE set_session_user_apikey(p_apikey VARCHAR2)
+   IS
+      l_userid VARCHAR2(32) := null;
+   BEGIN
+      select userid into l_userid from cwms_20.av_active_api_keys where apikey = p_apikey;
+      set_session_user_direct(l_userid);      
+   end set_session_user_apikey;
+
    PROCEDURE set_session_privileges
    IS
       l_office_id   VARCHAR2 (16);

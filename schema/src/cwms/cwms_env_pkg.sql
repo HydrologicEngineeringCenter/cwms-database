@@ -20,6 +20,13 @@ AS
     * @parameter p_user The user to perform operations as
    */
    PROCEDURE set_session_user_direct(p_user VARCHAR2);
+   /**
+    * For user by WEB_USER accounts, set the role given the provided apikey
+    *
+    * @parameter p_apikey A user authorization token with a user defined (default 1 day) lifetime.
+    *
+   */
+   PROCEDURE set_session_user_apikey(p_apikey VARCHAR2);
 END cwms_env;
 /
 
