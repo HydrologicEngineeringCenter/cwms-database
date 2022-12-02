@@ -4,15 +4,8 @@ AS
    FUNCTION get_dest (p_ts_code IN NUMBER)
       RETURN INT
    IS
-      l_dest NUMBER;
    BEGIN
-      SELECT DEST INTO l_dest FROM MV_TS_CODE_FILTER
-      WHERE TS_CODE=p_ts_code;
-      RETURN l_dest;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         RETURN do_not_stream;
+      RETURN allowed_dest(p_ts_code);
    END;
 
    FUNCTION allowed_dest (p_ts_code IN NUMBER)

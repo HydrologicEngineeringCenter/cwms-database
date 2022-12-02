@@ -69,6 +69,8 @@ insert into at_unit_alias values ('DEGF-D', 53, 124);
 insert into at_unit_alias values ('FT/S',   53,  41);
 insert into at_unit_alias values ('MG/L',   53,  51);
 
+@@./22_1_3/migrate_ts_dissemination
+
 create or replace trigger at_vloc_level_constituent_t01
    before insert or update of constituent_abbr, constituent_name, constituent_type
    on at_vloc_lvl_constituent
@@ -121,6 +123,7 @@ select systimestamp from dual;
 @../cwms/cwms_sec_policy
 @../cwms/cwms_level_pkg
 @../cwms/cwms_util_pkg
+@../cwms/cwms_data_dissem_pkg
 
 PROMPT ################################################################################
 PROMPT UPDATING TYPE SPECIFICATIONS
@@ -136,6 +139,7 @@ select systimestamp from dual;
 @../cwms/cwms_sec_policy_body
 @../cwms/cwms_ts_pkg_body
 @../cwms/cwms_util_pkg_body
+@../cwms/cwms_data_dissem_pkg_body
 
 PROMPT ################################################################################
 PROMPT UPDATING TYPE BODIES
