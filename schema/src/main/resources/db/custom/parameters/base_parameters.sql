@@ -12,6 +12,7 @@ declare
 	l_store_unit_code cwms_unit.unit_code%type := cwms_util.get_unit_code(p_store_unit_id);
 	l_display_si_code cwms_unit.unit_code%type := cwms_util.get_unit_code(p_display_si_id);
 	l_display_non_si_code cwms_unit.unit_code%type := cwms_util.get_unit_code(p_display_non_si_id);
+	l_office_code cwms_office.office_code%type := cwms_util.get_office_code('CWMS');
 --                                                                                     db        -----    Default  ------
 --                                                                                    store      ------Display Units-----
 --   CODE   ABSTRACT PARAMETER                  ID             NAME                  UNIT ID      SI       Non-SI         DESCRIPTION
@@ -39,6 +40,21 @@ begin
 				   p_long_name,p_description
 			)
 ;
+
+-- Each base parameter also needs to exist in the at_parameter table
+	MERGE into cwms_20.at_parameter atp
+		USING dual				
+		ON (	atp.parameter_code = p_base_parm_code
+			and	atp.base_parameter_code = p_base_parm_code 
+			and atp.sub_parameter_id is NULL 
+			and db_office_code = l_office_code)
+		WHEN MATCHED then
+			update set atp.sub_parameter_desc = p_description
+		WHEN NOT MATCHED then
+			insert(PARAMETER_CODE, BASE_PARAMETER_CODE, SUB_PARAMETER_ID, DB_OFFICE_CODE, SUB_PARAMETER_DESC)
+            values(p_base_parm_code,p_base_parm_code,NULL,l_office_code,p_long_name);
+		
+
 /*
 BASE_PARAMETER_CODE	NUMBER(14,0)
 BASE_PARAMETER_ID	VARCHAR2(16 BYTE)

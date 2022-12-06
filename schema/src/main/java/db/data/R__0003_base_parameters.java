@@ -89,8 +89,11 @@ public class R__0003_base_parameters extends BaseJavaMigration implements CwmsMi
             crc.update(sp.toString().getBytes());
         }
         baseParametersMergeSql = new String(getData(baseParametersSqlFile).readAllBytes());
+        crc.update(baseParametersMergeSql.getBytes());
         subParametersMergeSql = new String(getData(subParametersSqlFile).readAllBytes());
+        crc.update(subParametersMergeSql.getBytes());
         defaultBaseDisplayUnitsSql = new String(getData(defaultBaseDisplayUnitsSqlFile).readAllBytes());
+        crc.update(defaultBaseDisplayUnitsSql.getBytes());
     }
 
     @Override
