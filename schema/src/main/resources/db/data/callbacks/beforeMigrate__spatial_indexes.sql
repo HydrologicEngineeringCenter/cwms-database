@@ -4,7 +4,7 @@ declare
     v_sql varchar(512);
     PRAGMA EXCEPTION_INIT(duplicate_entry,-13223);
     PRAGMA EXCEPTION_INIT(idx_exists,-00955);
-    procedure generate_geo_index( p_index_name varchar2, p_table_name varchar2, p_column_name varchar2)
+    procedure generate_geo_index( p_index_name varchar2, p_table_name varchar2, p_column_name varchar2, p_srid integer)
     is
     begin
         begin
@@ -12,7 +12,7 @@ declare
                 VALUES (p_table_name, p_column_name,
                         sdo_dim_array (sdo_dim_element ('latitude', -180, 180, 0.0005),
                                         sdo_dim_element ('longitude', -90, 90, 0.0005)),
-                                        8265   -- SRID
+                        p_srid   -- SRID
                         );
         exception   
             when duplicate_entry then null; -- duplicate entry
@@ -25,16 +25,16 @@ declare
         when idx_exists then null; -- index already created
     end;
 begin
-    generate_geo_index('CWMS_AGG_DISTRICT_SIDX','CWMS_AGG_DISTRICT','SHAPE');
-    generate_geo_index('CWMS_CITIES_SP_SIDX','CWMS_CITIES_SP','SHAPE');
-    generate_geo_index('CWMS_COUNTY_SP_SIDX','CWMS_COUNTY_SP','SHAPE');
-    generate_geo_index('CWMS_NATION_SP_SIDX','CWMS_NATION_SP','SHAPE');
-    generate_geo_index('CWMS_OFFICES_GEOLOC_SIDX','CWMS_OFFICES_GEOLOC','SHAPE');
-    generate_geo_index('CWMS_NID_SIDX','CWMS_NID','SHAPE');
-    generate_geo_index('CWMS_STATE_SP_SIDX','CWMS_STATE_SP','SHAPE');
-    generate_geo_index('CWMS_STATION_NWS_SIDX','CWMS_STATION_NWS','SHAPE');
-    generate_geo_index('CWMS_STATION_USGS_SIDX','CWMS_STATION_USGS','SHAPE');
-    generate_geo_index('CWMS_TIME_ZONE_SP_SIDX','CWMS_TIME_ZONE_SP','SHAPE');
-    generate_geo_index('CWMS_USACE_DAM_SIDX','CWMS_USACE_DAM','SHAPE');
+    generate_geo_index('CWMS_AGG_DISTRICT_SIDX','CWMS_AGG_DISTRICT','SHAPE',8265);
+    generate_geo_index('CWMS_CITIES_SP_SIDX','CWMS_CITIES_SP','SHAPE',8265);
+    generate_geo_index('CWMS_COUNTY_SP_SIDX','CWMS_COUNTY_SP','SHAPE',8265);
+    generate_geo_index('CWMS_NATION_SP_SIDX','CWMS_NATION_SP','SHAPE',8265);
+    generate_geo_index('CWMS_OFFICES_GEOLOC_SIDX','CWMS_OFFICES_GEOLOC','SHAPE',8265);
+    generate_geo_index('CWMS_NID_SIDX','CWMS_NID','SHAPE',8307);
+    generate_geo_index('CWMS_STATE_SP_SIDX','CWMS_STATE_SP','SHAPE',8265);
+    generate_geo_index('CWMS_STATION_NWS_SIDX','CWMS_STATION_NWS','SHAPE',8307);
+    generate_geo_index('CWMS_STATION_USGS_SIDX','CWMS_STATION_USGS','SHAPE',8307);
+    generate_geo_index('CWMS_TIME_ZONE_SP_SIDX','CWMS_TIME_ZONE_SP','SHAPE',8265);
+    generate_geo_index('CWMS_USACE_DAM_SIDX','CWMS_USACE_DAM','SHAPE',8307);
 end;
 /
