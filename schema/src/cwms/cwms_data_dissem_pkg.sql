@@ -133,10 +133,16 @@ AS
    DMZ_DB                     CONSTANT VARCHAR2 (16) := 'DMZ';
    CorpsNet_DB                CONSTANT VARCHAR2 (16) := 'CORPSNET';
 
-   CorpsNet_include_gp_code   CONSTANT NUMBER := 100;
-   CorpsNet_exclude_gp_code   CONSTANT NUMBER := 101;
-   DMZ_include_gp_code        CONSTANT NUMBER := 102;
-   DMZ_exclude_gp_code        CONSTANT NUMBER := 103;
+   data_dissem_cat_id         CONSTANT AT_TS_CATEGORY.TS_CATEGORY_ID%TYPE := 'Data Dissemination';
+   CorpsNet_include_gp_id     CONSTANT AT_TS_GROUP.TS_GROUP_ID%TYPE := 'CorpsNet Include List';
+   CorpsNet_exclude_gp_id     CONSTANT AT_TS_GROUP.TS_GROUP_ID%TYPE := 'CorpsNet Exclude List';
+   DMZ_include_gp_id          CONSTANT AT_TS_GROUP.TS_GROUP_ID%TYPE := 'DMZ Include List';
+   DMZ_exclude_gp_id          CONSTANT AT_TS_GROUP.TS_GROUP_ID%TYPE := 'DMZ Exclude List';
+
+   CorpsNet_include_gp_code   AT_TS_GROUP.TS_GROUP_CODE%TYPE;
+   CorpsNet_exclude_gp_code   AT_TS_GROUP.TS_GROUP_CODE%TYPE;
+   DMZ_include_gp_code        AT_TS_GROUP.TS_GROUP_CODE%TYPE;
+   DMZ_exclude_gp_code        AT_TS_GROUP.TS_GROUP_CODE%TYPE;
 
    -- not documented
    TYPE cat_ts_transfer_rec_t IS RECORD

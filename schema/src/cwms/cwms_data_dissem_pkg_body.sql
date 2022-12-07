@@ -378,28 +378,28 @@ AS
                                     MINUS
                                     (SELECT ts_code
                                        FROM at_ts_group_assignment
-                                      WHERE ts_group_code = 102
+                                      WHERE ts_group_code = DMZ_include_gp_code
                                      MINUS
                                      (SELECT ts_code
                                         FROM at_ts_group_assignment
-                                       WHERE ts_group_code = 101
+                                       WHERE ts_group_code = CorpsNet_exclude_gp_code
                                       UNION ALL
                                       SELECT ts_code
                                         FROM at_ts_group_assignment
-                                       WHERE ts_group_code = 103)))
+                                       WHERE ts_group_code = DMZ_exclude_gp_code)))
                          UNION ALL
                          SELECT UNIQUE ts_code, 'DMZ' DESTINATION
                            FROM (SELECT ts_code
                                    FROM at_ts_group_assignment
-                                  WHERE ts_group_code = 102
+                                  WHERE ts_group_code = DMZ_include_gp_code
                                  MINUS
                                  (SELECT ts_code
                                     FROM at_ts_group_assignment
-                                   WHERE ts_group_code = 101
+                                   WHERE ts_group_code = CorpsNet_exclude_gp_code
                                   UNION ALL
                                   SELECT ts_code
                                     FROM at_ts_group_assignment
-                                   WHERE ts_group_code = 103)))
+                                   WHERE ts_group_code = DMZ_exclude_gp_code)))
                       USING (ts_code)
              WHERE db_office_code = l_office_code;
       --
@@ -607,6 +607,42 @@ AS
          --
          */
    END cat_ts_transfer;
+BEGIN
+   ---------------------------------------------------------
+   -- populate time series data dissemination group codes --
+   ---------------------------------------------------------
+   -- CorpsNet Include List
+   select g.ts_group_code
+     into CorpsNet_include_gp_code
+     from at_ts_group g,
+          at_ts_category c
+    where c.ts_category_id = data_dissem_cat_id
+      and g.ts_category_code = c.ts_category_code
+      and g.ts_group_id = CorpsNet_include_gp_id;
+   -- CorpsNet Exclude List
+   select g.ts_group_code
+     into CorpsNet_exclude_gp_code
+     from at_ts_group g,
+          at_ts_category c
+    where c.ts_category_id = data_dissem_cat_id
+      and g.ts_category_code = c.ts_category_code
+      and g.ts_group_id = CorpsNet_exclude_gp_id;
+   -- DMZ Include List
+   select g.ts_group_code
+     into DMZ_include_gp_code
+     from at_ts_group g,
+          at_ts_category c
+    where c.ts_category_id = data_dissem_cat_id
+      and g.ts_category_code = c.ts_category_code
+      and g.ts_group_id = DMZ_include_gp_id;
+   -- DMZ Exclude List
+   select g.ts_group_code
+     into DMZ_exclude_gp_code
+     from at_ts_group g,
+          at_ts_category c
+    where c.ts_category_id = data_dissem_cat_id
+      and g.ts_category_code = c.ts_category_code
+      and g.ts_group_id = DMZ_exclude_gp_id;
 END cwms_data_dissem;
 /
 show errors;

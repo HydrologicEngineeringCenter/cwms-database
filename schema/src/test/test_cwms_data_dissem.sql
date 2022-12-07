@@ -239,6 +239,7 @@ begin
             l_dest_dbs;
       close l_crsr;
       for m in 1..l_ts_ids.count loop
+         continue when instr(l_ts_ids(m), c_ts_id) != 1;
          l_seq2 := to_number(cwms_util.split_text(cwms_util.split_text(l_ts_ids(m), 6, '.'), 2, '-'));
          if l_seq2 between (i-1)*16+1 and i*16 then
             l_dest2(l_seq2) := case when l_dest_dbs(m) = 'CorpsNet' then 1 else 2 end;
