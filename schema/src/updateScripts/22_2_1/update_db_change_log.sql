@@ -23,8 +23,8 @@ begin
            22,
            1,
            3,
-           to_date ('31OCT2022', 'DDMONYYYY'),
-           'CWMS Database Release 22.1.3',
+           to_date ('07DEC2022', 'DDMONYYYY'),
+           'CWMS Database Release 22.2.1',
            'Updated from 22.1.2'
           );
    commit;

@@ -45,7 +45,7 @@ end;
 whenever sqlerror exit;
 column db_name new_value db_name
 select :db_name as db_name from dual;
-define logfile=update_&db_name._22_1_2_to_22_1_3.log
+define logfile=update_&db_name._22_1_2_to_22_2_1.log
 PROMPT log file = &logfile
 spool &logfile append;
 -------------------
@@ -54,7 +54,7 @@ spool &logfile append;
 PROMPT ################################################################################
 PROMPT VERIFYING EXPECTED VERSION
 select systimestamp from dual;
-@@./22_1_3/verify_db_version
+@@./22_2_1/verify_db_version
 
 PROMPT ################################################################################
 PROMPT SAVING PRE-UPDATE PRIVILEGES
@@ -69,7 +69,7 @@ insert into at_unit_alias values ('DEGF-D', 53, 124);
 insert into at_unit_alias values ('FT/S',   53,  41);
 insert into at_unit_alias values ('MG/L',   53,  51);
 
-@@./22_1_3/migrate_ts_dissemination
+@@./22_2_1/migrate_ts_dissemination
 
 create or replace trigger at_vloc_level_constituent_t01
    before insert or update of constituent_abbr, constituent_name, constituent_type
@@ -236,7 +236,7 @@ whenever sqlerror exit;
 PROMPT ################################################################################
 PROMPT UPDATING DB_CHANGE_LOG
 select systimestamp from dual;
-@@./22_1_3/update_db_change_log
+@@./22_2_1/update_db_change_log
 select substr(version, 1, 10) as version,
        to_char(version_date, 'yyyy-mm-dd hh24:mi') as version_date,
        to_char(apply_date, 'yyyy-mm-dd hh24:mi') as apply_date
