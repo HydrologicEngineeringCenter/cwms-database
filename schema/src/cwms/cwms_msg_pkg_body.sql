@@ -450,7 +450,7 @@ begin
              l_program,
              l_machine
         from v$session
-       where audsid = userenv('sessionid');
+       where sid = sys_context('userenv', 'sid');
 
       for i in 1..l_max_tries loop
          begin
@@ -606,7 +606,7 @@ begin
                'session_id',
                l_prop_type,
                null,
-               userenv('sessionid')
+               sys_context('userenv', 'sid')
              );
    end if;
    p_text_msg_id := l_msg_id;
@@ -1270,7 +1270,7 @@ begin
 
    case
    when p_session_id is null then
-      l_session_id := userenv('sessionid');
+      l_session_id := sys_context('userenv', 'sid');
    when upper(p_session_id) = 'ALL' then
       l_session_id := 'ALL';
    else
@@ -2571,7 +2571,7 @@ begin
           p_app_name,
           p_host_name
      from v$session
-    where audsid = userenv('sessionid');
+    where sid = sys_context('userenv', 'sid');
 end retrieve_client_info;
 --------------------------------------------------------------------------------
 -- function retrieve_host_name
@@ -2627,7 +2627,7 @@ begin
           l_app_name,
           l_host_name
      from v$session
-    where audsid = userenv('sessionid');
+    where sid = sys_context('userenv', 'sid');
    l_app_name := nvl(p_app_name, l_app_name);
 
    select office_id
@@ -2787,7 +2787,7 @@ begin
           l_app_name,
           l_host_name
      from v$session
-    where audsid = userenv('sessionid');
+    where sid = sys_context('userenv', 'sid');
 
    select office_id
      into l_office_id
@@ -2858,7 +2858,7 @@ begin
    select machine
      into l_host_name
      from v$session
-    where audsid = userenv('sessionid');
+    where sid = sys_context('userenv', 'sid');
 
    unregister_queue_subscriber(
       p_subscriber_name       => generate_subscriber_name(upper(l_office_id||'_'||p_queue_name), l_host_name, l_app_name, 0),
@@ -2893,7 +2893,7 @@ begin
           l_app_name,
           l_host_name
      from v$session
-    where audsid = userenv('sessionid');
+    where sid = sys_context('userenv', 'sid');
 
    select office_id
      into l_office_id
