@@ -138,7 +138,7 @@ select systimestamp from dual;
 @../cwms/cwms_level_pkg_body
 @../cwms/cwms_loc_pkg_body
 @../cwms/cwms_msg_pkg_body
-@../cwms/cwms_projec_pkg_body
+@../cwms/cwms_project_pkg_body
 @../cwms/cwms_rating_pkg_body
 @../cwms/cwms_sec_pkg_body
 @../cwms/cwms_sec_policy_body
