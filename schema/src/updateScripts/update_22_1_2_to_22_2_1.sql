@@ -120,10 +120,10 @@ delete from at_clob where id = '/VIEWDOCS/AV_LOCATION_LEVEL_CURVAL';
 PROMPT ################################################################################
 PROMPT UPDATING PACKAGE SPECIFICATIONS
 select systimestamp from dual;
+@../cwms/cwms_data_dissem_pkg
 @../cwms/cwms_sec_policy
 @../cwms/cwms_level_pkg
 @../cwms/cwms_util_pkg
-@../cwms/cwms_data_dissem_pkg
 
 PROMPT ################################################################################
 PROMPT UPDATING TYPE SPECIFICATIONS
@@ -134,12 +134,16 @@ drop type rating_t force;
 PROMPT ################################################################################
 PROMPT UPDATING PACKAGE BODIES
 select systimestamp from dual;
+@../cwms/cwms_data_dissem_pkg_body
 @../cwms/cwms_level_pkg_body
+@../cwms/cwms_loc_pkg_body
+@../cwms/cwms_msg_pkg_body
+@../cwms/cwms_projec_pkg_body
+@../cwms/cwms_rating_pkg_body
 @../cwms/cwms_sec_pkg_body
 @../cwms/cwms_sec_policy_body
 @../cwms/cwms_ts_pkg_body
 @../cwms/cwms_util_pkg_body
-@../cwms/cwms_data_dissem_pkg_body
 
 PROMPT ################################################################################
 PROMPT UPDATING TYPE BODIES
