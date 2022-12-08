@@ -5710,6 +5710,7 @@ AS
                   execute immediate
                      'merge into '||x.table_name||' t1
                            using (select cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date) date_time,
+                                         /*** TODO:: change to convert_units*/
                                          (t.value * c.factor + c.offset) - :l_value_offset value,
                                          cwms_ts.clean_quality_code(t.quality_code) quality_code
                                     from table(cast(:l_timeseries_data as tsv_array)) t,

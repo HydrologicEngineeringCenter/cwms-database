@@ -556,13 +556,13 @@ begin
       --------------------------------
       -- attribute units conversion --
       --------------------------------
-      get_units_conversion(
-         l_factor,
-         l_offset,
-         true, -- To CWMS
-         p_attribute_units,
-         p_attribute_parameter_code);
-      l_attribute_value := cwms_rounding.round_f(p_attribute_value * l_factor + l_offset, 12);
+      l_attribute_value := cwms_rounding.round_f(
+            cwms_util.convert_units(
+               p_attribute_value,
+               p_attribute_units,
+               cwms_util.get_db_unit_code(p_attribute_parameter_id)
+            ),
+            12);
    end if;
    l_base_query := '
          select distinct
@@ -1897,11 +1897,8 @@ is
    l_parameter_code            number(14);
    l_parameter_type_code       number(14);
    l_duration_code             number(14);
-   l_level_factor              binary_double;
-   l_level_offset              binary_double;
-   l_attr_factor               binary_double;
-   l_attr_offset               binary_double;
    l_attribute_value           number;
+   l_level_value               binary_double;
    l_effective_date            date;
    l_expiration_date           date;
    l_timezone_id               varchar2(28);
@@ -1919,7 +1916,10 @@ is
    l_attr_param_is_elev        boolean;
    l_level_vert_datum_offset   binary_double;
    l_attr_vert_datum_offset    binary_double;
-
+   l_offset_months             integer;
+   l_offset_minutes            integer;
+   l_level_store_units_code    cwms_unit.unit_code%type;
+   l_attr_store_units_code      cwms_unit.unit_code%type;
 begin
    l_fail_if_exists := cwms_util.return_true_or_false(p_fail_if_exists);
    -------------------
@@ -2040,26 +2040,18 @@ begin
    if p_tsid is not null then
       l_ts_code := cwms_ts.get_ts_code(p_tsid, l_office_code);
    end if;
-   -------------------------------
-   -- get the units conversions --
-   -------------------------------
-   get_units_conversion(
-      l_level_factor,
-      l_level_offset,
-      true, -- To CWMS
-      p_level_units,
-      l_parameter_code);
+   
+   
+   -- get storage units --
+   l_level_store_units_code := cwms_util.get_db_unit_code(p_parameter_id);
+
    if p_attribute_value is null then
       l_attribute_value := null;
    else
-      get_units_conversion(
-         l_attr_factor,
-         l_attr_offset,
-         true, -- To CWMS
-         p_attribute_units,
-         l_attribute_parameter_code);
-      l_attribute_value := cwms_rounding.round_f(p_attribute_value * l_attr_factor + l_attr_offset, 12);
+      l_attr_store_units_code := cwms_util.get_db_unit_code(p_attribute_parameter_id);
    end if;
+
+   l_level_value := p_level_value;
    ----------------------------------------------
    -- get vertical datum offset for elevations --
    ----------------------------------------------
@@ -2067,12 +2059,28 @@ begin
    l_attr_param_is_elev  := instr(upper(p_attribute_parameter_id), 'ELEV') = 1;
    if l_level_param_is_elev then
       l_level_vert_datum_offset := cwms_loc.get_vertical_datum_offset(l_location_code, p_level_units);
-      l_level_offset := l_level_offset - l_level_vert_datum_offset * l_level_factor;
+      l_level_value := l_level_value - l_level_vert_datum_offset;
    end if;
    if l_attr_param_is_elev then
       l_attr_vert_datum_offset := cwms_loc.get_vertical_datum_offset(l_location_code, p_attribute_units);
-      l_attribute_value := l_attribute_value - l_attr_vert_datum_offset * l_attr_factor;
    end if;
+   l_level_value := cwms_util.convert_units(
+         l_level_value,
+         p_level_units,
+         l_level_store_units_code
+   );
+
+   if l_attribute_value is not null then
+      l_attribute_value := cwms_rounding.round_f(
+         cwms_util.convert_units(
+            l_attribute_value - l_attr_vert_datum_offset,
+            p_attribute_units,
+            l_attr_store_units_code
+         ) ,
+         12
+         );
+   end if;
+
    --------------------------------------
    -- determine whether already exists --
    --------------------------------------
@@ -2094,7 +2102,7 @@ begin
                 l_parameter_type_code,
                 l_duration_code,
                 l_effective_date,
-                p_level_value * l_level_factor + l_level_offset,
+                l_level_value,
                 p_level_comment,
                 l_attribute_value,
                 l_attribute_parameter_code,
@@ -2192,7 +2200,7 @@ begin
          -- constant value or time series --
          -----------------------------------
          update at_location_level
-            set location_level_value = p_level_value * l_level_factor + l_level_offset,
+            set location_level_value = l_level_value,
                 location_level_comment = p_level_comment,
                 location_level_date = l_effective_date,
                 attribute_value = l_attribute_value,
@@ -2238,7 +2246,35 @@ begin
          delete
            from at_seasonal_location_level
           where location_level_code = l_location_level_code;
-         store_seasonal_location_level(p_seasonal_values,l_interval_origin_tz, l_timezone_id, l_interval_origin, l_level_factor, l_level_offset, l_location_level_code);
+         for i in 1..p_seasonal_values.count loop
+            -----------------------------------------------------------------------
+            -- convert the offset months/minutes from specified time zone to UTC --
+            --                                                                   --
+            -- This assumes each offset will either be in or out of DST in       --
+            -- every interval, which may not actually be the case                --
+            -----------------------------------------------------------------------
+            l_seasonal_date_utc := cwms_util.change_timezone(
+               add_months(l_interval_origin_tz, p_seasonal_values(i).offset_months) + p_seasonal_values(i).offset_minutes,
+               l_timezone_id,
+               'UTC');
+            l_offset_months := months_between(l_seasonal_date_utc, l_interval_origin);
+            l_offset_minutes := round((l_seasonal_date_utc - add_months(l_interval_origin, l_offset_months)) * 1440, 9);
+            if (l_offset_minutes < 0) then
+               l_offset_months := l_offset_months - 1;
+               l_offset_minutes := round((l_seasonal_date_utc - add_months(l_interval_origin, l_offset_months)) * 1440, 9);
+            end if;
+            insert
+              into at_seasonal_location_level
+            values(l_location_level_code,
+                   cwms_util.months_to_yminterval(l_offset_months),
+                   cwms_util.minutes_to_dsinterval(l_offset_minutes),
+                   cwms_util.convert_units(
+                              p_seasonal_values(i).value+l_level_vert_datum_offset,
+                              p_level_units,
+                              l_level_store_units_code
+                   )
+            );
+         end loop;
       end if;
    end if;
 end create_location_level;
