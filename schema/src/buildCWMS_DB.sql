@@ -73,7 +73,7 @@ alter session set current_schema = &cwms_schema;
 @@cwms/at_schema_sec
 @@cwms/at_schema_apex_debug
 @@cwms/at_schema_cma
-@@cwms/at_api_keys
+@@cwms/tables/at_api_keys
 
 --
 --  Load data into cwms tables...
