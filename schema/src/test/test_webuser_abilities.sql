@@ -1,18 +1,18 @@
 CREATE OR REPLACE PACKAGE &cwms_schema..test_webuser_abilities AUTHID CURRENT_USER 
 AS
-    -- %suite(Test WEB USER has it's extra priveleges in CWMS_ENV )
+    --%suite(Test WEB USER has it's extra priveleges in CWMS_ENV )
     --%rollback(manual)
 
-    -- %test(Can query an AT_ table directly.)
+    --%test(Can query an AT_ table directly.)
     procedure can_query_at_tables; 
     
-    -- %test(Can context back and forth)
+    --%test(Can context back and forth)
     procedure can_set_context_users;
     
-    -- %test(Can interact with the api keys table and view)
+    --%test(Can interact with the api keys table and view)
     procedure can_interact_with_api_keys_table_and_view;
 
-    -- %test(Can set USER context by API key)
+    --%test(Can set USER context by API key)
     procedure can_set_context_user_by_key;
 
 END;
