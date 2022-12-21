@@ -14,6 +14,23 @@ AS
 
    END set_cwms_env;
 
+   /**
+    * Helper to deal with permissions. If the previous set user doesn't have correct permissions
+    * this call to log_db_message will fail, however since this is called in the CWMS_ENV
+    * package we know it's a authorized user (the connection)
+    * so we elevate the privilege temporarily.
+    * Perhaps we should add a specific "CAN_LOG" privilege could also just check for WEB_USER role
+    * in the trigger
+   */
+   procedure log(p_procedure in varchar2, p_msg_level in integer, p_message   in varchar2)
+   is
+      l_priv varchar2(255) := SYS_CONTEXT('CWMS_ENV','CWMS_PRIVILEGE');
+   begin
+      set_cwms_env ('CWMS_PRIVILEGE', 'CAN_WRITE');
+      cwms_msg.log_db_message(p_procedure,p_msg_level,p_message);
+      set_cwms_env ('CWMS_PRIVILEGE', l_priv);
+   end;
+
 
    PROCEDURE set_session_office_id (p_office_id IN VARCHAR2)
    IS
@@ -92,16 +109,19 @@ AS
       select granted_role into l_role from dba_role_privs where granted_role='WEB_USER' and grantee=USER;
       l_msg := 'Login: ' || 'Session set to user ''' || p_user || ''' by ' 
                          || USER || ' from host ' || l_from_ip;
-      cwms_msg.log_db_message('set_session_user_direct',cwms_msg.msg_level_basic,l_msg);
+      log('set_session_user_direct',cwms_msg.msg_level_basic,l_msg);
       set_cwms_env('CWMS_USER',p_user);
       set_session_privileges;
    exception
       when no_data_found then
          l_msg := 'Unauthorized attempt to set user context by ' || USER || ' from ' || l_from_ip;
-         cwms_msg.log_db_message('set_session_user_direct',cwms_msg.msg_level_basic,l_msg);
+         log('set_session_user_direct',cwms_msg.msg_level_basic,l_msg);
          cwms_err.raise(
                'ERROR',
                'Permission Denied. Only accounts with the WEB_USER role can use this function');
+     when others then
+        clear_session_privileges;
+        raise;
    END set_session_user_direct;
 
    PROCEDURE set_session_user_apikey(p_apikey VARCHAR2)
