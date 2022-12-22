@@ -1,0 +1,262 @@
+#!/bin/env python3
+import os
+import re
+import subprocess
+import sys
+import tempfile
+import traceback
+import zipfile
+
+reIotPK = re.compile(r'<primary-key name="SYS_\w+">', re.M)
+reTriggerNames = re.compile(r'(\s+(trigger|on)\s+)"([a-z0-9$_]+)"', re.I | re.M)
+reTriggerOperations = re.compile(r'(before|after)\s+(insert|update|delete)(\s+or\s+(insert|update|delete))?(\s+or\s+(insert|update|delete))?', re.I | re.M)
+rePublicSynonym = re.compile(r'create\s+(or\s+replace\s+)?public\s+synonym\s+[a-z0-9$_]+\s+for\s+[a-z0-9$_]+;', re.I | re.M)
+reCheckCondition = re.compile(r'<condition>(.+?)</condition>', re.M | re.S)
+reTablespace = re.compile(r'<tablespace>.+?</tablespace>', re.M)
+
+try :
+	rc = 0
+	#-----------------------------------------------------------#
+	# get the zipfile names from the command line and open them #
+	#-----------------------------------------------------------#
+	filenames = [None, None]
+	zipfiles = None
+	diffcmd  = None
+	strict = False
+	fast = False
+	args = sys.argv[1:]
+	if "/strict".startswith(args[0].lower()) or "/fast".startswith(args[0].lower()) :
+		if "/strict".startswith(args[0].lower()) :
+			strict = True
+		else :
+			fast = True
+		args = args[1:]
+	if len(args) == 2 :
+		filenames[0], filenames[1] = args
+	elif len(args) == 3 :
+		filenames[0], filenames[1], diffcmd = args
+	else :
+		print("Usage : %s [(/strict|/fast)] zipfile_1 zipfile_2 [visual_compare_cmd]" % sys.argv[0])
+		exit()
+	for i in range(len(filenames)) :
+		if not filenames[i].lower().endswith(".zip") : filenames[i] += ".zip"
+	zipfiles = list(map(lambda fn : zipfile.ZipFile(fn, "r"), filenames))
+	#---------------------------------------#
+	# set up other variables for processing #
+	#---------------------------------------#
+	sids  = list(map(lambda fn : os.path.splitext(os.path.split(fn)[1])[0], filenames))
+	items = list(map(lambda zf : set(zf.namelist()), zipfiles))
+	all_items = items[0] | items[1] # set union
+	counts = {
+		"only_%s" % sids[0] : 0,
+		"only_%s" % sids[1] : 0,
+		"same"              : 0,
+		"different"         : 0
+	}
+	#--------------------------#
+	# open the output zip file #
+	#--------------------------#
+	zfoutname = "%s-%s.zip" % tuple(sids)
+	if os.path.exists(zfoutname) : os.remove(zfoutname)
+	zfout = zipfile.ZipFile(zfoutname, "w")
+	print("Writing %s" % zfoutname)
+	#-----------------------------------#
+	# compare contents of the zip files #
+	#-----------------------------------#
+	differences = []
+	for item in sorted(all_items) :
+		if item.find("/SNAP") != -1 : continue
+		item_type = item.split('/')[1]
+		values = [None, None]
+		if item in items[0] :
+			values[0] = zipfiles[0].read(item).strip().decode('utf-8')
+			if item in items[1] :
+				sys.stdout.write("checking %s                     \r" % item)
+				if zipfiles[0].getinfo(item).CRC == zipfiles[1].getinfo(item).CRC :
+					#----------#
+					# same CRC #
+					#----------#
+					arcname = "same/%s" % item
+					zfout.writestr(arcname, values[0])
+					counts["same"] += 1
+					continue
+				values[1] = zipfiles[1].read(item).strip().decode('utf-8')
+				itemType = item.split("/")[1]
+				if itemType == "TABLE" :
+					for i in 0, 1 :
+						values[i] = reIotPK.sub('<primary-key name="$GENERATED$">', values[i])
+						pos = 0
+						while True :
+							m = reCheckCondition.search(values[i], pos)
+							if not m : break
+							values[i] = "%s%s%s" % (
+								values[i][:m.start(1)],
+								m.group(1).upper().strip().replace('(', ' ( ').replace(')', ' ) ').replace(',', ' , '),
+								values[i][m.end(1):])
+							pos = m.end(1)
+				elif itemType == "TRIGGER" or itemType.endswith("BODY") :
+					for i in 0, 1 :
+						values[i] = values[i].rstrip("/").rstrip().rstrip(chr(0))
+						if itemType == "TRIGGER" :
+							values[i] = reTriggerNames.sub(r'\1\3', values[i]) # removes quotes from trigger and table names
+							m = reTriggerOperations.search(values[i])
+							if m and m.group(4) : # more than one operation, so put them in same order
+								operations = list(map(lambda s : s if s is None else s.upper(), [m.group(j) for j in (2,4,6)]))
+								repl = "%s" % m.group(1)
+								if "INSERT" in operations : repl += " insert or"
+								if "UPDATE" in operations : repl += " update or"
+								if "DELETE" in operations : repl += " delete or"
+								repl = " ".join(repl.split()[:-1])
+								values[i] = values[i].replace(m.group(0), repl)
+				elif itemType in ("PACKAGE", "TYPE", "VIEW") :
+					for i in 0, 1 :
+						values[i] = rePublicSynonym.sub('', values[i]).strip().rstrip("/").rstrip() # remove public synonym command
+				if values[1] == values[0] :
+					#-----------------#
+					# definitely same #
+					#-----------------#
+					arcname = "same/%s" % item
+					zfout.writestr(arcname, values[0])
+					counts["same"] += 1
+				else :
+					#--------------------#
+					# probably different #
+					#--------------------#
+					if values[1].split() == values[0].split() :
+						#----------------------------#
+						# same except for whitespace #
+						#----------------------------#
+						arcname = "same/%s" % item
+						zfout.writestr(arcname, values[0])
+						counts["same"] += 1
+						continue
+					if not strict:
+						if fast :
+							if values[1].lower().replace('"', '').split() == values[0].lower().replace('"', '').split() :
+								#----------------------------------------------#
+								# same except for whitespace, case, and quotes #
+								#----------------------------------------------#
+								arcname = "same/%s" % item
+								zfout.writestr(arcname, values[0])
+								counts["same"] += 1
+								continue
+						else :
+							if values[1].replace('"', '').split() == values[0].replace('"', '').split() :
+								#---------------------------------------#
+								# same except for whitespace and quotes #
+								#---------------------------------------#
+								arcname = "same/%s" % item
+								zfout.writestr(arcname, values[0])
+								counts["same"] += 1
+								continue
+						if values[1].replace('"', '').split() == values[0].replace('"', '').split() :
+							#---------------------------------------#
+							# same except for whitespace and quotes #
+							#---------------------------------------#
+							arcname = "same/%s" % item
+							zfout.writestr(arcname, values[0])
+							counts["same"] += 1
+							continue
+						if item_type in ("TABLE", "INDEX") :
+							if reTablespace.sub("", values[1]) == reTablespace.sub("", values[0]) :
+								#----------------------------#
+								# same except for tablespace #
+								#----------------------------#
+								arcname = "same/%s" % item
+								zfout.writestr(arcname, values[0])
+								counts["same"] += 1
+								continue
+						elif item_type != "VIEW" :
+							#-------------------------------------#
+							# resort to comparing formatted files #
+							#-------------------------------------#
+							try :
+								fh, fn0 = tempfile.mkstemp()
+								with os.fdopen(fh, "w") as f : f.write(values[0])
+								fh, fn1 = tempfile.mkstemp()
+								with os.fdopen(fh, "w") as f : f.write(values[1])
+								fh, fnCommands = tempfile.mkstemp()
+								with os.fdopen(fh, "w") as f : f.write("format file &1 &2\nformat file &3 &4\nexit\n")
+								if subprocess.call("sqlcl -noupdates /nolog @%s %s %s.out %s %s.out >/dev/null 2>&1" % (fnCommands, fn0, fn0, fn1, fn1), shell=True) :
+									raise Exception("Cannot run sqlcl")
+								if os.path.exists("%s.out" % fn0) and os.path.exists("%s.out" % fn1) :
+									if subprocess.call("diff -wq %s.out %s.out >/dev/null" % (fn0, fn1), shell=True) == 0 :
+										#-----------------------#
+										# same after formatting #
+										#-----------------------#
+										arcname = "same/%s" % item
+										zfout.writestr(arcname, values[0])
+										counts["same"] += 1
+										continue
+							except :
+								raise
+							else :
+								try    : os.remove("%s.out" % fn0)
+								except : pass
+								try    : os.remove("%s.out" % fn1)
+								except : pass
+							finally :
+								os.remove(fn0)
+								os.remove(fn1)
+								os.remove(fnCommands)
+					#-----------#
+					# different #
+					#-----------#
+					arcname = "different/%s/%s" % (sids[0], item)
+					differences.append([arcname])
+					print("        adding %s" % arcname)
+					zfout.writestr(arcname, values[0])
+					arcname = "different/%s/%s" % (sids[1], item)
+					differences[-1].append(arcname)
+					print("        adding %s" % arcname)
+					zfout.writestr(arcname, values[1])
+					counts["different"] += 1
+			else :
+				#---------------------#
+				# only in zipfiles[0] #
+				#---------------------#
+				arcname = "only_%s/%s" % (sids[0], item)
+				print("        adding %s" % arcname)
+				zfout.writestr(arcname, values[0])
+				counts["only_%s" % sids[0]] += 1
+		else :
+			#---------------------#
+			# only in zipfiles[1] #
+			#---------------------#
+			values[1] = zipfiles[1].read(item)
+			arcname = "only_%s/%s" % (sids[1], item)
+			print("        adding %s" % arcname)
+			zfout.writestr(arcname, values[1])
+			counts["only_%s" % sids[1]] += 1
+	zfout.close()
+	print("                                                                          ")
+	for key in sorted(counts.keys()) : print("%5d : %s" % (counts[key], key))
+	#-------------------------------#
+	# diff differences if specified #
+	#-------------------------------#
+	if diffcmd and differences :
+		basedir = r"u:\devl\perforce\wcdba\dev\oracle\dev\src\cwms"
+		zfout = zipfile.ZipFile(zfoutname, "r")
+		for i in range(len(differences)) :
+			real_filename = None
+			parts = differences[i][0].split("/")
+			filenames = ["tmp.%s" % differences[i][j].replace('/', '$') for j in range(2)]
+			values = [zfout.read(differences[i][j]) for j in range(2)]
+			for j in range(2) :
+				with open(filenames[j], "w") as f : f.write(values[j])
+			if real_filename :
+				subprocess.call('%s "%s" "%s"' % (diffcmd, real_filename, filenames[1]), shell=True)
+			else :
+				subprocess.call('%s "%s" "%s"' % (diffcmd, filenames[0], filenames[1]), shell=True)
+			for j in range(2) : os.remove(filenames[j])
+
+except SystemExit :
+	pass
+except	:
+	traceback.print_exc()
+	rc = -1
+else :
+	rc = 0
+finally :
+	exit(rc)
+
