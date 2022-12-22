@@ -23,5 +23,5 @@ grant select on sys.v_$latch to &builduser with grant option;
 grant select on sys.v_$mystat to &builduser with grant option;
 grant select on sys.v_$statname to &builduser with grant option;
 grant select on sys.v_$timer to &builduser with grant option;
-
+grant select on SYS.AQ$_UNFLUSHED_DEQUEUES to &builduser with grant option;
 grant execute any procedure to &builduser;
