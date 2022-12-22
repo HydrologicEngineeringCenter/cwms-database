@@ -598,11 +598,20 @@ begin
     l_result := cwms_rating.rate_one_f(
             p_rating_spec => l_rating_spec,
             p_values      => cwms_t_double_tab(392.0),
-            p_units       => cwms_t_str_tab('ft', 'ft2'),
+            p_units       => cwms_t_str_tab('ft', 'acre'),
             p_round       => 'T',
             p_office_id   => '&&office_id');
 
     ut.expect(l_result).to_equal(12.0);
+
+    l_result := cwms_rating.rate_one_f(
+            p_rating_spec => l_rating_spec,
+            p_values      => cwms_t_double_tab(392.0),
+            p_units       => cwms_t_str_tab('ft', 'ft2'),
+            p_round       => 'F',
+            p_office_id   => '&&office_id');
+
+    ut.expect(l_result).to_equal(12.0 * 43560);
 end test_table_rating;
 
 end test_cwms_rating;
