@@ -1,0 +1,644 @@
+#!/bin/env python3
+import cx_Oracle
+import datetime
+import getpass
+import os
+import io
+import sys
+import tempfile
+import traceback
+import zipfile
+from xml.sax import saxutils
+
+constraint_types = {
+	'C' : 'CHECK',
+	'P' : 'PRIMARY KEY',
+	'U' : 'UNIQUE',
+	'R' : 'FOREIGN KEY'
+}
+
+def output(msg, newline = True, continuation = False) :
+	lines = msg.split("\n")
+	for i in range(len(lines)) :
+		if not continuation : sys.stdout.write("%s: " % str(datetime.datetime.now())[:-3])
+		sys.stdout.write(lines[i])
+		if i < len(lines)-1 : sys.stdout.write("\n")
+	if newline : sys.stdout.write("\n")
+
+conn  = None
+schemas     = ["CWMS_20", "CWMS_DBA"]
+codeTypes   = ["TYPE", "TYPE BODY", "PACKAGE", "PACKAGE BODY", "TRIGGER", "PROCEDURE", "FUNCTION"]
+otherTypes  = ["TABLE", "INDEX", "VIEW", "MATERIALIZED VIEW"]
+schemawidth = max(map(lambda x : len(x), schemas))
+typewidth   = max(map(lambda x : len(x), codeTypes + otherTypes))
+format1     = "Get %%-%ds schema  (Y/n) >" % schemawidth
+format2     = "Get %%-%ds objects (Y/n) >" % typewidth
+format3     = "\t\t%%-%ds" % typewidth
+items       = schemas + codeTypes + otherTypes
+get         = dict(zip(items, len(items) * [True]))
+interactive = sys.stdin.isatty()
+redirected  = not sys.stdout.isatty()
+outfileName = None
+
+try :
+	rc = 0
+	url = usr = pwd = None
+	first = True
+	while True :
+		if interactive :
+			url = input("\nDB (Host:Port:SID) >")
+			if not url : break
+			parts = url.split(":")
+			host = parts[0]
+			port = parts[1] if len(parts) > 1 else ""
+			sid  = parts[2] if len(parts) > 2 else ""
+			if port and not sid and port.find("/") != -1 :
+				port, sid = port.split("/")
+			if not first :
+				resp = input("Use same credentials (y/N) >")
+				same = True if resp.upper().startswith("Y") else False
+			if first or not same :
+				resp = input("User Name          >")
+				usr = resp if bool(resp) else usr
+				resp = getpass.getpass("Pass Phrase        >")
+				pwd = resp if bool(resp) else pwd
+			if port and sid :
+				try :
+					conn = cx_Oracle.connect(dsn = cx_Oracle.makedsn(host, int(port), sid), user=usr, password=pwd)
+				except cx_Oracle.DatabaseError :
+					conn = cx_Oracle.connect(dsn = cx_Oracle.makedsn(host, int(port), None, sid), user=usr, password=pwd)
+			else :
+				conn = cx_Oracle.connect(dsn = host, user=usr, password=pwd)
+			if not first :
+				resp = input("Retrieve same items  (y/N) >")
+				same = True if resp.upper().startswith("Y") else False
+			if first or not same :
+				for schema in schemas :
+					resp = input(format1 % schema)
+					if resp.upper().startswith("N") : get[schema] = False
+				for codeType in codeTypes :
+					resp = input(format2 % codeType)
+					if resp.upper().startswith("N") : get[codeType] = False
+				for otherType in otherTypes :
+					resp = input(format2 % otherType)
+					if resp.upper().startswith("N") : get[otherType] = False
+			if not all(	[
+					any({i : get[i] for i in schemas}.values()),
+					any({i : get[i] for i in [ii for ii in items if ii not in schemas]}.values())
+					]):
+				output("\nNothing to get.")
+				exit(rc)
+			outfileName = "%s.zip" % (sid.lower() if sid else host.lower())
+			resp = input("Outfile (%s) >" % outfileName).strip()
+			if (resp) : outfileName = resp
+		else :
+			url = sys.stdin.readline().strip()
+			if not url : exit(rc)
+			parts = url.split(":")
+			host = parts[0]
+			port = parts[1] if len(parts) > 1 else ""
+			sid  = parts[2] if len(parts) > 2 else ""
+			if port and not sid and port.find("/") != -1 :
+				port, sid = port.split("/")
+			usr = sys.stdin.readline().strip()
+			if usr.startswith("$") : usr = os.getenv(usr[1:])
+			pwd = sys.stdin.readline().replace('"', '').strip()
+			if pwd.startswith("$") : pwd = os.getenv(pwd[1:])
+			if port and sid :
+				try :
+					conn = cx_Oracle.connect(dsn = cx_Oracle.makedsn(host, int(port), sid), user=usr, password=pwd)
+				except cx_Oracle.DatabaseError :
+					conn = cx_Oracle.connect(dsn = cx_Oracle.makedsn(host, int(port), None, sid), user=usr, password=pwd)
+			else :
+				conn = cx_Oracle.connect(dsn = host, user=usr, password=pwd)
+			try    : outfileName = sys.stdin.readline().strip()
+			except : pass
+			if not outfileName : outfileName = "%s.zip" % (sid.lower() if sid else host.lower())
+		first = False
+		crsr = conn.cursor()
+		if os.path.exists(outfileName) : os.remove(outfileName)
+		zf = zipfile.ZipFile(outfileName, "w")
+		output("\nWriting to %s" % os.path.abspath(outfileName))
+		for schema in schemas :
+			if not get[schema] : continue
+			output("\tSchema %s" % schema)
+			synonyms = {}
+			crsr.execute("select table_name, synonym_name from all_synonyms where table_owner = '%s' and owner = 'PUBLIC' and db_link is null order by 1" % schema)
+			for name, synonym in crsr.fetchall() :
+				zf.writestr("%s/PUBLIC SYNONYM/%s" % (schema, synonym), name)
+				synonyms.setdefault(name, []).append(synonym)
+			#------------#
+			# code types #
+			#------------#
+			for codeType in codeTypes :
+				if not get[codeType] : continue
+				output(format3 % codeType, False, False)
+				crsr.execute('''
+					select name
+					  from all_source
+					 where owner = :schema
+					   and type = :codeType
+					   and line=1
+					 order by 1''',
+					schema = schema,
+					codeType = codeType)
+				count = 0
+				for name, in crsr.fetchall() :
+					if codeType == "TYPE" and name.startswith("SYS_PLSQL_") : continue
+					if codeType == "TRIGGER" and "$" in name or name.endswith("_LOGON_TRIGGER") : continue
+					crsr.execute('''
+						select text
+						  from all_source
+						 where owner = :schema
+						   and type = :codeType
+						   and name = :name
+						 order by line''',
+						schema = schema,
+						codeType = codeType,
+						name = name)
+					buf = io.StringIO()
+					buf.write("create or replace ")
+					for line, in crsr.fetchall() : buf.write(line)
+					buf.write("\n/")
+					if name in synonyms and not codeType.endswith("BODY") :
+						for synonym in sorted(synonyms[name]) :
+							buf.write("\ncreate or replace public synonym %s for %s;" % (synonym, name))
+					zf.writestr("%s/%s/%s" % (schema, codeType.replace(" ", "_"), name), buf.getvalue())
+					buf.close()
+					count += 1
+					if not redirected : 
+						sys.stdout.write(" %5d items\b\b\b\b\b\b\b\b\b\b\b\b" % count)
+						sys.stdout.flush()
+				output(" %5d items" % count, True, True)
+			#--------#
+			# tables #
+			#--------#
+			if get['TABLE'] :
+				output(format3 % "TABLE", False, False)
+				crsr.execute('''
+                                        select at.table_name,
+                                            atc.comments,
+                                            nvl(
+                                               tablespace_name,
+                                               (select tablespace_name
+                                                  from all_indexes ai
+                                                 where index_name =
+                                                   (select index_name
+                                                      from all_constraints
+                                                     where owner=ai.owner
+                                                       and table_name=ai.table_name
+                                                       and constraint_type='P'
+                                                       and table_name=at.table_name
+                                                       and owner=at.owner
+                                                   )
+                                               )) as tablespace_name,
+                                            at.iot_type,
+                                            at.temporary
+                                           from all_tables at,
+                                                all_tab_comments atc
+                                          where at.owner = :schema
+                                            and instr(at.table_name, '$') = 0
+                                            and instr(at.table_name, 'SYS_') != 1
+                                            and at.table_name not in (select queue_table from all_queue_tables where owner=at.owner)
+                                            and at.table_name not in (select mview_name from all_mviews where owner=at.owner)
+                                            and atc.owner=at.owner
+                                            and atc.table_name = at.table_name
+                                          order by 1''',
+					schema = schema)
+				count = 0
+				for name, tab_comment, tablespace, iot, temporary in crsr.fetchall() :
+					isIOT = iot=="IOT"
+					if isIOT :
+						crsr.execute('''
+							select constraint_name
+							  from all_constraints
+							 where owner = :schema
+							   and table_name = :table_name
+							   and constraint_type = 'P''' + "'",
+							schema = schema,
+							table_name = name)
+						pkey_name = crsr.fetchall()[0][0]
+						crsr.execute('''
+							select column_name
+							  from all_cons_columns
+							 where owner = :schema
+							   and constraint_name = :pkey_name
+							 order by position''',
+							schema = schema,
+							pkey_name = pkey_name)
+						column_names = [row[0] for row in crsr.fetchall()]
+					f = io.StringIO()
+					f.write('<table name="%s" iot="%s" temporary="%s">\n' % (name, ("false","true")[isIOT], ("false","true")[temporary=="Y"]))
+					if isIOT :
+						if pkey_name.startswith("SYS_") :
+							f.write('  <primary-key name="$GENERATED$">\n')
+						else :
+							f.write('  <primary-key name="%s">\n' % pkey_name)
+						for column_name in column_names :
+							f.write('    <column>%s</column>\n' %column_name )
+						f.write('  </primary-key>\n')
+					if tablespace : f.write('  <tablespace>%s</tablespace>\n' % tablespace)
+					# if tab_comment : f.write('  <comment>%s</comment>\n' % tab_comment)
+					f.write('  <columns>\n')
+					crsr.execute('''
+						select atc.column_id,
+						       atc.column_name,
+						       atc.data_type,
+						       atc.data_precision,
+						       atc.data_scale,
+						       atc.nullable,
+						       atc.data_length,
+						       atc.data_default,
+						       atc.virtual_column,
+						       acc.comments
+						  from all_tab_cols atc,
+						       all_col_comments acc
+						 where atc.owner = :schema
+					           and atc.table_name = :table_name
+					           and atc.hidden_column = 'NO'
+					           and acc.owner = atc.owner
+					           and acc.table_name = atc.table_name
+					           and acc.column_name = atc.column_name
+						 order by atc.column_id''',
+						schema = schema,
+						table_name = name)
+					for col_id, col_name, data_type, precision, scale, nullable, length, default, virtual, col_comment in crsr.fetchall() :
+						f.write('    <column id="%s" name="%s" nullable="%s" virtual="%s">\n' % (
+							col_id,
+							col_name,
+							("false","true")[nullable=="Y"],
+							("false","true")[virtual=="YES"]))
+						# if col_comment : f.write('      <comment>%s</comment>\n' % col_comment)
+						if data_type == 'NUMBER' :
+							if precision is None :
+								if scale == 0 :
+									f.write('      <type>INTEGER</type>\n')
+								else :
+									f.write('      <type>NUMBER</type>\n')
+							elif scale == 0 :
+								if precision == 38 :
+									f.write('      <type>INTEGER</type>\n')
+								else :
+									f.write('      <type>NUMBER(%s)</type>\n' % precision)
+							elif scale is None :
+								raise Exception("Unexpected data type: %s(%s,%s)" % (data_type, precision, scale))
+							else :
+								f.write('      <type>NUMBER(%s,%s)</type>\n' % (precision, scale))
+						elif data_type == "RAW" or data_type.find("CHAR") != -1 :
+							f.write('      <type>%s(%d)</type>\n' % (data_type, length))
+						else :
+							f.write('      <type>%s</type>\n' % data_type)
+						if default is not None and default.strip() != "NULL" :
+							f.write('      <default>%s</default>\n' % default.strip())
+						if data_type == 'SDO_GEOMETRY' :
+							crsr.execute('''select *
+								          from table(select sdo_diminfo
+								                       from mdsys.sdo_geom_metadata_table
+								                      where sdo_owner=:schema
+								                        and sdo_table_name = :table_name
+								                        and sdo_column_name = :column_name
+								                    )''',
+								    schema=schema,
+								    table_name=name,
+								    column_name=col_name)
+							rows = crsr.fetchall()
+							if rows :
+								crsr.execute('''select sdo_srid
+										  from mdsys.sdo_geom_metadata_table
+										  where sdo_owner=:schema
+										  and sdo_table_name = :table_name
+										  and sdo_column_name = :column_name''',
+									    schema=schema,
+									    table_name=name,
+									    column_name=col_name)
+								srid = crsr.fetchall()[0][0]
+								f.write('      <geometry-info srid="%s">\n' % srid)
+								for dim_name, lower_bound, upper_bound, tolerance in rows :
+									f.write('        <dimension>\n')
+									f.write('          <name>%s</name>\n' % dim_name)
+									f.write('          <lower-bound>%s</lower-bound>\n' % lower_bound)
+									f.write('          <upper-bound>%s</upper-bound>\n' % upper_bound)
+									f.write('          <tolerance>%s</tolerance>\n' % tolerance)
+									f.write('        </dimension>\n')
+								f.write('      </geometry-info>\n')
+						f.write('    </column>\n')
+					f.write('  </columns>\n')
+					f.write('  <constraints>\n')
+					crsr.execute('''
+						select a.constraint_name,
+                                                       a.constraint_type,
+                                                       a.search_condition,
+                                                       a.r_constraint_name,
+                                                       a.index_name,
+                                                       b.column_name,
+                                                       b.position
+                                                  from (select owner,
+                                                               constraint_name,
+                                                               constraint_type,
+                                                               search_condition,
+                                                               r_constraint_name,
+                                                               index_name
+                                                          from all_constraints
+                                                         where owner = :schema
+                                                                and table_name = :table_name
+                                                           and instr(constraint_name, 'SYS_') != 1
+                                                       ) a
+                                                      left outer join
+                                                      (select owner,
+                                                              constraint_name,
+                                                              column_name,
+                                                              position
+                                                        from all_cons_columns
+                                                      ) b on b.owner = a.owner and b.constraint_name = a.constraint_name
+                                                order by constraint_name, position''',
+						schema = schema,
+						table_name = name)
+					constraints = []
+					for const_name, const_type, condition, reference, index, constrained_column, pos in crsr.fetchall() :
+						if constraints and constraints[-1][:5] == [const_name, const_type, condition, reference, index] :
+							constraints[-1][-1].append(constrained_column)
+						else :
+							constraints.append([const_name, const_type, condition, reference, index, [constrained_column]])
+					if constraints :
+						for const_name, const_type, condition, reference, index, constrained_columns in constraints :
+							if const_name.startswith("SYS_") :
+								f.write('    <constraint name="$GENERATED$" type="%s">\n' % (constraint_types[const_type]))
+							else :
+								f.write('    <constraint name="%s" type="%s">\n' % (const_name, constraint_types[const_type]))
+							if condition :
+								f.write('      <condition>%s</condition>\n' % saxutils.escape(condition))
+							elif reference :
+								crsr.execute('''
+									select column_position, table_name, column_name
+									  from all_ind_columns
+									 where index_owner = :schema
+									   and index_name = :idx_name
+									 order by 1''',
+									schema = schema,
+									idx_name = reference)
+								rows = crsr.fetchall()
+								if not rows :
+									crsr.execute('''
+										select column_position,
+										       table_name,
+										       column_name
+										  from (select column_position,
+										               table_name,
+										               column_name
+										          from all_ind_columns
+										         where index_owner = :schema1
+										           and index_name = (select index_name
+										       	                       from all_constraints
+										       	                       where owner = :schema2
+										                                 and constraint_name = :idx_name
+										       	                    )
+										         order by 1
+										       )
+										 where rownum <= :max_rows''',
+										schema1 = schema,
+										schema2 = schema,
+										idx_name = reference,
+										max_rows = len(constrained_columns))
+									rows = crsr.fetchall()
+								f.write('      <reference column="%s">\n' % ",".join(constrained_columns))
+								for i in range(len(rows)) :
+									pos, referenced_table, column_name  = rows[i]
+									if i == 0 :
+										f.write('        <table>%s</table>\n' % referenced_table)
+										if len(rows) > 1 : f.write("        <columns>\n")
+									if column_name.startswith("SYS_") :
+										crsr.execute('''
+											select column_expression
+											  from all_ind_expressions
+											 where index_owner = :schema
+											   and index_name = :idx_name
+											   and column_position = :pos''',
+										schema = schema,
+										idx_name = reference,
+										pos = pos)
+										expression = crsr.fetchall()[0][0]
+										if len(rows) > 1 : f.write("  ")
+										f.write('        <expression>%s</expression>\n' % expression)
+									else :
+										if len(rows) > 1 :
+											f.write('          <column pos="%d">%s</column>\n' % (i+1, column_name))
+										else :
+											f.write('        <column>%s</column>\n' % column_name)
+								if len(rows) > 1 : f.write("        </columns>\n")
+								f.write('      </reference>\n')
+							elif constrained_columns :
+								if len(constrained_columns) > 1 :
+									f.write('      <columns>\n')
+									for i in range(len(constrained_columns)) :
+										f.write('        <column pos="%d">%s</column>\n' % (i+1, constrained_columns[i]))
+									f.write('      </columns>\n')
+								else :
+									f.write('      <column>%s</column>\n' % ",".join(constrained_columns))
+							elif index :
+								f.write('      <index>%s</index>\n' % index)
+							f.write('    </constraint>\n')
+					else :
+						crsr.execute('''
+							select index_name,
+							       column_name
+							  from all_ind_columns
+							 where table_owner = :schema
+							   and table_name = :table_name
+							   and instr(index_name, 'SYS_') = 1
+							 order by column_position''',
+							schema = schema,
+							table_name = name)
+						rows = crsr.fetchall()
+						if rows :
+							const_name = rows[0][0]
+							columnNames = [row[1] for row in rows if not row[1].startswith("SYS_")]
+							if const_name.startswith("SYS_") :
+								f.write('    <constraint name="$GENERATED$" type="PRIMARY KEY">\n')
+							else :
+								f.write('    <constraint name="%s" type="PRIMARY KEY">\n' % const_name)
+							if len(columnNames) == 1 :
+								f.write("      <column>%s</column>\n" % columnNames[0])
+							else :
+								f.write("      <columns>\n")
+								for i in range(len(columnNames)) : f.write('        <column pos="%d">%s</column>\n' % (i+1, columnNames[i]))
+								f.write("      </columns>\n")
+							f.write('    </constraint>\n')
+					f.write('  </constraints>\n')
+					f.write('</table>\n')
+					zf.writestr("%s/TABLE/%s" % (schema, name), f.getvalue())
+					f.close()
+					count += 1
+					if not redirected : 
+						sys.stdout.write(" %5d items\b\b\b\b\b\b\b\b\b\b\b\b" % count)
+						sys.stdout.flush()
+				output(" %5d items" % count, True, True)
+			#---------#
+			# indexes #
+			#---------#
+			if get['INDEX'] :
+				output(format3 % "INDEX", False, False)
+				crsr.execute('''
+					select index_name,
+					       index_type,
+					       uniqueness,
+					       table_name,
+					       tablespace_name,
+					       ityp_owner,
+					       ityp_name,
+					       parameters
+					  from all_indexes
+					 where owner = :schema
+					   and instr(index_name, '$') = 0
+					   and instr(index_name, 'SYS_') != 1
+					 order by 1''',
+					schema = schema)
+				count = 0
+				for idx_name, idx_type, uniq, table_name, tablespace, domain_owner, domain_name, domain_parameters in crsr.fetchall() :
+					f = io.StringIO()
+					f.write('<index name="%s" type="%s" unique="%s" table="%s">\n' % (idx_name, idx_type, uniq, table_name))
+					if tablespace : f.write('  <tablespace>%s</tablespace>\n' % tablespace)
+					f.write('  <columns>\n')
+					crsr.execute('''
+						select column_position, column_name, descend
+						  from all_ind_columns
+						 where index_owner = :schema
+					           and index_name = :idx_name
+						 order by 1''',
+						schema = schema,
+						idx_name = idx_name)
+					for pos, name, order in crsr.fetchall() :
+						f.write('    <column id="%d" order="%s">' % (pos, order))
+						if name.startswith("SYS_") :
+							crsr.execute('''
+								select column_expression
+								  from all_ind_expressions
+								 where index_owner = :schema
+					                           and index_name = :idx_name
+								   and column_position = :pos''',
+							schema = schema,
+							idx_name = idx_name,
+							pos = pos)
+							expression = crsr.fetchall()[0][0]
+							f.write(expression)
+						else :
+							f.write(name)
+						f.write('</column>\n')
+					f.write('  </columns>\n')
+					if idx_type == 'DOMAIN' :
+						f.write('  <domain>\n')
+						f.write('    <owner>%s</owner>\n' % domain_owner)
+						f.write('    <name>%s</name>\n' % domain_name)
+						if domain_parameters :
+							f.write('    <parameters>%s</parameters>\n' % domain_parameters)
+						else :
+							f.write('    <parameters/>\n')
+						f.write('  </domain>\n')
+					f.write('</index>\n')
+					zf.writestr("%s/INDEX/%s" % (schema, idx_name), f.getvalue())
+					f.close()
+					count += 1
+					if not redirected : 
+						sys.stdout.write(" %5d items\b\b\b\b\b\b\b\b\b\b\b\b" % count)
+						sys.stdout.flush()
+				output(" %5d items" % count, True, True)
+			#-------#
+			# views #
+			#-------#
+			if get['VIEW'] :
+				output(format3 % "VIEW", False, False)
+				crsr.execute('''
+					select view_name,
+					       text
+					  from all_views
+					 where owner = :schema
+					   and instr(view_name, '$') = 0
+					 order by 1''',
+					schema = schema)
+				count = 0
+				for view_name, text in crsr.fetchall() :
+					if text[-1] != ';' : text += ';'
+					if view_name in synonyms :
+						for synonym in synonyms[view_name] :
+							text += "\ncreate or replace public synonym %s for %s;" % (synonym, view_name)
+					crsr.execute('''
+						select column_name
+						  from all_tab_columns
+						 where owner=:schema
+						   and table_name=:view_name
+						 order by column_id''',
+						 schema=schema,
+						 view_name=view_name)
+					column_names = [row[0] for row in crsr.fetchall()]
+					zf.writestr("%s/VIEW/%s" % (schema, view_name), "create view %s (%s) as\n%s" % (view_name, ",".join(column_names), text))
+					count += 1
+					if not redirected : 
+						sys.stdout.write(" %5d items\b\b\b\b\b\b\b\b\b\b\b\b" % count)
+						sys.stdout.flush()
+				output(" %5d items" % count, True, True)
+			#--------------------#
+			# materialized views #
+			#--------------------#
+			if get['MATERIALIZED VIEW'] :
+				output(format3 % "MATERIALIZED VIEW", False, False)
+				crsr.execute('''
+					select v.mview_name,
+                                               t. tablespace_name,
+                                               v.build_mode,
+                                               v.fast_refreshable,
+                                               v.refresh_method,
+                                               v.refresh_mode,
+                                               v.query
+                                          from all_mviews v,
+                                               all_tables t
+                                         where v.owner = :schema
+                                           and instr(v.mview_name, '$') = 0
+                                           and t.owner = v.owner
+                                           and t.table_name = v.mview_name
+                                         order by 1''',
+					schema = schema)
+				count = 0
+				for mview_name, tablespace, build, fast, method, mode, query in crsr.fetchall() :
+					crsr.execute('''
+						select column_name
+						  from all_tab_columns
+						 where owner=:schema
+						   and table_name=:mview_name
+						 order by column_id''',
+						 schema=schema,
+						 mview_name=mview_name)
+					column_names = [row[0] for row in crsr.fetchall()]
+					text = "create materialized view %s (%s)%s build %s refresh%s %s on %s as\n%s" % (
+						mview_name,
+						",".join(column_names),
+						(""," tablespace %s" % tablespace)[bool(tablespace)],
+						build,
+						(""," fast")[fast=="YES"],
+						method,
+						mode,
+						query)
+					if text[-1] != ';' : text += ';'
+					if mview_name in synonyms :
+						for synonym in synonyms[mview_name] :
+							text += "\ncreate or replace public synonym %s for %s;" % (synonym, mview_name)
+					zf.writestr("%s/MATERIALZED VIEW/%s" % (schema, mview_name), text)
+					count += 1
+					if not redirected : 
+						sys.stdout.write(" %5d items\b\b\b\b\b\b\b\b\b\b\b\b" % count)
+						sys.stdout.flush()
+				output(" %5d items" % count, True, True)
+		crsr.close()
+		conn.close()
+		zf.close()
+except SystemExit :
+	pass
+except	:
+	traceback.print_exc()
+	rc = -1
+else :
+	rc = 0
+finally :
+	if conn is not None :
+		try    : conn.close()
+		except : pass
+	exit(rc)
+

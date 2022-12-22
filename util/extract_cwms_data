@@ -1,0 +1,174 @@
+#!/bin/env python3
+import cx_Oracle
+import datetime
+import getpass
+import os
+import io
+import sys
+import tempfile
+import traceback
+import zipfile
+from xml.sax import saxutils
+
+def output(msg, newline = True, continuation = False) :
+	lines = msg.split("\n")
+	for i in range(len(lines)) :
+		if not continuation : sys.stdout.write("%s: " % str(datetime.datetime.now())[:-3])
+		sys.stdout.write(lines[i])
+		if i < len(lines)-1 : sys.stdout.write("\n")
+	if newline : sys.stdout.write("\n")
+
+conn  = None
+interactive = sys.stdin.isatty()
+redirected  = not sys.stdout.isatty()
+outfileName = None
+
+try :
+	rc = 0
+	url = usr = pwd = None
+	if interactive :
+		url = input("\nDB (Host:Port:SID) >")
+		if not url : exit()
+		parts = url.split(":")
+		host = parts[0]
+		port = parts[1] if len(parts) > 1 else ""
+		sid  = parts[2] if len(parts) > 2 else ""
+		if port and not sid and port.find("/") != -1 :
+			port, sid = port.split("/")
+		resp = input("User Name          >")
+		usr = resp if bool(resp) else usr
+		resp = getpass.getpass("Pass Phrase        >")
+		pwd = resp if bool(resp) else pwd
+		if port and sid :
+			try :
+				conn = cx_Oracle.connect(dsn = cx_Oracle.makedsn(host, int(port), sid), user=usr, password=pwd)
+			except cx_Oracle.DatabaseError as e :
+				conn = cx_Oracle.connect(dsn = cx_Oracle.makedsn(host, int(port), None, sid), user=usr, password=pwd)
+		else :
+			conn = cx_Oracle.connect(dsn = host, user=usr, password=pwd)
+		outfileName = "%s_data.zip" % (sid.lower() if sid else host.lower())
+		resp = input("Outfile (%s) >" % outfileName).strip()
+		if (resp) :
+			if resp.lower().endswith("_data") or resp.lower().endswith(".zip") :
+				outfileName = "%s.zip" % os.path.splitext(resp)[0]
+			else :
+				outfileName = "%s_data.zip" % resp
+	else :
+		url = sys.stdin.readline().strip()
+		if not url : exit(rc)
+		parts = url.split(":")
+		host = parts[0]
+		port = parts[1] if len(parts) > 1 else ""
+		sid  = parts[2] if len(parts) > 2 else ""
+		if port and not sid and port.find("/") != -1 :
+			port, sid = port.split("/")
+		usr = sys.stdin.readline().strip()
+		if usr.startswith("$") : usr = os.getenv(usr[1:])
+		pwd = sys.stdin.readline().replace('"', '').strip()
+		if pwd.startswith("$") : pwd = os.getenv(pwd[1:])
+		if port and sid :
+			try :
+				conn = cx_Oracle.connect(dsn = cx_Oracle.makedsn(host, int(port), sid), user=usr, password=pwd)
+			except cx_Oracle.DatabaseError as e :
+				conn = cx_Oracle.connect(dsn = cx_Oracle.makedsn(host, int(port), None, sid), user=usr, password=pwd)
+		else :
+			conn = cx_Oracle.connect(dsn = host, user=usr, password=pwd)
+		try    : outfileName = sys.stdin.readline().strip()
+		except : pass
+		if outfileName :
+			if outfileName.lower().endswith("_data") or outfileName.lower().endswith(".zip") :
+				outfileName = "%s.zip" % os.path.splitext(outfileName)[0]
+			else :
+				outfileName = "%s_data.zip" % outfileName
+		else :
+			outfileName = "%s_data.zip" % (sid.lower() if sid else host.lower())
+	crsr = conn.cursor()
+	if os.path.exists(outfileName) : os.remove(outfileName)
+	zf = zipfile.ZipFile(outfileName, "w")
+	output("\nWriting to %s" % os.path.abspath(outfileName))
+	schema = "CWMS_20"
+	crsr.execute('''
+		select table_name,
+		       column_name
+		  from all_tab_columns
+		 where owner = :owner
+		   and table_name like 'AT\\_%%' escape '\\'
+		   and column_name like '%%OFFICE\\_CODE' escape '\\'
+		 order by 1''',
+		owner = schema)
+	table_columns = crsr.fetchall()
+	crsr.execute('''
+		select table_name,
+		       NULL
+		  from all_tables
+		 where owner = :owner
+		   and table_name like 'CWMS\\_%%' escape '\\'
+		 order by 1''',
+		owner = schema)
+	table_columns.extend(crsr.fetchall())
+	for table_name, column_name in table_columns :
+		if table_name in ("AT_LOG_MESSAGE", "CWMS_DATA_QUALITY", "CWMS_VERTCON_DATA") : continue
+		if table_name.startswith("AT_") :
+			crsr.execute("select count(*) from %s.%s where %s = 53" % (schema, table_name, column_name))
+			count = crsr.fetchall()[0][0]
+		if table_name.startswith("CWMS_") or count > 0 :
+			item_name = "%s.%s" % (schema, table_name)
+			output("%s%s" % (item_name, " " * (40-len(item_name))), False, False)
+			if table_name == 'AT_CLOB' :
+				order_by = "order by id"
+			else :
+				crsr.execute('''
+					select constraint_name
+					  from all_constraints
+					 where owner = :schema
+					   and table_name = :table_name
+					   and constraint_type = 'P''' + "'",
+					schema = schema,
+					table_name = table_name)
+				rows = crsr.fetchall()
+				if rows :
+					pk_name = rows[0][0]
+					crsr.execute('''
+						select column_name
+						  from all_cons_columns
+						 where owner = :schema
+						   and constraint_name = :pk_name
+						 order by position''',
+						schema = schema,
+						pk_name = pk_name)
+					pk_cols = [row[0] for row in crsr.fetchall()]
+					order_by = " order by %s" % ", ".join(pk_cols)
+				else :
+					order_by = ""
+			if table_name == 'AT_CLOB' :
+				sql = "select * from %s.%s where %s = 53 and id not like '/DATAEXCHANGE/%%' and id not like '/_BAD_MESSAGE/%%'%s" % (schema, table_name, column_name, order_by)
+			elif table_name.startswith("AT_") :
+				sql = "select * from %s.%s where %s = 53%s" % (schema, table_name, column_name, order_by)
+			else :
+				sql = "select * from %s.%s%s" % (schema, table_name, order_by)
+			crsr.execute(sql)
+			f = io.StringIO()
+			count = 0
+			for row in crsr.fetchall() :
+				if not redirected and count % 100 == 0 : sys.stdout.write("%7d rows\b\b\b\b\b\b\b\b\b\b\b\b" % count)
+				f.write("%s\n" % "\t".join(map(str, row)))
+				count += 1
+			if not redirected : print("%7d rows" % count)
+			zf.writestr("%s/%s" % (schema, table_name), f.getvalue())
+			f.close()
+	crsr.close()
+	conn.close()
+	zf.close()
+except SystemExit :
+	pass
+except	:
+	traceback.print_exc()
+	rc = -1
+else :
+	rc = 0
+finally :
+	if conn is not None :
+		try    : conn.close()
+		except : pass
+	exit(rc)
+

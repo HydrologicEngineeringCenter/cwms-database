@@ -1,0 +1,177 @@
+#!/bin/env python3
+import os
+import re
+import sys
+import tempfile
+import traceback
+import zipfile
+
+re_address = re.compile(r"0x[0-9a-fA-F]+", re.M)
+re_code = re.compile(r"\d{4,}", re.M)
+
+def sort(data) :
+	return "\n".join(sorted(data.strip().split("\n")))
+
+def mask_addresses(data) :
+	return re_address.sub("0x0000000", data)
+
+def mask_codes(data) :
+	return re_code.sub("0000000", data)
+
+def remove_leading_zeros(data) :
+	lines = data.split("\n")
+	for i in range(len(lines)) :
+		parts = lines[i].split("\t")
+		for j in range(len(parts)) :
+			try    : parts[j] = str(int(parts[j]))
+			except : pass
+		lines[i] = "\t".join(parts)
+	return "\n".join(lines)
+
+try :
+	rc = 0
+	#-----------------------------------------------------------#
+	# get the zipfile names from the command line and open them #
+	#-----------------------------------------------------------#
+	filenames = [None, None]
+	zipfiles = None
+	diffcmd  = None
+	args = sys.argv[1:]
+	if len(args) == 2 :
+		filenames[0], filenames[1] = args
+	elif len(args) == 3 :
+		filenames[0], filenames[1], diffcmd = args
+	else :
+		print("Usage : %s zipfile_1 zipfile_2 [visual_compare_cmd]" % sys.argv[0])
+		exit()
+	for i in range(len(filenames)) :
+		if not filenames[i].lower().endswith(".zip") : filenames[i] += ".zip"
+	zipfiles = list(map(lambda fn : zipfile.ZipFile(fn, "r"), filenames))
+	#---------------------------------------#
+	# set up other variables for processing #
+	#---------------------------------------#
+	comparands  = list(map(lambda fn : os.path.splitext(os.path.split(fn)[1])[0], filenames))
+	items = list(map(lambda zf : set(zf.namelist()), zipfiles))
+	all_items = items[0] | items[1] # set union
+	counts = {
+		"only_%s" % comparands[0] : 0,
+		"only_%s" % comparands[1] : 0,
+		"same"                    : 0,
+		"different"               : 0
+	}
+	#--------------------------#
+	# open the output zip file #
+	#--------------------------#
+	zfoutname = "%s-%s.zip" % tuple(comparands)
+	if os.path.exists(zfoutname) : os.remove(zfoutname)
+	zfout = zipfile.ZipFile(zfoutname, "w")
+	print("Writing %s" % zfoutname)
+	#-----------------------------------#
+	# compare contents of the zip files #
+	#-----------------------------------#
+	differences = []
+	for item in sorted(all_items) :
+		values = [None, None]
+		if item in items[0] :
+			values[0] = zipfiles[0].read(item).strip().decode('utf-8')
+			if item in items[1] :
+				name = item.split('/')[1]
+				if name in ('AT_LOG_MESSAGE', 'CWMS_DB_CHANGE_LOG'):
+					continue
+				sys.stdout.write("checking %s                     \r" % item)
+				if zipfiles[0].getinfo(item).CRC == zipfiles[1].getinfo(item).CRC :
+					#----------#
+					# same CRC #
+					#----------#
+					arcname = "same/%s" % item
+					zfout.writestr(arcname, values[0])
+					counts["same"] += 1
+					continue
+				values[1] = zipfiles[1].read(item).strip().decode('utf-8')
+				if name.endswith("_SP") or name in ('CWMS_AGG_DISTRICT', 'CWMS_OFFICES_GEOLOC', 'CWMS_NID', 'CWMS_STATION_NWS', 'CWMS_STATION_USGS', 'CWMS_USACE_DAM') :
+					values[0], values[1] = list(map(sort, list(map(mask_addresses, (values[0], values[1])))))
+				elif name in ('AT_CLOB', 'AT_STD_TEXT','AT_TEXT_FILTER', 'CWMS_VERTCON_DATA', 'CWMS_VERTCON_HEADER') :
+					values[0], values[1] = list(map(mask_codes, (values[0], values[1])))
+				elif name == 'CWMS_COUNTY' :
+					values[0], values[1] = list(map(remove_leading_zeros, (values[0], values[1])))
+				elif name == 'CWMS_USACE_DAM_COUNTY' :
+					values[0], values[1] = list(map(sort, (values[0], values[1])))
+				if values[1] == values[0] :
+					#-----------#
+					# same text #
+					#-----------#
+					arcname = "same/%s" % item
+					zfout.writestr(arcname, values[0])
+					counts["same"] += 1
+				else :
+					parts0 = [line.strip().split() for line in values[0].strip().split()]
+					parts1 = [line.strip().split() for line in values[1].strip().split()]
+					if parts1 == parts0 :
+						#----------------------------#
+						# same except for whitespace #
+						#----------------------------#
+						arcname = "same/%s" % item
+						zfout.writestr(arcname, values[0])
+						counts["same"] += 1
+					else :
+						#-----------#
+						# different #
+						#-----------#
+						arcname = "different/%s/%s" % (comparands[0], item)
+						differences.append([arcname])
+						print("        adding %s" % arcname)
+						zfout.writestr(arcname, values[0])
+						arcname = "different/%s/%s" % (comparands[1], item)
+						differences[-1].append(arcname)
+						print("        adding %s" % arcname)
+						zfout.writestr(arcname, values[1])
+						counts["different"] += 1
+			else :
+				#---------------------#
+				# only in zipfiles[0] #
+				#---------------------#
+				arcname = "only_%s/%s" % (comparands[0], item)
+				print("        adding %s" % arcname)
+				zfout.writestr(arcname, values[0])
+				counts["only_%s" % comparands[0]] += 1
+		else :
+			#---------------------#
+			# only in zipfiles[1] #
+			#---------------------#
+			values[1] = zipfiles[1].read(item)
+			arcname = "only_%s/%s" % (comparands[1], item)
+			print("        adding %s" % arcname)
+			zfout.writestr(arcname, values[1])
+			counts["only_%s" % comparands[1]] += 1
+	zfout.close()
+	print("                                                                          ")
+	for key in sorted(counts.keys()) : print("%5d : %s" % (counts[key], key))
+	#-------------------------------#
+	# diff differences if specified #
+	#-------------------------------#
+	if diffcmd and differences :
+		basedir = r"u:\devl\perforce\wcdba\dev\oracle\dev\src\cwms"
+		zfout = zipfile.ZipFile(zfoutname, "r")
+		for i in range(len(differences)) :
+			real_filename = None
+			parts = differences[i][0].split("/")
+			filenames = ["tmp.%s" % differences[i][j].replace('/', '$') for j in range(2)]
+			values = [zfout.read(differences[i][j]) for j in range(2)]
+			for j in range(2) :
+				with open(filenames[j], "w") as f : f.write(values[j])
+			if real_filename :
+				os.system('%s "%s" "%s"' % (diffcmd, real_filename, filenames[1]))
+			else :
+				os.system('%s "%s" "%s"' % (diffcmd, filenames[0], filenames[1]))
+			for j in range(2) : os.remove(filenames[j])
+
+except SystemExit :
+	pass
+except	:
+	traceback.print_exc()
+	rc = -1
+else :
+	rc = 0
+finally :
+	exit(rc)
+

@@ -1,0 +1,46 @@
+#!/bin/env python3
+import os, sys, zipfile
+
+wait = True
+args = sys.argv[1:]
+if "/nowait" in args :
+	args.remove("/nowait")
+	wait = False
+	print(args)
+diffzip = args[0]
+diffcmd = args[1] if len(args) > 1 else "diff"
+diffdir = "different"
+subdirs = []
+
+if os.path.exists(diffdir) :
+	for root, dirnames, filenames in os.walk(diffdir, topdown=False) :
+		for fn in filenames : os.remove(os.path.join(root, fn))
+		for dn in dirnames : os.rmdir(os.path.join(root, dn))
+else :
+	os.mkdir(diffdir)
+
+zf = zipfile.ZipFile(diffzip, "r")
+for item in sorted(zf.namelist()) :
+	if item.startswith("different/") :
+		dirname = item.split("/")[1]
+		if dirname not in subdirs : subdirs.append(dirname)
+		zf.extract(item)
+zf.close()
+print(subdirs)
+if subdirs :
+	cmds = []
+	for root, dirnames, filenames in os.walk(os.path.join(diffdir, subdirs[0]), topdown=True) :
+		for fn in filenames :
+			fn1 = os.path.join(root, fn)
+			print(fn1)
+			parts = fn1.split(os.sep)
+			parts[1] = subdirs[1]
+			fn2 = os.sep.join(parts)
+			cmds.append("%s %s %s" % (diffcmd, fn1, fn2))
+
+	cmdCount = len(cmds)
+	for i in range(cmdCount) :
+		print(cmds[i])
+		os.system(cmds[i])
+		print("")
+		if i < cmdCount - 1 and wait : input("Press Enter to continue...")
