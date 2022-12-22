@@ -78,7 +78,7 @@ end;
 --
 begin
    for rec in (select role from dba_roles
-	where role = 'CWMS_USER' or role = 'CWMS_DBX_ROLE')
+	where role = 'CWMS_USER' or role = 'CWMS_DBX_ROLE' or role = 'WEB_USER')
    loop
    	dbms_output.put_line('drop role ' || rec.role);
    	execute immediate 'drop role ' || rec.role;
@@ -127,4 +127,3 @@ purge recyclebin;
 --ALTER SYSTEM DISABLE RESTRICTED SESSION;
 --EXEC DBMS_LOCK.SLEEP(1);
 exit 0
-

@@ -5942,6 +5942,7 @@ def main() :
     drop user &eroc.hectest_ccp_r;
     drop user &eroc.hectest_rdl_m;
     drop user &eroc.hectest_rdl_r;
+    drop user &eroc.webtest;
 
     -- create user for UPASS Admin 
     create user &eroc.hectest_up identified by "&test_passwd";
@@ -5990,6 +5991,9 @@ def main() :
     create user &eroc.hectest_rdl_m identified by "&test_passwd";
     grant create session to &eroc.hectest_rdl_m;
     grant set container to &eroc.hectest_rdl_m;
+
+    create user &eroc.webtest identified by "&test_passwd";
+    grant create session to &eroc.webtest;
     '''
 
     test_user_template = '''
@@ -6058,6 +6062,11 @@ def main() :
         -- hectest_rdl_m
         group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS PD Users', 'RDL Mgr', 'TS ID Creator', 'CWMS Users');
         "&cwms_schema"."CWMS_SEC"."ADD_CWMS_USER" ('&eroc.hectest_rdl_m', group_list, '&office_id');
+
+        -- webtest
+        group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS User Admins', 'CWMS PD Users','TS ID Creator', 'Viewer Users');
+        "&cwms_schema"."CWMS_SEC"."ADD_CWMS_USER" ('&eroc.webtest', group_list, '&office_id');
+        execute immediate 'grant web_user to &eroc.webtest';
     END;
     /
     '''
@@ -10134,4 +10143,3 @@ def main() :
     os.remove(tempFilename)
 
 if __name__ in ("__main__", "main") : main()
-

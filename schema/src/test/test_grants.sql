@@ -30,5 +30,8 @@ GRANT EXECUTE ON &cwms_schema..test_aaa to &4;
 --GRANT CREATE any procedure to &1;
 GRANT EXECUTE ON &cwms_schema..test_up to &5;
 
+cwms_msg.log_db_message('set_session_user_direct',cwms_msg.msg_level_basic,l_msg);
+exec cwms_sec.update_edipi('&7',1234567890);
 GRANT EXECUTE ON &cwms_schema..test_aq_user to &7;
 GRANT EXECUTE ON &cwms_schema..test_aaa_normaluserfails to &7;
+GRANT EXECUTE ON &cwms_schema..test_webuser_abilities to &8;

@@ -73,6 +73,7 @@ alter session set current_schema = &cwms_schema;
 @@cwms/at_schema_sec
 @@cwms/at_schema_apex_debug
 @@cwms/at_schema_cma
+@@cwms/tables/at_api_keys
 
 --
 --  Load data into cwms tables...
@@ -99,6 +100,7 @@ whenever sqlerror exit -1
 @@cwms/views/av_ts_profile_inst_tsv2
 @@cwms/views/av_ts_profile_inst_elev
 @@cwms/views/av_ts_profile_inst_sp
+@@cwms/views/av_active_api_keys
 
 --
 -- Create pd/test user accounts...
@@ -110,6 +112,7 @@ set define on
 --
 -- Create public synonyms and cwms_user roles
 @@cwms/at_schema_public_interface.sql
+show errors;
 -- Filter for streaming data
 @@cwms/mv_ts_code_filter
 
@@ -180,6 +183,7 @@ begin
     where database_id = 'LOCAL';
 end;
 /
+@@cwms/User-Roles/web_user_role_grants.sql
 alter session set current_schema = &builduser
 
 -- create CWMS service user
@@ -373,4 +377,3 @@ end;
 -- all done
 --
 exit 0
-
