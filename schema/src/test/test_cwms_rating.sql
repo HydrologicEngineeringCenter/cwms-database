@@ -19,6 +19,8 @@ procedure test_ratings_delete;
 procedure test_retrieve_usgs_rating_without_shift_points;
 --%test(Test expression rating)
 procedure test_expression_rating;
+--%test(Test table rating)
+procedure test_table_rating;
 
 c_location_id        constant varchar2(57) := 'Test_Ratings_Loc';
 c_inspect_after_test constant boolean := false;
@@ -497,6 +499,111 @@ begin
    l_xml := cwms_rating.retrieve_ratings_xml3_f(l_rating_spec, null, null, null, '&&office_id');
    -- if no exception then the test passed
 end test_retrieve_usgs_rating_without_shift_points;
+
+--------------------------------------------------------------------------------
+-- procedure test_table_rating
+--------------------------------------------------------------------------------
+procedure test_table_rating
+is
+    l_result        binary_double;
+    l_results       cwms_t_double_tab;
+    l_rating_spec   cwms_v_rating.rating_id%type;
+    l_errors        clob;
+    l_pool_elev     cwms_t_double_tab := cwms_t_double_tab(392.0);
+    l_expected_area cwms_t_double_tab := cwms_t_double_tab(12.0);
+    l_xml           varchar2(32767) := '
+        <ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">
+          <rating-template office-id="&&office_id">
+            <parameters-id>Elev;Area</parameters-id>
+            <version>Standard</version>
+            <ind-parameter-specs>
+              <ind-parameter-spec position="1">
+                <parameter>Elev</parameter>
+                <in-range-method>LINEAR</in-range-method>
+                <out-range-low-method>NEXT</out-range-low-method>
+                <out-range-high-method>PREVIOUS</out-range-high-method>
+              </ind-parameter-spec>
+            </ind-parameter-specs>
+            <dep-parameter>Area</dep-parameter>
+            <description>12</description>
+          </rating-template>
+          <rating-spec office-id="&&office_id">
+            <rating-spec-id>$location-id.Elev;Area.Standard.Production</rating-spec-id>
+            <template-id>Elev;Area.Standard</template-id>
+            <location-id>$location-id</location-id>
+            <version>Production</version>
+            <source-agency/>
+            <in-range-method>PREVIOUS</in-range-method>
+            <out-range-low-method>NEAREST</out-range-low-method>
+            <out-range-high-method>PREVIOUS</out-range-high-method>
+            <active>true</active>
+            <auto-update>true</auto-update>
+            <auto-activate>true</auto-activate>
+            <auto-migrate-extension>true</auto-migrate-extension>
+            <ind-rounding-specs>
+              <ind-rounding-spec position="1">4444444444</ind-rounding-spec>
+            </ind-rounding-specs>
+            <dep-rounding-spec>4444444444</dep-rounding-spec>
+            <description></description>
+          </rating-spec>
+          <simple-rating office-id="&&office_id">
+            <rating-spec-id>$location-id.Elev;Area.Standard.Production</rating-spec-id>
+            <units-id>ft;acre</units-id>
+            <effective-date>2017-09-26T20:06:00Z</effective-date>
+            <transition-start-date>2017-09-24T20:06:00Z</transition-start-date>
+            <create-date>2017-09-26T20:06:00Z</create-date>
+            <active>true</active>
+            <description/>
+            <rating-points>
+              <point><ind>370.0</ind><dep>0.0</dep></point>
+              <point><ind>383.0</ind><dep>0.1</dep></point>
+              <point><ind>387.0</ind><dep>1.0</dep></point>
+              <point><ind>388.0</ind><dep>2.0</dep></point>
+              <point><ind>389.0</ind><dep>4.0</dep></point>
+              <point><ind>390.2</ind><dep>7.0</dep></point>
+              <point><ind>391.0</ind><dep>10.0</dep></point>
+              <point><ind>392.0</ind><dep>12.0</dep></point>
+              <point><ind>393.0</ind><dep>14.0</dep></point>
+              <point><ind>394.0</ind><dep>18.0</dep></point>
+              <point><ind>395.0</ind><dep>20.0</dep></point>
+              <point><ind>396.0</ind><dep>22.0</dep></point>
+              <point><ind>397.0</ind><dep>25.0</dep></point>
+              <point><ind>398.0</ind><dep>27.0</dep></point>
+              <point><ind>399.0</ind><dep>29.0</dep></point>
+            </rating-points>
+          </simple-rating>
+        </ratings>';
+begin
+    ------------------------
+    -- store the location --
+    ------------------------
+    cwms_loc.store_location(
+            p_location_id  => c_location_id,
+            p_db_office_id => '&&office_id');
+    ----------------------
+    -- store the rating --
+    ----------------------
+    l_xml := replace(l_xml, '$location-id', c_location_id);
+    cwms_rating.store_ratings_xml(
+            p_errors         => l_errors,
+            p_xml            =>l_xml,
+            p_fail_if_exists => 'F',
+            p_replace_base   => 'T');
+
+    ut.expect(l_errors).to_be_null;
+    ------------------------------
+    -- rate one input value set --
+    ------------------------------
+    l_rating_spec := regexp_substr(l_xml, '<rating-spec-id>(.+?)</rating-spec-id>', 1, 1, 'i', 1);
+    l_result := cwms_rating.rate_one_f(
+            p_rating_spec => l_rating_spec,
+            p_values      => cwms_t_double_tab(392.0),
+            p_units       => cwms_t_str_tab('ft', 'ft2'),
+            p_round       => 'T',
+            p_office_id   => '&&office_id');
+
+    ut.expect(l_result).to_equal(12.0);
+end test_table_rating;
 
 end test_cwms_rating;
 /
