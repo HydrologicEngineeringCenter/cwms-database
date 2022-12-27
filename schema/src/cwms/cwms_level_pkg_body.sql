@@ -1855,7 +1855,6 @@ is
    l_spec_level_code           number(14);
    l_interval_origin           date;
    l_interval_origin_tz        date;
-   l_seasonal_date_utc         date;
    l_location_code             number(14);
    l_location_tz_code          number(14);
    l_parts                     str_tab_t;
@@ -1886,8 +1885,7 @@ is
    l_attr_param_is_elev        boolean;
    l_level_vert_datum_offset   binary_double;
    l_attr_vert_datum_offset    binary_double;
-   l_offset_months             integer;
-   l_offset_minutes            integer;
+
 begin
    l_fail_if_exists := cwms_util.return_true_or_false(p_fail_if_exists);
    -------------------
