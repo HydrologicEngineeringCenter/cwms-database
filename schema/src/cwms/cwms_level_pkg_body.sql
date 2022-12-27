@@ -2192,7 +2192,7 @@ begin
             -- every interval, which may not actually be the case                --
             -----------------------------------------------------------------------
             l_seasonal_date_utc := cwms_util.change_timezone(
-               add_months(l_interval_origin_tz, p_seasonal_values(i).offset_months) + p_seasonal_values(i).offset_minutes,
+               add_months(l_interval_origin_tz, p_seasonal_values(i).offset_months) + p_seasonal_values(i).offset_minutes / 1440,
                l_timezone_id,
                'UTC');
             l_offset_months := months_between(l_seasonal_date_utc, l_interval_origin);
