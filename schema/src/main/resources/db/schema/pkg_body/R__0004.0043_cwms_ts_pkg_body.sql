@@ -5614,7 +5614,7 @@ AS
       if l_units is null then l_units := p_units; end if;
       l_units := cwms_util.get_valid_unit_id (l_units, l_base_parameter_id);
       if l_value_offset is not null and l_units != 'm' then
-         l_value_offset := cwms_util.convert_units(l_value_offset, l_units, 'm');
+         l_value_offset := cwms_util.convert_units(l_value_offset, 'm',l_units);
       else
          l_value_offset := 0;
       end if;
@@ -5710,22 +5710,12 @@ AS
                   execute immediate
                      'merge into '||x.table_name||' t1
                            using (select cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date) date_time,
-                                         /*** TODO:: change to convert_units*/
-                                         (t.value * c.factor + c.offset) - :l_value_offset value,
+                                         cwms_util.convert_units(t.value-:l_value_offset,:l_units,:l_base_unit_id) value,
                                          cwms_ts.clean_quality_code(t.quality_code) quality_code
                                     from table(cast(:l_timeseries_data as tsv_array)) t,
-                                         at_cwms_ts_spec s,
-                                         at_parameter ap,
-                                         cwms_unit_conversion c,
-                                         cwms_base_parameter p,
-                                         cwms_unit u
+                                         at_cwms_ts_spec s
                                    where cwms_util.is_nan(t.value) = ''F''
                                      and s.ts_code = :l_ts_code
-                                     and s.parameter_code = ap.parameter_code
-                                     and ap.base_parameter_code = p.base_parameter_code
-                                     and p.unit_code = c.to_unit_code
-                                     and c.from_unit_code = u.unit_code
-                                     and u.unit_id = :l_units
                                      and date_time >= :start_date
                                      and date_time < :end_date) t2
                               on (t1.ts_code = :l_ts_code and t1.date_time = t2.date_time and t1.version_date = :l_version_date)
@@ -5749,6 +5739,7 @@ AS
                            l_timeseries_data,
                            l_ts_code,
                            l_units,
+                           l_base_unit_id,
                            from_tz(cast(x.start_date as timestamp),'0:00'),
                            from_tz(cast(x.end_date as timestamp),'0:00'),
                            l_ts_code,
@@ -5776,21 +5767,10 @@ AS
                   execute immediate
                      'merge into '||x.table_name||' t1
                            using (select cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date) date_time,
-                                         (t.value * c.factor + c.offset)  - :l_value_offset value,
+                                         cwms_util.convert_units(t.value - :l_value_offset,:l_units,:l_base_unit_id) value,
                                          cwms_ts.clean_quality_code(t.quality_code) quality_code
-                                    from table(cast(:l_timeseries_data as tsv_array)) t,
-                                         at_cwms_ts_spec s,
-                                         at_parameter ap,
-                                         cwms_unit_conversion c,
-                                         cwms_base_parameter p,
-                                         cwms_unit u
-                                   where cwms_util.is_nan(t.value) = ''F''
-                                     and s.ts_code = :l_ts_code
-                                     and s.parameter_code = ap.parameter_code
-                                     and ap.base_parameter_code = p.base_parameter_code
-                                     and p.unit_code = c.to_unit_code
-                                     and c.from_unit_code = u.unit_code
-                                     and u.unit_id = :l_units
+                                    from table(cast(:l_timeseries_data as tsv_array)) t                                         
+                                   where cwms_util.is_nan(t.value) = ''F''                                     
                                      and date_time >= :start_date
                                      and date_time < :end_date) t2
                               on (t1.ts_code = :l_ts_code and t1.date_time = t2.date_time and t1.version_date = :l_version_date)
@@ -5818,9 +5798,9 @@ AS
                                        t2.quality_code,
                                        :l_version_date)'
                      using l_value_offset,
-                           l_timeseries_data,
-                           l_ts_code,
                            l_units,
+                           l_base_unit_id,
+                           l_timeseries_data,
                            from_tz(cast(x.start_date as timestamp),'0:00'),
                            from_tz(cast(x.end_date as timestamp),'0:00'),
                            l_ts_code,
@@ -5848,14 +5828,9 @@ AS
                   execute immediate
                      'merge into '||x.table_name||' t1
                            using (select cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date) date_time,
-                                         (t.value * c.factor + c.offset) - :l_value_offset value,
+                                         cwms_util.convert_units(t.value-:l_value_offset,:l_units,:l_base_unit_id) value,
                                          cwms_ts.clean_quality_code(t.quality_code) quality_code
-                                    from table(cast(:l_timeseries_data as tsv_array)) t,
-                                         at_cwms_ts_spec s,
-                                         at_parameter ap,
-                                         cwms_unit_conversion c,
-                                         cwms_base_parameter p,
-                                         cwms_unit u
+                                    from table(cast(:l_timeseries_data as tsv_array)) t
                                    where cwms_util.is_nan(t.value) = ''F''
                                      and (t.value is not null
                                           or (:l_interval_value <= 0
@@ -5867,12 +5842,6 @@ AS
                                           or :l_interval_value <= 0
                                           or cwms_ts.quality_is_protected_text(t.quality_code) = ''T''
                                          )
-                                     and s.ts_code = :l_ts_code
-                                     and s.parameter_code = ap.parameter_code
-                                     and ap.base_parameter_code = p.base_parameter_code
-                                     and p.unit_code = c.to_unit_code
-                                     and c.from_unit_code = u.unit_code
-                                     and u.unit_id = :l_units
                                      and date_time >= :start_date
                                      and date_time < :end_date) t2
                               on (t1.ts_code = :l_ts_code and t1.date_time = t2.date_time and t1.version_date = :l_version_date)
@@ -5890,11 +5859,11 @@ AS
                                        t2.quality_code,
                                        :l_version_date)'
                      using l_value_offset,
+                           l_units,
+                           l_base_unit_id,
                            l_timeseries_data,
                            l_interval_value,
                            l_interval_value,
-                           l_ts_code,
-                           l_units,
                            from_tz(cast(x.start_date as timestamp),'0:00'),
                            from_tz(cast(x.end_date as timestamp),'0:00'),
                            l_ts_code,
@@ -5924,21 +5893,10 @@ AS
                      l_sql_txt :=
                            'merge into '||x.table_name||' t1
                                  using (select cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date) date_time,
-                                               (t.value * c.factor + c.offset) - :l_value_offset value,
+                                               cwms_util.convert_units(t.value-:l_value_offset,:l_units,:l_base_unit_id) value,
                                                cwms_ts.clean_quality_code(t.quality_code) quality_code
-                                          from table(cast(:l_timeseries_data as tsv_array)) t,
-                                               at_cwms_ts_spec s,
-                                               at_parameter ap,
-                                               cwms_unit_conversion c,
-                                               cwms_base_parameter p,
-                                               cwms_unit u
+                                          from table(cast(:l_timeseries_data as tsv_array)) t
                                          where cwms_util.is_nan(t.value) = ''F''
-                                           and s.ts_code = :l_ts_code
-                                           and s.parameter_code = ap.parameter_code
-                                           and ap.base_parameter_code = p.base_parameter_code
-                                           and p.unit_code = c.to_unit_code
-                                           and c.from_unit_code = u.unit_code
-                                           and u.unit_id = :l_units
                                            and date_time >= from_tz(cast(:start_date as timestamp), ''UTC'')
                                            and date_time < from_tz(cast(:end_date as timestamp), ''UTC'')) t2
                                     on (t1.ts_code = :l_ts_code and t1.date_time = t2.date_time and t1.version_date = :l_version_date)
@@ -5978,21 +5936,10 @@ AS
                      l_sql_txt :=
                            'merge into '||x.table_name||' t1
                                  using (select cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date) date_time,
-                                               (t.value * c.factor + c.offset) - :l_value_offset value,
+                                               cwms_util.convert_units(t.value-:l_value_offset,:l_units,:l_base_unit_id) value,
                                                cwms_ts.clean_quality_code(t.quality_code) quality_code
-                                          from table(cast(:l_timeseries_data as tsv_array)) t,
-                                               at_cwms_ts_spec s,
-                                               at_parameter ap,
-                                               cwms_unit_conversion c,
-                                               cwms_base_parameter p,
-                                               cwms_unit u
+                                          from table(cast(:l_timeseries_data as tsv_array)) t
                                          where cwms_util.is_nan(t.value) = ''F''
-                                           and s.ts_code = :l_ts_code
-                                           and s.parameter_code = ap.parameter_code
-                                           and ap.base_parameter_code = p.base_parameter_code
-                                           and p.unit_code = c.to_unit_code
-                                           and c.from_unit_code = u.unit_code
-                                           and u.unit_id = :l_units
                                            and date_time >= :start_date
                                            and date_time < :end_date) t2
                                     on (t1.ts_code = :l_ts_code and t1.date_time = t2.date_time and t1.version_date = :l_version_date)
@@ -6020,9 +5967,9 @@ AS
                   end if;
                   execute immediate l_sql_txt
                      using l_value_offset,
-                           l_timeseries_data,
-                           l_ts_code,
                            l_units,
+                           l_base_unit_id,
+                           l_timeseries_data,
                            from_tz(cast(x.start_date as timestamp),'0:00'),
                            from_tz(cast(x.end_date as timestamp),'0:00'),
                            l_ts_code,
@@ -6050,14 +5997,9 @@ AS
                   execute immediate
                      'merge into '||x.table_name||' t1
                            using (select cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date) date_time,
-                                         (t.value * c.factor + c.offset) - :l_value_offset value,
+                                         cwms_util.convert_units(t.value-:l_value_offset,:l_units,:l_base_unit_id) value,
                                          cwms_ts.clean_quality_code(t.quality_code) quality_code
-                                    from table(cast(:l_timeseries_data as tsv_array)) t,
-                                         at_cwms_ts_spec s,
-                                         at_parameter ap,
-                                         cwms_unit_conversion c,
-                                         cwms_base_parameter p,
-                                         cwms_unit u,
+                                    from table(cast(:l_timeseries_data as tsv_array)) t
                                          cwms_data_quality q
                                    where cwms_util.is_nan(t.value) = ''F''
                                      and (t.value is not null
@@ -6070,13 +6012,6 @@ AS
                                           or :l_interval_value <= 0
                                           or cwms_ts.quality_is_protected_text(t.quality_code) = ''T''
                                          )
-                                     and s.ts_code = :l_ts_code
-                                     and s.parameter_code = ap.parameter_code
-                                     and ap.base_parameter_code = p.base_parameter_code
-                                     and q.quality_code = cwms_ts.clean_quality_code(t.quality_code)
-                                     and p.unit_code = c.to_unit_code
-                                     and c.from_unit_code = u.unit_code
-                                     and u.unit_id = :l_units
                                      and date_time >= :start_date
                                      and date_time <  :end_date) t2
                               on (t1.ts_code = :l_ts_code and t1.date_time = t2.date_time and t1.version_date = :l_version_date)
@@ -6102,11 +6037,11 @@ AS
                                        t2.quality_code,
                                        :l_version_date)'
                      using l_value_offset,
+                           l_units,
+                           l_base_unit_id,
                            l_timeseries_data,
                            l_interval_value,
                            l_interval_value,
-                           l_ts_code,
-                           l_units,
                            from_tz(cast(x.start_date as timestamp),'0:00'),
                            from_tz(cast(x.end_date as timestamp),'0:00'),
                            l_ts_code,
@@ -6134,15 +6069,9 @@ AS
                   execute immediate
                      'merge into '||x.table_name||' t1
                            using (select cast((cwms_util.fixup_timezone(t.date_time) at time zone ''UTC'') as date) date_time,
-                                         (t.value * c.factor + c.offset) - :l_value_offset value,
+                                         cwms_util.convert_units(t.value-:l_value_offset,:l_units,:l_base_unit_id) value,
                                          cwms_ts.clean_quality_code(t.quality_code) quality_code
-                                    from table(cast(:l_timeseries_data as tsv_array)) t,
-                                         at_cwms_ts_spec s,
-                                         at_parameter ap,
-                                         cwms_unit_conversion c,
-                                         cwms_base_parameter p,
-                                         cwms_unit u,
-                                         cwms_data_quality q
+                                    from table(cast(:l_timeseries_data as tsv_array)) t
                                    where cwms_util.is_nan(t.value) = ''F''
                                      and (t.value is not null
                                           or (:l_interval_value <= 0
@@ -6154,13 +6083,6 @@ AS
                                           or :l_interval_value <= 0
                                           or cwms_ts.quality_is_protected_text(t.quality_code) = ''T''
                                          )
-                                     and s.ts_code = :l_ts_code
-                                     and s.parameter_code = ap.parameter_code
-                                     and ap.base_parameter_code = p.base_parameter_code
-                                     and q.quality_code = cwms_ts.clean_quality_code(t.quality_code)
-                                     and p.unit_code = c.to_unit_code
-                                     and c.from_unit_code = u.unit_code
-                                     and u.unit_id = :l_units
                                      and date_time >= :start_date
                                      and date_time <  :end_date) t2
                               on (t1.ts_code = :l_ts_code and t1.date_time = t2.date_time and t1.version_date = :l_version_date)
@@ -6194,11 +6116,11 @@ AS
                                        t2.quality_code,
                                        :l_version_date)'
                      using l_value_offset,
+                           l_units,
+                           l_base_unit_id,
                            l_timeseries_data,
                            l_interval_value,
                            l_interval_value,
-                           l_ts_code,
-                           l_units,
                            from_tz(cast(x.start_date as timestamp),'0:00'),
                            from_tz(cast(x.end_date as timestamp),'0:00'),
                            l_ts_code,
@@ -6222,23 +6144,14 @@ AS
                --------------------------------------------
                select ztsv_type(
                          trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone 'UTC') as date), 'mi'),
-                         (t.value * c.factor + c.offset) - l_value_offset,
+                         cwms_util.convert_units(t.value-l_value_offset,l_units,l_base_unit_id),
                          cwms_ts.clean_quality_code(t.quality_code))
                  bulk collect
                  into z_timeseries_data
                  from table(cast(l_timeseries_data as tsv_array)) t,
-                     at_cwms_ts_spec s,
-                     at_parameter p,
-                     cwms_unit_conversion c,
-                     cwms_base_parameter bp,
-                     cwms_unit u
+                     at_cwms_ts_spec s
                 where cwms_util.is_nan(t.value) = 'F'
-                  and s.ts_code = l_ts_code
-                  and u.unit_id = l_units
-                  and c.from_unit_code = u.unit_code
-                  and p.parameter_code = s.parameter_code
-                  and bp.base_parameter_code = p.base_parameter_code
-                  and c.to_unit_code = bp.unit_code;
+                  and s.ts_code = l_ts_code;
 
                for x in (select start_date, end_date, table_name
                            from at_ts_table_properties
@@ -6513,69 +6426,53 @@ AS
             -- no deletes --
             ----------------
             begin
-               select l_ts_code,
-                      l_version_date,
-                      mindate,
-                      l_store_date,
-                      l_store_date,
-                      q2.earliest_non_null_time,
-                      l_store_date,
-                      l_store_date,
-                      maxdate,
-                      l_store_date,
-                      l_store_date,
-                      q2.latest_non_null_time,
-                      l_store_date,
-                      l_store_date,
-                      case
-                      when c.function is null then q1.least_value * c.factor + c.offset
-                      else cwms_util.eval_expression(c.function, double_tab_t(q1.least_value))
-                      end,
-                      q4.least_value_time,
-                      l_store_date,
-                      case
-                      when c.function is null then q3.least_accepted_value * c.factor + c.offset
-                      else cwms_util.eval_expression(c.function, double_tab_t(q3.least_accepted_value))
-                      end,
-                      q6.least_accepted_value_time,
-                      l_store_date,
-                      case
-                      when c.function is null then q1.greatest_value * c.factor + c.offset
-                      else cwms_util.eval_expression(c.function, double_tab_t(q1.greatest_value))
-                      end,
-                      q5.greatest_value_time,
-                      l_store_date,
-                      case
-                      when c.function is null then q3.greatest_accepted_value * c.factor + c.offset
-                      else cwms_util.eval_expression(c.function, double_tab_t(q3.greatest_accepted_value))
-                      end,
-                      q7.greatest_accepted_value_time,
-                      l_store_date,
-                      l_store_date,
-                      nvl(q8.has_non_zero_quality, 'F')
-                 into l_ts_extents_rec
-                 from at_cwms_ts_spec s,
-                      at_parameter p,
-                      cwms_unit_conversion c,
-                      cwms_base_parameter bp,
-                      cwms_unit u,
-                      (select min(value) as least_value,
-                              max(value) as greatest_value
-                         from table(l_timeseries_data)
-                      ) q1
-                      join
-                      (select min(date_time) as earliest_non_null_time,
-                              max(date_time) as latest_non_null_time
-                         from table(l_timeseries_data)
-                        where value is not null
-                      ) q2 on 1=1
-                      join
-                      (select min(value) as least_accepted_value,
-                              max(value) as greatest_accepted_value
-                         from table(l_timeseries_data)
-                        where bitand(quality_code, 30) in (0,2,8)
-                      ) q3 on 1=1
-                      join
+            select l_ts_code,
+                   l_version_date,
+                   mindate,
+                   l_store_date,
+                   l_store_date,
+                   q2.earliest_non_null_time,
+                   l_store_date,
+                   l_store_date,
+                   maxdate,
+                   l_store_date,
+                   l_store_date,
+                   q2.latest_non_null_time,
+                   l_store_date,
+                   l_store_date,
+                   cwms_util.convert_units(q1.least_value,l_units,l_base_unit_id),
+                   q4.least_value_time,
+                   l_store_date,
+                   cwms_util.convert_units(q3.least_accepted_value,l_units,l_base_unit_id),                   
+                   q6.least_accepted_value_time,
+                   l_store_date,
+                   cwms_util.convert_units(q1.greatest_value,l_units,l_base_unit_id),
+                   q5.greatest_value_time,
+                   l_store_date,
+                   cwms_util.convert_units(q3.greatest_accepted_value,l_units,l_base_unit_id),
+                   q7.greatest_accepted_value_time,
+                   l_store_date,
+                   l_store_date,
+                   nvl(q8.has_non_zero_quality, 'F')
+              into l_ts_extents_rec
+              from at_cwms_ts_spec s,
+                   (select min(value) as least_value,
+                           max(value) as greatest_value
+                      from table(l_timeseries_data)
+                   ) q1
+                   join
+                   (select min(date_time) as earliest_non_null_time,
+                           max(date_time) as latest_non_null_time
+                      from table(l_timeseries_data)
+                     where value is not null
+                   ) q2 on 1=1
+                   join
+                   (select min(value) as least_accepted_value,
+                           max(value) as greatest_accepted_value
+                      from table(l_timeseries_data)
+                     where bitand(quality_code, 30) in (0,2,8)
+                   ) q3 on 1=1
+                   join
                       (select value,
                               max(date_time) as least_value_time
                          from table(l_timeseries_data)
@@ -6605,12 +6502,8 @@ AS
                         where quality_code != 0
                           and rownum = 1
                       ) q8 on 1=1
-                where s.ts_code = l_ts_code
-                  and u.unit_id = l_units
-                  and c.from_unit_code = u.unit_code
-                  and p.parameter_code = s.parameter_code
-                  and bp.base_parameter_code = p.base_parameter_code
-                  and c.to_unit_code = bp.unit_code;
+             where
+               s.ts_code = l_ts_code;
 
                declare
                   l_updated boolean;
