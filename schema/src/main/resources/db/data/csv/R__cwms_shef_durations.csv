@@ -1,0 +1,56 @@
+!query
+declare
+    p_duration_code      cwms_shef_duration.shef_duration_code%type := ?;
+    p_description        cwms_shef_duration.shef_duration_desc%type := ?;
+    p_duration_id        cwms_shef_duration.shef_duration_numeric%type := ?;
+    p_cwms_duration_code cwms_shef_duration.cwms_duration_code%type := ?;
+    
+begin
+    MERGE into cwms_20.cwms_shef_duration csd
+        USING dual
+        ON (csd.shef_duration_code = p_duration_code)
+        WHEN MATCHED then
+            update set                
+                csd.shef_duration_desc = p_description,
+                csd.shef_duration_numeric = p_duration_id,
+                csd.cwms_duration_code = p_cwms_duration_code
+        WHEN NOT MATCHED then
+            insert( shef_duration_code, shef_duration_desc, shef_duration_numeric,cwms_duration_code)
+            values( p_duration_code,                    
+                    p_description,
+                    p_duration_id,
+                    p_cwms_duration_code
+                )
+;
+end;
+!endquery
+!description
+:duration_code \s*(?<current>[A-Z])\s*\|(?<remains>.*) string
+:description ^\s*("?)(?<current>.*?)\1\s*\|(?<remains>.*)|(?<all>.*) string
+:duration \s*(?<current>(?:[0-9]*|NULL))\|(?<remains>.*) int
+:cwms_duration_code ^\s*(?<current>(?:[0-9]*|NULL))$(?<remains>.*) int
+!enddescription
+!data
+I| Instantaneous|                                                                                                     0|    29
+U| 1 Minute|                                                                                                          1|     1
+C| 15 Minutes|                                                                                                        15|    9
+J| 30 Minutes|                                                                                                        30|   11
+H| 1 Hour|                                                                                                            1001| 12
+B| 2 Hour|                                                                                                            1002| 13
+T| 3 Hour|                                                                                                            1003| 14
+F| 4 Hour|                                                                                                            1004| 15
+Q| 6 Hour|                                                                                                            1006| 16
+A| 8 Hour|                                                                                                            1008| 17
+K| 12 Hour|                                                                                                           1012| 18
+L| 18 Hour|                                                                                                           1018| NULL
+D| 1 Day|                                                                                                             2001| 19
+W| 1 Week|                                                                                                            2007| 25
+N| Mid month, duration for the period from the 1st day of the month to and ending on the 15th day of the same month|  NULL| NULL
+M| 1 Month|                                                                                                           3001| 26
+Y| 1 Year|                                                                                                            4001| 27
+P| Duration for a period beginning at previous 7 a.m. local and ending at time of observation|                        5004| 19
+V| Variable period, duration defined separately (see Tables 11a and 11b) 1/|                                          NULL| NULL
+S| Period of seasonal duration (normally used to designate a partial period, for example, 1 January to current date)| 5001| NULL
+R| Entire period of record|                                                                                           5002| NULL
+X| Unknown duration|                                                                                                  5005| NULL
+Z| Filler character, pointer to default duration for that physical element as shown in Table 7.|                      NULL| NULL

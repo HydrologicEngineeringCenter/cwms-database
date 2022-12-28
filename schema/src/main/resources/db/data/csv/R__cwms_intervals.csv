@@ -1,0 +1,92 @@
+!query
+declare
+    p_interval_code  cwms_interval.interval_code%type := ?;
+    p_interval_id    cwms_interval.interval_id%type := ?;
+    p_interval       cwms_interval.interval%type := ?;
+    p_description    cwms_interval.description%type := ?;
+begin
+    MERGE into cwms_20.cwms_interval ci
+        USING dual
+        ON (ci.interval_code = p_interval_code)
+        WHEN MATCHED then
+            update set
+                ci.interval_id = p_interval_id,
+                ci.interval = p_interval,
+                ci.description = p_description
+        WHEN NOT MATCHED then
+            insert( interval_code, interval_id, interval, description)
+            values( p_interval_code,
+                    p_interval_id,
+                    p_interval,
+                    p_description
+                )
+;
+end;
+!endquery
+!description
+:interval_code \s*(?<current>[0-9]*),(?<remains>.*) int
+:interval_id \s*(?<current>^~?[0-9a-zA-Z]*),(?<remains>.*) string
+:interval \s*(?<current>[0-9]*),(?<remains>.*) int
+:description ^\s*(\"?)(?<current>.*)\1$|(?<remains>.*) string 
+!enddescription
+!data
+29,    0,             0,Irregular recurrence interval
+31,     ~1Minute,       0,Local time irregular: expected recurrence interval of 1 minute
+32,     ~2Minutes,      0,Local time irregular: expected recurrence interval of 2 minutes
+33,     ~3Minutes,      0,Local time irregular: expected recurrence interval of 3 minutes
+34,     ~4Minutes,      0,Local time irregular: expected recurrence interval of 4 minutes
+35,     ~5Minutes,      0,Local time irregular: expected recurrence interval of 5 minutes
+36,     ~6Minutes,      0,Local time irregular: expected recurrence interval of 6 minutes
+37,     ~8Minutes,      0,Local time irregular: expected recurrence interval of 8 minutes
+38,    ~10Minutes,     0,Local time irregular: expected recurrence interval of 10 minutes
+39,     ~12Minutes,     0,Local time irregular: expected recurrence interval of 12 minutes
+40,     ~15Minutes,     0,Local time irregular: expected recurrence interval of 15 minutes
+41,    ~20Minutes,     0,Local time irregular: expected recurrence interval of 20 minutes
+42,    ~30Minutes,     0,Local time irregular: expected recurrence interval of 30 minutes
+43,    ~1Hour,         0,Local time irregular: expected recurrence interval of 1 hour
+44,    ~2Hours,        0,Local time irregular: expected recurrence interval of 2 hours
+45,    ~3Hours,        0,Local time irregular: expected recurrence interval of 3 hours
+46,    ~4Hours,        0,Local time irregular: expected recurrence interval of 4 hours
+47,    ~6Hours,        0,Local time irregular: expected recurrence interval of 6 hours
+48,    ~8Hours,        0,Local time irregular: expected recurrence interval of 8 hours
+49,    ~12Hours,       0,Local time irregular: expected recurrence interval of 12 hours
+50,    ~1Day,          0,Local time irregular: expected recurrence interval of 1 day
+51,    ~2Days,         0,Local time irregular: expected recurrence interval of 2 days
+52,    ~3Days,         0,Local time irregular: expected recurrence interval of 3 days
+53,    ~4Days,         0,Local time irregular: expected recurrence interval of 4 days
+54,    ~5Days,         0,Local time irregular: expected recurrence interval of 5 days
+55,    ~6Days,         0,Local time irregular: expected recurrence interval of 6 days
+56,    ~1Week,         0,Local time irregular: expected recurrence interval of 1 week
+57,    ~1Month,        0,Local time irregular: expected recurrence interval of 1 month
+58,    ~1Year,         0,Local time irregular: expected recurrence interval of 1 year
+59,    ~1Decade,       0,Local time irregular: expected recurrence interval of 1 decade
+60,    Irr,            0,Irregular (alias for 0)
+1,     1Minute,       1,Regular recurrence interval of 1 minute
+2,     2Minutes,      2,Regular recurrence interval of 2 minutes
+3,     3Minutes,      3,Regular recurrence interval of 3 minutes
+4,     4Minutes,      4,Regular recurrence interval of 4 minutes
+5,     5Minutes,      5,Regular recurrence interval of 5 minutes
+6,     6Minutes,      6,Regular recurrence interval of 6 minutes
+7,     8Minutes,      8,Regular recurrence interval of 8 minutes
+30,    10Minutes,    10,Regular recurrence interval of 10 minutes
+8,     12Minutes,    12,Regular recurrence interval of 12 minutes
+9,     15Minutes,    15,Regular recurrence interval of 15 minutes
+10,    20Minutes,    20,Regular recurrence interval of 20 minutes
+11,    30Minutes,    30,Regular recurrence interval of 30 minutes
+12,    1Hour,        60,Regular recurrence interval of 1 hour
+13,    2Hours,      120,Regular recurrence interval of 2 hours
+14,    3Hours,      180,Regular recurrence interval of 3 hours
+15,    4Hours,      240,Regular recurrence interval of 4 hours
+16,    6Hours,      360,Regular recurrence interval of 6 hours
+17,    8Hours,      480,Regular recurrence interval of 8 hours
+18,    12Hours,     720,Regular recurrence interval of 12 hours
+19,    1Day,       1440,Regular recurrence interval of 1 day
+20,    2Days,      2880,Regular recurrence interval of 2 days
+21,    3Days,      4320,Regular recurrence interval of 3 days
+22,    4Days,      5760,Regular recurrence interval of 4 days
+23,    5Days,      7200,Regular recurrence interval of 5 days
+24,    6Days,      8640,Regular recurrence interval of 6 days
+25,    1Week,     10080,Regular recurrence interval of 1 week
+26,    1Month,    43200,Regular recurrence interval of 1 month
+27,    1Year,    525600,Regular recurrence interval of 1 year
+28,    1Decade, 5256000,Regular recurrence interval of 1 decade

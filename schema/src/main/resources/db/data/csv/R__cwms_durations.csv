@@ -1,0 +1,94 @@
+!query
+declare
+    p_duration_code  cwms_duration.duration_code%type := ?;
+    p_duration_id    cwms_duration.duration_id%type := ?;
+    p_duration       cwms_duration.duration%type := ?;
+    p_description    cwms_duration.description%type := ?;
+begin
+    MERGE into cwms_20.cwms_duration cd
+        USING dual
+        ON (cd.duration_code = p_duration_code)
+        WHEN MATCHED then
+            update set
+                cd.duration_id = p_duration_id,
+                cd.duration = p_duration,
+                cd.description = p_description
+        WHEN NOT MATCHED then
+            insert( duration_code, duration_id, duration, description)
+            values( p_duration_code,
+                    p_duration_id,
+                    p_duration,
+                    p_description
+                )
+;
+end;
+!endquery
+!description
+:duration_code (?<current>[0-9]*)\|(?<remains>.*) int
+:duration_id \s*(?<current>^~?[0-9a-zA-Z]*)\|(?<remains>.*) string
+:duration \s*(?<current>-?[0-9]*)\|(?<remains>.*) int
+:description ^\s*("?)?(?<current>.*)\1$|(?<remains>.*) string
+!enddescription
+!data
+1|     1Minute|      1|Measurement applies over 1 minute, time stamped at period end
+2|     2Minutes|     2|Measurement applies over 2 minutes, time stamped at period end
+3|     3Minutes|     3|Measurement applies over 3 minutes, time stamped at period end
+4|     4Minutes|     4|Measurement applies over 4 minutes, time stamped at period end
+5|     5Minutes|     5|Measurement applies over 5 minutes, time stamped at period end
+6|     6Minutes|     6|Measurement applies over 6 minutes, time stamped at period end
+7|     8Minutes|     8|Measurement applies over 8 minutes, time stamped at period end
+8|     12Minutes|    12|Measurement applies over 12 minutes, time stamped at period end
+9|     15Minutes|    15|Measurement applies over 15 minutes, time stamped at period end
+10|    20Minutes|    20|Measurement applies over 20 minutes, time stamped at period end
+11|    30Minutes|    30|Measurement applies over 30 minutes, time stamped at period end
+12|    1Hour|        60|Measurement applies over 1 hour, time stamped at period end
+13|    2Hours|       120|    Measurement applies over 2 hours, time stamped at period end
+14|    3Hours|       180|    Measurement applies over 3 hours, time stamped at period end
+15|    4Hours|       240|    Measurement applies over 4 hours, time stamped at period end
+16|    6Hours|       360|    Measurement applies over 6 hours, time stamped at period end
+17|    8Hours|       480|    Measurement applies over 8 hours, time stamped at period end
+18|    12Hours|      720|    Measurement applies over 12 hours, time stamped at period end
+19|    1Day|         1440|   Measurement applies over 1 day, time stamped at period end
+20|    2Days|        2880|   Measurement applies over 2 days, time stamped at period end
+21|    3Days|        4320|   Measurement applies over 3 days, time stamped at period end
+22|    4Days|        5760|   Measurement applies over 4 days, time stamped at period end
+23|    5Days|        7200|   Measurement applies over 5 days, time stamped at period end
+24|    6Days|        8640|   Measurement applies over 6 days, time stamped at period end
+25|    1Week|        10080|Measurement applies over 1 week, time stamped at period end
+26|    1Month|       43200|Measurement applies over 1 month, time stamped at period end
+27|    1Year|        525600|Measurement applies over 1 year, time stamped at period end
+28|    1Decade|      5256000|    Measurement applies over 1 decade, time stamped at period end
+29|    0|            0|Measurement applies intantaneously at time stamp or from previous time stamp
+30|    1MinuteBOP|   1|Measurement applies over 1 minute, time stamped at period beginning
+31|    2MinutesBOP|  2|Measurement applies over 2 minutes, time stamped at period beginning
+32|    3MinutesBOP|  3|Measurement applies over 3 minutes, time stamped at period beginning
+33|    4MinutesBOP|  4|Measurement applies over 4 minutes, time stamped at period beginning
+34|    5MinutesBOP|  5|Measurement applies over 5 minutes, time stamped at period beginning
+35|    6MinutesBOP|  6|Measurement applies over 1 minutes, time stamped at period beginning
+36|    8MinutesBOP|  8|Measurement applies over 8 minutes, time stamped at period beginning
+37|    12MinutesBOP| 12|Measurement applies over 12 minutes, time stamped at period beginning
+38|    15MinutesBOP| 15|Measurement applies over 15 minutes, time stamped at period beginning
+39|    20MinutesBOP| 20|Measurement applies over 20 minutes, time stamped at period beginning
+40|    30MinutesBOP| 30|Measurement applies over 30 minutes, time stamped at period beginning
+41|    1HourBOP|     60|Measurement applies over 1 hour, time stamped at period beginnng
+42|    2HoursBOP|    120|    Measurement applies over 2 hours, time stamped at period beginning
+43|    3HoursBOP|    180|    Measurement applies over 3 hours, time stamped at period beginning
+44|    4HoursBOP|    240|    Measurement applies over 4 hours, time stamped at period beginning
+45|    6HoursBOP|    360|    Measurement applies over 6 hours, time stamped at period beginning
+46|    8HoursBOP|    480|    Measurement applies over 8 hours, time stamped at period beginning
+47|    12HoursBOP|   720|    Measurement applies over 12 hours, time stamped at period beginning
+48|    1DayBOP|      1440|   Measurement applies over 1 day, time stamped at period beginning
+49|    2DaysBOP|     2880|   Measurement applies over 2 days, time stamped at period beginning
+50|    3DaysBOP|     4320|   Measurement applies over 3 days, time stamped at period beginning
+51|    4DaysBOP|     5760|   Measurement applies over 4 days, time stamped at period beginning
+52|    5DaysBOP|     7200|   Measurement applies over 5 days, time stamped at period beginning
+53|    6DaysBOP|     8640|   Measurement applies over 6 days, time stamped at period beginning
+54|    1WeekBOP|     10080|Measurement applies over 1 week, time stamped at period beginning
+55|    1MonthBOP|    43200|Measurement applies over 1 month, time stamped at period beginning
+56|    1YearBOP|     525600|Measurement applies over 1 year, time stamped at period beginning
+57|    1DecadeBOP|   5256000|    Measurement applies over 1 decade, time stamped at period beginning
+58|    10Minutes|    10|Measurement applies over 10 minutes, time stamped at period end
+59|    10MinutesBOP| 10|Measurement applies over 10 minutes, time stamped at period beginning
+60|    0BOP|         0|Measurement applies intantaneously at time stamp or until next time stamp
+61|    Variable|     -1|Variable duration for non-instantaneous or const parameter types
+62|    UntilChanged| -2|  Duration for const parameter types
