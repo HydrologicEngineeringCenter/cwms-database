@@ -25,6 +25,7 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
     private DataResource resource;
     private String query;
     private ArrayList<String> disabledIndexes = new ArrayList<>();
+    private int batchSize = 1000;
 
     private class Group {
         public Group( String item, String pattern, String type, String endSequence){
@@ -65,31 +66,51 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
                 } else if( line.startsWith("!description") ) {
                     logger.fine("Loading descriptions.");
                     loadDescription(reader);
-                } else if( line.startsWith("!data")){
+                } else if( line.startsWith("!data")) {
                     logger.fine("Processing Data Elemements");
                     int entries = processData(reader,context.getConnection());
                     logger.finest("Total Entries loaded for (" + resource.getFilename() + ") is " + entries);
                 } else if( line.startsWith("!disableindex")) {
-
                     disableIndex(line.split("\\s+")[1],context.getConnection());
+                } else if( line.startsWith("!config")) {
+                    processConfig(reader);
                 } else if( line.startsWith("!")){
                     // do nothing, comment
                 }
-
-
             }
             PreparedStatement enableIndex = context.getConnection().prepareStatement("alter index ? rebuild online");
             for(String index: disabledIndexes){
                 enableIndex.setString(1,index);
                 enableIndex.execute();
             }
-        } catch( IOException e ){
+        } catch (SQLException ex) {
+            SQLException cur = ex;
+            logger.info(ex.getLocalizedMessage());
+            while ((cur = cur.getNextException()) != null) {
+                logger.info(cur.getLocalizedMessage());
+            }
+            throw ex;
+        } catch (IOException e ) {
             throw new FlywayException("Data load processing failure",e);
         }
 
 
 
 
+    }
+
+    private void processConfig(BufferedReader reader) throws IOException {
+        String line;
+
+        while( !(line = reader.readLine()).startsWith("!endconfig")) {
+            String parts[] = line.split("\\s+");
+            logger.finest( "Loading " + line + " Split to " + parts.length + " elements.");
+            if ("batchsize".equalsIgnoreCase(parts[0])) {
+                this.batchSize = Integer.parseInt(parts[1]);
+            } else {
+                logger.warning("Unknown config paramter " + parts[0] + ", ignored.");
+            }
+        }
     }
 
     private void disableIndex(String indexName, Connection connection) throws SQLException {
@@ -108,10 +129,9 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
         connection.setAutoCommit(false);
         String line;
         int totalEntries = 0;
-        int batchSize = 1000;
         while ((line = reader.readLine()) != null) {
             stmt.clearParameters();
-            //logger.info(line);
+            logger.info(line);
             String remainder = line;
             int idx = 0;
             if( line.trim().isEmpty()){
@@ -168,7 +188,7 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
             totalEntries++;
             if( totalEntries % batchSize == 0 ){
                 stmt.executeBatch();
-                logger.fine( "Have now saved: " + totalEntries + " records total for this set.");
+                logger.info( "Have now saved: " + totalEntries + " records total for this set.");
             }
         }
         stmt.executeBatch();

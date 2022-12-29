@@ -2,7 +2,7 @@
 declare
     p_code  cwms_parameter_type.parameter_type_code%type := ?;
     p_id    cwms_parameter_type.parameter_type_id%type := ?;
-    p_description    cwms_parameter_type.pdescription%type := ?;
+    p_description    cwms_parameter_type.description%type := ?;
 begin
     MERGE into cwms_20.cwms_parameter_type cpt
         USING dual
@@ -23,7 +23,7 @@ end;
 !description
 :code \s*(?<current>[0-9]*),(?<remains>.*) int
 :id \s*("?)(?<current>.*?)\1,(?<remains>.*) string
-:description \s*("?)(?<current>.*?)\1,(?<remains>.*) string
+:description \s*("?)(?<current>.*?)\1|(?<remains>.*) string
 !enddescription
 !data
 1, "Total", "TOTAL"

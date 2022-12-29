@@ -1,0 +1,44 @@
+!query
+declare
+    p_code  cwms_dss_parameter_type.dss_parameter_type_code%type := ?;
+	p_dss_type cwms_dss_parameter_type.dss_parameter_type_id%type := ?;
+	p_db_type_id  cwms_parameter_type.parameter_type_id%type := ?;
+    p_description  cwms_dss_parameter_type.description%type := ?;
+    l_parameter_type_code cwms_parameter_type.parameter_type_code%type;
+begin
+    select 
+        parameter_type_code into l_parameter_type_code 
+    from cwms_parameter_type 
+    where parameter_type_id = p_db_type_id;
+
+    MERGE into cwms_20.cwms_dss_parameter_type cdpt
+        USING dual
+        ON (cdpt.dss_parameter_type_code = p_code)
+        WHEN MATCHED then
+            update set
+                cdpt.dss_parameter_type_id = p_dss_type,
+                cdpt.parameter_type_code = l_parameter_type_code,
+				cdpt.description = p_description
+        WHEN NOT MATCHED then
+            insert( DSS_PARAMETER_TYPE_CODE, DSS_PARAMETER_TYPE_ID, PARAMETER_TYPE_CODE, DESCRIPTION)
+            values( p_code,
+                    p_dss_type,
+					l_parameter_type_code,
+                    p_description
+                )
+;
+end;
+!endquery
+!description
+:code \s*(?<current>[0-9]*),(?<remains>.*) int
+:dsstype \s*("?)(?<current>.*?)\1,(?<remains>.*) string
+:dbtype \s*("?)(?<current>.*?)\1,(?<remains>.*) string
+:description \s*("?)(?<current>.*?)\1|(?<remains>.*) string
+!enddescription
+!data
+1,"PER-AVER","Ave","Average over a period"
+2,"PER-CUM", "Total","Accumulation over a period"
+3,"INST-VAL","Inst", "Value observed at an instant"
+4,"INST-CUM","Inst", "Accumulation observed at an instant"
+5,"PER-MIN", "Min",  "Minumum over a period"
+6,"PER-MAX", "Max",  "Maximum over a period"
