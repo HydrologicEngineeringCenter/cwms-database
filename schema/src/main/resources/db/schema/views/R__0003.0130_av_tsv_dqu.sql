@@ -70,7 +70,10 @@ select tsv.ts_code,
        ts.ts_alias_group
   from av_tsv               tsv,
        av_cwms_ts_id2       ts,
-       cwms_unit_conversion c
+       ( (select from_unit_id,to_unit_id from cwms_unit_conversion)
+         union
+         (select ts.unit_id as from_unit_id, ts.unit_id as to_unit_id from av_cwms_ts_id2 ts)
+       ) c
  where tsv.ts_code = ts.ts_code
    and ts.unit_id  = c.from_unit_id
 /
@@ -111,7 +114,7 @@ select tsv.ts_code,
        tsv.version_date,
        tsv.data_entry_date,
        tsv.date_time,
-       tsv.value*c.factor+c.offset  value,
+       cwms_util.convert_units(tsv.value,c.from_unit_id,c.to_unit_id) value,
        ts.db_office_id office_id,
        c.to_unit_id unit_id,
        ts.cwms_ts_id,
@@ -125,7 +128,10 @@ select tsv.ts_code,
        ts.ts_alias_group
   from av_tsv               tsv,
        av_cwms_ts_id2       ts,
-       cwms_unit_conversion c
+       ( (select from_unit_id,to_unit_id from cwms_unit_conversion)
+         union
+         (select ts.unit_id as from_unit_id, ts.unit_id as to_unit_id from av_cwms_ts_id2 ts)
+       ) c
  where tsv.ts_code    = ts.ts_code
    and ts.unit_id     = c.from_unit_id
    and tsv.date_time >= sysdate - 30;
@@ -166,7 +172,7 @@ select tsv.ts_code,
        tsv.version_date,
        tsv.data_entry_date,
        tsv.date_time,
-       tsv.value*c.factor+c.offset  value,
+       cwms_util.convert_units(tsv.value,c.from_unit_id,c.to_unit_id) value,
        ts.db_office_id office_id,
        c.to_unit_id unit_id,
        ts.cwms_ts_id,
@@ -180,7 +186,10 @@ select tsv.ts_code,
        ts.ts_alias_group
   from av_tsv               tsv,
        av_cwms_ts_id2       ts,
-       cwms_unit_conversion c
+       ( (select from_unit_id,to_unit_id from cwms_unit_conversion)
+         union
+         (select ts.unit_id as from_unit_id, ts.unit_id as to_unit_id from av_cwms_ts_id2 ts)
+       ) c
  where tsv.ts_code    = ts.ts_code
    and ts.unit_id     = c.from_unit_id
    and tsv.date_time >= sysdate - 1

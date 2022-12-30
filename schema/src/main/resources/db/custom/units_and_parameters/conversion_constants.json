@@ -27,7 +27,7 @@
 	"J_per_Wh"         : "3.6e3",                // pg 55
 	"J_per_cal"        : "4.184e00",             // pg 47 calorie_thermochemical
 	"kg_per_lbm"       : "4.5359237e-1",         // pg 53 (footnote)
-	"m/s_per_knot"     : "(1852/3600)", 		// pg 10
+	"m_per_s_per_knot"     : "(1852/3600)", 		// pg 10
 	"m3_per_gal"       : "3.785412e-3",          // pg 50
 	"m_per_ft"         : "3.048e-1",             // pg 49
 	"Pa_per_bar"       : "1e5",                  // pg 45
@@ -43,7 +43,13 @@
 	"centi_per_unit"        : "10",  // centi-
 	"unit_per_kilo"         : "1000",  // kilo-
 	"unit_per_giga"         : "1000000000",  // giga-
-	"unit_per_tera"         : "1000000000000" // tera-	
+	"unit_per_tera"         : "1000000000000", // tera-	
+
+	"day_per_mon"      : "30.4375",              // nominal
+	"hr_per_day"       : "24",                   // pg 8
+	"min_per_hr"       : "60",                   // pg 8
+	"s_per_min"        : "60",                   // pg 8
+	"s_per_hr"		   : "3600"
 }
 /*
 	
