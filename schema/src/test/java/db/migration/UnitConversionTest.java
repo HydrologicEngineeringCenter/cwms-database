@@ -85,5 +85,31 @@ public class UnitConversionTest {
 
     }
 
-    
+    @Test
+    public void test_mm_in_and_back() throws Exception {
+        double mm_val = 25.4;
+        double in_val = 1.0;
+
+        var mm_unit = getUnit("mm");
+        var in_unit = getUnit("in");
+
+        Conversion mm_to_in = conversions.stream().filter( c -> c.getFrom().equals(mm_unit) && c.getTo().equals(in_unit) ).findFirst().get();
+        Conversion in_to_mm = conversions.stream().filter( c -> c.getFrom().equals(in_unit) && c.getTo().equals(mm_unit) ).findFirst().get();
+
+        var infix_mm_to_in = mm_to_in.getMethod().getPostfix();
+        var infix_in_to_mm = in_to_mm.getMethod().getPostfix();
+
+        double ret = SimpleInfixCalculator.calculate(infix_mm_to_in, mm_val);
+        assertEquals(in_val,ret, 0.0001);
+
+        ret = SimpleInfixCalculator.calculate(infix_in_to_mm, in_val);
+        assertEquals(mm_val, ret, 0.0001);
+    }
+
+    private Unit getUnit(String abbrv) {
+        return conversions.stream()
+                          .filter( c -> c.getFrom().getAbbreviation().equals(abbrv))
+                          .findFirst()
+                          .get().getFrom();
+    }
 }
