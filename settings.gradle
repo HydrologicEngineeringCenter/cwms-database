@@ -17,4 +17,5 @@ include 'services:webservice'
 
 rootProject.name = 'CWMS Database'
 include 'schema'
-include 'testcontainers'
+// disable for initial flyway setup
+//include 'testcontainers' 
