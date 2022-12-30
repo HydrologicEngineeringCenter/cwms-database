@@ -209,8 +209,6 @@ end test_constant_location_levels;
 --------------------------------------------------------------------------------
 procedure test_regularly_varying_location_levels
 is
-   type namesarray IS VARRAY(3) OF VARCHAR2(52); 
-   type datearray is VARRAY(3) of date;
    l_value           number;
    l_expected_value  number;
    l_date            date;
@@ -218,9 +216,6 @@ is
    l_date2           date;
    l_effective_date  date := date '2021-01-01';
    l_interval_origin date := date '2000-01-01';
-   l_interval_origin_ret datearray;
-   l_calendar_offset namesarray;
-   l_time_offset     namesarray;
    l_interval_months integer := 12;
    l_count           pls_integer;
    l_seasonal_values_existlevel cwms_t_seasonal_value_tab := cwms_t_seasonal_value_tab(
