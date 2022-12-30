@@ -131,7 +131,7 @@ public class CwmsDataLoadExecutor implements MigrationExecutor {
         int totalEntries = 0;
         while ((line = reader.readLine()) != null) {
             stmt.clearParameters();
-            logger.info(line);
+            logger.fine(line);
             String remainder = line;
             int idx = 0;
             if( line.trim().isEmpty()){

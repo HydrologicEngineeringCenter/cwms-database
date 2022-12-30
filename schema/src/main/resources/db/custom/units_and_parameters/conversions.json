@@ -259,12 +259,14 @@
 	// ["g",           "ton",         "[kg]/*_per_k*[g] | [lbm]/kg_per_lbm[kg] | [ton]/lbm_per_ton[lbm]"],
 	// ["g",           "tonne",       "[kg]/*_per_k*[g] | [tonne]/kg_per_tonne[kg]"],
 	// ["g",           "ug",          "u*_per_*[ug]/[g]"],
-	// ["g/l",         "g/m3",        "l_per_m3[l]/[m3]"],
+	// This is not a valid conversion?
+	//["g/l",         "g/m3",        "linear: l_per_m3 0"], 
 	// ["g/l",         "gm/cm3",      "l_per_m3[l]/[m3] | [m3]/c*_per_*^3[cm3] | [gm]/[g]"],
+
 	// ["g/l",         "lbm/ft3",     "[kg]/*_per_k*[g] | [lbm]/kg_per_lbm[kg] | l_per_m3[l]/[m3] | m_per_ft^3[m3]/[ft3]"],
-	// ["g/l",         "mg/l",        "m*_per_*[mg/l]/[g/l]"],
+	["g/l",         "mg/l",        "linear: milli_per_unit 0.0"],
 	// ["g/l",         "ppm",         "m*_per_*[mg/l]/[g/l] | [ppm]/[mg/l]"],
-	// ["g/l",         "ug/l",        "u*_per_*[ug/l]/[g/l]"],
+	["g/l",         "ug/l",        "linear: micro_per_unit 0"],
 	// ["g/m3",        "g/l",         "[m3]/l_per_m3[l]"],
 	// ["g/m3",        "gm/cm3",      "[gm]/[g] | [m3]/c*_per_*^3[cm3]"],
 	// ["g/m3",        "lbm/ft3",     "[kg]/*_per_k*[g] | [lbm]/kg_per_lbm[kg] | m_per_ft^3[m3]/[ft3]"],

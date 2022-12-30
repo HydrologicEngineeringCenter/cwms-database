@@ -140,6 +140,7 @@ public class R__0002_units_and_parameters extends BaseJavaMigration  implements 
                 mergeConversions.setString(1,conv.getFrom().getAbbreviation());
                 mergeConversions.setString(2,conv.getTo().getAbbreviation());
                 mergeConversions.setString(3,conv.getFrom().getAbstractParameter());
+                log.info(() -> "Adding " + conv.toString());
                 String postfix = conv.getMethod().getPostfix();
                 if( yEqualsMx.matcher(postfix).matches()) {
                     String value = postfix.split("\\s+")[1];
@@ -169,7 +170,7 @@ public class R__0002_units_and_parameters extends BaseJavaMigration  implements 
             mergeConversions.executeBatch();
 
         } catch (SQLException ex) {
-            throw new FlywayException(new CwmsMigrationSqlError("failed to merge unit data", ex));
+            throw new FlywayException(new CwmsMigrationSqlError("failed to merge unit data: ", ex));
         }
 
     }
