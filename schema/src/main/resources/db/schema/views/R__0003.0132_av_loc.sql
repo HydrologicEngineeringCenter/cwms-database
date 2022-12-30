@@ -117,7 +117,7 @@ from
          n.long_name as nation_id,
          unit_system,
          unit_id,
-         si_elevation*factor elevation,
+         cwms_util.convert_units(si_elevation,'m',unit_id) elevation,
          p.*
   from   phy_loc p left join
          cwms_20.cwms_office    odb on ( odb.office_code    = p.db_office_code ) left join
