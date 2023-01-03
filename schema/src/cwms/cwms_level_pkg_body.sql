@@ -1773,6 +1773,53 @@ begin
 
    return l_level_cursor;
 end cat_specified_levels;
+
+--------------------------------------------------------------------------------
+-- PROCEDURE store_seasonal_location_level
+--
+-- Creates or updates a seasonal location Level in the database
+--------------------------------------------------------------------------------
+
+procedure store_seasonal_location_level(
+    p_seasonal_values         in  seasonal_value_tab_t,
+    p_interval_origin_tz      in date,
+    p_timezone_id             in varchar2,
+    p_interval_origin         in  date,
+    p_level_factor            in  binary_double,
+    p_level_offset            in  binary_double,
+    p_location_level_code     in number
+    )
+    
+is
+    l_offset_months             integer;
+    l_offset_minutes            integer;
+    l_seasonal_date_utc         date;
+begin
+     for i in 1..p_seasonal_values.count loop
+        -----------------------------------------------------------------------
+        -- convert the offset months/minutes from specified time zone to UTC --
+        --                                                                   --
+        -- This assumes each offset will either be in or out of DST in       --
+        -- every interval, which may not actually be the case                --
+        -----------------------------------------------------------------------
+        l_seasonal_date_utc := cwms_util.change_timezone(
+           add_months(p_interval_origin_tz, p_seasonal_values(i).offset_months) + p_seasonal_values(i).offset_minutes / CWMS_TS.min_in_dy,
+           p_timezone_id,
+           'UTC');
+        l_offset_months := months_between(l_seasonal_date_utc, p_interval_origin);
+        l_offset_minutes := round((l_seasonal_date_utc - add_months(p_interval_origin, l_offset_months)) * CWMS_TS.min_in_dy, 9);
+        if (l_offset_minutes < 0) then
+           l_offset_months := l_offset_months - 1;
+           l_offset_minutes := round((l_seasonal_date_utc - add_months(p_interval_origin, l_offset_months)) * CWMS_TS.min_in_dy, 9);
+        end if;   
+        insert
+          into at_seasonal_location_level
+        values(p_location_level_code,
+               cwms_util.months_to_yminterval(l_offset_months),
+               cwms_util.minutes_to_dsinterval(l_offset_minutes),
+               p_seasonal_values(i).value * p_level_factor + p_level_offset);
+     end loop;
+end;
 --------------------------------------------------------------------------------
 -- PROCEDURE create_location_level
 --------------------------------------------------------------------------------
@@ -1810,7 +1857,6 @@ is
    l_spec_level_code           number(14);
    l_interval_origin           date;
    l_interval_origin_tz        date;
-   l_seasonal_date_utc         date;
    l_location_code             number(14);
    l_location_tz_code          number(14);
    l_parts                     str_tab_t;
@@ -1841,8 +1887,7 @@ is
    l_attr_param_is_elev        boolean;
    l_level_vert_datum_offset   binary_double;
    l_attr_vert_datum_offset    binary_double;
-   l_offset_months             integer;
-   l_offset_minutes            integer;
+
 begin
    l_fail_if_exists := cwms_util.return_true_or_false(p_fail_if_exists);
    -------------------
@@ -2095,30 +2140,7 @@ begin
                    l_ts_code,
                    l_expiration_date);
          end if;
-         for i in 1..p_seasonal_values.count loop
-            -----------------------------------------------------------------------
-            -- convert the offset months/minutes from specified time zone to UTC --
-            --                                                                   --
-            -- This assumes each offset will either be in or out of DST in       --
-            -- every interval, which may not actually be the case                --
-            -----------------------------------------------------------------------
-            l_seasonal_date_utc := cwms_util.change_timezone(
-               add_months(l_interval_origin_tz, p_seasonal_values(i).offset_months) + p_seasonal_values(i).offset_minutes / 1440,
-               l_timezone_id,
-               'UTC');
-            l_offset_months := months_between(l_seasonal_date_utc, l_interval_origin);
-            l_offset_minutes := round((l_seasonal_date_utc - add_months(l_interval_origin, l_offset_months)) * 1440, 9);
-            if (l_offset_minutes < 0) then
-               l_offset_months := l_offset_months - 1;
-               l_offset_minutes := round((l_seasonal_date_utc - add_months(l_interval_origin, l_offset_months)) * 1440, 9);
-            end if;
-            insert
-              into at_seasonal_location_level
-            values(l_location_level_code,
-                   cwms_util.months_to_yminterval(l_offset_months),
-                   cwms_util.minutes_to_dsinterval(l_offset_minutes),
-                   p_seasonal_values(i).value * l_level_factor + l_level_offset);
-         end loop;
+         store_seasonal_location_level(p_seasonal_values,l_interval_origin_tz, l_timezone_id, l_interval_origin, l_level_factor, l_level_offset, l_location_level_code);
       end if;
    else
       -----------------------------
@@ -2184,30 +2206,7 @@ begin
          delete
            from at_seasonal_location_level
           where location_level_code = l_location_level_code;
-         for i in 1..p_seasonal_values.count loop
-            -----------------------------------------------------------------------
-            -- convert the offset months/minutes from specified time zone to UTC --
-            --                                                                   --
-            -- This assumes each offset will either be in or out of DST in       --
-            -- every interval, which may not actually be the case                --
-            -----------------------------------------------------------------------
-            l_seasonal_date_utc := cwms_util.change_timezone(
-               add_months(l_interval_origin_tz, p_seasonal_values(i).offset_months) + p_seasonal_values(i).offset_minutes / 1440,
-               l_timezone_id,
-               'UTC');
-            l_offset_months := months_between(l_seasonal_date_utc, l_interval_origin);
-            l_offset_minutes := round((l_seasonal_date_utc - add_months(l_interval_origin, l_offset_months)) * 1440, 9);
-            if (l_offset_minutes < 0) then
-               l_offset_months := l_offset_months - 1;
-               l_offset_minutes := round((l_seasonal_date_utc - add_months(l_interval_origin, l_offset_months)) * 1440, 9);
-            end if;
-            insert
-              into at_seasonal_location_level
-            values(l_location_level_code,
-                   cwms_util.months_to_yminterval(l_offset_months),
-                   cwms_util.minutes_to_dsinterval(l_offset_minutes),
-                   p_seasonal_values(i).value * l_level_factor + l_level_offset);
-         end loop;
+         store_seasonal_location_level(p_seasonal_values,l_interval_origin_tz, l_timezone_id, l_interval_origin, l_level_factor, l_level_offset, l_location_level_code);
       end if;
    end if;
 end create_location_level;
