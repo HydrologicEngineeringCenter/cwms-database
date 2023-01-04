@@ -218,17 +218,21 @@ is
    l_interval_origin date := date '2000-01-01';
    l_interval_months integer := 12;
    l_count           pls_integer;
+   l_seasonal_values_existlevel cwms_t_seasonal_value_tab := cwms_t_seasonal_value_tab(
+      cwms_t_seasonal_value( 0,  0 * CWMS_TS.min_in_dy, 1020),  -- 01 Jan
+      cwms_t_seasonal_value( 3, 14 * CWMS_TS.min_in_dy, 1010),  -- 15 April
+      cwms_t_seasonal_value(9,  1 * CWMS_TS.min_in_dy, 1000)); -- 02 Oct
    l_seasonal_values cwms_t_seasonal_value_tab := cwms_t_seasonal_value_tab(
-      cwms_t_seasonal_value( 0,  0 * 1440, 1000),  -- 01 Jan
-      cwms_t_seasonal_value( 2, 14 * 1440, 1010),  -- 15 Mar
-      cwms_t_seasonal_value( 4,  0 * 1440, 1020),  -- 01 May
-      cwms_t_seasonal_value( 7,  0 * 1440, 1020),  -- 01 Aug
-      cwms_t_seasonal_value( 8, 14 * 1440, 1010),  -- 15 Sep
-      cwms_t_seasonal_value(11,  0 * 1440, 1000)); -- 01 Dec
+      cwms_t_seasonal_value( 0,  0 * CWMS_TS.min_in_dy, 1000),  -- 01 Jan
+      cwms_t_seasonal_value( 2, 14 * CWMS_TS.min_in_dy, 1010),  -- 15 Mar
+      cwms_t_seasonal_value( 4,  0 * CWMS_TS.min_in_dy, 1020), -- 01 May
+      cwms_t_seasonal_value( 7,  0 * CWMS_TS.min_in_dy, 1020),  -- 01 Aug
+      cwms_t_seasonal_value( 8, 14 * CWMS_TS.min_in_dy, 1010),  -- 15 Sep
+      cwms_t_seasonal_value(11,  0 * CWMS_TS.min_in_dy, 1000)); -- 01 Dec
 begin
    setup;
    ---------------------------------------
-   -- store the seasonal location level --
+   -- store the seasonal location level and create new level --
    ---------------------------------------
    cwms_level.store_location_level4(
       p_location_level_id => c_top_of_normal_elev_id,
@@ -240,6 +244,7 @@ begin
       p_interval_months   => l_interval_months,
       p_seasonal_values   => l_seasonal_values,
       p_office_id         => c_office_id);
+
 
    commit;
    -------------------------------------------------------------
@@ -256,7 +261,6 @@ begin
    exception
       when others then ut.expect(sqlerrm).to_be_like('ORA-20034: ITEM_DOES_NOT_EXIST: Location level % does not exist.');
    end;
-
    ut.expect(l_value).to_be_null;
    ----------------------------------------------------
    -- retrieve the value on the first effective date --
@@ -273,7 +277,7 @@ begin
    -- retrieve values on each seasonal breakpoint for a future year --
    -------------------------------------------------------------------
    for i in 1..l_seasonal_values.count loop
-      l_date := add_months(l_effective_date, l_seasonal_values(i).offset_months + 24) +  l_seasonal_values(i).offset_minutes / 1440;
+      l_date := add_months(l_effective_date, l_seasonal_values(i).offset_months + 24) +  l_seasonal_values(i).offset_minutes / CWMS_TS.min_in_dy;
       l_value := cwms_level.retrieve_location_level_value(
          p_location_level_id => c_top_of_normal_elev_id,
          p_level_units       => c_elev_unit,
@@ -287,8 +291,8 @@ begin
    -- retrieve values midway between seasonal breakpoints for a future year --
    ---------------------------------------------------------------------------
    for i in 2..l_seasonal_values.count loop
-      l_date1 := add_months(l_effective_date, l_seasonal_values(i-1).offset_months + 24) +  l_seasonal_values(i-1).offset_minutes / 1440;
-      l_date2 := add_months(l_effective_date, l_seasonal_values(i).offset_months + 24) +  l_seasonal_values(i).offset_minutes / 1440;
+      l_date1 := add_months(l_effective_date, l_seasonal_values(i-1).offset_months + 24) +  l_seasonal_values(i-1).offset_minutes / CWMS_TS.min_in_dy;
+      l_date2 := add_months(l_effective_date, l_seasonal_values(i).offset_months + 24) +  l_seasonal_values(i).offset_minutes / CWMS_TS.min_in_dy;
       l_date  := l_date1 + (l_date2 - l_date1) / 2;
       l_expected_value := (l_seasonal_values(i-1).value + l_seasonal_values(i).value) / 2;
       l_value := cwms_level.retrieve_location_level_value(
@@ -300,8 +304,26 @@ begin
 
       ut.expect(round(l_value / l_expected_value, 4)).to_equal(1);
    end loop;
+
+   ---------------------------------------
+   -- store the seasonal location level to level already created--
+   ---------------------------------------
+
+   cwms_level.store_location_level3(
+      p_location_level_id => c_top_of_normal_elev_id,
+      p_level_value       => null,
+      p_level_units       => c_elev_unit,
+      p_effective_date    => l_effective_date,
+      p_timezone_id       => c_timezone_id,
+      p_interval_origin   => l_interval_origin,
+      p_interval_months   => l_interval_months,
+      p_seasonal_values   => l_seasonal_values_existlevel,
+      p_fail_if_exists    => 'F',
+      p_office_id         => c_office_id);
+
+
    -------------------------------------------------------------------------
-   -- test delete_location_level3 with p_most_recent_effective_date = 'T' --
+   -- test number of seasonal values --
    -------------------------------------------------------------------------
    select count(*)
      into l_count
@@ -311,10 +333,36 @@ begin
       and level_date = cwms_util.change_timezone(l_effective_date, c_timezone_id, 'UTC')
       and unit_system = 'EN';
 
-   ut.expect(l_count).to_equal(l_seasonal_values.count);
+   ut.expect(l_count).to_equal(l_seasonal_values_existlevel.count);
+
+  --------------------------------------------------------------------------
+  --  test individual seasonal dates are present
+  -----------------------------------
+
+   for i in 1..l_seasonal_values_existlevel.count loop
+        l_date := cwms_util.change_timezone(
+                  add_months(l_interval_origin, l_seasonal_values_existlevel(i).offset_months) +
+		  l_seasonal_values_existlevel(i).offset_minutes / CWMS_TS.min_in_dy, 
+                  c_timezone_id, 'UTC');
+    	select count(*)
+         into  l_count
+     	 from  cwms_v_location_level
+    	 where office_id = c_office_id
+      	   and location_level_id = c_top_of_normal_elev_id
+      	   and level_date = cwms_util.change_timezone(l_effective_date, c_timezone_id, 'UTC')
+      	   and unit_system = 'EN'
+       	   and ADD_MONTHS(interval_origin,cwms_util.yminterval_to_months(calendar_offset)) +
+               cwms_util.dsinterval_to_minutes(time_offset)/CWMS_TS.min_in_dy= l_date;
+           ut.expect(l_count).to_equal(1);
+
+   end loop;
+
+   -------------------------------------------------------------------------
+   -- test delete_location_level3 with p_most_recent_effective_date = 'T' --
+   -------------------------------------------------------------------------
 
    cwms_level.delete_location_level3(
-      p_location_level_id          => c_top_of_normal_elev_id,
+     p_location_level_id          => c_top_of_normal_elev_id,
       p_cascade                    => 'T',
       p_office_id                  => c_office_id,
       p_most_recent_effective_date => 'T');
