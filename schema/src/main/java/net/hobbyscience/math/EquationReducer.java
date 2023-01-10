@@ -11,8 +11,9 @@ public class EquationReducer {
         
             return Equations.infixToPostfix(infix);
         } catch (BadMathExpression bme) {
-            throw new BadMathExpression(String.format("Unable to reduce %s",equation),bme);
+            throw new BadMathExpression(String.format("Unable to reduce '%s'",equation),bme);
+        } catch (Exception ex) {
+            throw new BadMathExpression(String.format("Unable to reduce '%s'",equation),ex);
         }
-        
     }
 }

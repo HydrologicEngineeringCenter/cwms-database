@@ -40,7 +40,8 @@
 
 	"micro_per_unit"        : "1000000",  // micro-
 	"milli_per_unit"        : "1000",  // milli-
-	"centi_per_unit"        : "10",  // centi-
+	"centi_per_unit"        : "100",  // centi-
+	"deci_per_unit"         : "10", // deci-
 	"unit_per_kilo"         : "1000",  // kilo-
 	"unit_per_giga"         : "1000000000",  // giga-
 	"unit_per_tera"         : "1000000000000", // tera-	

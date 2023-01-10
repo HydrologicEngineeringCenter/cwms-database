@@ -770,18 +770,39 @@
         "description": "Velocity of 1 mmeter per hour"
     },
     {
-        "abstract-parameter": "Mass Per Volume",
+        "abstract-parameter": "Mass Concentration",
         "abbr": "g/m3",
         "system": "SI",
         "name": "Grams per cubic meter",
         "description": "Mass of 1 gram per volume of 1 cubic meter"
     },
     {
-        "abstract-parameter": "Mass Per Volume",
+        "abstract-parameter": "Mass Concentration",
         "abbr": "lbm/ft3",
         "system": "EN",
         "name": "Pounds per cubic feet",
-        "description": "Mass of 1 pound per volume of 1 cubic food"
+        "description": "Mass of 1 pound per volume of 1 cubic foot"
+    },
+    {
+        "abstract-parameter": "Mass Concentration",
+        "abbr": "kg/l",
+        "system": "EN",
+        "name": "Kilograms per cubic meter",
+        "description": "Mass of 1 kilogram per volume of 1 cubic meter"
+    },
+    {
+        "abstract-parameter": "Mass Concentration",
+        "abbr": "lbm/l",
+        "system": "NULL",
+        "name": "Pounds per liter",
+        "description": "Mass of 1 pound per volume of 1 liter. Used as intermediate unit."
+    },
+    {
+        "abstract-parameter": "Mass Concentration",
+        "abbr": "lbm/m3",
+        "system": "NULL",
+        "name": "Pounds per cubic meter",
+        "description": "Mass of 1 pound per volume of 1 cubic meter. Used as intermediate unit."
     },
     {
         "abstract-parameter": "Mass Rate",

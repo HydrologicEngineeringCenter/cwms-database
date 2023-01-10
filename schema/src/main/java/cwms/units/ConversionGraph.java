@@ -73,7 +73,7 @@ public class ConversionGraph {
                     );
                 } catch( BadMathExpression bme ) {
                     throw new BadMathExpression(
-                        String.format("Unable to handle converion (%s) for units (%s->%s)",
+                        String.format("Unable to handle conversion (%s) for units (%s->%s)",
                                       postfix,
                                       from.getAbbreviation(),
                                       to.getAbbreviation()));
@@ -206,7 +206,7 @@ public class ConversionGraph {
             Set<Conversion> _conversions = 
                 initialConversions.stream()
                             .filter( c -> c.getFrom().getAbstractParameter().equalsIgnoreCase(unitClass) == true )
-                            .collect( Collectors.toSet() );
+                            .collect( Collectors.toSet() );                        
             retVal.addAll( expandConversions(unitClasses, _conversions));
         }
         return retVal;

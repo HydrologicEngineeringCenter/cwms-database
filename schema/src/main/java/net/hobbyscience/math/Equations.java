@@ -151,7 +151,7 @@ public class Equations {
      * @return
      */
     public static Deque<Token> postfixToTokens(String postfix) {
-        var isNumeric = Pattern.compile("^\\d+(\\.\\d+)([eE][0-9])?$");
+        var isNumeric = Pattern.compile("^\\d+(\\.\\d+)([eE][0-9]*)?$");
         var isAlpha = Pattern.compile("^[a-zA-Z]+$");
         Deque<Token> rhs = new LinkedList<>();
         String elements[] = postfix.split("\\s+");

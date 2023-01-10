@@ -15,6 +15,7 @@ import cwms.units.ConversionGraph;
 import cwms.units.Unit;
 import net.hobbyscience.database.Conversion;
 import net.hobbyscience.database.ConversionMethod;
+import net.hobbyscience.database.exceptions.BadMathExpression;
 import net.hobbyscience.database.methods.*;
 
 import java.sql.Connection;
@@ -71,16 +72,7 @@ public class R__0002_units_and_parameters extends BaseJavaMigration  implements 
                  .stream()
                  .map( conv -> conv.toString() )
                  .collect(Collectors.joining("\n")));
-
-        ConversionGraph convGraph = new ConversionGraph(conversions);
-
-        var expandedConversions = convGraph.generateConversions();
-        log.info(() -> String.format("We have %s total conversions",expandedConversions.size()));
-        log.log(Level.FINEST, "Expanded Conversions:\n{0}",
-                expandedConversions
-                    .stream()
-                    .map(conv -> conv.toString())
-                    .collect(Collectors.joining("\n")));
+        
 
         Connection conn = context.getConnection();
         /* now we would insert or update the conversions */
@@ -90,6 +82,16 @@ public class R__0002_units_and_parameters extends BaseJavaMigration  implements 
              var deleteAbstractParams = conn.prepareStatement("delete from cwms_abstract_parameter where abstract_parameter_id = ?");
              var existingParametersRS = conn.createStatement().executeQuery("select abstract_param_id from cwms_abstract_parameter");
               ) {
+            ConversionGraph convGraph = new ConversionGraph(conversions);
+    
+            var expandedConversions = convGraph.generateConversions();
+            log.info(() -> String.format("We have %s total conversions",expandedConversions.size()));
+            log.log(Level.FINEST, "Expanded Conversions:\n{0}",
+                    expandedConversions
+                        .stream()
+                        .map(conv -> conv.toString())
+                        .collect(Collectors.joining("\n")));
+
             log.info("Querying for existing abstract parameters");
             var existingParameters = new ArrayList<String>();
             while( existingParametersRS.next() ) {
@@ -171,6 +173,8 @@ public class R__0002_units_and_parameters extends BaseJavaMigration  implements 
 
         } catch (SQLException ex) {
             throw new FlywayException(new CwmsMigrationSqlError("failed to merge unit data: ", ex));
+        } catch (BadMathExpression bme ) {
+            throw new FlywayException("Error generating unit conversions", bme);
         }
 
     }
