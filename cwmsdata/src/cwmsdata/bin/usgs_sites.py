@@ -19,33 +19,32 @@ def usgs_sites():
     USGS sites method
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("--format", action="store", choices=output_format.keys(), default="rdb")
+    parser.add_argument(
+        "--format", action="store", choices=output_format.keys(), default="rdb"
+    )
     parser.add_argument("--huc", action="extend", nargs="+", type=str)
     parser.add_argument("--location", action="extend", nargs="+", type=str)
     parser.add_argument("--parameter_code", nargs="+", action="extend")
-    parser.add_argument("--service", action="store", type=str, choices=services.keys(), default="site")
+    parser.add_argument(
+        "--service", action="store", type=str, choices=services.keys(), default="site"
+    )
 
     args = parser.parse_args()
 
     query = {}
     if args.huc:
         query["huc"] = ",".join(args.huc)
-        logger.debug(query["huc"])
     if args.location:
         query["sites"] = ",".join(args.location)
-        logger.debug(query["sites"])
     if args.parameter_code:
-        query["parameterCd"] =  ",".join(args.parameter_code)
-        logger.debug(query["parameterCd"])
+        query["parameterCd"] = ",".join(args.parameter_code)
     if args.format:
         query["format"] = args.format
-        logger.debug(query["format"])
 
     logger.debug(f"{query=}")
-    
+
     url = usgs_services_url(service=args.service, query=query)
     logger.debug(url)
-
 
     resp = requests.get(url=url)
 
@@ -65,15 +64,16 @@ def usgs_sites():
         delimiter="\t",
     )
 
-
     office = cwms_util.user_office_id()
 
     for r in reader:
         site = r["site_no"]
-        keywordParameters={
+        keywordParameters = {
             "p_location_id": site,
             "p_location_type": "SITE",
-            "p_elevation": None if r["alt_va"].strip() == "" else float(r["alt_va"].strip()),
+            "p_elevation": None
+            if r["alt_va"].strip() == ""
+            else float(r["alt_va"].strip()),
             "p_elev_unit_id": "ft",
             "p_vertical_datum": r["alt_datum_cd"],
             "p_latitude": float(r["dec_lat_va"]),
@@ -99,3 +99,5 @@ def usgs_sites():
             logger.info(f"Site saved/updated: {site}")
         else:
             logger.warning(f"Site not saved/updated: {keywordParameters}")
+
+    sys.exit(0)

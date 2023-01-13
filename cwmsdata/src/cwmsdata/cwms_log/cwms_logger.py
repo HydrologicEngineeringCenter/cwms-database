@@ -4,6 +4,7 @@ Package logger
 
 import logging
 
+
 class package_logger(logging.Logger):
     """Package logger extending logging.Logger
 
@@ -12,6 +13,7 @@ class package_logger(logging.Logger):
     logging : Logger
         Logger object
     """
+
     def __init__(self):
         super().__init__(__package__)
 

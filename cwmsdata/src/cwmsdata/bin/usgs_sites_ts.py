@@ -4,40 +4,17 @@ Command-line tool to load usgs site data
 """
 
 import argparse
-import sqlite3
 import sys
 from datetime import datetime, timedelta
 from textwrap import dedent
 
-import pkg_resources
 import requests
 
+from cwmsdata.connection import cx_cwms
 from cwmsdata.cwms_log.cwms_logger import logger
 from cwmsdata.model.cwms import cwms_ts, cwms_util
 from cwmsdata.model.usgs import output_format, services, usgs_services_url
 
-
-def cx_cwms(stmt):
-    """
-    Connect to package sqlite database and execute provided sql statement
-
-    Parameters
-    ----------
-    stmt : str
-        sql statement
-
-    Returns
-    -------
-    list
-        rows from fetchall()
-    """
-    sqldb = pkg_resources.resource_filename("cwmsdata.data", "cx_cwms.db")
-    with sqlite3.connect(str(sqldb)) as conn:
-        cur = conn.cursor()
-        res = cur.execute(dedent(stmt))
-        rows = res.fetchall()
-
-        return rows
 
 def data_interval(data_list):
     """
@@ -72,11 +49,19 @@ def usgs_sites_ts():
     Command-line method
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("--format", action="store", choices=output_format.keys(), default="json")
+    parser.add_argument(
+        "--format", action="store", choices=output_format.keys(), default="json"
+    )
     parser.add_argument("--huc", action="extend", nargs="+", type=str)
     parser.add_argument("--location", action="extend", nargs="+", type=str)
     parser.add_argument("--parameter_code", nargs="+", action="extend")
-    parser.add_argument("--service", action="store", type=str, choices=services.keys(), default="instantaneous")
+    parser.add_argument(
+        "--service",
+        action="store",
+        type=str,
+        choices=services.keys(),
+        default="instantaneous",
+    )
     parser.add_argument("--period", action="store", type=str, default="P1D")
 
     args = parser.parse_args()
@@ -87,17 +72,16 @@ def usgs_sites_ts():
     if args.location:
         query["sites"] = ",".join(args.location)
     if args.parameter_code:
-        query["parameterCd"] =  ",".join(args.parameter_code)
+        query["parameterCd"] = ",".join(args.parameter_code)
     if args.format:
         query["format"] = args.format
     if args.period:
         query["period"] = args.period
 
     logger.debug(f"{query=}")
-    
+
     url = usgs_services_url(service=args.service, query=query)
     logger.debug(url)
-
 
     resp = requests.get(url=url)
     if resp.status_code != 200:
@@ -117,32 +101,35 @@ def usgs_sites_ts():
         # Values
         values = ts["values"][0]["value"]
 
-
         if len(values) > 0:
             interval_td = data_interval(values)
             try:
-                interval = cx_cwms(dedent(
-                    f"""
+                interval = cx_cwms(
+                    dedent(
+                        f"""
                         SELECT interval_id
                         FROM cwms_interval AS ci
                         WHERE ci.interval_sec = {interval_td.seconds}
-                    """))[0][0]
+                    """
+                    )
+                )[0][0]
 
-
-                parameter, ptype, unit = cx_cwms(dedent(
-                    f"""
+                parameter, ptype, unit = cx_cwms(
+                    dedent(
+                        f"""
                         SELECT cwms_parameter, cwms_type, cwms_unit
                         FROM cwms as c
                         WHERE c.usgs_code_id = (SELECT id FROM usgs_code AS uc WHERE uc.code = '{varible_code}')
-                    """))[0]
+                    """
+                    )
+                )[0]
 
                 duration = 0
                 if ptype != "Inst":
                     duration = interval
 
-
                 tsid = f"{base_location}.{parameter}.{ptype}.{interval}.{duration}.{network}"
-                
+
                 _values = [float(v.get("value")) for v in values]
                 _times = [
                     int(datetime.fromisoformat(v.get("dateTime")).timestamp() * 1000)
@@ -157,7 +144,7 @@ def usgs_sites_ts():
                     p_values=_values,
                     p_qualities=_qualities,
                     p_office_id=office,
-                    ):
+                ):
                     logger.info(f"Stored TS: {tsid}")
                 else:
                     logger.warning(f"Did not store TS: {tsid}")
@@ -165,3 +152,5 @@ def usgs_sites_ts():
             except IndexError as err:
                 logger.warning(err)
                 continue
+
+    sys.exit(0)
