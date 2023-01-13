@@ -1,0 +1,61 @@
+services:
+  database:
+    image: registry.hecdev.net/oracle/database:19.3.0-ee
+    container_name: cwms-dev-db
+    environment:
+      - ORACLE_PDB=CWMSDEV
+      - ORACLE_PWD=password
+      - ORACLE_EDITION=enterprise
+    ports:
+      - "1521:1521"
+  schema:
+    build:
+      context: ./schema
+    container_name: cwms-dev-schema
+    environment:
+      - DB_HOST_PORT=cwms-dev-db:1521
+      - DB_NAME=/CWMSDEV
+      - CWMS_USER=s0hectest
+      - SYS_PASSWORD=password
+      - CWMS_PASSWORD=password
+      - BUILDUSER_PASSWORD=password
+      - OFFICE_ID=HQ
+      - OFFICE_EROC=S0
+      - INSTALLONCE=0
+      - QUIET=0
+  cwms-data:
+    build:
+      context: cwmsdata
+    container_name: cwms-dev-data
+    environment:
+      - DB_HOST_PORT=cwms-dev-db:1521
+      - DB_NAME=/CWMSDEV
+      - CWMS_USER=s0hectest
+      - CWMS_PASSWORD=password
+      - OFFICE_ID=HQ
+      - OFFICE_EROC=S0
+  radar:
+    build:
+      context: ../cwms-radar-api/cwms_radar_api/build/docker
+    restart: always
+    container_name: cwms-dev-radar
+    environment:
+      - RADAR_JDBC_DRIVER=oracle.jdbc.driver.OracleDriver
+      - RADAR_JDBC_URL=jdbc:oracle:thin:@cwms-dev-db:1521/CWMSDEV
+      - RADAR_JDBC_USERNAME=s0hectest
+      - RADAR_JDBC_PASSWORD=password
+      - RADAR_POOL_INIT_SIZE=5
+      - RADAR_POOL_MAX_ACTIVE=10
+      - RADAR_POOL_MAX_IDLE=5
+      - RADAR_POOL_MIN_IDLE=2
+    ports:
+      - "7000:7000"
+
+volumes:
+  cwms-dev-db-volume:
+    external: true
+
+networks:
+  default:
+    name: cwms-dev-net
+    external: true
