@@ -3,9 +3,13 @@
 usage(){ printf "\n$0 usage:\n\n" && grep " .*)\ #" $0; exit 0;}
 
 cmds=""
+ALIVE=False
 
 while getopts ":stc:h" option; do
     case ${option} in 
+        a) # Keep the container alive
+            ALIVE=True
+            ;;
         c) # Switches for commands
             switch="$OPTARG";
             ;;
@@ -32,6 +36,11 @@ done
 for cmd in $sites $ts
 do
     eval ${cmd} ${switch}
+done
+
+while "$ALIVE" == "True"
+do
+    sleep 10000
 done
 
 # make sure to exit

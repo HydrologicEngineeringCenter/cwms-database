@@ -25,6 +25,7 @@ RUN pip install .
 ENTRYPOINT [ "entrypoint.sh" ]
 
 # entrypoint arguments:
+#   -a: keep the container alive
 #   -s: run usgs-sites with arguments
 #   -t: run usgs-ts with arguments
 #   -c: the string of arguments the above takes
