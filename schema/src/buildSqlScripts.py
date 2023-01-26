@@ -5994,6 +5994,9 @@ def main() :
 
     create user &eroc.webtest identified by "&test_passwd";
     grant create session to &eroc.webtest;
+
+    create user &eroc.hectest_multioffice identified by "&test_passwd";
+    grant create session to &eroc.hectest_multioffice;
     '''
 
     test_user_template = '''
@@ -6067,6 +6070,12 @@ def main() :
         group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS User Admins', 'CWMS PD Users','TS ID Creator', 'Viewer Users');
         "&cwms_schema"."CWMS_SEC"."ADD_CWMS_USER" ('&eroc.webtest', group_list, '&office_id');
         execute immediate 'grant web_user to &eroc.webtest';
+
+        group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS User Admins', 'CWMS PD Users','TS ID Creator', 'Viewer Users');
+        "&cwms_schema"."CWMS_SEC"."ADD_CWMS_USER" ('&eroc.hectest_multioffice', group_list, '&office_id');
+        "&cwms_schema"."CWMS_SEC"."ADD_CWMS_USER" ('&eroc.hectest_multioffice', group_list, 'HQ');
+        "&cwms_schema"."CWMS_SEC"."ADD_CWMS_USER" ('&eroc.hectest_multioffice', group_list, 'POA');
+        
     END;
     /
     '''

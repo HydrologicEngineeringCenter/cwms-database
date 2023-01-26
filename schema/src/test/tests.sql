@@ -32,5 +32,6 @@ show errors;
 @test_cwms_display.sql;
 @test_aq_user.sql;
 @test_webuser_abilities.sql;
-
+show errors;
+@test_multiple_office_perms.sql;
 show errors;

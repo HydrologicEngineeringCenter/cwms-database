@@ -26,7 +26,7 @@ AS
         RETURN VARCHAR2
     IS        
     BEGIN
-        if (cwms_sec.is_user_admin(NULL) OR SYS_CONTEXT('USERENV','POLICY_INVOKER') = 'CWMS_20')
+        if (SYS_CONTEXT('USERENV','POLICY_INVOKER') = 'CWMS_20' OR cwms_sec.is_user_admin(NULL) )
         then
             RETURN '1=1';
         else
