@@ -5,6 +5,7 @@ CWMS Oracle package 'cwms_ts'
 import cx_Oracle
 
 from cwmsdata import pool
+from cwmsdata.cwms_log.cwms_logger import logger
 
 
 def store_ts(p_cwms_ts_id, p_units, p_times, p_values, p_qualities, p_office_id=None):
@@ -74,6 +75,9 @@ def store_ts(p_cwms_ts_id, p_units, p_times, p_values, p_qualities, p_office_id=
                 p_office_id,
             ]
 
-            crsr.execute(stmt, args)
+            try:
+                crsr.execute(stmt, args)
+            except cx_Oracle.DatabaseError as err:
+                logger.warning(err)
 
             return True

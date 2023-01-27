@@ -48,13 +48,37 @@ def usgs_sites_ts():
     """
     Command-line method
     """
+    max_log_level = 50
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--format", action="store", choices=output_format.keys(), default="json"
+        "-v",
+        action="count",
+        dest="level",
+        help="-v (40), -vv (30), -vvv (20), or -vvv (10) (default: (50)",
     )
-    parser.add_argument("--huc", action="extend", nargs="+", type=str)
-    parser.add_argument("--location", action="extend", nargs="+", type=str)
-    parser.add_argument("--parameter_code", nargs="+", action="extend")
+    parser.add_argument(
+        "--format",
+        action="store",
+        choices=output_format.keys(),
+        default="json",
+    )
+    parser.add_argument(
+        "--huc",
+        action="extend",
+        nargs="+",
+        type=str,
+    )
+    parser.add_argument(
+        "--location",
+        action="extend",
+        nargs="+",
+        type=str,
+    )
+    parser.add_argument(
+        "--parameter_code",
+        nargs="+",
+        action="extend",
+    )
     parser.add_argument(
         "--service",
         action="store",
@@ -62,9 +86,22 @@ def usgs_sites_ts():
         choices=services.keys(),
         default="instantaneous",
     )
-    parser.add_argument("--period", action="store", type=str, default="P1D")
+    parser.add_argument(
+        "--period",
+        action="store",
+        type=str,
+        default="P1D",
+    )
 
     args = parser.parse_args()
+
+    log_level = 0
+    if 0 > args.level < max_log_level:
+        log_level = max_log_level - args.level * 10
+    elif args.level > max_log_level:
+      log_level = 10
+
+    logger.setLevel(log_level)
 
     query = {}
     if args.huc:

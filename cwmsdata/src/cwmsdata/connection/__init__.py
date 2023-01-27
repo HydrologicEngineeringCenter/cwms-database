@@ -5,6 +5,7 @@ Connection to the database using environment variables
 import os
 import sqlite3
 from importlib.resources import path
+import sys
 from textwrap import dedent
 
 import cx_Oracle
@@ -39,6 +40,7 @@ def start_pool():
         return pool
     except TypeError as err:
         logger.warning(err)
+        sys.exit(1)
 
 
 def cx_cwms(stmt):

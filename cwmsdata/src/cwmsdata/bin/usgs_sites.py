@@ -18,18 +18,54 @@ def usgs_sites():
     """
     USGS sites method
     """
+    max_log_level = 50
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--format", action="store", choices=output_format.keys(), default="rdb"
+        "-v",
+        action="count",
+        dest="level",
+        help="-v (40), -vv (30), -vvv (20), or -vvv (10) (default: (50)",
     )
-    parser.add_argument("--huc", action="extend", nargs="+", type=str)
-    parser.add_argument("--location", action="extend", nargs="+", type=str)
-    parser.add_argument("--parameter_code", nargs="+", action="extend")
     parser.add_argument(
-        "--service", action="store", type=str, choices=services.keys(), default="site"
+        "--format",
+        action="store",
+        choices=output_format.keys(),
+        default="rdb",
+    )
+    parser.add_argument(
+        "--huc",
+        action="extend",
+        nargs="+",
+        type=str,
+    )
+    parser.add_argument(
+        "--location",
+        action="extend",
+        nargs="+",
+        type=str,
+    )
+    parser.add_argument(
+        "--parameter_code",
+        nargs="+",
+        action="extend",
+    )
+    parser.add_argument(
+        "--service",
+        action="store",
+        type=str,
+        choices=services.keys(),
+        default="site",
     )
 
-    args = parser.parse_args()
+    args = parser.parse_known_args()
+
+    log_level = 0
+    if 0 > args.level < max_log_level:
+        log_level = max_log_level - args.level * 10
+    elif args.level > max_log_level:
+        log_level = 10
+
+    logger.setLevel(log_level)
 
     query = {}
     if args.huc:
@@ -68,16 +104,17 @@ def usgs_sites():
 
     for r in reader:
         site = r["site_no"]
+        alt_va = None if r["alt_va"].strip() == "" else float(r["alt_va"].strip())
+        dec_lat_va = 0 if r["dec_lat_va"] == "" else float(r["dec_lat_va"])
+        dec_long_va = 0 if r["dec_long_va"] == "" else float(r["dec_long_va"])
         keywordParameters = {
             "p_location_id": site,
             "p_location_type": "SITE",
-            "p_elevation": None
-            if r["alt_va"].strip() == ""
-            else float(r["alt_va"].strip()),
+            "p_elevation": alt_va,
             "p_elev_unit_id": "ft",
             "p_vertical_datum": r["alt_datum_cd"],
-            "p_latitude": float(r["dec_lat_va"]),
-            "p_longitude": float(r["dec_long_va"]),
+            "p_latitude": dec_lat_va,
+            "p_longitude": dec_long_va,
             "p_horizontal_datum": r["dec_coord_datum_cd"],
             "p_public_name": r["station_nm"],
             "p_long_name": r["station_nm"],
@@ -87,8 +124,8 @@ def usgs_sites():
             "p_state_initial": None,
             "p_active": "T",
             "p_map_label": None,
-            "p_published_latitude": float(r["dec_lat_va"]),
-            "p_published_longitude": float(r["dec_long_va"]),
+            "p_published_latitude": dec_lat_va,
+            "p_published_longitude": dec_long_va,
             "p_bounding_office_id": None,
             "p_nation_id": None,
             "p_nearest_city": None,

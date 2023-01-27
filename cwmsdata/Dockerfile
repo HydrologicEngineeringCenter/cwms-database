@@ -6,7 +6,13 @@ RUN apt-get update && \
 RUN mkdir -p /opt/oracle
 WORKDIR /opt/oracle
 RUN wget https://download.oracle.com/otn_software/linux/instantclient/1917000/instantclient-basic-linux.x64-19.17.0.0.0dbru.zip && \
-    unzip -u *.zip; rm -rf *.zip
+    wget https://download.oracle.com/otn_software/linux/instantclient/1917000/instantclient-tools-linux.x64-19.17.0.0.0dbru.zip && \
+    wget https://download.oracle.com/otn_software/linux/instantclient/1917000/instantclient-sqlplus-linux.x64-19.17.0.0.0dbru.zip && \
+    unzip -U instantclient-basic-linux.x64-19.17.0.0.0dbru.zip && \
+    unzip -U instantclient-tools-linux.x64-19.17.0.0.0dbru.zip && \
+    unzip -U instantclient-sqlplus-linux.x64-19.17.0.0.0dbru.zip && \
+    rm -rf *.zip
+
 
 RUN echo "/opt/oracle/instantclient_19_17" > /etc/ld.so.conf.d/oracle.conf && ldconfig
 
@@ -35,5 +41,4 @@ ENTRYPOINT [ "entrypoint.sh" ]
 #   only using 2 or 8 huc.
 #
 
-CMD [ "-st", "-c", "--huc 05130105 --parameter_code 00060 00065" ]
-# CMD [ "tail", "-f", "/dev/null" ]
+# CMD [ "-s", "-c", "--huc 05130101 05130102 05130103 --parameter_code 00060 00065" ]
