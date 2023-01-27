@@ -2,6 +2,7 @@ services:
   database:
     image: registry.hecdev.net/oracle/database:19.3.0-ee
     container_name: cwms-dev-db
+    restart: always
     volumes:
       - cwms-dev-oracle:/opt/oracle/oradata:rw
     environment:
@@ -25,7 +26,6 @@ services:
       - OFFICE_EROC=S0
       - INSTALLONCE=0
       - QUIET=0
-    restart: unless-stopped
   cwms-data:
     build:
       context: cwmsdata
@@ -33,8 +33,8 @@ services:
       - database
     container_name: cwms-dev-data
     command:
-      - "-st"
-      - " -c '-vv --huc 05130101 05130102 05130103 --parameter_code 00060 00065'"
+      - "usgs-sites"
+      - "usgs-ts"
     environment:
       - DB_HOST_PORT=cwms-dev-db:1521
       - DB_NAME=/CWMSDEV
@@ -42,7 +42,8 @@ services:
       - CWMS_PASSWORD=password
       - OFFICE_ID=HQ
       - OFFICE_EROC=S0
-    restart: unless-stopped
-
+      - USGS_HUC_CODES="05130101 05130102 05130103"
+      - USGS_PARAMETER_CODES="00060 00065"
+      - USGS_PERIOD="P1D"
 volumes:
   cwms-dev-oracle:

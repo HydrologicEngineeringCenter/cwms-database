@@ -51,10 +51,11 @@ def usgs_sites_ts():
     max_log_level = 50
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "--verbose",
         "-v",
         action="count",
-        dest="level",
         help="-v (40), -vv (30), -vvv (20), or -vvv (10) (default: (50)",
+        default=0
     )
     parser.add_argument(
         "--format",
@@ -93,12 +94,12 @@ def usgs_sites_ts():
         default="P1D",
     )
 
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
 
     log_level = 0
-    if 0 > args.level < max_log_level:
-        log_level = max_log_level - args.level * 10
-    elif args.level > max_log_level:
+    if 0 < args.verbose < max_log_level:
+        log_level = max_log_level - args.verbose * 10
+    elif args.verbose > max_log_level:
       log_level = 10
 
     logger.setLevel(log_level)

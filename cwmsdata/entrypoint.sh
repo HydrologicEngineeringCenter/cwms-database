@@ -1,70 +1,60 @@
 #!/bin/bash
 
-usage(){ printf "\n$0 usage:\n\n" && grep " .*)\ #" $0; exit 0;}
+# set -x
+
+VERBOSE_LEVEL="vvv"
+SLEEP_SEC=5
+
+START=1
+MAX_CONNECTION_TRY=3
 
 db_statuscheck() {
     echo "$(date) :Checking DB connectivity...";
-    echo "$(date) :Trying to connect "${DB_HOST_PORT}${DB_NAME}" ..."
-    echo "exit" | sqlplus -S ${CWMS_USER}/${CWMS_PASSWORD}@${DB_HOST_PORT}${DB_NAME} | grep -q "Connected to:" > /dev/null
+    sqlplus ${CWMS_USER}/${CWMS_PASSWORD}@${DB_HOST_PORT}${DB_NAME} | grep "Connected to:" > /dev/null
     if [ $? -eq 0 ]
     then
-        DB_STATUS="UP"
-        export DB_STATUS
-        echo "$(date) :Status: ${DB_STATUS}. Able to Connect..."
+        echo "$(date) :Status: UP. Able to Connect..."
+        export CWMS_DB_CONNECTED=true
     else
-        DB_STATUS="DOWN"
-        export DB_STATUS
         echo "$(date) :Status: DOWN; Not able to Connect."
-        echo "$(date) :Not able to connect to database with Username:  "${CWMS_USER}" DB HostName: "${DB_HOST_PORT}${DB_NAME}"."
-        echo "$(date) :Exiting Script"
-        sleep 15
-        exit 1
     fi
  }
 
-# Check the database first
-echo "$(date) :Starting Sql auto run script."
-db_statuscheck
-echo "$(date) :Sql auto run script execution completed."
+echo "Start entrypoint"
 
-
-cmds=""
-ALIVE=false
-
-while getopts ":ac:sth" option; do
-    case ${option} in 
-        a) # Keep container alive
-            ALIVE=true
-            ;;
-        c) # Switches for commands
-            switch="$OPTARG";
-            ;;
-        s) # Run usgs-sites
-            cmds="$cmds usgs-sites"
-            ;;
-        t) # Run usgs-ts
-            ts="$cmds usgs-ts"
-            ;;
-        h) # Print usage message
-            usage
-            exit 1
-            ;;
-        :)
-            echo "$0: Must supply an argument to -$OPTARG."
-            exit 1
-            ;;
-        ?)
-            echo "Invalid option: -$OPTARG."
-            exit 2
-            ;;    esac
-done
-
-for cmd in $sites $ts
+# always checking the db connection; three times max
+for (( i=$START; i<=$MAX_CONNECTION_TRY; i++ ))
 do
-    eval ${cmd} ${switch}
+    db_statuscheck
+    if [ $CWMS_DB_CONNECTED ]
+    then
+        DBUP=true
+        break
+    else
+        echo "Sleep for $SLEEP_SEC seconds then try again."
+        sleep $SLEEP_SEC
+    fi
 done
 
-while $ALIVE
+# check the things we want to do
+for arg in "$@"
 do
-    sleep 10000
+    [ "$arg" == "usgs-sites" ] && USGS_SITES=true
+    [ "$arg" == "usgs-ts" ] && USGS_TS=true
 done
+
+if [ "$DBUP" == "true" ]
+then
+    switch="-$VERBOSE_LEVEL"
+    [[ ! -z $USGS_HUC_CODES ]] && switch="$switch --huc $(echo "$USGS_HUC_CODES" | sed -e 's/^"//' -e 's/"$//')"
+    [[ ! -z $USGS_PARAMETER_CODES ]] && switch="$switch --parameter_code $(echo "$USGS_PARAMETER_CODES" | sed -e 's/^"//' -e 's/"$//')"
+    [[ ! -z $USGS_PERIOD ]] && switch="$switch --period $(echo "$USGS_PERIOD" | sed -e 's/^"//' -e 's/"$//')"
+
+    echo "Switches: $switch"
+    [ $USGS_SITES ] && usgs-sites ${switch}
+    [ $USGS_TS ] && usgs-ts ${switch}
+fi
+
+echo "Exiting entrypoint"
+
+exit

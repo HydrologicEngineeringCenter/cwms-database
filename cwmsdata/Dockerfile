@@ -29,16 +29,3 @@ WORKDIR /cwmsdata
 RUN pip install .
 
 ENTRYPOINT [ "entrypoint.sh" ]
-
-# entrypoint arguments:
-#   -a: keep the container alive
-#   -s: run usgs-sites with arguments
-#   -t: run usgs-ts with arguments
-#   -c: the string of arguments the above takes
-#
-#   follow the CMD below and add/remove hub and codes.  Space delimited
-#   list of huc and codes accepted.  Follow USGS huc https://water.usgs.gov/GIS/huc_name.html
-#   only using 2 or 8 huc.
-#
-
-# CMD [ "-s", "-c", "--huc 05130101 05130102 05130103 --parameter_code 00060 00065" ]
