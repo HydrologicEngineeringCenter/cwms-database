@@ -1,0 +1,20 @@
+version: 1
+formatters:
+  brief:
+    format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  precise:
+    format: "[%(asctime)s.%(msecs)03d] {%(name)s:%(funcName)s} - %(levelname)-s - %(message)s"
+    datefmt: "%Y-%m-%dT%H:%M:%S"
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: DEBUG
+    formatter: precise
+loggers:
+  cwms_logger:
+    level: DEBUG
+    handlers: [console]
+    # propagate: no
+# root:
+#   level: DEBUG
+#   handlers: [console]
