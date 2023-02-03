@@ -1258,7 +1258,8 @@ CREATE TABLE at_cwms_ts_spec
   active_flag          VARCHAR2(1 BYTE),
   delete_date          TIMESTAMP(9),
   data_source          VARCHAR2(16 BYTE),
-  historic_flag        VARCHAR2(1 BYTE)         DEFAULT 'F'
+  historic_flag        VARCHAR2(1 BYTE)         DEFAULT 'F',
+  prev_location_code   NUMBER(14)
 )
 TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
@@ -1282,7 +1283,7 @@ MONITORING
 
 COMMENT ON TABLE at_cwms_ts_spec IS 'Defines time series based on CWMS requirements.  This table also serves as time series specification super type.';
 COMMENT ON COLUMN at_cwms_ts_spec.ts_code IS 'Unique record identifier, primarily used for internal database processing. This code is automatically assigned by the system.';
-COMMENT ON COLUMN at_cwms_ts_spec.location_code IS 'Primary key of AT_PHYSICAL_LOCATION table.';
+COMMENT ON COLUMN at_cwms_ts_spec.location_code IS 'Primary key of AT_PHYSICAL_LOCATION table. Location time series is associated with. Is set to 0 when time series is deleted';
 COMMENT ON COLUMN at_cwms_ts_spec.parameter_code IS 'Primary key of AT_PARAMETER table.  Must already exist in the AT_PARAMETER table.';
 COMMENT ON COLUMN at_cwms_ts_spec.parameter_type_code IS 'Primary key of CWMS_PARAMETER_TYPE table.  Must already exist in the CWMS_PARAMETER_TYPE table.';
 COMMENT ON COLUMN at_cwms_ts_spec.interval_code IS 'Primary key of CWMS_INTERVAL table';
@@ -1298,6 +1299,8 @@ COMMENT ON COLUMN at_cwms_ts_spec.migrate_ver_flag IS 'Default is NULL, indicati
 COMMENT ON COLUMN at_cwms_ts_spec.active_flag IS 'T or F';
 COMMENT ON COLUMN at_cwms_ts_spec.delete_date IS 'Is the date that this ts_id was marked for deletion.';
 COMMENT ON COLUMN at_cwms_ts_spec.historic_flag IS 'T or F specifying whether this time series is part of the historic record';
+COMMENT ON COLUMN at_cwms_ts_spec.prev_location_code IS 'Location of time series prior to deletion';
+
 
 CREATE UNIQUE INDEX at_cwms_ts_spec_ui ON at_cwms_ts_spec
 (location_code, parameter_type_code, parameter_code, interval_code,
@@ -1335,6 +1338,31 @@ STORAGE    (
 NOPARALLEL
 /
 
+CREATE INDEX at_cwms_ts_spec_locations ON at_cwms_ts_spec
+(location_code, prev_location_code)
+LOGGING
+tablespace CWMS_20AT_DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+ALTER TABLE at_cwms_ts_spec ADD (
+  CONSTRAINT at_cwms_ts_spec_ck_1
+ CHECK ((location_code > 0 AND prev_location_code IS NULL) OR (location_code = 0 AND prev_location_code > 0)))
+/
+ALTER TABLE at_cwms_ts_spec ADD (
+  CONSTRAINT at_cwms_ts_spec_ck_2
+ CHECK ((location_code > 0 AND delete_date IS NULL) OR (location_code = 0 AND delete_date IS NOT NULL)))
+/
 ALTER TABLE at_cwms_ts_spec ADD (
   CONSTRAINT at_cwms_ts_spec_ck_3
  CHECK (TRIM(VERSION)=VERSION))
@@ -1402,6 +1430,12 @@ ALTER TABLE at_cwms_ts_spec ADD (
   CONSTRAINT at_cwms_ts_spec_fk_6
  FOREIGN KEY (time_zone_code)
  REFERENCES cwms_time_zone (time_zone_code))
+/
+
+ALTER TABLE at_cwms_ts_spec ADD (
+  CONSTRAINT at_cwms_ts_spec_fk_7
+ FOREIGN KEY (prev_location_code)
+ REFERENCES at_physical_location (location_code))
 /
 
 
