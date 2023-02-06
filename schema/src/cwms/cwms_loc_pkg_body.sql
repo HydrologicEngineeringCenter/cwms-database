@@ -10173,7 +10173,7 @@ end unassign_loc_groups;
       p_text in varchar2 default null)
    is
    begin
-      v_package_log_prop_text := nvl(p_text, userenv('sessionid'));
+      v_package_log_prop_text := nvl(p_text, sys_context('userenv', 'sid'));
    end set_package_log_property_text;
 
 END cwms_loc;
