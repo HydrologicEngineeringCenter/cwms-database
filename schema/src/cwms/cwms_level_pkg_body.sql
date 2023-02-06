@@ -125,7 +125,8 @@ begin
         into l_parts(1)
         from av_loc2
        where db_office_id = l_office_id
-         and upper(location_id) = upper(l_parts(1));
+         and upper(location_id) = upper(l_parts(1))
+         and aliased_item is null;
    exception
       when no_data_found then cwms_err.raise(
          'ERROR',
@@ -1772,6 +1773,7 @@ begin
 
    return l_level_cursor;
 end cat_specified_levels;
+
 --------------------------------------------------------------------------------
 -- PROCEDURE store_seasonal_location_level
 --
@@ -6534,8 +6536,12 @@ begin
                l_quality_codes;
          close l_crsr;
 
-         cwms_util.duration_to_interval(l_ym_interval, l_ds_interval, p_max_ts_timespan);
-         l_max_date := l_date_times(1) + l_ym_interval + l_ds_interval;
+         if p_max_ts_timespan is null then
+            l_max_date := date '3000-01-01';
+         else
+            cwms_util.duration_to_interval(l_ym_interval, l_ds_interval, p_max_ts_timespan);
+            l_max_date := l_date_times(1) + l_ym_interval + l_ds_interval;
+         end if;
 
          if l_date_times.count = 3 then
             ----------------------------------------------------------------------------------
@@ -6578,7 +6584,10 @@ begin
          -------------------------------------------------
          -- constant value, already retrieved in object --
          -------------------------------------------------
-         l_value := l_loc_level_obj.level_value;
+         l_value := cwms_util.convert_units(
+            l_loc_level_obj.level_value,
+            l_loc_level_obj.level_units_id,
+            p_level_units);
       else
          -------------------------------------------------------------------
          -- regularly varying or virtual value, retrieve value separately --
@@ -16675,7 +16684,7 @@ procedure set_package_log_property_text(
    p_text in varchar2 default null)
 is
 begin
-   v_package_log_prop_text := nvl(p_text, userenv('sessionid'));
+   v_package_log_prop_text := nvl(p_text, sys_context('userenv', 'sid'));
 end set_package_log_property_text;
 
 

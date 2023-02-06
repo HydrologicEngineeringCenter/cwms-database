@@ -315,7 +315,8 @@ as
                 at_parameter ap
           where cbp.base_parameter_id = get_base_id(p_param_id)
             and ap.base_parameter_code = cbp.base_parameter_code
-            and nvl(ap.sub_parameter_id, '-') = nvl(get_sub_id(p_param_id), '-');
+            and nvl(ap.sub_parameter_id, '-') = nvl(get_sub_id(p_param_id), '-')
+            and db_office_code in (db_office_code_all, get_office_code(p_office_id));
       exception
          when no_data_found then
          cwms_err.raise(
@@ -6059,7 +6060,7 @@ as
       p_text in varchar2 default null)
    is
    begin
-      v_package_log_prop_text := nvl(p_text, userenv('sessionid'));
+      v_package_log_prop_text := nvl(p_text, sys_context('userenv', 'sid'));
    end set_package_log_property_text;
 
    procedure trim_application_sessions
@@ -6118,7 +6119,7 @@ as
       l_session_id integer;
    begin
       if p_session_id = 0 then
-         l_session_id := userenv('sessionid');
+         l_session_id := sys_context('userenv', 'sid');
       else
          l_session_id := p_session_id;
       end if;
@@ -6554,7 +6555,7 @@ as
    is
       pragma autonomous_transaction;
       l_row        urowid;
-      l_session_id integer := userenv('sessionid');
+      l_session_id integer := sys_context('userenv', 'sid');
       l_office     varchar2(16);
       l_username   varchar2(30);
    begin
