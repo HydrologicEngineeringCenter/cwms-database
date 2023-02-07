@@ -1,6 +1,12 @@
 {
     "java.configuration.updateBuildConfiguration": "automatic",
+    "java.debug.logLevel": "verbose",
     "files.associations": {
         "*.json": "jsonc"
+    },
+    "java.test.config": {
+        "sourcePaths": [
+            "schema/libs/JMCAS-3.0-sources.jar"
+        ],
     }
 }

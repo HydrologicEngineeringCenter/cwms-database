@@ -46,29 +46,46 @@ public class ConversionGraph {
                      .distinct()
                      .collect(Collectors.toList());
         // forward
+        var unitChainStr = new StringBuffer(200);
+        var unitChain = new ArrayDeque<Conversion>(10);
         units.forEach( u -> log.fine("*"+u+"*"));
         for( Unit from: units ){
-            for( Unit to: units ){
+            for( Unit to: units ){                
                 if( from.equals(to) ) continue;
+
+                
                 log.fine(() -> String.format("Finding conversion from %s to %s",from,to));
-                Deque<ConversionMethod> steps = new ArrayDeque<>(findConversion(from,to,conversions));
+                var steps = new ArrayDeque<>(findConversion(from,to,conversions));
                 if( steps.isEmpty() ){
                     throw new NoConversionFound("Unable to find conversion from " + from + " to " + to);
                 }
+                unitChain.clear();
+                unitChainStr.setLength(0);
+
                 log.fine("Reducing/combining conversion steps");
-                String postfix = steps.pollLast().getPostfix();
-                ConversionMethod step = null;
-                while( (step = steps.pollLast()) != null){
-                    postfix = Equations.combine(postfix, step.getPostfix());
+                var conversion = steps.pollLast();                
+                unitChain.push(conversion);
+                String postfix = conversion.getMethod().getPostfix();
+                Conversion step = null;
+                while ((step = steps.pollLast()) != null) {
+                    unitChain.push(step);
+                    postfix = Equations.combine(postfix, step.getMethod().getPostfix());
                 }
-                
+
+                step = unitChain.pollFirst();
+                unitChainStr.append(String.format("%s -> %s",step.getFrom().getAbbreviation(),step.getTo().getAbbreviation()));
+                while ((step = unitChain.pollFirst()) != null) {
+                    unitChainStr.append(String.format(" -> %s",step.getTo().getAbbreviation()));
+                }
+
                 try {
                     var reduced = EquationReducer.reduce(postfix);
                     newConversions.add( 
                         new Conversion(
                             from,
                             to,
-                            new ForDB(reduced)
+                            new ForDB(reduced),
+                            unitChainStr.toString()
                         )
                     );
                 } catch( BadMathExpression bme ) {
@@ -161,7 +178,7 @@ public class ConversionGraph {
         }
     }
 
-    private Queue<ConversionMethod> findConversion(Unit from, Unit to, Set<Conversion> conversions) {                
+    private Queue<Conversion> findConversion(Unit from, Unit to, Set<Conversion> conversions) {                
         Set<Node> roots = new HashSet<>();
 
         // find the roots
@@ -194,7 +211,7 @@ public class ConversionGraph {
             else if ( l.size() == r.size() ) return 0;
             else return 1;
         }).findFirst().get();
-        return shortest.stream().map( q -> q.getMethod() ).collect(Collectors.toCollection(LinkedList::new));
+        return shortest;//.stream().map( q -> q.getMethod() ).collect(Collectors.toCollection(LinkedList::new));
                 
     }
 

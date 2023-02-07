@@ -1,3 +1,6 @@
+plugins {
+    id 'eclipse'
+}
 ext.ORACLE_JDBC_VERSION='19.3.0.0'
 
 // default property values to save some hassle.

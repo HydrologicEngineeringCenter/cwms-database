@@ -260,7 +260,7 @@
 	// ["g",           "tonne",       "[kg]/*_per_k*[g] | [tonne]/kg_per_tonne[kg]"],
 	// ["g",           "ug",          "u*_per_*[ug]/[g]"],
 	// This is not a valid conversion?
-	["g/m3",         "g/l",        "linear: l_per_m3 0"], 
+	["g/l",         "g/m3",        "linear: l_per_m3 0"], 
 	//["g/l",         "g/cm3",      "function: (i * l_per_m3)*(1/centi_per_unit)^3"],
 
 	//["g/l",         "lbm/ft3",     "function: (i/unit_per_kilo/kg_per_lbm)*l_per_m3*(m_per_ft^3)"],

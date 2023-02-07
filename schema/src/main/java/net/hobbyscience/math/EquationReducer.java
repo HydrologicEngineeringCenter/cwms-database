@@ -6,8 +6,9 @@ public class EquationReducer {
     public static String reduce(String equation) {
         try {
             var operations = Equations.tokensToBin(equation);        
-            operations = operations.simplify();        
-            var infix = operations.beautify().toString();
+            operations = operations.simplify(); 
+            var beautified = operations.beautify();       
+            var infix = beautified.toString();
         
             return Equations.infixToPostfix(infix);
         } catch (BadMathExpression bme) {

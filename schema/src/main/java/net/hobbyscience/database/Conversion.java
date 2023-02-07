@@ -12,12 +12,19 @@ import cwms.units.Unit;
 public class Conversion {
     private Unit from;
     private Unit to;
-    private ConversionMethod method;    
+    private ConversionMethod method;
+    private String conversionChain;
 
-    public Conversion(Unit from, Unit to, ConversionMethod method){
+    public Conversion(Unit from, Unit to, ConversionMethod method) {
         this.from = from;
         this.to = to;
         this.method = method;
+        this.conversionChain = String.format("%s -> %s",from.getAbbreviation(),to.getAbbreviation());
+    }
+
+    public Conversion(Unit from, Unit to, ConversionMethod method, String chain) {
+        this(from,to,method);
+        conversionChain = chain;
     }
 
     public Unit getFrom() {
@@ -59,8 +66,15 @@ public class Conversion {
           .append(to.getAbbreviation())
           .append(" with ")
           .append(method.render())
-          .append(" )");
+          .append(",")
+          .append("chain is: ").append(this.getConversionChain())
+          .append(" )")
+          ;
         return sb.toString();
+    }
+
+    public String getConversionChain() {
+        return conversionChain;
     }
     
 }
