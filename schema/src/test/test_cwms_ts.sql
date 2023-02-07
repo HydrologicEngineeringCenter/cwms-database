@@ -60,6 +60,9 @@ procedure test_inclusion_options__JIRA_CWDB_180;
 --%test(Test STORE_TS can create a versioned time series: CWDB-190)
 procedure test_store_ts_can_create_versioned_time_series__JIRA_CWDB_190;
 
+--%test(LRL 1Day at 6am EST stores correctly)
+procedure test_lrl_1day_CWDB_202;
+
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
 test_withsub_location_id VARCHAR2(32) := test_base_location_id||'-withsub';
 test_renamed_base_location_id VARCHAR2(32) := 'RenameTestLoc1';
@@ -1752,6 +1755,25 @@ AS
       end if;
 
     end test_store_ts_can_create_versioned_time_series__JIRA_CWDB_190;
-END test_cwms_ts;
+
+    PROCEDURE test_lrl_1day_CWDB_202
+    IS
+        l_count number;
+        l_tsid av_cwms_ts_id.cwms_ts_id%type := test_base_location_id || '.Temp-Water.Inst.1Day.0.lrl-at-6am';
+        l_offset  av_cwms_ts_id.interval_utc_offset%type;
+    BEGIN
+        store_a_value (l_tsid,
+                       'F',
+                       3600*24,
+                       1,
+                       TIMESTAMP '2023-02-02 11:00:00');
+        select count(*) into l_count from av_tsv where ts_code = (select ts_code from av_cwms_ts_id where cwms_ts_id = l_tsid);
+        select interval_utc_offset into l_offset from av_cwms_ts_id where cwms_ts_id = l_tsid;
+        dbms_output.put_line('Offset ' || l_offset);
+        ut.expect(l_offset).not_to_equal(0);
+        ut.expect(l_count).to_equal(1);
+    END test_lrl_1day_CWDB_202;
+
+END;
 /
 SHOW ERRORS
