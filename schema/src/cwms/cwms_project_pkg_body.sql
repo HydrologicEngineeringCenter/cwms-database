@@ -907,7 +907,7 @@ begin
              l_program,
              l_machine
         from v$session
-       where audsid = userenv('sessionid');
+       where sid = sys_context('userenv', 'sid');
 
       begin
          insert

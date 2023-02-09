@@ -53,23 +53,23 @@ select q1.office_id,
        q2.unit_si as attribute_unit_si,
        cwms_rounding.round_f(cwms_util.convert_units(q1.attribute_value, q2.unit_si, q2.unit_en), 10) as attribute_value_en,
        q2.unit_en as attribute_unit_en,
-       cwms_rounding.round_f(cwms_level.retrieve_loc_lvl_value_ex(
+       cwms_level.retrieve_loc_lvl_value_ex(
          p_location_level_id => q1.location_level_id,
          p_level_units       => cwms_display.retrieve_user_unit_f(q1.parameter_id, 'SI'),
          p_attribute_id      => q2.attribute_id,
          p_attribute_value   => q1.attribute_value,
          p_attribute_units   => q2.unit_si,
          p_ignore_errors     => 'T',
-         p_office_id         => q1.office_id), 10) as current_value_si,
+         p_office_id         => q1.office_id) as current_value_si,
        cwms_display.retrieve_user_unit_f(q1.parameter_id, 'SI') as value_unit_si,
-       cwms_rounding.round_f(cwms_level.retrieve_loc_lvl_value_ex(
+       cwms_level.retrieve_loc_lvl_value_ex(
          p_location_level_id => q1.location_level_id,
          p_level_units       => cwms_display.retrieve_user_unit_f(q1.parameter_id, 'EN'),
          p_attribute_id      => q2.attribute_id,
          p_attribute_value   => q1.attribute_value,
          p_attribute_units   => q2.unit_si,
          p_ignore_errors     => 'T',
-         p_office_id         => q1.office_id), 10) as current_value_en,
+         p_office_id         => q1.office_id) as current_value_en,
        cwms_display.retrieve_user_unit_f(q1.parameter_id, 'EN') as value_unit_en,
        case
        when q1.location_level_value is not null then 'CONSTANT'
