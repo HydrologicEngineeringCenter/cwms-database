@@ -100,7 +100,8 @@ as
       self.height_unit    := get_text('/*/@height-unit', self.used='T');
       self.flow_unit      := get_text('/*/@flow-unit', self.used='T');
       self.meas_number    := get_text('/*/number', true);
-      self.date_time      := cast(cwms_util.to_timestamp(get_text('/*/date', true)) as date);
+      self.time_zone      := nvl(cwms_loc.get_local_timezone(p_location_code => self.location.get_location_code), 'UTC');
+      self.date_time      := cwms_util.change_timezone(cast(cwms_util.to_timestamp(get_text('/*/date', true)) as date), 'UTC', self.time_zone);
       self.agency_id      := get_text('/*/agency');
       self.party          := get_text('/*/party');
       self.gage_height    := to_binary_double(get_text('/*/gage-height', self.used='T'));
@@ -118,6 +119,7 @@ as
       self.water_temp     := to_binary_double(get_text('/*/water-temp', false));
       self.temp_unit      := get_text('/*/@temp-unit', self.used='T' and (self.air_temp is not null or self.water_temp is not null));
       self.wm_comments    := get_text('/*/wm-comments');
+
       return;
    end streamflow_meas_t;
 
@@ -173,12 +175,12 @@ as
        where rowid = p_rowid;
 
       self.location        := location_ref_t(l_rec.location_code);
-      self.time_zone       := 'UTC';
+      self.time_zone       := cwms_loc.get_local_timezone(p_location_code => l_rec.location_code);
       self.height_unit     := cwms_util.get_default_units('Stage', p_unit_system);
       self.flow_unit       := cwms_util.get_default_units('Flow', p_unit_system);
       self.temp_unit       := cwms_util.get_default_units('Temp', p_unit_system);
       self.meas_number     := l_rec.meas_number;
-      self.date_time       := l_rec.date_time;
+      self.date_time       := cwms_util.change_timezone(l_rec.date_time, 'UTC', self.time_zone);
       self.used            := l_rec.used;
       self.agency_id       := cwms_entity.get_entity_id(l_rec.agency_code);
       self.party           := l_rec.party;

@@ -7,6 +7,7 @@ define upass_id = '&3';
 define eroc = '&4';
 -- make sure the info required for the below user is present
 exec cwms_sec.add_cwms_user('OTHER_DIST', char_32_array_type('CWMS Users'),'HQ');
+@test_cwms_stream;
 @test_cwms_prop.sql;
 @test_cwms_msg.sql;
 @test_aaa.sql;
