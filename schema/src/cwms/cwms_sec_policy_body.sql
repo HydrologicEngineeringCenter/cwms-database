@@ -4,6 +4,28 @@ SET DEFINE ON
 
 CREATE OR REPLACE PACKAGE BODY &cwms_schema..cwms_sec_policy
 AS
+    FUNCTION cwms_duration_filter (p_schema IN VARCHAR2, p_table IN VARCHAR2)
+        RETURN VARCHAR2
+    IS
+    BEGIN
+       return 'duration_code < 61';
+    END cwms_duration_filter;
+
+    FUNCTION cwms_interval_filter (p_schema IN VARCHAR2, p_table IN VARCHAR2)
+        RETURN VARCHAR2
+    IS
+    BEGIN
+       return 'interval_code < 60';
+    END cwms_interval_filter;
+
+    FUNCTION cwms_parameter_type_filter (p_schema IN VARCHAR2, p_table IN VARCHAR2)
+        RETURN VARCHAR2
+    IS
+    BEGIN
+       return 'parameter_type_code < 7';
+    END cwms_parameter_type_filter;
+
+
     FUNCTION CHECK_SESSION_USER (p_schema IN VARCHAR2, p_table IN VARCHAR2)
         RETURN VARCHAR2
     IS
