@@ -4393,153 +4393,276 @@ AS
       return l_result;
    end same_vq2;
 
+   function update_ts_extents_rec(
+      p_rec1 in     at_ts_extents%rowtype,
+      p_rec2 in out at_ts_extents%rowtype)
+      return boolean
+   is
+      l_updated boolean := false;
+
+      function value_is_less(p1 in binary_double, p2 in binary_double) return boolean
+      is begin return (p1 is not null) and (p2 is null or p1 < p2); end;
+
+      function value_is_more(p1 in binary_double, p2 in binary_double) return boolean
+      is begin return (p1 is not null) and (p2 is null or p1 > p2); end;
+
+      function date_is_less(p1 in date, p2 in date) return boolean
+      is begin return (p1 is not null) and (p2 is null or p1 < p2); end;
+
+      function date_is_more(p1 in date, p2 in date) return boolean
+      is begin return (p1 is not null) and (p2 is null or p1 > p2); end;
+
+      function time_is_less(p1 in timestamp, p2 in timestamp) return boolean
+      is begin return (p1 is not null) and (p2 is null or p1 < p2); end;
+
+      function time_is_more(p1 in timestamp, p2 in timestamp) return boolean
+      is begin return (p1 is not null) and (p2 is null or p1 > p2); end;
+
+   begin
+
+      -- Compare at_ts_extents records
+      -- p_rec1 contains new values
+      -- p_rec2 contains current/updated values
+
+      if p_rec2.ts_code is null then
+         p_rec2.ts_code                       := p_rec1.ts_code;
+         p_rec2.version_time                  := p_rec1.version_time;
+      end if;
+
+      if date_is_less (p_rec1.earliest_time, p_rec2.earliest_time)
+      then
+         p_rec2.earliest_time                 := p_rec1.earliest_time;
+         p_rec2.earliest_time_entry           := p_rec1.earliest_time_entry;
+         l_updated                            := true;
+      end if;
+
+      if time_is_less (p_rec1.earliest_entry_time, p_rec2.earliest_entry_time)
+      then
+         p_rec2.earliest_entry_time           := p_rec1.earliest_entry_time;
+         l_updated                            := true;
+      end if;
+
+      if date_is_less (p_rec1.earliest_non_null_time, p_rec2.earliest_non_null_time)
+      then
+         p_rec2.earliest_non_null_time        := p_rec1.earliest_non_null_time;
+         p_rec2.earliest_non_null_time_entry  := p_rec1.earliest_non_null_time_entry;
+         l_updated                            := true;
+      end if;
+
+      if time_is_less (p_rec1.earliest_non_null_entry_time, p_rec2.earliest_non_null_entry_time)
+      then
+         p_rec2.earliest_non_null_entry_time  := p_rec1.earliest_non_null_entry_time;
+         l_updated                            := true;
+      end if;
+
+      if date_is_more (p_rec1.latest_time, p_rec2.latest_time)
+      then
+         p_rec2.latest_time                   := p_rec1.latest_time;
+         p_rec2.latest_time_entry             := p_rec1.latest_time_entry;
+         l_updated                            := true;
+      end if;
+
+      if time_is_more (p_rec1.latest_entry_time, p_rec2.latest_entry_time)
+      then
+         p_rec2.latest_entry_time             := p_rec1.latest_entry_time;
+         l_updated                            := true;
+      end if;
+
+      if date_is_more (p_rec1.latest_non_null_time, p_rec2.latest_non_null_time)
+      then
+         p_rec2.latest_non_null_time          := p_rec1.latest_non_null_time;
+         p_rec2.latest_non_null_time_entry    := p_rec1.latest_non_null_time_entry;
+         l_updated                            := true;
+      end if;
+
+      if time_is_more (p_rec1.latest_non_null_entry_time, p_rec2.latest_non_null_entry_time)
+      then
+         p_rec2.latest_non_null_entry_time    := p_rec1.latest_non_null_entry_time;
+         l_updated                            := true;
+      end if;
+
+      if value_is_less (p_rec1.least_value, p_rec2.least_value)
+      then
+         p_rec2.least_value                   := p_rec1.least_value;
+         p_rec2.least_value_time              := p_rec1.least_value_time;
+         p_rec2.least_value_entry             := p_rec1.least_value_entry;
+         l_updated                            := true;
+      end if;
+
+      if value_is_less (p_rec1.least_accepted_value, p_rec2.least_accepted_value)
+      then
+         p_rec2.least_accepted_value          := p_rec1.least_accepted_value;
+         p_rec2.least_accepted_value_time     := p_rec1.least_accepted_value_time;
+         p_rec2.least_accepted_value_entry    := p_rec1.least_accepted_value_entry;
+         l_updated                            := true;
+      end if;
+
+      if value_is_more (p_rec1.greatest_value, p_rec2.greatest_value)
+      then
+         p_rec2.greatest_value                := p_rec1.greatest_value;
+         p_rec2.greatest_value_time           := p_rec1.greatest_value_time;
+         p_rec2.greatest_value_entry          := p_rec1.greatest_value_entry;
+         l_updated                            := true;
+      end if;
+
+      if value_is_more (p_rec1.greatest_accepted_value ,p_rec2.greatest_accepted_value)
+      then
+         p_rec2.greatest_accepted_value       := p_rec1.greatest_accepted_value;
+         p_rec2.greatest_accepted_value_time  := p_rec1.greatest_accepted_value_time;
+         p_rec2.greatest_accepted_value_entry := p_rec1.greatest_accepted_value_entry;
+         l_updated                            := true;
+      end if;
+
+      if l_updated then
+         p_rec2.last_update := p_rec1.last_update;
+      end if;
+
+      return l_updated;
+   end update_ts_extents_rec;
+
    function update_ts_extents(
       p_ts_extents_rec in at_ts_extents%rowtype)
       return boolean
    is
-      l_rec     at_ts_extents%rowtype;
-      l_updated boolean := false;
+      -- Minimize lock contention
+      -- Don't commit the parent transaction
+      PRAGMA AUTONOMOUS_TRANSACTION;
+
+      p_rec      at_ts_extents%rowtype;
+      l_rec      at_ts_extents%rowtype;
+      l_same     boolean;
+      l_updated  boolean := false;
+
+      function same_extents ( p_rec1 in at_ts_extents%rowtype,
+                              p_rec2 in at_ts_extents%rowtype )
+         return boolean
+      is
+         NB CONSTANT BINARY_DOUBLE := 1e100d;
+         NN CONSTANT NUMBER        := 1e100;
+         ND CONSTANT DATE          := date '1010-10-10';
+         NT CONSTANT TIMESTAMP     := timestamp '1010-10-10 10:10:10';
+         l_same      boolean;
+      begin
+         l_same :=
+            ( nvl(p_rec1.TS_CODE,NN)                       = nvl(p_rec2.TS_CODE,NN) ) and
+            ( nvl(p_rec1.VERSION_TIME,ND)                  = nvl(p_rec2.VERSION_TIME,ND) ) and
+            ( nvl(p_rec1.EARLIEST_TIME,ND)                 = nvl(p_rec2.EARLIEST_TIME,ND) ) and
+            ( nvl(p_rec1.EARLIEST_TIME_ENTRY,NT)           = nvl(p_rec2.EARLIEST_TIME_ENTRY,NT) ) and
+            ( nvl(p_rec1.EARLIEST_ENTRY_TIME,NT)           = nvl(p_rec2.EARLIEST_ENTRY_TIME,NT) ) and
+            ( nvl(p_rec1.EARLIEST_NON_NULL_TIME,ND)        = nvl(p_rec2.EARLIEST_NON_NULL_TIME,ND) ) and
+            ( nvl(p_rec1.EARLIEST_NON_NULL_TIME_ENTRY,NT)  = nvl(p_rec2.EARLIEST_NON_NULL_TIME_ENTRY,NT) ) and
+            ( nvl(p_rec1.EARLIEST_NON_NULL_ENTRY_TIME,NT)  = nvl(p_rec2.EARLIEST_NON_NULL_ENTRY_TIME,NT) ) and
+            ( nvl(p_rec1.LATEST_TIME,ND)                   = nvl(p_rec2.LATEST_TIME,ND) ) and
+            ( nvl(p_rec1.LATEST_TIME_ENTRY,NT)             = nvl(p_rec2.LATEST_TIME_ENTRY,NT) ) and
+            ( nvl(p_rec1.LATEST_ENTRY_TIME,NT)             = nvl(p_rec2.LATEST_ENTRY_TIME,NT) ) and
+            ( nvl(p_rec1.LATEST_NON_NULL_TIME,ND)          = nvl(p_rec2.LATEST_NON_NULL_TIME,ND) ) and
+            ( nvl(p_rec1.LATEST_NON_NULL_TIME_ENTRY,NT)    = nvl(p_rec2.LATEST_NON_NULL_TIME_ENTRY,NT) ) and
+            ( nvl(p_rec1.LATEST_NON_NULL_ENTRY_TIME,NT)    = nvl(p_rec2.LATEST_NON_NULL_ENTRY_TIME,NT) ) and
+            ( nvl(p_rec1.LEAST_VALUE,NB)                   = nvl(p_rec2.LEAST_VALUE,NB) ) and
+            ( nvl(p_rec1.LEAST_VALUE_TIME,ND)              = nvl(p_rec2.LEAST_VALUE_TIME,ND) ) and
+            ( nvl(p_rec1.LEAST_VALUE_ENTRY,NT)             = nvl(p_rec2.LEAST_VALUE_ENTRY,NT) ) and
+            ( nvl(p_rec1.LEAST_ACCEPTED_VALUE,NB)          = nvl(p_rec2.LEAST_ACCEPTED_VALUE,NB) ) and
+            ( nvl(p_rec1.LEAST_ACCEPTED_VALUE_TIME,ND)     = nvl(p_rec2.LEAST_ACCEPTED_VALUE_TIME,ND) ) and
+            ( nvl(p_rec1.LEAST_ACCEPTED_VALUE_ENTRY,NT)    = nvl(p_rec2.LEAST_ACCEPTED_VALUE_ENTRY,NT) ) and
+            ( nvl(p_rec1.GREATEST_VALUE,NB)                = nvl(p_rec2.GREATEST_VALUE,NB) ) and
+            ( nvl(p_rec1.GREATEST_VALUE_TIME,ND)           = nvl(p_rec2.GREATEST_VALUE_TIME,ND) ) and
+            ( nvl(p_rec1.GREATEST_VALUE_ENTRY,NT)          = nvl(p_rec2.GREATEST_VALUE_ENTRY,NT) ) and
+            ( nvl(p_rec1.GREATEST_ACCEPTED_VALUE,NB)       = nvl(p_rec2.GREATEST_ACCEPTED_VALUE,NB) ) and
+            ( nvl(p_rec1.GREATEST_ACCEPTED_VALUE_TIME,ND)  = nvl(p_rec2.GREATEST_ACCEPTED_VALUE_TIME,ND) ) and
+            ( nvl(p_rec1.GREATEST_ACCEPTED_VALUE_ENTRY,NT) = nvl(p_rec2.GREATEST_ACCEPTED_VALUE_ENTRY,NT) )
+            ;
+         return l_same;
+      end same_extents;
+
    begin
+      -- Compare p_ts_extents_rec with current TS extents,
+      -- If changes, then UPDATE else INSERT new extents
+      --
+      -- Procedure update_ts_extents may pass a negative ts_code indicating
+      -- a forced update without comparing with the current values.
+      -- This would better be an optional parameter but I didn't want to change
+      -- the package spec at this time.
+
+      p_rec         := p_ts_extents_rec;
+      p_rec.ts_code := abs(p_rec.ts_code);
+
+      -- Assume a row exists and do a SELECT first
+      -- If it doesn't exist (very rare) then try an insert
+      -- If the insert fails, accept the row that snuck in after the SELECT
+
       begin
          select *
            into l_rec
            from at_ts_extents
-          where ts_code = p_ts_extents_rec.ts_code
-            and version_time = p_ts_extents_rec.version_time;
-         ---------------------
-         -- existing record --
-         ---------------------
-         if p_ts_extents_rec.earliest_time is not null
-            and (l_rec.earliest_time is null or p_ts_extents_rec.earliest_time < l_rec.earliest_time)
-         then
-            l_rec.earliest_time                 := p_ts_extents_rec.earliest_time;
-            l_rec.earliest_time_entry           := p_ts_extents_rec.earliest_time_entry;
-            l_updated                           := true;
+          where ts_code      = p_rec.ts_code
+            and version_time = p_rec.version_time
+            FOR UPDATE;
+
+         l_same := same_extents (p_rec, l_rec);
+
+         if p_ts_extents_rec.ts_code < 0 then
+            -- force a complete update
+            l_rec := p_rec;
+            l_updated := TRUE;
+         else
+            l_updated := update_ts_extents_rec (p_rec, l_rec);
          end if;
-         if p_ts_extents_rec.earliest_non_null_time is not null
-            and (l_rec.earliest_non_null_time is null or p_ts_extents_rec.earliest_non_null_time < l_rec.earliest_non_null_time)
-         then
-            l_rec.earliest_non_null_time        := p_ts_extents_rec.earliest_non_null_time;
-            l_rec.earliest_non_null_time_entry  := p_ts_extents_rec.earliest_non_null_time_entry;
-            l_updated                           := true;
-         end if;
-         if p_ts_extents_rec.earliest_entry_time is not null
-            and (l_rec.earliest_entry_time is null or p_ts_extents_rec.earliest_entry_time < l_rec.earliest_entry_time)
-         then
-            l_rec.earliest_entry_time           := p_ts_extents_rec.earliest_entry_time;
-            l_updated                           := true;
-         end if;
-         if p_ts_extents_rec.earliest_non_null_entry_time is not null
-            and (l_rec.earliest_non_null_entry_time is null or p_ts_extents_rec.earliest_non_null_entry_time < l_rec.earliest_non_null_entry_time)
-         then
-            l_rec.earliest_non_null_entry_time  := p_ts_extents_rec.earliest_non_null_entry_time;
-            l_updated                           := true;
-         end if;
-         if p_ts_extents_rec.latest_time is not null
-            and (l_rec.latest_time is null or p_ts_extents_rec.latest_time > l_rec.latest_time)
-         then
-            l_rec.latest_time                   := p_ts_extents_rec.latest_time;
-            l_rec.latest_time_entry             := p_ts_extents_rec.latest_time_entry;
-            l_updated                           := true;
-         end if;
-         if p_ts_extents_rec.latest_non_null_time is not null
-            and (l_rec.latest_non_null_time is null or p_ts_extents_rec.latest_non_null_time > l_rec.latest_non_null_time)
-         then
-            l_rec.latest_non_null_time          := p_ts_extents_rec.latest_non_null_time;
-            l_rec.latest_non_null_time_entry    := p_ts_extents_rec.latest_non_null_time_entry;
-            l_updated                           := true;
-         end if;
-         if p_ts_extents_rec.latest_entry_time is not null
-            and (l_rec.latest_entry_time is null or p_ts_extents_rec.latest_entry_time > l_rec.latest_entry_time)
-         then
-            l_rec.latest_entry_time             := p_ts_extents_rec.latest_entry_time;
-            l_updated                           := true;
-         end if;
-         if p_ts_extents_rec.latest_non_null_entry_time is not null
-            and (l_rec.latest_non_null_entry_time is null or p_ts_extents_rec.latest_non_null_entry_time > l_rec.latest_non_null_entry_time)
-         then
-            l_rec.latest_non_null_entry_time    := p_ts_extents_rec.latest_non_null_entry_time;
-            l_updated                           := true;
-         end if;
-         if p_ts_extents_rec.least_value is not null
-            and (l_rec.least_value is null or p_ts_extents_rec.least_value < l_rec.least_value)
-         then
-            l_rec.least_value                   := p_ts_extents_rec.least_value;
-            l_rec.least_value_time              := p_ts_extents_rec.least_value_time;
-            l_rec.least_value_entry             := p_ts_extents_rec.least_value_entry;
-            l_updated                           := true;
-         end if;
-         if p_ts_extents_rec.least_accepted_value is not null
-            and (l_rec.least_accepted_value is null or p_ts_extents_rec.least_accepted_value < l_rec.least_accepted_value)
-         then
-            l_rec.least_accepted_value          := p_ts_extents_rec.least_accepted_value;
-            l_rec.least_accepted_value_time     := p_ts_extents_rec.least_accepted_value_time;
-            l_rec.least_accepted_value_entry    := p_ts_extents_rec.least_accepted_value_entry;
-            l_updated                           := true;
-         end if;
-         if p_ts_extents_rec.greatest_value is not null
-            and (l_rec.greatest_value is null or p_ts_extents_rec.greatest_value > l_rec.greatest_value)
-         then
-            l_rec.greatest_value                := p_ts_extents_rec.greatest_value;
-            l_rec.greatest_value_time           := p_ts_extents_rec.greatest_value_time;
-            l_rec.greatest_value_entry          := p_ts_extents_rec.greatest_value_entry;
-            l_updated                           := true;
-         end if;
-         if p_ts_extents_rec.greatest_accepted_value is not null
-            and (l_rec.greatest_accepted_value is null or p_ts_extents_rec.greatest_accepted_value > l_rec.greatest_accepted_value)
-         then
-            l_rec.greatest_accepted_value       := p_ts_extents_rec.greatest_accepted_value;
-            l_rec.greatest_accepted_value_time  := p_ts_extents_rec.greatest_accepted_value_time;
-            l_rec.greatest_accepted_value_entry := p_ts_extents_rec.greatest_accepted_value_entry;
-            l_updated                           := true;
-         end if;
+
          if l_updated then
-            l_rec.last_update := p_ts_extents_rec.last_update;
             update at_ts_extents
                set row = l_rec
-             where ts_code = l_rec.ts_code
+             where ts_code      = l_rec.ts_code
                and version_time = l_rec.version_time;
          end if;
-      exception
-         when no_data_found then
-            ------------------------
-            -- no existing record --
-            ------------------------
-            l_updated := true;
-	    begin
-              insert
-                into at_ts_extents
-              values p_ts_extents_rec;
-	    exception when DUP_VAL_ON_INDEX then
-	    -- An entry has already been inserted by UTX job. So no need to do anything
-               null;
-	    end;
+
+      exception when NO_DATA_FOUND then
+         -- New entry in the extents table
+         insert into at_ts_extents
+         values p_rec;
+
+         l_updated := TRUE;
       end;
+
+      -- release the lock
+      -- terminate the autonomous transaction
+      -- commit asynchronously
+
+      commit work WRITE NOWAIT BATCH;
       return l_updated;
+
+   exception when others then
+      cwms_msg.log_db_message (cwms_msg.msg_level_normal,
+         'UPDATE_TS_EXTENTS: null value in primary key: ts_code='||nvl(to_char(p_rec.ts_code), 'NULL')||
+         ', version_time='||nvl(to_char(p_rec.version_time), 'NULL'));
+
+      rollback;
+      return FALSE;
+
    end update_ts_extents;
 
    procedure update_ts_extents(
       p_ts_code      in integer default null,
       p_version_date in date default null)
    is
-      pragma autonomous_transaction;
-      type at_ts_extents_tabtype is table of at_ts_extents%rowtype;
-      l_crsr           sys_refcursor;
-      l_ts1            timestamp;
-      l_ts2            timestamp;
-      l_ts_start       timestamp;
-      l_ts_end         timestamp;
-      l_ts_table_start timestamp;
-      l_ts_table_end   timestamp;
-      l_elapsed        interval day (0) to second (6);
-      l_ts_extents     at_ts_extents_tabtype;
-      l_rec            at_ts_extents%rowtype;
-      l_updated        integer;
-      l_ts_codes       number_tab_t;
-      l_query          varchar2(32767) := '
-         select
-                q1.ts_code,
-                q1.version_date as version_time,
+      -- Minimize lock contention
+      -- Don't commit the parent transaction
+      PRAGMA AUTONOMOUS_TRANSACTION;
+
+      l_rec           at_ts_extents%rowtype;
+
+      l_updated       boolean;
+      l_rec1          at_ts_extents%rowtype;
+      l_rec2          at_ts_extents%rowtype;
+
+      l_query         varchar2(32767) := '
+         with AT_TSV as
+         ( select ts_code, version_date, data_entry_date, date_time, value, quality_code
+           from   :table_name
+           where  ts_code = :ts_code and
+                  version_date = nvl(:version_date, version_date)
+         )
+         select q0.ts_code,
+                q0.version_date as version_time,
                 --------------
                 -- earliest --
                 --------------
@@ -4576,212 +4699,140 @@ AS
                 q5.greatest_accepted_value,
                 q14.greatest_accepted_value_time,
                 q15.greatest_accepted_value_entry,
-                systimestamp
-           from (select ts_code,
-                        version_date,
-                        min(date_time) as earliest_time,
+                systimestamp as last_update
+           from (select ts_code, version_date
+                   from AT_TSV
+                  where rownum<2
+                ) q0
+                cross join
+                (select min(date_time) as earliest_time,
                         max(date_time) as latest_time,
                         min(data_entry_date) as earliest_entry_time,
                         max(data_entry_date) as latest_entry_time,
                         min(value) as least_value,
                         max(value) as greatest_value
-                   from :table_name
-                  where ts_code = :ts_code
-                    and version_date = nvl(:version_date, version_date)
-                  group by ts_code, version_date
+                   from AT_TSV
                 ) q1
-                join
-                (select ts_code,
-                        version_date,
-                        min(date_time) as earliest_non_null_time,
+                cross join
+                (select min(date_time) as earliest_non_null_time,
                         max(date_time) as latest_non_null_time,
                         min(data_entry_date) as earliest_non_null_entry_time,
                         max(data_entry_date) as latest_non_null_entry_time
-                   from :table_name
+                   from AT_TSV
                   where value is not null
-                  group by ts_code, version_date
-                ) q2 on q2.ts_code = q1.ts_code
-                    and q2.version_date = q1.version_date
+                ) q2
                 join
-                (select ts_code,
-                        version_date,
-                        date_time,
+                (select date_time,
                         max(data_entry_date) as earliest_non_null_time_entry
-                   from :table_name
-                  group by ts_code, version_date, date_time
-                ) q3 on q3.ts_code = q1.ts_code
-                    and q3.version_date = q1.version_date
-                    and q3.date_time = q2.earliest_non_null_time
+                   from AT_TSV
+                  group by date_time
+                ) q3 on q3.date_time = q2.earliest_non_null_time
                 join
-                (select ts_code,
-                        version_date,
-                        date_time,
+                (select date_time,
                         max(data_entry_date) as latest_non_null_time_entry
-                   from :table_name
-                  group by ts_code, version_date, date_time
-                ) q4 on q4.ts_code = q1.ts_code
-                    and q4.version_date = q1.version_date
-                    and q4.date_time = q2.latest_non_null_time
-                join
-                (select ts_code,
-                        version_date,
-                        min(value) as least_accepted_value,
+                   from AT_TSV
+                  group by date_time
+                ) q4 on q4.date_time = q2.latest_non_null_time
+                cross join
+                (select min(value) as least_accepted_value,
                         max(value) as greatest_accepted_value
-                   from :table_name
+                   from AT_TSV
                   where bitand(quality_code, 30) in (0,2,8)
-                  group by ts_code, version_date
-                ) q5 on q5.ts_code = q1.ts_code
-                    and q5.version_date = q1.version_date
+                ) q5
                 join
-                (select ts_code,
-                        version_date,
-                        date_time,
+                (select date_time,
                         data_entry_date as earliest_time_entry
-                   from :table_name
-                ) q6 on q6.ts_code = q1.ts_code
-                    and q6.version_date = q1.version_date
-                    and q6.date_time = q1.earliest_time
+                   from AT_TSV
+                ) q6 on q6.date_time = q1.earliest_time
                 join
-                (select ts_code,
-                        version_date,
-                        date_time,
+                (select date_time,
                         data_entry_date as latest_time_entry
-                   from :table_name
-                ) q7 on q7.ts_code = q1.ts_code
-                    and q7.version_date = q1.version_date
-                    and q7.date_time = q1.latest_time
+                   from AT_TSV
+                ) q7 on q7.date_time = q1.latest_time
                 join
-                (select ts_code,
-                        version_date,
-                        value,
+                (select value,
                         max(date_time) as least_value_time
-                   from :table_name
-                  group by ts_code, version_date, value
-                ) q8 on q8.ts_code = q1.ts_code
-                    and q8.version_date = q1.version_date
-                    and q8.value = q1.least_value
+                   from AT_TSV
+                  group by value
+                ) q8 on q8.value = q1.least_value
                 join
-                (select ts_code,
-                        version_date,
-                        date_time,
+                (select date_time,
                         data_entry_date as least_value_entry
-                   from :table_name
-                ) q9 on q9.ts_code = q1.ts_code
-                    and q9.version_date = q1.version_date
-                    and q9.date_time = q8.least_value_time
+                   from AT_TSV
+                ) q9 on q9.date_time = q8.least_value_time
                 join
-                (select ts_code,
-                        version_date,
-                        value,
+                (select value,
                         max(date_time) as greatest_value_time
-                   from :table_name
-                  group by ts_code, version_date, value
-                ) q10 on q10.ts_code = q1.ts_code
-                    and q10.version_date = q1.version_date
-                    and q10.value = q1.greatest_value
+                   from AT_TSV
+                  group by value
+                ) q10 on q10.value = q1.greatest_value
                 join
-                (select ts_code,
-                        version_date,
-                        date_time,
+                (select date_time,
                         data_entry_date as greatest_value_entry
-                   from :table_name
-                ) q11 on q11.ts_code = q1.ts_code
-                    and q11.version_date = q1.version_date
-                    and q11.date_time = q10.greatest_value_time
+                   from AT_TSV
+                ) q11 on q11.date_time = q10.greatest_value_time
                 join
-                (select ts_code,
-                        version_date,
-                        max(date_time) as least_accepted_value_time,
+                (select max(date_time) as least_accepted_value_time,
                         value
-                   from :table_name
-                  group by ts_code, version_date, value
-                ) q12 on q12.ts_code = q1.ts_code
-                    and q12.version_date = q1.version_date
-                    and q12.value = q5.least_accepted_value
+                   from AT_TSV
+                  group by value
+                ) q12 on q12.value = q5.least_accepted_value
                 join
-                (select ts_code,
-                        version_date,
-                        date_time,
+                (select date_time,
                         data_entry_date as least_accepted_value_entry
-                   from :table_name
-                ) q13 on q13.ts_code = q1.ts_code
-                    and q13.version_date = q1.version_date
-                    and q13.date_time = q12.least_accepted_value_time
+                   from AT_TSV
+                ) q13 on q13.date_time = q12.least_accepted_value_time
                 join
-                (select ts_code,
-                        version_date,
-                        max(date_time) as greatest_accepted_value_time,
+                (select max(date_time) as greatest_accepted_value_time,
                         value
-                   from :table_name
-                  group by ts_code, version_date, value
-                ) q14 on q14.ts_code = q1.ts_code
-                    and q14.version_date = q1.version_date
-                    and q14.value = q5.greatest_accepted_value
+                   from AT_TSV
+                  group by value
+                ) q14 on q14.value = q5.greatest_accepted_value
                 join
-                (select ts_code,
-                        version_date,
-                        date_time,
+                (select date_time,
                         data_entry_date as greatest_accepted_value_entry
-                   from :table_name
-                ) q15 on q15.ts_code = q1.ts_code
-                    and q15.version_date = q1.version_date
-                    and q15.date_time = q14.greatest_accepted_value_time';
+                   from AT_TSV
+                ) q15 on q15.date_time = q14.greatest_accepted_value_time';
    begin
-      l_ts_start := systimestamp;
-      cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'UPDATE_TS_EXTENTS starting with '||nvl(to_char(p_ts_code), 'NULL')||', '||nvl(to_char(p_version_date), 'NULL'));
-      if p_ts_code is null then
-         --------------------------
-         -- update NULL ts_codes --
-         --------------------------
-         for rec in (select ts_code from at_cwms_ts_spec minus select distinct ts_code from at_ts_extents) loop
-            update_ts_extents(rec.ts_code, p_version_date);
-         end loop;
+      -- This is essentially procedure update_ts_extents(p_ts_code, p_version_date)
+      -- Do a full scan for TS extents, then update or insert the new extents.
+
+      -- NOTE THAT THE ORIGINAL CODE ALLOWS FOR A NULL TS_CODE AND VERSION_TIME
+      -- NULL TS_CODE LOOPS THRU ALL TS_CODES W/O EXTENTS
+      -- NULL VERSION_DATE DEFAULTS TO '1111-11-11'
+
+      -------------------------------
+      -- update a specific ts_code --
+      -------------------------------
+
+      l_rec2 := null;
+
+      for rec in (select table_name from at_ts_table_properties order by start_date) loop
+         begin
+            execute immediate replace(l_query, ':table_name', rec.table_name) into l_rec1 using p_ts_code, p_version_date;
+            l_updated := update_ts_extents_rec (l_rec1, l_rec2);
+         exception when others then
+            -- it appears that l_rec1 is not cleared when no values are returned by the query
+            l_rec1 := null;
+            l_updated := FALSE;
+         end;
+      end loop;
+
+      -- Save completely recomputed extents
+      -- Use function update_ts_extents and force a complete update by setting
+      -- ts_code=-ts_code
+
+      if (l_rec2.ts_code is null) then
+         -- no ts data for this ts_code, just insert a record with NULL extents
+         l_rec2.ts_code := p_ts_code;
+         l_rec2.version_time := nvl(p_version_date, cwms_util.non_versioned);
+         insert into at_ts_extents values l_rec2;
+         commit work WRITE NOWAIT BATCH;
       else
-         -----------------------------
-         -- update specific ts_code --
-         -----------------------------
-         l_ts1 := systimestamp;
-         delete
-           from at_ts_extents
-          where ts_code = p_ts_code
-            and version_time = nvl(p_version_date, version_time);
-         if p_version_date is not null then
-            -- all fields are null from initialization
-            l_rec.ts_code := p_ts_code;
-            l_rec.version_time := p_version_date;
-            if update_ts_extents(l_rec) then null; end if;
-         end if;
-         ------------------------------------
-         -- loop across time series tables --
-         ------------------------------------
-         for rec in (select table_name from at_ts_table_properties order by start_date) loop
-            l_ts_table_start := l_ts1;
-            --cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'Starting table '||rec.table_name);
-            ------------
-            -- select --
-            ------------
-            open l_crsr for replace(l_query, ':table_name', rec.table_name) using p_ts_code, p_version_date;
-            fetch l_crsr bulk collect into l_ts_extents;
-            close l_crsr;
-            ------------
-            -- update --
-            ------------
-            l_updated := 0;
-            for i in 1..l_ts_extents.count loop
-               if update_ts_extents(l_ts_extents(i)) then
-                  l_updated := l_updated + 1;
-               end if;
-               if mod(l_updated, 100) = 0 then
-                  commit;
-               end if;
-            end loop;
-            commit;
-            l_ts_table_end := systimestamp;
-            l_elapsed := l_ts_table_end - l_ts_table_start;
-            --cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'Finished table '||rec.table_name||' in '||l_elapsed);
-         end loop;
+         l_rec2.ts_code := -l_rec2.ts_code;
+         l_updated  := update_ts_extents (l_rec2);
       end if;
-      cwms_msg.log_db_message(cwms_msg.msg_level_normal, 'UPDATE_TS_EXTENTS done for '||nvl(to_char(p_ts_code), 'NULL')||', '||nvl(to_char(p_version_date), 'NULL'));
+
    end update_ts_extents;
 
    -- not documented
