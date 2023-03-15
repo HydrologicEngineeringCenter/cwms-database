@@ -350,13 +350,53 @@ css = '''
      border:1px solid black;
      padding:5px;
    }
+   th.descr-bl {
+     background-color:#DFDFDF;
+     border-style:solid;
+     border-color:black;
+     border-width:1px 1px 1px 2px;
+     padding:5px;
+   }
+   th.descr-br {
+     background-color:#DFDFDF;
+     border-style:solid;
+     border-color:black;
+     border-width:1px 2px 1px 1px;
+     padding:5px;
+   }
    td.descr {
      border:1px solid black;
+     padding:5px;
+   }
+   td.descr-bl {
+     border-style:solid;
+     border-color:black;
+     border-width:1px 1px 1px 2px;
+     padding:5px;
+   }
+   td.descr-br {
+     border-style:solid;
+     border-color:black;
+     border-width:1px 2px 1px 1px;
      padding:5px;
    }
    td.descr-center {
      text-align:center;
      border:1px solid black;
+     padding:5px;
+   }
+   td.descr-center-bl {
+     text-align:center;
+     border-style:solid;
+     border-color:black;
+     border-width:1px 1px 1px 2px;
+     padding:5px;
+   }
+   td.descr-center-br {
+     text-align:center;
+     border-style:solid;
+     border-color:black;
+     border-width:1px 2px 1px 1px;
      padding:5px;
    }
    .routine-type-col {

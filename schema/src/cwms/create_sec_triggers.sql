@@ -38,7 +38,7 @@ BEGIN
      
              END IF;
            END;';
-   DBMS_OUTPUT.PUT_LINE(l_cmd);
+   --DBMS_OUTPUT.PUT_LINE(l_cmd);
    execute immediate l_cmd;
    END LOOP;
    FOR c IN (SELECT table_name
@@ -67,7 +67,7 @@ BEGIN
      
              END IF;
            END;';
-   DBMS_OUTPUT.PUT_LINE(l_cmd);
+   --DBMS_OUTPUT.PUT_LINE(l_cmd);
    execute immediate l_cmd;
    END LOOP;
 END;

@@ -15,13 +15,16 @@ procedure delete_ts_with_location_without_timezone;
 procedure test_retrieve_ts_with_calendar_based_times__JIRA_CWDB_157;
 
 --%test(Test creation various types of time series)
+--%disabled until new parameter types, intervals, and durations are unhidden
 procedure test_create_ts_parameter_types;
 
 --%test(Test rename time series) 
+--%disabled until new parameter types, intervals, and durations are unhidden
 procedure test_rename_ts;
 
 --%test(Test rename time series inst to median) 
 --%throws(-20013)
+--%disabled until new parameter types, intervals, and durations are unhidden
 procedure test_rename_ts_inst_to_median;
 
 --%test(create depth velocity time series)
@@ -32,24 +35,30 @@ procedure test_conc;
 
 --%test(Incremental precip with non zero duration)
 --%throws(-20205)
+--%disabled until new parameter types, intervals, and durations are unhidden
 PROCEDURE inc_with_zero_duration;
 
 --%test(Incremental cumulative precip with zero duration)
 --%throws(-20205)
+--%disabled until new parameter types, intervals, and durations are unhidden
 PROCEDURE cum_with_non_zero_duration;
 
 --%test(regular interval with until changed duration)
 --%throws(-20205)
+--%disabled until new parameter types, intervals, and durations are unhidden
     PROCEDURE untilchanged_with_regular;
 --%test(non-const parameter type with until changed duration)
 --%throws(-20205)
+--%disabled until new parameter types, intervals, and durations are unhidden
     PROCEDURE untilchanged_with_non_const;
 --%test(Variable duration with non instantaneous)
 --%throws(-20205)    
+--%disabled until new parameter types, intervals, and durations are unhidden
 PROCEDURE variable_with_inst;
 
 --%test(Variable duration with const)
 --%throws(-20205)   
+--%disabled until new parameter types, intervals, and durations are unhidden
 PROCEDURE variable_with_const;
 --%test(Make sure quality on generated rts/lrts values is 0 (unscreened) and not 5 (missing) [JIRA Issue CWMSVIEW-212])
 procedure quality_on_generated_rts_values__JIRA_CWMSVIEW_212;
@@ -59,6 +68,8 @@ procedure create_ts_with_null_timezone;
 procedure test_inclusion_options__JIRA_CWDB_180;
 --%test(Test STORE_TS can create a versioned time series: CWDB-190)
 procedure test_store_ts_can_create_versioned_time_series__JIRA_CWDB_190;
+--%test (Test RETRIEVE_TS for regular time series that has undefined interval offset)
+procedure test_retrieve_ts_with_undefined_interval_offset;
 
 --%test(LRL 1Day at 6am EST stores correctly)
 procedure test_lrl_1day_CWDB_202;
@@ -419,21 +430,25 @@ AS
                                  p_db_office_id   => '&&office_id');
         cwms_ts.create_ts (
             '&&office_id',
-            test_base_location_id || '.Flow.Ave.Irr.Variable.raw');
+--          test_base_location_id || '.Flow.Ave.Irr.Variable.raw'); until new parameter types, intervals, and durations are unhidden
+            test_base_location_id || '.Flow.Ave.0.0.raw');
         cwms_loc.rename_loc('&&office_id',
 		test_base_location_id,
 		test_renamed_base_location_id);
 	COMMIT;
-        delete_ts_id (test_renamed_base_location_id || '.Flow.Ave.Irr.Variable.raw');
+--      delete_ts_id (test_renamed_base_location_id || '.Flow.Ave.Irr.Variable.raw'); until new parameter types, intervals, and durations are unhidden
+        delete_ts_id (test_renamed_base_location_id || '.Flow.Ave.0.0.raw');
         COMMIT;
         cwms_loc.store_location (p_location_id    => test_renamed_withsub_location_id,
                                  p_active         => 'T',
                                  p_db_office_id   => '&&office_id');
         cwms_ts.create_ts (
             '&&office_id',
-            test_renamed_withsub_location_id || '.Flow.Ave.Irr.Variable.raw');
+--            test_renamed_withsub_location_id || '.Flow.Ave.Irr.Variable.raw'); until new parameter types, intervals, and durations are unhidden
+          test_renamed_withsub_location_id || '.Flow.Ave.0.0.raw');
         delete_ts_id (
-            test_renamed_withsub_location_id || '.Flow.Ave.Irr.Variable.raw');
+--            test_renamed_withsub_location_id || '.Flow.Ave.Irr.Variable.raw'); until new parameter types, intervals, and durations are unhidden
+            test_renamed_withsub_location_id || '.Flow.Ave.0.0.raw');
         COMMIT;
     END;
 
@@ -646,7 +661,8 @@ AS
         l_value        BINARY_DOUBLE;
         l_ts_code      NUMBER;
         l_cwms_ts_id   VARCHAR2 (200)
-            := test_base_location_id || '.DepthVelocity.Ave.Irr.Variable.raw';
+--          := test_base_location_id || '.DepthVelocity.Ave.Irr.Variable.raw'; until new intervals and durations are unhidden
+            := test_base_location_id || '.DepthVelocity.Ave.0.0.raw';
     BEGIN
         store_a_value (l_cwms_ts_id,
                        'ft2/s',
@@ -1774,6 +1790,49 @@ AS
         ut.expect(l_count).to_equal(1);
     END test_lrl_1day_CWDB_202;
 
-END;
+    --------------------------------------------------------------------------------
+    -- procedure test_retrieve_ts_with_undefined_interval_offset
+    --------------------------------------------------------------------------------
+    procedure test_retrieve_ts_with_undefined_interval_offset
+    is
+       l_ts_data sys_refcursor;
+       l_rts_id  varchar2(191)  := test_base_location_id||'.Code.Inst.1Hour.0.Test';
+       ts_id_not_found     exception;
+       item_already_exists exception;
+       pragma exception_init(ts_id_not_found,     -20001);
+       pragma exception_init(item_already_exists, -20003);
+    begin
+       begin
+          cwms_loc.store_location(
+             p_location_id  => test_base_location_id,
+             p_db_office_id => '&&office_id');
+       exception
+          when item_already_exists then null;
+       end;
+       begin
+          cwms_ts.delete_ts(
+             p_cwms_ts_id    => l_rts_id,
+             p_delete_action => cwms_util.delete_all,
+             p_db_office_id  => '&&office_id');
+       exception
+          when ts_id_not_found then null;
+       end;
+
+       cwms_ts.create_ts(
+          p_cwms_ts_id  => l_rts_id,
+          p_versioned   => 'F',
+          p_active_flag => 'T',
+          p_office_id   => '&&office_id');
+
+       cwms_ts.zretrieve_ts(
+          p_at_tsv_rc    => l_ts_data,
+          p_units        => 'n/a',
+          p_cwms_ts_id   => l_rts_id,
+          p_start_time   => sysdate - 1,
+          p_end_time     => sysdate,
+          p_db_office_id => '&&office_id');
+
+    end test_retrieve_ts_with_undefined_interval_offset;
+END test_cwms_ts;
 /
 SHOW ERRORS
