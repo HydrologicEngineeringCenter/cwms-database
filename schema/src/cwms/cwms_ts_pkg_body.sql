@@ -4823,12 +4823,14 @@ AS
       -- ts_code=-ts_code
 
       if (l_rec2.ts_code is null) then
-         -- no ts data for this ts_code, just insert a record with NULL extents
+         -- when no data, insert a record with NULL extents
+         -- need to set ts_code and version_time
          l_rec2.ts_code := p_ts_code;
          l_rec2.version_time := nvl(p_version_date, cwms_util.non_versioned);
          insert into at_ts_extents values l_rec2;
          commit work WRITE NOWAIT BATCH;
       else
+         -- -ts_code forces a complete update of the TS extents
          l_rec2.ts_code := -l_rec2.ts_code;
          l_updated  := update_ts_extents (l_rec2);
       end if;
