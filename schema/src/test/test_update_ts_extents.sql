@@ -7,12 +7,16 @@ create or replace package test_update_ts_extents as
 
 --%test(Update Time Series Extents)
 procedure update_ts_extents;
---%test(Update TS Extents can be called in a function [Jira issued CWDB-119])
+--%test(Update TS Extents can be called in a function [Jira issue CWDB-119])
 procedure cwdb_119_test_for_no_error_on_update_in_select;
---%test(Update TS Extents creates record even if no TS data [Jira issued CWDB-119])
+--%test(Update TS Extents creates record even if no TS data [Jira issue CWDB-119])
 procedure cwdb_119_test_for_update_always_creates_record;
---%test(TS Extents updated after DELETE_INSERT but no values deleted [Jira issued CWDB-182])
+--%test(TS Extents updated after DELETE_INSERT but no values deleted [Jira issue CWDB-182])
 procedure cwdb_182_test_for_update_with_delete_insert_without_deletes;
+--%test(AT_TS_EXTENTS.LAST_UPDATE is not null when no TS data [Jira issue CWDB-212])
+procedure cwdb_212_last_update_is_not_null;
+--%test(UTX jobs can start before calling code commits [Jira issue CWDB-212])
+procedure cwdb_213_utx_job_delays_5_seconds;
 
 procedure setup;
 procedure teardown;
@@ -595,6 +599,118 @@ begin
    
    ut.expect(l_extents.last_update).to_be_between(l_ts3, l_ts4);
 end cwdb_182_test_for_update_with_delete_insert_without_deletes;
+
+--------------------------------------------------------------------------------
+-- procedure cwdb_212_last_update_is_not_null
+--------------------------------------------------------------------------------
+procedure cwdb_212_last_update_is_not_null
+is
+   l_ts_code integer;
+   l_rec     at_ts_extents%rowtype;
+   l_ts      timestamp;
+begin
+   setup();
+   commit;
+   l_ts_code := cwms_ts.get_ts_code(c_ts_id, c_office_id);
+   
+   l_ts := systimestamp;
+   cwms_ts.update_ts_extents(l_ts_code, cwms_util.non_versioned);
+   select *
+     into l_rec
+     from at_ts_extents
+    where ts_code = l_ts_code
+      and version_time = cwms_util.non_versioned;
+      
+   ut.expect(l_rec.last_update).to_be_not_null;
+   ut.expect(cast(systimestamp as timestamp)).to_be_greater_than(l_ts);
+end cwdb_212_last_update_is_not_null;
+--------------------------------------------------------------------------------
+-- procedure cwdb_213_utx_job_delays_5_seconds
+--------------------------------------------------------------------------------
+procedure cwdb_213_utx_job_delays_5_seconds
+is
+   l_ts_code    integer;
+   l_job_name   user_scheduler_jobs.job_name%type;
+   l_start_date timestamp;
+   l_ts         timestamp;
+begin
+   setup();
+   commit;
+   l_ts_code  := cwms_ts.get_ts_code(c_ts_id, c_office_id);
+   l_job_name := 'UTX_'||l_ts_code||'_11111111_000000';
+   ------------------------------------------------------------------
+   -- store some data so we have some to delete with DELETE INSERT --
+   ------------------------------------------------------------------
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => c_ts_id,
+      p_units           => c_units,
+      p_timeseries_data => c_base_ts_data,
+      p_store_rule      => cwms_util.replace_all,
+      p_override_prot   => 'F',
+      p_version_date    => cwms_util.non_versioned,
+      p_office_id       => c_office_id);
+   commit;   
+   -----------------------------------------------------------
+   -- store some data with DELETE INSERT to trigger utx job --
+   -----------------------------------------------------------
+   l_ts := systimestamp;
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => c_ts_id,
+      p_units           => c_units,
+      p_timeseries_data => c_base_ts_data,
+      p_store_rule      => cwms_util.delete_insert,
+      p_override_prot   => 'F',
+      p_version_date    => cwms_util.non_versioned,
+      p_office_id       => c_office_id);
+   commit;   
+   -----------------------------------------
+   -- verify the utx job delays 5 seconds --
+   -----------------------------------------
+   select start_date
+     into l_start_date
+     from user_scheduler_jobs
+    where job_name = l_job_name; 
+   ut.expect(l_start_date).to_be_greater_than(l_ts + interval '000 00:00:05' day to second); 
+   ------------------------------------
+   -- wait for the utx job to finish --
+   ------------------------------------
+   l_ts := systimestamp;
+   loop
+      begin
+         select start_date
+           into l_start_date
+           from user_scheduler_jobs
+          where job_name = l_job_name; 
+      exception
+         when no_data_found then exit;
+      end;
+      if cast(systimestamp as timestamp) > l_ts + interval '000 00:01:00' day to second then
+         cwms_err.raise('ERROR', 'Timeout waiting on utx job to finish.');
+      end if;
+   end loop;
+   -----------------------------------------------------
+   -- delete some time series data to trigger utx job --
+   -----------------------------------------------------
+   cwms_ts.delete_ts(
+      p_cwms_ts_id           => c_ts_id,
+      p_override_protection  => 'T',
+      p_start_time           => c_base_ts_data(1).date_time,
+      p_end_time             => c_base_ts_data(1).date_time,
+      p_start_time_inclusive => 'T',
+      p_end_time_inclusive   => 'T',
+      p_version_date         => cwms_util.non_versioned,
+      p_time_zone            => 'UTC',
+      p_ts_item_mask         => cwms_util.ts_all,
+      p_db_office_id         => c_office_id);
+   -----------------------------------------
+   -- verify the utx job delays 5 seconds --
+   -----------------------------------------
+   select start_date
+     into l_start_date
+     from user_scheduler_jobs
+    where job_name = l_job_name; 
+   ut.expect(l_start_date).to_be_greater_than(l_ts + interval '000 00:00:05' day to second); 
+end cwdb_213_utx_job_delays_5_seconds;
 
 end test_update_ts_extents;
 /
