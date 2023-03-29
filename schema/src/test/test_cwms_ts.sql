@@ -73,6 +73,8 @@ procedure test_retrieve_ts_with_undefined_interval_offset;
 
 --%test(LRL 1Day at 6am EST stores correctly)
 procedure test_lrl_1day_CWDB_202;
+--%test(No silent failure on storing data with wrong offset [Jira issue CWDB-204])
+procedure cwdb_204_silent_failure_on_store_ts_with_unexpected_offset;
 
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
 test_withsub_location_id VARCHAR2(32) := test_base_location_id||'-withsub';
@@ -82,6 +84,7 @@ procedure setup;
 procedure teardown;
 end test_cwms_ts;
 /
+show errors;
 
 /* Formatted on 4/28/2022 2:38:41 PM (QP5 v5.381) */
 CREATE OR REPLACE PACKAGE BODY CWMS_20.test_cwms_ts
@@ -1098,8 +1101,7 @@ AS
     --------------------------------------------------------------------------------
     PROCEDURE quality_on_generated_rts_values__JIRA_CWMSVIEW_212
     IS
-        l_ts_id          VARCHAR2 (191)
-            := test_base_location_id || '.Code.Inst.1Day.0.QualityTest';
+        l_ts_id          VARCHAR2 (191) := test_base_location_id || '.Code.Inst.1Day.0.QualityTest';
         l_office_id      VARCHAR2 (16) := '&&office_id';
         l_start_time     DATE := DATE '2022-03-01';
         l_value_count    PLS_INTEGER := 11;
@@ -1115,27 +1117,26 @@ AS
         l_values         cwms_t_double_tab;
         l_qualities      cwms_t_number_tab;
     BEGIN
-            ---------------------------------
-            -- create the time series data --
-            ---------------------------------
-            SELECT cwms_t_tsv (
-                       FROM_TZ (CAST (l_start_time + LEVEL - 1 AS TIMESTAMP),
-                                l_time_zone),
-                       LEVEL,
-                       3)
-              BULK COLLECT INTO l_ts_data
-              FROM DUAL
-        CONNECT BY LEVEL <= l_value_count;
+      ---------------------------------
+      -- create the time series data --
+      ---------------------------------
+      SELECT cwms_t_tsv (FROM_TZ (CAST (l_start_time + LEVEL - 1 AS TIMESTAMP), l_time_zone),
+              LEVEL,
+              3)
+         BULK COLLECT INTO l_ts_data
+         FROM DUAL
+      CONNECT BY LEVEL <= l_value_count;
 
-            SELECT cwms_t_ztsv (l_start_time + LEVEL - 1, LEVEL, 3)
-              BULK COLLECT INTO l_zts_data
-              FROM DUAL
-        CONNECT BY LEVEL <= l_value_count;
+      SELECT cwms_t_ztsv (l_start_time + LEVEL - 1, LEVEL, 3)
+        BULK COLLECT INTO l_zts_data
+        FROM DUAL
+     CONNECT BY LEVEL <= l_value_count;
 
         ------------------------
         -- store the location --
         ------------------------
         cwms_loc.store_location (p_location_id    => test_base_location_id,
+                                 p_time_zone_id   => l_time_zone,
                                  p_active         => 'T',
                                  p_db_office_id   => '&&office_id');
         ----------------------------------
@@ -1833,6 +1834,64 @@ AS
           p_db_office_id => '&&office_id');
 
     end test_retrieve_ts_with_undefined_interval_offset;
+
+
+   --------------------------------------------------------------------------------
+   -- procedure cwdb_204_silent_failure_on_store_ts_with_unexpected_offset
+   --------------------------------------------------------------------------------
+   procedure cwdb_204_silent_failure_on_store_ts_with_unexpected_offset
+   is
+      l_ts_id       varchar2 (191) := test_base_location_id || '.Code.Inst.1Hour.0.Test';
+      l_loc_id      varchar2 (57)  := test_base_location_id;
+      l_unit        varchar2 (16)  := 'n/a';
+      l_office_id   varchar2 (16)  := '&&office_id';
+      l_ts_data     cwms_t_ztsv_array;
+   begin
+      setup();
+      cwms_loc.store_location(
+         p_location_id  => l_loc_id,
+         p_active       => 'T',
+         p_db_office_id => '&&office_id');
+      ---------------------------------------------
+      -- create_time series with 0-minute offset --
+      ---------------------------------------------
+      cwms_ts.create_ts(
+         l_ts_id,
+         0,
+         null,
+         null,
+         'F',
+         'T',
+         '&&office_id');
+      ---------------------------------------------
+      -- store time series with 15-minute offset --
+      ---------------------------------------------
+      l_ts_data := cwms_t_ztsv_array (
+         cwms_t_ztsv (date '2021-10-01' + 1 / 24 + 15 / 1440, 1, 0),
+         cwms_t_ztsv (date '2021-10-01' + 2 / 24 + 15 / 1440, 2, 0),
+         cwms_t_ztsv (date '2021-10-01' + 3 / 24 + 15 / 1440, 3, 0),
+         cwms_t_ztsv (date '2021-10-01' + 4 / 24 + 15 / 1440, 4, 0),
+         cwms_t_ztsv (date '2021-10-01' + 5 / 24 + 15 / 1440, 5, 0),
+         cwms_t_ztsv (date '2021-10-01' + 6 / 24 + 15 / 1440, 6, 0));
+      begin
+         cwms_ts.zstore_ts (
+            p_cwms_ts_id      => l_ts_id,
+            p_units           => l_unit,
+            p_timeseries_data => l_ts_data,
+            p_store_rule      => cwms_util.replace_all,
+            p_office_id       => l_office_id);
+         cwms_err.raise('ERROR', 'Expected exception not raised.');
+      exception
+         when others then
+            if not regexp_like(
+               dbms_utility.format_error_stack,
+               '.*Incoming Data Set''s UTC_OFFSET: \d+ does not match its previously stored UTC_OFFSET of: \d+ - data set was NOT stored.*',
+               'mn')
+            then
+               raise;
+            end if;
+      end;
+   end cwdb_204_silent_failure_on_store_ts_with_unexpected_offset;
 END test_cwms_ts;
 /
 SHOW ERRORS

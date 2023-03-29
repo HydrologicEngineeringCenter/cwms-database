@@ -403,6 +403,9 @@ AS
       else
          l_interval_offset := interval_offset_minutes(p_interval_offset);
       end if;
+      if (p_interval = 0 and p_interval_offset = 0) then
+         return p_date_time;
+      end if;
       if l_interval_offset >= l_interval then
          cwms_err.raise('ERROR', 'Interval offset ('||l_interval_offset||') must be less than interval ('||l_interval||')');
       end if;
@@ -5341,14 +5344,16 @@ AS
          select cast(multiset(select tsv_type(
                                         from_tz(
                                            cast(
-                                              snap_to_interval_offset_tz(
-                                                 date_time,
-                                                 l_interval_value,
-                                                 nvl(l_utc_offset, existing_utc_offset),
-                                                 extract(timezone_region from date_time),
-                                                 'UTC',
-                                                 nvl(l_interval_forward, 0),
-                                                 nvl(l_interval_backward, 0))
+                                              nvl(
+                                                 snap_to_interval_offset_tz(
+                                                    date_time,
+                                                    l_interval_value,
+                                                    nvl(l_utc_offset, existing_utc_offset),
+                                                    extract(timezone_region from date_time),
+                                                    'UTC',
+                                                    nvl(l_interval_forward, 0),
+                                                    nvl(l_interval_backward, 0)),
+                                                 date_time)
                                               as timestamp),
                                            extract(timezone_region from date_time)),
                                         value,
@@ -5357,23 +5362,8 @@ AS
                                 from table(l_timeseries_data)
                              ) as tsv_array
                     )
-           into l_timeseries_data -- times outside snapping window will be set to null
+           into l_timeseries_data -- times outside snapping window will not be changed
            from dual;
-         ------------------------------------
-         -- filter out times not on offset --
-         ------------------------------------
-         select cast(multiset(select tsv_type(date_time, value, quality_code)
-                                from table(l_timeseries_data)
-                               where date_time is not null
-                               order by date_time
-                             ) as tsv_array
-                    )
-           into l_timeseries_data
-           from dual;
-         if l_timeseries_data.count = 0 then
-            dbms_application_info.set_action ('Returning due to no in snapping window');
-            return;
-         end if;
          -----------------------------
          -- test for irregular data --
          -----------------------------
@@ -5400,7 +5390,7 @@ AS
             -----------------------------
             -- test for invalid offset --
             -----------------------------
-            if get_utc_interval_offset(l_timeseries_data(1).date_time at time zone 'UTC', l_interval_value) != existing_utc_offset then
+            if l_utc_offset != existing_utc_offset then
                raise_application_error (
                   -20101,
                   'Incoming Data Set''s UTC_OFFSET: '
@@ -5431,14 +5421,16 @@ AS
                select cast(multiset(select tsv_type(
                                                 from_tz(
                                                  cast(
-                                                    snap_to_interval_offset_tz(
-                                                       date_time,
-                                                       l_irr_interval,
-                                                       l_irr_offset,
-                                                       extract(timezone_region from date_time),
-                                                       l_loc_tz,
-                                                       l_interval_forward,
-                                                       l_interval_backward)
+                                                    nvl(
+                                                       snap_to_interval_offset_tz(
+                                                          date_time,
+                                                          l_irr_interval,
+                                                          l_irr_offset,
+                                                          extract(timezone_region from date_time),
+                                                          l_loc_tz,
+                                                          l_interval_forward,
+                                                          l_interval_backward),
+                                                       date_time)
                                                     as timestamp),
                                                  extract(timezone_region from date_time)),
                                               value,
@@ -5446,23 +5438,44 @@ AS
                                            )
                                       from table(l_timeseries_data)
                                    )as tsv_array)
-                 into l_timeseries_data -- times outside snapping window will be set to null
+                 into l_timeseries_data -- times outside snapping window will not be changed
                  from dual;
-               ------------------------------------
-               -- filter out times not on offset --
-               ------------------------------------
-               select cast(multiset(select tsv_type(date_time, value, quality_code)
-                                      from table(l_timeseries_data)
-                                     where date_time is not null
-                                     order by date_time
-                                   ) as tsv_array
-                          )
-                 into l_timeseries_data
-                 from dual;
-               if l_timeseries_data.count = 0 then
-                  dbms_application_info.set_action ('Returning due to no in snapping window');
-                  return;
-               end if;
+                  ------------------------------------
+                  -- test for multiple data offsets --
+                  ------------------------------------
+                  -- can't use the same method as or RTS becuase "at time zone" can't be used with a variable (requires a literal)
+                  begin
+                     select distinct get_utc_interval_offset(
+                                        from_tz(
+                                           cwms_util.change_timezone(
+                                              cast(date_time as timestamp),
+                                              extract(timezone_region from date_time),
+                                              l_loc_tz),
+                                           l_loc_tz),
+                                        l_interval_value)
+                       into l_utc_offset
+                       from table(l_timeseries_data);
+                  exception
+                     when too_many_rows then
+                        raise_application_error (
+                           -20110,
+                           'ERROR: Incoming data set contains multiple interval offsets. Unable to store data for '
+                           || l_cwms_ts_id,
+                           TRUE);
+                  end;
+                  -----------------------------
+                  -- test for invalid offset --
+                  -----------------------------
+                  if l_utc_offset != existing_utc_offset then
+                     raise_application_error (
+                        -20101,
+                        'Incoming Data Set''s UTC_OFFSET: '
+                        || l_utc_offset
+                        || ' does not match its previously stored UTC_OFFSET of: '
+                        || existing_utc_offset
+                        || ' - data set was NOT stored',
+                        TRUE);
+                  end if;
             end if;
          end if;
       END IF;
