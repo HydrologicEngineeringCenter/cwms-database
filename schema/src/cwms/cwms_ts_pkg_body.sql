@@ -4530,49 +4530,7 @@ AS
 
       p_rec      at_ts_extents%rowtype;
       l_rec      at_ts_extents%rowtype;
-      l_same     boolean;
       l_updated  boolean := false;
-
-      function same_extents ( p_rec1 in at_ts_extents%rowtype,
-                              p_rec2 in at_ts_extents%rowtype )
-         return boolean
-      is
-         NB CONSTANT BINARY_DOUBLE := 1e100d;
-         NN CONSTANT NUMBER        := 1e100;
-         ND CONSTANT DATE          := date '1010-10-10';
-         NT CONSTANT TIMESTAMP     := timestamp '1010-10-10 10:10:10';
-         l_same      boolean;
-      begin
-         l_same :=
-            ( nvl(p_rec1.TS_CODE,NN)                       = nvl(p_rec2.TS_CODE,NN) ) and
-            ( nvl(p_rec1.VERSION_TIME,ND)                  = nvl(p_rec2.VERSION_TIME,ND) ) and
-            ( nvl(p_rec1.EARLIEST_TIME,ND)                 = nvl(p_rec2.EARLIEST_TIME,ND) ) and
-            ( nvl(p_rec1.EARLIEST_TIME_ENTRY,NT)           = nvl(p_rec2.EARLIEST_TIME_ENTRY,NT) ) and
-            ( nvl(p_rec1.EARLIEST_ENTRY_TIME,NT)           = nvl(p_rec2.EARLIEST_ENTRY_TIME,NT) ) and
-            ( nvl(p_rec1.EARLIEST_NON_NULL_TIME,ND)        = nvl(p_rec2.EARLIEST_NON_NULL_TIME,ND) ) and
-            ( nvl(p_rec1.EARLIEST_NON_NULL_TIME_ENTRY,NT)  = nvl(p_rec2.EARLIEST_NON_NULL_TIME_ENTRY,NT) ) and
-            ( nvl(p_rec1.EARLIEST_NON_NULL_ENTRY_TIME,NT)  = nvl(p_rec2.EARLIEST_NON_NULL_ENTRY_TIME,NT) ) and
-            ( nvl(p_rec1.LATEST_TIME,ND)                   = nvl(p_rec2.LATEST_TIME,ND) ) and
-            ( nvl(p_rec1.LATEST_TIME_ENTRY,NT)             = nvl(p_rec2.LATEST_TIME_ENTRY,NT) ) and
-            ( nvl(p_rec1.LATEST_ENTRY_TIME,NT)             = nvl(p_rec2.LATEST_ENTRY_TIME,NT) ) and
-            ( nvl(p_rec1.LATEST_NON_NULL_TIME,ND)          = nvl(p_rec2.LATEST_NON_NULL_TIME,ND) ) and
-            ( nvl(p_rec1.LATEST_NON_NULL_TIME_ENTRY,NT)    = nvl(p_rec2.LATEST_NON_NULL_TIME_ENTRY,NT) ) and
-            ( nvl(p_rec1.LATEST_NON_NULL_ENTRY_TIME,NT)    = nvl(p_rec2.LATEST_NON_NULL_ENTRY_TIME,NT) ) and
-            ( nvl(p_rec1.LEAST_VALUE,NB)                   = nvl(p_rec2.LEAST_VALUE,NB) ) and
-            ( nvl(p_rec1.LEAST_VALUE_TIME,ND)              = nvl(p_rec2.LEAST_VALUE_TIME,ND) ) and
-            ( nvl(p_rec1.LEAST_VALUE_ENTRY,NT)             = nvl(p_rec2.LEAST_VALUE_ENTRY,NT) ) and
-            ( nvl(p_rec1.LEAST_ACCEPTED_VALUE,NB)          = nvl(p_rec2.LEAST_ACCEPTED_VALUE,NB) ) and
-            ( nvl(p_rec1.LEAST_ACCEPTED_VALUE_TIME,ND)     = nvl(p_rec2.LEAST_ACCEPTED_VALUE_TIME,ND) ) and
-            ( nvl(p_rec1.LEAST_ACCEPTED_VALUE_ENTRY,NT)    = nvl(p_rec2.LEAST_ACCEPTED_VALUE_ENTRY,NT) ) and
-            ( nvl(p_rec1.GREATEST_VALUE,NB)                = nvl(p_rec2.GREATEST_VALUE,NB) ) and
-            ( nvl(p_rec1.GREATEST_VALUE_TIME,ND)           = nvl(p_rec2.GREATEST_VALUE_TIME,ND) ) and
-            ( nvl(p_rec1.GREATEST_VALUE_ENTRY,NT)          = nvl(p_rec2.GREATEST_VALUE_ENTRY,NT) ) and
-            ( nvl(p_rec1.GREATEST_ACCEPTED_VALUE,NB)       = nvl(p_rec2.GREATEST_ACCEPTED_VALUE,NB) ) and
-            ( nvl(p_rec1.GREATEST_ACCEPTED_VALUE_TIME,ND)  = nvl(p_rec2.GREATEST_ACCEPTED_VALUE_TIME,ND) ) and
-            ( nvl(p_rec1.GREATEST_ACCEPTED_VALUE_ENTRY,NT) = nvl(p_rec2.GREATEST_ACCEPTED_VALUE_ENTRY,NT) )
-            ;
-         return l_same;
-      end same_extents;
 
    begin
       -- Compare p_ts_extents_rec with current TS extents,
@@ -4597,8 +4555,6 @@ AS
           where ts_code      = p_rec.ts_code
             and version_time = p_rec.version_time
             FOR UPDATE;
-
-         l_same := same_extents (p_rec, l_rec);
 
          if p_ts_extents_rec.ts_code < 0 then
             -- force a complete update
@@ -4827,8 +4783,9 @@ AS
          -- need to set ts_code and version_time
          l_rec2.ts_code := p_ts_code;
          l_rec2.version_time := nvl(p_version_date, cwms_util.non_versioned);
+         l_rec2.last_update := systimestamp;
          insert into at_ts_extents values l_rec2;
-         commit work WRITE NOWAIT BATCH;
+         commit work WRITE BATCH;
       else
          -- -ts_code forces a complete update of the TS extents
          l_rec2.ts_code := -l_rec2.ts_code;
@@ -6417,10 +6374,11 @@ AS
                   || ''',''YYYY-MM-DD HH24:MI:SS'')); end;';
                END IF;
                   dbms_scheduler.create_job (
-                     job_name            => l_job_name,
-                     job_type            => 'PLSQL_BLOCK',
-                     job_action          => l_plsql_block,
-                     comments            => 'Updates the time series extents.');
+                     job_name   => l_job_name,
+                     job_type   => 'PLSQL_BLOCK',
+                     job_action => l_plsql_block,
+                     start_date => systimestamp + interval '000 00:00:05' day to second,
+                     comments   => 'Updates the time series extents.');
                     dbms_scheduler.enable(l_job_name);
                exception
                   when job_name_already_exists then
@@ -7498,10 +7456,11 @@ AS
                           || ''',''YYYY-MM-DD HH24:MI:SS'')); end;';
                   END IF;
             dbms_scheduler.create_job (
-               job_name            => l_job_name,
-               job_type            => 'PLSQL_BLOCK',
-               job_action          => l_plsql_block,
-               comments            => 'Updates the time series extents.');
+               job_name   => l_job_name,
+               job_type   => 'PLSQL_BLOCK',
+               job_action => l_plsql_block,
+               start_date => systimestamp + interval '000 00:00:05' day to second,
+               comments   => 'Updates the time series extents.');
             dbms_scheduler.enable(l_job_name);
          exception
             when job_name_already_exists then
