@@ -6438,107 +6438,112 @@ AS
             -- no deletes --
             ----------------
             begin
-            select l_ts_code,
-                   l_version_date,
-                   mindate,
-                   l_store_date,
-                   l_store_date,
-                   q2.earliest_non_null_time,
-                   l_store_date,
-                   l_store_date,
-                   maxdate,
-                   l_store_date,
-                   l_store_date,
-                   q2.latest_non_null_time,
-                   l_store_date,
-                   l_store_date,
-                   case
-                   when c.function is null then q1.least_value * c.factor + c.offset
-                   else cwms_util.eval_expression(c.function, double_tab_t(q1.least_value))
-                   end,
-                   q4.least_value_time,
-                   l_store_date,
-                   case
-                   when c.function is null then q3.least_accepted_value * c.factor + c.offset
-                   else cwms_util.eval_expression(c.function, double_tab_t(q3.least_accepted_value))
-                   end,
-                   q6.least_accepted_value_time,
-                   l_store_date,
-                   case
-                   when c.function is null then q1.greatest_value * c.factor + c.offset
-                   else cwms_util.eval_expression(c.function, double_tab_t(q1.greatest_value))
-                   end,
-                   q5.greatest_value_time,
-                   l_store_date,
-                   case
-                   when c.function is null then q3.greatest_accepted_value * c.factor + c.offset
-                   else cwms_util.eval_expression(c.function, double_tab_t(q3.greatest_accepted_value))
-                   end,
-                   q7.greatest_accepted_value_time,
-                   l_store_date,
-                   l_store_date
-              into l_ts_extents_rec
-              from at_cwms_ts_spec s,
-                   at_parameter p,
-                   cwms_unit_conversion c,
-                   cwms_base_parameter bp,
-                   cwms_unit u,
-                   (select min(value) as least_value,
-                           max(value) as greatest_value
-                      from table(l_timeseries_data)
-                   ) q1
-                   join
-                   (select min(date_time) as earliest_non_null_time,
-                           max(date_time) as latest_non_null_time
-                      from table(l_timeseries_data)
-                     where value is not null
-                   ) q2 on 1=1
-                   join
-                   (select min(value) as least_accepted_value,
-                           max(value) as greatest_accepted_value
-                      from table(l_timeseries_data)
-                     where bitand(quality_code, 30) in (0,2,8)
-                   ) q3 on 1=1
-                   join
-                   (select value,
-                           max(date_time) as least_value_time
-                      from table(l_timeseries_data)
-                     group by value
-                   ) q4 on q4.value = q1.least_value
-                   join
-                   (select value,
-                           max(date_time) as greatest_value_time
-                      from table(l_timeseries_data)
-                     group by value
-                   ) q5 on q5.value = q1.greatest_value
-                   join
-                   (select max(date_time) as least_accepted_value_time,
-                           value
-                      from table(l_timeseries_data)
-                     group by value
-                   ) q6 on q6.value = q3.least_accepted_value
-                   join
-                   (select max(date_time) as greatest_accepted_value_time,
-                           value
-                      from table(l_timeseries_data)
-                     group by value
-                   ) q7 on q7.value = q3.greatest_accepted_value
-             where s.ts_code = l_ts_code
-               and u.unit_id = l_units
-               and c.from_unit_code = u.unit_code
-               and p.parameter_code = s.parameter_code
-               and bp.base_parameter_code = p.base_parameter_code
-               and c.to_unit_code = bp.unit_code;
+               select l_ts_code,
+                      l_version_date,
+                      mindate,
+                      l_store_date,
+                      l_store_date,
+                      q2.earliest_non_null_time,
+                      l_store_date,
+                      l_store_date,
+                      maxdate,
+                      l_store_date,
+                      l_store_date,
+                      q2.latest_non_null_time,
+                      l_store_date,
+                      l_store_date,
+                      case
+                      when c.function is null then q1.least_value * c.factor + c.offset
+                      else cwms_util.eval_expression(c.function, double_tab_t(q1.least_value))
+                      end,
+                      q4.least_value_time,
+                      l_store_date,
+                      case
+                      when c.function is null then q3.least_accepted_value * c.factor + c.offset
+                      else cwms_util.eval_expression(c.function, double_tab_t(q3.least_accepted_value))
+                      end,
+                      q6.least_accepted_value_time,
+                      l_store_date,
+                      case
+                      when c.function is null then q1.greatest_value * c.factor + c.offset
+                      else cwms_util.eval_expression(c.function, double_tab_t(q1.greatest_value))
+                      end,
+                      q5.greatest_value_time,
+                      l_store_date,
+                      case
+                      when c.function is null then q3.greatest_accepted_value * c.factor + c.offset
+                      else cwms_util.eval_expression(c.function, double_tab_t(q3.greatest_accepted_value))
+                      end,
+                      q7.greatest_accepted_value_time,
+                      l_store_date,
+                      l_store_date
+                 into l_ts_extents_rec
+                 from at_cwms_ts_spec s,
+                      at_parameter p,
+                      cwms_unit_conversion c,
+                      cwms_base_parameter bp,
+                      cwms_unit u,
+                      (select min(value) as least_value,
+                              max(value) as greatest_value
+                         from table(l_timeseries_data)
+                      ) q1
+                      join
+                      (select min(date_time) as earliest_non_null_time,
+                              max(date_time) as latest_non_null_time
+                         from table(l_timeseries_data)
+                        where value is not null
+                      ) q2 on 1=1
+                      join
+                      (select min(value) as least_accepted_value,
+                              max(value) as greatest_accepted_value
+                         from table(l_timeseries_data)
+                        where bitand(quality_code, 30) in (0,2,8)
+                      ) q3 on 1=1
+                      join
+                      (select value,
+                              max(date_time) as least_value_time
+                         from table(l_timeseries_data)
+                        group by value
+                      ) q4 on nvl(q4.value, binary_double_infinity) = nvl(q1.least_value, binary_double_infinity)
+                      join
+                      (select value,
+                              max(date_time) as greatest_value_time
+                         from table(l_timeseries_data)
+                        group by value
+                      ) q5 on nvl(q5.value, binary_double_infinity) = nvl(q1.greatest_value, binary_double_infinity)
+                      join
+                      (select max(date_time) as least_accepted_value_time,
+                              value
+                         from table(l_timeseries_data)
+                        group by value
+                      ) q6 on nvl(q6.value, binary_double_infinity) = nvl(q3.least_accepted_value, binary_double_infinity)
+                      join
+                      (select max(date_time) as greatest_accepted_value_time,
+                              value
+                         from table(l_timeseries_data)
+                        group by value
+                      ) q7 on nvl(q7.value, binary_double_infinity) = nvl(q3.greatest_accepted_value, binary_double_infinity)
+                where s.ts_code = l_ts_code
+                  and u.unit_id = l_units
+                  and c.from_unit_code = u.unit_code
+                  and p.parameter_code = s.parameter_code
+                  and bp.base_parameter_code = p.base_parameter_code
+                  and c.to_unit_code = bp.unit_code;
 
-            declare
-               l_updated boolean;
-            begin
-               l_updated := update_ts_extents(l_ts_extents_rec);
-            end;
+               declare
+                  l_updated boolean;
+               begin
+                  l_updated := update_ts_extents(l_ts_extents_rec);
+               end;
             exception
-               when no_data_found then cwms_msg.log_db_message (
+               when others then cwms_msg.log_db_message (
                   1,
-                  'NO DATA FOUND on updating TS Extents for '||l_office_id||'/'||l_cwms_ts_id);
+                  'Error updating TS Extents for '
+                  ||l_office_id
+                  ||'/'
+                  ||l_cwms_ts_id
+                  ||chr(10)
+                  ||dbms_utility.format_error_backtrace);
             end;
          end if;
 

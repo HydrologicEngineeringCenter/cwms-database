@@ -13,6 +13,8 @@ procedure cwdb_119_test_for_no_error_on_update_in_select;
 procedure cwdb_119_test_for_update_always_creates_record;
 --%test(TS Extents updated after DELETE_INSERT but no values deleted [Jira issued CWDB-182])
 procedure cwdb_182_test_for_update_with_delete_insert_without_deletes;
+--%test(Prevent NO_DATA_FOUND exception on update_ts_extents [Jira issue CWDB-170])
+procedure cwdb_170_update_ts_extents_no_data_found_exception;
 
 procedure setup;
 procedure teardown;
@@ -595,6 +597,41 @@ begin
    
    ut.expect(l_extents.last_update).to_be_between(l_ts3, l_ts4);
 end cwdb_182_test_for_update_with_delete_insert_without_deletes;
+--------------------------------------------------------------------------------
+-- procedure cwdb_170_update_ts_extents_no_data_found_exception
+--------------------------------------------------------------------------------
+procedure cwdb_170_update_ts_extents_no_data_found_exception
+is
+   l_ts_data cwms_t_ztsv_array;
+   l_msg_id  cwms_v_log_message.msg_id%type;
+   l_count   pls_integer;
+begin
+   setup();
+   l_ts_data := c_base_ts_data;
+   for i in 1..l_ts_data.count loop
+      l_ts_data(i).value        := null;
+      l_ts_data(i).quality_code := 5;
+   end loop;
+
+   l_msg_id := cwms_msg.get_msg_id;
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => c_ts_id,
+      p_units           => c_units,
+      p_timeseries_data => l_ts_data,
+      p_store_rule      => cwms_util.replace_all,
+      p_override_prot   => 'T',
+      p_version_date    => cwms_util.non_versioned,
+      p_office_id       => c_office_id);
+
+   select count(*)
+     into l_count
+     from cwms_v_log_message
+    where msg_id > l_msg_id
+      and msg_text like  'Error updating TS Extents for '||c_office_id||'/'||c_ts_id||'%';
+
+   ut.expect(l_count).to_equal(0);
+end cwdb_170_update_ts_extents_no_data_found_exception;
+
 
 end test_update_ts_extents;
 /
