@@ -1858,11 +1858,12 @@ end retrieve_ts_multi_single_value;
 --------------------------------------------------------------------------------
 procedure store_ts
 is
-   l_cwms_ts_id av_cwms_ts_id.cwms_ts_id%type;
-   l_ts_values  tsv_array := tsv_array();
-   l_ts_code    integer;
-   l_count      integer;
-   l_offset     integer;
+   l_cwms_ts_id  av_cwms_ts_id.cwms_ts_id%type;
+   l_ts_values   tsv_array := tsv_array();
+   l_ts_values_2 tsv_array := tsv_array();
+   l_ts_code     integer;
+   l_count       integer;
+   l_offset      integer;
 begin
    setup('INIT,STORE_LOCATIONS');
    l_cwms_ts_id := replace(v_ts_ids(1), '<intvl>', '~1Hour');
@@ -1936,10 +1937,46 @@ begin
    -- next store data as local-regular --
    --------------------------------------
    cwms_ts.delete_ts(l_cwms_ts_id, cwms_util.delete_all, c_office_id);
+   begin
+      ----------------------------------------------
+      -- should fail on multiple interval offsets --
+      ----------------------------------------------
+      cwms_ts.store_ts(
+         p_cwms_ts_id      => l_cwms_ts_id,
+         p_units           => c_ts_unit,
+         p_timeseries_data => l_ts_values,
+         p_store_rule      => cwms_util.replace_all,
+         p_override_prot   => 'F',
+         p_version_date    => cwms_util.non_versioned,
+         p_office_id       => c_office_id,
+         p_create_as_lrts  => 'T');
+      cwms_err.raise('ERROR', 'Expected exception not raised.');
+   exception
+      when others then
+         if not regexp_like(
+            dbms_utility.format_error_stack,
+            '.*Incoming data set contains multiple interval offsets.*',
+            'm')
+         then
+            raise;
+         end if;
+   end;
+   ----------------------------------
+   -- filter down to single offset --
+   ----------------------------------
+   for i in 1..l_ts_values.count loop
+      if mod(i, 2) = 1 then
+         l_ts_values_2.extend;
+         l_ts_values_2(l_ts_values_2.count) := l_ts_values(i);
+      end if;
+   end loop;
+   -----------------------------------------
+   -- storing these values should succeed --
+   -----------------------------------------
    cwms_ts.store_ts(
       p_cwms_ts_id      => l_cwms_ts_id,
       p_units           => c_ts_unit,
-      p_timeseries_data => l_ts_values,
+      p_timeseries_data => l_ts_values_2,
       p_store_rule      => cwms_util.replace_all,
       p_override_prot   => 'F',
       p_version_date    => cwms_util.non_versioned,
@@ -1959,7 +1996,7 @@ begin
      from at_cwms_ts_spec
     where ts_code = l_ts_code;
 
-    ut.expect(l_count).to_equal(l_ts_values.count / 2);
+    ut.expect(l_count).to_equal(l_ts_values_2.count);
     ut.expect(l_offset).to_equal(-c_intvl_offsets(2));
 end store_ts;
 --------------------------------------------------------------------------------
@@ -1968,10 +2005,11 @@ end store_ts;
 procedure store_ts_old
 is
    l_cwms_ts_id av_cwms_ts_id.cwms_ts_id%type;
-   l_ts_values  tsv_array := tsv_array();
-   l_ts_code    integer;
-   l_count      integer;
-   l_offset     integer;
+   l_ts_values   tsv_array := tsv_array();
+   l_ts_values_2 tsv_array := tsv_array();
+   l_ts_code     integer;
+   l_count       integer;
+   l_offset      integer;
 begin
    setup('INIT,STORE_LOCATIONS');
    l_cwms_ts_id := replace(v_ts_ids(1), '<intvl>', '~1Hour');
@@ -2045,11 +2083,47 @@ begin
    -- next store data as local-regular --
    --------------------------------------
    cwms_ts.delete_ts(l_cwms_ts_id, cwms_util.delete_all, c_office_id);
+   begin
+      ----------------------------------------------
+      -- should fail on multiple interval offsets --
+      ----------------------------------------------
+      cwms_ts.store_ts(
+         p_office_id       => c_office_id,
+         p_cwms_ts_id      => l_cwms_ts_id,
+         p_units           => c_ts_unit,
+         p_timeseries_data => l_ts_values,
+         p_store_rule      => cwms_util.replace_all,
+         p_override_prot   => 0,
+         p_versiondate     => cwms_util.non_versioned,
+         p_create_as_lrts  => 'T');
+      cwms_err.raise('ERROR', 'Expected exception not raised.');
+   exception
+      when others then
+         if not regexp_like(
+            dbms_utility.format_error_stack,
+            '.*Incoming data set contains multiple interval offsets.*',
+            'm')
+         then
+            raise;
+         end if;
+   end;
+   ----------------------------------
+   -- filter down to single offset --
+   ----------------------------------
+   for i in 1..l_ts_values.count loop
+      if mod(i, 2) = 1 then
+         l_ts_values_2.extend;
+         l_ts_values_2(l_ts_values_2.count) := l_ts_values(i);
+      end if;
+   end loop;
+   -----------------------------------------
+   -- storing these values should succeed --
+   -----------------------------------------
    cwms_ts.store_ts(
       p_office_id       => c_office_id,
       p_cwms_ts_id      => l_cwms_ts_id,
       p_units           => c_ts_unit,
-      p_timeseries_data => l_ts_values,
+      p_timeseries_data => l_ts_values_2,
       p_store_rule      => cwms_util.replace_all,
       p_override_prot   => 0,
       p_versiondate     => cwms_util.non_versioned,
@@ -2068,7 +2142,7 @@ begin
      from at_cwms_ts_spec
     where ts_code = l_ts_code;
 
-    ut.expect(l_count).to_equal(l_ts_values.count / 2);
+    ut.expect(l_count).to_equal(l_ts_values_2.count);
     ut.expect(l_offset).to_equal(-c_intvl_offsets(2));
 end store_ts_old;
 --------------------------------------------------------------------------------
@@ -2077,12 +2151,15 @@ end store_ts_old;
 procedure store_ts_oracle
 is
    l_cwms_ts_id av_cwms_ts_id.cwms_ts_id%type;
-   l_times      cwms_ts.number_array;
-   l_values     cwms_ts.double_array;
-   l_qualities  cwms_ts.number_array;
-   l_ts_code    integer;
-   l_count      integer;
-   l_offset     integer;
+   l_times       cwms_ts.number_array;
+   l_values      cwms_ts.double_array;
+   l_qualities   cwms_ts.number_array;
+   l_times_2     cwms_ts.number_array;
+   l_values_2    cwms_ts.double_array;
+   l_qualities_2 cwms_ts.number_array;
+   l_ts_code     integer;
+   l_count       integer;
+   l_offset      integer;
 begin
    setup('INIT,STORE_LOCATIONS');
    l_cwms_ts_id := replace(v_ts_ids(1), '<intvl>', '~1Hour');
@@ -2155,12 +2232,51 @@ begin
    -- next store data as local-regular --
    --------------------------------------
    cwms_ts.delete_ts(l_cwms_ts_id, cwms_util.delete_all, c_office_id);
+   begin
+      ----------------------------------------------
+      -- should fail on multiple interval offsets --
+      ----------------------------------------------
+      cwms_ts.store_ts (
+         p_cwms_ts_id     => l_cwms_ts_id,
+         p_units          => c_ts_unit,
+         p_times          => l_times,
+         p_values         => l_values,
+         p_qualities      => l_qualities,
+         p_store_rule     => cwms_util.replace_all,
+         p_override_prot  => 'F',
+         p_version_date   => cwms_util.non_versioned,
+         p_office_id      => c_office_id,
+         p_create_as_lrts => 'T');
+      cwms_err.raise('ERROR', 'Expected exception not raised.');
+   exception
+      when others then
+         if not regexp_like(
+            dbms_utility.format_error_stack,
+            '.*Incoming data set contains multiple interval offsets.*',
+            'm')
+         then
+            raise;
+         end if;
+   end;
+   ----------------------------------
+   -- filter down to single offset --
+   ----------------------------------
+   for i in 1..l_times.count loop
+      if mod(i, 2) = 1 then
+         l_times_2((i-1)/2+1)     := l_times(i);
+         l_values_2((i-1)/2+1)    := l_values(i);
+         l_qualities_2((i-1)/2+1) := l_qualities(i);
+      end if;
+   end loop;
+   -----------------------------------------
+   -- storing these values should succeed --
+   -----------------------------------------
    cwms_ts.store_ts (
       p_cwms_ts_id     => l_cwms_ts_id,
       p_units          => c_ts_unit,
-      p_times          => l_times,
-      p_values         => l_values,
-      p_qualities      => l_qualities,
+      p_times          => l_times_2,
+      p_values         => l_values_2,
+      p_qualities      => l_qualities_2,
       p_store_rule     => cwms_util.replace_all,
       p_override_prot  => 'F',
       p_version_date   => cwms_util.non_versioned,
@@ -2180,7 +2296,7 @@ begin
      from at_cwms_ts_spec
     where ts_code = l_ts_code;
 
-    ut.expect(l_count).to_equal(l_values.count / 2);
+    ut.expect(l_count).to_equal(l_values_2.count);
     ut.expect(l_offset).to_equal(-c_intvl_offsets(2));
 end store_ts_oracle;
 --------------------------------------------------------------------------------
@@ -2189,12 +2305,15 @@ end store_ts_oracle;
 procedure store_ts_jython
 is
    l_cwms_ts_id av_cwms_ts_id.cwms_ts_id%type;
-   l_times      number_tab_t := number_tab_t();
-   l_values     number_tab_t := number_tab_t();
-   l_qualities  number_tab_t := number_tab_t();
-   l_ts_code    integer;
-   l_count      integer;
-   l_offset     integer;
+   l_times       number_tab_t := number_tab_t();
+   l_values      number_tab_t := number_tab_t();
+   l_qualities   number_tab_t := number_tab_t();
+   l_times_2     number_tab_t := number_tab_t();
+   l_values_2    number_tab_t := number_tab_t();
+   l_qualities_2 number_tab_t := number_tab_t();
+   l_ts_code     integer;
+   l_count       integer;
+   l_offset      integer;
 begin
    setup('INIT,STORE_LOCATIONS');
    l_cwms_ts_id := replace(v_ts_ids(1), '<intvl>', '~1Hour');
@@ -2270,12 +2389,59 @@ begin
    -- next store data as local-regular --
    --------------------------------------
    cwms_ts.delete_ts(l_cwms_ts_id, cwms_util.delete_all, c_office_id);
+   begin
+      ----------------------------------------------
+      -- should fail on multiple interval offsets --
+      ----------------------------------------------
+      cwms_ts.store_ts (
+         p_cwms_ts_id     => l_cwms_ts_id,
+         p_units          => c_ts_unit,
+         p_times          => l_times,
+         p_values         => l_values,
+         p_qualities      => l_qualities,
+         p_store_rule     => cwms_util.replace_all,
+         p_override_prot  => 'F',
+         p_version_date   => cwms_util.non_versioned,
+         p_office_id      => c_office_id,
+         p_create_as_lrts => 'T');
+      cwms_err.raise('ERROR', 'Expected exception not raised.');
+   exception
+      when others then
+         if not regexp_like(
+            dbms_utility.format_error_stack,
+            '.*Incoming data set contains multiple interval offsets.*',
+            'm')
+         then
+            raise;
+         end if;
+   end;
+   ----------------------------------
+   -- filter down to single offset --
+   ----------------------------------
+   declare
+      j pls_integer;
+   begin
+      for i in 1..l_times.count loop
+         if mod(i, 2) = 1 then
+            l_times_2.extend;
+            l_values_2.extend;
+            l_qualities_2.extend;
+            j := l_times_2.count;
+            l_times_2(j)     := l_times(i);
+            l_values_2(j)    := l_values(i);
+            l_qualities_2(j) := l_qualities(i);
+         end if;
+      end loop;
+   end;
+   -----------------------------------------
+   -- storing these values should succeed --
+   -----------------------------------------
    cwms_ts.store_ts (
       p_cwms_ts_id     => l_cwms_ts_id,
       p_units          => c_ts_unit,
-      p_times          => l_times,
-      p_values         => l_values,
-      p_qualities      => l_qualities,
+      p_times          => l_times_2,
+      p_values         => l_values_2,
+      p_qualities      => l_qualities_2,
       p_store_rule     => cwms_util.replace_all,
       p_override_prot  => 'F',
       p_version_date   => cwms_util.non_versioned,
@@ -2295,7 +2461,7 @@ begin
      from at_cwms_ts_spec
     where ts_code = l_ts_code;
 
-    ut.expect(l_count).to_equal(l_values.count / 2);
+    ut.expect(l_count).to_equal(l_values_2.count);
     ut.expect(l_offset).to_equal(-c_intvl_offsets(2));
 end store_ts_jython;
 --------------------------------------------------------------------------------
@@ -2304,10 +2470,11 @@ end store_ts_jython;
 procedure zstore_ts
 is
    l_cwms_ts_id av_cwms_ts_id.cwms_ts_id%type;
-   l_ts_values  ztsv_array := ztsv_array();
-   l_ts_code    integer;
-   l_count      integer;
-   l_offset     integer;
+   l_ts_values   ztsv_array := ztsv_array();
+   l_ts_values_2 ztsv_array := ztsv_array();
+   l_ts_code     integer;
+   l_count       integer;
+   l_offset      integer;
 begin
    setup('INIT,STORE_LOCATIONS');
    l_cwms_ts_id := replace(v_ts_ids(1), '<intvl>', '~1Hour');
@@ -2381,10 +2548,46 @@ begin
    -- next store data as local-regular --
    --------------------------------------
    cwms_ts.delete_ts(l_cwms_ts_id, cwms_util.delete_all, c_office_id);
+   begin
+      ----------------------------------------------
+      -- should fail on multiple interval offsets --
+      ----------------------------------------------
+      cwms_ts.zstore_ts(
+         p_cwms_ts_id      => l_cwms_ts_id,
+         p_units           => c_ts_unit,
+         p_timeseries_data => l_ts_values,
+         p_store_rule      => cwms_util.replace_all,
+         p_override_prot   => 'F',
+         p_version_date    => cwms_util.non_versioned,
+         p_office_id       => c_office_id,
+         p_create_as_lrts  => 'T');
+      cwms_err.raise('ERROR', 'Expected exception not raised.');
+   exception
+      when others then
+         if not regexp_like(
+            dbms_utility.format_error_stack,
+            '.*Incoming data set contains multiple interval offsets.*',
+            'm')
+         then
+            raise;
+         end if;
+   end;
+   ----------------------------------
+   -- filter down to single offset --
+   ----------------------------------
+   for i in 1..l_ts_values.count loop
+      if mod(i, 2) = 1 then
+         l_ts_values_2.extend;
+         l_ts_values_2(l_ts_values_2.count) := l_ts_values(i);
+      end if;
+   end loop;
+   -----------------------------------------
+   -- storing these values should succeed --
+   -----------------------------------------
    cwms_ts.zstore_ts(
       p_cwms_ts_id      => l_cwms_ts_id,
       p_units           => c_ts_unit,
-      p_timeseries_data => l_ts_values,
+      p_timeseries_data => l_ts_values_2,
       p_store_rule      => cwms_util.replace_all,
       p_override_prot   => 'F',
       p_version_date    => cwms_util.non_versioned,
@@ -2404,7 +2607,7 @@ begin
      from at_cwms_ts_spec
     where ts_code = l_ts_code;
 
-    ut.expect(l_count).to_equal(l_ts_values.count / 2);
+    ut.expect(l_count).to_equal(l_ts_values_2.count);
     ut.expect(l_offset).to_equal(-c_intvl_offsets(2));
 end zstore_ts;
 --------------------------------------------------------------------------------
@@ -2412,10 +2615,11 @@ end zstore_ts;
 --------------------------------------------------------------------------------
 procedure store_ts_multi
 is
-   l_ts_array timeseries_array := timeseries_array();
-   l_ts_code  integer;
-   l_count    integer;
-   l_offset   integer;
+   l_ts_array   timeseries_array := timeseries_array();
+   l_ts_array_2 timeseries_array;
+   l_ts_code    integer;
+   l_count      integer;
+   l_offset     integer;
 begin
    setup('INIT,STORE_LOCATIONS');
    l_ts_array.extend(2);
@@ -2468,8 +2672,46 @@ begin
    for i in 1..2 loop
       cwms_ts.delete_ts(l_ts_array(i).tsid, cwms_util.delete_all, c_office_id);
    end loop;
+   begin
+      ----------------------------------------------
+      -- should fail on multiple interval offsets --
+      ----------------------------------------------
+      cwms_ts.store_ts_multi(
+         p_timeseries_array => l_ts_array,
+         p_store_rule       => cwms_util.replace_all,
+         p_override_prot    => 'F',
+         p_version_date     => cwms_util.non_versioned,
+         p_office_id        => c_office_id,
+         p_create_as_lrts   => 'T');
+      cwms_err.raise('ERROR', 'Expected exception not raised.');
+   exception
+      when others then
+         if not regexp_like(
+            dbms_utility.format_error_stack,
+            '.*store_ts_multi processed \d+ ts_ids of which \d+ had STORE ERRORS.*',
+            'm')
+         then
+            raise;
+         end if;
+   end;
+   ----------------------------------
+   -- filter down to single offset --
+   ----------------------------------
+   l_ts_array_2 := l_ts_array;
+   for i in 1..2 loop
+      l_ts_array_2(i).data := tsv_array();
+      for j in 1..l_ts_array(i).data.count loop
+         if mod(j, 2) = 1 then
+            l_ts_array_2(i).data.extend;
+            l_ts_array_2(i).data(l_ts_array_2(i).data.count) := l_ts_array(i).data(j);
+         end if;
+      end loop;
+   end loop;
+   -----------------------------------------
+   -- storing these values should succeed --
+   -----------------------------------------
    cwms_ts.store_ts_multi(
-      p_timeseries_array => l_ts_array,
+      p_timeseries_array => l_ts_array_2,
       p_store_rule       => cwms_util.replace_all,
       p_override_prot    => 'F',
       p_version_date     => cwms_util.non_versioned,
@@ -2499,8 +2741,37 @@ begin
    for i in 1..2 loop
       cwms_ts.delete_ts(l_ts_array(i).tsid, cwms_util.delete_all, c_office_id);
    end loop;
+   begin
+      ----------------------------------------------
+      -- should fail on multiple interval offsets --
+      ----------------------------------------------
+      cwms_ts.store_ts_multi(
+         p_timeseries_array => l_ts_array,
+         p_store_rule       => cwms_util.replace_all,
+         p_override_prot    => 'F',
+         p_version_dates    => date_table_type(cwms_util.non_versioned, cwms_util.non_versioned),
+         p_office_id        => c_office_id,
+         p_create_as_lrts   => str_tab_t('T', 'F'));
+      cwms_err.raise('ERROR', 'Expected exception not raised.');
+   exception
+      when others then
+         if not regexp_like(
+            dbms_utility.format_error_stack,
+            '.*store_ts_multi processed \d+ ts_ids of which \d+ had STORE ERRORS.*',
+            'm')
+         then
+            raise;
+         end if;
+   end;
+   -- l_ts_array_2 is already filtered
+   -----------------------------------------
+   -- storing these values should succeed --
+   -----------------------------------------
+   for i in 1..2 loop
+      cwms_ts.delete_ts(l_ts_array(i).tsid, cwms_util.delete_all, c_office_id);
+   end loop;
    cwms_ts.store_ts_multi(
-      p_timeseries_array => l_ts_array,
+      p_timeseries_array => l_ts_array_2,
       p_store_rule       => cwms_util.replace_all,
       p_override_prot    => 'F',
       p_version_dates    => date_table_type(cwms_util.non_versioned, cwms_util.non_versioned),
@@ -2521,13 +2792,12 @@ begin
         from at_cwms_ts_spec
        where ts_code = l_ts_code;
 
-       if i = 1 then
-          ut.expect(l_count).to_equal(l_ts_array(i).data.count / 2);
-          ut.expect(l_offset).to_equal(-c_intvl_offsets(2));
-       else
-          ut.expect(l_count).to_equal(l_ts_array(i).data.count);
-          ut.expect(l_offset).to_equal(cwms_util.utc_offset_irregular);
-       end if;
+      ut.expect(l_count).to_equal(l_ts_array_2(i).data.count);
+      if i = 1 then
+         ut.expect(l_offset).to_equal(-c_intvl_offsets(2));
+      else
+         ut.expect(l_offset).to_equal(cwms_util.utc_offset_irregular);
+      end if;
    end loop;
 end store_ts_multi;
 --------------------------------------------------------------------------------
@@ -2535,10 +2805,11 @@ end store_ts_multi;
 --------------------------------------------------------------------------------
 procedure zstore_ts_multi
 is
-   l_ts_array ztimeseries_array := ztimeseries_array();
-   l_ts_code  integer;
-   l_count    integer;
-   l_offset   integer;
+   l_ts_array   ztimeseries_array := ztimeseries_array();
+   l_ts_array_2 ztimeseries_array := ztimeseries_array();
+   l_ts_code    integer;
+   l_count      integer;
+   l_offset     integer;
 begin
    setup('INIT,STORE_LOCATIONS');
    l_ts_array.extend(2);
@@ -2591,8 +2862,46 @@ begin
    for i in 1..2 loop
       cwms_ts.delete_ts(l_ts_array(i).tsid, cwms_util.delete_all, c_office_id);
    end loop;
+   begin
+      ----------------------------------------------
+      -- should fail on multiple interval offsets --
+      ----------------------------------------------
+      cwms_ts.zstore_ts_multi(
+         p_timeseries_array => l_ts_array,
+         p_store_rule       => cwms_util.replace_all,
+         p_override_prot    => 'F',
+         p_version_date     => cwms_util.non_versioned,
+         p_office_id        => c_office_id,
+         p_create_as_lrts   => 'T');
+      cwms_err.raise('ERROR', 'Expected exception not raised.');
+   exception
+      when others then
+         if not regexp_like(
+            dbms_utility.format_error_stack,
+            '.*zstore_ts_multi processed \d+ ts_ids of which \d+ had STORE ERRORS.*',
+            'm')
+         then
+            raise;
+         end if;
+   end;
+   ----------------------------------
+   -- filter down to single offset --
+   ----------------------------------
+   l_ts_array_2 := l_ts_array;
+   for i in 1..2 loop
+      l_ts_array_2(i).data := ztsv_array();
+      for j in 1..l_ts_array(i).data.count loop
+         if mod(j, 2) = 1 then
+            l_ts_array_2(i).data.extend;
+            l_ts_array_2(i).data(l_ts_array_2(i).data.count) := l_ts_array(i).data(j);
+         end if;
+      end loop;
+   end loop;
+   -----------------------------------------
+   -- storing these values should succeed --
+   -----------------------------------------
    cwms_ts.zstore_ts_multi(
-      p_timeseries_array => l_ts_array,
+      p_timeseries_array => l_ts_array_2,
       p_store_rule       => cwms_util.replace_all,
       p_override_prot    => 'F',
       p_version_date     => cwms_util.non_versioned,
@@ -2622,8 +2931,37 @@ begin
    for i in 1..2 loop
       cwms_ts.delete_ts(l_ts_array(i).tsid, cwms_util.delete_all, c_office_id);
    end loop;
+   begin
+      ----------------------------------------------
+      -- should fail on multiple interval offsets --
+      ----------------------------------------------
+      cwms_ts.zstore_ts_multi(
+         p_timeseries_array => l_ts_array,
+         p_store_rule       => cwms_util.replace_all,
+         p_override_prot    => 'F',
+         p_version_dates    => date_table_type(cwms_util.non_versioned, cwms_util.non_versioned),
+         p_office_id        => c_office_id,
+         p_create_as_lrts   => str_tab_t('T', 'F'));
+      cwms_err.raise('ERROR', 'Expected exception not raised.');
+   exception
+      when others then
+         if not regexp_like(
+            dbms_utility.format_error_stack,
+            '.*zstore_ts_multi processed \d+ ts_ids of which \d+ had STORE ERRORS.*',
+            'm')
+         then
+            raise;
+         end if;
+   end;
+   -- l_ts_array_2 is already filtered
+   -----------------------------------------
+   -- storing these values should succeed --
+   -----------------------------------------
+   for i in 1..2 loop
+      cwms_ts.delete_ts(l_ts_array(i).tsid, cwms_util.delete_all, c_office_id);
+   end loop;
    cwms_ts.zstore_ts_multi(
-      p_timeseries_array => l_ts_array,
+      p_timeseries_array => l_ts_array_2,
       p_store_rule       => cwms_util.replace_all,
       p_override_prot    => 'F',
       p_version_dates    => date_table_type(cwms_util.non_versioned, cwms_util.non_versioned),
@@ -2644,13 +2982,12 @@ begin
         from at_cwms_ts_spec
        where ts_code = l_ts_code;
 
-       if i = 1 then
-          ut.expect(l_count).to_equal(l_ts_array(i).data.count / 2);
-          ut.expect(l_offset).to_equal(-c_intvl_offsets(2));
-       else
-          ut.expect(l_count).to_equal(l_ts_array(i).data.count);
-          ut.expect(l_offset).to_equal(cwms_util.utc_offset_irregular);
-       end if;
+      ut.expect(l_count).to_equal(l_ts_array_2(i).data.count);
+      if i = 1 then
+         ut.expect(l_offset).to_equal(-c_intvl_offsets(2));
+      else
+         ut.expect(l_offset).to_equal(cwms_util.utc_offset_irregular);
+      end if;
    end loop;
 end zstore_ts_multi;
 --------------------------------------------------------------------------------
