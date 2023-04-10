@@ -8,7 +8,7 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvFileSource;
 
-import jmc.cas.Mode;
+import org.opendcs.jas.core.Mode;
 import net.hobbyscience.database.methods.Function;
 
 @TestInstance(Lifecycle.PER_CLASS)
@@ -17,6 +17,7 @@ public class ConversionTest {
     @BeforeAll
     public static void setup() {
         Mode.DEBUG = true;
+        Mode.FRACTION = true;
     }
 
     @ParameterizedTest(name="{0}")

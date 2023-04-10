@@ -13,7 +13,7 @@ import org.junit.jupiter.params.provider.CsvFileSource;
 import cwms.units.ConversionGraph;
 import cwms.units.Unit;
 import db.data.R__0002_units_and_parameters;
-import jmc.cas.Mode;
+import org.opendcs.jas.core.Mode;
 import net.hobbyscience.SimpleInfixCalculator;
 import net.hobbyscience.database.Conversion;
 
@@ -31,6 +31,7 @@ public class UnitConversionTest {
     @BeforeAll
     public static void setup() throws Exception {
         Mode.DEBUG = true;
+        Mode.FRACTION = true;
         R__0002_units_and_parameters migration = new R__0002_units_and_parameters();        
 
         ConversionGraph graph = new ConversionGraph(migration.getConversions());

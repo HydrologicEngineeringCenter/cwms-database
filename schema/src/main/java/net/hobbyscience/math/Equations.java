@@ -17,11 +17,9 @@ import java.util.Queue;
 import java.util.Stack;
 import java.util.regex.Pattern;
 
-import jmc.cas.BinaryOperation;
-import jmc.cas.Operable;
-import jmc.cas.RawValue;
-import jmc.cas.UnaryOperation;
-import jmc.cas.Variable;
+import org.opendcs.jas.core.Node;
+import org.opendcs.jas.core.operations.Binary;
+import org.opendcs.jas.core.operations.Unary;
 import net.hobbyscience.database.exceptions.BadMathExpression;
 import net.hobbyscience.database.exceptions.NoInverse;
 import net.hobbyscience.database.exceptions.NotImplemented;
@@ -52,80 +50,6 @@ public class Equations {
             throw new BadMathExpression(String.format("Bad data in '%s'",infix),ex);
         }        
     }
-
-    private static boolean isOperator(Token token ) {
-        return token.getType() == Token.TOKEN_OPERATOR;
-    }
-
-    private static boolean isNumber(Token token ) {
-        return token.getType() == Token.TOKEN_NUMBER;
-    }
-
-    /**
-     * @param operand 
-     * @return the opossite function
-     */
-    private static Token inverseFor(OperatorToken operand){
-        Operator op = null;
-        switch( operand.getOperator().getSymbol() ){
-            case "+": {
-                op = Operators.getBuiltinOperator('-', 2);
-                break;
-            }
-            case "-": {
-                op = Operators.getBuiltinOperator('+', 2);
-                break;
-            } 
-            case "^": { 
-                return new FunctionToken(null);                
-            }
-            case "*": {
-                op = Operators.getBuiltinOperator('/', 2);
-                break;
-            }
-            case "/": {
-                op = Operators.getBuiltinOperator('*', 2);
-                break;
-            }
-            case "nroot":{
-                 op = Operators.getBuiltinOperator('^', 2);
-                 break;
-            }
-            default: {
-                throw new NoInverse("Cannot find inverser for operator " + operand);
-            }            
-        }
-        return new OperatorToken(op);
-    }
-
-    private static NumberToken calc(NumberToken left, NumberToken right, Token operand) {
-        double r1 = left.getValue();
-        double r2 = right.getValue();
-        
-        return new NumberToken(Double.parseDouble(calc(r1,r2,operand.toString())));
-    }
-
-    private static String calc(String left, String right, String operand) {
-        double r1 = Double.parseDouble(left);
-        double r2 = Double.parseDouble(right);
-        return calc(r1,r2,operand);
-    }
-
-    private static String calc(double r1, double r2, String operand ){
-        
-        switch( operand ){
-            case "+": return Double.toString( r1+r2 );
-            case "-": return Double.toString( r1-r2 );
-            case "^": return Double.toString( Math.pow(r1,r2) );
-            case "*": return Double.toString( r1*r2 );
-            case "/": return Double.toString( r1/r2 );
-            case "nroot": return Double.toString( Math.pow(r1,1.0/r2) );
-            default: {
-                throw new NotImplemented("Cannot calculate for operator " + operand);
-            }
-        }
-    }    
-
     
     /**
      * 
@@ -218,21 +142,21 @@ public class Equations {
      * @param postfix
      * @return jmc.cas binary tree
      */
-    public static Operable tokensToBin(String postfix) {
+    public static Node tokensToBin(String postfix) {
         // just gotta go through the stack
         Token current = null;
         
         Deque<Token> tokens = Equations.postfixToTokens(postfix);
 
-        Deque<Operable> stack = new ArrayDeque<>(3);
+        Deque<Node> stack = new ArrayDeque<>(3);
         while ((current = tokens.pollFirst()) != null) {
             switch(current.getType()) {
                 case Token.TOKEN_NUMBER: {
-                    stack.add(new RawValue(((NumberToken)current).getValue()));
+                    stack.add(new org.opendcs.jas.core.components.RawValue(((NumberToken)current).getValue()));
                     break;
                 }
                 case Token.TOKEN_VARIABLE: {
-                    stack.add(new Variable(((VariableToken)current).getName()));
+                    stack.add(new org.opendcs.jas.core.components.Variable(((VariableToken)current).getName()));
                     break;
                 }
                 case Token.TOKEN_OPERATOR: {
@@ -241,14 +165,14 @@ public class Equations {
                     switch (numOperands) {
                         case 1: {
                             var operand = stack.pollLast();
-                            var op = new UnaryOperation(operand, tmp.getOperator().getSymbol());
+                            var op = new Unary(operand, tmp.getOperator().getSymbol());
                             stack.add(op);
                             break;
                         }
                         case 2: {
                             var right = stack.pollLast();
                             var left = stack.pollLast();
-                            var op = new BinaryOperation(left, tmp.getOperator().getSymbol(), right);
+                            var op = new Binary(left, tmp.getOperator().getSymbol(), right);
                             stack.add(op);
                             break;
                         }

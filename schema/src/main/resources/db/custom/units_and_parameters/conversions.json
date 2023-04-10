@@ -274,6 +274,10 @@
 	["g/l",          "ug/l",       "linear: micro_per_unit 0"],
 	// ["g/m3",        "g/l",         "[m3]/l_per_m3[l]"],
 	["g/m3",         "gm/cm3",     "function: i / (centi_per_unit)^3"],
+	// Currently need to short cut the conversion chain. Bug in the library that causes
+	// the data not to render correctly and screws up the equation.
+	["ug/l",		 "lbm/l",	   "linear: 2.20462e-9 0"],
+	["lmb/ft3",		 "ug/l",	   "linear: 1.602e7 0"],
 	// ["g/m3",        "lbm/ft3",     "[kg]/*_per_k*[g] | [lbm]/kg_per_lbm[kg] | m_per_ft^3[m3]/[ft3]"],
 	// ["g/m3",        "mg/l",        "[m3]/l_per_m3[l] | m*_per_*[mg]/[g]"],
 	// ["g/m3",        "ppm",         "[m3]/l_per_m3[l] | m*_per_*[mg]/[g] | [ppm]/[mg/l]"],
