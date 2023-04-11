@@ -23,6 +23,7 @@ c_rts_ts_id            constant varchar2(183)     := c_location_id||'.Code.Inst.
 c_its_ts_id            constant varchar2(183)     := c_location_id||'.Code.Inst.0.0.Test';
 c_lrts_ts_id           constant varchar2(183)     := c_location_id||'.Code.Inst.~1Day.0.Test';
 c_time_zone            constant varchar2(28)      := 'US/Central';
+c_interval_value       constant integer           := 1440; -- 1Day
 c_interval_offset      constant integer           := 7 * 60; -- 7 hours into UTC or local interval
 c_snap_backward        constant integer           := 8;
 c_snap_forward         constant integer           := 5;
@@ -89,14 +90,14 @@ begin
             c_time_zone),
          1,
          0);
-      for i in 2..21 loop
+      for i in 2..c_value_count loop
          l_ts_values(i) := cwms_t_tsv(
             l_ts_values(i-1).date_time  + l_increment,
             i,
             0);
       end loop;
    when p_ts_type = 'LRTS' then
-      for i in 1..21 loop
+      for i in 1..c_value_count loop
          l_ts_values(i) := cwms_t_tsv(
             from_tz(
                cast(
@@ -112,6 +113,33 @@ begin
    return l_ts_values;
 end make_timeseries;
 --------------------------------------------------------------------------------
+-- function trim_timeseries
+--------------------------------------------------------------------------------
+function trim_timeseries(
+   p_ts_data         in cwms_t_tsv_array,
+   p_interval_offset in integer,
+   p_time_zone       in varchar2)
+   return cwms_t_tsv_array
+is
+   l_ts_data cwms_t_tsv_array := cwms_t_tsv_array();
+begin
+   for i in 1..p_ts_data.count loop
+      if cwms_ts.snap_to_interval_offset_tz(
+            p_ts_data(i).date_time,
+            c_interval_value,
+            p_interval_offset,
+            extract(timezone_region from p_ts_data(i).date_time),
+            p_time_zone,
+            c_snap_forward,
+            c_snap_backward) is not null
+      then
+         l_ts_data.extend;
+         l_ts_data(l_ts_data.count) := p_ts_data(i);
+      end if;
+   end loop;
+   return l_ts_data;
+end;
+--------------------------------------------------------------------------------
 -- procedure store_retrieve_rts
 --------------------------------------------------------------------------------
 procedure store_retrieve_rts
@@ -121,11 +149,12 @@ is
    l_values         cwms_t_double_tab;
    l_qualities      cwms_t_number_tab;
    l_ts_values      cwms_t_tsv_array;
-   l_dst_times      cwms_t_date_table;
+   l_ts_values_2    cwms_t_tsv_array;
    l_first_time     date;
 begin
    for i in 1..c_start_dates.count loop
-      l_ts_values      := make_timeseries('RTS', c_start_dates(i),c_interval_offset);
+      l_ts_values   := make_timeseries('RTS', c_start_dates(i),c_interval_offset);
+      l_ts_values_2 := trim_timeseries(l_ts_values, c_interval_offset, 'UTC');
 
       cwms_ts.create_ts(
          p_cwms_ts_id        => c_rts_ts_id,
@@ -136,10 +165,33 @@ begin
          p_active_flag       => 'T',
          p_office_id         => c_office_id);
 
+      if l_ts_values_2.count < l_ts_values.count then
+         begin
+            cwms_ts.store_ts(
+               p_cwms_ts_id      => c_rts_ts_id,
+               p_units           => c_units,
+               p_timeseries_data => l_ts_values,
+               p_store_rule      => cwms_util.replace_all,
+               p_override_prot   => 'F',
+               p_version_date    => cwms_util.non_versioned,
+               p_office_id       => c_office_id);
+            cwms_err.raise('ERROR', 'Expected exception not raised.');
+         exception
+            when others then
+               if not regexp_like(
+                  dbms_utility.format_error_stack,
+                  '.*Incoming data set contains multiple interval offsets.*',
+                  'm')
+               then
+                  raise;
+               end if;
+         end;
+      end if;
+
       cwms_ts.store_ts(
          p_cwms_ts_id      => c_rts_ts_id,
          p_units           => c_units,
-         p_timeseries_data => l_ts_values,
+         p_timeseries_data => l_ts_values_2,
          p_store_rule      => cwms_util.replace_all,
          p_override_prot   => 'F',
          p_version_date    => cwms_util.non_versioned,
@@ -150,7 +202,7 @@ begin
          p_cwms_ts_id      => c_rts_ts_id,
          p_units           => c_units,
          p_start_time      => c_start_dates(i) - 1,
-         p_end_time        => c_start_dates(i) + l_ts_values.count + 1,
+         p_end_time        => c_start_dates(i) + l_ts_values_2.count + 2,
          p_time_zone       => c_time_zone,
          p_trim            => 'T',
          p_office_id       => c_office_id);
@@ -168,12 +220,7 @@ begin
       if l_times.count = c_expected_rts_values.count then
          for j in 1..l_times.count loop
             ut.expect(cwms_util.change_timezone(l_times(j), c_time_zone, 'UTC')).to_equal(l_first_time + j - 1);
-            l_dst_times := cwms_ts.dst_times(c_time_zone, l_times(j));
-            if l_dst_times(2) is not null and l_times(j) = l_dst_times(2) - 1/24 then
-               ut.expect(l_values(j)).to_be_null;
-            else
-               ut.expect(l_values(j)).to_equal(c_expected_rts_values(j));
-            end if;
+            ut.expect(l_values(j)).to_equal(c_expected_rts_values(j));
          end loop;
       end if;
 
@@ -191,12 +238,13 @@ is
    l_values         cwms_t_double_tab;
    l_qualities      cwms_t_number_tab;
    l_ts_values      cwms_t_tsv_array;
-   l_dst_times      cwms_t_date_table;
+   l_ts_values_2    cwms_t_tsv_array;
    l_first_time     date;
    l_interval_offset INTEGER := 0;
 begin
    for i in 1..c_start_dates.count loop
-      l_ts_values      := make_timeseries('RTS', c_start_dates(i),l_interval_offset);
+      l_ts_values   := make_timeseries('RTS', c_start_dates(i),l_interval_offset);
+      l_ts_values_2 := trim_timeseries(l_ts_values, l_interval_offset, 'UTC');
 
       cwms_ts.create_ts(
          p_cwms_ts_id        => c_rts_ts_id,
@@ -207,10 +255,33 @@ begin
          p_active_flag       => 'T',
          p_office_id         => c_office_id);
 
+      if l_ts_values_2.count < l_ts_values.count then
+         begin
+            cwms_ts.store_ts(
+               p_cwms_ts_id      => c_rts_ts_id,
+               p_units           => c_units,
+               p_timeseries_data => l_ts_values,
+               p_store_rule      => cwms_util.replace_all,
+               p_override_prot   => 'F',
+               p_version_date    => cwms_util.non_versioned,
+               p_office_id       => c_office_id);
+            cwms_err.raise('ERROR', 'Expected exception not raised.');
+         exception
+            when others then
+               if not regexp_like(
+                  dbms_utility.format_error_stack,
+                  '.*Incoming data set contains multiple interval offsets.*',
+                  'm')
+               then
+                  raise;
+               end if;
+         end;
+      end if;
+
       cwms_ts.store_ts(
          p_cwms_ts_id      => c_rts_ts_id,
          p_units           => c_units,
-         p_timeseries_data => l_ts_values,
+         p_timeseries_data => l_ts_values_2,
          p_store_rule      => cwms_util.replace_all,
          p_override_prot   => 'F',
          p_version_date    => cwms_util.non_versioned,
@@ -221,7 +292,7 @@ begin
          p_cwms_ts_id      => c_rts_ts_id,
          p_units           => c_units,
          p_start_time      => c_start_dates(i) - 1,
-         p_end_time        => c_start_dates(i) + l_ts_values.count + 1,
+         p_end_time        => c_start_dates(i) + l_ts_values_2.count + 2,
          p_time_zone       => c_time_zone,
          p_trim            => 'T',
          p_office_id       => c_office_id);
@@ -239,12 +310,7 @@ begin
       if l_times.count = c_expected_rts_values.count then
          for j in 1..l_times.count loop
             ut.expect(cwms_util.change_timezone(l_times(j), c_time_zone, 'UTC')).to_equal(l_first_time + j - 1);
-            l_dst_times := cwms_ts.dst_times(c_time_zone, l_times(j));
-            if l_dst_times(2) is not null and l_times(j) = l_dst_times(2) - 1/24 then
-               ut.expect(l_values(j)).to_be_null;
-            else
-               ut.expect(l_values(j)).to_equal(c_expected_rts_values(j));
-            end if;
+            ut.expect(l_values(j)).to_equal(c_expected_rts_values(j));
          end loop;
       end if;
 
@@ -260,16 +326,17 @@ end store_retrieve_rts_cwdb_172;
 --------------------------------------------------------------------------------
 procedure store_retrieve_lrts
 is
-   l_crsr      sys_refcursor;
-   l_times     cwms_t_date_table;
-   l_values    cwms_t_double_tab;
-   l_qualities cwms_t_number_tab;
-   l_ts_values cwms_t_tsv_array;
-   l_dst_times cwms_t_date_table;
-   l_first_time     date;
+   l_crsr        sys_refcursor;
+   l_times       cwms_t_date_table;
+   l_values      cwms_t_double_tab;
+   l_qualities   cwms_t_number_tab;
+   l_ts_values   cwms_t_tsv_array;
+   l_ts_values_2 cwms_t_tsv_array;
+   l_first_time  date;
 begin
    for i in 1..c_start_dates.count loop
-      l_ts_values      := make_timeseries('LRTS', c_start_dates(i),c_interval_offset);
+      l_ts_values   := make_timeseries('LRTS', c_start_dates(i), c_interval_offset);
+      l_ts_values_2 := trim_timeseries(l_ts_values, c_interval_offset, c_time_zone);
 
       cwms_ts.create_ts(
          p_cwms_ts_id        => c_lrts_ts_id,
@@ -280,10 +347,33 @@ begin
          p_active_flag       => 'T',
          p_office_id         => c_office_id);
 
+      if l_ts_values_2.count < l_ts_values.count then
+         begin
+            cwms_ts.store_ts(
+               p_cwms_ts_id      => c_rts_ts_id,
+               p_units           => c_units,
+               p_timeseries_data => l_ts_values,
+               p_store_rule      => cwms_util.replace_all,
+               p_override_prot   => 'F',
+               p_version_date    => cwms_util.non_versioned,
+               p_office_id       => c_office_id);
+            cwms_err.raise('ERROR', 'Expected exception not raised.');
+         exception
+            when others then
+               if not regexp_like(
+                  dbms_utility.format_error_stack,
+                  '.*Incoming data set contains multiple interval offsets.*',
+                  'm')
+               then
+                  raise;
+               end if;
+         end;
+      end if;
+
       cwms_ts.store_ts(
          p_cwms_ts_id      => c_lrts_ts_id,
          p_units           => c_units,
-         p_timeseries_data => l_ts_values,
+         p_timeseries_data => l_ts_values_2,
          p_store_rule      => cwms_util.replace_all,
          p_override_prot   => 'F',
          p_version_date    => cwms_util.non_versioned,
@@ -295,7 +385,7 @@ begin
          p_cwms_ts_id      => c_lrts_ts_id,
          p_units           => c_units,
          p_start_time      => c_start_dates(i) - 1,
-         p_end_time        => c_start_dates(i) + l_ts_values.count + 1,
+         p_end_time        => c_start_dates(i) + l_ts_values.count + 2,
          p_time_zone       => c_time_zone,
          p_trim            => 'T',
          p_office_id       => c_office_id);
@@ -313,12 +403,7 @@ begin
       if l_times.count = c_expected_rts_values.count then
          for j in 1..l_times.count loop
             ut.expect(l_times(j)).to_equal(l_first_time + j - 1);
-            l_dst_times := cwms_ts.dst_times(c_time_zone, l_times(j));
-            if l_dst_times(2) is not null and l_times(j) = l_dst_times(2) - 1/24 then
-               ut.expect(l_values(j)).to_be_null;
-            else
-               ut.expect(l_values(j)).to_equal(c_expected_rts_values(j));
-            end if;
+            ut.expect(l_values(j)).to_equal(c_expected_rts_values(j));
          end loop;
       end if;
 
