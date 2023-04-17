@@ -6756,6 +6756,24 @@ AS
                 p_create_as_lrts);
    END store_ts;
 
+   function extract_error_info(
+      p_error_stack in varchar2)
+      return varchar2
+   is
+      l_error_info varchar2(32767);
+      l_lines      str_tab_t;
+      l_line       varchar2(1024);
+   begin
+      l_lines := cwms_util.split_text(p_error_stack, chr(10));
+      for i in 1..l_lines.count loop
+         l_line := substr(l_lines(i), 12);
+         continue when l_line like 'at %' or l_line like 'ERROR: ORA-06512: at %';
+         l_error_info := l_error_info||chr(10)||chr(9)||l_line;
+         exit;
+      end loop;
+      return l_error_info;
+   end extract_error_info;
+
    --
    --*******************************************************************   --
    --*******************************************************************   --
@@ -6770,14 +6788,14 @@ AS
       p_office_id          in varchar2 default null,
       p_create_as_lrts     in str_tab_t default null)
    is
-      l_err_msg        varchar2 (722)  := null;
-      l_all_err_msgs   varchar2 (2048) := null;
-      l_version_dates  date_table_type := date_table_type();
-      l_len            pls_integer := 0;
-      l_total_len      pls_integer := 0;
-      l_num_errors     pls_integer := 0;
-      l_excep_errors   pls_integer := 0;
-      l_create_as_lrts varchar2(1);
+      c_max_err_msg_size integer := 2048;
+      l_err_msgs         varchar2 (2048) := null;
+      l_version_dates    date_table_type := date_table_type();
+      l_len              pls_integer := 0;
+      l_total_len        pls_integer := 0;
+      l_num_errors       pls_integer := 0;
+      l_excep_errors     pls_integer := 0;
+      l_create_as_lrts   varchar2(1);
    begin
 
       if p_timeseries_array is not null then
@@ -6815,37 +6833,32 @@ AS
             exception
                when others then
                   l_num_errors := l_num_errors + 1;
-
-                  l_err_msg :=
-                        'STORE_ERROR ***'
-                     || p_timeseries_array(i).tsid
-                     || '*** '
-                     || sqlcode
-                     || ': '
-                     || sqlerrm;
-
-                  if   nvl (length (l_all_err_msgs), 0)
-                     + nvl (length (l_err_msg),      0) <= 1930
-                  then
-                     l_excep_errors := l_excep_errors + 1;
-                     l_all_err_msgs := l_all_err_msgs || ' ' || l_err_msg;
+                  if l_err_msgs is null or length(l_err_msgs) < c_max_err_msg_size then
+                     l_err_msgs := substr(
+                                      l_err_msgs
+                                         ||chr(10)
+                                         ||l_num_errors
+                                         ||': '
+                                         ||p_timeseries_array(i).tsid
+                                         ||extract_error_info(dbms_utility.format_error_stack),
+                                      1,
+                                      c_max_err_msg_size);
                   end if;
             end;
          end loop;
       end if;
 
-      if l_all_err_msgs is not null then
-         l_all_err_msgs :=
-               'STORE ERRORS: store_ts_multi processed '
-            || p_timeseries_array.count
-            || ' ts_ids of which '
-            || l_num_errors
-            || ' had STORE ERRORS. '
-            || l_excep_errors
-            || ' of those errors are: '
-            || l_all_err_msgs;
+      if l_num_errors > 0 then
+         l_err_msgs := substr('store_ts_multi processed '
+                                 ||p_timeseries_array.count
+                                 ||' ts_ids of which '
+                                 ||l_num_errors
+                                 ||' had STORE ERRORS:'
+                                 ||l_err_msgs,
+                              1,
+                              c_max_err_msg_size);
 
-         raise_application_error (-20999, l_all_err_msgs);
+         raise_application_error (-20999, l_err_msgs);
       end if;
 
 
@@ -9123,14 +9136,14 @@ end retrieve_existing_item_counts;
       p_office_id          IN VARCHAR2 DEFAULT NULL,
       p_create_as_lrts     IN VARCHAR2 DEFAULT 'F')
    IS
-      l_timeseries     ztimeseries_type;
-      l_err_msg        VARCHAR2 (722) := NULL;
-      l_all_err_msgs   VARCHAR2 (2048) := NULL;
-      l_len            NUMBER := 0;
-      l_total_len      NUMBER := 0;
-      l_num_ts_ids     NUMBER := 0;
-      l_num_errors     NUMBER := 0;
-      l_excep_errors   NUMBER := 0;
+      l_timeseries       ztimeseries_type;
+      c_max_err_msg_size integer := 2048;
+      l_err_msgs         varchar2 (2048) := null;
+      l_len              NUMBER := 0;
+      l_total_len        NUMBER := 0;
+      l_num_ts_ids       NUMBER := 0;
+      l_num_errors       NUMBER := 0;
+      l_excep_errors     NUMBER := 0;
    BEGIN
       DBMS_APPLICATION_INFO.set_module ('cwms_ts.zstore_ts_multi',
                                         'selecting time series from input');
@@ -9140,7 +9153,7 @@ end retrieve_existing_item_counts;
          DBMS_APPLICATION_INFO.set_module ('cwms_ts_store.zstore_ts_multi',
                                            'calling zstore_ts');
 
-         BEGIN
+         begin
             l_num_ts_ids := l_num_ts_ids + 1;
 
             cwms_ts.zstore_ts (l_timeseries.tsid,
@@ -9151,42 +9164,35 @@ end retrieve_existing_item_counts;
                                p_version_date,
                                p_office_id,
                                p_create_as_lrts);
-         EXCEPTION
-            WHEN OTHERS
-            THEN
+         exception
+            when others then
                l_num_errors := l_num_errors + 1;
-
-               l_err_msg :=
-                     'STORE_ERROR ***'
-                  || l_timeseries.tsid
-                  || '*** '
-                  || SQLCODE
-                  || ': '
-                  || SQLERRM;
-
-               IF   NVL (LENGTH (l_all_err_msgs), 0)
-                  + NVL (LENGTH (l_err_msg), 0) <= 1930
-               THEN
-                  l_excep_errors := l_excep_errors + 1;
-                  l_all_err_msgs := l_all_err_msgs || ' ' || l_err_msg;
-               END IF;
-         END;
+               if l_err_msgs is null or length(l_err_msgs) < c_max_err_msg_size then
+                  l_err_msgs := substr(
+                                   l_err_msgs
+                                      ||chr(10)
+                                      ||l_num_errors
+                                      ||': '
+                                      ||l_timeseries.tsid
+                                      ||extract_error_info(dbms_utility.format_error_stack),
+                                   1,
+                                   c_max_err_msg_size);
+               end if;
+         end;
       END LOOP;
 
-      IF l_all_err_msgs IS NOT NULL
-      THEN
-         l_all_err_msgs :=
-               'STORE ERRORS: zstore_ts_multi processed '
-            || l_num_ts_ids
-            || ' ts_ids of which '
-            || l_num_errors
-            || ' had STORE ERRORS. '
-            || l_excep_errors
-            || ' of those errors are: '
-            || l_all_err_msgs;
+      if l_num_errors > 0 then
+         l_err_msgs := substr('store_ts_multi processed '
+                                 ||p_timeseries_array.count
+                                 ||' ts_ids of which '
+                                 ||l_num_errors
+                                 ||' had STORE ERRORS:'
+                                 ||l_err_msgs,
+                              1,
+                              c_max_err_msg_size);
 
-         raise_application_error (-20999, l_all_err_msgs);
-      END IF;
+         raise_application_error (-20999, l_err_msgs);
+      end if;
 
       DBMS_APPLICATION_INFO.set_module (NULL, NULL);
    END zstore_ts_multi;
@@ -9199,16 +9205,16 @@ end retrieve_existing_item_counts;
       p_office_id          IN VARCHAR2 DEFAULT NULL,
       p_create_as_lrts     IN STR_TAB_T DEFAULT NULL)
    IS
-      l_timeseries     ztimeseries_type;
-      l_err_msg        VARCHAR2 (722) := NULL;
-      l_all_err_msgs   VARCHAR2 (2048) := NULL;
-      l_len            NUMBER := 0;
-      l_total_len      NUMBER := 0;
-      l_num_ts_ids     NUMBER := 0;
-      l_num_errors     NUMBER := 0;
-      l_excep_errors   NUMBER := 0;
-      l_version_date   date;
-      l_create_as_lrts varchar2(1);
+      l_timeseries       ztimeseries_type;
+      c_max_err_msg_size integer := 2048;
+      l_err_msgs         varchar2 (2048) := null;
+      l_len              NUMBER := 0;
+      l_total_len        NUMBER := 0;
+      l_num_ts_ids       NUMBER := 0;
+      l_num_errors       NUMBER := 0;
+      l_excep_errors     NUMBER := 0;
+      l_version_date     date;
+      l_create_as_lrts   varchar2(1);
    BEGIN
       DBMS_APPLICATION_INFO.set_module ('cwms_ts.zstore_ts_multi',
                                         'selecting time series from input');
@@ -9218,7 +9224,7 @@ end retrieve_existing_item_counts;
          DBMS_APPLICATION_INFO.set_module ('cwms_ts_store.zstore_ts_multi',
                                            'calling zstore_ts');
 
-         BEGIN
+         begin
             l_num_ts_ids := l_num_ts_ids + 1;
 
             l_version_date := case when p_version_dates is null then cwms_util.non_versioned else p_version_dates(l_num_ts_ids) end;
@@ -9232,42 +9238,35 @@ end retrieve_existing_item_counts;
                                l_version_date,
                                p_office_id,
                                l_create_as_lrts);
-         EXCEPTION
-            WHEN OTHERS
-            THEN
+         exception
+            when others then
                l_num_errors := l_num_errors + 1;
-
-               l_err_msg :=
-                     'STORE_ERROR ***'
-                  || l_timeseries.tsid
-                  || '*** '
-                  || SQLCODE
-                  || ': '
-                  || SQLERRM;
-
-               IF   NVL (LENGTH (l_all_err_msgs), 0)
-                  + NVL (LENGTH (l_err_msg), 0) <= 1930
-               THEN
-                  l_excep_errors := l_excep_errors + 1;
-                  l_all_err_msgs := l_all_err_msgs || ' ' || l_err_msg;
-               END IF;
-         END;
+               if l_err_msgs is null or length(l_err_msgs) < c_max_err_msg_size then
+                  l_err_msgs := substr(
+                                   l_err_msgs
+                                      ||chr(10)
+                                      ||l_num_errors
+                                      ||': '
+                                      ||l_timeseries.tsid
+                                      ||extract_error_info(dbms_utility.format_error_stack),
+                                   1,
+                                   c_max_err_msg_size);
+               end if;
+         end;
       END LOOP;
 
-      IF l_all_err_msgs IS NOT NULL
-      THEN
-         l_all_err_msgs :=
-               'STORE ERRORS: zstore_ts_multi processed '
-            || l_num_ts_ids
-            || ' ts_ids of which '
-            || l_num_errors
-            || ' had STORE ERRORS. '
-            || l_excep_errors
-            || ' of those errors are: '
-            || l_all_err_msgs;
+      if l_num_errors > 0 then
+         l_err_msgs := substr('zstore_ts_multi processed '
+                                 ||p_timeseries_array.count
+                                 ||' ts_ids of which '
+                                 ||l_num_errors
+                                 ||' had STORE ERRORS:'
+                                 ||l_err_msgs,
+                              1,
+                              c_max_err_msg_size);
 
-         raise_application_error (-20999, l_all_err_msgs);
-      END IF;
+         raise_application_error (-20999, l_err_msgs);
+      end if;
 
       DBMS_APPLICATION_INFO.set_module (NULL, NULL);
    END zstore_ts_multi;
