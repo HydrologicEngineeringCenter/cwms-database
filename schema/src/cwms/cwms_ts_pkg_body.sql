@@ -9182,7 +9182,7 @@ end retrieve_existing_item_counts;
       END LOOP;
 
       if l_num_errors > 0 then
-         l_err_msgs := substr('store_ts_multi processed '
+         l_err_msgs := substr('zstore_ts_multi processed '
                                  ||p_timeseries_array.count
                                  ||' ts_ids of which '
                                  ||l_num_errors

@@ -1,74 +1,100 @@
 CREATE OR REPLACE package &&cwms_schema..test_cwms_ts as
+
 --%suite(Test cwms_ts package code)
 --%beforeall (setup)
 --%afterall(teardown)
 --%rollback(manual)
+
 --%test(Test setting active flag)
 procedure test_set_active_flag;
+
 --%test(Test filter duplicates)
 procedure test_filter_duplicates;
+
 --%test(Test delete ts data for location without timezone)
 procedure delete_ts_with_location_without_timezone;
+
 --%test(Test retrieve TS with calendar-based times [JIRA Issue CWDB-157])
 procedure test_retrieve_ts_with_calendar_based_times__JIRA_CWDB_157;
+
 --%test(Test creation various types of time series)
 --%disabled until new parameter types, intervals, and durations are unhidden
 procedure test_create_ts_parameter_types;
+
 --%test(Test rename time series)
 --%disabled until new parameter types, intervals, and durations are unhidden
 procedure test_rename_ts;
+
 --%test(Test rename time series inst to median)
 --%throws(-20013)
 --%disabled until new parameter types, intervals, and durations are unhidden
 procedure test_rename_ts_inst_to_median;
+
 --%test(create depth velocity time series)
 procedure test_create_depth_velocity;
+
 --%test(test micrograms/l)
 procedure test_conc;
+
 --%test(Incremental precip with non zero duration)
 --%throws(-20205)
 --%disabled until new parameter types, intervals, and durations are unhidden
 PROCEDURE inc_with_zero_duration;
+
 --%test(Incremental cumulative precip with zero duration)
 --%throws(-20205)
 --%disabled until new parameter types, intervals, and durations are unhidden
 PROCEDURE cum_with_non_zero_duration;
+
 --%test(regular interval with until changed duration)
 --%throws(-20205)
 --%disabled until new parameter types, intervals, and durations are unhidden
-    PROCEDURE untilchanged_with_regular;
+PROCEDURE untilchanged_with_regular;
+
 --%test(non-const parameter type with until changed duration)
 --%throws(-20205)
 --%disabled until new parameter types, intervals, and durations are unhidden
-    PROCEDURE untilchanged_with_non_const;
+PROCEDURE untilchanged_with_non_const;
+
 --%test(Variable duration with non instantaneous)
 --%throws(-20205)
 --%disabled until new parameter types, intervals, and durations are unhidden
 PROCEDURE variable_with_inst;
+
 --%test(Variable duration with const)
 --%throws(-20205)
 --%disabled until new parameter types, intervals, and durations are unhidden
 PROCEDURE variable_with_const;
+
 --%test(Make sure quality on generated rts/lrts values is 0 (unscreened) and not 5 (missing) [JIRA Issue CWMSVIEW-212])
 procedure quality_on_generated_rts_values__JIRA_CWMSVIEW_212;
+
 --%test(create a time series id with null timezone in location that has a  base location: CWDB-175)
 procedure create_ts_with_null_timezone;
+
 --%test(Test flags p_start_inclusive, p_end_inclusive, p_previous, p_next, and ts with aliases: CWDB-180)
 procedure test_inclusion_options__JIRA_CWDB_180;
+
 --%test(Test STORE_TS can create a versioned time series: CWDB-190)
 procedure test_store_ts_can_create_versioned_time_series__JIRA_CWDB_190;
+
 --%test (Test RETRIEVE_TS for regular time series that has undefined interval offset)
 procedure test_retrieve_ts_with_undefined_interval_offset;
+
 --%test(LRL 1Day at 6am EST stores correctly)
 procedure test_lrl_1day_CWDB_202;
+
 --%test(No silent failure on storing data with wrong offset [Jira issue CWDB-204])
 procedure cwdb_204_silent_failure_on_store_ts_with_unexpected_offset;
---%test (CWDB-134 STORE_TS_MULTI doen't hide error individual messages)
+
+--%test (CWDB-134 STORE_TS_MULTI doen't hide individual error messages)
 procedure cwdb_134_test_store_multi_does_not_hide_error_messages;
+
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
 test_withsub_location_id VARCHAR2(32) := test_base_location_id||'-withsub';
 test_renamed_base_location_id VARCHAR2(32) := 'RenameTestLoc1';
 test_renamed_withsub_location_id VARCHAR2(32) := test_renamed_base_location_id||'-withsub';
+
 procedure setup;
 procedure teardown;
 end test_cwms_ts;
