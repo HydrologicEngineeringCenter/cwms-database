@@ -554,12 +554,13 @@ AS
       p_interval_backward in varchar2 default null)
       return date
    is
-      l_interval          integer;
-      l_interval_offset   integer;
-      l_interval_forward  integer;
-      l_interval_backward integer;
-      l_prev_top          date;
-      l_next_top          date;
+      l_interval           integer;
+      l_interval_offset    integer;
+      l_interval_forward   integer;
+      l_interval_backward  integer;
+      l_snap_window_length integer;
+      l_prev_top           date;
+      l_next_top           date;
    begin
       -------------------
       -- sanity checks --
@@ -584,15 +585,11 @@ AS
          when others then
             cwms_err.raise('ERROR', 'Invalid interval backward '||p_interval_backward);
       end;
-      if l_interval_offset + l_interval_forward >= l_interval then
+      l_snap_window_length := l_interval_backward + l_interval_forward;
+      if l_snap_window_length >= l_interval then
          cwms_err.raise(
             'ERROR',
-            'Interval offset ('||l_interval||') + interval forward ('||l_interval_forward||') >= interval length ('||l_interval||')');
-      end if;
-      if l_interval_offset - l_interval_backward <= 0 then
-         cwms_err.raise(
-            'ERROR',
-            'Interval offset ('||l_interval||') - interval backward ('||l_interval_backward||') <= 0');
+            'Interval backward ('||l_interval_backward||') + interval forward ('||l_interval_forward||') >= interval length ('||l_interval||')' );
       end if;
       ------------------------------------------------------------------------------
       -- return top of current interval if p_date_time within its snapping window --
