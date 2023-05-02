@@ -693,7 +693,7 @@ AS
          p_next             => 'F');
       l_backward_limit_utc := cwms_util.change_timezone(l_prev_top - l_interval_backward / 1440, p_time_zone, 'UTC');
       l_forward_limit_utc  := cwms_util.change_timezone(l_prev_top + l_interval_forward / 1440, p_time_zone, 'UTC');
-      l_utc_window_length  := (l_forward_limit_utc - l_backward_limit_utc) * 1400;
+      l_utc_window_length  := (l_forward_limit_utc - l_backward_limit_utc) * 1440;
       if l_utc_window_length > l_snap_window_length then
          -----------------------------------
          -- crosses a spring DST boundary --
@@ -730,7 +730,7 @@ AS
          p_next             => 'T');
       l_backward_limit_utc := cwms_util.change_timezone(l_next_top - l_interval_backward / 1440, p_time_zone, 'UTC');
       l_forward_limit_utc  := cwms_util.change_timezone(l_next_top + l_interval_forward / 1440, p_time_zone, 'UTC');
-      l_utc_window_length  := (l_forward_limit_utc - l_backward_limit_utc) * 1400;
+      l_utc_window_length  := (l_forward_limit_utc - l_backward_limit_utc) * 1440;
       if l_utc_window_length > l_snap_window_length then
          -----------------------------------
          -- crosses a spring DST boundary --
