@@ -506,6 +506,8 @@ begin
       ut.expect(extract(hour from l_snapped)).to_equal(l_this_hour);
    end if;
    -- this call should fail BEFORE CWDB-217
+   l_snapped := cwms_ts.snap_to_interval_offset_utc(cast(l_now as date), 60, 15, 29, 30);
+   ut.expect(extract(minute from l_snapped)).to_equal(15);
    if l_this_min >= 45 then -- 15 + 29 is max minute to snap back to current hour
       ut.expect(extract(hour from l_snapped)).to_equal(l_next_hour);
    else
