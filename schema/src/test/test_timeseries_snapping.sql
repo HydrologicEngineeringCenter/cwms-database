@@ -13,6 +13,8 @@ procedure store_retrieve_rts_cwdb_172;
 procedure store_retrieve_lrts;
 --%test(Store and retrieve irrregular time series)
 procedure store_retrieve_its;
+--%test(CWDB-217 SNAP_TO_INTERVAL_OFFSET_UTC)
+procedure cwdb_217_snap_to_interval_offset_utc;
 
 procedure setup;
 procedure teardown;
@@ -484,7 +486,31 @@ begin
          p_db_office_id  => c_office_id);
    end loop;
 end store_retrieve_its;
-
+--------------------------------------------------------------------------------
+-- procedure procedure cwdb_217_snap_to_interval_offset_utc
+--------------------------------------------------------------------------------
+procedure cwdb_217_snap_to_interval_offset_utc
+is
+   l_now       timestamp := systimestamp;
+   l_timestamp timestamp;
+begin
+   -- this call should work BEFORE CWDB-217 was fixed (same bug was fixed previously)
+   l_timestamp := cwms_ts.snap_to_interval_offset_tz(sysdate, 60, 15, 'UTC', 'UTC', 29, 30);
+   ut.expect(extract(minute from l_timestamp)).to_equal(15);
+   if extract(minute from l_now) >= 15 then
+      ut.expect(extract(hour from l_timestamp)).to_equal(extract(hour from l_now));
+   else
+      ut.expect(extract(hour from l_timestamp)).to_equal(mod(extract(hour from l_now)+24, 24));
+   end if;
+   -- this call should fail BEFORE CWDB-217
+   l_timestamp := cwms_ts.snap_to_interval_offset_utc(sysdate, 60, 15, 29, 30);
+   ut.expect(extract(minute from l_timestamp)).to_equal(15);
+   if extract(minute from l_now) >= 15 then
+      ut.expect(extract(hour from l_timestamp)).to_equal(extract(hour from l_now));
+   else
+      ut.expect(extract(hour from l_timestamp)).to_equal(mod(extract(hour from l_now)+24, 24));
+   end if;
+end cwdb_217_snap_to_interval_offset_utc;
 end test_timeseries_snapping;
 /
 
