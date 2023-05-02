@@ -492,23 +492,24 @@ end store_retrieve_its;
 procedure cwdb_217_snap_to_interval_offset_utc
 is
    l_now       timestamp := systimestamp;
-   l_timestamp timestamp;
+   l_snapped   timestamp;
+   l_this_hour pls_integer := extract(hour from l_now);
+   l_this_min  pls_integer := extract(minute from l_now);
+   l_next_hour pls_integer := mod(l_this_hour+1, 24);
 begin
    -- this call should work BEFORE CWDB-217 was fixed (same bug was fixed previously)
-   l_timestamp := cwms_ts.snap_to_interval_offset_tz(sysdate, 60, 15, 'UTC', 'UTC', 29, 30);
-   ut.expect(extract(minute from l_timestamp)).to_equal(15);
-   if extract(minute from l_now) >= 15 then
-      ut.expect(extract(hour from l_timestamp)).to_equal(extract(hour from l_now));
+   l_snapped := cwms_ts.snap_to_interval_offset_tz(cast(l_now as date), 60, 15, 'UTC', 'UTC', 29, 30);
+   ut.expect(extract(minute from l_snapped)).to_equal(15);
+   if l_this_min >= 45 then -- 15 + 29 is max minute to snap back to current hour
+      ut.expect(extract(hour from l_snapped)).to_equal(l_next_hour);
    else
-      ut.expect(extract(hour from l_timestamp)).to_equal(mod(extract(hour from l_now)+24, 24));
+      ut.expect(extract(hour from l_snapped)).to_equal(l_this_hour);
    end if;
    -- this call should fail BEFORE CWDB-217
-   l_timestamp := cwms_ts.snap_to_interval_offset_utc(sysdate, 60, 15, 29, 30);
-   ut.expect(extract(minute from l_timestamp)).to_equal(15);
-   if extract(minute from l_now) >= 15 then
-      ut.expect(extract(hour from l_timestamp)).to_equal(extract(hour from l_now));
+   if l_this_min >= 45 then -- 15 + 29 is max minute to snap back to current hour
+      ut.expect(extract(hour from l_snapped)).to_equal(l_next_hour);
    else
-      ut.expect(extract(hour from l_timestamp)).to_equal(mod(extract(hour from l_now)+24, 24));
+      ut.expect(extract(hour from l_snapped)).to_equal(l_this_hour);
    end if;
 end cwdb_217_snap_to_interval_offset_utc;
 end test_timeseries_snapping;
