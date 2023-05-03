@@ -7,10 +7,13 @@ CREATE OR REPLACE package &&cwms_schema..test_cwms_ts as
 
 --%test(Test setting active flag)
 procedure test_set_active_flag;
+
 --%test(Test filter duplicates)
 procedure test_filter_duplicates;
+
 --%test(Test delete ts data for location without timezone)
 procedure delete_ts_with_location_without_timezone;
+
 --%test(Test retrieve TS with calendar-based times [JIRA Issue CWDB-157])
 procedure test_retrieve_ts_with_calendar_based_times__JIRA_CWDB_157;
 
@@ -18,17 +21,17 @@ procedure test_retrieve_ts_with_calendar_based_times__JIRA_CWDB_157;
 --%disabled until new parameter types, intervals, and durations are unhidden
 procedure test_create_ts_parameter_types;
 
---%test(Test rename time series) 
+--%test(Test rename time series)
 --%disabled until new parameter types, intervals, and durations are unhidden
 procedure test_rename_ts;
 
---%test(Test rename time series inst to median) 
+--%test(Test rename time series inst to median)
 --%throws(-20013)
 --%disabled until new parameter types, intervals, and durations are unhidden
 procedure test_rename_ts_inst_to_median;
 
 --%test(create depth velocity time series)
-procedure test_create_depth_velocity; 
+procedure test_create_depth_velocity;
 
 --%test(test micrograms/l)
 procedure test_conc;
@@ -46,48 +49,59 @@ PROCEDURE cum_with_non_zero_duration;
 --%test(regular interval with until changed duration)
 --%throws(-20205)
 --%disabled until new parameter types, intervals, and durations are unhidden
-    PROCEDURE untilchanged_with_regular;
+PROCEDURE untilchanged_with_regular;
+
 --%test(non-const parameter type with until changed duration)
 --%throws(-20205)
 --%disabled until new parameter types, intervals, and durations are unhidden
-    PROCEDURE untilchanged_with_non_const;
+PROCEDURE untilchanged_with_non_const;
+
 --%test(Variable duration with non instantaneous)
---%throws(-20205)    
+--%throws(-20205)
 --%disabled until new parameter types, intervals, and durations are unhidden
 PROCEDURE variable_with_inst;
 
 --%test(Variable duration with const)
---%throws(-20205)   
+--%throws(-20205)
 --%disabled until new parameter types, intervals, and durations are unhidden
 PROCEDURE variable_with_const;
+
 --%test(Make sure quality on generated rts/lrts values is 0 (unscreened) and not 5 (missing) [JIRA Issue CWMSVIEW-212])
 procedure quality_on_generated_rts_values__JIRA_CWMSVIEW_212;
+
 --%test(create a time series id with null timezone in location that has a  base location: CWDB-175)
 procedure create_ts_with_null_timezone;
+
 --%test(Test flags p_start_inclusive, p_end_inclusive, p_previous, p_next, and ts with aliases: CWDB-180)
 procedure test_inclusion_options__JIRA_CWDB_180;
+
 --%test(Test STORE_TS can create a versioned time series: CWDB-190)
 procedure test_store_ts_can_create_versioned_time_series__JIRA_CWDB_190;
+
 --%test (Test RETRIEVE_TS for regular time series that has undefined interval offset)
 procedure test_retrieve_ts_with_undefined_interval_offset;
 
 --%test(LRL 1Day at 6am EST stores correctly)
 procedure test_lrl_1day_CWDB_202;
+
 --%test(No silent failure on storing data with wrong offset [Jira issue CWDB-204])
 procedure cwdb_204_silent_failure_on_store_ts_with_unexpected_offset;
+
+--%test (CWDB-134 STORE_TS_MULTI doen't hide individual error messages)
+procedure cwdb_134_test_store_multi_does_not_hide_error_messages;
 
 test_base_location_id VARCHAR2(32) := 'TestLoc1';
 test_withsub_location_id VARCHAR2(32) := test_base_location_id||'-withsub';
 test_renamed_base_location_id VARCHAR2(32) := 'RenameTestLoc1';
 test_renamed_withsub_location_id VARCHAR2(32) := test_renamed_base_location_id||'-withsub';
+
 procedure setup;
 procedure teardown;
 end test_cwms_ts;
 /
 show errors;
-
 /* Formatted on 4/28/2022 2:38:41 PM (QP5 v5.381) */
-CREATE OR REPLACE PACKAGE BODY CWMS_20.test_cwms_ts
+CREATE OR REPLACE PACKAGE BODY &&cwms_schema..test_cwms_ts
 AS
     --------------------------------------------------------------------------------
     -- procedure delete_all
@@ -113,7 +127,6 @@ AS
             END;
         END LOOP;
     END delete_all;
-
     PROCEDURE setup
     IS
     BEGIN
@@ -127,28 +140,22 @@ AS
                                  p_db_office_id   => '&&office_id');
         COMMIT;
     END;
-
     PROCEDURE teardown
     IS
     BEGIN
         delete_all;
     END teardown;
-
     PROCEDURE delete_ts_id (p_cwms_ts_id VARCHAR2)
     IS
         l_count   NUMBER;
     BEGIN
         CWMS_TS.DELETE_TS (p_cwms_ts_id, cwms_util.delete_all);
-
         SELECT COUNT (*)
           INTO l_count
           FROM at_cwms_ts_id
          WHERE UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id);
-
         ut.expect (l_count).to_equal (0);
-
     END;
-
     PROCEDURE delete_ts_with_location_without_timezone
     IS
         l_times        CWMS_TS.NUMBER_ARRAY;
@@ -165,19 +172,15 @@ AS
                                  p_db_office_id   => '&&office_id');
         cwms_ts.create_ts ('&&office_id', l_cwms_ts_id);
         COMMIT;
-
         SELECT COUNT (*)
           INTO l_count
           FROM at_cwms_ts_id
          WHERE UPPER (cwms_ts_id) = UPPER (l_cwms_ts_id);
-
         ut.expect (l_count).to_equal (1);
-
         SELECT ts_code
           INTO l_ts_code
           FROM at_cwms_ts_id
          WHERE cwms_ts_id = l_cwms_ts_id;
-
         FOR i IN 1 .. 9
         LOOP
             l_times (i) :=
@@ -193,12 +196,10 @@ AS
                               l_qualities,
                               'Delete Insert');
         END LOOP;
-
         SELECT COUNT (*)
           INTO l_count
           FROM at_tsv_2022
          WHERE ts_code = l_ts_code;
-
         ut.expect (l_count).to_equal (9);
         CWMS_TS.DELETE_TS (
             l_cwms_ts_id,
@@ -213,16 +214,13 @@ AS
             'T',
             -1,
             '&&office_id');
-
         SELECT COUNT (*)
           INTO l_count
           FROM at_tsv_2022
          WHERE ts_code = l_ts_code;
-
         ut.expect (l_count).to_equal (0);
         delete_ts_id (l_cwms_ts_id);
     END;
-
     PROCEDURE test_unit_conversion (p_cwms_ts_id   VARCHAR2,
                                     p_start_time   TIMESTAMP,
                                     p_interval     NUMBER,
@@ -251,14 +249,10 @@ AS
             p_time_zone    => 'UTC',
             p_trim         => 'T',
             p_office_id    => '&&office_id');
-
         FETCH l_crsr
             BULK COLLECT INTO l_ret_times, l_ret_values, l_ret_qualities;
-
         ut.expect (l_ret_times.COUNT).to_equal (p_num_values);
-
         CLOSE l_crsr;
-
         FOR j IN 1 .. l_ret_times.COUNT
         LOOP
             ut.expect (CWMS_UTIL.TO_MILLIS (l_ret_times (j))).to_equal (
@@ -267,7 +261,6 @@ AS
             ut.expect (l_ret_qualities (j)).to_equal (0);
         END LOOP;
     END test_unit_conversion;
-
     PROCEDURE test_conc
     IS
         l_cwms_ts_id      VARCHAR2 (200);
@@ -290,19 +283,15 @@ AS
         l_cwms_ts_id := test_base_location_id || '.Conc.Ave.1Hour.1Hour.raw';
         cwms_ts.create_ts ('&&office_id', l_cwms_ts_id);
         COMMIT;
-
         SELECT COUNT (*)
           INTO l_count
           FROM at_cwms_ts_id
          WHERE UPPER (cwms_ts_id) = UPPER (l_cwms_ts_id);
-
         ut.expect (l_count).to_equal (1);
-
         SELECT ts_code
           INTO l_ts_code
           FROM at_cwms_ts_id
          WHERE cwms_ts_id = l_cwms_ts_id;
-
         FOR i IN 1 .. l_num_values
         LOOP
             l_times (i) :=
@@ -310,14 +299,12 @@ AS
             l_values (i) := i;
             l_qualities (i) := 0;
         END LOOP;
-
         CWMS_TS.STORE_TS (l_cwms_ts_id,
                           'ug/l',
                           l_times,
                           l_values,
                           l_qualities,
                           'Delete Insert');
-
         SELECT COUNT (*)
           INTO l_count
           FROM av_tsv
@@ -326,7 +313,6 @@ AS
                AND date_time <=
                    (  l_start_time
                     + ((l_interval * l_num_values) / (3600 * 24)));
-
         ut.expect (l_count).to_equal (l_num_values);
         test_unit_conversion(l_cwms_ts_id,l_start_time,l_interval,10,'ug/l',1,1.0E-09);
         test_unit_conversion(l_cwms_ts_id,l_start_time,l_interval,10,'mg/l',1.0E-03,1.0E-09);
@@ -336,7 +322,6 @@ AS
         test_unit_conversion(l_cwms_ts_id,l_start_time,l_interval,10,'ppm',1.0E-3,1.0E-09);
 	delete_ts_id(l_cwms_ts_id);
     END test_conc;
-
     PROCEDURE store_a_value (p_cwms_ts_id   VARCHAR2,
                              p_units        VARCHAR2,
                              p_interval     INTEGER,
@@ -358,19 +343,15 @@ AS
                                  p_db_office_id   => '&&office_id');
         cwms_ts.create_ts ('&&office_id', p_cwms_ts_id);
         COMMIT;
-
         SELECT COUNT (*)
           INTO l_count
           FROM at_cwms_ts_id
          WHERE UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id);
-
         ut.expect (l_count).to_equal (1);
-
         SELECT ts_code
           INTO l_ts_code
           FROM at_cwms_ts_id
          WHERE cwms_ts_id = p_cwms_ts_id;
-
         FOR i IN 1 .. p_num_values
         LOOP
             l_times (i) :=
@@ -378,14 +359,12 @@ AS
             l_values (i) := i;
             l_qualities (i) := 0;
         END LOOP;
-
         CWMS_TS.STORE_TS (p_cwms_ts_id,
                           p_units,
                           l_times,
                           l_values,
                           l_qualities,
                           'Delete Insert');
-
         SELECT COUNT (*)
           INTO l_count
           FROM av_tsv
@@ -394,9 +373,7 @@ AS
                AND date_time <=
                    (  p_start_time
                     + ((p_interval * p_num_values) / (3600 * 24)));
-
         ut.expect (l_count).to_equal (p_num_values);
-
         cwms_ts.retrieve_ts (
             p_at_tsv_rc    => l_crsr,
             p_cwms_ts_id   => p_cwms_ts_id,
@@ -408,14 +385,10 @@ AS
             p_time_zone    => 'UTC',
             p_trim         => 'T',
             p_office_id    => '&&office_id');
-
         FETCH l_crsr
             BULK COLLECT INTO l_ret_times, l_ret_values, l_ret_qualities;
-
         ut.expect (l_ret_times.COUNT).to_equal (p_num_values);
-
         CLOSE l_crsr;
-
         FOR j IN 1..l_ret_times.COUNT
         LOOP
             ut.expect (CWMS_UTIL.TO_MILLIS (l_ret_times (j))).to_equal (
@@ -424,7 +397,6 @@ AS
             ut.expect (l_ret_qualities (j)).to_equal (0);
         END LOOP;
     END;
-
     PROCEDURE create_ts_with_null_timezone
     IS
     BEGIN
@@ -454,56 +426,48 @@ AS
             test_renamed_withsub_location_id || '.Flow.Ave.0.0.raw');
         COMMIT;
     END;
-
     PROCEDURE throw_an_exception (p_cwms_ts_id VARCHAR2)
     IS
     BEGIN
         cwms_ts.create_ts ('&&office_id', p_cwms_ts_id);
         COMMIT;
     END;
-
     PROCEDURE inc_with_zero_duration
     IS
     BEGIN
         throw_an_exception (
             test_base_location_id || '.Precip.Inc.1Hour.0.raw');
     END;
-
     PROCEDURE cum_with_non_zero_duration
     IS
     BEGIN
         throw_an_exception (
             test_base_location_id || '.Precip.Cum.1Hour.1Hour.raw');
     END;
-
     PROCEDURE untilchanged_with_regular
     IS
     BEGIN
         throw_an_exception (
             test_base_location_id || '.Precip.Const.1Hour.UntilChanged.raw');
     END;
-
     PROCEDURE untilchanged_with_non_const
     IS
     BEGIN
         throw_an_exception (
             test_base_location_id || '.Precip.Ave.0.UntilChanged.raw');
     END;
-
     PROCEDURE variable_with_inst
     IS
     BEGIN
         throw_an_exception (
             test_base_location_id || '.Precip.Inst.0.Variable.raw');
     END;
-
     PROCEDURE variable_with_const
     IS
     BEGIN
         throw_an_exception (
             test_base_location_id || '.Precip.Const.0.Variable.raw');
     END;
-
     PROCEDURE test_rename_ts
     IS
         l_time   NUMBER
@@ -522,7 +486,6 @@ AS
         delete_ts_id (
             test_base_location_id || '.Flow.Median.Irr.Variable.raw');
     END;
-
     PROCEDURE test_rename_ts_inst_to_median
     IS
         l_time   NUMBER
@@ -539,7 +502,6 @@ AS
             p_cwms_ts_id_new   =>
                 test_base_location_id || '.Flow.Median.1Day.1Day.raw');
     END;
-
     PROCEDURE test_create_ts_parameter_types
     IS
     BEGIN
@@ -656,7 +618,6 @@ AS
             TIMESTAMP '2022-11-01 00:00:00');
         delete_ts_id (test_base_location_id || '.Precip.Inc.1Hour.1Hour.raw');
     END;
-
     PROCEDURE test_create_depth_velocity
     IS
         l_time         NUMBER
@@ -672,25 +633,20 @@ AS
                        3600,
                        1,
                        TIMESTAMP '2022-03-01 00:00:00');
-
         SELECT ts_code
           INTO l_ts_code
           FROM at_cwms_ts_id
          WHERE cwms_ts_id = l_cwms_ts_id;
-
         SELECT VALUE
           INTO l_value
           FROM at_tsv_2022
          WHERE ts_code = l_ts_code;
-
         ut.expect (ABS (l_value - (1 * 0.092903))).to_be_less_or_equal (
             0.0001);
-
         SELECT VALUE
           INTO l_value
           FROM av_tsv_dqu
          WHERE ts_code = l_ts_code AND UPPER (unit_id) = 'FT2/S';
-
         ut.expect (ABS (l_value - 1)).to_be_less_or_equal (0.0001);
         delete_ts_id (l_cwms_ts_id);
         store_a_value (l_cwms_ts_id,
@@ -698,33 +654,26 @@ AS
                        3600,
                        1,
                        TIMESTAMP '2022-03-01 00:00:00');
-
         SELECT ts_code
           INTO l_ts_code
           FROM at_cwms_ts_id
          WHERE cwms_ts_id = l_cwms_ts_id;
-
         SELECT VALUE
           INTO l_value
           FROM at_tsv_2022
          WHERE ts_code = l_ts_code;
-
         ut.expect (l_value).to_equal (1);
-
         SELECT VALUE
           INTO l_value
           FROM av_tsv_dqu
          WHERE ts_code = l_ts_code AND UPPER (unit_id) = 'FT2/S';
-
         ut.expect (ABS (l_value - (1 / 0.092903))).to_be_less_or_equal (
             0.001);
         delete_ts_id (l_cwms_ts_id);
     END;
-
     --------------------------------------------------------------------------------
     -- procedure store_location_with_multiple_attributes
     --------------------------------------------------------------------------------
-
     PROCEDURE test_set_active_flag
     IS
         l_base_location_id   av_loc.base_location_id%TYPE;
@@ -742,7 +691,6 @@ AS
         COMMIT;
         cwms_ts.create_ts ('&&office_id', l_cwms_ts_id);
         COMMIT;
-
           SELECT bas_loc_active_flag,
                  loc_active_flag,
                  ts_active_flag,
@@ -754,7 +702,6 @@ AS
             FROM av_cwms_ts_id
            WHERE cwms_ts_id = l_cwms_ts_id
         ORDER BY 1;
-
         COMMIT;
         ut.expect (l_base_loc_active).to_equal ('F');
         ut.expect (l_loc_active).to_equal ('F');
@@ -764,8 +711,6 @@ AS
                                  p_active         => 'T',
                                  p_db_office_id   => '&&office_id');
         COMMIT;
-
-
           SELECT bas_loc_active_flag,
                  loc_active_flag,
                  ts_active_flag,
@@ -777,7 +722,6 @@ AS
             FROM av_cwms_ts_id
            WHERE cwms_ts_id = l_cwms_ts_id
         ORDER BY 1;
-
         COMMIT;
         ut.expect (l_base_loc_active).to_equal ('T');
         ut.expect (l_loc_active).to_equal ('T');
@@ -787,7 +731,6 @@ AS
                               p_ts_active_flag   => 'F',
                               p_db_office_id     => '&&office_id');
         COMMIT;
-
           SELECT bas_loc_active_flag,
                  loc_active_flag,
                  ts_active_flag,
@@ -799,14 +742,11 @@ AS
             FROM av_cwms_ts_id
            WHERE cwms_ts_id = l_cwms_ts_id
         ORDER BY 1;
-
-
         ut.expect (l_base_loc_active).to_equal ('T');
         ut.expect (l_loc_active).to_equal ('T');
         ut.expect (l_ts_active).to_equal ('F');
         ut.expect (l_net_ts_active).to_equal ('F');
     END;
-
     --------------------------------------------------------------------------------
     -- procedure test_filter_duplicates
     --------------------------------------------------------------------------------
@@ -843,7 +783,6 @@ AS
         -----------------------------------------------------
         cwms_loc.store_location (p_location_id    => l_loc_id,
                                  p_db_office_id   => l_office_id);
-
         cwms_ts.zstore_ts (p_cwms_ts_id        => l_ts_id,
                            p_units             => l_unit,
                            p_timeseries_data   => l_ts_data,
@@ -853,15 +792,12 @@ AS
         -- set filter duplicates to FALSE and store the same data --
         ------------------------------------------------------------
         cwms_ts.set_filter_duplicates_ofc ('F', l_office_id);
-
         l_ts := SYSTIMESTAMP;
-
         cwms_ts.zstore_ts (p_cwms_ts_id        => l_ts_id,
                            p_units             => l_unit,
                            p_timeseries_data   => l_ts_data,
                            p_store_rule        => cwms_util.replace_all,
                            p_office_id         => l_office_id);
-
         --------------------------------------------------------------------
         -- we should have a ts archive message for the entire time window --
         --------------------------------------------------------------------
@@ -871,7 +807,6 @@ AS
          WHERE     message_time > l_ts
                AND db_office_id = l_office_id
                AND cwms_ts_id = l_ts_id;
-
         ut.expect (l_msg_rec.first_data_time).to_equal (
             l_ts_data (1).date_time);
         ut.expect (l_msg_rec.last_data_time).to_equal (
@@ -880,15 +815,12 @@ AS
         -- set filter duplicates to TRUE and store the same data --
         -----------------------------------------------------------
         cwms_ts.set_filter_duplicates_ofc ('T', l_office_id);
-
         l_ts := SYSTIMESTAMP;
-
         cwms_ts.zstore_ts (p_cwms_ts_id        => l_ts_id,
                            p_units             => l_unit,
                            p_timeseries_data   => l_ts_data,
                            p_store_rule        => cwms_util.replace_all,
                            p_office_id         => l_office_id);
-
         -----------------------------------------------
         -- we should not have ANY ts archive message --
         -----------------------------------------------
@@ -899,25 +831,21 @@ AS
              WHERE     message_time > l_ts
                    AND db_office_id = l_office_id
                    AND cwms_ts_id = l_ts_id;
-
             cwms_err.raise ('ERROR', 'Expected exception not raised');
         EXCEPTION
             WHEN NO_DATA_FOUND
             THEN
                 NULL;
         END;
-
         ----------------------------------------------------------------
         -- leave filter duplicates to TRUE and store overlapping data --
         ----------------------------------------------------------------
         l_ts := SYSTIMESTAMP;
-
         cwms_ts.zstore_ts (p_cwms_ts_id        => l_ts_id,
                            p_units             => l_unit,
                            p_timeseries_data   => l_ts_data2,
                            p_store_rule        => cwms_util.replace_all,
                            p_office_id         => l_office_id);
-
         -------------------------------------------------------------------------------------------------
         -- we should have a ts archive message for only the non-overlapping portion of the time window --
         -------------------------------------------------------------------------------------------------
@@ -927,7 +855,6 @@ AS
          WHERE     message_time > l_ts
                AND db_office_id = l_office_id
                AND cwms_ts_id = l_ts_id;
-
         ut.expect (l_msg_rec.first_data_time).to_equal (
             l_ts_data2 (l_ts_data2.COUNT).date_time);
         ut.expect (l_msg_rec.last_data_time).to_equal (
@@ -939,7 +866,6 @@ AS
                                   p_delete_action   => cwms_util.delete_all,
                                   p_db_office_id    => l_office_id);
     END test_filter_duplicates;
-
     --------------------------------------------------------------------------------
     -- procedure test_retrieve_ts_with_calendar_based_times__JIRA_CWDB_157
     --------------------------------------------------------------------------------
@@ -956,7 +882,6 @@ AS
         l_quality_codes             cwms_t_number_tab;
         l_version_date              DATE;
         l_is_lrts                   VARCHAR2 (1);
-
         exc_location_id_not_found   EXCEPTION;
         PRAGMA EXCEPTION_INIT (exc_location_id_not_found, -20025);
     BEGIN
@@ -975,7 +900,6 @@ AS
                 THEN
                     NULL;
             END;
-
             ----------------------------------
             -- setup time series attributes --
             ----------------------------------
@@ -994,7 +918,6 @@ AS
                     l_ts_id := REPLACE (l_ts_id, '1Month', '~1Month');
                     l_is_lrts := 'T';
             END CASE;
-
             -------------------------
             -- create the location --
             -------------------------
@@ -1002,7 +925,6 @@ AS
                                      p_active         => 'T',
                                      p_db_office_id   => l_office_id);
             l_ts_id := test_base_location_id || '.Code.Inst.1Month.0.Test';
-
             FOR j IN 1 .. 2
             LOOP
                 ----------------------------
@@ -1025,7 +947,6 @@ AS
                             cwms_t_ztsv (DATE '2025-01-01', 4, 0));
                     l_ts_id := REPLACE (l_ts_id, '1Month', '1Year');
                 END IF;
-
                 cwms_ts.create_ts (
                     p_cwms_ts_id   => l_ts_id,
                     p_utc_offset   => 0,
@@ -1072,14 +993,10 @@ AS
                     p_version_date      => l_version_date,
                     p_max_version       => 'T',
                     p_office_id         => l_office_id);
-
                 FETCH l_crsr
                     BULK COLLECT INTO l_date_times, l_values, l_quality_codes;
-
                 CLOSE l_crsr;
-
                 ut.expect (l_date_times.COUNT).to_equal (l_ts_data.COUNT);
-
                 IF l_date_times.COUNT = l_ts_data.COUNT
                 THEN
                     FOR k IN 1 .. l_date_times.COUNT
@@ -1095,7 +1012,6 @@ AS
             END LOOP;
         END LOOP;
     END test_retrieve_ts_with_calendar_based_times__JIRA_CWDB_157;
-
     --------------------------------------------------------------------------------
     -- procedure quality_on_generated_rts_values__JIRA_CWMSVIEW_212
     --------------------------------------------------------------------------------
@@ -1126,12 +1042,10 @@ AS
          BULK COLLECT INTO l_ts_data
          FROM DUAL
       CONNECT BY LEVEL <= l_value_count;
-
       SELECT cwms_t_ztsv (l_start_time + LEVEL - 1, LEVEL, 3)
         BULK COLLECT INTO l_zts_data
         FROM DUAL
      CONNECT BY LEVEL <= l_value_count;
-
         ------------------------
         -- store the location --
         ------------------------
@@ -1169,11 +1083,8 @@ AS
                              p_version_date      => l_version_date,
                              p_max_version       => 'T',
                              p_office_id         => l_office_id);
-
         FETCH l_crsr BULK COLLECT INTO l_date_times, l_values, l_qualities;
-
         CLOSE l_crsr;
-
         FOR i IN 1 .. l_date_times.COUNT
         LOOP
             IF l_date_times (i) BETWEEN l_first_date AND l_last_date
@@ -1183,7 +1094,6 @@ AS
                 ut.expect (l_qualities (i)).to_equal (0);
             END IF;
         END LOOP;
-
         -----------------------------------
         -- store the time series as LRTS --
         -----------------------------------
@@ -1215,11 +1125,8 @@ AS
                              p_version_date      => l_version_date,
                              p_max_version       => 'T',
                              p_office_id         => l_office_id);
-
         FETCH l_crsr BULK COLLECT INTO l_date_times, l_values, l_qualities;
-
         CLOSE l_crsr;
-
         FOR i IN 1 .. l_date_times.COUNT
         LOOP
             IF l_date_times (i) BETWEEN l_zts_data (1).date_time
@@ -1298,7 +1205,6 @@ AS
          p_version_date    => cwms_util.non_versioned,
          p_office_id       => '&&office_id',
          p_create_as_lrts  => 'F');
-
       cwms_ts.zstore_ts(
          p_cwms_ts_id      => l_ts_id_tim,
          p_units           => l_unit,
@@ -1327,10 +1233,8 @@ AS
          p_version_date    => cwms_util.non_versioned,
          p_max_version     => 'T',
          p_office_id       => '&&office_id');
-
       fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
       close l_crsr;
-
       ut.expect(l_date_times.count).to_equal(3);
       ut.expect(l_date_times(1)).to_equal(l_ts_data_cal(2).date_time);
       ut.expect(l_date_times(3)).to_equal(l_ts_data_cal(4).date_time);
@@ -1350,10 +1254,8 @@ AS
          p_version_date    => cwms_util.non_versioned,
          p_max_version     => 'T',
          p_office_id       => '&&office_id');
-
       fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
       close l_crsr;
-
       ut.expect(l_date_times.count).to_equal(1);
       ut.expect(l_date_times(1)).to_equal(l_ts_data_cal(3).date_time);
       -- interval = CALENDAR, inclusive = FALSE, prev/next = TRUE
@@ -1372,10 +1274,8 @@ AS
          p_version_date    => cwms_util.non_versioned,
          p_max_version     => 'T',
          p_office_id       => '&&office_id');
-
       fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
       close l_crsr;
-
       ut.expect(l_date_times.count).to_equal(3);
       ut.expect(l_date_times(1)).to_equal(l_ts_data_cal(2).date_time);
       ut.expect(l_date_times(3)).to_equal(l_ts_data_cal(4).date_time);
@@ -1395,10 +1295,8 @@ AS
          p_version_date    => cwms_util.non_versioned,
          p_max_version     => 'T',
          p_office_id       => '&&office_id');
-
       fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
       close l_crsr;
-
       ut.expect(l_date_times.count).to_equal(5);
       ut.expect(l_date_times(1)).to_equal(l_ts_data_cal(1).date_time);
       ut.expect(l_date_times(5)).to_equal(l_ts_data_cal(5).date_time);
@@ -1418,10 +1316,8 @@ AS
          p_version_date    => cwms_util.non_versioned,
          p_max_version     => 'T',
          p_office_id       => '&&office_id');
-
       fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
       close l_crsr;
-
       ut.expect(l_date_times.count).to_equal(3);
       ut.expect(l_date_times(1)).to_equal(l_ts_data_tim(2).date_time);
       ut.expect(l_date_times(3)).to_equal(l_ts_data_tim(4).date_time);
@@ -1441,10 +1337,8 @@ AS
          p_version_date    => cwms_util.non_versioned,
          p_max_version     => 'T',
          p_office_id       => '&&office_id');
-
       fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
       close l_crsr;
-
       ut.expect(l_date_times.count).to_equal(1);
       ut.expect(l_date_times(1)).to_equal(l_ts_data_tim(3).date_time);
       -- interval = TIME, inclusive = FALSE, prev/next = TRUE
@@ -1463,10 +1357,8 @@ AS
          p_version_date    => cwms_util.non_versioned,
          p_max_version     => 'T',
          p_office_id       => '&&office_id');
-
       fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
       close l_crsr;
-
       ut.expect(l_date_times.count).to_equal(3);
       ut.expect(l_date_times(1)).to_equal(l_ts_data_tim(2).date_time);
       ut.expect(l_date_times(3)).to_equal(l_ts_data_tim(4).date_time);
@@ -1486,10 +1378,8 @@ AS
          p_version_date    => cwms_util.non_versioned,
          p_max_version     => 'T',
          p_office_id       => '&&office_id');
-
       fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
       close l_crsr;
-
       ut.expect(l_date_times.count).to_equal(5);
       ut.expect(l_date_times(1)).to_equal(l_ts_data_tim(1).date_time);
       ut.expect(l_date_times(5)).to_equal(l_ts_data_tim(5).date_time);
@@ -1507,7 +1397,6 @@ AS
          p_version_date    => cwms_util.non_versioned,
          p_office_id       => '&&office_id',
          p_create_as_lrts  => 'F');
-
       cwms_ts.zstore_ts(
          p_cwms_ts_id      => l_ts_id_tim,
          p_units           => l_unit,
@@ -1536,10 +1425,8 @@ AS
          p_version_date    => cwms_util.non_versioned,
          p_max_version     => 'T',
          p_office_id       => '&&office_id');
-
       fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
       close l_crsr;
-
       ut.expect(l_date_times.count).to_equal(3);
       ut.expect(l_date_times(1)).to_equal(l_ts_data_cal(2).date_time);
       ut.expect(l_date_times(3)).to_equal(l_ts_data_cal(4).date_time);
@@ -1559,10 +1446,8 @@ AS
          p_version_date    => cwms_util.non_versioned,
          p_max_version     => 'T',
          p_office_id       => '&&office_id');
-
       fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
       close l_crsr;
-
       ut.expect(l_date_times.count).to_equal(1);
       ut.expect(l_date_times(1)).to_equal(l_ts_data_cal(3).date_time);
       -- interval = NONE, inclusive = FALSE, prev/next = TRUE
@@ -1581,10 +1466,8 @@ AS
          p_version_date    => cwms_util.non_versioned,
          p_max_version     => 'T',
          p_office_id       => '&&office_id');
-
       fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
       close l_crsr;
-
       ut.expect(l_date_times.count).to_equal(3);
       ut.expect(l_date_times(1)).to_equal(l_ts_data_cal(2).date_time);
       ut.expect(l_date_times(3)).to_equal(l_ts_data_cal(4).date_time);
@@ -1604,10 +1487,8 @@ AS
          p_version_date    => cwms_util.non_versioned,
          p_max_version     => 'T',
          p_office_id       => '&&office_id');
-
       fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
       close l_crsr;
-
       ut.expect(l_date_times.count).to_equal(5);
       ut.expect(l_date_times(1)).to_equal(l_ts_data_cal(1).date_time);
       ut.expect(l_date_times(5)).to_equal(l_ts_data_cal(5).date_time);
@@ -1627,10 +1508,8 @@ AS
          p_version_date    => cwms_util.non_versioned,
          p_max_version     => 'T',
          p_office_id       => '&&office_id');
-
       fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
       close l_crsr;
-
       ut.expect(l_date_times.count).to_equal(3);
       ut.expect(l_date_times(1)).to_equal(l_ts_data_tim(2).date_time);
       ut.expect(l_date_times(3)).to_equal(l_ts_data_tim(4).date_time);
@@ -1650,10 +1529,8 @@ AS
          p_version_date    => cwms_util.non_versioned,
          p_max_version     => 'T',
          p_office_id       => '&&office_id');
-
       fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
       close l_crsr;
-
       ut.expect(l_date_times.count).to_equal(1);
       ut.expect(l_date_times(1)).to_equal(l_ts_data_tim(3).date_time);
       -- interval = NONE, inclusive = FALSE, prev/next = TRUE
@@ -1672,10 +1549,8 @@ AS
          p_version_date    => cwms_util.non_versioned,
          p_max_version     => 'T',
          p_office_id       => '&&office_id');
-
       fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
       close l_crsr;
-
       ut.expect(l_date_times.count).to_equal(3);
       ut.expect(l_date_times(1)).to_equal(l_ts_data_tim(2).date_time);
       ut.expect(l_date_times(3)).to_equal(l_ts_data_tim(4).date_time);
@@ -1695,14 +1570,11 @@ AS
          p_version_date    => cwms_util.non_versioned,
          p_max_version     => 'T',
          p_office_id       => '&&office_id');
-
       fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
       close l_crsr;
-
       ut.expect(l_date_times.count).to_equal(5);
       ut.expect(l_date_times(1)).to_equal(l_ts_data_tim(1).date_time);
       ut.expect(l_date_times(5)).to_equal(l_ts_data_tim(5).date_time);
-
     end test_inclusion_options__JIRA_CWDB_180;
     --------------------------------------------------------------------------------
     -- procedure test_store_ts_can_create_versioned_time_series__JIRA_CWDB_190
@@ -1742,7 +1614,6 @@ AS
                          p_store_rule        => cwms_util.replace_all,
                          p_version_date      => l_version_date,
                          p_office_id         => '&&office_id');
-
       ut.expect(cwms_ts.is_tsid_versioned_f(l_ts_id, '&&office_id')).to_equal('T');
       if cwms_ts.is_tsid_versioned_f(l_ts_id, '&&office_id') = 'T' then
          ------------------------------
@@ -1756,10 +1627,8 @@ AS
             p_end_time        => l_ts_data(l_ts_data.count).date_time,
             p_version_date    => l_version_date,
             p_office_id       => '&&office_id');
-
          fetch l_crsr bulk collect into l_date_times, l_values, l_quality_codes;
          close l_crsr;
-
          for i in 1..l_date_times.count loop
             dbms_output.put_line(i||chr(9)||l_date_times(i)||chr(9)||l_values(i)||chr(9)||l_quality_codes(i));
          end loop;
@@ -1770,9 +1639,7 @@ AS
             end loop;
          end if;
       end if;
-
     end test_store_ts_can_create_versioned_time_series__JIRA_CWDB_190;
-
     PROCEDURE test_lrl_1day_CWDB_202
     IS
         l_count number;
@@ -1790,7 +1657,6 @@ AS
         ut.expect(l_offset).not_to_equal(0);
         ut.expect(l_count).to_equal(1);
     END test_lrl_1day_CWDB_202;
-
     --------------------------------------------------------------------------------
     -- procedure test_retrieve_ts_with_undefined_interval_offset
     --------------------------------------------------------------------------------
@@ -1818,13 +1684,11 @@ AS
        exception
           when ts_id_not_found then null;
        end;
-
        cwms_ts.create_ts(
           p_cwms_ts_id  => l_rts_id,
           p_versioned   => 'F',
           p_active_flag => 'T',
           p_office_id   => '&&office_id');
-
        cwms_ts.zretrieve_ts(
           p_at_tsv_rc    => l_ts_data,
           p_units        => 'n/a',
@@ -1832,16 +1696,13 @@ AS
           p_start_time   => sysdate - 1,
           p_end_time     => sysdate,
           p_db_office_id => '&&office_id');
-
     end test_retrieve_ts_with_undefined_interval_offset;
-
-
    --------------------------------------------------------------------------------
    -- procedure cwdb_204_silent_failure_on_store_ts_with_unexpected_offset
    --------------------------------------------------------------------------------
    procedure cwdb_204_silent_failure_on_store_ts_with_unexpected_offset
    is
-      l_ts_id       varchar2 (191) := test_base_location_id || '.Code.Inst.1Hour.0.Test';
+      l_ts_id      varchar2 (191) := test_base_location_id || '.Code.Inst.1Hour.0.Test';
       l_loc_id      varchar2 (57)  := test_base_location_id;
       l_unit        varchar2 (16)  := 'n/a';
       l_office_id   varchar2 (16)  := '&&office_id';
@@ -1892,6 +1753,145 @@ AS
             end if;
       end;
    end cwdb_204_silent_failure_on_store_ts_with_unexpected_offset;
+   --------------------------------------------------------------------------------
+   -- procedure cwdb_134_test_store_multi_does_not_hide_error_messages
+   --------------------------------------------------------------------------------
+   procedure cwdb_134_test_store_multi_does_not_hide_error_messages
+   is
+      l_ts_id_1        varchar2 (191) := test_base_location_id || '.Code-Test1.Inst.1Hour.0.Test';
+      l_ts_id_2        varchar2 (191) := test_base_location_id || '.Code-Test2.Inst.1Hour.0.Test';
+      l_loc_id         varchar2 (57)  := test_base_location_id;
+      l_unit           varchar2 (16)  := 'n/a';
+      l_office_id      varchar2 (16)  := '&&office_id';
+      l_ts_data        cwms_t_timeseries_array;
+      l_zts_data       cwms_t_ztimeseries_array;
+      l_expected_error varchar2(4000) := '^.+1: '
+                                         ||l_ts_id_1
+                                         ||'.+ERROR: Incoming data set contains multiple interval offsets. Unable to store data for '
+                                         ||l_ts_id_1
+                                         ||'.+2: '
+                                         ||l_ts_id_2
+                                         ||'.+ERROR: Incoming data set contains multiple interval offsets. Unable to store data for '
+                                         ||l_ts_id_2
+                                         ||'.+$';
+   begin
+      -------------------------------------------------
+      -- store the location and create the data sets --
+      -------------------------------------------------
+      delete_all;
+      cwms_loc.store_location(
+         p_location_id  => test_base_location_id,
+         p_active       => 'T',
+         p_db_office_id => l_office_id);
+      l_ts_data := cwms_t_timeseries_array();
+      l_ts_data.extend(2);
+      l_ts_data(1) := cwms_t_timeseries(
+         l_ts_id_1,
+         l_unit,
+         cwms_t_tsv_array());
+      l_ts_data(1).data.extend(5);
+      l_ts_data(1).data(1) := cwms_t_tsv(from_tz(timestamp '2023-04-13 01:00:00', 'UTC'), 1.0, 3.0);
+      l_ts_data(1).data(2) := cwms_t_tsv(from_tz(timestamp '2023-04-13 02:05:00', 'UTC'), 2.0, 3.0);
+      l_ts_data(1).data(3) := cwms_t_tsv(from_tz(timestamp '2023-04-13 03:05:00', 'UTC'), 3.0, 3.0);
+      l_ts_data(1).data(4) := cwms_t_tsv(from_tz(timestamp '2023-04-13 04:05:00', 'UTC'), 4.0, 3.0);
+      l_ts_data(1).data(5) := cwms_t_tsv(from_tz(timestamp '2023-04-13 05:00:00', 'UTC'), 5.0, 3.0);
+      l_ts_data(2) := l_ts_data(1);
+      l_ts_data(2).tsid := l_ts_id_2;
+      l_zts_data := cwms_t_ztimeseries_array();
+      l_zts_data.extend(2);
+      l_zts_data(1) := cwms_t_ztimeseries(
+         l_ts_id_1,
+         l_unit,
+         cwms_t_ztsv_array());
+      l_zts_data(1).data.extend(5);
+      l_zts_data(1).data(1) := cwms_t_ztsv(timestamp '2023-04-13 01:00:00', 1.0, 3.0);
+      l_zts_data(1).data(2) := cwms_t_ztsv(timestamp '2023-04-13 02:05:00', 2.0, 3.0);
+      l_zts_data(1).data(3) := cwms_t_ztsv(timestamp '2023-04-13 03:05:00', 3.0, 3.0);
+      l_zts_data(1).data(4) := cwms_t_ztsv(timestamp '2023-04-13 04:05:00', 4.0, 3.0);
+      l_zts_data(1).data(5) := cwms_t_ztsv(timestamp '2023-04-13 05:00:00', 5.0, 3.0);
+      l_zts_data(2) := l_zts_data(1);
+      l_zts_data(2).tsid := l_ts_id_2;
+      --------------------------------------------------------------------
+      -- store with STORE_TS_MULTI with single version date/lrts option --
+      --------------------------------------------------------------------
+      begin
+         cwms_ts.store_ts_multi(
+            p_timeseries_array => l_ts_data,
+            p_store_rule       => cwms_util.replace_all,
+            p_override_prot    => 'F',
+            p_version_date     => null,
+            p_office_id        => l_office_id,
+            p_create_as_lrts   => null);
+         cwms_err.raise('ERROR', 'Expected exception not raised');
+      exception
+         when others then
+            if regexp_like(dbms_utility.format_error_stack, l_expected_error, 'mn') then
+               null;
+            else
+               raise;
+            end if;
+      end;
+      -----------------------------------------------------------------------
+      -- store with STORE_TS_MULTI with multiple version dates/lrts option --
+      -----------------------------------------------------------------------
+      begin
+         cwms_ts.store_ts_multi(
+            p_timeseries_array => l_ts_data,
+            p_store_rule       => cwms_util.replace_all,
+            p_override_prot    => 'F',
+            p_version_dates    => null,
+            p_office_id        => l_office_id,
+            p_create_as_lrts   => null);
+         cwms_err.raise('ERROR', 'Expected exception not raised');
+      exception
+         when others then
+            if regexp_like(dbms_utility.format_error_stack, l_expected_error, 'mn') then
+               null;
+            else
+               raise;
+            end if;
+      end;
+      ---------------------------------------------------------------------
+      -- store with ZSTORE_TS_MULTI with single version date/lrts option --
+      ---------------------------------------------------------------------
+      begin
+         cwms_ts.zstore_ts_multi(
+            p_timeseries_array => l_zts_data,
+            p_store_rule       => cwms_util.replace_all,
+            p_override_prot    => 'F',
+            p_version_date     => null,
+            p_office_id        => l_office_id,
+            p_create_as_lrts   => null);
+         cwms_err.raise('ERROR', 'Expected exception not raised');
+      exception
+         when others then
+            if regexp_like(dbms_utility.format_error_stack, l_expected_error, 'mn') then
+               null;
+            else
+               raise;
+            end if;
+      end;
+      -----------------------------------------------------------------------
+      -- store with ZSTORE_TS_MULTI with single multiple dates/lrts option --
+      -----------------------------------------------------------------------
+      begin
+         cwms_ts.zstore_ts_multi(
+            p_timeseries_array => l_zts_data,
+            p_store_rule       => cwms_util.replace_all,
+            p_override_prot    => 'F',
+            p_version_dates    => null,
+            p_office_id        => l_office_id,
+            p_create_as_lrts   => null);
+         cwms_err.raise('ERROR', 'Expected exception not raised');
+      exception
+         when others then
+            if regexp_like(dbms_utility.format_error_stack, l_expected_error, 'mn') then
+               null;
+            else
+               raise;
+            end if;
+      end;
+   end cwdb_134_test_store_multi_does_not_hide_error_messages;
 END test_cwms_ts;
 /
 SHOW ERRORS

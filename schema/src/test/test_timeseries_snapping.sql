@@ -491,28 +491,156 @@ end store_retrieve_its;
 --------------------------------------------------------------------------------
 procedure cwdb_217_snap_to_interval_offset_utc
 is
-   l_now       timestamp := systimestamp;
-   l_snapped   timestamp;
-   l_this_hour pls_integer := extract(hour from l_now);
-   l_this_min  pls_integer := extract(minute from l_now);
-   l_next_hour pls_integer := mod(l_this_hour+1, 24);
+   type clob_tab_t is table of clob;
+   l_lines             cwms_t_str_tab;
+   l_parts             cwms_t_str_tab;
+   l_interval          pls_integer;
+   l_interval_offset   pls_integer;
+   l_interval_forward  pls_integer;
+   l_interval_backward pls_integer;
+   l_timestamp         timestamp;
+   l_snapped           timestamp;
+   l_expected          timestamp;
+   l_clobs clob_tab_t := clob_tab_t(
+      -- Interval  1 hour
+      -- Offset   15 minutes
+      -- Forward  24 minutes
+      -- Backward 25 minutes
+      '60,15,24,25
+      2023/05/01 00:00|2023/05/01 00:15
+      2023/05/01 00:05|2023/05/01 00:15
+      2023/05/01 00:10|2023/05/01 00:15
+      2023/05/01 00:15|2023/05/01 00:15
+      2023/05/01 00:20|2023/05/01 00:15
+      2023/05/01 00:25|2023/05/01 00:15
+      2023/05/01 00:30|2023/05/01 00:15
+      2023/05/01 00:35|2023/05/01 00:15
+      2023/05/01 00:40|
+      2023/05/01 00:45|
+      2023/05/01 00:50|2023/05/01 01:15
+      2023/05/01 00:55|2023/05/01 01:15',
+      -- Interval 6 hours
+      -- Offset   1 hour + 15 minutes
+      -- Forward  2 hours
+      -- Backward 2 hours
+      '360,75,120,120
+      2023/05/01 00:00|2023/05/01 01:15
+      2023/05/01 00:15|2023/05/01 01:15
+      2023/05/01 00:30|2023/05/01 01:15
+      2023/05/01 00:45|2023/05/01 01:15
+      2023/05/01 01:00|2023/05/01 01:15
+      2023/05/01 01:15|2023/05/01 01:15
+      2023/05/01 01:30|2023/05/01 01:15
+      2023/05/01 01:45|2023/05/01 01:15
+      2023/05/01 02:00|2023/05/01 01:15
+      2023/05/01 02:15|2023/05/01 01:15
+      2023/05/01 02:30|2023/05/01 01:15
+      2023/05/01 02:45|2023/05/01 01:15
+      2023/05/01 03:00|2023/05/01 01:15
+      2023/05/01 03:15|2023/05/01 01:15
+      2023/05/01 03:30|
+      2023/05/01 03:45|
+      2023/05/01 04:00|
+      2023/05/01 04:15|
+      2023/05/01 04:30|
+      2023/05/01 04:45|
+      2023/05/01 05:00|
+      2023/05/01 05:15|2023/05/01 07:15
+      2023/05/01 05:30|2023/05/01 07:15
+      2023/05/01 05:45|2023/05/01 07:15',
+      -- Interval  1 day
+      -- Offset    7 hours
+      -- Forward   9 hours
+      -- Backward 10 hours
+      '1440,420,540,600
+      2023/05/01 00:00|2023/05/01 07:00
+      2023/05/01 01:00|2023/05/01 07:00
+      2023/05/01 02:00|2023/05/01 07:00
+      2023/05/01 03:00|2023/05/01 07:00
+      2023/05/01 04:00|2023/05/01 07:00
+      2023/05/01 05:00|2023/05/01 07:00
+      2023/05/01 06:00|2023/05/01 07:00
+      2023/05/01 07:00|2023/05/01 07:00
+      2023/05/01 08:00|2023/05/01 07:00
+      2023/05/01 09:00|2023/05/01 07:00
+      2023/05/01 10:00|2023/05/01 07:00
+      2023/05/01 11:00|2023/05/01 07:00
+      2023/05/01 12:00|2023/05/01 07:00
+      2023/05/01 13:00|2023/05/01 07:00
+      2023/05/01 14:00|2023/05/01 07:00
+      2023/05/01 15:00|2023/05/01 07:00
+      2023/05/01 16:00|2023/05/01 07:00
+      2023/05/01 17:00|
+      2023/05/01 18:00|
+      2023/05/01 19:00|
+      2023/05/01 20:00|
+      2023/05/01 21:00|2023/05/02 07:00
+      2023/05/01 22:00|2023/05/02 07:00
+      2023/05/01 23:00|2023/05/02 07:00',
+      -- Interval 1 month
+      -- Offset   2 days + 7 hours
+      -- Forward  3 days
+      -- Backward 4 days
+      '43200,3300,4320,5760
+      2023/05/01 07:00|2023/05/03 07:00
+      2023/05/02 07:00|2023/05/03 07:00
+      2023/05/03 07:00|2023/05/03 07:00
+      2023/05/04 07:00|2023/05/03 07:00
+      2023/05/05 07:00|2023/05/03 07:00
+      2023/05/06 07:00|2023/05/03 07:00
+      2023/05/07 07:00|
+      2023/05/08 07:00|
+      2023/05/28 07:00|
+      2023/05/29 07:00|
+      2023/05/30 07:00|2023/06/03 07:00
+      2023/05/31 07:00|2023/06/03 07:00');
+
 begin
-   -- this call should work BEFORE CWDB-217 was fixed (same bug was fixed previously)
-   l_snapped := cwms_ts.snap_to_interval_offset_tz(cast(l_now as date), 60, 15, 'UTC', 'UTC', 29, 30);
-   ut.expect(extract(minute from l_snapped)).to_equal(15);
-   if l_this_min >= 45 then -- 15 + 29 is max minute to snap back to current hour
-      ut.expect(extract(hour from l_snapped)).to_equal(l_next_hour);
-   else
-      ut.expect(extract(hour from l_snapped)).to_equal(l_this_hour);
-   end if;
-   -- this call should fail BEFORE CWDB-217
-   l_snapped := cwms_ts.snap_to_interval_offset_utc(cast(l_now as date), 60, 15, 29, 30);
-   ut.expect(extract(minute from l_snapped)).to_equal(15);
-   if l_this_min >= 45 then -- 15 + 29 is max minute to snap back to current hour
-      ut.expect(extract(hour from l_snapped)).to_equal(l_next_hour);
-   else
-      ut.expect(extract(hour from l_snapped)).to_equal(l_this_hour);
-   end if;
+   for i in 1..l_clobs.count loop
+      l_lines := cwms_util.split_text(l_clobs(i), chr(10));
+      l_parts := cwms_util.split_text(trim(l_lines(1)), ',');
+      l_interval          := l_parts(1);
+      l_interval_offset   := l_parts(2);
+      l_interval_forward  := l_parts(3);
+      l_interval_backward := l_parts(4);
+      for j in 2..l_lines.count loop
+         l_parts := cwms_util.split_text(l_lines(j), '|');
+         l_timestamp := to_date(l_parts(1), 'yyyy/mm/dd hh24:mi');
+         l_expected  := to_date(l_parts(2), 'yyyy/mm/dd hh24:mi');
+         -------------------------------------------
+         -- first test SNAP_TO_INTERVAL_OFFSET_TZ --
+         -------------------------------------------
+         l_snapped   := cwms_ts.snap_to_interval_offset_tz(
+            p_date_time         => l_timestamp,
+            p_interval          => l_interval,
+            p_interval_offset   => l_interval_offset,
+            p_time_zone         => 'US/Central',
+            p_offset_time_zone  => 'US/Central',
+            p_interval_forward  => l_interval_forward,
+            p_interval_backward => l_interval_backward);
+
+         if l_expected is null then
+            ut.expect(l_snapped).to_be_null;
+         else
+            ut.expect(l_snapped).to_equal(l_expected);
+         end if;
+         -------------------------------------------
+         -- next test SNAP_TO_INTERVAL_OFFSET_UTC --
+         -------------------------------------------
+         l_snapped   := cwms_ts.snap_to_interval_offset_utc(
+            p_date_time         => l_timestamp,
+            p_interval          => l_interval,
+            p_interval_offset   => l_interval_offset,
+            p_interval_forward  => l_interval_forward,
+            p_interval_backward => l_interval_backward);
+
+         if l_expected is null then
+            ut.expect(l_snapped).to_be_null;
+         else
+            ut.expect(l_snapped).to_equal(l_expected);
+         end if;
+      end loop;
+   end loop;
 end cwdb_217_snap_to_interval_offset_utc;
 end test_timeseries_snapping;
 /
