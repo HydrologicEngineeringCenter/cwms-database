@@ -1671,6 +1671,7 @@ AS
        pragma exception_init(ts_id_not_found,     -20001);
        pragma exception_init(item_already_exists, -20003);
     begin
+      teardown;
        begin
           cwms_loc.store_location(
              p_location_id  => test_base_location_id,
