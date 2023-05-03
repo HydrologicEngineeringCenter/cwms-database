@@ -2601,16 +2601,10 @@ AS
                                  );
             WHEN l_delete_action = cwms_util.delete_ts_id
             THEN
-               BEGIN
-                  cwms_ts.delete_ts (l_cwms_ts_id,
-                                     cwms_util.delete_ts_id,
-                                     l_db_office_code
-                                    );
-               EXCEPTION
-                  WHEN OTHERS
-                  THEN
-                     NULL;              -- exception thrown if ts_id has data.
-               END;
+               cwms_ts.delete_ts (l_cwms_ts_id,
+                                  cwms_util.delete_ts_id,
+                                  l_db_office_code
+                                 );
             WHEN l_delete_action = cwms_util.delete_ts_data
             THEN
                cwms_ts.delete_ts (l_cwms_ts_id,
@@ -2628,6 +2622,33 @@ AS
       --
       CLOSE l_cursor;
 
+      ----------------------------
+      -- collect location codes --
+      ----------------------------
+      if l_this_is_a_base_loc then
+         --------------------------------------------
+         -- collect location and all sub-locations --
+         --------------------------------------------
+         select location_code,
+                p_location_id || substr ('-', 1, length (sub_location_id)) || sub_location_id
+           bulk collect into
+                l_location_codes,
+                l_location_ids
+           from at_physical_location
+          where base_location_code = l_base_location_code;
+      else
+         -------------------------------
+         -- collect just the location --
+         -------------------------------
+         select location_code,
+                p_location_id
+           bulk collect
+           into l_location_codes,
+                l_location_ids
+           from at_physical_location
+          where location_code = l_location_code;
+      end if;
+
       ---------------------------------------------
       -- delete other child records if specified --
       ---------------------------------------------
@@ -2636,29 +2657,6 @@ AS
              cwms_util.delete_all,
              cwms_util.delete_loc_cascade)
       then
-         if l_this_is_a_base_loc then
-            --------------------------------------------
-            -- collect location and all sub-locations --
-            --------------------------------------------
-            select location_code,
-                   p_location_id || substr ('-', 1, length (sub_location_id)) || sub_location_id
-              bulk collect into
-                   l_location_codes,
-                   l_location_ids
-              from at_physical_location
-             where base_location_code = l_base_location_code;
-         else
-            -------------------------------
-            -- collect just the location --
-            -------------------------------
-            select location_code,
-                   p_location_id
-              bulk collect
-              into l_location_codes,
-                   l_location_ids
-              from at_physical_location
-             where location_code = l_location_code;
-         end if;
          -----------------------
          -- group assignments --
          -----------------------
@@ -2955,23 +2953,50 @@ AS
              cwms_util.delete_loc,
              cwms_util.delete_loc_cascade)
       then
-         if l_this_is_a_base_loc
-         then -- Deleting Base Location ----------------------------------------
-            ----------------------
-            -- actual locations --
-            ----------------------
-            delete
-              from at_physical_location apl
-             where apl.base_location_code = l_base_location_code;
+         for i in 1..2 loop
+            begin
+               if l_this_is_a_base_loc
+               then -- Deleting Base Location ----------------------------------------
+                  ----------------------
+                  -- actual locations --
+                  ----------------------
+                  delete
+                    from at_physical_location apl
+                   where apl.base_location_code = l_base_location_code;
 
-            delete
-              from at_base_location abl
-             where abl.base_location_code = l_base_location_code;
-         else -- Deleting a single Sub Location --------------------------------
-            delete
-              from at_physical_location apl
-             where apl.location_code = l_location_code;
-         end if;
+                  delete
+                    from at_base_location abl
+                   where abl.base_location_code = l_base_location_code;
+               else -- Deleting a single Sub Location --------------------------------
+                  delete
+                    from at_physical_location apl
+                   where apl.location_code = l_location_code;
+               end if;
+               exit;
+            exception
+               when others then
+                  -------------------------------------------------------------------------------------------
+                  -- don't let deleted time series prevent deleting a location regardless of delete action --
+                  -------------------------------------------------------------------------------------------
+                  if i = 1 then
+                     --------------------------------------------------------------------------------------------------------
+                     -- purge all deleted ts data types for all version dates for all ts codes associated with location(s) --
+                     --------------------------------------------------------------------------------------------------------
+                     for location_code in (select column_value as it from table(l_location_codes)) loop
+                        for ts_code in (select ts_code as it from at_cwms_ts_spec where location_code = 0 and prev_location_code = location_code.it) loop
+                           cwms_ts.remove_deleted_ts(ts_code.it);
+                        end loop;
+                     end loop;
+                  else
+                     -------------------------------------------------------------------------
+                     -- someting other than deleted time seires prevented location deletion --
+                     --                                                                     --
+                     -- deleted time series purge will be rolled back, so no harm done      --
+                     -------------------------------------------------------------------------
+                     raise;
+                  end if;
+            end;
+         end loop;
       end if;
 
       commit;

@@ -6950,21 +6950,30 @@ AS
       p_delete_action  in varchar2,
       p_db_office_code in number)
    is
-      l_db_office_code   number := p_db_office_code;
-      l_db_office_id     varchar2(16);
-      l_cwms_ts_id       varchar2(191);
-      l_ts_code          number;
-      l_count            number;
-      l_value_count      number;
-      l_std_text_count   number;
-      l_text_count       number;
-      l_binary_count     number;
-      l_delete_action    varchar2(22) := upper(nvl(p_delete_action, cwms_util.delete_ts_id));
+      l_db_office_code   cwms_office.office_code%type := p_db_office_code;
+      l_db_office_id     cwms_office.office_id%type;
+      l_cwms_ts_id       av_cwms_ts_id.cwms_ts_id%type;
+      l_ts_code          at_cwms_ts_spec.ts_code%type;
+      l_location_code    at_cwms_ts_spec.location_code%type;
+      l_delete_action    varchar2(22) := upper(nvl(p_delete_action, cwms_util.delete_key));
       l_delete_date      timestamp(9) := systimestamp;
       l_msg              sys.aq$_jms_map_message;
       l_msgid            pls_integer;
-      i                  integer;
+      l_publish_message  boolean := true;
+      l_published_msgid  integer;
    begin
+      ---------------------------------
+      -- normalize the delete action --
+      ---------------------------------
+      case l_delete_action
+      when cwms_util.delete_ts_id      then l_delete_action := cwms_util.delete_key;
+      when cwms_util.delete_ts_data    then l_delete_action := cwms_util.delete_data;
+      when cwms_util.delete_ts_cascade then l_delete_action := cwms_util.delete_all;
+      else null;
+      end case;
+      ---------------------
+      -- get the ts code --
+      ---------------------
       if p_db_office_code is null then
          l_db_office_code := cwms_util.get_office_code(null);
       end if;
@@ -6994,113 +7003,61 @@ AS
             end;
       end;
 
-      ----------------------------------------------
-      -- translate non-ts-specific delete_actions --
-      ----------------------------------------------
       if l_delete_action = cwms_util.delete_key then
-         l_delete_action := cwms_util.delete_ts_id;
-      end if;
+         ---------------------------------------
+         -- update the at_cwms_ts_spec record --
+         ---------------------------------------
+         select location_code
+           into l_location_code
+           from at_cwms_ts_spec
+          where ts_code = l_ts_code
+            for update;
 
-      if l_delete_action = cwms_util.delete_all then
-         l_delete_action := cwms_util.delete_ts_cascade;
-      end if;
+         update at_cwms_ts_spec
+            set location_code = 0,
+                delete_date = l_delete_date,
+                prev_location_code = l_location_code
+          where ts_code = l_ts_code;
+      elsif l_delete_action in (cwms_util.delete_data, cwms_util.delete_all) then
+         ---------------------------------
+         -- delete ts group assignments --
+         ---------------------------------
+         delete
+           from at_ts_group_assignment
+          where ts_code = l_ts_code
+             or ts_ref_code = l_ts_code;
+         ---------------------------
+         -- delete the ts extents --
+         ---------------------------
+         delete from at_ts_extents where ts_code = l_ts_code;
+         --------------------
+         -- delete ts data --
+         --------------------
+         for rec in (select table_name
+                       from at_ts_table_properties
+                      where start_date in (select distinct start_date
+                                             from av_tsv
+                                            where ts_code = l_ts_code)) loop
+            execute immediate replace('delete from $t where ts_code = :1', '$t', rec.table_name) using l_ts_code;
+         end loop;
 
-      if l_delete_action = cwms_util.delete_data then
-         l_delete_action := cwms_util.delete_ts_data;
-      end if;
+         delete from at_tsv_std_text where ts_code = l_ts_code;
+         delete from at_tsv_text where ts_code = l_ts_code;
+         delete from at_tsv_binary where ts_code = l_ts_code;
 
-      case
-         when l_delete_action = cwms_util.delete_ts_id then
-            select count(*)
-              into l_value_count
-              from av_tsv
-             where ts_code = l_ts_code;
-
-            select count(*)
-              into l_std_text_count
-              from at_tsv_std_text
-             where ts_code = l_ts_code;
-
-            select count(*)
-              into l_text_count
-              from at_tsv_text
-             where ts_code = l_ts_code;
-
-            select count(*)
-              into l_binary_count
-              from at_tsv_binary
-             where ts_code = l_ts_code;
-
-            l_count := l_value_count + l_std_text_count + l_text_count + l_binary_count;
-
-            if l_count = 0 then
-               loop
-                  begin
-                     update at_cwms_ts_spec
-                        set location_code = 0, delete_date = l_delete_date
-                      where ts_code = l_ts_code;
-
-                     exit;
-                  exception
-                     when others then
-                        if sqlcode = -1 then
-                           l_delete_date := systimestamp;
-                        end if;
-                  end;
-               end loop;
-            else
-               cwms_err.raise('ERROR', 'cwms_ts_id: ' || p_cwms_ts_id || ' contains data. Cannot use the DELETE TS ID action');
-            end if;
-         when l_delete_action in (cwms_util.delete_ts_cascade, cwms_util.delete_ts_data) then
-            -------------------------------
-            -- delete data from database --
-            -------------------------------
-            for rec in (select table_name
-                          from at_ts_table_properties
-                         where start_date in (select distinct start_date
-                                                from av_tsv
-                                               where ts_code = l_ts_code)) loop
-               execute immediate replace('delete from $t where ts_code = :1', '$t', rec.table_name) using l_ts_code;
-            end loop;
-
-            delete from at_tsv_std_text
-                  where ts_code = l_ts_code;
-
-            delete from at_tsv_text
-                  where ts_code = l_ts_code;
-
-            delete from at_tsv_binary
-                  where ts_code = l_ts_code;
-
-            if l_delete_action = cwms_util.delete_ts_cascade then
-               ---------------------------------------
-               -- delete location group assignments --
-               ---------------------------------------
-               delete
-                 from at_ts_group_assignment
-                where ts_code = l_ts_code
-                   or ts_ref_code = l_ts_code;
-               ------------------------------
-               -- delete the timeseries id --
-               ------------------------------
-               update at_cwms_ts_spec
-                  set location_code = 0, delete_date = l_delete_date
-                where ts_code = l_ts_code;
-
-               delete_ts_cleanup(l_ts_code);
-            end if;
-
-            commit;
+         if l_delete_action = cwms_util.delete_data then
+            l_publish_message := false;
          else
-            cwms_err.raise('INVALID_DELETE_ACTION', p_delete_action);
-      end case;
+            ------------------------------
+            -- delete the timeseries id --
+            ------------------------------
+            delete from at_cwms_ts_spec where ts_code = l_ts_code;
+         end if;
+      else
+         cwms_err.raise('INVALID_DELETE_ACTION', p_delete_action);
+      end if;
 
-      ---------------------------
-      -- update the ts extents --
-      ---------------------------
-      delete from at_ts_extents where ts_code = l_ts_code;
-
-      if l_delete_action in (cwms_util.delete_ts_id, cwms_util.delete_ts_cascade) then
+      if l_publish_message then
          -------------------------------
          -- publish TSDeleted message --
          -------------------------------
@@ -7108,8 +7065,9 @@ AS
          l_msg.set_string(l_msgid, 'ts_id', l_cwms_ts_id);
          l_msg.set_string(l_msgid, 'office_id', l_db_office_id);
          l_msg.set_long(l_msgid, 'ts_code', l_ts_code);
-         i := cwms_msg.publish_message(l_msg, l_msgid, l_db_office_id || '_ts_stored');
+         l_published_msgid := cwms_msg.publish_message(l_msg, l_msgid, l_db_office_id || '_ts_stored');
       end if;
+
    end delete_ts;
 
    procedure delete_ts (
@@ -7560,6 +7518,96 @@ AS
          end;
       end;
    end purge_ts_data;
+
+   procedure remove_deleted_ts(
+      p_ts_code in number)
+   is
+   begin
+      for table_name in (select table_name as it from at_ts_table_properties) loop
+         execute immediate replace('delete from $t where ts_code = :ts_code', '$t', table_name.it) using p_ts_code;
+      end loop;
+      delete from at_clob where clob_code in (select clob_code from at_tsv_text where ts_code = p_ts_code);
+      delete from at_tsv_text where ts_code = p_ts_code;
+      delete from at_blob where blob_code in (select blob_code from at_tsv_binary where ts_code = p_ts_code);
+      delete from at_tsv_binary where ts_code = p_ts_code;
+      delete from at_ts_extents where ts_code = p_ts_code;
+      delete from at_cwms_ts_spec where ts_code = p_ts_code;
+   end remove_deleted_ts;
+
+   procedure undelete_ts(
+      p_ts_code in number)
+   is
+      l_location_code at_cwms_ts_spec.prev_location_code%type;
+   begin
+      select prev_location_code
+        into l_location_code
+        from at_cwms_ts_spec
+       where ts_code = p_ts_code
+         and location_code = 0
+         and prev_location_code is not null
+         for update;
+
+      update at_cwms_ts_spec
+         set location_code = l_location_code,
+             delete_date = null,
+             prev_location_code = null
+       where ts_code = p_ts_code;
+   end undelete_ts;
+
+   procedure undelete_ts(
+      p_cwms_ts_id in varchar2,
+      p_office_id  in varchar2 default null)
+   is
+      l_office_id           cwms_office.office_id%type;
+      l_base_location_id    at_base_location.base_location_id%type;
+      l_sub_location_id     at_physical_location.sub_location_id%type;
+      l_base_parameter_id   cwms_base_parameter.base_parameter_id%type;
+      l_sub_parameter_id    at_parameter.sub_parameter_id%type;
+      l_parameter_type_id   cwms_parameter_type.parameter_type_id%type;
+      l_interval_id         cwms_interval.interval_id%type;
+      l_duration_id         cwms_duration.duration_id%type;
+      l_version_id          at_cwms_ts_spec.version%type;
+      l_office_code         cwms_office.office_code%type;
+      l_location_code       at_cwms_ts_spec.location_code%type;
+      l_parameter_code      at_cwms_ts_spec.parameter_code%type;
+      l_parameter_type_code cwms_parameter_type.parameter_type_code%type;
+      l_interval_code       cwms_interval.interval_code%type;
+      l_duration_code       cwms_duration.duration_code%type;
+      l_ts_code             at_cwms_ts_spec.ts_code%type;
+   begin
+      l_office_id := cwms_util.get_db_office_id(p_office_id);
+      l_office_code := cwms_util.get_db_office_code(l_office_id);
+
+      parse_ts(
+         p_cwms_ts_id        => p_cwms_ts_id,
+         p_base_location_id  => l_base_location_id,
+         p_sub_location_id   => l_sub_location_id,
+         p_base_parameter_id => l_base_parameter_id,
+         p_sub_parameter_id  => l_sub_parameter_id,
+         p_parameter_type_id => l_parameter_type_id,
+         p_interval_id       => l_interval_id,
+         p_duration_id       => l_duration_id,
+         p_version_id        => l_version_id);
+
+      l_location_code := cwms_loc.get_location_code(l_office_id, l_base_location_id||substr('-', 1, length(l_sub_location_id))||l_sub_location_id);
+      l_parameter_code := cwms_util.get_parameter_code(l_base_parameter_id||substr('-', 1, length(l_sub_parameter_id))||l_sub_parameter_id, l_office_id);
+      select parameter_type_code into l_parameter_type_code from cwms_parameter_type where upper(parameter_type_id) = upper(l_parameter_type_id);
+      select interval_code into l_interval_code from cwms_interval where upper(interval_id) = upper(l_interval_id);
+      select duration_code into l_duration_code from cwms_duration where upper(duration_id) = upper(l_duration_id);
+
+      select ts_code
+        into l_ts_code
+        from at_cwms_ts_spec
+       where location_code = 0
+         and prev_location_code = l_location_code
+         and parameter_code = l_parameter_code
+         and parameter_type_code = l_parameter_type_code
+         and interval_code = l_interval_code
+         and duration_code = l_duration_code
+         and upper(version) = upper(l_version_id);
+
+      undelete_ts(l_ts_code);
+   end undelete_ts;
 
    procedure change_version_date(
       p_ts_code              in number,

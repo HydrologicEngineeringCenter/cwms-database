@@ -26,6 +26,7 @@ DECLARE
       'av_cwms_ts_id2',
       'av_cwms_user',              -- created in at_schema_2
       'av_dataexchange_job',
+      'av_deleted_ts_id',
       'av_display_units',
       'av_document',
       'av_document_type',
@@ -165,6 +166,7 @@ END;
 @@cwms/views/av_data_streams_current
 @@cwms/views/av_dataexchange_job
 @@cwms/views/av_db_change_log
+@@cwms/views/av_deleted_ts_id
 @@cwms/views/av_display_units
 @@cwms/views/av_document
 @@cwms/views/av_document_type
