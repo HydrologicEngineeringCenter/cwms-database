@@ -999,7 +999,7 @@
 			<isset property="database.eroc"/>
 		</condition>
 
-		<condition property="docker.props.oracle.image" value="${oracle.image}" else="oracle/database:19.3.0-ee">
+		<condition property="docker.props.oracle.image" value="${oracle.image}" else="registry.hecdev.net/oracle/database:19.3.0-ee">
 			<isset property="oracle.image"/>
 		</condition>
 
@@ -1054,7 +1054,7 @@
 
 	<target name="docker.buildimage" depends="docker.init">
 		<echo message="Creating baseline docker image"/>
-		<exec dir="${root}" executable="docker"  failonerror="true">
+		<exec dir="${root}/.." executable="docker"  failonerror="true">
 			<arg value="build"/>
 			<arg value="--tag"/>
 			<arg value="${docker.props.image_name}"/>
@@ -1137,7 +1137,7 @@
 		<if>
 			<matches pattern="${docker.props.container_name_valid}$" string="${containerList}" multiline="true"/>
 			<then>
-				<echo message="Starting Existing Oracle databse"/>
+				<echo message="Starting Existing Oracle database"/>
 				<exec executable="docker" failonerror="true">
 					<arg value="start"/>
 					<arg value="${docker.props.container_name_valid}"/>

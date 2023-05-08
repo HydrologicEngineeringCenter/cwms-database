@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (c) 2023
+  ~ United States Army Corps of Engineers - Hydrologic Engineering Center (USACE/HEC)
+  ~ All Rights Reserved.  USACE PROPRIETARY/CONFIDENTIAL.
+  ~ Source may not be released without written approval from HEC
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>mil.army.usace.hec</groupId>
+	<artifactId>cwms-database-schema-parent</artifactId>
+	<version>${revision}</version>
+	<packaging>pom</packaging>
+	<properties>
+		<revision>99-99-99-SNAPSHOT</revision>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
+		<oracle.jdbc.version>19.3.0.0</oracle.jdbc.version>
+		<jooq.version>3.11.2</jooq.version>
+	</properties>
+	<modules>
+		<module>schema</module>
+		<module>codegen/cwms-db-properties-reader</module>
+		<module>codegen/cwms-db-version-generator</module>
+		<module>codegen/cwms-db-jooq-generator</module>
+		<module>codegen/cwms-db-jooq-codegen</module>
+	</modules>
+	<distributionManagement>
+		<snapshotRepository>
+			<id>hec-nexus-snapshots</id>
+			<url>https://www.hec.usace.army.mil/nexus/repository/cwms-snapshots</url>
+		</snapshotRepository>
+		<repository>
+			<id>hec-nexus-releases</id>
+			<url>https://www.hec.usace.army.mil/nexus/repository/cwms-releases</url>
+		</repository>
+	</distributionManagement>
+	<repositories>
+		<repository>
+			<id>maven-public</id>
+			<url>https://www.hec.usace.army.mil/nexus/repository/maven-public</url>
+		</repository>
+		<repository>
+			<id>hec-nexus-releases</id>
+			<url>https://www.hec.usace.army.mil/nexus/repository/cwms-internal</url>
+		</repository>
+	</repositories>
+	<pluginRepositories>
+		<pluginRepository>
+			<id>maven-public</id>
+			<url>https://www.hec.usace.army.mil/nexus/repository/maven-public</url>
+		</pluginRepository>
+		<pluginRepository>
+			<id>hec-nexus-releases</id>
+			<url>https://www.hec.usace.army.mil/nexus/repository/cwms-internal</url>
+		</pluginRepository>
+	</pluginRepositories>
+</project>

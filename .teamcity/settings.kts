@@ -123,17 +123,6 @@ object Build : BuildType({
             jdkHome = "%env.JDK_11_x64%"
             runnerArgs =  "-Dbuilduser.overrides=schema/build/overrides.external.xml"
         }
-        maven {
-            name = "Deploy jOOQ Codegen"
-            pomLocation = "schema/pom.xml"
-            userSettingsSelection = "cwms-maven-settings"
-            goals = "deploy"
-            jdkHome = "%env.JDK_11_x64%"
-            runnerArgs =  "-Dbuilduser.overrides=schema/build/overrides.external.xml"
-            conditions {
-                matches("teamcity.build.branch", "(master|release/.*)")
-            }
-        }
         ant {
             workingDir = "./schema"
             mode = antFile {
@@ -155,14 +144,13 @@ object Build : BuildType({
                 matches("teamcity.build.branch", "(master|release/.*)")
             }
         }
-        ant {
+        maven {
             name = "Push to Nexus"
-            workingDir = "./schema"
-            mode = antFile {
-                path = "schema/build.xml"
-            }
-            targets = "deploy"
-            antArguments = "-Dbuilduser.overrides=build/overrides.external.xml"
+            pomLocation = "pom.xml"
+            userSettingsSelection = "cwms-maven-settings"
+            goals = "deploy"
+            jdkHome = "%env.JDK_11_x64%"
+            runnerArgs =  "-Dbuilduser.overrides=schema/build/overrides.external.xml"
             conditions {
                 matches("teamcity.build.branch", "(master|release/.*)")
             }

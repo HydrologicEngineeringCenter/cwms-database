@@ -49,7 +49,7 @@ docker run -d --network $NETWORK_NAME --name $CONTAINERNAME \
             -e ORACLE_PDB=$DBNAME -e ORACLE_PWD=$SYS_PASSWORD \
             -p $PORT:1521 \
             -v $VOLUME_NAME:/opt/oracle/oradata \
-            -e enterprise oracle/database:19.3.0-ee
+            -e enterprise registry.hecdev.net/oracle/database:19.3.0-ee
 # about 25 minutes later you will have a functional oracle database you control
 # because you used the -d parameter above, your database will be running in the background. Otherwise you'll need to open a new shell or Ctrl-C and run the docker start $CONTAINERNAME command
 #
