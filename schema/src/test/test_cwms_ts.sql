@@ -1684,6 +1684,7 @@ AS
        exception
           when ts_id_not_found then null;
        end;
+       cwms_properties.set_property('DEBUG', 'MDPTEST', 'T', null, 'CWMS');
        cwms_ts.create_ts(
           p_cwms_ts_id  => l_rts_id,
           p_versioned   => 'F',
@@ -1696,6 +1697,7 @@ AS
           p_start_time   => sysdate - 1,
           p_end_time     => sysdate,
           p_db_office_id => '&&office_id');
+       cwms_properties.set_property('DEBUG', 'MDPTEST', 'F', null, 'CWMS');
     end test_retrieve_ts_with_undefined_interval_offset;
    --------------------------------------------------------------------------------
    -- procedure cwdb_204_silent_failure_on_store_ts_with_unexpected_offset

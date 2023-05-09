@@ -1802,7 +1802,21 @@ AS
       l_can_create            BOOLEAN := TRUE;
       l_cwms_ts_id            varchar2(191);
       l_parts                 str_tab_t;
+      l_debug                 boolean;
    BEGIN
+      l_debug := cwms_properties.get_property('DEBUG', 'MDPTEST', 'F', 'CWMS') = 'T';
+      if l_debug then
+         dbms_output.enable(200000);
+         dbms_output.put_line('p_cwms_ts_id        = '||p_cwms_ts_id);
+         dbms_output.put_line('p_utc_offset        = '||p_utc_offset);
+         dbms_output.put_line('p_interval_forward  = '||p_interval_forward);
+         dbms_output.put_line('p_interval_backward = '||p_interval_backward);
+         dbms_output.put_line('p_versioned         = '||p_versioned);
+         dbms_output.put_line('p_active_flag       = '||p_active_flag);
+         dbms_output.put_line('p_fail_if_exists    = '||p_fail_if_exists);
+         dbms_output.put_line('p_office_id         = '||p_office_id);
+      end if;
+
       IF p_office_id IS NULL
       THEN
          l_office_id := cwms_util.user_office_id;
@@ -14177,6 +14191,5 @@ end retrieve_existing_item_counts;
 
 END cwms_ts;                                                --end package body
 /
-
 SHOW ERRORS;
 commit;
