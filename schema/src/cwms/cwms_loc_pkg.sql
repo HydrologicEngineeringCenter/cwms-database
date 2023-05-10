@@ -34,6 +34,18 @@ AS
     */
    v_package_log_prop_text varchar2(30);
    function package_log_property_text return varchar2;
+   /*
+    * undocumented function store_local_datum_name
+    *
+    * If p_vertical_datum_id is not a standard vertical datum id, then store the
+    * value as the local datum name for the location and return 'LOCAL'.
+    *
+    * Otherwise return p_vertical_datum_id unchanged.
+   */
+   function store_local_datum_name(
+      p_location_code     in integer,
+      p_vertical_datum_id in varchar2)
+      return varchar2 deterministic;
 
    /**
     * Sets text value of package logging property

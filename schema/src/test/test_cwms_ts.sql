@@ -1684,18 +1684,25 @@ AS
        exception
           when ts_id_not_found then null;
        end;
-       cwms_ts.create_ts(
-          p_cwms_ts_id  => l_rts_id,
-          p_versioned   => 'F',
-          p_active_flag => 'T',
-          p_office_id   => '&&office_id');
-       cwms_ts.zretrieve_ts(
-          p_at_tsv_rc    => l_ts_data,
-          p_units        => 'n/a',
-          p_cwms_ts_id   => l_rts_id,
-          p_start_time   => sysdate - 1,
-          p_end_time     => sysdate,
-          p_db_office_id => '&&office_id');
+       declare
+          l_debug_output boolean;
+       begin
+          l_debug_output := cwms_util.output_debug_info;
+          cwms_util.set_output_debug_info(true);
+          cwms_ts.create_ts(
+             p_cwms_ts_id  => l_rts_id,
+             p_versioned   => 'F',
+             p_active_flag => 'T',
+             p_office_id   => '&&office_id');
+          cwms_ts.zretrieve_ts(
+             p_at_tsv_rc    => l_ts_data,
+             p_units        => 'n/a',
+             p_cwms_ts_id   => l_rts_id,
+             p_start_time   => sysdate - 1,
+             p_end_time     => sysdate,
+             p_db_office_id => '&&office_id');
+          cwms_util.set_output_debug_info(l_debug_output);
+       end;
     end test_retrieve_ts_with_undefined_interval_offset;
    --------------------------------------------------------------------------------
    -- procedure cwdb_204_silent_failure_on_store_ts_with_unexpected_offset
