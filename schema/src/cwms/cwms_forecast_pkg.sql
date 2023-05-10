@@ -1017,21 +1017,21 @@ procedure cat_forecast(
  *   </tr>
  *   <tr>
  *     <td class="descr-center">2</td>
- *     <td class="descr">forecast_date</td>
- *     <td class="descr">date</td>
- *     <td class="descr">The forecast date of the forecast</td>
- *   </tr>
- *   <tr>
- *     <td class="descr-center">3</td>
  *     <td class="descr">location_id</td>
  *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The target location for the forecast</td>
  *   </tr>
  *   <tr>
- *     <td class="descr-center">4</td>
+ *     <td class="descr-center">3</td>
  *     <td class="descr">forecast_id</td>
  *     <td class="descr">varchar2(32)</td>
  *     <td class="descr">The forecast identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">forecast_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The forecast date of the forecast</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">5</td>
@@ -1057,6 +1057,12 @@ procedure cat_forecast(
  *     <td class="descr">varchar2(28)</td>
  *     <td class="descr">The time zone for the date/time columns</td>
  *   </tr>
+ *   <tr>
+ *     <td class="descr-center">9</td>
+ *     <td class="descr">valid</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">'T' if the forecast is still valid, otherwise 'F'</td>
+ *   </tr>
  * </table>
  * <p>
  * Otherwise, the following columns will be returned, sorted by the first five
@@ -1074,24 +1080,24 @@ procedure cat_forecast(
  *     <td class="descr">varchar2(16)</td>
  *     <td class="descr">The office that owns the forecast time series</td>
  *   </tr>
- *   <tr>
  *     <td class="descr-center">2</td>
- *     <td class="descr">forecast_date</td>
- *     <td class="descr">date</td>
- *     <td class="descr">The forecast date of the forecast</td>
- *   </tr>
- *   <tr>
- *     <td class="descr-center">3</td>
  *     <td class="descr">location_id</td>
  *     <td class="descr">varchar2(57)</td>
  *     <td class="descr">The target location for the forecast</td>
  *   </tr>
  *   <tr>
- *     <td class="descr-center">4</td>
+ *     <td class="descr-center">3</td>
  *     <td class="descr">forecast_id</td>
  *     <td class="descr">varchar2(32)</td>
  *     <td class="descr">The forecast identifier</td>
  *   </tr>
+ *   <tr>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">forecast_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The forecast date of the forecast</td>
+ *   </tr>
+ *   <tr>
  *   <tr>
  *     <td class="descr-center">5</td>
  *     <td class="descr">issue_date</td>
@@ -1133,6 +1139,12 @@ procedure cat_forecast(
  *     <td class="descr">time_zone_name</td>
  *     <td class="descr">varchar2(28)</td>
  *     <td class="descr">The time zone for the date/time columns</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">12</td>
+ *     <td class="descr">valid</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">'T' if the forecast is still valid, otherwise 'F'</td>
  *   </tr>
  * </table>
  */
