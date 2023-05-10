@@ -6676,6 +6676,32 @@ as
       return l_hostaddress;
    end;
 
+   procedure set_output_debug_info(
+      p_state in boolean)
+   is
+   begin
+      cwms_properties.set_property(
+         p_category  => 'CWMSDB',
+         p_id        => 'logging.debug.dbms_output',
+         p_value     => case p_state when true then 'T' else 'F' end,
+         p_comment   => 'Whether to output debug information via dbms_output',
+         p_office_id => 'CWMS');
+   end set_output_debug_info;
+
+   function output_debug_info
+      return boolean
+   is
+      l_value at_properties.prop_value%type;
+   begin
+      l_value := cwms_properties.get_property(
+         p_category  => 'CWMSDB',
+         p_id        => 'logging.debug.dbms_output',
+         p_default   => 'F',
+         p_office_id => 'CWMS');
+
+      return l_value = 'T';
+   end output_debug_info;
+
 END cwms_util;
 /
 

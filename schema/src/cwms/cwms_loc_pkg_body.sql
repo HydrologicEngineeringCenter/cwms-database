@@ -7813,7 +7813,7 @@ end unassign_loc_groups;
          places pls_integer := 7;
       begin
          if p1 is null then
-            if p2 is null then return true; else return round(p2, places) = round(p1, places); end if;
+            return p2 is null;
          end if;
          return round(p2, places) = round(p1, places);
       end;

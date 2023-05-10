@@ -1802,19 +1802,18 @@ AS
       l_can_create            BOOLEAN := TRUE;
       l_cwms_ts_id            varchar2(191);
       l_parts                 str_tab_t;
-      l_debug                 boolean;
    BEGIN
-      l_debug := cwms_properties.get_property('DEBUG', 'MDPTEST', 'F', 'CWMS') = 'T';
-      if l_debug then
+      if cwms_util.output_debug_info then
          dbms_output.enable(200000);
-         dbms_output.put_line('p_cwms_ts_id        = '||p_cwms_ts_id);
-         dbms_output.put_line('p_utc_offset        = '||p_utc_offset);
-         dbms_output.put_line('p_interval_forward  = '||p_interval_forward);
-         dbms_output.put_line('p_interval_backward = '||p_interval_backward);
-         dbms_output.put_line('p_versioned         = '||p_versioned);
-         dbms_output.put_line('p_active_flag       = '||p_active_flag);
-         dbms_output.put_line('p_fail_if_exists    = '||p_fail_if_exists);
-         dbms_output.put_line('p_office_id         = '||p_office_id);
+         dbms_output.put_line('create_ts_code(');
+         dbms_output.put_line('   p_cwms_ts_id        => '||p_cwms_ts_id);
+         dbms_output.put_line('   p_utc_offset        => '||p_utc_offset);
+         dbms_output.put_line('   p_interval_forward  => '||p_interval_forward);
+         dbms_output.put_line('   p_interval_backward => '||p_interval_backward);
+         dbms_output.put_line('   p_versioned         => '||p_versioned);
+         dbms_output.put_line('   p_active_flag       => '||p_active_flag);
+         dbms_output.put_line('   p_fail_if_exists    => '||p_fail_if_exists);
+         dbms_output.put_line('   p_office_id         => '||p_office_id||');');
       end if;
 
       IF p_office_id IS NULL
