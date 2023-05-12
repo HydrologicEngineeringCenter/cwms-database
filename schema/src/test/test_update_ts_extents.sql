@@ -17,8 +17,10 @@ procedure cwdb_182_test_for_update_with_delete_insert_without_deletes;
 procedure cwdb_170_update_ts_extents_no_data_found_exception;
 --%test(AT_TS_EXTENTS.LAST_UPDATE is not null when no TS data [Jira issue CWDB-212])
 procedure cwdb_212_last_update_is_not_null;
---%test(UTX jobs can start before calling code commits [Jira issue CWDB-212])
+--%test(UTX jobs can start before calling code commits [Jira issue CWDB-213])
 procedure cwdb_213_utx_job_delays_5_seconds;
+--%test(NULL in subquery can affect UPDATE_TS_EXTENTS)
+procedure cwdb_220_null_in_subquery_affects_update_ts_extents;
 
 procedure setup;
 procedure teardown;
@@ -748,7 +750,47 @@ begin
     where job_name = l_job_name; 
    ut.expect(l_start_date).to_be_greater_than(l_ts + interval '000 00:00:05' day to second); 
 end cwdb_213_utx_job_delays_5_seconds;
-
+--------------------------------------------------------------------------------
+-- procedure cwdb_220_null_in_subquery_affects_update_ts_extents
+--------------------------------------------------------------------------------
+procedure cwdb_220_null_in_subquery_affects_update_ts_extents
+is
+   l_ts_data  cwms_t_ztsv_array;
+   l_min_date date;
+   l_max_date date;
+begin
+   setup;
+   --------------------------------------------------------
+   -- create and store a data set with ALL rejected data --
+   --------------------------------------------------------
+   l_ts_data := c_base_ts_data;
+   for i in 1..l_ts_data.count loop
+      l_ts_data(i).quality_code := 17;
+   end loop;
+   cwms_ts.zstore_ts(
+      p_cwms_ts_id      => c_ts_id,
+      p_units           => c_units,
+      p_timeseries_data => l_ts_data,
+      p_store_rule      => cwms_util.replace_all,
+      p_override_prot   => 'F',
+      p_version_date    => cwms_util.non_versioned,
+      p_office_id       => c_office_id);
+   --------------------------------------
+   -- retrieve the time series extents --
+   --------------------------------------
+   cwms_ts.get_ts_extents(
+      p_min_date     => l_min_date,
+      p_max_date     => l_max_date,
+      p_cwms_ts_id   => c_ts_id,
+      p_time_zone    => 'UTC',
+      p_version_date => cwms_util.non_versioned,
+      p_office_id    => c_office_id);
+   ------------------------
+   -- verify the extents --
+   ------------------------
+   ut.expect(l_min_date).to_be_not_null;
+   ut.expect(l_max_date).to_be_not_null;
+end cwdb_220_null_in_subquery_affects_update_ts_extents;
 end test_update_ts_extents;
 /
 show errors
