@@ -722,6 +722,7 @@ is
    l_forecast_time      date;
    l_issue_time         date; 
    l_count              pls_integer := 0;
+   l_ts_extents         ts_extents_t;
 begin
    -------------------      
    -- get the codes --
@@ -752,31 +753,23 @@ begin
             and issue_date = nvl(l_issue_time, issue_date)
       )
    loop
-      l_count := l_count + 1;
-      cwms_ts.purge_ts_data(rec.ts_code, rec.version_date, null, null);
+      cwms_ts.get_ts_extents(
+         p_ts_extents   => l_ts_extents,
+         p_ts_code      => rec.ts_code,
+         p_version_date => rec.version_date);
+
+      cwms_ts.purge_ts_data(
+         p_ts_code          => rec.ts_code,
+         p_version_date_utc => rec.version_date,
+         p_start_time_utc   => l_ts_extents.earliest_time,
+         p_end_time_utc     => l_ts_extents.latest_time);
    end loop;
-   if l_count = 0 then
-      cwms_err.raise(
-         'ITEM_DOES_NOT_EXIST',
-         'CWMS forecast time series',
-         nvl(upper(p_office_id), cwms_util.user_office_id)
-         ||'/'
-         ||p_location_id
-         ||'/'
-         ||p_forecast_id
-         ||'/'
-         ||nvl(p_cwms_ts_id, '<any>')
-         ||'/forecast_time='
-         ||nvl(to_char(p_forecast_time, 'yyyy/mm/dd hh24mi'), '<any>')
-         ||' '
-         ||p_time_zone
-         ||'/'
-         ||p_cwms_ts_id
-         ||'/issue_time='
-         ||nvl(to_char(p_issue_time, 'yyyy/mm/dd hh24mi'), '<any')
-         ||' '
-         ||p_time_zone);
-   end if;
+   delete
+     from at_forecast_ts
+    where forecast_spec_code = l_forecast_spec_code
+      and ts_code = nvl(l_ts_code, ts_code)
+      and forecast_date = nvl(l_forecast_time, forecast_date)
+      and issue_date = nvl(l_issue_time, issue_date);
 end delete_ts;
 
 --------------------------------------------------------------------------------
@@ -955,7 +948,7 @@ begin
       l_rec.clob_code          := cwms_seq.nextval;
 
       l_text_id := substr(
-         '/fcst/'
+         '/FORECAST/'
          ||p_forecast_id
          ||'/'
          ||cwms_util.to_millis(cwms_util.change_timezone(p_forecast_time, p_time_zone, 'UTC'))/60000 -- minutes
@@ -1071,23 +1064,25 @@ procedure delete_text(
    p_office_id       in varchar2 default null) -- null = user's office id
 is
    l_forecast_spec_code  number(14);
-   l_clob_code           number(14);
    l_forecast_time       date;
    l_issue_time          date;
    l_time_zone           varchar2(28);
+   l_clob_codes          number_tab_t := number_tab_t();
 begin
    -------------------
    -- sanity checks --
    -------------------
-   if p_forecast_time is null then
-      cwms_err.raise(
-         'ERROR',
-         'Forecast date cannot be null.');
+   if p_location_id is null then cwms_err.raise('NULL_ARGUMENT', 'P_Location_Id'); end if;
+   if p_forecast_id is null then cwms_err.raise('NULL_ARGUMENT', 'P_Forecast_Id'); end if;
+   -----------------------------
+   -- process the input times --
+   -----------------------------
+   l_time_zone := nvl(p_time_zone, cwms_loc.get_local_timezone(p_location_id, p_office_id));
+   if p_forecast_time is not null then
+      l_forecast_time := cwms_util.change_timezone(p_forecast_time, l_time_zone, 'UTC');
    end if;
-   if p_issue_time is null then
-      cwms_err.raise(
-         'ERROR',
-         'Issue date cannot be null.');
+   if p_issue_time is not null then
+      l_issue_time := cwms_util.change_timezone(p_issue_time, l_time_zone, 'UTC');
    end if;
    --------------------------
    -- get the forcast spec --
@@ -1096,38 +1091,29 @@ begin
       p_location_id,
       p_forecast_id,
       p_office_id);
-   -----------------------------------------
-   -- determine whether the record exists --
-   -----------------------------------------
+   ---------------------
+   -- delete the data --
+   ---------------------
    l_time_zone := cwms_loc.get_local_timezone(p_location_id, p_office_id);
    l_forecast_time  := cwms_util.change_timezone(p_forecast_time, l_time_zone, 'UTC');
    l_issue_time     := cwms_util.change_timezone(p_issue_time, l_time_zone, 'UTC');
-   begin
-      select clob_code
-        into l_clob_code
-        from at_forecast_text
-       where forecast_spec_code = l_forecast_spec_code
-         and forecast_date = l_forecast_time
-         and issue_date = l_issue_time;
-   exception
-      when no_data_found then
-         cwms_err.raise(
-            'ITEM_DOES_NOT_EXIST',
-            'CWMS forecast text',
-            nvl(upper(p_office_id), cwms_util.user_office_id)
-            ||'/'
-            ||p_location_id
-            ||'/'
-            ||p_forecast_id
-            ||'/forecast_time='
-            ||to_char(p_forecast_time, 'yyyy/mm/dd hh24mi')
-            ||' '
-            ||l_time_zone
-            ||'/issue_time='
-            ||to_char(p_issue_time, 'yyyy/mm/dd hh24mi')
-            ||' '
-            ||l_time_zone);
-   end;
+   select clob_code
+     bulk collect
+     into l_clob_codes
+     from at_forecast_text
+    where forecast_spec_code = l_forecast_spec_code
+      and forecast_date = nvl(l_forecast_time, forecast_date)
+      and issue_date = nvl(l_issue_time, issue_date);
+
+   delete
+     from at_forecast_text
+    where forecast_spec_code = l_forecast_spec_code
+      and forecast_date = nvl(l_forecast_time, forecast_date)
+      and issue_date = nvl(l_issue_time, issue_date);
+
+   delete
+     from at_clob
+    where clob_code in (select column_value from table(l_clob_codes)) ;
 end delete_text;
 
 --------------------------------------------------------------------------------
@@ -1666,7 +1652,6 @@ begin
                      and upper(bl.base_location_id||substr('-', 1, length(pl.sub_location_id))||pl.sub_location_id) like l_loc_id_mask escape '\'
                      and fs.target_location_code = pl.location_code
                      and upper(fs.forecast_id) like l_fcst_id_mask escape '\'
-                     and cts.location_code = pl.location_code
                      and fts.ts_code = cts.ts_code
                      and fts.forecast_date >= l_min_fcst_date
                      and fts.issue_date >= l_min_issue_date
@@ -1745,7 +1730,6 @@ begin
                      and upper(bl.base_location_id||substr('-', 1, length(pl.sub_location_id))||pl.sub_location_id) like l_loc_id_mask escape '\'
                      and fs.target_location_code = pl.location_code
                      and upper(fs.forecast_id) like l_fcst_id_mask escape '\'
-                     and cts.location_code = pl.location_code
                      and fts.ts_code = cts.ts_code
                      and fts.forecast_date >= l_min_fcst_date
                      and fts.issue_date >= l_min_issue_date

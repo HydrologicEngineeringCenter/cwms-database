@@ -109,7 +109,6 @@ select nvl(q1.office_id, q2.office_id) as office_id,
           where bl.db_office_code = o.office_code
             and pl.base_location_code = bl.base_location_code
             and fs.target_location_code = pl.location_code
-            and cts.location_code = pl.location_code
             and fts.ts_code = cts.ts_code
             and fts.forecast_spec_code = fs.forecast_spec_code
        ) q1
