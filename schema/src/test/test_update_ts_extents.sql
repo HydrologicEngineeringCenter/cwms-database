@@ -855,6 +855,10 @@ begin
    ---------------------------------------------------------------------------------------------------
    l_extents := get_ts_extents;
    ut.expect(l_extents.has_non_zero_quality).to_equal('T');
+   ---------------------------------------------------
+   -- verify we can pass nulls to update_ts_extents --
+   ---------------------------------------------------
+   cwms_ts.update_ts_extents;
 
 end cwdb_200_ts_extents_has_field_for_non_zero_quality;
 

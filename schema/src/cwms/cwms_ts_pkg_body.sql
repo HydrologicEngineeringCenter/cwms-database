@@ -4838,13 +4838,42 @@ AS
       -- This is essentially procedure update_ts_extents(p_ts_code, p_version_date)
       -- Do a full scan for TS extents, then update or insert the new extents.
 
-      -- NOTE THAT THE ORIGINAL CODE ALLOWS FOR A NULL TS_CODE AND VERSION_TIME
-      -- NULL TS_CODE LOOPS THRU ALL TS_CODES W/O EXTENTS
-      -- NULL VERSION_DATE DEFAULTS TO '1111-11-11'
+      if p_ts_code is null then
+         -------------------------
+         -- update all ts_codes --
+         -------------------------
+         for rec in (select ts_code from at_cwms_ts_id where net_ts_active_flag = 'T') loop
+            update_ts_extents(rec.ts_code, p_version_date);
+         end loop;
+         return;
+      elsif p_version_date is null then
+         ----------------------------------------------------
+         -- update all version_dates for specified ts_code --
+         ----------------------------------------------------
+         for rec1 in (select version_flag from at_cwms_ts_id where ts_code = p_ts_code and net_ts_active_flag = 'T') loop
+            --------------------------------
+            -- will be only 0 or 1 record --
+            --------------------------------
+            if rec1.version_flag = 'F' then
+               ------------------------------
+               -- ts_code is non-versioned --
+               ------------------------------
+               update_ts_extents(p_ts_code, cwms_util.non_versioned);
+            else
+               --------------------------
+               -- ts_code is versioned --
+               --------------------------
+               for rec2 in (select distinct version_date from av_tsv where ts_code = p_ts_code) loop
+                  update_ts_extents(p_ts_code, rec2.version_date);
+               end loop;
+            end if;
+         end loop;
+         return;
+      end if;
 
-      -------------------------------
-      -- update a specific ts_code --
-      -------------------------------
+      --------------------------------------------
+      -- update a specific ts_code/version_date --
+      --------------------------------------------
 
       l_rec2 := null;
 
