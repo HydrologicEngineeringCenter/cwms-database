@@ -3133,6 +3133,20 @@ AS
     */
    function get_db_host
       return varchar2;
+   /**
+    * Sets the property CWMS/CWMSDB/logging.debug.dbms_output to 'T' or 'F' depending on p_state. The property can be used directly 
+    * or via the output_debug_info function to determine whether debugging information should be output via dbms_output.
+    *
+    * @param p_state Whether debugging information should be output via dbms_output
+    */
+   procedure set_output_debug_info(
+      p_state in boolean);
+   /**
+    * Test the property CWMS/CWMSDB/logging.debug.dbms_output to determine whether debugging information should be output via dbms_output
+    * @return whether debugging information should be output via dbms_output
+    */
+   function output_debug_info
+      return boolean;
 END cwms_util;
 /
 set escape off

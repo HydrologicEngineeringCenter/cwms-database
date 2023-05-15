@@ -1803,6 +1803,19 @@ AS
       l_cwms_ts_id            varchar2(191);
       l_parts                 str_tab_t;
    BEGIN
+      if cwms_util.output_debug_info then
+         dbms_output.enable(200000);
+         dbms_output.put_line('create_ts_code(');
+         dbms_output.put_line('   p_cwms_ts_id        => '||p_cwms_ts_id);
+         dbms_output.put_line('   p_utc_offset        => '||p_utc_offset);
+         dbms_output.put_line('   p_interval_forward  => '||p_interval_forward);
+         dbms_output.put_line('   p_interval_backward => '||p_interval_backward);
+         dbms_output.put_line('   p_versioned         => '||p_versioned);
+         dbms_output.put_line('   p_active_flag       => '||p_active_flag);
+         dbms_output.put_line('   p_fail_if_exists    => '||p_fail_if_exists);
+         dbms_output.put_line('   p_office_id         => '||p_office_id||');');
+      end if;
+
       IF p_office_id IS NULL
       THEN
          l_office_id := cwms_util.user_office_id;
@@ -4733,13 +4746,13 @@ AS
                    from AT_TSV
                   where value is not null
                 ) q2
-                join
+                left outer join
                 (select date_time,
                         max(data_entry_date) as earliest_non_null_time_entry
                    from AT_TSV
                   group by date_time
                 ) q3 on q3.date_time = q2.earliest_non_null_time
-                join
+                left outer join
                 (select date_time,
                         max(data_entry_date) as latest_non_null_time_entry
                    from AT_TSV
@@ -4751,56 +4764,56 @@ AS
                    from AT_TSV
                   where bitand(quality_code, 30) in (0,2,8)
                 ) q5
-                join
+                left outer join
                 (select date_time,
                         data_entry_date as earliest_time_entry
                    from AT_TSV
                 ) q6 on q6.date_time = q1.earliest_time
-                join
+                left outer join
                 (select date_time,
                         data_entry_date as latest_time_entry
                    from AT_TSV
                 ) q7 on q7.date_time = q1.latest_time
-                join
+                left outer join
                 (select value,
                         max(date_time) as least_value_time
                    from AT_TSV
                   group by value
                 ) q8 on q8.value = q1.least_value
-                join
+                left outer join
                 (select date_time,
                         data_entry_date as least_value_entry
                    from AT_TSV
                 ) q9 on q9.date_time = q8.least_value_time
-                join
+                left outer join
                 (select value,
                         max(date_time) as greatest_value_time
                    from AT_TSV
                   group by value
                 ) q10 on q10.value = q1.greatest_value
-                join
+                left outer join
                 (select date_time,
                         data_entry_date as greatest_value_entry
                    from AT_TSV
                 ) q11 on q11.date_time = q10.greatest_value_time
-                join
+                left outer join
                 (select max(date_time) as least_accepted_value_time,
                         value
                    from AT_TSV
                   group by value
                 ) q12 on q12.value = q5.least_accepted_value
-                join
+                left outer join
                 (select date_time,
                         data_entry_date as least_accepted_value_entry
                    from AT_TSV
                 ) q13 on q13.date_time = q12.least_accepted_value_time
-                join
+                left outer join
                 (select max(date_time) as greatest_accepted_value_time,
                         value
                    from AT_TSV
                   group by value
                 ) q14 on q14.value = q5.greatest_accepted_value
-                join
+                left outer join
                 (select date_time,
                         data_entry_date as greatest_accepted_value_entry
                    from AT_TSV
@@ -14225,6 +14238,5 @@ end retrieve_existing_item_counts;
 
 END cwms_ts;                                                --end package body
 /
-
 SHOW ERRORS;
 commit;

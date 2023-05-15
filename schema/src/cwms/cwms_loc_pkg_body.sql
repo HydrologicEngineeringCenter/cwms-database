@@ -251,6 +251,57 @@ AS
    BEGIN
       return get_location_code(p_db_office_id, p_location_id, 'T');
    END get_location_code;
+   --------------------------------------------------------------------------------
+   -- function store_local_datum_name
+   --
+   -- If p_vertical_datum_id is not a standard vertical datum id, then store the
+   -- value as the local datum name for the location and return 'LOCAL'.
+   --
+   -- Otherwise return p_vertical_datum_id unchanged.
+   --------------------------------------------------------------------------------
+   function store_local_datum_name(
+      p_location_code     in integer,
+      p_vertical_datum_id in varchar2)
+      return varchar2 deterministic
+   is
+      l_vertical_datum_id at_vert_datum_local.local_datum_name%type;
+   begin
+      if upper(regexp_replace(upper(p_vertical_datum_id), '(N[AG]VD)[ -]', '\1', 1, 0)) not in ('NAVD88', 'NGVD29') then
+         if p_vertical_datum_id not in ('LOCAL', 'OTHER') then
+            begin
+               select local_datum_name
+                 into l_vertical_datum_id
+                 from at_vert_datum_local
+                where location_code = p_location_code;
+
+               update at_vert_datum_local
+                  set local_datum_name = p_vertical_datum_id
+                where location_code = p_location_code;
+            exception
+               when no_data_found then
+                  insert into at_vert_datum_local values (p_location_code, p_vertical_datum_id);
+            end;
+         end if;
+         l_vertical_datum_id := 'LOCAL';
+      else
+         l_vertical_datum_id := p_vertical_datum_id;
+      end if;
+      return l_vertical_datum_id;
+   end;
+   --------------------------------------------------------------------------------
+   -- local procedure update_local_datum_name
+   --
+   -- If p_vertical_datum_id is not a standard vertical datum id, then store the
+   -- value as the local datum name for the location.
+   --------------------------------------------------------------------------------
+   procedure update_local_datum_name(
+      p_location_code     in integer,
+      p_vertical_datum_id in varchar2)
+   is
+      l_vertical_datum_id at_vert_datum_local.local_datum_name%type;
+   begin
+      l_vertical_datum_id := store_local_datum_name(p_location_code, p_vertical_datum_id);
+   end;
 
    --********************************************************************** -
    --********************************************************************** -
@@ -667,6 +718,7 @@ AS
                            p_nearest_city
                         );
 
+               update_local_datum_name(p_base_location_code, p_vertical_datum);
                p_location_code := p_base_location_code;
             END IF;
 
@@ -726,6 +778,7 @@ AS
                            )
                RETURNING   location_code
                     INTO   p_location_code;
+               update_local_datum_name(p_location_code, p_vertical_datum);
             END IF;
          END IF;
       END IF;
@@ -1280,7 +1333,7 @@ AS
       UPDATE at_physical_location
          SET location_type = l_location_type,
              elevation = l_elevation,
-             vertical_datum = l_vertical_datum,
+             vertical_datum = store_local_datum_name(l_location_code, l_vertical_datum),
              latitude = l_latitude,
              longitude = l_longitude,
              horizontal_datum = l_horizontal_datum,
@@ -1626,7 +1679,7 @@ AS
       UPDATE   at_physical_location
          SET   location_type = l_location_type,
                elevation = l_elevation,
-               vertical_datum = l_vertical_datum,
+               vertical_datum = store_local_datum_name(l_location_code, l_vertical_datum),
                latitude = l_latitude,
                longitude = l_longitude,
                horizontal_datum = l_horizontal_datum,
@@ -6677,9 +6730,82 @@ end unassign_loc_groups;
       l_delete         boolean := false;
       l_insert         boolean := false;
       l_update         boolean := false;
-      l_vertical_datum_id_1 varchar2(16) := upper(regexp_replace(upper(p_vertical_datum_id_1), '(N[AG]VD)[ -]', '\1', 1, 0));
-      l_vertical_datum_id_2 varchar2(16) := upper(regexp_replace(upper(p_vertical_datum_id_2), '(N[AG]VD)[ -]', '\1', 1, 0));
+      l_vertical_datum_id_1 varchar2(32767);
+      l_vertical_datum_id_2 varchar2(32767);
+      l_max_id_length       pls_integer;
+      l_max_name_length     pls_integer;
+      l_local_datum         at_vert_datum_local.local_datum_name%type;
+      l_local_datum_rec     at_vert_datum_local%rowtype;
    begin
+      select char_length
+        into l_max_id_length
+        from user_tab_columns
+       where table_name = 'AT_VERT_DATUM_OFFSET'
+            and column_name = 'VERTICAL_DATUM_ID_1';
+
+      select char_length
+        into l_max_name_length
+        from user_tab_columns
+       where table_name = 'AT_VERT_DATUM_LOCAL'
+         and column_name = 'LOCAL_DATUM_NAME';
+      -------------------------
+      -- normalize datum ids --
+      -------------------------
+      l_vertical_datum_id_1 := regexp_replace(upper(p_vertical_datum_id_1), '(N[AG]VD)[ -]', '\1', 1, 0);
+      if l_vertical_datum_id_1 in ('NAVD88', 'NGVD29', 'OTHER', 'LOCAL') then
+         -- standard datum id
+         if length(p_vertical_datum_id_1) > l_max_id_length then
+            cwms_err.raise('ERROR', 'Vertical datum IDs may be only '||l_max_id_length||' characters long.');
+         end if;
+         l_vertical_datum_id_1 := replace(l_vertical_datum_id_1, 'OTHER', 'LOCAL');
+      else
+         -- datum id is local datum name
+         if length(p_vertical_datum_id_1) > l_max_name_length then
+            cwms_err.raise('ERROR', 'Local datum names may be only '||l_max_name_length||' characters long.');
+         end if;
+         l_local_datum := p_vertical_datum_id_1;
+         l_vertical_datum_id_1 := 'LOCAL';
+      end if;
+      l_vertical_datum_id_2 := regexp_replace(upper(p_vertical_datum_id_2), '(N[AG]VD)[ -]', '\1', 1, 0);
+      if l_vertical_datum_id_2 in ('NAVD88', 'NGVD29', 'OTHER', 'LOCAL') then
+         -- standard datum id
+         if length(p_vertical_datum_id_2) > l_max_id_length then
+            cwms_err.raise('ERROR', 'Vertical datum IDs may be only '||l_max_id_length||' characters long.');
+         end if;
+         l_vertical_datum_id_2 := replace(l_vertical_datum_id_2, 'OTHER', 'LOCAL');
+      else
+         -- datum id is local datum name
+         if l_local_datum is not null then
+            cwms_err.raise(
+               'ERROR',
+               'Only one local datum is allowed, but 2 were specified: '||p_vertical_datum_id_1||' and '||p_vertical_datum_id_2);
+         end if;
+         if length(p_vertical_datum_id_2) > l_max_name_length then
+            cwms_err.raise('ERROR', 'Local datum names may be only '||l_max_name_length||' characters long.');
+         end if;
+         l_local_datum := p_vertical_datum_id_2;
+         l_vertical_datum_id_2 := 'LOCAL';
+      end if;
+      -----------------------------
+      -- handle local datum name --
+      -----------------------------
+      if l_local_datum is not null then
+         l_local_datum_rec.location_code := get_location_code(p_office_id, p_location_Id);
+         begin
+            select *
+              into l_local_datum_rec
+              from at_vert_datum_local
+             where location_code = l_local_datum_rec.location_code;
+            l_local_datum_rec.local_datum_name := l_local_datum;
+            update at_vert_datum_local
+               set local_datum_name = l_local_datum
+             where location_code = l_local_datum_rec.location_code;
+         exception
+            when no_data_found then
+               l_local_datum_rec.local_datum_name := l_local_datum;
+               insert into at_vert_datum_local values l_local_datum_rec;
+         end;
+      end if;
       ---------------------------
       -- normalize cookie date --
       ---------------------------
@@ -6823,6 +6949,8 @@ end unassign_loc_groups;
       p_match_effective_date in  varchar2 default 'F',
       p_office_id            in  varchar2 default null)
    is
+      l_offset         binary_double;
+      l_estimate       varchar2(1);
       l_rowid          urowid;
       l_effective_date date;
       l_time_zone      varchar2(28);
@@ -6842,31 +6970,44 @@ end unassign_loc_groups;
       -----------------
       -- do the work --
       -----------------
-      l_effective_date := nvl(p_effective_date_in, sysdate);
-      l_time_zone := case p_effective_date_in is null
-                        when true then 'UTC'
-                        else nvl(p_time_zone, cwms_loc.get_local_timezone(p_location_id, p_office_id))
-                     end;
-      l_rowid := get_vertical_datum_offset_row(
-         p_location_id          => p_location_id,
-         p_vertical_datum_id_1  => p_vertical_datum_id_1,
-         p_vertical_datum_id_2  => p_vertical_datum_id_2,
-         p_effective_date       => l_effective_date,
-         p_time_zone            => l_time_zone,
-         p_match_effective_date => p_match_effective_date,
-         p_office_id            => p_office_id);
-      if l_rowid is null then
-         cwms_err.raise(
-            'ITEM_DOES_NOT_EXIST',
-            'CWMS Vertical Datum Offset',
-            cwms_util.get_db_office_id(p_office_id)
-            ||'/'||p_location_id
-            ||'/'||upper(p_vertical_datum_id_1)
-            ||'/'||upper(p_vertical_datum_id_2)
-            ||'@'||to_char(l_effective_date, 'yyyy-mm-dd hh24:mi:ss')
-            ||'('||l_time_zone
-            ||')');
-      end if;
+      for i in 1..2 loop
+         l_effective_date := nvl(p_effective_date_in, sysdate);
+         l_time_zone := case p_effective_date_in is null
+                           when true then 'UTC'
+                           else nvl(p_time_zone, cwms_loc.get_local_timezone(p_location_id, p_office_id))
+                        end;
+         l_rowid := get_vertical_datum_offset_row(
+            p_location_id          => p_location_id,
+            p_vertical_datum_id_1  => p_vertical_datum_id_1,
+            p_vertical_datum_id_2  => p_vertical_datum_id_2,
+            p_effective_date       => l_effective_date,
+            p_time_zone            => l_time_zone,
+            p_match_effective_date => p_match_effective_date,
+            p_office_id            => p_office_id);
+         if l_rowid is null then
+            if 1 = 1 and p_vertical_datum_id_1 in ('NAVD88', 'NGVD29') and p_vertical_datum_id_2 in ('NAVD88', 'NGVD29') then
+               get_vertical_datum_offset(
+                  p_offset              => l_offset,
+                  p_effective_date      => l_effective_date,
+                  p_estimate            => l_estimate,
+                  p_location_code       => get_location_code(p_office_id, p_location_id),
+                  p_vertical_datum_id_1 => p_vertical_datum_id_1,
+                  p_vertical_datum_id_2 => p_vertical_datum_id_2,
+                  p_datetime_utc        => cwms_util.change_timezone(l_effective_date, l_time_zone, 'UTC'));
+               continue;
+            end if;
+            cwms_err.raise(
+               'ITEM_DOES_NOT_EXIST',
+               'CWMS Vertical Datum Offset',
+               cwms_util.get_db_office_id(p_office_id)
+               ||'/'||p_location_id
+               ||'/'||upper(p_vertical_datum_id_1)
+               ||'/'||upper(p_vertical_datum_id_2)
+               ||'@'||to_char(nvl(p_effective_date_in, sysdate), 'yyyy-mm-dd hh24:mi:ss')
+               ||'('||l_time_zone
+               ||')');
+         end if;
+      end loop;
       select case
                 when p_unit_in is null then offset
                 else cwms_util.convert_units(offset, 'm', p_unit_in)
@@ -7199,10 +7340,21 @@ end unassign_loc_groups;
                       longitude
                  into l_lat,
                       l_lon
-                 from cwms_v_loc
-                where location_code = p_location_code
-                  and unit_system = 'SI';
-
+                 from at_physical_location
+                where location_code = p_location_code;
+               if l_lat is null and l_lon is null then
+                  --------------------------------------------
+                  -- inherit lat/lon from the base location --
+                  --------------------------------------------
+                  select pl2.latitude,
+                         pl2.longitude
+                    into l_lat,
+                         l_lon
+                    from at_physical_location pl1,
+                         at_physical_location pl2
+                  where  pl1.location_code = p_location_code
+                     and pl2.location_code = pl1.base_location_code;
+               end if;
                if l_lat is not null and l_lon is not null then
                   begin
                      l_offset := get_vertcon_offset(l_lat, l_lon);
@@ -7660,6 +7812,15 @@ end unassign_loc_groups;
       p_location_code   in  number,
       p_unit            in  varchar2)
    is
+      l_base_location_id   at_base_location.base_location_id%type;
+      l_base_location_code at_physical_location.base_location_code%type;
+      l_sub_location_id    at_physical_location.sub_location_id%type;
+      l_vertical_datum     at_physical_location.vertical_datum%type;
+      l_latitude           at_physical_location.latitude%type;
+      l_longitude          at_physical_location.longitude%type;
+      l_base_latitude      at_physical_location.latitude%type;
+      l_base_longitude     at_physical_location.longitude%type;
+      l_count              pls_integer;
       l_location_id      varchar2(57);
       l_office_id        varchar2(16);
       l_elevation        number;
@@ -7671,7 +7832,83 @@ end unassign_loc_groups;
       l_effective_date   date;
       l_estimate         varchar2(1);
       l_rounding_spec    varchar2(10) := '4444567894';
+
+      function equal(p1 in binary_double, p2 in binary_double) return boolean
+      is
+         places pls_integer := 7;
+      begin
+         if p1 is null then
+            return p2 is null;
+         end if;
+         return round(p2, places) = round(p1, places);
+      end;
    begin
+      ------------------------------------------------------
+      -- see if we need to inherit from the base location --
+      ------------------------------------------------------
+      select bl.base_location_id,
+             bl.base_location_code,
+             pl.sub_location_id,
+             pl.vertical_datum,
+             pl.latitude,
+             pl.longitude
+        into l_base_location_id,
+             l_base_location_code,
+             l_sub_location_id,
+             l_vertical_datum,
+             l_latitude,
+             l_longitude
+        from at_physical_location pl,
+             at_base_location bl
+       where location_code = p_location_code
+         and bl.base_location_code = pl.base_location_code;
+      if l_sub_location_id is not null and l_vertical_datum is null then
+         select latitude,
+                longitude
+           into l_base_latitude,
+                l_base_longitude
+           from at_physical_location
+          where location_code = l_base_location_code;
+         if equal(nvl(l_latitude,  l_base_latitude),  l_base_latitude) and
+            equal(nvl(l_longitude, l_base_longitude), l_base_longitude)
+         then
+            ------------------------------------------
+            -- yep - inherit from the base location --
+            ------------------------------------------
+            get_vertical_datum_info(
+               p_vert_datum_info => l_vert_datum_info,
+               p_location_code   => l_base_location_code,
+               p_unit            => p_unit);
+            p_vert_datum_info := replace(
+               l_vert_datum_info,
+               '<location>'||l_base_location_id||'</location>',
+               '<location>'||l_base_location_id||'-'||l_sub_location_id||'</location>');
+            return;
+         end if;
+      end if;
+      ----------------------------------------------------
+      -- nope - get the info for the specified location --
+      ----------------------------------------------------
+      select count(*)
+        into l_count
+        from at_vert_datum_offset
+       where location_code = p_location_code
+         and (vertical_datum_id_1 in ('NAVD88','NGVD29') and vertical_datum_id_2 in ('NAVD88','NGVD29'));
+      if l_count = 0 then
+         ---------------------------------------
+         -- force a NGVD29 to NAVD88 estimate --
+         ---------------------------------------
+         get_vertical_datum_offset(
+            p_offset              => l_datum_offset,
+            p_effective_date      => l_effective_date,
+            p_estimate            => l_estimate,
+            p_location_code       => p_location_code,
+            p_vertical_datum_id_1 => 'NGVD29',
+            p_vertical_datum_id_2 => 'NAVD88');
+         l_datum_offset := null;
+         l_effective_date := null;
+         l_estimate       := null;
+      end if;
       l_unit := cwms_util.get_unit_id(p_unit);
 
       select bl.base_location_id
@@ -7974,7 +8211,7 @@ end unassign_loc_groups;
             -- update native datum in database --
             -------------------------------------
             update at_physical_location
-               set vertical_datum = replace(regexp_replace(l_native_datum, '(N[AG]VD).+(29|88)', '\1\2'), 'LOCAL', 'OTHER')
+               set vertical_datum = store_local_datum_name(p_location_code, regexp_replace(l_native_datum, '(N[AG]VD).+(29|88)', '\1\2'))
              where location_code = p_location_code;
             l_local_datum_name := cwms_util.get_xml_text(l_node, '/vertical-datum-info/local-datum-name');
             if l_local_datum_name is not null then
@@ -9656,7 +9893,7 @@ end unassign_loc_groups;
              case
              when l_datums(i) = 'NATIVE' then
                 case
-                when nvl(pl1.vertical_datum, nvl(pl2.vertical_datum, 'UNKNOWN')) = 'LOCAL' then
+                when nvl(pl1.vertical_datum, nvl(pl2.vertical_datum, 'UNKNOWN')) in ('LOCAL','OTHER') then
                    cwms_loc.get_local_vert_datum_name_f(pl1.location_code)
                 else
                    nvl(pl1.vertical_datum, nvl(pl2.vertical_datum, 'UNKNOWN'))

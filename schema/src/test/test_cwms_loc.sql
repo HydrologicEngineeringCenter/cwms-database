@@ -25,6 +25,8 @@ procedure test_store_location_with_multiple_attributes_and_actvie_flags;
 procedure test_set_vertical_datum_info;
 --%test(Test set_vertical_datum_info_exp)
 procedure test_set_vertical_datum_info_exp;
+--%test(CWDB-222 Sublocation without VDI should inherit base location VDI)
+procedure test_cwdb_222_sublocation_vdi_inheritance;
 
 procedure setup;
 procedure teardown;
@@ -693,5 +695,122 @@ AS
         ut.expect (l_active).to_equal ('F');
     END test_store_location_with_multiple_attributes_and_actvie_flags;
 
+    --------------------------------------------------------------------------------
+    -- procedure test_cwdb_222_sublocation_vdi_inheritance
+    --------------------------------------------------------------------------------
+   procedure test_cwdb_222_sublocation_vdi_inheritance
+   is
+      l_office_id      av_loc.db_office_id%TYPE;
+      l_location_id1   av_loc.location_id%TYPE;
+      l_location_id2   av_loc.location_id%TYPE;
+      l_vertical_datum av_loc.vertical_datum%type;
+      l_elevation      av_loc.elevation%type;
+      l_vd_offset      cwms_t_vert_datum_offset;
+      l_xmlstr_out     varchar2(4000);
+      l_xmlstr         cwms_t_str_tab := cwms_t_str_tab(
+'<vertical-datum-info office=":office_id" unit="ft">
+  <location>:location_id</location>
+  <native-datum>NGVD-29</native-datum>
+  <elevation>1600</elevation>
+  <offset estimate="true">
+    <to-datum>NAVD-88</to-datum>
+    <value>0.3855</value>
+  </offset>
+</vertical-datum-info>',
+
+'<vertical-datum-info office=":office_id" unit="ft">
+  <location>:location_id</location>
+  <native-datum>OTHER</native-datum>
+  <local-datum-name>Pensacola</local-datum-name>
+  <elevation>742.34</elevation>
+  <offset estimate="true">
+    <to-datum>NAVD-88</to-datum>
+    <value>1.455</value>
+  </offset>
+  <offset estimate="false">
+    <to-datum>NGVD-29</to-datum>
+    <value>1.07</value>
+  </offset>
+</vertical-datum-info>');
+   begin
+      teardown;
+
+      l_office_id    := '&&office_id';
+      l_location_id1 := 'TestLoc1';
+      l_location_id2 := 'TestLoc1-WithSub';
+
+      for i in 1..l_xmlstr.count loop
+         l_xmlstr(i) := replace(l_xmlstr(i), ':office_id',   l_office_id);
+      end loop;
+      ----------------------------------------------------
+      -- store the base location with lat/lon/vert-daum --
+      ----------------------------------------------------
+      cwms_loc.store_location(
+         p_location_id    => l_location_id1,
+         p_elevation      => 1600,
+         p_elev_unit_id   => 'ft',
+         p_vertical_datum => 'NGVD-29',
+         p_latitude       => 36.1406481,
+         p_longitude      => -96.0063866,
+         p_db_office_id   => l_office_id);
+      -------------------------------------------------------
+      -- store the sub-location without lat/lon/vert-datum --
+      -------------------------------------------------------
+      cwms_loc.store_location(
+         p_location_id    => l_location_id2,
+         p_db_office_id   => l_office_id);
+
+      commit;
+      -----------------------------------------------
+      -- get vertical datum info for base location --
+      -----------------------------------------------
+      l_xmlstr_out := cwms_loc.get_vertical_datum_info_f(
+         p_location_id => l_location_id1,
+         p_unit        => 'ft',
+         p_office_id   => l_office_id);
+
+      ut.expect(l_xmlstr_out).to_equal(replace(l_xmlstr(1), ':location_id', l_location_id1));
+      -------------------------------------------------------------------------
+      -- get vertical datum info for sub-location (should inherit from base) --
+      -------------------------------------------------------------------------
+      l_xmlstr_out := cwms_loc.get_vertical_datum_info_f(
+         p_location_id => l_location_id2,
+         p_unit        => 'ft',
+         p_office_id   => l_office_id);
+
+      ut.expect(l_xmlstr_out).to_equal(replace(l_xmlstr(1), ':location_id', l_location_id2));
+      -----------------------------------------------------------
+      -- store sub-location with different vertical datum info --
+      -----------------------------------------------------------
+      cwms_loc.store_location(
+         p_location_id    => l_location_id2,
+         p_elevation      => 742.34,
+         p_elev_unit_id   => 'ft',
+         p_vertical_datum => 'Pensacola',
+         p_latitude       => 36.1406481,
+         p_longitude      => -96.0063866,
+         p_db_office_id   => l_office_id);
+
+      cwms_loc.store_vertical_datum_offset(
+         p_location_id         => l_location_id2,
+         p_vertical_datum_id_1 => 'Pensacola',
+         p_vertical_datum_id_2 => 'NGVD29',
+         p_offset              => 1.07,
+         p_unit                => 'ft',
+         p_office_id           => l_office_id);
+
+      commit;
+      -----------------------------------------------------------------------------
+      -- get vertical datum info for sub-location (should NOT inherit from base) --
+      -----------------------------------------------------------------------------
+      l_xmlstr_out := cwms_loc.get_vertical_datum_info_f(
+         p_location_id => l_location_id2,
+         p_unit        => 'ft',
+         p_office_id   => l_office_id);
+
+      ut.expect(l_xmlstr_out).not_to_equal(replace(l_xmlstr(1), ':location_id', l_location_id2));
+      ut.expect(l_xmlstr_out).to_equal(replace(l_xmlstr(2), ':location_id', l_location_id2));
+
+   end test_cwdb_222_sublocation_vdi_inheritance;
 END test_cwms_loc;
 /
