@@ -4582,6 +4582,12 @@ AS
          l_updated                            := true;
       end if;
 
+      if p_rec2.has_non_zero_quality is null or (p_rec1.has_non_zero_quality = 'T' and p_rec2.has_non_zero_quality = 'F')
+      then
+         p_rec2.has_non_zero_quality          := p_rec1.has_non_zero_quality;
+         l_updated                            := true;
+      end if;
+
       if l_updated then
          p_rec2.last_update := p_rec1.last_update;
       end if;
@@ -4724,7 +4730,11 @@ AS
                 q5.greatest_accepted_value,
                 q14.greatest_accepted_value_time,
                 q15.greatest_accepted_value_entry,
-                systimestamp as last_update
+                -----------
+                -- other --
+                -----------
+                systimestamp as last_update,
+                q16.has_non_zero_quality
            from (select ts_code, version_date
                    from AT_TSV
                   where rownum<2
@@ -4817,7 +4827,13 @@ AS
                 (select date_time,
                         data_entry_date as greatest_accepted_value_entry
                    from AT_TSV
-                ) q15 on q15.date_time = q14.greatest_accepted_value_time';
+                ) q15 on q15.date_time = q14.greatest_accepted_value_time
+                left outer join
+                (select ''T'' as has_non_zero_quality
+                   from AT_TSV
+                  where quality_code != 0
+                    and rownum = 1
+                ) q16 on 1=1';
    begin
       -- This is essentially procedure update_ts_extents(p_ts_code, p_version_date)
       -- Do a full scan for TS extents, then update or insert the new extents.
@@ -4836,7 +4852,7 @@ AS
          begin
             execute immediate replace(l_query, ':table_name', rec.table_name) into l_rec1 using p_ts_code, p_version_date;
             l_updated := update_ts_extents_rec (l_rec1, l_rec2);
-         exception when others then
+         exception when no_data_found then
             -- it appears that l_rec1 is not cleared when no values are returned by the query
             l_rec1 := null;
             l_updated := FALSE;
@@ -6516,7 +6532,8 @@ AS
                       end,
                       q7.greatest_accepted_value_time,
                       l_store_date,
-                      l_store_date
+                      l_store_date,
+                      nvl(q8.has_non_zero_quality, 'F')
                  into l_ts_extents_rec
                  from at_cwms_ts_spec s,
                       at_parameter p,
@@ -6563,6 +6580,12 @@ AS
                          from table(l_timeseries_data)
                         group by value
                       ) q7 on nvl(q7.value, binary_double_infinity) = nvl(q3.greatest_accepted_value, binary_double_infinity)
+                      left outer join
+                      (select 'T' as has_non_zero_quality
+                         from table(l_timeseries_data)
+                        where quality_code != 0
+                          and rownum = 1
+                      ) q8 on 1=1
                 where s.ts_code = l_ts_code
                   and u.unit_id = l_units
                   and c.from_unit_code = u.unit_code
