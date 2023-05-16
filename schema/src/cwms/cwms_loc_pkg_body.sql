@@ -7757,7 +7757,7 @@ end unassign_loc_groups;
          when l_effective_datum is null or l_location_datum = l_effective_datum then
             l_datum_offset := 0;
          when l_location_datum is null then
-            cwms_err.raise('ERROR', 'Cannot convert between NULL and non-NULL vertical datums');
+            cwms_err.raise('ERROR', 'Cannot convert between vertical datums NULL and '||l_effective_datum);
          else
             l_datum_offset := get_vertical_datum_offset(
                  p_location_code,
@@ -7765,6 +7765,9 @@ end unassign_loc_groups;
                  l_effective_datum,
                  sysdate,
                  p_unit);
+         if l_datum_offset is null then
+            cwms_err.raise('ERROR', 'Cannot convert between vertical datums '||l_location_datum||' and '||l_effective_datum);
+         end if;
       end case;
       return l_datum_offset;
    end get_vertical_datum_offset;

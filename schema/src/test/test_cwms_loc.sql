@@ -27,6 +27,8 @@ procedure test_set_vertical_datum_info;
 procedure test_set_vertical_datum_info_exp;
 --%test(CWDB-222 Sublocation without VDI should inherit base location VDI)
 procedure test_cwdb_222_sublocation_vdi_inheritance;
+--%test(CWDB-143 Storing Elev data with unknown datum offset)
+procedure test_cwdb_143_storing_elev_with_unknown_datum_offset;
 
 procedure setup;
 procedure teardown;
@@ -812,5 +814,187 @@ AS
       ut.expect(l_xmlstr_out).to_equal(replace(l_xmlstr(2), ':location_id', l_location_id2));
 
    end test_cwdb_222_sublocation_vdi_inheritance;
+   --------------------------------------------------------------------------------
+   -- procedure test_cwdb_143_storing_elev_with_unknown_datum_offset
+   --------------------------------------------------------------------------------
+   procedure test_cwdb_143_storing_elev_with_unknown_datum_offset
+   is
+      l_location_id   cwms_v_loc.location_id%type  := 'TestLoc1';
+      l_ts_id         cwms_v_ts_id.cwms_ts_id%type := l_location_id||'.Elev.Inst.1Hour.0.Test';
+      l_office_id     cwms_v_loc.db_office_id%type := '&&office_id';
+      l_offset        binary_double;
+      l_crsr          sys_refcursor;
+      l_datetimes     cwms_t_date_table;
+      l_values        cwms_t_double_tab;
+      l_quality_codes cwms_t_number_tab;
+      l_ts_data       cwms_t_ztsv_array := cwms_t_ztsv_array(
+                         cwms_t_ztsv(timestamp '2023-05-16 01:00:00', 1001, 3),
+                         cwms_t_ztsv(timestamp '2023-05-16 02:00:00', 1002, 3),
+                         cwms_t_ztsv(timestamp '2023-05-16 03:00:00', 1003, 3),
+                         cwms_t_ztsv(timestamp '2023-05-16 04:00:00', 1004, 3),
+                         cwms_t_ztsv(timestamp '2023-05-16 05:00:00', 1005, 3),
+                         cwms_t_ztsv(timestamp '2023-05-16 06:00:00', 1006, 3));
+   begin
+      teardown;
+      -------------------------------------------------------------------------
+      -- store the location with lat/lon/vert-daum but no vert datum offsets --
+      -------------------------------------------------------------------------
+      cwms_loc.store_location(
+         p_location_id    => l_location_id,
+         p_elevation      => 1600,
+         p_elev_unit_id   => 'ft',
+         p_vertical_datum => 'Pensacola',
+         p_latitude       => 36.1406481,
+         p_longitude      => -96.0063866,
+         p_db_office_id   => l_office_id);
+      ----------------------------------------------------------------------------------
+      -- get the vertical datum offset to the native datum (no other datum indicated) --
+      ----------------------------------------------------------------------------------
+      cwms_loc.set_default_vertical_datum(null);
+      l_offset := cwms_loc.get_vertical_datum_offset(
+                     p_location_code => cwms_loc.get_location_code(l_office_id, l_location_id),
+                     p_unit          => 'ft');
+      ut.expect(l_offset).to_equal(0.D);
+      ------------------------------------------------------
+      -- get the vertical datum offset to a default datum --
+      ------------------------------------------------------
+      cwms_loc.set_default_vertical_datum('NGVD29');
+      begin
+         l_offset := cwms_loc.get_vertical_datum_offset(
+                        p_location_code => cwms_loc.get_location_code(l_office_id, l_location_id),
+                        p_unit          => 'ft');
+         cwms_err.raise('ERROR', 'Expected exception not raised');
+      exception
+         when others then
+            if regexp_like(dbms_utility.format_error_stack, 'Cannot convert between vertical datums', 'mn')
+            then null;
+            else raise;
+            end if;
+      end;
+      --------------------------------------------------------
+      -- get the vertical datum offset to a specified datum --
+      --------------------------------------------------------
+      cwms_loc.set_default_vertical_datum(null);
+      begin
+         l_offset := cwms_loc.get_vertical_datum_offset(
+                        p_location_code => cwms_loc.get_location_code(l_office_id, l_location_id),
+                        p_unit          => 'U=ft|V=NAVD88');
+         cwms_err.raise('ERROR', 'Expected exception not raised');
+      exception
+         when others then
+            if regexp_like(dbms_utility.format_error_stack, 'Cannot convert between vertical datums', 'mn')
+            then null;
+            else raise;
+            end if;
+      end;
+      ------------------------------------------------------------------
+      -- store the elev timeseries with no default or specified datum --
+      ------------------------------------------------------------------
+      cwms_loc.set_default_vertical_datum(null);
+      cwms_ts.zstore_ts(
+         p_cwms_ts_id      => l_ts_id,
+         p_units           => 'ft',
+         p_timeseries_data => l_ts_data,
+         p_store_rule      => cwms_util.replace_all,
+         p_version_date    => cwms_util.non_versioned,
+         p_office_id       => l_office_id);
+      ---------------------------------------------------------------------
+      -- retrieve the elev timeseries with no default or specified datum --
+      ---------------------------------------------------------------------
+      cwms_ts.retrieve_ts(
+         p_at_tsv_rc  => l_crsr,
+         p_cwms_ts_id => l_ts_id,
+         p_units      => 'ft',
+         p_start_time => l_ts_data(1).date_time,
+         p_end_time   => l_ts_data(l_ts_data.count).date_time,
+         p_office_id  => l_office_id);
+      fetch l_crsr
+       bulk collect
+       into l_datetimes,
+            l_values,
+            l_quality_codes;
+      close l_crsr;
+      ------------------------------------------------
+      -- store the time series with a default datum --
+      ------------------------------------------------
+      cwms_loc.set_default_vertical_datum('NGVD29');
+      begin
+         cwms_ts.zstore_ts(
+            p_cwms_ts_id      => l_ts_id,
+            p_units           => 'ft',
+            p_timeseries_data => l_ts_data,
+            p_store_rule      => cwms_util.replace_all,
+            p_version_date    => cwms_util.non_versioned,
+            p_office_id       => l_office_id);
+         cwms_err.raise('ERROR', 'Expected exception not raised');
+      exception
+         when others then
+            if regexp_like(dbms_utility.format_error_stack, 'Cannot convert between vertical datums', 'mn')
+            then null;
+            else raise;
+            end if;
+      end;
+      -------------------------------------------------------
+      -- retrieve the elev timeseries with a default datum --
+      -------------------------------------------------------
+      begin
+         cwms_ts.retrieve_ts(
+            p_at_tsv_rc  => l_crsr,
+            p_cwms_ts_id => l_ts_id,
+            p_units      => 'ft',
+            p_start_time => l_ts_data(1).date_time,
+            p_end_time   => l_ts_data(l_ts_data.count).date_time,
+            p_office_id  => l_office_id);
+         close l_crsr;
+         cwms_err.raise('ERROR', 'Expected exception not raised');
+      exception
+         when others then
+            if regexp_like(dbms_utility.format_error_stack, 'Cannot convert between vertical datums', 'mn')
+            then null;
+            else raise;
+            end if;
+      end;
+      --------------------------------------------------
+      -- store the time series with a specified datum --
+      --------------------------------------------------
+      cwms_loc.set_default_vertical_datum(null);
+      begin
+         cwms_ts.zstore_ts(
+            p_cwms_ts_id      => l_ts_id,
+            p_units           => 'U=ft|V=NAVD88',
+            p_timeseries_data => l_ts_data,
+            p_store_rule      => cwms_util.replace_all,
+            p_version_date    => cwms_util.non_versioned,
+            p_office_id       => l_office_id);
+         cwms_err.raise('ERROR', 'Expected exception not raised');
+      exception
+         when others then
+            if regexp_like(dbms_utility.format_error_stack, 'Cannot convert between vertical datums', 'mn')
+            then null;
+            else raise;
+            end if;
+      end;
+      -------------------------------------------------------
+      -- retrieve the elev timeseries with a specified datum --
+      -------------------------------------------------------
+      begin
+         cwms_ts.retrieve_ts(
+            p_at_tsv_rc  => l_crsr,
+            p_cwms_ts_id => l_ts_id,
+            p_units      => 'U=ft|V=NAVD88',
+            p_start_time => l_ts_data(1).date_time,
+            p_end_time   => l_ts_data(l_ts_data.count).date_time,
+            p_office_id  => l_office_id);
+         close l_crsr;
+         cwms_err.raise('ERROR', 'Expected exception not raised');
+      exception
+         when others then
+            if regexp_like(dbms_utility.format_error_stack, 'Cannot convert between vertical datums', 'mn')
+            then null;
+            else raise;
+            end if;
+      end;
+
+   end test_cwdb_143_storing_elev_with_unknown_datum_offset;
 END test_cwms_loc;
 /
