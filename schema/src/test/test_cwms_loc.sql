@@ -827,6 +827,7 @@ AS
       l_datetimes     cwms_t_date_table;
       l_values        cwms_t_double_tab;
       l_quality_codes cwms_t_number_tab;
+      l_errors        clob;
       l_ts_data       cwms_t_ztsv_array := cwms_t_ztsv_array(
                          cwms_t_ztsv(timestamp '2023-05-16 01:00:00', 1001, 3),
                          cwms_t_ztsv(timestamp '2023-05-16 02:00:00', 1002, 3),
@@ -834,6 +835,68 @@ AS
                          cwms_t_ztsv(timestamp '2023-05-16 04:00:00', 1004, 3),
                          cwms_t_ztsv(timestamp '2023-05-16 05:00:00', 1005, 3),
                          cwms_t_ztsv(timestamp '2023-05-16 06:00:00', 1006, 3));
+    l_rating_xml      varchar2(32767) := replace('
+        <ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">
+          <rating-template office-id="&&office_id">
+            <parameters-id>Elev;Area</parameters-id>
+            <version>Standard</version>
+            <ind-parameter-specs>
+              <ind-parameter-spec position="1">
+                <parameter>Elev</parameter>
+                <in-range-method>LINEAR</in-range-method>
+                <out-range-low-method>NEXT</out-range-low-method>
+                <out-range-high-method>PREVIOUS</out-range-high-method>
+              </ind-parameter-spec>
+            </ind-parameter-specs>
+            <dep-parameter>Area</dep-parameter>
+            <description>12</description>
+          </rating-template>
+          <rating-spec office-id="&&office_id">
+            <rating-spec-id>$location-id.Elev;Area.Standard.Production</rating-spec-id>
+            <template-id>Elev;Area.Standard</template-id>
+            <location-id>$location-id</location-id>
+            <version>Production</version>
+            <source-agency/>
+            <in-range-method>PREVIOUS</in-range-method>
+            <out-range-low-method>NEAREST</out-range-low-method>
+            <out-range-high-method>PREVIOUS</out-range-high-method>
+            <active>true</active>
+            <auto-update>true</auto-update>
+            <auto-activate>true</auto-activate>
+            <auto-migrate-extension>true</auto-migrate-extension>
+            <ind-rounding-specs>
+              <ind-rounding-spec position="1">4444444444</ind-rounding-spec>
+            </ind-rounding-specs>
+            <dep-rounding-spec>4444444444</dep-rounding-spec>
+            <description></description>
+          </rating-spec>
+          <simple-rating office-id="&&office_id">
+            <rating-spec-id>$location-id.Elev;Area.Standard.Production</rating-spec-id>
+            <units-id>ft;acre</units-id>
+            <effective-date>2017-09-26T20:06:00Z</effective-date>
+            <transition-start-date>2017-09-24T20:06:00Z</transition-start-date>
+            <create-date>2017-09-26T20:06:00Z</create-date>
+            <active>true</active>
+            <description/>
+            <rating-points>
+              <point><ind>370.0</ind><dep>0.0</dep></point>
+              <point><ind>383.0</ind><dep>0.1</dep></point>
+              <point><ind>387.0</ind><dep>1.0</dep></point>
+              <point><ind>388.0</ind><dep>2.0</dep></point>
+              <point><ind>389.0</ind><dep>4.0</dep></point>
+              <point><ind>390.2</ind><dep>7.0</dep></point>
+              <point><ind>391.0</ind><dep>10.0</dep></point>
+              <point><ind>392.0</ind><dep>12.0</dep></point>
+              <point><ind>393.0</ind><dep>14.0</dep></point>
+              <point><ind>394.0</ind><dep>18.0</dep></point>
+              <point><ind>395.0</ind><dep>20.0</dep></point>
+              <point><ind>396.0</ind><dep>22.0</dep></point>
+              <point><ind>397.0</ind><dep>25.0</dep></point>
+              <point><ind>398.0</ind><dep>27.0</dep></point>
+              <point><ind>399.0</ind><dep>29.0</dep></point>
+            </rating-points>
+          </simple-rating>
+        </ratings>','$location-id', l_location_id);
    begin
       teardown;
       -------------------------------------------------------------------------
@@ -849,6 +912,7 @@ AS
          p_db_office_id   => l_office_id);
       ----------------------------------------------------------------------------------
       -- get the vertical datum offset to the native datum (no other datum indicated) --
+      -- (should succeed)                                                             --
       ----------------------------------------------------------------------------------
       cwms_loc.set_default_vertical_datum(null);
       l_offset := cwms_loc.get_vertical_datum_offset(
@@ -857,6 +921,7 @@ AS
       ut.expect(l_offset).to_equal(0.D);
       ------------------------------------------------------
       -- get the vertical datum offset to a default datum --
+      -- (should raise an exception)                      --
       ------------------------------------------------------
       cwms_loc.set_default_vertical_datum('NGVD29');
       begin
@@ -873,6 +938,7 @@ AS
       end;
       --------------------------------------------------------
       -- get the vertical datum offset to a specified datum --
+      -- (should raise an exception)                        --
       --------------------------------------------------------
       cwms_loc.set_default_vertical_datum(null);
       begin
@@ -889,6 +955,7 @@ AS
       end;
       ------------------------------------------------------------------
       -- store the elev timeseries with no default or specified datum --
+      -- (should succeed)                                             --
       ------------------------------------------------------------------
       cwms_loc.set_default_vertical_datum(null);
       cwms_ts.zstore_ts(
@@ -900,6 +967,7 @@ AS
          p_office_id       => l_office_id);
       ---------------------------------------------------------------------
       -- retrieve the elev timeseries with no default or specified datum --
+      -- (should succeed                                                 --
       ---------------------------------------------------------------------
       cwms_ts.retrieve_ts(
          p_at_tsv_rc  => l_crsr,
@@ -914,8 +982,15 @@ AS
             l_values,
             l_quality_codes;
       close l_crsr;
+      ut.expect(l_datetimes.count).to_equal(l_ts_data.count);
+      for i in 1..l_datetimes.count loop
+         ut.expect(l_datetimes(i)).to_equal(l_ts_data(i).date_time);
+         ut.expect(round(l_values(i),9)).to_equal(round(l_ts_data(i).value,9));
+         ut.expect(l_quality_codes(i)).to_equal(l_ts_data(i).quality_code);
+      end loop;
       ------------------------------------------------
       -- store the time series with a default datum --
+      -- (should raise an exception)                --
       ------------------------------------------------
       cwms_loc.set_default_vertical_datum('NGVD29');
       begin
@@ -936,6 +1011,7 @@ AS
       end;
       -------------------------------------------------------
       -- retrieve the elev timeseries with a default datum --
+      -- (should raise an exception)                       --
       -------------------------------------------------------
       begin
          cwms_ts.retrieve_ts(
@@ -956,6 +1032,7 @@ AS
       end;
       --------------------------------------------------
       -- store the time series with a specified datum --
+      -- (should raise an exception)                  --
       --------------------------------------------------
       cwms_loc.set_default_vertical_datum(null);
       begin
@@ -974,9 +1051,10 @@ AS
             else raise;
             end if;
       end;
-      -------------------------------------------------------
+      ---------------------------------------------------------
       -- retrieve the elev timeseries with a specified datum --
-      -------------------------------------------------------
+      -- (should raise an exception)                         --
+      ---------------------------------------------------------
       begin
          cwms_ts.retrieve_ts(
             p_at_tsv_rc  => l_crsr,
@@ -994,7 +1072,52 @@ AS
             else raise;
             end if;
       end;
-
+      ---------------------------------------------------------
+      -- store the rating with no default or specified datum --
+      -- (should succeed)                                    --
+      ---------------------------------------------------------
+      cwms_loc.set_default_vertical_datum(null);
+      cwms_rating.store_ratings_xml(
+         p_errors         => l_errors,
+         p_xml            => l_rating_xml,
+         p_fail_if_exists => 'F');
+      ut.expect(l_errors).to_be_null;
+      -------------------------------------------
+      -- store the rating with a default datum --
+      -- (should raise an exception)           --
+      -------------------------------------------
+      cwms_loc.set_default_vertical_datum('NGVD29');
+      begin
+         cwms_rating.store_ratings_xml(
+            p_errors         => l_errors,
+            p_xml            => l_rating_xml,
+            p_fail_if_exists => 'F');
+         cwms_err.raise('ERROR', 'Expected exception not raised');
+      exception
+         when others then
+            if regexp_like(dbms_utility.format_error_stack, 'Cannot convert between vertical datums', 'mn')
+            then null;
+            else raise;
+            end if;
+      end;
+      ---------------------------------------------
+      -- store the rating with a specified datum --
+      -- (should raise an exception)             --
+      ---------------------------------------------
+      cwms_loc.set_default_vertical_datum(null);
+      begin
+         cwms_rating.store_ratings_xml(
+            p_errors         => l_errors,
+            p_xml            => replace(l_rating_xml, '<units>ft;', '<units>U=ft|V=NAVD88;'),
+            p_fail_if_exists => 'F');
+         cwms_err.raise('ERROR', 'Expected exception not raised');
+      exception
+         when others then
+            if regexp_like(dbms_utility.format_error_stack, 'Cannot convert between vertical datums', 'mn')
+            then null;
+            else raise;
+            end if;
+      end;
    end test_cwdb_143_storing_elev_with_unknown_datum_offset;
 END test_cwms_loc;
 /
