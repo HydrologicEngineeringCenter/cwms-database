@@ -36,8 +36,8 @@
 									<classifier>docs</classifier>
 								</artifact>
 								<artifact>
-									<file>build/resources.zip</file>
-									<type>zip</type>
+									<file>build/resources.jar</file>
+									<type>jar</type>
 									<classifier>resources</classifier>
 								</artifact>
 								<artifact>
