@@ -7121,14 +7121,19 @@ end unassign_loc_groups;
       if p_location_code is null then
          cwms_err.raise('NULL_ARGUMENT', 'p_location_code');
       end if;
-      if p_vertical_datum_id_1 is null then
-         cwms_err.raise('NULL_ARGUMENT', 'p_vertical_datum_id_1');
-      end if;
-      if p_vertical_datum_id_2 is null then
-         cwms_err.raise('NULL_ARGUMENT', 'p_vertical_datum_id_2');
-      end if;
       if p_datetime_utc is null then
          cwms_err.raise('NULL_ARGUMENT', 'p_datetime_utc');
+      end if;
+      if p_vertical_datum_id_1 is null then
+         if p_vertical_datum_id_2 is null then
+            p_offset := 0.D;
+            return;
+         else
+            cwms_err.raise('ERROR', 'Cannot convert between vertical datums NULL and '||p_vertical_datum_id_2);
+         end if;
+      end if;
+      if p_vertical_datum_id_2 is null then
+            cwms_err.raise('ERROR', 'Cannot convert between vertical datums '||p_vertical_datum_id_1||' and NULL');
       end if;
       -----------------
       -- do the work --
@@ -7497,9 +7502,15 @@ end unassign_loc_groups;
           p_vertical_datum_id_1 => p_vertical_datum_id_1,
           p_vertical_datum_id_2 => p_vertical_datum_id_2,
           p_datetime_utc        => p_datetime_utc);
-      if p_unit is not null then
-         l_offset := cwms_util.convert_units(l_offset, 'm', p_unit);
+      if l_offset is null then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot convert between vertical datums '
+            ||nvl(p_vertical_datum_id_1, 'NULL')
+            ||' and '
+            ||nvl(p_vertical_datum_id_2, 'NULL'));
       end if;
+      l_offset := cwms_util.convert_units(l_offset, 'm', p_unit);
       return l_offset;
    end get_vertical_datum_offset;
 
@@ -7765,9 +7776,6 @@ end unassign_loc_groups;
                  l_effective_datum,
                  sysdate,
                  p_unit);
-         if l_datum_offset is null then
-            cwms_err.raise('ERROR', 'Cannot convert between vertical datums '||l_location_datum||' and '||l_effective_datum);
-         end if;
       end case;
       return l_datum_offset;
    end get_vertical_datum_offset;

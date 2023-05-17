@@ -971,18 +971,19 @@ as
       p_include_points in varchar2 default 'T')
    is
       type text_hash_t is table of boolean index by varchar(32767);
-      l_code        number(14);
-      l_count       pls_integer;
-      l_idx         pls_integer;
-      l_parts       str_tab_t;
-      l_params      str_tab_t;
-      l_units       str_tab_t;
-      l_tokens      str_tab_t;
-      l_connections str_tab_t;
-      l_factor      binary_double;
-      l_offset      binary_double;
-      l_unconnected text_hash_t;
-      l_input       varchar2(2);
+      l_code          number(14);
+      l_location_code number(14);
+      l_count         pls_integer;
+      l_idx           pls_integer;
+      l_parts         str_tab_t;
+      l_params        str_tab_t;
+      l_units         str_tab_t;
+      l_tokens        str_tab_t;
+      l_connections   str_tab_t;
+      l_factor        binary_double;
+      l_offset        binary_double;
+      l_unconnected   text_hash_t;
+      l_input         varchar2(2);
    begin
       ---------------
       -- office_id --
@@ -1016,7 +1017,7 @@ as
       -----------------
       -- ...location --
       -----------------
-      l_code := cwms_loc.get_location_code(self.office_id, l_parts(1));
+      l_location_code := cwms_loc.get_location_code(self.office_id, l_parts(1));
       -------------------------
       -- ...template version --
       -------------------------
@@ -1097,33 +1098,67 @@ as
          end if;
          l_units.extend;
          l_units(l_units.count) := cwms_util.get_unit_id(l_parts(2), self.office_id);
-         for i in 1..l_units.count loop
-            begin
-               select unit_code
-                 into l_code
-                 from cwms_unit
-                where unit_id = l_units(i);
-            exception
-               when no_data_found then
-                  cwms_err.raise(
-                     'ERROR',
-                     'Native units specification contains invalid unit: '||l_units(i));
-            end;
-            begin
-               select factor,
-                      offset
-                 into l_factor,
-                      l_offset
-                 from cwms_unit_conversion
-                where to_unit_id = cwms_util.get_default_units(l_params(i), 'SI')
-                  and from_unit_id = l_units(i);
-            exception
-               when no_data_found then
-                  cwms_err.raise(
-                     'ERROR',
-                     'Native unit "'||l_units(i)||'" is invalid for parameter "'||l_params(i)||'"');
-            end;
-         end loop;
+         declare
+            l_first_elev      boolean := true;
+            l_effective_datum varchar2(16);
+            l_local_datum     varchar2(16);
+            l_offset          binary_double;
+         begin
+            for i in 1..l_units.count loop
+               if regexp_like(l_params(i), '^Elev.*', 'i') then
+                  l_effective_datum := cwms_util.get_effective_vertical_datum(l_units(i));
+                  if l_first_elev then
+                     self.effective_datum := l_effective_datum;
+                     l_local_datum := cwms_loc.get_local_vert_datum_name_f(l_location_code);
+                     l_first_elev := false;
+                  else
+                     if nvl(l_effective_datum, '@') != nvl(self.effective_datum, '@') then
+                        cwms_err.raise(
+                           'ERROR',
+                           'Cannot have multiple effective datums in a single rating: ('
+                           ||nvl(self.effective_datum, '<NULL>')
+                           ||', '
+                           ||nvl(l_effective_datum, '<NULL>')
+                           ||')');
+                     end if;
+                  end if;
+               end if;
+               begin
+                  select unit_code
+                    into l_code
+                    from cwms_unit
+                   where unit_id = cwms_util.parse_unit(l_units(i));
+               exception
+                  when no_data_found then
+                     cwms_err.raise(
+                        'ERROR',
+                        'Native units specification contains invalid unit: '||cwms_util.parse_unit(l_units(i)));
+               end;
+               begin
+                  select factor,
+                         offset
+                    into l_factor,
+                         l_offset
+                    from cwms_unit_conversion
+                   where to_unit_id = cwms_util.get_default_units(l_params(i), 'SI')
+                     and from_unit_id = cwms_util.parse_unit(l_units(i));
+               exception
+                  when no_data_found then
+                     cwms_err.raise(
+                        'ERROR',
+                        'Native unit "'||cwms_util.parse_unit(l_units(i))||'" is invalid for parameter "'||l_params(i)||'"');
+               end;
+            end loop;
+            if self.effective_datum is not null then
+               -------------------------------------------------------------------------
+               -- raise an exception if no vertical datum offset from effective datum --
+               -------------------------------------------------------------------------
+               l_offset := cwms_loc.get_vertical_datum_offset(
+                  p_location_code       => l_location_code,
+                  p_vertical_datum_id_1 => self.effective_datum,
+                  p_vertical_datum_Id_2 => l_local_datum);
+            end if;
+         end;
          ---------------------------------------------------------------------------
          -- make sure the native units string specifies actual units, not aliases --
          ---------------------------------------------------------------------------
@@ -1131,11 +1166,11 @@ as
          for i in 2..l_units.count-1 loop
             self.native_units := self.native_units
                ||cwms_rating.separator3
-               ||cwms_util.get_unit_id(l_units(i), self.office_id);
+               ||cwms_util.get_unit_id(cwms_util.parse_unit(l_units(i)), self.office_id);
          end loop;
          self.native_units := self.native_units
             ||cwms_rating.separator2
-            ||cwms_util.get_unit_id(l_units(l_units.count), self.office_id);
+            ||cwms_util.get_unit_id(cwms_util.parse_unit(l_units(l_units.count)), self.office_id);
       end if;
       --------------------------------------------------
       -- formula / points / connections / evaluations --
@@ -2025,32 +2060,53 @@ as
       p_rating_code    out number,
       p_fail_if_exists in  varchar2)
    is
-      l_rating_rec  at_rating%rowtype;
-      l_vrating_rec at_virtual_rating%rowtype;
-      l_trating_rec at_transitional_rating%rowtype;
-      l_exists      boolean := true;
-      l_clone       rating_t;
-      l_msg         sys.aq$_jms_map_message;
-      l_msgid       pls_integer;
-      i             integer;
-      l_is_rating   boolean;
-      l_rating_part varchar2(500);
-      l_units_part  varchar2(50);
-      l_units       str_tab_t;
-      l_units_rec   at_virtual_rating_unit%rowtype;
+      l_rating_rec     at_rating%rowtype;
+      l_vrating_rec    at_virtual_rating%rowtype;
+      l_trating_rec    at_transitional_rating%rowtype;
+      l_exists         boolean := true;
+      l_clone          rating_t;
+      l_vdatum_rating  vdatum_rating_t;
+      l_elev_positions number_tab_t;
+      l_msg            sys.aq$_jms_map_message;
+      l_msgid          pls_integer;
+      i                integer;
+      l_is_rating      boolean;
+      l_rating_part    varchar2(500);
+      l_units_part     varchar2(50);
+      l_units          str_tab_t;
+      l_units_rec      at_virtual_rating_unit%rowtype;
    begin
       case
       when self.source_ratings is null then
          ---------------------
          -- concrete rating --
          ---------------------
-         if self.current_units = 'N' or self.current_time = 'L' then
+         if self.current_units = 'N' or self.current_time = 'L' or self.effective_datum is not null then
             l_clone := rating_t(self);
             if self.current_units = 'N' then
                l_clone.convert_to_database_units;
             end if;
             if self.current_time = 'L' then
                l_clone.convert_to_database_time;
+            end if;
+            if self.effective_datum is not null then
+               l_elev_positions := number_tab_t();
+               for i in 1..self.get_ind_parameter_count loop
+                  if regexp_like(self.get_ind_parameter(i), '$Elev.*', 'i') then
+                     l_elev_positions.extend;
+                     l_elev_positions(l_elev_positions.count) := 1;
+                  end if;
+               end loop;
+               if regexp_like(self.get_dep_parameter, '$Elev.*', 'i') then
+                  l_elev_positions.extend;
+                  l_elev_positions(l_elev_positions.count) := self.get_ind_parameter_count + 1;
+               end if;
+               l_vdatum_rating := vdatum_rating_t(
+                  p_rating         => self,
+                  p_current_datum  => self.effective_datum,
+                  p_elev_positions => l_elev_positions);
+               l_vdatum_rating.to_native_datum;
+               l_clone := treat(l_vdatum_rating as rating_t);
             end if;
             l_clone.store(p_rating_code, p_fail_if_exists);
             return;

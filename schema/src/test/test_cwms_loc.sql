@@ -931,7 +931,7 @@ AS
          cwms_err.raise('ERROR', 'Expected exception not raised');
       exception
          when others then
-            if regexp_like(dbms_utility.format_error_stack, 'Cannot convert between vertical datums', 'mn')
+            if regexp_like(dbms_utility.format_error_stack, '.+Cannot convert between vertical datums.*', 'mn')
             then null;
             else raise;
             end if;
@@ -948,7 +948,7 @@ AS
          cwms_err.raise('ERROR', 'Expected exception not raised');
       exception
          when others then
-            if regexp_like(dbms_utility.format_error_stack, 'Cannot convert between vertical datums', 'mn')
+            if regexp_like(dbms_utility.format_error_stack, '.+Cannot convert between vertical datums.*', 'mn')
             then null;
             else raise;
             end if;
@@ -1087,37 +1087,21 @@ AS
       -- (should raise an exception)           --
       -------------------------------------------
       cwms_loc.set_default_vertical_datum('NGVD29');
-      begin
-         cwms_rating.store_ratings_xml(
-            p_errors         => l_errors,
-            p_xml            => l_rating_xml,
-            p_fail_if_exists => 'F');
-         cwms_err.raise('ERROR', 'Expected exception not raised');
-      exception
-         when others then
-            if regexp_like(dbms_utility.format_error_stack, 'Cannot convert between vertical datums', 'mn')
-            then null;
-            else raise;
-            end if;
-      end;
+      cwms_rating.store_ratings_xml(
+         p_errors         => l_errors,
+         p_xml            => l_rating_xml,
+         p_fail_if_exists => 'F');
+      ut.expect(l_errors).to_be_not_null;
       ---------------------------------------------
       -- store the rating with a specified datum --
       -- (should raise an exception)             --
       ---------------------------------------------
       cwms_loc.set_default_vertical_datum(null);
-      begin
-         cwms_rating.store_ratings_xml(
-            p_errors         => l_errors,
-            p_xml            => replace(l_rating_xml, '<units>ft;', '<units>U=ft|V=NAVD88;'),
-            p_fail_if_exists => 'F');
-         cwms_err.raise('ERROR', 'Expected exception not raised');
-      exception
-         when others then
-            if regexp_like(dbms_utility.format_error_stack, 'Cannot convert between vertical datums', 'mn')
-            then null;
-            else raise;
-            end if;
-      end;
+      cwms_rating.store_ratings_xml(
+         p_errors         => l_errors,
+         p_xml            => replace(l_rating_xml, '<units-id>ft;acre</units-id>', '<units-id>U=ft|V=NAVD88;acre</units-id>'),
+         p_fail_if_exists => 'F');
+      ut.expect(l_errors).to_be_not_null;
    end test_cwdb_143_storing_elev_with_unknown_datum_offset;
 END test_cwms_loc;
 /

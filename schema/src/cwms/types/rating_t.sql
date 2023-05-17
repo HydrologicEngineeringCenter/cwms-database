@@ -1,3 +1,4 @@
+-- drop type rating_t force;
 create or replace type rating_t
 /**
  * Holds a rating
@@ -46,6 +47,7 @@ as object (
    connections_map rating_conn_map_tab_t,  -- for virtual ratings
    conditions      logic_expr_tab_t,       -- for transitional ratings
    evaluations     str_tab_tab_t,          -- for transitional ratings
+   effective_datum varchar2(16),           -- transient for table ratings
    /**
     * Construct a rating_t object for a simple concrete rating.
     *
