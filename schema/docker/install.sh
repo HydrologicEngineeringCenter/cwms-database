@@ -41,6 +41,7 @@ then
     #exit 1
 fi
 
+cd /cwmsdb/schema
 
 echo $DB_NAME
 sed -e "s/HOST_AND_PORT/$DB_HOST_PORT/g" \
@@ -50,7 +51,7 @@ sed -e "s/HOST_AND_PORT/$DB_HOST_PORT/g" \
     -e "s/OFFICE_CODE/$OFFICE_EROC/g" \
     -e "s/TEST_ACCOUNT_FLAG/-testaccount/g" \
     -e "s/SYS_PASSWORD/$SYS_PASSWORD/g" \
-    -e "s/PASSWORD/$CWMS_PASSWORD/g" /cwmsdb/teamcity_overrides.xml > /overrides.xml
+    -e "s/PASSWORD/$CWMS_PASSWORD/g" teamcity_overrides.xml > /overrides.xml
  # TODO: create lookup system for office code
 
 cat /overrides.xml
@@ -64,7 +65,6 @@ END
 
 sqlplus sys/$SYS_PASSWORD@$DB_HOST_PORT$DB_NAME as sysdba @apexins.sql APEX APEX TEMP /i/
 
-cd /cwmsdb
 echo "Creating table spaces at sys/$SYS_PASSWORD@$DB_HOST_PORT$DB_NAME as sysdba"
 sqlplus sys/$SYS_PASSWORD@$DB_HOST_PORT$DB_NAME as sysdba <<END
     CREATE TABLESPACE "CWMS_20AT_DATA" DATAFILE '/opt/oracle/oradata/at_data.dat' size 20M autoextend on next 10M;
@@ -75,11 +75,8 @@ sqlplus sys/$SYS_PASSWORD@$DB_HOST_PORT$DB_NAME as sysdba <<END
 
 END
 
-
-
 echo "Installing CWMS Schema"
-cd /cwmsdb
-
+cd /cwmsdb/schema
 if [ "$INSTALLONCE" == "1" ]; then
     echo "Running only build task"
     ant -Dbuilduser.overrides=/overrides.xml build

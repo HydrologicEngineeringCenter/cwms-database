@@ -64,10 +64,10 @@ docker run  -e DB_HOST_PORT=<database hostname/ip>:<port> \
             -e BUILDUSER_PASSWORD=<desired build user password or leave off to generate> \
             -e OFFICE_ID=<office ID, letters, all caps. default is HEC> \
             -e OFFICE_EROC=<2 letter eroc, lower case, default is q0> \
-            registy.hecdev.net/cwms/schema_installer:<version>
+            registry.hecdev.net/cwms/schema_installer:<version>
 ```
 
-NOTE the dockerimage is not generally the friendly for diagnosing thing as it's intended
+NOTE the dockerimage is not generally friendly for diagnosing thing as it's intended
 for use after the build scripts have been verified. The buildCWMS_DB.log and other logging .txt
 files will be printed to the schema installers stdout.
 

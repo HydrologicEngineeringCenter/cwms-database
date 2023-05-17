@@ -11,9 +11,9 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>mil.army.usace.hec</groupId>
-		<artifactId>cwms-database-schema</artifactId>
-		<version>99-99-99-SNAPSHOT</version>
-		<relativePath>../../schema/pom.xml</relativePath>
+		<artifactId>cwms-database-schema-parent</artifactId>
+		<version>${revision}</version>
+		<relativePath>../../pom.xml</relativePath>
 	</parent>
 	<name>CwmsDbPropertiesReader</name>
 	<packaging>maven-plugin</packaging>
