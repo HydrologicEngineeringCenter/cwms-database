@@ -827,14 +827,19 @@ AS
       l_offset_to_ngvd29 binary_double := 1.07D; -- ft
       l_offset_to_navd88 binary_double;
       l_offset_specified boolean;
+      l_table_rating     boolean;
       l_crsr             sys_refcursor;
       l_datetimes        cwms_t_date_table;
       l_values           cwms_t_double_tab;
       l_quality_codes    cwms_t_number_tab;
       l_ratings          cwms_t_rating_tab;
       l_rating_spec_ids  cwms_t_str_tab := cwms_t_str_tab();
+      l_effective_dates  cwms_t_date_table := cwms_t_date_table();
+      l_create_dates     cwms_t_date_table := cwms_t_date_table();
       l_expected_elevs   cwms_t_number_tab := cwms_t_number_tab();
       l_errors           clob;
+      l_value_str        varchar2(16);
+      l_expected_str     varchar2(16);
       l_ts_data          cwms_t_ztsv_array := cwms_t_ztsv_array(
                             cwms_t_ztsv(timestamp '2023-05-16 01:00:00', 1001, 3),
                             cwms_t_ztsv(timestamp '2023-05-16 02:00:00', 1002, 3),
@@ -1020,9 +1025,30 @@ AS
          p_store_rule      => cwms_util.replace_all,
          p_version_date    => cwms_util.non_versioned,
          p_office_id       => l_office_id);
+
+      select date_time,
+             value,
+             quality_code
+        bulk collect
+        into l_datetimes,
+             l_values,
+             l_quality_codes
+        from cwms_v_tsv_dqu
+       where cwms_ts_id = l_ts_id
+         and date_time between l_ts_data(1).date_time and l_ts_data(l_ts_data.count).date_time
+         and unit_id = 'ft';
+
+      ut.expect(l_datetimes.count).to_equal(l_ts_data.count);
+      for j in 1..l_datetimes.count loop
+         ut.expect(l_datetimes(j)).to_equal(l_ts_data(j).date_time);
+         l_value_str    := cwms_rounding.round_nt_f(l_values(j), '7777777777');
+         l_expected_str := cwms_rounding.round_dt_f(l_ts_data(j).value, '7777777777');
+         ut.expect(l_value_str).to_equal(l_expected_str);
+         ut.expect(l_quality_codes(j)).to_equal(l_ts_data(j).quality_code);
+      end loop;
       ---------------------------------------------------------------------
       -- retrieve the elev timeseries with no default or specified datum --
-      -- (should succeed                                                 --
+      -- (should succeed)                                                --
       ---------------------------------------------------------------------
       cwms_ts.retrieve_ts(
          p_at_tsv_rc  => l_crsr,
@@ -1031,18 +1057,23 @@ AS
          p_start_time => l_ts_data(1).date_time,
          p_end_time   => l_ts_data(l_ts_data.count).date_time,
          p_office_id  => l_office_id);
+
       fetch l_crsr
        bulk collect
        into l_datetimes,
             l_values,
             l_quality_codes;
       close l_crsr;
+
       ut.expect(l_datetimes.count).to_equal(l_ts_data.count);
       for i in 1..l_datetimes.count loop
          ut.expect(l_datetimes(i)).to_equal(l_ts_data(i).date_time);
-         ut.expect(round(l_values(i),9)).to_equal(round(l_ts_data(i).value,9));
+         l_value_str    := cwms_rounding.round_nt_f(l_values(i), '7777777777');
+         l_expected_str := cwms_rounding.round_dt_f(l_ts_data(i).value, '7777777777');
+         ut.expect(l_value_str).to_equal(l_expected_str);
          ut.expect(l_quality_codes(i)).to_equal(l_ts_data(i).quality_code);
       end loop;
+
       for i in 1..2 loop
          l_offset_specified := i = 2;
          if l_offset_specified then
@@ -1081,10 +1112,13 @@ AS
                 where cwms_ts_id = l_ts_id
                   and date_time between l_ts_data(1).date_time and l_ts_data(l_ts_data.count).date_time
                   and unit_id = 'ft';
+
                ut.expect(l_datetimes.count).to_equal(l_ts_data.count);
                for j in 1..l_datetimes.count loop
                   ut.expect(l_datetimes(j)).to_equal(l_ts_data(j).date_time);
-                  ut.expect(round(l_values(j),9)).to_equal(round(l_ts_data(j).value-l_offset_to_ngvd29,9));
+                  l_value_str    := cwms_rounding.round_nt_f(l_values(j), '7777777777');
+                  l_expected_str := cwms_rounding.round_dt_f(l_ts_data(j).value-l_offset_to_ngvd29, '7777777777');
+                  ut.expect(l_value_str).to_equal(l_expected_str);
                   ut.expect(l_quality_codes(j)).to_equal(l_ts_data(j).quality_code);
                end loop;
             else
@@ -1116,13 +1150,15 @@ AS
                      l_values,
                      l_quality_codes;
                close l_crsr;
+
                ut.expect(l_datetimes.count).to_equal(l_ts_data.count);
                for j in 1..l_datetimes.count loop
                   ut.expect(l_datetimes(j)).to_equal(l_ts_data(j).date_time);
-                  ut.expect(round(l_values(j),9)).to_equal(round(l_ts_data(j).value,9));
+                  l_value_str    := cwms_rounding.round_nt_f(l_values(j), '7777777777');
+                  l_expected_str := cwms_rounding.round_dt_f(l_ts_data(j).value, '7777777777');
+                  ut.expect(l_value_str).to_equal(l_expected_str);
                   ut.expect(l_quality_codes(j)).to_equal(l_ts_data(j).quality_code);
                end loop;
-               close l_crsr;
             else
                close l_crsr;
                cwms_err.raise('ERROR', 'Expected exception not raised');
@@ -1164,10 +1200,13 @@ AS
                 where cwms_ts_id = l_ts_id
                   and date_time between l_ts_data(1).date_time and l_ts_data(l_ts_data.count).date_time
                   and unit_id = 'ft';
+
                ut.expect(l_datetimes.count).to_equal(l_ts_data.count);
                for j in 1..l_datetimes.count loop
                   ut.expect(l_datetimes(j)).to_equal(l_ts_data(j).date_time);
-                  ut.expect(round(l_values(j),9)).to_equal(round(l_ts_data(j).value-l_offset_to_navd88,9));
+                  l_value_str    := cwms_rounding.round_nt_f(l_values(j), '7777777777');
+                  l_expected_str := cwms_rounding.round_dt_f(l_ts_data(j).value-l_offset_to_navd88, '7777777777');
+                  ut.expect(l_value_str).to_equal(l_expected_str);
                   ut.expect(l_quality_codes(j)).to_equal(l_ts_data(j).quality_code);
                end loop;
             else
@@ -1199,10 +1238,13 @@ AS
                      l_values,
                      l_quality_codes;
                close l_crsr;
+
                ut.expect(l_datetimes.count).to_equal(l_ts_data.count);
                for j in 1..l_datetimes.count loop
                   ut.expect(l_datetimes(j)).to_equal(l_ts_data(j).date_time);
-                  ut.expect(round(l_values(j),9)).to_equal(round(l_ts_data(j).value,9));
+                  l_value_str    := cwms_rounding.round_nt_f(l_values(j), '7777777777');
+                  l_expected_str := cwms_rounding.round_dt_f(l_ts_data(j).value, '7777777777');
+                  ut.expect(l_value_str).to_equal(l_expected_str);
                   ut.expect(l_quality_codes(j)).to_equal(l_ts_data(j).quality_code);
                end loop;
                close l_crsr;
@@ -1226,29 +1268,33 @@ AS
             commit;
          end if;
       end loop;
-      for i in 1..2 loop
-         ----------------------------------
-         -- get the rating id fro the xml --
-         ----------------------------------
+      for rating_index in 1..2 loop
+         --------------------------------------
+         -- get the rating info from the xml --
+         --------------------------------------
          l_ratings_xml.extend;
-         l_ratings_xml(i) := xmltype(l_ratings_xml_str(i));
+         l_ratings_xml(rating_index)     := xmltype(l_ratings_xml_str(rating_index));
          l_rating_spec_ids.extend;
-         l_rating_spec_ids(i) := cwms_util.get_xml_text(l_ratings_xml(i), '/ratings/simple-rating/rating-spec-id');
-         if i = 1 then
+         l_rating_spec_ids(rating_index) := cwms_util.get_xml_text(l_ratings_xml(rating_index), '/ratings/simple-rating/rating-spec-id');
+         l_effective_dates.extend;
+         l_effective_dates(rating_index) := cwms_util.to_timestamp(cwms_util.get_xml_text(l_ratings_xml(rating_index), '/ratings/simple-rating/effective-date'));
+         l_create_dates.extend;
+         l_create_dates(rating_index)    := cwms_util.to_timestamp(cwms_util.get_xml_text(l_ratings_xml(rating_index), '/ratings/simple-rating/create-date'));
+         l_table_rating := rating_index = 1;
+         if l_table_rating then
             ---------------------------------------------------------------
             -- get the elevation values from the xml of the table rating --
             ---------------------------------------------------------------
             declare
                l_elev number;
             begin
-               for j in 1..999999 loop
-                  l_expected_elevs.extend;
+               for i in 1..999999 loop
                   l_elev := cwms_util.get_xml_number(
                                l_ratings_xml(1),
-                               '/ratings/simple-rating/rating-points/point['||j||']/ind');
+                               '/ratings/simple-rating/rating-points/point['||i||']/ind');
                   exit when l_elev is null;
                   l_expected_elevs.extend;
-                  l_expected_elevs(j) := l_elev;
+                  l_expected_elevs(i) := l_elev;
                end loop;
             end;
          end if;
@@ -1259,65 +1305,184 @@ AS
          cwms_loc.set_default_vertical_datum(null);
          cwms_rating.store_ratings_xml(
             p_errors         => l_errors,
-            p_xml            => l_ratings_xml(i),
+            p_xml            => l_ratings_xml(rating_index),
             p_fail_if_exists => 'F');
+
          ut.expect(l_errors).to_be_null;
+         if l_table_rating then
+            select ind_value_1
+              bulk collect
+              into l_values
+              from cwms_v_rating_values_native
+             where rating_code = (select rating_code
+                                    from cwms_v_rating
+                                   where rating_id = l_rating_spec_ids(rating_index)
+                                     and effective_date = l_effective_dates(rating_index)
+                                     and create_date = l_create_dates(rating_index)
+                                 )
+             order by 1;
+
+            ut.expect(l_values.count).to_equal(l_expected_elevs.count);
+            for i in 1..l_values.count loop
+               l_value_str    := cwms_rounding.round_nt_f(l_values(i), '7777777777');
+               l_expected_str := cwms_rounding.round_dt_f(l_expected_elevs(i), '7777777777');
+               ut.expect(l_value_str).to_equal(l_expected_str);
+            end loop;
+         end if;
          ------------------------------------------------------------
          -- retrieve the rating with no default or specified datum --
          -- (should succeed)                                       --
          ------------------------------------------------------------
          l_ratings := cwms_rating.retrieve_ratings_obj_f(
-            p_spec_id_mask   => l_rating_spec_ids(i),
+            p_spec_id_mask   => l_rating_spec_ids(rating_index),
             p_office_id_mask => l_office_id);
+
          ut.expect(l_ratings.count).to_equal(1);
-         if i = 1 then
-            l_ratings(i).convert_to_native_units;
-            for j in 1..l_ratings(1).rating_info.rating_values.count loop
-               ut.expect(round(to_number(l_ratings(1).rating_info.rating_values(j).ind_value), 9)).to_equal(round(l_expected_elevs(j),9));
+         if l_table_rating then
+            ut.expect(l_ratings(1).rating_info.rating_values.count).to_equal(l_expected_elevs.count);
+            l_ratings(rating_index).convert_to_native_units;
+            for i in 1..l_ratings(1).rating_info.rating_values.count loop
+               l_value_str    := cwms_rounding.round_nt_f(l_values(i), '7777777777');
+               l_expected_str := cwms_rounding.round_dt_f(l_expected_elevs(i), '7777777777');
+               ut.expect(l_value_str).to_equal(l_expected_str);
             end loop;
          end if;
-         -------------------------------------------
-         -- store the rating with a default datum --
-         -- (should raise an exception)           --
-         -------------------------------------------
-         cwms_loc.set_default_vertical_datum('NGVD29');
-         cwms_rating.store_ratings_xml(
-            p_errors         => l_errors,
-            p_xml            => l_ratings_xml(i),
-            p_fail_if_exists => 'F');
-         ut.expect(l_errors).to_be_not_null;
-         ut.expect(regexp_like(l_errors, 'Cannot convert between vertical datums', 'mn')).to_be_true;
-         ----------------------------------------------
-         -- retrieve the rating with a default datum --
-         -- (should raise an exception)              --
-         ----------------------------------------------
-         begin
-            l_ratings := cwms_rating.retrieve_ratings_obj_f(
-               p_spec_id_mask   => l_rating_spec_ids(i),
-               p_office_id_mask => l_office_id);
-            cwms_err.raise('ERROR', 'Expected exception not raised');
-         exception
-            when others then
-               ut.expect(regexp_like(dbms_utility.format_error_stack, 'Cannot convert between vertical datums', 'mn')).to_be_true;
-         end;
-         ---------------------------------------------
-         -- store the rating with a specified datum --
-         -- (should raise an exception)             --
-         ---------------------------------------------
-         cwms_loc.set_default_vertical_datum(null);
-         cwms_rating.store_ratings_xml(
-            p_errors         => l_errors,
-            p_xml            => replace(
-                                   l_ratings_xml_str(i),
-                                   case when i = 1 then '<units-id>ft;acre</units-id>' else '<units-id>ft,ft;cfs</units-id>' end,
-                                   case when i = 1 then '<units-id>U=ft|V=NAVD88;acre</units-id>' else '<units-id>U=ft|V=NAVD88,ft;cfs</units-id>' end),
-            p_fail_if_exists => 'F');
-         ut.expect(l_errors).to_be_not_null;
-         if i = 1 then
-            ut.expect(regexp_like(l_errors, 'Cannot convert between vertical datums', 'mn')).to_be_true;
-         else
-            ut.expect(regexp_like(l_errors, 'Cannot have multiple effective datums in a single rating', 'mn')).to_be_true;
-         end if;
+         for i in 1..2 loop
+            l_offset_specified := i = 2;
+            if l_offset_specified then
+               cwms_loc.store_vertical_datum_offset(
+                  p_location_id         => l_location_id,
+                  p_vertical_datum_id_1 => 'Pensacola',
+                  p_vertical_datum_id_2 => 'NGVD29',
+                  p_offset              => l_offset_to_ngvd29,
+                  p_unit                => 'ft',
+                  p_office_id           => l_office_id);
+               commit;
+            end if;
+            ----------------------------------------------
+            -- store the rating with a default datum    --
+            -- (should raise an exception) if no offset --
+            ----------------------------------------------
+            cwms_loc.set_default_vertical_datum('NGVD29');
+            cwms_rating.store_ratings_xml(
+               p_errors         => l_errors,
+               p_xml            => l_ratings_xml(rating_index),
+               p_fail_if_exists => 'F');
+
+            if l_offset_specified and l_table_rating then
+               ut.expect(l_errors).to_be_null;
+               if l_table_rating then
+                  select ind_value_1
+                    bulk collect
+                    into l_values
+                    from cwms_v_rating_values_native
+                   where rating_code = (select rating_code
+                                          from cwms_v_rating
+                                         where rating_id = l_rating_spec_ids(rating_index)
+                                           and effective_date = l_effective_dates(rating_index)
+                                           and create_date = l_create_dates(rating_index)
+                                       )
+                   order by 1;
+
+                  ut.expect(l_values.count).to_equal(l_expected_elevs.count);
+                  for j in 1..l_values.count loop
+                     l_value_str    := cwms_rounding.round_nt_f(l_values(j), '7777777777');
+                     l_expected_str := cwms_rounding.round_dt_f(l_expected_elevs(j)-l_offset_to_ngvd29, '7777777777');
+                     ut.expect(l_value_str).to_equal(l_expected_str);
+                  end loop;
+               end if;
+            else
+               ut.expect(l_errors).to_be_not_null;
+               if l_offset_specified and not l_table_rating then
+                  ut.expect(regexp_like(l_errors, 'Cannot change vertical datum on an expression rating', 'mn')).to_be_true;
+               else
+                  ut.expect(regexp_like(l_errors, 'Cannot convert between vertical datums', 'mn')).to_be_true;
+               end if;
+            end if;
+            ----------------------------------------------
+            -- retrieve the rating with a default datum --
+            -- (should raise an exception) if no offset --
+            ----------------------------------------------
+            begin
+               l_ratings := cwms_rating.retrieve_ratings_obj_f(
+                  p_spec_id_mask   => l_rating_spec_ids(rating_index),
+                  p_office_id_mask => l_office_id);
+
+               if l_table_rating and l_offset_specified then
+                  ut.expect(l_ratings.count).to_equal(1);
+                  if l_table_rating then
+                     ut.expect(l_ratings(1).rating_info.rating_values.count).to_equal(l_expected_elevs.count);
+                     l_ratings(rating_index).convert_to_native_units;
+                     for j in 1..l_ratings(1).rating_info.rating_values.count loop
+                        l_value_str    := cwms_rounding.round_nt_f(l_ratings(1).rating_info.rating_values(j).ind_value, '7777777777');
+                        l_expected_str := cwms_rounding.round_dt_f(l_expected_elevs(j), '7777777777');
+                        ut.expect(l_value_str).to_equal(l_expected_str);
+                     end loop;
+                  end if;
+               else
+                  cwms_err.raise('ERROR', 'Expected exception not raised');
+               end if;
+            exception
+               when others then
+                  if not l_offset_specified then
+                     ut.expect(regexp_like(dbms_utility.format_error_stack, 'Cannot convert between vertical datums', 'mn')).to_be_true;
+                  end if;
+            end;
+            ----------------------------------------------
+            -- store the rating with a specified datum  --
+            -- (should raise an exception) if no offset --
+            ----------------------------------------------
+            cwms_loc.set_default_vertical_datum(null);
+            cwms_rating.store_ratings_xml(
+               p_errors         => l_errors,
+               p_xml            => replace(
+                                      l_ratings_xml_str(rating_index),
+                                      case when l_table_rating then '<units-id>ft;acre</units-id>' else '<units-id>ft,ft;cfs</units-id>' end,
+                                      case when l_table_rating then '<units-id>U=ft|V=NAVD88;acre</units-id>' else '<units-id>U=ft|V=NAVD88,ft;cfs</units-id>' end),
+               p_fail_if_exists => 'F');
+            if l_offset_specified and l_table_rating then
+               ut.expect(l_errors).to_be_null;
+               if l_table_rating then
+                  select ind_value_1
+                    bulk collect
+                    into l_values
+                    from cwms_v_rating_values_native
+                   where rating_code = (select rating_code
+                                          from cwms_v_rating
+                                         where rating_id = l_rating_spec_ids(rating_index)
+                                           and effective_date = l_effective_dates(rating_index)
+                                           and create_date = l_create_dates(rating_index)
+                                       )
+                   order by 1;
+
+                  ut.expect(l_values.count).to_equal(l_expected_elevs.count);
+                  for j in 1..l_values.count loop
+                     l_value_str    := cwms_rounding.round_nt_f(l_values(j), '7777777777');
+                     l_expected_str := cwms_rounding.round_dt_f(l_expected_elevs(j)-l_offset_to_navd88, '7777777777');
+                     ut.expect(l_value_str).to_equal(l_expected_str);
+                  end loop;
+               end if;
+            else
+               ut.expect(l_errors).to_be_not_null;
+               if l_table_rating then
+                  ut.expect(regexp_like(l_errors, 'Cannot convert between vertical datums', 'mn')).to_be_true;
+               else
+                  ut.expect(regexp_like(l_errors, 'Cannot have multiple effective datums in a single rating', 'mn')).to_be_true;
+               end if;
+            end if;
+            ------------------------------------------------------------------------------
+            -- cannot retrieve ratings with specified datum (no input units on retrieve --
+            ------------------------------------------------------------------------------
+            if l_offset_specified then
+               cwms_loc.delete_vertical_datum_offset(
+                  p_location_id          => l_location_id,
+                  p_vertical_datum_id_1  => 'Pensacola',
+                  p_vertical_datum_id_2  => 'NGVD29',
+                  p_match_effective_date => 'F',
+                  p_office_id            => l_office_id);
+               commit;
+            end if;
+         end loop;
       end loop;
    end test_cwdb_143_storing_elev_with_unknown_datum_offset;
 END test_cwms_loc;

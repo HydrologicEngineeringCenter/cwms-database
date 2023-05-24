@@ -145,7 +145,7 @@ as
       -- test for virtual or transitional rating --
       ---------------------------------------------
       l_is_virtual := get_node(l_xml, '/*/connections') is not null;
-         if l_is_virtual then
+      if l_is_virtual then
          if l_xml.getrootelement != 'virtual-rating' then
             cwms_err.raise('ERROR', 'Cannot specify <connections> in <'||l_xml.getrootelement||'> element');
          end if;
@@ -575,25 +575,43 @@ as
       if self.rating_info is null and self.formula is null then
          self.validate_obj('F');
       else
-         self.validate_obj('T');
+         self.validate_obj('T'); -- will set self.effetive_datum from default datum or datum in elev units spec
       end if;
       if not l_is_virtual and not l_is_transitional and self.rating_info is not null then
          --------------------------------------------------
-         -- convert to native datum if                   --
-         --   a. is a table rating, and                  --
-         --   b. has elevations, and                     --
-         --   c. xml specifies a non-null vertical datum --
+         -- convert to native datum if all of:           --
+         --   1. is a table rating, and                  --
+         --   2. has elevations, and                     --
+         --   3. vertical datum is specified by one of:  --
+         --      a. <vertical-datum> xml element         --
+         --      b. <units-id> specfies vertical datum   --
+         --      c. default vertical datum is non-null   --
          --------------------------------------------------
          l_elev_positions := cwms_rating.get_elevation_positions(cwms_util.split_text(self.rating_spec_id, 2, cwms_rating.separator1));
          if l_elev_positions is not null then
             l_datum := get_text(l_xml, '/*/vertical-datum');
-            if l_datum is not null then
+            if l_datum is not null or self.effective_datum is not null then
+               if l_datum is not null and self.effective_datum is not null then
+                  if l_datum != self.effective_datum then
+                  cwms_err.raise(
+                     'ERROR',
+                     'Cannot specify different vertical datums in <vertical-datum> element ('
+                     ||l_datum
+                     ||') in effective datum ('
+                     ||self.effective_datum
+                     ||') on rating '
+                     ||self.office_id
+                     ||'/'
+                     ||self.rating_spec_id);
+                  end if;
+               end if;
                declare
                   l_vdatum_rating vdatum_rating_t;
                begin
-                  l_vdatum_rating := vdatum_rating_t(self, l_datum, l_elev_positions);
+                  l_vdatum_rating := vdatum_rating_t(self, nvl(l_datum, self.effective_datum), l_elev_positions);
                   l_vdatum_rating.to_native_datum;
-                  self := l_vdatum_rating;
+                  self.rating_info := l_vdatum_rating.rating_info;
+                  self.effective_datum := null;
                end;
             end if;
          end if;
@@ -640,6 +658,7 @@ as
    is
       l_ind_param_count      number(1);
       l_ind_param_spec_codes number_tab_t := number_tab_t();
+      l_location_code        at_rating_spec.location_code%type;
    begin
       ----------------------------------------------------------
       -- use loop for convenience - only 1 at most will match --
@@ -659,6 +678,7 @@ as
                 where rating_spec_code = rec.rating_spec_code
             )
          loop
+            l_location_code := rec2.location_code;
             for rec3 in
                (  select template_code,
                          office_code,
@@ -945,7 +965,26 @@ as
       if self.rating_spec_id is null then
          cwms_err.raise('ERROR', 'Rating not found for code '||p_rating_code);
       end if;
-      validate_obj(p_include_points);
+      validate_obj(p_include_points); -- sets self.effective_datum
+      if self.effective_datum is not null then
+         ----------------------------------------
+         -- adjust to effective vertical datum --
+         ----------------------------------------
+         declare
+            l_vdatum_rating    vdatum_rating_t;
+            l_elev_positions   number_tab_t;
+            l_local_vert_datum at_vert_datum_offset.vertical_datum_id_1%type;
+         begin
+            l_elev_positions := cwms_rating.get_elevation_positions(
+                                   cwms_util.split_text(self.rating_spec_id,
+                                   2,
+                                   cwms_rating.separator1));
+            l_local_vert_datum := cwms_loc.get_local_vert_datum_name_f(l_location_code);
+            l_vdatum_rating := vdatum_rating_t(self, l_local_vert_datum, l_elev_positions);
+            l_vdatum_rating.to_vertical_datum(self.effective_datum);
+            self.rating_info := l_vdatum_rating.rating_info;
+         end;
+      end if;
    end;
 
    member procedure init(
@@ -1156,7 +1195,8 @@ as
                l_offset := cwms_loc.get_vertical_datum_offset(
                   p_location_code       => l_location_code,
                   p_vertical_datum_id_1 => self.effective_datum,
-                  p_vertical_datum_Id_2 => l_local_datum);
+                  p_vertical_datum_Id_2 => l_local_datum,
+                  p_unit                => 'm');
             end if;
          end;
          ---------------------------------------------------------------------------
@@ -1860,6 +1900,9 @@ as
       l_tokens      str_tab_t;
       l_pos         pls_integer;
       l_rating_spec rating_spec_t;
+      l_unit_specs  str_tab_t;
+      l_parameters  str_tab_t;
+      l_value       binary_double;
    begin
       l_parts := str_tab_t();
       l_parts.extend(2);
@@ -1873,29 +1916,74 @@ as
             l_parts(2) := trim(substr(l_parts(2), 1, length(l_parts(2))-1));
          end if;
       end if;
+      l_unit_specs := cwms_util.split_text(replace(l_parts(2), cwms_rating.separator2, cwms_rating.separator3), cwms_rating.separator3);
       begin
          l_rating_spec := rating_spec_t(l_parts(1), self.office_id);
+         l_parameters := cwms_util.split_text(replace(l_rating_spec.template_id, cwms_rating.separator2, cwms_rating.separator3), cwms_rating.separator3);
+         if l_unit_specs.count != l_parameters.count then
+            cwms_err.raise('ERROR', 'Source rating has different numbers of parameters and units: '||p_text);
+         end if;
+         for i in 1..l_parameters.count loop
+            begin
+               l_value := cwms_util.convert_units(1, cwms_util.parse_unit(l_unit_specs(i)), cwms_util.get_db_unit_code(l_parameters(i)));
+            exception
+               when others then
+                  cwms_err.raise(
+                     'ERROR',
+                     'Source rating uses invalid unit ('
+                     ||cwms_util.parse_unit(l_unit_specs(i))
+                     ||') for parameter '
+                     ||l_parameters(i)
+                     ||': '
+                     ||p_text);
+            end;
+         end loop;
+         -----------------------
+         -- valid rating spec --
+         -----------------------
          p_is_rating := true;
       exception
          when others then
+            declare
+               type arg_index_t is table of boolean index by binary_integer;
+               arg_indexes arg_index_t;
+               idx varchar2(4);
             begin
                l_tokens := cwms_util.tokenize_expression(l_parts(1));
                for i in 1..l_tokens.count loop
                   case
-                  when cwms_util.is_expression_constant(l_tokens(i))  then null;
-                  when cwms_util.is_expression_function(l_tokens(i))  then null;
-                  when cwms_util.is_expression_operator(l_tokens(i))  then null;
-                  when regexp_instr(l_tokens(i), '^-?(I|ARG)\d$') = 1 then null;
+                  when cwms_util.is_expression_constant(l_tokens(i)) then null;
+                  when cwms_util.is_expression_function(l_tokens(i)) then null;
+                  when cwms_util.is_expression_operator(l_tokens(i)) then null;
                   else
-                     declare
-                        x number;
                      begin
-                        x := to_number(l_tokens(i));
+                        idx := regexp_replace(l_tokens(i), '^-?(I|ARG)(\d+$)', '\2', 1, 0, 'i');
+                        if idx is not null and idx != l_tokens(i) then
+                           arg_indexes(idx) := true;
+                        else
+                           l_value := l_tokens(i);
+                        end if;
                      exception
                         when others then cwms_err.raise('INVALID_ITEM', l_tokens(i), 'math expression token');
                      end;
                   end case;
                end loop;
+               for i in 1..l_unit_specs.count loop
+                  if not arg_indexes.exists(i) then
+                     cwms_err.raise('ERROR', 'Math expression has unit but no argument for position '||i);
+                  end if;
+               end loop;
+               l_value := arg_indexes.first;
+               loop
+                  exit when l_value is null;
+                  if not l_value between 1 and l_unit_specs.count then
+                     cwms_err.raise('ERROR', 'Math expression has argument but no unit for position '||l_value);
+                  end if;
+                  l_value := arg_indexes.next(l_value);
+               end loop;
+               -----------------------------
+               -- valid rating expression --
+               -----------------------------
                p_is_rating := false;
             exception
                when others then
@@ -1905,6 +1993,11 @@ as
                      'CWMS rating spec or math expression');
             end;
       end;
+      for i in 1..l_unit_specs.count loop
+         if cwms_util.parse_vertical_datum(l_unit_specs(i)) is not null then
+            cwms_err.raise('ERROR', 'Cannot specify vertical datum in source rating unit spec: '||p_text);
+         end if;
+      end loop;
       p_rating_part := l_parts(1);
       p_units_part  := l_parts(2);
    end parse_source_rating;
@@ -2090,17 +2183,7 @@ as
                l_clone.convert_to_database_time;
             end if;
             if self.effective_datum is not null then
-               l_elev_positions := number_tab_t();
-               for i in 1..self.get_ind_parameter_count loop
-                  if regexp_like(self.get_ind_parameter(i), '$Elev.*', 'i') then
-                     l_elev_positions.extend;
-                     l_elev_positions(l_elev_positions.count) := 1;
-                  end if;
-               end loop;
-               if regexp_like(self.get_dep_parameter, '$Elev.*', 'i') then
-                  l_elev_positions.extend;
-                  l_elev_positions(l_elev_positions.count) := self.get_ind_parameter_count + 1;
-               end if;
+               l_elev_positions := cwms_rating.get_elevation_positions(cwms_util.split_text(self.rating_spec_id, 2, cwms_rating.separator1));
                l_vdatum_rating := vdatum_rating_t(
                   p_rating         => self,
                   p_current_datum  => self.effective_datum,
