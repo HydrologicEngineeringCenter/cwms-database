@@ -28,10 +28,9 @@ RUN wget https://download.oracle.com/otn_software/apex/apex_21.1_en.zip
 RUN unzip apex_21.1_en.zip && \
     rm *.zip
 
-RUN mkdir /cwmsdb
-WORKDIR /cwmsdb
+COPY . /cwmsdb
 
-ADD . /cwmsdb/
+WORKDIR /cwmsdb/schema
 
 ENV PATH=$PATH:/opt/oracle/instantclient_19_6
 ENV LD_LIBRARY_PATH=/opt/oracle/instantclient_19_6
@@ -41,4 +40,6 @@ ENV OFFICE_EROC=Q0
 ENV INSTALLONCE=0
 ENV QUIET=0
 
-CMD ["/cwmsdb/docker/install.sh"]
+RUN chmod +x ./docker/install.sh
+
+CMD ["/cwmsdb/schema/docker/install.sh"]
