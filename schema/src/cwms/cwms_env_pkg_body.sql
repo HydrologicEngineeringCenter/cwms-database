@@ -99,7 +99,7 @@ AS
     set_session_privileges;
    END set_session_user;
 
-   PROCEDURE set_session_user_direct(p_user VARCHAR2)
+   PROCEDURE set_session_user_direct(p_user VARCHAR2, p_office VARCHAR2)
    IS
       l_userid VARCHAR2(32);
       l_role varchar2(32) := null;
@@ -111,7 +111,11 @@ AS
                          || USER || ' from host ' || l_from_ip;
       log('set_session_user_direct',cwms_msg.msg_level_basic,l_msg);
       set_cwms_env('CWMS_USER',p_user);
-      set_session_privileges;
+      if p_office is not null then
+         set_session_office_id(p_office);
+      else
+         clear_session_privileges; -- set back to read only
+      end if;
    exception
       when no_data_found then
          l_msg := 'Unauthorized attempt to set user context by ' || USER || ' from ' || l_from_ip;
@@ -124,12 +128,12 @@ AS
         raise;
    END set_session_user_direct;
 
-   PROCEDURE set_session_user_apikey(p_apikey VARCHAR2)
+   PROCEDURE set_session_user_apikey(p_apikey VARCHAR2, p_office VARCHAR2)
    IS
       l_userid VARCHAR2(32) := null;
    BEGIN
       select userid into l_userid from cwms_20.av_active_api_keys where apikey = p_apikey;
-      set_session_user_direct(l_userid);      
+      set_session_user_direct(l_userid,p_office);
    end set_session_user_apikey;
 
    PROCEDURE set_session_privileges
