@@ -1,41 +1,49 @@
 CREATE OR REPLACE PACKAGE &cwms_schema..test_webuser_abilities AUTHID CURRENT_USER
 AS
-    --%suite(Test WEB USER has it's extra priveleges in CWMS_ENV )
-    --%rollback(manual)
-    --%beforeall(setup)
-    --%afterall(teardown)
-    procedure setup;
-    procedure teardown;
+    -- %suite(Test WEB USER has it's extra priveleges in CWMS_ENV )
+    -- %rollback(manual)
 
-    --%test(Can query an AT_ table directly.)
+    -- %beforeall
+    procedure setup_users_webuser;
+
+    -- %afterall
+    procedure teardown_users_webuser;
+
+    -- %test(Can query an AT_ table directly.)
     procedure can_query_at_tables;
 
-    --%test(Can context back and forth)
+    -- %test(Can set context back and forth between users)
     procedure can_set_context_users;
 
-    --%test(Can interact with the api keys table and view)
+    -- %test(Can interact with the api keys table and view)
     procedure can_interact_with_api_keys_table_and_view;
 
-    --%test(Can set USER context by API key)
+    -- %test(Can set USER context by API key)
     procedure can_set_context_user_by_key;
 
-    multioffice_user varchar(255) := 'l2multof';
+    /** The test below expects no admin privs*/
+    multioffice_user varchar(255) := '&&eroc.hectest_multioffice2';
 END;
 /
 
 /* Formatted on 2/24/2022 3:11:58 PM (QP5 v5.381) */
 CREATE OR REPLACE PACKAGE BODY &cwms_schema..test_webuser_abilities
 AS
-    procedure setup is
+    procedure setup_users_webuser is
     begin
-        cwms_20.cwms_sec.add_cwms_user(multioffice_user,char_32_array_type('CWMS Users'), '&&office_id');
-        cwms_20.cwms_sec.add_user_to_group(multioffice_user,'CWMS Users','&&office_id');
-        cwms_20.cwms_sec.add_user_to_group(multioffice_user,'CWMS Users','PAO');
+        ut.fail('is called');
+        dbms_output.put_line('Setup:Creating user.');
+        execute immediate 'create user ' || multioffice_user || ' identified by "test"';
+        cwms_20.cwms_sec.add_cwms_user (multioffice_user, 
+                                        CHAR_32_ARRAY_TYPE ('CWMS Users','TS ID Creator', 'Viewer Users'),
+                                        'SPK');
+        cwms_20.cwms_sec.add_user_to_group(multioffice_user,'CWMS Users','POA');
     end;
 
-    procedure teardown is
+    procedure teardown_users_webuser is
     begin
-        cwms_20.cwms_sec.delete_user(multioffice_user);
+        dbms_output.put_line('Teardown:Droping user and keys');
+        --cwms_20.cwms_sec.delete_user_from_all_offices(multioffice_user);
         delete from cwms_20.at_api_keys;
     end;
 
@@ -60,12 +68,14 @@ AS
     begin
         for i in l_users.first..l_users.last loop
             l_user := l_users(i);
+            dbms_output.put_line('  Setting Context for ' || l_user);
             cwms_20.cwms_env.set_session_user_direct(l_user,'&&office_id');
             ut.expect(cwms_util.get_user_id).to_equal(upper(l_user));
             ut.expect(USER).to_equal(upper('&eroc.webtest'));
             begin
+                dbms_output.put_line('      Calling get_user_credentials, which should fail.');
                 cwms_sec.get_user_credentials(1234567890,l_userid,l_session_key);
-                ut.fail('This call should not have succedded');
+                ut.fail('This call should not have succedded. User that got through was ' || l_user);
             exception
             when others then
                 null; /** This is supposed to fail */
