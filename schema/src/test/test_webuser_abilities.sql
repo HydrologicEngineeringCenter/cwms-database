@@ -1,6 +1,6 @@
 CREATE OR REPLACE PACKAGE &cwms_schema..test_webuser_abilities AUTHID CURRENT_USER
 AS
-    -- %suite(Test WEB USER has it's extra priveleges in CWMS_ENV )
+    -- %suite(Test WEB USER has it's extra priveleges in CWMS_ENV)
     -- %rollback(manual)
 
     -- %beforeall
@@ -9,7 +9,7 @@ AS
     -- %afterall
     procedure teardown_users_webuser;
 
-    -- %test(Can query an AT_ table directly.)
+    -- %test(Can query an AT_ table directly)
     procedure can_query_at_tables;
 
     -- %test(Can set context back and forth between users)
@@ -21,8 +21,7 @@ AS
     -- %test(Can set USER context by API key)
     procedure can_set_context_user_by_key;
 
-    /** The test below expects no admin privs*/
-    multioffice_user varchar(255) := '&&eroc.hectest_multioffice2';
+    multioffice_user varchar(255) := '&&multiuser2';
 END;
 /
 
@@ -31,19 +30,28 @@ CREATE OR REPLACE PACKAGE BODY &cwms_schema..test_webuser_abilities
 AS
     procedure setup_users_webuser is
     begin
-        ut.fail('is called');
-        dbms_output.put_line('Setup:Creating user.');
-        execute immediate 'create user ' || multioffice_user || ' identified by "test"';
+        dbms_output.put_line('Setup:-');
+        /*
+        Need to review permissions check and environment
+           until there is time for that I've moved the user creation to the test
+           install.
+        cwms_20.cwms_env.set_session_user_direct('&eroc.hectest_db','&&office_id');
         cwms_20.cwms_sec.add_cwms_user (multioffice_user, 
                                         CHAR_32_ARRAY_TYPE ('CWMS Users','TS ID Creator', 'Viewer Users'),
                                         'SPK');
-        cwms_20.cwms_sec.add_user_to_group(multioffice_user,'CWMS Users','POA');
+        --cwms_20.cwms_sec.add_user_to_group(multioffice_user,'CWMS Users','POA');
+        */
     end;
 
     procedure teardown_users_webuser is
     begin
-        dbms_output.put_line('Teardown:Droping user and keys');
-        --cwms_20.cwms_sec.delete_user_from_all_offices(multioffice_user);
+        dbms_output.put_line('Teardown:Dropping keys');
+        /* See setup_users_webuser comment for status of below code
+
+        cwms_20.cwms_env.set_session_user_direct('&eroc.hectest_db','&&office_id');
+        cwms_20.cwms_sec.delete_user_from_all_offices(multioffice_user);
+              cwms_20.cwms_env.set_session_user_direct('&eroc.webtest','&&office_id');
+        */
         delete from cwms_20.at_api_keys;
     end;
 
@@ -54,8 +62,6 @@ AS
       select count(*) into l_count from cwms_20.at_base_location;
       ut.expect(l_count).to_be_greater_or_equal(0);
     end;
-
-
 
     procedure can_set_context_users is
         l_normal_user varchar2(255) := '&&eroc.hectest';
@@ -85,7 +91,7 @@ AS
             ut.expect(cwms_util.get_user_id).to_equal(upper(l_web_user));
             begin
                 cwms_sec.get_user_credentials(1234567890,l_userid,l_session_key);
-                ut.expect(l_userid).to_equal(upper(l_user));
+                ut.expect(l_userid).to_equal(upper(l_normal_user));
                 ut.expect(l_session_key).to_be_not_null();
                 cwms_sec.remove_session_key(l_session_key);
             exception
