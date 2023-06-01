@@ -123,6 +123,7 @@ AS
         l_testkey2 cwms_20.at_api_keys.apikey%type := 'User 2 Test Key';
         l_user1 varchar2(32) := upper('&eroc.hectest');
         l_user2 varchar2(32) := upper('&eroc.hectest_ro');
+        l_priv varchar2(255);
     begin
         insert into cwms_20.at_api_keys(userid,key_name,apikey)
             values (l_user1,l_testkey1,l_testkey1);
@@ -132,11 +133,15 @@ AS
         cwms_env.set_session_user_apikey(l_testkey1,'&&office_id');
         ut.expect(cwms_util.get_user_id).to_equal(l_user1);
 
-        cwms_env.set_session_user_apikey(l_testkey2,'&&office_id');
+        -- test without office ID set
+        cwms_env.set_session_user_apikey(l_testkey2);
         ut.expect(cwms_util.get_user_id).to_equal(l_user2);
+        ut.expect(SYS_CONTEXT ('CWMS_ENV', 'CWMS_PRIVILEGE')).to_equal('READ_ONLY');
 
-        /** I don't believe it but this actually is required, which is good. */
-        cwms_env.set_session_user_direct(upper('&eroc.webtest'));
+        /** I don't believe it but this actually is required, which is good. But
+            we should still call it to make sure it doesn't fail.
+        */
+        cwms_env.set_session_user_direct(upper('&eroc.webtest'),'&&office_id');
 
 
 
