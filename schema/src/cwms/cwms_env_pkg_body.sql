@@ -25,10 +25,24 @@ AS
    procedure log(p_procedure in varchar2, p_msg_level in integer, p_message   in varchar2)
    is
       l_priv varchar2(255) := SYS_CONTEXT('CWMS_ENV','CWMS_PRIVILEGE');
+      l_cur_office varchar2(5) := SYS_CONTEXT('CWMS_ENV','SESSION_OFFICE_ID');
+      l_cur_office_code cwms_office.office_code%type := NULL;      
    begin
+     if l_cur_office is not null then
+         l_cur_office_code := CWMS_UTIL.GET_DB_OFFICE_CODE(l_cur_office);
+     end if;
+      -- set environment so logging works
       set_cwms_env ('CWMS_PRIVILEGE', 'CAN_WRITE');
+      set_cwms_env ('SESSION_OFFICE_ID', 'CWMS');
+      set_cwms_env ('SESSION_OFFICE_CODE', CWMS_UTIL.GET_DB_OFFICE_CODE('CWMS'));
+
+      -- The actual thing this function is supposed to do
       cwms_msg.log_db_message(p_procedure,p_msg_level,p_message);
+
+      -- reset environment back so security works
       set_cwms_env ('CWMS_PRIVILEGE', l_priv);
+      set_cwms_env ('SESSION_OFFICE_ID', l_cur_office);
+      set_cwms_env ('SESSION_OFFICE_CODE', l_cur_office_code);
    end;
 
 
