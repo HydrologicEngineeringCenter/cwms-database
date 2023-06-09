@@ -23,19 +23,19 @@
 	//
 	//	English-->SI from NIST (http://physics.nist.gov/cuu/pdf/sp811.pdf)
 	//
-	"J_per_m2_per_langley" : "4.184e4",              // pg 51
-	"J_per_Wh"         : "3.6e3",                // pg 55
-	"J_per_cal"        : "4.184e00",             // pg 47 calorie_thermochemical
-	"kg_per_lbm"       : "4.5359237e-1",         // pg 53 (footnote)
+	"J_per_m2_per_langley" : "4.184E4",              // pg 51
+	"J_per_Wh"         : "3.6E3",                // pg 55
+	"J_per_cal"        : "4.184E00",             // pg 47 calorie_thermochemical
+	"kg_per_lbm"       : "4.5359237E-1",         // pg 53 (footnote)
 	"m_per_s_per_knot"     : "(1852/3600)", 		// pg 10
-	"m3_per_gal"       : "3.785412e-3",          // pg 50
-	"m_per_ft"         : "3.048e-1",             // pg 49
-	"Pa_per_bar"       : "1e5",                  // pg 45
-	"Pa_per_in-hg"     : "3.386389e3",           // pg 50
-	"Pa_per_mm-hg"     : "1.333224e2",           // pg 52
-	"Pa_per_psi"       : "6.894757e3",           // pg 53
+	"m3_per_gal"       : "3.785412E-3",          // pg 50
+	"m_per_ft"         : "3.048E-1",             // pg 49
+	"Pa_per_bar"       : "1E5",                  // pg 45
+	"Pa_per_in-hg"     : "3.386389E3",           // pg 50
+	"Pa_per_mm-hg"     : "1.333224E2",           // pg 52
+	"Pa_per_psi"       : "6.894757E3",           // pg 53
 	"C_per_F"          : "(1/1.8)",     // pg 48
-	"rad_per_deg"      : "1.745329e-2",          // pg 48
+	"rad_per_deg"      : "1.745329E-2",          // pg 48
 
 
 	"micro_per_unit"        : "1000000",  // micro-

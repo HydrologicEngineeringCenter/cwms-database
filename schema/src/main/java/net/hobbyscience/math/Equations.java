@@ -92,7 +92,7 @@ public class Equations {
                 }                
                 default: {
                     if (isNumeric.matcher(item).matches()) {
-                        rhs.add(new NumberToken(Double.parseDouble(item)));
+                        rhs.add(new NumberToken(Double.valueOf(item)));
                     } else if (isAlpha.matcher(item).matches()) {
                         rhs.add(new VariableToken(item));
                     } else {

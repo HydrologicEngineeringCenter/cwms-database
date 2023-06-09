@@ -27,8 +27,8 @@ public class Linear implements ConversionMethod{
             throw new BadMethodData("Linear conversions consist of only 2 values. (" + data + ") has " + parts.length + " values");
         }
         try {
-            a = Double.parseDouble(parts[0]);
-            b = Double.parseDouble(parts[1]);
+            a = Double.valueOf(parts[0]);
+            b = Double.valueOf(parts[1]);
         } catch( NumberFormatException ex ){
             throw new BadMethodData("values must be doubles", ex);
         }
