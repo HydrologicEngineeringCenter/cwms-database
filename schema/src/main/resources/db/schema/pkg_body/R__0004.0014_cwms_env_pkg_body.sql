@@ -249,4 +249,3 @@ AS
    END set_session_privileges;
 END cwms_env;
 /
-show errors;

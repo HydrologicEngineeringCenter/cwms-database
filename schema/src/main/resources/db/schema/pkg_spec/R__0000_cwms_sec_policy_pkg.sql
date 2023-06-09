@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE &cwms_schema..cwms_sec_policy authid current_user
+CREATE OR REPLACE PACKAGE ${CWMS_SCHEMA}.cwms_sec_policy authid current_user
 AS
     FUNCTION cwms_duration_filter(p_schema IN VARCHAR2, p_table IN VARCHAR2)
         RETURN VARCHAR2;
