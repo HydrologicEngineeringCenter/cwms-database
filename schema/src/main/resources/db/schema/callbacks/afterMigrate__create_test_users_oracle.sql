@@ -34,6 +34,7 @@ begin
         user_list(14) := 'hectest_ccp_r';
         user_list(15) := 'hectest_rdl_m';
         user_list(16) := 'hectest_rdl_r';
+        user_list(17) := 'webtest';
 
         for i in 1..user_list.count loop
             begin
@@ -48,6 +49,7 @@ begin
             execute immediate 'grant set container to ${CWMS_OFFICE_EROC}' || user_list(i);
         end loop;
         execute immediate 'grant execute on cwms_upass to ${CWMS_OFFICE_EROC}hectest_up';
+        execute immediate 'grant web_user to ${CWMS_OFFICE_EROC}webtest';
     end if;
 end;
 /

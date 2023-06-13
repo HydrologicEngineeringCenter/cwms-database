@@ -23,5 +23,3 @@ begin
     end if;
 end;
 /
-
-show errors;

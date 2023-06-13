@@ -205,6 +205,8 @@ task installTests(type: Exec ){
 			args "${cwms_eroc}hectest_up"
 			args "${cwms_schema_name}"
             args "${cwms_eroc}hectest"
+            args "${cwms_eroc}webest"
+            args "${cwms_eroc}hectest_multioffice"
         }
     }
 }
@@ -262,13 +264,26 @@ task testAsPdUser(type: Exec) {
     args "-s" // terminal output even with o set
 	args "${cwms_eroc}cwmspd/\"${pd_password}\"@${dbUrl}"
 }
-/*
+
 task testAsRoUser(type: Exec ) {
     dependsOn installTests
     dependsOn loadTestData
 
-    
-}*/
+    executable="utplsql"
+    args "run"
+	args "-p=${cwms_schema_name}.test_ro"
+    args "-f=UT_COVERAGE_HTML_REPORTER"
+        args "-o=${coverageDir}/index.html"
+    args "-f=UT_COVERAGE_COBERTURA_REPORTER"
+        args "-o=${coverageDir}/coverage_ro.xml"
+    args "-f=UT_JUNIT_REPORTER"
+        args "-o=$buildDir//tests_ro.xml"
+	args "-f=UT_DOCUMENTATION_REPORTER"
+    args "-d"
+    args "-D"
+    args "-s"
+	args "${cwms_eroc}hectest_ro/\"${pd_password}\"@${dbUrl}"
+}
 
 task testMigrationCode(type: Test) {
     dependsOn compileJava
@@ -284,6 +299,7 @@ task testDb() {
     dependsOn cleanTestData
     dependsOn loadTestData
     dependsOn testAsPdUser
+    //dependsOn testAsRoUser
 }
 
 

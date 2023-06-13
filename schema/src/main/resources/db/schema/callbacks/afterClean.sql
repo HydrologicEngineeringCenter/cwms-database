@@ -11,7 +11,13 @@ begin
    execute immediate 'drop role cwms_user';
    exception
      when others then null;
+end;
+/
 
+begin
+   execute immediate 'drop role web_user';
+   exception
+     when others then null;
 end;
 /
 
