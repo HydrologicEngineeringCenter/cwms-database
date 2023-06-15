@@ -820,35 +820,46 @@ AS
    procedure test_cwdb_143_storing_elev_with_unknown_datum_offset
    is
       type xml_tab_t is table of xmltype;
-      l_location_id      cwms_v_loc.location_id%type  := 'TestLoc1';
-      l_ts_id            cwms_v_ts_id.cwms_ts_id%type := l_location_id||'.Elev.Inst.1Hour.0.Test';
-      l_office_id        cwms_v_loc.db_office_id%type := '&&office_id';
-      l_offset           binary_double;
-      l_offset_to_ngvd29 binary_double := 1.07D; -- ft
-      l_offset_to_navd88 binary_double;
-      l_offset_specified boolean;
-      l_table_rating     boolean;
-      l_crsr             sys_refcursor;
-      l_datetimes        cwms_t_date_table;
-      l_values           cwms_t_double_tab;
-      l_quality_codes    cwms_t_number_tab;
-      l_ratings          cwms_t_rating_tab;
-      l_rating_spec_ids  cwms_t_str_tab := cwms_t_str_tab();
-      l_effective_dates  cwms_t_date_table := cwms_t_date_table();
-      l_create_dates     cwms_t_date_table := cwms_t_date_table();
-      l_expected_elevs   cwms_t_number_tab := cwms_t_number_tab();
-      l_errors           clob;
-      l_value_str        varchar2(16);
-      l_expected_str     varchar2(16);
-      l_ts_data          cwms_t_ztsv_array := cwms_t_ztsv_array(
-                            cwms_t_ztsv(timestamp '2023-05-16 01:00:00', 1001, 3),
-                            cwms_t_ztsv(timestamp '2023-05-16 02:00:00', 1002, 3),
-                            cwms_t_ztsv(timestamp '2023-05-16 03:00:00', 1003, 3),
-                            cwms_t_ztsv(timestamp '2023-05-16 04:00:00', 1004, 3),
-                            cwms_t_ztsv(timestamp '2023-05-16 05:00:00', 1005, 3),
-                            cwms_t_ztsv(timestamp '2023-05-16 06:00:00', 1006, 3));
-      l_ratings_xml         xml_tab_t := xml_tab_t();
-      l_ratings_xml_str     cwms_t_str_tab := cwms_t_str_tab(
+      l_location_id       cwms_v_loc.location_id%type  := 'TestLoc1';
+      l_ts_id             cwms_v_ts_id.cwms_ts_id%type := l_location_id||'.Elev.Inst.1Hour.0.Test';
+      l_office_id         cwms_v_loc.db_office_id%type := '&&office_id';
+      l_value             binary_double;
+      l_offset            binary_double;
+      l_offset_to_ngvd29  binary_double := 1.07D; -- ft
+      l_offset_to_navd88  binary_double;
+      l_offset_specified  boolean;
+      l_table_rating      boolean;
+      l_seasonal_level    boolean;
+      l_crsr              sys_refcursor;
+      l_datetimes         cwms_t_date_table;
+      l_values            cwms_t_double_tab;
+      l_quality_codes     cwms_t_number_tab;
+      l_ratings           cwms_t_rating_tab;
+      l_rating_spec_ids   cwms_t_str_tab := cwms_t_str_tab();
+      l_effective_dates   cwms_t_date_table := cwms_t_date_table();
+      l_create_dates      cwms_t_date_table := cwms_t_date_table();
+      l_expected_elevs    cwms_t_number_tab := cwms_t_number_tab();
+      l_errors            clob;
+      l_value_str         varchar2(16);
+      l_expected_str      varchar2(16);
+      l_ts_data           cwms_t_ztsv_array := cwms_t_ztsv_array(
+                             cwms_t_ztsv(timestamp '2023-05-16 01:00:00', 1001, 3),
+                             cwms_t_ztsv(timestamp '2023-05-16 02:00:00', 1002, 3),
+                             cwms_t_ztsv(timestamp '2023-05-16 03:00:00', 1003, 3),
+                             cwms_t_ztsv(timestamp '2023-05-16 04:00:00', 1004, 3),
+                             cwms_t_ztsv(timestamp '2023-05-16 05:00:00', 1005, 3),
+                             cwms_t_ztsv(timestamp '2023-05-16 06:00:00', 1006, 3));
+      l_location_level_id cwms_v_location_level.location_level_id%type := l_location_id||'.Elev.Inst.0.Top of Normal';
+      l_seasonal_values   cwms_t_seasonal_value_tab := cwms_t_seasonal_value_tab(
+                             cwms_t_seasonal_value( 0, 0, 1000),
+                             cwms_t_seasonal_value( 2, 0, 1002),
+                             cwms_t_seasonal_value( 4, 0, 1004),
+                             cwms_t_seasonal_value( 6, 0, 1006),
+                             cwms_t_seasonal_value( 8, 0, 1004),
+                             cwms_t_seasonal_value(10, 0, 1002));
+      l_location_level       cwms_t_location_level;
+      l_ratings_xml          xml_tab_t := xml_tab_t();
+      l_ratings_xml_str      cwms_t_str_tab := cwms_t_str_tab(
          replace('
             <ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">
               <rating-template office-id="&&office_id">
@@ -975,7 +986,11 @@ AS
          p_vertical_datum => 'Pensacola',
          p_latitude       => 36.1406481,
          p_longitude      => -96.0063866,
+         p_time_zone_id   => 'UTC',
          p_db_office_id   => l_office_id);
+--    #####################
+--    ## LOW LEVEL TESTS ##
+--    #####################
       ----------------------------------------------------------------------------------
       -- get the vertical datum offset to the native datum (no other datum indicated) --
       -- (should succeed)                                                             --
@@ -1013,6 +1028,9 @@ AS
          when others then
             ut.expect(regexp_like(dbms_utility.format_error_stack, 'Cannot convert between vertical datums', 'mn')).to_be_true;
       end;
+--    #######################
+--    ## TIME SERIES TESTS ##
+--    #######################
       ------------------------------------------------------------------
       -- store the elev timeseries with no default or specified datum --
       -- (should succeed)                                             --
@@ -1128,6 +1146,8 @@ AS
             when others then
                if not l_offset_specified then
                   ut.expect(regexp_like(dbms_utility.format_error_stack, 'Cannot convert between vertical datums', 'mn')).to_be_true;
+               else
+                  raise;
                end if;
          end;
          -------------------------------------------------------
@@ -1167,6 +1187,8 @@ AS
             when others then
                if not l_offset_specified then
                   ut.expect(regexp_like(dbms_utility.format_error_stack, 'Cannot convert between vertical datums', 'mn')).to_be_true;
+               else
+                  raise;
                end if;
          end;
          --------------------------------------------------
@@ -1216,6 +1238,8 @@ AS
             when others then
                if not l_offset_specified then
                   ut.expect(regexp_like(dbms_utility.format_error_stack, 'Cannot convert between vertical datums', 'mn')).to_be_true;
+               else
+                  raise;
                end if;
          end;
          ---------------------------------------------------------
@@ -1247,7 +1271,6 @@ AS
                   ut.expect(l_value_str).to_equal(l_expected_str);
                   ut.expect(l_quality_codes(j)).to_equal(l_ts_data(j).quality_code);
                end loop;
-               close l_crsr;
             else
                close l_crsr;
                cwms_err.raise('ERROR', 'Expected exception not raised');
@@ -1256,6 +1279,8 @@ AS
             when others then
                if not l_offset_specified then
                   ut.expect(regexp_like(dbms_utility.format_error_stack, 'Cannot convert between vertical datums', 'mn')).to_be_true;
+               else
+                  raise;
                end if;
          end;
          if l_offset_specified then
@@ -1268,6 +1293,9 @@ AS
             commit;
          end if;
       end loop;
+--    ##################
+--    ## RATING TESTS ##
+--    ##################
       for rating_index in 1..2 loop
          --------------------------------------
          -- get the rating info from the xml --
@@ -1324,8 +1352,8 @@ AS
 
             ut.expect(l_values.count).to_equal(l_expected_elevs.count);
             for i in 1..l_values.count loop
-               l_value_str    := cwms_rounding.round_nt_f(l_values(i), '7777777777');
-               l_expected_str := cwms_rounding.round_dt_f(l_expected_elevs(i), '7777777777');
+               l_value_str    := cwms_rounding.round_dt_f(l_values(i), '7777777777');
+               l_expected_str := cwms_rounding.round_nt_f(l_expected_elevs(i), '7777777777');
                ut.expect(l_value_str).to_equal(l_expected_str);
             end loop;
          end if;
@@ -1342,8 +1370,8 @@ AS
             ut.expect(l_ratings(1).rating_info.rating_values.count).to_equal(l_expected_elevs.count);
             l_ratings(rating_index).convert_to_native_units;
             for i in 1..l_ratings(1).rating_info.rating_values.count loop
-               l_value_str    := cwms_rounding.round_nt_f(l_values(i), '7777777777');
-               l_expected_str := cwms_rounding.round_dt_f(l_expected_elevs(i), '7777777777');
+               l_value_str    := cwms_rounding.round_dt_f(l_values(i), '7777777777');
+               l_expected_str := cwms_rounding.round_nt_f(l_expected_elevs(i), '7777777777');
                ut.expect(l_value_str).to_equal(l_expected_str);
             end loop;
          end if;
@@ -1386,8 +1414,8 @@ AS
 
                   ut.expect(l_values.count).to_equal(l_expected_elevs.count);
                   for j in 1..l_values.count loop
-                     l_value_str    := cwms_rounding.round_nt_f(l_values(j), '7777777777');
-                     l_expected_str := cwms_rounding.round_dt_f(l_expected_elevs(j)-l_offset_to_ngvd29, '7777777777');
+                     l_value_str    := cwms_rounding.round_dt_f(l_values(j), '7777777777');
+                     l_expected_str := cwms_rounding.round_nt_f(l_expected_elevs(j)-l_offset_to_ngvd29, '7777777777');
                      ut.expect(l_value_str).to_equal(l_expected_str);
                   end loop;
                end if;
@@ -1414,8 +1442,8 @@ AS
                      ut.expect(l_ratings(1).rating_info.rating_values.count).to_equal(l_expected_elevs.count);
                      l_ratings(rating_index).convert_to_native_units;
                      for j in 1..l_ratings(1).rating_info.rating_values.count loop
-                        l_value_str    := cwms_rounding.round_nt_f(l_ratings(1).rating_info.rating_values(j).ind_value, '7777777777');
-                        l_expected_str := cwms_rounding.round_dt_f(l_expected_elevs(j), '7777777777');
+                        l_value_str    := cwms_rounding.round_dt_f(l_ratings(1).rating_info.rating_values(j).ind_value, '7777777777');
+                        l_expected_str := cwms_rounding.round_nt_f(l_expected_elevs(j), '7777777777');
                         ut.expect(l_value_str).to_equal(l_expected_str);
                      end loop;
                   end if;
@@ -1426,6 +1454,10 @@ AS
                when others then
                   if not l_offset_specified then
                      ut.expect(regexp_like(dbms_utility.format_error_stack, 'Cannot convert between vertical datums', 'mn')).to_be_true;
+                  elsif not l_table_rating then
+                     ut.expect(regexp_like(dbms_utility.format_error_stack, 'Cannot change vertical datum on an expression rating', 'mn')).to_be_true;
+                  else
+                     raise;
                   end if;
             end;
             ----------------------------------------------
@@ -1457,8 +1489,8 @@ AS
 
                   ut.expect(l_values.count).to_equal(l_expected_elevs.count);
                   for j in 1..l_values.count loop
-                     l_value_str    := cwms_rounding.round_nt_f(l_values(j), '7777777777');
-                     l_expected_str := cwms_rounding.round_dt_f(l_expected_elevs(j)-l_offset_to_navd88, '7777777777');
+                     l_value_str    := cwms_rounding.round_dt_f(l_values(j), '7777777777');
+                     l_expected_str := cwms_rounding.round_nt_f(l_expected_elevs(j)-l_offset_to_navd88, '7777777777');
                      ut.expect(l_value_str).to_equal(l_expected_str);
                   end loop;
                end if;
@@ -1483,6 +1515,398 @@ AS
                commit;
             end if;
          end loop;
+      end loop;
+--    ##########################
+--    ## LOCATION LEVEL TESTS ##
+--    ##########################
+      select value
+        bulk collect
+        into l_expected_elevs
+        from table(l_seasonal_values);
+      -----------------------------------------------------------------
+      -- store the location_level with no default or specified datum --
+      -- (should succeed)                                            --
+      -----------------------------------------------------------------
+      cwms_loc.set_default_vertical_datum(null);
+      for i in 1..2 loop
+         l_seasonal_level := i = 2;
+         if l_seasonal_level then
+            cwms_level.store_location_level4(
+               p_location_level_id => l_location_level_id,
+               p_level_value       => null,
+               p_level_units       => 'ft',
+               p_timezone_id       => 'US/Pacific',
+               p_interval_origin   => date '2023-01-01',
+               p_interval_months   => 12,
+               p_seasonal_values   => l_seasonal_values,
+               p_fail_if_exists    => 'F',
+               p_office_id         => l_office_id);
+         else
+            cwms_level.store_location_level4(
+               p_location_level_id => l_location_level_id,
+               p_level_value       => l_seasonal_values(1).value,
+               p_level_units       => 'ft',
+               p_timezone_id       => 'US/Pacific',
+               p_interval_origin   => null,
+               p_interval_months   => null,
+               p_seasonal_values   => null,
+               p_fail_if_exists    => 'F',
+               p_office_id         => l_office_id);
+         end if;
+
+         commit;
+         if l_seasonal_level then
+            select seasonal_level
+              bulk collect
+              into l_values
+              from cwms_v_location_level
+             where location_level_id = l_location_level_id
+               and level_unit = 'ft'
+             order by calendar_offset,
+                      time_offset;
+
+            ut.expect(l_values.count).to_equal(l_seasonal_values.count);
+            for i in 1..l_values.count loop
+               l_value_str    := cwms_rounding.round_dt_f(l_values(i), '7777777777');
+               l_expected_str := cwms_rounding.round_nt_f(l_expected_elevs(i), '7777777777');
+               ut.expect(l_value_str).to_equal(l_expected_str);
+            end loop;
+
+            select distinct
+                   constant_level
+              into l_value
+              from cwms_v_location_level
+             where location_level_id = l_location_level_id
+               and level_unit = 'ft';
+
+            ut.expect(l_value).to_be_null;
+         else
+            select seasonal_level
+              bulk collect
+              into l_values
+              from cwms_v_location_level
+             where location_level_id = l_location_level_id
+               and level_unit = 'ft'
+             order by calendar_offset,
+                      time_offset;
+
+            ut.expect(l_values.count).to_equal(1);
+            ut.expect(l_values(1)).to_be_null;
+
+            select constant_level
+              into l_value
+              from cwms_v_location_level
+             where location_level_id = l_location_level_id
+               and level_unit = 'ft';
+
+            l_value_str    := cwms_rounding.round_dt_f(l_value, '7777777777');
+            l_expected_str := cwms_rounding.round_nt_f(l_expected_elevs(1), '7777777777');
+            ut.expect(l_value_str).to_equal(l_expected_str);
+         end if;
+         --------------------------------------------------------------------
+         -- retrieve the location_level with no default or specified datum --
+         -- (should succeed)                                               --
+         --------------------------------------------------------------------
+         l_location_level := cwms_level.retrieve_location_level(
+            p_location_level_id => l_location_level_id,
+            p_level_units       => 'ft',
+            p_date              => sysdate,
+            p_timezone_id       => 'US/Pacific',
+            p_office_id         => l_office_id);
+
+         ut.expect(l_location_level is null).to_be_false;
+         if l_location_level is not null then
+            if l_seasonal_level then
+               ut.expect(l_location_level.seasonal_values is null).to_be_false;
+               if l_location_level.seasonal_values is not null then
+                  ut.expect(l_location_level.seasonal_values.count).to_equal(l_expected_elevs.count);
+                  for i in 1..l_location_level.seasonal_values.count loop
+                     l_value_str    := cwms_rounding.round_nt_f(l_location_level.seasonal_values(i).value, '7777777777');
+                     l_expected_str := cwms_rounding.round_nt_f(l_expected_elevs(i), '7777777777');
+                     ut.expect(l_value_str).to_equal(l_expected_str);
+                  end loop;
+               end if;
+            else
+               l_value_str    := cwms_rounding.round_nt_f(l_location_level.level_value, '7777777777');
+               l_expected_str := cwms_rounding.round_nt_f(l_expected_elevs(1), '7777777777');
+               ut.expect(l_value_str).to_equal(l_expected_str);
+            end if;
+         end if;
+      end loop;
+      for i in 1..2 loop
+         l_offset_specified := i = 2;
+         if l_offset_specified then
+            cwms_loc.store_vertical_datum_offset(
+               p_location_id         => l_location_id,
+               p_vertical_datum_id_1 => 'Pensacola',
+               p_vertical_datum_id_2 => 'NGVD29',
+               p_offset              => l_offset_to_ngvd29,
+               p_unit                => 'ft',
+               p_office_id           => l_office_id);
+            commit;
+         end if;
+         for j in 1..2 loop
+            l_seasonal_level := j = 2;
+            ---------------------------------------------------
+            -- store the location level with a default datum --
+            -- (should raise an exception) if no offset      --
+            ---------------------------------------------------
+            cwms_loc.set_default_vertical_datum('NGVD29');
+            begin
+               if l_seasonal_level then
+                  cwms_level.store_location_level4(
+                     p_location_level_id => l_location_level_id,
+                     p_level_value       => null,
+                     p_level_units       => 'ft',
+                     p_timezone_id       => 'US/Pacific',
+                     p_interval_origin   => date '2023-01-01',
+                     p_interval_months   => 12,
+                     p_seasonal_values   => l_seasonal_values,
+                     p_fail_if_exists    => 'F',
+                     p_office_id         => l_office_id);
+               else
+                  cwms_level.store_location_level4(
+                     p_location_level_id => l_location_level_id,
+                     p_level_value       => l_seasonal_values(1).value,
+                     p_level_units       => 'ft',
+                     p_timezone_id       => 'US/Pacific',
+                     p_interval_origin   => null,
+                     p_interval_months   => null,
+                     p_seasonal_values   => null,
+                     p_fail_if_exists    => 'F',
+                     p_office_id         => l_office_id);
+               end if;
+
+               commit;
+
+               if l_offset_specified then
+                  if l_seasonal_level then
+                     select seasonal_level
+                       bulk collect
+                       into l_values
+                       from cwms_v_location_level
+                      where location_level_id = l_location_level_id
+                        and level_unit = 'ft'
+                      order by calendar_offset,
+                               time_offset;
+
+                     ut.expect(l_values.count).to_equal(l_seasonal_values.count);
+                     for j in 1..l_values.count loop
+                        l_value_str    := cwms_rounding.round_dt_f(l_values(j), '7777777777');
+                        l_expected_str := cwms_rounding.round_nt_f(l_expected_elevs(j)-l_offset_to_ngvd29, '7777777777');
+                        ut.expect(l_value_str).to_equal(l_expected_str);
+                     end loop;
+                  else
+                     select constant_level
+                       into l_value
+                       from cwms_v_location_level
+                      where location_level_id = l_location_level_id
+                        and level_unit = 'ft';
+
+                     l_value_str    := cwms_rounding.round_dt_f(l_value, '7777777777');
+                     l_expected_str := cwms_rounding.round_nt_f(l_expected_elevs(1)-l_offset_to_ngvd29, '7777777777');
+                     ut.expect(l_value_str).to_equal(l_expected_str);
+                  end if;
+               else
+                  cwms_err.raise('ERROR', 'Expected exception not raised');
+               end if;
+            exception
+               when others then
+                  if not l_offset_specified then
+                     ut.expect(regexp_like(dbms_utility.format_error_stack, 'Cannot convert between vertical datums', 'mn')).to_be_true;
+                  else
+                     raise;
+                  end if;
+            end;
+            ------------------------------------------------------
+            -- retrieve the location_level with a default datum --
+            -- (should raise an exception if no offset)         --
+            ------------------------------------------------------
+            begin
+               l_location_level := cwms_level.retrieve_location_level(
+                  p_location_level_id => l_location_level_id,
+                  p_level_units       => 'ft',
+                  p_date              => sysdate,
+                  p_timezone_id       => 'US/Pacific',
+                  p_office_id         => l_office_id);
+
+               if l_offset_specified then
+                  ut.expect(l_location_level is null).to_be_false;
+                  if l_location_level is not null then
+                     if l_seasonal_level then
+                        ut.expect(l_location_level.seasonal_values is null).to_be_false;
+                        if l_location_level.seasonal_values is not null then
+                           ut.expect(l_location_level.seasonal_values.count).to_equal(l_expected_elevs.count);
+                           for j in 1..l_location_level.seasonal_values.count loop
+                              l_value_str    := cwms_rounding.round_nt_f(l_location_level.seasonal_values(j).value, '7777777777');
+                              l_expected_str := cwms_rounding.round_nt_f(l_expected_elevs(j), '7777777777');
+                              ut.expect(l_value_str).to_equal(l_expected_str);
+                           end loop;
+                        end if;
+                     else
+                        l_value_str    := cwms_rounding.round_nt_f(l_location_level.level_value, '7777777777');
+                        l_expected_str := cwms_rounding.round_nt_f(l_expected_elevs(1), '7777777777');
+                        ut.expect(l_value_str).to_equal(l_expected_str);
+                     end if;
+                  end if;
+               else
+                  cwms_err.raise('ERROR', 'Expected exception not raised');
+               end if;
+            exception
+               when others then
+                  if not l_offset_specified then
+                     ut.expect(regexp_like(dbms_utility.format_error_stack, 'Cannot convert between vertical datums', 'mn')).to_be_true;
+                  else
+                     raise;
+                  end if;
+            end;
+         end loop;
+         if l_offset_specified then
+            cwms_loc.delete_vertical_datum_offset(
+               p_location_id          => l_location_id,
+               p_vertical_datum_id_1  => 'Pensacola',
+               p_vertical_datum_id_2  => 'NGVD29',
+               p_match_effective_date => 'F',
+               p_office_id            => l_office_id);
+            commit;
+         end if;
+      end loop;
+      cwms_loc.set_default_vertical_datum(null);
+      for i in 1..2 loop
+         l_offset_specified := i = 2;
+         if l_offset_specified then
+            cwms_loc.store_vertical_datum_offset(
+               p_location_id         => l_location_id,
+               p_vertical_datum_id_1 => 'Pensacola',
+               p_vertical_datum_id_2 => 'NGVD29',
+               p_offset              => l_offset_to_ngvd29,
+               p_unit                => 'ft',
+               p_office_id           => l_office_id);
+            commit;
+         end if;
+         for j in 1..2 loop
+            l_seasonal_level := j = 2;
+            -----------------------------------------------------
+            -- store the location level with a specified datum --
+            -- (should raise an exception) if no offset        --
+            -----------------------------------------------------
+            begin
+               if l_seasonal_level then
+                  cwms_level.store_location_level4(
+                     p_location_level_id => l_location_level_id,
+                     p_level_value       => null,
+                     p_level_units       => 'U=ft|V=NAVD88',
+                     p_timezone_id       => 'US/Pacific',
+                     p_interval_origin   => date '2023-01-01',
+                     p_interval_months   => 12,
+                     p_seasonal_values   => l_seasonal_values,
+                     p_fail_if_exists    => 'F',
+                     p_office_id         => l_office_id);
+               else
+                  cwms_level.store_location_level4(
+                     p_location_level_id => l_location_level_id,
+                     p_level_value       => l_seasonal_values(1).value,
+                     p_level_units       => 'U=ft|V=NAVD88',
+                     p_timezone_id       => 'US/Pacific',
+                     p_interval_origin   => null,
+                     p_interval_months   => null,
+                     p_seasonal_values   => null,
+                     p_fail_if_exists    => 'F',
+                     p_office_id         => l_office_id);
+               end if;
+               commit;
+
+               if l_offset_specified then
+                  if l_seasonal_level then
+                     select seasonal_level
+                       bulk collect
+                       into l_values
+                       from cwms_v_location_level
+                      where location_level_id = l_location_level_id
+                        and level_unit = 'ft'
+                      order by calendar_offset,
+                               time_offset;
+
+                     ut.expect(l_values.count).to_equal(l_seasonal_values.count);
+                     for j in 1..l_values.count loop
+                        l_value_str    := cwms_rounding.round_dt_f(l_values(j), '7777777777');
+                        l_expected_str := cwms_rounding.round_nt_f(l_expected_elevs(j)-l_offset_to_navd88, '7777777777');
+                        ut.expect(l_value_str).to_equal(l_expected_str);
+                     end loop;
+                  else
+                     select constant_level
+                       into l_value
+                       from cwms_v_location_level
+                      where location_level_id = l_location_level_id
+                        and level_unit = 'ft';
+
+                     l_value_str    := cwms_rounding.round_dt_f(l_value, '7777777777');
+                     l_expected_str := cwms_rounding.round_nt_f(l_expected_elevs(1)-l_offset_to_navd88, '7777777777');
+                     ut.expect(l_value_str).to_equal(l_expected_str);
+                  end if;
+               else
+                  cwms_err.raise('ERROR', 'Expected exception not raised');
+               end if;
+            exception
+               when others then
+                  if not l_offset_specified then
+                     ut.expect(regexp_like(dbms_utility.format_error_stack, 'Cannot convert between vertical datums', 'mn')).to_be_true;
+                  else
+                     raise;
+                  end if;
+            end;
+            --------------------------------------------------------
+            -- retrieve the location_level with a specified datum --
+            -- (should raise an exception if no offset)           --
+            --------------------------------------------------------
+            begin
+               l_location_level := cwms_level.retrieve_location_level(
+                  p_location_level_id => l_location_level_id,
+                  p_level_units       => 'U=ft|V=NAVD88',
+                  p_date              => sysdate,
+                  p_timezone_id       => 'US/Pacific',
+                  p_office_id         => l_office_id);
+
+               if l_offset_specified then
+                  ut.expect(l_location_level is null).to_be_false;
+                  if l_location_level is not null then
+                     if l_seasonal_level then
+                        ut.expect(l_location_level.seasonal_values is null).to_be_false;
+                        if l_location_level.seasonal_values is not null then
+                           ut.expect(l_location_level.seasonal_values.count).to_equal(l_expected_elevs.count);
+                           for j in 1..l_location_level.seasonal_values.count loop
+                              l_value_str    := cwms_rounding.round_nt_f(l_location_level.seasonal_values(j).value, '7777777777');
+                              l_expected_str := cwms_rounding.round_nt_f(l_expected_elevs(j), '7777777777');
+                              ut.expect(l_value_str).to_equal(l_expected_str);
+                           end loop;
+                        end if;
+                     else
+                        l_value_str    := cwms_rounding.round_nt_f(l_location_level.level_value, '7777777777');
+                        l_expected_str := cwms_rounding.round_nt_f(l_expected_elevs(1), '7777777777');
+                        ut.expect(l_value_str).to_equal(l_expected_str);
+                     end if;
+                  end if;
+               else
+                  cwms_err.raise('ERROR', 'Expected exception not raised');
+               end if;
+            exception
+               when others then
+                  if not l_offset_specified then
+                     ut.expect(regexp_like(dbms_utility.format_error_stack, 'Cannot convert between vertical datums', 'mn')).to_be_true;
+                  else
+                     raise;
+                  end if;
+            end;
+         end loop;
+         if l_offset_specified then
+            cwms_loc.delete_vertical_datum_offset(
+               p_location_id          => l_location_id,
+               p_vertical_datum_id_1  => 'Pensacola',
+               p_vertical_datum_id_2  => 'NGVD29',
+               p_match_effective_date => 'F',
+               p_office_id            => l_office_id);
+            commit;
+         end if;
       end loop;
    end test_cwdb_143_storing_elev_with_unknown_datum_offset;
 END test_cwms_loc;

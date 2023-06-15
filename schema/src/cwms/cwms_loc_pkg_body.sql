@@ -7603,22 +7603,26 @@ end unassign_loc_groups;
       p_office_id           in varchar2 default null)
       return binary_double
    is
-      l_offset         binary_double;
-      l_effective_date date;
-      l_estimate       varchar2(1);
+      l_offset       binary_double;
    begin
-      get_vertical_datum_offset(
-         l_offset,
-         l_effective_date,
-         l_estimate,
-         p_location_id,
-         p_vertical_datum_id_1,
-         p_vertical_datum_id_2,
-         p_datetime,
-         p_time_zone,
-         p_unit,
-         p_office_id);
-      return l_offset;
+      -------------------
+      -- sanity checks --
+      -------------------
+      if p_location_id is null then
+         cwms_err.raise('NULL_ARGUMENT', p_location_id);
+      end if;
+      -----------------
+      -- do the work --
+      -----------------
+      return get_vertical_datum_offset(
+         p_location_code       => cwms_loc.get_location_code(p_office_id, p_location_id),
+         p_vertical_datum_id_1 => p_vertical_datum_id_1,
+         p_vertical_datum_id_2 => p_vertical_datum_id_2,
+         p_datetime_utc        => cwms_util.change_timezone(
+                                     nvl(p_datetime, sysdate),
+                                     nvl(p_time_zone, cwms_loc.get_local_timezone(p_location_id, p_office_id)),
+                                     'UTC'),
+         p_unit                => p_unit);
    end get_vertical_datum_offset;
 
    procedure get_vertical_datum_offset(

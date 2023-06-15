@@ -104,7 +104,7 @@ as
       self.indicators   := p_obj.indicators;
       self.constituents := p_obj.constituents;
       self.connections  := p_obj.connections;
-      
+
       return;
    end location_level_t;
 
@@ -141,8 +141,13 @@ as
       l_parameter_type_id             parameter_type_id%type := parameter_type_id;
       l_duration_id                   duration_id%type := duration_id;
       l_specified_level_id            specified_level_id%type := specified_level_id;
+      l_current_vertical_datum        at_vert_datum_offset.vertical_datum_id_1%type;
 
    begin
+      l_current_vertical_datum := self.vertical_datum;
+      if l_current_vertical_datum is not null then
+         self.set_to_native_vertical_datum;
+      end if;
       select o.office_code,
              pl.location_code
         into l_office_code,
@@ -276,6 +281,11 @@ as
          self.indicators,
          self.constituents,
          self.connections);
+
+      if l_current_vertical_datum is not null then
+         self.set_vertical_datum(l_current_vertical_datum);
+      end if;
+
       return l_obj;
    end zlocation_level;
 
@@ -289,7 +299,7 @@ as
              ||'.'||self.duration_id
              ||'.'||self.specified_level_id;
    end location_level_id;
-   
+
    member function attribute_id
       return varchar2
    is
@@ -302,7 +312,7 @@ as
       end if;
       return l_attribute_id;
    end attribute_id;
-   
+
    member procedure set_timezone(
       p_timezone_id in varchar2)
    is
@@ -317,7 +327,7 @@ as
          self.interval_origin := cwms_util.change_timezone(self.interval_origin, self.timezone_id, l_timezone_id);
       end if;
       self.timezone_id := l_timezone_id;
-   end set_timezone;   
+   end set_timezone;
 
    member procedure set_level_unit(
       p_level_unit in varchar2)
@@ -333,7 +343,7 @@ as
       end if;
       self.level_units_id := p_level_unit;
    end set_level_unit;
-   
+
    member procedure set_attribute_unit(
       p_attribute_unit in varchar2)
    is
@@ -343,7 +353,7 @@ as
          self.attribute_units_id := p_attribute_unit;
       end if;
    end set_attribute_unit;
-   
+
    member procedure set_unit_system(
       p_unit_system in varchar2)
    is
@@ -358,7 +368,57 @@ as
          self.set_attribute_unit(cwms_util.get_default_units(self.attribute_parameter_id, p_unit_system));
       end if;
    end set_unit_system;
-   
+
+   member procedure set_vertical_datum(
+      p_vertical_datum in varchar2)
+   is
+      l_vert_datum_offset binary_double;
+   begin
+      if instr(self.parameter_id, 'Elev') != 1 and instr(self.attribute_parameter_id, 'Elev') != 1 then
+         cwms_err.raise('ERROR', 'Cannot set vertical datum on location level unless parameter or attribute parameter is elevation');
+      end if;
+      if self.vertical_datum is null then
+         self.vertical_datum := cwms_loc.get_location_vertical_datum(
+            p_location_id => self.location_id,
+            p_office_id   => self.office_id);
+      end if;
+      if instr(self.parameter_id, 'Elev') = 1 then
+         l_vert_datum_offset := cwms_loc.get_vertical_datum_offset(
+            p_location_id         => self.location_id,
+            p_vertical_datum_id_1 => self.vertical_datum,
+            p_vertical_datum_id_2 => p_vertical_datum,
+            p_datetime            => self.level_date,
+            p_time_zone           => self.timezone_id,
+            p_unit                => self.level_units_id,
+            p_office_id           => self.office_id);
+         if self.level_value is not null then
+            self.level_value := self.level_value + l_vert_datum_offset;
+         end if;
+         if self.seasonal_values is not null then
+            for i in 1..self.seasonal_values.count loop
+               self.seasonal_values(i).value := self.seasonal_values(i).value + l_vert_datum_offset;
+            end loop;
+         end if;
+      end if;
+      if instr(self.attribute_parameter_id, 'Elev') = 1 then
+         l_vert_datum_offset := cwms_loc.get_vertical_datum_offset(
+            p_location_id         => self.location_id,
+            p_vertical_datum_id_1 => self.vertical_datum,
+            p_vertical_datum_id_2 => p_vertical_datum,
+            p_datetime            => self.level_date,
+            p_time_zone           => self.timezone_id,
+            p_unit                => self.attribute_units_id,
+            p_office_id           => self.office_id);
+         self.attribute_value := self.attribute_value + l_vert_datum_offset;
+      end if;
+   end set_vertical_datum;
+
+   member procedure set_to_native_vertical_datum
+   is
+   begin
+      self.set_vertical_datum(cwms_loc.get_location_vertical_datum(self.location_id, self.office_id));
+   end set_to_native_vertical_datum;
+
    member function is_virtual
       return boolean is
    begin
