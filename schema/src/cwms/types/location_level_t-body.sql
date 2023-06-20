@@ -142,11 +142,12 @@ as
       l_duration_id                   duration_id%type := duration_id;
       l_specified_level_id            specified_level_id%type := specified_level_id;
       l_current_vertical_datum        at_vert_datum_offset.vertical_datum_id_1%type;
+      l_clone                         location_level_t := self;
 
    begin
       l_current_vertical_datum := self.vertical_datum;
       if l_current_vertical_datum is not null then
-         self.set_to_native_vertical_datum;
+         l_clone.set_to_native_vertical_datum;
       end if;
       select o.office_code,
              pl.location_code
@@ -155,19 +156,19 @@ as
         from at_physical_location pl,
              at_base_location bl,
              cwms_office o
-       where upper(o.office_id) = upper(self.office_id)
+       where upper(o.office_id) = upper(l_clone.office_id)
          and bl.db_office_code = o.office_code
          and bl.base_location_code = pl.base_location_code
-         and upper(bl.base_location_id) = upper(cwms_util.get_base_id(self.location_id))
-         and upper(nvl(pl.sub_location_id, '.')) = upper(nvl(cwms_util.get_sub_id(self.location_id), '.'));
+         and upper(bl.base_location_id) = upper(cwms_util.get_base_id(l_clone.location_id))
+         and upper(nvl(pl.sub_location_id, '.')) = upper(nvl(cwms_util.get_sub_id(l_clone.location_id), '.'));
 
       select p.parameter_code
         into l_parameter_code
         from at_parameter p,
              cwms_base_parameter bp
-       where upper(bp.base_parameter_id) = upper(cwms_util.get_base_id(self.parameter_id))
+       where upper(bp.base_parameter_id) = upper(cwms_util.get_base_id(l_clone.parameter_id))
          and p.base_parameter_code = bp.base_parameter_code
-         and upper(nvl(p.sub_parameter_id, '.')) = upper(nvl(cwms_util.get_sub_id(self.parameter_id), '.'))
+         and upper(nvl(p.sub_parameter_id, '.')) = upper(nvl(cwms_util.get_sub_id(l_clone.parameter_id), '.'))
          and p.db_office_code in (l_office_code, l_cwms_office_code);
 
       select pt.parameter_type_code
@@ -188,50 +189,50 @@ as
       select level_value * factor + offset
         into l_location_level_value
         from cwms_unit_conversion cuc
-       where from_unit_id = self.level_units_id
-         and to_unit_id = cwms_util.get_unit_id2(cwms_util.get_db_unit_code(self.parameter_id));
+       where from_unit_id = l_clone.level_units_id
+         and to_unit_id = cwms_util.get_unit_id2(cwms_util.get_db_unit_code(l_clone.parameter_id));
 
-      if self.attribute_parameter_id is not null then
+      if l_clone.attribute_parameter_id is not null then
          select p.parameter_code
            into l_attribute_parameter_code
            from at_parameter p,
                 cwms_base_parameter bp
-          where upper(bp.base_parameter_id) = upper(cwms_util.get_base_id(self.attribute_parameter_id))
+          where upper(bp.base_parameter_id) = upper(cwms_util.get_base_id(l_clone.attribute_parameter_id))
             and p.base_parameter_code = bp.base_parameter_code
-            and upper(nvl(p.sub_parameter_id, '.')) = upper(nvl(cwms_util.get_sub_id(self.attribute_parameter_id), '.'))
+            and upper(nvl(p.sub_parameter_id, '.')) = upper(nvl(cwms_util.get_sub_id(l_clone.attribute_parameter_id), '.'))
             and p.db_office_code in (l_office_code, l_cwms_office_code);
 
          select pt.parameter_type_code
            into l_attribute_param_type_code
            from cwms_parameter_type pt
-          where upper(pt.parameter_type_id) = upper(self.attribute_parameter_type_id);
+          where upper(pt.parameter_type_id) = upper(l_clone.attribute_parameter_type_id);
 
          select d.duration_code
            into l_attribute_duration_code
            from cwms_duration d
-          where upper(d.duration_id) = upper(self.attribute_duration_id);
+          where upper(d.duration_id) = upper(l_clone.attribute_duration_id);
 
-         select cwms_rounding.round_f(self.attribute_value * factor + offset, 12)
+         select cwms_rounding.round_f(l_clone.attribute_value * factor + offset, 12)
            into l_attribute_value
            from cwms_unit_conversion cuc
           where from_unit_id = attribute_units_id
-            and to_unit_id = cwms_util.get_unit_id2(cwms_util.get_db_unit_code(self.attribute_parameter_id));
+            and to_unit_id = cwms_util.get_unit_id2(cwms_util.get_db_unit_code(l_clone.attribute_parameter_id));
       end if;
 
-      l_calendar_interval := cwms_util.months_to_yminterval(self.interval_months);
-      l_time_interval     := cwms_util.minutes_to_dsinterval(self.interval_minutes);
+      l_calendar_interval := cwms_util.months_to_yminterval(l_clone.interval_months);
+      l_time_interval     := cwms_util.minutes_to_dsinterval(l_clone.interval_minutes);
 
-      if self.seasonal_values is not null then
+      if l_clone.seasonal_values is not null then
          l_seasonal_level_values := new seasonal_loc_lvl_tab_t();
-         for i in 1..self.seasonal_values.count loop
+         for i in 1..l_clone.seasonal_values.count loop
             l_seasonal_level_values.extend;
             l_seasonal_level_values(i) := seasonal_location_level_t(
-               cwms_util.months_to_yminterval(self.seasonal_values(i).offset_months),
-               cwms_util.minutes_to_dsinterval(self.seasonal_values(i).offset_minutes),
+               cwms_util.months_to_yminterval(l_clone.seasonal_values(i).offset_months),
+               cwms_util.minutes_to_dsinterval(l_clone.seasonal_values(i).offset_minutes),
                cwms_util.convert_units(
                   seasonal_values(i).value,
-                  self.level_units_id,
-                  cwms_util.get_unit_id2(cwms_util.get_db_unit_code(self.parameter_id))));
+                  l_clone.level_units_id,
+                  cwms_util.get_unit_id2(cwms_util.get_db_unit_code(l_clone.parameter_id))));
          end loop;
       end if;
 
@@ -244,7 +245,7 @@ as
             and parameter_type_code = l_parameter_type_code
             and duration_code = l_duration_code
             and specified_level_code = l_specified_level_code
-            and location_level_date = self.level_date
+            and location_level_date = l_clone.level_date
             and nvl(to_char(attribute_value), '@') = nvl(to_char(l_attribute_value), '@')
             and nvl(attribute_parameter_code, -1) = nvl(l_attribute_parameter_code, -1)
             and nvl(attribute_parameter_type_code, -1) = nvl(l_attribute_param_type_code, -1)
@@ -260,31 +261,27 @@ as
          l_parameter_code,
          l_parameter_type_code,
          l_duration_code,
-         cwms_util.change_timezone(self.level_date, self.timezone_id, 'UTC'),
+         cwms_util.change_timezone(l_clone.level_date, l_clone.timezone_id, 'UTC'),
          l_location_level_value,
-         self.level_comment,
+         l_clone.level_comment,
          l_attribute_value,
          l_attribute_parameter_code,
          l_attribute_param_type_code,
          l_attribute_duration_code,
-         self.attribute_comment,
-         cwms_util.change_timezone(self.interval_origin, self.timezone_id, 'UTC'),
+         l_clone.attribute_comment,
+         cwms_util.change_timezone(l_clone.interval_origin, l_clone.timezone_id, 'UTC'),
          l_calendar_interval,
          l_time_interval,
-         self.interpolate,
-         case self.tsid is null
+         l_clone.interpolate,
+         case l_clone.tsid is null
             when true  then null
-            when false then cwms_ts.get_ts_code(self.tsid, l_office_code)
+            when false then cwms_ts.get_ts_code(l_clone.tsid, l_office_code)
          end,
-         self.expiration_date,
+         l_clone.expiration_date,
          l_seasonal_level_values,
-         self.indicators,
-         self.constituents,
-         self.connections);
-
-      if l_current_vertical_datum is not null then
-         self.set_vertical_datum(l_current_vertical_datum);
-      end if;
+         l_clone.indicators,
+         l_clone.constituents,
+         l_clone.connections);
 
       return l_obj;
    end zlocation_level;
