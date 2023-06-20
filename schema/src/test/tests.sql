@@ -5,8 +5,17 @@ define office_id = '&1';
 define cwms_schema = '&2';
 define upass_id = '&3';
 define eroc = '&4';
--- make sure the info required for the below user is present
-exec cwms_sec.add_cwms_user('OTHER_DIST', char_32_array_type('CWMS Users'),'HQ');
+define multiuser2 = '&eroc.hectest_multiuser2';
+-- make sure the info required for the below users are present
+begin
+    cwms_sec.add_cwms_user('OTHER_DIST', char_32_array_type('CWMS Users'),'HQ');
+    cwms_20.cwms_sec.add_cwms_user ('&&multiuser2',
+                                        CHAR_32_ARRAY_TYPE ('CWMS Users','TS ID Creator', 'Viewer Users'),
+                                        '&&office_id');
+    cwms_20.cwms_sec.add_user_to_group('&&multiuser2','CWMS Users','POA');
+end;
+/
+
 @test_cwms_stream;
 @test_cwms_prop.sql;
 @test_cwms_msg.sql;
