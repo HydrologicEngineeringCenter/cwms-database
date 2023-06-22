@@ -5103,7 +5103,7 @@ begin
                      l_level_values(l_level_values.count-1).value +
                      (l_end_time_utc - l_level_values(l_level_values.count-1).date_time) /
                      (l_date_next - l_level_values(l_level_values.count-1).date_time) *
-                     (l_value_next - l_level_values(l_level_values.count-1).value)) * l_factor + l_offset;
+                     ((l_value_next * l_factor + l_offset) - l_level_values(l_level_values.count-1).value));
                   l_level_values(l_level_values.count) :=
                      new ztsv_type(l_end_time_utc, l_value, case when l_rec.interpolate = 'T' then 1 else 0 end);
                end if;

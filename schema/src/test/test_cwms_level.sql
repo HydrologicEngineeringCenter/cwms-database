@@ -21,6 +21,8 @@ procedure test_virtual_location_levels;
 procedure test_guide_curve;
 --%test(Test location level labels, sources, indicators and conditions, and xml store/retrieve) [only works if OS TZ is UTC]
 procedure test_sources_labels_indicators_conditions_and_xml;
+--%test(CWDB-234 Bad interpolation at end of seasonal location level time series)
+procedure test_cwdb_234_bad_interpolation_at_end_of_seasonal_location_level_time_series;
 
 c_office_id             varchar2(16)  := '&&office_id';
 c_location_id           varchar2(57)  := 'LocLevelTestLoc';
@@ -1706,6 +1708,79 @@ begin
    ut.expect(l_levels_xml2).to_equal(l_levels_xml1);
 
 end test_sources_labels_indicators_conditions_and_xml;
+--------------------------------------------------------------------------------
+-- procedure test_cwdb_234_bad_interpolation_at_end_of_seasonal_location_level_time_series
+--------------------------------------------------------------------------------
+procedure test_cwdb_234_bad_interpolation_at_end_of_seasonal_location_level_time_series
+is
+   l_date            date;
+   l_date_1          date;
+   l_date_2          date;
+   l_fraction        binary_double;
+   l_start_time      date := date '2023-04-01';
+   l_end_time        date := date '2023-04-15';
+   l_effective_date  date := date '2021-01-01';
+   l_interval_origin date := date '2000-01-01';
+   l_interval_months integer := 12;
+   l_ts_values       cwms_t_ztsv_array;
+   l_expected_values cwms_t_ztsv_array;
+   l_seasonal_values cwms_t_seasonal_value_tab := cwms_t_seasonal_value_tab(
+      cwms_t_seasonal_value( 0,  0 * CWMS_TS.min_in_dy, 1000),  -- 01 Jan
+      cwms_t_seasonal_value( 2, 14 * CWMS_TS.min_in_dy, 1010),  -- 15 Mar
+      cwms_t_seasonal_value( 4,  0 * CWMS_TS.min_in_dy, 1020),  -- 01 May
+      cwms_t_seasonal_value( 7,  0 * CWMS_TS.min_in_dy, 1020),  -- 01 Aug
+      cwms_t_seasonal_value( 8, 14 * CWMS_TS.min_in_dy, 1010),  -- 15 Sep
+      cwms_t_seasonal_value(11,  0 * CWMS_TS.min_in_dy, 1000)); -- 01 Dec
+begin
+   setup;
+   ---------------------------------------
+   -- store the seasonal location level --
+   ---------------------------------------
+   cwms_level.store_location_level4(
+      p_location_level_id => c_top_of_normal_elev_id,
+      p_level_value       => null,
+      p_level_units       => c_elev_unit,
+      p_effective_date    => l_effective_date,
+      p_timezone_id       => c_timezone_id,
+      p_interval_origin   => l_interval_origin,
+      p_interval_months   => l_interval_months,
+      p_seasonal_values   => l_seasonal_values,
+      p_office_id         => c_office_id);
+   --------------------------------
+   -- set up the expected values --
+   --------------------------------
+   l_expected_values := cwms_t_ztsv_array();
+   l_expected_values.extend(3);
+   l_date_1 := add_months(trunc(l_start_time, 'YYYY'), l_seasonal_values(2).offset_months) + l_seasonal_values(2).offset_minutes / 1440;
+   l_date_2 := add_months(trunc(l_start_time, 'YYYY'), l_seasonal_values(3).offset_months) + l_seasonal_values(3).offset_minutes / 1440;
+   l_date := l_start_time;
+   l_fraction := (l_date - l_date_1) / (l_date_2 - l_date_1);
+   l_expected_values(1) := cwms_t_ztsv(l_date, l_seasonal_values(2).value + l_fraction * (l_seasonal_values(3).value - l_seasonal_values(2).value), 1);
+   l_date := l_end_time - 1/86400;
+   l_fraction := (l_date - l_date_1) / (l_date_2 - l_date_1);
+   l_expected_values(2) := cwms_t_ztsv(l_date, l_seasonal_values(2).value + l_fraction * (l_seasonal_values(3).value - l_seasonal_values(2).value), 1);
+   l_date := l_end_time;
+   l_fraction := (l_date - l_date_1) / (l_date_2 - l_date_1);
+   l_expected_values(3) := cwms_t_ztsv(l_date, l_seasonal_values(2).value + l_fraction * (l_seasonal_values(3).value - l_seasonal_values(2).value), 1);
+   -----------------------------------------------------------
+   -- retrieve the level as a time series and verify values --
+   -----------------------------------------------------------
+   l_ts_values := cwms_level.retrieve_location_level_values(
+      p_location_level_id => c_top_of_normal_elev_id,
+      p_level_units       => c_elev_unit,
+      p_start_time        => l_start_time,
+      p_end_time          => l_end_time,
+      p_timezone_id       => c_timezone_id,
+      p_office_id         => c_office_id);
+
+   ut.expect(l_ts_values.count).to_equal(3);
+   ut.expect(l_ts_values(1).date_time).to_equal(l_expected_values(1).date_time);
+   ut.expect(round(l_ts_values(1).value / l_expected_values(1).value, 4)).to_equal(1);
+   ut.expect(l_ts_values(2).date_time).to_equal(l_expected_values(2).date_time);
+   ut.expect(round(l_ts_values(2).value / l_expected_values(2).value, 4)).to_equal(1);
+   ut.expect(l_ts_values(3).date_time).to_equal(l_expected_values(3).date_time);
+   ut.expect(round(l_ts_values(3).value / l_expected_values(3).value, 4)).to_equal(1);
+end test_cwdb_234_bad_interpolation_at_end_of_seasonal_location_level_time_series;
 
 end test_cwms_level;
 /
