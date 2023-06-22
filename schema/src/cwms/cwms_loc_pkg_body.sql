@@ -6639,16 +6639,42 @@ end unassign_loc_groups;
       if p_effective_date is null then
          cwms_err.raise('NULL_ARGUMENT', p_effective_date);
       end if;
-      -----------------
-      -- do the work --
-      -----------------
-      l_vertical_datum_id_1 := upper(p_vertical_datum_id_1);
-      l_vertical_datum_id_2 := upper(p_vertical_datum_id_2);
-      l_location_code       := cwms_loc.get_location_code(p_office_id, p_location_id);
-      l_effective_date_utc  := cwms_util.change_timezone(
+      l_location_code      := cwms_loc.get_location_code(p_office_id, p_location_id);
+      l_effective_date_utc := cwms_util.change_timezone(
          p_effective_date,
          nvl(p_time_zone, cwms_loc.get_local_timezone(l_location_code)),
          'UTC');
+      ---------------------------
+      -- normalize datum names --
+      ---------------------------
+      l_vertical_datum_id_1 := replace(regexp_replace(upper(p_vertical_datum_id_1), '(N[AG]VD)[ -]', '\1', 1, 0), 'OTHER', 'LOCAL');
+      l_vertical_datum_id_2 := replace(regexp_replace(upper(p_vertical_datum_id_2), '(N[AG]VD)[ -]', '\1', 1, 0), 'OTHER', 'LOCAL');
+      ------------------------
+      -- handle local datum --
+      ------------------------
+      if l_vertical_datum_id_1 not in('NGVD29', 'NAVD88', 'LOCAL') then
+         select 'LOCAL'
+           into l_vertical_datum_id_1
+           from dual
+          where exists(select location_code
+                         from at_vert_datum_local
+                        where location_code = l_location_code
+                          and upper(local_datum_name) = l_vertical_datum_id_1
+                      );
+      end if;
+      if l_vertical_datum_id_2 not in('NGVD29', 'NAVD88', 'LOCAL') then
+         select 'LOCAL'
+           into l_vertical_datum_id_2
+           from dual
+          where exists(select location_code
+                         from at_vert_datum_local
+                        where location_code = l_location_code
+                          and upper(local_datum_name) = l_vertical_datum_id_2
+                      );
+      end if;
+      -----------------
+      -- do the work --
+      -----------------
       begin
          if cwms_util.is_true(p_match_effective_date) then
             --------------------------
@@ -6658,8 +6684,8 @@ end unassign_loc_groups;
               into l_rowid
               from at_vert_datum_offset
              where location_code = l_location_code
-               and vertical_datum_id_1 = l_vertical_datum_id_1
-               and vertical_datum_id_2 = l_vertical_datum_id_2
+               and vertical_datum_id_1 in (l_vertical_datum_id_1, l_vertical_datum_id_2)
+               and vertical_datum_id_2 in (l_vertical_datum_id_1, l_vertical_datum_id_2)
                and effective_date = l_effective_date_utc;
          else
             -----------------------------------------------
@@ -6669,13 +6695,13 @@ end unassign_loc_groups;
               into l_rowid
               from at_vert_datum_offset
              where location_code = l_location_code
-               and vertical_datum_id_1 = l_vertical_datum_id_1
-               and vertical_datum_id_2 = l_vertical_datum_id_2
+               and vertical_datum_id_1 in (l_vertical_datum_id_1, l_vertical_datum_id_2)
+               and vertical_datum_id_2 in (l_vertical_datum_id_1, l_vertical_datum_id_2)
                and effective_date = (select max(effective_date)
                                        from at_vert_datum_offset
                                       where location_code = l_location_code
-                                        and vertical_datum_id_1 = l_vertical_datum_id_1
-                                        and vertical_datum_id_2 = l_vertical_datum_id_2
+                                        and vertical_datum_id_1 in (l_vertical_datum_id_1, l_vertical_datum_id_2)
+                                        and vertical_datum_id_2 in (l_vertical_datum_id_1, l_vertical_datum_id_2)
                                         and effective_date <= l_effective_date_utc
                                     );
          end if;
@@ -7050,9 +7076,12 @@ end unassign_loc_groups;
       p_match_effective_date in varchar2 default 'T',
       p_office_id            in varchar2 default null)
    is
-      l_rowid          urowid;
-      l_effective_date date;
-      l_time_zone      varchar2(28);
+      l_vertical_datum_id_1 at_vert_datum_offset.vertical_datum_id_1%type;
+      l_vertical_datum_id_2 at_vert_datum_offset.vertical_datum_id_2%type;
+      l_location_code       at_physical_location.location_code%type;
+      l_rowid               urowid;
+      l_effective_date      date;
+      l_time_zone           varchar2(28);
    begin
       -------------------
       -- sanity checks --
@@ -7066,9 +7095,35 @@ end unassign_loc_groups;
       if p_vertical_datum_id_2 is null then
          cwms_err.raise('NULL_ARGUMENT', p_vertical_datum_id_2);
       end if;
-      -----------------
-      -- do the work --
-      -----------------
+      l_location_code := cwms_loc.get_location_code(p_office_id, p_location_id);
+      ---------------------------
+      -- normalize datum names --
+      ---------------------------
+      l_vertical_datum_id_1 := replace(regexp_replace(upper(p_vertical_datum_id_1), '(N[AG]VD)[ -]', '\1', 1, 0), 'OTHER', 'LOCAL');
+      l_vertical_datum_id_2 := replace(regexp_replace(upper(p_vertical_datum_id_2), '(N[AG]VD)[ -]', '\1', 1, 0), 'OTHER', 'LOCAL');
+      ------------------------
+      -- handle local datum --
+      ------------------------
+      if l_vertical_datum_id_1 not in('NGVD29', 'NAVD88', 'LOCAL') then
+         select 'LOCAL'
+           into l_vertical_datum_id_1
+           from dual
+          where exists(select location_code
+                         from at_vert_datum_local
+                        where location_code = l_location_code
+                          and upper(local_datum_name) = l_vertical_datum_id_1
+                      );
+      end if;
+      if l_vertical_datum_id_2 not in('NGVD29', 'NAVD88', 'LOCAL') then
+         select 'LOCAL'
+           into l_vertical_datum_id_2
+           from dual
+          where exists(select location_code
+                         from at_vert_datum_local
+                        where location_code = l_location_code
+                          and upper(local_datum_name) = l_vertical_datum_id_2
+                      );
+      end if;
       l_effective_date := nvl(p_effective_date_in, sysdate);
       l_time_zone := case p_effective_date_in is null
                         when true then 'UTC'
@@ -7088,8 +7143,8 @@ end unassign_loc_groups;
             'CWMS Vertical Datum Offset',
             cwms_util.get_db_office_id(p_office_id)
             ||'/'||p_location_id
-            ||'/'||upper(p_vertical_datum_id_1)
-            ||'/'||upper(p_vertical_datum_id_2)
+            ||'/'||l_vertical_datum_id_1
+            ||'/'||l_vertical_datum_id_2
             ||'@'||to_char(l_effective_date, 'yyyy-mm-dd hh24:mi:ss')
             ||'('||l_time_zone
             ||')');
@@ -7114,6 +7169,7 @@ end unassign_loc_groups;
       l_vertical_datum_id_1 varchar2(16);
       l_vertical_datum_id_2 varchar2(16);
       l_description         varchar2(64);
+      l_count               pls_integer;
    begin
       -------------------
       -- sanity checks --
@@ -7121,20 +7177,48 @@ end unassign_loc_groups;
       if p_location_code is null then
          cwms_err.raise('NULL_ARGUMENT', 'p_location_code');
       end if;
-      if p_vertical_datum_id_1 is null then
-         cwms_err.raise('NULL_ARGUMENT', 'p_vertical_datum_id_1');
-      end if;
-      if p_vertical_datum_id_2 is null then
-         cwms_err.raise('NULL_ARGUMENT', 'p_vertical_datum_id_2');
-      end if;
       if p_datetime_utc is null then
          cwms_err.raise('NULL_ARGUMENT', 'p_datetime_utc');
       end if;
-      -----------------
-      -- do the work --
-      -----------------
-      l_vertical_datum_id_1 := upper(p_vertical_datum_id_1);
-      l_vertical_datum_id_2 := upper(p_vertical_datum_id_2);
+      if p_vertical_datum_id_1 is null then
+         if p_vertical_datum_id_2 is null then
+            p_offset := 0.D;
+            return;
+         else
+            cwms_err.raise('ERROR', 'Cannot convert between vertical datums NULL and '||p_vertical_datum_id_2);
+         end if;
+      end if;
+      if p_vertical_datum_id_2 is null then
+            cwms_err.raise('ERROR', 'Cannot convert between vertical datums '||p_vertical_datum_id_1||' and NULL');
+      end if;
+      ---------------------------
+      -- normalize datum names --
+      ---------------------------
+      l_vertical_datum_id_1 := replace(regexp_replace(upper(p_vertical_datum_id_1), '(N[AG]VD)[ -]', '\1', 1, 0), 'OTHER', 'LOCAL');
+      l_vertical_datum_id_2 := replace(regexp_replace(upper(p_vertical_datum_id_2), '(N[AG]VD)[ -]', '\1', 1, 0), 'OTHER', 'LOCAL');
+      ------------------------
+      -- handle local datum --
+      ------------------------
+      if l_vertical_datum_id_1 not in('NGVD29', 'NAVD88', 'LOCAL') then
+         select 'LOCAL'
+           into l_vertical_datum_id_1
+           from dual
+          where exists(select location_code
+                         from at_vert_datum_local
+                        where location_code = p_location_code
+                          and upper(local_datum_name) = l_vertical_datum_id_1
+                      );
+      end if;
+      if l_vertical_datum_id_2 not in('NGVD29', 'NAVD88', 'LOCAL') then
+         select 'LOCAL'
+           into l_vertical_datum_id_2
+           from dual
+          where exists(select location_code
+                         from at_vert_datum_local
+                        where location_code = p_location_code
+                          and upper(local_datum_name) = l_vertical_datum_id_2
+                      );
+      end if;
       if l_vertical_datum_id_2 = l_vertical_datum_id_1 then
          ----------------------
          -- identity mapping --
@@ -7497,9 +7581,15 @@ end unassign_loc_groups;
           p_vertical_datum_id_1 => p_vertical_datum_id_1,
           p_vertical_datum_id_2 => p_vertical_datum_id_2,
           p_datetime_utc        => p_datetime_utc);
-      if p_unit is not null then
-         l_offset := cwms_util.convert_units(l_offset, 'm', p_unit);
+      if l_offset is null then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot convert between vertical datums '
+            ||nvl(p_vertical_datum_id_1, 'NULL')
+            ||' and '
+            ||nvl(p_vertical_datum_id_2, 'NULL'));
       end if;
+      l_offset := cwms_util.convert_units(l_offset, 'm', p_unit);
       return l_offset;
    end get_vertical_datum_offset;
 
@@ -7513,22 +7603,26 @@ end unassign_loc_groups;
       p_office_id           in varchar2 default null)
       return binary_double
    is
-      l_offset         binary_double;
-      l_effective_date date;
-      l_estimate       varchar2(1);
+      l_offset       binary_double;
    begin
-      get_vertical_datum_offset(
-         l_offset,
-         l_effective_date,
-         l_estimate,
-         p_location_id,
-         p_vertical_datum_id_1,
-         p_vertical_datum_id_2,
-         p_datetime,
-         p_time_zone,
-         p_unit,
-         p_office_id);
-      return l_offset;
+      -------------------
+      -- sanity checks --
+      -------------------
+      if p_location_id is null then
+         cwms_err.raise('NULL_ARGUMENT', p_location_id);
+      end if;
+      -----------------
+      -- do the work --
+      -----------------
+      return get_vertical_datum_offset(
+         p_location_code       => cwms_loc.get_location_code(p_office_id, p_location_id),
+         p_vertical_datum_id_1 => p_vertical_datum_id_1,
+         p_vertical_datum_id_2 => p_vertical_datum_id_2,
+         p_datetime_utc        => cwms_util.change_timezone(
+                                     nvl(p_datetime, sysdate),
+                                     nvl(p_time_zone, cwms_loc.get_local_timezone(p_location_id, p_office_id)),
+                                     'UTC'),
+         p_unit                => p_unit);
    end get_vertical_datum_offset;
 
    procedure get_vertical_datum_offset(
@@ -7757,7 +7851,7 @@ end unassign_loc_groups;
          when l_effective_datum is null or l_location_datum = l_effective_datum then
             l_datum_offset := 0;
          when l_location_datum is null then
-            cwms_err.raise('ERROR', 'Cannot convert between NULL and non-NULL vertical datums');
+            cwms_err.raise('ERROR', 'Cannot convert between vertical datums NULL and '||l_effective_datum);
          else
             l_datum_offset := get_vertical_datum_offset(
                  p_location_code,

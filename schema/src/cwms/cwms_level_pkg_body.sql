@@ -309,6 +309,7 @@ procedure get_units_conversion(
    p_units          in  varchar2,
    p_parameter_code in  number)
 is
+   l_unit              cwms_unit.unit_id%type;
    l_parameter_id      varchar2(49);
    l_sub_parameter_id  varchar2(32);
 begin
@@ -321,6 +322,7 @@ begin
       p_factor := 1;
       p_offset := 0;
    else
+      l_unit := cwms_util.parse_unit(p_units);
       begin
          if p_to_cwms then
             -------------
@@ -336,7 +338,7 @@ begin
              where uc.to_unit_code = bp.unit_code
                and bp.base_parameter_code = ap.base_parameter_code
                and ap.parameter_code = p_parameter_code
-               and uc.from_unit_id = p_units;
+               and uc.from_unit_id = l_unit;
          else
             ---------------
             -- FROM CWMS --
@@ -351,7 +353,7 @@ begin
              where uc.from_unit_code = bp.unit_code
                and bp.base_parameter_code = ap.base_parameter_code
                and ap.parameter_code = p_parameter_code
-               and uc.to_unit_id = p_units;
+               and uc.to_unit_id = l_unit;
          end if;
       exception
          when no_data_found then
@@ -376,7 +378,7 @@ begin
                      else           ' from'
                   end
                || ' specified units: '
-               || p_units);
+               || l_unit);
       end;
    end if;
 end get_units_conversion;
@@ -1789,7 +1791,7 @@ procedure store_seasonal_location_level(
     p_level_offset            in  binary_double,
     p_location_level_code     in number
     )
-    
+
 is
     l_offset_months             integer;
     l_offset_minutes            integer;
@@ -1811,7 +1813,7 @@ begin
         if (l_offset_minutes < 0) then
            l_offset_months := l_offset_months - 1;
            l_offset_minutes := round((l_seasonal_date_utc - add_months(p_interval_origin, l_offset_months)) * CWMS_TS.min_in_dy, 9);
-        end if;   
+        end if;
         insert
           into at_seasonal_location_level
         values(p_location_level_code,
@@ -1920,7 +1922,7 @@ begin
          'Must specify exactly one of p_level_value, p_seasonal_values, and p_tsid '
          || 'in CREATE_LOCATION_LEVEL');
    end if;
-   if p_seasonal_values is not null then
+   if p_seasonal_values is not null and p_seasonal_values.count > 0 then
       case
       when nvl(p_interval_months, 0) > 0 and nvl(p_interval_minutes, 0) > 0 then
          cwms_err.raise(
@@ -2035,11 +2037,11 @@ begin
    l_attr_param_is_elev  := instr(upper(p_attribute_parameter_id), 'ELEV') = 1;
    if l_level_param_is_elev then
       l_level_vert_datum_offset := cwms_loc.get_vertical_datum_offset(l_location_code, p_level_units);
-      l_level_offset := l_level_offset - l_level_vert_datum_offset;
+      l_level_offset := l_level_offset - l_level_vert_datum_offset * l_level_factor;
    end if;
    if l_attr_param_is_elev then
       l_attr_vert_datum_offset := cwms_loc.get_vertical_datum_offset(l_location_code, p_attribute_units);
-      l_attribute_value := l_attribute_value - l_attr_vert_datum_offset;
+      l_attribute_value := l_attribute_value - l_attr_vert_datum_offset * l_attr_factor;
    end if;
    --------------------------------------
    -- determine whether already exists --
@@ -2049,7 +2051,7 @@ begin
       -- new location level - insert it --
       ------------------------------------
       l_location_level_code := cwms_seq.nextval;
-      if p_seasonal_values is null then
+      if p_seasonal_values is null or p_seasonal_values.count = 0 then
          -----------------------------------
          -- constant value or time series --
          -----------------------------------
@@ -2155,7 +2157,7 @@ begin
       -------------------------------
       -- update the existing level --
       -------------------------------
-      if p_seasonal_values is null then
+      if p_seasonal_values is null or p_seasonal_values.count = 0 then
          -----------------------------------
          -- constant value or time series --
          -----------------------------------
@@ -2598,9 +2600,12 @@ is
    l_office_id                  varchar2(16);
    l_interpolate                varchar2(1);
    l_location_level_id          varchar2(398);
+   l_location_id                av_loc.location_id%type;
+   l_parameter_id               av_parameter.parameter_id%type;
    l_level_value                number;
    l_level_unit                 varchar2(16);
    l_attribute_id               varchar2(83);
+   l_attribute_parameter_id     av_parameter.parameter_id%type;
    l_attribute_value            number;
    l_attribute_unit             varchar2(16);
    l_effective_date             date;
@@ -2641,6 +2646,9 @@ is
    l_seasonal_values            seasonal_value_tab_t;
    l_connections                varchar2(256);
    l_constituents               varchar2(32767);
+   l_vertical_datum             at_vert_datum_offset.vertical_datum_id_1%type;
+   l_native_vertical_datum      at_vert_datum_offset.vertical_datum_id_1%type;
+   l_vertical_datum_offset      binary_double;
 
 
    function is_error(p_msg_txt in varchar2, p_error_if_exists in boolean) return boolean is
@@ -2689,20 +2697,24 @@ begin
       l_top_node := get_xml_node(l_xml, '/*/location-level['||i||']');
       exit when l_top_node is null;
       begin
-         l_office_id := get_xml_text(l_top_node, '/*/@office');
-         l_interpolate := upper(substr(get_xml_text(l_top_node, '/*/@interpolate'), 1, 1));
+         l_office_id         := get_xml_text(l_top_node, '/*/@office');
+         l_interpolate       := upper(substr(get_xml_text(l_top_node, '/*/@interpolate'), 1, 1));
          l_location_level_id := get_xml_text(l_top_node, '/*/location-level-id');
-         l_node := get_xml_node(l_top_node, '/*/location-level-attribute');
+         l_location_id       := cwms_util.split_text(l_location_level_id, 1, '.');
+         l_parameter_id      := cwms_util.split_text(l_location_level_id, 2, '.');
+         l_node              := get_xml_node(l_top_node, '/*/location-level-attribute');
          if l_node is null then
-            l_attribute_id      := null;
-            l_attribute_value   := null;
-            l_attribute_unit    := null;
-            l_attribute_comment := null;
+            l_attribute_id           := null;
+            l_attribute_parameter_id := null;
+            l_attribute_value        := null;
+            l_attribute_unit         := null;
+            l_attribute_comment      := null;
          else
-            l_attribute_id      := get_xml_text(l_node, '/*/attribute-id');
-            l_attribute_value   := get_xml_number(l_node, '/*/value');
-            l_attribute_unit    := get_xml_text(l_node, '/*/value/@unit');
-            l_attribute_comment := get_xml_text(l_node, '/*/comment');
+            l_attribute_id           := get_xml_text(l_node, '/*/attribute-id');
+            l_attribute_parameter_id := cwms_util.split_text(l_attribute_id, 1, '.');
+            l_attribute_value        := get_xml_number(l_node, '/*/value');
+            l_attribute_unit         := get_xml_text(l_node, '/*/value/@unit');
+            l_attribute_comment      := get_xml_text(l_node, '/*/comment');
          end if;
          l_effective_date := cwms_util.to_timestamp(get_xml_text(l_top_node, '/*/effective-date'));
          l_level_comment  := get_xml_text(l_top_node, '/*/level-comment');
@@ -2712,6 +2724,27 @@ begin
          else
             l_expiration_date := cwms_util.to_timestamp(get_xml_text(l_node, '.'));
          end if;
+         if instr(l_parameter_id, 'Elev') = 1 or instr(l_attribute_parameter_id, 'Elev') = 1 then
+            l_vertical_datum := get_xml_text(l_top_node, '/*/vertical-datum');
+            if l_vertical_datum is not null then
+               l_native_vertical_datum := cwms_loc.get_location_vertical_datum(
+                  p_location_id => l_location_id,
+                  p_office_id   => l_office_id);
+            end if;
+         else
+            l_vertical_datum := null;
+         end if;
+         if instr(l_attribute_parameter_id, 'Elev') = 1 and l_vertical_datum is not null then
+            l_vertical_datum_offset := cwms_loc.get_vertical_datum_offset(
+               p_location_id         => l_location_id,
+               p_vertical_datum_id_1 => l_vertical_datum,
+               p_vertical_datum_id_2 => l_native_vertical_datum,
+               p_datetime            => l_effective_date,
+               p_time_zone           => 'UTC',
+               p_unit                => l_attribute_unit,
+               p_office_id           => l_office_id);
+            l_attribute_value := l_attribute_value + l_vertical_datum_offset;
+         end if;
          l_value_node := get_xml_node(l_top_node, '(/*/constant|/*/regularly-varying|/*/irregularly-varying|/*/virtual)');
          case l_value_node.getrootelement
          when 'constant' then
@@ -2720,6 +2753,17 @@ begin
             --------------------
             l_level_unit := get_xml_text(l_value_node, '/*/@unit');
             l_level_value := get_xml_number(l_value_node, '.');
+            if instr(l_parameter_id, 'Elev') = 1 and l_vertical_datum is not null then
+               l_vertical_datum_offset := cwms_loc.get_vertical_datum_offset(
+                  p_location_id         => l_location_id,
+                  p_vertical_datum_id_1 => l_vertical_datum,
+                  p_vertical_datum_id_2 => l_native_vertical_datum,
+                  p_datetime            => l_effective_date,
+                  p_time_zone           => 'UTC',
+                  p_unit                => l_level_unit,
+                  p_office_id           => l_office_id);
+               l_level_value := l_level_value + l_vertical_datum_offset;
+            end if;
             store_location_level4(
                p_location_level_id => l_location_level_id,
                p_level_value       => l_level_value,
@@ -2750,6 +2794,16 @@ begin
             l_interval_minutes := cwms_util.dsinterval_to_minutes(l_dsinterval);
             l_seasonal_values  := seasonal_value_tab_t();
             l_level_unit := get_xml_text(l_value_node, '/*/seasonal-value[1]/level-value/@unit');
+            if instr(l_parameter_id, 'Elev') = 1 and l_vertical_datum is not null then
+               l_vertical_datum_offset := cwms_loc.get_vertical_datum_offset(
+                  p_location_id         => l_location_id,
+                  p_vertical_datum_id_1 => l_vertical_datum,
+                  p_vertical_datum_id_2 => l_native_vertical_datum,
+                  p_datetime            => l_effective_date,
+                  p_time_zone           => 'UTC',
+                  p_unit                => l_level_unit,
+                  p_office_id           => l_office_id);
+            end if;
             for j in 1..999999 loop
                l_node := get_xml_node(l_value_node, '/*/seasonal-value['||j||']');
                exit when l_node is null;
@@ -2759,7 +2813,7 @@ begin
                   get_xml_number(l_node, '/*/level-value'),
                   get_xml_text(l_node, '/*/level-value/@unit'),
                   l_level_unit);
-               l_seasonal_values(l_seasonal_values.count) := seasonal_value_t(l_yminterval, l_dsinterval, l_level_value);
+               l_seasonal_values(l_seasonal_values.count) := seasonal_value_t(l_yminterval, l_dsinterval, l_level_value + l_vertical_datum_offset);
             end loop;
             store_location_level4(
                p_location_level_id => l_location_level_id,
@@ -3630,6 +3684,9 @@ is
    l_attribute_parameter_type_id varchar2(16);
    l_attribute_duration_id       varchar2(16);
    l_location_level_code         number;
+   l_unit                        cwms_unit.unit_id%type;
+   l_vertical_datum              at_vert_datum_offset.vertical_datum_id_1%type;
+   l_location_level              location_level_t;
 begin
    -------------------
    -- sanity checks --
@@ -3688,13 +3745,24 @@ begin
       p_attribute_duration_id   => l_attribute_duration_id,
       p_office_id               => p_office_id,
       p_level_precedence        => p_level_precedence);
-   -----------------------------------------------------------
-   -- return the location level object or null if not found --
-   -----------------------------------------------------------
-   return case l_location_level_code is null
-      when true  then null
-      when false then location_level_t(zlocation_level_t(l_location_level_code))
-   end;
+
+   if l_location_level_code is not null then
+      l_location_level := location_level_t(zlocation_level_t(l_location_level_code));
+      l_unit := cwms_util.parse_unit(p_level_units);
+      l_vertical_datum := cwms_util.get_effective_vertical_datum(p_level_units);
+      l_location_level.set_level_unit(l_unit);
+      if l_vertical_datum is not null then
+         l_location_level.set_vertical_datum(l_vertical_datum);
+      end if;
+      if l_location_level.attribute_value is not null then
+         l_location_level.set_attribute_unit(p_attribute_units);
+      end if;
+      if l_timezone_id != 'UTC' then
+         l_location_level.set_timezone(l_timezone_id);
+      end if;
+   end if;
+
+   return l_location_level;
 
 end retrieve_location_level;
 --------------------------------------------------------------------------------
@@ -3758,61 +3826,65 @@ function retrieve_location_levels_xml_f(
    return clob
 is
    type loc_lvl_tab_t is table of location_level_t;
-   l_xml                  clob;
-   l_levels               clob;
-   l_auxiliary            clob;
-   l_loc_lvl_objs         loc_lvl_tab_t;
-   l_crsr                 sys_refcursor;
-   l_office_ids           str_tab_t;
-   l_location_level_ids   str_tab_t;
-   l_attribute_ids        str_tab_t;
-   l_attribute_values     number_tab_t;
-   l_attribute_units      str_tab_t;
-   l_effective_dates      date_table_type;
-   l_expiration_dates     date_table_type;
-   l_level_types          str_tab_t;
-   l_start_time           date;
-   l_end_time             date;
-   l_timezone_id          varchar2(28);
-   l_unit_system          varchar2(2);
-   l_attribute_value      number;
-   l_level_type           varchar2(2);
-   l_include_levels       boolean;
-   l_include_constituents boolean;
-   l_include_sources      boolean;
-   l_include_labels       boolean;
-   l_include_indicators   boolean;
-   l_office_id            varchar2(16);
-   l_attribute_parameter  varchar2(49);
-   l_attribute_unit       varchar2(16);
-   l_processed_levels     bool_by_str_t;
-   l_constituent_levels   bool_by_str_t;
-   l_loc_lvl_obj          location_level_t;
-   l_loc_lvl_str          varchar2(32767);
-   l_normalized_str       varchar2(32767);
-   l_parts                str_tab_t;
-   l_source_code          integer;
-   l_label_codes          number_tab_t;
-   l_indicator_codes      number_tab_t;
-   l_sources_procesed     bool_by_str_t;
-   l_labels_procesed      bool_by_str_t;
-   l_indicators_procesed  bool_by_str_t;
-   l_entity_code          integer;
-   l_category_id          varchar2(16);
-   l_entity_id            varchar2(32);
-   l_entity_name          varchar2(128);
-   l_configuration_code   integer;
-   l_configuration_id     varchar2(32);
-   l_configuration_name   varchar2(128);
-   l_label                varchar2(32);
-   l_level_indicator_id   varchar2(32);
-   l_parameter_code       integer;
-   l_ref_spec_level_code  integer;
-   l_minimum_duration     interval day (3) to second (0);
-   l_maximum_age          interval day (3) to second (0);
-   l_location_level_id    varchar2(398);
-   l_attribute_id         varchar2(83);
-   l_spec_level_id        varchar2(256);
+   l_xml                    clob;
+   l_levels                 clob;
+   l_auxiliary              clob;
+   l_loc_lvl_objs           loc_lvl_tab_t;
+   l_crsr                   sys_refcursor;
+   l_office_ids             str_tab_t;
+   l_location_level_ids     str_tab_t;
+   l_attribute_ids          str_tab_t;
+   l_attribute_values       number_tab_t;
+   l_attribute_units        str_tab_t;
+   l_effective_dates        date_table_type;
+   l_expiration_dates       date_table_type;
+   l_level_types            str_tab_t;
+   l_start_time             date;
+   l_end_time               date;
+   l_location_id            av_loc.location_id%type;
+   l_parameter_id           av_parameter.parameter_id%type;
+   l_attribute_parameter_id av_parameter.parameter_id%type;
+   l_vertical_datum         at_vert_datum_offset.vertical_datum_id_1%type;
+   l_timezone_id            varchar2(28);
+   l_unit_system            varchar2(2);
+   l_attribute_value        number;
+   l_level_type             varchar2(2);
+   l_include_levels         boolean;
+   l_include_constituents   boolean;
+   l_include_sources        boolean;
+   l_include_labels         boolean;
+   l_include_indicators     boolean;
+   l_office_id              varchar2(16);
+   l_attribute_parameter    varchar2(49);
+   l_attribute_unit         varchar2(16);
+   l_processed_levels       bool_by_str_t;
+   l_constituent_levels     bool_by_str_t;
+   l_loc_lvl_obj            location_level_t;
+   l_loc_lvl_str            varchar2(32767);
+   l_normalized_str         varchar2(32767);
+   l_parts                  str_tab_t;
+   l_source_code            integer;
+   l_label_codes            number_tab_t;
+   l_indicator_codes        number_tab_t;
+   l_sources_procesed       bool_by_str_t;
+   l_labels_procesed        bool_by_str_t;
+   l_indicators_procesed    bool_by_str_t;
+   l_entity_code            integer;
+   l_category_id            varchar2(16);
+   l_entity_id              varchar2(32);
+   l_entity_name            varchar2(128);
+   l_configuration_code     integer;
+   l_configuration_id       varchar2(32);
+   l_configuration_name     varchar2(128);
+   l_label                  varchar2(32);
+   l_level_indicator_id     varchar2(32);
+   l_parameter_code         integer;
+   l_ref_spec_level_code    integer;
+   l_minimum_duration       interval day (3) to second (0);
+   l_maximum_age            interval day (3) to second (0);
+   l_location_level_id      varchar2(398);
+   l_attribute_id           varchar2(83);
+   l_spec_level_id          varchar2(256);
 
    function encode(
       ll_text in varchar2)
@@ -3968,6 +4040,14 @@ begin
                --------------------------------
                -- output this location level --
                --------------------------------
+               l_location_id            := cwms_util.split_text(l_loc_lvl_objs(i).location_level_id, 1, '.');
+               l_parameter_id           := cwms_util.split_text(l_loc_lvl_objs(i).location_level_id, 2, '.');
+               l_attribute_parameter_id := cwms_util.split_text(l_loc_lvl_objs(i).attribute_id, 1, '.');
+               if instr(l_parameter_id, 'Elev') = 1 or instr(l_attribute_parameter_id, 'Elev') = 1 then
+                  l_vertical_datum := cwms_loc.get_location_vertical_datum(l_location_id, l_office_id);
+               else
+                  l_vertical_datum := null;
+               end if;
                cwms_util.append(
                   l_levels,
                   '<location-level office="'
@@ -3992,6 +4072,9 @@ begin
                end if;
                if l_loc_lvl_objs(i).level_comment is not null then
                   cwms_util.append(l_levels, '<level-comment>'||encode(l_loc_lvl_objs(i).level_comment)||'</level-comment>');
+               end if;
+               if l_vertical_datum is not null then
+                  cwms_util.append(l_levels, '<vertical-datum>'||encode(l_vertical_datum)||'</vertical-datum>');
                end if;
                case
                when l_loc_lvl_objs(i).level_value is not null then
@@ -16431,7 +16514,7 @@ begin
                loop
                   l_location_level_obj := retrieve_location_level(
                      p_location_level_id => l_constituents(j)(3),
-                     p_level_units       => p_level_units,
+                     p_level_units       => l_level_unit,
                      p_date              => rec.date_time,
                      p_timezone_id       => 'UTC',
                      p_attribute_id      => l_attribute_id,

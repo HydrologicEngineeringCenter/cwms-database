@@ -6507,7 +6507,7 @@ function get_elevation_positions(
 is
    l_elev_code      number(14);
    l_params         str_tab_t;
-   l_elev_positions number_tab_t;
+   l_elev_positions number_tab_t := number_tab_t();
 begin
       select base_parameter_code
         into l_elev_code
@@ -6522,9 +6522,6 @@ begin
          separator3);
       for i in 1..l_params.count loop
          if cwms_util.get_base_param_code(l_params(i), 'T') = l_elev_code then
-            if l_elev_positions is null then
-               l_elev_positions := number_tab_t();
-            end if;
             l_elev_positions.extend;
             if i = l_params.count then
                l_elev_positions(l_elev_positions.count) := -1;

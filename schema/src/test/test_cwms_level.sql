@@ -56,9 +56,10 @@ is
 begin
    teardown;
    cwms_loc.store_location(
-      p_location_id  =>c_location_id,
-      p_time_zone_id => c_timezone_id,
-      p_db_office_id => c_office_id);
+      p_location_id    =>c_location_id,
+      p_time_zone_id   => c_timezone_id,
+      p_vertical_datum => 'NGVD-29',
+      p_db_office_id   => c_office_id);
    commit;
 end;
 --------------------------------------------------------------------------------
@@ -699,6 +700,7 @@ begin
       p_office_id               => c_office_id);
    commit;
    for year in 1..3 loop
+      dbms_output.put_line('Year = '||year);
       ---------------------------------------------------------
       -- retrieve the elev value at each seasonal breakpoint --
       ---------------------------------------------------------
@@ -724,6 +726,7 @@ begin
       ---------------------------------------------------------
       for i in 1..l_seasonal_stor_values.count loop
          l_date := add_months(l_effective_date, l_seasonal_stor_values(i).offset_months + (year-1) * 12) +  l_seasonal_stor_values(i).offset_minutes / 1440;
+         dbms_output.put_line(i||': '||l_date);
          l_expected_value := case
                              when year = 2 then
                                 least(l_seasonal_stor_values(i).value, l_stor_limit)

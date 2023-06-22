@@ -30,8 +30,7 @@ begin
                     object_type
                from dba_objects
               where owner = 'CWMS_20'
-                and object_type in ('TRIGGER','PROCEDURE','FUNCTION')
-                and status <> 'VALID')
+                and object_type in ('TRIGGER','PROCEDURE','FUNCTION'))
    loop
       cmd := 'alter '||c.object_type||' '||c.owner||'.'||c.object_name||' compile debug';
       dbms_output.put_line (cmd);

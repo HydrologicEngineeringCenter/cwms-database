@@ -43,7 +43,7 @@ as
    begin   
       if self.current_datum != upper(p_vertical_datum) then
          if self.formula is not null then
-            cwms_err.raise('ERROR', 'Can''t change vertical datum on a formula rating.');
+            cwms_err.raise('ERROR', 'Cannot change vertical datum on an expression rating.');
          end if;
          for i in 1..self.elev_positions.count loop
             if self.current_units = 'D' then

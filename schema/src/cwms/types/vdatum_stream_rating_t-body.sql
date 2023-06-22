@@ -71,6 +71,7 @@ as
                end if;
             end loop;
          end if;
+         self.current_datum := p_vertical_datum;
       end if;
    end;
    

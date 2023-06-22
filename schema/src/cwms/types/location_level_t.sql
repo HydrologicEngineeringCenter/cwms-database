@@ -41,6 +41,7 @@ create or replace type location_level_t
  *                                     attributes, and are the constituent level attribute id, attribute value, and attribute value unit, respectively. If there are only five
  *                                     values, the attribute value is in database storage units for the attribute parameter.
  * @member connections                 The constituents connections string if this is a virtual location level
+ * @member vertical_datum              The vertical datum of any elevation values in the level. Null indicates native vertical datum for the location.
  */
 is object (
    office_id                   varchar2(16),
@@ -70,6 +71,7 @@ is object (
    indicators                  loc_lvl_indicator_tab_t,
    constituents                str_tab_tab_t,
    connections                 varchar2(256),
+   vertical_datum              varchar2(16),
    -- not documented
    constructor function location_level_t(
       p_obj zlocation_level_t)
@@ -118,6 +120,17 @@ is object (
     */
    member procedure set_unit_system(
       p_unit_system in varchar2),
+   /**
+    * Converts the location level to use the specified vertical datum for elevation values. Sets the vertical_datum member and converts level_value and seasonal_value members
+    *
+    * @param p_vertical_datum The vertical datum to convert the level elevation values to.
+    */
+   member procedure set_vertical_datum(
+      p_vertical_datum in varchar2),
+   /**
+    * Converts the location level to use the location native vertical datum for elevation values. Sets the vertical_datum member and converts level_value and seasonal_value members
+    */
+   member procedure set_to_native_vertical_datum,
    /**
     * Returns whether this is a virtual location level
     */
