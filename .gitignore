@@ -57,3 +57,4 @@ schema/src/xml/hec-datatypes.xsd
 **/target
 **/*.versionsBackup
 **/.vscode
+gradle.properties
