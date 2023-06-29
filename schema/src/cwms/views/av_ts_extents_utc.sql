@@ -46,6 +46,7 @@ begin
  * @field greatest_accepted_value_time  The time that the greatest accepted (not missing or rejected) non-null value (in database units) that has been stored for the time series is for
  * @field greatest_accepted_value_entry The time that the greatest accepted (not missing or rejected) non-null value (in database units) that has been stored for the time series was entered (stored)
  * @field last_update                   The time that this record was updated
+ * @field has_non_zero_quality          Specifies whether the ENTIRE time series has ANY quality_code other than zero
  */
 ';
    delete from at_clob where office_code = 53 and id = '/VIEWDOCS/AV_TS_EXTENTS_UTC';
@@ -90,7 +91,8 @@ create or replace force view av_ts_extents_utc (
    greatest_accepted_value_en,
    greatest_accepted_value_time,
    greatest_accepted_value_entry,
-   last_update)
+   last_update,
+   has_non_zero_quality)
 as
 select tsx.ts_code,
        tid.db_office_id,
@@ -131,7 +133,8 @@ select tsx.ts_code,
        cwms_util.convert_units(tsx.greatest_accepted_value, tid.unit_id, cwms_display.retrieve_user_unit_f(tid.parameter_id, 'EN')) as greatest_accepted_value_en,
        tsx.greatest_accepted_value_time,
        tsx.greatest_accepted_value_entry,
-       tsx.last_update
+       tsx.last_update,
+       tsx.has_non_zero_quality
   from at_ts_extents tsx,
        at_cwms_ts_id tid
  where tid.ts_code = tsx.ts_code;

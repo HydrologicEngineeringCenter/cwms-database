@@ -4582,6 +4582,12 @@ AS
          l_updated                            := true;
       end if;
 
+      if p_rec2.has_non_zero_quality is null or (p_rec1.has_non_zero_quality = 'T' and p_rec2.has_non_zero_quality = 'F')
+      then
+         p_rec2.has_non_zero_quality          := p_rec1.has_non_zero_quality;
+         l_updated                            := true;
+      end if;
+
       if l_updated then
          p_rec2.last_update := p_rec1.last_update;
       end if;
@@ -4724,7 +4730,11 @@ AS
                 q5.greatest_accepted_value,
                 q14.greatest_accepted_value_time,
                 q15.greatest_accepted_value_entry,
-                systimestamp as last_update
+                -----------
+                -- other --
+                -----------
+                systimestamp as last_update,
+                q16.has_non_zero_quality
            from (select ts_code, version_date
                    from AT_TSV
                   where rownum<2
@@ -4817,18 +4827,53 @@ AS
                 (select date_time,
                         data_entry_date as greatest_accepted_value_entry
                    from AT_TSV
-                ) q15 on q15.date_time = q14.greatest_accepted_value_time';
+                ) q15 on q15.date_time = q14.greatest_accepted_value_time
+                left outer join
+                (select ''T'' as has_non_zero_quality
+                   from AT_TSV
+                  where quality_code != 0
+                    and rownum = 1
+                ) q16 on 1=1';
    begin
       -- This is essentially procedure update_ts_extents(p_ts_code, p_version_date)
       -- Do a full scan for TS extents, then update or insert the new extents.
 
-      -- NOTE THAT THE ORIGINAL CODE ALLOWS FOR A NULL TS_CODE AND VERSION_TIME
-      -- NULL TS_CODE LOOPS THRU ALL TS_CODES W/O EXTENTS
-      -- NULL VERSION_DATE DEFAULTS TO '1111-11-11'
+      if p_ts_code is null then
+         -------------------------
+         -- update all ts_codes --
+         -------------------------
+         for rec in (select ts_code from at_cwms_ts_id where net_ts_active_flag = 'T') loop
+            update_ts_extents(rec.ts_code, p_version_date);
+         end loop;
+         return;
+      elsif p_version_date is null then
+         ----------------------------------------------------
+         -- update all version_dates for specified ts_code --
+         ----------------------------------------------------
+         for rec1 in (select version_flag from at_cwms_ts_id where ts_code = p_ts_code and net_ts_active_flag = 'T') loop
+            --------------------------------
+            -- will be only 0 or 1 record --
+            --------------------------------
+            if rec1.version_flag = 'F' then
+               ------------------------------
+               -- ts_code is non-versioned --
+               ------------------------------
+               update_ts_extents(p_ts_code, cwms_util.non_versioned);
+            else
+               --------------------------
+               -- ts_code is versioned --
+               --------------------------
+               for rec2 in (select distinct version_date from av_tsv where ts_code = p_ts_code) loop
+                  update_ts_extents(p_ts_code, rec2.version_date);
+               end loop;
+            end if;
+         end loop;
+         return;
+      end if;
 
-      -------------------------------
-      -- update a specific ts_code --
-      -------------------------------
+      --------------------------------------------
+      -- update a specific ts_code/version_date --
+      --------------------------------------------
 
       l_rec2 := null;
 
@@ -4836,7 +4881,7 @@ AS
          begin
             execute immediate replace(l_query, ':table_name', rec.table_name) into l_rec1 using p_ts_code, p_version_date;
             l_updated := update_ts_extents_rec (l_rec1, l_rec2);
-         exception when others then
+         exception when no_data_found then
             -- it appears that l_rec1 is not cleared when no values are returned by the query
             l_rec1 := null;
             l_updated := FALSE;
@@ -6516,7 +6561,8 @@ AS
                       end,
                       q7.greatest_accepted_value_time,
                       l_store_date,
-                      l_store_date
+                      l_store_date,
+                      nvl(q8.has_non_zero_quality, 'F')
                  into l_ts_extents_rec
                  from at_cwms_ts_spec s,
                       at_parameter p,
@@ -6563,6 +6609,12 @@ AS
                          from table(l_timeseries_data)
                         group by value
                       ) q7 on nvl(q7.value, binary_double_infinity) = nvl(q3.greatest_accepted_value, binary_double_infinity)
+                      left outer join
+                      (select 'T' as has_non_zero_quality
+                         from table(l_timeseries_data)
+                        where quality_code != 0
+                          and rownum = 1
+                      ) q8 on 1=1
                 where s.ts_code = l_ts_code
                   and u.unit_id = l_units
                   and c.from_unit_code = u.unit_code
