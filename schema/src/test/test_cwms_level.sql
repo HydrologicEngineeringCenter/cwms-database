@@ -23,6 +23,8 @@ procedure test_guide_curve;
 procedure test_sources_labels_indicators_conditions_and_xml;
 --%test(CWDB-234 Bad interpolation at end of seasonal location level time series)
 procedure test_cwdb_234_bad_interpolation_at_end_of_seasonal_location_level_time_series;
+--%test(CWDB-235 Exception using seasonal levels with leap day value in non-leap years)
+procedure test_cwdb_235_exception_using_seasonal_levels_with_leap_day_value_in_non_leap_years;
 
 c_office_id             varchar2(16)  := '&&office_id';
 c_location_id           varchar2(57)  := 'LocLevelTestLoc';
@@ -58,7 +60,7 @@ is
 begin
    teardown;
    cwms_loc.store_location(
-      p_location_id    =>c_location_id,
+      p_location_id    => c_location_id,
       p_time_zone_id   => c_timezone_id,
       p_vertical_datum => 'NGVD-29',
       p_db_office_id   => c_office_id);
@@ -1784,6 +1786,89 @@ begin
    ut.expect(l_ts_values(3).date_time).to_equal(l_expected_values(3).date_time);
    ut.expect(round(l_ts_values(3).value / l_expected_values(3).value, 4)).to_equal(1);
 end test_cwdb_234_bad_interpolation_at_end_of_seasonal_location_level_time_series;
+--------------------------------------------------------------------------------
+-- procedure test_cwdb_235_exception_using_seasonal_levels_with_leap_day_value_in_non_leap_years
+--------------------------------------------------------------------------------
+procedure test_cwdb_235_exception_using_seasonal_levels_with_leap_day_value_in_non_leap_years
+is
+   l_loc_lvl_values    cwms_t_ztsv_array;
+   l_location_level_id cwms_v_location_level.location_level_id%type := c_location_id||'.Elev.Const.0.Top of Normal';
+   l_one_second        number := 1/86400;
+   l_errors            clob;
+   l_xml               clob := '
+<location-levels>
+    <location-level office=":office" interpolate="true">
+        <location-level-id>:location_level_id</location-level-id>
+        <effective-date>1900-01-01T00:00:00Z</effective-date>
+        <regularly-varying>
+            <interval-origin>2020-01-01T00:00:00Z</interval-origin>
+            <interval-duration>P1Y</interval-duration>
+            <seasonal-value><interval-offset>PT0M   </interval-offset><!-- 01Jan          --><level-value unit=":unit">1000</level-value></seasonal-value>
+            <seasonal-value><interval-offset>P1M    </interval-offset><!-- 01Feb          --><level-value unit=":unit">1000</level-value></seasonal-value>
+            <seasonal-value><interval-offset>P1M28D </interval-offset><!-- 29Feb or 01Mar --><level-value unit=":unit">1001</level-value></seasonal-value>
+            <seasonal-value><interval-offset>P2M    </interval-offset><!-- 01Mar          --><level-value unit=":unit">1002</level-value></seasonal-value>
+            <seasonal-value><interval-offset>P3M    </interval-offset><!-- 01Apr          --><level-value unit=":unit">1000</level-value></seasonal-value>
+        </regularly-varying>
+    </location-level>
+</location-levels>';
+begin
+   setup;
+   l_xml := replace(l_xml, ':office', c_office_id);
+   l_xml := replace(l_xml, ':location_level_id', l_location_level_id);
+   l_xml := replace(l_xml, ':unit', c_elev_unit);
+   --------------------------------------------------
+   -- store a location level with a leap-day value --
+   --------------------------------------------------
+   cwms_level.store_location_levels_xml(l_errors, l_xml, 'F', 'T');
+   ut.expect(l_errors).to_be_null;
+   ------------------------------------------------
+   -- retrieve the location level in a leap year --
+   ------------------------------------------------
+   l_loc_lvl_values := cwms_level.retrieve_location_level_values(
+      p_location_level_id => l_location_level_id,
+      p_level_units       => c_elev_unit,
+      p_start_time        => date '2020-02-01',
+      p_end_time          => date '2020-04-01',
+      p_timezone_id       => 'UTC',
+      p_office_id         => c_office_id);
+   --------------------------------------------------
+   -- make sure we get both 29Feb and 01Mar values --
+   --------------------------------------------------
+   ut.expect(l_loc_lvl_values.count).to_equal(5);
+   ut.expect(l_loc_lvl_values(1).date_time).to_equal(date '2020-02-01');
+   ut.expect(l_loc_lvl_values(2).date_time).to_equal(date '2020-02-29');
+   ut.expect(l_loc_lvl_values(3).date_time).to_equal(date '2020-03-01');
+   ut.expect(l_loc_lvl_values(4).date_time).to_equal(date '2020-04-01' - l_one_second);
+   ut.expect(l_loc_lvl_values(5).date_time).to_equal(date '2020-04-01');
+   ut.expect(to_number(round(l_loc_lvl_values(1).value, 5))).to_equal(1000);
+   ut.expect(to_number(round(l_loc_lvl_values(2).value, 5))).to_equal(1001);
+   ut.expect(to_number(round(l_loc_lvl_values(3).value, 5))).to_equal(1002);
+   ut.expect(to_number(round(l_loc_lvl_values(4).value, 5))).to_equal(1000);
+   ut.expect(to_number(round(l_loc_lvl_values(5).value, 5))).to_equal(1000);
+   ----------------------------------------------------
+   -- retrieve the location level in a non-leap year --
+   ----------------------------------------------------
+   l_loc_lvl_values := cwms_level.retrieve_location_level_values(
+      p_location_level_id => l_location_level_id,
+      p_level_units       => c_elev_unit,
+      p_start_time        => date '2023-02-01',
+      p_end_time          => date '2023-04-01',
+      p_timezone_id       => 'UTC',
+      p_office_id         => c_office_id);
+   --------------------------------------
+   -- make sure we get the 01Mar value --
+   --------------------------------------
+   ut.expect(l_loc_lvl_values.count).to_equal(4);
+   ut.expect(l_loc_lvl_values(1).date_time).to_equal(date '2023-02-01');
+   ut.expect(l_loc_lvl_values(2).date_time).to_equal(date '2023-03-01');
+   ut.expect(l_loc_lvl_values(3).date_time).to_equal(date '2023-04-01' - l_one_second);
+   ut.expect(l_loc_lvl_values(4).date_time).to_equal(date '2023-04-01');
+   ut.expect(to_number(round(l_loc_lvl_values(1).value, 5))).to_equal(1000);
+   ut.expect(to_number(round(l_loc_lvl_values(2).value, 5))).to_equal(1002);
+   ut.expect(to_number(round(l_loc_lvl_values(3).value, 5))).to_equal(1000);
+   ut.expect(to_number(round(l_loc_lvl_values(4).value, 5))).to_equal(1000);
+
+end test_cwdb_235_exception_using_seasonal_levels_with_leap_day_value_in_non_leap_years;
 
 end test_cwms_level;
 /

@@ -913,18 +913,33 @@ begin
          ------------------------
          for i in 1..2 loop
             begin
-               select distinct
-                      cast(l_intvl + calendar_offset + time_offset as date),
+               --------------------------------------------------------------------------------
+               -- This form allows selection of the 01Mar date for location levels that have --
+               -- 29Feb and 01Mar values within time windows in non-leap years. Otherwise we --
+               -- get 2 nearest values for 01Mar and raise an uncaught exception in non-leap --
+               -- years. We still get separate 29Feb and 01Mar values in leap years (if the  --
+               -- location level has both)                                                   --
+               --------------------------------------------------------------------------------
+               with query as
+                  (select distinct
+                         cast(l_intvl + calendar_offset + time_offset as date) as date_time,
+                         value,
+                         calendar_offset
+                   from at_seasonal_location_level
+                   where location_level_code = p_rec.location_level_code
+                      and cast(l_intvl + calendar_offset + time_offset as date) =
+                            (select min(cast(l_intvl + calendar_offset + time_offset as date))
+                               from at_seasonal_location_level
+                               where location_level_code = p_rec.location_level_code
+                                     and cast(l_intvl + calendar_offset + time_offset as date) >= l_date)
+                  )
+               select date_time,
                       value
                  into p_nearest_date,
                       p_nearest_value
-                 from at_seasonal_location_level
-                where location_level_code = p_rec.location_level_code
-                  and cast(l_intvl + calendar_offset + time_offset as date) =
-                         (select min(cast(l_intvl + calendar_offset + time_offset as date))
-                            from at_seasonal_location_level
-                           where location_level_code = p_rec.location_level_code
-                                 and cast(l_intvl + calendar_offset + time_offset as date) >= l_date);
+                 from query
+                where calendar_offset = (select max(calendar_offset) from query);
+
                exit; -- when found
             exception
                when no_data_found then
@@ -950,18 +965,33 @@ begin
          ------------------------
          for i in 1..2 loop
             begin
-               select distinct
-                      cast(l_intvl + calendar_offset + time_offset as date),
+               --------------------------------------------------------------------------------
+               -- This form allows selection of the 01Mar date for location levels that have --
+               -- 29Feb and 01Mar values within time windows in non-leap years. Otherwise we --
+               -- get 2 nearest values for 01Mar and raise an uncaught exception in non-leap --
+               -- years. We still get separate 29Feb and 01Mar values in leap years (if the  --
+               -- location level has both)                                                   --
+               --------------------------------------------------------------------------------
+               with query as
+                  (select distinct
+                         cast(l_intvl + calendar_offset + time_offset as date) as date_time,
+                         value,
+                         calendar_offset
+                   from at_seasonal_location_level
+                   where location_level_code = p_rec.location_level_code
+                      and cast(l_intvl + calendar_offset + time_offset as date) =
+                            (select max(cast(l_intvl + calendar_offset + time_offset as date))
+                               from at_seasonal_location_level
+                               where location_level_code = p_rec.location_level_code
+                                     and cast(l_intvl + calendar_offset + time_offset as date) <= l_date)
+                  )
+               select date_time,
                       value
                  into p_nearest_date,
                       p_nearest_value
-                 from at_seasonal_location_level
-                where location_level_code = p_rec.location_level_code
-                  and cast(l_intvl + calendar_offset + time_offset as date) =
-                         (select max(cast(l_intvl + calendar_offset + time_offset as date))
-                            from at_seasonal_location_level
-                           where location_level_code = p_rec.location_level_code
-                                 and cast(l_intvl + calendar_offset + time_offset as date) <= l_date);
+                 from query
+                where calendar_offset = (select max(calendar_offset) from query);
+
                exit; -- when found
             exception
                when no_data_found then
@@ -2648,7 +2678,7 @@ is
    l_constituents               varchar2(32767);
    l_vertical_datum             at_vert_datum_offset.vertical_datum_id_1%type;
    l_native_vertical_datum      at_vert_datum_offset.vertical_datum_id_1%type;
-   l_vertical_datum_offset      binary_double;
+   l_vertical_datum_offset      binary_double := 0;
 
 
    function is_error(p_msg_txt in varchar2, p_error_if_exists in boolean) return boolean is
